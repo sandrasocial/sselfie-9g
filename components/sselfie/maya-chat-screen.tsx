@@ -6,6 +6,7 @@ import { Camera, Send, Plus, ArrowDown, History } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import ConceptCard from "./concept-card"
 import MayaChatHistory from "./maya-chat-history"
+import UnifiedLoading from "./unified-loading"
 
 export default function MayaChatScreen() {
   const [inputValue, setInputValue] = useState("")
@@ -243,14 +244,7 @@ export default function MayaChatScreen() {
   }
 
   if (isLoadingChat) {
-    return (
-      <div className="h-full flex items-center justify-center">
-        <div className="flex items-center gap-3 text-stone-600">
-          <div className="w-2 h-2 rounded-full bg-stone-600 animate-pulse" aria-hidden="true"></div>
-          <span className="text-sm tracking-[0.15em] uppercase font-light">Loading chat...</span>
-        </div>
-      </div>
-    )
+    return <UnifiedLoading message="Loading chat..." />
   }
 
   return (

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Aperture, Edit2, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import BrandProfileWizard from "./brand-profile-wizard"
+import UnifiedLoading from "./unified-loading"
 
 interface PersonalBrandData {
   name: string
@@ -79,14 +80,7 @@ export default function PersonalBrandSection({ userId }: PersonalBrandSectionPro
   console.log("[v0] PersonalBrandSection rendering, showWizard:", showWizard, "brandData:", !!brandData)
 
   if (isLoading) {
-    return (
-      <div className="bg-white/50 backdrop-blur-2xl rounded-xl sm:rounded-[1.75rem] p-6 sm:p-8 border border-white/60 shadow-xl shadow-stone-900/10">
-        <div className="animate-pulse space-y-4">
-          <div className="h-6 bg-stone-200/50 rounded w-1/3"></div>
-          <div className="h-4 bg-stone-200/50 rounded w-2/3"></div>
-        </div>
-      </div>
-    )
+    return <UnifiedLoading message="Loading brand profile..." />
   }
 
   return (

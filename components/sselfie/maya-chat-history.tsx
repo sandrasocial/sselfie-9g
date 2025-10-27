@@ -2,6 +2,7 @@
 
 import { MessageSquare, Clock, ChevronRight, Aperture } from "lucide-react"
 import useSWR from "swr"
+import UnifiedLoading from "./unified-loading"
 
 interface MayaChat {
   id: number
@@ -86,22 +87,7 @@ export default function MayaChatHistory({ currentChatId, onSelectChat, onNewChat
   }
 
   if (isLoading) {
-    return (
-      <div className="space-y-3">
-        {[1, 2, 3].map((i) => (
-          <div
-            key={i}
-            className="bg-white/40 backdrop-blur-2xl border border-white/60 rounded-xl p-4 animate-pulse"
-            role="status"
-            aria-label="Loading chat history"
-          >
-            <div className="h-4 bg-stone-200 rounded w-3/4 mb-2"></div>
-            <div className="h-3 bg-stone-200 rounded w-1/2 mb-2"></div>
-            <div className="h-3 bg-stone-200 rounded w-full"></div>
-          </div>
-        ))}
-      </div>
-    )
+    return <UnifiedLoading message="Loading chat history..." />
   }
 
   if (error) {

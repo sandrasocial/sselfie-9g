@@ -29,12 +29,8 @@ export default function LoadingScreen() {
 
           {/* Logo in center */}
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-xl sm:rounded-2xl flex items-center justify-center shadow-2xl shadow-stone-900/20 p-2.5 sm:p-3">
-              <img
-                src="https://i.postimg.cc/65NtYqMK/Black-transperent-logo.png"
-                alt="SSELFIE Logo"
-                className="w-full h-full object-contain"
-              />
+            <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center p-2 sm:p-2.5">
+              <img src="/icon-192.png" alt="SSELFIE Logo" className="w-full h-full object-contain" />
             </div>
           </div>
         </div>

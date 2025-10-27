@@ -1,12 +1,13 @@
 "use client"
 
 import { useState } from "react"
-import { Heart, Grid, Camera, Loader2, ImageIcon, Download, Trash2 } from "lucide-react"
+import { Heart, Grid, Camera, ImageIcon, Download, Trash2 } from "lucide-react"
 import useSWR from "swr"
 import type { User } from "./types"
 import type { GalleryImage } from "@/lib/data/images"
 import { ImageLightbox } from "@/components/image-lightbox"
 import { ProfileImageSelector } from "@/components/profile-image-selector"
+import UnifiedLoading from "./unified-loading"
 
 interface GalleryScreenProps {
   user: User
@@ -129,14 +130,7 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
   }
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center space-y-4">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto text-stone-400" />
-          <p className="text-sm font-light text-stone-600">Loading your gallery...</p>
-        </div>
-      </div>
-    )
+    return <UnifiedLoading message="Loading your gallery..." />
   }
 
   if (error) {
@@ -216,7 +210,7 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
               <button
                 key={category.key}
                 onClick={() => setSelectedCategory(category.key)}
-                className={`px-3 sm:px-4 py-2 text-[10px] sm:text-xs tracking-[0.15em] uppercase font-light border border-stone-200/40 rounded-full transition-all duration-200 whitespace-nowrap flex-shrink-0 min-h-[36px] ${
+                className={`px-3 sm:px-4 py-2 text-[10px] sm:text-xs tracking-[0.15em] uppercase font-light border border-stone-200/40 rounded-full transition-all duration-200 whitespace-nowrap flex-shrink-0 min-h-[36px] sm:min-h-[40px] ${
                   selectedCategory === category.key ? "bg-stone-950 text-white" : "bg-stone-50 hover:bg-stone-100"
                 }`}
               >

@@ -8,6 +8,7 @@ import PersonalBrandSection from "./personal-brand-section"
 import { ProfileImageSelector } from "@/components/profile-image-selector"
 import type { User } from "./types"
 import Image from "next/image"
+import UnifiedLoading from "./unified-loading"
 
 interface ProfileScreenProps {
   user: User
@@ -156,6 +157,10 @@ export default function ProfileScreen({ user }: ProfileScreenProps) {
   const displayAvatar = profileInfo?.avatar || user.avatar || "/placeholder.svg"
   const displayPlan = profileInfo?.plan || user.membershipTier || "free"
 
+  if (loading) {
+    return <UnifiedLoading message="Loading your profile..." />
+  }
+
   return (
     <div className="space-y-8 pb-24">
       <div className="text-center space-y-8 pt-4">
@@ -278,39 +283,32 @@ export default function ProfileScreen({ user }: ProfileScreenProps) {
           </button>
         </div>
         <div className="grid grid-cols-3 gap-2 sm:gap-3 md:gap-4">
-          {loading
-            ? [1, 2, 3, 4, 5, 6].map((i) => (
+          {recentWork.length > 0
+            ? recentWork.map((image) => (
+                <div
+                  key={image.id}
+                  className="aspect-square rounded-xl sm:rounded-2xl border border-stone-300/30 overflow-hidden cursor-pointer group transition-all duration-200 hover:scale-[1.02] hover:shadow-lg relative"
+                >
+                  <Image
+                    src={image.selected_url || "/placeholder.svg"}
+                    alt={image.category || "Generated image"}
+                    fill
+                    className="object-cover object-top"
+                  />
+                </div>
+              ))
+            : [1, 2, 3, 4, 5, 6].map((i) => (
                 <div
                   key={i}
-                  className="aspect-square bg-stone-200/30 rounded-xl sm:rounded-2xl border border-stone-300/30 animate-pulse"
-                />
-              ))
-            : recentWork.length > 0
-              ? recentWork.map((image) => (
-                  <div
-                    key={image.id}
-                    className="aspect-square rounded-xl sm:rounded-2xl border border-stone-300/30 overflow-hidden cursor-pointer group transition-all duration-200 hover:scale-[1.02] hover:shadow-lg relative"
-                  >
-                    <Image
-                      src={image.selected_url || "/placeholder.svg"}
-                      alt={image.category || "Generated image"}
-                      fill
-                      className="object-cover object-top"
-                    />
-                  </div>
-                ))
-              : [1, 2, 3, 4, 5, 6].map((i) => (
-                  <div
-                    key={i}
-                    className="aspect-square bg-stone-200/30 rounded-xl sm:rounded-2xl border border-stone-300/30 flex items-center justify-center cursor-pointer group transition-all duration-200 hover:scale-[1.02] hover:bg-stone-200/50"
-                  >
-                    <Camera
-                      size={20}
-                      strokeWidth={1.5}
-                      className="text-stone-500 group-hover:text-stone-700 transition-colors"
-                    />
-                  </div>
-                ))}
+                  className="aspect-square bg-stone-200/30 rounded-xl sm:rounded-2xl border border-stone-300/30 flex items-center justify-center cursor-pointer group transition-all duration-200 hover:scale-[1.02] hover:bg-stone-200/50"
+                >
+                  <Camera
+                    size={20}
+                    strokeWidth={1.5}
+                    className="text-stone-500 group-hover:text-stone-700 transition-colors"
+                  />
+                </div>
+              ))}
         </div>
       </div>
 

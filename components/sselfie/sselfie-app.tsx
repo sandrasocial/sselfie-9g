@@ -9,6 +9,7 @@ import MayaChatScreen from "./maya-chat-screen"
 import GalleryScreen from "./gallery-screen"
 import AcademyScreen from "./academy-screen"
 import ProfileScreen from "./profile-screen"
+import { InstallPrompt } from "./install-prompt"
 import type { User as UserType } from "./types"
 
 interface SselfieAppProps {
@@ -217,6 +218,9 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
           </div>
         </div>
       </div>
+
+      {/* InstallPrompt component */}
+      <InstallPrompt />
     </div>
   )
 }
