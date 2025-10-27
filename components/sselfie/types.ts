@@ -12,6 +12,7 @@ export interface ConceptData {
   description: string
   category: string // Changed from union type to string for flexibility
   prompt: string // Flux prompt for Replicate
+  referenceImageUrl?: string // Added reference image URL for image-to-image generation
 }
 
 export interface Message {

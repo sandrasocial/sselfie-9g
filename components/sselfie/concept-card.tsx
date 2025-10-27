@@ -59,7 +59,14 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
     setError(null)
 
     try {
-      console.log("[v0] Starting image generation for:", concept.title)
+      console.log("[v0] ========== CONCEPT CARD GENERATION ==========")
+      console.log("[v0] Concept title:", concept.title)
+      console.log("[v0] Concept category:", concept.category)
+      console.log("[v0] Has reference image:", !!concept.referenceImageUrl)
+      if (concept.referenceImageUrl) {
+        console.log("[v0] Reference image URL:", concept.referenceImageUrl)
+      }
+      console.log("[v0] ================================================")
 
       const response = await fetch("/api/maya/generate-image", {
         method: "POST",
@@ -71,6 +78,7 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
           conceptPrompt: concept.prompt, // Maya's detailed FLUX prompt
           category: concept.category,
           chatId,
+          referenceImageUrl: concept.referenceImageUrl,
         }),
       })
 
@@ -166,7 +174,7 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
         <div className="mt-5 sm:mt-6">
           <button
             onClick={handleGenerate}
-            className="group relative w-full bg-stone-950 text-white px-5 sm:px-6 py-4 rounded-[1.25rem] font-semibold tracking-wide text-sm transition-all duration-300 hover:shadow-2xl hover:shadow-stone-900/40 hover:scale-[1.02] active:scale-[0.98] min-h-[52px] overflow-hidden"
+            className="group relative w-full bg-stone-950 text-white px-5 sm:px-6 py-4 rounded-[1.25rem] font-semibold tracking-wide text-sm transition-all duration-300 hover:shadow-2xl hover:shadow-stone-950/40 hover:scale-[1.02] active:scale-[0.98] min-h-[52px] overflow-hidden"
             aria-label={`Create photo: ${concept.title}`}
           >
             <div

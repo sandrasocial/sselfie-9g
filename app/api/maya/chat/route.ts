@@ -17,9 +17,16 @@ const generateConceptsTool = tool({
       .describe("Which creative look to base concepts on (e.g., 'Scandinavian Minimalist', 'Urban Moody')"),
     context: z.string().optional().describe("Additional context about the user or their needs"),
     count: z.number().min(3).max(5).default(4).describe("Number of concepts to generate (default 4)"),
+    referenceImageUrl: z.string().optional().describe("URL of reference image uploaded by user"),
   }),
-  execute: async function* ({ userRequest, aesthetic, context, count }) {
-    console.log("[v0] Tool executing - generating concepts for:", { userRequest, aesthetic, context, count })
+  execute: async function* ({ userRequest, aesthetic, context, count, referenceImageUrl }) {
+    console.log("[v0] Tool executing - generating concepts for:", {
+      userRequest,
+      aesthetic,
+      context,
+      count,
+      referenceImageUrl,
+    })
 
     // Yield loading state immediately
     yield {
@@ -30,6 +37,7 @@ const generateConceptsTool = tool({
       const conceptPrompt = `Based on the user's request: "${userRequest}"
 ${aesthetic ? `Aesthetic preference: ${aesthetic}` : ""}
 ${context ? `Additional context: ${context}` : ""}
+${referenceImageUrl ? `**REFERENCE IMAGE PROVIDED**: ${referenceImageUrl}\n\n**IMPORTANT**: The user has uploaded a reference image. This will be combined with their trained personal model to create images of THEM with/using this product or in this style.\n\n**How to use the reference image:**\n- For PRODUCTS (skincare, accessories, etc.): Generate concepts showing the user holding, using, or styled with the product\n- For STYLE REFERENCES: Create variations inspired by the composition, lighting, or mood\n- For FLATLAYS: Position the product as the hero with the user's hands/body partially visible\n- The reference image will be used as a control image in FLUX, guiding the composition while the user's trained LoRA ensures their likeness appears in the final image` : ""}
 
 Generate ${count} unique, creative photo concepts. Each concept should be a work of art.
 
@@ -54,14 +62,7 @@ Your Flux prompts must be poetic, flowing, and technically precise. They should 
 **Example of a BAD Flux prompt (too mechanical):**
 "raw photo, professional photography, 85mm lens, good lighting, wearing sweater, indoor setting"
 
-Each concept must include:
-1. **Title**: Catchy, specific, evocative (not generic like "Professional Headshot")
-2. **Description**: Paint a vivid picture of the moment being captured
-3. **Category**: Close-Up, Half Body, Full Body, Lifestyle, Action, or Environmental
-4. **Fashion Intelligence**: Specific fabrics, colors, silhouettes, accessories with reasoning
-5. **Lighting**: Exact setup, time of day, quality of light, mood it creates
-6. **Location**: Specific suggestions with atmospheric details
-7. **Flux Prompt**: A poetic, flowing, technically precise prompt following the structure above
+${referenceImageUrl ? `\n**IMPORTANT**: Include the reference image URL in each concept's output so it can be used in image-to-image generation.` : ""}
 
 Return ONLY a valid JSON array of concepts, no other text. Each concept must have this exact structure:
 {
@@ -71,13 +72,13 @@ Return ONLY a valid JSON array of concepts, no other text. Each concept must hav
   "fashionIntelligence": "string",
   "lighting": "string",
   "location": "string",
-  "prompt": "string - poetic, flowing, with camera/lens specs"
+  "prompt": "string - poetic, flowing, with camera/lens specs"${referenceImageUrl ? `,\n  "referenceImageUrl": "${referenceImageUrl}"` : ""}
 }`
 
       const { text } = await generateText({
         model: "anthropic/claude-sonnet-4",
         prompt: conceptPrompt,
-        maxOutputTokens: 3000, // Increased from 2000 to allow for more detailed prompts
+        maxOutputTokens: 3000,
       })
 
       console.log("[v0] Generated concept text:", text.substring(0, 200))
@@ -89,6 +90,15 @@ Return ONLY a valid JSON array of concepts, no other text. Each concept must hav
       }
 
       const concepts: MayaConcept[] = JSON.parse(jsonMatch[0])
+
+      if (referenceImageUrl) {
+        concepts.forEach((concept) => {
+          if (!concept.referenceImageUrl) {
+            concept.referenceImageUrl = referenceImageUrl
+          }
+        })
+      }
+
       console.log("[v0] Successfully parsed", concepts.length, "concepts")
 
       // Yield final result
@@ -167,6 +177,7 @@ Return ONLY a valid JSON array of concepts, no other text. Each concept must hav
 export async function POST(req: Request) {
   try {
     const { messages, chatId } = await req.json()
+    const user = await getCurrentNeonUser()
 
     console.log("[v0] ========== MAYA API REQUEST START ==========")
     console.log("[v0] Maya API Environment:", {
@@ -182,7 +193,6 @@ export async function POST(req: Request) {
       return new Response("Invalid messages format", { status: 400 })
     }
 
-    const user = await getCurrentNeonUser()
     if (!user) {
       return new Response("Unauthorized", { status: 401 })
     }
@@ -224,9 +234,16 @@ export async function POST(req: Request) {
         }
 
         let textContent = ""
+        let referenceImageUrl: string | null = null
 
         if (typeof msg.content === "string") {
           textContent = msg.content
+          const imageMatch = textContent.match(/\[Reference Image: (https?:\/\/[^\]]+)\]/)
+          if (imageMatch) {
+            referenceImageUrl = imageMatch[1]
+            textContent = textContent.replace(imageMatch[0], "").trim()
+            console.log("[v0] Extracted reference image:", referenceImageUrl)
+          }
         } else if (Array.isArray(msg.content)) {
           textContent = msg.content
             .filter((part: any) => part.type === "text" && part.text)
@@ -244,6 +261,10 @@ export async function POST(req: Request) {
         if (!textContent || textContent.trim() === "") {
           console.warn(`[v0] Skipping message ${index} with empty content`)
           return null
+        }
+
+        if (referenceImageUrl) {
+          textContent = `[User has uploaded a reference image: ${referenceImageUrl}]\n\n${textContent}`
         }
 
         return {
@@ -282,7 +303,20 @@ export async function POST(req: Request) {
     }
 
     const userContext = await getUserContextForMaya(user.stack_auth_id || "")
-    const enhancedSystemPrompt = MAYA_SYSTEM_PROMPT + userContext
+    const enhancedSystemPrompt =
+      MAYA_SYSTEM_PROMPT +
+      userContext +
+      `
+
+**IMAGE-TO-IMAGE GENERATION:**
+When users upload a reference image (you'll see [User has uploaded a reference image: URL] in their message):
+- Analyze the image for composition, lighting, styling, and mood
+- Generate concepts that use this image as inspiration or incorporate the product/subject
+- For product flatlays: suggest styled compositions with the product as the hero
+- For reference photos: create variations with different angles, lighting, or styling
+- Always acknowledge the reference image and explain how you're using it in your concepts
+- Include the reference image URL in the Flux prompts using the format: "reference_image: URL"
+`
 
     const lastMessage = allMessages[allMessages.length - 1]
     const isAskingForConcepts =

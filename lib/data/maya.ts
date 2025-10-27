@@ -101,20 +101,37 @@ export async function saveChatMessage(
   content: string,
   conceptCards?: any[],
 ): Promise<MayaChatMessage> {
-  const message = await sql`
-    INSERT INTO maya_chat_messages (chat_id, role, content, concept_cards)
-    VALUES (${chatId}, ${role}, ${content}, ${conceptCards ? JSON.stringify(conceptCards) : null})
-    RETURNING *
-  `
+  try {
+    const message = await sql`
+      INSERT INTO maya_chat_messages (chat_id, role, content, concept_cards)
+      VALUES (${chatId}, ${role}, ${content}, ${conceptCards ? JSON.stringify(conceptCards) : null})
+      RETURNING *
+    `
 
-  // Update chat last_activity
-  await sql`
-    UPDATE maya_chats
-    SET last_activity = NOW(), updated_at = NOW()
-    WHERE id = ${chatId}
-  `
+    // Update chat last_activity
+    await sql`
+      UPDATE maya_chats
+      SET last_activity = NOW(), updated_at = NOW()
+      WHERE id = ${chatId}
+    `
 
-  return message[0] as MayaChatMessage
+    return message[0] as MayaChatMessage
+  } catch (error: any) {
+    // Handle database errors and convert to proper Error objects
+    const errorMessage = error?.message || String(error)
+
+    // Check if it's a rate limit error
+    if (
+      errorMessage.includes("Too Many Requests") ||
+      errorMessage.includes("429") ||
+      errorMessage.includes("rate limit")
+    ) {
+      throw new Error("Too Many Requests: Database rate limit exceeded")
+    }
+
+    // Re-throw with proper error message
+    throw new Error(`Database error: ${errorMessage}`)
+  }
 }
 
 // Get user's personal memory

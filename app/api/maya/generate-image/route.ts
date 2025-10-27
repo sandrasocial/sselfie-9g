@@ -19,9 +19,13 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { conceptTitle, conceptDescription, conceptPrompt, category, chatId } = body
+    const { conceptTitle, conceptDescription, conceptPrompt, category, chatId, referenceImageUrl } = body
 
-    console.log("[v0] Generating image for concept:", { conceptTitle, category })
+    console.log("[v0] Generating image for concept:", {
+      conceptTitle,
+      category,
+      hasReferenceImage: !!referenceImageUrl,
+    })
 
     const neonUser = await getUserByAuthId(user.id)
     if (!neonUser) {
@@ -103,16 +107,42 @@ export async function POST(request: NextRequest) {
     console.log("[v0] Creating prediction with version:", replicateVersionId)
     console.log("[v0] Quality settings:", qualitySettings)
 
+    const predictionInput: any = {
+      prompt: finalPrompt,
+      ...qualitySettings,
+      ...(qualitySettings.lora_scale !== undefined && { lora_scale: qualitySettings.lora_scale }),
+    }
+
+    if (referenceImageUrl) {
+      console.log("[v0] ========== REFERENCE IMAGE DETECTED ==========")
+      console.log("[v0] Reference Image URL:", referenceImageUrl)
+      console.log("[v0] Adding to prediction input as 'image' parameter")
+
+      // For FLUX LoRA models, use 'image' parameter for img2img
+      predictionInput.image = referenceImageUrl
+      // prompt_strength controls how much the output matches the input (0-1)
+      // Lower = more like input image, Higher = more creative freedom
+      predictionInput.prompt_strength = 0.75
+
+      console.log("[v0] Image parameter set:", predictionInput.image)
+      console.log("[v0] Prompt strength set:", predictionInput.prompt_strength)
+      console.log("[v0] ================================================")
+    }
+
+    console.log("[v0] ========== FULL PREDICTION INPUT ==========")
+    console.log("[v0] Prediction input:", JSON.stringify(predictionInput, null, 2))
+    console.log("[v0] ================================================")
+
     const prediction = await replicate.predictions.create({
       version: replicateVersionId,
-      input: {
-        prompt: finalPrompt,
-        ...qualitySettings,
-        ...(qualitySettings.lora_scale !== undefined && { lora_scale: qualitySettings.lora_scale }),
-      },
+      input: predictionInput,
     })
 
-    console.log("[v0] Replicate prediction started:", prediction.id)
+    console.log("[v0] ========== REPLICATE RESPONSE ==========")
+    console.log("[v0] Prediction ID:", prediction.id)
+    console.log("[v0] Prediction status:", prediction.status)
+    console.log("[v0] Full prediction object:", JSON.stringify(prediction, null, 2))
+    console.log("[v0] ================================================")
 
     const insertResult = await sql`
       INSERT INTO generated_images (

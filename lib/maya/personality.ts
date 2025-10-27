@@ -115,6 +115,7 @@ export interface MayaConcept {
   lighting?: string // Lighting setup details
   location?: string // Location suggestions
   prompt: string // Flux prompt for image generation
+  referenceImageUrl?: string // Reference image URL for image-to-image generation
 }
 
 export function getCreativeLook(lookName: string): CreativeLook | undefined {
