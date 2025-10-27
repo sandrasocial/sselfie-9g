@@ -109,7 +109,7 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
 
   return (
     <div
-      className="h-screen bg-gradient-to-br from-stone-50 via-stone-100/50 to-stone-50 relative overflow-hidden"
+      className="h-screen bg-gradient-to-br from-stone-50 via-stone-100/50 to-stone-50 relative overflow-hidden prevent-horizontal-scroll"
       style={{
         fontFamily:
           '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
@@ -173,45 +173,47 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
         </div>
       </div>
 
-      <div className="absolute bottom-3 sm:bottom-4 md:bottom-5 left-2 sm:left-3 md:left-4 right-2 sm:right-3 md:right-4">
-        <div className="bg-white/20 backdrop-blur-3xl rounded-[1.75rem] sm:rounded-[2rem] md:rounded-[2.5rem] border border-white/40 px-1.5 sm:px-2 md:px-3 py-2.5 sm:py-3 md:py-4 shadow-2xl shadow-stone-900/20">
-          <div className="flex justify-around items-center">
-            {tabs.map((tab) => {
-              const Icon = tab.icon
-              const isActive = activeTab === tab.id
+      <div className="fixed bottom-0 left-0 right-0 safe-area-bottom z-50 px-2 sm:px-3 md:px-4 pb-3 sm:pb-4 md:pb-5">
+        <div className="bg-white/20 backdrop-blur-3xl rounded-[1.75rem] sm:rounded-[2rem] md:rounded-[2.5rem] border border-white/40 shadow-2xl shadow-stone-900/20">
+          <div className="overflow-x-auto scrollbar-hide px-1.5 sm:px-2 md:px-3 py-2.5 sm:py-3 md:py-4">
+            <div className="flex gap-1 sm:gap-2 min-w-max sm:justify-around">
+              {tabs.map((tab) => {
+                const Icon = tab.icon
+                const isActive = activeTab === tab.id
 
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex flex-col items-center space-y-1 px-1.5 sm:px-2.5 md:px-4 py-2 sm:py-2.5 md:py-3 rounded-[1rem] sm:rounded-[1.25rem] md:rounded-[1.5rem] transition-all duration-500 ease-out min-w-[52px] sm:min-w-[58px] md:min-w-[68px] relative ${
-                    isActive ? "transform scale-105" : "hover:scale-[1.02] active:scale-95"
-                  }`}
-                >
-                  {isActive && (
-                    <div className="absolute inset-0 bg-gradient-to-b from-white/90 to-white/70 backdrop-blur-2xl rounded-[1rem] sm:rounded-[1.25rem] md:rounded-[1.5rem] shadow-xl shadow-stone-900/20 border border-white/60"></div>
-                  )}
-                  <div
-                    className={`relative z-10 w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-[0.875rem] sm:rounded-[1rem] md:rounded-[1.125rem] flex items-center justify-center transition-all duration-500 ${
-                      isActive ? "bg-stone-950 shadow-lg shadow-stone-900/30" : "bg-white/40 backdrop-blur-xl"
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex flex-col items-center space-y-1 px-2 sm:px-2.5 md:px-4 py-2 sm:py-2.5 md:py-3 rounded-[1rem] sm:rounded-[1.25rem] md:rounded-[1.5rem] transition-all duration-500 ease-out min-w-[60px] sm:min-w-[68px] md:min-w-[76px] relative touch-manipulation ${
+                      isActive ? "transform scale-105" : "hover:scale-[1.02] active:scale-95"
                     }`}
                   >
-                    <Icon
-                      size={isActive ? 19 : 17}
-                      strokeWidth={2}
-                      className={`transition-all duration-500 ${isActive ? "text-white" : "text-stone-600"}`}
-                    />
-                  </div>
-                  <span
-                    className={`relative z-10 text-[8px] sm:text-[9px] md:text-[10px] font-semibold tracking-wide transition-all duration-500 ${
-                      isActive ? "text-stone-900" : "text-stone-500 opacity-70"
-                    }`}
-                  >
-                    {tab.label}
-                  </span>
-                </button>
-              )
-            })}
+                    {isActive && (
+                      <div className="absolute inset-0 bg-gradient-to-b from-white/90 to-white/70 backdrop-blur-2xl rounded-[1rem] sm:rounded-[1.25rem] md:rounded-[1.5rem] shadow-xl shadow-stone-900/20 border border-white/60"></div>
+                    )}
+                    <div
+                      className={`relative z-10 w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-[0.875rem] sm:rounded-[1rem] md:rounded-[1.125rem] flex items-center justify-center transition-all duration-500 ${
+                        isActive ? "bg-stone-950 shadow-lg shadow-stone-900/30" : "bg-white/40 backdrop-blur-xl"
+                      }`}
+                    >
+                      <Icon
+                        size={isActive ? 19 : 17}
+                        strokeWidth={2}
+                        className={`transition-all duration-500 ${isActive ? "text-white" : "text-stone-600"}`}
+                      />
+                    </div>
+                    <span
+                      className={`relative z-10 text-[9px] sm:text-[10px] md:text-[11px] font-semibold tracking-wide transition-all duration-500 whitespace-nowrap ${
+                        isActive ? "text-stone-900" : "text-stone-500 opacity-70"
+                      }`}
+                    >
+                      {tab.label}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
           </div>
         </div>
       </div>

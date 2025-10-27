@@ -32,88 +32,6 @@ export default function MayaChatScreen() {
         timestamp: new Date().toISOString(),
       })
     },
-    onFinish: async (message) => {
-      console.log("[v0] ========== onFinish START ==========")
-      console.log("[v0] Message ID:", message.id)
-      console.log("[v0] Chat ID:", chatId)
-      console.log("[v0] Already saved?:", savedMessageIds.current.has(message.id))
-      console.log("[v0] Message role:", message.role)
-      console.log("[v0] Message toolInvocations:", message.toolInvocations)
-      console.log("[v0] Message content:", message.content)
-
-      // Only save if we have a chatId and haven't saved this message yet
-      if (!chatId || savedMessageIds.current.has(message.id)) {
-        console.log("[v0] Skipping save - no chatId or already saved")
-        console.log("[v0] ========== onFinish END (skipped) ==========")
-        return
-      }
-
-      const conceptCards =
-        message.toolInvocations && Array.isArray(message.toolInvocations)
-          ? message.toolInvocations
-              .filter((invocation: any) => {
-                const isConceptTool = invocation.toolName === "generateConcepts"
-                const hasResult = invocation.state === "result"
-                const hasConcepts = Array.isArray(invocation.result?.concepts)
-
-                console.log("[v0] Checking tool invocation:", {
-                  toolName: invocation.toolName,
-                  isConceptTool,
-                  state: invocation.state,
-                  hasResult,
-                  hasConcepts,
-                  conceptsCount: invocation.result?.concepts?.length || 0,
-                })
-
-                return isConceptTool && hasResult && hasConcepts
-              })
-              .flatMap((invocation: any) => invocation.result.concepts || [])
-          : []
-
-      console.log("[v0] Extracted concept cards:", {
-        count: conceptCards.length,
-        concepts: conceptCards,
-      })
-
-      // Mark as saved before making the request
-      savedMessageIds.current.add(message.id)
-
-      try {
-        const payload = {
-          chatId,
-          role: message.role,
-          content: message.content || "",
-          conceptCards: conceptCards.length > 0 ? conceptCards : null,
-        }
-
-        console.log("[v0] Sending to save-message API:", payload)
-
-        const response = await fetch("/api/maya/save-message", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        })
-
-        const responseData = await response.json()
-        console.log("[v0] Save-message API response:", {
-          status: response.status,
-          ok: response.ok,
-          data: responseData,
-        })
-
-        if (response.ok) {
-          console.log("[v0] ✅ Message saved successfully with", conceptCards.length, "concept cards")
-        } else {
-          console.error("[v0] ❌ Failed to save message:", response.status, response.statusText, responseData)
-          savedMessageIds.current.delete(message.id)
-        }
-      } catch (error) {
-        console.error("[v0] ❌ Error saving message:", error)
-        savedMessageIds.current.delete(message.id)
-      }
-
-      console.log("[v0] ========== onFinish END ==========")
-    },
   })
 
   const isTyping = status === "submitted" || status === "streaming"
@@ -204,6 +122,87 @@ export default function MayaChatScreen() {
   useEffect(() => {
     console.log("[v0] Maya chat status:", status, "isTyping:", isTyping)
   }, [status, isTyping])
+
+  useEffect(() => {
+    if (!chatId || isTyping) return
+
+    // Find unsaved assistant messages
+    const unsavedMessages = messages.filter((msg) => msg.role === "assistant" && !savedMessageIds.current.has(msg.id))
+
+    unsavedMessages.forEach(async (message) => {
+      console.log("[v0] ========== Auto-saving message ==========")
+      console.log("[v0] Message ID:", message.id)
+      console.log("[v0] Chat ID:", chatId)
+      console.log("[v0] Message toolInvocations:", message.toolInvocations)
+
+      // Extract concept cards from toolInvocations
+      const conceptCards =
+        message.toolInvocations && Array.isArray(message.toolInvocations)
+          ? message.toolInvocations
+              .filter((invocation: any) => {
+                const isConceptTool = invocation.toolName === "generateConcepts"
+                const hasResult = invocation.state === "result"
+                const hasConcepts = Array.isArray(invocation.result?.concepts)
+
+                console.log("[v0] Checking tool invocation:", {
+                  toolName: invocation.toolName,
+                  isConceptTool,
+                  state: invocation.state,
+                  hasResult,
+                  hasConcepts,
+                  conceptsCount: invocation.result?.concepts?.length || 0,
+                })
+
+                return isConceptTool && hasResult && hasConcepts
+              })
+              .flatMap((invocation: any) => invocation.result.concepts || [])
+          : []
+
+      console.log("[v0] Extracted concept cards:", {
+        count: conceptCards.length,
+        concepts: conceptCards,
+      })
+
+      // Mark as saved before making the request
+      savedMessageIds.current.add(message.id)
+
+      try {
+        const payload = {
+          chatId,
+          role: message.role,
+          content: message.content || "",
+          conceptCards: conceptCards.length > 0 ? conceptCards : null,
+        }
+
+        console.log("[v0] Sending to save-message API:", payload)
+
+        const response = await fetch("/api/maya/save-message", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        })
+
+        const responseData = await response.json()
+        console.log("[v0] Save-message API response:", {
+          status: response.status,
+          ok: response.ok,
+          data: responseData,
+        })
+
+        if (response.ok) {
+          console.log("[v0] ✅ Message saved successfully with", conceptCards.length, "concept cards")
+        } else {
+          console.error("[v0] ❌ Failed to save message:", response.status, response.statusText, responseData)
+          savedMessageIds.current.delete(message.id)
+        }
+      } catch (error) {
+        console.error("[v0] ❌ Error saving message:", error)
+        savedMessageIds.current.delete(message.id)
+      }
+
+      console.log("[v0] ========== Auto-save END ==========")
+    })
+  }, [messages, chatId, isTyping])
 
   const handleSendMessage = () => {
     if (inputValue.trim() && !isTyping) {

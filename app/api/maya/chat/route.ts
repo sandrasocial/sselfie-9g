@@ -31,14 +31,37 @@ const generateConceptsTool = tool({
 ${aesthetic ? `Aesthetic preference: ${aesthetic}` : ""}
 ${context ? `Additional context: ${context}` : ""}
 
-Generate ${count} unique, creative photo concepts. Each concept should include:
-1. A catchy, specific title (not generic)
-2. Detailed description of the shot
-3. Category (Close-Up, Half Body, Full Body, Lifestyle, Action, or Environmental)
-4. Fashion intelligence (specific fabrics, colors, silhouettes, accessories)
-5. Lighting direction (exact setup and time of day)
-6. Location guidance (specific suggestions)
-7. Flux prompt (technical prompt for image generation)
+Generate ${count} unique, creative photo concepts. Each concept should be a work of art.
+
+**CRITICAL REQUIREMENTS FOR FLUX PROMPTS:**
+Your Flux prompts must be poetic, flowing, and technically precise. They should read like a cinematographer's vision, not a checklist.
+
+**Structure each Flux prompt like this:**
+1. Start with technical foundation: "raw photo, editorial quality, professional photography, sharp focus, film grain, visible skin pores, editorial luxury aesthetic"
+2. Add camera and lens specifications (REQUIRED):
+   - For Close-Up/Portrait: "shot on 85mm lens, f/1.4 aperture, shallow depth of field, creamy bokeh background"
+   - For Half Body: "shot on 50mm lens, f/2.0 aperture, medium depth of field, natural compression"
+   - For Full Body: "shot on 35mm lens, f/2.8 aperture, environmental context, balanced depth"
+   - For Lifestyle/Action: "shot on 35mm lens, f/2.0 aperture, dynamic framing, natural perspective"
+3. Describe lighting poetically: "bathed in golden hour warmth, soft directional light caressing features" or "dramatic chiaroscuro, key light sculpting shadows"
+4. Paint the scene with flowing language: "standing in minimalist concrete space, natural textures surrounding, soft morning light streaming through floor-to-ceiling windows"
+5. Describe styling and mood: "wearing flowing cream cashmere, delicate gold jewelry catching light, confident yet approachable expression"
+6. Add atmospheric details: "subtle film grain, editorial magazine quality, timeless elegance"
+
+**Example of a GOOD Flux prompt:**
+"raw photo, editorial quality, professional photography, sharp focus, film grain, visible skin pores, editorial luxury aesthetic, shot on 85mm lens f/1.4, shallow depth of field with creamy bokeh, bathed in soft golden hour light streaming through sheer curtains, standing in minimalist Scandinavian interior with natural wood and white walls, wearing flowing cream cashmere turtleneck with delicate layered gold necklaces, confident yet warm expression, hair naturally tousled, subtle makeup emphasizing natural beauty, timeless editorial elegance, magazine cover quality"
+
+**Example of a BAD Flux prompt (too mechanical):**
+"raw photo, professional photography, 85mm lens, good lighting, wearing sweater, indoor setting"
+
+Each concept must include:
+1. **Title**: Catchy, specific, evocative (not generic like "Professional Headshot")
+2. **Description**: Paint a vivid picture of the moment being captured
+3. **Category**: Close-Up, Half Body, Full Body, Lifestyle, Action, or Environmental
+4. **Fashion Intelligence**: Specific fabrics, colors, silhouettes, accessories with reasoning
+5. **Lighting**: Exact setup, time of day, quality of light, mood it creates
+6. **Location**: Specific suggestions with atmospheric details
+7. **Flux Prompt**: A poetic, flowing, technically precise prompt following the structure above
 
 Return ONLY a valid JSON array of concepts, no other text. Each concept must have this exact structure:
 {
@@ -48,13 +71,13 @@ Return ONLY a valid JSON array of concepts, no other text. Each concept must hav
   "fashionIntelligence": "string",
   "lighting": "string",
   "location": "string",
-  "prompt": "string starting with: raw photo, editorial quality, professional photography, sharp focus, film grain, visible skin pores, editorial luxury aesthetic"
+  "prompt": "string - poetic, flowing, with camera/lens specs"
 }`
 
       const { text } = await generateText({
         model: "anthropic/claude-sonnet-4",
         prompt: conceptPrompt,
-        maxOutputTokens: 2000,
+        maxOutputTokens: 3000, // Increased from 2000 to allow for more detailed prompts
       })
 
       console.log("[v0] Generated concept text:", text.substring(0, 200))
@@ -78,51 +101,58 @@ Return ONLY a valid JSON array of concepts, no other text. Each concept must hav
 
       const fallbackConcepts: MayaConcept[] = [
         {
-          title: "The Confident Professional",
+          title: "The Confident Executive",
           description:
-            "A sophisticated close-up portrait that captures your professional essence with refined styling and modern elegance.",
+            "A sophisticated close-up portrait that captures your professional essence with refined styling and modern elegance, bathed in soft natural light.",
           category: "Close-Up" as const,
           fashionIntelligence:
-            "Cream cashmere turtleneck, delicate gold minimal jewelry, natural makeup with defined brows",
-          lighting: "Soft directional window light creating gentle shadows, golden hour warmth",
-          location: "Modern minimalist office with concrete walls and natural wood elements",
+            "Cream cashmere turtleneck for timeless sophistication, delicate 14k gold minimal jewelry adding subtle luxury, natural makeup with defined brows emphasizing confidence",
+          lighting:
+            "Soft directional window light at 45 degrees creating gentle shadows, golden hour warmth, diffused through sheer curtains",
+          location: "Modern minimalist office with concrete walls and natural wood elements, floor-to-ceiling windows",
           prompt:
-            "raw photo, editorial quality, professional photography, sharp focus, film grain, visible skin pores, editorial luxury aesthetic, close-up portrait, wearing cream cashmere turtleneck with delicate gold minimal jewelry, soft directional window light, modern minimalist office, warm professional atmosphere",
+            "raw photo, editorial quality, professional photography, sharp focus, film grain, visible skin pores, editorial luxury aesthetic, shot on 85mm lens f/1.4, shallow depth of field with creamy bokeh background, bathed in soft golden hour light streaming through sheer curtains, close-up portrait in modern minimalist office with concrete walls, wearing cream cashmere turtleneck with delicate gold minimal jewelry, confident yet approachable expression, natural makeup with defined brows, warm professional atmosphere, timeless editorial elegance",
         },
         {
-          title: "Urban Lifestyle Moment",
+          title: "Urban Sophisticate",
           description:
-            "A dynamic lifestyle shot capturing you in your element within an urban environment, balancing context with personal style.",
+            "A dynamic lifestyle moment capturing you in your element within an urban environment, balancing architectural context with personal style and movement.",
           category: "Lifestyle" as const,
           fashionIntelligence:
-            "Tailored charcoal blazer over white silk blouse, minimal silver accessories, structured leather tote",
-          lighting: "Natural overcast daylight providing even, flattering illumination",
-          location: "Contemporary city street with modern architecture and clean lines",
+            "Tailored charcoal blazer in Italian wool over white silk blouse, minimal silver accessories for modern edge, structured leather tote completing the look",
+          lighting:
+            "Natural overcast daylight providing even, flattering illumination, soft shadows, diffused city light",
+          location:
+            "Contemporary city street with modern architecture and clean lines, glass facades reflecting ambient light",
           prompt:
-            "raw photo, editorial quality, professional photography, sharp focus, film grain, visible skin pores, editorial luxury aesthetic, half body lifestyle shot, wearing tailored charcoal blazer over white silk blouse, natural overcast daylight, contemporary city street with modern architecture",
+            "raw photo, editorial quality, professional photography, sharp focus, film grain, visible skin pores, editorial luxury aesthetic, shot on 35mm lens f/2.0, natural depth of field capturing environmental context, soft overcast daylight creating even illumination, half body lifestyle shot on contemporary city street with modern architecture, wearing tailored charcoal blazer over white silk blouse, minimal silver accessories, confident stride, natural movement, urban sophistication, magazine editorial quality",
         },
         {
           title: "Minimalist Elegance",
           description:
-            "A full-body portrait emphasizing silhouette and proportion against a clean backdrop, showcasing complete styling.",
+            "A full-body portrait emphasizing silhouette and proportion against a clean backdrop, showcasing complete styling with architectural precision.",
           category: "Full Body" as const,
           fashionIntelligence:
-            "Flowing wide-leg trousers in neutral beige, fitted black turtleneck, pointed-toe leather boots",
-          lighting: "Studio lighting with key light at 45 degrees, subtle fill light",
-          location: "Minimal white studio space with concrete floor",
+            "Flowing wide-leg trousers in neutral beige linen, fitted black turtleneck creating elegant contrast, pointed-toe leather boots adding height and sophistication",
+          lighting:
+            "Studio lighting with key light at 45 degrees, subtle fill light, rim light separating subject from background",
+          location: "Minimal white studio space with concrete floor, clean lines, architectural simplicity",
           prompt:
-            "raw photo, editorial quality, professional photography, sharp focus, film grain, visible skin pores, editorial luxury aesthetic, full body portrait, wearing flowing wide-leg trousers with fitted black turtleneck, studio lighting, minimal white studio space",
+            "raw photo, editorial quality, professional photography, sharp focus, film grain, visible skin pores, editorial luxury aesthetic, shot on 50mm lens f/2.8, balanced depth of field, professional studio lighting with key light at 45 degrees and subtle fill, full body portrait in minimal white studio with concrete floor, wearing flowing wide-leg beige linen trousers with fitted black turtleneck, pointed-toe leather boots, elegant posture, clean architectural lines, timeless minimalist aesthetic, Vogue editorial quality",
         },
         {
-          title: "Natural Light Portrait",
+          title: "Golden Hour Warmth",
           description:
-            "A warm, approachable portrait in beautiful natural light, emphasizing authenticity and connection.",
+            "A warm, approachable portrait bathed in beautiful natural light, emphasizing authenticity and connection through soft, glowing illumination.",
           category: "Half Body" as const,
-          fashionIntelligence: "Soft knit sweater in warm camel tone, layered delicate necklaces, natural wavy hair",
-          lighting: "Golden hour sunlight streaming through large windows, warm and diffused",
-          location: "Bright, airy interior space with plants and natural textures",
+          fashionIntelligence:
+            "Soft knit sweater in warm camel tone for approachable elegance, layered delicate necklaces adding personal touch, natural wavy hair catching golden light",
+          lighting:
+            "Golden hour sunlight streaming through large windows, warm and diffused, creating luminous glow on skin and hair",
+          location:
+            "Bright, airy interior space with plants and natural textures, Scandinavian-inspired design, organic elements",
           prompt:
-            "raw photo, editorial quality, professional photography, sharp focus, film grain, visible skin pores, editorial luxury aesthetic, half body portrait, wearing soft knit sweater in warm camel tone, golden hour sunlight through windows, bright airy interior with plants",
+            "raw photo, editorial quality, professional photography, sharp focus, film grain, visible skin pores, editorial luxury aesthetic, shot on 50mm lens f/2.0, medium depth of field with soft background, bathed in golden hour sunlight streaming through large windows, half body portrait in bright airy interior with plants and natural textures, wearing soft knit sweater in warm camel tone, layered delicate necklaces, natural wavy hair catching golden light, warm approachable expression, organic atmosphere, timeless natural beauty",
         },
       ]
 
