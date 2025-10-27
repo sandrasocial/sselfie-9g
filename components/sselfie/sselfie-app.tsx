@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Camera, User, Aperture, Grid, MessageCircle, ImageIcon } from "lucide-react"
+import { Camera, User, Aperture, Grid, MessageCircle, ImageIcon, Infinity } from "lucide-react"
 import LoadingScreen from "./loading-screen"
 import StudioScreen from "./studio-screen"
 import TrainingScreen from "./training-screen"
@@ -23,6 +23,40 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
   const [currentTime, setCurrentTime] = useState(new Date())
   const [hasTrainedModel, setHasTrainedModel] = useState(false)
   const [isLoadingTrainingStatus, setIsLoadingTrainingStatus] = useState(true)
+  const [generationsRemaining, setGenerationsRemaining] = useState<number | null>(null)
+  const [isUnlimited, setIsUnlimited] = useState(false)
+  const [isLoadingQuota, setIsLoadingQuota] = useState(true)
+
+  useEffect(() => {
+    const fetchQuota = async () => {
+      try {
+        const response = await fetch("/api/quota/status")
+        const data = await response.json()
+        console.log("[v0] Quota status:", data)
+
+        if (data.isUnlimited) {
+          setIsUnlimited(true)
+          setGenerationsRemaining(null)
+        } else {
+          setIsUnlimited(false)
+          setGenerationsRemaining(data.remaining || 0)
+        }
+      } catch (error) {
+        console.error("[v0] Error fetching quota:", error)
+        setGenerationsRemaining(0)
+      } finally {
+        setIsLoadingQuota(false)
+      }
+    }
+
+    fetchQuota()
+  }, [])
+
+  const decrementQuota = () => {
+    if (!isUnlimited && generationsRemaining !== null && generationsRemaining > 0) {
+      setGenerationsRemaining((prev) => (prev !== null ? prev - 1 : 0))
+    }
+  }
 
   useEffect(() => {
     const fetchTrainingStatus = async () => {
@@ -69,7 +103,7 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
     posts: "127",
   }
 
-  if (isLoading || isLoadingTrainingStatus) {
+  if (isLoading || isLoadingTrainingStatus || isLoadingQuota) {
     return <LoadingScreen />
   }
 
@@ -97,23 +131,31 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
               </div>
             </div>
             <div className="flex items-center space-x-2 sm:space-x-3">
-              <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 bg-white/60 backdrop-blur-xl rounded-full border border-white/40">
-                <div className="flex space-x-0.5 sm:space-x-1">
-                  <div className="w-0.5 sm:w-1 h-2 sm:h-3 bg-stone-900 rounded-full"></div>
-                  <div className="w-0.5 sm:w-1 h-2 sm:h-3 bg-stone-900 rounded-full"></div>
-                  <div className="w-0.5 sm:w-1 h-2 sm:h-3 bg-stone-900 rounded-full"></div>
-                  <div className="w-0.5 sm:w-1 h-2 sm:h-3 bg-stone-400 rounded-full"></div>
+              {isUnlimited ? (
+                <div className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 backdrop-blur-xl rounded-full border border-amber-400/40">
+                  <Infinity size={14} className="text-amber-600" strokeWidth={2.5} />
+                  <span className="text-xs sm:text-sm font-semibold text-amber-700 tracking-wide">Unlimited</span>
                 </div>
-                <div className="w-4 sm:w-5 h-4 sm:h-5 bg-stone-900 rounded-full flex items-center justify-center text-white text-[8px] sm:text-[10px] font-bold">
-                  95
+              ) : (
+                <div className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-white/60 backdrop-blur-xl rounded-full border border-white/40">
+                  <Camera size={14} className="text-stone-700" strokeWidth={2.5} />
+                  <span className="text-xs sm:text-sm font-bold text-stone-900 tracking-wide tabular-nums">
+                    {generationsRemaining}
+                  </span>
+                  <span className="text-[10px] sm:text-xs font-medium text-stone-500">left</span>
                 </div>
-              </div>
+              )}
             </div>
           </div>
 
           <div className="h-[calc(100%-80px)] sm:h-[calc(100%-88px)] md:h-[calc(100%-96px)] px-4 sm:px-6 md:px-8 pb-4 sm:pb-6 md:pb-8 pt-0 overflow-y-auto">
             {activeTab === "studio" && (
-              <StudioScreen user={user} hasTrainedModel={hasTrainedModel} setActiveTab={setActiveTab} />
+              <StudioScreen
+                user={user}
+                hasTrainedModel={hasTrainedModel}
+                setActiveTab={setActiveTab}
+                onImageGenerated={decrementQuota}
+              />
             )}
             {activeTab === "training" && (
               <TrainingScreen
@@ -123,7 +165,7 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
                 setActiveTab={setActiveTab}
               />
             )}
-            {activeTab === "maya" && <MayaChatScreen />}
+            {activeTab === "maya" && <MayaChatScreen onImageGenerated={decrementQuota} />}
             {activeTab === "gallery" && <GalleryScreen user={user} userId={userId} />}
             {activeTab === "academy" && <AcademyScreen />}
             {activeTab === "profile" && <ProfileScreen user={user} />}

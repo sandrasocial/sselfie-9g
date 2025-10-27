@@ -1,4 +1,5 @@
 import { neon } from "@neondatabase/serverless"
+import { createServerClient } from "@/lib/supabase/server"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -81,4 +82,27 @@ export async function getUserByAuthId(authId: string): Promise<NeonUser | null> 
   `
 
   return users.length > 0 ? (users[0] as NeonUser) : null
+}
+
+/**
+ * Get current user's Neon database ID from Supabase auth session
+ * Returns the Neon user ID (string) or null if not authenticated
+ */
+export async function getUserId(): Promise<string | null> {
+  try {
+    const supabase = await createServerClient()
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser()
+
+    if (!authUser) {
+      return null
+    }
+
+    const neonUser = await getUserByAuthId(authUser.id)
+    return neonUser?.id || null
+  } catch (error) {
+    console.error("[v0] Error getting user ID:", error)
+    return null
+  }
 }
