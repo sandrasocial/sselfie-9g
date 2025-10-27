@@ -1,7 +1,13 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { saveChatMessage, learnFromInteraction } from "@/lib/data/maya"
+import {
+  saveChatMessage,
+  learnFromInteraction,
+  updateChatTitle,
+  generateChatTitle,
+  getChatMessages,
+} from "@/lib/data/maya"
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,6 +26,18 @@ export async function POST(request: NextRequest) {
     }
 
     const { chatId, role, content, conceptCards } = await request.json()
+
+    if (role === "user") {
+      const existingMessages = await getChatMessages(chatId)
+      const userMessages = existingMessages.filter((msg) => msg.role === "user")
+
+      // If this is the first user message, generate and update the chat title
+      if (userMessages.length === 0) {
+        const title = await generateChatTitle(content)
+        await updateChatTitle(chatId, title)
+        console.log("[v0] Generated chat title:", title)
+      }
+    }
 
     // Save message with retry logic for rate limits
     let retries = 3

@@ -37,6 +37,18 @@ export async function GET(request: NextRequest) {
     // Get chat messages
     const messages = await getChatMessages(chat.id)
 
+    console.log("[v0] Loading chat messages:", messages.length)
+    messages.forEach((msg, index) => {
+      console.log(`[v0] Message ${index + 1}:`, {
+        id: msg.id,
+        role: msg.role,
+        hasConceptCards: !!msg.concept_cards,
+        conceptCardsType: Array.isArray(msg.concept_cards) ? "array" : typeof msg.concept_cards,
+        conceptCardsLength: Array.isArray(msg.concept_cards) ? msg.concept_cards.length : 0,
+        conceptCards: msg.concept_cards,
+      })
+    })
+
     const formattedMessages = messages.map((msg) => {
       const baseMessage = {
         id: msg.id.toString(),
@@ -44,8 +56,9 @@ export async function GET(request: NextRequest) {
         createdAt: msg.created_at,
       }
 
-      // If message has concept cards, create a parts array with tool call
+      // If message has concept cards, include them as a tool part
       if (msg.concept_cards && Array.isArray(msg.concept_cards) && msg.concept_cards.length > 0) {
+        console.log("[v0] Formatting message with concept cards:", msg.id, "Cards:", msg.concept_cards.length)
         return {
           ...baseMessage,
           parts: [
@@ -67,12 +80,19 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      // Otherwise, just use content string
+      // For messages without concept cards, still use parts array format
       return {
         ...baseMessage,
-        content: msg.content,
+        parts: [
+          {
+            type: "text",
+            text: msg.content || "",
+          },
+        ],
       }
     })
+
+    console.log("[v0] Formatted messages:", formattedMessages.length)
 
     return NextResponse.json({
       chatId: chat.id,

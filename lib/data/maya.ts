@@ -12,6 +12,7 @@ export interface MayaChat {
   updated_at: Date
   last_activity: Date
   message_count?: number
+  first_message?: string // Updated to include first_message
 }
 
 export interface MayaChatMessage {
@@ -263,7 +264,14 @@ export async function getUserChats(userId: string, limit = 20): Promise<MayaChat
   const chats = await sql`
     SELECT 
       mc.*,
-      COUNT(mcm.id) as message_count
+      COUNT(mcm.id) as message_count,
+      (
+        SELECT content 
+        FROM maya_chat_messages 
+        WHERE chat_id = mc.id AND role = 'user'
+        ORDER BY created_at ASC 
+        LIMIT 1
+      ) as first_message
     FROM maya_chats mc
     LEFT JOIN maya_chat_messages mcm ON mcm.chat_id = mc.id
     WHERE mc.user_id = ${userId}
@@ -304,4 +312,50 @@ export async function createNewChat(userId: string, title?: string): Promise<May
   `
 
   return newChat[0] as MayaChat
+}
+
+// Update chat title
+export async function updateChatTitle(chatId: number, title: string): Promise<void> {
+  await sql`
+    UPDATE maya_chats
+    SET chat_title = ${title}, updated_at = NOW()
+    WHERE id = ${chatId}
+  `
+}
+
+// Generate chat title from first message
+export async function generateChatTitle(firstMessage: string): Promise<string> {
+  // Handle edge cases
+  if (!firstMessage || firstMessage.trim().length < 5) {
+    return `Chat from ${new Date().toLocaleDateString()}`
+  }
+
+  // Check for generic greetings
+  const genericGreetings = ["hi", "hello", "hey", "greetings", "good morning", "good afternoon", "good evening"]
+  const lowerMessage = firstMessage.toLowerCase().trim()
+  if (genericGreetings.some((greeting) => lowerMessage === greeting || lowerMessage.startsWith(greeting + " "))) {
+    return "New Conversation"
+  }
+
+  // Extract key concepts from the message (simple approach)
+  // Take first 50 characters and clean it up
+  let title = firstMessage.trim().substring(0, 50)
+
+  // Remove common filler words from the start
+  const fillerWords = ["i want", "i need", "can you", "could you", "please", "help me", "i would like"]
+  for (const filler of fillerWords) {
+    if (title.toLowerCase().startsWith(filler)) {
+      title = title.substring(filler.length).trim()
+    }
+  }
+
+  // Capitalize first letter
+  title = title.charAt(0).toUpperCase() + title.slice(1)
+
+  // Add ellipsis if truncated
+  if (firstMessage.length > 50) {
+    title += "..."
+  }
+
+  return title
 }

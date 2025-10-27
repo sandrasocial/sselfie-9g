@@ -67,12 +67,34 @@ export default function MayaChatScreen() {
     try {
       setIsLoadingChat(true)
       const url = specificChatId ? `/api/maya/load-chat?chatId=${specificChatId}` : "/api/maya/load-chat"
+      console.log("[v0] Loading chat:", specificChatId || "active chat")
       const response = await fetch(url)
       if (response.ok) {
         const data = await response.json()
+        console.log(
+          "[v0] Loaded chat ID:",
+          data.chatId,
+          "Messages:",
+          data.messages?.length || 0,
+          "Title:",
+          data.chatTitle,
+        )
+
+        data.messages?.forEach((msg: any, index: number) => {
+          const conceptParts = msg.parts?.filter((p: any) => p.type === "tool-generateConcepts")
+          if (conceptParts && conceptParts.length > 0) {
+            console.log(`[v0] Message ${index + 1} has concept cards:`, {
+              messageId: msg.id,
+              conceptParts: conceptParts.length,
+              concepts: conceptParts[0]?.output?.concepts?.length || 0,
+              state: conceptParts[0]?.output?.state,
+            })
+          }
+        })
+
         setChatId(data.chatId)
 
-        if (data.messages && Array.isArray(data.messages) && data.messages.length > 1) {
+        if (data.messages && Array.isArray(data.messages) && data.messages.length > 0) {
           setMessages(data.messages)
         } else {
           setMessages([])
@@ -109,6 +131,15 @@ export default function MayaChatScreen() {
                 .flatMap((part: any) => part.output.concepts || [])
             : []
 
+        console.log("[v0] Saving message:", {
+          messageId: lastMessage.id,
+          role: lastMessage.role,
+          hasParts: !!lastMessage.parts,
+          partsCount: lastMessage.parts?.length || 0,
+          conceptCardsCount: conceptCards.length,
+          conceptCards: conceptCards.length > 0 ? conceptCards : null,
+        })
+
         savedMessageIds.current.add(lastMessage.id)
 
         fetch("/api/maya/save-message", {
@@ -120,12 +151,21 @@ export default function MayaChatScreen() {
             content: lastMessage.parts?.find((p: any) => p.type === "text")?.text || "",
             conceptCards: conceptCards.length > 0 ? conceptCards : null,
           }),
-        }).catch((error) => {
-          savedMessageIds.current.delete(lastMessage.id)
-          console.error("[v0] Error saving message:", error)
         })
+          .then((response) => {
+            if (response.ok) {
+              console.log("[v0] Message saved successfully with", conceptCards.length, "concept cards")
+            } else {
+              console.error("[v0] Failed to save message:", response.status, response.statusText)
+              savedMessageIds.current.delete(lastMessage.id)
+            }
+          })
+          .catch((error) => {
+            savedMessageIds.current.delete(lastMessage.id)
+            console.error("[v0] Error saving message:", error)
+          })
       }
-    }, 1000)
+    }, 2000)
 
     return () => {
       if (saveTimeoutRef.current) {
@@ -167,7 +207,10 @@ export default function MayaChatScreen() {
   }
 
   const handleSelectChat = (selectedChatId: number) => {
+    console.log("[v0] Chat selected:", selectedChatId, "Current chat:", chatId)
     if (selectedChatId !== chatId) {
+      setChatId(selectedChatId)
+      setMessages([])
       savedMessageIds.current.clear()
       loadChat(selectedChatId)
     }
@@ -281,8 +324,17 @@ export default function MayaChatScreen() {
                         const toolPart = part as any
                         const output = toolPart.output
 
+                        console.log("[v0] Rendering concept card part:", {
+                          messageId: msg.id,
+                          hasOutput: !!output,
+                          outputState: output?.state,
+                          hasConcepts: Array.isArray(output?.concepts),
+                          conceptsLength: output?.concepts?.length || 0,
+                        })
+
                         if (output && output.state === "ready" && Array.isArray(output.concepts)) {
                           const concepts = output.concepts
+                          console.log("[v0] Rendering", concepts.length, "concept cards for message", msg.id)
 
                           return (
                             <div key={partIndex} className="mt-4 space-y-3" role="region" aria-label="Photo concepts">
@@ -311,6 +363,13 @@ export default function MayaChatScreen() {
                               </div>
                             </div>
                           )
+                        } else {
+                          console.log("[v0] Concept cards not rendered - conditions not met:", {
+                            hasOutput: !!output,
+                            state: output?.state,
+                            hasConcepts: Array.isArray(output?.concepts),
+                            conceptsLength: output?.concepts?.length || 0,
+                          })
                         }
                       }
 
