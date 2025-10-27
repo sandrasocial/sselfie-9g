@@ -25,6 +25,13 @@ export default function MayaChatScreen() {
     body: {
       chatId: chatId,
     },
+    onError: (error) => {
+      console.error("[v0] Maya chat error:", {
+        error: error.message,
+        stack: error.stack,
+        timestamp: new Date().toISOString(),
+      })
+    },
     onFinish: async (message) => {
       // Only save if we have a chatId and haven't saved this message yet
       if (!chatId || savedMessageIds.current.has(message.id)) {
@@ -36,6 +43,8 @@ export default function MayaChatScreen() {
         role: message.role,
         hasParts: !!message.parts,
         partsCount: message.parts?.length || 0,
+        partsTypes: message.parts?.map((p: any) => p.type) || [],
+        environment: typeof window !== "undefined" ? "client" : "server",
       })
 
       // Extract concept cards from the completed message
@@ -49,6 +58,12 @@ export default function MayaChatScreen() {
       console.log("[v0] Extracted concept cards:", {
         conceptCardsCount: conceptCards.length,
         conceptCards: conceptCards.length > 0 ? conceptCards : null,
+        allParts: message.parts?.map((p: any) => ({
+          type: p.type,
+          hasOutput: !!p.output,
+          outputState: p.output?.state,
+          conceptsCount: p.output?.concepts?.length || 0,
+        })),
       })
 
       // Mark as saved before making the request

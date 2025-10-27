@@ -108,6 +108,13 @@ export async function POST(req: Request) {
   try {
     const { messages, chatId } = await req.json()
 
+    console.log("[v0] Maya API Environment:", {
+      nodeEnv: process.env.NODE_ENV,
+      vercelEnv: process.env.VERCEL_ENV,
+      hasAIGateway: !!process.env.AI_GATEWAY_URL,
+      timestamp: new Date().toISOString(),
+    })
+
     if (!messages || !Array.isArray(messages)) {
       console.error("[v0] Invalid messages array:", messages)
       return new Response("Invalid messages format", { status: 400 })
@@ -214,6 +221,14 @@ export async function POST(req: Request) {
     const userContext = await getUserContextForMaya(user.stack_auth_id || "")
     const enhancedSystemPrompt = MAYA_SYSTEM_PROMPT + userContext
 
+    console.log("[v0] Streaming with tools:", {
+      toolsAvailable: Object.keys({ generateConcepts: generateConceptsTool }),
+      model: "anthropic/claude-sonnet-4",
+      messageCount: allMessages.length,
+      lastMessageRole: allMessages[allMessages.length - 1]?.role,
+      lastMessagePreview: allMessages[allMessages.length - 1]?.content?.substring(0, 100),
+    })
+
     const result = streamText({
       model: "anthropic/claude-sonnet-4",
       system: enhancedSystemPrompt,
@@ -222,12 +237,37 @@ export async function POST(req: Request) {
         generateConcepts: generateConceptsTool,
       },
       maxOutputTokens: 2000,
+      toolChoice: "auto",
+      onStepFinish: async (step) => {
+        console.log("[v0] Step finished:", {
+          stepType: step.stepType,
+          toolCalls: step.toolCalls?.length || 0,
+          toolResults: step.toolResults?.length || 0,
+          hasText: !!step.text,
+          textLength: step.text?.length || 0,
+        })
+
+        if (step.toolCalls && step.toolCalls.length > 0) {
+          console.log(
+            "[v0] Tool calls made:",
+            step.toolCalls.map((tc) => ({
+              toolName: tc.toolName,
+              argsPreview: JSON.stringify(tc.args).substring(0, 200),
+            })),
+          )
+        }
+      },
     })
 
     return result.toUIMessageStreamResponse()
   } catch (error) {
     console.error("[v0] Maya Chat Error:", error)
     console.error("[v0] Error stack:", error instanceof Error ? error.stack : "No stack trace")
+    console.error("[v0] Error details:", {
+      name: error instanceof Error ? error.name : "Unknown",
+      message: error instanceof Error ? error.message : String(error),
+      cause: error instanceof Error ? error.cause : undefined,
+    })
     return new Response("Internal Server Error", { status: 500 })
   }
 }
