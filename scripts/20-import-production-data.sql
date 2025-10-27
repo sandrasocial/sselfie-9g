@@ -1,0 +1,11 @@
+-- Paste the SQL output from script 13 here
+-- It should contain INSERT statements for:
+-- - users (17 rows)
+-- - user_profiles (17 rows)  
+-- - training_runs (8 rows)
+-- - generated_images (296 rows)
+-- - maya_chats (432 rows)
+-- - maya_chat_messages
+-- - subscriptions (8 rows)
+
+-- After pasting, run this script to import all your production data

@@ -1,0 +1,282 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { Bell, Aperture, Shield, User, ChevronRight, LogOut, Mail, Calendar, CreditCard } from "lucide-react"
+import { useRouter } from "next/navigation"
+
+interface SettingsScreenProps {
+  onBack: () => void
+}
+
+interface UserInfo {
+  email: string
+  name: string
+  plan: string
+  memberSince: string
+}
+
+export default function SettingsScreen({ onBack }: SettingsScreenProps) {
+  const router = useRouter()
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null)
+
+  const [emailNotifications, setEmailNotifications] = useState(true)
+  const [mayaUpdates, setMayaUpdates] = useState(true)
+
+  const [defaultImageCount, setDefaultImageCount] = useState(5)
+  const [saveToGallery, setSaveToGallery] = useState(true)
+
+  const [dataForTraining, setDataForTraining] = useState(true)
+
+  useEffect(() => {
+    fetchUserInfo()
+    fetchSettings()
+  }, [])
+
+  const fetchUserInfo = async () => {
+    try {
+      const response = await fetch("/api/profile/info", {
+        credentials: "include",
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setUserInfo(data)
+      }
+    } catch (error) {
+      console.error("[v0] Error fetching user info:", error)
+    }
+  }
+
+  const fetchSettings = async () => {
+    try {
+      const response = await fetch("/api/settings", {
+        credentials: "include",
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setEmailNotifications(data.settings?.emailNotifications ?? true)
+        setMayaUpdates(data.settings?.mayaUpdates ?? true)
+        setDefaultImageCount(data.settings?.defaultImageCount ?? 5)
+        setSaveToGallery(data.settings?.saveToGallery ?? true)
+        setDataForTraining(data.settings?.dataForTraining ?? true)
+      }
+    } catch (error) {
+      console.error("[v0] Error fetching settings:", error)
+    }
+  }
+
+  const updateSetting = async (key: string, value: boolean | number) => {
+    try {
+      await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ [key]: value }),
+      })
+    } catch (error) {
+      console.error("[v0] Error updating setting:", error)
+    }
+  }
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true)
+    try {
+      const response = await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      })
+
+      if (response.ok) {
+        console.log("[v0] Logout successful, redirecting to login...")
+        router.push("/login")
+      } else {
+        console.error("[v0] Logout failed")
+        setIsLoggingOut(false)
+      }
+    } catch (error) {
+      console.error("[v0] Error during logout:", error)
+      setIsLoggingOut(false)
+    }
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      month: "long",
+      year: "numeric",
+    })
+  }
+
+  return (
+    <div className="space-y-8 pb-4">
+      <div className="flex items-center gap-4 pt-4">
+        <button
+          onClick={onBack}
+          className="p-4 bg-stone-100/50 rounded-2xl border border-stone-200/40 hover:bg-stone-100/70 hover:border-stone-300/50 transition-all duration-200"
+        >
+          <ChevronRight size={18} className="text-stone-600 transform rotate-180" strokeWidth={1.5} />
+        </button>
+        <div className="flex-1 min-w-0">
+          <h2 className="text-2xl sm:text-4xl font-serif font-extralight tracking-[0.3em] text-stone-950 uppercase">
+            Settings
+          </h2>
+          <p className="text-xs tracking-[0.15em] uppercase font-light mt-2 text-stone-500">Your Preferences</p>
+        </div>
+      </div>
+
+      <div className="space-y-6">
+        {userInfo && (
+          <div className="bg-white/50 backdrop-blur-2xl rounded-xl sm:rounded-[1.75rem] p-4 sm:p-6 md:p-8 border border-white/60 shadow-xl shadow-stone-900/10">
+            <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
+              <div className="p-2.5 sm:p-3.5 bg-stone-950 rounded-lg sm:rounded-[1.125rem] shadow-lg">
+                <User size={18} className="text-white" strokeWidth={2.5} />
+              </div>
+              <h3 className="text-base sm:text-lg md:text-xl font-bold text-stone-950">Account Information</h3>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 py-3">
+                <Mail size={16} className="text-stone-500" />
+                <div>
+                  <p className="text-xs text-stone-500 uppercase tracking-wider">Email</p>
+                  <p className="text-sm font-medium text-stone-950">{userInfo.email}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 py-3">
+                <CreditCard size={16} className="text-stone-500" />
+                <div>
+                  <p className="text-xs text-stone-500 uppercase tracking-wider">Plan</p>
+                  <p className="text-sm font-medium text-stone-950 capitalize">{userInfo.plan.replace("-", " ")}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 py-3">
+                <Calendar size={16} className="text-stone-500" />
+                <div>
+                  <p className="text-xs text-stone-500 uppercase tracking-wider">Member Since</p>
+                  <p className="text-sm font-medium text-stone-950">{formatDate(userInfo.memberSince)}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="bg-white/50 backdrop-blur-2xl rounded-xl sm:rounded-[1.75rem] p-4 sm:p-6 md:p-8 border border-white/60 shadow-xl shadow-stone-900/10">
+          <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
+            <div className="p-2.5 sm:p-3.5 bg-stone-950 rounded-lg sm:rounded-[1.125rem] shadow-lg">
+              <Bell size={18} className="text-white" strokeWidth={2.5} />
+            </div>
+            <h3 className="text-base sm:text-lg md:text-xl font-bold text-stone-950">Notifications</h3>
+          </div>
+
+          <div className="space-y-1 sm:space-y-2">
+            <ToggleItem
+              label="Email notifications"
+              description="Get notified when your photos are ready"
+              value={emailNotifications}
+              onChange={(value) => {
+                setEmailNotifications(value)
+                updateSetting("emailNotifications", value)
+              }}
+            />
+            <ToggleItem
+              label="Maya updates"
+              description="Receive tips and new features from Maya"
+              value={mayaUpdates}
+              onChange={(value) => {
+                setMayaUpdates(value)
+                updateSetting("mayaUpdates", value)
+              }}
+            />
+          </div>
+        </div>
+
+        <div className="bg-white/50 backdrop-blur-2xl rounded-xl sm:rounded-[1.75rem] p-4 sm:p-6 md:p-8 border border-white/60 shadow-xl shadow-stone-900/10">
+          <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
+            <div className="p-2.5 sm:p-3.5 bg-stone-950 rounded-lg sm:rounded-[1.125rem] shadow-lg">
+              <Aperture size={18} className="text-white" strokeWidth={2.5} />
+            </div>
+            <h3 className="text-base sm:text-lg md:text-xl font-bold text-stone-950">Generation Preferences</h3>
+          </div>
+
+          <div className="space-y-1 sm:space-y-2">
+            <ToggleItem
+              label="Auto-save to gallery"
+              description="Automatically save generated photos to your gallery"
+              value={saveToGallery}
+              onChange={(value) => {
+                setSaveToGallery(value)
+                updateSetting("saveToGallery", value)
+              }}
+            />
+          </div>
+        </div>
+
+        <div className="bg-white/50 backdrop-blur-2xl rounded-xl sm:rounded-[1.75rem] p-4 sm:p-6 md:p-8 border border-white/60 shadow-xl shadow-stone-900/10">
+          <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
+            <div className="p-2.5 sm:p-3.5 bg-stone-950 rounded-lg sm:rounded-[1.125rem] shadow-lg">
+              <Shield size={18} className="text-white" strokeWidth={2.5} />
+            </div>
+            <h3 className="text-base sm:text-lg md:text-xl font-bold text-stone-950">Privacy & Data</h3>
+          </div>
+
+          <div className="space-y-1 sm:space-y-2">
+            <ToggleItem
+              label="Use my data for training"
+              description="Help improve Maya by allowing your photos to enhance the AI model"
+              value={dataForTraining}
+              onChange={(value) => {
+                setDataForTraining(value)
+                updateSetting("dataForTraining", value)
+              }}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="pt-6 border-t border-stone-200/30">
+        <button
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+          className="w-full text-sm tracking-[0.15em] uppercase font-light border rounded-2xl py-5 transition-colors hover:text-stone-950 hover:bg-stone-100/30 min-h-[56px] text-stone-600 border-stone-300/40 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        >
+          <LogOut size={16} />
+          {isLoggingOut ? "Signing Out..." : "Sign Out"}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function ToggleItem({
+  label,
+  description,
+  value,
+  onChange,
+}: {
+  label: string
+  description: string
+  value: boolean
+  onChange: (value: boolean) => void
+}) {
+  return (
+    <div
+      onClick={() => onChange(!value)}
+      className="flex items-start justify-between py-3 sm:py-5 hover:bg-white/30 rounded-lg sm:rounded-[1.25rem] px-3 sm:px-6 -mx-3 sm:-mx-6 transition-all duration-300 cursor-pointer group min-h-[68px] sm:min-h-[80px]"
+    >
+      <div className="flex-1 min-w-0 pr-4">
+        <p className="text-xs sm:text-sm md:text-base text-stone-950 font-medium">{label}</p>
+        <p className="text-[10px] sm:text-xs text-stone-500 mt-1">{description}</p>
+      </div>
+      <div
+        className={`relative w-12 h-7 sm:w-14 sm:h-8 md:w-16 md:h-9 rounded-full transition-all duration-300 cursor-pointer shadow-inner flex-shrink-0 ${
+          value ? "bg-stone-950 shadow-stone-900/30" : "bg-stone-300/60"
+        }`}
+      >
+        <div
+          className={`absolute top-1 w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 bg-white rounded-full shadow-lg transition-all duration-300 ${
+            value ? "translate-x-6 sm:translate-x-7 md:translate-x-8" : "translate-x-1"
+          }`}
+        ></div>
+      </div>
+    </div>
+  )
+}
