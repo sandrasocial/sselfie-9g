@@ -21,6 +21,12 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
   const [isViewerOpen, setIsViewerOpen] = useState(false)
   const [isFavorite, setIsFavorite] = useState(false)
 
+  const [isGeneratingVideo, setIsGeneratingVideo] = useState(false)
+  const [videoUrl, setVideoUrl] = useState<string | null>(null)
+  const [videoId, setVideoId] = useState<string | null>(null)
+  const [videoPredictionId, setVideoPredictionId] = useState<string | null>(null)
+  const [videoError, setVideoError] = useState<string | null>(null)
+
   useEffect(() => {
     if (!predictionId || !generationId || isGenerated) return
 
@@ -53,6 +59,36 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
 
     return () => clearInterval(pollInterval)
   }, [predictionId, generationId, isGenerated])
+
+  useEffect(() => {
+    if (!videoPredictionId || !videoId || videoUrl) return
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const response = await fetch(`/api/maya/check-video?predictionId=${videoPredictionId}&videoId=${videoId}`)
+        const data = await response.json()
+
+        console.log("[v0] Video generation status:", data.status)
+
+        if (data.status === "succeeded") {
+          setVideoUrl(data.videoUrl)
+          setIsGeneratingVideo(false)
+          clearInterval(pollInterval)
+        } else if (data.status === "failed") {
+          setVideoError(data.error || "Video generation failed")
+          setIsGeneratingVideo(false)
+          clearInterval(pollInterval)
+        }
+      } catch (err) {
+        console.error("[v0] Error polling video generation:", err)
+        setVideoError("Failed to check video status")
+        setIsGeneratingVideo(false)
+        clearInterval(pollInterval)
+      }
+    }, 5000) // Poll every 5 seconds (videos take longer)
+
+    return () => clearInterval(pollInterval)
+  }, [videoPredictionId, videoId, videoUrl])
 
   const handleGenerate = async () => {
     setIsGenerating(true)
@@ -138,6 +174,44 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
       setPredictionId(null)
     } catch (error) {
       console.error("[v0] Error deleting image:", error)
+    }
+  }
+
+  const handleAnimate = async () => {
+    if (!generatedImageUrl || !generationId) return
+
+    setIsGeneratingVideo(true)
+    setVideoError(null)
+
+    try {
+      console.log("[v0] Starting video generation from image:", generatedImageUrl)
+
+      const response = await fetch("/api/maya/generate-video", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          imageUrl: generatedImageUrl,
+          imageId: generationId,
+          motionPrompt: undefined, // Let the API generate a creative default
+          imageDescription: concept.description, // Pass concept description for context
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to generate video")
+      }
+
+      console.log("[v0] Video generation started:", data)
+
+      setVideoPredictionId(data.predictionId)
+      setVideoId(data.videoId.toString())
+    } catch (err) {
+      console.error("[v0] Error generating video:", err)
+      setVideoError(err instanceof Error ? err.message : "Failed to generate video")
+      setIsGeneratingVideo(false)
     }
   }
 
@@ -267,6 +341,54 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
               </span>
             </div>
           </div>
+
+          {!videoUrl && !isGeneratingVideo && (
+            <button
+              onClick={handleAnimate}
+              className="w-full px-4 sm:px-5 py-3 sm:py-4 bg-stone-950 text-white rounded-[1.25rem] font-semibold text-xs sm:text-sm transition-all duration-300 hover:shadow-2xl hover:shadow-stone-950/40 hover:scale-[1.02] active:scale-[0.98] min-h-[48px] sm:min-h-[52px]"
+              aria-label="Animate this photo into a video"
+            >
+              Animate This Photo
+            </button>
+          )}
+
+          {isGeneratingVideo && (
+            <div
+              className="flex flex-col items-center justify-center py-6 sm:py-8 space-y-3 sm:space-y-4"
+              role="status"
+            >
+              <div className="relative w-10 h-10 sm:w-12 sm:h-12">
+                <div className="absolute inset-0 rounded-full bg-stone-200/20 animate-ping"></div>
+                <div className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-stone-950 animate-spin border-4 border-transparent border-t-white shadow-lg shadow-stone-900/30"></div>
+              </div>
+              <div className="text-center space-y-2">
+                <span className="text-xs sm:text-sm tracking-wider uppercase font-semibold text-stone-700">
+                  Creating Video
+                </span>
+                <p className="text-[10px] sm:text-xs text-stone-600">This takes 40-60 seconds</p>
+              </div>
+            </div>
+          )}
+
+          {videoError && (
+            <div className="p-3 sm:p-4 bg-red-50 border border-red-200 rounded-xl">
+              <p className="text-xs sm:text-sm text-red-600">{videoError}</p>
+              <button
+                onClick={handleAnimate}
+                className="mt-2 text-xs sm:text-sm font-semibold text-red-700 hover:text-red-900"
+              >
+                Try Again
+              </button>
+            </div>
+          )}
+
+          {videoUrl && videoId && (
+            <div className="mt-4">
+              <div className="aspect-[9/16] bg-stone-950 rounded-[1.5rem] overflow-hidden">
+                <video src={videoUrl} className="w-full h-full object-cover" controls playsInline loop />
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-2 sm:gap-3">
             <button

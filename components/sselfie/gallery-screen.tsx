@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Heart, Grid, Camera, ImageIcon, Download, Trash2 } from "lucide-react"
+import { Heart, Grid, Camera, ImageIcon, Download, Trash2, Video, Play } from "lucide-react"
 import useSWR from "swr"
 import type { User } from "./types"
 import type { GalleryImage } from "@/lib/data/images"
@@ -12,6 +12,19 @@ import UnifiedLoading from "./unified-loading"
 interface GalleryScreenProps {
   user: User
   userId: string
+}
+
+interface GeneratedVideo {
+  id: number
+  user_id: string
+  image_id: number | null
+  image_source: string | null
+  video_url: string
+  motion_prompt: string | null
+  status: string
+  progress: number
+  created_at: string
+  completed_at: string | null
 }
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
@@ -36,6 +49,7 @@ function categorizeImage(image: GalleryImage): string {
 
 export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
   const [galleryView, setGalleryView] = useState<"instagram" | "all">("instagram")
+  const [contentFilter, setContentFilter] = useState<"all" | "photos" | "videos">("all")
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
   const [favorites, setFavorites] = useState<Set<string>>(new Set())
   const [lightboxImage, setLightboxImage] = useState<GalleryImage | null>(null)
@@ -43,6 +57,10 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
   const [profileImage, setProfileImage] = useState(user.avatar || "/placeholder.svg")
 
   const { data, error, isLoading, mutate } = useSWR("/api/images", fetcher, {
+    refreshInterval: 30000,
+  })
+
+  const { data: videosData, mutate: mutateVideos } = useSWR("/api/maya/videos", fetcher, {
     refreshInterval: 30000,
   })
 
@@ -55,6 +73,7 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
   }
 
   const allImages: GalleryImage[] = data?.images || []
+  const allVideos: GeneratedVideo[] = videosData?.videos || []
   const favoritedImages = allImages.filter((img) => img.is_favorite || favorites.has(img.id))
 
   const getFilteredImages = () => {
@@ -64,6 +83,14 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
   }
 
   const filteredImages = getFilteredImages()
+
+  const getFilteredContent = () => {
+    if (contentFilter === "photos") return { images: filteredImages, videos: [] }
+    if (contentFilter === "videos") return { images: [], videos: allVideos }
+    return { images: filteredImages, videos: allVideos }
+  }
+
+  const { images: displayImages, videos: displayVideos } = getFilteredContent()
 
   const toggleFavorite = async (imageId: string, currentFavoriteState: boolean) => {
     const newFavoriteState = !currentFavoriteState
@@ -121,6 +148,29 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
     } catch (error) {
       console.error("[v0] Error deleting image:", error)
       alert("Failed to delete image. Please try again.")
+    }
+  }
+
+  const deleteVideo = async (videoId: number) => {
+    if (!confirm("Are you sure you want to delete this video?")) {
+      return
+    }
+
+    try {
+      const response = await fetch("/api/maya/delete-video", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ videoId }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to delete video")
+      }
+
+      mutateVideos()
+    } catch (error) {
+      console.error("[v0] Error deleting video:", error)
+      alert("Failed to delete video. Please try again.")
     }
   }
 
@@ -190,13 +240,22 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:gap-6 mb-4 sm:mb-6 pb-4 sm:pb-6 border-b border-stone-200/40">
-            <div className="text-center">
-              <div className="text-xl sm:text-2xl font-light text-stone-950 mb-1">{favoritedImages.length}</div>
-              <div className="text-[10px] sm:text-xs tracking-[0.1em] uppercase font-light text-stone-500">
-                Favorited Images
-              </div>
-            </div>
+          <div className="flex gap-2 mb-4 pb-4 border-b border-stone-200/40">
+            {[
+              { key: "all", label: "All Content" },
+              { key: "photos", label: "Photos" },
+              { key: "videos", label: "Videos" },
+            ].map((filter) => (
+              <button
+                key={filter.key}
+                onClick={() => setContentFilter(filter.key as "all" | "photos" | "videos")}
+                className={`px-3 sm:px-4 py-2 text-[10px] sm:text-xs tracking-[0.15em] uppercase font-light border border-stone-200/40 rounded-full transition-all duration-200 whitespace-nowrap flex-shrink-0 min-h-[36px] sm:min-h-[40px] ${
+                  contentFilter === filter.key ? "bg-stone-950 text-white" : "bg-stone-50 hover:bg-stone-100"
+                }`}
+              >
+                {filter.label}
+              </button>
+            ))}
           </div>
 
           <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
@@ -220,11 +279,12 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
           </div>
         </div>
 
-        {filteredImages.length > 0 ? (
+        {displayImages.length > 0 || displayVideos.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-1">
-            {filteredImages.map((image) => (
+            {/* Photos */}
+            {displayImages.map((image) => (
               <button
-                key={image.id}
+                key={`img-${image.id}`}
                 onClick={() => setLightboxImage(image)}
                 className="aspect-square relative group overflow-hidden bg-stone-200/30"
               >
@@ -237,14 +297,26 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
                   <div className="flex items-center gap-4 text-stone-50">
                     <div className="flex items-center gap-1">
                       <Heart size={16} fill="currentColor" strokeWidth={1.5} />
-                      <span className="text-sm font-light">{Math.floor(Math.random() * 500)}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      {/* Placeholder for MessageCircle icon */}
-                      <div className="w-4 h-4" />
-                      <span className="text-sm font-light">{Math.floor(Math.random() * 50)}</span>
                     </div>
                   </div>
+                </div>
+              </button>
+            ))}
+
+            {displayVideos.map((video) => (
+              <button
+                key={`vid-${video.id}`}
+                onClick={() => window.open(video.video_url, "_blank")}
+                className="aspect-square relative group overflow-hidden bg-stone-200/30"
+              >
+                <video src={video.video_url} className="w-full h-full object-cover" muted playsInline />
+                <div className="absolute inset-0 bg-stone-950/40 flex items-center justify-center">
+                  <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center">
+                    <Play size={20} className="text-stone-950 ml-1" fill="currentColor" />
+                  </div>
+                </div>
+                <div className="absolute top-2 right-2">
+                  <Video size={16} className="text-white drop-shadow-lg" />
                 </div>
               </button>
             ))}
@@ -253,24 +325,25 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
           <div className="bg-stone-100/40 rounded-3xl p-12 text-center border border-stone-200/40">
             <Heart size={48} className="mx-auto mb-6 text-stone-400" strokeWidth={1.5} />
             <h3 className="text-xl font-serif font-extralight tracking-[0.15em] text-stone-950 uppercase mb-3">
-              {selectedCategory === "all" && allImages.length === 0 ? "No Images Yet" : "No Images in This Category"}
+              {contentFilter === "videos" ? "No Videos Yet" : "No Images Yet"}
             </h3>
             <p className="text-sm font-light text-stone-600 mb-6">
-              {selectedCategory === "all" && allImages.length === 0
-                ? "Generate your first AI image in the Studio to get started"
-                : "Try selecting a different category or generate more images"}
+              {contentFilter === "videos"
+                ? "Animate your photos in Maya to create videos"
+                : "Generate your first AI image in the Studio to get started"}
             </p>
           </div>
         )}
 
+        {/* Existing lightbox and profile selector */}
         {lightboxImage && (
           <ImageLightbox
             image={lightboxImage}
-            images={filteredImages}
+            images={displayImages}
             onClose={() => setLightboxImage(null)}
-            onFavorite={toggleFavorite}
+            onFavorite={(imageId, newState) => toggleFavorite(imageId, !newState)}
             onDelete={deleteImage}
-            isFavorited={favorites.has(lightboxImage.id)}
+            isFavorited={lightboxImage.is_favorite || favorites.has(lightboxImage.id)}
           />
         )}
 
@@ -305,7 +378,7 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
         {[
-          { key: "all", label: "Total", value: allImages.length, icon: Grid },
+          { key: "all", label: "Total", value: allImages.length + allVideos.length, icon: Grid },
           { key: "favorited", label: "Favorited", value: favoritedImages.length, icon: Heart },
           {
             key: "close-up",
@@ -338,7 +411,7 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
         ))}
       </div>
 
-      {filteredImages.length === 0 ? (
+      {filteredImages.length === 0 && displayVideos.length === 0 ? (
         <div className="bg-stone-100/40 rounded-3xl p-12 text-center border border-stone-200/40">
           <Camera size={48} className="mx-auto mb-6 text-stone-400" strokeWidth={1.5} />
           <h3 className="text-xl font-serif font-extralight tracking-[0.15em] text-stone-950 uppercase mb-3">
@@ -352,7 +425,11 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
             const isFavorited = image.is_favorite || favorites.has(image.id)
 
             return (
-              <button key={image.id} onClick={() => setLightboxImage(image)} className="relative group text-left">
+              <button
+                key={`img-${image.id}`}
+                onClick={() => setLightboxImage(image)}
+                className="relative group text-left"
+              >
                 <div className="aspect-square overflow-hidden rounded-xl sm:rounded-2xl border border-stone-200/40 bg-stone-200/30">
                   <img
                     src={image.image_url || "/placeholder.svg"}
@@ -411,13 +488,46 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
               </button>
             )
           })}
+
+          {displayVideos.map((video) => (
+            <button
+              key={`vid-${video.id}`}
+              onClick={() => window.open(video.video_url, "_blank")}
+              className="relative group text-left"
+            >
+              <div className="aspect-square overflow-hidden rounded-xl sm:rounded-2xl border border-stone-200/40 bg-stone-200/30">
+                <video src={video.video_url} className="w-full h-full object-cover" muted playsInline />
+              </div>
+
+              <div className="absolute top-2 right-2">
+                <Video size={16} className="text-white drop-shadow-lg" />
+              </div>
+
+              <div className="absolute inset-0 bg-stone-950/40 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center">
+                  <Play size={20} className="text-stone-950 ml-1" fill="currentColor" />
+                </div>
+              </div>
+
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  deleteVideo(video.id)
+                }}
+                className="absolute top-2 sm:top-3 left-2 sm:left-3 p-2 sm:p-2.5 rounded-full backdrop-blur-xl transition-all duration-200 shadow-lg min-w-[40px] min-h-[40px] sm:min-w-[44px] sm:min-h-[44px] flex items-center justify-center bg-white/70 text-stone-950 hover:bg-white transition-colors shadow-lg border border-white"
+              >
+                <Trash2 size={14} className="sm:w-4 sm:h-4" strokeWidth={2} />
+              </button>
+            </button>
+          ))}
         </div>
       )}
 
+      {/* Existing lightbox */}
       {lightboxImage && (
         <ImageLightbox
           image={lightboxImage}
-          images={filteredImages}
+          images={displayImages}
           onClose={() => setLightboxImage(null)}
           onFavorite={(imageId, newState) => toggleFavorite(imageId, !newState)}
           onDelete={deleteImage}

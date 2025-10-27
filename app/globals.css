@@ -1,7 +1,89 @@
 @import "tailwindcss";
-/* Removed tw-animate-css import as it was causing CSS syntax errors with @property declarations */
+/* Removed tw-animate-css import - it's incompatible with Tailwind v4 */
 
 @custom-variant dark (&:is(.dark *));
+
+/* Define keyframes at root level for Tailwind v4 compatibility */
+@keyframes slide-in-from-top {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-from-top-2 {
+  from {
+    transform: translateY(-0.5rem);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-from-bottom-2 {
+  from {
+    transform: translateY(0.5rem);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-from-left-2 {
+  from {
+    transform: translateX(-0.5rem);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-in-from-right-2 {
+  from {
+    transform: translateX(0.5rem);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-in-from-top-full {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-from-bottom-full {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-out-to-top {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-100%);
+  }
+}
+
+@keyframes slide-out-to-right-full {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
 
 :root {
   --background: oklch(1 0 0);
@@ -75,7 +157,6 @@
 }
 
 @theme inline {
-  /* optional: --font-sans, --font-serif, --font-mono if they are applied in the layout.tsx */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -132,18 +213,52 @@
     display: none;
   }
 
-  /* Added mobile-specific utilities to prevent horizontal scrolling */
   .prevent-horizontal-scroll {
     max-width: 100vw;
     overflow-x: hidden;
   }
 
-  /* Safe area support for mobile devices */
   .safe-area-bottom {
     padding-bottom: env(safe-area-inset-bottom);
   }
 
   .safe-area-top {
     padding-top: env(safe-area-inset-top);
+  }
+
+  .slide-in-from-top {
+    animation: slide-in-from-top 0.3s ease-out;
+  }
+
+  .slide-in-from-top-2 {
+    animation: slide-in-from-top-2 0.3s ease-out;
+  }
+
+  .slide-in-from-bottom-2 {
+    animation: slide-in-from-bottom-2 0.3s ease-out;
+  }
+
+  .slide-in-from-left-2 {
+    animation: slide-in-from-left-2 0.3s ease-out;
+  }
+
+  .slide-in-from-right-2 {
+    animation: slide-in-from-right-2 0.3s ease-out;
+  }
+
+  .slide-in-from-top-full {
+    animation: slide-in-from-top-full 0.3s ease-out;
+  }
+
+  .slide-in-from-bottom-full {
+    animation: slide-in-from-bottom-full 0.3s ease-out;
+  }
+
+  .slide-out-to-top {
+    animation: slide-out-to-top 0.3s ease-out;
+  }
+
+  .slide-out-to-right-full {
+    animation: slide-out-to-right-full 0.3s ease-out;
   }
 }

@@ -45,19 +45,39 @@ Generate ${count} unique, creative photo concepts. Each concept should be a work
 Your Flux prompts must be poetic, flowing, and technically precise. They should read like a cinematographer's vision, not a checklist.
 
 **Structure each Flux prompt like this:**
-1. Start with technical foundation: "raw photo, editorial quality, professional photography, sharp focus, film grain, visible skin pores, editorial luxury aesthetic"
+1. Start with technical foundation: "raw photo, editorial quality, professional photography, sharp focus, natural skin texture, visible pores, film grain, editorial luxury aesthetic"
 2. Add camera and lens specifications (REQUIRED):
    - For Close-Up/Portrait: "shot on 85mm lens, f/1.4 aperture, shallow depth of field, creamy bokeh background"
    - For Half Body: "shot on 50mm lens, f/2.0 aperture, medium depth of field, natural compression"
    - For Full Body: "shot on 35mm lens, f/2.8 aperture, environmental context, balanced depth"
    - For Lifestyle/Action: "shot on 35mm lens, f/2.0 aperture, dynamic framing, natural perspective"
-3. Describe lighting poetically: "bathed in golden hour warmth, soft directional light caressing features" or "dramatic chiaroscuro, key light sculpting shadows"
+3. Describe lighting poetically with specific details: 
+   - "bathed in soft golden hour warmth, directional light at 45 degrees caressing features, gentle rim light separating from background"
+   - "dramatic chiaroscuro, key light from camera left sculpting shadows, subtle fill light preserving detail"
+   - "diffused overcast daylight, even illumination, soft shadows, natural flattering light"
+   - "warm studio lighting, beauty dish creating soft shadows, hair light adding dimension"
 4. Paint the scene with flowing language: "standing in minimalist concrete space, natural textures surrounding, soft morning light streaming through floor-to-ceiling windows"
-5. Describe styling and mood: "wearing flowing cream cashmere, delicate gold jewelry catching light, confident yet approachable expression"
-6. Add atmospheric details: "subtle film grain, editorial magazine quality, timeless elegance"
+5. Describe styling and skin texture: 
+   - "wearing flowing cream cashmere, delicate gold jewelry catching light, natural skin texture visible, subtle pores, healthy glow, confident yet approachable expression"
+   - "dressed in tailored charcoal wool, natural skin with visible texture, authentic beauty, warm undertones, genuine expression"
+6. Add atmospheric details: "subtle film grain, editorial magazine quality, timeless elegance, authentic human beauty"
+
+**LIGHTING DESCRIPTORS TO USE:**
+- Golden hour: "warm directional sunlight, long soft shadows, golden glow on skin"
+- Soft window light: "diffused natural light from large windows, gentle shadows, luminous quality"
+- Studio beauty: "beauty dish creating soft wrap-around light, subtle shadows defining features"
+- Overcast natural: "even diffused daylight, soft shadows, flattering natural illumination"
+- Dramatic side light: "strong directional light from side, deep shadows, sculptural quality"
+- Backlit glow: "backlight creating luminous edge, subtle fill light on face, ethereal quality"
+
+**SKIN TEXTURE DESCRIPTORS TO USE:**
+- "natural skin texture visible, subtle pores, healthy glow, authentic beauty"
+- "realistic skin with natural texture, visible pores, warm undertones, genuine human quality"
+- "editorial skin quality, natural texture preserved, subtle imperfections, real beauty"
+- "authentic skin with visible texture, natural pores, healthy radiance, unretouched quality"
 
 **Example of a GOOD Flux prompt:**
-"raw photo, editorial quality, professional photography, sharp focus, film grain, visible skin pores, editorial luxury aesthetic, shot on 85mm lens f/1.4, shallow depth of field with creamy bokeh, bathed in soft golden hour light streaming through sheer curtains, standing in minimalist Scandinavian interior with natural wood and white walls, wearing flowing cream cashmere turtleneck with delicate layered gold necklaces, confident yet warm expression, hair naturally tousled, subtle makeup emphasizing natural beauty, timeless editorial elegance, magazine cover quality"
+"raw photo, editorial quality, professional photography, sharp focus, natural skin texture, visible pores, film grain, editorial luxury aesthetic, shot on 85mm lens f/1.4, shallow depth of field with creamy bokeh, bathed in soft golden hour light streaming through sheer curtains at 45 degrees, gentle rim light separating from background, standing in minimalist Scandinavian interior with natural wood and white walls, wearing flowing cream cashmere turtleneck with delicate layered gold necklaces, natural skin texture visible with subtle pores and healthy glow, confident yet warm expression, hair naturally tousled catching golden light, subtle makeup emphasizing natural beauty, timeless editorial elegance, magazine cover quality"
 
 **Example of a BAD Flux prompt (too mechanical):**
 "raw photo, professional photography, 85mm lens, good lighting, wearing sweater, indoor setting"
@@ -72,7 +92,7 @@ Return ONLY a valid JSON array of concepts, no other text. Each concept must hav
   "fashionIntelligence": "string",
   "lighting": "string",
   "location": "string",
-  "prompt": "string - poetic, flowing, with camera/lens specs"${referenceImageUrl ? `,\n  "referenceImageUrl": "${referenceImageUrl}"` : ""}
+  "prompt": "string - poetic, flowing, with camera/lens specs, lighting details, and skin texture descriptors"${referenceImageUrl ? `,\n  "referenceImageUrl": "${referenceImageUrl}"` : ""}
 }`
 
       const { text } = await generateText({
@@ -121,7 +141,7 @@ Return ONLY a valid JSON array of concepts, no other text. Each concept must hav
             "Soft directional window light at 45 degrees creating gentle shadows, golden hour warmth, diffused through sheer curtains",
           location: "Modern minimalist office with concrete walls and natural wood elements, floor-to-ceiling windows",
           prompt:
-            "raw photo, editorial quality, professional photography, sharp focus, film grain, visible skin pores, editorial luxury aesthetic, shot on 85mm lens f/1.4, shallow depth of field with creamy bokeh background, bathed in soft golden hour light streaming through sheer curtains, close-up portrait in modern minimalist office with concrete walls, wearing cream cashmere turtleneck with delicate gold minimal jewelry, confident yet approachable expression, natural makeup with defined brows, warm professional atmosphere, timeless editorial elegance",
+            "raw photo, editorial quality, professional photography, sharp focus, natural skin texture, visible pores, film grain, editorial luxury aesthetic, shot on 85mm lens f/1.4, shallow depth of field with creamy bokeh background, bathed in soft golden hour light streaming through sheer curtains at 45 degrees, gentle rim light separating from background, standing in minimalist Scandinavian interior with natural wood and white walls, wearing flowing cream cashmere turtleneck with delicate gold minimal jewelry, natural skin texture visible with subtle pores and healthy glow, confident yet warm expression, hair naturally tousled catching golden light, subtle makeup emphasizing natural beauty, timeless editorial elegance, magazine cover quality",
         },
         {
           title: "Urban Sophisticate",
@@ -135,7 +155,7 @@ Return ONLY a valid JSON array of concepts, no other text. Each concept must hav
           location:
             "Contemporary city street with modern architecture and clean lines, glass facades reflecting ambient light",
           prompt:
-            "raw photo, editorial quality, professional photography, sharp focus, film grain, visible skin pores, editorial luxury aesthetic, shot on 35mm lens f/2.0, natural depth of field capturing environmental context, soft overcast daylight creating even illumination, half body lifestyle shot on contemporary city street with modern architecture, wearing tailored charcoal blazer over white silk blouse, minimal silver accessories, confident stride, natural movement, urban sophistication, magazine editorial quality",
+            "raw photo, editorial quality, professional photography, sharp focus, natural skin texture, visible pores, film grain, editorial luxury aesthetic, shot on 35mm lens f/2.0, natural depth of field capturing environmental context, diffused overcast daylight, even illumination, soft shadows, flattering natural illumination, half body lifestyle shot on contemporary city street with modern architecture, wearing tailored charcoal blazer over white silk blouse, minimal silver accessories, confident stride, natural movement, urban sophistication, magazine editorial quality",
         },
         {
           title: "Minimalist Elegance",
@@ -148,7 +168,7 @@ Return ONLY a valid JSON array of concepts, no other text. Each concept must hav
             "Studio lighting with key light at 45 degrees, subtle fill light, rim light separating subject from background",
           location: "Minimal white studio space with concrete floor, clean lines, architectural simplicity",
           prompt:
-            "raw photo, editorial quality, professional photography, sharp focus, film grain, visible skin pores, editorial luxury aesthetic, shot on 50mm lens f/2.8, balanced depth of field, professional studio lighting with key light at 45 degrees and subtle fill, full body portrait in minimal white studio with concrete floor, wearing flowing wide-leg beige linen trousers with fitted black turtleneck, pointed-toe leather boots, elegant posture, clean architectural lines, timeless minimalist aesthetic, Vogue editorial quality",
+            "raw photo, editorial quality, professional photography, sharp focus, natural skin texture, visible pores, film grain, editorial luxury aesthetic, shot on 50mm lens f/2.8, balanced depth of field, warm studio lighting, beauty dish creating soft shadows, hair light adding dimension, full body portrait in minimal white studio with concrete floor, wearing flowing wide-leg beige linen trousers with fitted black turtleneck, pointed-toe leather boots, natural skin texture visible with subtle pores and healthy glow, elegant posture, clean architectural lines, timeless minimalist aesthetic, Vogue editorial quality",
         },
         {
           title: "Golden Hour Warmth",
@@ -162,13 +182,72 @@ Return ONLY a valid JSON array of concepts, no other text. Each concept must hav
           location:
             "Bright, airy interior space with plants and natural textures, Scandinavian-inspired design, organic elements",
           prompt:
-            "raw photo, editorial quality, professional photography, sharp focus, film grain, visible skin pores, editorial luxury aesthetic, shot on 50mm lens f/2.0, medium depth of field with soft background, bathed in golden hour sunlight streaming through large windows, half body portrait in bright airy interior with plants and natural textures, wearing soft knit sweater in warm camel tone, layered delicate necklaces, natural wavy hair catching golden light, warm approachable expression, organic atmosphere, timeless natural beauty",
+            "raw photo, editorial quality, professional photography, sharp focus, natural skin texture, visible pores, film grain, editorial luxury aesthetic, shot on 50mm lens f/2.0, medium depth of field with soft background, bathed in golden hour sunlight streaming through large windows, warm and diffused, creating luminous glow on skin and hair, half body portrait in bright airy interior with plants and natural textures, wearing soft knit sweater in warm camel tone, layered delicate necklaces, natural wavy hair catching golden light, natural skin texture visible with subtle pores and healthy glow, warm approachable expression, organic atmosphere, timeless natural beauty",
         },
       ]
 
       yield {
         state: "ready" as const,
         concepts: fallbackConcepts.slice(0, count),
+      }
+    }
+  },
+})
+
+const generateVideoTool = tool({
+  description:
+    "Generate a 5-second animated video from a generated image using the user's trained LoRA model for character consistency. Suggest creative motion prompts that enhance the photo's story.",
+  inputSchema: z.object({
+    imageUrl: z.string().describe("URL of the image to animate"),
+    imageId: z.string().optional().describe("Database ID of the image (if available)"),
+    motionPrompt: z
+      .string()
+      .optional()
+      .describe(
+        "Description of desired motion/animation. Be creative and specific! Examples: 'gentle head turn with soft smile', 'walking confidently forward', 'hair flowing in gentle breeze', 'subtle breathing motion with natural blink'",
+      ),
+  }),
+  execute: async function* ({ imageUrl, imageId, motionPrompt }) {
+    console.log("[v0] Video generation tool executing:", { imageUrl, imageId, motionPrompt })
+
+    yield {
+      state: "loading" as const,
+      message: "Starting video generation with your trained model...",
+    }
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/maya/generate-video`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            imageUrl,
+            imageId: imageId || null,
+            motionPrompt: motionPrompt || "subtle natural movement, gentle head turn, soft breathing motion",
+          }),
+        },
+      )
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Failed to start video generation")
+      }
+
+      const { videoId, predictionId, estimatedTime } = await response.json()
+
+      yield {
+        state: "processing" as const,
+        videoId,
+        predictionId,
+        estimatedTime,
+        message: `Video generation started! This will take about ${estimatedTime}. Your trained LoRA model is being used to ensure the video looks like you.`,
+      }
+    } catch (error) {
+      console.error("[v0] Error generating video:", error)
+      yield {
+        state: "error" as const,
+        error: error instanceof Error ? error.message : "Failed to generate video",
       }
     }
   },
@@ -315,7 +394,45 @@ When users upload a reference image (you'll see [User has uploaded a reference i
 - For product flatlays: suggest styled compositions with the product as the hero
 - For reference photos: create variations with different angles, lighting, or styling
 - Always acknowledge the reference image and explain how you're using it in your concepts
-- Include the reference image URL in the Flux prompts using the format: "reference_image: URL"
+- The reference image will be passed to FLUX as a control image, combined with the user's trained LoRA
+
+**VIDEO GENERATION WORKFLOW:**
+IMPORTANT: Video generation requires a photo first. When users ask for videos, follow this workflow:
+
+1. **If user asks to "create a video" or "animate" something:**
+   - First, generate 1-2 photo concepts using generateConcepts tool
+   - Explain: "I'll create a photo first, then animate it into a 5-second video"
+   - After concepts are generated, suggest which one would animate beautifully
+   - Wait for user to pick a concept, then use generateVideo tool
+
+2. **If user asks to animate an existing image:**
+   - Use the generateVideo tool directly with the image URL
+   - Suggest a creative motion prompt based on the photo's mood
+
+3. **Motion Prompt Guidelines:**
+   - Be specific and creative with motion descriptions
+   - Consider the photo's context, mood, and composition
+   - Suggest natural, subtle movements that enhance the story
+   - Examples of excellent motion prompts:
+     * "gentle head turn with soft smile, hair catching light, confident gaze"
+     * "walking confidently forward through urban space, coat flowing naturally"
+     * "subtle breathing motion, natural blink, warm expression, serene presence"
+     * "looking over shoulder with playful smile, hair moving gently"
+     * "standing in wind, hair flowing in gentle breeze, contemplative expression"
+
+4. **Technical Details:**
+   - Videos are 5 seconds long at 30fps (interpolated from 16fps)
+   - Generation takes 40-60 seconds
+   - User's trained LoRA model ensures character consistency
+   - Motion is controlled by motion_bucket_id (127 = balanced motion)
+
+**Example Conversation:**
+User: "Create a video of me in Iceland, dark and moody"
+You: "I love that vision! Let me first create a stunning photo concept of you in Iceland's dramatic landscape, then we'll animate it into a cinematic 5-second video. [Call generateConcepts with Iceland theme]"
+[After concepts generated]
+You: "These concepts would animate beautifully! The 'Solitude Among Black Sands' would be perfect with subtle wind in your hair and a contemplative gaze. Should I animate this one?"
+User: "Yes!"
+You: "[Call generateVideo with creative motion prompt]"
 `
 
     const lastMessage = allMessages[allMessages.length - 1]
@@ -327,13 +444,18 @@ When users upload a reference image (you'll see [User has uploaded a reference i
         lastMessage.content.toLowerCase().includes("suggest") ||
         lastMessage.content.toLowerCase().includes("help"))
 
+    const isAskingForVideo =
+      lastMessage?.role === "user" &&
+      (lastMessage.content.toLowerCase().includes("video") || lastMessage.content.toLowerCase().includes("animate"))
+
     console.log("[v0] User request analysis:", {
       isAskingForConcepts,
+      isAskingForVideo,
       lastMessagePreview: lastMessage?.content?.substring(0, 100),
     })
 
     console.log("[v0] Streaming with tools:", {
-      toolsAvailable: Object.keys({ generateConcepts: generateConceptsTool }),
+      toolsAvailable: Object.keys({ generateConcepts: generateConceptsTool, generateVideo: generateVideoTool }),
       model: "anthropic/claude-sonnet-4",
       messageCount: allMessages.length,
       lastMessageRole: allMessages[allMessages.length - 1]?.role,
@@ -347,6 +469,7 @@ When users upload a reference image (you'll see [User has uploaded a reference i
       messages: allMessages,
       tools: {
         generateConcepts: generateConceptsTool,
+        generateVideo: generateVideoTool,
       },
       maxOutputTokens: 2000,
       maxSteps: 5,

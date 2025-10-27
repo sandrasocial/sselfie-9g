@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-
+import VideoCard from "./video-card"
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport } from "ai"
 import { Camera, Send, Plus, ArrowDown, History, X, Sparkles, User, Package, Palette } from "lucide-react"
@@ -26,6 +26,7 @@ export default function MayaChatScreen() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const retryQueue = useRef<Array<{ messageId: string; payload: any }>>([])
   const [isDragging, setIsDragging] = useState(false)
+  const [contentFilter, setContentFilter] = useState<"all" | "photos" | "videos">("all")
 
   const { messages, sendMessage, status, setMessages } = useChat({
     transport: new DefaultChatTransport({ api: "/api/maya/chat" }),
@@ -406,6 +407,22 @@ export default function MayaChatScreen() {
     }
   }
 
+  const filteredMessages = messages.filter((msg) => {
+    if (contentFilter === "all") return true
+
+    if (contentFilter === "photos") {
+      // Show messages with concept cards (photos)
+      return msg.toolInvocations?.some((inv: any) => inv.toolName === "generateConcepts" && inv.state === "result")
+    }
+
+    if (contentFilter === "videos") {
+      // Show messages with video cards
+      return msg.toolInvocations?.some((inv: any) => inv.toolName === "generateVideo")
+    }
+
+    return true
+  })
+
   if (isLoadingChat) {
     return <UnifiedLoading message="Loading chat..." />
   }
@@ -474,11 +491,46 @@ export default function MayaChatScreen() {
           </button>
 
           <div className="flex items-center gap-1.5 sm:gap-2">
-            <div className="w-1.5 sm:w-2 h-1.5 sm:h-2 bg-stone-900 rounded-full" aria-hidden="true"></div>
+            <div className="w-1.5 sm:w-2 h-1.5 sm:h-2 bg-stone-950 rounded-full" aria-hidden="true"></div>
             <span className="text-xs tracking-[0.15em] font-light text-stone-600">Online</span>
           </div>
         </div>
       </div>
+
+      {!isEmpty && (
+        <div className="flex-shrink-0 flex items-center gap-2 mb-3 pb-3 border-b border-white/30">
+          <button
+            onClick={() => setContentFilter("all")}
+            className={`px-4 py-2 rounded-xl text-xs font-medium tracking-wide transition-all duration-300 ${
+              contentFilter === "all"
+                ? "bg-stone-950 text-white"
+                : "bg-white/40 backdrop-blur-xl border border-white/60 text-stone-600 hover:bg-white/60"
+            }`}
+          >
+            All
+          </button>
+          <button
+            onClick={() => setContentFilter("photos")}
+            className={`px-4 py-2 rounded-xl text-xs font-medium tracking-wide transition-all duration-300 ${
+              contentFilter === "photos"
+                ? "bg-stone-950 text-white"
+                : "bg-white/40 backdrop-blur-xl border border-white/60 text-stone-600 hover:bg-white/60"
+            }`}
+          >
+            Photos
+          </button>
+          <button
+            onClick={() => setContentFilter("videos")}
+            className={`px-4 py-2 rounded-xl text-xs font-medium tracking-wide transition-all duration-300 ${
+              contentFilter === "videos"
+                ? "bg-stone-950 text-white"
+                : "bg-white/40 backdrop-blur-xl border border-white/60 text-stone-600 hover:bg-white/60"
+            }`}
+          >
+            Videos
+          </button>
+        </div>
+      )}
 
       {showHistory && (
         <div className="flex-shrink-0 mb-3 sm:mb-4 bg-white/50 backdrop-blur-3xl border border-white/60 rounded-2xl p-4 shadow-xl shadow-stone-900/5 animate-in slide-in-from-top-2 duration-300">
@@ -527,9 +579,9 @@ export default function MayaChatScreen() {
             </div>
           )}
 
-          {messages &&
-            Array.isArray(messages) &&
-            messages.map((msg) => (
+          {filteredMessages &&
+            Array.isArray(filteredMessages) &&
+            filteredMessages.map((msg) => (
               <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                 <div className={`max-w-[90%] sm:max-w-[85%] ${msg.role === "user" ? "order-2" : "order-1"}`}>
                   {msg.parts &&
@@ -603,6 +655,49 @@ export default function MayaChatScreen() {
                             hasConcepts: Array.isArray(output?.concepts),
                             conceptsLength: output?.concepts?.length || 0,
                           })
+                        }
+                      }
+
+                      if (part.type === "tool-generateVideo") {
+                        const toolPart = part as any
+                        const output = toolPart.output
+
+                        if (output && output.state === "processing") {
+                          return (
+                            <div key={partIndex} className="mt-4">
+                              <VideoCard
+                                videoUrl=""
+                                status="processing"
+                                progress={output.progress}
+                                motionPrompt={toolPart.args?.motionPrompt}
+                              />
+                            </div>
+                          )
+                        }
+
+                        if (output && output.state === "ready" && output.videoUrl) {
+                          return (
+                            <div key={partIndex} className="mt-4">
+                              <VideoCard
+                                videoUrl={output.videoUrl}
+                                motionPrompt={toolPart.args?.motionPrompt}
+                                imageSource={toolPart.args?.imageUrl}
+                              />
+                            </div>
+                          )
+                        }
+
+                        if (output && output.state === "loading") {
+                          return (
+                            <div key={partIndex} className="mt-4">
+                              <div className="flex items-center gap-3 text-stone-600">
+                                <div className="w-2 h-2 rounded-full bg-stone-600 animate-pulse" />
+                                <span className="text-xs tracking-[0.15em] uppercase font-light">
+                                  Starting video generation...
+                                </span>
+                              </div>
+                            </div>
+                          )
                         }
                       }
 
