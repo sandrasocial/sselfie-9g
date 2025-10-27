@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport } from "ai"
-import { Camera, Send, Plus, ArrowDown, History, X } from "lucide-react"
+import { Camera, Send, Plus, ArrowDown, History, X, Sparkles, User, Package, Palette } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import ConceptCard from "./concept-card"
 import MayaChatHistory from "./maya-chat-history"
@@ -24,6 +24,8 @@ export default function MayaChatScreen() {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null)
   const [isUploadingImage, setIsUploadingImage] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const retryQueue = useRef<Array<{ messageId: string; payload: any }>>([])
+  const [isDragging, setIsDragging] = useState(false)
 
   const { messages, sendMessage, status, setMessages } = useChat({
     transport: new DefaultChatTransport({ api: "/api/maya/chat" }),
@@ -41,6 +43,36 @@ export default function MayaChatScreen() {
   })
 
   const isTyping = status === "submitted" || status === "streaming"
+
+  const suggestedPrompts = [
+    {
+      icon: User,
+      label: "Professional",
+      prompt: "Create a professional headshot with natural lighting and a clean background",
+    },
+    {
+      icon: Sparkles,
+      label: "Lifestyle",
+      prompt: "Generate a lifestyle photo in a modern urban setting with natural light",
+    },
+    {
+      icon: Package,
+      label: "Product",
+      prompt: "Design a product flatlay with aesthetic composition and soft shadows",
+    },
+    {
+      icon: Palette,
+      label: "Creative",
+      prompt: "Create an artistic portrait with dramatic lighting and creative composition",
+    },
+  ]
+
+  const examplePrompts = [
+    "Create a professional headshot with natural lighting",
+    "Generate a lifestyle photo in a coffee shop",
+    "Design a product flatlay for skincare",
+    "Create an artistic portrait with dramatic lighting",
+  ]
 
   const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
     messagesEndRef.current?.scrollIntoView({ behavior, block: "end" })
@@ -62,6 +94,41 @@ export default function MayaChatScreen() {
 
     lastScrollTop.current = scrollTop
   }
+
+  const retryFailedSaves = async () => {
+    if (retryQueue.current.length === 0) return
+
+    console.log("[v0] 🔄 Retrying", retryQueue.current.length, "failed saves")
+
+    const queue = [...retryQueue.current]
+    retryQueue.current = []
+
+    for (const item of queue) {
+      try {
+        const response = await fetch("/api/maya/save-message", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(item.payload),
+        })
+
+        if (response.ok) {
+          console.log("[v0] ✅ Retry successful for message:", item.messageId)
+          savedMessageIds.current.add(item.messageId)
+        } else {
+          console.log("[v0] ⚠️ Retry failed, re-queuing:", item.messageId)
+          retryQueue.current.push(item)
+        }
+      } catch (error) {
+        console.error("[v0] ❌ Retry error:", error)
+        retryQueue.current.push(item)
+      }
+    }
+  }
+
+  useEffect(() => {
+    const interval = setInterval(retryFailedSaves, 30000)
+    return () => clearInterval(interval)
+  }, [])
 
   useEffect(() => {
     if (!isUserScrolling) {
@@ -132,108 +199,97 @@ export default function MayaChatScreen() {
   useEffect(() => {
     if (!chatId || isTyping) return
 
-    // Debounce the save operation
-    const timeoutId = setTimeout(() => {
-      // Find unsaved assistant messages that have content or concept cards
-      const unsavedMessages = messages.filter((msg) => {
-        if (msg.role !== "assistant") return false
-        if (savedMessageIds.current.has(msg.id)) return false
+    const lastMessage = messages[messages.length - 1]
+    if (!lastMessage || lastMessage.role !== "assistant") return
+    if (savedMessageIds.current.has(lastMessage.id)) return
 
-        // Only save if message has content or concept cards
-        const hasContent = msg.content && msg.content.trim().length > 0
-        const hasConcepts =
-          msg.toolInvocations &&
-          Array.isArray(msg.toolInvocations) &&
-          msg.toolInvocations.some(
-            (inv: any) =>
-              inv.toolName === "generateConcepts" &&
-              inv.state === "result" &&
-              Array.isArray(inv.result?.concepts) &&
-              inv.result.concepts.length > 0,
-          )
+    const hasContent = lastMessage.content && lastMessage.content.trim().length > 0
+    const hasConcepts =
+      lastMessage.toolInvocations &&
+      Array.isArray(lastMessage.toolInvocations) &&
+      lastMessage.toolInvocations.some(
+        (inv: any) =>
+          inv.toolName === "generateConcepts" &&
+          inv.state === "result" &&
+          Array.isArray(inv.result?.concepts) &&
+          inv.result.concepts.length > 0,
+      )
 
-        return hasContent || hasConcepts
-      })
+    if (!hasContent && !hasConcepts) return
 
-      if (unsavedMessages.length === 0) return
+    const conceptCards =
+      lastMessage.toolInvocations && Array.isArray(lastMessage.toolInvocations)
+        ? lastMessage.toolInvocations
+            .filter((inv: any) => inv.toolName === "generateConcepts" && inv.state === "result")
+            .flatMap((inv: any) => inv.result?.concepts || [])
+        : []
 
-      unsavedMessages.forEach(async (message) => {
-        console.log("[v0] ========== Auto-saving message ==========")
-        console.log("[v0] Message ID:", message.id)
-        console.log("[v0] Chat ID:", chatId)
+    console.log("[v0] 💾 Saving assistant message:", {
+      messageId: lastMessage.id,
+      chatId,
+      hasContent,
+      conceptCount: conceptCards.length,
+    })
 
-        // Extract concept cards from toolInvocations
-        const conceptCards =
-          message.toolInvocations && Array.isArray(message.toolInvocations)
-            ? message.toolInvocations
-                .filter((invocation: any) => {
-                  const isConceptTool = invocation.toolName === "generateConcepts"
-                  const hasResult = invocation.state === "result"
-                  const hasConcepts = Array.isArray(invocation.result?.concepts)
+    savedMessageIds.current.add(lastMessage.id)
 
-                  return isConceptTool && hasResult && hasConcepts
-                })
-                .flatMap((invocation: any) => invocation.result.concepts || [])
-            : []
-
-        console.log("[v0] Extracted concept cards:", {
-          count: conceptCards.length,
-        })
-
-        // Mark as saved before making the request
-        savedMessageIds.current.add(message.id)
-
-        try {
-          const payload = {
-            chatId,
-            role: message.role,
-            content: message.content || "",
-            conceptCards: conceptCards.length > 0 ? conceptCards : null,
-          }
-
-          const response = await fetch("/api/maya/save-message", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          })
-
-          const responseData = await response.json()
-
-          if (response.ok) {
-            console.log("[v0] ✅ Message saved successfully with", conceptCards.length, "concept cards")
-          } else {
-            console.error("[v0] ❌ Failed to save message:", response.status, responseData)
-            // Remove from saved set so it can be retried
-            savedMessageIds.current.delete(message.id)
-
-            // If unauthorized, the session might have expired
-            if (response.status === 401) {
-              console.error("[v0] Session expired - user needs to re-authenticate")
-            }
-          }
-        } catch (error) {
-          console.error("[v0] ❌ Error saving message:", error)
-          savedMessageIds.current.delete(message.id)
+    fetch("/api/maya/save-message", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chatId,
+        role: lastMessage.role,
+        content: lastMessage.content || "",
+        conceptCards: conceptCards.length > 0 ? conceptCards : null,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          console.log("[v0] ✅ Message saved successfully")
+        } else {
+          console.error("[v0] ❌ Failed to save:", data.error)
+          savedMessageIds.current.delete(lastMessage.id)
         }
-
-        console.log("[v0] ========== Auto-save END ==========")
       })
-    }, 1000) // Debounce for 1 second
-
-    return () => clearTimeout(timeoutId)
+      .catch((error) => {
+        console.error("[v0] ❌ Save error:", error)
+        savedMessageIds.current.delete(lastMessage.id)
+      })
   }, [messages, chatId, isTyping])
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (e.currentTarget === e.target) {
+      setIsDragging(false)
+    }
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+  }
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+
+    const file = e.dataTransfer.files?.[0]
     if (!file) return
 
-    // Check file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
       alert("Image must be smaller than 10MB")
       return
     }
 
-    // Check file type
     if (!file.type.startsWith("image/")) {
       alert("Please upload an image file")
       return
@@ -242,7 +298,46 @@ export default function MayaChatScreen() {
     setIsUploadingImage(true)
 
     try {
-      // Upload to Vercel Blob
+      const formData = new FormData()
+      formData.append("file", file)
+
+      const response = await fetch("/api/upload-image", {
+        method: "POST",
+        body: formData,
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to upload image")
+      }
+
+      const { url } = await response.json()
+      setUploadedImage(url)
+      console.log("[v0] Image uploaded:", url)
+    } catch (error) {
+      console.error("[v0] Error uploading image:", error)
+      alert("Failed to upload image. Please try again.")
+    } finally {
+      setIsUploadingImage(false)
+    }
+  }
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (file.size > 10 * 1024 * 1024) {
+      alert("Image must be smaller than 10MB")
+      return
+    }
+
+    if (!file.type.startsWith("image/")) {
+      alert("Please upload an image file")
+      return
+    }
+
+    setIsUploadingImage(true)
+
+    try {
       const formData = new FormData()
       formData.append("file", file)
 
@@ -269,11 +364,10 @@ export default function MayaChatScreen() {
     }
   }
 
-  const handleSendMessage = () => {
-    if ((inputValue.trim() || uploadedImage) && !isTyping) {
-      const messageContent = uploadedImage
-        ? `${inputValue.trim()}\n\n[Reference Image: ${uploadedImage}]`
-        : inputValue.trim()
+  const handleSendMessage = (customPrompt?: string) => {
+    const messageText = customPrompt || inputValue.trim()
+    if ((messageText || uploadedImage) && !isTyping) {
+      const messageContent = uploadedImage ? `${messageText}\n\n[Reference Image: ${uploadedImage}]` : messageText
 
       sendMessage({ text: messageContent })
       setInputValue("")
@@ -316,8 +410,26 @@ export default function MayaChatScreen() {
     return <UnifiedLoading message="Loading chat..." />
   }
 
+  const isEmpty = !messages || messages.length === 0
+
   return (
-    <div className="h-full flex flex-col">
+    <div
+      className="h-full flex flex-col"
+      onDragEnter={handleDragEnter}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      {isDragging && (
+        <div className="fixed inset-0 z-50 bg-stone-950/80 backdrop-blur-sm flex items-center justify-center animate-in fade-in duration-200">
+          <div className="bg-white/90 backdrop-blur-xl border-2 border-dashed border-stone-400 rounded-3xl p-12 text-center max-w-md mx-4">
+            <Camera size={48} className="mx-auto mb-4 text-stone-600" strokeWidth={1.5} />
+            <h3 className="text-xl font-serif tracking-[0.2em] uppercase text-stone-950 mb-2">Drop Image Here</h3>
+            <p className="text-sm text-stone-600 tracking-wide">Upload a reference image for Maya to work with</p>
+          </div>
+        </div>
+      )}
+
       <div className="flex-shrink-0 flex items-center justify-between pt-3 sm:pt-4 pb-2">
         <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
           <div className="w-11 h-11 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full border-2 border-stone-200/60 overflow-hidden flex-shrink-0">
@@ -383,6 +495,38 @@ export default function MayaChatScreen() {
           aria-live="polite"
           aria-label="Chat messages"
         >
+          {isEmpty && !isTyping && (
+            <div className="flex flex-col items-center justify-center h-full px-4 py-8 animate-in fade-in duration-500">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-2 border-stone-200/60 overflow-hidden mb-6">
+                <img
+                  src="https://i.postimg.cc/fTtCnzZv/out-1-22.png"
+                  alt="Maya"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-serif font-extralight tracking-[0.3em] text-stone-950 uppercase mb-3 text-center">
+                Welcome
+              </h2>
+              <p className="text-sm sm:text-base text-stone-600 tracking-wide text-center mb-8 max-w-md leading-relaxed">
+                I'm Maya, your personal photo stylist. I'll help you create stunning images using your trained model.
+                Try one of these prompts to get started.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-2xl">
+                {examplePrompts.map((prompt, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleSendMessage(prompt)}
+                    className="group p-4 bg-white/50 backdrop-blur-xl border border-white/70 rounded-2xl hover:bg-white/70 hover:border-stone-300 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] text-left"
+                  >
+                    <p className="text-sm text-stone-700 leading-relaxed group-hover:text-stone-950 transition-colors">
+                      {prompt}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {messages &&
             Array.isArray(messages) &&
             messages.map((msg) => (
@@ -507,6 +651,56 @@ export default function MayaChatScreen() {
       </div>
 
       <div className="flex-shrink-0 border-t border-white/30 pt-3 sm:pt-4 mt-3 sm:mt-4 pb-2">
+        {uploadedImage ? (
+          <div className="mb-3">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-1 h-1 rounded-full bg-stone-600" aria-hidden="true"></div>
+              <span className="text-xs tracking-[0.15em] uppercase font-light text-stone-600">Try These</span>
+            </div>
+            <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
+              <button
+                onClick={() => handleSendMessage("Create variations of this product with different angles")}
+                className="flex-shrink-0 px-4 py-2 bg-white/40 backdrop-blur-xl border border-white/60 rounded-xl hover:bg-white/60 hover:border-stone-300 transition-all text-xs text-stone-700 whitespace-nowrap"
+              >
+                Product Variations
+              </button>
+              <button
+                onClick={() => handleSendMessage("Use this as inspiration for a lifestyle photo")}
+                className="flex-shrink-0 px-4 py-2 bg-white/40 backdrop-blur-xl border border-white/60 rounded-xl hover:bg-white/60 hover:border-stone-300 transition-all text-xs text-stone-700 whitespace-nowrap"
+              >
+                Lifestyle Shot
+              </button>
+              <button
+                onClick={() => handleSendMessage("Create a flatlay composition with this product")}
+                className="flex-shrink-0 px-4 py-2 bg-white/40 backdrop-blur-xl border border-white/60 rounded-xl hover:bg-white/60 hover:border-stone-300 transition-all text-xs text-stone-700 whitespace-nowrap"
+              >
+                Flatlay Design
+              </button>
+            </div>
+          </div>
+        ) : (
+          !isEmpty && (
+            <div className="mb-3">
+              <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
+                {suggestedPrompts.map((item, index) => {
+                  const Icon = item.icon
+                  return (
+                    <button
+                      key={index}
+                      onClick={() => handleSendMessage(item.prompt)}
+                      disabled={isTyping}
+                      className="flex-shrink-0 flex items-center gap-2 px-4 py-2.5 bg-white/40 backdrop-blur-xl border border-white/60 rounded-xl hover:bg-white/60 hover:border-stone-300 transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Icon size={14} className="text-stone-600" strokeWidth={2} />
+                      <span className="text-xs tracking-wide font-medium text-stone-700">{item.label}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        )}
+
         {uploadedImage && (
           <div className="mb-3 relative inline-block">
             <div className="relative w-24 h-24 rounded-xl overflow-hidden border-2 border-white/60 shadow-lg">
@@ -565,7 +759,7 @@ export default function MayaChatScreen() {
             </div>
           </div>
           <button
-            onClick={handleSendMessage}
+            onClick={() => handleSendMessage()}
             className="group relative px-4 sm:px-5 py-4 sm:py-4 bg-stone-950 text-white rounded-xl sm:rounded-[1.5rem] font-semibold transition-all duration-300 hover:shadow-2xl hover:shadow-stone-900/40 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden min-h-[52px] sm:min-h-[56px] min-w-[52px] sm:min-w-[56px] flex items-center justify-center hover:scale-105 active:scale-95"
             disabled={isTyping || (!inputValue.trim() && !uploadedImage) || isUploadingImage}
             aria-label="Send message"

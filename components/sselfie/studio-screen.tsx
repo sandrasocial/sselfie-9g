@@ -31,12 +31,12 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
 
   if (!hasTrainedModel) {
     return (
-      <div className="space-y-6 sm:space-y-8 pb-4">
+      <div className="space-y-6 sm:space-y-8 pb-4 overflow-x-hidden max-w-full">
         <div className="pt-4 sm:pt-6 text-center">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif font-extralight tracking-[0.2em] sm:tracking-[0.3em] text-stone-900 uppercase leading-none mb-2 sm:mb-3 px-4">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif font-extralight tracking-[0.1em] sm:tracking-[0.2em] md:tracking-[0.3em] text-stone-900 uppercase leading-none mb-2 sm:mb-3 px-4">
             Welcome to Studio
           </h1>
-          <p className="text-[10px] sm:text-xs tracking-[0.2em] sm:tracking-[0.3em] uppercase font-light text-stone-400">
+          <p className="text-[10px] sm:text-xs tracking-[0.15em] sm:tracking-[0.2em] md:tracking-[0.3em] uppercase font-light text-stone-400">
             Start Here
           </p>
         </div>
@@ -90,7 +90,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
         </div>
 
         <div className="bg-white/50 backdrop-blur-3xl border border-white/60 rounded-2xl sm:rounded-3xl p-8 shadow-xl shadow-stone-900/5">
-          <h3 className="text-lg sm:text-xl md:text-2xl font-serif font-extralight tracking-[0.15em] sm:tracking-[0.2em] text-stone-900 uppercase mb-6 sm:mb-8">
+          <h3 className="text-lg sm:text-xl md:text-2xl font-serif font-extralight tracking-[0.15em] sm:tracking-[0.2em] md:tracking-[0.3em] text-stone-900 uppercase mb-6 sm:mb-8">
             What You Will Need
           </h3>
 
@@ -139,12 +139,12 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
     : null
 
   return (
-    <div className="space-y-6 sm:space-y-8 pb-8 pt-4">
+    <div className="space-y-6 sm:space-y-8 pb-8 pt-4 overflow-x-hidden max-w-full">
       <div className="text-center">
-        <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif font-extralight tracking-[0.2em] sm:tracking-[0.3em] text-stone-900 uppercase leading-none mb-2 sm:mb-3">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif font-extralight tracking-[0.1em] sm:tracking-[0.2em] md:tracking-[0.3em] text-stone-900 uppercase leading-none mb-2 sm:mb-3">
           STUDIO
         </h1>
-        <p className="text-[10px] sm:text-xs tracking-[0.2em] sm:tracking-[0.3em] uppercase font-light text-stone-400">
+        <p className="text-[10px] sm:text-xs tracking-[0.15em] sm:tracking-[0.2em] md:tracking-[0.3em] uppercase font-light text-stone-400">
           Creative Control Center
         </p>
       </div>
@@ -422,7 +422,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
 
       {hasRecentGenerations ? (
         <div className="space-y-6">
-          <h3 className="text-lg sm:text-xl md:text-2xl font-serif font-extralight tracking-[0.15em] sm:tracking-[0.2em] text-stone-900 uppercase">
+          <h3 className="text-lg sm:text-xl md:text-2xl font-serif font-extralight tracking-[0.15em] sm:tracking-[0.2em] md:tracking-[0.3em] text-stone-900 uppercase">
             Recent Activity
           </h3>
           <div className="space-y-1">
@@ -461,7 +461,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
         </div>
       ) : (
         <div className="bg-white/50 backdrop-blur-3xl border border-white/60 rounded-3xl p-8 text-center shadow-xl shadow-stone-900/5">
-          <h3 className="text-lg sm:text-xl md:text-2xl font-serif font-extralight tracking-[0.15em] sm:tracking-[0.2em] text-stone-900 uppercase mb-3">
+          <h3 className="text-lg sm:text-xl md:text-2xl font-serif font-extralight tracking-[0.15em] sm:tracking-[0.2em] md:tracking-[0.3em] text-stone-900 uppercase mb-3">
             No Recent Activity
           </h3>
           <p className="text-sm font-light text-stone-500">Your recent photo generations will appear here</p>
@@ -470,7 +470,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
 
       {sessionsData?.sessions && sessionsData.sessions.length > 0 && (
         <div className="space-y-6">
-          <h3 className="text-lg sm:text-xl md:text-2xl font-serif font-extralight tracking-[0.15em] sm:tracking-[0.2em] text-stone-900 uppercase">
+          <h3 className="text-lg sm:text-xl md:text-2xl font-serif font-extralight tracking-[0.15em] sm:tracking-[0.2em] md:tracking-[0.3em] text-stone-900 uppercase">
             Session History
           </h3>
           <div className="grid gap-4">

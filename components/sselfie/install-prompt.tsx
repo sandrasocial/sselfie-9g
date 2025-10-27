@@ -15,18 +15,36 @@ export function InstallPrompt() {
   const [isInstalled, setIsInstalled] = useState(false)
 
   useEffect(() => {
+    console.log("[v0] InstallPrompt mounted")
+
     // Check if already installed
-    if (window.matchMedia("(display-mode: standalone)").matches || (window.navigator as any).standalone === true) {
+    const isStandalone =
+      window.matchMedia("(display-mode: standalone)").matches || (window.navigator as any).standalone === true
+    console.log("[v0] Is standalone:", isStandalone)
+
+    if (isStandalone) {
       setIsInstalled(true)
       return
     }
 
+    // Check if dismissed recently
+    const dismissed = localStorage.getItem("installPromptDismissed")
+    if (dismissed) {
+      const dismissedTime = Number.parseInt(dismissed)
+      const daysSinceDismissed = (Date.now() - dismissedTime) / (1000 * 60 * 60 * 24)
+      console.log("[v0] Days since dismissed:", daysSinceDismissed)
+      if (daysSinceDismissed < 7) {
+        console.log("[v0] Install prompt dismissed recently, not showing")
+        return
+      }
+    }
+
     // Listen for the beforeinstallprompt event
     const handler = (e: Event) => {
+      console.log("[v0] beforeinstallprompt event fired!")
       e.preventDefault()
       setDeferredPrompt(e as BeforeInstallPromptEvent)
       setShowPrompt(true)
-      console.log("[v0] Install prompt available")
     }
 
     window.addEventListener("beforeinstallprompt", handler)
@@ -62,22 +80,14 @@ export function InstallPrompt() {
   }
 
   const handleDismiss = () => {
+    console.log("[v0] Install prompt dismissed")
     setShowPrompt(false)
-    // Store dismissal in localStorage to not show again for a while
     localStorage.setItem("installPromptDismissed", Date.now().toString())
   }
 
-  // Don't show if already installed or dismissed recently
   useEffect(() => {
-    const dismissed = localStorage.getItem("installPromptDismissed")
-    if (dismissed) {
-      const dismissedTime = Number.parseInt(dismissed)
-      const daysSinceDismissed = (Date.now() - dismissedTime) / (1000 * 60 * 60 * 24)
-      if (daysSinceDismissed < 7) {
-        setShowPrompt(false)
-      }
-    }
-  }, [])
+    console.log("[v0] Install prompt state:", { isInstalled, showPrompt, hasDeferredPrompt: !!deferredPrompt })
+  }, [isInstalled, showPrompt, deferredPrompt])
 
   if (isInstalled || !showPrompt || !deferredPrompt) {
     return null

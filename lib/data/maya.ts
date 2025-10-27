@@ -101,12 +101,26 @@ export async function saveChatMessage(
   content: string,
   conceptCards?: any[],
 ): Promise<MayaChatMessage> {
+  console.log("[v0] 💾 saveChatMessage called:", {
+    chatId,
+    role,
+    contentLength: content?.length || 0,
+    hasConceptCards: !!conceptCards,
+    conceptCardsCount: conceptCards?.length || 0,
+  })
+
   try {
     const message = await sql`
       INSERT INTO maya_chat_messages (chat_id, role, content, concept_cards)
       VALUES (${chatId}, ${role}, ${content}, ${conceptCards ? JSON.stringify(conceptCards) : null})
       RETURNING *
     `
+
+    console.log("[v0] ✅ Message saved successfully:", {
+      messageId: message[0].id,
+      chatId: message[0].chat_id,
+      role: message[0].role,
+    })
 
     // Update chat last_activity
     await sql`
@@ -115,8 +129,16 @@ export async function saveChatMessage(
       WHERE id = ${chatId}
     `
 
+    console.log("[v0] ✅ Chat last_activity updated for chat:", chatId)
+
     return message[0] as MayaChatMessage
   } catch (error: any) {
+    console.error("[v0] ❌ Error in saveChatMessage:", {
+      chatId,
+      role,
+      error: error?.message || String(error),
+    })
+
     // Handle database errors and convert to proper Error objects
     const errorMessage = error?.message || String(error)
 

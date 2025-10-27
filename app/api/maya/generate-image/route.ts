@@ -122,10 +122,11 @@ export async function POST(request: NextRequest) {
       predictionInput.image = referenceImageUrl
       // prompt_strength controls how much the output matches the input (0-1)
       // Lower = more like input image, Higher = more creative freedom
-      predictionInput.prompt_strength = 0.75
+      predictionInput.prompt_strength = 0.5
 
       console.log("[v0] Image parameter set:", predictionInput.image)
       console.log("[v0] Prompt strength set:", predictionInput.prompt_strength)
+      console.log("[v0] This will blend the reference image with your trained model")
       console.log("[v0] ================================================")
     }
 

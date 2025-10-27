@@ -65,7 +65,9 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
       console.log("[v0] Has reference image:", !!concept.referenceImageUrl)
       if (concept.referenceImageUrl) {
         console.log("[v0] Reference image URL:", concept.referenceImageUrl)
+        console.log("[v0] This image will be blended with your trained model")
       }
+      console.log("[v0] Full concept object:", JSON.stringify(concept, null, 2))
       console.log("[v0] ================================================")
 
       const response = await fetch("/api/maya/generate-image", {
@@ -272,7 +274,7 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
               className={`px-4 sm:px-5 py-3 sm:py-4 rounded-[1.25rem] font-semibold text-xs sm:text-sm transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] min-h-[48px] sm:min-h-[52px] ${
                 isFavorite
                   ? "bg-red-500 text-white"
-                  : "bg-stone-950 text-white hover:shadow-2xl hover:shadow-stone-900/40"
+                  : "bg-stone-950 text-white hover:shadow-2xl hover:shadow-stone-950/40"
               }`}
               aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
             >
