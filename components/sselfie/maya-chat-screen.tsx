@@ -13,7 +13,6 @@ export default function MayaChatScreen() {
   const [isLoadingChat, setIsLoadingChat] = useState(true)
   const [showHistory, setShowHistory] = useState(false)
   const savedMessageIds = useRef(new Set<string>())
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const [showScrollButton, setShowScrollButton] = useState(false)
@@ -25,6 +24,58 @@ export default function MayaChatScreen() {
     initialMessages: [],
     body: {
       chatId: chatId,
+    },
+    onFinish: async (message) => {
+      // Only save if we have a chatId and haven't saved this message yet
+      if (!chatId || savedMessageIds.current.has(message.id)) {
+        return
+      }
+
+      console.log("[v0] onFinish - Saving message after streaming complete:", {
+        messageId: message.id,
+        role: message.role,
+        hasParts: !!message.parts,
+        partsCount: message.parts?.length || 0,
+      })
+
+      // Extract concept cards from the completed message
+      const conceptCards =
+        message.parts && Array.isArray(message.parts)
+          ? message.parts
+              .filter((part: any) => part.type === "tool-generateConcepts" && part.output?.state === "ready")
+              .flatMap((part: any) => part.output.concepts || [])
+          : []
+
+      console.log("[v0] Extracted concept cards:", {
+        conceptCardsCount: conceptCards.length,
+        conceptCards: conceptCards.length > 0 ? conceptCards : null,
+      })
+
+      // Mark as saved before making the request
+      savedMessageIds.current.add(message.id)
+
+      try {
+        const response = await fetch("/api/maya/save-message", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chatId,
+            role: message.role,
+            content: message.parts?.find((p: any) => p.type === "text")?.text || "",
+            conceptCards: conceptCards.length > 0 ? conceptCards : null,
+          }),
+        })
+
+        if (response.ok) {
+          console.log("[v0] Message saved successfully with", conceptCards.length, "concept cards")
+        } else {
+          console.error("[v0] Failed to save message:", response.status, response.statusText)
+          savedMessageIds.current.delete(message.id)
+        }
+      } catch (error) {
+        console.error("[v0] Error saving message:", error)
+        savedMessageIds.current.delete(message.id)
+      }
     },
   })
 
@@ -100,7 +151,6 @@ export default function MayaChatScreen() {
           setMessages([])
         }
 
-        // Close history sidebar after selecting a chat
         setShowHistory(false)
       }
     } catch (error) {
@@ -113,66 +163,6 @@ export default function MayaChatScreen() {
   useEffect(() => {
     loadChat()
   }, [])
-
-  useEffect(() => {
-    if (!chatId || isLoadingChat || messages.length <= 1) return
-
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current)
-    }
-
-    saveTimeoutRef.current = setTimeout(() => {
-      const lastMessage = messages[messages.length - 1]
-      if (lastMessage && lastMessage.id !== "welcome" && !savedMessageIds.current.has(lastMessage.id)) {
-        const conceptCards =
-          lastMessage.parts && Array.isArray(lastMessage.parts)
-            ? lastMessage.parts
-                .filter((part: any) => part.type === "tool-generateConcepts" && part.output?.state === "ready")
-                .flatMap((part: any) => part.output.concepts || [])
-            : []
-
-        console.log("[v0] Saving message:", {
-          messageId: lastMessage.id,
-          role: lastMessage.role,
-          hasParts: !!lastMessage.parts,
-          partsCount: lastMessage.parts?.length || 0,
-          conceptCardsCount: conceptCards.length,
-          conceptCards: conceptCards.length > 0 ? conceptCards : null,
-        })
-
-        savedMessageIds.current.add(lastMessage.id)
-
-        fetch("/api/maya/save-message", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chatId,
-            role: lastMessage.role,
-            content: lastMessage.parts?.find((p: any) => p.type === "text")?.text || "",
-            conceptCards: conceptCards.length > 0 ? conceptCards : null,
-          }),
-        })
-          .then((response) => {
-            if (response.ok) {
-              console.log("[v0] Message saved successfully with", conceptCards.length, "concept cards")
-            } else {
-              console.error("[v0] Failed to save message:", response.status, response.statusText)
-              savedMessageIds.current.delete(lastMessage.id)
-            }
-          })
-          .catch((error) => {
-            savedMessageIds.current.delete(lastMessage.id)
-            console.error("[v0] Error saving message:", error)
-          })
-      }
-    }, 2000)
-
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current)
-      }
-    }
-  }, [messages, chatId, isLoadingChat])
 
   useEffect(() => {
     console.log("[v0] Maya chat status:", status, "isTyping:", isTyping)
