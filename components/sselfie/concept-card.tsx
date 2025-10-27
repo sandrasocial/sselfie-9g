@@ -132,51 +132,67 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
   }
 
   return (
-    <div className="bg-white/50 backdrop-blur-2xl border border-white/70 rounded-[1.75rem] p-6 transition-all duration-300 hover:bg-white/70 hover:border-white/90 hover:scale-[1.01] shadow-xl shadow-stone-900/10">
-      <div className="space-y-5">
+    <div className="bg-white/50 backdrop-blur-2xl border border-white/70 rounded-[1.75rem] p-5 sm:p-6 transition-all duration-300 hover:bg-white/70 hover:border-white/90 hover:scale-[1.01] shadow-xl shadow-stone-900/10">
+      <div className="space-y-4 sm:space-y-5">
         <div className="flex items-center justify-between">
-          <div className="px-4 py-2 bg-stone-100 backdrop-blur-xl rounded-full border border-stone-200 shadow-inner">
-            <span className="text-xs tracking-wider uppercase font-semibold text-stone-950">{concept.category}</span>
+          <div className="px-3 sm:px-4 py-1.5 sm:py-2 bg-stone-100 backdrop-blur-xl rounded-full border border-stone-200 shadow-inner">
+            <span className="text-[10px] sm:text-xs tracking-wider uppercase font-semibold text-stone-950">
+              {concept.category}
+            </span>
           </div>
-          <div className="w-2 h-2 rounded-full bg-stone-950 shadow-lg shadow-stone-950/50"></div>
+          <div className="w-2 h-2 rounded-full bg-stone-950 shadow-lg shadow-stone-950/50" aria-hidden="true"></div>
         </div>
 
-        <div className="space-y-3">
-          <h4 className="text-base font-bold text-stone-950 leading-tight">{concept.title}</h4>
-          <p className="text-sm font-medium leading-relaxed text-stone-600">{concept.description}</p>
+        <div className="space-y-2 sm:space-y-3">
+          <h4 className="text-sm sm:text-base font-bold text-stone-950 leading-tight">{concept.title}</h4>
+          <p className="text-xs sm:text-sm font-medium leading-relaxed text-stone-600">{concept.description}</p>
         </div>
       </div>
 
       {error && (
-        <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-xl">
-          <p className="text-sm text-red-600">{error}</p>
-          <button onClick={handleGenerate} className="mt-2 text-sm font-semibold text-red-700 hover:text-red-900">
+        <div className="mt-5 sm:mt-6 p-3 sm:p-4 bg-red-50 border border-red-200 rounded-xl" role="alert">
+          <p className="text-xs sm:text-sm text-red-600">{error}</p>
+          <button
+            onClick={handleGenerate}
+            className="mt-2 text-xs sm:text-sm font-semibold text-red-700 hover:text-red-900 min-h-[44px] px-3 py-2"
+            aria-label="Retry image generation"
+          >
             Try Again
           </button>
         </div>
       )}
 
       {!isGenerating && !isGenerated && !error && (
-        <div className="mt-6">
+        <div className="mt-5 sm:mt-6">
           <button
             onClick={handleGenerate}
-            className="group relative w-full bg-stone-950 text-white px-6 py-4 rounded-[1.25rem] font-semibold tracking-wide text-sm transition-all duration-300 hover:shadow-2xl hover:shadow-stone-900/40 hover:scale-[1.02] active:scale-[0.98] min-h-[52px] overflow-hidden"
+            className="group relative w-full bg-stone-950 text-white px-5 sm:px-6 py-4 rounded-[1.25rem] font-semibold tracking-wide text-sm transition-all duration-300 hover:shadow-2xl hover:shadow-stone-900/40 hover:scale-[1.02] active:scale-[0.98] min-h-[52px] overflow-hidden"
+            aria-label={`Create photo: ${concept.title}`}
           >
-            <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div
+              className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+              aria-hidden="true"
+            ></div>
             <span className="relative z-10">Create This Photo</span>
           </button>
         </div>
       )}
 
       {isGenerating && (
-        <div className="mt-6 flex flex-col items-center justify-center py-8 space-y-4">
-          <div className="relative w-10 h-10">
+        <div
+          className="mt-5 sm:mt-6 flex flex-col items-center justify-center py-6 sm:py-8 space-y-3 sm:space-y-4"
+          role="status"
+          aria-live="polite"
+        >
+          <div className="relative w-10 h-10 sm:w-12 sm:h-12" aria-hidden="true">
             <div className="absolute inset-0 rounded-full bg-stone-200/20 animate-ping"></div>
-            <div className="relative w-10 h-10 rounded-full bg-stone-950 animate-spin border-4 border-transparent border-t-white shadow-lg shadow-stone-900/30"></div>
+            <div className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-stone-950 animate-spin border-4 border-transparent border-t-white shadow-lg shadow-stone-900/30"></div>
           </div>
           <div className="text-center space-y-2">
-            <span className="text-sm tracking-wider uppercase font-semibold text-stone-700">Creating Magic</span>
-            <div className="flex gap-1 justify-center">
+            <span className="text-xs sm:text-sm tracking-wider uppercase font-semibold text-stone-700">
+              Creating Magic
+            </span>
+            <div className="flex gap-1 justify-center" aria-hidden="true">
               <div className="w-1.5 h-1.5 rounded-full bg-stone-950 animate-bounce"></div>
               <div
                 className="w-1.5 h-1.5 rounded-full bg-stone-950 animate-bounce"
@@ -192,15 +208,21 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
       )}
 
       {isGenerated && generatedImageUrl && (
-        <div className="mt-6 space-y-4">
-          <div className="p-5 bg-stone-100 backdrop-blur-xl border border-stone-200 rounded-[1.25rem] shadow-xl shadow-stone-900/10">
+        <div className="mt-5 sm:mt-6 space-y-3 sm:space-y-4">
+          <div
+            className="p-4 sm:p-5 bg-stone-100 backdrop-blur-xl border border-stone-200 rounded-[1.25rem] shadow-xl shadow-stone-900/10"
+            role="status"
+          >
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-stone-950 rounded-xl flex items-center justify-center shadow-lg shadow-stone-900/30">
-                <Check className="w-5 h-5 text-white" />
+              <div
+                className="w-9 h-9 sm:w-10 sm:h-10 bg-stone-950 rounded-xl flex items-center justify-center shadow-lg shadow-stone-900/30 flex-shrink-0"
+                aria-hidden="true"
+              >
+                <Check className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
               <div className="space-y-1 flex-1 min-w-0">
-                <h4 className="text-sm font-semibold text-stone-950">Photo Ready</h4>
-                <p className="text-xs font-medium text-stone-600">Looking absolutely stunning</p>
+                <h4 className="text-xs sm:text-sm font-semibold text-stone-950">Photo Ready</h4>
+                <p className="text-[10px] sm:text-xs font-medium text-stone-600">Looking absolutely stunning</p>
               </div>
             </div>
           </div>
@@ -208,6 +230,15 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
           <div
             onClick={() => setIsViewerOpen(true)}
             className="aspect-[4/5] bg-white/40 backdrop-blur-2xl rounded-[1.5rem] border border-white/60 overflow-hidden hover:bg-white/60 transition-all duration-300 cursor-pointer group relative shadow-xl shadow-stone-900/10"
+            role="button"
+            tabIndex={0}
+            aria-label={`View full image: ${concept.title}`}
+            onKeyPress={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault()
+                setIsViewerOpen(true)
+              }
+            }}
           >
             <Image
               src={generatedImageUrl || "/placeholder.svg"}
@@ -215,28 +246,34 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
               fill
               className="object-cover"
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              loading="lazy"
             />
-            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center">
-              <span className="text-white font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <div
+              className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center"
+              aria-hidden="true"
+            >
+              <span className="text-white font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-sm sm:text-base">
                 View Full Image
               </span>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
             <button
               onClick={handleFavoriteToggle}
-              className={`px-5 py-4 rounded-[1.25rem] font-semibold text-sm transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] min-h-[52px] ${
+              className={`px-4 sm:px-5 py-3 sm:py-4 rounded-[1.25rem] font-semibold text-xs sm:text-sm transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] min-h-[48px] sm:min-h-[52px] ${
                 isFavorite
                   ? "bg-red-500 text-white"
                   : "bg-stone-950 text-white hover:shadow-2xl hover:shadow-stone-900/40"
               }`}
+              aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
             >
               {isFavorite ? "Saved ♥" : "Save Photo"}
             </button>
             <button
               onClick={() => setIsViewerOpen(true)}
-              className="px-5 py-4 bg-white/50 backdrop-blur-2xl text-stone-950 border border-white/60 rounded-[1.25rem] font-semibold text-sm transition-all duration-300 hover:bg-white/70 hover:border-white/80 hover:scale-[1.02] active:scale-[0.98] min-h-[52px] shadow-lg shadow-stone-900/10"
+              className="px-4 sm:px-5 py-3 sm:py-4 bg-white/50 backdrop-blur-2xl text-stone-950 border border-white/60 rounded-[1.25rem] font-semibold text-xs sm:text-sm transition-all duration-300 hover:bg-white/70 hover:border-white/80 hover:scale-[1.02] active:scale-[0.98] min-h-[48px] sm:min-h-[52px] shadow-lg shadow-stone-900/10"
+              aria-label="View full image"
             >
               View Full
             </button>

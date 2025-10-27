@@ -172,8 +172,12 @@ export default function MayaChatScreen() {
     <div className="h-full flex flex-col space-y-3 sm:space-y-4 pb-24">
       <div className="flex items-center justify-between pt-3 sm:pt-4 pb-2">
         <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
-          <div className="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-full border-2 border-stone-200/60 overflow-hidden flex-shrink-0">
-            <img src="https://i.postimg.cc/fTtCnzZv/out-1-22.png" alt="Maya" className="w-full h-full object-cover" />
+          <div className="w-11 h-11 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full border-2 border-stone-200/60 overflow-hidden flex-shrink-0">
+            <img
+              src="https://i.postimg.cc/fTtCnzZv/out-1-22.png"
+              alt="Maya - Your Photo Stylist"
+              className="w-full h-full object-cover"
+            />
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="text-lg sm:text-xl md:text-2xl font-serif font-extralight tracking-[0.25em] text-stone-950 uppercase">
@@ -188,14 +192,15 @@ export default function MayaChatScreen() {
         <div className="flex items-center gap-3 sm:gap-4 ml-3 sm:ml-4 flex-shrink-0">
           <button
             onClick={handleNewChat}
-            className="group relative p-2 sm:p-2.5 bg-white/40 backdrop-blur-2xl border border-white/60 rounded-xl hover:bg-white/60 hover:border-white/80 transition-all duration-300 hover:scale-105 active:scale-95"
+            className="group relative p-3 sm:p-3 bg-white/40 backdrop-blur-2xl border border-white/60 rounded-xl hover:bg-white/60 hover:border-white/80 transition-all duration-300 hover:scale-105 active:scale-95 min-w-[44px] min-h-[44px] flex items-center justify-center"
             title="Start new chat"
+            aria-label="Start new chat"
           >
-            <Plus size={16} className="text-stone-600" strokeWidth={2} />
+            <Plus size={18} className="text-stone-600" strokeWidth={2} />
           </button>
 
           <div className="flex items-center gap-1.5 sm:gap-2">
-            <div className="w-1.5 sm:w-2 h-1.5 sm:h-2 bg-stone-900 rounded-full"></div>
+            <div className="w-1.5 sm:w-2 h-1.5 sm:h-2 bg-stone-900 rounded-full" aria-hidden="true"></div>
             <span className="text-xs tracking-[0.15em] font-light text-stone-600">Online</span>
           </div>
         </div>
@@ -206,13 +211,16 @@ export default function MayaChatScreen() {
           ref={messagesContainerRef}
           onScroll={handleScroll}
           className="h-full overflow-y-auto space-y-3 sm:space-y-4 pr-1 scroll-smooth"
-          style={{ maxHeight: "calc(100vh - 320px)" }}
+          style={{ maxHeight: "calc(100vh - 280px)" }}
+          role="log"
+          aria-live="polite"
+          aria-label="Chat messages"
         >
           {messages &&
             Array.isArray(messages) &&
             messages.map((msg) => (
               <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                <div className={`max-w-[85%] ${msg.role === "user" ? "order-2" : "order-1"}`}>
+                <div className={`max-w-[90%] sm:max-w-[85%] ${msg.role === "user" ? "order-2" : "order-1"}`}>
                   {msg.parts &&
                     Array.isArray(msg.parts) &&
                     msg.parts.map((part, partIndex) => {
@@ -220,11 +228,12 @@ export default function MayaChatScreen() {
                         return (
                           <div
                             key={partIndex}
-                            className={`p-5 sm:p-6 rounded-[1.5rem] sm:rounded-[1.75rem] transition-all duration-300 hover:scale-[1.01] ${
+                            className={`p-4 sm:p-5 md:p-6 rounded-[1.5rem] sm:rounded-[1.75rem] transition-all duration-300 hover:scale-[1.01] ${
                               msg.role === "user"
                                 ? "bg-stone-950 text-white shadow-xl shadow-stone-900/30"
                                 : "bg-white/50 backdrop-blur-2xl border border-white/70 shadow-xl shadow-stone-900/10 text-stone-950"
                             }`}
+                            role={msg.role === "assistant" ? "article" : undefined}
                           >
                             <p className="text-sm sm:text-base leading-relaxed font-medium whitespace-pre-wrap">
                               {part.text}
@@ -241,9 +250,9 @@ export default function MayaChatScreen() {
                           const concepts = output.concepts
 
                           return (
-                            <div key={partIndex} className="mt-4 space-y-3">
+                            <div key={partIndex} className="mt-4 space-y-3" role="region" aria-label="Photo concepts">
                               <div className="flex items-center gap-3">
-                                <div className="w-1 h-1 rounded-full bg-stone-600"></div>
+                                <div className="w-1 h-1 rounded-full bg-stone-600" aria-hidden="true"></div>
                                 <span className="text-xs tracking-[0.15em] uppercase font-light text-stone-600">
                                   Photo Ideas
                                 </span>
@@ -255,9 +264,12 @@ export default function MayaChatScreen() {
                           )
                         } else if (output && output.state === "loading") {
                           return (
-                            <div key={partIndex} className="mt-4">
+                            <div key={partIndex} className="mt-4" role="status" aria-live="polite">
                               <div className="flex items-center gap-3 text-stone-600">
-                                <div className="w-2 h-2 rounded-full bg-stone-600 animate-pulse"></div>
+                                <div
+                                  className="w-2 h-2 rounded-full bg-stone-600 animate-pulse"
+                                  aria-hidden="true"
+                                ></div>
                                 <span className="text-xs tracking-[0.15em] uppercase font-light">
                                   Creating photo concepts...
                                 </span>
@@ -274,10 +286,10 @@ export default function MayaChatScreen() {
             ))}
 
           {isTyping && (
-            <div className="flex justify-start">
-              <div className="bg-white/50 backdrop-blur-xl border border-white/70 p-4 rounded-2xl max-w-[90%] shadow-lg shadow-stone-900/5">
+            <div className="flex justify-start" role="status" aria-live="polite" aria-label="Maya is typing">
+              <div className="bg-white/50 backdrop-blur-xl border border-white/70 p-4 rounded-2xl max-w-[90%] sm:max-w-[85%] shadow-lg shadow-stone-900/5">
                 <div className="flex items-center gap-4">
-                  <div className="flex gap-1">
+                  <div className="flex gap-1" aria-hidden="true">
                     <div className="w-2 h-2 rounded-full animate-bounce bg-stone-700"></div>
                     <div
                       className="w-2 h-2 rounded-full animate-bounce bg-stone-700"
@@ -303,7 +315,8 @@ export default function MayaChatScreen() {
               setIsUserScrolling(false)
               scrollToBottom("smooth")
             }}
-            className="absolute bottom-4 right-4 p-3 bg-stone-950 text-white rounded-full shadow-2xl shadow-stone-900/40 hover:scale-110 active:scale-95 transition-all duration-300 z-10 animate-in fade-in slide-in-from-bottom-2"
+            className="absolute bottom-6 right-6 p-3 bg-stone-950 text-white rounded-full shadow-2xl shadow-stone-900/40 hover:scale-110 active:scale-95 transition-all duration-300 z-10 animate-in fade-in slide-in-from-bottom-2 min-w-[44px] min-h-[44px] flex items-center justify-center"
+            aria-label="Scroll to bottom"
           >
             <ArrowDown size={18} strokeWidth={2.5} />
           </button>
@@ -324,23 +337,32 @@ export default function MayaChatScreen() {
                 }
               }}
               placeholder="Message Maya..."
-              className="w-full px-4 sm:px-5 py-3 sm:py-4 bg-white/40 backdrop-blur-2xl border border-white/60 rounded-xl sm:rounded-[1.5rem] text-stone-950 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-950/50 focus:border-stone-950/50 focus:bg-white/60 pr-12 sm:pr-14 font-medium text-sm min-h-[48px] sm:min-h-[56px] shadow-lg shadow-stone-900/10 transition-all duration-300"
+              className="w-full px-4 sm:px-5 py-4 sm:py-4 bg-white/40 backdrop-blur-2xl border border-white/60 rounded-xl sm:rounded-[1.5rem] text-stone-950 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-950/50 focus:border-stone-950/50 focus:bg-white/60 pr-14 sm:pr-16 font-medium text-sm min-h-[52px] sm:min-h-[56px] shadow-lg shadow-stone-900/10 transition-all duration-300"
               disabled={isTyping}
+              aria-label="Message input"
             />
             <div className="absolute right-2 sm:right-3 top-1/2 transform -translate-y-1/2">
-              <div className="w-8 h-8 sm:w-9 sm:h-9 bg-stone-950 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg shadow-stone-900/30 group-hover:shadow-xl group-hover:scale-105 transition-all duration-300">
-                <Camera size={14} className="text-white" strokeWidth={2.5} />
-              </div>
+              <button
+                className="w-10 h-10 sm:w-11 sm:h-11 bg-stone-950 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg shadow-stone-900/30 group-hover:shadow-xl group-hover:scale-105 transition-all duration-300 min-w-[44px] min-h-[44px]"
+                aria-label="Attach image"
+                type="button"
+              >
+                <Camera size={16} className="text-white" strokeWidth={2.5} />
+              </button>
             </div>
           </div>
           <button
             onClick={handleSendMessage}
-            className="group relative px-4 sm:px-5 py-3 sm:py-4 bg-stone-950 text-white rounded-xl sm:rounded-[1.5rem] font-semibold transition-all duration-300 hover:shadow-2xl hover:shadow-stone-900/40 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden min-h-[48px] sm:min-h-[56px] min-w-[48px] sm:min-w-[56px] flex items-center justify-center hover:scale-105 active:scale-95"
+            className="group relative px-4 sm:px-5 py-4 sm:py-4 bg-stone-950 text-white rounded-xl sm:rounded-[1.5rem] font-semibold transition-all duration-300 hover:shadow-2xl hover:shadow-stone-900/40 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden min-h-[52px] sm:min-h-[56px] min-w-[52px] sm:min-w-[56px] flex items-center justify-center hover:scale-105 active:scale-95"
             disabled={isTyping || !inputValue.trim()}
+            aria-label="Send message"
           >
-            <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div
+              className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+              aria-hidden="true"
+            ></div>
             <Send
-              size={16}
+              size={18}
               strokeWidth={2.5}
               className="relative z-10 transition-transform duration-300 group-hover:translate-x-0.5"
             />

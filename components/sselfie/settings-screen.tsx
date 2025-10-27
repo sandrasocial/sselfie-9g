@@ -22,10 +22,8 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
 
   const [emailNotifications, setEmailNotifications] = useState(true)
   const [mayaUpdates, setMayaUpdates] = useState(true)
-
   const [defaultImageCount, setDefaultImageCount] = useState(5)
   const [saveToGallery, setSaveToGallery] = useState(true)
-
   const [dataForTraining, setDataForTraining] = useState(true)
 
   useEffect(() => {
@@ -52,27 +50,39 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
       const response = await fetch("/api/settings", {
         credentials: "include",
       })
-      if (response.ok) {
-        const data = await response.json()
-        setEmailNotifications(data.settings?.emailNotifications ?? true)
-        setMayaUpdates(data.settings?.mayaUpdates ?? true)
-        setDefaultImageCount(data.settings?.defaultImageCount ?? 5)
-        setSaveToGallery(data.settings?.saveToGallery ?? true)
-        setDataForTraining(data.settings?.dataForTraining ?? true)
+
+      if (!response.ok) {
+        console.warn("[v0] Settings API returned error, using defaults")
+        return
+      }
+
+      const data = await response.json()
+
+      if (data && data.settings) {
+        setEmailNotifications(data.settings.emailNotifications ?? true)
+        setMayaUpdates(data.settings.mayaUpdates ?? true)
+        setDefaultImageCount(data.settings.defaultImageCount ?? 5)
+        setSaveToGallery(data.settings.saveToGallery ?? true)
+        setDataForTraining(data.settings.dataForTraining ?? true)
       }
     } catch (error) {
       console.error("[v0] Error fetching settings:", error)
+      // Continue with default values
     }
   }
 
   const updateSetting = async (key: string, value: boolean | number) => {
     try {
-      await fetch("/api/settings", {
+      const response = await fetch("/api/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({ [key]: value }),
       })
+
+      if (!response.ok) {
+        console.warn("[v0] Failed to update setting:", key)
+      }
     } catch (error) {
       console.error("[v0] Error updating setting:", error)
     }
@@ -88,7 +98,7 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
 
       if (response.ok) {
         console.log("[v0] Logout successful, redirecting to login...")
-        router.push("/login")
+        router.push("/auth/login")
       } else {
         console.error("[v0] Logout failed")
         setIsLoggingOut(false)

@@ -86,7 +86,7 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-stone-300/20 rounded-full blur-3xl"></div>
       </div>
 
-      <div className="relative h-full mx-1 sm:mx-2 md:mx-3 pt-1 sm:pt-2 pb-28 sm:pb-28">
+      <div className="relative h-full mx-1 sm:mx-2 md:mx-3 pt-1 sm:pt-2 pb-24 sm:pb-26 md:pb-28">
         <div className="h-full bg-white/30 backdrop-blur-3xl rounded-[2rem] sm:rounded-[2.5rem] md:rounded-[3rem] border border-white/40 overflow-hidden shadow-2xl shadow-stone-900/10">
           <div className="flex justify-between items-center px-4 sm:px-6 md:px-8 py-4 sm:py-5 md:py-6 bg-gradient-to-b from-white/40 to-transparent backdrop-blur-xl border-b border-white/20">
             <div className="flex items-center gap-2 sm:gap-3">
@@ -111,7 +111,7 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
             </div>
           </div>
 
-          <div className="flex-1 px-4 sm:px-6 md:px-8 pb-4 sm:pb-6 md:pb-8 pt-0 h-full overflow-y-auto">
+          <div className="h-[calc(100%-80px)] sm:h-[calc(100%-88px)] md:h-[calc(100%-96px)] px-4 sm:px-6 md:px-8 pb-4 sm:pb-6 md:pb-8 pt-0 overflow-y-auto">
             {activeTab === "studio" && (
               <StudioScreen user={user} hasTrainedModel={hasTrainedModel} setActiveTab={setActiveTab} />
             )}
