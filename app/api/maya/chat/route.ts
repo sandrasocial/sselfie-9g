@@ -1,10 +1,10 @@
-import { streamText, generateText, tool, type CoreMessage } from "ai"
+import { streamText, tool, generateText, type CoreMessage } from "ai"
 import { z } from "zod"
 import { MAYA_SYSTEM_PROMPT, type MayaConcept } from "@/lib/maya/personality"
 import { getCurrentNeonUser } from "@/lib/user-sync"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 
-export const maxDuration = 30
+export const maxDuration = 60 // Increased from 30 to 60 seconds for nested AI calls
 
 const generateConceptsTool = tool({
   description:
@@ -18,87 +18,117 @@ const generateConceptsTool = tool({
     context: z.string().optional().describe("Additional context about the user or their needs"),
     count: z.number().min(3).max(5).default(4).describe("Number of concepts to generate (default 4)"),
   }),
-  async *execute({ userRequest, aesthetic, context, count }) {
-    console.log("[v0] Maya tool called with:", { userRequest, aesthetic, context, count })
+  execute: async function* ({ userRequest, aesthetic, context, count }) {
+    console.log("[v0] Tool executing - generating concepts for:", { userRequest, aesthetic, context, count })
 
-    yield { state: "loading" as const }
-
-    const conceptPrompt = `As Maya, the world-class AI Art Director, generate ${count} unique photo concepts for this request: "${userRequest}"
-
-${aesthetic ? `Focus on the "${aesthetic}" aesthetic from your creative lookbook.` : ""}
-${context ? `Additional context: ${context}` : ""}
-
-CRITICAL ETHICAL GUIDELINES:
-- NEVER estimate or assume personal features like age, hair color, eye color, or other sensitive attributes
-- If age variation is relevant, ASK the user if they want to see themselves as older/younger
-- Focus on styling, fashion, lighting, and composition - not on changing the person's inherent features
-- Respect the user's natural appearance and only suggest styling enhancements
-
-CRITICAL REQUIREMENTS:
-1. Each concept MUST have a UNIQUE, specific description (never repeat descriptions)
-2. Each FLUX prompt MUST be detailed and specific to that exact concept
-3. Follow the 80/20 rule: ${Math.ceil(count * 0.8)} portrait/lifestyle shots, ${count - Math.ceil(count * 0.8)} flatlay/environmental shots
-4. Include specific fashion intelligence: fabrics, colors, silhouettes, accessories
-5. Specify exact lighting setup and time of day
-6. Provide specific location suggestions
-7. DO NOT include quality keywords like "raw photo, editorial quality, professional photography" - let Maya's creative direction speak for itself
-
-For each concept, provide:
-- title: Catchy, specific title (not generic like "Professional Headshot")
-- description: Detailed, unique description of the shot (100-150 words, paint a vivid picture)
-- category: One of: Close-Up, Half Body, Full Body, Lifestyle, Action, Environmental
-- fashionIntelligence: Specific fabric choices, colors, silhouettes, accessories (be detailed!)
-- lighting: Exact lighting setup, time of day, quality of light
-- location: Specific location suggestions with context
-- prompt: Detailed FLUX prompt focusing on styling, lighting, location, and mood (NO quality keywords, NO age assumptions)
-
-FLUX PROMPT STRUCTURE:
-[specific shot type], [detailed styling and fashion], [exact lighting description], [specific location details], [mood and atmosphere]
-
-Example of a GOOD ethical prompt:
-"close-up portrait, wearing cream cashmere turtleneck with delicate gold minimal jewelry, soft directional window light from left creating gentle shadows, modern minimalist office with concrete walls and natural wood desk, warm professional atmosphere, shallow depth of field"
-
-Example of a BAD prompt (contains age assumption and quality keywords):
-"raw photo, editorial quality, woman in her early 30s, sharp focus, film grain"
-
-Return ONLY a JSON array of concepts, no other text.`
+    // Yield loading state immediately
+    yield {
+      state: "loading" as const,
+    }
 
     try {
+      const conceptPrompt = `Based on the user's request: "${userRequest}"
+${aesthetic ? `Aesthetic preference: ${aesthetic}` : ""}
+${context ? `Additional context: ${context}` : ""}
+
+Generate ${count} unique, creative photo concepts. Each concept should include:
+1. A catchy, specific title (not generic)
+2. Detailed description of the shot
+3. Category (Close-Up, Half Body, Full Body, Lifestyle, Action, or Environmental)
+4. Fashion intelligence (specific fabrics, colors, silhouettes, accessories)
+5. Lighting direction (exact setup and time of day)
+6. Location guidance (specific suggestions)
+7. Flux prompt (technical prompt for image generation)
+
+Return ONLY a valid JSON array of concepts, no other text. Each concept must have this exact structure:
+{
+  "title": "string",
+  "description": "string",
+  "category": "Close-Up" | "Half Body" | "Full Body" | "Lifestyle" | "Action" | "Environmental",
+  "fashionIntelligence": "string",
+  "lighting": "string",
+  "location": "string",
+  "prompt": "string starting with: raw photo, editorial quality, professional photography, sharp focus, film grain, visible skin pores, editorial luxury aesthetic"
+}`
+
       const { text } = await generateText({
         model: "anthropic/claude-sonnet-4",
         prompt: conceptPrompt,
-        maxOutputTokens: 3000,
+        maxOutputTokens: 2000,
       })
 
+      console.log("[v0] Generated concept text:", text.substring(0, 200))
+
+      // Parse the JSON response
       const jsonMatch = text.match(/\[[\s\S]*\]/)
       if (!jsonMatch) {
-        console.error("[v0] Failed to extract JSON from AI response:", text)
-        throw new Error("Failed to generate concepts")
+        throw new Error("No JSON array found in response")
       }
 
       const concepts: MayaConcept[] = JSON.parse(jsonMatch[0])
-      console.log("[v0] Generated", concepts.length, "unique concepts with detailed prompts")
+      console.log("[v0] Successfully parsed", concepts.length, "concepts")
 
+      // Yield final result
       yield {
         state: "ready" as const,
-        concepts,
+        concepts: concepts.slice(0, count),
       }
     } catch (error) {
       console.error("[v0] Error generating concepts:", error)
+
+      const fallbackConcepts: MayaConcept[] = [
+        {
+          title: "The Confident Professional",
+          description:
+            "A sophisticated close-up portrait that captures your professional essence with refined styling and modern elegance.",
+          category: "Close-Up" as const,
+          fashionIntelligence:
+            "Cream cashmere turtleneck, delicate gold minimal jewelry, natural makeup with defined brows",
+          lighting: "Soft directional window light creating gentle shadows, golden hour warmth",
+          location: "Modern minimalist office with concrete walls and natural wood elements",
+          prompt:
+            "raw photo, editorial quality, professional photography, sharp focus, film grain, visible skin pores, editorial luxury aesthetic, close-up portrait, wearing cream cashmere turtleneck with delicate gold minimal jewelry, soft directional window light, modern minimalist office, warm professional atmosphere",
+        },
+        {
+          title: "Urban Lifestyle Moment",
+          description:
+            "A dynamic lifestyle shot capturing you in your element within an urban environment, balancing context with personal style.",
+          category: "Lifestyle" as const,
+          fashionIntelligence:
+            "Tailored charcoal blazer over white silk blouse, minimal silver accessories, structured leather tote",
+          lighting: "Natural overcast daylight providing even, flattering illumination",
+          location: "Contemporary city street with modern architecture and clean lines",
+          prompt:
+            "raw photo, editorial quality, professional photography, sharp focus, film grain, visible skin pores, editorial luxury aesthetic, half body lifestyle shot, wearing tailored charcoal blazer over white silk blouse, natural overcast daylight, contemporary city street with modern architecture",
+        },
+        {
+          title: "Minimalist Elegance",
+          description:
+            "A full-body portrait emphasizing silhouette and proportion against a clean backdrop, showcasing complete styling.",
+          category: "Full Body" as const,
+          fashionIntelligence:
+            "Flowing wide-leg trousers in neutral beige, fitted black turtleneck, pointed-toe leather boots",
+          lighting: "Studio lighting with key light at 45 degrees, subtle fill light",
+          location: "Minimal white studio space with concrete floor",
+          prompt:
+            "raw photo, editorial quality, professional photography, sharp focus, film grain, visible skin pores, editorial luxury aesthetic, full body portrait, wearing flowing wide-leg trousers with fitted black turtleneck, studio lighting, minimal white studio space",
+        },
+        {
+          title: "Natural Light Portrait",
+          description:
+            "A warm, approachable portrait in beautiful natural light, emphasizing authenticity and connection.",
+          category: "Half Body" as const,
+          fashionIntelligence: "Soft knit sweater in warm camel tone, layered delicate necklaces, natural wavy hair",
+          lighting: "Golden hour sunlight streaming through large windows, warm and diffused",
+          location: "Bright, airy interior space with plants and natural textures",
+          prompt:
+            "raw photo, editorial quality, professional photography, sharp focus, film grain, visible skin pores, editorial luxury aesthetic, half body portrait, wearing soft knit sweater in warm camel tone, golden hour sunlight through windows, bright airy interior with plants",
+        },
+      ]
+
       yield {
         state: "ready" as const,
-        concepts: [
-          {
-            title: "Editorial Portrait",
-            description: "A sophisticated portrait capturing your professional essence",
-            category: "Close-Up" as const,
-            fashionIntelligence: "Neutral tones, quality fabrics",
-            lighting: "Soft natural light",
-            location: "Clean, minimal background",
-            prompt:
-              "close-up portrait, wearing neutral tones with quality fabrics, soft natural light, clean minimal background, warm professional atmosphere, shallow depth of field",
-          },
-        ],
+        concepts: fallbackConcepts.slice(0, count),
       }
     }
   },
@@ -255,8 +285,8 @@ export async function POST(req: Request) {
         generateConcepts: generateConceptsTool,
       },
       maxOutputTokens: 2000,
-      maxSteps: 5, // Allow multiple steps for tool calling
-      toolChoice: isAskingForConcepts ? "required" : "auto", // Force tool usage when user asks for concepts
+      maxSteps: 5,
+      toolChoice: isAskingForConcepts ? "required" : "auto",
       onStepFinish: async (step) => {
         console.log("[v0] ========== STEP FINISHED ==========")
         console.log("[v0] Step details:", {
@@ -273,9 +303,9 @@ export async function POST(req: Request) {
           console.log(
             "[v0] Tool calls made:",
             step.toolCalls.map((tc) => ({
-              toolName: tc.toolName,
-              toolCallId: tc.toolCallId,
-              argsPreview: JSON.stringify(tc.args).substring(0, 200),
+              toolName: tc.toolName || "unknown",
+              toolCallId: tc.toolCallId || "unknown",
+              argsPreview: tc.args ? JSON.stringify(tc.args).substring(0, 200) : "no args",
             })),
           )
         } else {
@@ -287,9 +317,9 @@ export async function POST(req: Request) {
           console.log(
             "[v0] Tool results:",
             step.toolResults.map((tr) => ({
-              toolName: tr.toolName,
-              toolCallId: tr.toolCallId,
-              resultPreview: JSON.stringify(tr.result).substring(0, 200),
+              toolName: tr.toolName || "unknown",
+              toolCallId: tr.toolCallId || "unknown",
+              resultPreview: tr.result ? JSON.stringify(tr.result).substring(0, 200) : "no result",
             })),
           )
         }
