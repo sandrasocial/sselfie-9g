@@ -108,11 +108,13 @@ export async function POST(req: Request) {
   try {
     const { messages, chatId } = await req.json()
 
+    console.log("[v0] ========== MAYA API REQUEST START ==========")
     console.log("[v0] Maya API Environment:", {
       nodeEnv: process.env.NODE_ENV,
       vercelEnv: process.env.VERCEL_ENV,
       hasAIGateway: !!process.env.AI_GATEWAY_URL,
       timestamp: new Date().toISOString(),
+      requestUrl: req.url,
     })
 
     if (!messages || !Array.isArray(messages)) {
@@ -126,6 +128,7 @@ export async function POST(req: Request) {
     }
 
     console.log("[v0] Maya chat API called with", messages.length, "messages, chatId:", chatId)
+    console.log("[v0] User:", user.email, "ID:", user.id)
 
     let chatHistory: CoreMessage[] = []
     if (chatId) {
@@ -221,12 +224,27 @@ export async function POST(req: Request) {
     const userContext = await getUserContextForMaya(user.stack_auth_id || "")
     const enhancedSystemPrompt = MAYA_SYSTEM_PROMPT + userContext
 
+    const lastMessage = allMessages[allMessages.length - 1]
+    const isAskingForConcepts =
+      lastMessage?.role === "user" &&
+      (lastMessage.content.toLowerCase().includes("photo") ||
+        lastMessage.content.toLowerCase().includes("concept") ||
+        lastMessage.content.toLowerCase().includes("idea") ||
+        lastMessage.content.toLowerCase().includes("suggest") ||
+        lastMessage.content.toLowerCase().includes("help"))
+
+    console.log("[v0] User request analysis:", {
+      isAskingForConcepts,
+      lastMessagePreview: lastMessage?.content?.substring(0, 100),
+    })
+
     console.log("[v0] Streaming with tools:", {
       toolsAvailable: Object.keys({ generateConcepts: generateConceptsTool }),
       model: "anthropic/claude-sonnet-4",
       messageCount: allMessages.length,
       lastMessageRole: allMessages[allMessages.length - 1]?.role,
       lastMessagePreview: allMessages[allMessages.length - 1]?.content?.substring(0, 100),
+      toolChoice: isAskingForConcepts ? "required" : "auto",
     })
 
     const result = streamText({
@@ -237,30 +255,51 @@ export async function POST(req: Request) {
         generateConcepts: generateConceptsTool,
       },
       maxOutputTokens: 2000,
-      toolChoice: "auto",
+      maxSteps: 5, // Allow multiple steps for tool calling
+      toolChoice: isAskingForConcepts ? "required" : "auto", // Force tool usage when user asks for concepts
       onStepFinish: async (step) => {
-        console.log("[v0] Step finished:", {
+        console.log("[v0] ========== STEP FINISHED ==========")
+        console.log("[v0] Step details:", {
           stepType: step.stepType,
           toolCalls: step.toolCalls?.length || 0,
           toolResults: step.toolResults?.length || 0,
           hasText: !!step.text,
           textLength: step.text?.length || 0,
+          finishReason: step.finishReason,
         })
 
         if (step.toolCalls && step.toolCalls.length > 0) {
+          console.log("[v0] ========== TOOL CALLS DETECTED ==========")
           console.log(
             "[v0] Tool calls made:",
             step.toolCalls.map((tc) => ({
               toolName: tc.toolName,
+              toolCallId: tc.toolCallId,
               argsPreview: JSON.stringify(tc.args).substring(0, 200),
+            })),
+          )
+        } else {
+          console.log("[v0] No tool calls in this step")
+        }
+
+        if (step.toolResults && step.toolResults.length > 0) {
+          console.log("[v0] ========== TOOL RESULTS ==========")
+          console.log(
+            "[v0] Tool results:",
+            step.toolResults.map((tr) => ({
+              toolName: tr.toolName,
+              toolCallId: tr.toolCallId,
+              resultPreview: JSON.stringify(tr.result).substring(0, 200),
             })),
           )
         }
       },
     })
 
+    console.log("[v0] ========== STREAMING STARTED ==========")
     return result.toUIMessageStreamResponse()
   } catch (error) {
+    console.error("[v0] ========== MAYA CHAT ERROR ==========")
     console.error("[v0] Maya Chat Error:", error)
     console.error("[v0] Error stack:", error instanceof Error ? error.stack : "No stack trace")
     console.error("[v0] Error details:", {
