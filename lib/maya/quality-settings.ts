@@ -27,6 +27,13 @@ export const MAYA_QUALITY_PRESETS = {
     aspect_ratio: "1:1",
     guidance_scale: 3.5,
   },
+  "Full Body": {
+    ...MAYA_DEFAULT_QUALITY_SETTINGS,
+    aspect_ratio: "4:5",
+    guidance_scale: 2.5, // Lower guidance for more natural full-body composition
+    num_inference_steps: 50, // More steps for better detail preservation
+    megapixels: "1", // Higher resolution to maintain facial clarity when body is in frame
+  },
   lifestyle: {
     ...MAYA_DEFAULT_QUALITY_SETTINGS,
     aspect_ratio: "4:5",
@@ -36,7 +43,7 @@ export const MAYA_QUALITY_PRESETS = {
     ...MAYA_DEFAULT_QUALITY_SETTINGS,
     aspect_ratio: "3:4",
     guidance_scale: 3.5,
-    num_inference_steps: 60,
+    num_inference_steps: 50,
   },
   default: MAYA_DEFAULT_QUALITY_SETTINGS,
 }

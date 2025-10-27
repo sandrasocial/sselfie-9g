@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { getOrCreateActiveChat, getChatMessages } from "@/lib/data/maya"
+import { getOrCreateActiveChat, getChatMessages, loadChatById } from "@/lib/data/maya"
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,14 +14,25 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Get Neon user ID
     const neonUser = await getUserByAuthId(user.id)
     if (!neonUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    // Get or create active chat
-    const chat = await getOrCreateActiveChat(neonUser.id)
+    const { searchParams } = new URL(request.url)
+    const requestedChatId = searchParams.get("chatId")
+
+    let chat
+    if (requestedChatId) {
+      // Load specific chat by ID
+      chat = await loadChatById(Number.parseInt(requestedChatId), neonUser.id)
+      if (!chat) {
+        return NextResponse.json({ error: "Chat not found" }, { status: 404 })
+      }
+    } else {
+      // Get or create active chat
+      chat = await getOrCreateActiveChat(neonUser.id)
+    }
 
     // Get chat messages
     const messages = await getChatMessages(chat.id)
@@ -65,6 +76,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       chatId: chat.id,
+      chatTitle: chat.chat_title,
       messages: formattedMessages,
     })
   } catch (error) {

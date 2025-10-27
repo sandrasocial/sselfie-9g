@@ -10,6 +10,7 @@ export interface NeonUser {
   last_name?: string
   profile_image_url?: string
   stack_auth_id?: string // Using stack_auth_id
+  supabase_user_id?: string // For new users (Supabase Auth)
   created_at: string
   updated_at: string
 }
@@ -26,19 +27,19 @@ export async function getOrCreateNeonUser(supabaseAuthId: string, email: string,
 
   if (existingUsers.length > 0) {
     const user = existingUsers[0] as NeonUser
-    if (!user.stack_auth_id) {
+    if (!user.supabase_user_id) {
       await sql`
         UPDATE users 
-        SET stack_auth_id = ${supabaseAuthId}, updated_at = NOW()
+        SET supabase_user_id = ${supabaseAuthId}, updated_at = NOW()
         WHERE id = ${user.id}
       `
-      user.stack_auth_id = supabaseAuthId
+      user.supabase_user_id = supabaseAuthId
     }
     return user
   }
 
   const newUsers = await sql`
-    INSERT INTO users (email, display_name, stack_auth_id, created_at, updated_at)
+    INSERT INTO users (email, display_name, supabase_user_id, created_at, updated_at)
     VALUES (${email}, ${name || email.split("@")[0]}, ${supabaseAuthId}, NOW(), NOW())
     RETURNING *
   `
@@ -70,10 +71,13 @@ export async function getNeonUserById(id: string): Promise<NeonUser | null> {
 
 /**
  * Get Neon user by Supabase auth ID
+ * Supports both Stack Auth (existing users) and Supabase Auth (new users)
  */
 export async function getUserByAuthId(authId: string): Promise<NeonUser | null> {
   const users = await sql`
-    SELECT * FROM users WHERE stack_auth_id = ${authId} LIMIT 1
+    SELECT * FROM users 
+    WHERE stack_auth_id = ${authId} OR supabase_user_id = ${authId}
+    LIMIT 1
   `
 
   return users.length > 0 ? (users[0] as NeonUser) : null

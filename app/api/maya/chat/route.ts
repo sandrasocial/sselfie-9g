@@ -21,13 +21,18 @@ const generateConceptsTool = tool({
   async *execute({ userRequest, aesthetic, context, count }) {
     console.log("[v0] Maya tool called with:", { userRequest, aesthetic, context, count })
 
-    // Yield loading state
     yield { state: "loading" as const }
 
     const conceptPrompt = `As Maya, the world-class AI Art Director, generate ${count} unique photo concepts for this request: "${userRequest}"
 
 ${aesthetic ? `Focus on the "${aesthetic}" aesthetic from your creative lookbook.` : ""}
 ${context ? `Additional context: ${context}` : ""}
+
+CRITICAL ETHICAL GUIDELINES:
+- NEVER estimate or assume personal features like age, hair color, eye color, or other sensitive attributes
+- If age variation is relevant, ASK the user if they want to see themselves as older/younger
+- Focus on styling, fashion, lighting, and composition - not on changing the person's inherent features
+- Respect the user's natural appearance and only suggest styling enhancements
 
 CRITICAL REQUIREMENTS:
 1. Each concept MUST have a UNIQUE, specific description (never repeat descriptions)
@@ -36,6 +41,7 @@ CRITICAL REQUIREMENTS:
 4. Include specific fashion intelligence: fabrics, colors, silhouettes, accessories
 5. Specify exact lighting setup and time of day
 6. Provide specific location suggestions
+7. DO NOT include quality keywords like "raw photo, editorial quality, professional photography" - let Maya's creative direction speak for itself
 
 For each concept, provide:
 - title: Catchy, specific title (not generic like "Professional Headshot")
@@ -44,14 +50,16 @@ For each concept, provide:
 - fashionIntelligence: Specific fabric choices, colors, silhouettes, accessories (be detailed!)
 - lighting: Exact lighting setup, time of day, quality of light
 - location: Specific location suggestions with context
-- prompt: Detailed FLUX prompt that captures ALL the specific details of this concept
+- prompt: Detailed FLUX prompt focusing on styling, lighting, location, and mood (NO quality keywords, NO age assumptions)
 
 FLUX PROMPT STRUCTURE:
-Start with: "raw photo, editorial quality, professional photography, sharp focus, film grain, visible skin pores, editorial luxury aesthetic"
-Then add: [specific shot type], [detailed subject description], [specific clothing/styling details], [exact lighting description], [specific location details], [mood and atmosphere], [technical quality markers]
+[specific shot type], [detailed styling and fashion], [exact lighting description], [specific location details], [mood and atmosphere]
 
-Example of a GOOD prompt:
-"raw photo, editorial quality, professional photography, sharp focus, film grain, visible skin pores, editorial luxury aesthetic, close-up portrait, woman in her early 30s with confident expression, wearing cream cashmere turtleneck with gold minimal jewelry, soft directional window light from left creating gentle shadows, modern minimalist office with concrete walls and natural wood desk, warm professional atmosphere, shallow depth of field, 85mm lens, high quality, 8k"
+Example of a GOOD ethical prompt:
+"close-up portrait, wearing cream cashmere turtleneck with delicate gold minimal jewelry, soft directional window light from left creating gentle shadows, modern minimalist office with concrete walls and natural wood desk, warm professional atmosphere, shallow depth of field"
+
+Example of a BAD prompt (contains age assumption and quality keywords):
+"raw photo, editorial quality, woman in her early 30s, sharp focus, film grain"
 
 Return ONLY a JSON array of concepts, no other text.`
 
@@ -62,7 +70,6 @@ Return ONLY a JSON array of concepts, no other text.`
         maxOutputTokens: 3000,
       })
 
-      // Parse the generated concepts
       const jsonMatch = text.match(/\[[\s\S]*\]/)
       if (!jsonMatch) {
         console.error("[v0] Failed to extract JSON from AI response:", text)
@@ -72,14 +79,12 @@ Return ONLY a JSON array of concepts, no other text.`
       const concepts: MayaConcept[] = JSON.parse(jsonMatch[0])
       console.log("[v0] Generated", concepts.length, "unique concepts with detailed prompts")
 
-      // Yield ready state with concepts
       yield {
         state: "ready" as const,
         concepts,
       }
     } catch (error) {
       console.error("[v0] Error generating concepts:", error)
-      // Fallback to basic concepts if AI generation fails
       yield {
         state: "ready" as const,
         concepts: [
@@ -91,7 +96,7 @@ Return ONLY a JSON array of concepts, no other text.`
             lighting: "Soft natural light",
             location: "Clean, minimal background",
             prompt:
-              "raw photo, editorial quality, professional photography, sharp focus, film grain, visible skin pores, editorial luxury aesthetic, close-up portrait, soft natural light, minimal background, high quality, 8k",
+              "close-up portrait, wearing neutral tones with quality fabrics, soft natural light, clean minimal background, warm professional atmosphere, shallow depth of field",
           },
         ],
       }
@@ -123,7 +128,6 @@ export async function POST(req: Request) {
 
         console.log("[v0] Loaded", dbMessages.length, "messages from database for chat", chatId)
 
-        // Convert database messages to CoreMessage format
         chatHistory = dbMessages
           .map((msg) => {
             if (!msg.content || msg.content.trim() === "") {
@@ -139,32 +143,27 @@ export async function POST(req: Request) {
         console.log("[v0] Converted", chatHistory.length, "database messages to core messages")
       } catch (error) {
         console.error("[v0] Error loading chat history:", error)
-        // Continue without chat history if loading fails
       }
     }
 
     const coreMessages: CoreMessage[] = messages
       .map((msg: any, index: number) => {
-        // Skip messages with invalid structure
         if (!msg.role || (msg.role !== "user" && msg.role !== "assistant")) {
           console.warn(`[v0] Skipping message ${index} with invalid role:`, msg.role)
           return null
         }
 
-        // Extract text content from the message
         let textContent = ""
 
         if (typeof msg.content === "string") {
           textContent = msg.content
         } else if (Array.isArray(msg.content)) {
-          // If content is an array, extract text parts
           textContent = msg.content
             .filter((part: any) => part.type === "text" && part.text)
             .map((part: any) => part.text)
             .join(" ")
             .trim()
         } else if (msg.parts && Array.isArray(msg.parts)) {
-          // If message has parts, extract text from text parts
           textContent = msg.parts
             .filter((part: any) => part.type === "text" && part.text)
             .map((part: any) => part.text)
@@ -172,7 +171,6 @@ export async function POST(req: Request) {
             .trim()
         }
 
-        // Skip messages with no text content
         if (!textContent || textContent.trim() === "") {
           console.warn(`[v0] Skipping message ${index} with empty content`)
           return null
@@ -189,7 +187,6 @@ export async function POST(req: Request) {
 
     const allMessages: CoreMessage[] = [...chatHistory]
 
-    // Add current messages, but skip if they're already in chat history
     for (const msg of coreMessages) {
       const isDuplicate = chatHistory.some(
         (historyMsg) => historyMsg.role === msg.role && historyMsg.content === msg.content,
@@ -220,7 +217,7 @@ export async function POST(req: Request) {
     const result = streamText({
       model: "anthropic/claude-sonnet-4",
       system: enhancedSystemPrompt,
-      messages: allMessages, // Use combined messages instead of just current messages
+      messages: allMessages,
       tools: {
         generateConcepts: generateConceptsTool,
       },

@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { neon } from "@neondatabase/serverless"
+import { createNewChat } from "@/lib/data/maya"
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,14 +19,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    const sql = neon(process.env.DATABASE_URL!)
-
-    // Create a new chat session
-    const [newChat] = await sql`
-      INSERT INTO maya_chats (user_id, chat_title, created_at, updated_at)
-      VALUES (${dbUser.id}, 'New Chat', NOW(), NOW())
-      RETURNING id
-    `
+    const newChat = await createNewChat(dbUser.id)
 
     return NextResponse.json({ chatId: newChat.id })
   } catch (error) {

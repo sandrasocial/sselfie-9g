@@ -11,6 +11,7 @@ export interface MayaChat {
   created_at: Date
   updated_at: Date
   last_activity: Date
+  message_count?: number
 }
 
 export interface MayaChatMessage {
@@ -255,4 +256,52 @@ export async function linkPersonalMemoryToBrand(userId: string, brandId: number)
     SET personal_brand_id = ${brandId}
     WHERE user_id = ${userId}
   `
+}
+
+// Get all user chats for history browsing
+export async function getUserChats(userId: string, limit = 20): Promise<MayaChat[]> {
+  const chats = await sql`
+    SELECT 
+      mc.*,
+      COUNT(mcm.id) as message_count
+    FROM maya_chats mc
+    LEFT JOIN maya_chat_messages mcm ON mcm.chat_id = mc.id
+    WHERE mc.user_id = ${userId}
+    GROUP BY mc.id
+    ORDER BY mc.last_activity DESC
+    LIMIT ${limit}
+  `
+
+  return chats as MayaChat[]
+}
+
+// Load a specific chat by ID
+export async function loadChatById(chatId: number, userId: string): Promise<MayaChat | null> {
+  const chat = await sql`
+    SELECT * FROM maya_chats
+    WHERE id = ${chatId} AND user_id = ${userId}
+    LIMIT 1
+  `
+
+  if (chat.length === 0) return null
+
+  // Update last_activity when loading a chat
+  await sql`
+    UPDATE maya_chats
+    SET last_activity = NOW()
+    WHERE id = ${chatId}
+  `
+
+  return chat[0] as MayaChat
+}
+
+// Create a new chat (not just get or create)
+export async function createNewChat(userId: string, title?: string): Promise<MayaChat> {
+  const newChat = await sql`
+    INSERT INTO maya_chats (user_id, chat_title, chat_category, last_activity)
+    VALUES (${userId}, ${title || "New Chat"}, 'general', NOW())
+    RETURNING *
+  `
+
+  return newChat[0] as MayaChat
 }

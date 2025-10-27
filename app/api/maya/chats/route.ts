@@ -1,0 +1,45 @@
+import { type NextRequest, NextResponse } from "next/server"
+import { createServerClient } from "@/lib/supabase/server"
+import { getUserChats } from "@/lib/data/maya"
+import { getUserByAuthId } from "@/lib/user-mapping"
+
+export async function GET(request: NextRequest) {
+  try {
+    console.log("[v0] Fetching chat history...")
+
+    // Get authenticated user from Supabase
+    const supabase = await createServerClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      console.log("[v0] No authenticated user")
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    console.log("[v0] Supabase user ID:", user.id)
+
+    const neonUser = await getUserByAuthId(user.id)
+
+    if (!neonUser) {
+      console.log("[v0] No Neon user found for auth user:", user.id)
+      return NextResponse.json({ error: "User not found" }, { status: 404 })
+    }
+
+    const neonUserId = neonUser.id.toString()
+    console.log("[v0] Neon user ID:", neonUserId)
+
+    // Get user's chat history
+    const chats = await getUserChats(neonUserId)
+    console.log("[v0] Found chats:", chats.length)
+
+    return NextResponse.json({ chats })
+  } catch (error) {
+    console.error("[v0] Error fetching chat history:", error)
+    return NextResponse.json(
+      { error: "Failed to fetch chat history", details: error instanceof Error ? error.message : String(error) },
+      { status: 500 },
+    )
+  }
+}

@@ -2,14 +2,16 @@
 
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport } from "ai"
-import { Camera, Send, Plus, ArrowDown } from "lucide-react"
+import { Camera, Send, Plus, ArrowDown, History } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import ConceptCard from "./concept-card"
+import MayaChatHistory from "./maya-chat-history"
 
 export default function MayaChatScreen() {
   const [inputValue, setInputValue] = useState("")
   const [chatId, setChatId] = useState<number | null>(null)
   const [isLoadingChat, setIsLoadingChat] = useState(true)
+  const [showHistory, setShowHistory] = useState(false)
   const savedMessageIds = useRef(new Set<string>())
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -20,9 +22,9 @@ export default function MayaChatScreen() {
 
   const { messages, sendMessage, status, setMessages } = useChat({
     transport: new DefaultChatTransport({ api: "/api/maya/chat" }),
-    initialMessages: [], // Removed welcome message from initialMessages
+    initialMessages: [],
     body: {
-      chatId: chatId, // Pass chatId to API so it can load chat history
+      chatId: chatId,
     },
   })
 
@@ -36,11 +38,10 @@ export default function MayaChatScreen() {
     if (!messagesContainerRef.current) return
 
     const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current
-    const isAtBottom = scrollHeight - scrollTop - clientHeight < 100 // 100px threshold
+    const isAtBottom = scrollHeight - scrollTop - clientHeight < 100
 
     setShowScrollButton(!isAtBottom)
 
-    // Detect if user is actively scrolling up
     if (scrollTop < lastScrollTop.current) {
       setIsUserScrolling(true)
     } else if (isAtBottom) {
@@ -62,27 +63,34 @@ export default function MayaChatScreen() {
     }
   }, [isLoadingChat])
 
-  useEffect(() => {
-    async function loadChat() {
-      try {
-        const response = await fetch("/api/maya/load-chat")
-        if (response.ok) {
-          const data = await response.json()
-          setChatId(data.chatId)
+  const loadChat = async (specificChatId?: number) => {
+    try {
+      setIsLoadingChat(true)
+      const url = specificChatId ? `/api/maya/load-chat?chatId=${specificChatId}` : "/api/maya/load-chat"
+      const response = await fetch(url)
+      if (response.ok) {
+        const data = await response.json()
+        setChatId(data.chatId)
 
-          if (data.messages && Array.isArray(data.messages) && data.messages.length > 1) {
-            setMessages(data.messages)
-          }
+        if (data.messages && Array.isArray(data.messages) && data.messages.length > 1) {
+          setMessages(data.messages)
+        } else {
+          setMessages([])
         }
-      } catch (error) {
-        console.error("[v0] Error loading chat:", error)
-      } finally {
-        setIsLoadingChat(false)
-      }
-    }
 
+        // Close history sidebar after selecting a chat
+        setShowHistory(false)
+      }
+    } catch (error) {
+      console.error("[v0] Error loading chat:", error)
+    } finally {
+      setIsLoadingChat(false)
+    }
+  }
+
+  useEffect(() => {
     loadChat()
-  }, [setMessages])
+  }, [])
 
   useEffect(() => {
     if (!chatId || isLoadingChat || messages.length <= 1) return
@@ -148,8 +156,9 @@ export default function MayaChatScreen() {
         const data = await response.json()
         setChatId(data.chatId)
         savedMessageIds.current.clear()
-        setMessages([]) // Start with empty messages instead of welcome message
+        setMessages([])
         setIsUserScrolling(false)
+        setShowHistory(false)
         setTimeout(() => scrollToBottom("auto"), 100)
       }
     } catch (error) {
@@ -157,11 +166,18 @@ export default function MayaChatScreen() {
     }
   }
 
+  const handleSelectChat = (selectedChatId: number) => {
+    if (selectedChatId !== chatId) {
+      savedMessageIds.current.clear()
+      loadChat(selectedChatId)
+    }
+  }
+
   if (isLoadingChat) {
     return (
       <div className="h-full flex items-center justify-center">
         <div className="flex items-center gap-3 text-stone-600">
-          <div className="w-2 h-2 rounded-full bg-stone-600 animate-pulse"></div>
+          <div className="w-2 h-2 rounded-full bg-stone-600 animate-pulse" aria-hidden="true"></div>
           <span className="text-sm tracking-[0.15em] uppercase font-light">Loading chat...</span>
         </div>
       </div>
@@ -169,8 +185,8 @@ export default function MayaChatScreen() {
   }
 
   return (
-    <div className="h-full flex flex-col space-y-3 sm:space-y-4 pb-24">
-      <div className="flex items-center justify-between pt-3 sm:pt-4 pb-2">
+    <div className="h-full flex flex-col">
+      <div className="flex-shrink-0 flex items-center justify-between pt-3 sm:pt-4 pb-2">
         <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
           <div className="w-11 h-11 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full border-2 border-stone-200/60 overflow-hidden flex-shrink-0">
             <img
@@ -191,6 +207,20 @@ export default function MayaChatScreen() {
 
         <div className="flex items-center gap-3 sm:gap-4 ml-3 sm:ml-4 flex-shrink-0">
           <button
+            onClick={() => setShowHistory(!showHistory)}
+            className={`group relative p-3 sm:p-3 backdrop-blur-2xl border rounded-xl transition-all duration-300 hover:scale-105 active:scale-95 min-w-[44px] min-h-[44px] flex items-center justify-center ${
+              showHistory
+                ? "bg-stone-900 border-stone-900 text-white"
+                : "bg-white/40 border-white/60 hover:bg-white/60 hover:border-white/80 text-stone-600"
+            }`}
+            title="Chat history"
+            aria-label="Toggle chat history"
+            aria-expanded={showHistory}
+          >
+            <History size={18} strokeWidth={2} />
+          </button>
+
+          <button
             onClick={handleNewChat}
             className="group relative p-3 sm:p-3 bg-white/40 backdrop-blur-2xl border border-white/60 rounded-xl hover:bg-white/60 hover:border-white/80 transition-all duration-300 hover:scale-105 active:scale-95 min-w-[44px] min-h-[44px] flex items-center justify-center"
             title="Start new chat"
@@ -206,12 +236,17 @@ export default function MayaChatScreen() {
         </div>
       </div>
 
-      <div className="flex-1 relative">
+      {showHistory && (
+        <div className="flex-shrink-0 mb-3 sm:mb-4 bg-white/50 backdrop-blur-3xl border border-white/60 rounded-2xl p-4 shadow-xl shadow-stone-900/5 animate-in slide-in-from-top-2 duration-300">
+          <MayaChatHistory currentChatId={chatId} onSelectChat={handleSelectChat} onNewChat={handleNewChat} />
+        </div>
+      )}
+
+      <div className="flex-1 relative min-h-0">
         <div
           ref={messagesContainerRef}
           onScroll={handleScroll}
           className="h-full overflow-y-auto space-y-3 sm:space-y-4 pr-1 scroll-smooth"
-          style={{ maxHeight: "calc(100vh - 280px)" }}
           role="log"
           aria-live="polite"
           aria-label="Chat messages"
@@ -323,7 +358,7 @@ export default function MayaChatScreen() {
         )}
       </div>
 
-      <div className="border-t border-white/30 pt-3 sm:pt-4 mt-auto flex-shrink-0">
+      <div className="flex-shrink-0 border-t border-white/30 pt-3 sm:pt-4 mt-3 sm:mt-4 pb-2">
         <div className="flex gap-2 sm:gap-3">
           <div className="flex-1 relative group">
             <input

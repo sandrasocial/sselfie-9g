@@ -57,16 +57,26 @@ export async function POST(request: NextRequest) {
 
     let finalPrompt = conceptPrompt
 
+    // Add trigger word if not present
     if (!finalPrompt.toLowerCase().includes(triggerWord.toLowerCase())) {
       finalPrompt = `${triggerWord}, ${finalPrompt}`
     }
 
+    // Add gender token if not present
     const genderToken = gender === "woman" ? "woman" : gender === "man" ? "man" : "person"
     if (!finalPrompt.toLowerCase().includes(genderToken)) {
       finalPrompt = finalPrompt.replace(triggerWord, `${triggerWord}, ${genderToken}`)
     }
 
-    console.log("[v0] Final FLUX prompt with user data:", finalPrompt)
+    if (category === "Full Body") {
+      // Emphasize facial clarity in full-body compositions
+      const facialEmphasis = "detailed face, clear facial features, sharp eyes"
+      if (!finalPrompt.toLowerCase().includes("face") && !finalPrompt.toLowerCase().includes("facial")) {
+        finalPrompt = `${finalPrompt}, ${facialEmphasis}`
+      }
+    }
+
+    console.log("[v0] Final FLUX prompt (trigger word + gender only):", finalPrompt)
 
     const qualitySettings =
       MAYA_QUALITY_PRESETS[category as keyof typeof MAYA_QUALITY_PRESETS] || MAYA_QUALITY_PRESETS.default
