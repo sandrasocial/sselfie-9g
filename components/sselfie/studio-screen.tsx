@@ -7,11 +7,12 @@ interface StudioScreenProps {
   user: any
   hasTrainedModel: boolean
   setActiveTab: (tab: string) => void
+  onImageGenerated: () => void
 }
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
-export default function StudioScreen({ user, hasTrainedModel, setActiveTab }: StudioScreenProps) {
+export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onImageGenerated }: StudioScreenProps) {
   const { data: stats } = useSWR(hasTrainedModel ? "/api/studio/stats" : null, fetcher, {
     refreshInterval: 30000,
   })
@@ -30,28 +31,30 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab }: St
 
   if (!hasTrainedModel) {
     return (
-      <div className="space-y-8 pb-4">
-        <div className="pt-6 text-center">
-          <h1 className="text-5xl font-serif font-extralight tracking-[0.3em] text-stone-900 uppercase leading-none mb-3">
+      <div className="space-y-6 sm:space-y-8 pb-4">
+        <div className="pt-4 sm:pt-6 text-center">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif font-extralight tracking-[0.2em] sm:tracking-[0.3em] text-stone-900 uppercase leading-none mb-2 sm:mb-3 px-4">
             Welcome to Studio
           </h1>
-          <p className="text-xs tracking-[0.3em] uppercase font-light text-stone-400">Start Here</p>
+          <p className="text-[10px] sm:text-xs tracking-[0.2em] sm:tracking-[0.3em] uppercase font-light text-stone-400">
+            Start Here
+          </p>
         </div>
 
-        <div className="bg-white/50 backdrop-blur-3xl border border-white/60 rounded-3xl p-12 text-center shadow-xl shadow-stone-900/5">
-          <div className="w-20 h-20 bg-white/70 backdrop-blur-2xl rounded-2xl flex items-center justify-center mx-auto mb-6 border border-white/80 shadow-lg shadow-stone-900/5">
-            <Aperture size={32} className="text-stone-600" strokeWidth={1.5} />
+        <div className="bg-white/50 backdrop-blur-3xl border border-white/60 rounded-2xl sm:rounded-3xl p-6 sm:p-8 md:p-12 text-center shadow-xl shadow-stone-900/5">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white/70 backdrop-blur-2xl rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-4 sm:mb-6 border border-white/80 shadow-lg shadow-stone-900/5">
+            <Aperture size={28} className="sm:w-8 sm:h-8" strokeWidth={1.5} />
           </div>
 
-          <h2 className="text-3xl font-serif font-extralight tracking-[0.2em] text-stone-900 uppercase mb-4">
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-serif font-extralight tracking-[0.15em] sm:tracking-[0.2em] text-stone-900 uppercase mb-3 sm:mb-4 px-4">
             Train Your AI First
           </h2>
 
-          <p className="text-base font-light text-stone-500 mb-8 max-w-md mx-auto leading-relaxed">
+          <p className="text-sm sm:text-base font-light text-stone-500 mb-6 sm:mb-8 max-w-md mx-auto leading-relaxed px-4">
             Before you can create stunning photos you need to train your personal AI model with your selfies.
           </p>
 
-          <div className="grid grid-cols-3 gap-4 mb-10 max-w-2xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-8 sm:mb-10 max-w-2xl mx-auto">
             {[
               { label: "Accurate", desc: "Photos that look like you" },
               { label: "Fast", desc: "20 minute training" },
@@ -59,10 +62,10 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab }: St
             ].map((item, i) => (
               <div
                 key={i}
-                className="p-6 bg-white/60 backdrop-blur-3xl rounded-2xl border border-white/70 shadow-lg shadow-stone-900/5 hover:shadow-xl hover:shadow-stone-900/10 hover:scale-105 transition-all duration-500 group"
+                className="p-5 sm:p-6 bg-white/60 backdrop-blur-3xl rounded-xl sm:rounded-2xl border border-white/70 shadow-lg shadow-stone-900/5 hover:shadow-xl hover:shadow-stone-900/10 hover:scale-105 transition-all duration-500 group"
               >
-                <div className="w-14 h-14 bg-stone-900 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-stone-900/20 group-hover:scale-110 transition-transform duration-500">
-                  <div className="text-lg font-light text-white">{i + 1}</div>
+                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-stone-900 rounded-lg sm:rounded-xl flex items-center justify-center mx-auto mb-3 sm:mb-4 shadow-lg shadow-stone-900/20 group-hover:scale-110 transition-transform duration-500">
+                  <div className="text-base sm:text-lg font-light text-white">{i + 1}</div>
                 </div>
                 <div className="text-sm font-light text-stone-900 mb-2">{item.label}</div>
                 <div className="text-xs font-light text-stone-500">{item.desc}</div>
@@ -72,7 +75,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab }: St
 
           <button
             onClick={() => setActiveTab("training")}
-            className="group relative bg-stone-900 text-white px-12 py-5 rounded-2xl font-light tracking-wider text-sm transition-all duration-500 hover:shadow-2xl hover:shadow-stone-900/30 hover:scale-105 active:scale-95 min-h-[60px] overflow-hidden"
+            className="group relative bg-stone-900 text-white px-8 sm:px-12 py-4 sm:py-5 rounded-xl sm:rounded-2xl font-light tracking-wider text-sm transition-all duration-500 hover:shadow-2xl hover:shadow-stone-900/30 hover:scale-105 active:scale-95 min-h-[52px] sm:min-h-[60px] overflow-hidden w-full sm:w-auto"
           >
             <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
             <span className="relative z-10 flex items-center justify-center gap-2">
@@ -86,8 +89,8 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab }: St
           </button>
         </div>
 
-        <div className="bg-white/50 backdrop-blur-3xl border border-white/60 rounded-3xl p-8 shadow-xl shadow-stone-900/5">
-          <h3 className="text-lg font-serif font-extralight tracking-[0.15em] text-stone-900 uppercase mb-6">
+        <div className="bg-white/50 backdrop-blur-3xl border border-white/60 rounded-2xl sm:rounded-3xl p-8 shadow-xl shadow-stone-900/5">
+          <h3 className="text-lg sm:text-xl md:text-2xl font-serif font-extralight tracking-[0.15em] sm:tracking-[0.2em] text-stone-900 uppercase mb-6 sm:mb-8">
             What You Will Need
           </h3>
 
@@ -100,14 +103,14 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab }: St
             ].map((item, i) => (
               <div
                 key={i}
-                className="flex items-start gap-4 p-4 bg-white/60 backdrop-blur-2xl rounded-xl border border-white/70 shadow-lg shadow-stone-900/5 hover:shadow-xl hover:shadow-stone-900/10 hover:scale-[1.02] transition-all duration-500"
+                className="flex items-start gap-4 p-4 bg-white/60 backdrop-blur-2xl rounded-xl sm:rounded-2xl border border-white/70 shadow-lg shadow-stone-900/5 hover:shadow-xl hover:shadow-stone-900/10 hover:scale-[1.02] transition-all duration-500"
               >
                 <div className="w-8 h-8 bg-white/80 backdrop-blur-xl rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 border border-white/70 shadow-inner shadow-stone-900/5">
                   <div className="w-1.5 h-1.5 bg-stone-600 rounded-full"></div>
                 </div>
                 <div className="flex-1">
-                  <h4 className="text-sm font-light text-stone-900 mb-1">{item.title}</h4>
-                  <p className="text-xs font-light text-stone-500">{item.desc}</p>
+                  <h4 className="text-sm sm:text-base font-light text-stone-900 mb-1">{item.title}</h4>
+                  <p className="text-xs sm:text-sm font-light text-stone-500">{item.desc}</p>
                 </div>
               </div>
             ))}
@@ -136,15 +139,17 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab }: St
     : null
 
   return (
-    <div className="space-y-8 pb-8 pt-4">
+    <div className="space-y-6 sm:space-y-8 pb-8 pt-4">
       <div className="text-center">
-        <h1 className="text-5xl font-serif font-extralight tracking-[0.3em] text-stone-900 uppercase leading-none mb-3">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif font-extralight tracking-[0.2em] sm:tracking-[0.3em] text-stone-900 uppercase leading-none mb-2 sm:mb-3">
           STUDIO
         </h1>
-        <p className="text-xs tracking-[0.3em] uppercase font-light text-stone-400">Creative Control Center</p>
+        <p className="text-[10px] sm:text-xs tracking-[0.2em] sm:tracking-[0.3em] uppercase font-light text-stone-400">
+          Creative Control Center
+        </p>
       </div>
 
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-3 gap-3 sm:gap-4 md:gap-6">
         {[
           { label: "Active", value: hasActiveSession ? "1" : "0", desc: "Sessions" },
           { label: "Ready", value: stats?.totalGenerated || "0", desc: "Photos" },
@@ -152,12 +157,16 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab }: St
         ].map((item, index) => (
           <div
             key={index}
-            className="group relative bg-white/50 backdrop-blur-3xl border border-white/60 rounded-2xl p-6 hover:bg-white/70 hover:border-white/80 transition-all duration-500 min-h-[130px] flex flex-col justify-center shadow-xl shadow-stone-900/5 hover:shadow-2xl hover:shadow-stone-900/10 hover:scale-[1.02] active:scale-95 cursor-pointer"
+            className="group relative bg-white/50 backdrop-blur-3xl border border-white/60 rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 hover:bg-white/70 hover:border-white/80 transition-all duration-500 min-h-[110px] sm:min-h-[130px] flex flex-col justify-center shadow-xl shadow-stone-900/5 hover:shadow-2xl hover:shadow-stone-900/10 hover:scale-[1.02] active:scale-95 cursor-pointer"
           >
-            <div className="absolute top-3 right-3 w-2 h-2 rounded-full bg-stone-900 shadow-lg opacity-60"></div>
-            <div className="text-xs tracking-wider uppercase font-light mb-3 text-stone-500">{item.label}</div>
-            <div className="text-4xl font-extralight text-stone-900 mb-2">{item.value}</div>
-            <div className="text-xs font-light text-stone-400">{item.desc}</div>
+            <div className="absolute top-2 sm:top-3 right-2 sm:right-3 w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-stone-900 shadow-lg opacity-60"></div>
+            <div className="text-[10px] sm:text-xs tracking-wider uppercase font-light mb-2 sm:mb-3 text-stone-500">
+              {item.label}
+            </div>
+            <div className="text-2xl sm:text-3xl md:text-4xl font-extralight text-stone-900 mb-1 sm:mb-2">
+              {item.value}
+            </div>
+            <div className="text-[10px] sm:text-xs font-light text-stone-400">{item.desc}</div>
           </div>
         ))}
       </div>
@@ -279,7 +288,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab }: St
                   </p>
                   <button
                     onClick={() => setActiveTab("maya")}
-                    className="group relative bg-stone-900 text-white px-8 py-4 rounded-2xl font-light tracking-wider text-sm transition-all duration-500 hover:shadow-2xl hover:shadow-stone-900/30 hover:scale-105 active:scale-95 overflow-hidden w-full mb-3"
+                    className="group relative bg-stone-900 text-white px-8 sm:px-12 py-4 sm:py-5 rounded-2xl sm:rounded-3xl font-light tracking-wider text-sm transition-all duration-500 hover:shadow-2xl hover:shadow-stone-900/30 hover:scale-105 active:scale-95 overflow-hidden w-full sm:w-auto"
                   >
                     <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                     <span className="relative z-10 flex items-center justify-center gap-2">
@@ -294,7 +303,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab }: St
                   </button>
                   <button
                     onClick={() => setActiveTab("gallery")}
-                    className="group relative bg-white/60 backdrop-blur-2xl border border-white/70 text-stone-900 px-8 py-4 rounded-2xl font-light tracking-wider text-sm transition-all duration-500 hover:bg-white/80 hover:border-white/90 hover:shadow-xl hover:shadow-stone-900/10 hover:scale-105 active:scale-95 overflow-hidden w-full"
+                    className="group relative bg-white/60 backdrop-blur-3xl border border-white/70 text-stone-900 px-8 sm:px-12 py-4 sm:py-5 rounded-2xl sm:rounded-3xl font-light tracking-wider text-sm transition-all duration-500 hover:bg-white/80 hover:border-white/90 hover:shadow-xl hover:shadow-stone-900/10 hover:scale-105 active:scale-95 overflow-hidden w-full sm:w-auto"
                   >
                     <span className="relative z-10 flex items-center justify-center gap-2">
                       <Grid size={16} strokeWidth={1.5} />
@@ -351,7 +360,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab }: St
                   </p>
                   <button
                     onClick={() => setActiveTab("maya")}
-                    className="group relative bg-stone-900 text-white px-8 py-4 rounded-2xl font-light tracking-wider text-sm transition-all duration-500 hover:shadow-2xl hover:shadow-stone-900/30 hover:scale-105 active:scale-95 overflow-hidden w-full"
+                    className="group relative bg-stone-900 text-white px-8 sm:px-12 py-4 sm:py-5 rounded-2xl sm:rounded-3xl font-light tracking-wider text-sm transition-all duration-500 hover:shadow-2xl hover:shadow-stone-900/30 hover:scale-105 active:scale-95 overflow-hidden w-full sm:w-auto"
                   >
                     <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                     <span className="relative z-10 flex items-center justify-center gap-2">
@@ -413,7 +422,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab }: St
 
       {hasRecentGenerations ? (
         <div className="space-y-6">
-          <h3 className="text-lg font-serif font-extralight tracking-[0.15em] text-stone-900 uppercase">
+          <h3 className="text-lg sm:text-xl md:text-2xl font-serif font-extralight tracking-[0.15em] sm:tracking-[0.2em] text-stone-900 uppercase">
             Recent Activity
           </h3>
           <div className="space-y-1">
@@ -452,7 +461,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab }: St
         </div>
       ) : (
         <div className="bg-white/50 backdrop-blur-3xl border border-white/60 rounded-3xl p-8 text-center shadow-xl shadow-stone-900/5">
-          <h3 className="text-lg font-serif font-extralight tracking-[0.15em] text-stone-900 uppercase mb-3">
+          <h3 className="text-lg sm:text-xl md:text-2xl font-serif font-extralight tracking-[0.15em] sm:tracking-[0.2em] text-stone-900 uppercase mb-3">
             No Recent Activity
           </h3>
           <p className="text-sm font-light text-stone-500">Your recent photo generations will appear here</p>
@@ -461,7 +470,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab }: St
 
       {sessionsData?.sessions && sessionsData.sessions.length > 0 && (
         <div className="space-y-6">
-          <h3 className="text-lg font-serif font-extralight tracking-[0.15em] text-stone-900 uppercase">
+          <h3 className="text-lg sm:text-xl md:text-2xl font-serif font-extralight tracking-[0.15em] sm:tracking-[0.2em] text-stone-900 uppercase">
             Session History
           </h3>
           <div className="grid gap-4">
