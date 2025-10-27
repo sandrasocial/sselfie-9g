@@ -11,21 +11,37 @@ import {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log("[v0] ========== save-message API START ==========")
+
     const supabase = await createServerClient()
     const {
       data: { user },
     } = await supabase.auth.getUser()
 
     if (!user) {
+      console.log("[v0] ❌ Unauthorized - no user")
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const neonUser = await getUserByAuthId(user.id)
     if (!neonUser) {
+      console.log("[v0] ❌ User not found in Neon")
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    const { chatId, role, content, conceptCards } = await request.json()
+    const body = await request.json()
+    console.log("[v0] Request body:", body)
+
+    const { chatId, role, content, conceptCards } = body
+
+    console.log("[v0] Parsed data:", {
+      chatId,
+      role,
+      contentLength: content?.length || 0,
+      hasConceptCards: !!conceptCards,
+      conceptCardsCount: Array.isArray(conceptCards) ? conceptCards.length : 0,
+      conceptCards,
+    })
 
     if (role === "user") {
       const existingMessages = await getChatMessages(chatId)
@@ -45,10 +61,25 @@ export async function POST(request: NextRequest) {
 
     while (retries > 0) {
       try {
+        console.log("[v0] Calling saveChatMessage with:", {
+          chatId,
+          role,
+          contentLength: content?.length || 0,
+          conceptCardsCount: Array.isArray(conceptCards) ? conceptCards.length : 0,
+        })
+
         message = await saveChatMessage(chatId, role, content, conceptCards)
+
+        console.log("[v0] ✅ Message saved to database:", {
+          messageId: message.id,
+          hasConceptCards: !!message.concept_cards,
+          conceptCardsCount: Array.isArray(message.concept_cards) ? message.concept_cards.length : 0,
+        })
+
         break // Success, exit retry loop
       } catch (error: any) {
         const errorMessage = error?.message || String(error)
+        console.error("[v0] ❌ Error in saveChatMessage:", errorMessage)
 
         // Check if it's a rate limit error
         if (errorMessage.includes("Too Many Requests") || errorMessage.includes("429")) {
@@ -56,6 +87,7 @@ export async function POST(request: NextRequest) {
           if (retries > 0) {
             // Wait before retrying (exponential backoff)
             const waitTime = (4 - retries) * 1000 // 1s, 2s, 3s
+            console.log("[v0] Rate limited, retrying in", waitTime, "ms")
             await new Promise((resolve) => setTimeout(resolve, waitTime))
             continue
           }
@@ -69,6 +101,7 @@ export async function POST(request: NextRequest) {
     // Learn from interaction if concepts were generated
     if (conceptCards && conceptCards.length > 0) {
       try {
+        console.log("[v0] Learning from interaction with", conceptCards.length, "concepts")
         await learnFromInteraction(neonUser.id, {
           conceptsGenerated: conceptCards,
           topics: conceptCards.map((c: any) => c.category).filter(Boolean),
@@ -79,9 +112,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    console.log("[v0] ========== save-message API END (success) ==========")
     return NextResponse.json({ success: true, message })
   } catch (error: any) {
     const errorMessage = error?.message || String(error)
+    console.error("[v0] ========== save-message API END (error) ==========")
     console.error("[v0] Error saving message:", errorMessage)
 
     if (errorMessage.includes("Too Many Requests") || errorMessage.includes("429")) {

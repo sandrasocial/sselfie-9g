@@ -33,64 +33,86 @@ export default function MayaChatScreen() {
       })
     },
     onFinish: async (message) => {
+      console.log("[v0] ========== onFinish START ==========")
+      console.log("[v0] Message ID:", message.id)
+      console.log("[v0] Chat ID:", chatId)
+      console.log("[v0] Already saved?:", savedMessageIds.current.has(message.id))
+      console.log("[v0] Message role:", message.role)
+      console.log("[v0] Message toolInvocations:", message.toolInvocations)
+      console.log("[v0] Message content:", message.content)
+
       // Only save if we have a chatId and haven't saved this message yet
       if (!chatId || savedMessageIds.current.has(message.id)) {
+        console.log("[v0] Skipping save - no chatId or already saved")
+        console.log("[v0] ========== onFinish END (skipped) ==========")
         return
       }
 
-      console.log("[v0] onFinish - Saving message after streaming complete:", {
-        messageId: message.id,
-        role: message.role,
-        hasParts: !!message.parts,
-        partsCount: message.parts?.length || 0,
-        partsTypes: message.parts?.map((p: any) => p.type) || [],
-        environment: typeof window !== "undefined" ? "client" : "server",
-      })
-
-      // Extract concept cards from the completed message
       const conceptCards =
-        message.parts && Array.isArray(message.parts)
-          ? message.parts
-              .filter((part: any) => part.type === "tool-generateConcepts" && part.output?.state === "ready")
-              .flatMap((part: any) => part.output.concepts || [])
+        message.toolInvocations && Array.isArray(message.toolInvocations)
+          ? message.toolInvocations
+              .filter((invocation: any) => {
+                const isConceptTool = invocation.toolName === "generateConcepts"
+                const hasResult = invocation.state === "result"
+                const hasConcepts = Array.isArray(invocation.result?.concepts)
+
+                console.log("[v0] Checking tool invocation:", {
+                  toolName: invocation.toolName,
+                  isConceptTool,
+                  state: invocation.state,
+                  hasResult,
+                  hasConcepts,
+                  conceptsCount: invocation.result?.concepts?.length || 0,
+                })
+
+                return isConceptTool && hasResult && hasConcepts
+              })
+              .flatMap((invocation: any) => invocation.result.concepts || [])
           : []
 
       console.log("[v0] Extracted concept cards:", {
-        conceptCardsCount: conceptCards.length,
-        conceptCards: conceptCards.length > 0 ? conceptCards : null,
-        allParts: message.parts?.map((p: any) => ({
-          type: p.type,
-          hasOutput: !!p.output,
-          outputState: p.output?.state,
-          conceptsCount: p.output?.concepts?.length || 0,
-        })),
+        count: conceptCards.length,
+        concepts: conceptCards,
       })
 
       // Mark as saved before making the request
       savedMessageIds.current.add(message.id)
 
       try {
+        const payload = {
+          chatId,
+          role: message.role,
+          content: message.content || "",
+          conceptCards: conceptCards.length > 0 ? conceptCards : null,
+        }
+
+        console.log("[v0] Sending to save-message API:", payload)
+
         const response = await fetch("/api/maya/save-message", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chatId,
-            role: message.role,
-            content: message.parts?.find((p: any) => p.type === "text")?.text || "",
-            conceptCards: conceptCards.length > 0 ? conceptCards : null,
-          }),
+          body: JSON.stringify(payload),
+        })
+
+        const responseData = await response.json()
+        console.log("[v0] Save-message API response:", {
+          status: response.status,
+          ok: response.ok,
+          data: responseData,
         })
 
         if (response.ok) {
-          console.log("[v0] Message saved successfully with", conceptCards.length, "concept cards")
+          console.log("[v0] ✅ Message saved successfully with", conceptCards.length, "concept cards")
         } else {
-          console.error("[v0] Failed to save message:", response.status, response.statusText)
+          console.error("[v0] ❌ Failed to save message:", response.status, response.statusText, responseData)
           savedMessageIds.current.delete(message.id)
         }
       } catch (error) {
-        console.error("[v0] Error saving message:", error)
+        console.error("[v0] ❌ Error saving message:", error)
         savedMessageIds.current.delete(message.id)
       }
+
+      console.log("[v0] ========== onFinish END ==========")
     },
   })
 

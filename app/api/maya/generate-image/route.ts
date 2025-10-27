@@ -108,6 +108,7 @@ export async function POST(request: NextRequest) {
       input: {
         prompt: finalPrompt,
         ...qualitySettings,
+        ...(qualitySettings.lora_scale !== undefined && { lora_scale: qualitySettings.lora_scale }),
       },
     })
 

@@ -5,6 +5,7 @@ export interface QualitySettings {
   megapixels: string
   output_format: string
   output_quality: number
+  lora_scale?: number
 }
 
 export const MAYA_DEFAULT_QUALITY_SETTINGS: QualitySettings = {
@@ -14,6 +15,7 @@ export const MAYA_DEFAULT_QUALITY_SETTINGS: QualitySettings = {
   megapixels: "1",
   output_format: "png",
   output_quality: 95,
+  lora_scale: 1.0,
 }
 
 export const MAYA_QUALITY_PRESETS = {
@@ -21,29 +23,40 @@ export const MAYA_QUALITY_PRESETS = {
     ...MAYA_DEFAULT_QUALITY_SETTINGS,
     aspect_ratio: "4:5",
     guidance_scale: 3.5,
+    lora_scale: 1.0,
   },
   headshot: {
     ...MAYA_DEFAULT_QUALITY_SETTINGS,
     aspect_ratio: "1:1",
     guidance_scale: 3.5,
+    lora_scale: 1.0,
+  },
+  "Half Body": {
+    ...MAYA_DEFAULT_QUALITY_SETTINGS,
+    aspect_ratio: "4:5",
+    guidance_scale: 3.5,
+    lora_scale: 1.0,
   },
   "Full Body": {
     ...MAYA_DEFAULT_QUALITY_SETTINGS,
     aspect_ratio: "4:5",
-    guidance_scale: 2.5, // Lower guidance for more natural full-body composition
-    num_inference_steps: 50, // More steps for better detail preservation
-    megapixels: "1", // Higher resolution to maintain facial clarity when body is in frame
+    guidance_scale: 2.5,
+    num_inference_steps: 50,
+    megapixels: "1",
+    lora_scale: 1.1,
   },
   lifestyle: {
     ...MAYA_DEFAULT_QUALITY_SETTINGS,
     aspect_ratio: "4:5",
     guidance_scale: 3.5,
+    lora_scale: 1.0,
   },
   editorial: {
     ...MAYA_DEFAULT_QUALITY_SETTINGS,
     aspect_ratio: "3:4",
     guidance_scale: 3.5,
     num_inference_steps: 50,
+    lora_scale: 1.0,
   },
   default: MAYA_DEFAULT_QUALITY_SETTINGS,
 }

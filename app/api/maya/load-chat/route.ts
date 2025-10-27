@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
             {
               type: "tool-generateConcepts",
               toolCallId: `tool_${msg.id}`,
-              state: "output-available",
+              state: "ready", // Changed state from "output-available" to "ready" to match frontend expectations
               input: {},
               output: {
                 state: "ready",
