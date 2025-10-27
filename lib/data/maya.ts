@@ -33,9 +33,28 @@ export interface MayaPersonalMemory {
   personal_insights: any
   ongoing_goals: any
   personalized_styling_notes: string | null
+  personal_brand_id: number | null
   created_at: Date
   updated_at: Date
   last_memory_update: Date
+}
+
+export interface UserPersonalBrand {
+  id: number
+  user_id: string
+  name: string | null
+  business_type: string | null
+  current_situation: string | null
+  transformation_story: string | null
+  future_vision: string | null
+  business_goals: string | null
+  photo_goals: string | null
+  style_preferences: string | null
+  is_completed: boolean
+  onboarding_step: number
+  created_at: Date
+  updated_at: Date
+  completed_at: Date | null
 }
 
 // Get or create active chat for user
@@ -125,6 +144,7 @@ export async function updatePersonalMemory(
         personal_insights = COALESCE(${updates.personal_insights ? JSON.stringify(updates.personal_insights) : null}, personal_insights),
         ongoing_goals = COALESCE(${updates.ongoing_goals ? JSON.stringify(updates.ongoing_goals) : null}, ongoing_goals),
         personalized_styling_notes = COALESCE(${updates.personalized_styling_notes}, personalized_styling_notes),
+        personal_brand_id = COALESCE(${updates.personal_brand_id}, personal_brand_id),
         memory_version = memory_version + 1,
         updated_at = NOW(),
         last_memory_update = NOW()
@@ -143,6 +163,7 @@ export async function updatePersonalMemory(
         personal_insights,
         ongoing_goals,
         personalized_styling_notes,
+        personal_brand_id,
         memory_version
       )
       VALUES (
@@ -154,6 +175,7 @@ export async function updatePersonalMemory(
         ${updates.personal_insights ? JSON.stringify(updates.personal_insights) : "{}"},
         ${updates.ongoing_goals ? JSON.stringify(updates.ongoing_goals) : "{}"},
         ${updates.personalized_styling_notes},
+        ${updates.personal_brand_id},
         1
       )
       RETURNING *
@@ -214,4 +236,23 @@ export async function learnFromInteraction(
       images_favorited: (insights.images_favorited || 0) + (interaction.imagesFavorited || 0),
     },
   })
+}
+
+// Get user's personal brand
+export async function getUserPersonalBrand(userId: string): Promise<UserPersonalBrand | null> {
+  const brand = await sql`
+    SELECT * FROM user_personal_brand
+    WHERE user_id = ${userId}
+    LIMIT 1
+  `
+
+  return brand.length > 0 ? (brand[0] as UserPersonalBrand) : null
+}
+
+export async function linkPersonalMemoryToBrand(userId: string, brandId: number): Promise<void> {
+  await sql`
+    UPDATE maya_personal_memory
+    SET personal_brand_id = ${brandId}
+    WHERE user_id = ${userId}
+  `
 }

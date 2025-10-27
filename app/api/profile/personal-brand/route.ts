@@ -219,6 +219,50 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const existingMemory = await sql`
+      SELECT id FROM maya_personal_memory WHERE user_id = ${neonUserId}
+    `
+
+    if (existingMemory.length > 0) {
+      // Update existing memory to link to brand
+      await sql`
+        UPDATE maya_personal_memory
+        SET personal_brand_id = ${brandId}, updated_at = NOW()
+        WHERE user_id = ${neonUserId}
+      `
+    } else {
+      // Create new memory linked to brand
+      await sql`
+        INSERT INTO maya_personal_memory (
+          user_id,
+          personal_brand_id,
+          memory_version,
+          preferred_topics,
+          conversation_style,
+          successful_prompt_patterns,
+          user_feedback_patterns,
+          personal_insights,
+          ongoing_goals,
+          created_at,
+          updated_at,
+          last_memory_update
+        ) VALUES (
+          ${neonUserId},
+          ${brandId},
+          1,
+          '[]'::jsonb,
+          '{}'::jsonb,
+          '{}'::jsonb,
+          '{}'::jsonb,
+          '{}'::jsonb,
+          '{}'::jsonb,
+          NOW(),
+          NOW(),
+          NOW()
+        )
+      `
+    }
+
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error("[v0] Error updating personal brand:", error)

@@ -21,6 +21,9 @@ export default function MayaChatScreen() {
   const { messages, sendMessage, status, setMessages } = useChat({
     transport: new DefaultChatTransport({ api: "/api/maya/chat" }),
     initialMessages: [], // Removed welcome message from initialMessages
+    body: {
+      chatId: chatId, // Pass chatId to API so it can load chat history
+    },
   })
 
   const isTyping = status === "submitted" || status === "streaming"
@@ -321,7 +324,7 @@ export default function MayaChatScreen() {
                 }
               }}
               placeholder="Message Maya..."
-              className="w-full px-4 sm:px-5 py-3 sm:py-4 bg-white/40 backdrop-blur-2xl border border-white/60 rounded-xl sm:rounded-[1.5rem] text-stone-950 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-900/50 focus:border-stone-950/50 focus:bg-white/60 pr-12 sm:pr-14 font-medium text-sm min-h-[48px] sm:min-h-[56px] shadow-lg shadow-stone-900/10 transition-all duration-300"
+              className="w-full px-4 sm:px-5 py-3 sm:py-4 bg-white/40 backdrop-blur-2xl border border-white/60 rounded-xl sm:rounded-[1.5rem] text-stone-950 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-950/50 focus:border-stone-950/50 focus:bg-white/60 pr-12 sm:pr-14 font-medium text-sm min-h-[48px] sm:min-h-[56px] shadow-lg shadow-stone-900/10 transition-all duration-300"
               disabled={isTyping}
             />
             <div className="absolute right-2 sm:right-3 top-1/2 transform -translate-y-1/2">

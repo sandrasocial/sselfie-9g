@@ -101,7 +101,7 @@ Return ONLY a JSON array of concepts, no other text.`
 
 export async function POST(req: Request) {
   try {
-    const { messages } = await req.json()
+    const { messages, chatId } = await req.json()
 
     if (!messages || !Array.isArray(messages)) {
       console.error("[v0] Invalid messages array:", messages)
@@ -113,7 +113,35 @@ export async function POST(req: Request) {
       return new Response("Unauthorized", { status: 401 })
     }
 
-    console.log("[v0] Maya chat API called with", messages.length, "messages")
+    console.log("[v0] Maya chat API called with", messages.length, "messages, chatId:", chatId)
+
+    let chatHistory: CoreMessage[] = []
+    if (chatId) {
+      try {
+        const { getChatMessages } = await import("@/lib/data/maya")
+        const dbMessages = await getChatMessages(chatId)
+
+        console.log("[v0] Loaded", dbMessages.length, "messages from database for chat", chatId)
+
+        // Convert database messages to CoreMessage format
+        chatHistory = dbMessages
+          .map((msg) => {
+            if (!msg.content || msg.content.trim() === "") {
+              return null
+            }
+            return {
+              role: msg.role as "user" | "assistant",
+              content: msg.content,
+            } as CoreMessage
+          })
+          .filter((msg): msg is CoreMessage => msg !== null)
+
+        console.log("[v0] Converted", chatHistory.length, "database messages to core messages")
+      } catch (error) {
+        console.error("[v0] Error loading chat history:", error)
+        // Continue without chat history if loading fails
+      }
+    }
 
     const coreMessages: CoreMessage[] = messages
       .map((msg: any, index: number) => {
@@ -157,9 +185,31 @@ export async function POST(req: Request) {
       })
       .filter((msg): msg is CoreMessage => msg !== null)
 
-    console.log("[v0] Converted to", coreMessages.length, "core messages")
+    console.log("[v0] Converted to", coreMessages.length, "core messages from current request")
 
-    if (coreMessages.length === 0) {
+    const allMessages: CoreMessage[] = [...chatHistory]
+
+    // Add current messages, but skip if they're already in chat history
+    for (const msg of coreMessages) {
+      const isDuplicate = chatHistory.some(
+        (historyMsg) => historyMsg.role === msg.role && historyMsg.content === msg.content,
+      )
+      if (!isDuplicate) {
+        allMessages.push(msg)
+      }
+    }
+
+    console.log(
+      "[v0] Total messages for AI context:",
+      allMessages.length,
+      "(",
+      chatHistory.length,
+      "from history +",
+      allMessages.length - chatHistory.length,
+      "new)",
+    )
+
+    if (allMessages.length === 0) {
       console.error("[v0] No valid messages after filtering")
       return new Response("No valid messages", { status: 400 })
     }
@@ -170,7 +220,7 @@ export async function POST(req: Request) {
     const result = streamText({
       model: "anthropic/claude-sonnet-4",
       system: enhancedSystemPrompt,
-      messages: coreMessages,
+      messages: allMessages, // Use combined messages instead of just current messages
       tools: {
         generateConcepts: generateConceptsTool,
       },
