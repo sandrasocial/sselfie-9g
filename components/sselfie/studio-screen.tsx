@@ -4,6 +4,7 @@ import useSWR from "swr"
 import Image from "next/image"
 import { InstagramPhotoPreview } from "./instagram-photo-preview"
 import { useState } from "react"
+import BrandProfileWizard from "./brand-profile-wizard"
 
 interface StudioScreenProps {
   user: any
@@ -16,6 +17,7 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onImageGenerated }: StudioScreenProps) {
   const [showPreview, setShowPreview] = useState(false)
+  const [showBrandWizard, setShowBrandWizard] = useState(false)
 
   const { data: stats } = useSWR(hasTrainedModel ? "/api/studio/stats" : null, fetcher, {
     refreshInterval: 30000,
@@ -154,26 +156,66 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
         </p>
       </div>
 
-      <div className="grid grid-cols-3 gap-3 sm:gap-4 md:gap-6">
-        {[
-          { label: "Active", value: hasActiveSession ? "1" : "0", desc: "Sessions" },
-          { label: "Ready", value: stats?.totalGenerated || "0", desc: "Photos" },
-          { label: "Queue", value: "0", desc: "Pending" },
-        ].map((item, index) => (
-          <div
-            key={index}
-            className="group relative bg-white/50 backdrop-blur-3xl border border-white/60 rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 hover:bg-white/70 hover:border-white/80 transition-all duration-500 min-h-[110px] sm:min-h-[130px] flex flex-col justify-center shadow-xl shadow-stone-900/5 hover:shadow-2xl hover:shadow-stone-900/10 hover:scale-[1.02] active:scale-95 cursor-pointer"
-          >
-            <div className="absolute top-2 sm:top-3 right-2 sm:right-3 w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-stone-900 shadow-lg opacity-60"></div>
-            <div className="text-[10px] sm:text-xs tracking-wider uppercase font-light mb-2 sm:mb-3 text-stone-500">
-              {item.label}
-            </div>
-            <div className="text-2xl sm:text-3xl md:text-4xl font-extralight text-stone-900 mb-1 sm:mb-2">
-              {item.value}
-            </div>
-            <div className="text-[10px] sm:text-xs font-light text-stone-400">{item.desc}</div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
+        <button
+          onClick={() => setActiveTab("feed-designer")}
+          className="group relative bg-stone-50 backdrop-blur-3xl border border-stone-200/60 rounded-2xl sm:rounded-3xl p-6 sm:p-7 md:p-8 text-left hover:bg-stone-100/50 hover:border-stone-300/60 transition-all duration-500 min-h-[160px] sm:min-h-[180px] flex flex-col justify-between shadow-xl shadow-stone-900/5 hover:shadow-2xl hover:shadow-stone-900/10 hover:scale-[1.02] active:scale-95"
+        >
+          <div>
+            <div className="text-xs tracking-[0.15em] uppercase font-light mb-3 text-stone-400">Create</div>
+            <h3 className="text-lg sm:text-xl md:text-2xl font-serif font-extralight tracking-[0.1em] text-stone-900 uppercase mb-2">
+              Design Your Feed
+            </h3>
+            <p className="text-sm font-light text-stone-500">Curate your perfect aesthetic</p>
           </div>
-        ))}
+          <div className="flex items-center gap-2 text-stone-600">
+            <ChevronRight
+              size={14}
+              strokeWidth={1.5}
+              className="group-hover:translate-x-1 transition-transform duration-500"
+            />
+          </div>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("academy")}
+          className="group relative bg-stone-100 backdrop-blur-3xl border border-stone-200/60 rounded-2xl sm:rounded-3xl p-6 sm:p-7 md:p-8 text-left hover:bg-stone-200/50 hover:border-stone-300/60 transition-all duration-500 min-h-[160px] sm:min-h-[180px] flex flex-col justify-between shadow-xl shadow-stone-900/5 hover:shadow-2xl hover:shadow-stone-900/10 hover:scale-[1.02] active:scale-95"
+        >
+          <div>
+            <div className="text-xs tracking-[0.15em] uppercase font-light mb-3 text-stone-400">Learn</div>
+            <h3 className="text-lg sm:text-xl md:text-2xl font-serif font-extralight tracking-[0.1em] text-stone-900 uppercase mb-2">
+              Start Learning
+            </h3>
+            <p className="text-sm font-light text-stone-500">Master AI photography</p>
+          </div>
+          <div className="flex items-center gap-2 text-stone-600">
+            <ChevronRight
+              size={14}
+              strokeWidth={1.5}
+              className="group-hover:translate-x-1 transition-transform duration-500"
+            />
+          </div>
+        </button>
+
+        <button
+          onClick={() => setShowBrandWizard(true)}
+          className="group relative bg-stone-200 backdrop-blur-3xl border border-stone-300/60 rounded-2xl sm:rounded-3xl p-6 sm:p-7 md:p-8 text-left hover:bg-stone-300/50 hover:border-stone-400/60 transition-all duration-500 min-h-[160px] sm:min-h-[180px] flex flex-col justify-between shadow-xl shadow-stone-900/5 hover:shadow-2xl hover:shadow-stone-900/10 hover:scale-[1.02] active:scale-95"
+        >
+          <div>
+            <div className="text-xs tracking-[0.15em] uppercase font-light mb-3 text-stone-400">Build</div>
+            <h3 className="text-lg sm:text-xl md:text-2xl font-serif font-extralight tracking-[0.1em] text-stone-900 uppercase mb-2">
+              Personal Brand
+            </h3>
+            <p className="text-sm font-light text-stone-500">Build your unique identity</p>
+          </div>
+          <div className="flex items-center gap-2 text-stone-600">
+            <ChevronRight
+              size={14}
+              strokeWidth={1.5}
+              className="group-hover:translate-x-1 transition-transform duration-500"
+            />
+          </div>
+        </button>
       </div>
 
       <div className="bg-white/50 backdrop-blur-3xl border border-white/60 rounded-3xl p-8 shadow-xl shadow-stone-900/5">
@@ -191,14 +233,14 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
               </div>
               <div className="flex items-center gap-2 ml-4 flex-shrink-0">
                 <div className="w-2 h-2 bg-stone-900 rounded-full shadow-lg"></div>
-                <span className="text-xs tracking-[0.1em] uppercase font-light text-stone-500">Live</span>
+                <span className="text-xs tracking-[0.15em] uppercase font-light text-stone-500">Live</span>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-6 mb-8">
               <div
                 onClick={() => lastGeneration && setShowPreview(true)}
-                className="aspect-[4/3] bg-white/40 backdrop-blur-2xl rounded-2xl border border-white/60 flex items-center justify-center group hover:bg-white/60 hover:border-white/80 transition-all duration-500 cursor-pointer shadow-lg shadow-stone-900/5 hover:shadow-xl hover:shadow-stone-900/10 hover:scale-[1.02] overflow-hidden relative"
+                className="aspect-square bg-white/40 backdrop-blur-2xl rounded-2xl border border-white/60 flex items-center justify-center group hover:bg-white/60 hover:border-white/80 transition-all duration-500 cursor-pointer shadow-lg shadow-stone-900/5 hover:shadow-xl hover:shadow-stone-900/10 hover:scale-[1.02] overflow-hidden relative"
               >
                 {lastGeneratedImage ? (
                   <>
@@ -206,7 +248,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
                       src={lastGeneratedImage || "/placeholder.svg"}
                       alt="Last generated"
                       fill
-                      className="object-cover object-top"
+                      className="object-cover"
                       sizes="(max-width: 768px) 100vw, 50vw"
                     />
                     <div className="absolute inset-0 bg-stone-900/0 group-hover:bg-stone-900/10 transition-colors duration-500"></div>
@@ -222,7 +264,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
 
               <div className="space-y-4">
                 <div className="flex justify-between text-xs">
-                  <span className="tracking-[0.1em] uppercase font-light text-stone-400">Progress</span>
+                  <span className="tracking-[0.15em] uppercase font-light text-stone-400">Progress</span>
                   <span className="font-light text-stone-500">{sessionData.session.progress}%</span>
                 </div>
                 <div className="w-full h-1.5 bg-white/60 backdrop-blur-xl rounded-full overflow-hidden border border-white/50">
@@ -270,7 +312,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
             <div className="grid grid-cols-2 gap-6 mb-8">
               <div
                 onClick={() => lastGeneration && setShowPreview(true)}
-                className="aspect-[4/3] bg-white/40 backdrop-blur-2xl rounded-2xl border border-white/60 flex items-center justify-center group hover:bg-white/60 hover:border-white/80 transition-all duration-500 cursor-pointer shadow-lg shadow-stone-900/5 hover:shadow-xl hover:shadow-stone-900/10 hover:scale-[1.02] overflow-hidden relative"
+                className="aspect-square bg-white/40 backdrop-blur-2xl rounded-2xl border border-white/60 flex items-center justify-center group hover:bg-white/60 hover:border-white/80 transition-all duration-500 cursor-pointer shadow-lg shadow-stone-900/5 hover:shadow-xl hover:shadow-stone-900/10 hover:scale-[1.02] overflow-hidden relative"
               >
                 {lastGeneratedImage ? (
                   <>
@@ -278,7 +320,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
                       src={lastGeneratedImage || "/placeholder.svg"}
                       alt="Last generated"
                       fill
-                      className="object-cover object-top"
+                      className="object-cover"
                       sizes="(max-width: 768px) 100vw, 50vw"
                     />
                     <div className="absolute inset-0 bg-stone-900/0 group-hover:bg-stone-900/10 transition-colors duration-500"></div>
@@ -357,7 +399,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
             <div className="grid grid-cols-2 gap-6 mb-8">
               <div
                 onClick={() => lastGeneration && setShowPreview(true)}
-                className="aspect-[4/3] bg-white/40 backdrop-blur-2xl rounded-2xl border border-white/60 flex flex-col items-center justify-center group hover:bg-white/60 hover:border-white/80 transition-all duration-500 shadow-lg shadow-stone-900/5 hover:shadow-xl hover:shadow-stone-900/10 p-8"
+                className="aspect-square bg-white/40 backdrop-blur-2xl rounded-2xl border border-white/60 flex flex-col items-center justify-center group hover:bg-white/60 hover:border-white/80 transition-all duration-500 shadow-lg shadow-stone-900/5 hover:shadow-xl hover:shadow-stone-900/10 p-8"
               >
                 <div className="w-20 h-20 bg-white/70 backdrop-blur-2xl rounded-2xl flex items-center justify-center mb-4 border border-white/80 shadow-lg shadow-stone-900/5 group-hover:scale-110 transition-transform duration-500">
                   <Aperture size={32} className="text-stone-600" strokeWidth={1.5} />
@@ -413,23 +455,31 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
             onClick={() => setActiveTab(action.action)}
             className="group relative bg-white/50 backdrop-blur-3xl border border-white/60 rounded-2xl p-6 text-left hover:bg-white/70 hover:border-white/80 transition-all duration-500 min-h-[130px] flex flex-col justify-between shadow-xl shadow-stone-900/5 hover:shadow-2xl hover:shadow-stone-900/10 hover:scale-[1.02] active:scale-95 overflow-hidden"
           >
-            <div className="absolute top-0 right-0 w-32 h-32 bg-stone-200/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-full blur-2xl"></div>
-            <div className="relative z-10 flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-stone-900 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-500">
+            <div className="absolute inset-0 bg-gradient-to-br from-white/40 via-white/10 to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-500 rounded-2xl sm:rounded-3xl"></div>
+
+            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+            </div>
+
+            <div className="relative z-10">
+              <div className="w-12 h-12 bg-stone-900 rounded-xl flex items-center justify-center mb-4 sm:mb-5 shadow-xl shadow-stone-900/30 group-hover:scale-110 transition-all duration-500 border border-white/20">
                 <action.icon size={18} className="text-white" strokeWidth={1.5} />
               </div>
-              <div className="w-8 h-8 bg-white/70 backdrop-blur-2xl rounded-full flex items-center justify-center group-hover:bg-white/90 transition-all duration-500 border border-white/50">
+
+              <h4 className="text-base font-light text-stone-900 mb-2 sm:mb-3 leading-tight">{action.title}</h4>
+
+              <p className="text-xs sm:text-sm font-light text-stone-500 leading-relaxed">{action.desc}</p>
+            </div>
+
+            {action.action && (
+              <div className="absolute bottom-4 right-4 w-8 h-8 bg-white/60 backdrop-blur-xl rounded-full flex items-center justify-center group-hover:bg-white/80 transition-all duration-500 border border-white/40 shadow-lg">
                 <ChevronRight
                   size={14}
-                  className="text-stone-500 group-hover:translate-x-0.5 transition-transform duration-500"
-                  strokeWidth={1.5}
+                  className="text-stone-700 group-hover:translate-x-0.5 transition-transform duration-500"
+                  strokeWidth={2}
                 />
               </div>
-            </div>
-            <div className="relative z-10">
-              <h4 className="text-base font-light text-stone-900 mb-2">{action.title}</h4>
-              <p className="text-xs font-light text-stone-500">{action.desc}</p>
-            </div>
+            )}
           </button>
         ))}
       </div>
@@ -465,7 +515,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
                       {gen.category ? `${gen.category} session completed` : "New session started"}
                     </span>
                   </div>
-                  <span className="text-xs tracking-[0.1em] uppercase font-light text-stone-400 ml-4 flex-shrink-0">
+                  <span className="text-xs tracking-[0.15em] uppercase font-light text-stone-400 ml-4 flex-shrink-0">
                     {timeAgo}
                   </span>
                 </div>
@@ -543,6 +593,18 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
 
       {showPreview && lastGeneration && (
         <InstagramPhotoPreview
+          image={{
+            id: lastGeneration.id,
+            image_url: lastGeneration.image_url,
+            prompt: lastGeneration.prompt,
+            description: lastGeneration.description,
+            category: lastGeneration.category,
+            subcategory: lastGeneration.subcategory,
+            created_at: lastGeneration.created_at,
+            saved: lastGeneration.saved,
+            user_id: user.id,
+            is_favorite: lastGeneration.saved || false,
+          }}
           images={[
             {
               id: lastGeneration.id,
@@ -554,9 +616,9 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
               created_at: lastGeneration.created_at,
               saved: lastGeneration.saved,
               user_id: user.id,
+              is_favorite: lastGeneration.saved || false,
             },
           ]}
-          initialIndex={0}
           onClose={() => setShowPreview(false)}
           onDelete={async () => {
             setShowPreview(false)
@@ -565,6 +627,18 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
           onFavorite={async () => {
             onImageGenerated()
           }}
+          isFavorited={lastGeneration.saved || false}
+        />
+      )}
+
+      {showBrandWizard && (
+        <BrandProfileWizard
+          isOpen={showBrandWizard}
+          onClose={() => setShowBrandWizard(false)}
+          onComplete={() => {
+            setShowBrandWizard(false)
+          }}
+          existingData={null}
         />
       )}
     </div>

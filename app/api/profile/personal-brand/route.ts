@@ -61,8 +61,14 @@ export async function GET(request: NextRequest) {
         businessType: brand.business_type,
         currentSituation: brand.current_situation,
         transformationStory: brand.transformation_story,
+        targetAudience: brand.target_audience,
+        brandVoice: brand.brand_voice,
+        languageStyle: brand.language_style,
+        contentThemes: brand.content_themes,
+        brandVibe: brand.brand_vibe,
+        colorMood: brand.color_mood,
         futureVision: brand.future_vision,
-        businessGoals: brand.business_goals,
+        contentGoals: brand.content_goals,
         photoGoals: brand.photo_goals,
         stylePreferences: brand.style_preferences,
         colorPreferences: brand.color_preferences,
@@ -112,7 +118,6 @@ export async function POST(request: NextRequest) {
     let brandId: number
 
     if (existingBrand.length > 0) {
-      // Update existing brand
       const result = await sql`
         UPDATE user_personal_brand
         SET
@@ -120,10 +125,14 @@ export async function POST(request: NextRequest) {
           business_type = ${body.businessType || ""},
           current_situation = ${body.currentSituation || ""},
           transformation_story = ${body.transformationStory || ""},
+          target_audience = ${body.targetAudience || ""},
+          brand_voice = ${body.brandVoice || ""},
+          language_style = ${body.languageStyle || ""},
+          content_themes = ${body.contentThemes || ""},
+          brand_vibe = ${body.brandVibe || ""},
+          color_mood = ${body.colorMood || ""},
           future_vision = ${body.futureVision || ""},
-          business_goals = ${body.businessGoals || ""},
-          photo_goals = ${body.photoGoals || ""},
-          style_preferences = ${body.stylePreferences || ""},
+          content_goals = ${body.contentGoals || ""},
           is_completed = ${body.isCompleted || false},
           updated_at = NOW()
         WHERE user_id = ${neonUserId}
@@ -131,7 +140,6 @@ export async function POST(request: NextRequest) {
       `
       brandId = result[0].id
     } else {
-      // Insert new brand
       const result = await sql`
         INSERT INTO user_personal_brand (
           user_id,
@@ -139,10 +147,14 @@ export async function POST(request: NextRequest) {
           business_type,
           current_situation,
           transformation_story,
+          target_audience,
+          brand_voice,
+          language_style,
+          content_themes,
+          brand_vibe,
+          color_mood,
           future_vision,
-          business_goals,
-          photo_goals,
-          style_preferences,
+          content_goals,
           is_completed,
           created_at,
           updated_at
@@ -152,10 +164,14 @@ export async function POST(request: NextRequest) {
           ${body.businessType || ""},
           ${body.currentSituation || ""},
           ${body.transformationStory || ""},
+          ${body.targetAudience || ""},
+          ${body.brandVoice || ""},
+          ${body.languageStyle || ""},
+          ${body.contentThemes || ""},
+          ${body.brandVibe || ""},
+          ${body.colorMood || ""},
           ${body.futureVision || ""},
-          ${body.businessGoals || ""},
-          ${body.photoGoals || ""},
-          ${body.stylePreferences || ""},
+          ${body.contentGoals || ""},
           ${body.isCompleted || false},
           NOW(),
           NOW()
@@ -265,7 +281,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error("[v0] Error updating personal brand:", error)
+    console.error("Error updating personal brand:", error)
     return NextResponse.json({ error: "Failed to update personal brand" }, { status: 500 })
   }
 }

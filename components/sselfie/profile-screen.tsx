@@ -5,6 +5,7 @@ import { Camera, Settings, Aperture, TrendingUp, ImageIcon } from "lucide-react"
 import SettingsScreen from "./settings-screen"
 import EditProfileDialog from "./edit-profile-dialog"
 import PersonalBrandSection from "./personal-brand-section"
+import BrandAssetsManager from "./brand-assets-manager"
 import { ProfileImageSelector } from "@/components/profile-image-selector"
 import type { User } from "./types"
 import Image from "next/image"
@@ -253,6 +254,8 @@ export default function ProfileScreen({ user }: ProfileScreenProps) {
       )}
 
       <PersonalBrandSection userId={user.id} />
+
+      <BrandAssetsManager />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <button

@@ -63,6 +63,10 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="SSELFIE" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="icon" type="image/png" href="/favicon.png" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Dancing+Script:wght@700&family=Montserrat:wght@700&family=Inter:wght@600&display=swap"
+          rel="stylesheet"
+        />
       </head>
       <body className={`font-sans antialiased`}>
         {children}

@@ -7,6 +7,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Progress } from "@/components/ui/progress"
+import ContentPillarBuilder from "./content-pillar-builder"
 
 interface BrandProfileWizardProps {
   isOpen: boolean
@@ -21,12 +22,12 @@ const STEPS = [
     title: "Hey there! 👋",
     subtitle: "Let's create your personal brand together",
     mayaMessage:
-      "I'm Maya, and I'm here to help you create photos that actually look like YOU. To do that, I need to understand your unique style and vision. This will only take a few minutes, and trust me - it's worth it!",
+      "I'm Maya, and I'm here to help you create content that actually looks and sounds like YOU. To do that, I need to understand your unique style, voice, and vision. This will only take a few minutes, and trust me - it's worth it!",
   },
   {
     id: "name",
     title: "What should I call your brand?",
-    subtitle: "Step 1 of 6",
+    subtitle: "Step 1 of 7",
     mayaMessage:
       "This could be your business name, your personal brand, or just your name. Whatever feels right to you!",
     field: "name",
@@ -35,7 +36,7 @@ const STEPS = [
   {
     id: "businessType",
     title: "What do you do?",
-    subtitle: "Step 2 of 6",
+    subtitle: "Step 2 of 7",
     mayaMessage:
       "Are you a coach, designer, entrepreneur, content creator? Tell me about your work - I want to understand what makes you unique.",
     field: "businessType",
@@ -45,7 +46,7 @@ const STEPS = [
   {
     id: "currentSituation",
     title: "Where are you right now?",
-    subtitle: "Step 3 of 6",
+    subtitle: "Step 3 of 7",
     mayaMessage:
       "Are you building your business foundation? Growing your online presence? Scaling? Understanding where you are helps me create photos that match your current journey.",
     field: "currentSituation",
@@ -55,7 +56,7 @@ const STEPS = [
   {
     id: "transformationStory",
     title: "What's your story?",
-    subtitle: "Step 4 of 6",
+    subtitle: "Step 4 of 7",
     mayaMessage:
       "Everyone has a story. What brought you here? What transformation are you going through or have you been through? Your story makes your brand authentic and relatable.",
     field: "transformationStory",
@@ -65,7 +66,7 @@ const STEPS = [
   {
     id: "futureVision",
     title: "Where are you headed?",
-    subtitle: "Step 5 of 6",
+    subtitle: "Step 5 of 7",
     mayaMessage:
       "Dream big! Where do you see yourself and your brand in the future? What impact do you want to make? This helps me create photos that align with your vision.",
     field: "futureVision",
@@ -75,12 +76,19 @@ const STEPS = [
   {
     id: "photoGoals",
     title: "What do you need photos for?",
-    subtitle: "Step 6 of 6",
+    subtitle: "Step 6 of 7",
     mayaMessage:
       "Last question! Are you building a social media presence? Need professional headshots? Creating content for your website? Knowing this helps me create exactly what you need.",
     field: "photoGoals",
     placeholder: "e.g., Social media content, Professional brand photos, Website images...",
     isTextarea: true,
+  },
+  {
+    id: "contentPillars",
+    title: "What will you post about?",
+    subtitle: "Step 7 of 7",
+    mayaMessage: "Let me help you figure out your content strategy!",
+    isContentPillarBuilder: true,
   },
 ]
 
@@ -97,6 +105,7 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
     photoGoals: existingData?.photoGoals || "",
     stylePreferences: existingData?.stylePreferences || "",
   })
+  const [contentPillars, setContentPillars] = useState<any[]>([])
 
   useEffect(() => {
     console.log("[v0] BrandProfileWizard mounted, isOpen:", isOpen)
@@ -138,6 +147,7 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
         credentials: "include",
         body: JSON.stringify({
           ...formData,
+          contentPillars: contentPillars.length > 0 ? JSON.stringify(contentPillars) : null,
           isCompleted: true,
         }),
       })
@@ -157,6 +167,17 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const handleContentPillarsComplete = (pillars: any[]) => {
+    console.log("[v0] Content pillars selected:", pillars)
+    setContentPillars(pillars)
+    handleComplete()
+  }
+
+  const handleContentPillarsSkip = () => {
+    console.log("[v0] Content pillars skipped")
+    handleComplete()
   }
 
   const canProceed = () => {
@@ -195,7 +216,13 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
           <div className="space-y-4">
             <h2 className="text-2xl font-bold text-stone-950">{step.title}</h2>
 
-            {!isIntroStep && step.field && (
+            {step.isContentPillarBuilder ? (
+              <ContentPillarBuilder
+                userAnswers={formData}
+                onComplete={handleContentPillarsComplete}
+                onSkip={handleContentPillarsSkip}
+              />
+            ) : !isIntroStep && step.field ? (
               <div className="space-y-2">
                 {step.isTextarea ? (
                   <Textarea
@@ -214,47 +241,49 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
                   />
                 )}
               </div>
-            )}
+            ) : null}
           </div>
 
           {/* Navigation Buttons */}
-          <div className="flex items-center justify-between pt-4 border-t border-stone-200">
-            <Button
-              variant="ghost"
-              onClick={handleBack}
-              disabled={currentStep === 0}
-              className="text-stone-600 hover:text-stone-950"
-            >
-              <ArrowLeft size={16} className="mr-2" />
-              Back
-            </Button>
+          {!step.isContentPillarBuilder && (
+            <div className="flex items-center justify-between pt-4 border-t border-stone-200">
+              <Button
+                variant="ghost"
+                onClick={handleBack}
+                disabled={currentStep === 0}
+                className="text-stone-600 hover:text-stone-950"
+              >
+                <ArrowLeft size={16} className="mr-2" />
+                Back
+              </Button>
 
-            {isLastStep ? (
-              <Button
-                onClick={handleComplete}
-                disabled={!canProceed() || isSaving}
-                className="bg-stone-950 hover:bg-stone-800 text-white"
-              >
-                {isSaving ? (
-                  "Saving..."
-                ) : (
-                  <>
-                    Complete
-                    <Check size={16} className="ml-2" />
-                  </>
-                )}
-              </Button>
-            ) : (
-              <Button
-                onClick={handleNext}
-                disabled={!canProceed()}
-                className="bg-stone-950 hover:bg-stone-800 text-white"
-              >
-                {isIntroStep ? "Let's Start" : "Next"}
-                <ArrowRight size={16} className="ml-2" />
-              </Button>
-            )}
-          </div>
+              {isLastStep ? (
+                <Button
+                  onClick={handleComplete}
+                  disabled={!canProceed() || isSaving}
+                  className="bg-stone-950 hover:bg-stone-800 text-white"
+                >
+                  {isSaving ? (
+                    "Saving..."
+                  ) : (
+                    <>
+                      Complete
+                      <Check size={16} className="ml-2" />
+                    </>
+                  )}
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleNext}
+                  disabled={!canProceed()}
+                  className="bg-stone-950 hover:bg-stone-800 text-white"
+                >
+                  {isIntroStep ? "Let's Start" : "Next"}
+                  <ArrowRight size={16} className="ml-2" />
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

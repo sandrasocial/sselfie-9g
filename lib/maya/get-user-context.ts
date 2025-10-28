@@ -1,20 +1,22 @@
 import { getUserPersonalMemory, getUserPersonalBrand } from "@/lib/data/maya"
 import { getUserByAuthId } from "@/lib/user-mapping"
+import { neon } from "@neondatabase/serverless"
+
+const sql = neon(process.env.DATABASE_URL!)
 
 export async function getUserContextForMaya(authUserId: string): Promise<string> {
   try {
-    // Get Neon user
     const neonUser = await getUserByAuthId(authUserId)
     if (!neonUser) {
       return ""
     }
 
-    const [memory, personalBrand] = await Promise.all([
+    const [memory, personalBrand, assets] = await Promise.all([
       getUserPersonalMemory(neonUser.id),
       getUserPersonalBrand(neonUser.id),
+      sql`SELECT * FROM brand_assets WHERE user_id = ${neonUser.id} ORDER BY created_at DESC`,
     ])
 
-    // Build context string
     const contextParts: string[] = []
 
     if (personalBrand && personalBrand.is_completed) {
@@ -26,6 +28,34 @@ export async function getUserContextForMaya(authUserId: string): Promise<string>
 
       if (personalBrand.business_type) {
         contextParts.push(`Business Type: ${personalBrand.business_type}`)
+      }
+
+      if (personalBrand.target_audience) {
+        contextParts.push(`Target Audience: ${personalBrand.target_audience}`)
+      }
+
+      if (personalBrand.brand_voice) {
+        contextParts.push(`Brand Voice: ${personalBrand.brand_voice}`)
+      }
+
+      if (personalBrand.language_style) {
+        contextParts.push(`Language Style: ${personalBrand.language_style}`)
+      }
+
+      if (personalBrand.content_themes) {
+        contextParts.push(`Content Themes: ${personalBrand.content_themes}`)
+      }
+
+      if (personalBrand.content_pillars) {
+        contextParts.push(`Content Pillars: ${personalBrand.content_pillars}`)
+      }
+
+      if (personalBrand.brand_vibe) {
+        contextParts.push(`Brand Vibe: ${personalBrand.brand_vibe}`)
+      }
+
+      if (personalBrand.color_mood) {
+        contextParts.push(`Color Mood: ${personalBrand.color_mood}`)
       }
 
       if (personalBrand.current_situation) {
@@ -52,10 +82,25 @@ export async function getUserContextForMaya(authUserId: string): Promise<string>
         contextParts.push(`Style Preferences: ${personalBrand.style_preferences}`)
       }
 
-      contextParts.push("") // Empty line for separation
+      contextParts.push("")
     }
 
-    // Add personal memory context
+    if (assets && assets.length > 0) {
+      contextParts.push("=== USER'S BRAND ASSETS ===")
+      contextParts.push(`The user has uploaded ${assets.length} brand asset(s):`)
+
+      for (const asset of assets) {
+        const assetInfo = [`- ${asset.file_name} (${asset.file_type})`]
+        if (asset.description) {
+          assetInfo.push(`  Description: ${asset.description}`)
+        }
+        assetInfo.push(`  URL: ${asset.file_url}`)
+        contextParts.push(assetInfo.join("\n"))
+      }
+
+      contextParts.push("")
+    }
+
     if (memory) {
       contextParts.push("=== MAYA'S LEARNING ABOUT USER ===")
 

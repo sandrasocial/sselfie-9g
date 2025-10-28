@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Camera, User, Aperture, Grid, MessageCircle, ImageIcon, Infinity } from "lucide-react"
+import { Camera, User, Aperture, Grid, MessageCircle, ImageIcon, Infinity, LayoutGrid } from "lucide-react"
 import LoadingScreen from "./loading-screen"
 import StudioScreen from "./studio-screen"
 import TrainingScreen from "./training-screen"
@@ -9,6 +9,7 @@ import MayaChatScreen from "./maya-chat-screen"
 import GalleryScreen from "./gallery-screen"
 import AcademyScreen from "./academy-screen"
 import ProfileScreen from "./profile-screen"
+import FeedDesignerScreen from "./feed-designer-screen"
 import { InstallPrompt } from "./install-prompt"
 import type { User as UserType } from "./types"
 
@@ -93,6 +94,7 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
     { id: "gallery", label: "Gallery", icon: ImageIcon },
     { id: "academy", label: "Academy", icon: Grid },
     { id: "profile", label: "Profile", icon: User },
+    { id: "feed-designer", label: "Feed Designer", icon: LayoutGrid },
   ]
 
   const user: UserType = {
@@ -170,6 +172,7 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
             {activeTab === "gallery" && <GalleryScreen user={user} userId={userId} />}
             {activeTab === "academy" && <AcademyScreen />}
             {activeTab === "profile" && <ProfileScreen user={user} />}
+            {activeTab === "feed-designer" && <FeedDesignerScreen />}
           </div>
         </div>
       </div>
