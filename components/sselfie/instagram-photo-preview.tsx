@@ -86,7 +86,7 @@ export function InstagramPhotoPreview({
       )}
 
       {/* Instagram Post Style */}
-      <div className="w-full max-w-md mx-auto bg-stone-950 rounded-xl overflow-hidden">
+      <div className="w-full max-w-md mx-auto bg-stone-950 rounded-xl overflow-hidden max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-3 border-b border-stone-800">
           <div className="flex items-center gap-3">
@@ -101,16 +101,16 @@ export function InstagramPhotoPreview({
         </div>
 
         {/* Image */}
-        <div className="relative aspect-square bg-stone-900">
+        <div className="relative aspect-square bg-stone-900 overflow-y-auto">
           <img
             src={currentImage.image_url || "/placeholder.svg"}
-            alt={currentImage.prompt || "Photo"}
-            className="w-full h-full object-cover"
+            alt={currentImage.description || currentImage.prompt || "Photo"}
+            className="w-full h-auto object-contain"
           />
         </div>
 
         {/* Actions */}
-        <div className="p-3 space-y-3 border-t border-stone-800">
+        <div className="p-3 space-y-3 border-t border-stone-800 overflow-y-auto">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
@@ -146,10 +146,10 @@ export function InstagramPhotoPreview({
           </div>
 
           {/* Caption */}
-          {currentImage.prompt && (
+          {(currentImage.description || currentImage.prompt) && (
             <div className="text-sm text-white">
               <span className="font-medium mr-2">{userName}</span>
-              <span className="text-stone-300">{currentImage.prompt}</span>
+              <span className="text-stone-300">{currentImage.description || currentImage.prompt}</span>
             </div>
           )}
 

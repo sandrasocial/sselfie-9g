@@ -4,7 +4,7 @@ import type React from "react"
 import VideoCard from "./video-card"
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport } from "ai"
-import { Camera, Send, Plus, ArrowDown, History, X, Sparkles, User, Package, Palette } from "lucide-react"
+import { Camera, Send, Plus, ArrowDown, History, X } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import ConceptCard from "./concept-card"
 import MayaChatHistory from "./maya-chat-history"
@@ -27,7 +27,7 @@ export default function MayaChatScreen() {
   const retryQueue = useRef<Array<{ messageId: string; payload: any }>>([])
   const [isDragging, setIsDragging] = useState(false)
   const [contentFilter, setContentFilter] = useState<"all" | "photos" | "videos">("all")
-  const [currentPrompts, setCurrentPrompts] = useState<Array<{ label: string; prompt: string; icon: any }>>([])
+  const [currentPrompts, setCurrentPrompts] = useState<Array<{ label: string; prompt: string }>>([])
 
   const { messages, sendMessage, status, setMessages } = useChat({
     transport: new DefaultChatTransport({ api: "/api/maya/chat" }),
@@ -50,49 +50,84 @@ export default function MayaChatScreen() {
     photoStories: [
       {
         label: "Golden Hour",
-        prompt: "Capture me in golden hour light, where warmth meets natural radiance",
-        icon: Sparkles,
+        prompt: "Take my photo during golden hour with warm, natural lighting",
       },
       {
-        label: "Editorial",
-        prompt: "Create an editorial moment with dramatic shadows and bold composition",
-        icon: Palette,
+        label: "Editorial Style",
+        prompt: "Create an editorial-style photo with dramatic lighting and composition",
       },
-      { label: "In Motion", prompt: "Show me in motion, alive and authentic, energy flowing naturally", icon: User },
-      { label: "Cinematic", prompt: "Paint me into a cinematic landscape, where story meets scenery", icon: Camera },
       {
-        label: "Architectural",
-        prompt: "Frame me in architectural elegance, clean lines and modern beauty",
-        icon: Package,
+        label: "Action Shot",
+        prompt: "Capture me in motion with natural energy and movement",
       },
-      { label: "Ethereal", prompt: "Capture something ethereal and dreamy in soft, natural light", icon: Sparkles },
+      {
+        label: "Cinematic Look",
+        prompt: "Make a cinematic photo with beautiful scenery in the background",
+      },
+      {
+        label: "Modern Architecture",
+        prompt: "Take my photo with modern architecture and clean lines",
+      },
+      {
+        label: "Soft & Dreamy",
+        prompt: "Create a soft, dreamy photo with gentle natural light",
+      },
     ],
     videoMoments: [
-      { label: "Bring to Life", prompt: "Animate my portrait with subtle, natural movement", icon: Camera },
-      { label: "Cinematic Flow", prompt: "Create a cinematic video moment with flowing movement", icon: Sparkles },
-      { label: "Living Portrait", prompt: "Turn a still moment into something alive and breathing", icon: User },
+      {
+        label: "Bring Photo to Life",
+        prompt: "Turn my photo into a video with subtle natural movement",
+      },
+      {
+        label: "Cinematic Video",
+        prompt: "Make a cinematic video with smooth, flowing movement",
+      },
+      {
+        label: "Animated Portrait",
+        prompt: "Animate my portrait with lifelike, natural motion",
+      },
     ],
     storytelling: [
-      { label: "My Story", prompt: "Tell my story through light, shadow, and authentic moments", icon: Palette },
-      { label: "Visual Journey", prompt: "Create a visual narrative of confidence and grace", icon: Sparkles },
-      { label: "Essence", prompt: "Capture the essence of who I am in this moment", icon: User },
-      { label: "Mood", prompt: "Create something moody and introspective in soft, contemplative light", icon: Camera },
+      {
+        label: "Tell My Story",
+        prompt: "Create photos that tell my story through light and composition",
+      },
+      {
+        label: "Confident Look",
+        prompt: "Capture me looking confident and graceful",
+      },
+      {
+        label: "Authentic Moment",
+        prompt: "Show who I am in this moment, authentic and real",
+      },
+      {
+        label: "Moody Vibe",
+        prompt: "Create a moody photo with soft, contemplative lighting",
+      },
     ],
     artistic: [
-      { label: "Bold & Powerful", prompt: "Show me bold and powerful in a dramatic setting", icon: Package },
+      {
+        label: "Bold & Powerful",
+        prompt: "Make me look bold and powerful in a dramatic setting",
+      },
       {
         label: "Natural Beauty",
-        prompt: "Celebrate natural beauty in an organic, flowing composition",
-        icon: Sparkles,
+        prompt: "Highlight natural beauty with organic, flowing composition",
       },
-      { label: "Urban Edge", prompt: "Capture urban energy with modern edge and contemporary style", icon: Palette },
-      { label: "Timeless", prompt: "Create something timeless and elegant, classic yet fresh", icon: User },
+      {
+        label: "Urban Style",
+        prompt: "Capture urban energy with modern, contemporary style",
+      },
+      {
+        label: "Timeless & Elegant",
+        prompt: "Create something timeless and elegant, classic but fresh",
+      },
     ],
   }
 
   const getRandomPrompts = () => {
     const allCategories = Object.values(promptPool)
-    const selected: Array<{ label: string; prompt: string; icon: any }> = []
+    const selected: Array<{ label: string; prompt: string }> = []
 
     // Get 1-2 from each category, shuffled
     allCategories.forEach((category) => {
@@ -682,24 +717,20 @@ export default function MayaChatScreen() {
                 Welcome
               </h2>
               <p className="text-sm sm:text-base text-stone-600 tracking-wide text-center mb-8 max-w-md leading-relaxed">
-                I'm Maya, your creative photo stylist. Let's craft visual stories that capture your essence. Choose a
-                prompt below or tell me what you're envisioning.
+                Hi, I'm Maya. I'll help you create beautiful photos and videos. Pick a style below or tell me what you'd
+                like to make.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-2xl">
                 {currentPrompts.map((item, index) => {
-                  const Icon = item.icon
                   return (
                     <button
                       key={index}
                       onClick={() => handleSendMessage(item.prompt)}
-                      className="group p-4 bg-white/50 backdrop-blur-xl border border-white/70 rounded-2xl sm:rounded-[1.5rem] hover:bg-white/70 hover:border-stone-300 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] text-left"
+                      className="group p-4 bg-white/50 backdrop-blur-xl border border-white/70 rounded-2xl sm:rounded-[1.5rem] hover:bg-stone-100 hover:border-stone-300 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] text-left"
                     >
-                      <div className="flex items-center gap-2 mb-2">
-                        <Icon size={14} className="text-stone-600" strokeWidth={2} />
-                        <span className="text-xs tracking-[0.15em] uppercase font-light text-stone-600">
-                          {item.label}
-                        </span>
-                      </div>
+                      <span className="text-xs tracking-[0.15em] uppercase font-light text-stone-600 mb-2 block">
+                        {item.label}
+                      </span>
                       <p className="text-sm text-stone-700 leading-relaxed group-hover:text-stone-950 transition-colors">
                         {item.prompt}
                       </p>
@@ -910,15 +941,13 @@ export default function MayaChatScreen() {
             <div className="mb-3">
               <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
                 {currentPrompts.map((item, index) => {
-                  const Icon = item.icon
                   return (
                     <button
                       key={index}
                       onClick={() => handleSendMessage(item.prompt)}
                       disabled={isTyping}
-                      className="flex-shrink-0 flex items-center gap-2 px-4 py-2.5 bg-white/40 backdrop-blur-xl border border-white/60 rounded-xl hover:bg-white/60 hover:border-stone-300 transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex-shrink-0 px-4 py-2.5 bg-white/40 backdrop-blur-xl border border-white/60 rounded-xl hover:bg-white/60 hover:border-stone-300 transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <Icon size={14} className="text-stone-600" strokeWidth={2} />
                       <span className="text-xs tracking-wide font-medium text-stone-700">{item.label}</span>
                     </button>
                   )

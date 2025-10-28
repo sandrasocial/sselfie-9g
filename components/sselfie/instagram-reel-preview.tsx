@@ -121,18 +121,20 @@ export function InstagramReelPreview({
       )}
 
       {/* Instagram Reel Style */}
-      <div className="relative w-full max-w-md h-full max-h-[90vh] bg-stone-950 rounded-xl overflow-hidden">
+      <div className="relative w-full max-w-md h-full max-h-[90vh] bg-stone-950 rounded-xl overflow-hidden flex flex-col">
         {/* Video */}
-        <video
-          ref={videoRef}
-          src={currentVideo.video_url}
-          className="w-full h-full object-cover cursor-pointer"
-          loop
-          muted={isMuted}
-          playsInline
-          autoPlay
-          onClick={togglePlay}
-        />
+        <div className="relative flex-1 overflow-y-auto">
+          <video
+            ref={videoRef}
+            src={currentVideo.video_url}
+            className="w-full h-auto object-contain cursor-pointer"
+            loop
+            muted={isMuted}
+            playsInline
+            autoPlay
+            onClick={togglePlay}
+          />
+        </div>
 
         {/* Top gradient overlay */}
         <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-stone-950/80 to-transparent pointer-events-none" />
@@ -203,7 +205,7 @@ export function InstagramReelPreview({
           </div>
 
           {currentVideo.motion_prompt && (
-            <p className="text-sm text-white mb-2 line-clamp-2">{currentVideo.motion_prompt}</p>
+            <p className="text-sm text-white mb-2 line-clamp-3">{currentVideo.motion_prompt}</p>
           )}
 
           {videos.length > 1 && (

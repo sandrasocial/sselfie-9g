@@ -156,6 +156,7 @@ export async function POST(request: NextRequest) {
       INSERT INTO generated_images (
         user_id,
         prompt,
+        description,
         category,
         subcategory,
         image_urls,
@@ -163,6 +164,7 @@ export async function POST(request: NextRequest) {
       ) VALUES (
         ${neonUser.id},
         ${finalPrompt},
+        ${conceptDescription},
         ${category},
         ${conceptTitle},
         ${JSON.stringify({ prediction_id: prediction.id, status: "processing" })},

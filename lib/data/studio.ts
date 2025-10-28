@@ -13,6 +13,7 @@ export interface RecentGeneration {
   id: number
   image_url: string
   prompt: string
+  description: string | null
   category: string
   subcategory: string | null
   created_at: string
@@ -44,6 +45,7 @@ export async function getRecentGenerations(userId: string, limit = 10): Promise<
       id,
       COALESCE(selected_url, (string_to_array(image_urls, ','))[1]) as image_url,
       prompt,
+      description,
       category,
       subcategory,
       created_at,

@@ -34,6 +34,7 @@ export interface GalleryImage {
   user_id: string
   image_url: string
   prompt: string
+  description?: string
   category?: string
   style?: string
   is_favorite?: boolean
@@ -54,6 +55,7 @@ export async function getUserImages(userId: string): Promise<GalleryImage[]> {
         user_id,
         image_url,
         prompt,
+        generated_prompt,
         style,
         category,
         is_favorite,
@@ -83,6 +85,7 @@ export async function getUserImages(userId: string): Promise<GalleryImage[]> {
         user_id: img.user_id,
         image_url: img.image_url,
         prompt: img.prompt || "",
+        description: img.generated_prompt || img.prompt || "",
         category: img.category,
         style: img.style,
         is_favorite: img.is_favorite || false,
@@ -94,6 +97,7 @@ export async function getUserImages(userId: string): Promise<GalleryImage[]> {
         user_id: img.user_id,
         image_url: img.image_url,
         prompt: img.prompt || "",
+        description: img.prompt || "",
         category: img.category || img.subcategory,
         is_favorite: false,
         created_at: img.created_at,
@@ -128,6 +132,7 @@ export async function getImageById(imageId: string): Promise<GalleryImage | null
           user_id,
           image_url,
           prompt,
+          generated_prompt,
           style,
           category,
           is_favorite,
@@ -144,6 +149,7 @@ export async function getImageById(imageId: string): Promise<GalleryImage | null
           user_id: img.user_id,
           image_url: img.image_url,
           prompt: img.prompt || "",
+          description: img.generated_prompt || img.prompt || "",
           category: img.category,
           style: img.style,
           is_favorite: img.is_favorite || false,
@@ -173,6 +179,7 @@ export async function getImageById(imageId: string): Promise<GalleryImage | null
           user_id: img.user_id,
           image_url: img.image_url,
           prompt: img.prompt || "",
+          description: img.prompt || "",
           category: img.category || img.subcategory,
           is_favorite: false,
           created_at: img.created_at,

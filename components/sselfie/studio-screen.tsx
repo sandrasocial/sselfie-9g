@@ -2,6 +2,8 @@
 import { Aperture, ChevronRight, Plus, Grid, Camera } from "lucide-react"
 import useSWR from "swr"
 import Image from "next/image"
+import { InstagramPhotoPreview } from "./instagram-photo-preview"
+import { useState } from "react"
 
 interface StudioScreenProps {
   user: any
@@ -13,6 +15,8 @@ interface StudioScreenProps {
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onImageGenerated }: StudioScreenProps) {
+  const [showPreview, setShowPreview] = useState(false)
+
   const { data: stats } = useSWR(hasTrainedModel ? "/api/studio/stats" : null, fetcher, {
     refreshInterval: 30000,
   })
@@ -123,6 +127,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
   const hasActiveSession = sessionData?.session
   const hasRecentGenerations = generationsData?.generations && generationsData.generations.length > 0
   const lastGeneratedImage = generationsData?.generations?.[0]?.image_url
+  const lastGeneration = generationsData?.generations?.[0]
   const recentGenerationsCount = generationsData?.generations?.length || 0
   const lastGenerationTime = generationsData?.generations?.[0]?.created_at
     ? (() => {
@@ -191,7 +196,10 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
             </div>
 
             <div className="grid grid-cols-2 gap-6 mb-8">
-              <div className="aspect-[4/3] bg-white/40 backdrop-blur-2xl rounded-2xl border border-white/60 flex items-center justify-center group hover:bg-white/60 hover:border-white/80 transition-all duration-500 cursor-pointer shadow-lg shadow-stone-900/5 hover:shadow-xl hover:shadow-stone-900/10 hover:scale-[1.02] overflow-hidden relative">
+              <div
+                onClick={() => lastGeneration && setShowPreview(true)}
+                className="aspect-[4/3] bg-white/40 backdrop-blur-2xl rounded-2xl border border-white/60 flex items-center justify-center group hover:bg-white/60 hover:border-white/80 transition-all duration-500 cursor-pointer shadow-lg shadow-stone-900/5 hover:shadow-xl hover:shadow-stone-900/10 hover:scale-[1.02] overflow-hidden relative"
+              >
                 {lastGeneratedImage ? (
                   <>
                     <Image
@@ -255,12 +263,15 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
               </div>
               <div className="flex items-center gap-2 ml-4 flex-shrink-0">
                 <div className="w-2 h-2 bg-stone-600 rounded-full shadow-lg"></div>
-                <span className="text-xs tracking-[0.1em] uppercase font-light text-stone-500">Active</span>
+                <span className="text-xs tracking-[0.15em] uppercase font-light text-stone-500">Active</span>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-6 mb-8">
-              <div className="aspect-[4/3] bg-white/40 backdrop-blur-2xl rounded-2xl border border-white/60 flex items-center justify-center group hover:bg-white/60 hover:border-white/80 transition-all duration-500 cursor-pointer shadow-lg shadow-stone-900/5 hover:shadow-xl hover:shadow-stone-900/10 hover:scale-[1.02] overflow-hidden relative">
+              <div
+                onClick={() => lastGeneration && setShowPreview(true)}
+                className="aspect-[4/3] bg-white/40 backdrop-blur-2xl rounded-2xl border border-white/60 flex items-center justify-center group hover:bg-white/60 hover:border-white/80 transition-all duration-500 cursor-pointer shadow-lg shadow-stone-900/5 hover:shadow-xl hover:shadow-stone-900/10 hover:scale-[1.02] overflow-hidden relative"
+              >
                 {lastGeneratedImage ? (
                   <>
                     <Image
@@ -339,12 +350,15 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
               </div>
               <div className="flex items-center gap-2 ml-4 flex-shrink-0">
                 <div className="w-2 h-2 bg-stone-300 rounded-full shadow-sm"></div>
-                <span className="text-xs tracking-[0.1em] uppercase font-light text-stone-400">Idle</span>
+                <span className="text-xs tracking-[0.15em] uppercase font-light text-stone-400">Idle</span>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-6 mb-8">
-              <div className="aspect-[4/3] bg-white/40 backdrop-blur-2xl rounded-2xl border border-white/60 flex flex-col items-center justify-center group hover:bg-white/60 hover:border-white/80 transition-all duration-500 shadow-lg shadow-stone-900/5 hover:shadow-xl hover:shadow-stone-900/10 p-8">
+              <div
+                onClick={() => lastGeneration && setShowPreview(true)}
+                className="aspect-[4/3] bg-white/40 backdrop-blur-2xl rounded-2xl border border-white/60 flex flex-col items-center justify-center group hover:bg-white/60 hover:border-white/80 transition-all duration-500 shadow-lg shadow-stone-900/5 hover:shadow-xl hover:shadow-stone-900/10 p-8"
+              >
                 <div className="w-20 h-20 bg-white/70 backdrop-blur-2xl rounded-2xl flex items-center justify-center mb-4 border border-white/80 shadow-lg shadow-stone-900/5 group-hover:scale-110 transition-transform duration-500">
                   <Aperture size={32} className="text-stone-600" strokeWidth={1.5} />
                 </div>
@@ -525,6 +539,33 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
             })}
           </div>
         </div>
+      )}
+
+      {showPreview && lastGeneration && (
+        <InstagramPhotoPreview
+          images={[
+            {
+              id: lastGeneration.id,
+              image_url: lastGeneration.image_url,
+              prompt: lastGeneration.prompt,
+              description: lastGeneration.description,
+              category: lastGeneration.category,
+              subcategory: lastGeneration.subcategory,
+              created_at: lastGeneration.created_at,
+              saved: lastGeneration.saved,
+              user_id: user.id,
+            },
+          ]}
+          initialIndex={0}
+          onClose={() => setShowPreview(false)}
+          onDelete={async () => {
+            setShowPreview(false)
+            onImageGenerated()
+          }}
+          onFavorite={async () => {
+            onImageGenerated()
+          }}
+        />
       )}
     </div>
   )

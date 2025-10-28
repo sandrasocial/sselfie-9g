@@ -74,6 +74,7 @@ export async function POST(request: Request) {
         user_id,
         model_id,
         prompt,
+        description,
         category,
         subcategory,
         image_urls,
@@ -81,6 +82,7 @@ export async function POST(request: Request) {
       ) VALUES (
         ${neonUser.id},
         ${model.id},
+        ${prompt},
         ${prompt},
         ${category || "custom"},
         ${subcategory || null},
