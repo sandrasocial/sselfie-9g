@@ -231,38 +231,88 @@ export default function MayaChatScreen() {
   }, [status, isTyping])
 
   useEffect(() => {
-    if (!chatId || isTyping) return
+    console.log("[v0] 🔍 Assistant save useEffect triggered:", {
+      chatId,
+      isTyping,
+      messagesCount: messages.length,
+      lastMessageRole: messages[messages.length - 1]?.role,
+      lastMessageId: messages[messages.length - 1]?.id,
+    })
+
+    if (!chatId) {
+      console.log("[v0] ⏭️ Skipping save - no chatId")
+      return
+    }
+
+    if (isTyping) {
+      console.log("[v0] ⏭️ Skipping save - still typing")
+      return
+    }
 
     const lastMessage = messages[messages.length - 1]
-    if (!lastMessage || lastMessage.role !== "assistant") return
-    if (savedMessageIds.current.has(lastMessage.id)) return
+    if (!lastMessage) {
+      console.log("[v0] ⏭️ Skipping save - no messages")
+      return
+    }
 
-    const hasContent = lastMessage.content && lastMessage.content.trim().length > 0
-    const hasConcepts =
-      lastMessage.toolInvocations &&
-      Array.isArray(lastMessage.toolInvocations) &&
-      lastMessage.toolInvocations.some(
-        (inv: any) =>
-          inv.toolName === "generateConcepts" &&
-          inv.state === "result" &&
-          Array.isArray(inv.result?.concepts) &&
-          inv.result.concepts.length > 0,
-      )
+    if (lastMessage.role !== "assistant") {
+      console.log("[v0] ⏭️ Skipping save - last message is not assistant, it's:", lastMessage.role)
+      return
+    }
 
-    if (!hasContent && !hasConcepts) return
+    if (savedMessageIds.current.has(lastMessage.id)) {
+      console.log("[v0] ⏭️ Skipping save - message already saved:", lastMessage.id)
+      return
+    }
 
-    const conceptCards =
-      lastMessage.toolInvocations && Array.isArray(lastMessage.toolInvocations)
-        ? lastMessage.toolInvocations
-            .filter((inv: any) => inv.toolName === "generateConcepts" && inv.state === "result")
-            .flatMap((inv: any) => inv.result?.concepts || [])
-        : []
+    const parts = lastMessage.parts || []
+
+    // Extract text content from text parts
+    const textParts = parts.filter((p: any) => p.type === "text")
+    const textContent = textParts
+      .map((p: any) => p.text)
+      .join("\n")
+      .trim()
+
+    // Extract concept cards from tool-generateConcepts parts
+    const conceptParts = parts.filter((p: any) => p.type === "tool-generateConcepts")
+    const conceptCards: any[] = []
+
+    conceptParts.forEach((part: any) => {
+      if (part.output && part.output.state === "ready" && Array.isArray(part.output.concepts)) {
+        conceptCards.push(...part.output.concepts)
+      }
+    })
+
+    const hasContent = textContent.length > 0
+    const hasConcepts = conceptCards.length > 0
+
+    console.log("[v0] 📊 Message analysis:", {
+      messageId: lastMessage.id,
+      hasContent,
+      contentLength: textContent.length,
+      hasConcepts,
+      conceptsCount: conceptCards.length,
+      partsCount: parts.length,
+      textPartsCount: textParts.length,
+      conceptPartsCount: conceptParts.length,
+    })
+
+    if (!hasContent && !hasConcepts) {
+      console.log("[v0] ⏭️ Skipping save - no content and no concepts")
+      return
+    }
 
     console.log("[v0] 💾 Saving assistant message:", {
       messageId: lastMessage.id,
       chatId,
       hasContent,
       conceptCount: conceptCards.length,
+      conceptCards: conceptCards.map((c: any) => ({
+        title: c.title,
+        category: c.category,
+        type: c.type,
+      })),
     })
 
     savedMessageIds.current.add(lastMessage.id)
@@ -273,16 +323,19 @@ export default function MayaChatScreen() {
       body: JSON.stringify({
         chatId,
         role: lastMessage.role,
-        content: lastMessage.content || "",
+        content: textContent || "",
         conceptCards: conceptCards.length > 0 ? conceptCards : null,
       }),
     })
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
-          console.log("[v0] ✅ Message saved successfully")
+          console.log("[v0] ✅ Assistant message saved successfully:", {
+            messageId: data.message?.id,
+            savedConceptsCount: data.message?.concept_cards?.length || 0,
+          })
         } else {
-          console.error("[v0] ❌ Failed to save:", data.error)
+          console.error("[v0] ❌ Failed to save assistant message:", data.error)
           savedMessageIds.current.delete(lastMessage.id)
         }
       })
@@ -479,12 +532,12 @@ export default function MayaChatScreen() {
 
     if (contentFilter === "photos") {
       // Show messages with concept cards (photos)
-      return msg.toolInvocations?.some((inv: any) => inv.toolName === "generateConcepts" && inv.state === "result")
+      return msg.parts?.some((inv: any) => inv.toolName === "generateConcepts" && inv.state === "result")
     }
 
     if (contentFilter === "videos") {
       // Show messages with video cards
-      return msg.toolInvocations?.some((inv: any) => inv.toolName === "generateVideo")
+      return msg.parts?.some((inv: any) => inv.toolName === "generateVideo")
     }
 
     return true
@@ -541,7 +594,7 @@ export default function MayaChatScreen() {
             className={`group relative p-3 sm:p-3 backdrop-blur-2xl border rounded-xl transition-all duration-300 hover:scale-105 active:scale-95 min-w-[44px] min-h-[44px] flex items-center justify-center ${
               showHistory
                 ? "bg-stone-900 border-stone-900 text-white"
-                : "bg-white/40 border-white/60 hover:bg-white/60 hover:border-white/80 text-stone-600"
+                : "bg-white/40 border-white/60 hover:bg-white/60 hover:border-stone-300 text-stone-600"
             }`}
             title="Chat history"
             aria-label="Toggle chat history"
@@ -904,7 +957,7 @@ export default function MayaChatScreen() {
                 }
               }}
               placeholder={uploadedImage ? "Describe how to use this image..." : "Message Maya..."}
-              className="w-full px-4 sm:px-5 py-4 sm:py-4 bg-white/40 backdrop-blur-2xl border border-white/60 rounded-xl sm:rounded-[1.5rem] text-stone-950 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-950/50 focus:border-stone-950/50 focus:bg-white/60 pr-14 sm:pr-16 font-medium text-sm min-h-[52px] sm:min-h-[56px] shadow-lg shadow-stone-900/10 transition-all duration-300"
+              className="w-full px-4 sm:px-5 py-4 sm:py-4 bg-white/40 backdrop-blur-2xl border border-white/60 rounded-xl sm:rounded-[1.5rem] text-stone-950 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-950/50 focus:border-stone-950/50 focus:bg-white/60 pr-14 sm:pr-16 font-medium text-sm min-h-[52px] sm:min-h-[56px] shadow-lg shadow-stone-950/10 transition-all duration-300"
               disabled={isTyping || isUploadingImage}
               aria-label="Message input"
             />
@@ -934,7 +987,7 @@ export default function MayaChatScreen() {
           </div>
           <button
             onClick={() => handleSendMessage()}
-            className="group relative px-4 sm:px-5 py-4 sm:py-4 bg-stone-950 text-white rounded-xl sm:rounded-[1.5rem] font-semibold transition-all duration-300 hover:shadow-2xl hover:shadow-stone-900/40 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden min-h-[52px] sm:min-h-[56px] min-w-[52px] sm:min-w-[56px] flex items-center justify-center hover:scale-105 active:scale-95"
+            className="group relative px-4 sm:px-5 py-4 sm:py-4 bg-stone-950 text-white rounded-xl sm:rounded-[1.5rem] font-semibold transition-all duration-300 hover:shadow-2xl hover:shadow-stone-950/40 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden min-h-[52px] sm:min-h-[56px] min-w-[52px] sm:min-w-[56px] flex items-center justify-center hover:scale-105 active:scale-95"
             disabled={isTyping || (!inputValue.trim() && !uploadedImage) || isUploadingImage}
             aria-label="Send message"
           >
