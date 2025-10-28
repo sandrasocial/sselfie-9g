@@ -3,107 +3,49 @@ import { z } from "zod"
 import { getCurrentNeonUser } from "@/lib/user-sync"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 import { MAYA_SYSTEM_PROMPT } from "@/lib/maya/personality"
-import { neon } from "@neondatabase/serverless"
 import type { CoreMessage } from "ai"
+import { neon } from "@neondatabase/serverless"
 
 const MAYA_FEED_STRATEGIST_EXTENSION = `
 
 ## Instagram Feed Strategy Expertise
 
-You're also an expert Instagram strategist who creates cohesive, professional feeds that tell compelling brand stories.
+You're an expert Instagram strategist who creates cohesive, professional feeds by researching current trends and aesthetics.
 
-**The Rule of 3 - Content Variety:**
-Every great Instagram feed uses strategic variety to create visual rhythm:
+**Your Workflow - FOLLOW THESE STEPS IN ORDER:**
 
-1. **Portrait Shots** (40% of feed):
-   - Close-Up: Face focus, emotional connection, confident first impression
-   - Half Body: Show style and personality, professional yet approachable
-   - Full Body: Complete look, fashion/lifestyle showcase
+When a user asks you to design their feed, you MUST complete ALL THREE steps:
 
-2. **Quote Posts** (20% of feed):
-   - Plain backgrounds with 60-70% whitespace
-   - Elegant typography (serif for luxury, script for feminine, sans-serif for modern)
-   - Inspirational messages aligned with brand values
-   - Use when: Need visual rest, want to emphasize a message, create engagement
+**Step 1: Research** 
+- Use the researchInstagramTrends tool to find trending layouts, patterns, and aesthetics for their niche
+- Example query: "Instagram feed layouts for [their niche] Pinterest 2025 trending aesthetic patterns"
 
-3. **Lifestyle Shots** (20% of feed):
-   - Working moments, coffee shops, behind-the-scenes
-   - Show authenticity and daily life
-   - Use when: Want to build connection, show personality beyond posed shots
+**Step 2: Design**
+- IMMEDIATELY after research completes, use the generateCompleteFeed tool
+- Pass the research insights you just discovered into the researchInsights parameter
+- Create a unique feed strategy based on what you learned
 
-4. **Objects/Flatlays** (10% of feed):
-   - Products, flowers, styled arrangements
-   - Use when: Showcasing products, creating aesthetic moments, adding variety
+**Step 3: Explain**
+- After the generateCompleteFeed tool finishes, write a warm conversational message explaining:
+  - What you researched and discovered
+  - Why you chose specific patterns and aesthetics  
+  - What makes their feed unique and strategic
+  - Next steps (like generating the images)
 
-5. **Scenery/Spaces** (10% of feed):
-   - Interiors, architecture, nature
-   - Use when: Setting the scene, showing environment, creating mood
+**IMPORTANT RULES:**
+- NEVER stop after just researching - you must continue to design the feed
+- ALWAYS call generateCompleteFeed immediately after researchInstagramTrends completes
+- ALWAYS respond with conversational text after the tools finish
+- The user should see: your initial message → research → design → your explanation
 
-**Visual Rhythm Patterns:**
-- **Checkerboard**: Alternate light/dark or portrait/quote for maximum variety
-- **Diagonal Flow**: Create diagonal lines of similar content (top-left to bottom-right)
-- **Row Themes**: Each row tells a mini-story (e.g., Row 1: Confidence, Row 2: Action, Row 3: Results)
-- **The 80/20 Rule**: 80% featuring the person (portraits/lifestyle), 20% supporting content (quotes/objects)
+**Example Complete Flow:**
+User: "Can you design my feed?"
+You: "I'd love to! Let me research trending Instagram aesthetics for [their niche] first..."
+[Call researchInstagramTrends tool - it completes]
+[IMMEDIATELY call generateCompleteFeed tool with the research insights - it completes]
+You: "Your feed strategy is ready! I researched [findings] and created a [pattern] layout with [colors]. Here's what makes it special: [explanation]. Ready to generate the images?"
 
-**Whitespace & Negative Space:**
-- Quote posts should breathe - 60-70% empty space around text
-- Balance busy images (detailed portraits) with minimal posts (simple quotes)
-- Create visual rest points every 2-3 posts
-- Use negative space to draw attention to the subject
-
-**Color Cohesion Strategies:**
-- **Neutral Elegance**: Beige, cream, white, black (for coaches, consultants, luxury brands)
-- **Dark & Moody**: Charcoal, black, gold accents (for high-end, sophisticated brands)
-- **Warm & Approachable**: Soft browns, warm beiges, natural tones (for wellness, lifestyle brands)
-- Stick to 3-5 colors maximum across the entire feed
-- Match text overlay colors to brand palette
-
-**Typography Pairing:**
-- **Elegant/Luxury**: Playfair Display (serif) + Montserrat (sans-serif)
-- **Feminine/Personal**: Dancing Script (script) + Inter (sans-serif)
-- **Modern/Bold**: Montserrat Bold (sans-serif) + Playfair Display (serif)
-- Never use more than 2-3 font families in one feed
-
-**Strategic Feed Design Process:**
-1. Analyze user's brand profile (style, colors, vibe, business type)
-2. Choose a visual rhythm pattern that matches their brand energy
-3. Design 9 posts with strategic variety (follow the Rule of 3 percentages)
-4. Ensure color cohesion throughout
-5. Place quote posts strategically for visual rest and engagement
-6. Present the complete strategy for approval BEFORE generating
-
-**Your Communication Style:**
-- Warm and encouraging, like a trusted creative director
-- Explain the "why" behind your design choices in simple terms
-- Present the feed as a cohesive story: "This feed tells the story of..."
-- Always get approval before generating images
-- Be specific about what each post contributes to the overall narrative
-
-**Caption Writing Mastery:**
-You write captions that follow the proven "recipe" for personal brands:
-
-1. **Hook** (First line): Grab attention with a bold statement, question, or relatable observation
-2. **Story** (Middle): Share personal anecdotes, the "why" behind your work, or your journey
-3. **Value** (Core): Offer actionable advice, insights, or lessons learned
-4. **CTA** (End): Clear call to action - ask a question, encourage saves, or guide next steps
-
-**Caption Guidelines:**
-- Use simple, everyday language - no corporate jargon
-- Be authentic and vulnerable - show personality
-- Keep paragraphs short (2-3 sentences max)
-- Use line breaks for readability
-- Match the user's brand voice and language style
-- Include 3-5 relevant emojis naturally (not forced)
-- End with an engaging question or clear next step
-
-**Hashtag Strategy:**
-- Research trending hashtags in the user's niche using web search
-- Mix of sizes: 2-3 large (100k-1M), 3-5 medium (10k-100k), 5-7 niche (1k-10k)
-- Include branded hashtag if user has one
-- Total 10-15 hashtags maximum
-- Place at end of caption or first comment
-
-Remember: Every caption should sound like the user wrote it themselves, not like AI.
+Remember: You must complete ALL THREE steps. Research → Design → Explain. Don't stop halfway!
 `
 
 async function fetchTrendingHashtags(businessType: string, userBrand: any): Promise<string[]> {
@@ -192,18 +134,17 @@ async function fetchTrendingHashtags(businessType: string, userBrand: any): Prom
 
 const researchInstagramTrendsTool = tool({
   description:
-    "Research current Instagram trends, viral hooks, best practices, or any Instagram-related information using web search. Use this to get real-time data about what's working on Instagram right now.",
+    "Research current Instagram trends, viral hooks, best practices, aesthetic feed layouts from Pinterest, or any Instagram-related information using web search. ALWAYS use this before designing a feed to get real-time inspiration and trends.",
   inputSchema: z.object({
     query: z
       .string()
       .describe(
-        "What to research (e.g., 'viral Instagram hooks for coaches 2025', 'best Instagram caption formats', 'trending Instagram reels ideas for wellness brands')",
+        "What to research (e.g., 'aesthetic Instagram feed layouts for life coaches Pinterest 2025', 'trending Instagram grid patterns wellness brands', 'viral Instagram feed color schemes minimalist')",
       ),
   }),
   execute: async ({ query }) => {
-    console.log("[v0] [CLIENT] Researching Instagram trends:", query)
+    console.log("[v0] Researching Instagram trends:", query)
 
-    // Call server-side API endpoint to keep API key secure
     try {
       const response = await fetch("/api/maya/research", {
         method: "POST",
@@ -226,8 +167,13 @@ const researchInstagramTrendsTool = tool({
 
 const generateCompleteFeedTool = tool({
   description:
-    "Design a complete 9-post Instagram feed strategy with professional visual rhythm, content variety, and brand cohesion. Use this when users ask to create or design their Instagram feed.",
+    "Design a complete 9-post Instagram feed strategy with professional visual rhythm, content variety, and brand cohesion. IMPORTANT: You should have already researched trending feed layouts using researchInstagramTrends before calling this tool. Use the research insights to create a unique, non-template feed design.",
   inputSchema: z.object({
+    researchInsights: z
+      .string()
+      .describe(
+        "Summary of research findings from Pinterest and Instagram trends that will inform this feed design (e.g., 'Trending: diagonal flow with warm neutrals, 40% close-ups, minimalist quote posts with serif fonts')",
+      ),
     brandVibe: z
       .string()
       .describe(
@@ -239,12 +185,12 @@ const generateCompleteFeedTool = tool({
     colorPalette: z
       .string()
       .describe(
-        "Specific color scheme that matches their brand (e.g., 'neutral earth tones - beige, cream, white', 'dark moody - charcoal, black, gold')",
+        "Specific color scheme that matches their brand AND current trends (e.g., 'neutral earth tones - beige, cream, white', 'dark moody - charcoal, black, gold')",
       ),
     visualRhythm: z
       .string()
       .describe(
-        "The pattern strategy for the feed (e.g., 'checkerboard alternating portraits and quotes', 'diagonal flow with lifestyle moments', 'row-by-row storytelling')",
+        "The pattern strategy for the feed based on research (e.g., 'checkerboard alternating portraits and quotes', 'diagonal flow with lifestyle moments', 'row-by-row storytelling')",
       ),
     feedStory: z
       .string()
@@ -266,6 +212,7 @@ const generateCompleteFeedTool = tool({
       .describe("5-7 Instagram highlight categories that organize their content strategy"),
   }),
   execute: async function* ({
+    researchInsights,
     brandVibe,
     businessType,
     colorPalette,
@@ -274,17 +221,14 @@ const generateCompleteFeedTool = tool({
     instagramBio,
     highlights,
   }) {
-    console.log("[v0] Generating strategic feed with visual rhythm:", {
+    console.log("[v0] Generating research-driven feed strategy:", {
+      researchInsights,
       brandVibe,
       businessType,
       colorPalette,
       visualRhythm,
-      feedStory,
-      instagramBio,
-      highlights,
     })
 
-    // Yield loading state immediately
     yield {
       state: "loading" as const,
     }
@@ -338,11 +282,46 @@ const generateCompleteFeedTool = tool({
     ]
 
     const quotesByTheme = {
-      confidence: ["BE YOUR OWN BOSS", "CONFIDENCE IS THE KEY", "BELIEVE IN YOURSELF", "OWN YOUR POWER"],
-      motivation: ["FOLLOW YOUR PASSION", "TRUST THE PROCESS", "CREATE YOUR VISION", "MAKE IT HAPPEN"],
-      lifestyle: ["LIVE IN THE MOMENT", "FIND YOUR BALANCE", "EMBRACE THE JOURNEY", "STAY PRESENT"],
-      growth: ["EXPAND YOUR MINDSET", "LEVEL UP", "GROW THROUGH IT", "EVOLVE DAILY"],
-      success: ["DREAM BIG", "SUCCESS STARTS HERE", "BUILD YOUR EMPIRE", "RISE AND SHINE"],
+      confidence: [
+        "BE YOUR OWN BOSS",
+        "CONFIDENCE IS THE KEY",
+        "BELIEVE IN YOURSELF",
+        "OWN YOUR POWER",
+        "TRUST YOUR VISION",
+        "YOU ARE ENOUGH",
+      ],
+      motivation: [
+        "FOLLOW YOUR PASSION",
+        "TRUST THE PROCESS",
+        "CREATE YOUR VISION",
+        "MAKE IT HAPPEN",
+        "START BEFORE YOU'RE READY",
+        "PROGRESS OVER PERFECTION",
+      ],
+      lifestyle: [
+        "LIVE IN THE MOMENT",
+        "FIND YOUR BALANCE",
+        "EMBRACE THE JOURNEY",
+        "STAY PRESENT",
+        "SLOW DOWN & BREATHE",
+        "ENJOY THE LITTLE THINGS",
+      ],
+      growth: [
+        "EXPAND YOUR MINDSET",
+        "LEVEL UP",
+        "GROW THROUGH IT",
+        "EVOLVE DAILY",
+        "BECOME WHO YOU'RE MEANT TO BE",
+        "TRANSFORM YOUR LIFE",
+      ],
+      success: [
+        "DREAM BIG",
+        "SUCCESS STARTS HERE",
+        "BUILD YOUR EMPIRE",
+        "RISE AND SHINE",
+        "MAKE YOUR MARK",
+        "CREATE YOUR LEGACY",
+      ],
     }
 
     const allQuotes = Object.values(quotesByTheme).flat()
@@ -357,9 +336,9 @@ const generateCompleteFeedTool = tool({
         return {
           id: `post-${index + 1}`,
           title: quoteText,
-          description: `${post.purpose}. ${post.composition}`,
+          description: `${post.purpose}. ${post.composition}. Research-driven design: ${researchInsights}`,
           category: "Quote",
-          prompt: `minimalist ${colorPalette} background, elegant composition with 70% negative space, soft gradient or solid color, subtle texture, professional editorial quality, ${brandVibe} aesthetic, clean and sophisticated, high-end design, breathing room around center`,
+          prompt: `minimalist ${colorPalette} background, elegant composition with 70% negative space, soft gradient or solid color, subtle texture, professional editorial quality, ${brandVibe} aesthetic, clean and sophisticated, high-end design, breathing room around center, trending Instagram aesthetic 2025`,
           textOverlay: {
             text: quoteText,
             position: "center" as const,
@@ -375,9 +354,9 @@ const generateCompleteFeedTool = tool({
         return {
           id: `post-${index + 1}`,
           title: "Styled Flatlay",
-          description: `${post.purpose}. ${post.composition}`,
+          description: `${post.purpose}. ${post.composition}. Inspired by trending ${businessType} aesthetics`,
           category: "Object",
-          prompt: `styled flatlay photography, ${colorPalette}, elegant product arrangement, overhead shot, soft natural lighting, professional editorial quality, ${brandVibe} aesthetic, brand-aligned objects (flowers, coffee, notebook, jewelry), shallow depth of field, film grain, high-end commercial photography, minimalist composition`,
+          prompt: `styled flatlay photography, ${colorPalette}, elegant product arrangement, overhead shot, soft natural lighting, professional editorial quality, ${brandVibe} aesthetic, brand-aligned objects (flowers, coffee, notebook, jewelry), shallow depth of field, film grain, high-end commercial photography, minimalist composition, trending Instagram aesthetic 2025`,
           textOverlay: undefined,
           purpose: post.purpose,
           composition: post.composition,
@@ -407,28 +386,92 @@ const generateCompleteFeedTool = tool({
         title: `${post.type} Portrait`,
         description: categoryDescriptions[post.type as keyof typeof categoryDescriptions],
         category: post.type,
-        prompt: `raw photo, editorial quality, professional photography, sharp focus, natural skin texture, visible pores, film grain, ${colorPalette}, ${brandVibe} aesthetic, ${lensSpecs[post.type as keyof typeof lensSpecs]}, ${lightingStyle}, ${businessType} professional, confident expression, timeless elegance, high-end fashion photography, authentic moment, ${post.composition}`,
+        prompt: `raw photo, editorial quality, professional photography, sharp focus, natural skin texture, visible pores, film grain, ${colorPalette}, ${brandVibe} aesthetic, ${lensSpecs[post.type as keyof typeof lensSpecs]}, ${lightingStyle}, ${businessType} professional, confident expression, timeless elegance, high-end fashion photography, authentic moment, ${post.composition}, trending Instagram aesthetic 2025`,
         textOverlay: undefined,
         purpose: post.purpose,
         composition: post.composition,
       }
     })
 
-    const feedData = {
-      brandVibe,
-      businessType,
-      colorPalette,
-      visualRhythm,
-      feedStory,
-      instagramBio,
-      highlights,
-      posts,
+    const user = await getCurrentNeonUser()
+    const userBrand = { content_themes: "", target_audience: "" }
+    const trendingHashtags = await fetchTrendingHashtags(businessType, userBrand)
+
+    const postsWithCaptions = posts.map((post, index) => {
+      const { caption, hashtags } = generateCaptionWithRecipe(post, index, trendingHashtags)
+      return {
+        ...post,
+        caption,
+        hashtags,
+      }
+    })
+
+    let feedId: string | null = null
+
+    if (user) {
+      try {
+        const sql = neon(process.env.DATABASE_URL!)
+
+        const [feedLayout] = await sql`
+          INSERT INTO feed_layouts (
+            user_id, brand_vibe, business_type, color_palette, 
+            visual_rhythm, feed_story, research_insights
+          )
+          VALUES (
+            ${user.id}, ${brandVibe}, ${businessType}, ${colorPalette},
+            ${visualRhythm}, ${feedStory}, ${researchInsights}
+          )
+          RETURNING id
+        `
+
+        feedId = feedLayout.id
+
+        await sql`
+          INSERT INTO instagram_bios (feed_id, bio_text)
+          VALUES (${feedId}, ${instagramBio})
+        `
+
+        for (const highlight of highlights) {
+          await sql`
+            INSERT INTO instagram_highlights (feed_id, title, description)
+            VALUES (${feedId}, ${highlight.title}, ${highlight.description})
+          `
+        }
+
+        for (let i = 0; i < postsWithCaptions.length; i++) {
+          const post = postsWithCaptions[i]
+          await sql`
+            INSERT INTO feed_posts (
+              feed_id, position, title, description, prompt, category,
+              caption, hashtags, text_overlay, status
+            )
+            VALUES (
+              ${feedId}, ${i}, ${post.title}, ${post.description}, ${post.prompt},
+              ${post.category}, ${post.caption}, ${post.hashtags},
+              ${post.textOverlay ? JSON.stringify(post.textOverlay) : null}, 'pending'
+            )
+          `
+        }
+
+        console.log("[v0] Feed saved to database with ID:", feedId)
+      } catch (error) {
+        console.error("[v0] Error saving feed to database:", error)
+      }
     }
 
-    // Yield ready state with complete feed data
     yield {
       state: "ready" as const,
-      feedData: feedData,
+      feedData: {
+        feedId,
+        brandVibe,
+        businessType,
+        colorPalette,
+        visualRhythm,
+        feedStory,
+        instagramBio,
+        highlights,
+        posts: postsWithCaptions,
+      },
     }
   },
 })
@@ -492,7 +535,7 @@ export async function POST(req: Request) {
 
     const enhancedSystemPrompt = MAYA_SYSTEM_PROMPT + MAYA_FEED_STRATEGIST_EXTENSION + userContext
 
-    const result = streamText({
+    const result = await streamText({
       model: "anthropic/claude-sonnet-4",
       system: enhancedSystemPrompt,
       messages: coreMessages,
@@ -501,148 +544,6 @@ export async function POST(req: Request) {
         researchInstagramTrends: researchInstagramTrendsTool,
       },
       maxSteps: 10,
-      onStepFinish: async ({ stepType, toolResults }) => {
-        if (stepType === "tool-call" && toolResults) {
-          for (const toolResult of toolResults) {
-            if (toolResult.toolName === "generateCompleteFeed" && toolResult.result) {
-              const generatorResult = toolResult.result as any
-
-              if (generatorResult.state === "ready" && generatorResult.feedData) {
-                const feedPlan = generatorResult.feedData
-
-                console.log("[v0] [SERVER] Saving feed to database...")
-
-                const sql = neon(process.env.DATABASE_URL!)
-
-                // Get user's brand profile
-                const brandProfile = await sql`
-                  SELECT 
-                    brand_voice,
-                    language_style,
-                    content_themes,
-                    content_pillars,
-                    target_audience,
-                    business_type
-                  FROM user_personal_brand
-                  WHERE user_id = ${user.stack_auth_id}
-                  LIMIT 1
-                `
-
-                const userBrand = brandProfile[0] || {}
-
-                // Save feed layout
-                const feedResult = await sql`
-                  INSERT INTO feed_layouts (user_id, layout, created_at, updated_at)
-                  VALUES (
-                    ${user.stack_auth_id},
-                    ${JSON.stringify({
-                      ...feedPlan,
-                      designPrinciples: {
-                        contentVariety:
-                          "Following Rule of 3: 40% portraits, 20% quotes, 20% lifestyle, 10% objects, 10% scenery",
-                        colorCohesion: `Consistent ${feedPlan.colorPalette} throughout all posts`,
-                        whitespace: "Quote posts use 70% negative space for visual rest",
-                        typography: feedPlan.brandVibe.includes("elegant")
-                          ? "Playfair Display for luxury feel"
-                          : "Montserrat for modern look",
-                      },
-                    })},
-                    NOW(),
-                    NOW()
-                  )
-                  RETURNING id
-                `
-
-                const feedId = feedResult[0].id
-
-                console.log("[v0] [SERVER] Feed saved with ID:", feedId)
-
-                // Fetch trending hashtags
-                console.log("[v0] [SERVER] Fetching trending hashtags...")
-                const hashtags = await fetchTrendingHashtags(feedPlan.businessType, userBrand)
-                const hashtagString = hashtags.join(" ")
-
-                // Save posts with hashtags
-                for (let i = 0; i < feedPlan.posts.length; i++) {
-                  const post = feedPlan.posts[i]
-                  const { caption } = generateCaptionWithRecipe(post, i, hashtags)
-
-                  await sql`
-                    INSERT INTO feed_posts (
-                      feed_layout_id,
-                      position,
-                      post_type,
-                      title,
-                      description,
-                      prompt,
-                      caption,
-                      hashtags,
-                      visual_description,
-                      text_overlay,
-                      is_posted,
-                      created_at
-                    )
-                    VALUES (
-                      ${feedId},
-                      ${i + 1},
-                      ${post.category},
-                      ${post.title},
-                      ${post.description},
-                      ${post.prompt},
-                      ${caption},
-                      ${hashtagString},
-                      ${post.prompt},
-                      ${post.textOverlay ? JSON.stringify(post.textOverlay) : null},
-                      false,
-                      NOW()
-                    )
-                  `
-                }
-
-                // Save bio
-                await sql`
-                  INSERT INTO instagram_bios (user_id, feed_layout_id, bio_text, created_at)
-                  VALUES (
-                    ${user.stack_auth_id},
-                    ${feedId},
-                    ${feedPlan.instagramBio},
-                    NOW()
-                  )
-                `
-
-                // Save highlights
-                for (const highlight of feedPlan.highlights) {
-                  await sql`
-                    INSERT INTO highlight_covers (
-                      user_id,
-                      feed_layout_id,
-                      title,
-                      description,
-                      created_at
-                    )
-                    VALUES (
-                      ${user.stack_auth_id},
-                      ${feedId},
-                      ${highlight.title},
-                      ${highlight.description},
-                      NOW()
-                    )
-                  `
-                }
-
-                console.log("[v0] [SERVER] Feed saved successfully with hashtags!")
-
-                toolResult.result = {
-                  success: true,
-                  strategy: feedPlan,
-                  feedUrl: `/feed/${feedId}`,
-                  message: `✨ Your Instagram Feed Strategy is Ready!\n\nI've designed a strategic 9-post feed that tells your story: ${feedPlan.feedStory}\n\nYour feed is saved and ready! Click "Generate All 9 Posts" to create the images.`,
-                }
-              }
-            }
-          }
-        }
-      },
     })
 
     return result.toUIMessageStreamResponse()

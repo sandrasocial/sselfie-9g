@@ -239,25 +239,69 @@ export default function FeedDesignerScreen() {
     transport: new DefaultChatTransport({ api: "/api/maya/feed-chat" }),
     initialMessages: [],
     onFinish: (message) => {
-      console.log("[v0] Maya response:", message)
+      console.log("[v0] Maya response - full message:", JSON.stringify(message, null, 2))
+      console.log("[v0] Maya response - content type:", typeof message.content)
+      console.log("[v0] Maya response - content value:", message.content)
+      console.log("[v0] Maya response - toolInvocations:", message.toolInvocations)
 
+      if (message.content && typeof message.content === "string") {
+        const feedDataMatch = message.content.match(/\[FEED_STRATEGY_DATA\](.*?)\[\/FEED_STRATEGY_DATA\]/s)
+        if (feedDataMatch) {
+          try {
+            const feedData = JSON.parse(feedDataMatch[1])
+            console.log("[v0] Feed strategy extracted from text:", feedData)
+
+            setFeedStrategy(feedData)
+
+            if (feedData.instagramBio) {
+              setProfile((prev) => ({
+                ...prev,
+                bio: feedData.instagramBio,
+              }))
+            }
+
+            if (feedData.highlights && Array.isArray(feedData.highlights)) {
+              const mappedHighlights = feedData.highlights.map((h: any) => ({
+                title: h.title,
+                coverUrl: "/placeholder.svg?height=64&width=64",
+                description: h.description,
+              }))
+              console.log("[v0] Setting highlights:", mappedHighlights)
+              setProfile((prev) => ({
+                ...prev,
+                highlights: mappedHighlights,
+              }))
+            }
+
+            if (feedData.feedUrl) {
+              console.log("[v0] Feed URL:", feedData.feedUrl)
+              setFeedUrl(feedData.feedUrl)
+            }
+          } catch (error) {
+            console.error("[v0] Error parsing feed data from text:", error)
+          }
+        }
+      }
+
+      // Keep existing tool invocation handling as fallback
       if (message.toolInvocations && message.toolInvocations.length > 0) {
         message.toolInvocations.forEach((invocation: any) => {
           if (invocation.toolName === "generateCompleteFeed" && invocation.result) {
             const result = invocation.result
-            if (result.success && result.strategy) {
-              setFeedStrategy(result.strategy)
-              console.log("[v0] Feed strategy received:", result.strategy)
 
-              if (result.strategy.instagramBio) {
+            if (result.state === "ready" && result.feedData) {
+              setFeedStrategy(result.feedData)
+              console.log("[v0] Feed strategy received:", result.feedData)
+
+              if (result.feedData.instagramBio) {
                 setProfile((prev) => ({
                   ...prev,
-                  bio: result.strategy.instagramBio,
+                  bio: result.feedData.instagramBio,
                 }))
               }
 
-              if (result.strategy.highlights && Array.isArray(result.strategy.highlights)) {
-                const mappedHighlights = result.strategy.highlights.map((h: any) => ({
+              if (result.feedData.highlights && Array.isArray(result.feedData.highlights)) {
+                const mappedHighlights = result.feedData.highlights.map((h: any) => ({
                   title: h.title,
                   coverUrl: "/placeholder.svg?height=64&width=64",
                   description: h.description,
@@ -596,72 +640,119 @@ export default function FeedDesignerScreen() {
                     message.role === "user" ? "bg-stone-950 text-white" : "bg-stone-100 text-stone-950"
                   }`}
                 >
-                  {message.parts && Array.isArray(message.parts) ? (
-                    message.parts.map((part: any, partIndex: number) => {
-                      if (part.type === "text") {
+                  {(() => {
+                    console.log("[v0] Rendering message:", {
+                      index,
+                      role: message.role,
+                      hasParts: !!message.parts,
+                      partsLength: message.parts?.length,
+                      contentType: typeof message.content,
+                      hasToolInvocations: !!message.toolInvocations,
+                      toolInvocationsLength: message.toolInvocations?.length,
+                    })
+
+                    // Handle tool invocations for research
+                    if (message.toolInvocations && message.toolInvocations.length > 0) {
+                      const researchInvocation = message.toolInvocations.find(
+                        (inv: any) => inv.toolName === "researchInstagramTrends",
+                      )
+                      if (researchInvocation && researchInvocation.state === "call") {
                         return (
-                          <p key={partIndex} className="text-sm leading-relaxed whitespace-pre-wrap">
-                            {part.text}
-                          </p>
+                          <div className="flex items-center gap-3 text-stone-600">
+                            <div className="w-2 h-2 rounded-full bg-stone-600 animate-pulse"></div>
+                            <span className="text-xs tracking-wider uppercase font-light">
+                              Researching Instagram trends...
+                            </span>
+                          </div>
                         )
                       }
-                      if (part.type === "tool-generateCompleteFeed") {
-                        const toolPart = part as any
-                        const output = toolPart.output
+                    }
 
-                        if (output && output.state === "ready" && output.feedData) {
-                          const feedData = output.feedData
+                    if (message.parts && Array.isArray(message.parts)) {
+                      return message.parts.map((part: any, partIndex: number) => {
+                        console.log("[v0] Rendering part:", { partIndex, type: part.type, part })
 
+                        if (part.type === "text") {
                           return (
-                            <div key={partIndex} className="mt-4 space-y-3">
-                              <div className="flex items-center gap-3">
-                                <div className="w-1 h-1 rounded-full bg-stone-600"></div>
-                                <span className="text-xs tracking-wider uppercase font-light text-stone-600">
-                                  Feed Strategy
-                                </span>
-                              </div>
-                              <div className="bg-white rounded-xl p-4 border border-stone-200">
-                                <h4 className="font-bold text-stone-950 mb-2">{feedData.feedStory}</h4>
-                                <div className="grid grid-cols-3 gap-1 mb-3">
-                                  {feedData.posts.slice(0, 9).map((post: any, i: number) => (
-                                    <div
-                                      key={i}
-                                      className="aspect-square bg-stone-100 rounded flex items-center justify-center"
-                                    >
-                                      <span className="text-xs text-stone-500">{post.category}</span>
-                                    </div>
-                                  ))}
-                                </div>
-                                <Button
-                                  onClick={() => {
-                                    setFeedStrategy(feedData)
-                                    setMobileView("preview")
-                                  }}
-                                  className="w-full bg-stone-950 hover:bg-stone-800 text-white"
-                                >
-                                  View Full Feed Strategy
-                                </Button>
-                              </div>
-                            </div>
-                          )
-                        } else if (output && output.state === "loading") {
-                          return (
-                            <div key={partIndex} className="mt-4">
-                              <div className="flex items-center gap-3 text-stone-600">
-                                <div className="w-2 h-2 rounded-full bg-stone-600 animate-pulse"></div>
-                                <span className="text-xs tracking-wider uppercase font-light">
-                                  Designing your feed strategy...
-                                </span>
-                              </div>
-                            </div>
+                            <p key={partIndex} className="text-sm leading-relaxed whitespace-pre-wrap">
+                              {part.text}
+                            </p>
                           )
                         }
-                      }
-                      return null
-                    })
-                  ) : (
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content || ""}</p>
-                  )}
+                        if (part.type === "tool-generateCompleteFeed") {
+                          const toolPart = part as any
+                          const output = toolPart.output
+
+                          if (output && output.state === "ready" && output.feedData) {
+                            const feedData = output.feedData
+
+                            return (
+                              <div key={partIndex} className="mt-4 space-y-3">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-1 h-1 rounded-full bg-stone-600"></div>
+                                  <span className="text-xs tracking-wider uppercase font-light text-stone-600">
+                                    Feed Strategy
+                                  </span>
+                                </div>
+                                <div className="bg-white rounded-xl p-4 border border-stone-200">
+                                  <h4 className="font-bold text-stone-950 mb-2">{feedData.feedStory}</h4>
+                                  <div className="grid grid-cols-3 gap-1 mb-3">
+                                    {feedData.posts.slice(0, 9).map((post: any, i: number) => (
+                                      <div
+                                        key={i}
+                                        className="aspect-square bg-stone-100 rounded flex items-center justify-center"
+                                      >
+                                        <span className="text-xs text-stone-500">{post.category}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                  <Button
+                                    onClick={() => {
+                                      setFeedStrategy(feedData)
+                                      setMobileView("preview")
+                                    }}
+                                    className="w-full bg-stone-950 hover:bg-stone-800 text-white"
+                                  >
+                                    View Full Feed Strategy
+                                  </Button>
+                                </div>
+                              </div>
+                            )
+                          } else if (output && output.state === "loading") {
+                            return (
+                              <div key={partIndex} className="mt-4">
+                                <div className="flex items-center gap-3 text-stone-600">
+                                  <div className="w-2 h-2 rounded-full bg-stone-600 animate-pulse"></div>
+                                  <span className="text-xs tracking-wider uppercase font-light">
+                                    Designing your feed strategy...
+                                  </span>
+                                </div>
+                              </div>
+                            )
+                          }
+                        }
+                        return null
+                      })
+                    }
+
+                    // Handle string content
+                    if (typeof message.content === "string") {
+                      return <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                    }
+
+                    // Handle object content (error case)
+                    if (typeof message.content === "object") {
+                      console.error("[v0] Message content is an object:", message.content)
+                      return (
+                        <div className="text-sm text-stone-600">
+                          <p className="mb-2">Maya is processing your request...</p>
+                          <p className="text-xs text-stone-500">Debug: Content type is {typeof message.content}</p>
+                        </div>
+                      )
+                    }
+
+                    return <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content || ""}</p>
+                  })()}
                 </div>
               </div>
             ))}
