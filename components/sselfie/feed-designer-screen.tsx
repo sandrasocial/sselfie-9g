@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { useChat } from "@ai-sdk/react"
+import { DefaultChatTransport } from "ai"
 import { Textarea } from "@/components/ui/textarea"
 import { Progress } from "@/components/ui/progress"
 
@@ -58,10 +59,61 @@ export default function FeedDesignerScreen() {
   const [feedUrl, setFeedUrl] = useState<string | null>(null)
   const [generationError, setGenerationError] = useState<string | null>(null)
   const [hasTrainedModel, setHasTrainedModel] = useState<boolean>(true)
+  const [currentPrompts, setCurrentPrompts] = useState<Array<{ label: string; prompt: string }>>([])
+  const [brandData, setBrandData] = useState<any>(null)
+
+  const generatePersonalizedPrompts = (brand: any) => {
+    if (!brand || !brand.businessType) {
+      // Fallback to generic prompts if no brand data
+      return [
+        {
+          label: "Get Started",
+          prompt: "Create a 9-post feed strategy for my brand",
+        },
+        {
+          label: "Content Ideas",
+          prompt: "Help me plan engaging content for my audience",
+        },
+        {
+          label: "Brand Story",
+          prompt: "Design a feed that tells my brand story",
+        },
+        {
+          label: "Engagement",
+          prompt: "Create content that drives engagement and growth",
+        },
+      ]
+    }
+
+    const businessType = brand.businessType || "business"
+    const contentThemes = brand.contentThemes || "your expertise"
+    const targetAudience = brand.targetAudience || "your audience"
+    const contentGoals = brand.contentGoals || "engagement"
+
+    return [
+      {
+        label: `${businessType} Feed`,
+        prompt: `Create a 9-post feed for my ${businessType} that showcases ${contentThemes}`,
+      },
+      {
+        label: "Audience Connection",
+        prompt: `Design content that resonates with ${targetAudience} and builds trust`,
+      },
+      {
+        label: "Content Strategy",
+        prompt: `Help me plan a feed focused on ${contentGoals} with ${contentThemes}`,
+      },
+      {
+        label: "Brand Growth",
+        prompt: `Create a strategic feed for my ${businessType} that drives ${contentGoals}`,
+      },
+    ]
+  }
 
   useEffect(() => {
     loadBrandProfile()
     checkTrainedModel()
+    loadLatestFeed()
   }, [])
 
   const loadBrandProfile = async () => {
@@ -70,6 +122,7 @@ export default function FeedDesignerScreen() {
       const data = await response.json()
 
       if (data.exists && data.completed) {
+        setBrandData(data.data)
         setProfile({
           profileImage: "/placeholder.svg?height=80&width=80",
           name: data.data.name || "Your Brand",
@@ -77,9 +130,13 @@ export default function FeedDesignerScreen() {
           bio: data.data.futureVision || data.data.currentSituation || "Building something amazing",
           highlights: [],
         })
+        setCurrentPrompts(generatePersonalizedPrompts(data.data))
+      } else {
+        setCurrentPrompts(generatePersonalizedPrompts(null))
       }
     } catch (error) {
       console.error("[v0] Error loading brand profile:", error)
+      setCurrentPrompts(generatePersonalizedPrompts(null))
     }
   }
 
@@ -100,8 +157,87 @@ export default function FeedDesignerScreen() {
     }
   }
 
-  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
-    api: "/api/maya/feed-chat",
+  const loadLatestFeed = async () => {
+    try {
+      console.log("[v0] Loading latest feed...")
+      const response = await fetch("/api/feed/latest")
+      const data = await response.json()
+
+      if (data.exists) {
+        console.log("[v0] Latest feed found:", data)
+
+        // Reconstruct feed strategy from database data
+        const strategy = {
+          brandVibe: data.feed.brand_vibe,
+          businessType: data.feed.business_type,
+          colorPalette: data.feed.color_palette,
+          visualRhythm: data.feed.visual_rhythm,
+          feedStory: data.feed.feed_story,
+          instagramBio: data.bio?.bio_text || profile.bio,
+          highlights: data.highlights.map((h: any) => ({
+            title: h.title,
+            description: h.description,
+            coverUrl: h.cover_url,
+          })),
+          posts: data.posts.map((p: any) => ({
+            title: p.title,
+            description: p.description,
+            prompt: p.prompt,
+            category: p.category,
+            caption: p.caption,
+            hashtags: p.hashtags,
+            textOverlay: p.text_overlay,
+          })),
+        }
+
+        setFeedStrategy(strategy)
+        setFeedUrl(`/feed/${data.feed.id}`)
+
+        // Update profile with bio and highlights
+        if (data.bio) {
+          setProfile((prev) => ({
+            ...prev,
+            bio: data.bio.bio_text,
+          }))
+        }
+
+        if (data.highlights.length > 0) {
+          const mappedHighlights = data.highlights.map((h: any) => ({
+            title: h.title,
+            coverUrl: h.cover_url || "/placeholder.svg?height=64&width=64",
+            description: h.description,
+          }))
+          setProfile((prev) => ({
+            ...prev,
+            highlights: mappedHighlights,
+          }))
+        }
+
+        // Update feed posts with generated images
+        const postsWithImages = data.posts.map((p: any, index: number) => ({
+          id: `post-${index}`,
+          imageUrl: p.image_url,
+          status: p.image_url ? ("ready" as const) : ("empty" as const),
+          title: p.title,
+          description: p.description,
+          prompt: p.prompt,
+          category: p.category,
+          textOverlay: p.text_overlay,
+        }))
+
+        setFeedPosts(postsWithImages)
+        console.log("[v0] Feed loaded successfully")
+      } else {
+        console.log("[v0] No existing feed found")
+      }
+    } catch (error) {
+      console.error("[v0] Error loading latest feed:", error)
+    }
+  }
+
+  const { messages, sendMessage, status } = useChat({
+    transport: new DefaultChatTransport({ api: "/api/maya/feed-chat" }),
+    initialMessages: [],
     onFinish: (message) => {
       console.log("[v0] Maya response:", message)
 
@@ -123,7 +259,7 @@ export default function FeedDesignerScreen() {
               if (result.strategy.highlights && Array.isArray(result.strategy.highlights)) {
                 const mappedHighlights = result.strategy.highlights.map((h: any) => ({
                   title: h.title,
-                  coverUrl: "/placeholder.svg?height=64&width=64", // Placeholder for now
+                  coverUrl: "/placeholder.svg?height=64&width=64",
                   description: h.description,
                 }))
                 console.log("[v0] Setting highlights:", mappedHighlights)
@@ -142,7 +278,17 @@ export default function FeedDesignerScreen() {
         })
       }
     },
+    onError: (error) => {
+      console.error("[v0] Feed chat error:", {
+        error: error.message,
+        stack: error.stack,
+        timestamp: new Date().toISOString(),
+      })
+    },
   })
+
+  const isTyping = status === "submitted" || status === "streaming"
+  const [inputValue, setInputValue] = useState("")
 
   const generateCompleteFeed = async () => {
     if (!feedStrategy) {
@@ -341,6 +487,20 @@ export default function FeedDesignerScreen() {
     URL.revokeObjectURL(url)
   }
 
+  const handleQuickPrompt = (prompt: string) => {
+    if (isTyping || isGenerating) return
+    sendMessage({ text: prompt })
+  }
+
+  const handleSendMessage = () => {
+    const messageText = inputValue.trim()
+    if (messageText && !isTyping && !isGenerating) {
+      console.log("[v0] Sending message:", messageText)
+      sendMessage({ text: messageText })
+      setInputValue("")
+    }
+  }
+
   return (
     <div className="h-full flex flex-col bg-stone-50">
       <div className="md:hidden flex-shrink-0 border-b border-stone-200 bg-white">
@@ -391,6 +551,35 @@ export default function FeedDesignerScreen() {
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {messages.length === 0 && !isTyping && (
+              <div className="flex flex-col items-center justify-center h-full px-4 py-8">
+                <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-stone-200 mb-4">
+                  <img
+                    src="https://i.postimg.cc/fTtCnzZv/out-1-22.png"
+                    alt="Maya"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <h2 className="text-xl font-bold text-stone-950 mb-2 text-center">Plan Your Instagram Feed</h2>
+                <p className="text-sm text-stone-600 text-center mb-6 max-w-md leading-relaxed">
+                  Tell me about your brand and I'll create a strategic 9-post feed with captions, hashtags, and
+                  personalized tips.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-xl">
+                  {currentPrompts.map((item, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleQuickPrompt(item.prompt)}
+                      className="p-4 bg-stone-50 border border-stone-200 rounded-xl hover:bg-stone-100 hover:border-stone-300 transition-all text-left"
+                    >
+                      <span className="text-xs font-medium text-stone-600 mb-1 block">{item.label}</span>
+                      <p className="text-sm text-stone-700 leading-relaxed">{item.prompt}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {messages.map((message, index) => (
               <div key={index} className={`flex gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}>
                 {message.role === "assistant" && (
@@ -407,12 +596,77 @@ export default function FeedDesignerScreen() {
                     message.role === "user" ? "bg-stone-950 text-white" : "bg-stone-100 text-stone-950"
                   }`}
                 >
-                  <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                  {message.parts && Array.isArray(message.parts) ? (
+                    message.parts.map((part: any, partIndex: number) => {
+                      if (part.type === "text") {
+                        return (
+                          <p key={partIndex} className="text-sm leading-relaxed whitespace-pre-wrap">
+                            {part.text}
+                          </p>
+                        )
+                      }
+                      if (part.type === "tool-generateCompleteFeed") {
+                        const toolPart = part as any
+                        const output = toolPart.output
+
+                        if (output && output.state === "ready" && output.feedData) {
+                          const feedData = output.feedData
+
+                          return (
+                            <div key={partIndex} className="mt-4 space-y-3">
+                              <div className="flex items-center gap-3">
+                                <div className="w-1 h-1 rounded-full bg-stone-600"></div>
+                                <span className="text-xs tracking-wider uppercase font-light text-stone-600">
+                                  Feed Strategy
+                                </span>
+                              </div>
+                              <div className="bg-white rounded-xl p-4 border border-stone-200">
+                                <h4 className="font-bold text-stone-950 mb-2">{feedData.feedStory}</h4>
+                                <div className="grid grid-cols-3 gap-1 mb-3">
+                                  {feedData.posts.slice(0, 9).map((post: any, i: number) => (
+                                    <div
+                                      key={i}
+                                      className="aspect-square bg-stone-100 rounded flex items-center justify-center"
+                                    >
+                                      <span className="text-xs text-stone-500">{post.category}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                                <Button
+                                  onClick={() => {
+                                    setFeedStrategy(feedData)
+                                    setMobileView("preview")
+                                  }}
+                                  className="w-full bg-stone-950 hover:bg-stone-800 text-white"
+                                >
+                                  View Full Feed Strategy
+                                </Button>
+                              </div>
+                            </div>
+                          )
+                        } else if (output && output.state === "loading") {
+                          return (
+                            <div key={partIndex} className="mt-4">
+                              <div className="flex items-center gap-3 text-stone-600">
+                                <div className="w-2 h-2 rounded-full bg-stone-600 animate-pulse"></div>
+                                <span className="text-xs tracking-wider uppercase font-light">
+                                  Designing your feed strategy...
+                                </span>
+                              </div>
+                            </div>
+                          )
+                        }
+                      }
+                      return null
+                    })
+                  ) : (
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content || ""}</p>
+                  )}
                 </div>
               </div>
             ))}
 
-            {isLoading && (
+            {isTyping && (
               <div className="flex justify-start gap-3">
                 <div className="flex-shrink-0 w-8 h-8 rounded-full overflow-hidden border-2 border-stone-200">
                   <img
@@ -442,23 +696,46 @@ export default function FeedDesignerScreen() {
           </div>
 
           <div className="flex-shrink-0 border-t border-stone-200 p-4">
-            <form onSubmit={handleSubmit} className="flex gap-3">
+            {messages.length > 0 && !isTyping && (
+              <div className="mb-3">
+                <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
+                  {currentPrompts.slice(0, 3).map((item, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleQuickPrompt(item.prompt)}
+                      disabled={isTyping || isGenerating}
+                      className="flex-shrink-0 px-3 py-2 bg-stone-50 border border-stone-200 rounded-lg hover:bg-stone-100 hover:border-stone-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <span className="text-xs font-medium text-stone-700 whitespace-nowrap">{item.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-3">
               <Textarea
-                value={input}
-                onChange={handleInputChange}
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
                 placeholder="Describe your brand and feed vision..."
                 className="flex-1 resize-none bg-stone-50 border-stone-200"
                 rows={2}
-                disabled={isLoading || isGenerating}
+                disabled={isTyping || isGenerating}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault()
+                    handleSendMessage()
+                  }
+                }}
               />
               <Button
-                type="submit"
-                disabled={isLoading || isGenerating || !input?.trim()}
+                onClick={handleSendMessage}
+                disabled={isTyping || isGenerating || !inputValue?.trim()}
                 className="bg-stone-950 hover:bg-stone-800 text-white self-end px-6"
               >
                 Send
               </Button>
-            </form>
+            </div>
           </div>
         </div>
 

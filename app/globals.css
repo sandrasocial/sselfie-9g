@@ -1,5 +1,5 @@
 @import "tailwindcss";
-/* Removed tw-animate-css import - it's incompatible with Tailwind v4 */
+@import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -157,6 +157,7 @@
 }
 
 @theme inline {
+  /* optional: --font-sans, --font-serif, --font-mono if they are applied in the layout.tsx */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
