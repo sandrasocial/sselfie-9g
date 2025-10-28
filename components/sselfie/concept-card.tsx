@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { Check } from "lucide-react"
-import Image from "next/image"
-import ImageViewerModal from "./image-viewer-modal"
+import InstagramPhotoCard from "./instagram-photo-card"
+import InstagramReelCard from "./instagram-reel-card"
 import type { ConceptData } from "./types"
 
 interface ConceptCardProps {
@@ -292,7 +292,7 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
       )}
 
       {isGenerated && generatedImageUrl && (
-        <div className="mt-5 sm:mt-6 space-y-3 sm:space-y-4">
+        <div className="mt-5 sm:mt-6 space-y-4">
           <div
             className="p-4 sm:p-5 bg-stone-100 backdrop-blur-xl border border-stone-200 rounded-[1.25rem] shadow-xl shadow-stone-900/10"
             role="status"
@@ -311,46 +311,15 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
             </div>
           </div>
 
-          <div
-            onClick={() => setIsViewerOpen(true)}
-            className="aspect-[4/5] bg-white/40 backdrop-blur-2xl rounded-[1.5rem] border border-white/60 overflow-hidden hover:bg-white/60 transition-all duration-300 cursor-pointer group relative shadow-xl shadow-stone-900/10"
-            role="button"
-            tabIndex={0}
-            aria-label={`View full image: ${concept.title}`}
-            onKeyPress={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault()
-                setIsViewerOpen(true)
-              }
-            }}
-          >
-            <Image
-              src={generatedImageUrl || "/placeholder.svg"}
-              alt={concept.title}
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              loading="lazy"
-            />
-            <div
-              className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center"
-              aria-hidden="true"
-            >
-              <span className="text-white font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-sm sm:text-base">
-                View Full Image
-              </span>
-            </div>
-          </div>
-
-          {!videoUrl && !isGeneratingVideo && (
-            <button
-              onClick={handleAnimate}
-              className="w-full px-4 sm:px-5 py-3 sm:py-4 bg-stone-950 text-white rounded-[1.25rem] font-semibold text-xs sm:text-sm transition-all duration-300 hover:shadow-2xl hover:shadow-stone-950/40 hover:scale-[1.02] active:scale-[0.98] min-h-[48px] sm:min-h-[52px]"
-              aria-label="Animate this photo into a video"
-            >
-              Animate This Photo
-            </button>
-          )}
+          <InstagramPhotoCard
+            concept={concept}
+            imageUrl={generatedImageUrl}
+            imageId={generationId || ""}
+            isFavorite={isFavorite}
+            onFavoriteToggle={handleFavoriteToggle}
+            onDelete={handleDelete}
+            onAnimate={!videoUrl && !isGeneratingVideo ? handleAnimate : undefined}
+          />
 
           {isGeneratingVideo && (
             <div
@@ -363,7 +332,7 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
               </div>
               <div className="text-center space-y-2">
                 <span className="text-xs sm:text-sm tracking-wider uppercase font-semibold text-stone-700">
-                  Creating Video
+                  Creating Reel
                 </span>
                 <p className="text-[10px] sm:text-xs text-stone-600">This takes 40-60 seconds</p>
               </div>
@@ -384,46 +353,10 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
 
           {videoUrl && videoId && (
             <div className="mt-4">
-              <div className="aspect-[9/16] bg-stone-950 rounded-[1.5rem] overflow-hidden">
-                <video src={videoUrl} className="w-full h-full object-cover" controls playsInline loop />
-              </div>
+              <InstagramReelCard videoUrl={videoUrl} motionPrompt={concept.description} />
             </div>
           )}
-
-          <div className="grid grid-cols-2 gap-2 sm:gap-3">
-            <button
-              onClick={handleFavoriteToggle}
-              className={`px-4 sm:px-5 py-3 sm:py-4 rounded-[1.25rem] font-semibold text-xs sm:text-sm transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] min-h-[48px] sm:min-h-[52px] ${
-                isFavorite
-                  ? "bg-red-500 text-white"
-                  : "bg-stone-950 text-white hover:shadow-2xl hover:shadow-stone-950/40"
-              }`}
-              aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
-            >
-              {isFavorite ? "Saved ♥" : "Save Photo"}
-            </button>
-            <button
-              onClick={() => setIsViewerOpen(true)}
-              className="px-4 sm:px-5 py-3 sm:py-4 bg-white/50 backdrop-blur-2xl text-stone-950 border border-white/60 rounded-[1.25rem] font-semibold text-xs sm:text-sm transition-all duration-300 hover:bg-white/70 hover:border-white/80 hover:scale-[1.02] active:scale-[0.98] min-h-[48px] sm:min-h-[52px] shadow-lg shadow-stone-900/10"
-              aria-label="View full image"
-            >
-              View Full
-            </button>
-          </div>
         </div>
-      )}
-
-      {isGenerated && generatedImageUrl && generationId && (
-        <ImageViewerModal
-          imageUrl={generatedImageUrl}
-          imageId={Number.parseInt(generationId)}
-          title={concept.title}
-          isOpen={isViewerOpen}
-          onClose={() => setIsViewerOpen(false)}
-          isFavorite={isFavorite}
-          onFavoriteToggle={handleFavoriteToggle}
-          onDelete={handleDelete}
-        />
       )}
     </div>
   )
