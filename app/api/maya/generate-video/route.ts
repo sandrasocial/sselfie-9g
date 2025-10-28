@@ -117,8 +117,8 @@ export async function POST(request: NextRequest) {
       disable_safety_checker: false, // Keep safety checker enabled
       lora_weights_transformer: loraWeightsUrl, // HIGH transformer LoRA for character consistency
       lora_weights_transformer_2: loraWeightsUrl, // LOW transformer_2 LoRA for character consistency
-      lora_scale_transformer: 1.2, // Increased from 1.0 for stronger character consistency
-      lora_scale_transformer_2: 1.2, // Increased from 1.0 for better facial feature preservation
+      lora_scale_transformer: 1.0,
+      lora_scale_transformer_2: 1.0,
     }
 
     console.log("[v0] ========== WAN-2.2-I2V-FAST INPUT ==========")
@@ -133,8 +133,16 @@ export async function POST(request: NextRequest) {
     console.log("[v0] Interpolate output:", predictionInput.interpolate_output)
     console.log("[v0] ✅ LoRA weights (transformer):", predictionInput.lora_weights_transformer)
     console.log("[v0] ✅ LoRA weights (transformer_2):", predictionInput.lora_weights_transformer_2)
-    console.log("[v0] ✅ LoRA scale (transformer):", predictionInput.lora_scale_transformer)
-    console.log("[v0] ✅ LoRA scale (transformer_2):", predictionInput.lora_scale_transformer_2)
+    console.log(
+      "[v0] ✅ LoRA scale (transformer):",
+      predictionInput.lora_scale_transformer,
+      "(reduced for natural motion)",
+    )
+    console.log(
+      "[v0] ✅ LoRA scale (transformer_2):",
+      predictionInput.lora_scale_transformer_2,
+      "(reduced for natural motion)",
+    )
     console.log("[v0] Full prediction input:", JSON.stringify(predictionInput, null, 2))
     console.log("[v0] ================================================")
 

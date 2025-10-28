@@ -403,6 +403,39 @@ export default function MayaChatScreen() {
     if ((messageText || uploadedImage) && !isTyping) {
       const messageContent = uploadedImage ? `${messageText}\n\n[Reference Image: ${uploadedImage}]` : messageText
 
+      console.log("[v0] 📤 Sending user message:", {
+        chatId,
+        messageLength: messageContent.length,
+        hasImage: !!uploadedImage,
+      })
+
+      // Save user message immediately
+      if (chatId) {
+        console.log("[v0] 💾 Saving user message to database")
+        fetch("/api/maya/save-message", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chatId,
+            role: "user",
+            content: messageContent,
+          }),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.success) {
+              console.log("[v0] ✅ User message saved successfully")
+            } else {
+              console.error("[v0] ❌ Failed to save user message:", data.error)
+            }
+          })
+          .catch((error) => {
+            console.error("[v0] ❌ Error saving user message:", error)
+          })
+      } else {
+        console.error("[v0] ❌ Cannot save user message - chatId is null")
+      }
+
       sendMessage({ text: messageContent })
       setInputValue("")
       setUploadedImage(null)
@@ -475,7 +508,9 @@ export default function MayaChatScreen() {
         <div className="fixed inset-0 z-50 bg-stone-950/80 backdrop-blur-sm flex items-center justify-center animate-in fade-in duration-200">
           <div className="bg-white/90 backdrop-blur-xl border-2 border-dashed border-stone-400 rounded-3xl p-12 text-center max-w-md mx-4">
             <Camera size={48} className="mx-auto mb-4 text-stone-600" strokeWidth={1.5} />
-            <h3 className="text-xl font-serif tracking-[0.2em] uppercase text-stone-950 mb-2">Drop Image Here</h3>
+            <h3 className="text-xl sm:text-xl md:text-2xl font-serif font-extralight tracking-[0.2em] uppercase text-stone-950 mb-2">
+              Drop Image Here
+            </h3>
             <p className="text-sm text-stone-600 tracking-wide">Upload a reference image for Maya to work with</p>
           </div>
         </div>
@@ -604,7 +639,7 @@ export default function MayaChatScreen() {
                     <button
                       key={index}
                       onClick={() => handleSendMessage(item.prompt)}
-                      className="group p-4 bg-white/50 backdrop-blur-xl border border-white/70 rounded-2xl hover:bg-white/70 hover:border-stone-300 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] text-left"
+                      className="group p-4 bg-white/50 backdrop-blur-xl border border-white/70 rounded-2xl sm:rounded-[1.5rem] hover:bg-white/70 hover:border-stone-300 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] text-left"
                     >
                       <div className="flex items-center gap-2 mb-2">
                         <Icon size={14} className="text-stone-600" strokeWidth={2} />
@@ -636,8 +671,8 @@ export default function MayaChatScreen() {
                             key={partIndex}
                             className={`p-4 sm:p-5 md:p-6 rounded-[1.5rem] sm:rounded-[1.75rem] transition-all duration-300 hover:scale-[1.01] ${
                               msg.role === "user"
-                                ? "bg-stone-950 text-white shadow-xl shadow-stone-900/30"
-                                : "bg-white/50 backdrop-blur-2xl border border-white/70 shadow-xl shadow-stone-900/10 text-stone-950"
+                                ? "bg-stone-950 text-white shadow-xl shadow-stone-950/30"
+                                : "bg-white/50 backdrop-blur-2xl border border-white/70 shadow-xl shadow-stone-950/10 text-stone-950"
                             }`}
                             role={msg.role === "assistant" ? "article" : undefined}
                           >
@@ -885,7 +920,7 @@ export default function MayaChatScreen() {
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploadingImage || isTyping}
-                className="w-10 h-10 sm:w-11 sm:h-11 bg-stone-950 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg shadow-stone-900/30 group-hover:shadow-xl group-hover:scale-105 transition-all duration-300 min-w-[44px] min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-10 h-10 sm:w-11 sm:h-11 bg-stone-950 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg shadow-stone-950/30 group-hover:shadow-xl group-hover:scale-105 transition-all duration-300 min-w-[44px] min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
                 aria-label="Attach image"
                 type="button"
               >

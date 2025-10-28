@@ -5,39 +5,50 @@ import { getOrCreateActiveChat, getChatMessages, loadChatById } from "@/lib/data
 
 export async function GET(request: NextRequest) {
   try {
+    console.log("[v0] ========== load-chat API START ==========")
+
     const supabase = await createServerClient()
     const {
       data: { user },
     } = await supabase.auth.getUser()
 
     if (!user) {
+      console.log("[v0] ❌ Unauthorized - no user")
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const neonUser = await getUserByAuthId(user.id)
     if (!neonUser) {
+      console.log("[v0] ❌ User not found in Neon")
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
+    console.log("[v0] 👤 Loading chat for user:", neonUser.id)
+
     const { searchParams } = new URL(request.url)
     const requestedChatId = searchParams.get("chatId")
+
+    console.log("[v0] 📋 Requested chat ID:", requestedChatId || "active chat")
 
     let chat
     if (requestedChatId) {
       // Load specific chat by ID
       chat = await loadChatById(Number.parseInt(requestedChatId), neonUser.id)
       if (!chat) {
+        console.log("[v0] ❌ Chat not found:", requestedChatId)
         return NextResponse.json({ error: "Chat not found" }, { status: 404 })
       }
+      console.log("[v0] ✅ Loaded specific chat:", chat.id)
     } else {
       // Get or create active chat
       chat = await getOrCreateActiveChat(neonUser.id)
+      console.log("[v0] ✅ Got/created active chat:", chat.id)
     }
 
     // Get chat messages
     const messages = await getChatMessages(chat.id)
 
-    console.log("[v0] Loading chat messages:", messages.length)
+    console.log("[v0] 📨 Loading chat messages:", messages.length, "for chat ID:", chat.id)
     messages.forEach((msg, index) => {
       console.log(`[v0] Message ${index + 1}:`, {
         id: msg.id,
@@ -94,12 +105,14 @@ export async function GET(request: NextRequest) {
 
     console.log("[v0] Formatted messages:", formattedMessages.length)
 
+    console.log("[v0] ========== load-chat API END (success) ==========")
     return NextResponse.json({
       chatId: chat.id,
       chatTitle: chat.chat_title,
       messages: formattedMessages,
     })
   } catch (error) {
+    console.error("[v0] ========== load-chat API END (error) ==========")
     console.error("[v0] Error loading chat:", error)
     return NextResponse.json({ error: "Failed to load chat" }, { status: 500 })
   }

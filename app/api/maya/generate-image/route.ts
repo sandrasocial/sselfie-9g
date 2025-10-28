@@ -39,7 +39,8 @@ export async function POST(request: NextRequest) {
         u.gender,
         um.trigger_word,
         um.replicate_version_id,
-        um.training_status
+        um.training_status,
+        um.lora_scale
       FROM users u
       LEFT JOIN user_models um ON u.id = um.user_id
       WHERE u.id = ${neonUser.id}
@@ -56,8 +57,9 @@ export async function POST(request: NextRequest) {
     const triggerWord = userData.trigger_word || "person"
     const gender = userData.gender
     const replicateVersionId = userData.replicate_version_id
+    const userLoraScale = userData.lora_scale
 
-    console.log("[v0] User training data:", { triggerWord, gender, replicateVersionId })
+    console.log("[v0] User training data:", { triggerWord, gender, replicateVersionId, userLoraScale })
 
     let finalPrompt = conceptPrompt
 
@@ -85,6 +87,11 @@ export async function POST(request: NextRequest) {
     const qualitySettings =
       MAYA_QUALITY_PRESETS[category as keyof typeof MAYA_QUALITY_PRESETS] || MAYA_QUALITY_PRESETS.default
 
+    if (userLoraScale !== null && userLoraScale !== undefined) {
+      qualitySettings.lora_scale = Number(userLoraScale)
+      console.log("[v0] Using user-specific LoRA scale:", qualitySettings.lora_scale)
+    }
+
     console.log("[v0] Initializing Replicate client...")
     let replicate
     try {
@@ -110,7 +117,7 @@ export async function POST(request: NextRequest) {
     const predictionInput: any = {
       prompt: finalPrompt,
       ...qualitySettings,
-      ...(qualitySettings.lora_scale !== undefined && { lora_scale: qualitySettings.lora_scale }),
+      ...(qualitySettings.lora_scale !== undefined && { lora_scale: Number(qualitySettings.lora_scale) }),
     }
 
     if (referenceImageUrl) {
