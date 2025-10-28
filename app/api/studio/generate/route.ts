@@ -41,6 +41,16 @@ export async function POST(request: Request) {
     console.log("[v0] Starting generation with model:", model.model_name)
     console.log("[v0] Trigger word:", model.trigger_word)
     console.log("[v0] User prompt:", prompt)
+    console.log("[v0] LoRA weights URL:", model.lora_weights_url)
+    console.log("[v0] LoRA scale:", model.lora_scale)
+
+    if (!model.lora_weights_url || model.lora_weights_url.trim() === "") {
+      console.log("[v0] ❌ LoRA weights URL is missing for user")
+      return NextResponse.json(
+        { error: "LoRA weights URL not found. Please contact support to fix your model." },
+        { status: 400 },
+      )
+    }
 
     // Initialize Replicate
     const replicate = new Replicate({
@@ -63,10 +73,14 @@ export async function POST(request: Request) {
         output_quality: 90,
         num_inference_steps: 28,
         guidance_scale: 3.5,
+        lora: model.lora_weights_url,
+        lora_scale: model.lora_scale || 0.9,
       },
     })
 
     console.log("[v0] Prediction created:", prediction.id)
+    console.log("[v0] ✅ LoRA weights sent to Replicate:", model.lora_weights_url)
+    console.log("[v0] ✅ LoRA scale:", model.lora_scale || 0.9)
 
     // Save generation record to database
     const [generation] = await sql`

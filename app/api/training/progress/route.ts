@@ -69,6 +69,7 @@ export async function GET(request: NextRequest) {
               replicate_model_id = ${training.output?.model || null},
               replicate_version_id = ${training.output?.version || null},
               lora_weights_url = ${training.output?.weights || null},
+              lora_scale = COALESCE(lora_scale, 1.0),
               completed_at = NOW(),
               updated_at = NOW()
             WHERE id = ${modelId}

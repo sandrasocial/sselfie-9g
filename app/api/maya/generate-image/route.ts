@@ -40,7 +40,8 @@ export async function POST(request: NextRequest) {
         um.trigger_word,
         um.replicate_version_id,
         um.training_status,
-        um.lora_scale
+        um.lora_scale,
+        um.lora_weights_url
       FROM users u
       LEFT JOIN user_models um ON u.id = um.user_id
       WHERE u.id = ${neonUser.id}
@@ -58,8 +59,17 @@ export async function POST(request: NextRequest) {
     const gender = userData.gender
     const replicateVersionId = userData.replicate_version_id
     const userLoraScale = userData.lora_scale
+    const loraWeightsUrl = userData.lora_weights_url
 
-    console.log("[v0] User training data:", { triggerWord, gender, replicateVersionId, userLoraScale })
+    console.log("[v0] User training data:", { triggerWord, gender, replicateVersionId, userLoraScale, loraWeightsUrl })
+
+    if (!loraWeightsUrl || loraWeightsUrl.trim() === "") {
+      console.log("[v0] ❌ LoRA weights URL is missing for user")
+      return NextResponse.json(
+        { error: "LoRA weights URL not found. Please contact support to fix your model." },
+        { status: 400 },
+      )
+    }
 
     let finalPrompt = conceptPrompt
 
@@ -90,6 +100,9 @@ export async function POST(request: NextRequest) {
     if (userLoraScale !== null && userLoraScale !== undefined) {
       qualitySettings.lora_scale = Number(userLoraScale)
       console.log("[v0] Using user-specific LoRA scale:", qualitySettings.lora_scale)
+    } else {
+      qualitySettings.lora_scale = 0.9
+      console.log("[v0] Using default LoRA scale:", qualitySettings.lora_scale)
     }
 
     console.log("[v0] Initializing Replicate client...")
@@ -118,6 +131,7 @@ export async function POST(request: NextRequest) {
       prompt: finalPrompt,
       ...qualitySettings,
       ...(qualitySettings.lora_scale !== undefined && { lora_scale: Number(qualitySettings.lora_scale) }),
+      lora: loraWeightsUrl,
     }
 
     if (referenceImageUrl) {
@@ -138,6 +152,8 @@ export async function POST(request: NextRequest) {
     }
 
     console.log("[v0] ========== FULL PREDICTION INPUT ==========")
+    console.log("[v0] ✅ LoRA weights URL:", loraWeightsUrl)
+    console.log("[v0] ✅ LoRA scale:", predictionInput.lora_scale)
     console.log("[v0] Prediction input:", JSON.stringify(predictionInput, null, 2))
     console.log("[v0] ================================================")
 

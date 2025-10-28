@@ -32,6 +32,7 @@ interface InstagramProfile {
 }
 
 export default function FeedDesignerScreen() {
+  const [isInitializing, setIsInitializing] = useState(true)
   const [feedPosts, setFeedPosts] = useState<FeedPost[]>(
     Array(9)
       .fill(null)
@@ -111,9 +112,17 @@ export default function FeedDesignerScreen() {
   }
 
   useEffect(() => {
-    loadBrandProfile()
-    checkTrainedModel()
-    loadLatestFeed()
+    const initializeComponent = async () => {
+      try {
+        await Promise.all([loadBrandProfile(), checkTrainedModel(), loadLatestFeed()])
+      } catch (error) {
+        console.error("[v0] Error initializing component:", error)
+      } finally {
+        setIsInitializing(false)
+      }
+    }
+
+    initializeComponent()
   }, [])
 
   const loadBrandProfile = async () => {
@@ -545,6 +554,17 @@ export default function FeedDesignerScreen() {
     }
   }
 
+  if (isInitializing) {
+    return (
+      <div className="h-full flex items-center justify-center bg-stone-50">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-stone-950 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-sm text-stone-600">Loading feed designer...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="h-full flex flex-col bg-stone-50">
       <div className="md:hidden flex-shrink-0 border-b border-stone-200 bg-white">
@@ -702,7 +722,7 @@ export default function FeedDesignerScreen() {
                                         key={i}
                                         className="aspect-square bg-stone-100 rounded flex items-center justify-center"
                                       >
-                                        <span className="text-xs text-stone-500">{post.category}</span>
+                                        <span className="text-stone-400 text-sm">{post.category}</span>
                                       </div>
                                     ))}
                                   </div>
