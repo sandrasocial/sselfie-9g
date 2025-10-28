@@ -28,6 +28,7 @@ export default function MayaChatScreen() {
   const [isDragging, setIsDragging] = useState(false)
   const [contentFilter, setContentFilter] = useState<"all" | "photos" | "videos">("all")
   const [currentPrompts, setCurrentPrompts] = useState<Array<{ label: string; prompt: string }>>([])
+  const [userGender, setUserGender] = useState<string | null>(null)
 
   const { messages, sendMessage, status, setMessages } = useChat({
     transport: new DefaultChatTransport({ api: "/api/maya/chat" }),
@@ -46,41 +47,120 @@ export default function MayaChatScreen() {
 
   const isTyping = status === "submitted" || status === "streaming"
 
-  const promptPool = {
+  const promptPoolWoman = {
     photoStories: [
       {
-        label: "Golden Hour",
-        prompt: "Take my photo during golden hour with warm, natural lighting",
+        label: "Golden Hour Glow",
+        prompt: "Take my photo during golden hour with warm, natural lighting highlighting my features",
       },
       {
-        label: "Editorial Style",
-        prompt: "Create an editorial-style photo with dramatic lighting and composition",
+        label: "Editorial Elegance",
+        prompt: "Create an editorial-style photo with dramatic lighting and graceful composition",
       },
       {
-        label: "Action Shot",
-        prompt: "Capture me in motion with natural energy and movement",
+        label: "Flowing Movement",
+        prompt: "Capture me in motion with natural, flowing energy",
       },
       {
-        label: "Cinematic Look",
+        label: "Cinematic Beauty",
         prompt: "Make a cinematic photo with beautiful scenery in the background",
       },
       {
-        label: "Modern Architecture",
-        prompt: "Take my photo with modern architecture and clean lines",
+        label: "Soft & Dreamy",
+        prompt: "Create a soft, dreamy photo with gentle natural light and ethereal mood",
       },
       {
-        label: "Soft & Dreamy",
-        prompt: "Create a soft, dreamy photo with gentle natural light",
+        label: "Confident & Graceful",
+        prompt: "Show me looking confident and graceful with elegant posing",
       },
     ],
     videoMoments: [
       {
         label: "Bring Photo to Life",
-        prompt: "Turn my photo into a video with subtle natural movement",
+        prompt: "Turn my photo into a video with subtle, natural movement",
       },
       {
         label: "Cinematic Video",
         prompt: "Make a cinematic video with smooth, flowing movement",
+      },
+      {
+        label: "Animated Portrait",
+        prompt: "Animate my portrait with lifelike, graceful motion",
+      },
+    ],
+    storytelling: [
+      {
+        label: "Tell My Story",
+        prompt: "Create photos that tell my story through light and composition",
+      },
+      {
+        label: "Authentic Moment",
+        prompt: "Show who I am in this moment, authentic and real",
+      },
+      {
+        label: "Moody & Contemplative",
+        prompt: "Create a moody photo with soft, contemplative lighting",
+      },
+      {
+        label: "Natural Beauty",
+        prompt: "Highlight natural beauty with organic, flowing composition",
+      },
+    ],
+    artistic: [
+      {
+        label: "Bold & Powerful",
+        prompt: "Make me look bold and powerful in a dramatic setting",
+      },
+      {
+        label: "Timeless Elegance",
+        prompt: "Create something timeless and elegant, classic but fresh",
+      },
+      {
+        label: "Modern Chic",
+        prompt: "Capture modern, contemporary style with clean lines",
+      },
+      {
+        label: "Romantic Mood",
+        prompt: "Create a romantic, dreamy atmosphere with soft lighting",
+      },
+    ],
+  }
+
+  const promptPoolMan = {
+    photoStories: [
+      {
+        label: "Golden Hour Power",
+        prompt: "Take my photo during golden hour with strong, natural lighting",
+      },
+      {
+        label: "Editorial Style",
+        prompt: "Create an editorial-style photo with dramatic lighting and bold composition",
+      },
+      {
+        label: "Action Shot",
+        prompt: "Capture me in motion with natural energy and strength",
+      },
+      {
+        label: "Cinematic Look",
+        prompt: "Make a cinematic photo with striking scenery in the background",
+      },
+      {
+        label: "Sharp & Modern",
+        prompt: "Create a sharp, modern photo with clean lines and contemporary style",
+      },
+      {
+        label: "Confident Look",
+        prompt: "Show me looking confident and strong with powerful posing",
+      },
+    ],
+    videoMoments: [
+      {
+        label: "Bring Photo to Life",
+        prompt: "Turn my photo into a video with subtle, natural movement",
+      },
+      {
+        label: "Cinematic Video",
+        prompt: "Make a cinematic video with smooth, dynamic movement",
       },
       {
         label: "Animated Portrait",
@@ -93,16 +173,16 @@ export default function MayaChatScreen() {
         prompt: "Create photos that tell my story through light and composition",
       },
       {
-        label: "Confident Look",
-        prompt: "Capture me looking confident and graceful",
-      },
-      {
         label: "Authentic Moment",
         prompt: "Show who I am in this moment, authentic and real",
       },
       {
         label: "Moody Vibe",
-        prompt: "Create a moody photo with soft, contemplative lighting",
+        prompt: "Create a moody photo with dramatic, contemplative lighting",
+      },
+      {
+        label: "Natural Strength",
+        prompt: "Highlight natural strength with bold, powerful composition",
       },
     ],
     artistic: [
@@ -111,21 +191,22 @@ export default function MayaChatScreen() {
         prompt: "Make me look bold and powerful in a dramatic setting",
       },
       {
-        label: "Natural Beauty",
-        prompt: "Highlight natural beauty with organic, flowing composition",
+        label: "Timeless & Classic",
+        prompt: "Create something timeless and classic, refined but modern",
       },
       {
-        label: "Urban Style",
-        prompt: "Capture urban energy with modern, contemporary style",
+        label: "Urban Edge",
+        prompt: "Capture urban energy with modern, edgy style",
       },
       {
-        label: "Timeless & Elegant",
-        prompt: "Create something timeless and elegant, classic but fresh",
+        label: "Rugged & Natural",
+        prompt: "Create a rugged, natural look with authentic outdoor energy",
       },
     ],
   }
 
-  const getRandomPrompts = () => {
+  const getRandomPrompts = (gender: string | null) => {
+    const promptPool = gender === "woman" ? promptPoolWoman : promptPoolMan
     const allCategories = Object.values(promptPool)
     const selected: Array<{ label: string; prompt: string }> = []
 
@@ -140,7 +221,29 @@ export default function MayaChatScreen() {
   }
 
   useEffect(() => {
-    setCurrentPrompts(getRandomPrompts())
+    const fetchUserGender = async () => {
+      try {
+        console.log("[v0] Fetching user gender from /api/user/profile")
+        const response = await fetch("/api/user/profile")
+        console.log("[v0] Profile API response status:", response.status)
+
+        if (response.ok) {
+          const data = await response.json()
+          console.log("[v0] Profile API data:", data)
+          setUserGender(data.gender || null)
+          const prompts = getRandomPrompts(data.gender || null)
+          console.log("[v0] Setting prompts for gender:", data.gender, "Prompts:", prompts.length)
+          setCurrentPrompts(prompts)
+        } else {
+          console.error("[v0] Profile API error:", response.status, response.statusText)
+          setCurrentPrompts(getRandomPrompts(null))
+        }
+      } catch (error) {
+        console.error("[v0] Error fetching user gender:", error)
+        setCurrentPrompts(getRandomPrompts(null))
+      }
+    }
+    fetchUserGender()
   }, [])
 
   const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
@@ -544,7 +647,7 @@ export default function MayaChatScreen() {
         setMessages([])
         setIsUserScrolling(false)
         setShowHistory(false)
-        setCurrentPrompts(getRandomPrompts()) // Refresh prompts
+        setCurrentPrompts(getRandomPrompts(userGender))
         setTimeout(() => scrollToBottom("auto"), 100)
       }
     } catch (error) {
@@ -690,7 +793,7 @@ export default function MayaChatScreen() {
       )}
 
       {showHistory && (
-        <div className="flex-shrink-0 mb-3 sm:mb-4 bg-white/50 backdrop-blur-3xl border border-white/60 rounded-2xl p-4 shadow-xl shadow-stone-900/5 animate-in slide-in-from-top-2 duration-300">
+        <div className="flex-shrink-0 mb-3 sm:mb-4 bg-white/50 backdrop-blur-3xl border border-white/60 rounded-2xl p-4 shadow-xl shadow-stone-950/5 animate-in slide-in-from-top-2 duration-300">
           <MayaChatHistory currentChatId={chatId} onSelectChat={handleSelectChat} onNewChat={handleNewChat} />
         </div>
       )}

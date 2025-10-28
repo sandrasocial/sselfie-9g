@@ -352,7 +352,7 @@ const generateCompleteFeedTool = tool({
         title: `${post.type} Portrait`,
         description: categoryDescriptions[post.type as keyof typeof categoryDescriptions],
         category: post.type,
-        prompt: `raw photo, editorial quality, professional photography, sharp focus, natural skin texture, visible pores, film grain, ${colorPalette}, ${brandVibe} aesthetic, ${lensSpecs[post.type as keyof typeof lensSpecs]}, ${lightingStyle}, ${businessType} professional, confident expression, timeless elegance, high-end fashion photography, authentic moment, ${post.composition}, trending Instagram aesthetic 2025`,
+        prompt: `A confident ${businessType} professional with styled appearance, ${colorPalette} color palette, ${brandVibe} aesthetic, ${lensSpecs[post.type as keyof typeof lensSpecs]}, ${lightingStyle}, natural skin texture with film grain, timeless elegance, high-end editorial photography, authentic professional presence, ${post.composition}, trending Instagram aesthetic 2025`,
         textOverlay: undefined,
         purpose: post.purpose,
         composition: post.composition,

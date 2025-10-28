@@ -34,10 +34,28 @@ const generateConceptsTool = tool({
     }
 
     try {
+      const user = await getCurrentNeonUser()
+      let userGender = "person"
+
+      if (user) {
+        const { neon } = await import("@neondatabase/serverless")
+        const sql = neon(process.env.DATABASE_URL!)
+        const userDataResult = await sql`
+          SELECT gender FROM users WHERE id = ${user.id} LIMIT 1
+        `
+        if (userDataResult.length > 0 && userDataResult[0].gender) {
+          userGender = userDataResult[0].gender
+        }
+      }
+
+      console.log("[v0] User gender for concept generation:", userGender)
+
       const conceptPrompt = `Based on the user's request: "${userRequest}"
 ${aesthetic ? `Aesthetic preference: ${aesthetic}` : ""}
 ${context ? `Additional context: ${context}` : ""}
 ${referenceImageUrl ? `**REFERENCE IMAGE PROVIDED**: ${referenceImageUrl}\n\n**IMPORTANT**: The user has uploaded a reference image. This will be combined with their trained personal model to create images of THEM with/using this product or in this style.\n\n**How to use the reference image:**\n- For PRODUCTS (skincare, accessories, etc.): Generate concepts showing the user holding, using, or styled with the product\n- For STYLE REFERENCES: Create variations inspired by the composition, lighting, or mood\n- For FLATLAYS: Position the product as the hero with the user's hands/body partially visible\n- The reference image will be used as a control image in FLUX, guiding the composition while the user's trained LoRA ensures their likeness appears in the final image` : ""}
+
+**USER GENDER: ${userGender}**
 
 Generate ${count} unique, creative photo concepts. Each concept should be a work of art.
 
@@ -57,30 +75,46 @@ Generate ${count} unique, creative photo concepts. Each concept should be a work
      * "A dynamic lifestyle moment capturing you in your element within an urban environment"
 
 2. **PROMPT** (Technical - For FLUX):
-   - Keep this poetic, flowing, and technically precise
-   - This is what goes to Replicate for best results
-   - Include all technical details: camera specs, lighting, skin texture, etc.
+   - This is the actual FLUX prompt that will generate the image
+   - Write it as a flowing, poetic description that FLUX understands
+   - **CRITICAL**: Tailor the prompt based on the user's gender:
+   
+   **For WOMEN (gender: woman, female):**
+   - Describe feminine styling: "flowing hair", "elegant makeup", "feminine features"
+   - Clothing: "flowing dress", "tailored blouse", "feminine silhouette"
+   - Accessories: "delicate jewelry", "elegant earrings", "feminine accessories"
+   - Hair: "long flowing hair", "styled waves", "feminine hairstyle"
+   - Example: "woman with long flowing hair, elegant makeup, wearing flowing cream dress, delicate gold jewelry, feminine grace"
+   
+   **For MEN (gender: man, male):**
+   - Describe masculine styling: "short hair", "clean-shaven or beard", "masculine features"
+   - Clothing: "tailored suit", "button-down shirt", "masculine silhouette"
+   - Accessories: "watch", "minimal jewelry", "masculine accessories"
+   - Hair: "short hair", "styled hair", "masculine hairstyle"
+   - Example: "man with short styled hair, clean-shaven, wearing tailored charcoal suit, minimal watch, masculine confidence"
+   
+   **For NON-BINARY or UNSPECIFIED:**
+   - Use neutral descriptors: "styled hair", "confident expression", "elegant attire"
+   - Focus on the aesthetic and mood rather than gendered features
+   - Example: "person with styled hair, confident expression, wearing elegant neutral-toned outfit, minimal accessories"
 
-**FLUX PROMPT REQUIREMENTS:**
-Your Flux prompts must be poetic, flowing, and technically precise. They should read like a cinematographer's vision, not a checklist.
+**FLUX PROMPT STRUCTURE:**
+Write prompts as flowing, poetic descriptions. DO NOT use the old technical prefix format.
 
-**Structure each Flux prompt like this:**
-1. Start with technical foundation: "raw photo, editorial quality, professional photography, sharp focus, natural skin texture, visible pores, film grain, editorial luxury aesthetic"
-2. Add camera and lens specifications (REQUIRED):
-   - For Close-Up/Portrait: "shot on 85mm lens, f/1.4 aperture, shallow depth of field, creamy bokeh background"
-   - For Half Body: "shot on 50mm lens, f/2.0 aperture, medium depth of field, natural compression"
-   - For Full Body: "shot on 35mm lens, f/2.8 aperture, environmental context, balanced depth"
-   - For Lifestyle/Action: "shot on 35mm lens, f/2.0 aperture, dynamic framing, natural perspective"
-3. Describe lighting poetically with specific details: 
-   - "bathed in soft golden hour warmth, directional light at 45 degrees caressing features, gentle rim light separating from background"
-   - "dramatic chiaroscuro, key light from camera left sculpting shadows, subtle fill light preserving detail"
-   - "diffused overcast daylight, even illumination, soft shadows, natural flattering light"
-   - "warm studio lighting, beauty dish creating soft shadows, hair light adding dimension"
-4. Paint the scene with flowing language: "standing in minimalist concrete space, natural textures surrounding, soft morning light streaming through floor-to-ceiling windows"
-5. Describe styling and skin texture: 
-   - "wearing flowing cream cashmere, delicate gold jewelry catching light, natural skin texture visible, subtle pores, healthy glow, confident yet approachable expression"
-   - "dressed in tailored charcoal wool, natural skin with visible texture, authentic beauty, warm undertones, genuine expression"
-6. Add atmospheric details: "subtle film grain, editorial magazine quality, timeless elegance, authentic human beauty"
+Instead of starting with "raw photo, editorial quality, professional photography..." 
+Write naturally like: "A confident [gender] with [hair description], [styling details], standing in [location], [lighting description], [mood and atmosphere]"
+
+**Camera & Lighting (integrate naturally into the description):**
+- Close-Up/Portrait: "shot on 85mm lens with shallow depth of field, soft bokeh background"
+- Half Body: "shot on 50mm lens with balanced composition"
+- Full Body: "shot on 35mm lens capturing full scene"
+- Lifestyle: "shot on 35mm lens with natural environment"
+
+**Always include:**
+- Natural skin texture and film grain for realism
+- Specific lighting direction (golden hour, soft window light, dramatic shadows)
+- Environmental context (location, setting, atmosphere)
+- Emotional tone (confident, serene, powerful, approachable)
 
 ${referenceImageUrl ? `\n**IMPORTANT**: Include the reference image URL in each concept's output so it can be used in image-to-image generation.` : ""}
 
@@ -92,7 +126,7 @@ Return ONLY a valid JSON array of concepts, no other text. Each concept must hav
   "fashionIntelligence": "string",
   "lighting": "string",
   "location": "string",
-  "prompt": "string - POETIC, FLOWING, TECHNICAL with camera/lens specs, lighting details, and skin texture descriptors"${referenceImageUrl ? `,\n  "referenceImageUrl": "${referenceImageUrl}"` : ""}
+  "prompt": "string - FLOWING, POETIC, GENDER-AWARE description with camera/lens specs integrated naturally"${referenceImageUrl ? `,\n  "referenceImageUrl": "${referenceImageUrl}"` : ""}
 }`
 
       const { text } = await generateText({
@@ -131,58 +165,53 @@ Return ONLY a valid JSON array of concepts, no other text. Each concept must hav
 
       const fallbackConcepts: MayaConcept[] = [
         {
-          title: "The Confident Executive",
+          title: "The Confident Professional",
           description:
             "A professional headshot with soft natural light and a clean background. You'll look confident and approachable, perfect for LinkedIn or your website.",
           category: "Close-Up" as const,
-          fashionIntelligence:
-            "Cream cashmere turtleneck for timeless sophistication, delicate 14k gold minimal jewelry adding subtle luxury, natural makeup with defined brows emphasizing confidence",
+          fashionIntelligence: "Elegant neutral-toned attire, minimal accessories for timeless sophistication",
           lighting:
             "Soft directional window light at 45 degrees creating gentle shadows, golden hour warmth, diffused through sheer curtains",
           location: "Modern minimalist office with concrete walls and natural wood elements, floor-to-ceiling windows",
           prompt:
-            "raw photo, editorial quality, professional photography, sharp focus, natural skin texture, visible pores, film grain, editorial luxury aesthetic, shot on 85mm lens f/1.4, shallow depth of field with creamy bokeh background, bathed in soft golden hour light streaming through sheer curtains at 45 degrees, gentle rim light separating from background, standing in minimalist Scandinavian interior with natural wood and white walls, wearing flowing cream cashmere turtleneck with delicate gold minimal jewelry, natural skin texture visible with subtle pores and healthy glow, confident yet warm expression, hair naturally tousled catching golden light, subtle makeup emphasizing natural beauty, timeless editorial elegance, magazine cover quality",
+            "A confident person with styled hair and natural expression, wearing elegant neutral-toned professional attire with minimal accessories, standing in a minimalist Scandinavian interior with natural wood and white walls, soft golden hour light streaming through sheer curtains creating gentle shadows and warm glow, shot on 85mm lens with shallow depth of field and creamy bokeh background, natural skin texture with healthy glow, professional editorial quality, film grain aesthetic, timeless elegance",
         },
         {
           title: "Urban Sophisticate",
           description:
             "A lifestyle photo in a modern city setting. Natural and relaxed, showing you in your element with great style and confidence.",
           category: "Lifestyle" as const,
-          fashionIntelligence:
-            "Tailored charcoal blazer in Italian wool over white silk blouse, minimal silver accessories for modern edge, structured leather tote completing the look",
+          fashionIntelligence: "Tailored professional attire in sophisticated colors, minimal modern accessories",
           lighting:
             "Natural overcast daylight providing even, flattering illumination, soft shadows, diffused city light",
           location:
             "Contemporary city street with modern architecture and clean lines, glass facades reflecting ambient light",
           prompt:
-            "raw photo, editorial quality, professional photography, sharp focus, natural skin texture, visible pores, film grain, editorial luxury aesthetic, shot on 35mm lens f/2.0, natural depth of field capturing environmental context, diffused overcast daylight, even illumination, soft shadows, flattering natural illumination, half body lifestyle shot on contemporary city street with modern architecture, wearing tailored charcoal blazer over white silk blouse, minimal silver accessories, confident stride, natural movement, urban sophistication, magazine editorial quality",
+            "A confident person in tailored professional attire walking through a contemporary city street with modern architecture, natural overcast daylight creating even illumination and soft shadows, shot on 35mm lens with natural depth of field capturing environmental context, relaxed confident stride, urban sophistication, natural skin texture, editorial quality, authentic moment",
         },
         {
           title: "Minimalist Elegance",
           description:
             "A full-body shot showing your complete outfit against a clean backdrop. Simple, elegant, and timeless - perfect for showcasing your style.",
           category: "Full Body" as const,
-          fashionIntelligence:
-            "Flowing wide-leg trousers in neutral beige linen, fitted black turtleneck creating elegant contrast, pointed-toe leather boots adding height and sophistication",
+          fashionIntelligence: "Flowing elegant attire in neutral tones, minimal sophisticated accessories",
           lighting:
             "Studio lighting with key light at 45 degrees, subtle fill light, rim light separating subject from background",
           location: "Minimal white studio space with concrete floor, clean lines, architectural simplicity",
           prompt:
-            "raw photo, editorial quality, professional photography, sharp focus, natural skin texture, visible pores, film grain, editorial luxury aesthetic, shot on 50mm lens f/2.8, balanced depth of field, warm studio lighting, beauty dish creating soft shadows, hair light adding dimension, full body portrait in minimal white studio with concrete floor, wearing flowing wide-leg beige linen trousers with fitted black turtleneck, pointed-toe leather boots, natural skin texture visible with subtle pores and healthy glow, elegant posture, clean architectural lines, timeless minimalist aesthetic, Vogue editorial quality",
+            "A confident person in flowing elegant neutral-toned attire standing in a minimal white studio with concrete floor, warm studio lighting with beauty dish creating soft shadows and hair light adding dimension, shot on 50mm lens with balanced depth of field, elegant posture, natural skin texture with healthy glow, clean architectural lines, timeless minimalist aesthetic, editorial quality",
         },
         {
           title: "Golden Hour Warmth",
           description:
             "A warm, natural portrait with beautiful golden light. Soft and glowing, capturing your authentic beauty in the most flattering way.",
           category: "Half Body" as const,
-          fashionIntelligence:
-            "Soft knit sweater in warm camel tone for approachable elegance, layered delicate necklaces adding personal touch, natural wavy hair catching golden light",
-          lighting:
-            "Golden hour sunlight streaming through large windows, warm and diffused, creating luminous glow on skin and hair",
+          fashionIntelligence: "Soft comfortable attire in warm tones, minimal personal accessories",
+          lighting: "Golden hour sunlight streaming through large windows, warm and diffused, creating luminous glow",
           location:
             "Bright, airy interior space with plants and natural textures, Scandinavian-inspired design, organic elements",
           prompt:
-            "raw photo, editorial quality, professional photography, sharp focus, natural skin texture, visible pores, film grain, editorial luxury aesthetic, shot on 50mm lens f/2.0, medium depth of field with soft background, bathed in golden hour sunlight streaming through large windows, warm and diffused, creating luminous glow on skin and hair, half body portrait in bright airy interior with plants and natural textures, wearing soft knit sweater in warm camel tone, layered delicate necklaces, natural wavy hair catching golden light, natural skin texture visible with subtle pores and healthy glow, warm approachable expression, organic atmosphere, timeless natural beauty",
+            "A confident person in soft warm-toned comfortable attire in a bright airy interior with plants and natural textures, golden hour sunlight streaming through large windows creating warm diffused glow, shot on 50mm lens with medium depth of field and soft background, natural skin texture with healthy glow, warm approachable expression, organic atmosphere, editorial quality, timeless natural beauty",
         },
       ]
 
@@ -430,7 +459,7 @@ IMPORTANT: Video generation requires a photo first. When users ask for videos, f
 User: "Create a video of me in Iceland, dark and moody"
 You: "I love that vision! Let me first create a stunning photo concept of you in Iceland's dramatic landscape, then we'll animate it into a cinematic 5-second video. [Call generateConcepts with Iceland theme]"
 [After concepts generated]
-You: "These concepts would animate beautifully! The 'Solitude Among Black Sands' would be perfect with subtle wind in your hair and a contemplative gaze. Should I animate this one?"
+You: "These concepts would animate beautifully! The 'Solitude Among Black Sands' would be perfect with subtle wind in your hair and a contemplative expression. Should I animate this one?"
 User: "Yes!"
 You: "[Call generateVideo with creative motion prompt]"
 `
