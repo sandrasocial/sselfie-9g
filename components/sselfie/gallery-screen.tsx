@@ -5,7 +5,8 @@ import { Heart, Grid, Camera, ImageIcon, Download, Trash2, Video, Play } from "l
 import useSWR from "swr"
 import type { User } from "./types"
 import type { GalleryImage } from "@/lib/data/images"
-import { ImageLightbox } from "@/components/image-lightbox"
+import { InstagramPhotoPreview } from "./instagram-photo-preview"
+import { InstagramReelPreview } from "./instagram-reel-preview"
 import { ProfileImageSelector } from "@/components/profile-image-selector"
 import UnifiedLoading from "./unified-loading"
 
@@ -53,6 +54,7 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
   const [favorites, setFavorites] = useState<Set<string>>(new Set())
   const [lightboxImage, setLightboxImage] = useState<GalleryImage | null>(null)
+  const [previewVideo, setPreviewVideo] = useState<GeneratedVideo | null>(null)
   const [showProfileSelector, setShowProfileSelector] = useState(false)
   const [profileImage, setProfileImage] = useState(user.avatar || "/placeholder.svg")
 
@@ -303,10 +305,11 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
               </button>
             ))}
 
+            {/* Videos */}
             {displayVideos.map((video) => (
               <button
                 key={`vid-${video.id}`}
-                onClick={() => window.open(video.video_url, "_blank")}
+                onClick={() => setPreviewVideo(video)}
                 className="aspect-square relative group overflow-hidden bg-stone-200/30"
               >
                 <video src={video.video_url} className="w-full h-full object-cover" muted playsInline />
@@ -335,15 +338,29 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
           </div>
         )}
 
-        {/* Existing lightbox and profile selector */}
+        {/* InstagramPhotoPreview */}
         {lightboxImage && (
-          <ImageLightbox
+          <InstagramPhotoPreview
             image={lightboxImage}
             images={displayImages}
             onClose={() => setLightboxImage(null)}
             onFavorite={(imageId, newState) => toggleFavorite(imageId, !newState)}
             onDelete={deleteImage}
             isFavorited={lightboxImage.is_favorite || favorites.has(lightboxImage.id)}
+            userName={displayName}
+            userAvatar={profileImage}
+          />
+        )}
+
+        {/* InstagramReelPreview */}
+        {previewVideo && (
+          <InstagramReelPreview
+            video={previewVideo}
+            videos={displayVideos}
+            onClose={() => setPreviewVideo(null)}
+            onDelete={deleteVideo}
+            userName={displayName}
+            userAvatar={profileImage}
           />
         )}
 
@@ -396,7 +413,7 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
           <button
             key={stat.key}
             onClick={() => setSelectedCategory(stat.key)}
-            className={`group bg-white/50 backdrop-blur-2xl border rounded-xl sm:rounded-[1.5rem] p-3 sm:p-4 text-center shadow-xl shadow-stone-900/10 hover:shadow-2xl hover:shadow-stone-900/20 hover:scale-105 transition-all duration-300 min-h-[100px] sm:min-h-[120px] ${
+            className={`group bg-white/50 backdrop-blur-2xl border rounded-xl sm:rounded-[1.5rem] p-3 sm:p-4 text-center shadow-xl shadow-stone-950/10 hover:shadow-2xl hover:shadow-stone-950/20 hover:scale-105 transition-all duration-300 min-h-[100px] sm:min-h-[120px] ${
               selectedCategory === stat.key ? "border-stone-950 ring-2 ring-stone-950" : "border-white/60"
             }`}
           >
@@ -490,11 +507,7 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
           })}
 
           {displayVideos.map((video) => (
-            <button
-              key={`vid-${video.id}`}
-              onClick={() => window.open(video.video_url, "_blank")}
-              className="relative group text-left"
-            >
+            <button key={`vid-${video.id}`} onClick={() => setPreviewVideo(video)} className="relative group text-left">
               <div className="aspect-square overflow-hidden rounded-xl sm:rounded-2xl border border-stone-200/40 bg-stone-200/30">
                 <video src={video.video_url} className="w-full h-full object-cover" muted playsInline />
               </div>
@@ -523,15 +536,29 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
         </div>
       )}
 
-      {/* Existing lightbox */}
+      {/* InstagramPhotoPreview */}
       {lightboxImage && (
-        <ImageLightbox
+        <InstagramPhotoPreview
           image={lightboxImage}
           images={displayImages}
           onClose={() => setLightboxImage(null)}
           onFavorite={(imageId, newState) => toggleFavorite(imageId, !newState)}
           onDelete={deleteImage}
           isFavorited={lightboxImage.is_favorite || favorites.has(lightboxImage.id)}
+          userName={user.name || user.email?.split("@")[0] || "User"}
+          userAvatar={profileImage}
+        />
+      )}
+
+      {/* InstagramReelPreview */}
+      {previewVideo && (
+        <InstagramReelPreview
+          video={previewVideo}
+          videos={displayVideos}
+          onClose={() => setPreviewVideo(null)}
+          onDelete={deleteVideo}
+          userName={user.name || user.email?.split("@")[0] || "User"}
+          userAvatar={profileImage}
         />
       )}
     </div>

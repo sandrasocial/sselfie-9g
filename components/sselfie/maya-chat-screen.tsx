@@ -27,6 +27,7 @@ export default function MayaChatScreen() {
   const retryQueue = useRef<Array<{ messageId: string; payload: any }>>([])
   const [isDragging, setIsDragging] = useState(false)
   const [contentFilter, setContentFilter] = useState<"all" | "photos" | "videos">("all")
+  const [currentPrompts, setCurrentPrompts] = useState<Array<{ label: string; prompt: string; icon: any }>>([])
 
   const { messages, sendMessage, status, setMessages } = useChat({
     transport: new DefaultChatTransport({ api: "/api/maya/chat" }),
@@ -45,35 +46,67 @@ export default function MayaChatScreen() {
 
   const isTyping = status === "submitted" || status === "streaming"
 
-  const suggestedPrompts = [
-    {
-      icon: User,
-      label: "Professional",
-      prompt: "Create a professional headshot with natural lighting and a clean background",
-    },
-    {
-      icon: Sparkles,
-      label: "Lifestyle",
-      prompt: "Generate a lifestyle photo in a modern urban setting with natural light",
-    },
-    {
-      icon: Package,
-      label: "Product",
-      prompt: "Design a product flatlay with aesthetic composition and soft shadows",
-    },
-    {
-      icon: Palette,
-      label: "Creative",
-      prompt: "Create an artistic portrait with dramatic lighting and creative composition",
-    },
-  ]
+  const promptPool = {
+    photoStories: [
+      {
+        label: "Golden Hour",
+        prompt: "Capture me in golden hour light, where warmth meets natural radiance",
+        icon: Sparkles,
+      },
+      {
+        label: "Editorial",
+        prompt: "Create an editorial moment with dramatic shadows and bold composition",
+        icon: Palette,
+      },
+      { label: "In Motion", prompt: "Show me in motion, alive and authentic, energy flowing naturally", icon: User },
+      { label: "Cinematic", prompt: "Paint me into a cinematic landscape, where story meets scenery", icon: Camera },
+      {
+        label: "Architectural",
+        prompt: "Frame me in architectural elegance, clean lines and modern beauty",
+        icon: Package,
+      },
+      { label: "Ethereal", prompt: "Capture something ethereal and dreamy in soft, natural light", icon: Sparkles },
+    ],
+    videoMoments: [
+      { label: "Bring to Life", prompt: "Animate my portrait with subtle, natural movement", icon: Camera },
+      { label: "Cinematic Flow", prompt: "Create a cinematic video moment with flowing movement", icon: Sparkles },
+      { label: "Living Portrait", prompt: "Turn a still moment into something alive and breathing", icon: User },
+    ],
+    storytelling: [
+      { label: "My Story", prompt: "Tell my story through light, shadow, and authentic moments", icon: Palette },
+      { label: "Visual Journey", prompt: "Create a visual narrative of confidence and grace", icon: Sparkles },
+      { label: "Essence", prompt: "Capture the essence of who I am in this moment", icon: User },
+      { label: "Mood", prompt: "Create something moody and introspective in soft, contemplative light", icon: Camera },
+    ],
+    artistic: [
+      { label: "Bold & Powerful", prompt: "Show me bold and powerful in a dramatic setting", icon: Package },
+      {
+        label: "Natural Beauty",
+        prompt: "Celebrate natural beauty in an organic, flowing composition",
+        icon: Sparkles,
+      },
+      { label: "Urban Edge", prompt: "Capture urban energy with modern edge and contemporary style", icon: Palette },
+      { label: "Timeless", prompt: "Create something timeless and elegant, classic yet fresh", icon: User },
+    ],
+  }
 
-  const examplePrompts = [
-    "Create a professional headshot with natural lighting",
-    "Generate a lifestyle photo in a coffee shop",
-    "Design a product flatlay for skincare",
-    "Create an artistic portrait with dramatic lighting",
-  ]
+  const getRandomPrompts = () => {
+    const allCategories = Object.values(promptPool)
+    const selected: Array<{ label: string; prompt: string; icon: any }> = []
+
+    // Get 1-2 from each category, shuffled
+    allCategories.forEach((category) => {
+      const shuffled = [...category].sort(() => Math.random() - 0.5)
+      selected.push(...shuffled.slice(0, Math.random() > 0.5 ? 2 : 1))
+    })
+
+    // Shuffle all selected and take 4
+    return selected.sort(() => Math.random() - 0.5).slice(0, 4)
+  }
+
+  useEffect(() => {
+    setCurrentPrompts(getRandomPrompts())
+  }, [])
 
   const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
     messagesEndRef.current?.scrollIntoView({ behavior, block: "end" })
@@ -390,6 +423,7 @@ export default function MayaChatScreen() {
         setMessages([])
         setIsUserScrolling(false)
         setShowHistory(false)
+        setCurrentPrompts(getRandomPrompts()) // Refresh prompts
         setTimeout(() => scrollToBottom("auto"), 100)
       }
     } catch (error) {
@@ -483,7 +517,7 @@ export default function MayaChatScreen() {
 
           <button
             onClick={handleNewChat}
-            className="group relative p-3 sm:p-3 bg-white/40 backdrop-blur-2xl border border-white/60 rounded-xl hover:bg-white/60 hover:border-white/80 transition-all duration-300 hover:scale-105 active:scale-95 min-w-[44px] min-h-[44px] flex items-center justify-center"
+            className="group relative p-3 sm:p-3 bg-white/40 backdrop-blur-2xl border border-white/60 rounded-xl hover:bg-white/60 hover:border-stone-300 transition-all duration-300 hover:scale-105 active:scale-95 min-w-[44px] min-h-[44px] flex items-center justify-center"
             title="Start new chat"
             aria-label="Start new chat"
           >
@@ -560,21 +594,30 @@ export default function MayaChatScreen() {
                 Welcome
               </h2>
               <p className="text-sm sm:text-base text-stone-600 tracking-wide text-center mb-8 max-w-md leading-relaxed">
-                I'm Maya, your personal photo stylist. I'll help you create stunning images using your trained model.
-                Try one of these prompts to get started.
+                I'm Maya, your creative photo stylist. Let's craft visual stories that capture your essence. Choose a
+                prompt below or tell me what you're envisioning.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-2xl">
-                {examplePrompts.map((prompt, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleSendMessage(prompt)}
-                    className="group p-4 bg-white/50 backdrop-blur-xl border border-white/70 rounded-2xl hover:bg-white/70 hover:border-stone-300 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] text-left"
-                  >
-                    <p className="text-sm text-stone-700 leading-relaxed group-hover:text-stone-950 transition-colors">
-                      {prompt}
-                    </p>
-                  </button>
-                ))}
+                {currentPrompts.map((item, index) => {
+                  const Icon = item.icon
+                  return (
+                    <button
+                      key={index}
+                      onClick={() => handleSendMessage(item.prompt)}
+                      className="group p-4 bg-white/50 backdrop-blur-xl border border-white/70 rounded-2xl hover:bg-white/70 hover:border-stone-300 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] text-left"
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        <Icon size={14} className="text-stone-600" strokeWidth={2} />
+                        <span className="text-xs tracking-[0.15em] uppercase font-light text-stone-600">
+                          {item.label}
+                        </span>
+                      </div>
+                      <p className="text-sm text-stone-700 leading-relaxed group-hover:text-stone-950 transition-colors">
+                        {item.prompt}
+                      </p>
+                    </button>
+                  )
+                })}
               </div>
             </div>
           )}
@@ -774,10 +817,11 @@ export default function MayaChatScreen() {
             </div>
           </div>
         ) : (
-          !isEmpty && (
+          !isEmpty &&
+          !uploadedImage && (
             <div className="mb-3">
               <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
-                {suggestedPrompts.map((item, index) => {
+                {currentPrompts.map((item, index) => {
                   const Icon = item.icon
                   return (
                     <button

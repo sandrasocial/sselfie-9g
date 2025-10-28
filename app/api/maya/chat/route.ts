@@ -41,7 +41,27 @@ ${referenceImageUrl ? `**REFERENCE IMAGE PROVIDED**: ${referenceImageUrl}\n\n**I
 
 Generate ${count} unique, creative photo concepts. Each concept should be a work of art.
 
-**CRITICAL REQUIREMENTS FOR FLUX PROMPTS:**
+**CRITICAL: TWO DIFFERENT TEXTS REQUIRED**
+
+1. **DESCRIPTION** (User-Facing):
+   - Write in Maya's voice: warm, friendly, simple everyday language
+   - Easy to understand, no technical jargon
+   - Focus on the feeling and story, not technical details
+   - Examples of GOOD descriptions:
+     * "A professional headshot with soft natural light. You'll look confident and approachable."
+     * "A lifestyle photo in a modern coffee shop. Natural and relaxed vibes."
+     * "A full-body shot showing your complete outfit. Clean and elegant."
+     * "A moody portrait with dramatic lighting. Artistic and bold."
+   - Examples of BAD descriptions (too technical):
+     * "A sophisticated close-up portrait that captures your professional essence with refined styling and modern elegance"
+     * "A dynamic lifestyle moment capturing you in your element within an urban environment"
+
+2. **PROMPT** (Technical - For FLUX):
+   - Keep this poetic, flowing, and technically precise
+   - This is what goes to Replicate for best results
+   - Include all technical details: camera specs, lighting, skin texture, etc.
+
+**FLUX PROMPT REQUIREMENTS:**
 Your Flux prompts must be poetic, flowing, and technically precise. They should read like a cinematographer's vision, not a checklist.
 
 **Structure each Flux prompt like this:**
@@ -62,37 +82,17 @@ Your Flux prompts must be poetic, flowing, and technically precise. They should 
    - "dressed in tailored charcoal wool, natural skin with visible texture, authentic beauty, warm undertones, genuine expression"
 6. Add atmospheric details: "subtle film grain, editorial magazine quality, timeless elegance, authentic human beauty"
 
-**LIGHTING DESCRIPTORS TO USE:**
-- Golden hour: "warm directional sunlight, long soft shadows, golden glow on skin"
-- Soft window light: "diffused natural light from large windows, gentle shadows, luminous quality"
-- Studio beauty: "beauty dish creating soft wrap-around light, subtle shadows defining features"
-- Overcast natural: "even diffused daylight, soft shadows, flattering natural illumination"
-- Dramatic side light: "strong directional light from side, deep shadows, sculptural quality"
-- Backlit glow: "backlight creating luminous edge, subtle fill light on face, ethereal quality"
-
-**SKIN TEXTURE DESCRIPTORS TO USE:**
-- "natural skin texture visible, subtle pores, healthy glow, authentic beauty"
-- "realistic skin with natural texture, visible pores, warm undertones, genuine human quality"
-- "editorial skin quality, natural texture preserved, subtle imperfections, real beauty"
-- "authentic skin with visible texture, natural pores, healthy radiance, unretouched quality"
-
-**Example of a GOOD Flux prompt:**
-"raw photo, editorial quality, professional photography, sharp focus, natural skin texture, visible pores, film grain, editorial luxury aesthetic, shot on 85mm lens f/1.4, shallow depth of field with creamy bokeh, bathed in soft golden hour light streaming through sheer curtains at 45 degrees, gentle rim light separating from background, standing in minimalist Scandinavian interior with natural wood and white walls, wearing flowing cream cashmere turtleneck with delicate layered gold necklaces, natural skin texture visible with subtle pores and healthy glow, confident yet warm expression, hair naturally tousled catching golden light, subtle makeup emphasizing natural beauty, timeless editorial elegance, magazine cover quality"
-
-**Example of a BAD Flux prompt (too mechanical):**
-"raw photo, professional photography, 85mm lens, good lighting, wearing sweater, indoor setting"
-
 ${referenceImageUrl ? `\n**IMPORTANT**: Include the reference image URL in each concept's output so it can be used in image-to-image generation.` : ""}
 
 Return ONLY a valid JSON array of concepts, no other text. Each concept must have this exact structure:
 {
-  "title": "string",
-  "description": "string",
+  "title": "string - Short, catchy title",
+  "description": "string - SIMPLE, WARM, FRIENDLY language that anyone can understand. No technical jargon. Focus on feeling and story.",
   "category": "Close-Up" | "Half Body" | "Full Body" | "Lifestyle" | "Action" | "Environmental",
   "fashionIntelligence": "string",
   "lighting": "string",
   "location": "string",
-  "prompt": "string - poetic, flowing, with camera/lens specs, lighting details, and skin texture descriptors"${referenceImageUrl ? `,\n  "referenceImageUrl": "${referenceImageUrl}"` : ""}
+  "prompt": "string - POETIC, FLOWING, TECHNICAL with camera/lens specs, lighting details, and skin texture descriptors"${referenceImageUrl ? `,\n  "referenceImageUrl": "${referenceImageUrl}"` : ""}
 }`
 
       const { text } = await generateText({
@@ -133,7 +133,7 @@ Return ONLY a valid JSON array of concepts, no other text. Each concept must hav
         {
           title: "The Confident Executive",
           description:
-            "A sophisticated close-up portrait that captures your professional essence with refined styling and modern elegance, bathed in soft natural light.",
+            "A professional headshot with soft natural light and a clean background. You'll look confident and approachable, perfect for LinkedIn or your website.",
           category: "Close-Up" as const,
           fashionIntelligence:
             "Cream cashmere turtleneck for timeless sophistication, delicate 14k gold minimal jewelry adding subtle luxury, natural makeup with defined brows emphasizing confidence",
@@ -146,7 +146,7 @@ Return ONLY a valid JSON array of concepts, no other text. Each concept must hav
         {
           title: "Urban Sophisticate",
           description:
-            "A dynamic lifestyle moment capturing you in your element within an urban environment, balancing architectural context with personal style and movement.",
+            "A lifestyle photo in a modern city setting. Natural and relaxed, showing you in your element with great style and confidence.",
           category: "Lifestyle" as const,
           fashionIntelligence:
             "Tailored charcoal blazer in Italian wool over white silk blouse, minimal silver accessories for modern edge, structured leather tote completing the look",
@@ -160,7 +160,7 @@ Return ONLY a valid JSON array of concepts, no other text. Each concept must hav
         {
           title: "Minimalist Elegance",
           description:
-            "A full-body portrait emphasizing silhouette and proportion against a clean backdrop, showcasing complete styling with architectural precision.",
+            "A full-body shot showing your complete outfit against a clean backdrop. Simple, elegant, and timeless - perfect for showcasing your style.",
           category: "Full Body" as const,
           fashionIntelligence:
             "Flowing wide-leg trousers in neutral beige linen, fitted black turtleneck creating elegant contrast, pointed-toe leather boots adding height and sophistication",
@@ -173,7 +173,7 @@ Return ONLY a valid JSON array of concepts, no other text. Each concept must hav
         {
           title: "Golden Hour Warmth",
           description:
-            "A warm, approachable portrait bathed in beautiful natural light, emphasizing authenticity and connection through soft, glowing illumination.",
+            "A warm, natural portrait with beautiful golden light. Soft and glowing, capturing your authentic beauty in the most flattering way.",
           category: "Half Body" as const,
           fashionIntelligence:
             "Soft knit sweater in warm camel tone for approachable elegance, layered delicate necklaces adding personal touch, natural wavy hair catching golden light",
