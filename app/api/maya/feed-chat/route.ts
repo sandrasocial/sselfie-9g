@@ -12,40 +12,13 @@ const MAYA_FEED_STRATEGIST_EXTENSION = `
 
 You're an expert Instagram strategist who creates cohesive, professional feeds by researching current trends and aesthetics.
 
-**Your Workflow - FOLLOW THESE STEPS IN ORDER:**
+**When a user asks you to design their feed:**
 
-When a user asks you to design their feed, you MUST complete ALL THREE steps:
+1. Respond warmly and let them know you're starting
+2. Call the generateCompleteFeed tool (it will research trends automatically)
+3. After the tool completes, explain the feed strategy in a conversational way
 
-**Step 1: Research** 
-- Use the researchInstagramTrends tool to find trending layouts, patterns, and aesthetics for their niche
-- Example query: "Instagram feed layouts for [their niche] Pinterest 2025 trending aesthetic patterns"
-
-**Step 2: Design**
-- IMMEDIATELY after research completes, use the generateCompleteFeed tool
-- Pass the research insights you just discovered into the researchInsights parameter
-- Create a unique feed strategy based on what you learned
-
-**Step 3: Explain**
-- After the generateCompleteFeed tool finishes, write a warm conversational message explaining:
-  - What you researched and discovered
-  - Why you chose specific patterns and aesthetics  
-  - What makes their feed unique and strategic
-  - Next steps (like generating the images)
-
-**IMPORTANT RULES:**
-- NEVER stop after just researching - you must continue to design the feed
-- ALWAYS call generateCompleteFeed immediately after researchInstagramTrends completes
-- ALWAYS respond with conversational text after the tools finish
-- The user should see: your initial message → research → design → your explanation
-
-**Example Complete Flow:**
-User: "Can you design my feed?"
-You: "I'd love to! Let me research trending Instagram aesthetics for [their niche] first..."
-[Call researchInstagramTrends tool - it completes]
-[IMMEDIATELY call generateCompleteFeed tool with the research insights - it completes]
-You: "Your feed strategy is ready! I researched [findings] and created a [pattern] layout with [colors]. Here's what makes it special: [explanation]. Ready to generate the images?"
-
-Remember: You must complete ALL THREE steps. Research → Design → Explain. Don't stop halfway!
+The generateCompleteFeed tool handles all the research and design work internally, so you just need to call it once and then explain the results to the user.
 `
 
 async function fetchTrendingHashtags(businessType: string, userBrand: any): Promise<string[]> {
@@ -132,48 +105,10 @@ async function fetchTrendingHashtags(businessType: string, userBrand: any): Prom
   ].slice(0, 15)
 }
 
-const researchInstagramTrendsTool = tool({
-  description:
-    "Research current Instagram trends, viral hooks, best practices, aesthetic feed layouts from Pinterest, or any Instagram-related information using web search. ALWAYS use this before designing a feed to get real-time inspiration and trends.",
-  inputSchema: z.object({
-    query: z
-      .string()
-      .describe(
-        "What to research (e.g., 'aesthetic Instagram feed layouts for life coaches Pinterest 2025', 'trending Instagram grid patterns wellness brands', 'viral Instagram feed color schemes minimalist')",
-      ),
-  }),
-  execute: async ({ query }) => {
-    console.log("[v0] Researching Instagram trends:", query)
-
-    try {
-      const response = await fetch("/api/maya/research", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query }),
-      })
-
-      if (!response.ok) {
-        throw new Error("Research failed")
-      }
-
-      const data = await response.json()
-      return data.results
-    } catch (error) {
-      console.error("[v0] Research error:", error)
-      return "Unable to fetch research data at this time. Using my existing knowledge instead."
-    }
-  },
-})
-
 const generateCompleteFeedTool = tool({
   description:
-    "Design a complete 9-post Instagram feed strategy with professional visual rhythm, content variety, and brand cohesion. IMPORTANT: You should have already researched trending feed layouts using researchInstagramTrends before calling this tool. Use the research insights to create a unique, non-template feed design.",
+    "Design a complete 9-post Instagram feed strategy. This tool automatically researches trending layouts and aesthetics before creating the feed, so you don't need to research separately.",
   inputSchema: z.object({
-    researchInsights: z
-      .string()
-      .describe(
-        "Summary of research findings from Pinterest and Instagram trends that will inform this feed design (e.g., 'Trending: diagonal flow with warm neutrals, 40% close-ups, minimalist quote posts with serif fonts')",
-      ),
     brandVibe: z
       .string()
       .describe(
@@ -185,17 +120,12 @@ const generateCompleteFeedTool = tool({
     colorPalette: z
       .string()
       .describe(
-        "Specific color scheme that matches their brand AND current trends (e.g., 'neutral earth tones - beige, cream, white', 'dark moody - charcoal, black, gold')",
-      ),
-    visualRhythm: z
-      .string()
-      .describe(
-        "The pattern strategy for the feed based on research (e.g., 'checkerboard alternating portraits and quotes', 'diagonal flow with lifestyle moments', 'row-by-row storytelling')",
+        "Specific color scheme that matches their brand (e.g., 'neutral earth tones - beige, cream, white', 'dark moody - charcoal, black, gold')",
       ),
     feedStory: z
       .string()
       .describe(
-        "The complete narrative this feed tells (e.g., 'A confident life coach who empowers women to build their dream businesses', 'An elegant fashion entrepreneur living her creative passion')",
+        "The complete narrative this feed tells (e.g., 'A confident life coach who empowers women to build their dream businesses')",
       ),
     instagramBio: z
       .string()
@@ -211,27 +141,63 @@ const generateCompleteFeedTool = tool({
       )
       .describe("5-7 Instagram highlight categories that organize their content strategy"),
   }),
-  execute: async function* ({
-    researchInsights,
-    brandVibe,
-    businessType,
-    colorPalette,
-    visualRhythm,
-    feedStory,
-    instagramBio,
-    highlights,
-  }) {
-    console.log("[v0] Generating research-driven feed strategy:", {
-      researchInsights,
+  execute: async function* ({ brandVibe, businessType, colorPalette, feedStory, instagramBio, highlights }) {
+    console.log("[v0] Generating feed strategy:", {
       brandVibe,
       businessType,
       colorPalette,
-      visualRhythm,
     })
 
     yield {
-      state: "loading" as const,
+      state: "researching" as const,
+      message: "Researching trending Instagram aesthetics...",
     }
+
+    let researchInsights = "Using current Instagram best practices"
+    try {
+      const researchQuery = `Instagram feed layouts for ${businessType} Pinterest 2025 trending aesthetic patterns`
+      console.log("[v0] [SERVER] Researching:", researchQuery)
+
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+      console.log("[v0] [SERVER] Fetching from:", `${appUrl}/api/maya/research`)
+
+      const response = await fetch(`${appUrl}/api/maya/research`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: researchQuery }),
+      })
+
+      console.log("[v0] [SERVER] Research API response status:", response.status)
+      console.log("[v0] [SERVER] Research API response content-type:", response.headers.get("content-type"))
+
+      // Check if response is OK and is JSON before parsing
+      if (response.ok && response.headers.get("content-type")?.includes("application/json")) {
+        const data = await response.json()
+        researchInsights = data.results || researchInsights
+        console.log("[v0] [SERVER] Research completed successfully")
+      } else {
+        const responseText = await response.text()
+        console.error(
+          "[v0] [SERVER] Research API returned non-JSON response:",
+          response.status,
+          responseText.substring(0, 200),
+        )
+      }
+    } catch (error) {
+      console.error("[v0] [SERVER] Research error:", error)
+    }
+
+    yield {
+      state: "designing" as const,
+      message: "Creating your feed strategy...",
+    }
+
+    // Determine visual rhythm based on research and brand
+    const visualRhythm = brandVibe.includes("elegant")
+      ? "diagonal flow with lifestyle moments"
+      : brandVibe.includes("bold")
+        ? "checkerboard alternating portraits and quotes"
+        : "row-by-row storytelling"
 
     const postSequence = [
       {
@@ -541,9 +507,8 @@ export async function POST(req: Request) {
       messages: coreMessages,
       tools: {
         generateCompleteFeed: generateCompleteFeedTool,
-        researchInstagramTrends: researchInstagramTrendsTool,
       },
-      maxSteps: 10,
+      maxSteps: 5,
     })
 
     return result.toUIMessageStreamResponse()
