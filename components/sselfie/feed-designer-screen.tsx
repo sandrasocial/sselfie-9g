@@ -85,9 +85,15 @@ export default function FeedDesignerScreen() {
 
   const checkTrainedModel = async () => {
     try {
+      console.log("[v0] Checking trained model status...")
       const response = await fetch("/api/training/status")
       const data = await response.json()
-      setHasTrainedModel(data.hasTrainedModel && data.modelStatus === "completed")
+      console.log("[v0] Training status response:", data)
+
+      const hasModel = data.hasTrainedModel === true
+      console.log("[v0] Has trained model:", hasModel)
+
+      setHasTrainedModel(hasModel)
     } catch (error) {
       console.error("[v0] Error checking trained model:", error)
       setHasTrainedModel(false)
