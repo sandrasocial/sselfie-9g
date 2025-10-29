@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
@@ -18,6 +18,7 @@ interface StoryHighlightCardProps {
   onRemove: (index: number) => void
   userColorTheme?: string
   feedId?: string
+  isEditing?: boolean
 }
 
 export default function StoryHighlightCard({
@@ -27,17 +28,24 @@ export default function StoryHighlightCard({
   onRemove,
   userColorTheme,
   feedId,
+  isEditing: parentIsEditing,
 }: StoryHighlightCardProps) {
   const [isEditing, setIsEditing] = useState(!highlight.title)
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [isGenerated, setIsGenerated] = useState(!!highlight.coverUrl && !highlight.coverUrl.startsWith("#"))
+  const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(
+    highlight.coverUrl && !highlight.coverUrl.startsWith("#") ? highlight.coverUrl : null,
+  )
+  const [error, setError] = useState<string | null>(null)
+  const [predictionId, setPredictionId] = useState<string | null>(null)
+  const [generationId, setGenerationId] = useState<string | null>(null)
   const [isViewingFullSize, setIsViewingFullSize] = useState(false)
   const [title, setTitle] = useState(highlight.title || "")
   const [description, setDescription] = useState(highlight.description || "")
   const [mode, setMode] = useState<"image" | "color">("color")
-  const [isGenerating, setIsGenerating] = useState(false)
   const [selectedColor, setSelectedColor] = useState(
     highlight.coverUrl && highlight.coverUrl.startsWith("#") ? highlight.coverUrl : "#D4C5B9",
   )
-  const [error, setError] = useState<string | null>(null)
 
   // Color palettes based on brand themes
   const colorPalettes = {
@@ -54,9 +62,59 @@ export default function StoryHighlightCard({
       ? colorPalettes[userColorTheme as keyof typeof colorPalettes]
       : colorPalettes["Beige & Creamy"]
 
-  const handleGenerateImage = async () => {
-    if (!title.trim()) {
-      setError("Please enter a title first")
+  useEffect(() => {
+    if (!predictionId || !generationId || isGenerated) {
+      return
+    }
+
+    console.log("[v0] Starting polling for highlight", index, "with prediction", predictionId)
+
+    const pollInterval = setInterval(async () => {
+      try {
+        console.log("[v0] Polling highlight generation status...")
+        const response = await fetch(
+          `/api/maya/check-generation?predictionId=${predictionId}&generationId=${generationId}`,
+        )
+        const data = await response.json()
+
+        console.log("[v0] Highlight generation status:", data.status)
+
+        if (data.status === "succeeded") {
+          console.log("[v0] Highlight generation succeeded! Image URL:", data.imageUrl)
+          setGeneratedImageUrl(data.imageUrl)
+          setIsGenerated(true)
+          setIsGenerating(false)
+          clearInterval(pollInterval)
+
+          onUpdate(index, {
+            title: highlight.title,
+            coverUrl: data.imageUrl,
+            description: highlight.description,
+            type: "image",
+          })
+        } else if (data.status === "failed") {
+          console.log("[v0] Highlight generation failed:", data.error)
+          setError(data.error || "Generation failed")
+          setIsGenerating(false)
+          clearInterval(pollInterval)
+        }
+      } catch (err) {
+        console.error("[v0] Error polling generation:", err)
+        setError("Failed to check generation status")
+        setIsGenerating(false)
+        clearInterval(pollInterval)
+      }
+    }, 3000)
+
+    return () => {
+      console.log("[v0] Cleaning up polling interval")
+      clearInterval(pollInterval)
+    }
+  }, [predictionId, generationId, isGenerated, index, highlight, onUpdate])
+
+  const handleGenerate = async () => {
+    if (!highlight.title) {
+      setError("Highlight needs a title")
       return
     }
 
@@ -64,22 +122,24 @@ export default function StoryHighlightCard({
     setError(null)
 
     try {
+      console.log("[v0] Generating highlight:", highlight.title)
+
       const mayaResponse = await fetch("/api/maya/generate-feed-prompt", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           postType: "Story Highlight",
-          caption: title,
+          caption: highlight.title,
           feedPosition: index + 1,
           colorTheme: userColorTheme,
-          brandVibe: description || `Story highlight cover for ${title}`,
+          brandVibe: highlight.description || `Story highlight cover for ${highlight.title}`,
         }),
       })
 
       let conceptPrompt: string
       if (!mayaResponse.ok) {
         console.error("[v0] Maya prompt generation failed, using fallback")
-        conceptPrompt = `Create a beautiful Instagram story highlight cover for "${title}". ${description}. Professional, aesthetic, and eye-catching design.`
+        conceptPrompt = `Create a beautiful Instagram story highlight cover for "${highlight.title}". ${highlight.description}. Professional, aesthetic, and eye-catching design.`
       } else {
         const mayaData = await mayaResponse.json()
         conceptPrompt = mayaData.prompt
@@ -90,10 +150,10 @@ export default function StoryHighlightCard({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          conceptTitle: title,
-          conceptDescription: description || `Story highlight cover for ${title}`,
+          conceptTitle: highlight.title,
+          conceptDescription: highlight.description || `Story highlight cover for ${highlight.title}`,
           conceptPrompt,
-          category: "Close-Up",
+          category: "feed-design",
         }),
       })
 
@@ -103,39 +163,11 @@ export default function StoryHighlightCard({
         throw new Error(data.error || "Failed to generate image")
       }
 
-      const predictionId = data.predictionId
-      const generationId = data.generationId
-
-      const pollInterval = setInterval(async () => {
-        try {
-          const checkResponse = await fetch(
-            `/api/maya/check-generation?predictionId=${predictionId}&generationId=${generationId}`,
-          )
-          const checkData = await checkResponse.json()
-
-          if (checkData.status === "succeeded") {
-            clearInterval(pollInterval)
-            onUpdate(index, {
-              title,
-              coverUrl: checkData.imageUrl,
-              description,
-              type: "image",
-            })
-            setIsGenerating(false)
-            setIsEditing(false)
-          } else if (checkData.status === "failed") {
-            clearInterval(pollInterval)
-            setError(checkData.error || "Generation failed")
-            setIsGenerating(false)
-          }
-        } catch (err) {
-          clearInterval(pollInterval)
-          setError("Failed to check generation status")
-          setIsGenerating(false)
-        }
-      }, 3000)
+      console.log("[v0] Generation started with prediction ID:", data.predictionId)
+      setPredictionId(data.predictionId)
+      setGenerationId(data.generationId)
     } catch (err) {
-      console.error("[v0] Error generating highlight image:", err)
+      console.error("[v0] Error generating highlight:", err)
       setError(err instanceof Error ? err.message : "Failed to generate image")
       setIsGenerating(false)
     }
@@ -166,9 +198,7 @@ export default function StoryHighlightCard({
     }
   }
 
-  if (isViewingFullSize) {
-    const isColorHighlight = highlight.coverUrl.startsWith("#")
-
+  if (isViewingFullSize && generatedImageUrl) {
     return (
       <div
         className="fixed inset-0 bg-background/95 backdrop-blur-sm z-50 flex items-center justify-center p-4"
@@ -182,22 +212,11 @@ export default function StoryHighlightCard({
             Close
           </button>
 
-          {isColorHighlight ? (
-            <div
-              className="w-full aspect-square rounded-2xl flex items-center justify-center"
-              style={{ backgroundColor: highlight.coverUrl }}
-            >
-              <span className="text-9xl font-bold text-primary-foreground drop-shadow-2xl">
-                {highlight.title.charAt(0).toUpperCase()}
-              </span>
-            </div>
-          ) : (
-            <img
-              src={highlight.coverUrl || "/placeholder.svg"}
-              alt={highlight.title}
-              className="w-full h-auto rounded-2xl shadow-2xl"
-            />
-          )}
+          <img
+            src={generatedImageUrl || "/placeholder.svg"}
+            alt={highlight.title}
+            className="w-full h-auto rounded-2xl shadow-2xl"
+          />
 
           <div className="mt-4 text-center">
             <h3 className="text-xl font-bold text-foreground">{highlight.title}</h3>
@@ -315,7 +334,7 @@ export default function StoryHighlightCard({
                   </Button>
                 ) : (
                   <Button
-                    onClick={handleGenerateImage}
+                    onClick={handleGenerate}
                     disabled={isGenerating}
                     className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
                   >
@@ -348,6 +367,81 @@ export default function StoryHighlightCard({
     )
   }
 
+  if (!isGenerating && !isGenerated && !error) {
+    return (
+      <div className="flex flex-col items-center gap-2 flex-shrink-0 w-[80px]">
+        <button
+          onClick={handleGenerate}
+          className="w-16 h-16 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 p-[2px] group relative"
+        >
+          <div className="w-full h-full rounded-full bg-stone-100 flex items-center justify-center group-hover:bg-stone-50 transition-all">
+            <span className="text-xs font-semibold text-stone-700">Generate</span>
+          </div>
+        </button>
+        <span className="text-xs text-muted-foreground text-center leading-tight max-w-[80px] truncate">
+          {highlight.title || "Highlight"}
+        </span>
+      </div>
+    )
+  }
+
+  if (isGenerating) {
+    return (
+      <div className="flex flex-col items-center gap-2 flex-shrink-0 w-[80px]">
+        <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 p-[2px]">
+          <div className="w-full h-full rounded-full bg-card p-[2px]">
+            <div className="w-full h-full rounded-full bg-stone-950/5 flex items-center justify-center">
+              <div className="w-8 h-8 border-3 border-stone-300 border-t-stone-950 rounded-full animate-spin" />
+            </div>
+          </div>
+        </div>
+        <span className="text-xs text-muted-foreground">Creating...</span>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center gap-2 flex-shrink-0 w-[80px]">
+        <button
+          onClick={handleGenerate}
+          className="w-16 h-16 rounded-full bg-gradient-to-tr from-red-400 via-red-500 to-red-600 p-[2px]"
+        >
+          <div className="w-full h-full rounded-full bg-red-50 flex items-center justify-center">
+            <span className="text-xs font-semibold text-red-700">Retry</span>
+          </div>
+        </button>
+        <span className="text-xs text-red-600 text-center leading-tight max-w-[80px]">{error}</span>
+      </div>
+    )
+  }
+
+  if (isGenerated && generatedImageUrl) {
+    return (
+      <div className="flex flex-col items-center gap-2 flex-shrink-0 w-[80px]">
+        <button
+          onClick={() => setIsViewingFullSize(true)}
+          className="w-16 h-16 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 p-[2px] group relative"
+        >
+          <div className="w-full h-full rounded-full bg-card p-[2px]">
+            <img
+              src={generatedImageUrl || "/placeholder.svg"}
+              alt={highlight.title}
+              className="w-full h-full rounded-full object-cover group-hover:opacity-80 transition-opacity"
+            />
+          </div>
+          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-stone-950/50 rounded-full">
+            <span className="text-xs text-white font-medium">View</span>
+          </div>
+        </button>
+
+        <span className="text-xs text-muted-foreground text-center leading-tight max-w-[80px] truncate">
+          {highlight.title}
+        </span>
+      </div>
+    )
+  }
+
   const isColorHighlight = highlight.coverUrl.startsWith("#")
 
   return (
@@ -355,9 +449,13 @@ export default function StoryHighlightCard({
       <button
         onClick={(e) => {
           e.stopPropagation()
-          setIsViewingFullSize(true)
+          if (parentIsEditing) {
+            setIsEditing(true)
+          } else {
+            setIsViewingFullSize(true)
+          }
         }}
-        className="w-16 h-16 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 p-[2px] group"
+        className="w-16 h-16 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 p-[2px] group relative"
       >
         <div className="w-full h-full rounded-full bg-card p-[2px]">
           {isColorHighlight ? (
@@ -377,14 +475,16 @@ export default function StoryHighlightCard({
             />
           )}
         </div>
+        {!isGenerating && (
+          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-stone-950/50 rounded-full">
+            <span className="text-xs text-white font-medium">{parentIsEditing ? "Edit" : "View"}</span>
+          </div>
+        )}
       </button>
 
-      <button
-        onClick={() => setIsEditing(true)}
-        className="text-xs text-muted-foreground hover:text-foreground text-center leading-tight max-w-[80px] truncate transition-colors"
-      >
+      <span className="text-xs text-muted-foreground text-center leading-tight max-w-[80px] truncate">
         {highlight.title}
-      </button>
+      </span>
     </div>
   )
 }

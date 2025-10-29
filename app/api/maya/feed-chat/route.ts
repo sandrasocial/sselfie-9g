@@ -1,7 +1,6 @@
 import { streamText, tool } from "ai"
 import { z } from "zod"
 import { getCurrentNeonUser } from "@/lib/user-sync"
-import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 import { MAYA_SYSTEM_PROMPT } from "@/lib/maya/personality"
 import type { CoreMessage } from "ai"
 import { neon } from "@neondatabase/serverless"
@@ -275,11 +274,12 @@ const generateCompleteFeedTool = tool({
     })
 
     let feedId: string | null = null
+    let user: any = null // Declare the user variable
 
     try {
       const sql = neon(process.env.DATABASE_URL!)
 
-      const user = await getCurrentNeonUser()
+      user = await getCurrentNeonUser()
 
       if (!user) {
         console.error("[v0] [SERVER] No user found, cannot save feed")
@@ -346,16 +346,36 @@ const generateCompleteFeedTool = tool({
 })
 
 export async function POST(req: Request) {
+  console.log("[v0] 🚀 FEED CHAT API CALLED - INLINE USER CONTEXT")
+
   try {
-    const { messages } = await req.json()
-    const user = await getCurrentNeonUser()
+    console.log("[v0] === FEED CHAT API START ===")
+
+    let messages
+    try {
+      const body = await req.json()
+      messages = body.messages
+      console.log("[v0] Step 1: Parsed request body, messages count:", messages?.length)
+    } catch (parseError) {
+      console.error("[v0] ERROR parsing request body:", parseError)
+      return new Response("Invalid request body", { status: 400 })
+    }
+
+    let user
+    try {
+      user = await getCurrentNeonUser()
+      console.log("[v0] Step 2: Got current user:", user ? `ID ${user.id}` : "NO USER")
+    } catch (userError) {
+      console.error("[v0] ERROR getting current user:", userError)
+      return new Response("Error getting user", { status: 500 })
+    }
 
     if (!user) {
+      console.error("[v0] ERROR: No user found")
       return new Response("Unauthorized", { status: 401 })
     }
 
-    console.log("[v0] Feed chat API called with", messages.length, "messages")
-
+    console.log("[v0] Step 3: Converting messages to core messages...")
     const coreMessages: CoreMessage[] = messages
       .map((msg: any, index: number) => {
         if (!msg.role || (msg.role !== "user" && msg.role !== "assistant")) {
@@ -393,30 +413,113 @@ export async function POST(req: Request) {
       })
       .filter((msg): msg is CoreMessage => msg !== null)
 
-    console.log("[v0] Converted to", coreMessages.length, "core messages")
+    console.log("[v0] Step 4: Converted to", coreMessages.length, "core messages")
 
     if (coreMessages.length === 0) {
-      console.error("[v0] No valid messages after filtering")
+      console.error("[v0] ERROR: No valid messages after filtering")
       return new Response("No valid messages", { status: 400 })
     }
 
-    const userContext = await getUserContextForMaya(user.stack_auth_id || "")
+    console.log("[v0] Step 5: Getting user context (inline)...")
+    let userContext = ""
+    try {
+      const authId = user.stack_auth_id || user.supabase_user_id || user.id
+      console.log("[v0] Using auth ID:", authId)
 
+      const sql = neon(process.env.DATABASE_URL!)
+
+      // Get user by auth ID
+      const { getUserByAuthId } = await import("@/lib/user-mapping")
+      const neonUser = await getUserByAuthId(authId)
+
+      if (neonUser) {
+        const contextParts: string[] = []
+
+        // Get personal brand
+        const [brandResult] = await sql`
+          SELECT * FROM user_personal_brand 
+          WHERE user_id = ${neonUser.id} 
+          AND is_completed = true 
+          LIMIT 1
+        `
+
+        if (brandResult) {
+          contextParts.push("=== USER'S PERSONAL BRAND ===")
+          if (brandResult.name) contextParts.push(`Name: ${brandResult.name}`)
+          if (brandResult.business_type) contextParts.push(`Business Type: ${brandResult.business_type}`)
+          if (brandResult.brand_vibe) contextParts.push(`Brand Vibe: ${brandResult.brand_vibe}`)
+          if (brandResult.color_theme) contextParts.push(`Color Theme: ${brandResult.color_theme}`)
+
+          // Handle color_palette
+          if (brandResult.color_palette) {
+            try {
+              let colorPalette = brandResult.color_palette
+              if (typeof colorPalette === "string") {
+                colorPalette = JSON.parse(colorPalette)
+              }
+              if (Array.isArray(colorPalette) && colorPalette.length > 0) {
+                const colors = colorPalette.filter((c: any) => typeof c === "string" && c.trim().length > 0)
+                if (colors.length > 0) {
+                  contextParts.push(`Brand Colors: ${colors.join(", ")}`)
+                  contextParts.push(
+                    `IMPORTANT: Use these exact brand colors in all visual prompts: ${colors.join(", ")}`,
+                  )
+                }
+              }
+            } catch (e) {
+              console.error("[v0] Error parsing color_palette:", e)
+            }
+          }
+
+          contextParts.push("")
+        }
+
+        userContext = contextParts.length > 0 ? `\n\n${contextParts.join("\n")}` : ""
+      }
+
+      console.log("[v0] Step 5 SUCCESS: User context retrieved, length:", userContext.length)
+    } catch (contextError) {
+      console.error("[v0] Step 5 WARNING: Error getting user context, continuing without it:", contextError)
+      userContext = ""
+    }
+
+    console.log("[v0] Step 6: Building system prompt...")
     const enhancedSystemPrompt = MAYA_SYSTEM_PROMPT + MAYA_FEED_STRATEGIST_EXTENSION + userContext
+    console.log("[v0] Step 6 SUCCESS: System prompt built, length:", enhancedSystemPrompt.length)
 
-    const result = await streamText({
-      model: "anthropic/claude-sonnet-4",
-      system: enhancedSystemPrompt,
-      messages: coreMessages,
-      tools: {
-        generateCompleteFeed: generateCompleteFeedTool,
-      },
-      maxSteps: 5,
-    })
+    console.log("[v0] Step 7: Calling streamText...")
+    try {
+      const result = await streamText({
+        model: "anthropic/claude-sonnet-4",
+        system: enhancedSystemPrompt,
+        messages: coreMessages,
+        tools: {
+          generateCompleteFeed: generateCompleteFeedTool,
+        },
+        maxSteps: 5,
+      })
 
-    return result.toUIMessageStreamResponse()
+      console.log("[v0] Step 7 SUCCESS: streamText completed")
+      console.log("[v0] === FEED CHAT API END (success) ===")
+      return result.toUIMessageStreamResponse()
+    } catch (streamError) {
+      console.error("[v0] Step 7 ERROR: streamText failed")
+      console.error("[v0] Stream error:", streamError)
+      if (streamError instanceof Error) {
+        console.error("[v0] Stream error message:", streamError.message)
+        console.error("[v0] Stream error stack:", streamError.stack)
+      }
+      throw streamError
+    }
   } catch (error) {
+    console.error("[v0] === FEED CHAT API ERROR ===")
     console.error("[v0] Feed chat error:", error)
+    if (error instanceof Error) {
+      console.error("[v0] Error name:", error.name)
+      console.error("[v0] Error message:", error.message)
+      console.error("[v0] Error stack:", error.stack)
+    }
+    console.error("[v0] === FEED CHAT API END (error) ===")
     return new Response("Internal Server Error", { status: 500 })
   }
 }

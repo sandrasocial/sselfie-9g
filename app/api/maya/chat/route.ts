@@ -410,7 +410,15 @@ export async function POST(req: Request) {
       return new Response("No valid messages", { status: 400 })
     }
 
-    const userContext = await getUserContextForMaya(user.stack_auth_id || "")
+    let authId = user.stack_auth_id || user.supabase_user_id
+
+    // If neither exists, use the user's Neon ID as fallback
+    if (!authId) {
+      console.log("[v0] No auth ID found, using Neon user ID as fallback")
+      authId = user.id
+    }
+
+    const userContext = await getUserContextForMaya(authId)
     const enhancedSystemPrompt =
       MAYA_SYSTEM_PROMPT +
       userContext +

@@ -52,7 +52,17 @@ export interface UserPersonalBrand {
   future_vision: string | null
   business_goals: string | null
   photo_goals: string | null
+  content_goals: string | null
   style_preferences: string | null
+  target_audience: string | null
+  content_themes: string | null
+  content_pillars: string | null
+  brand_voice: string | null
+  language_style: string | null
+  brand_vibe: string | null
+  color_mood: string | null
+  color_theme: string | null
+  color_palette: any | null // JSONB field for custom colors
   is_completed: boolean
   onboarding_step: number
   created_at: Date

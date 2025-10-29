@@ -67,6 +67,8 @@ export async function GET(request: NextRequest) {
         contentThemes: brand.content_themes,
         brandVibe: brand.brand_vibe,
         colorMood: brand.color_mood,
+        colorTheme: brand.color_theme,
+        colorPalette: brand.color_palette,
         futureVision: brand.future_vision,
         contentGoals: brand.content_goals,
         photoGoals: brand.photo_goals,
@@ -98,6 +100,11 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
+    console.log("[v0] Saving brand profile with data:", {
+      colorTheme: body.colorTheme,
+      hasCustomColors: !!body.customColors,
+    })
+
     const sql = neon(process.env.DATABASE_URL!)
 
     // Get Neon user ID
@@ -131,6 +138,8 @@ export async function POST(request: NextRequest) {
           content_themes = ${body.contentThemes || ""},
           brand_vibe = ${body.brandVibe || ""},
           color_mood = ${body.colorMood || ""},
+          color_theme = ${body.colorTheme || ""},
+          color_palette = ${body.customColors || null},
           future_vision = ${body.futureVision || ""},
           content_goals = ${body.contentGoals || ""},
           is_completed = ${body.isCompleted || false},
@@ -139,6 +148,11 @@ export async function POST(request: NextRequest) {
         RETURNING id
       `
       brandId = result[0].id
+      console.log("[v0] Updated brand profile with colors:", {
+        brandId,
+        colorTheme: body.colorTheme,
+        hasCustomColors: !!body.customColors,
+      })
     } else {
       const result = await sql`
         INSERT INTO user_personal_brand (
@@ -153,6 +167,8 @@ export async function POST(request: NextRequest) {
           content_themes,
           brand_vibe,
           color_mood,
+          color_theme,
+          color_palette,
           future_vision,
           content_goals,
           is_completed,
@@ -170,6 +186,8 @@ export async function POST(request: NextRequest) {
           ${body.contentThemes || ""},
           ${body.brandVibe || ""},
           ${body.colorMood || ""},
+          ${body.colorTheme || ""},
+          ${body.customColors || null},
           ${body.futureVision || ""},
           ${body.contentGoals || ""},
           ${body.isCompleted || false},
@@ -179,6 +197,11 @@ export async function POST(request: NextRequest) {
         RETURNING id
       `
       brandId = result[0].id
+      console.log("[v0] Created brand profile with colors:", {
+        brandId,
+        colorTheme: body.colorTheme,
+        hasCustomColors: !!body.customColors,
+      })
     }
 
     // Update style profile if provided
@@ -281,7 +304,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error("Error updating personal brand:", error)
+    console.error("[v0] Error updating personal brand:", error)
     return NextResponse.json({ error: "Failed to update personal brand" }, { status: 500 })
   }
 }

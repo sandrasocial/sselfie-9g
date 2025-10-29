@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Aperture, ArrowRight, ArrowLeft, Check, Palette } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
@@ -172,17 +172,6 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
     existingData?.customColors ? JSON.parse(existingData.customColors) : ["#D4C5B9", "#A89B8E", "#8B7E71", "#6E6154"],
   )
 
-  useEffect(() => {
-    console.log("[v0] BrandProfileWizard mounted, isOpen:", isOpen)
-  }, [])
-
-  useEffect(() => {
-    console.log("[v0] BrandProfileWizard isOpen changed:", isOpen)
-    if (isOpen) {
-      console.log("[v0] Dialog should be visible now")
-    }
-  }, [isOpen])
-
   const step = STEPS[currentStep]
   const progress = ((currentStep + 1) / STEPS.length) * 100
   const isIntroStep = step.id === "intro"
@@ -190,20 +179,17 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
 
   const handleNext = () => {
     if (currentStep < STEPS.length - 1) {
-      console.log("[v0] Moving to next step:", currentStep + 1)
       setCurrentStep(currentStep + 1)
     }
   }
 
   const handleBack = () => {
     if (currentStep > 0) {
-      console.log("[v0] Moving to previous step:", currentStep - 1)
       setCurrentStep(currentStep - 1)
     }
   }
 
   const handleComplete = async () => {
-    console.log("[v0] Completing brand profile wizard...")
     setIsSaving(true)
     try {
       const response = await fetch("/api/profile/personal-brand", {
@@ -222,7 +208,6 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
         throw new Error("Failed to save brand profile")
       }
 
-      console.log("[v0] Brand profile saved successfully")
       onComplete()
     } catch (error) {
       console.error("[v0] Error saving brand profile:", error)
@@ -246,13 +231,11 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
   }
 
   const handleContentPillarsComplete = (pillars: any[]) => {
-    console.log("[v0] Content pillars selected:", pillars)
     setContentPillars(pillars)
     handleComplete()
   }
 
   const handleContentPillarsSkip = () => {
-    console.log("[v0] Content pillars skipped")
     handleComplete()
   }
 
@@ -262,8 +245,6 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
     if (!step.field) return true
     return formData[step.field as keyof typeof formData]?.trim().length > 0
   }
-
-  console.log("[v0] BrandProfileWizard rendering, isOpen:", isOpen, "currentStep:", currentStep)
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

@@ -35,6 +35,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "User not found in database" }, { status: 404 })
     }
 
+    const brandDataResult = await sql`
+      SELECT 
+        color_theme,
+        custom_colors,
+        color_mood
+      FROM user_personal_brand
+      WHERE user_id = ${neonUser.id}
+      LIMIT 1
+    `
+
+    let brandColors = ""
+    if (brandDataResult.length > 0) {
+      const brandData = brandDataResult[0]
+      if (brandData.custom_colors) {
+        try {
+          const customColors = JSON.parse(brandData.custom_colors)
+          if (Array.isArray(customColors) && customColors.length > 0) {
+            brandColors = customColors.join(", ")
+          }
+        } catch (e) {
+          console.error("[v0] Error parsing custom colors:", e)
+        }
+      }
+    }
+
     // Get user's trigger word and gender
     const userDataResult = await sql`
       SELECT 
@@ -78,12 +103,14 @@ POST DETAILS:
 - Brand Vibe: ${brandVibe || "Not specified"}
 - User's Trigger Word: ${triggerWord}
 - User's Gender: ${gender || "Not specified"}
+${brandColors ? `- User's Brand Colors: ${brandColors}` : ""}
 
 IMPORTANT INSTRUCTIONS:
 1. Generate a sophisticated FLUX prompt that will create a stunning Instagram post
 2. Use your fashion expertise: fabrics, colors, silhouettes, accessories, styling
 3. Use your Instagram knowledge: what works on feeds, visual storytelling, engagement
-4. Consider the post type and create appropriate composition:
+4. ${brandColors ? `**CRITICAL**: Incorporate the user's brand colors (${brandColors}) into the styling, clothing, background, or props. These are their chosen brand colors and MUST be reflected in the image.` : ""}
+5. Consider the post type and create appropriate composition:
    - "Full Body": Full body shot, show outfit, styling, environment
    - "Half Body": Waist-up shot, focus on upper styling, expression
    - "Close-Up": Face and shoulders, emphasize expression, details
@@ -92,11 +119,12 @@ IMPORTANT INSTRUCTIONS:
    - "Object": Product/item focus, styling, flat lay or in-context
    - "Place/Scenery": Location focus, atmosphere, mood
    - "Hobby/Others": Activity-based, authentic moment, passion
-5. Match the color theme and brand vibe if provided
-6. Create prompts that feel authentic and Instagram-worthy
-7. ALWAYS start with the trigger word: ${triggerWord}
-8. Be specific about lighting, setting, styling, pose, and mood
-9. Make it feel like a real Instagram post, not a studio photoshoot (unless that's the vibe)
+6. Match the color theme and brand vibe if provided
+7. Create prompts that feel authentic and Instagram-worthy
+8. ALWAYS start with the trigger word: ${triggerWord}
+9. Be specific about lighting, setting, styling, pose, and mood
+10. ${brandColors ? `Describe clothing, accessories, or background elements in the brand colors: ${brandColors}` : ""}
+11. Make it feel like a real Instagram post, not a studio photoshoot (unless that's the vibe)
 
 OUTPUT FORMAT:
 Generate ONLY the FLUX prompt. No explanations, no extra text. Just the prompt that will be sent to Replicate.

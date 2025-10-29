@@ -42,6 +42,7 @@ interface InstagramProfile {
 export default function FeedDesignerScreen() {
   const [isInitializing, setIsInitializing] = useState(true)
   const [isDesigning, setIsDesigning] = useState(false)
+  const [isApplyingDesign, setIsApplyingDesign] = useState(false)
   const [feedPosts, setFeedPosts] = useState<FeedPost[]>([])
   const [profile, setProfile] = useState<InstagramProfile>({
     profileImage: "/placeholder.svg?height=80&width=80",
@@ -58,12 +59,137 @@ export default function FeedDesignerScreen() {
   const [currentPrompts, setCurrentPrompts] = useState<Array<{ label: string; prompt: string }>>([])
   const [brandData, setBrandData] = useState<any>(null)
   const [showBrandWizard, setShowBrandWizard] = useState(false)
-  const [brandCompleted, setBrandCompleted] = useState(false)
+  const [brandCompleted, setBrandCompleted] = useState(true) // Default to true to prevent premature rendering
   const [editingHighlights, setEditingHighlights] = useState(false)
   const [chatId, setChatId] = useState<number | null>(null)
   const [isLoadingChat, setIsLoadingChat] = useState(true)
   const [showHistory, setShowHistory] = useState(false)
   const savedMessageIds = useRef(new Set<string>())
+
+  const [isGeneratingProfile, setIsGeneratingProfile] = useState(false)
+  const [profileError, setProfileError] = useState<string | null>(null)
+  const [profilePredictionId, setProfilePredictionId] = useState<string | null>(null)
+  const [profileGenerationId, setProfileGenerationId] = useState<string | null>(null)
+  const [isProfileGenerated, setIsProfileGenerated] = useState(false)
+
+  useEffect(() => {
+    if (!profilePredictionId || !profileGenerationId || isProfileGenerated) {
+      return
+    }
+
+    console.log("[v0] Starting polling for profile image with prediction", profilePredictionId)
+
+    const pollInterval = setInterval(async () => {
+      try {
+        console.log("[v0] Polling profile image generation status...")
+        const response = await fetch(
+          `/api/maya/check-generation?predictionId=${profilePredictionId}&generationId=${profileGenerationId}`,
+        )
+        const data = await response.json()
+
+        console.log("[v0] Profile image generation status:", data.status)
+
+        if (data.status === "succeeded") {
+          console.log("[v0] Profile image generation succeeded! Image URL:", data.imageUrl)
+          setProfile((prev) => ({ ...prev, profileImage: data.imageUrl }))
+          setIsProfileGenerated(true)
+          setIsGeneratingProfile(false)
+          clearInterval(pollInterval)
+
+          if (feedUrl) {
+            const feedId = feedUrl.split("/").pop()
+            if (feedId) {
+              try {
+                await fetch(`/api/feed/${feedId}/profile-image`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ profileImageUrl: data.imageUrl }),
+                })
+              } catch (error) {
+                console.error("[v0] Error saving profile image:", error)
+              }
+            }
+          }
+        } else if (data.status === "failed") {
+          console.log("[v0] Profile image generation failed:", data.error)
+          setProfileError(data.error || "Generation failed")
+          setIsGeneratingProfile(false)
+          clearInterval(pollInterval)
+        }
+      } catch (err) {
+        console.error("[v0] Error polling generation:", err)
+        setProfileError("Failed to check generation status")
+        setIsGeneratingProfile(false)
+        clearInterval(pollInterval)
+      }
+    }, 3000)
+
+    return () => {
+      console.log("[v0] Cleaning up polling interval")
+      clearInterval(pollInterval)
+    }
+  }, [profilePredictionId, profileGenerationId, isProfileGenerated, feedUrl])
+
+  const handleGenerateProfileImage = async () => {
+    if (!brandData) {
+      setProfileError("Complete your brand profile first")
+      return
+    }
+
+    setIsGeneratingProfile(true)
+    setProfileError(null)
+
+    try {
+      console.log("[v0] Generating profile image...")
+
+      const mayaResponse = await fetch("/api/maya/generate-feed-prompt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          postType: "Profile Picture",
+          caption: `Professional profile picture for ${brandData.name || "personal brand"}`,
+          feedPosition: 0,
+          colorTheme: brandData.colorTheme,
+          brandVibe: brandData.brandVibe || brandData.futureVision,
+        }),
+      })
+
+      let conceptPrompt: string
+      if (!mayaResponse.ok) {
+        console.error("[v0] Maya prompt generation failed, using fallback")
+        conceptPrompt = `Professional Instagram profile picture for ${brandData.name || "personal brand"}. ${brandData.brandVibe || ""}. Clean, professional, and eye-catching.`
+      } else {
+        const mayaData = await mayaResponse.json()
+        conceptPrompt = mayaData.prompt
+        console.log("[v0] Maya generated profile prompt:", conceptPrompt)
+      }
+
+      const response = await fetch("/api/maya/generate-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          conceptTitle: "Profile Picture",
+          conceptDescription: `Professional profile picture for ${brandData.name || "personal brand"}`,
+          conceptPrompt,
+          category: "feed-design",
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to generate image")
+      }
+
+      console.log("[v0] Generation started with prediction ID:", data.predictionId)
+      setProfilePredictionId(data.predictionId)
+      setProfileGenerationId(data.generationId)
+    } catch (err) {
+      console.error("[v0] Error generating profile image:", err)
+      setProfileError(err instanceof Error ? err.message : "Failed to generate image")
+      setIsGeneratingProfile(false)
+    }
+  }
 
   const { status, messages, sendMessage, setMessages } = useChat({
     transport: new DefaultChatTransport({ api: "/api/maya/feed-chat" }),
@@ -125,12 +251,13 @@ export default function FeedDesignerScreen() {
       if (data.exists && data.completed) {
         setBrandData(data.data)
         setBrandCompleted(true)
+        setShowBrandWizard(false)
         setProfile({
-          profileImage: "/placeholder.svg?height=80&width=80",
+          profileImage: data.data.profileImage || "/placeholder.svg?height=80&width=80",
           name: data.data.name || "Your Brand",
           handle: `@${data.data.name?.toLowerCase().replace(/\s+/g, "") || "yourbrand"}`,
           bio: data.data.futureVision || data.data.currentSituation || "Building something amazing",
-          highlights: [],
+          highlights: data.data.highlights || [],
         })
         setCurrentPrompts(generatePersonalizedPrompts(data.data))
       } else {
@@ -174,9 +301,11 @@ export default function FeedDesignerScreen() {
       const lastMessage = messages[messages.length - 1]
       if (lastMessage.role === "assistant") {
         console.log("[v0] Maya finished responding, reloading feed data in 2 seconds...")
+        setIsApplyingDesign(true)
         setTimeout(() => {
           loadLatestFeed()
           setIsDesigning(false)
+          setIsApplyingDesign(false)
         }, 2000)
       }
     }
@@ -624,12 +753,14 @@ export default function FeedDesignerScreen() {
 
   return (
     <div className="h-full flex flex-col bg-stone-50">
-      <BrandProfileWizard
-        isOpen={showBrandWizard}
-        onClose={() => setShowBrandWizard(false)}
-        onComplete={handleBrandWizardComplete}
-        existingData={brandData}
-      />
+      {showBrandWizard && !brandCompleted && (
+        <BrandProfileWizard
+          isOpen={showBrandWizard}
+          onClose={() => setShowBrandWizard(false)}
+          onComplete={handleBrandWizardComplete}
+          existingData={brandData}
+        />
+      )}
 
       <div className="md:hidden flex-shrink-0 border-b border-stone-200 bg-white">
         <div className="flex">
@@ -811,7 +942,9 @@ export default function FeedDesignerScreen() {
                         style={{ animationDelay: "0.4s" }}
                       ></div>
                     </div>
-                    <span className="text-sm text-stone-600">Maya is designing...</span>
+                    <span className="text-sm text-stone-600">
+                      {isDesigning ? "Maya is designing your feed..." : "Maya is thinking..."}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -868,19 +1001,55 @@ export default function FeedDesignerScreen() {
             mobileView === "preview" ? "flex w-full md:w-3/5" : "hidden md:flex md:w-3/5"
           }`}
         >
+          {(isDesigning || isApplyingDesign) && (
+            <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center">
+              <div className="text-center">
+                <div className="w-12 h-12 border-4 border-stone-950 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                <p className="text-sm font-medium text-stone-950 mb-1">
+                  {isDesigning ? "Maya is designing your feed..." : "Applying design..."}
+                </p>
+                <p className="text-xs text-stone-600">
+                  {isDesigning
+                    ? "Creating a strategic 9-post layout with concepts tailored to your brand"
+                    : "Your feed strategy is being loaded into the preview"}
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="flex-1 overflow-y-auto">
             <div className="bg-white border-b border-stone-200 p-6 sticky top-0 z-10">
               <div className="max-w-2xl mx-auto">
                 <div className="flex items-start gap-6">
-                  <img
-                    src={profile.profileImage || "/placeholder.svg"}
-                    alt={profile.name}
-                    className="w-20 h-20 rounded-full object-cover border-2 border-stone-200"
-                  />
+                  <div className="relative group">
+                    <button
+                      onClick={handleGenerateProfileImage}
+                      disabled={isGeneratingProfile || !brandData}
+                      className="w-20 h-20 rounded-full overflow-hidden border-2 border-stone-200 hover:border-stone-400 transition-all disabled:cursor-not-allowed disabled:hover:border-stone-200"
+                    >
+                      {isGeneratingProfile ? (
+                        <div className="w-full h-full bg-stone-100 flex items-center justify-center">
+                          <div className="w-8 h-8 border-3 border-stone-300 border-t-stone-950 rounded-full animate-spin" />
+                        </div>
+                      ) : (
+                        <img
+                          src={profile.profileImage || "/placeholder.svg"}
+                          alt={profile.name}
+                          className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
+                        />
+                      )}
+                    </button>
+                    {!isGeneratingProfile && !isProfileGenerated && (
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-stone-950/50 rounded-full">
+                        <span className="text-xs text-white font-medium">Generate</span>
+                      </div>
+                    )}
+                  </div>
                   <div className="flex-1">
                     <h2 className="text-xl font-bold text-stone-950">{profile.name}</h2>
                     <p className="text-sm text-stone-500 mb-2">{profile.handle}</p>
                     <p className="text-sm text-stone-700 leading-relaxed">{profile.bio}</p>
+                    {profileError && <p className="text-xs text-red-600 mt-2">{profileError}</p>}
                   </div>
                 </div>
 
@@ -912,6 +1081,7 @@ export default function FeedDesignerScreen() {
                         onRemove={handleRemoveHighlight}
                         userColorTheme={brandData?.colorTheme}
                         feedId={feedUrl?.split("/").pop()}
+                        isEditing={editingHighlights}
                       />
                     ))}
 
@@ -964,6 +1134,39 @@ export default function FeedDesignerScreen() {
                         >
                           Go to Studio
                         </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {isApplyingDesign && (
+                  <div className="mb-6 bg-white rounded-xl p-6 border border-stone-200">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-stone-200 flex-shrink-0">
+                        <img
+                          src="https://i.postimg.cc/fTtCnzZv/out-1-22.png"
+                          alt="Maya"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="flex gap-1">
+                            <div className="w-2 h-2 rounded-full animate-bounce bg-stone-700"></div>
+                            <div
+                              className="w-2 h-2 rounded-full animate-bounce bg-stone-700"
+                              style={{ animationDelay: "0.2s" }}
+                            ></div>
+                            <div
+                              className="w-2 h-2 rounded-full animate-bounce bg-stone-700"
+                              style={{ animationDelay: "0.4s" }}
+                            ></div>
+                          </div>
+                          <span className="text-sm font-medium text-stone-950">Applying design to preview...</span>
+                        </div>
+                        <p className="text-xs text-stone-600">
+                          Your feed strategy is being loaded into the Instagram preview
+                        </p>
                       </div>
                     </div>
                   </div>
