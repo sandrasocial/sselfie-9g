@@ -48,10 +48,10 @@ export async function POST(request: Request, { params }: { params: { feedId: str
             ${feedId},
             ${neonUser.id},
             ${highlight.title},
-            ${highlight.coverUrl},
+            ${highlight.coverUrl || highlight.image_url},
             ${highlight.type || "color"},
             ${highlight.description || ""},
-            'completed'
+            ${highlight.coverUrl && !highlight.coverUrl.startsWith("#") && !highlight.coverUrl.includes("placeholder") ? "completed" : "pending"}
           )
         `
       }

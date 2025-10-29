@@ -15,9 +15,11 @@ You're an expert Instagram strategist who creates cohesive, professional feeds b
 
 1. Respond warmly and let them know you're starting
 2. Call the generateCompleteFeed tool (it will research trends automatically)
-3. After the tool completes, explain the feed strategy in a conversational way
+3. After the feed is created, AUTOMATICALLY call generateStoryHighlights to create highlight covers
+4. Then call generateProfileImage to create the profile picture
+5. After all generations complete, explain the complete strategy
 
-The generateCompleteFeed tool handles all the research and design work internally, so you just need to call it once and then explain the results to the user.
+The tools handle all the research and design work internally, so you just need to call them in sequence and then explain the results to the user.
 `
 
 function generateSmartHashtags(businessType: string): string[] {
@@ -76,10 +78,14 @@ const generateCompleteFeedTool = tool({
       .array(
         z.object({
           title: z.string().describe("Highlight title (e.g., 'Tips', 'BTS', 'Client Wins')"),
-          description: z.string().describe("What this highlight category contains"),
+          prompt: z
+            .string()
+            .describe(
+              "FLUX prompt for generating the BACKGROUND IMAGE ONLY (flatlay, object, aesthetic scene) - DO NOT include text in the prompt. The text will be overlaid later. Focus on creating a beautiful, brand-aligned background image with the user's colors and aesthetic.",
+            ),
         }),
       )
-      .describe("5-7 Instagram highlight categories that organize their content strategy"),
+      .describe("5-7 Instagram highlight categories with detailed FLUX prompts for BACKGROUND images (no text)"),
   }),
   execute: async ({ brandVibe, businessType, colorPalette, feedStory, instagramBio, highlights }) => {
     console.log("[v0] [SERVER] === TOOL EXECUTION STARTED ===")
@@ -311,10 +317,10 @@ const generateCompleteFeedTool = tool({
       for (const highlight of highlights) {
         await sql`
           INSERT INTO instagram_highlights (feed_layout_id, title, prompt, user_id)
-          VALUES (${feedId}, ${highlight.title}, ${highlight.description}, ${user.id})
+          VALUES (${feedId}, ${highlight.title}, ${highlight.prompt}, ${user.id})
         `
       }
-      console.log("[v0] [SERVER] ✓ Highlights saved:", highlights.length)
+      console.log("[v0] [SERVER] ✓ Highlights saved with FLUX prompts:", highlights.length)
 
       for (let i = 0; i < postsWithCaptions.length; i++) {
         const post = postsWithCaptions[i]
@@ -341,6 +347,126 @@ const generateCompleteFeedTool = tool({
         console.error("[v0] [SERVER] Error details:", error.message)
       }
       return "I encountered an error while saving your feed strategy. Please try again."
+    }
+  },
+})
+
+const generateStoryHighlightsTool = tool({
+  description:
+    "Generate cover images for all story highlights in the feed. Call this after creating the feed strategy.",
+  inputSchema: z.object({
+    feedId: z.string().describe("The feed layout ID from generateCompleteFeed"),
+    colorPalette: z.string().describe("The brand's color palette"),
+    brandVibe: z.string().describe("The brand's aesthetic vibe"),
+  }),
+  execute: async ({ feedId, colorPalette, brandVibe }) => {
+    console.log("[v0] [SERVER] === GENERATING STORY HIGHLIGHTS ===")
+    console.log("[v0] [SERVER] Feed ID:", feedId, "Color Palette:", colorPalette)
+
+    try {
+      const sql = neon(process.env.DATABASE_URL!)
+      const user = await getCurrentNeonUser()
+
+      if (!user) {
+        return "Error: User not found"
+      }
+
+      // Get all highlights for this feed
+      const highlights = await sql`
+        SELECT * FROM instagram_highlights
+        WHERE feed_layout_id = ${feedId}
+        ORDER BY created_at ASC
+      `
+
+      console.log("[v0] [SERVER] Found", highlights.length, "highlights to generate")
+
+      let successCount = 0
+      for (const highlight of highlights) {
+        try {
+          // Generate image for this highlight
+          const conceptPrompt = `Instagram story highlight cover for "${highlight.title}". ${highlight.prompt}. ${colorPalette} color palette, ${brandVibe} aesthetic, minimalist design, professional quality, centered composition, soft lighting, elegant and cohesive with brand identity`
+
+          const response = await fetch(
+            `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/maya/generate-image`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                conceptTitle: highlight.title,
+                conceptDescription: highlight.prompt,
+                conceptPrompt,
+                category: "feed-design",
+              }),
+            },
+          )
+
+          if (response.ok) {
+            const data = await response.json()
+
+            // Update highlight with prediction ID
+            await sql`
+              UPDATE instagram_highlights
+              SET prediction_id = ${data.predictionId},
+                  cover_url = 'generating'
+              WHERE id = ${highlight.id}
+            `
+
+            successCount++
+            console.log("[v0] [SERVER] ✓ Started generation for highlight:", highlight.title)
+          }
+        } catch (error) {
+          console.error("[v0] [SERVER] Error generating highlight:", highlight.title, error)
+        }
+      }
+
+      console.log("[v0] [SERVER] === STORY HIGHLIGHTS GENERATION COMPLETE ===")
+      return `Started generating ${successCount} story highlight covers. They'll appear in the preview as they complete.`
+    } catch (error) {
+      console.error("[v0] [SERVER] Error in generateStoryHighlights:", error)
+      return "Error generating story highlights"
+    }
+  },
+})
+
+const generateProfileImageTool = tool({
+  description:
+    "Generate a professional profile picture for the Instagram feed. Call this after creating the feed strategy.",
+  inputSchema: z.object({
+    businessType: z.string().describe("What the user does"),
+    colorPalette: z.string().describe("The brand's color palette"),
+    brandVibe: z.string().describe("The brand's aesthetic vibe"),
+  }),
+  execute: async ({ businessType, colorPalette, brandVibe }) => {
+    console.log("[v0] [SERVER] === GENERATING PROFILE IMAGE ===")
+    console.log("[v0] [SERVER] Business Type:", businessType)
+
+    try {
+      const conceptPrompt = `Professional Instagram profile picture for a ${businessType}. ${colorPalette} color palette, ${brandVibe} aesthetic, close-up portrait, confident and approachable expression, shot on 85mm lens f/1.4, soft natural lighting, high-end editorial quality, authentic professional presence, perfect for Instagram profile, circular crop friendly`
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/maya/generate-image`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            conceptTitle: "Profile Picture",
+            conceptDescription: `Professional profile picture for ${businessType}`,
+            conceptPrompt,
+            category: "feed-design",
+          }),
+        },
+      )
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log("[v0] [SERVER] ✓ Profile image generation started")
+        return `Started generating your professional profile picture. It'll appear in the preview when ready.`
+      } else {
+        throw new Error("Failed to start profile image generation")
+      }
+    } catch (error) {
+      console.error("[v0] [SERVER] Error generating profile image:", error)
+      return "Error generating profile image"
     }
   },
 })
@@ -495,6 +621,8 @@ export async function POST(req: Request) {
         messages: coreMessages,
         tools: {
           generateCompleteFeed: generateCompleteFeedTool,
+          generateStoryHighlights: generateStoryHighlightsTool,
+          generateProfileImage: generateProfileImageTool,
         },
         maxSteps: 5,
       })

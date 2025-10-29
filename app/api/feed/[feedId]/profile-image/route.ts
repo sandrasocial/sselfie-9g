@@ -25,14 +25,9 @@ export async function POST(request: Request, { params }: { params: { feedId: str
     const body = await request.json()
     const { profileImageUrl } = body
 
-    // Update feed_layouts with profile image
     await sql`
       UPDATE feed_layouts 
-      SET profile_data = jsonb_set(
-        COALESCE(profile_data, '{}'::jsonb),
-        '{profileImage}',
-        ${JSON.stringify(profileImageUrl)}
-      )
+      SET profile_image_url = ${profileImageUrl}
       WHERE id = ${feedId} AND user_id = ${neonUser.id}
     `
 

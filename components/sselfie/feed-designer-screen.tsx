@@ -291,7 +291,8 @@ export default function FeedDesignerScreen() {
   useEffect(() => {
     if (isTyping && messages.length > 0) {
       const lastMessage = messages[messages.length - 1]
-      if (lastMessage.role === "user") {
+      // Only set isDesigning when Maya is responding (assistant message being generated)
+      if (lastMessage.role === "assistant") {
         console.log("[v0] Maya is designing feed strategy...")
         setIsDesigning(true)
       }
@@ -335,7 +336,7 @@ export default function FeedDesignerScreen() {
           instagramBio: data.bio?.bio_text || profile.bio,
           highlights: data.highlights.map((h: any) => ({
             title: h.title,
-            description: h.description,
+            description: h.prompt, // This is the FLUX prompt Maya generated
             coverUrl: h.cover_url,
             type: h.type || "image",
           })),
@@ -365,7 +366,7 @@ export default function FeedDesignerScreen() {
           const mappedHighlights = data.highlights.map((h: any) => ({
             title: h.title,
             coverUrl: h.cover_url || "/placeholder.svg?height=64&width=64",
-            description: h.description,
+            description: h.prompt, // This is the FLUX prompt Maya generated
             type: h.type || "image",
           }))
           setProfile((prev) => ({
@@ -611,7 +612,9 @@ export default function FeedDesignerScreen() {
     setProfile((prev) => ({
       ...prev,
       highlights: prev.highlights.map((h, i) =>
-        i === index ? { title: data.title, coverUrl: data.coverUrl, description: data.description } : h,
+        i === index
+          ? { title: data.title, coverUrl: data.coverUrl, description: data.description, type: data.type }
+          : h,
       ),
     }))
 
@@ -625,11 +628,15 @@ export default function FeedDesignerScreen() {
               : h,
           )
 
+          console.log("[v0] Saving highlight to database:", { index, coverUrl: data.coverUrl })
+
           await fetch(`/api/feed/${feedId}/highlights`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ highlights: updatedHighlights }),
           })
+
+          console.log("[v0] Highlight saved successfully")
         } catch (error) {
           console.error("[v0] Error saving highlights:", error)
         }
@@ -997,7 +1004,7 @@ export default function FeedDesignerScreen() {
         </div>
 
         <div
-          className={`flex flex-col bg-stone-50 transition-all duration-300 ${
+          className={`flex flex-col bg-stone-50 transition-all duration-300 relative ${
             mobileView === "preview" ? "flex w-full md:w-3/5" : "hidden md:flex md:w-3/5"
           }`}
         >
@@ -1022,26 +1029,34 @@ export default function FeedDesignerScreen() {
               <div className="max-w-2xl mx-auto">
                 <div className="flex items-start gap-6">
                   <div className="relative group">
-                    <button
-                      onClick={handleGenerateProfileImage}
-                      disabled={isGeneratingProfile || !brandData}
-                      className="w-20 h-20 rounded-full overflow-hidden border-2 border-stone-200 hover:border-stone-400 transition-all disabled:cursor-not-allowed disabled:hover:border-stone-200"
-                    >
-                      {isGeneratingProfile ? (
-                        <div className="w-full h-full bg-stone-100 flex items-center justify-center">
-                          <div className="w-8 h-8 border-3 border-stone-300 border-t-stone-950 rounded-full animate-spin" />
-                        </div>
-                      ) : (
+                    {!isGeneratingProfile && !isProfileGenerated && brandData ? (
+                      <button
+                        onClick={handleGenerateProfileImage}
+                        className="w-20 h-20 rounded-full overflow-hidden border-2 border-stone-200 hover:border-stone-400 transition-all relative group"
+                      >
                         <img
                           src={profile.profileImage || "/placeholder.svg"}
                           alt={profile.name}
                           className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
                         />
-                      )}
-                    </button>
-                    {!isGeneratingProfile && !isProfileGenerated && (
-                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-stone-950/50 rounded-full">
-                        <span className="text-xs text-white font-medium">Generate</span>
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-stone-950/50 rounded-full">
+                          <span className="text-xs text-white font-medium">Generate</span>
+                        </div>
+                      </button>
+                    ) : isGeneratingProfile ? (
+                      <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-stone-200 bg-stone-100 flex items-center justify-center">
+                        <div className="relative w-10 h-10">
+                          <div className="absolute inset-0 rounded-full bg-stone-200/20 animate-ping"></div>
+                          <div className="relative w-10 h-10 rounded-full bg-stone-950 animate-spin border-4 border-transparent border-t-white"></div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-stone-200">
+                        <img
+                          src={profile.profileImage || "/placeholder.svg"}
+                          alt={profile.name}
+                          className="w-full h-full object-cover"
+                        />
                       </div>
                     )}
                   </div>

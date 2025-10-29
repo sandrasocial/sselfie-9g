@@ -32,9 +32,19 @@ export default function StoryHighlightCard({
 }: StoryHighlightCardProps) {
   const [isEditing, setIsEditing] = useState(!highlight.title)
   const [isGenerating, setIsGenerating] = useState(false)
-  const [isGenerated, setIsGenerated] = useState(!!highlight.coverUrl && !highlight.coverUrl.startsWith("#"))
+  const [isGenerated, setIsGenerated] = useState(
+    !!highlight.coverUrl &&
+      !highlight.coverUrl.startsWith("#") &&
+      !highlight.coverUrl.includes("placeholder.svg") &&
+      highlight.coverUrl !== "generating",
+  )
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(
-    highlight.coverUrl && !highlight.coverUrl.startsWith("#") ? highlight.coverUrl : null,
+    highlight.coverUrl &&
+      !highlight.coverUrl.startsWith("#") &&
+      !highlight.coverUrl.includes("placeholder.svg") &&
+      highlight.coverUrl !== "generating"
+      ? highlight.coverUrl
+      : null,
   )
   const [error, setError] = useState<string | null>(null)
   const [predictionId, setPredictionId] = useState<string | null>(null)
@@ -73,7 +83,7 @@ export default function StoryHighlightCard({
       try {
         console.log("[v0] Polling highlight generation status...")
         const response = await fetch(
-          `/api/maya/check-generation?predictionId=${predictionId}&generationId=${generationId}`,
+          `/api/maya/check-generation?predictionId=${predictionId}&generationId=${generationId}&addTextOverlay=true&overlayText=${encodeURIComponent(highlight.title)}`,
         )
         const data = await response.json()
 
@@ -110,7 +120,7 @@ export default function StoryHighlightCard({
       console.log("[v0] Cleaning up polling interval")
       clearInterval(pollInterval)
     }
-  }, [predictionId, generationId, isGenerated, index, highlight, onUpdate])
+  }, [predictionId, generationId, isGenerated, index])
 
   const handleGenerate = async () => {
     if (!highlight.title) {
@@ -124,27 +134,11 @@ export default function StoryHighlightCard({
     try {
       console.log("[v0] Generating highlight:", highlight.title)
 
-      const mayaResponse = await fetch("/api/maya/generate-feed-prompt", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          postType: "Story Highlight",
-          caption: highlight.title,
-          feedPosition: index + 1,
-          colorTheme: userColorTheme,
-          brandVibe: highlight.description || `Story highlight cover for ${highlight.title}`,
-        }),
-      })
+      const conceptPrompt =
+        highlight.description ||
+        `Create a beautiful Instagram story highlight cover for "${highlight.title}". Professional, aesthetic, and eye-catching design.`
 
-      let conceptPrompt: string
-      if (!mayaResponse.ok) {
-        console.error("[v0] Maya prompt generation failed, using fallback")
-        conceptPrompt = `Create a beautiful Instagram story highlight cover for "${highlight.title}". ${highlight.description}. Professional, aesthetic, and eye-catching design.`
-      } else {
-        const mayaData = await mayaResponse.json()
-        conceptPrompt = mayaData.prompt
-        console.log("[v0] Maya generated highlight prompt:", conceptPrompt)
-      }
+      console.log("[v0] Using Maya's saved prompt:", conceptPrompt)
 
       const response = await fetch("/api/maya/generate-image", {
         method: "POST",
@@ -154,6 +148,7 @@ export default function StoryHighlightCard({
           conceptDescription: highlight.description || `Story highlight cover for ${highlight.title}`,
           conceptPrompt,
           category: "feed-design",
+          isHighlight: true, // Flag to indicate this is a highlight cover
         }),
       })
 
@@ -391,7 +386,10 @@ export default function StoryHighlightCard({
         <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 p-[2px]">
           <div className="w-full h-full rounded-full bg-card p-[2px]">
             <div className="w-full h-full rounded-full bg-stone-950/5 flex items-center justify-center">
-              <div className="w-8 h-8 border-3 border-stone-300 border-t-stone-950 rounded-full animate-spin" />
+              <div className="relative w-8 h-8">
+                <div className="absolute inset-0 rounded-full bg-stone-200/20 animate-ping"></div>
+                <div className="relative w-8 h-8 rounded-full bg-stone-950 animate-spin border-4 border-transparent border-t-white"></div>
+              </div>
             </div>
           </div>
         </div>

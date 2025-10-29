@@ -19,12 +19,13 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { conceptTitle, conceptDescription, conceptPrompt, category, chatId, referenceImageUrl } = body
+    const { conceptTitle, conceptDescription, conceptPrompt, category, chatId, referenceImageUrl, addTextOverlay, textOverlayConfig, isHighlight } = body
 
     console.log("[v0] Generating image for concept:", {
       conceptTitle,
       category,
       hasReferenceImage: !!referenceImageUrl,
+      addTextOverlay: !!addTextOverlay,
     })
 
     const neonUser = await getUserByAuthId(user.id)
@@ -72,6 +73,12 @@ export async function POST(request: NextRequest) {
     }
 
     let finalPrompt = conceptPrompt
+
+    if (isHighlight) {
+      // For highlights, we want elegant background images that will have text overlaid
+      // Focus on creating beautiful, minimalistic backgrounds
+      finalPrompt = `${conceptPrompt}, professional Instagram story highlight aesthetic, elegant and minimalistic design, soft lighting, high-end editorial quality, perfect for text overlay, circular crop friendly, trending Instagram aesthetic 2025`
+    }
 
     // Add trigger word if not present
     if (!finalPrompt.toLowerCase().includes(triggerWord.toLowerCase())) {
@@ -177,7 +184,11 @@ export async function POST(request: NextRequest) {
         ${conceptDescription},
         ${category},
         ${conceptTitle},
-        ${JSON.stringify({ prediction_id: prediction.id, status: "processing" })},
+        ${JSON.stringify({ 
+          prediction_id: prediction.id, 
+          status: "processing",
+          text_overlay: addTextOverlay ? textOverlayConfig : null
+        })},
         NOW()
       )
       RETURNING id
@@ -191,6 +202,7 @@ export async function POST(request: NextRequest) {
       predictionId: prediction.id,
       status: "processing",
       fluxPrompt: finalPrompt,
+      textOverlay: addTextOverlay ? textOverlayConfig : null,
     })
   } catch (error) {
     console.error("[v0] Error generating image:", error)
