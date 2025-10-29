@@ -196,6 +196,18 @@ CREATE TABLE IF NOT EXISTS photo_selections (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Brand assets table
+CREATE TABLE IF NOT EXISTS brand_assets (
+  id SERIAL PRIMARY KEY,
+  user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+  file_name TEXT NOT NULL,
+  file_url TEXT NOT NULL,
+  file_type TEXT NOT NULL,
+  file_size INTEGER NOT NULL,
+  description TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_user_profiles_user_id ON user_profiles(user_id);
 CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id ON subscriptions(user_id);
@@ -207,3 +219,4 @@ CREATE INDEX IF NOT EXISTS idx_concept_cards_user_id ON concept_cards(user_id);
 CREATE INDEX IF NOT EXISTS idx_selfie_uploads_training_run_id ON selfie_uploads(training_run_id);
 CREATE INDEX IF NOT EXISTS idx_lora_weights_training_run_id ON lora_weights(training_run_id);
 CREATE INDEX IF NOT EXISTS idx_user_models_user_id ON user_models(user_id);
+CREATE INDEX IF NOT EXISTS idx_brand_assets_user_id ON brand_assets(user_id);

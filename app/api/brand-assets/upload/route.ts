@@ -8,7 +8,7 @@ const sql = neon(process.env.DATABASE_URL!)
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
     const {
       data: { user: authUser },
     } = await supabase.auth.getUser()
@@ -34,6 +34,7 @@ export async function POST(request: NextRequest) {
     // Upload to Vercel Blob with user-specific path
     const blob = await put(`brand-assets/${neonUser.id}/${file.name}`, file, {
       access: "public",
+      addRandomSuffix: true,
     })
 
     // Save to database

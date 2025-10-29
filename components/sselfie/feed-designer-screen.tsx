@@ -9,6 +9,7 @@ import { Progress } from "@/components/ui/progress"
 import { Sparkles, Download } from "lucide-react"
 
 import FeedPostCard from "./feed-post-card"
+import BrandProfileWizard from "./brand-profile-wizard"
 
 interface FeedPost {
   id: string | number
@@ -57,6 +58,8 @@ export default function FeedDesignerScreen() {
   const [hasTrainedModel, setHasTrainedModel] = useState<boolean>(true)
   const [currentPrompts, setCurrentPrompts] = useState<Array<{ label: string; prompt: string }>>([])
   const [brandData, setBrandData] = useState<any>(null)
+  const [showBrandWizard, setShowBrandWizard] = useState(false)
+  const [brandCompleted, setBrandCompleted] = useState(false)
   const { status, messages, sendMessage } = useChat({
     transport: new DefaultChatTransport({ api: "/api/maya/feed-chat" }),
     initialMessages: [],
@@ -112,6 +115,7 @@ export default function FeedDesignerScreen() {
 
       if (data.exists && data.completed) {
         setBrandData(data.data)
+        setBrandCompleted(true)
         setProfile({
           profileImage: "/placeholder.svg?height=80&width=80",
           name: data.data.name || "Your Brand",
@@ -121,6 +125,8 @@ export default function FeedDesignerScreen() {
         })
         setCurrentPrompts(generatePersonalizedPrompts(data.data))
       } else {
+        setShowBrandWizard(true)
+        setBrandCompleted(false)
         setCurrentPrompts(generatePersonalizedPrompts(null))
       }
     } catch (error) {
@@ -530,6 +536,12 @@ export default function FeedDesignerScreen() {
     }
   }
 
+  const handleBrandWizardComplete = () => {
+    console.log("[v0] Brand wizard completed, reloading brand profile...")
+    setShowBrandWizard(false)
+    loadBrandProfile()
+  }
+
   if (isInitializing) {
     return (
       <div className="h-full flex items-center justify-center bg-stone-50">
@@ -543,6 +555,13 @@ export default function FeedDesignerScreen() {
 
   return (
     <div className="h-full flex flex-col bg-stone-50">
+      <BrandProfileWizard
+        isOpen={showBrandWizard}
+        onClose={() => setShowBrandWizard(false)}
+        onComplete={handleBrandWizardComplete}
+        existingData={brandData}
+      />
+
       <div className="md:hidden flex-shrink-0 border-b border-stone-200 bg-white">
         <div className="flex">
           <button
@@ -591,7 +610,28 @@ export default function FeedDesignerScreen() {
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {messages.length === 0 && !isTyping && (
+            {messages.length === 0 && !isTyping && !brandCompleted && (
+              <div className="flex flex-col items-center justify-center h-full px-4 py-8">
+                <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-stone-200 mb-4">
+                  <img
+                    src="https://i.postimg.cc/fTtCnzZv/out-1-22.png"
+                    alt="Maya"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <h2 className="text-xl font-bold text-stone-950 mb-2 text-center">Complete Your Brand Profile</h2>
+                <p className="text-sm text-stone-600 text-center mb-6 max-w-md leading-relaxed">
+                  Before I can design your perfect Instagram feed, I need to understand your unique brand story, style,
+                  and vision. This takes just a few minutes!
+                </p>
+                <Button onClick={() => setShowBrandWizard(true)} className="bg-stone-950 hover:bg-stone-800 text-white">
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Start Brand Profile
+                </Button>
+              </div>
+            )}
+
+            {messages.length === 0 && !isTyping && brandCompleted && (
               <div className="flex flex-col items-center justify-center h-full px-4 py-8">
                 <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-stone-200 mb-4">
                   <img

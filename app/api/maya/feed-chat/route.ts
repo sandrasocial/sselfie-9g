@@ -92,136 +92,141 @@ const generateCompleteFeedTool = tool({
 
     const researchInsights = "Using current Instagram best practices and proven feed layout strategies"
 
-    const visualRhythm = brandVibe.includes("elegant")
-      ? "diagonal flow with lifestyle moments"
-      : brandVibe.includes("bold")
-        ? "checkerboard alternating portraits and quotes"
-        : "row-by-row storytelling"
+    // Instead of a fixed template, we now generate dynamic patterns that create visual interest
 
-    const postSequence = [
-      {
-        type: "Close-Up",
-        purpose: "Anchor post - confident first impression that stops the scroll",
-        composition: "Face focus, emotional connection, direct eye contact or thoughtful gaze",
-      },
-      {
-        type: "Quote",
-        purpose: "Inspirational message that establishes brand values",
-        composition: "Elegant typography with 70% whitespace, centered or asymmetric layout",
-      },
-      {
-        type: "Lifestyle",
-        purpose: "Show authenticity - working, creating, or in your element",
-        composition: "Natural moment, environmental context, authentic action",
-      },
-      {
-        type: "Full Body",
-        purpose: "Complete style showcase - fashion meets personality",
-        composition: "Full outfit visible, confident posture, environmental context",
-      },
-      {
-        type: "Quote",
-        purpose: "Visual rest point + motivational engagement",
-        composition: "Bold statement with breathing room, complementary to first quote",
-      },
-      {
-        type: "Half Body",
-        purpose: "Professional yet approachable - the sweet spot",
-        composition: "Upper body focus, show personality through styling and expression",
-      },
-      {
-        type: "Lifestyle",
-        purpose: "Behind-the-scenes or daily moment - build connection",
-        composition: "Candid or semi-posed, show your world and process",
-      },
-      {
-        type: "Object",
-        purpose: "Product, flatlay, or aesthetic moment - add variety",
-        composition: "Styled arrangement, overhead or angled shot, brand-aligned objects",
-      },
-      {
-        type: "Close-Up",
-        purpose: "Strong closing portrait - leave them wanting more",
-        composition: "Different angle or mood from first close-up, memorable final impression",
-      },
-    ]
+    // Define multiple aesthetic layout patterns
+    const layoutPatterns = {
+      // Checkerboard pattern - alternates between personal and lifestyle/object posts
+      checkerboard: [
+        { type: "Object", tone: "cool" },
+        { type: "Place/Scenery", tone: "cool" },
+        { type: "Hobby/Others", tone: "cool" },
+        { type: "Full Body", tone: "warm" },
+        { type: "Selfie", tone: "warm" },
+        { type: "Object", tone: "cool" },
+        { type: "Place/Scenery", tone: "cool" },
+        { type: "Hobby/Others", tone: "cool" },
+        { type: "Full Body", tone: "warm" },
+      ],
 
-    const quotesByTheme = {
-      confidence: [
-        "BE YOUR OWN BOSS",
-        "CONFIDENCE IS THE KEY",
-        "BELIEVE IN YOURSELF",
-        "OWN YOUR POWER",
-        "TRUST YOUR VISION",
-        "YOU ARE ENOUGH",
+      // Diagonal flow - creates diagonal lines of similar content
+      diagonal: [
+        { type: "Object", tone: "cool" },
+        { type: "Full Body", tone: "warm" },
+        { type: "Place/Scenery", tone: "cool" },
+        { type: "Place/Scenery", tone: "cool" },
+        { type: "Selfie", tone: "warm" },
+        { type: "Hobby/Others", tone: "cool" },
+        { type: "Hobby/Others", tone: "cool" },
+        { type: "Full Body", tone: "warm" },
+        { type: "Selfie", tone: "warm" },
       ],
-      motivation: [
-        "FOLLOW YOUR PASSION",
-        "TRUST THE PROCESS",
-        "CREATE YOUR VISION",
-        "MAKE IT HAPPEN",
-        "START BEFORE YOU'RE READY",
-        "PROGRESS OVER PERFECTION",
+
+      // Row storytelling - each row tells a different part of the story
+      rowStory: [
+        { type: "Selfie", tone: "warm" },
+        { type: "Object", tone: "cool" },
+        { type: "Place/Scenery", tone: "cool" },
+        { type: "Full Body", tone: "warm" },
+        { type: "Hobby/Others", tone: "cool" },
+        { type: "Selfie", tone: "warm" },
+        { type: "Place/Scenery", tone: "cool" },
+        { type: "Full Body", tone: "warm" },
+        { type: "Object", tone: "cool" },
       ],
-      lifestyle: [
-        "LIVE IN THE MOMENT",
-        "FIND YOUR BALANCE",
-        "EMBRACE THE JOURNEY",
-        "STAY PRESENT",
-        "SLOW DOWN & BREATHE",
-        "ENJOY THE LITTLE THINGS",
-      ],
-      growth: [
-        "EXPAND YOUR MINDSET",
-        "LEVEL UP",
-        "GROW THROUGH IT",
-        "EVOLVE DAILY",
-        "BECOME WHO YOU'RE MEANT TO BE",
-        "TRANSFORM YOUR LIFE",
-      ],
-      success: [
-        "DREAM BIG",
-        "SUCCESS STARTS HERE",
-        "BUILD YOUR EMPIRE",
-        "RISE AND SHINE",
-        "MAKE YOUR MARK",
-        "CREATE YOUR LEGACY",
+
+      // Scattered balance - creates visual interest with scattered warm/cool tones
+      scattered: [
+        { type: "Full Body", tone: "warm" },
+        { type: "Place/Scenery", tone: "cool" },
+        { type: "Selfie", tone: "warm" },
+        { type: "Object", tone: "cool" },
+        { type: "Hobby/Others", tone: "cool" },
+        { type: "Full Body", tone: "warm" },
+        { type: "Selfie", tone: "warm" },
+        { type: "Place/Scenery", tone: "cool" },
+        { type: "Object", tone: "cool" },
       ],
     }
 
-    const allQuotes = Object.values(quotesByTheme).flat()
-    const selectedQuotes = allQuotes.sort(() => 0.5 - Math.random()).slice(0, 3)
+    // Select pattern based on brand vibe
+    let selectedPattern: typeof layoutPatterns.checkerboard
+    let visualRhythm: string
 
-    let quoteIndex = 0
-    const posts = postSequence.map((post, index) => {
-      if (post.type === "Quote") {
-        const quoteText = selectedQuotes[quoteIndex]
-        quoteIndex++
+    if (brandVibe.includes("elegant") || brandVibe.includes("minimalist") || brandVibe.includes("clean")) {
+      selectedPattern = layoutPatterns.checkerboard
+      visualRhythm = "checkerboard pattern with alternating personal and lifestyle moments"
+    } else if (brandVibe.includes("bold") || brandVibe.includes("colorful") || brandVibe.includes("vibrant")) {
+      selectedPattern = layoutPatterns.diagonal
+      visualRhythm = "diagonal flow creating dynamic visual movement"
+    } else if (brandVibe.includes("moody") || brandVibe.includes("dark") || brandVibe.includes("dramatic")) {
+      selectedPattern = layoutPatterns.scattered
+      visualRhythm = "scattered balance with strategic contrast"
+    } else {
+      selectedPattern = layoutPatterns.rowStory
+      visualRhythm = "row-by-row storytelling with cohesive narrative"
+    }
 
-        return {
-          id: `post-${index + 1}`,
-          title: quoteText,
-          description: `${post.purpose}. ${post.composition}. Research-driven design: ${researchInsights}`,
-          category: "Quote",
-          prompt: `minimalist ${colorPalette} background, elegant composition with 70% negative space, soft gradient or solid color, subtle texture, professional editorial quality, ${brandVibe} aesthetic, clean and sophisticated, high-end design, breathing room around center, trending Instagram aesthetic 2025`,
-          textOverlay: {
-            text: quoteText,
-            position: "center" as const,
-            font: brandVibe.includes("elegant") || brandVibe.includes("luxury") ? "Playfair Display" : "Montserrat",
-            color: colorPalette.includes("dark") ? "white" : "black",
-          },
-          purpose: post.purpose,
-          composition: post.composition,
-        }
+    const postTypeMapping = {
+      Object: "Object",
+      "Place/Scenery": "Lifestyle",
+      "Hobby/Others": "Lifestyle",
+      "Full Body": "Full Body",
+      Selfie: "Close-Up",
+    }
+
+    const postSequence = selectedPattern.map((item, index) => {
+      const mappedType = postTypeMapping[item.type as keyof typeof postTypeMapping]
+
+      // Define purpose and composition based on post type
+      const postDetails = {
+        Object: {
+          purpose: "Brand aesthetic moment - styled flatlay or product shot",
+          composition: "Overhead or angled shot, elegant arrangement, brand-aligned objects",
+        },
+        Lifestyle:
+          item.type === "Place/Scenery"
+            ? {
+                purpose: "Environmental storytelling - show your world and spaces",
+                composition: "Location-based shot, architectural or natural elements, atmospheric",
+              }
+            : {
+                purpose: "Authentic moment - hobbies, interests, or behind-the-scenes",
+                composition: "Candid or activity-based, show personality and interests",
+              },
+        "Full Body": {
+          purpose: "Complete style showcase - fashion meets personality",
+          composition: "Full outfit visible, confident posture, environmental context",
+        },
+        "Close-Up": {
+          purpose:
+            item.tone === "warm"
+              ? "Personal connection - face and expression focus"
+              : "Detail shot - intimate and engaging",
+          composition: "Face focus, emotional connection, direct or thoughtful gaze",
+        },
+        "Half Body": {
+          purpose: "Professional yet approachable - the sweet spot",
+          composition: "Upper body focus, show personality through styling and expression",
+        },
       }
 
+      return {
+        type: mappedType,
+        tone: item.tone,
+        purpose: postDetails[mappedType as keyof typeof postDetails]?.purpose || "Engaging content",
+        composition: postDetails[mappedType as keyof typeof postDetails]?.composition || "Balanced composition",
+      }
+    })
+
+    const posts = postSequence.map((post, index) => {
       if (post.type === "Object") {
         return {
           id: `post-${index + 1}`,
-          title: "Styled Flatlay",
+          title: "Styled Moment",
           description: `${post.purpose}. ${post.composition}. Inspired by trending ${businessType} aesthetics`,
           category: "Object",
-          prompt: `styled flatlay photography, ${colorPalette}, elegant product arrangement, overhead shot, soft natural lighting, professional editorial quality, ${brandVibe} aesthetic, brand-aligned objects (flowers, coffee, notebook, jewelry), shallow depth of field, film grain, high-end commercial photography, minimalist composition, trending Instagram aesthetic 2025`,
+          prompt: `styled flatlay photography, ${colorPalette}, elegant product arrangement, overhead shot, soft natural lighting, professional editorial quality, ${brandVibe} aesthetic, brand-aligned objects (flowers, coffee, notebook, jewelry, books, workspace items), shallow depth of field, film grain, high-end commercial photography, minimalist composition, trending Instagram aesthetic 2025`,
           textOverlay: undefined,
           purpose: post.purpose,
           composition: post.composition,
@@ -248,7 +253,7 @@ const generateCompleteFeedTool = tool({
 
       return {
         id: `post-${index + 1}`,
-        title: `${post.type} Portrait`,
+        title: `${post.type} ${post.type === "Lifestyle" ? "Moment" : "Portrait"}`,
         description: categoryDescriptions[post.type as keyof typeof categoryDescriptions],
         category: post.type,
         prompt: `A confident ${businessType} professional with styled appearance, ${colorPalette} color palette, ${brandVibe} aesthetic, ${lensSpecs[post.type as keyof typeof lensSpecs]}, ${lightingStyle}, natural skin texture with film grain, timeless elegance, high-end editorial photography, authentic professional presence, ${post.composition}, trending Instagram aesthetic 2025`,

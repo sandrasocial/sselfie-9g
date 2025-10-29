@@ -8,7 +8,7 @@ const sql = neon(process.env.DATABASE_URL!)
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
     const {
       data: { user: authUser },
     } = await supabase.auth.getUser()
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
     const {
       data: { user: authUser },
     } = await supabase.auth.getUser()
