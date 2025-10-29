@@ -45,6 +45,11 @@ export default function FeedPostCard({ post, feedId, onGenerated }: FeedPostCard
   const galleryImages = galleryData?.images || []
 
   useEffect(() => {
+    console.log("[v0] Caption prop changed, updating local state:", post.caption)
+    setCaption(post.caption)
+  }, [post.caption])
+
+  useEffect(() => {
     console.log("[v0] FeedPostCard polling useEffect triggered", { predictionId, postId, isGenerated })
 
     if (!predictionId || !postId || isGenerated) {

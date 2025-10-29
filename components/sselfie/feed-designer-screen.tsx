@@ -589,14 +589,14 @@ export default function FeedDesignerScreen() {
         })
 
         console.log(
-          "[v0] [FEED DEBUG] Highlights from database:",
-          data.highlights.map((h: any) => ({
-            id: h.id,
-            title: h.title,
-            image_url: h.image_url,
-            generation_status: h.generation_status,
+          "[v0] [FEED DEBUG] Posts with captions from database:",
+          data.posts.map((p: any) => ({
+            id: p.id,
+            position: p.position,
+            caption: p.caption?.substring(0, 50) + "...",
           })),
         )
+        // </CHANGE>
 
         const strategy = {
           brandVibe: data.feed.brand_vibe,
@@ -629,21 +629,19 @@ export default function FeedDesignerScreen() {
         setProfile((prev) => {
           const updatedProfile = { ...prev }
 
-          // Update profile image if it exists in feed
           if (data.feed.profile_image_url) {
             console.log("[v0] [FEED DEBUG] Loading saved profile image:", data.feed.profile_image_url)
             updatedProfile.profileImage = data.feed.profile_image_url
             setIsProfileGenerated(true)
           }
 
-          // Update bio if it exists in feed
           if (data.bio) {
             updatedProfile.bio = data.bio.bio_text
           }
 
           if (data.highlights.length > 0) {
             const mappedHighlights = data.highlights.map((h: any) => ({
-              id: h.id, // Preserve database ID
+              id: h.id,
               title: h.title,
               coverUrl: h.image_url || "/placeholder.svg?height=64&width=64",
               description: h.prompt,
@@ -659,7 +657,6 @@ export default function FeedDesignerScreen() {
             )
             updatedProfile.highlights = mappedHighlights
           }
-          // </CHANGE>
 
           return updatedProfile
         })
@@ -672,13 +669,25 @@ export default function FeedDesignerScreen() {
           description: p.prompt || "",
           prompt: p.prompt || "",
           category: p.post_type || "Portrait",
-          caption: p.caption,
+          caption: p.caption || "", // Ensure caption is always included
           hashtags: p.hashtags,
           textOverlay: p.text_overlay_style,
           position: p.position,
         }))
 
-        setFeedPosts(postsWithConcepts)
+        console.log(
+          "[v0] [FEED DEBUG] Setting feed posts with captions:",
+          postsWithConcepts.map((p) => ({
+            id: p.id,
+            position: p.position,
+            caption: p.caption?.substring(0, 50) + "...",
+          })),
+        )
+
+        // Force complete state replacement
+        setFeedPosts([...postsWithConcepts])
+        // </CHANGE>
+
         console.log("[v0] ✓ Feed loaded with", postsWithConcepts.length, "concept cards")
       } else {
         console.log("[v0] No existing feed found")

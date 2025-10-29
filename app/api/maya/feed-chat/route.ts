@@ -135,7 +135,34 @@ const generateCompleteFeedTool = tool({
 - Varies in style: some storytelling, some educational, some inspirational, some behind-the-scenes
 - Post 1-3: Focus on introduction and brand story
 - Post 4-6: Share expertise and value
-- Post 7-9: Build community and engagement`),
+- Post 7-9: Build community and engagement
+
+**CRITICAL WRITING STYLE:**
+- Write in SIMPLE, EVERYDAY LANGUAGE - like you're texting a friend
+- NEVER use em dashes (—) - use periods or commas instead
+- Use short, punchy sentences that feel natural
+- Sound like a real person, NOT like AI wrote it
+- Avoid fancy words - use simple, conversational language
+- Be authentic and relatable, not polished or formal
+- Write how people actually talk on Instagram
+
+**FORMATTING REQUIREMENTS:**
+- Use double line breaks (\\n\\n) between paragraphs for readability
+- Include 2-3 strategic emojis throughout (not just at the end)
+- Place emojis at natural breaks to enhance meaning, not decorate
+- Keep paragraphs short (2-3 sentences max per paragraph)
+- End with hashtags on a new line
+
+**EXAMPLE STRUCTURE:**
+[Opening hook with emoji] 💫
+
+[First paragraph - 2-3 short sentences]
+
+[Second paragraph with emoji] ✨ [Rest of paragraph]
+
+[Final paragraph with CTA]
+
+[Hashtags on new line]`),
             }),
           )
           .length(9),
@@ -158,8 +185,18 @@ For each post, provide:
 - Type and tone for visual balance
 - Specific purpose in the feed story
 - Unique composition and styling direction
-- **CRITICAL: Completely unique caption (150-200 words) that:**
-  * Has a SPECIFIC hook related to THIS exact post's visual and purpose
+- **CRITICAL: Completely unique caption (150-200 words) with PROPER FORMATTING:**
+  * Write in SIMPLE, EVERYDAY LANGUAGE - like texting a friend
+  * NEVER use em dashes (—) - use periods or commas instead
+  * Use short, punchy sentences that feel natural
+  * Sound like a real person, NOT like AI wrote it
+  * Avoid fancy or formal words - keep it simple and relatable
+  * Be authentic and genuine, not polished or corporate
+  * Write how people actually talk on Instagram
+  * Use double line breaks (\\n\\n) between paragraphs
+  * Include 2-3 strategic emojis placed naturally throughout the caption
+  * Keep paragraphs short and scannable (2-3 sentences max)
+  * Each caption MUST have a SPECIFIC hook related to THIS exact post's visual and purpose
   * Tells a DIFFERENT story or shares DIFFERENT value than other posts
   * Varies in style and tone across the feed (storytelling, educational, inspirational, BTS)
   * Feels authentic and conversational, NOT templated
@@ -563,7 +600,7 @@ const rewriteCaptionTool = tool({
     "Rewrite a specific post's caption based on user instructions (make it longer, shorter, change topic, different tone, etc.)",
   inputSchema: z.object({
     feedId: z.string().describe("The feed layout ID"),
-    postId: z.string().describe("The specific post ID to update"),
+    postNumber: z.number().describe("The post number (1-9) as the user sees it in the grid"),
     instructions: z
       .string()
       .describe(
@@ -572,9 +609,13 @@ const rewriteCaptionTool = tool({
     currentCaption: z.string().describe("The current caption text"),
     brandVibe: z.string().describe("The brand's aesthetic vibe for consistency"),
   }),
-  execute: async ({ feedId, postId, instructions, currentCaption, brandVibe }) => {
+  execute: async ({ feedId, postNumber, instructions, currentCaption, brandVibe }) => {
     console.log("[v0] [SERVER] === REWRITING CAPTION ===")
-    console.log("[v0] [SERVER] Post ID:", postId, "Instructions:", instructions)
+    console.log("[v0] [SERVER] Feed ID:", feedId)
+    const position = postNumber - 1
+    console.log("[v0] [SERVER] Post Number:", postNumber, "→ Position:", position)
+    console.log("[v0] [SERVER] Instructions:", instructions)
+    console.log("[v0] [SERVER] Current caption preview:", currentCaption.substring(0, 100) + "...")
 
     try {
       const { object: rewrittenCaption } = await generateObject({
@@ -601,29 +642,88 @@ Create a new caption that:
 4. Has a clear hook and call-to-action
 5. Is optimized for Instagram engagement
 
+**CRITICAL WRITING STYLE:**
+- Write in SIMPLE, EVERYDAY LANGUAGE - like texting a friend
+- NEVER use em dashes (—) - use periods or commas instead
+- Use short, punchy sentences that feel natural
+- Sound like a real person, NOT like AI wrote it
+- Avoid fancy words - use simple, conversational language
+- Be authentic and relatable, not polished or formal
+- Write how people actually talk on Instagram
+
+**FORMATTING REQUIREMENTS:**
+- Use double line breaks (\\n\\n) between paragraphs for readability
+- Include 2-3 strategic emojis throughout (not just at the end)
+- Place emojis at natural breaks to enhance meaning
+- Keep paragraphs short (2-3 sentences max per paragraph)
+- End with hashtags on a new line
+
 Be creative and authentic - no generic templates.`,
       })
+
+      console.log("[v0] [SERVER] ✓ AI generated new caption:", rewrittenCaption.caption.substring(0, 100) + "...")
 
       const sql = neon(process.env.DATABASE_URL!)
       const user = await getCurrentNeonUser()
 
       if (!user) {
+        console.error("[v0] [SERVER] ❌ No user found")
         return "Error: User not found"
       }
 
-      // Update caption in database
-      await sql`
+      console.log("[v0] [SERVER] User ID:", user.id)
+
+      const existingPost = await sql`
+        SELECT id, caption, user_id, feed_layout_id, position
+        FROM feed_posts
+        WHERE feed_layout_id = ${feedId}
+        AND position = ${position}
+        AND user_id = ${user.id}
+      `
+
+      console.log("[v0] [SERVER] Existing post query result:", existingPost.length, "rows")
+      if (existingPost.length > 0) {
+        console.log("[v0] [SERVER] Found post:", {
+          id: existingPost[0].id,
+          position: existingPost[0].position,
+          user_id: existingPost[0].user_id,
+          feed_layout_id: existingPost[0].feed_layout_id,
+          caption_preview: existingPost[0].caption.substring(0, 50) + "...",
+        })
+      } else {
+        console.error("[v0] [SERVER] ❌ Post not found at position:", position, "in feed:", feedId)
+        return `Error: Post ${postNumber} not found in the current feed.`
+      }
+
+      const postId = existingPost[0].id
+
+      console.log("[v0] [SERVER] Attempting to update caption for post ID:", postId)
+      const updateResult = await sql`
         UPDATE feed_posts
         SET caption = ${rewrittenCaption.caption}
         WHERE id = ${postId}
         AND feed_layout_id = ${feedId}
         AND user_id = ${user.id}
+        RETURNING id, caption, position
       `
 
-      console.log("[v0] [SERVER] ✓ Caption rewritten and saved")
-      return `Perfect! I've rewritten the caption. Here's the new version:\n\n"${rewrittenCaption.caption}"\n\nThe caption has been updated in your feed preview.`
+      console.log("[v0] [SERVER] Update result:", updateResult.length, "rows affected")
+      if (updateResult.length > 0) {
+        console.log("[v0] [SERVER] ✓ Caption updated successfully")
+        console.log("[v0] [SERVER] Updated post position:", updateResult[0].position)
+        console.log("[v0] [SERVER] New caption preview:", updateResult[0].caption.substring(0, 100) + "...")
+      } else {
+        console.error("[v0] [SERVER] ❌ No rows updated")
+        return "Error: Failed to update caption. Please try again."
+      }
+
+      return `Perfect! I've rewritten the caption for post ${postNumber}. Here's the new version:\n\n"${rewrittenCaption.caption}"\n\nThe caption has been updated in your feed preview.`
     } catch (error) {
-      console.error("[v0] [SERVER] Error rewriting caption:", error)
+      console.error("[v0] [SERVER] ❌ Error rewriting caption:", error)
+      if (error instanceof Error) {
+        console.error("[v0] [SERVER] Error message:", error.message)
+        console.error("[v0] [SERVER] Error stack:", error.stack)
+      }
       return "Error rewriting caption. Please try again."
     }
   },
