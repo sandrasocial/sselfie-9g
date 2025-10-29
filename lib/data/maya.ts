@@ -13,6 +13,7 @@ export interface MayaChat {
   last_activity: Date
   message_count?: number
   first_message?: string // Updated to include first_message
+  chat_type?: string // Updated to include chat_type
 }
 
 export interface MayaChatMessage {
@@ -59,12 +60,32 @@ export interface UserPersonalBrand {
   completed_at: Date | null
 }
 
+// Load a specific chat by ID
+export async function loadChatById(chatId: number, userId: string): Promise<MayaChat | null> {
+  const chat = await sql`
+    SELECT * FROM maya_chats
+    WHERE id = ${chatId} AND user_id = ${userId}
+    LIMIT 1
+  `
+
+  if (chat.length === 0) return null
+
+  // Update last_activity when loading a chat
+  await sql`
+    UPDATE maya_chats
+    SET last_activity = NOW()
+    WHERE id = ${chatId}
+  `
+
+  return chat[0] as MayaChat
+}
+
 // Get or create active chat for user
-export async function getOrCreateActiveChat(userId: string): Promise<MayaChat> {
-  // Try to get the most recent active chat
+export async function getOrCreateActiveChat(userId: string, chatType = "maya"): Promise<MayaChat> {
+  // Try to get the most recent active chat of the specified type
   const existingChats = await sql`
     SELECT * FROM maya_chats
-    WHERE user_id = ${userId}
+    WHERE user_id = ${userId} AND chat_type = ${chatType}
     ORDER BY last_activity DESC
     LIMIT 1
   `
@@ -73,10 +94,10 @@ export async function getOrCreateActiveChat(userId: string): Promise<MayaChat> {
     return existingChats[0] as MayaChat
   }
 
-  // Create new chat
+  // Create new chat with the specified type
   const newChat = await sql`
-    INSERT INTO maya_chats (user_id, chat_title, chat_category, last_activity)
-    VALUES (${userId}, 'New Chat', 'general', NOW())
+    INSERT INTO maya_chats (user_id, chat_title, chat_category, chat_type, last_activity)
+    VALUES (${userId}, 'New Chat', 'general', ${chatType}, NOW())
     RETURNING *
   `
 
@@ -299,54 +320,53 @@ export async function linkPersonalMemoryToBrand(userId: string, brandId: number)
 }
 
 // Get all user chats for history browsing
-export async function getUserChats(userId: string, limit = 20): Promise<MayaChat[]> {
-  const chats = await sql`
-    SELECT 
-      mc.*,
-      COUNT(mcm.id) as message_count,
-      (
-        SELECT content 
-        FROM maya_chat_messages 
-        WHERE chat_id = mc.id AND role = 'user'
-        ORDER BY created_at ASC 
-        LIMIT 1
-      ) as first_message
-    FROM maya_chats mc
-    LEFT JOIN maya_chat_messages mcm ON mcm.chat_id = mc.id
-    WHERE mc.user_id = ${userId}
-    GROUP BY mc.id
-    ORDER BY mc.last_activity DESC
-    LIMIT ${limit}
-  `
+export async function getUserChats(userId: string, chatType?: string, limit = 20): Promise<MayaChat[]> {
+  const chats = chatType
+    ? await sql`
+        SELECT 
+          mc.*,
+          COUNT(mcm.id) as message_count,
+          (
+            SELECT content 
+            FROM maya_chat_messages 
+            WHERE chat_id = mc.id AND role = 'user'
+            ORDER BY created_at ASC 
+            LIMIT 1
+          ) as first_message
+        FROM maya_chats mc
+        LEFT JOIN maya_chat_messages mcm ON mcm.chat_id = mc.id
+        WHERE mc.user_id = ${userId} AND mc.chat_type = ${chatType}
+        GROUP BY mc.id
+        ORDER BY mc.last_activity DESC
+        LIMIT ${limit}
+      `
+    : await sql`
+        SELECT 
+          mc.*,
+          COUNT(mcm.id) as message_count,
+          (
+            SELECT content 
+            FROM maya_chat_messages 
+            WHERE chat_id = mc.id AND role = 'user'
+            ORDER BY created_at ASC 
+            LIMIT 1
+          ) as first_message
+        FROM maya_chats mc
+        LEFT JOIN maya_chat_messages mcm ON mcm.chat_id = mc.id
+        WHERE mc.user_id = ${userId}
+        GROUP BY mc.id
+        ORDER BY mc.last_activity DESC
+        LIMIT ${limit}
+      `
 
   return chats as MayaChat[]
 }
 
-// Load a specific chat by ID
-export async function loadChatById(chatId: number, userId: string): Promise<MayaChat | null> {
-  const chat = await sql`
-    SELECT * FROM maya_chats
-    WHERE id = ${chatId} AND user_id = ${userId}
-    LIMIT 1
-  `
-
-  if (chat.length === 0) return null
-
-  // Update last_activity when loading a chat
-  await sql`
-    UPDATE maya_chats
-    SET last_activity = NOW()
-    WHERE id = ${chatId}
-  `
-
-  return chat[0] as MayaChat
-}
-
 // Create a new chat (not just get or create)
-export async function createNewChat(userId: string, title?: string): Promise<MayaChat> {
+export async function createNewChat(userId: string, chatType = "maya", title?: string): Promise<MayaChat> {
   const newChat = await sql`
-    INSERT INTO maya_chats (user_id, chat_title, chat_category, last_activity)
-    VALUES (${userId}, ${title || "New Chat"}, 'general', NOW())
+    INSERT INTO maya_chats (user_id, chat_title, chat_category, chat_type, last_activity)
+    VALUES (${userId}, ${title || "New Chat"}, 'general', ${chatType}, NOW())
     RETURNING *
   `
 

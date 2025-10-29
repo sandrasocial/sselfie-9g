@@ -7,7 +7,6 @@ export async function GET(request: NextRequest) {
   try {
     console.log("[v0] Fetching chat history...")
 
-    // Get authenticated user from Supabase
     const supabase = await createServerClient()
     const {
       data: { user },
@@ -30,9 +29,11 @@ export async function GET(request: NextRequest) {
     const neonUserId = neonUser.id.toString()
     console.log("[v0] Neon user ID:", neonUserId)
 
-    // Get user's chat history
-    const chats = await getUserChats(neonUserId)
-    console.log("[v0] Found chats:", chats.length)
+    const { searchParams } = new URL(request.url)
+    const chatType = searchParams.get("chatType") || undefined
+
+    const chats = await getUserChats(neonUserId, chatType)
+    console.log("[v0] Found chats:", chats.length, chatType ? `(filtered by type: ${chatType})` : "")
 
     return NextResponse.json({ chats })
   } catch (error) {

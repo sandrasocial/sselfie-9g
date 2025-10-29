@@ -5,12 +5,12 @@ import { Button } from "@/components/ui/button"
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport } from "ai"
 import { Textarea } from "@/components/ui/textarea"
-import { Progress } from "@/components/ui/progress"
-import { Sparkles, Download } from "lucide-react"
+import { Sparkles, Download, Plus, History } from "lucide-react"
 
 import FeedPostCard from "./feed-post-card"
 import BrandProfileWizard from "./brand-profile-wizard"
 import StoryHighlightCard from "./story-highlight-card"
+import MayaChatHistory from "./maya-chat-history"
 
 interface FeedPost {
   id: string | number
@@ -36,7 +36,7 @@ interface InstagramProfile {
   name: string
   handle: string
   bio: string
-  highlights: Array<{ title: string; coverUrl: string; description: string }>
+  highlights: Array<{ title: string; coverUrl: string; description: string; type: "image" | "color" }>
 }
 
 export default function FeedDesignerScreen() {
@@ -50,8 +50,6 @@ export default function FeedDesignerScreen() {
     bio: "Loading your brand story...",
     highlights: [],
   })
-  const [isGenerating, setIsGenerating] = useState(false)
-  const [generationProgress, setGenerationProgress] = useState(0)
   const [feedStrategy, setFeedStrategy] = useState<any>(null)
   const [mobileView, setMobileView] = useState<"chat" | "preview">("chat")
   const [feedUrl, setFeedUrl] = useState<string | null>(null)
@@ -62,14 +60,23 @@ export default function FeedDesignerScreen() {
   const [showBrandWizard, setShowBrandWizard] = useState(false)
   const [brandCompleted, setBrandCompleted] = useState(false)
   const [editingHighlights, setEditingHighlights] = useState(false)
-  const { status, messages, sendMessage } = useChat({
+  const [chatId, setChatId] = useState<number | null>(null)
+  const [isLoadingChat, setIsLoadingChat] = useState(true)
+  const [showHistory, setShowHistory] = useState(false)
+  const savedMessageIds = useRef(new Set<string>())
+
+  const { status, messages, sendMessage, setMessages } = useChat({
     transport: new DefaultChatTransport({ api: "/api/maya/feed-chat" }),
     initialMessages: [],
+    body: {
+      chatId: chatId,
+    },
     onError: (error) => {
       console.error("[v0] Feed chat error:", error)
       setIsDesigning(false)
     },
   })
+
   const isTyping = status === "submitted" || status === "streaming"
   const [inputValue, setInputValue] = useState("")
 
@@ -201,6 +208,7 @@ export default function FeedDesignerScreen() {
             title: h.title,
             description: h.description,
             coverUrl: h.cover_url,
+            type: h.type || "image",
           })),
           posts: data.posts.map((p: any) => ({
             id: p.id,
@@ -229,6 +237,7 @@ export default function FeedDesignerScreen() {
             title: h.title,
             coverUrl: h.cover_url || "/placeholder.svg?height=64&width=64",
             description: h.description,
+            type: h.type || "image",
           }))
           setProfile((prev) => ({
             ...prev,
@@ -257,106 +266,6 @@ export default function FeedDesignerScreen() {
       }
     } catch (error) {
       console.error("[v0] Error loading latest feed:", error)
-    }
-  }
-
-  const generateCompleteFeed = async () => {
-    if (!feedStrategy) {
-      setGenerationError("No feed strategy available. Please chat with Maya first.")
-      return
-    }
-
-    if (!hasTrainedModel) {
-      setGenerationError(
-        "You need a trained model to generate images. Please complete your training in the Studio first.",
-      )
-      return
-    }
-
-    setIsGenerating(true)
-    setGenerationProgress(0)
-    setGenerationError(null)
-
-    try {
-      const feedId = feedUrl?.split("/").pop()
-      if (!feedId) {
-        throw new Error("Feed ID not found")
-      }
-
-      const response = await fetch(`/api/feed/${feedId}/generate-images`, {
-        method: "POST",
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || "Failed to start image generation")
-      }
-
-      const { predictions } = await response.json()
-      console.log("[v0] Image generation started:", predictions)
-
-      await pollGenerationProgress(feedId, predictions)
-    } catch (error: any) {
-      console.error("[v0] Error generating feed:", error)
-      setGenerationError(error.message || "Failed to generate images. Please try again.")
-    } finally {
-      setIsGenerating(false)
-    }
-  }
-
-  const pollGenerationProgress = async (feedId: string, predictions: any[]) => {
-    const maxAttempts = 120 // 4 minutes max
-    let attempts = 0
-    const totalPosts = predictions.length
-
-    while (attempts < maxAttempts) {
-      try {
-        const response = await fetch(`/api/feed/${feedId}/progress`)
-        const data = await response.json()
-
-        const completedCount = data.posts.filter((p: any) => p.status === "completed").length
-        const failedCount = data.posts.filter((p: any) => p.status === "failed").length
-        const progress = (completedCount / totalPosts) * 100
-
-        setGenerationProgress(progress)
-
-        setFeedPosts((prev) =>
-          prev.map((post, index) => {
-            const apiPost = data.posts[index]
-            if (!apiPost) return post
-
-            return {
-              ...post,
-              imageUrl: apiPost.image_url || post.imageUrl,
-              status:
-                apiPost.status === "completed"
-                  ? "ready"
-                  : apiPost.status === "failed"
-                    ? "error"
-                    : apiPost.status === "generating"
-                      ? "generating"
-                      : post.status,
-            }
-          }),
-        )
-
-        if (completedCount + failedCount === totalPosts) {
-          if (failedCount > 0) {
-            setGenerationError(`${failedCount} image(s) failed to generate. You can retry them individually.`)
-          }
-          break
-        }
-
-        await new Promise((resolve) => setTimeout(resolve, 3000))
-        attempts++
-      } catch (error) {
-        console.error("[v0] Error polling progress:", error)
-        attempts++
-      }
-    }
-
-    if (attempts >= maxAttempts) {
-      setGenerationError("Image generation timed out. Some images may still be processing.")
     }
   }
 
@@ -469,14 +378,29 @@ export default function FeedDesignerScreen() {
   }
 
   const handleQuickPrompt = (prompt: string) => {
-    if (isTyping || isGenerating) return
+    if (isTyping) return
     sendMessage({ text: prompt })
   }
 
   const handleSendMessage = () => {
     const messageText = inputValue.trim()
-    if (messageText && !isTyping && !isGenerating) {
+    if (messageText && !isTyping) {
       console.log("[v0] Sending message:", messageText)
+
+      if (chatId) {
+        fetch("/api/maya/save-message", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chatId,
+            role: "user",
+            content: messageText,
+          }),
+        }).catch((error) => {
+          console.error("[v0] Error saving user message:", error)
+        })
+      }
+
       sendMessage({ text: messageText })
       setInputValue("")
     }
@@ -506,7 +430,6 @@ export default function FeedDesignerScreen() {
         throw new Error("Failed to generate post")
       }
 
-      // Poll for completion
       const pollInterval = setInterval(async () => {
         const progressResponse = await fetch(`/api/feed/${feedId}/progress`)
         const data = await progressResponse.json()
@@ -547,12 +470,12 @@ export default function FeedDesignerScreen() {
   const handleAddHighlight = () => {
     setProfile((prev) => ({
       ...prev,
-      highlights: [...prev.highlights, { title: "", coverUrl: "#D4C5B9", description: "" }],
+      highlights: [...prev.highlights, { title: "", coverUrl: "#D4C5B9", description: "", type: "image" }],
     }))
     setEditingHighlights(true)
   }
 
-  const handleUpdateHighlight = (
+  const handleUpdateHighlight = async (
     index: number,
     data: { title: string; coverUrl: string; description: string; type: "image" | "color" },
   ) => {
@@ -562,6 +485,27 @@ export default function FeedDesignerScreen() {
         i === index ? { title: data.title, coverUrl: data.coverUrl, description: data.description } : h,
       ),
     }))
+
+    if (feedUrl) {
+      const feedId = feedUrl.split("/").pop()
+      if (feedId) {
+        try {
+          const updatedHighlights = profile.highlights.map((h, i) =>
+            i === index
+              ? { title: data.title, coverUrl: data.coverUrl, description: data.description, type: data.type }
+              : h,
+          )
+
+          await fetch(`/api/feed/${feedId}/highlights`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ highlights: updatedHighlights }),
+          })
+        } catch (error) {
+          console.error("[v0] Error saving highlights:", error)
+        }
+      }
+    }
   }
 
   const handleRemoveHighlight = (index: number) => {
@@ -571,7 +515,103 @@ export default function FeedDesignerScreen() {
     }))
   }
 
-  if (isInitializing) {
+  useEffect(() => {
+    loadChat()
+  }, [])
+
+  useEffect(() => {
+    if (!chatId || isTyping) return
+
+    const lastMessage = messages[messages.length - 1]
+    if (!lastMessage || lastMessage.role !== "assistant") return
+    if (savedMessageIds.current.has(lastMessage.id)) return
+
+    const textParts = lastMessage.parts?.filter((p: any) => p.type === "text") || []
+    const textContent = textParts
+      .map((p: any) => p.text)
+      .join("\n")
+      .trim()
+
+    if (!textContent) return
+
+    savedMessageIds.current.add(lastMessage.id)
+
+    fetch("/api/maya/save-message", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chatId,
+        role: lastMessage.role,
+        content: textContent,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (!data.success) {
+          savedMessageIds.current.delete(lastMessage.id)
+        }
+      })
+      .catch(() => {
+        savedMessageIds.current.delete(lastMessage.id)
+      })
+  }, [messages, chatId, isTyping])
+
+  const loadChat = async (specificChatId?: number) => {
+    try {
+      setIsLoadingChat(true)
+      const url = specificChatId
+        ? `/api/maya/load-chat?chatId=${specificChatId}&chatType=feed-designer`
+        : "/api/maya/load-chat?chatType=feed-designer"
+      const response = await fetch(url)
+      if (response.ok) {
+        const data = await response.json()
+        setChatId(data.chatId)
+
+        if (data.messages && Array.isArray(data.messages) && data.messages.length > 0) {
+          setMessages(data.messages)
+        } else {
+          setMessages([])
+        }
+
+        setShowHistory(false)
+      }
+    } catch (error) {
+      console.error("[v0] Error loading chat:", error)
+    } finally {
+      setIsLoadingChat(false)
+    }
+  }
+
+  const handleNewChat = async () => {
+    try {
+      const response = await fetch("/api/maya/new-chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chatType: "feed-designer" }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setChatId(data.chatId)
+        savedMessageIds.current.clear()
+        setMessages([])
+        setShowHistory(false)
+      }
+    } catch (error) {
+      console.error("[v0] Error creating new chat:", error)
+    }
+  }
+
+  const handleSelectChat = (selectedChatId: number) => {
+    if (selectedChatId !== chatId) {
+      setChatId(selectedChatId)
+      setMessages([])
+      savedMessageIds.current.clear()
+      loadChat(selectedChatId)
+    }
+  }
+
+  if (isInitializing || isLoadingChat) {
     return (
       <div className="h-full flex items-center justify-center bg-stone-50">
         <div className="text-center">
@@ -623,20 +663,48 @@ export default function FeedDesignerScreen() {
           }`}
         >
           <div className="flex-shrink-0 border-b border-stone-200 p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-stone-200">
-                <img
-                  src="https://i.postimg.cc/fTtCnzZv/out-1-22.png"
-                  alt="Maya"
-                  className="w-full h-full object-cover"
-                />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-stone-200">
+                  <img
+                    src="https://i.postimg.cc/fTtCnzZv/out-1-22.png"
+                    alt="Maya"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-stone-950">Maya</h3>
+                  <p className="text-xs text-stone-500">Instagram Strategist</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-sm font-bold text-stone-950">Maya</h3>
-                <p className="text-xs text-stone-500">Instagram Strategist</p>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowHistory(!showHistory)}
+                  className={`p-2 rounded-lg transition-all ${
+                    showHistory ? "bg-stone-950 text-white" : "bg-stone-100 text-stone-600 hover:bg-stone-200"
+                  }`}
+                  title="Chat history"
+                >
+                  <History size={18} />
+                </button>
+
+                <button
+                  onClick={handleNewChat}
+                  className="p-2 bg-stone-100 text-stone-600 hover:bg-stone-200 rounded-lg transition-all"
+                  title="Start new chat"
+                >
+                  <Plus size={18} />
+                </button>
               </div>
             </div>
           </div>
+
+          {showHistory && (
+            <div className="flex-shrink-0 border-b border-stone-200 p-4 bg-stone-50">
+              <MayaChatHistory currentChatId={chatId} onSelectChat={handleSelectChat} onNewChat={handleNewChat} />
+            </div>
+          )}
 
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {messages.length === 0 && !isTyping && !brandCompleted && (
@@ -759,7 +827,7 @@ export default function FeedDesignerScreen() {
                     <button
                       key={index}
                       onClick={() => handleQuickPrompt(item.prompt)}
-                      disabled={isTyping || isGenerating}
+                      disabled={isTyping}
                       className="flex-shrink-0 px-3 py-1.5 bg-stone-50 border border-stone-200 rounded-lg hover:bg-stone-100 hover:border-stone-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <span className="text-xs font-medium text-stone-700 whitespace-nowrap">{item.prompt}</span>
@@ -776,7 +844,7 @@ export default function FeedDesignerScreen() {
                 placeholder="Describe your brand and feed vision..."
                 className="flex-1 resize-none bg-stone-50 border-stone-200"
                 rows={2}
-                disabled={isTyping || isGenerating}
+                disabled={isTyping}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault()
@@ -786,7 +854,7 @@ export default function FeedDesignerScreen() {
               />
               <Button
                 onClick={handleSendMessage}
-                disabled={isTyping || isGenerating || !inputValue?.trim()}
+                disabled={isTyping || !inputValue?.trim()}
                 className="bg-stone-950 hover:bg-stone-800 text-white self-end px-6"
               >
                 Send
@@ -843,6 +911,7 @@ export default function FeedDesignerScreen() {
                         onUpdate={handleUpdateHighlight}
                         onRemove={handleRemoveHighlight}
                         userColorTheme={brandData?.colorTheme}
+                        feedId={feedUrl?.split("/").pop()}
                       />
                     ))}
 
@@ -900,39 +969,6 @@ export default function FeedDesignerScreen() {
                   </div>
                 )}
 
-                {feedStrategy && feedPosts.some((p) => p.status === "concept") && (
-                  <div className="mb-6 bg-white rounded-xl p-6 border border-stone-200">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <h3 className="text-lg font-bold text-stone-950 mb-1">Your Feed Strategy is Ready</h3>
-                        <p className="text-sm text-stone-600">
-                          Generate all 9 posts at once, or click individual cards to generate them one by one
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      onClick={generateCompleteFeed}
-                      disabled={!hasTrainedModel || isGenerating}
-                      className="w-full bg-stone-950 hover:bg-stone-800 text-white"
-                    >
-                      <Sparkles className="w-4 h-4 mr-2" />
-                      Generate All 9 Posts
-                    </Button>
-                  </div>
-                )}
-
-                {isGenerating && (
-                  <div className="mb-6 bg-white rounded-xl p-4 border border-stone-200">
-                    <div className="flex items-center gap-3 mb-2">
-                      <span className="text-sm font-medium text-stone-950">
-                        Generating your feed... {Math.round(generationProgress)}%
-                      </span>
-                    </div>
-                    <Progress value={generationProgress} className="h-2" />
-                    <p className="text-xs text-stone-500 mt-2">This takes about 2-3 minutes for professional quality</p>
-                  </div>
-                )}
-
                 {isDesigning && feedPosts.every((p) => !p.title) && (
                   <div className="mb-6 bg-white rounded-xl p-6 border border-stone-200">
                     <div className="flex items-center gap-4">
@@ -966,7 +1002,6 @@ export default function FeedDesignerScreen() {
                   </div>
                 )}
 
-                {/* Update the grid rendering to use FeedPostCard component */}
                 <div className="grid grid-cols-3 gap-1 bg-white rounded-xl overflow-hidden border border-stone-200">
                   {feedPosts.map((post) => {
                     const feedId = feedUrl?.split("/").pop()

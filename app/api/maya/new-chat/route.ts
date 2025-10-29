@@ -19,7 +19,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    const newChat = await createNewChat(dbUser.id)
+    const body = await request.json().catch(() => ({}))
+    const chatType = body.chatType || "maya"
+
+    const newChat = await createNewChat(dbUser.id, chatType)
 
     return NextResponse.json({ chatId: newChat.id })
   } catch (error) {

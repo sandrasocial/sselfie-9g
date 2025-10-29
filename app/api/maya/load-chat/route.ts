@@ -27,12 +27,12 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const requestedChatId = searchParams.get("chatId")
+    const chatType = searchParams.get("chatType") || "maya"
 
-    console.log("[v0] 📋 Requested chat ID:", requestedChatId || "active chat")
+    console.log("[v0] 📋 Requested chat ID:", requestedChatId || "active chat", "Type:", chatType)
 
     let chat
     if (requestedChatId) {
-      // Load specific chat by ID
       chat = await loadChatById(Number.parseInt(requestedChatId), neonUser.id)
       if (!chat) {
         console.log("[v0] ❌ Chat not found:", requestedChatId)
@@ -40,12 +40,10 @@ export async function GET(request: NextRequest) {
       }
       console.log("[v0] ✅ Loaded specific chat:", chat.id)
     } else {
-      // Get or create active chat
-      chat = await getOrCreateActiveChat(neonUser.id)
-      console.log("[v0] ✅ Got/created active chat:", chat.id)
+      chat = await getOrCreateActiveChat(neonUser.id, chatType)
+      console.log("[v0] ✅ Got/created active chat:", chat.id, "Type:", chatType)
     }
 
-    // Get chat messages
     const messages = await getChatMessages(chat.id)
 
     console.log("[v0] 📨 Loading chat messages:", messages.length, "for chat ID:", chat.id)
@@ -67,7 +65,6 @@ export async function GET(request: NextRequest) {
         createdAt: msg.created_at,
       }
 
-      // If message has concept cards, include them as a tool part
       if (msg.concept_cards && Array.isArray(msg.concept_cards) && msg.concept_cards.length > 0) {
         console.log("[v0] Formatting message with concept cards:", msg.id, "Cards:", msg.concept_cards.length)
         return {
@@ -80,7 +77,7 @@ export async function GET(request: NextRequest) {
             {
               type: "tool-generateConcepts",
               toolCallId: `tool_${msg.id}`,
-              state: "ready", // Changed state from "output-available" to "ready" to match frontend expectations
+              state: "ready",
               input: {},
               output: {
                 state: "ready",
@@ -91,7 +88,6 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      // For messages without concept cards, still use parts array format
       return {
         ...baseMessage,
         parts: [

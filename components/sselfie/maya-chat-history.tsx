@@ -18,12 +18,15 @@ interface MayaChatHistoryProps {
   currentChatId: number | null
   onSelectChat: (chatId: number) => void
   onNewChat: () => void
+  chatType?: string
 }
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
-export default function MayaChatHistory({ currentChatId, onSelectChat, onNewChat }: MayaChatHistoryProps) {
-  const { data, error, isLoading } = useSWR<{ chats: MayaChat[] }>("/api/maya/chats", fetcher, {
+export default function MayaChatHistory({ currentChatId, onSelectChat, onNewChat, chatType }: MayaChatHistoryProps) {
+  const apiUrl = chatType ? `/api/maya/chats?chatType=${chatType}` : "/api/maya/chats"
+
+  const { data, error, isLoading } = useSWR<{ chats: MayaChat[] }>(apiUrl, fetcher, {
     refreshInterval: 30000,
   })
 

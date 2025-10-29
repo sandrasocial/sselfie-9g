@@ -3,7 +3,6 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Sparkles, Palette, Check, X } from "lucide-react"
 
 interface StoryHighlightCardProps {
   highlight: {
@@ -18,6 +17,7 @@ interface StoryHighlightCardProps {
   ) => void
   onRemove: (index: number) => void
   userColorTheme?: string
+  feedId?: string
 }
 
 export default function StoryHighlightCard({
@@ -26,8 +26,10 @@ export default function StoryHighlightCard({
   onUpdate,
   onRemove,
   userColorTheme,
+  feedId,
 }: StoryHighlightCardProps) {
   const [isEditing, setIsEditing] = useState(!highlight.title)
+  const [isViewingFullSize, setIsViewingFullSize] = useState(false)
   const [title, setTitle] = useState(highlight.title || "")
   const [description, setDescription] = useState(highlight.description || "")
   const [mode, setMode] = useState<"image" | "color">("color")
@@ -101,7 +103,6 @@ export default function StoryHighlightCard({
         throw new Error(data.error || "Failed to generate image")
       }
 
-      // Poll for completion
       const predictionId = data.predictionId
       const generationId = data.generationId
 
@@ -165,6 +166,48 @@ export default function StoryHighlightCard({
     }
   }
 
+  if (isViewingFullSize) {
+    const isColorHighlight = highlight.coverUrl.startsWith("#")
+
+    return (
+      <div
+        className="fixed inset-0 bg-background/95 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        onClick={() => setIsViewingFullSize(false)}
+      >
+        <div className="relative max-w-2xl w-full">
+          <button
+            onClick={() => setIsViewingFullSize(false)}
+            className="absolute -top-12 right-0 px-4 py-2 text-sm text-foreground hover:text-muted-foreground transition-colors"
+          >
+            Close
+          </button>
+
+          {isColorHighlight ? (
+            <div
+              className="w-full aspect-square rounded-2xl flex items-center justify-center"
+              style={{ backgroundColor: highlight.coverUrl }}
+            >
+              <span className="text-9xl font-bold text-primary-foreground drop-shadow-2xl">
+                {highlight.title.charAt(0).toUpperCase()}
+              </span>
+            </div>
+          ) : (
+            <img
+              src={highlight.coverUrl || "/placeholder.svg"}
+              alt={highlight.title}
+              className="w-full h-auto rounded-2xl shadow-2xl"
+            />
+          )}
+
+          <div className="mt-4 text-center">
+            <h3 className="text-xl font-bold text-foreground">{highlight.title}</h3>
+            {highlight.description && <p className="text-sm text-muted-foreground mt-2">{highlight.description}</p>}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   if (isEditing) {
     return (
       <>
@@ -173,8 +216,11 @@ export default function StoryHighlightCard({
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-bold text-foreground">Edit Highlight</h3>
-                <button onClick={handleCancel} className="p-1 hover:bg-muted rounded-full transition-colors">
-                  <X className="w-5 h-5 text-muted-foreground" />
+                <button
+                  onClick={handleCancel}
+                  className="px-3 py-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Cancel
                 </button>
               </div>
 
@@ -200,7 +246,6 @@ export default function StoryHighlightCard({
                   size="sm"
                   className="flex-1"
                 >
-                  <Palette className="w-4 h-4 mr-2" />
                   Color
                 </Button>
                 <Button
@@ -209,7 +254,6 @@ export default function StoryHighlightCard({
                   size="sm"
                   className="flex-1"
                 >
-                  <Sparkles className="w-4 h-4 mr-2" />
                   Image
                 </Button>
               </div>
@@ -267,7 +311,6 @@ export default function StoryHighlightCard({
                     onClick={handleSaveColor}
                     className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
                   >
-                    <Check className="w-4 h-4 mr-2" />
                     Save
                   </Button>
                 ) : (
@@ -276,7 +319,6 @@ export default function StoryHighlightCard({
                     disabled={isGenerating}
                     className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
                   >
-                    <Sparkles className="w-4 h-4 mr-2" />
                     {isGenerating ? "Generating..." : "Generate"}
                   </Button>
                 )}
@@ -292,29 +334,31 @@ export default function StoryHighlightCard({
                 className="w-full h-full rounded-full flex items-center justify-center"
                 style={{ backgroundColor: selectedColor }}
               >
-                {isGenerating ? (
-                  <div className="w-6 h-6 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <Sparkles className="w-6 h-6 text-primary-foreground/50" />
+                {isGenerating && (
+                  <div className="w-8 h-8 border-3 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
                 )}
               </div>
             </div>
           </div>
-          <span className="text-xs text-muted-foreground text-center">Editing...</span>
+          <span className="text-xs text-muted-foreground text-center">
+            {isGenerating ? "Generating..." : "Editing..."}
+          </span>
         </div>
       </>
     )
   }
 
-  // Display mode
   const isColorHighlight = highlight.coverUrl.startsWith("#")
 
   return (
-    <button
-      onClick={() => setIsEditing(true)}
-      className="flex flex-col items-center gap-2 flex-shrink-0 w-[80px] group"
-    >
-      <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 p-[2px]">
+    <div className="flex flex-col items-center gap-2 flex-shrink-0 w-[80px]">
+      <button
+        onClick={(e) => {
+          e.stopPropagation()
+          setIsViewingFullSize(true)
+        }}
+        className="w-16 h-16 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 p-[2px] group"
+      >
         <div className="w-full h-full rounded-full bg-card p-[2px]">
           {isColorHighlight ? (
             <div
@@ -333,10 +377,14 @@ export default function StoryHighlightCard({
             />
           )}
         </div>
-      </div>
-      <span className="text-xs text-muted-foreground text-center leading-tight max-w-[80px] truncate">
+      </button>
+
+      <button
+        onClick={() => setIsEditing(true)}
+        className="text-xs text-muted-foreground hover:text-foreground text-center leading-tight max-w-[80px] truncate transition-colors"
+      >
         {highlight.title}
-      </span>
-    </button>
+      </button>
+    </div>
   )
 }
