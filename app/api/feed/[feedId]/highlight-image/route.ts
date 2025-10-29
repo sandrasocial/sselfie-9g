@@ -31,9 +31,13 @@ export async function POST(request: Request, { params }: { params: { feedId: str
     await sql`
       UPDATE instagram_highlights
       SET image_url = ${imageUrl},
-          generation_status = 'completed',
-          cover_url = ${imageUrl}
+          generation_status = 'completed'
       WHERE id = ${highlightId}
+    `
+
+    await sql`
+      INSERT INTO ai_images (user_id, image_url, category, prompt, generation_status, is_favorite)
+      VALUES (${neonUser.id}, ${imageUrl}, 'highlight', 'Story highlight cover', 'completed', false)
     `
 
     console.log("[v0] Saved highlight image URL to database:", highlightId)

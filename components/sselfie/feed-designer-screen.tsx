@@ -1,11 +1,13 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport } from "ai"
 import { Textarea } from "@/components/ui/textarea"
-import { Plus, History, MessageCircle, X, Minimize2, RefreshCw } from "lucide-react"
+import { Plus, History, MessageCircle, X, Minimize2, RefreshCw, ImageIcon, Upload } from "lucide-react"
 
 import FeedPostCard from "./feed-post-card"
 import BrandProfileWizard from "./brand-profile-wizard"
@@ -13,6 +15,9 @@ import StoryHighlightCard from "./story-highlight-card"
 import MayaChatHistory from "./maya-chat-history"
 import FeedAnalyticsPanel from "./feed-analytics-panel"
 import HashtagStrategyPanel from "./hashtag-strategy-panel"
+import ImageGalleryModal from "./image-gallery-modal"
+import { Dialog, DialogContent } from "@/components/ui/dialog"
+import useSWR from "swr"
 
 interface FeedPost {
   id: string | number
@@ -40,6 +45,8 @@ interface InstagramProfile {
   bio: string
   highlights: Array<{ title: string; coverUrl: string; description: string; type: "image" | "color" }>
 }
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 export default function FeedDesignerScreen() {
   const [isInitializing, setIsInitializing] = useState(true)
@@ -95,6 +102,14 @@ export default function FeedDesignerScreen() {
   const [highlightPredictions, setHighlightPredictions] = useState<Map<number, string>>(new Map())
 
   const [showNewFeedModal, setShowNewFeedModal] = useState(false)
+
+  const [showProfileFullSize, setShowProfileFullSize] = useState(false)
+  const [showProfileGallery, setShowProfileGallery] = useState(false)
+  const [isReplacingProfile, setIsReplacingProfile] = useState(false)
+  const profileFileInputRef = useRef<HTMLInputElement>(null)
+
+  const { data: galleryData } = useSWR("/api/images", fetcher)
+  const galleryImages = galleryData?.images || []
 
   const handleGenerateProfileImage = async () => {
     if (!feedUrl) return
@@ -256,7 +271,9 @@ export default function FeedDesignerScreen() {
   useEffect(() => {
     const initializeComponent = async () => {
       try {
-        await Promise.all([loadBrandProfile(), checkTrainedModel(), loadLatestFeed()])
+        await loadBrandProfile()
+        await loadLatestFeed() // This will now override brand profile with feed data
+        await checkTrainedModel()
       } catch (error) {
         console.error("[v0] Error initializing component:", error)
       } finally {
@@ -443,11 +460,11 @@ export default function FeedDesignerScreen() {
         setBrandCompleted(true)
         setShowBrandWizard(false)
         setProfile({
-          profileImage: data.data.profileImage || "/placeholder.svg?height=80&width=80",
+          profileImage: "/placeholder.svg?height=80&width=80", // Default, will be overridden by feed
           name: data.data.name || "Your Brand",
           handle: `@${data.data.name?.toLowerCase().replace(/\s+/g, "") || "yourbrand"}`,
           bio: data.data.futureVision || data.data.currentSituation || "Building something amazing",
-          highlights: data.data.highlights || [],
+          highlights: [], // Will be overridden by feed highlights
         })
         setCurrentPrompts(generatePersonalizedPrompts(data.data))
       } else {
@@ -572,41 +589,41 @@ export default function FeedDesignerScreen() {
         setFeedStrategy(strategy)
         setFeedUrl(`/feed/${data.feed.id}`)
 
-        if (data.feed.profile_image_url) {
-          console.log("[v0] Loading saved profile image:", data.feed.profile_image_url)
-          setProfile((prev) => ({
-            ...prev,
-            profileImage: data.feed.profile_image_url,
-          }))
-          setIsProfileGenerated(true)
-        }
+        setProfile((prev) => {
+          const updatedProfile = { ...prev }
 
-        if (data.bio) {
-          setProfile((prev) => ({
-            ...prev,
-            bio: data.bio.bio_text,
-          }))
-        }
+          // Update profile image if it exists in feed
+          if (data.feed.profile_image_url) {
+            console.log("[v0] Loading saved profile image:", data.feed.profile_image_url)
+            updatedProfile.profileImage = data.feed.profile_image_url
+            setIsProfileGenerated(true)
+          }
 
-        if (data.highlights.length > 0) {
-          const mappedHighlights = data.highlights.map((h: any) => ({
-            title: h.title,
-            coverUrl: h.image_url || h.cover_url || "/placeholder.svg?height=64&width=64",
-            description: h.prompt, // This is the FLUX prompt Maya generated
-            type: h.icon_style || h.type || "image",
-          }))
-          console.log(
-            "[v0] Loaded highlights with image URLs:",
-            mappedHighlights.map((h) => ({ title: h.title, coverUrl: h.coverUrl })),
-          )
-          setProfile((prev) => ({
-            ...prev,
-            highlights: mappedHighlights,
-          }))
-        }
+          // Update bio if it exists in feed
+          if (data.bio) {
+            updatedProfile.bio = data.bio.bio_text
+          }
+
+          // Update highlights if they exist in feed
+          if (data.highlights.length > 0) {
+            const mappedHighlights = data.highlights.map((h: any) => ({
+              title: h.title,
+              coverUrl: h.image_url || "/placeholder.svg?height=64&width=64",
+              description: h.prompt,
+              type: h.icon_style || h.type || "image",
+            }))
+            console.log(
+              "[v0] Loaded highlights with image URLs:",
+              mappedHighlights.map((h) => ({ title: h.title, coverUrl: h.coverUrl })),
+            )
+            updatedProfile.highlights = mappedHighlights
+          }
+
+          return updatedProfile
+        })
 
         const postsWithConcepts = data.posts.map((p: any) => ({
-          id: p.id, // Use actual database ID
+          id: p.id,
           imageUrl: p.image_url,
           status: p.image_url ? ("ready" as const) : ("concept" as const),
           title: p.post_type || "Post",
@@ -1021,6 +1038,72 @@ export default function FeedDesignerScreen() {
     }, 1000)
   }
 
+  const handleUploadProfileImage = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    const feedId = feedUrl?.split("/").pop()
+    if (!feedId) return
+
+    setIsReplacingProfile(true)
+    setProfileError(null)
+
+    const formData = new FormData()
+    formData.append("image", file)
+
+    try {
+      const response = await fetch(`/api/feed/${feedId}/upload-profile-image`, {
+        method: "POST",
+        body: formData,
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to upload profile image")
+      }
+
+      const data = await response.json()
+      setProfile((prev) => ({ ...prev, profileImage: data.imageUrl }))
+      setIsProfileGenerated(true)
+    } catch (error) {
+      console.error("[v0] Error uploading profile image:", error)
+      setProfileError("Failed to upload profile image")
+    } finally {
+      setIsReplacingProfile(false)
+      if (profileFileInputRef.current) {
+        profileFileInputRef.current.value = "" // Clear the input
+      }
+    }
+  }
+
+  const handleReplaceProfileFromGallery = async (imageUrl: string) => {
+    const feedId = feedUrl?.split("/").pop()
+    if (!feedId) return
+
+    setIsReplacingProfile(true)
+    setShowProfileGallery(false)
+    setProfileError(null)
+
+    try {
+      const response = await fetch(`/api/feed/${feedId}/update-profile-image`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageUrl }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to update profile image")
+      }
+
+      setProfile((prev) => ({ ...prev, profileImage: imageUrl }))
+      setIsProfileGenerated(true)
+    } catch (error) {
+      console.error("[v0] Error replacing profile image:", error)
+      setProfileError("Failed to update profile image")
+    } finally {
+      setIsReplacingProfile(false)
+    }
+  }
+
   return (
     <div className="h-full flex flex-col bg-stone-50">
       {showBrandWizard && !brandCompleted && (
@@ -1147,21 +1230,48 @@ export default function FeedDesignerScreen() {
                         </div>
                       ) : (
                         <>
-                          <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-stone-200">
+                          <button
+                            onClick={() => setShowProfileFullSize(true)}
+                            className="w-24 h-24 rounded-full overflow-hidden border-2 border-stone-200"
+                          >
                             <img
                               src={profile.profileImage || "/placeholder.svg"}
                               alt={profile.name}
                               className="w-full h-full object-cover"
                             />
-                          </div>
+                          </button>
                           <div className="absolute inset-0 rounded-full bg-stone-950/0 group-hover:bg-stone-950/60 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
-                            <button
-                              onClick={handleGenerateProfileImage}
-                              className="p-3 bg-white/90 backdrop-blur-xl rounded-full hover:bg-white transition-all hover:scale-110"
-                              title="Regenerate Profile Image"
-                            >
-                              <RefreshCw size={16} className="text-stone-950" strokeWidth={2} />
-                            </button>
+                            <div className="flex items-center gap-1">
+                              {/* Replace from Gallery */}
+                              <button
+                                onClick={() => setShowProfileGallery(true)}
+                                disabled={isReplacingProfile}
+                                className="p-2 bg-white/90 backdrop-blur-xl rounded-full hover:bg-white transition-all hover:scale-110 disabled:opacity-50"
+                                title="Replace from Gallery"
+                              >
+                                <ImageIcon size={14} className="text-stone-950" strokeWidth={2} />
+                              </button>
+
+                              {/* Upload Own Image */}
+                              <button
+                                onClick={() => profileFileInputRef.current?.click()}
+                                disabled={isReplacingProfile}
+                                className="p-2 bg-white/90 backdrop-blur-xl rounded-full hover:bg-white transition-all hover:scale-110 disabled:opacity-50"
+                                title="Upload Image"
+                              >
+                                <Upload size={14} className="text-stone-950" strokeWidth={2} />
+                              </button>
+
+                              {/* Regenerate */}
+                              <button
+                                onClick={handleGenerateProfileImage}
+                                disabled={isReplacingProfile}
+                                className="p-2 bg-white/90 backdrop-blur-xl rounded-full hover:bg-white transition-all hover:scale-110 disabled:opacity-50"
+                                title="Regenerate Profile Image"
+                              >
+                                <RefreshCw size={14} className="text-stone-950" strokeWidth={2} />
+                              </button>
+                            </div>
                           </div>
                         </>
                       )}
@@ -1657,6 +1767,46 @@ export default function FeedDesignerScreen() {
             </>
           )}
         </div>
+      )}
+
+      <input
+        ref={profileFileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleUploadProfileImage}
+        className="hidden"
+      />
+
+      {showProfileGallery && (
+        <ImageGalleryModal
+          images={galleryImages}
+          onSelect={handleReplaceProfileFromGallery}
+          onClose={() => setShowProfileGallery(false)}
+        />
+      )}
+
+      {showProfileFullSize && (
+        <Dialog open={showProfileFullSize} onOpenChange={setShowProfileFullSize}>
+          <DialogContent className="max-w-2xl p-0 bg-transparent border-none">
+            <div className="relative">
+              <button
+                onClick={() => setShowProfileFullSize(false)}
+                className="absolute -top-12 right-0 px-4 py-2 text-sm text-white hover:text-stone-300 transition-colors"
+              >
+                Close
+              </button>
+              <img
+                src={profile.profileImage || "/placeholder.svg"}
+                alt={profile.name}
+                className="w-full h-auto rounded-2xl shadow-2xl"
+              />
+              <div className="mt-4 text-center">
+                <h3 className="text-xl font-bold text-white">{profile.name}</h3>
+                <p className="text-sm text-stone-300 mt-2">{profile.handle}</p>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   )

@@ -23,15 +23,26 @@ export async function POST(request: Request, { params }: { params: { feedId: str
 
     const { feedId } = params
     const body = await request.json()
-    const { profileImageUrl } = body
+    const imageUrl = body.profileImageUrl || body.imageUrl
+
+    if (!imageUrl) {
+      return NextResponse.json({ error: "Missing image URL" }, { status: 400 })
+    }
 
     await sql`
       UPDATE feed_layouts 
-      SET profile_image_url = ${profileImageUrl}
+      SET profile_image_url = ${imageUrl}
       WHERE id = ${feedId} AND user_id = ${neonUser.id}
     `
 
-    return NextResponse.json({ success: true })
+    await sql`
+      INSERT INTO ai_images (user_id, image_url, category, prompt, generation_status, is_favorite)
+      VALUES (${neonUser.id}, ${imageUrl}, 'profile', 'Profile image for feed', 'completed', false)
+    `
+
+    console.log("[v0] Saved profile image URL to database:", imageUrl)
+
+    return NextResponse.json({ success: true, imageUrl })
   } catch (error) {
     console.error("[v0] Error saving profile image:", error)
     return NextResponse.json({ error: "Failed to save profile image" }, { status: 500 })
