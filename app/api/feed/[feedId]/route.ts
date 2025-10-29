@@ -43,7 +43,7 @@ export async function GET(req: NextRequest, { params }: { params: { feedId: stri
       `
 
       const highlights = await sql`
-        SELECT * FROM highlight_covers
+        SELECT * FROM instagram_highlights
         WHERE feed_layout_id = ${feedLayout.id}
         ORDER BY created_at ASC
       `
@@ -84,7 +84,7 @@ export async function GET(req: NextRequest, { params }: { params: { feedId: stri
     `
 
     const highlights = await sql`
-      SELECT * FROM highlight_covers
+      SELECT * FROM instagram_highlights
       WHERE feed_layout_id = ${feedId}
       ORDER BY created_at ASC
     `

@@ -3,6 +3,8 @@ import { getCurrentNeonUser } from "@/lib/user-sync"
 import { neon } from "@neondatabase/serverless"
 import { getReplicateClient } from "@/lib/replicate-client"
 import { MAYA_QUALITY_PRESETS } from "@/lib/maya/quality-settings"
+import { generateObject } from "ai"
+import { z } from "zod"
 
 export async function POST(req: NextRequest, { params }: { params: { feedId: string } }) {
   try {
@@ -15,7 +17,9 @@ export async function POST(req: NextRequest, { params }: { params: { feedId: str
     const sql = neon(process.env.DATABASE_URL!)
 
     const [feedLayout] = await sql`
-      SELECT color_palette, brand_vibe, profile_image_url, profile_image_prompt FROM feed_layouts WHERE id = ${feedId}
+      SELECT color_palette, brand_vibe, business_type, profile_image_url, profile_image_prompt 
+      FROM feed_layouts 
+      WHERE id = ${feedId}
     `
 
     if (!feedLayout) {
@@ -39,13 +43,76 @@ export async function POST(req: NextRequest, { params }: { params: { feedId: str
       return Response.json({ error: "LoRA weights URL not found" }, { status: 400 })
     }
 
-    const basePrompt = feedLayout.profile_image_prompt
+    let basePrompt = feedLayout.profile_image_prompt
 
     if (!basePrompt) {
-      return Response.json(
-        { error: "No profile image prompt found. Please regenerate your feed strategy." },
-        { status: 400 },
-      )
+      console.log("[v0] No profile image prompt found, using Maya's styling intelligence...")
+
+      const userDataResult = await sql`
+        SELECT gender FROM users WHERE id = ${user.id} LIMIT 1
+      `
+
+      const userGender = userDataResult[0]?.gender || "person"
+
+      // Maya's AI-powered profile design with her fashion expertise
+      const { object: profileDesign } = await generateObject({
+        model: "anthropic/claude-sonnet-4",
+        schema: z.object({
+          styleDirection: z.string().describe("Maya's specific styling direction for this profile image"),
+          composition: z.string().describe("Maya's composition and framing expertise"),
+          lightingMood: z.string().describe("Maya's lighting style and mood direction"),
+          fashionDetails: z.string().describe("Maya's clothing and styling expertise"),
+        }),
+        prompt: `You are Maya, an expert fashion photographer and Instagram strategist with sophisticated taste.
+
+Create a high-end editorial profile picture concept for a ${feedLayout.business_type || "professional"} with this brand identity:
+- Brand Vibe: ${feedLayout.brand_vibe || "professional and approachable"}
+- Color Palette: ${feedLayout.color_palette || "neutral tones"}
+- Gender: ${userGender}
+
+Channel your expertise in:
+1. **Scandinavian Minimalism** - Clean compositions, neutral palettes, natural light, effortless elegance
+2. **Dark Moody Aesthetics** - Dramatic lighting, rich colors, cinematic atmosphere, emotional depth
+3. **Editorial Fashion Photography** - Sophisticated styling, impeccable tailoring, authentic presence
+4. **Personal Brand Storytelling** - Confidence, approachability, genuine professional energy
+
+The profile image should:
+- Be a close-up portrait (face focus, circular crop friendly)
+- Convey confidence, approachability, and authentic professional presence
+- Match the ${feedLayout.brand_vibe || "professional"} aesthetic perfectly
+- Use ${feedLayout.color_palette || "neutral tones"} in clothing and background
+- Feel like high-end editorial photography, not a generic headshot
+
+Provide your expert direction for:
+- **Style Direction**: Hair, makeup/grooming, expression, energy (be specific about the look)
+- **Composition**: Framing, angle, focus, depth (your photographer's eye)
+- **Lighting Mood**: Natural/dramatic, soft/bold, warm/cool (create atmosphere)
+- **Fashion Details**: Clothing style, colors, accessories, fabric quality (your fashion expertise)
+
+Be sophisticated and specific - this should feel like a Vogue editorial, not a LinkedIn headshot.`,
+      })
+
+      console.log("[v0] ✓ Maya's profile design created:", profileDesign.styleDirection.substring(0, 100))
+
+      // Maya's gender-aware styling expertise
+      const genderStyling =
+        userGender === "woman" || userGender === "female"
+          ? "elegant flowing hair styled naturally with effortless sophistication, refined makeup with natural glow emphasizing bone structure, feminine grace and quiet confidence, authentic presence that feels both powerful and approachable"
+          : userGender === "man" || userGender === "male"
+            ? "styled hair with clean lines and natural texture, masculine confidence and strong presence, refined grooming with attention to detail, professional demeanor that conveys both authority and warmth"
+            : "styled appearance with confident presence and authentic energy, professional polish with natural authenticity, genuine connection that transcends traditional styling"
+
+      // Maya's complete FLUX prompt with her signature sophistication
+      basePrompt = `${model.trigger_word}, confident ${feedLayout.business_type || "professional"} with ${genderStyling}, ${profileDesign.fashionDetails}, ${profileDesign.styleDirection}, shot on 85mm lens f/1.4 for that creamy editorial bokeh, shallow depth of field with face as the hero, ${profileDesign.lightingMood}, natural skin texture with subtle film grain for authenticity and editorial quality, ${profileDesign.composition}, timeless elegance meets modern sophistication, high-end editorial photography with ${feedLayout.brand_vibe || "professional"} aesthetic, perfect for Instagram profile picture with circular crop in mind, genuine professional presence that feels both aspirational and relatable, cohesive with ${feedLayout.color_palette || "neutral tones"} color palette, Scandinavian minimalist influence with dark moody undertones, trending Instagram aesthetic 2025`
+
+      // Save Maya's prompt for future use
+      await sql`
+        UPDATE feed_layouts
+        SET profile_image_prompt = ${basePrompt}
+        WHERE id = ${feedId}
+      `
+
+      console.log("[v0] ✓ Maya's sophisticated profile prompt saved")
     }
 
     const finalPrompt = `${model.trigger_word}, ${basePrompt}`
@@ -58,7 +125,7 @@ export async function POST(req: NextRequest, { params }: { params: { feedId: str
 
     console.log("[v0] Generating profile image:", {
       feedId,
-      prompt: finalPrompt,
+      prompt: finalPrompt.substring(0, 100) + "...",
     })
 
     const replicate = getReplicateClient()
@@ -77,6 +144,6 @@ export async function POST(req: NextRequest, { params }: { params: { feedId: str
     return Response.json({ predictionId: prediction.id })
   } catch (error: any) {
     console.error("[v0] Error generating profile image:", error)
-    return Response.json({ error: error.message }, { status: 500 })
+    return Response.json({ error: error.message || "Failed to generate profile image" }, { status: 500 })
   }
 }

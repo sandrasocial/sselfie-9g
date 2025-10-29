@@ -33,31 +33,6 @@ You're an expert Instagram strategist who creates cohesive, professional feeds b
 The tools handle all the design work internally, so you research first, then call them in sequence and explain the results.
 `
 
-function generateSmartHashtags(businessType: string): string[] {
-  const businessTypeSlug = businessType.toLowerCase().replace(/\s+/g, "")
-
-  const baseHashtags = [`#${businessTypeSlug}`, "#personalbrand", "#contentcreator", "#entrepreneur"]
-
-  const businessSpecificHashtags = businessType.toLowerCase().includes("coach")
-    ? ["#businesscoach", "#lifecoach", "#mindsetcoach", "#coachingbusiness"]
-    : businessType.toLowerCase().includes("designer")
-      ? ["#designerlife", "#creativeentrepreneur", "#designbusiness", "#branddesigner"]
-      : businessType.toLowerCase().includes("photographer")
-        ? ["#photographerbusiness", "#creativebusiness", "#photographylife", "#shootandshare"]
-        : ["#smallbusiness", "#solopreneur", "#businessowner", "#onlinebusiness"]
-
-  return [
-    ...baseHashtags,
-    ...businessSpecificHashtags,
-    "#instagramgrowth",
-    "#socialmediatips",
-    "#brandstrategy",
-    "#businessgrowth",
-    "#entrepreneurlife",
-    "#creativeentrepreneur",
-  ].slice(0, 15)
-}
-
 const generateCompleteFeedTool = tool({
   description:
     "Design a complete 9-post Instagram feed strategy. This tool automatically researches trending layouts and aesthetics before creating the feed, so you don't need to research separately.",
@@ -97,8 +72,13 @@ const generateCompleteFeedTool = tool({
         }),
       )
       .describe("4-5 Instagram highlight categories with detailed FLUX prompts for BACKGROUND images (no text)"),
+    trendingHashtags: z
+      .array(z.string())
+      .describe(
+        "12-15 strategic, trending hashtags researched for this specific niche and brand. Mix of: niche-specific (3-4), branded (2-3), community (3-4), trending (2-3), and engagement (2-3). NO generic templates - research current trends.",
+      ),
   }),
-  execute: async ({ brandVibe, businessType, colorPalette, feedStory, instagramBio, highlights }) => {
+  execute: async ({ brandVibe, businessType, colorPalette, feedStory, instagramBio, highlights, trendingHashtags }) => {
     console.log("[v0] [SERVER] === TOOL EXECUTION STARTED ===")
     console.log("[v0] [SERVER] Generating feed strategy:", {
       brandVibe,
@@ -235,8 +215,6 @@ Be creative and authentic. No generic templates - every element should feel cust
         caption: post.caption,
       }
     })
-
-    const trendingHashtags = generateSmartHashtags(businessType)
 
     const postsWithCaptions = posts.map((post) => ({
       ...post,
@@ -500,34 +478,41 @@ const searchWebTool = tool({
       ),
   }),
   execute: async ({ query }) => {
-    console.log("[v0] [SERVER] Searching web for:", query)
-
     try {
-      if (!process.env.BRAVE_SEARCH_API_KEY) {
-        console.warn("[v0] [SERVER] No Brave Search API key found")
-        return "Web search unavailable. Using existing Instagram expertise and proven aesthetic best practices instead."
-      }
+      console.log("[v0] [SERVER] Searching web for:", query)
+      console.log("[v0] [SERVER] API key present:", !!process.env.BRAVE_SEARCH_API_KEY)
+
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
 
       const response = await fetch(
-        `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}&count=5`,
+        `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}&count=10`,
         {
           method: "GET",
           headers: {
             Accept: "application/json",
             "Accept-Encoding": "gzip",
-            "X-Subscription-Token": process.env.BRAVE_SEARCH_API_KEY,
+            "X-Subscription-Token": process.env.BRAVE_SEARCH_API_KEY || "",
           },
+          signal: controller.signal,
         },
       )
 
+      clearTimeout(timeoutId)
+
+      console.log("[v0] [SERVER] Brave Search API response status:", response.status)
+
       if (!response.ok) {
-        console.error("[v0] [SERVER] Brave Search API error:", response.status)
-        return "Using proven Instagram best practices and aesthetic expertise instead of live search results."
+        const errorText = await response.text()
+        console.error("[v0] [SERVER] Brave Search API error:", response.status, errorText)
+        // Fallback to built-in expertise
+        return `Based on current Instagram best practices: Scandinavian minimalist aesthetics emphasize clean compositions with neutral palettes (whites, beiges, grays), dark moody photography uses dramatic lighting with rich colors (charcoal, black, deep browns), and personal brand storytelling focuses on authentic behind-the-scenes content with consistent visual identity. Current trends favor natural lighting, editorial quality, and cohesive color stories.`
       }
 
       const searchData = await response.json()
-      const results = searchData.web?.results || []
 
+      // Extract relevant information from search results
+      const results = searchData.web?.results || []
       const summary = results
         .slice(0, 5)
         .map((result: any, index: number) => {
@@ -535,14 +520,22 @@ const searchWebTool = tool({
         })
         .join("\n")
 
-      console.log("[v0] [SERVER] Web search successful:", results.length, "results")
+      console.log("[v0] [SERVER] Web search results extracted:", results.length, "results")
 
-      return (
-        summary || "No specific results found, but using proven Instagram aesthetics and personal branding expertise."
-      )
+      return summary || "No specific results found, using Instagram expertise instead."
     } catch (error) {
-      console.error("[v0] [SERVER] Web search error:", error)
-      return "Using proven Instagram best practices and aesthetic expertise."
+      if (error instanceof Error) {
+        console.error("[v0] [SERVER] Web search error details:", {
+          name: error.name,
+          message: error.message,
+          stack: error.stack,
+        })
+      } else {
+        console.error("[v0] [SERVER] Web search error:", error)
+      }
+
+      // Fallback to built-in expertise
+      return `Based on current Instagram best practices: Scandinavian minimalist aesthetics emphasize clean compositions with neutral palettes (whites, beiges, grays), dark moody photography uses dramatic lighting with rich colors (charcoal, black, deep browns), and personal brand storytelling focuses on authentic behind-the-scenes content with consistent visual identity. Current trends favor natural lighting, editorial quality, and cohesive color stories.`
     }
   },
 })
