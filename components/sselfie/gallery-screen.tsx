@@ -33,6 +33,7 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json())
 function categorizeImage(image: GalleryImage): string {
   if (image.category) {
     const cat = image.category.toLowerCase()
+    if (cat.includes("feed") || cat.includes("instagram")) return "feed-design"
     if (cat.includes("close") || cat.includes("portrait")) return "close-up"
     if (cat.includes("half") || cat.includes("waist")) return "half-body"
     if (cat.includes("full") || cat.includes("scenery")) return "full-scenery"
@@ -264,6 +265,7 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
             {[
               { key: "all", label: "All" },
               { key: "favorited", label: "Favorited" },
+              { key: "feed-design", label: "Feed Design" },
               { key: "close-up", label: "Close-Up" },
               { key: "full-scenery", label: "Scenery" },
               { key: "flatlay", label: "Flatlay" },
@@ -397,6 +399,12 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
         {[
           { key: "all", label: "Total", value: allImages.length + allVideos.length, icon: Grid },
           { key: "favorited", label: "Favorited", value: favoritedImages.length, icon: Heart },
+          {
+            key: "feed-design",
+            label: "Feed Design",
+            value: allImages.filter((i) => categorizeImage(i) === "feed-design").length,
+            icon: Grid,
+          },
           {
             key: "close-up",
             label: "Close-Up",

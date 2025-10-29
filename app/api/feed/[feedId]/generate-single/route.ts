@@ -25,6 +25,10 @@ export async function POST(req: NextRequest, { params }: { params: { feedId: str
       return Response.json({ error: "Post not found" }, { status: 404 })
     }
 
+    const [feedLayout] = await sql`
+      SELECT color_palette, brand_vibe FROM feed_layouts WHERE id = ${feedId}
+    `
+
     const [model] = await sql`
       SELECT trigger_word, replicate_version_id, lora_scale, lora_weights_url
       FROM user_models
@@ -42,16 +46,55 @@ export async function POST(req: NextRequest, { params }: { params: { feedId: str
       return Response.json({ error: "LoRA weights URL not found" }, { status: 400 })
     }
 
+    console.log("[v0] Calling Maya to generate feed post prompt...")
+    const mayaResponse = await fetch(`${req.nextUrl.origin}/api/maya/generate-feed-prompt`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        postType: post.post_type,
+        caption: post.text_overlay,
+        feedPosition: post.position,
+        colorTheme: feedLayout?.color_palette,
+        brandVibe: feedLayout?.brand_vibe,
+      }),
+    })
+
+    let finalPrompt
+    if (!mayaResponse.ok) {
+      console.error("[v0] Maya prompt generation failed with status:", mayaResponse.status)
+
+      // Try to get error details if available
+      try {
+        const errorText = await mayaResponse.text()
+        console.error("[v0] Error response:", errorText)
+
+        // Check if it's a rate limit error
+        if (mayaResponse.status === 429 || errorText.includes("Too Many Requests")) {
+          return Response.json({ error: "Rate limit exceeded. Please wait a moment and try again." }, { status: 429 })
+        }
+      } catch (e) {
+        console.error("[v0] Could not parse error response")
+      }
+
+      // Fallback to simple prompt for other errors
+      finalPrompt = post.prompt || `${model.trigger_word}, ${post.visual_description}`
+    } else {
+      try {
+        const mayaData = await mayaResponse.json()
+        finalPrompt = mayaData.prompt
+        console.log("[v0] Maya generated prompt:", finalPrompt)
+      } catch (jsonError) {
+        console.error("[v0] Failed to parse Maya response as JSON:", jsonError)
+        // Fallback to simple prompt if JSON parsing fails
+        finalPrompt = post.prompt || `${model.trigger_word}, ${post.visual_description}`
+      }
+    }
+
     const qualitySettings =
       MAYA_QUALITY_PRESETS[post.post_type as keyof typeof MAYA_QUALITY_PRESETS] || MAYA_QUALITY_PRESETS.default
 
     if (model.lora_scale !== null && model.lora_scale !== undefined) {
       qualitySettings.lora_scale = Number(model.lora_scale)
-    }
-
-    let finalPrompt = post.prompt
-    if (!finalPrompt.toLowerCase().includes(model.trigger_word.toLowerCase())) {
-      finalPrompt = `${model.trigger_word}, ${finalPrompt}`
     }
 
     console.log("[v0] Generating feed post:", {

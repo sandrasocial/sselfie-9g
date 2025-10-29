@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Aperture, ArrowRight, ArrowLeft, Check } from "lucide-react"
+import { Aperture, ArrowRight, ArrowLeft, Check, Palette } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -58,6 +58,14 @@ const COLOR_THEMES = [
     description: "Vibrant colors with high energy",
     colors: ["#FF6B9D", "#FFA07A", "#FFD700", "#98D8C8"],
     gradient: "from-pink-300 via-orange-300 to-yellow-300",
+  },
+  {
+    id: "custom",
+    name: "Custom Colors",
+    description: "Choose your own brand colors",
+    colors: ["#D4C5B9", "#A89B8E", "#8B7E71", "#6E6154"],
+    gradient: "from-stone-200 via-stone-300 to-stone-400",
+    isCustom: true,
   },
 ]
 
@@ -160,6 +168,9 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
     stylePreferences: existingData?.stylePreferences || "",
   })
   const [contentPillars, setContentPillars] = useState<any[]>([])
+  const [customColors, setCustomColors] = useState<string[]>(
+    existingData?.customColors ? JSON.parse(existingData.customColors) : ["#D4C5B9", "#A89B8E", "#8B7E71", "#6E6154"],
+  )
 
   useEffect(() => {
     console.log("[v0] BrandProfileWizard mounted, isOpen:", isOpen)
@@ -201,6 +212,7 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
         credentials: "include",
         body: JSON.stringify({
           ...formData,
+          customColors: formData.colorTheme === "custom" ? JSON.stringify(customColors) : null,
           contentPillars: contentPillars.length > 0 ? JSON.stringify(contentPillars) : null,
           isCompleted: true,
         }),
@@ -227,6 +239,12 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
     setFormData((prev) => ({ ...prev, colorTheme: themeId }))
   }
 
+  const handleCustomColorChange = (index: number, color: string) => {
+    const newColors = [...customColors]
+    newColors[index] = color
+    setCustomColors(newColors)
+  }
+
   const handleContentPillarsComplete = (pillars: any[]) => {
     console.log("[v0] Content pillars selected:", pillars)
     setContentPillars(pillars)
@@ -251,7 +269,6 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="space-y-6 py-4">
-          {/* Progress Bar */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-xs text-stone-500">
               <span>{step.subtitle}</span>
@@ -260,7 +277,6 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
             <Progress value={progress} className="h-2" />
           </div>
 
-          {/* Maya's Avatar and Message */}
           <div className="flex gap-4 items-start bg-stone-50 rounded-xl p-4">
             <div className="flex-shrink-0 w-12 h-12 bg-stone-950 rounded-full flex items-center justify-center">
               <Aperture size={20} className="text-white" />
@@ -271,47 +287,90 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
             </div>
           </div>
 
-          {/* Step Content */}
           <div className="space-y-4">
             <h2 className="text-2xl font-bold text-stone-950">{step.title}</h2>
 
             {step.isColorThemeSelector ? (
-              <div className="grid grid-cols-2 gap-4">
-                {COLOR_THEMES.map((theme) => (
-                  <button
-                    key={theme.id}
-                    onClick={() => handleColorThemeSelect(theme.id)}
-                    className={`relative p-4 rounded-xl border-2 transition-all text-left hover:shadow-md ${
-                      formData.colorTheme === theme.id
-                        ? "border-stone-950 bg-stone-50"
-                        : "border-stone-200 hover:border-stone-300"
-                    }`}
-                  >
-                    {/* Color swatches */}
-                    <div className="flex gap-2 mb-3">
-                      {theme.colors.map((color, idx) => (
-                        <div
-                          key={idx}
-                          className="w-8 h-8 rounded-full border border-stone-200"
-                          style={{ backgroundColor: color }}
-                        />
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  {COLOR_THEMES.map((theme) => (
+                    <button
+                      key={theme.id}
+                      onClick={() => handleColorThemeSelect(theme.id)}
+                      className={`relative p-4 rounded-xl border-2 transition-all text-left hover:shadow-md ${
+                        formData.colorTheme === theme.id
+                          ? "border-stone-950 bg-stone-50"
+                          : "border-border hover:border-ring"
+                      }`}
+                    >
+                      <div className="flex gap-2 mb-3">
+                        {theme.isCustom && formData.colorTheme === "custom"
+                          ? customColors.map((color, idx) => (
+                              <div
+                                key={idx}
+                                className="w-8 h-8 rounded-full border border-border"
+                                style={{ backgroundColor: color }}
+                              />
+                            ))
+                          : theme.colors.map((color, idx) => (
+                              <div
+                                key={idx}
+                                className="w-8 h-8 rounded-full border border-border"
+                                style={{ backgroundColor: color }}
+                              />
+                            ))}
+                      </div>
+
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          {theme.isCustom && <Palette size={14} className="text-stone-600" />}
+                          <p className="text-sm font-semibold text-foreground">{theme.name}</p>
+                        </div>
+                        <p className="text-xs text-muted-foreground">{theme.description}</p>
+                      </div>
+
+                      {formData.colorTheme === theme.id && (
+                        <div className="absolute top-3 right-3 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                          <Check size={14} className="text-primary-foreground" />
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+
+                {formData.colorTheme === "custom" && (
+                  <div className="bg-card border border-border rounded-xl p-6 space-y-4">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Palette size={18} className="text-muted-foreground" />
+                      <h3 className="text-sm font-semibold text-foreground">Customize Your Brand Colors</h3>
+                    </div>
+                    <p className="text-xs text-muted-foreground mb-4">
+                      Choose 4 colors that represent your brand. These will be used throughout your content.
+                    </p>
+                    <div className="grid grid-cols-2 gap-4">
+                      {customColors.map((color, index) => (
+                        <div key={index} className="space-y-2">
+                          <label className="text-xs font-medium text-muted-foreground">Color {index + 1}</label>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={color}
+                              onChange={(e) => handleCustomColorChange(index, e.target.value)}
+                              placeholder="#000000"
+                              className="flex-1 px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground"
+                            />
+                            <input
+                              type="color"
+                              value={color}
+                              onChange={(e) => handleCustomColorChange(index, e.target.value)}
+                              className="w-12 h-10 rounded-lg border border-border cursor-pointer"
+                            />
+                          </div>
+                        </div>
                       ))}
                     </div>
-
-                    {/* Theme name and description */}
-                    <div className="space-y-1">
-                      <p className="text-sm font-semibold text-stone-950">{theme.name}</p>
-                      <p className="text-xs text-stone-600">{theme.description}</p>
-                    </div>
-
-                    {/* Selected indicator */}
-                    {formData.colorTheme === theme.id && (
-                      <div className="absolute top-3 right-3 w-6 h-6 bg-stone-950 rounded-full flex items-center justify-center">
-                        <Check size={14} className="text-white" />
-                      </div>
-                    )}
-                  </button>
-                ))}
+                  </div>
+                )}
               </div>
             ) : step.isContentPillarBuilder ? (
               <ContentPillarBuilder
@@ -341,7 +400,6 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
             ) : null}
           </div>
 
-          {/* Navigation Buttons */}
           {!step.isContentPillarBuilder && (
             <div className="flex items-center justify-between pt-4 border-t border-stone-200">
               <Button

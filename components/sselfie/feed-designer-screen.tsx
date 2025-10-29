@@ -10,6 +10,7 @@ import { Sparkles, Download } from "lucide-react"
 
 import FeedPostCard from "./feed-post-card"
 import BrandProfileWizard from "./brand-profile-wizard"
+import StoryHighlightCard from "./story-highlight-card"
 
 interface FeedPost {
   id: string | number
@@ -60,6 +61,7 @@ export default function FeedDesignerScreen() {
   const [brandData, setBrandData] = useState<any>(null)
   const [showBrandWizard, setShowBrandWizard] = useState(false)
   const [brandCompleted, setBrandCompleted] = useState(false)
+  const [editingHighlights, setEditingHighlights] = useState(false)
   const { status, messages, sendMessage } = useChat({
     transport: new DefaultChatTransport({ api: "/api/maya/feed-chat" }),
     initialMessages: [],
@@ -542,6 +544,33 @@ export default function FeedDesignerScreen() {
     loadBrandProfile()
   }
 
+  const handleAddHighlight = () => {
+    setProfile((prev) => ({
+      ...prev,
+      highlights: [...prev.highlights, { title: "", coverUrl: "#D4C5B9", description: "" }],
+    }))
+    setEditingHighlights(true)
+  }
+
+  const handleUpdateHighlight = (
+    index: number,
+    data: { title: string; coverUrl: string; description: string; type: "image" | "color" },
+  ) => {
+    setProfile((prev) => ({
+      ...prev,
+      highlights: prev.highlights.map((h, i) =>
+        i === index ? { title: data.title, coverUrl: data.coverUrl, description: data.description } : h,
+      ),
+    }))
+  }
+
+  const handleRemoveHighlight = (index: number) => {
+    setProfile((prev) => ({
+      ...prev,
+      highlights: prev.highlights.filter((_, i) => i !== index),
+    }))
+  }
+
   if (isInitializing) {
     return (
       <div className="h-full flex items-center justify-center bg-stone-50">
@@ -788,39 +817,47 @@ export default function FeedDesignerScreen() {
                 </div>
 
                 <div className="mt-6">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-1 h-1 rounded-full bg-stone-600"></div>
-                    <span className="text-xs tracking-wider uppercase font-medium text-stone-600">
-                      Story Highlights
-                    </span>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-1 h-1 rounded-full bg-stone-600"></div>
+                      <span className="text-xs tracking-wider uppercase font-medium text-stone-600">
+                        Story Highlights
+                      </span>
+                    </div>
+                    <Button
+                      onClick={() => setEditingHighlights(!editingHighlights)}
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs"
+                    >
+                      {editingHighlights ? "Done" : "Edit"}
+                    </Button>
                   </div>
-                  {profile.highlights.length > 0 ? (
-                    <div className="flex gap-4 overflow-x-auto pb-2">
-                      {profile.highlights.map((highlight, index) => (
-                        <div key={index} className="flex flex-col items-center gap-2 flex-shrink-0">
-                          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-400 via-pink-400 to-orange-400 p-[2px]">
-                            <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
-                              <span className="text-lg font-bold text-stone-700">{highlight.title.charAt(0)}</span>
-                            </div>
-                          </div>
-                          <span className="text-xs text-stone-600 max-w-[64px] text-center truncate">
-                            {highlight.title}
-                          </span>
+
+                  <div className="flex gap-4 overflow-x-auto pb-2">
+                    {profile.highlights.map((highlight, index) => (
+                      <StoryHighlightCard
+                        key={index}
+                        highlight={highlight}
+                        index={index}
+                        onUpdate={handleUpdateHighlight}
+                        onRemove={handleRemoveHighlight}
+                        userColorTheme={brandData?.colorTheme}
+                      />
+                    ))}
+
+                    {(editingHighlights || profile.highlights.length === 0) && profile.highlights.length < 10 && (
+                      <button
+                        onClick={handleAddHighlight}
+                        className="flex flex-col items-center gap-2 flex-shrink-0 w-[80px] group"
+                      >
+                        <div className="w-16 h-16 rounded-full bg-stone-100 border-2 border-dashed border-stone-300 flex items-center justify-center group-hover:border-stone-400 group-hover:bg-stone-50 transition-all">
+                          <span className="text-2xl text-stone-400 group-hover:text-stone-600">+</span>
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="flex gap-4 overflow-x-auto pb-2">
-                      {[1, 2, 3, 4, 5].map((i) => (
-                        <div key={i} className="flex flex-col items-center gap-2 flex-shrink-0">
-                          <div className="w-16 h-16 rounded-full bg-stone-200 border-2 border-stone-300 flex items-center justify-center">
-                            <span className="text-xs text-stone-400">+</span>
-                          </div>
-                          <span className="text-xs text-stone-400">New</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                        <span className="text-xs text-stone-400 group-hover:text-stone-600">Add New</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

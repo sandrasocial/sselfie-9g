@@ -456,20 +456,20 @@ function generateCaptionWithRecipe(post: any, postIndex: number, hashtags: strin
       "Can I share something with you?",
     ],
     Object: [
-      "The tools that changed everything for me.",
-      "These are my non-negotiables.",
-      "What's in my daily routine? Let me show you.",
-      "The essentials that keep me going.",
+      "The essentials that changed my workflow.",
+      "What's on my desk today? Let me show you.",
+      "These pieces tell my brand story.",
+      "The details that make all the difference.",
     ],
   }
 
   const stories = {
     "Close-Up": `When I started as a ${businessType}, I thought I had to be perfect. But the truth? People connect with authenticity, not perfection.\n\nThe moment I started showing up as my real self - flaws, struggles, and all - everything shifted. My audience grew, my engagement increased, and most importantly, I felt aligned with my work.`,
-    Quote: `Sometimes we all need a reminder that we're on the right path. Building ${businessType} isn't always easy, but it's always worth it.\n\nI keep this quote close because on the hard days, it reminds me why I started. And on the good days, it pushes me to keep growing.`,
+    Quote: `Sometimes we all need a reminder that we're on the right path. Building a ${businessType} business isn't always easy, but it's always worth it.\n\nI keep this quote close because on the hard days, it reminds me why I started. And on the good days, it pushes me to keep growing.`,
     Lifestyle: `This is what the journey really looks like. Not just the highlight reel, but the real moments - the coffee breaks, the planning sessions, the work that happens behind the scenes.\n\nAs a ${businessType}, I've learned that consistency beats perfection every time. Show up, do the work, trust the process.`,
     "Full Body": `Your personal brand isn't just about what you do - it's about how you show up. The energy you bring, the confidence you carry, the authenticity you share.\n\nI've learned that when you align your outer presence with your inner values, magic happens. You attract the right people, opportunities, and growth.`,
-    "Half Body": `Here's something I wish someone told me earlier: ${businessType} is a journey, not a destination.\n\nEvery step forward counts. Every lesson learned matters. Every moment of growth adds up. Trust your process, celebrate your progress, and keep moving forward.`,
-    Object: `The right tools make all the difference. But here's what matters more than any tool or strategy: your commitment to showing up consistently.\n\nThese are the essentials that support my work as a ${businessType}. But the real secret? It's the daily dedication to serving my audience and staying true to my mission.`,
+    "Half Body": `Here's something I wish someone told me earlier: being a ${businessType} is a journey, not a destination.\n\nEvery step forward counts. Every lesson learned matters. Every moment of growth adds up. Trust your process, celebrate your progress, and keep moving forward.`,
+    Object: `Every detail in my workspace is intentional. From the way I style my desk to the tools I choose, it all reflects my brand aesthetic and values.\n\nAs a ${businessType}, I've learned that your environment shapes your creativity. These carefully curated pieces aren't just beautiful - they inspire me to do my best work every single day.`,
   }
 
   const ctas = [
