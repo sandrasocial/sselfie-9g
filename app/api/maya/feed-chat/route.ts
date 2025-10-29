@@ -85,7 +85,7 @@ const generateCompleteFeedTool = tool({
             ),
         }),
       )
-      .describe("5-7 Instagram highlight categories with detailed FLUX prompts for BACKGROUND images (no text)"),
+      .describe("4-5 Instagram highlight categories with detailed FLUX prompts for BACKGROUND images (no text)"),
   }),
   execute: async ({ brandVibe, businessType, colorPalette, feedStory, instagramBio, highlights }) => {
     console.log("[v0] [SERVER] === TOOL EXECUTION STARTED ===")
@@ -97,7 +97,29 @@ const generateCompleteFeedTool = tool({
 
     const researchInsights = "Using current Instagram best practices and proven feed layout strategies"
 
-    // Instead of a fixed template, we now generate dynamic patterns that create visual interest
+    const user = await getCurrentNeonUser()
+    let triggerWord = "person"
+    let userGender = "person"
+
+    if (user) {
+      const sql = neon(process.env.DATABASE_URL!)
+      const userDataResult = await sql`
+        SELECT 
+          u.gender,
+          um.trigger_word
+        FROM users u
+        LEFT JOIN user_models um ON u.id = um.user_id
+        WHERE u.id = ${user.id}
+        AND um.training_status = 'completed'
+        ORDER BY um.created_at DESC
+        LIMIT 1
+      `
+
+      if (userDataResult.length > 0) {
+        triggerWord = userDataResult[0].trigger_word || "person"
+        userGender = userDataResult[0].gender || "person"
+      }
+    }
 
     // Define multiple aesthetic layout patterns
     const layoutPatterns = {
@@ -231,7 +253,7 @@ const generateCompleteFeedTool = tool({
           title: "Styled Moment",
           description: `${post.purpose}. ${post.composition}. Inspired by trending ${businessType} aesthetics`,
           category: "Object",
-          prompt: `styled flatlay photography, ${colorPalette}, elegant product arrangement, overhead shot, soft natural lighting, professional editorial quality, ${brandVibe} aesthetic, brand-aligned objects (flowers, coffee, notebook, jewelry, books, workspace items), shallow depth of field, film grain, high-end commercial photography, minimalist composition, trending Instagram aesthetic 2025`,
+          prompt: `${colorPalette} styled flatlay photography, elegant product arrangement showcasing ${businessType} essentials, overhead shot with soft directional natural lighting creating gentle shadows, professional editorial quality with ${brandVibe} aesthetic, carefully curated brand-aligned objects (fresh flowers, artisan coffee, leather-bound notebook, delicate jewelry, design books, minimalist workspace items), shallow depth of field with creamy bokeh, subtle film grain texture, high-end commercial photography, sophisticated minimalist composition, trending Instagram aesthetic 2025, warm inviting atmosphere, cohesive color story with ${colorPalette}`,
           textOverlay: undefined,
           purpose: post.purpose,
           composition: post.composition,
@@ -253,15 +275,31 @@ const generateCompleteFeedTool = tool({
       }
 
       const lightingStyle = colorPalette.includes("dark")
-        ? "dramatic lighting, moody shadows, high contrast"
-        : "soft natural lighting, gentle shadows, even exposure"
+        ? "dramatic lighting with moody shadows and high contrast, cinematic atmosphere"
+        : "soft natural lighting with gentle shadows and even exposure, warm inviting glow"
+
+      const genderStyling =
+        userGender === "woman" || userGender === "female"
+          ? "elegant flowing hair styled naturally, refined makeup with natural glow, feminine grace and confidence"
+          : userGender === "man" || userGender === "male"
+            ? "styled hair with clean lines, masculine confidence and presence, strong professional demeanor"
+            : "styled appearance with confident presence, authentic professional energy"
+
+      const fashionDetails =
+        post.type === "Full Body"
+          ? `wearing sophisticated ${colorPalette} attire with impeccable tailoring and refined silhouette, styled with carefully chosen accessories that complement the overall aesthetic, complete outfit showcasing personal style and brand identity`
+          : post.type === "Half Body"
+            ? `dressed in elegant ${colorPalette} professional attire with attention to fabric quality and fit, styled with minimal sophisticated accessories, upper body styling that conveys both professionalism and approachability`
+            : post.type === "Close-Up"
+              ? `styled with ${colorPalette} tones in clothing and background, natural skin texture with healthy radiant glow, authentic expression that connects with viewers`
+              : `authentic ${colorPalette} styling that feels natural and effortless, environmental elements that tell a story, genuine moment captured with editorial quality`
 
       return {
         id: `post-${index + 1}`,
         title: `${post.type} ${post.type === "Lifestyle" ? "Moment" : "Portrait"}`,
         description: categoryDescriptions[post.type as keyof typeof categoryDescriptions],
         category: post.type,
-        prompt: `A confident ${businessType} professional with styled appearance, ${colorPalette} color palette, ${brandVibe} aesthetic, ${lensSpecs[post.type as keyof typeof lensSpecs]}, ${lightingStyle}, natural skin texture with film grain, timeless elegance, high-end editorial photography, authentic professional presence, ${post.composition}, trending Instagram aesthetic 2025`,
+        prompt: `${triggerWord}, confident ${businessType} professional with ${genderStyling}, ${fashionDetails}, ${lensSpecs[post.type as keyof typeof lensSpecs]}, ${lightingStyle}, natural skin texture with subtle film grain for authenticity, timeless elegance meets modern sophistication, high-end editorial photography with ${brandVibe} aesthetic, ${post.composition}, genuine professional presence that feels both aspirational and relatable, trending Instagram aesthetic 2025, cohesive visual story with ${colorPalette} color palette`,
         textOverlay: undefined,
         purpose: post.purpose,
         composition: post.composition,
@@ -280,14 +318,12 @@ const generateCompleteFeedTool = tool({
     })
 
     let feedId: string | null = null
-    let user: any = null // Declare the user variable
+    const userInstance = await getCurrentNeonUser()
 
     try {
       const sql = neon(process.env.DATABASE_URL!)
 
-      user = await getCurrentNeonUser()
-
-      if (!user) {
+      if (!userInstance) {
         console.error("[v0] [SERVER] No user found, cannot save feed")
         return "I encountered an error - you need to be logged in to save your feed strategy. Please refresh and try again."
       }
@@ -298,7 +334,7 @@ const generateCompleteFeedTool = tool({
           visual_rhythm, feed_story, research_insights, title, description
         )
         VALUES (
-          ${user.id}, ${brandVibe}, ${businessType}, ${colorPalette},
+          ${userInstance.id}, ${brandVibe}, ${businessType}, ${colorPalette},
           ${visualRhythm}, ${feedStory}, ${researchInsights},
           ${`${businessType} Feed Strategy`}, ${feedStory}
         )
@@ -310,14 +346,14 @@ const generateCompleteFeedTool = tool({
 
       await sql`
         INSERT INTO instagram_bios (feed_layout_id, bio_text, user_id)
-        VALUES (${feedId}, ${instagramBio}, ${user.id})
+        VALUES (${feedId}, ${instagramBio}, ${userInstance.id})
       `
       console.log("[v0] [SERVER] ✓ Instagram bio saved")
 
       for (const highlight of highlights) {
         await sql`
           INSERT INTO instagram_highlights (feed_layout_id, title, prompt, user_id)
-          VALUES (${feedId}, ${highlight.title}, ${highlight.prompt}, ${user.id})
+          VALUES (${feedId}, ${highlight.title}, ${highlight.prompt}, ${userInstance.id})
         `
       }
       console.log("[v0] [SERVER] ✓ Highlights saved with FLUX prompts:", highlights.length)
@@ -330,7 +366,7 @@ const generateCompleteFeedTool = tool({
             caption, text_overlay_style, generation_status
           )
           VALUES (
-            ${feedId}, ${user.id}, ${i}, ${post.prompt}, ${post.category},
+            ${feedId}, ${userInstance.id}, ${i}, ${post.prompt}, ${post.category},
             ${post.caption}, ${post.textOverlay ? JSON.stringify(post.textOverlay) : null}, 
             'pending'
           )
@@ -476,14 +512,8 @@ export async function POST(req: Request) {
       return new Response("Invalid request body", { status: 400 })
     }
 
-    let user
-    try {
-      user = await getCurrentNeonUser()
-      console.log("[v0] Step 2: Got current user:", user ? `ID ${user.id}` : "NO USER")
-    } catch (userError) {
-      console.error("[v0] ERROR getting current user:", userError)
-      return new Response("Error getting user", { status: 500 })
-    }
+    const user = await getCurrentNeonUser()
+    console.log("[v0] Step 2: Got current user:", user ? `ID ${user.id}` : "NO USER")
 
     if (!user) {
       console.error("[v0] ERROR: No user found")

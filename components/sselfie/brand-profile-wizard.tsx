@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { Aperture, ArrowRight, ArrowLeft, Check, Palette } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -72,7 +71,7 @@ const COLOR_THEMES = [
 const STEPS = [
   {
     id: "intro",
-    title: "Hey there! 👋",
+    title: "Welcome",
     subtitle: "Let's create your personal brand together",
     mayaMessage:
       "I'm Maya, and I'm here to help you create content that actually looks and sounds like YOU. To do that, I need to understand your unique style, voice, and vision. This will only take a few minutes, and trust me - it's worth it!",
@@ -248,103 +247,100 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="space-y-6 py-4">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs text-stone-500">
-              <span>{step.subtitle}</span>
-              <span>{Math.round(progress)}% complete</span>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <div className="space-y-8 py-6">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-light tracking-[0.2em] uppercase text-stone-500">{step.subtitle}</span>
+              <span className="text-xs font-light text-stone-400">{Math.round(progress)}%</span>
             </div>
-            <Progress value={progress} className="h-2" />
+            <Progress value={progress} className="h-1 bg-stone-100" />
           </div>
 
-          <div className="flex gap-4 items-start bg-stone-50 rounded-xl p-4">
-            <div className="flex-shrink-0 w-12 h-12 bg-stone-950 rounded-full flex items-center justify-center">
-              <Aperture size={20} className="text-white" />
-            </div>
-            <div className="flex-1">
-              <p className="text-xs font-semibold text-stone-950 mb-1">Maya</p>
-              <p className="text-sm text-stone-600 leading-relaxed">{step.mayaMessage}</p>
+          <div className="bg-stone-50 rounded-lg p-6 border border-stone-200">
+            <div className="space-y-3">
+              <p className="text-xs font-light tracking-[0.3em] uppercase text-stone-950">MAYA</p>
+              <p className="text-base font-normal leading-relaxed text-stone-700">{step.mayaMessage}</p>
             </div>
           </div>
 
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-stone-950">{step.title}</h2>
+          <div className="space-y-6">
+            <h2 className="font-['Times_New_Roman'] text-3xl md:text-4xl font-extralight tracking-[0.1em] text-stone-950">
+              {step.title}
+            </h2>
 
             {step.isColorThemeSelector ? (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {COLOR_THEMES.map((theme) => (
                     <button
                       key={theme.id}
                       onClick={() => handleColorThemeSelect(theme.id)}
-                      className={`relative p-4 rounded-xl border-2 transition-all text-left hover:shadow-md ${
+                      className={`relative p-6 rounded-lg border transition-all text-left hover:shadow-sm ${
                         formData.colorTheme === theme.id
                           ? "border-stone-950 bg-stone-50"
-                          : "border-border hover:border-ring"
+                          : "border-stone-200 hover:border-stone-400"
                       }`}
                     >
-                      <div className="flex gap-2 mb-3">
+                      <div className="flex gap-2 mb-4">
                         {theme.isCustom && formData.colorTheme === "custom"
                           ? customColors.map((color, idx) => (
                               <div
                                 key={idx}
-                                className="w-8 h-8 rounded-full border border-border"
+                                className="w-10 h-10 rounded-full border border-stone-200"
                                 style={{ backgroundColor: color }}
                               />
                             ))
                           : theme.colors.map((color, idx) => (
                               <div
                                 key={idx}
-                                className="w-8 h-8 rounded-full border border-border"
+                                className="w-10 h-10 rounded-full border border-stone-200"
                                 style={{ backgroundColor: color }}
                               />
                             ))}
                       </div>
 
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          {theme.isCustom && <Palette size={14} className="text-stone-600" />}
-                          <p className="text-sm font-semibold text-foreground">{theme.name}</p>
-                        </div>
-                        <p className="text-xs text-muted-foreground">{theme.description}</p>
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium tracking-wider uppercase text-stone-950">{theme.name}</p>
+                        <p className="text-sm font-light text-stone-600">{theme.description}</p>
                       </div>
 
                       {formData.colorTheme === theme.id && (
-                        <div className="absolute top-3 right-3 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-                          <Check size={14} className="text-primary-foreground" />
-                        </div>
+                        <div className="absolute top-4 right-4 w-6 h-6 bg-stone-950 rounded-full" />
                       )}
                     </button>
                   ))}
                 </div>
 
                 {formData.colorTheme === "custom" && (
-                  <div className="bg-card border border-border rounded-xl p-6 space-y-4">
-                    <div className="flex items-center gap-2 mb-4">
-                      <Palette size={18} className="text-muted-foreground" />
-                      <h3 className="text-sm font-semibold text-foreground">Customize Your Brand Colors</h3>
+                  <div className="bg-stone-50 border border-stone-200 rounded-lg p-6 space-y-6">
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-medium tracking-wider uppercase text-stone-950">
+                        CUSTOMIZE YOUR BRAND COLORS
+                      </h3>
+                      <p className="text-sm font-light text-stone-600">
+                        Choose 4 colors that represent your brand. These will be used throughout your content.
+                      </p>
                     </div>
-                    <p className="text-xs text-muted-foreground mb-4">
-                      Choose 4 colors that represent your brand. These will be used throughout your content.
-                    </p>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {customColors.map((color, index) => (
                         <div key={index} className="space-y-2">
-                          <label className="text-xs font-medium text-muted-foreground">Color {index + 1}</label>
+                          <label className="text-xs font-light tracking-wider uppercase text-stone-500">
+                            Color {index + 1}
+                          </label>
                           <div className="flex gap-2">
                             <input
                               type="text"
                               value={color}
                               onChange={(e) => handleCustomColorChange(index, e.target.value)}
                               placeholder="#000000"
-                              className="flex-1 px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground"
+                              className="flex-1 px-4 py-3 text-sm border border-stone-200 rounded-lg bg-white text-stone-950 focus:border-stone-400 focus:outline-none transition-colors"
                             />
                             <input
                               type="color"
                               value={color}
                               onChange={(e) => handleCustomColorChange(index, e.target.value)}
-                              className="w-12 h-10 rounded-lg border border-border cursor-pointer"
+                              className="w-14 h-12 rounded-lg border border-stone-200 cursor-pointer"
                             />
                           </div>
                         </div>
@@ -366,7 +362,7 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
                     value={formData[step.field as keyof typeof formData]}
                     onChange={(e) => handleInputChange(step.field!, e.target.value)}
                     placeholder={step.placeholder}
-                    className="min-h-[120px] resize-none"
+                    className="min-h-[140px] resize-none border-stone-200 focus:border-stone-400 text-base leading-relaxed"
                     autoFocus
                   />
                 ) : (
@@ -374,6 +370,7 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
                     value={formData[step.field as keyof typeof formData]}
                     onChange={(e) => handleInputChange(step.field!, e.target.value)}
                     placeholder={step.placeholder}
+                    className="border-stone-200 focus:border-stone-400 text-base"
                     autoFocus
                   />
                 )}
@@ -382,40 +379,31 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
           </div>
 
           {!step.isContentPillarBuilder && (
-            <div className="flex items-center justify-between pt-4 border-t border-stone-200">
+            <div className="flex items-center justify-between pt-6 border-t border-stone-200">
               <Button
                 variant="ghost"
                 onClick={handleBack}
                 disabled={currentStep === 0}
-                className="text-stone-600 hover:text-stone-950"
+                className="text-sm font-medium tracking-wider uppercase text-stone-600 hover:text-stone-950 hover:bg-stone-50 disabled:opacity-30"
               >
-                <ArrowLeft size={16} className="mr-2" />
-                Back
+                BACK
               </Button>
 
               {isLastStep ? (
                 <Button
                   onClick={handleComplete}
                   disabled={!canProceed() || isSaving}
-                  className="bg-stone-950 hover:bg-stone-800 text-white"
+                  className="bg-stone-950 hover:bg-stone-800 text-white text-sm font-medium tracking-wider uppercase px-8 py-6 rounded-lg transition-all duration-200"
                 >
-                  {isSaving ? (
-                    "Saving..."
-                  ) : (
-                    <>
-                      Complete
-                      <Check size={16} className="ml-2" />
-                    </>
-                  )}
+                  {isSaving ? "SAVING..." : "COMPLETE"}
                 </Button>
               ) : (
                 <Button
                   onClick={handleNext}
                   disabled={!canProceed()}
-                  className="bg-stone-950 hover:bg-stone-800 text-white"
+                  className="bg-stone-950 hover:bg-stone-800 text-white text-sm font-medium tracking-wider uppercase px-8 py-6 rounded-lg transition-all duration-200"
                 >
-                  {isIntroStep ? "Let's Start" : "Next"}
-                  <ArrowRight size={16} className="ml-2" />
+                  {isIntroStep ? "LET'S START" : "NEXT"}
                 </Button>
               )}
             </div>

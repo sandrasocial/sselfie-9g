@@ -15,7 +15,7 @@ export async function POST(req: NextRequest, { params }: { params: { feedId: str
     const sql = neon(process.env.DATABASE_URL!)
 
     const [feedLayout] = await sql`
-      SELECT color_palette, brand_vibe, profile_image_url FROM feed_layouts WHERE id = ${feedId}
+      SELECT color_palette, brand_vibe, profile_image_url, profile_image_prompt FROM feed_layouts WHERE id = ${feedId}
     `
 
     if (!feedLayout) {
@@ -39,7 +39,11 @@ export async function POST(req: NextRequest, { params }: { params: { feedId: str
       return Response.json({ error: "LoRA weights URL not found" }, { status: 400 })
     }
 
-    const finalPrompt = `${model.trigger_word}, professional headshot portrait, clean background, confident expression, high quality, well-lit, sharp focus`
+    const basePrompt =
+      feedLayout.profile_image_prompt ||
+      `professional headshot portrait, clean background, confident expression, high quality, well-lit, sharp focus`
+
+    const finalPrompt = `${model.trigger_word}, ${basePrompt}`
 
     const qualitySettings = MAYA_QUALITY_PRESETS.default
 

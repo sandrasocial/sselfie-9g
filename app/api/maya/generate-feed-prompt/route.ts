@@ -138,7 +138,7 @@ Now generate the FLUX prompt for this feed post:`
     let result
     try {
       result = await streamText({
-        model: "openai/gpt-4o",
+        model: "anthropic/claude-sonnet-4",
         messages: [
           {
             role: "system",

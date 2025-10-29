@@ -42,6 +42,7 @@
     "@stackframe/stack": "2.8.47",
     "@supabase/ssr": "latest",
     "@supabase/supabase-js": "latest",
+    "@upstash/redis": "latest",
     "@vercel/analytics": "latest",
     "@vercel/blob": "latest",
     "@vercel/postgres": "0.10.0",

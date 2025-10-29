@@ -5,12 +5,15 @@ import { Button } from "@/components/ui/button"
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport } from "ai"
 import { Textarea } from "@/components/ui/textarea"
-import { Sparkles, Download, Plus, History } from "lucide-react"
+import { Plus, History, MessageCircle, X, Minimize2 } from "lucide-react"
 
 import FeedPostCard from "./feed-post-card"
 import BrandProfileWizard from "./brand-profile-wizard"
 import StoryHighlightCard from "./story-highlight-card"
 import MayaChatHistory from "./maya-chat-history"
+import FeedWizardSteps from "./feed-wizard-steps"
+import FeedAnalyticsPanel from "./feed-analytics-panel"
+import HashtagStrategyPanel from "./hashtag-strategy-panel"
 
 interface FeedPost {
   id: string | number
@@ -52,7 +55,7 @@ export default function FeedDesignerScreen() {
     highlights: [],
   })
   const [feedStrategy, setFeedStrategy] = useState<any>(null)
-  const [mobileView, setMobileView] = useState<"chat" | "preview">("chat")
+  // const [mobileView, setMobileView] = useState<"chat" | "preview">("chat") // REMOVED
   const [feedUrl, setFeedUrl] = useState<string | null>(null)
   const [generationError, setGenerationError] = useState<string | null>(null)
   const [hasTrainedModel, setHasTrainedModel] = useState<boolean>(true)
@@ -72,6 +75,17 @@ export default function FeedDesignerScreen() {
   const [isProfileGenerated, setIsProfileGenerated] = useState(false)
 
   const isDesigningSetRef = useRef(false)
+
+  // New state variables for wizard, analytics, and hashtags
+  const [showWizard, setShowWizard] = useState(false)
+  const [showAnalytics, setShowAnalytics] = useState(false)
+  const [showHashtags, setShowHashtags] = useState(false)
+
+  const [isChatOpen, setIsChatOpen] = useState(false)
+  const [isChatMinimized, setIsChatMinimized] = useState(false)
+
+  // State to track highlight image generation status
+  const [highlightPredictions, setHighlightPredictions] = useState<Map<number, string>>(new Map())
 
   const handleGenerateProfileImage = async () => {
     if (!feedUrl) return
@@ -206,6 +220,126 @@ export default function FeedDesignerScreen() {
     initializeComponent()
   }, [])
 
+  useEffect(() => {
+    if (!feedUrl || profile.highlights.length === 0) return
+
+    const feedId = feedUrl.split("/").pop()
+    if (!feedId) return
+
+    // Check which highlights need polling
+    const highlightsToCheck = profile.highlights
+      .map((h, index) => ({ highlight: h, index }))
+      .filter(
+        (
+          { highlight, index }, // FIX: undeclared variable 'index' removed from here and used from closure
+        ) =>
+          highlight.coverUrl === "generating" ||
+          (highlight.coverUrl.includes("placeholder") && !highlightPredictions.has(index)),
+      )
+
+    if (highlightsToCheck.length === 0) return
+
+    console.log("[v0] Starting highlight polling for", highlightsToCheck.length, "highlights")
+
+    const pollHighlights = async () => {
+      for (const { highlight, index } of highlightsToCheck) {
+        // Get the highlight ID from the database
+        try {
+          const response = await fetch(`/api/feed/${feedId}/highlights`)
+          if (!response.ok) continue
+
+          const data = await response.json()
+          const dbHighlight = data.highlights[index]
+
+          if (!dbHighlight || !dbHighlight.prediction_id) continue
+
+          // Check if this prediction is already being polled
+          if (highlightPredictions.has(index)) continue
+
+          // Start polling this highlight
+          setHighlightPredictions((prev) => new Map(prev).set(index, dbHighlight.prediction_id))
+          pollSingleHighlight(feedId, dbHighlight.id, dbHighlight.prediction_id, index)
+        } catch (error) {
+          console.error("[v0] Error checking highlight:", error)
+        }
+      }
+    }
+
+    pollHighlights()
+  }, [feedUrl, profile.highlights, highlightPredictions])
+
+  const pollSingleHighlight = async (feedId: string, highlightId: number, predictionId: string, index: number) => {
+    const maxAttempts = 60
+    let attempts = 0
+
+    console.log("[v0] Polling highlight", index, "with prediction", predictionId)
+
+    while (attempts < maxAttempts) {
+      try {
+        const response = await fetch(
+          `/api/feed/${feedId}/check-highlight?predictionId=${predictionId}&highlightId=${highlightId}`,
+        )
+
+        if (!response.ok) {
+          throw new Error("Failed to check highlight status")
+        }
+
+        const data = await response.json()
+
+        if (data.status === "succeeded" && data.imageUrl) {
+          console.log("[v0] Highlight", index, "generation succeeded:", data.imageUrl)
+
+          // Save the image URL to the database
+          await fetch(`/api/feed/${feedId}/highlight-image`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ highlightId, imageUrl: data.imageUrl }),
+          })
+
+          // Update the local state
+          setProfile((prev) => ({
+            ...prev,
+            highlights: prev.highlights.map((h, i) => (i === index ? { ...h, coverUrl: data.imageUrl } : h)),
+          }))
+
+          // Remove from polling map
+          setHighlightPredictions((prev) => {
+            const newMap = new Map(prev)
+            newMap.delete(index)
+            return newMap
+          })
+
+          break
+        }
+
+        if (data.status === "failed") {
+          console.error("[v0] Highlight", index, "generation failed:", data.error)
+          setHighlightPredictions((prev) => {
+            const newMap = new Map(prev)
+            newMap.delete(index)
+            return newMap
+          })
+          break
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 3000))
+        attempts++
+      } catch (error) {
+        console.error("[v0] Error polling highlight:", error)
+        attempts++
+      }
+    }
+
+    if (attempts >= maxAttempts) {
+      console.warn("[v0] Highlight", index, "polling timed out")
+      setHighlightPredictions((prev) => {
+        const newMap = new Map(prev)
+        newMap.delete(index)
+        return newMap
+      })
+    }
+  }
+
   const loadBrandProfile = async () => {
     try {
       const response = await fetch("/api/profile/personal-brand")
@@ -300,7 +434,7 @@ export default function FeedDesignerScreen() {
           instagramBio: data.bio?.bio_text || profile.bio,
           highlights: data.highlights.map((h: any) => ({
             title: h.title,
-            description: h.prompt, // This is the FLUX prompt Maya generated
+            description: h.prompt,
             coverUrl: h.image_url || h.cover_url || "/placeholder.svg?height=64&width=64",
             type: h.icon_style || h.type || "image",
           })),
@@ -318,6 +452,15 @@ export default function FeedDesignerScreen() {
 
         setFeedStrategy(strategy)
         setFeedUrl(`/feed/${data.feed.id}`)
+
+        if (data.feed.profile_image_url) {
+          console.log("[v0] Loading saved profile image:", data.feed.profile_image_url)
+          setProfile((prev) => ({
+            ...prev,
+            profileImage: data.feed.profile_image_url,
+          }))
+          setIsProfileGenerated(true)
+        }
 
         if (data.bio) {
           setProfile((prev) => ({
@@ -565,10 +708,17 @@ export default function FeedDesignerScreen() {
     loadBrandProfile()
   }
 
+  // Function to handle the completion of the Feed Wizard
+  const handleWizardComplete = (data: any) => {
+    setShowWizard(false)
+    const wizardPrompt = `Create my Instagram feed strategy. I'm a ${data.businessType} targeting ${data.targetAudience}. My brand vibe is ${data.brandVibe}. My goals are: ${data.goals}`
+    sendMessage({ text: wizardPrompt })
+  }
+
   const handleAddHighlight = () => {
     setProfile((prev) => ({
       ...prev,
-      highlights: [...prev.highlights, { title: "", coverUrl: "#D4C5B9", description: "", type: "image" }],
+      highlights: [...prev.highlights, { title: "", coverUrl: "generating", description: "", type: "image" }],
     }))
     setEditingHighlights(true)
   }
@@ -737,245 +887,8 @@ export default function FeedDesignerScreen() {
         />
       )}
 
-      <div className="md:hidden flex-shrink-0 border-b border-stone-200 bg-white">
-        <div className="flex">
-          <button
-            onClick={() => setMobileView("chat")}
-            className={`flex-1 py-3 text-sm font-medium tracking-wide transition-all ${
-              mobileView === "chat"
-                ? "text-stone-950 border-b-2 border-stone-950"
-                : "text-stone-500 hover:text-stone-700"
-            }`}
-          >
-            Chat with Maya
-          </button>
-          <button
-            onClick={() => setMobileView("preview")}
-            className={`flex-1 py-3 text-sm font-medium tracking-wide transition-all ${
-              mobileView === "preview"
-                ? "text-stone-950 border-b-2 border-stone-950"
-                : "text-stone-500 hover:text-stone-700"
-            }`}
-          >
-            Feed Preview
-          </button>
-        </div>
-      </div>
-
       <div className="flex-1 flex overflow-hidden">
-        <div
-          className={`flex flex-col bg-white border-r border-stone-200 transition-all duration-300 ${
-            mobileView === "chat" ? "flex w-full md:w-2/5" : "hidden md:flex md:w-2/5"
-          }`}
-        >
-          <div className="flex-shrink-0 border-b border-stone-200 p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-stone-200">
-                  <img
-                    src="https://i.postimg.cc/fTtCnzZv/out-1-22.png"
-                    alt="Maya"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-stone-950">Maya</h3>
-                  <p className="text-xs text-stone-500">Instagram Strategist</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setShowHistory(!showHistory)}
-                  className={`p-2 rounded-lg transition-all ${
-                    showHistory ? "bg-stone-950 text-white" : "bg-stone-100 text-stone-600 hover:bg-stone-200"
-                  }`}
-                  title="Chat history"
-                >
-                  <History size={18} />
-                </button>
-
-                <button
-                  onClick={handleNewChat}
-                  className="p-2 bg-stone-100 text-stone-600 hover:bg-stone-200 rounded-lg transition-all"
-                  title="Start new chat"
-                >
-                  <Plus size={18} />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {showHistory && (
-            <div className="flex-shrink-0 border-b border-stone-200 p-4 bg-stone-50">
-              <MayaChatHistory currentChatId={chatId} onSelectChat={handleSelectChat} onNewChat={handleNewChat} />
-            </div>
-          )}
-
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {messages.length === 0 && !isTyping && !brandCompleted && (
-              <div className="flex flex-col items-center justify-center h-full px-4 py-8">
-                <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-stone-200 mb-4">
-                  <img
-                    src="https://i.postimg.cc/fTtCnzZv/out-1-22.png"
-                    alt="Maya"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <h2 className="text-xl font-bold text-stone-950 mb-2 text-center">Complete Your Brand Profile</h2>
-                <p className="text-sm text-stone-600 text-center mb-6 max-w-md leading-relaxed">
-                  Before I can design your perfect Instagram feed, I need to understand your unique brand story, style,
-                  and vision. This takes just a few minutes!
-                </p>
-                <Button onClick={() => setShowBrandWizard(true)} className="bg-stone-950 hover:bg-stone-800 text-white">
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Start Brand Profile
-                </Button>
-              </div>
-            )}
-
-            {messages.length === 0 && !isTyping && brandCompleted && (
-              <div className="flex flex-col items-center justify-center h-full px-4 py-8">
-                <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-stone-200 mb-4">
-                  <img
-                    src="https://i.postimg.cc/fTtCnzZv/out-1-22.png"
-                    alt="Maya"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <h2 className="text-xl font-bold text-stone-950 mb-2 text-center">Plan Your Instagram Feed</h2>
-                <p className="text-sm text-stone-600 text-center mb-6 max-w-md leading-relaxed">
-                  Tell me about your brand and I'll create a strategic 9-post feed with captions, hashtags, and
-                  personalized tips.
-                </p>
-                <div className="grid grid-cols-2 gap-2 w-full max-w-md">
-                  {currentPrompts.map((item, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handleQuickPrompt(item.prompt)}
-                      className="px-3 py-2.5 bg-stone-50 border border-stone-200 rounded-lg hover:bg-stone-100 hover:border-stone-300 transition-all text-center group"
-                    >
-                      <span className="text-xs font-medium text-stone-700 transition-colors">{item.prompt}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {messages.map((message, index) => (
-              <div key={index} className={`flex gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}>
-                {message.role === "assistant" && (
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full overflow-hidden border-2 border-stone-200">
-                    <img
-                      src="https://i.postimg.cc/fTtCnzZv/out-1-22.png"
-                      alt="Maya"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
-                <div className={`max-w-[80%] ${message.role === "user" ? "order-2" : "order-1"}`}>
-                  {message.parts &&
-                    Array.isArray(message.parts) &&
-                    message.parts.map((part, partIndex) => {
-                      if (part.type === "text") {
-                        return (
-                          <div
-                            key={partIndex}
-                            className={`rounded-2xl px-4 py-3 ${
-                              message.role === "user" ? "bg-stone-950 text-white" : "bg-stone-100 text-stone-950"
-                            }`}
-                          >
-                            <p className="text-sm leading-relaxed whitespace-pre-wrap">{part.text}</p>
-                          </div>
-                        )
-                      }
-                      return null
-                    })}
-                </div>
-              </div>
-            ))}
-
-            {isTyping && (
-              <div className="flex justify-start gap-3">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full overflow-hidden border-2 border-stone-200">
-                  <img
-                    src="https://i.postimg.cc/fTtCnzZv/out-1-22.png"
-                    alt="Maya"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="bg-stone-100 rounded-2xl px-4 py-3 max-w-[80%]">
-                  <div className="flex items-center gap-2">
-                    <div className="flex gap-1">
-                      <div className="w-2 h-2 rounded-full animate-bounce bg-stone-700"></div>
-                      <div
-                        className="w-2 h-2 rounded-full animate-bounce bg-stone-700"
-                        style={{ animationDelay: "0.2s" }}
-                      ></div>
-                      <div
-                        className="w-2 h-2 rounded-full animate-bounce bg-stone-700"
-                        style={{ animationDelay: "0.4s" }}
-                      ></div>
-                    </div>
-                    <span className="text-sm text-stone-600">
-                      {isDesigning ? "Maya is designing your feed..." : "Maya is thinking..."}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-
-          <div className="flex-shrink-0 border-t border-stone-200 p-4">
-            {messages.length > 0 && !isTyping && (
-              <div className="mb-3">
-                <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
-                  {currentPrompts.slice(0, 3).map((item, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handleQuickPrompt(item.prompt)}
-                      disabled={isTyping}
-                      className="flex-shrink-0 px-3 py-1.5 bg-stone-50 border border-stone-200 rounded-lg hover:bg-stone-100 hover:border-stone-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <span className="text-xs font-medium text-stone-700 whitespace-nowrap">{item.prompt}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="flex gap-3">
-              <Textarea
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                placeholder="Describe your brand and feed vision..."
-                className="flex-1 resize-none bg-stone-50 border-stone-200"
-                rows={2}
-                disabled={isTyping}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault()
-                    handleSendMessage()
-                  }
-                }}
-              />
-              <Button
-                onClick={handleSendMessage}
-                disabled={isTyping || !inputValue?.trim()}
-                className="bg-stone-950 hover:bg-stone-800 text-white self-end px-6"
-              >
-                Send
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        <div
-          className={`flex flex-col bg-stone-50 transition-all duration-300 relative ${
-            mobileView === "preview" ? "flex w-full md:w-3/5" : "hidden md:flex md:w-3/5"
-          }`}
-        >
+        <div className="flex-1 flex flex-col bg-stone-50 overflow-hidden">
           {(isDesigning || isApplyingDesign) && (
             <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center">
               <div className="text-center">
@@ -992,62 +905,98 @@ export default function FeedDesignerScreen() {
             </div>
           )}
 
+          <div className="flex-shrink-0 bg-white border-b border-stone-200 px-6 py-3">
+            <div className="flex items-center justify-between max-w-4xl mx-auto">
+              <h2 className="font-['Times_New_Roman'] text-xl font-extralight tracking-[0.2em] uppercase text-stone-950">
+                INSTAGRAM FEED DESIGNER
+              </h2>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowAnalytics(!showAnalytics)}
+                  className={`px-4 py-2 rounded-lg text-xs font-medium tracking-wider uppercase transition-all ${
+                    showAnalytics ? "bg-stone-950 text-white" : "bg-stone-100 text-stone-600 hover:bg-stone-200"
+                  }`}
+                >
+                  ANALYTICS
+                </button>
+                <button
+                  onClick={() => setShowHashtags(!showHashtags)}
+                  className={`px-4 py-2 rounded-lg text-xs font-medium tracking-wider uppercase transition-all ${
+                    showHashtags ? "bg-stone-950 text-white" : "bg-stone-100 text-stone-600 hover:bg-stone-200"
+                  }`}
+                >
+                  HASHTAGS
+                </button>
+              </div>
+            </div>
+          </div>
+
           <div className="flex-1 overflow-y-auto">
-            <div className="bg-white border-b border-stone-200 p-6 sticky top-0 z-10">
-              <div className="max-w-2xl mx-auto">
-                <div className="flex items-start gap-6">
-                  <div className="relative group">
-                    {!isProfileGenerated && !isGeneratingProfile && profile.profileImage.includes("placeholder") ? (
-                      <button
-                        onClick={handleGenerateProfileImage}
-                        className="w-20 h-20 rounded-full overflow-hidden border-2 border-dashed border-stone-300 bg-stone-50 flex flex-col items-center justify-center hover:border-stone-400 hover:bg-stone-100 transition-all"
-                      >
-                        <span className="text-xs font-medium text-stone-600">Generate</span>
-                      </button>
-                    ) : isGeneratingProfile ? (
-                      <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-stone-200 bg-stone-100 flex items-center justify-center">
-                        <div className="relative w-10 h-10">
-                          <div className="absolute inset-0 rounded-full bg-stone-200/20 animate-ping"></div>
-                          <div className="relative w-10 h-10 rounded-full bg-stone-950 animate-spin border-4 border-transparent border-t-white"></div>
+            <div className="max-w-4xl mx-auto p-6">
+              <div className="bg-white rounded-xl border border-stone-200 overflow-hidden mb-6">
+                {/* Profile Header */}
+                <div className="p-6 border-b border-stone-200">
+                  <div className="flex items-start gap-6 mb-6">
+                    <div className="relative group flex-shrink-0">
+                      {!isProfileGenerated && !isGeneratingProfile && profile.profileImage.includes("placeholder") ? (
+                        <button
+                          onClick={handleGenerateProfileImage}
+                          className="w-24 h-24 rounded-full overflow-hidden border-2 border-dashed border-stone-300 bg-stone-50 flex flex-col items-center justify-center hover:border-stone-400 hover:bg-stone-100 transition-all"
+                        >
+                          <span className="text-xs font-medium text-stone-600 text-center px-2">Generate Profile</span>
+                        </button>
+                      ) : isGeneratingProfile ? (
+                        <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-stone-200 bg-stone-100 flex items-center justify-center">
+                          <div className="relative w-12 h-12">
+                            <div className="absolute inset-0 rounded-full bg-stone-200/20 animate-ping"></div>
+                            <div className="relative w-12 h-12 rounded-full bg-stone-950 animate-spin border-4 border-transparent border-t-white"></div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-stone-200">
+                          <img
+                            src={profile.profileImage || "/placeholder.svg"}
+                            alt={profile.name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-4 mb-4">
+                        <h2 className="text-xl font-normal text-stone-950">{profile.handle}</h2>
+                        <button className="px-4 py-1.5 bg-stone-100 hover:bg-stone-200 rounded-lg text-sm font-medium text-stone-950 transition-all">
+                          Edit profile
+                        </button>
+                      </div>
+
+                      {/* Stats */}
+                      <div className="flex items-center gap-6 mb-4">
+                        <div className="text-center">
+                          <div className="text-sm font-semibold text-stone-950">{feedPosts.length}</div>
+                          <div className="text-xs text-stone-500">posts</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-sm font-semibold text-stone-950">1,234</div>
+                          <div className="text-xs text-stone-500">followers</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-sm font-semibold text-stone-950">567</div>
+                          <div className="text-xs text-stone-500">following</div>
                         </div>
                       </div>
-                    ) : (
-                      <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-stone-200">
-                        <img
-                          src={profile.profileImage || "/placeholder.svg"}
-                          alt={profile.name}
-                          className="w-full h-full object-cover"
-                        />
+
+                      <div>
+                        <div className="text-sm font-semibold text-stone-950 mb-1">{profile.name}</div>
+                        <p className="text-sm text-stone-700 leading-relaxed whitespace-pre-wrap">{profile.bio}</p>
                       </div>
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <h2 className="text-xl font-bold text-stone-950">{profile.name}</h2>
-                    <p className="text-sm text-stone-500 mb-2">{profile.handle}</p>
-                    <p className="text-sm text-stone-700 leading-relaxed">{profile.bio}</p>
-                    {profileError && <p className="text-xs text-red-600 mt-2">{profileError}</p>}
-                  </div>
-                </div>
-
-                <div className="mt-6">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-1 h-1 rounded-full bg-stone-600"></div>
-                      <span className="text-xs tracking-wider uppercase font-medium text-stone-600">
-                        Story Highlights
-                      </span>
+                      {profileError && <p className="text-xs text-red-600 mt-2">{profileError}</p>}
                     </div>
-                    <Button
-                      onClick={() => setEditingHighlights(!editingHighlights)}
-                      variant="ghost"
-                      size="sm"
-                      className="text-xs"
-                    >
-                      {editingHighlights ? "Done" : "Edit"}
-                    </Button>
                   </div>
 
-                  <div className="flex gap-4 overflow-x-auto pb-2">
+                  {/* Story Highlights */}
+                  <div className="flex items-center gap-4 overflow-x-auto pb-2">
                     {profile.highlights.map((highlight, index) => (
                       <StoryHighlightCard
                         key={index}
@@ -1069,124 +1018,18 @@ export default function FeedDesignerScreen() {
                         <div className="w-16 h-16 rounded-full bg-stone-100 border-2 border-dashed border-stone-300 flex items-center justify-center group-hover:border-stone-400 group-hover:bg-stone-50 transition-all">
                           <span className="text-2xl text-stone-400 group-hover:text-stone-600">+</span>
                         </div>
-                        <span className="text-xs text-stone-400 group-hover:text-stone-600">Add New</span>
+                        <span className="text-xs text-stone-400 group-hover:text-stone-600">New</span>
                       </button>
                     )}
                   </div>
                 </div>
-              </div>
-            </div>
 
-            <div className="p-6">
-              <div className="max-w-2xl mx-auto">
-                {generationError && (
-                  <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4">
-                    <div className="flex items-start gap-3">
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-red-950 mb-1">Generation Error</p>
-                        <p className="text-sm text-red-700">{generationError}</p>
-                      </div>
-                      <button
-                        onClick={() => setGenerationError(null)}
-                        className="text-red-400 hover:text-red-600 text-xl leading-none"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {!hasTrainedModel && (
-                  <div className="mb-6 bg-amber-50 border border-amber-200 rounded-xl p-4">
-                    <div className="flex items-start gap-3">
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-amber-950 mb-1">Training Required</p>
-                        <p className="text-sm text-amber-700 mb-3">
-                          You need to train your personal model before generating feed images.
-                        </p>
-                        <Button
-                          onClick={() => (window.location.href = "/?tab=studio")}
-                          className="bg-amber-950 hover:bg-amber-800 text-white"
-                        >
-                          Go to Studio
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {isApplyingDesign && (
-                  <div className="mb-6 bg-white rounded-xl p-6 border border-stone-200">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-stone-200 flex-shrink-0">
-                        <img
-                          src="https://i.postimg.cc/fTtCnzZv/out-1-22.png"
-                          alt="Maya"
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <div className="flex gap-1">
-                            <div className="w-2 h-2 rounded-full animate-bounce bg-stone-700"></div>
-                            <div
-                              className="w-2 h-2 rounded-full animate-bounce bg-stone-700"
-                              style={{ animationDelay: "0.2s" }}
-                            ></div>
-                            <div
-                              className="w-2 h-2 rounded-full animate-bounce bg-stone-700"
-                              style={{ animationDelay: "0.4s" }}
-                            ></div>
-                          </div>
-                          <span className="text-sm font-medium text-stone-950">Applying design to preview...</span>
-                        </div>
-                        <p className="text-xs text-stone-600">
-                          Your feed strategy is being loaded into the Instagram preview
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {isDesigning && feedPosts.every((p) => !p.title) && (
-                  <div className="mb-6 bg-white rounded-xl p-6 border border-stone-200">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-stone-200 flex-shrink-0">
-                        <img
-                          src="https://i.postimg.cc/fTtCnzZv/out-1-22.png"
-                          alt="Maya"
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <div className="flex gap-1">
-                            <div className="w-2 h-2 rounded-full animate-bounce bg-stone-700"></div>
-                            <div
-                              className="w-2 h-2 rounded-full animate-bounce bg-stone-700"
-                              style={{ animationDelay: "0.2s" }}
-                            ></div>
-                            <div
-                              className="w-2 h-2 rounded-full animate-bounce bg-stone-700"
-                              style={{ animationDelay: "0.4s" }}
-                            ></div>
-                          </div>
-                          <span className="text-sm font-medium text-stone-950">Maya is designing your feed...</span>
-                        </div>
-                        <p className="text-xs text-stone-600">
-                          Creating a strategic 9-post layout with concepts tailored to your brand
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-3 gap-1 bg-white rounded-xl overflow-hidden border border-stone-200">
+                <div className="grid grid-cols-3 gap-1 bg-stone-100">
                   {feedPosts.map((post) => {
                     const feedId = feedUrl?.split("/").pop()
 
                     return (
-                      <div key={post.id} className="aspect-square bg-stone-100 relative group">
+                      <div key={post.id} className="aspect-[3/4] bg-stone-100 relative group">
                         {isDesigning && !post.title && (
                           <div className="absolute inset-0 bg-gradient-to-br from-stone-200 to-stone-300 animate-pulse">
                             <div className="absolute inset-0 flex items-center justify-center">
@@ -1199,7 +1042,7 @@ export default function FeedDesignerScreen() {
                         )}
 
                         {!isDesigning && post.status === "concept" && !post.title && (
-                          <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="absolute inset-0 flex items-center justify-center bg-stone-50">
                             <span className="text-stone-400 text-sm">{post.position + 1}</span>
                           </div>
                         )}
@@ -1208,7 +1051,7 @@ export default function FeedDesignerScreen() {
                           <div className="absolute inset-0">
                             <FeedPostCard
                               post={{
-                                id: post.id, // Now this is the actual database ID
+                                id: post.id,
                                 position: post.position,
                                 post_type: post.category,
                                 prompt: post.prompt,
@@ -1231,28 +1074,323 @@ export default function FeedDesignerScreen() {
                     )
                   })}
                 </div>
-
-                {feedPosts.some((p) => p.status === "ready") && (
-                  <div className="mt-6 flex gap-3 justify-center">
-                    {feedUrl && (
-                      <Button
-                        onClick={() => window.open(feedUrl, "_blank")}
-                        className="bg-stone-950 hover:bg-stone-800 text-white"
-                      >
-                        View Full Feed
-                      </Button>
-                    )}
-                    <Button onClick={downloadFeed} variant="outline" className="border-stone-300 bg-transparent">
-                      <Download className="w-4 h-4 mr-2" />
-                      Download ZIP
-                    </Button>
-                  </div>
-                )}
               </div>
+
+              {/* Side Panels */}
+              {(showAnalytics || showHashtags) && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  {showAnalytics && <FeedAnalyticsPanel feedStrategy={feedStrategy} />}
+                  {showHashtags && <HashtagStrategyPanel businessType={brandData?.businessType} />}
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              {feedPosts.some((p) => p.status === "ready") && (
+                <div className="flex gap-3 justify-center">
+                  {feedUrl && (
+                    <Button
+                      onClick={() => window.open(feedUrl, "_blank")}
+                      className="bg-stone-950 hover:bg-stone-800 text-white px-8 py-3 text-sm font-medium tracking-wider uppercase"
+                    >
+                      VIEW FULL FEED
+                    </Button>
+                  )}
+                  <Button
+                    onClick={downloadFeed}
+                    variant="outline"
+                    className="border-stone-300 bg-transparent px-8 py-3 text-sm font-medium tracking-wider uppercase"
+                  >
+                    DOWNLOAD ZIP
+                  </Button>
+                </div>
+              )}
+
+              {/* Error Messages */}
+              {generationError && (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-red-950 mb-1">Generation Error</p>
+                      <p className="text-sm text-red-700">{generationError}</p>
+                    </div>
+                    <button
+                      onClick={() => setGenerationError(null)}
+                      className="text-red-400 hover:text-red-600 text-xl leading-none"
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {!hasTrainedModel && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-amber-950 mb-1">Training Required</p>
+                      <p className="text-sm text-amber-700 mb-3">
+                        You need to train your personal model before generating feed images.
+                      </p>
+                      <Button
+                        onClick={() => (window.location.href = "/?tab=studio")}
+                        className="bg-amber-950 hover:bg-amber-800 text-white"
+                      >
+                        Go to Studio
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
+
+      {!isChatOpen && (
+        <button
+          onClick={() => setIsChatOpen(true)}
+          className="fixed bottom-6 right-6 w-16 h-16 bg-stone-950 hover:bg-stone-800 text-white rounded-full shadow-2xl flex items-center justify-center transition-all z-40 group"
+        >
+          <MessageCircle size={28} className="group-hover:scale-110 transition-transform" />
+          {messages.length === 0 && (
+            <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full animate-pulse"></div>
+          )}
+        </button>
+      )}
+
+      {isChatOpen && (
+        <div
+          className={`fixed bottom-6 right-6 bg-white rounded-2xl shadow-2xl border border-stone-200 z-50 transition-all ${
+            isChatMinimized ? "w-80 h-16" : "w-96 h-[600px]"
+          }`}
+        >
+          {/* Chat Header */}
+          <div className="flex-shrink-0 border-b border-stone-200 p-4 bg-stone-50 rounded-t-2xl">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-stone-200">
+                  <img
+                    src="https://i.postimg.cc/fTtCnzZv/out-1-22.png"
+                    alt="Maya"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                {!isChatMinimized && (
+                  <div>
+                    <h3 className="text-sm font-bold text-stone-950">Maya</h3>
+                    <p className="text-xs text-stone-500">Instagram Strategist</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                {!isChatMinimized && (
+                  <>
+                    <button
+                      onClick={() => setShowHistory(!showHistory)}
+                      className="p-2 rounded-lg hover:bg-stone-200 transition-all"
+                      title="Chat history"
+                    >
+                      <History size={16} />
+                    </button>
+                    <button
+                      onClick={handleNewChat}
+                      className="p-2 rounded-lg hover:bg-stone-200 transition-all"
+                      title="New chat"
+                    >
+                      <Plus size={16} />
+                    </button>
+                  </>
+                )}
+                <button
+                  onClick={() => setIsChatMinimized(!isChatMinimized)}
+                  className="p-2 rounded-lg hover:bg-stone-200 transition-all"
+                  title={isChatMinimized ? "Expand" : "Minimize"}
+                >
+                  <Minimize2 size={16} />
+                </button>
+                <button
+                  onClick={() => setIsChatOpen(false)}
+                  className="p-2 rounded-lg hover:bg-stone-200 transition-all"
+                  title="Close"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {!isChatMinimized && (
+            <>
+              {showHistory && (
+                <div className="flex-shrink-0 border-b border-stone-200 p-4 bg-stone-50 max-h-48 overflow-y-auto">
+                  <MayaChatHistory currentChatId={chatId} onSelectChat={handleSelectChat} onNewChat={handleNewChat} />
+                </div>
+              )}
+
+              {/* Chat Messages */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 h-[400px]">
+                {messages.length === 0 && !isTyping && !brandCompleted && (
+                  <div className="flex flex-col items-center justify-center h-full px-4 py-8">
+                    <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-stone-200 mb-4">
+                      <img
+                        src="https://i.postimg.cc/fTtCnzZv/out-1-22.png"
+                        alt="Maya"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <h3 className="text-lg font-bold text-stone-950 mb-2 text-center">Complete Your Brand Profile</h3>
+                    <p className="text-xs text-stone-600 text-center mb-4 leading-relaxed">
+                      I need to understand your brand story first!
+                    </p>
+                    <Button
+                      onClick={() => setShowBrandWizard(true)}
+                      className="bg-stone-950 hover:bg-stone-800 text-white text-sm"
+                    >
+                      Start Brand Profile
+                    </Button>
+                  </div>
+                )}
+
+                {messages.length === 0 && !isTyping && brandCompleted && (
+                  <div className="flex flex-col items-center justify-center h-full px-4 py-8">
+                    <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-stone-200 mb-4">
+                      <img
+                        src="https://i.postimg.cc/fTtCnzZv/out-1-22.png"
+                        alt="Maya"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <h3 className="text-lg font-bold text-stone-950 mb-2 text-center">Design Your Feed</h3>
+                    <p className="text-xs text-stone-600 text-center mb-4 leading-relaxed">
+                      I'll create a strategic 9-post feed for you!
+                    </p>
+
+                    <Button
+                      onClick={() => setShowWizard(true)}
+                      className="bg-stone-950 hover:bg-stone-800 text-white text-sm mb-3"
+                    >
+                      Start Wizard
+                    </Button>
+
+                    <div className="text-xs text-stone-500 mb-3">or quick start</div>
+
+                    <div className="grid grid-cols-2 gap-2 w-full">
+                      {currentPrompts.slice(0, 4).map((item, index) => (
+                        <button
+                          key={index}
+                          onClick={() => handleQuickPrompt(item.prompt)}
+                          className="px-2 py-2 bg-stone-50 border border-stone-200 rounded-lg hover:bg-stone-100 transition-all text-center"
+                        >
+                          <span className="text-xs font-medium text-stone-700">{item.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {messages.map((message, index) => (
+                  <div
+                    key={index}
+                    className={`flex gap-2 ${message.role === "user" ? "justify-end" : "justify-start"}`}
+                  >
+                    {message.role === "assistant" && (
+                      <div className="flex-shrink-0 w-7 h-7 rounded-full overflow-hidden border-2 border-stone-200">
+                        <img
+                          src="https://i.postimg.cc/fTtCnzZv/out-1-22.png"
+                          alt="Maya"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
+                    <div className={`max-w-[75%] ${message.role === "user" ? "order-2" : "order-1"}`}>
+                      {message.parts &&
+                        Array.isArray(message.parts) &&
+                        message.parts.map((part, partIndex) => {
+                          if (part.type === "text") {
+                            return (
+                              <div
+                                key={partIndex}
+                                className={`rounded-2xl px-3 py-2 ${
+                                  message.role === "user" ? "bg-stone-950 text-white" : "bg-stone-100 text-stone-950"
+                                }`}
+                              >
+                                <p className="text-xs leading-relaxed whitespace-pre-wrap">{part.text}</p>
+                              </div>
+                            )
+                          }
+                          return null
+                        })}
+                    </div>
+                  </div>
+                ))}
+
+                {isTyping && (
+                  <div className="flex justify-start gap-2">
+                    <div className="flex-shrink-0 w-7 h-7 rounded-full overflow-hidden border-2 border-stone-200">
+                      <img
+                        src="https://i.postimg.cc/fTtCnzZv/out-1-22.png"
+                        alt="Maya"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="bg-stone-100 rounded-2xl px-3 py-2">
+                      <div className="flex gap-1">
+                        <div className="w-2 h-2 rounded-full animate-bounce bg-stone-700"></div>
+                        <div
+                          className="w-2 h-2 rounded-full animate-bounce bg-stone-700"
+                          style={{ animationDelay: "0.2s" }}
+                        ></div>
+                        <div
+                          className="w-2 h-2 rounded-full animate-bounce bg-stone-700"
+                          style={{ animationDelay: "0.4s" }}
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Chat Input */}
+              <div className="flex-shrink-0 border-t border-stone-200 p-3">
+                <div className="flex gap-2">
+                  <Textarea
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    placeholder="Ask Maya..."
+                    className="flex-1 resize-none bg-stone-50 border-stone-200 text-sm"
+                    rows={2}
+                    disabled={isTyping}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault()
+                        handleSendMessage()
+                      }
+                    }}
+                  />
+                  <Button
+                    onClick={handleSendMessage}
+                    disabled={isTyping || !inputValue?.trim()}
+                    className="bg-stone-950 hover:bg-stone-800 text-white self-end px-4 text-sm"
+                  >
+                    Send
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Wizard Modal */}
+      {showWizard && (
+        <div className="fixed inset-0 bg-stone-950/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-3xl">
+            <FeedWizardSteps onComplete={handleWizardComplete} onSkip={() => setShowWizard(false)} />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

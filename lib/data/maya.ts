@@ -1,6 +1,6 @@
 import { neon } from "@neondatabase/serverless"
-
-const sql = neon(process.env.DATABASE_URL!)
+import { getRedisClient, CacheKeys, CacheTTL } from "@/lib/redis"
+const sql = neon()
 
 export interface MayaChat {
   id: number
@@ -114,15 +114,44 @@ export async function getOrCreateActiveChat(userId: string, chatType = "maya"): 
   return newChat[0] as MayaChat
 }
 
-// Get chat messages
 export async function getChatMessages(chatId: number): Promise<MayaChatMessage[]> {
-  const messages = await sql`
-    SELECT * FROM maya_chat_messages
-    WHERE chat_id = ${chatId}
-    ORDER BY created_at ASC
-  `
+  try {
+    // Try to get from cache first
+    const redis = getRedisClient()
+    const cacheKey = CacheKeys.mayaChatMessages(chatId)
+    const cached = await redis.get<MayaChatMessage[]>(cacheKey)
 
-  return messages as MayaChatMessage[]
+    if (cached) {
+      console.log("[v0] Cache hit for chat messages:", chatId)
+      return cached
+    }
+
+    console.log("[v0] Cache miss for chat messages:", chatId, "- fetching from Neon")
+
+    // Cache miss - fetch from Neon database
+    const messages = await sql`
+      SELECT * FROM maya_chat_messages
+      WHERE chat_id = ${chatId}
+      ORDER BY created_at ASC
+    `
+
+    const typedMessages = messages as MayaChatMessage[]
+
+    // Store in cache for future requests
+    await redis.setex(cacheKey, CacheTTL.chatMessages, typedMessages)
+    console.log("[v0] Cached chat messages for:", chatId)
+
+    return typedMessages
+  } catch (error) {
+    console.error("[v0] Error in getChatMessages (falling back to Neon only):", error)
+    // Fallback to direct database query if Redis fails
+    const messages = await sql`
+      SELECT * FROM maya_chat_messages
+      WHERE chat_id = ${chatId}
+      ORDER BY created_at ASC
+    `
+    return messages as MayaChatMessage[]
+  }
 }
 
 // Save chat message
@@ -162,6 +191,16 @@ export async function saveChatMessage(
 
     console.log("[v0] ✅ Chat last_activity updated for chat:", chatId)
 
+    try {
+      const redis = getRedisClient()
+      const cacheKey = CacheKeys.mayaChatMessages(chatId)
+      await redis.del(cacheKey)
+      console.log("[v0] Cache invalidated for chat:", chatId)
+    } catch (cacheError) {
+      console.error("[v0] Error invalidating cache (non-critical):", cacheError)
+      // Don't throw - cache invalidation failure shouldn't break message saving
+    }
+
     return message[0] as MayaChatMessage
   } catch (error: any) {
     console.error("[v0] ❌ Error in saveChatMessage:", {
@@ -189,13 +228,43 @@ export async function saveChatMessage(
 
 // Get user's personal memory
 export async function getUserPersonalMemory(userId: string): Promise<MayaPersonalMemory | null> {
-  const memory = await sql`
-    SELECT * FROM maya_personal_memory
-    WHERE user_id = ${userId}
-    LIMIT 1
-  `
+  try {
+    // Try cache first
+    const redis = getRedisClient()
+    const cacheKey = CacheKeys.mayaPersonalMemory(userId)
+    const cached = await redis.get<MayaPersonalMemory>(cacheKey)
 
-  return memory.length > 0 ? (memory[0] as MayaPersonalMemory) : null
+    if (cached) {
+      console.log("[v0] Cache hit for personal memory:", userId)
+      return cached
+    }
+
+    console.log("[v0] Cache miss for personal memory:", userId, "- fetching from Neon")
+
+    // Fetch from Neon
+    const memory = await sql`
+      SELECT * FROM maya_personal_memory
+      WHERE user_id = ${userId}
+      LIMIT 1
+    `
+
+    const result = memory.length > 0 ? (memory[0] as MayaPersonalMemory) : null
+
+    // Cache the result (even if null)
+    await redis.setex(cacheKey, CacheTTL.personalMemory, result)
+    console.log("[v0] Cached personal memory for:", userId)
+
+    return result
+  } catch (error) {
+    console.error("[v0] Error in getUserPersonalMemory (falling back to Neon only):", error)
+    // Fallback to direct database query
+    const memory = await sql`
+      SELECT * FROM maya_personal_memory
+      WHERE user_id = ${userId}
+      LIMIT 1
+    `
+    return memory.length > 0 ? (memory[0] as MayaPersonalMemory) : null
+  }
 }
 
 // Update or create personal memory
@@ -204,6 +273,8 @@ export async function updatePersonalMemory(
   updates: Partial<Omit<MayaPersonalMemory, "id" | "user_id" | "created_at" | "updated_at">>,
 ): Promise<MayaPersonalMemory> {
   const existing = await getUserPersonalMemory(userId)
+
+  let result: MayaPersonalMemory
 
   if (existing) {
     const updated = await sql`
@@ -223,7 +294,7 @@ export async function updatePersonalMemory(
       WHERE user_id = ${userId}
       RETURNING *
     `
-    return updated[0] as MayaPersonalMemory
+    result = updated[0] as MayaPersonalMemory
   } else {
     const created = await sql`
       INSERT INTO maya_personal_memory (
@@ -252,8 +323,19 @@ export async function updatePersonalMemory(
       )
       RETURNING *
     `
-    return created[0] as MayaPersonalMemory
+    result = created[0] as MayaPersonalMemory
   }
+
+  try {
+    const redis = getRedisClient()
+    const cacheKey = CacheKeys.mayaPersonalMemory(userId)
+    await redis.del(cacheKey)
+    console.log("[v0] Cache invalidated for personal memory:", userId)
+  } catch (cacheError) {
+    console.error("[v0] Error invalidating cache (non-critical):", cacheError)
+  }
+
+  return result
 }
 
 // Learn from user interaction
@@ -310,15 +392,44 @@ export async function learnFromInteraction(
   })
 }
 
-// Get user's personal brand
 export async function getUserPersonalBrand(userId: string): Promise<UserPersonalBrand | null> {
-  const brand = await sql`
-    SELECT * FROM user_personal_brand
-    WHERE user_id = ${userId}
-    LIMIT 1
-  `
+  try {
+    // Try cache first
+    const redis = getRedisClient()
+    const cacheKey = CacheKeys.mayaPersonalBrand(userId)
+    const cached = await redis.get<UserPersonalBrand>(cacheKey)
 
-  return brand.length > 0 ? (brand[0] as UserPersonalBrand) : null
+    if (cached) {
+      console.log("[v0] Cache hit for personal brand:", userId)
+      return cached
+    }
+
+    console.log("[v0] Cache miss for personal brand:", userId, "- fetching from Neon")
+
+    // Fetch from Neon
+    const brand = await sql`
+      SELECT * FROM user_personal_brand
+      WHERE user_id = ${userId}
+      LIMIT 1
+    `
+
+    const result = brand.length > 0 ? (brand[0] as UserPersonalBrand) : null
+
+    // Cache the result
+    await redis.setex(cacheKey, CacheTTL.personalBrand, result)
+    console.log("[v0] Cached personal brand for:", userId)
+
+    return result
+  } catch (error) {
+    console.error("[v0] Error in getUserPersonalBrand (falling back to Neon only):", error)
+    // Fallback to direct database query
+    const brand = await sql`
+      SELECT * FROM user_personal_brand
+      WHERE user_id = ${userId}
+      LIMIT 1
+    `
+    return brand.length > 0 ? (brand[0] as UserPersonalBrand) : null
+  }
 }
 
 export async function linkPersonalMemoryToBrand(userId: string, brandId: number): Promise<void> {
