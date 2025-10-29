@@ -1,11 +1,61 @@
 import type { NextRequest } from "next/server"
 import { neon } from "@neondatabase/serverless"
+import { getCurrentNeonUser } from "@/lib/user-sync"
 
 const sql = neon(process.env.DATABASE_URL!)
 
 export async function GET(req: NextRequest, { params }: { params: { feedId: string } }) {
   try {
     const { feedId } = params
+
+    if (feedId === "latest") {
+      const user = await getCurrentNeonUser()
+
+      if (!user) {
+        return Response.json({ error: "Unauthorized" }, { status: 401 })
+      }
+
+      // Get user's most recent feed layout
+      const feedLayouts = await sql`
+        SELECT * FROM feed_layouts
+        WHERE user_id = ${user.id}
+        ORDER BY created_at DESC
+        LIMIT 1
+      `
+
+      if (feedLayouts.length === 0) {
+        return Response.json({ exists: false })
+      }
+
+      const feedLayout = feedLayouts[0]
+
+      // Get feed posts
+      const feedPosts = await sql`
+        SELECT * FROM feed_posts
+        WHERE feed_layout_id = ${feedLayout.id}
+        ORDER BY position ASC
+      `
+
+      const bios = await sql`
+        SELECT * FROM instagram_bios
+        WHERE feed_layout_id = ${feedLayout.id}
+        LIMIT 1
+      `
+
+      const highlights = await sql`
+        SELECT * FROM highlight_covers
+        WHERE feed_layout_id = ${feedLayout.id}
+        ORDER BY created_at ASC
+      `
+
+      return Response.json({
+        exists: true,
+        feed: feedLayout,
+        posts: feedPosts,
+        bio: bios[0] || null,
+        highlights: highlights || [],
+      })
+    }
 
     // Get feed layout
     const feedLayouts = await sql`
@@ -47,6 +97,45 @@ export async function GET(req: NextRequest, { params }: { params: { feedId: stri
     })
   } catch (error) {
     console.error("[v0] Error fetching feed:", error)
+    return Response.json({ error: "Internal server error" }, { status: 500 })
+  }
+}
+
+export async function PATCH(req: NextRequest, { params }: { params: { feedId: string } }) {
+  try {
+    const { feedId } = params
+    const body = await req.json()
+    const { bio } = body
+
+    if (!bio || typeof bio !== "string") {
+      return Response.json({ error: "Bio is required" }, { status: 400 })
+    }
+
+    // Update or insert bio
+    const existingBios = await sql`
+      SELECT id FROM instagram_bios
+      WHERE feed_layout_id = ${feedId}
+      LIMIT 1
+    `
+
+    if (existingBios.length > 0) {
+      // Update existing bio
+      await sql`
+        UPDATE instagram_bios
+        SET bio_text = ${bio}, updated_at = NOW()
+        WHERE feed_layout_id = ${feedId}
+      `
+    } else {
+      // Insert new bio
+      await sql`
+        INSERT INTO instagram_bios (feed_layout_id, bio_text)
+        VALUES (${feedId}, ${bio})
+      `
+    }
+
+    return Response.json({ success: true, bio })
+  } catch (error) {
+    console.error("[v0] Error updating bio:", error)
     return Response.json({ error: "Internal server error" }, { status: 500 })
   }
 }

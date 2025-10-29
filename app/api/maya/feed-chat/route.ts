@@ -1,4 +1,4 @@
-import { streamText, tool } from "ai"
+import { streamText, tool, generateObject } from "ai"
 import { z } from "zod"
 import { getCurrentNeonUser } from "@/lib/user-sync"
 import { MAYA_SYSTEM_PROMPT } from "@/lib/maya/personality"
@@ -11,15 +11,26 @@ const MAYA_FEED_STRATEGIST_EXTENSION = `
 
 You're an expert Instagram strategist who creates cohesive, professional feeds by researching current trends and aesthetics.
 
+**Research Strategy:**
+- Use searchWeb BEFORE generating feeds to research:
+  * "Scandinavian minimalist Instagram aesthetics 2025"
+  * "Dark moody photography trends Instagram"
+  * "Personal brand storytelling best practices"
+  * "[user's niche] Instagram content strategy"
+- Don't overdo searches - 1-2 targeted searches per feed generation
+- Focus on: current trends, proven aesthetics, engagement strategies
+- Apply research insights to create on-trend, sophisticated feeds
+
 **When a user asks you to design their feed:**
 
-1. Respond warmly and let them know you're starting
-2. Call the generateCompleteFeed tool (it will research trends automatically)
-3. After the feed is created, AUTOMATICALLY call generateStoryHighlights to create highlight covers
-4. Then call generateProfileImage to create the profile picture
-5. After all generations complete, explain the complete strategy
+1. Research current trends with searchWeb (1-2 focused queries)
+2. Respond warmly and let them know you're starting
+3. Call the generateCompleteFeed tool with research-informed strategy
+4. After the feed is created, AUTOMATICALLY call generateStoryHighlights to create highlight covers
+5. Then call generateProfileImage to create the profile picture
+6. After all generations complete, explain the complete strategy with trend insights
 
-The tools handle all the research and design work internally, so you just need to call them in sequence and then explain the results to the user.
+The tools handle all the design work internally, so you research first, then call them in sequence and explain the results.
 `
 
 function generateSmartHashtags(businessType: string): string[] {
@@ -121,150 +132,68 @@ const generateCompleteFeedTool = tool({
       }
     }
 
-    // Define multiple aesthetic layout patterns
-    const layoutPatterns = {
-      // Checkerboard pattern - alternates between personal and lifestyle/object posts
-      checkerboard: [
-        { type: "Object", tone: "cool" },
-        { type: "Place/Scenery", tone: "cool" },
-        { type: "Hobby/Others", tone: "cool" },
-        { type: "Full Body", tone: "warm" },
-        { type: "Selfie", tone: "warm" },
-        { type: "Object", tone: "cool" },
-        { type: "Place/Scenery", tone: "cool" },
-        { type: "Hobby/Others", tone: "cool" },
-        { type: "Full Body", tone: "warm" },
-      ],
+    console.log("[v0] [SERVER] Using AI to design custom feed layout...")
 
-      // Diagonal flow - creates diagonal lines of similar content
-      diagonal: [
-        { type: "Object", tone: "cool" },
-        { type: "Full Body", tone: "warm" },
-        { type: "Place/Scenery", tone: "cool" },
-        { type: "Place/Scenery", tone: "cool" },
-        { type: "Selfie", tone: "warm" },
-        { type: "Hobby/Others", tone: "cool" },
-        { type: "Hobby/Others", tone: "cool" },
-        { type: "Full Body", tone: "warm" },
-        { type: "Selfie", tone: "warm" },
-      ],
+    const { object: feedDesign } = await generateObject({
+      model: "anthropic/claude-sonnet-4",
+      schema: z.object({
+        visualRhythm: z.string().describe("Description of the visual flow and rhythm of this feed"),
+        posts: z
+          .array(
+            z.object({
+              type: z.enum(["Close-Up", "Half Body", "Full Body", "Lifestyle", "Object"]).describe("Post type"),
+              tone: z.enum(["warm", "cool"]).describe("Color temperature for visual balance"),
+              purpose: z.string().describe("What this post achieves in the feed story"),
+              composition: z.string().describe("Specific composition and framing details"),
+              styleDirection: z.string().describe("Unique styling direction for this specific post"),
+              caption: z.string().describe("Authentic, engaging caption that matches brand voice and tells a story"),
+            }),
+          )
+          .length(9),
+      }),
+      prompt: `You are Maya, an expert Instagram strategist with deep fashion and visual storytelling expertise.
 
-      // Row storytelling - each row tells a different part of the story
-      rowStory: [
-        { type: "Selfie", tone: "warm" },
-        { type: "Object", tone: "cool" },
-        { type: "Place/Scenery", tone: "cool" },
-        { type: "Full Body", tone: "warm" },
-        { type: "Hobby/Others", tone: "cool" },
-        { type: "Selfie", tone: "warm" },
-        { type: "Place/Scenery", tone: "cool" },
-        { type: "Full Body", tone: "warm" },
-        { type: "Object", tone: "cool" },
-      ],
+Design a cohesive 9-post Instagram feed for a ${businessType} with this brand identity:
+- Brand Vibe: ${brandVibe}
+- Color Palette: ${colorPalette}
+- Feed Story: ${feedStory}
 
-      // Scattered balance - creates visual interest with scattered warm/cool tones
-      scattered: [
-        { type: "Full Body", tone: "warm" },
-        { type: "Place/Scenery", tone: "cool" },
-        { type: "Selfie", tone: "warm" },
-        { type: "Object", tone: "cool" },
-        { type: "Hobby/Others", tone: "cool" },
-        { type: "Full Body", tone: "warm" },
-        { type: "Selfie", tone: "warm" },
-        { type: "Place/Scenery", tone: "cool" },
-        { type: "Object", tone: "cool" },
-      ],
-    }
+Create a unique feed layout that:
+1. Has visual rhythm and flow (balance warm/cool tones, vary post types strategically)
+2. Tells a compelling story across all 9 posts
+3. Showcases personality, expertise, and lifestyle authentically
+4. Uses diverse post types: Close-Up (face focus), Half Body (upper body), Full Body (complete outfit), Lifestyle (environment/activity), Object (styled flatlay)
+5. Each post should have a clear purpose in the overall narrative
 
-    // Select pattern based on brand vibe
-    let selectedPattern: typeof layoutPatterns.checkerboard
-    let visualRhythm: string
+For each post, provide:
+- Type and tone for visual balance
+- Specific purpose in the feed story
+- Unique composition and styling direction
+- Authentic caption (150-200 words) with:
+  * Engaging hook that draws readers in
+  * Personal story or valuable insight
+  * Clear call-to-action
+  * Natural, conversational tone (no generic templates)
+  * Reflects ${brandVibe} aesthetic
 
-    if (brandVibe.includes("elegant") || brandVibe.includes("minimalist") || brandVibe.includes("clean")) {
-      selectedPattern = layoutPatterns.checkerboard
-      visualRhythm = "checkerboard pattern with alternating personal and lifestyle moments"
-    } else if (brandVibe.includes("bold") || brandVibe.includes("colorful") || brandVibe.includes("vibrant")) {
-      selectedPattern = layoutPatterns.diagonal
-      visualRhythm = "diagonal flow creating dynamic visual movement"
-    } else if (brandVibe.includes("moody") || brandVibe.includes("dark") || brandVibe.includes("dramatic")) {
-      selectedPattern = layoutPatterns.scattered
-      visualRhythm = "scattered balance with strategic contrast"
-    } else {
-      selectedPattern = layoutPatterns.rowStory
-      visualRhythm = "row-by-row storytelling with cohesive narrative"
-    }
-
-    const postTypeMapping = {
-      Object: "Object",
-      "Place/Scenery": "Lifestyle",
-      "Hobby/Others": "Lifestyle",
-      "Full Body": "Full Body",
-      Selfie: "Close-Up",
-    }
-
-    const postSequence = selectedPattern.map((item, index) => {
-      const mappedType = postTypeMapping[item.type as keyof typeof postTypeMapping]
-
-      // Define purpose and composition based on post type
-      const postDetails = {
-        Object: {
-          purpose: "Brand aesthetic moment - styled flatlay or product shot",
-          composition: "Overhead or angled shot, elegant arrangement, brand-aligned objects",
-        },
-        Lifestyle:
-          item.type === "Place/Scenery"
-            ? {
-                purpose: "Environmental storytelling - show your world and spaces",
-                composition: "Location-based shot, architectural or natural elements, atmospheric",
-              }
-            : {
-                purpose: "Authentic moment - hobbies, interests, or behind-the-scenes",
-                composition: "Candid or activity-based, show personality and interests",
-              },
-        "Full Body": {
-          purpose: "Complete style showcase - fashion meets personality",
-          composition: "Full outfit visible, confident posture, environmental context",
-        },
-        "Close-Up": {
-          purpose:
-            item.tone === "warm"
-              ? "Personal connection - face and expression focus"
-              : "Detail shot - intimate and engaging",
-          composition: "Face focus, emotional connection, direct or thoughtful gaze",
-        },
-        "Half Body": {
-          purpose: "Professional yet approachable - the sweet spot",
-          composition: "Upper body focus, show personality through styling and expression",
-        },
-      }
-
-      return {
-        type: mappedType,
-        tone: item.tone,
-        purpose: postDetails[mappedType as keyof typeof postDetails]?.purpose || "Engaging content",
-        composition: postDetails[mappedType as keyof typeof postDetails]?.composition || "Balanced composition",
-      }
+Be creative and authentic. No generic templates - every element should feel custom-designed for this specific brand.`,
     })
 
-    const posts = postSequence.map((post, index) => {
+    console.log("[v0] [SERVER] AI-generated feed design complete:", feedDesign.visualRhythm)
+
+    const posts = feedDesign.posts.map((post, index) => {
       if (post.type === "Object") {
         return {
           id: `post-${index + 1}`,
           title: "Styled Moment",
-          description: `${post.purpose}. ${post.composition}. Inspired by trending ${businessType} aesthetics`,
+          description: `${post.purpose}. ${post.composition}`,
           category: "Object",
-          prompt: `${colorPalette} styled flatlay photography, elegant product arrangement showcasing ${businessType} essentials, overhead shot with soft directional natural lighting creating gentle shadows, professional editorial quality with ${brandVibe} aesthetic, carefully curated brand-aligned objects (fresh flowers, artisan coffee, leather-bound notebook, delicate jewelry, design books, minimalist workspace items), shallow depth of field with creamy bokeh, subtle film grain texture, high-end commercial photography, sophisticated minimalist composition, trending Instagram aesthetic 2025, warm inviting atmosphere, cohesive color story with ${colorPalette}`,
+          prompt: `${colorPalette} styled flatlay photography, ${post.styleDirection}, elegant arrangement showcasing ${businessType} essentials, overhead shot with soft directional natural lighting creating gentle shadows, professional editorial quality with ${brandVibe} aesthetic, carefully curated brand-aligned objects, shallow depth of field with creamy bokeh, subtle film grain texture, high-end commercial photography, sophisticated composition, trending Instagram aesthetic 2025, warm inviting atmosphere, cohesive color story with ${colorPalette}`,
           textOverlay: undefined,
           purpose: post.purpose,
           composition: post.composition,
+          caption: post.caption,
         }
-      }
-
-      const categoryDescriptions = {
-        "Close-Up": `${post.purpose}. ${post.composition}`,
-        "Half Body": `${post.purpose}. ${post.composition}`,
-        "Full Body": `${post.purpose}. ${post.composition}`,
-        Lifestyle: `${post.purpose}. ${post.composition}`,
       }
 
       const lensSpecs = {
@@ -287,35 +216,32 @@ const generateCompleteFeedTool = tool({
 
       const fashionDetails =
         post.type === "Full Body"
-          ? `wearing sophisticated ${colorPalette} attire with impeccable tailoring and refined silhouette, styled with carefully chosen accessories that complement the overall aesthetic, complete outfit showcasing personal style and brand identity`
+          ? `wearing sophisticated ${colorPalette} attire with impeccable tailoring and refined silhouette, ${post.styleDirection}, styled with carefully chosen accessories that complement the overall aesthetic, complete outfit showcasing personal style and brand identity`
           : post.type === "Half Body"
-            ? `dressed in elegant ${colorPalette} professional attire with attention to fabric quality and fit, styled with minimal sophisticated accessories, upper body styling that conveys both professionalism and approachability`
+            ? `dressed in elegant ${colorPalette} professional attire with attention to fabric quality and fit, ${post.styleDirection}, styled with minimal sophisticated accessories, upper body styling that conveys both professionalism and approachability`
             : post.type === "Close-Up"
-              ? `styled with ${colorPalette} tones in clothing and background, natural skin texture with healthy radiant glow, authentic expression that connects with viewers`
-              : `authentic ${colorPalette} styling that feels natural and effortless, environmental elements that tell a story, genuine moment captured with editorial quality`
+              ? `styled with ${colorPalette} tones in clothing and background, ${post.styleDirection}, natural skin texture with healthy radiant glow, authentic expression that connects with viewers`
+              : `authentic ${colorPalette} styling that feels natural and effortless, ${post.styleDirection}, environmental elements that tell a story, genuine moment captured with editorial quality`
 
       return {
         id: `post-${index + 1}`,
         title: `${post.type} ${post.type === "Lifestyle" ? "Moment" : "Portrait"}`,
-        description: categoryDescriptions[post.type as keyof typeof categoryDescriptions],
+        description: `${post.purpose}. ${post.composition}`,
         category: post.type,
-        prompt: `${triggerWord}, confident ${businessType} professional with ${genderStyling}, ${fashionDetails}, ${lensSpecs[post.type as keyof typeof lensSpecs]}, ${lightingStyle}, natural skin texture with subtle film grain for authenticity, timeless elegance meets modern sophistication, high-end editorial photography with ${brandVibe} aesthetic, ${post.composition}, genuine professional presence that feels both aspirational and relatable, trending Instagram aesthetic 2025, cohesive visual story with ${colorPalette} color palette`,
+        prompt: `${triggerWord}, confident ${businessType} professional with ${genderStyling}, ${fashionDetails}, ${lensSpecs[post.type as keyof typeof lensSpecs]}, ${lightingStyle}, natural skin texture with subtle film grain for authenticity, timeless elegance meets modern sophistication, high-high-end editorial photography with ${brandVibe} aesthetic, ${post.composition}, genuine professional presence that feels both aspirational and relatable, trending Instagram aesthetic 2025, cohesive visual story with ${colorPalette} color palette`,
         textOverlay: undefined,
         purpose: post.purpose,
         composition: post.composition,
+        caption: post.caption,
       }
     })
 
     const trendingHashtags = generateSmartHashtags(businessType)
 
-    const postsWithCaptions = posts.map((post, index) => {
-      const { caption, hashtags } = generateCaptionWithRecipe(post, index, trendingHashtags, businessType)
-      return {
-        ...post,
-        caption,
-        hashtags,
-      }
-    })
+    const postsWithCaptions = posts.map((post) => ({
+      ...post,
+      hashtags: trendingHashtags.slice(0, 12).join(" "),
+    }))
 
     let feedId: string | null = null
     const userInstance = await getCurrentNeonUser()
@@ -335,7 +261,7 @@ const generateCompleteFeedTool = tool({
         )
         VALUES (
           ${userInstance.id}, ${brandVibe}, ${businessType}, ${colorPalette},
-          ${visualRhythm}, ${feedStory}, ${researchInsights},
+          ${feedDesign.visualRhythm}, ${feedStory}, ${researchInsights},
           ${`${businessType} Feed Strategy`}, ${feedStory}
         )
         RETURNING id
@@ -466,7 +392,7 @@ const generateStoryHighlightsTool = tool({
 
 const generateProfileImageTool = tool({
   description:
-    "Generate a FLUX prompt for the profile picture. This saves the prompt to the database so users can generate it later.",
+    "Generate an intelligent FLUX prompt for the profile picture using AI. This creates a sophisticated, detailed prompt that matches the feed's aesthetic.",
   inputSchema: z.object({
     feedId: z.string().describe("The feed layout ID from generateCompleteFeed"),
     businessType: z.string().describe("What the user does"),
@@ -474,24 +400,149 @@ const generateProfileImageTool = tool({
     brandVibe: z.string().describe("The brand's aesthetic vibe"),
   }),
   execute: async ({ feedId, businessType, colorPalette, brandVibe }) => {
-    console.log("[v0] [SERVER] === GENERATING PROFILE IMAGE PROMPT ===")
+    console.log("[v0] [SERVER] === GENERATING PROFILE IMAGE PROMPT WITH AI ===")
     console.log("[v0] [SERVER] Feed ID:", feedId, "Business Type:", businessType)
 
     try {
-      const profileImagePrompt = `Professional Instagram profile picture for a ${businessType}. ${colorPalette} color palette, ${brandVibe} aesthetic, close-up portrait, confident and approachable expression, shot on 85mm lens f/1.4, soft natural lighting, high-end editorial quality, authentic professional presence, perfect for Instagram profile, circular crop friendly`
-
       const sql = neon(process.env.DATABASE_URL!)
+      const user = await getCurrentNeonUser()
+
+      if (!user) {
+        return "Error: User not found"
+      }
+
+      const userDataResult = await sql`
+        SELECT 
+          u.gender,
+          um.trigger_word
+        FROM users u
+        LEFT JOIN user_models um ON u.id = um.user_id
+        WHERE u.id = ${user.id}
+        AND um.training_status = 'completed'
+        ORDER BY um.created_at DESC
+        LIMIT 1
+      `
+
+      let triggerWord = "person"
+      let userGender = "person"
+
+      if (userDataResult.length > 0) {
+        triggerWord = userDataResult[0].trigger_word || "person"
+        userGender = userDataResult[0].gender || "person"
+      }
+
+      const { object: profileDesign } = await generateObject({
+        model: "anthropic/claude-sonnet-4",
+        schema: z.object({
+          styleDirection: z.string().describe("Specific styling direction for this profile image"),
+          composition: z.string().describe("Composition and framing details"),
+          lightingMood: z.string().describe("Lighting style and mood"),
+          fashionDetails: z.string().describe("Clothing and styling details"),
+        }),
+        prompt: `You are Maya, an expert fashion photographer and Instagram strategist.
+
+Create a sophisticated FLUX prompt for an Instagram profile picture for a ${businessType} with this brand identity:
+- Brand Vibe: ${brandVibe}
+- Color Palette: ${colorPalette}
+- Gender: ${userGender}
+
+The profile image should:
+1. Be a close-up portrait (face focus, circular crop friendly)
+2. Convey confidence, approachability, and professionalism
+3. Match the ${brandVibe} aesthetic perfectly
+4. Use ${colorPalette} in clothing and background
+5. Feel authentic and editorial quality
+
+Provide specific details for:
+- Style direction (hair, makeup/grooming, expression, energy)
+- Composition (framing, angle, focus)
+- Lighting mood (natural/dramatic, soft/bold, warm/cool)
+- Fashion details (clothing style, colors, accessories)
+
+Be specific and sophisticated - this should feel like high-end editorial photography, not a generic headshot.`,
+      })
+
+      console.log("[v0] [SERVER] AI-generated profile design:", profileDesign.styleDirection)
+
+      const genderStyling =
+        userGender === "woman" || userGender === "female"
+          ? "elegant flowing hair styled naturally, refined makeup with natural glow, feminine grace and confidence"
+          : userGender === "man" || userGender === "male"
+            ? "styled hair with clean lines, masculine confidence and presence, strong professional demeanor"
+            : "styled appearance with confident presence, authentic professional energy"
+
+      const profileImagePrompt = `${triggerWord}, confident ${businessType} professional with ${genderStyling}, ${profileDesign.fashionDetails}, ${profileDesign.styleDirection}, shot on 85mm lens f/1.4, shallow depth of field, creamy bokeh, face focus, ${profileDesign.lightingMood}, natural skin texture with subtle film grain for authenticity, ${profileDesign.composition}, timeless elegance meets modern sophistication, high-end editorial photography with ${brandVibe} aesthetic, perfect for Instagram profile picture, circular crop friendly, genuine professional presence that feels both aspirational and relatable, cohesive with ${colorPalette} color palette`
+
       await sql`
         UPDATE feed_layouts
         SET profile_image_prompt = ${profileImagePrompt}
         WHERE id = ${feedId}
       `
 
-      console.log("[v0] [SERVER] ✓ Profile image prompt saved to database")
-      return `Profile image prompt created! Users can click the profile placeholder to generate it.`
+      console.log("[v0] [SERVER] ✓ Sophisticated profile image prompt saved to database")
+      console.log("[v0] [SERVER] Prompt preview:", profileImagePrompt.substring(0, 150) + "...")
+      return `Profile image prompt created with sophisticated styling! Users can click the profile placeholder to generate it.`
     } catch (error) {
-      console.error("[v0] [SERVER] Error saving profile image prompt:", error)
+      console.error("[v0] [SERVER] Error creating profile image prompt:", error)
       return "Error creating profile image prompt"
+    }
+  },
+})
+
+const searchWebTool = tool({
+  description:
+    "Search the web for current Instagram trends, aesthetic best practices, and content strategies. Use this to stay on-trend with Scandinavian aesthetics, dark moody styling, and personal branding.",
+  inputSchema: z.object({
+    query: z
+      .string()
+      .describe(
+        "Search query for Instagram trends (e.g., 'Scandinavian minimalist Instagram 2025', 'dark moody photography trends', 'personal brand storytelling')",
+      ),
+  }),
+  execute: async ({ query }) => {
+    console.log("[v0] [SERVER] Searching web for:", query)
+
+    try {
+      if (!process.env.BRAVE_SEARCH_API_KEY) {
+        console.warn("[v0] [SERVER] No Brave Search API key found")
+        return "Web search unavailable. Using existing Instagram expertise and proven aesthetic best practices instead."
+      }
+
+      const response = await fetch(
+        `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}&count=5`,
+        {
+          method: "GET",
+          headers: {
+            Accept: "application/json",
+            "Accept-Encoding": "gzip",
+            "X-Subscription-Token": process.env.BRAVE_SEARCH_API_KEY,
+          },
+        },
+      )
+
+      if (!response.ok) {
+        console.error("[v0] [SERVER] Brave Search API error:", response.status)
+        return "Using proven Instagram best practices and aesthetic expertise instead of live search results."
+      }
+
+      const searchData = await response.json()
+      const results = searchData.web?.results || []
+
+      const summary = results
+        .slice(0, 5)
+        .map((result: any, index: number) => {
+          return `${index + 1}. **${result.title}**\n${result.description}\n`
+        })
+        .join("\n")
+
+      console.log("[v0] [SERVER] Web search successful:", results.length, "results")
+
+      return (
+        summary || "No specific results found, but using proven Instagram aesthetics and personal branding expertise."
+      )
+    } catch (error) {
+      console.error("[v0] [SERVER] Web search error:", error)
+      return "Using proven Instagram best practices and aesthetic expertise."
     }
   },
 })
@@ -619,6 +670,42 @@ export async function POST(req: Request) {
           contextParts.push("")
         }
 
+        const existingFeeds = await sql`
+          SELECT 
+            fl.id,
+            fl.brand_vibe,
+            fl.business_type,
+            fl.color_palette,
+            fl.visual_rhythm,
+            fl.feed_story,
+            fl.created_at,
+            COUNT(fp.id) as post_count
+          FROM feed_layouts fl
+          LEFT JOIN feed_posts fp ON fl.id = fp.feed_layout_id
+          WHERE fl.user_id = ${neonUser.id}
+          GROUP BY fl.id, fl.brand_vibe, fl.business_type, fl.color_palette, fl.visual_rhythm, fl.feed_story, fl.created_at
+          ORDER BY fl.created_at DESC
+          LIMIT 1
+        `
+
+        if (existingFeeds.length > 0) {
+          const latestFeed = existingFeeds[0]
+          contextParts.push("=== EXISTING FEED STRATEGY ===")
+          contextParts.push(`Feed ID: ${latestFeed.id}`)
+          contextParts.push(`Brand Vibe: ${latestFeed.brand_vibe}`)
+          contextParts.push(`Business Type: ${latestFeed.business_type}`)
+          contextParts.push(`Color Palette: ${latestFeed.color_palette}`)
+          contextParts.push(`Visual Rhythm: ${latestFeed.visual_rhythm}`)
+          contextParts.push(`Feed Story: ${latestFeed.feed_story}`)
+          contextParts.push(`Posts: ${latestFeed.post_count} concept cards created`)
+          contextParts.push(`Created: ${new Date(latestFeed.created_at).toLocaleDateString()}`)
+          contextParts.push("")
+          contextParts.push(
+            "IMPORTANT: A feed strategy already exists! Unless the user explicitly asks for a 'new feed' or 'fresh feed', you should refine and improve the existing feed instead of creating a new one. Use your expertise to suggest improvements, adjust specific posts, or refine the strategy.",
+          )
+          contextParts.push("")
+        }
+
         userContext = contextParts.length > 0 ? `\n\n${contextParts.join("\n")}` : ""
       }
 
@@ -639,6 +726,7 @@ export async function POST(req: Request) {
         system: enhancedSystemPrompt,
         messages: coreMessages,
         tools: {
+          searchWeb: searchWebTool,
           generateCompleteFeed: generateCompleteFeedTool,
           generateStoryHighlights: generateStoryHighlightsTool,
           generateProfileImage: generateProfileImageTool,
@@ -668,89 +756,5 @@ export async function POST(req: Request) {
     }
     console.error("[v0] === FEED CHAT API END (error) ===")
     return new Response("Internal Server Error", { status: 500 })
-  }
-}
-
-function generateCaptionWithRecipe(post: any, postIndex: number, hashtags: string[], businessType: string) {
-  const brandVoice = "authentic and relatable"
-
-  const hooks = {
-    "Close-Up": [
-      "Here's what nobody tells you about building a personal brand...",
-      "Can we talk about something real for a second?",
-      "This is the moment everything changed for me.",
-      "Let me be honest with you...",
-    ],
-    Quote: [
-      "Save this if you need the reminder today.",
-      "Read this when you're doubting yourself.",
-      "This is your sign to keep going.",
-      "Pin this somewhere you'll see it daily.",
-    ],
-    Lifestyle: [
-      "Behind the scenes of what it really looks like...",
-      "This is what a typical day looks like for me.",
-      "Real talk: this is the part nobody shows you.",
-      "Here's what I'm working on right now...",
-    ],
-    "Full Body": [
-      "Confidence isn't about perfection, it's about showing up.",
-      "This outfit? It's more than just clothes.",
-      "When you feel good, you show up differently.",
-      "Style is just the beginning...",
-    ],
-    "Half Body": [
-      "Let's talk about something important...",
-      "I've learned something valuable recently.",
-      "Here's what I wish I knew earlier...",
-      "Can I share something with you?",
-    ],
-    Object: [
-      "The essentials that changed my workflow.",
-      "What's on my desk today? Let me show you.",
-      "These pieces tell my brand story.",
-      "The details that make all the difference.",
-    ],
-  }
-
-  const stories = {
-    "Close-Up": `When I started as a ${businessType}, I thought I had to be perfect. But the truth? People connect with authenticity, not perfection.\n\nThe moment I started showing up as my real self - flaws, struggles, and all - everything shifted. My audience grew, my engagement increased, and most importantly, I felt aligned with my work.`,
-    Quote: `Sometimes we all need a reminder that we're on the right path. Building a ${businessType} business isn't always easy, but it's always worth it.\n\nI keep this quote close because on the hard days, it reminds me why I started. And on the good days, it pushes me to keep growing.`,
-    Lifestyle: `This is what the journey really looks like. Not just the highlight reel, but the real moments - the coffee breaks, the planning sessions, the work that happens behind the scenes.\n\nAs a ${businessType}, I've learned that consistency beats perfection every time. Show up, do the work, trust the process.`,
-    "Full Body": `Your personal brand isn't just about what you do - it's about how you show up. The energy you bring, the confidence you carry, the authenticity you share.\n\nI've learned that when you align your outer presence with your inner values, magic happens. You attract the right people, opportunities, and growth.`,
-    "Half Body": `Here's something I wish someone told me earlier: being a ${businessType} is a journey, not a destination.\n\nEvery step forward counts. Every lesson learned matters. Every moment of growth adds up. Trust your process, celebrate your progress, and keep moving forward.`,
-    Object: `Every detail in my workspace is intentional. From the way I style my desk to the tools I choose, it all reflects my brand aesthetic and values.\n\nAs a ${businessType}, I've learned that your environment shapes your creativity. These carefully curated pieces aren't just beautiful - they inspire me to do my best work every single day.`,
-  }
-
-  const ctas = [
-    "What resonates with you most? Drop a comment below 👇",
-    "Save this for later and share it with someone who needs to hear it 💫",
-    "Tell me in the comments - can you relate? 💬",
-    "Which part speaks to you? Let me know below ⬇️",
-    "Drop a 💛 if this resonates with you",
-    "Tag someone who needs this reminder today 🤍",
-  ]
-
-  const postType = post.category as keyof typeof hooks
-  const hook = hooks[postType]?.[postIndex % hooks[postType].length] || hooks["Close-Up"][0]
-  const story = stories[postType] || stories["Close-Up"]
-  const cta = ctas[postIndex % ctas.length]
-
-  const emojis =
-    brandVoice.includes("elegant") || brandVoice.includes("luxury")
-      ? ["✨", "🤍", "💫"]
-      : brandVoice.includes("bold") || brandVoice.includes("confident")
-        ? ["💪", "🔥", "⚡"]
-        : ["💛", "🌟", "✨"]
-
-  const emoji = emojis[postIndex % emojis.length]
-
-  const caption = `${hook}\n\n${story}\n\n${cta} ${emoji}`
-
-  const selectedHashtags = hashtags.slice(0, 12).join(" ")
-
-  return {
-    caption,
-    hashtags: selectedHashtags,
   }
 }

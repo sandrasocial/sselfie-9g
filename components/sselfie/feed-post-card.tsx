@@ -1,8 +1,13 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import type React from "react"
+
+import { useState, useEffect, useRef } from "react"
+import { ImageIcon, Upload, RefreshCw } from "lucide-react"
 import InstagramPhotoCard from "./instagram-photo-card"
+import ImageGalleryModal from "./image-gallery-modal"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
+import useSWR from "swr"
 
 interface FeedPost {
   id: number
@@ -21,6 +26,8 @@ interface FeedPostCardProps {
   onGenerated?: () => void
 }
 
+const fetcher = (url: string) => fetch(url).then((res) => res.json())
+
 export default function FeedPostCard({ post, feedId, onGenerated }: FeedPostCardProps) {
   const [isGenerating, setIsGenerating] = useState(false)
   const [isGenerated, setIsGenerated] = useState(!!post.image_url)
@@ -29,6 +36,12 @@ export default function FeedPostCard({ post, feedId, onGenerated }: FeedPostCard
   const [predictionId, setPredictionId] = useState<string | null>(post.prediction_id)
   const [postId, setPostId] = useState<string>(post.id.toString())
   const [showFullPreview, setShowFullPreview] = useState(false)
+  const [showGalleryModal, setShowGalleryModal] = useState(false)
+  const [isReplacing, setIsReplacing] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const { data: galleryData } = useSWR("/api/images", fetcher)
+  const galleryImages = galleryData?.images || []
 
   useEffect(() => {
     console.log("[v0] FeedPostCard polling useEffect triggered", { predictionId, postId, isGenerated })
@@ -104,6 +117,97 @@ export default function FeedPostCard({ post, feedId, onGenerated }: FeedPostCard
     }
   }
 
+  const handleReplaceFromGallery = async (imageUrl: string) => {
+    setIsReplacing(true)
+    try {
+      const response = await fetch(`/api/feed/${feedId}/replace-post-image`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          postId: post.id,
+          imageUrl,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to replace image")
+      }
+
+      setGeneratedImageUrl(imageUrl)
+      setIsGenerated(true)
+      onGenerated?.()
+    } catch (err) {
+      console.error("[v0] Error replacing image:", err)
+      setError(err instanceof Error ? err.message : "Failed to replace image")
+    } finally {
+      setIsReplacing(false)
+    }
+  }
+
+  const handleUploadImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (file.size > 10 * 1024 * 1024) {
+      alert("Image must be smaller than 10MB")
+      return
+    }
+
+    if (!file.type.startsWith("image/")) {
+      alert("Please upload an image file")
+      return
+    }
+
+    setIsReplacing(true)
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+
+      const uploadResponse = await fetch("/api/upload-image", {
+        method: "POST",
+        body: formData,
+      })
+
+      if (!uploadResponse.ok) {
+        throw new Error("Failed to upload image")
+      }
+
+      const { url } = await uploadResponse.json()
+
+      const replaceResponse = await fetch(`/api/feed/${feedId}/replace-post-image`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          postId: post.id,
+          imageUrl: url,
+        }),
+      })
+
+      if (!replaceResponse.ok) {
+        throw new Error("Failed to replace image")
+      }
+
+      setGeneratedImageUrl(url)
+      setIsGenerated(true)
+      onGenerated?.()
+    } catch (err) {
+      console.error("[v0] Error uploading image:", err)
+      setError(err instanceof Error ? err.message : "Failed to upload image")
+    } finally {
+      setIsReplacing(false)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ""
+      }
+    }
+  }
+
+  const handleRegenerate = async () => {
+    setIsGenerated(false)
+    setGeneratedImageUrl(null)
+    setPredictionId(null)
+    await handleGenerate()
+  }
+
   const conceptData = {
     title: post.post_type,
     description: post.caption, // Full caption with hashtags
@@ -151,17 +255,69 @@ export default function FeedPostCard({ post, feedId, onGenerated }: FeedPostCard
   if (isGenerated && generatedImageUrl) {
     return (
       <>
-        <button
-          onClick={() => setShowFullPreview(true)}
-          className="aspect-square w-full h-full overflow-hidden bg-stone-100 hover:opacity-90 transition-opacity"
-        >
+        <div className="aspect-square w-full h-full relative group overflow-hidden bg-stone-100">
           <img
             src={generatedImageUrl || "/placeholder.svg"}
             alt={post.post_type}
             className="w-full h-full object-cover object-top"
           />
-        </button>
 
+          {/* Hover overlay with actions */}
+          <div className="absolute inset-0 bg-stone-950/0 group-hover:bg-stone-950/60 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+            <div className="flex items-center gap-2">
+              {/* Replace from Gallery */}
+              <button
+                onClick={() => setShowGalleryModal(true)}
+                disabled={isReplacing}
+                className="p-3 bg-white/90 backdrop-blur-xl rounded-full hover:bg-white transition-all hover:scale-110 disabled:opacity-50"
+                title="Replace from Gallery"
+              >
+                <ImageIcon size={16} className="text-stone-950" strokeWidth={2} />
+              </button>
+
+              {/* Upload Own Image */}
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isReplacing}
+                className="p-3 bg-white/90 backdrop-blur-xl rounded-full hover:bg-white transition-all hover:scale-110 disabled:opacity-50"
+                title="Upload Image"
+              >
+                <Upload size={16} className="text-stone-950" strokeWidth={2} />
+              </button>
+
+              {/* Regenerate */}
+              <button
+                onClick={handleRegenerate}
+                disabled={isReplacing}
+                className="p-3 bg-white/90 backdrop-blur-xl rounded-full hover:bg-white transition-all hover:scale-110 disabled:opacity-50"
+                title="Regenerate"
+              >
+                <RefreshCw size={16} className="text-stone-950" strokeWidth={2} />
+              </button>
+            </div>
+          </div>
+
+          {/* View full preview button */}
+          <button
+            onClick={() => setShowFullPreview(true)}
+            className="absolute inset-0 w-full h-full"
+            aria-label="View full preview"
+          />
+        </div>
+
+        {/* Hidden file input for upload */}
+        <input ref={fileInputRef} type="file" accept="image/*" onChange={handleUploadImage} className="hidden" />
+
+        {/* Gallery Modal */}
+        {showGalleryModal && (
+          <ImageGalleryModal
+            images={galleryImages}
+            onSelect={handleReplaceFromGallery}
+            onClose={() => setShowGalleryModal(false)}
+          />
+        )}
+
+        {/* Full Preview Dialog */}
         <Dialog open={showFullPreview} onOpenChange={setShowFullPreview}>
           <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto p-0 bg-transparent border-none">
             <InstagramPhotoCard

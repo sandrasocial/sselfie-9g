@@ -39,9 +39,14 @@ export async function POST(req: NextRequest, { params }: { params: { feedId: str
       return Response.json({ error: "LoRA weights URL not found" }, { status: 400 })
     }
 
-    const basePrompt =
-      feedLayout.profile_image_prompt ||
-      `professional headshot portrait, clean background, confident expression, high quality, well-lit, sharp focus`
+    const basePrompt = feedLayout.profile_image_prompt
+
+    if (!basePrompt) {
+      return Response.json(
+        { error: "No profile image prompt found. Please regenerate your feed strategy." },
+        { status: 400 },
+      )
+    }
 
     const finalPrompt = `${model.trigger_word}, ${basePrompt}`
 
