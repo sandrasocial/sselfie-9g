@@ -596,7 +596,6 @@ export default function FeedDesignerScreen() {
             caption: p.caption?.substring(0, 50) + "...",
           })),
         )
-        // </CHANGE>
 
         const strategy = {
           brandVibe: data.feed.brand_vibe,
@@ -626,40 +625,36 @@ export default function FeedDesignerScreen() {
         setFeedStrategy(strategy)
         setFeedUrl(`/feed/${data.feed.id}`)
 
-        setProfile((prev) => {
-          const updatedProfile = { ...prev }
+        const newProfile: InstagramProfile = {
+          profileImage: data.feed.profile_image_url || profile.profileImage,
+          name: profile.name,
+          handle: profile.handle,
+          bio: data.bio?.bio_text || profile.bio,
+          highlights: data.highlights.map((h: any) => ({
+            id: h.id,
+            title: h.title,
+            coverUrl: h.image_url || "/placeholder.svg?height=64&width=64",
+            description: h.prompt,
+            type: h.icon_style || h.type || "image",
+          })),
+        }
 
-          if (data.feed.profile_image_url) {
-            console.log("[v0] [FEED DEBUG] Loading saved profile image:", data.feed.profile_image_url)
-            updatedProfile.profileImage = data.feed.profile_image_url
-            setIsProfileGenerated(true)
-          }
+        if (data.feed.profile_image_url) {
+          console.log("[v0] [FEED DEBUG] Loading saved profile image:", data.feed.profile_image_url)
+          setIsProfileGenerated(true)
+        }
 
-          if (data.bio) {
-            updatedProfile.bio = data.bio.bio_text
-          }
+        console.log(
+          "[v0] [FEED DEBUG] Setting profile with highlights:",
+          newProfile.highlights.map((h) => ({
+            id: h.id,
+            title: h.title,
+          })),
+        )
 
-          if (data.highlights.length > 0) {
-            const mappedHighlights = data.highlights.map((h: any) => ({
-              id: h.id,
-              title: h.title,
-              coverUrl: h.image_url || "/placeholder.svg?height=64&width=64",
-              description: h.prompt,
-              type: h.icon_style || h.type || "image",
-            }))
-            console.log(
-              "[v0] [FEED DEBUG] Mapped highlights for state:",
-              mappedHighlights.map((h) => ({
-                id: h.id,
-                title: h.title,
-                coverUrl: h.coverUrl,
-              })),
-            )
-            updatedProfile.highlights = mappedHighlights
-          }
-
-          return updatedProfile
-        })
+        // Force complete state replacement
+        setProfile(newProfile)
+        // </CHANGE>
 
         const postsWithConcepts = data.posts.map((p: any) => ({
           id: p.id,
@@ -669,7 +664,7 @@ export default function FeedDesignerScreen() {
           description: p.prompt || "",
           prompt: p.prompt || "",
           category: p.post_type || "Portrait",
-          caption: p.caption || "", // Ensure caption is always included
+          caption: p.caption || "",
           hashtags: p.hashtags,
           textOverlay: p.text_overlay_style,
           position: p.position,
@@ -684,9 +679,7 @@ export default function FeedDesignerScreen() {
           })),
         )
 
-        // Force complete state replacement
         setFeedPosts([...postsWithConcepts])
-        // </CHANGE>
 
         console.log("[v0] ✓ Feed loaded with", postsWithConcepts.length, "concept cards")
       } else {

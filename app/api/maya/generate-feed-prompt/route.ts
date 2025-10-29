@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { postType, caption, feedPosition, colorTheme, brandVibe } = body
 
-    console.log("[v0] Maya generating feed prompt for:", {
+    console.log("[v0] [FEED-PROMPT] Starting prompt generation for:", {
       postType,
       caption: caption?.substring(0, 50),
       feedPosition,
@@ -32,8 +32,11 @@ export async function POST(request: NextRequest) {
 
     const neonUser = await getUserByAuthId(user.id)
     if (!neonUser) {
+      console.error("[v0] [FEED-PROMPT] User not found in database")
       return NextResponse.json({ error: "User not found in database" }, { status: 404 })
     }
+
+    console.log("[v0] [FEED-PROMPT] Found neon user:", neonUser.id)
 
     const brandDataResult = await sql`
       SELECT 
@@ -74,6 +77,7 @@ export async function POST(request: NextRequest) {
     `
 
     if (userDataResult.length === 0) {
+      console.error("[v0] [FEED-PROMPT] No trained model found for user:", neonUser.id)
       return NextResponse.json({ error: "No trained model found" }, { status: 400 })
     }
 
@@ -81,8 +85,12 @@ export async function POST(request: NextRequest) {
     const triggerWord = userData.trigger_word || "person"
     const gender = userData.gender
 
+    console.log("[v0] [FEED-PROMPT] User data:", { triggerWord, gender })
+
     // Get user context for Maya
+    console.log("[v0] [FEED-PROMPT] Getting user context...")
     const userContext = await getUserContextForMaya(user.id)
+    console.log("[v0] [FEED-PROMPT] User context retrieved, length:", userContext.length)
 
     // Build Maya's system prompt for feed post generation
     const mayaPersonality = getMayaPersonality()
@@ -135,10 +143,11 @@ Example output format:
 Now generate the FLUX prompt for this feed post:`
 
     // Call AI to generate the prompt
+    console.log("[v0] [FEED-PROMPT] Calling AI SDK with model: anthropic/claude-3-5-sonnet-20241022")
     let result
     try {
       result = await streamText({
-        model: "anthropic/claude-sonnet-4",
+        model: "anthropic/claude-3-5-sonnet-20241022", // Use correct Anthropic model identifier
         messages: [
           {
             role: "system",
@@ -152,8 +161,14 @@ Now generate the FLUX prompt for this feed post:`
         temperature: 0.8,
         maxTokens: 500,
       })
+      console.log("[v0] [FEED-PROMPT] AI SDK call successful")
     } catch (aiError: any) {
-      console.error("[v0] AI provider error:", aiError)
+      console.error("[v0] [FEED-PROMPT] AI provider error:", {
+        message: aiError.message,
+        stack: aiError.stack,
+        name: aiError.name,
+        cause: aiError.cause,
+      })
 
       // Check if it's a rate limit error
       if (aiError.message?.includes("429") || aiError.message?.includes("Too Many Requests")) {
@@ -166,30 +181,33 @@ Now generate the FLUX prompt for this feed post:`
         )
       }
 
-      // For other AI errors, return 500
+      // For other AI errors, return 500 with details
       return NextResponse.json(
         {
           error: "Failed to generate prompt",
           details: aiError.message || "AI provider error",
+          errorType: aiError.name || "Unknown",
         },
         { status: 500 },
       )
     }
 
     // Collect the streamed response
+    console.log("[v0] [FEED-PROMPT] Collecting streamed response...")
     let generatedPrompt = ""
     for await (const chunk of result.textStream) {
       generatedPrompt += chunk
     }
 
     generatedPrompt = generatedPrompt.trim()
+    console.log("[v0] [FEED-PROMPT] Generated prompt length:", generatedPrompt.length)
 
     // Ensure trigger word is at the start
     if (!generatedPrompt.toLowerCase().startsWith(triggerWord.toLowerCase())) {
       generatedPrompt = `${triggerWord}, ${generatedPrompt}`
     }
 
-    console.log("[v0] Maya generated feed prompt:", generatedPrompt)
+    console.log("[v0] [FEED-PROMPT] Final prompt:", generatedPrompt.substring(0, 100) + "...")
 
     return NextResponse.json({
       success: true,
@@ -197,7 +215,12 @@ Now generate the FLUX prompt for this feed post:`
       postType,
     })
   } catch (error) {
-    console.error("[v0] Error generating feed prompt:", error)
+    console.error("[v0] [FEED-PROMPT] Unexpected error:", {
+      message: error instanceof Error ? error.message : "Unknown error",
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : undefined,
+      error: error,
+    })
     return NextResponse.json(
       {
         error: "Failed to generate prompt",

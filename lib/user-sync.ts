@@ -66,9 +66,22 @@ export async function syncUserWithNeon(authUserId: string, email: string, name?:
 export async function getCurrentNeonUser(): Promise<NeonUser | null> {
   try {
     const supabase = await createServerClient()
-    const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser()
+
+    let authUser
+    try {
+      const { data, error } = await supabase.auth.getUser()
+
+      if (error) {
+        console.error("[v0] Supabase auth error:", error.message)
+        return null
+      }
+
+      authUser = data.user
+    } catch (authError: any) {
+      // Handle rate limiting and network errors gracefully
+      console.error("[v0] Supabase auth request failed:", authError?.message || authError)
+      return null
+    }
 
     if (!authUser) {
       console.log("[v0] No authenticated user")

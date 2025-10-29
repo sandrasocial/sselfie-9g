@@ -246,14 +246,24 @@ export default function FeedPostCard({ post, feedId, onGenerated }: FeedPostCard
 
   if (!isGenerating && !isGenerated && !error) {
     return (
-      <div className="aspect-square flex flex-col items-center justify-center p-3 bg-gradient-to-br from-stone-100 to-stone-200 rounded-sm">
-        <span className="text-xs font-bold text-stone-950 mb-2 text-center">{post.post_type}</span>
-        <button
-          onClick={handleGenerate}
-          className="px-4 py-2 bg-stone-950 text-white text-xs font-semibold rounded-full transition-all hover:bg-stone-800 hover:scale-105"
-        >
-          Generate
-        </button>
+      <div className="aspect-square flex flex-col items-center justify-center p-4 bg-gradient-to-br from-stone-100 to-stone-200 rounded-sm gap-3">
+        <span className="text-xs font-bold text-stone-950 text-center">{post.post_type}</span>
+
+        <div className="flex flex-col gap-2 w-full px-2">
+          <button
+            onClick={handleGenerate}
+            className="w-full px-4 py-2 bg-stone-950 text-white text-xs font-semibold rounded-full transition-all hover:bg-stone-800 hover:scale-105"
+          >
+            Generate
+          </button>
+
+          <button
+            onClick={() => setShowGalleryModal(true)}
+            className="w-full px-4 py-2 bg-white text-stone-950 text-xs font-semibold rounded-full transition-all hover:bg-stone-100 hover:scale-105 border border-stone-300"
+          >
+            Choose from Gallery
+          </button>
+        </div>
       </div>
     )
   }
@@ -291,14 +301,20 @@ export default function FeedPostCard({ post, feedId, onGenerated }: FeedPostCard
             className="w-full h-full object-cover object-top"
           />
 
-          {/* Hover overlay with actions */}
-          <div className="absolute inset-0 bg-stone-950/0 group-hover:bg-stone-950/60 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+          {/* Hover overlay with actions - clicking overlay opens preview */}
+          <div
+            onClick={() => setShowFullPreview(true)}
+            className="absolute inset-0 bg-stone-950/0 group-hover:bg-stone-950/60 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer"
+          >
             <div className="flex items-center gap-2">
               {/* Replace from Gallery */}
               <button
-                onClick={() => setShowGalleryModal(true)}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setShowGalleryModal(true)
+                }}
                 disabled={isReplacing}
-                className="p-3 bg-white/90 backdrop-blur-xl rounded-full hover:bg-white transition-all hover:scale-110 disabled:opacity-50"
+                className="p-3 bg-white/90 backdrop-blur-xl rounded-full hover:bg-white transition-all hover:scale-110 disabled:opacity-50 relative z-10"
                 title="Replace from Gallery"
               >
                 <ImageIcon size={16} className="text-stone-950" strokeWidth={2} />
@@ -306,9 +322,12 @@ export default function FeedPostCard({ post, feedId, onGenerated }: FeedPostCard
 
               {/* Upload Own Image */}
               <button
-                onClick={() => fileInputRef.current?.click()}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  fileInputRef.current?.click()
+                }}
                 disabled={isReplacing}
-                className="p-3 bg-white/90 backdrop-blur-xl rounded-full hover:bg-white transition-all hover:scale-110 disabled:opacity-50"
+                className="p-3 bg-white/90 backdrop-blur-xl rounded-full hover:bg-white transition-all hover:scale-110 disabled:opacity-50 relative z-10"
                 title="Upload Image"
               >
                 <Upload size={16} className="text-stone-950" strokeWidth={2} />
@@ -316,22 +335,18 @@ export default function FeedPostCard({ post, feedId, onGenerated }: FeedPostCard
 
               {/* Regenerate */}
               <button
-                onClick={handleRegenerate}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleRegenerate()
+                }}
                 disabled={isReplacing}
-                className="p-3 bg-white/90 backdrop-blur-xl rounded-full hover:bg-white transition-all hover:scale-110 disabled:opacity-50"
+                className="p-3 bg-white/90 backdrop-blur-xl rounded-full hover:bg-white transition-all hover:scale-110 disabled:opacity-50 relative z-10"
                 title="Regenerate"
               >
                 <RefreshCw size={16} className="text-stone-950" strokeWidth={2} />
               </button>
             </div>
           </div>
-
-          {/* View full preview button */}
-          <button
-            onClick={() => setShowFullPreview(true)}
-            className="absolute inset-0 w-full h-full"
-            aria-label="View full preview"
-          />
         </div>
 
         {/* Hidden file input for upload */}

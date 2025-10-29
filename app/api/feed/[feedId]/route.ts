@@ -9,7 +9,16 @@ export async function GET(req: NextRequest, { params }: { params: { feedId: stri
     const { feedId } = params
 
     if (feedId === "latest") {
-      const user = await getCurrentNeonUser()
+      let user
+      try {
+        user = await getCurrentNeonUser()
+      } catch (authError: any) {
+        console.error("[v0] Auth error in feed API:", authError?.message || authError)
+        return Response.json(
+          { error: "Authentication service temporarily unavailable. Please try again." },
+          { status: 503 },
+        )
+      }
 
       if (!user) {
         return Response.json({ error: "Unauthorized" }, { status: 401 })
@@ -95,9 +104,9 @@ export async function GET(req: NextRequest, { params }: { params: { feedId: stri
       bio: bios[0] || null,
       highlights: highlights || [],
     })
-  } catch (error) {
-    console.error("[v0] Error fetching feed:", error)
-    return Response.json({ error: "Internal server error" }, { status: 500 })
+  } catch (error: any) {
+    console.error("[v0] Error fetching feed:", error?.message || error)
+    return Response.json({ error: "Failed to load feed. Please try again." }, { status: 500 })
   }
 }
 
@@ -134,8 +143,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { feedId: st
     }
 
     return Response.json({ success: true, bio })
-  } catch (error) {
-    console.error("[v0] Error updating bio:", error)
+  } catch (error: any) {
+    console.error("[v0] Error updating bio:", error?.message || error)
     return Response.json({ error: "Internal server error" }, { status: 500 })
   }
 }

@@ -8,18 +8,12 @@ export function createClient() {
 
   if (!supabaseUrl || !supabaseAnonKey) {
     console.error("[v0] Missing Supabase environment variables")
-    console.error(
-      "[v0] Available env vars:",
-      Object.keys(process.env).filter((k) => k.includes("SUPABASE")),
-    )
-    throw new Error(
-      "Missing Supabase environment variables. Please add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to your environment variables.",
-    )
+    console.warn("[v0] Supabase client may not work correctly without proper environment variables")
   }
 
   console.log("[v0] Creating Supabase client with URL:", supabaseUrl?.substring(0, 20) + "...")
 
-  return createBrowserClient(supabaseUrl, supabaseAnonKey, {
+  return createBrowserClient(supabaseUrl || "", supabaseAnonKey || "", {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
