@@ -15,6 +15,7 @@ interface InstagramPhotoCardProps {
   onDelete: () => void
   onAnimate?: () => void
   isFavorite: boolean
+  onCaptionUpdate?: (newCaption: string) => void
 }
 
 export default function InstagramPhotoCard({
@@ -26,14 +27,29 @@ export default function InstagramPhotoCard({
   onDelete,
   onAnimate,
   isFavorite,
+  onCaptionUpdate,
 }: InstagramPhotoCardProps) {
   const [isViewerOpen, setIsViewerOpen] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
   const [liked, setLiked] = useState(isFavorite)
+  const [isEditingCaption, setIsEditingCaption] = useState(false)
+  const [captionValue, setCaptionValue] = useState(concept.description)
 
   const handleLike = () => {
     setLiked(!liked)
     onFavoriteToggle()
+  }
+
+  const handleSaveCaption = () => {
+    if (onCaptionUpdate) {
+      onCaptionUpdate(captionValue)
+    }
+    setIsEditingCaption(false)
+  }
+
+  const handleCancelCaption = () => {
+    setCaptionValue(concept.description)
+    setIsEditingCaption(false)
   }
 
   return (
@@ -153,8 +169,46 @@ export default function InstagramPhotoCard({
             )}
             <div className="text-sm">
               <span className="font-semibold text-stone-950">sselfie</span>{" "}
-              <span className="text-stone-950">{concept.description}</span>
+              {!isEditingCaption ? (
+                <span
+                  onClick={() => setIsEditingCaption(true)}
+                  className="text-stone-950 cursor-text hover:bg-stone-50 rounded px-1 -mx-1 transition-all"
+                  title="Click to edit caption"
+                >
+                  {concept.description}
+                </span>
+              ) : (
+                <div className="mt-2 space-y-2">
+                  <textarea
+                    value={captionValue}
+                    onChange={(e) => setCaptionValue(e.target.value)}
+                    className="w-full text-sm resize-none bg-white border border-stone-300 rounded-lg px-3 py-2 focus:border-stone-950 focus:outline-none"
+                    rows={4}
+                    maxLength={500}
+                    placeholder="Write your caption..."
+                  />
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-stone-500">{captionValue.length}/500</span>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleCancelCaption}
+                        className="px-3 py-1.5 text-xs font-medium text-stone-600 hover:text-stone-950 transition-all"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleSaveCaption}
+                        disabled={captionValue === concept.description}
+                        className="px-3 py-1.5 bg-stone-950 hover:bg-stone-800 text-white text-xs font-medium rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Save
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
+            {/* </CHANGE> */}
             <p className="text-xs text-stone-400 uppercase tracking-wide">Just now</p>
           </div>
         </div>

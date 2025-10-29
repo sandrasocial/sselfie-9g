@@ -1800,7 +1800,7 @@ export default function FeedDesignerScreen() {
                   <div className="flex justify-start gap-2">
                     <div className="flex-shrink-0 w-7 h-7 rounded-full overflow-hidden border-2 border-stone-200">
                       <img
-                        src="https://i.postimg.cos/fTtCnzZv/out-1-22.png"
+                        src="https://i.postimg.cc/fTtCnzZv/out-1-22.png"
                         alt="Maya"
                         className="w-full h-full object-cover"
                       />
@@ -1830,7 +1830,7 @@ export default function FeedDesignerScreen() {
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
                     placeholder="Ask Maya..."
-                    className="flex-1 resize-none bg-stone-50 border-stone-200 text-sm"
+                    className="flex-1 resize-none bg-stone-50 border-stone-200 text-sm max-h-[120px] overflow-y-auto"
                     rows={2}
                     disabled={isTyping}
                     onKeyDown={(e) => {

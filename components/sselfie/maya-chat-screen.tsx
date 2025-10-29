@@ -1089,7 +1089,7 @@ export default function MayaChatScreen() {
                 }
               }}
               placeholder={uploadedImage ? "Describe how to use this image..." : "Message Maya..."}
-              className="w-full px-4 sm:px-5 py-4 sm:py-4 bg-white/40 backdrop-blur-2xl border border-white/60 rounded-xl sm:rounded-[1.5rem] text-stone-950 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-950/50 focus:border-stone-950/50 focus:bg-white/60 pr-14 sm:pr-16 font-medium text-sm min-h-[52px] sm:min-h-[56px] shadow-lg shadow-stone-950/10 transition-all duration-300"
+              className="w-full px-4 sm:px-5 py-4 sm:py-4 bg-white/40 backdrop-blur-2xl border border-white/60 rounded-xl sm:rounded-[1.5rem] text-stone-950 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-950/50 focus:border-stone-950/50 focus:bg-white/60 pr-14 sm:pr-16 font-medium text-sm min-h-[52px] sm:min-h-[56px] max-h-[120px] shadow-lg shadow-stone-950/10 transition-all duration-300 overflow-y-auto resize-none"
               disabled={isTyping || isUploadingImage}
               aria-label="Message input"
             />

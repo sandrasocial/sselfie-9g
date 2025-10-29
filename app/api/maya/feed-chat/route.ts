@@ -126,7 +126,16 @@ const generateCompleteFeedTool = tool({
               purpose: z.string().describe("What this post achieves in the feed story"),
               composition: z.string().describe("Specific composition and framing details"),
               styleDirection: z.string().describe("Unique styling direction for this specific post"),
-              caption: z.string().describe("Authentic, engaging caption that matches brand voice and tells a story"),
+              caption: z.string().describe(`Authentic, engaging caption (150-200 words) that:
+- Has a unique hook specific to THIS post's purpose and visual
+- Tells a personal story or shares valuable insight related to the post type
+- Matches the ${brandVibe} brand voice authentically
+- Includes a clear call-to-action that feels natural
+- NO generic templates - every caption must be completely unique and specific to this exact post
+- Varies in style: some storytelling, some educational, some inspirational, some behind-the-scenes
+- Post 1-3: Focus on introduction and brand story
+- Post 4-6: Share expertise and value
+- Post 7-9: Build community and engagement`),
             }),
           )
           .length(9),
@@ -149,12 +158,21 @@ For each post, provide:
 - Type and tone for visual balance
 - Specific purpose in the feed story
 - Unique composition and styling direction
-- Authentic caption (150-200 words) with:
-  * Engaging hook that draws readers in
-  * Personal story or valuable insight
-  * Clear call-to-action
-  * Natural, conversational tone (no generic templates)
-  * Reflects ${brandVibe} aesthetic
+- **CRITICAL: Completely unique caption (150-200 words) that:**
+  * Has a SPECIFIC hook related to THIS exact post's visual and purpose
+  * Tells a DIFFERENT story or shares DIFFERENT value than other posts
+  * Varies in style and tone across the feed (storytelling, educational, inspirational, BTS)
+  * Feels authentic and conversational, NOT templated
+  * Post 1: Introduce yourself and your brand story
+  * Post 2: Share your expertise or a valuable tip
+  * Post 3: Behind-the-scenes or personal moment
+  * Post 4: Educational content or how-to
+  * Post 5: Inspirational message or transformation story
+  * Post 6: Showcase your work or results
+  * Post 7: Community engagement or question
+  * Post 8: Personal values or mission
+  * Post 9: Call-to-action or next steps
+  * Each caption MUST be completely different from the others - no repeated phrases, structures, or templates
 
 Be creative and authentic. No generic templates - every element should feel custom-designed for this specific brand.`,
     })
@@ -540,6 +558,77 @@ const searchWebTool = tool({
   },
 })
 
+const rewriteCaptionTool = tool({
+  description:
+    "Rewrite a specific post's caption based on user instructions (make it longer, shorter, change topic, different tone, etc.)",
+  inputSchema: z.object({
+    feedId: z.string().describe("The feed layout ID"),
+    postId: z.string().describe("The specific post ID to update"),
+    instructions: z
+      .string()
+      .describe(
+        "User's instructions for rewriting (e.g., 'make it shorter', 'change topic to productivity', 'more inspirational')",
+      ),
+    currentCaption: z.string().describe("The current caption text"),
+    brandVibe: z.string().describe("The brand's aesthetic vibe for consistency"),
+  }),
+  execute: async ({ feedId, postId, instructions, currentCaption, brandVibe }) => {
+    console.log("[v0] [SERVER] === REWRITING CAPTION ===")
+    console.log("[v0] [SERVER] Post ID:", postId, "Instructions:", instructions)
+
+    try {
+      const { object: rewrittenCaption } = await generateObject({
+        model: "anthropic/claude-sonnet-4",
+        schema: z.object({
+          caption: z.string().describe("The rewritten caption following user's instructions"),
+        }),
+        prompt: `You are Maya, an expert Instagram caption writer.
+
+Rewrite this caption following the user's instructions:
+
+**Current Caption:**
+${currentCaption}
+
+**User's Instructions:**
+${instructions}
+
+**Brand Vibe:** ${brandVibe}
+
+Create a new caption that:
+1. Follows the user's instructions precisely
+2. Maintains the ${brandVibe} brand voice
+3. Feels authentic and engaging
+4. Has a clear hook and call-to-action
+5. Is optimized for Instagram engagement
+
+Be creative and authentic - no generic templates.`,
+      })
+
+      const sql = neon(process.env.DATABASE_URL!)
+      const user = await getCurrentNeonUser()
+
+      if (!user) {
+        return "Error: User not found"
+      }
+
+      // Update caption in database
+      await sql`
+        UPDATE feed_posts
+        SET caption = ${rewrittenCaption.caption}
+        WHERE id = ${postId}
+        AND feed_layout_id = ${feedId}
+        AND user_id = ${user.id}
+      `
+
+      console.log("[v0] [SERVER] ✓ Caption rewritten and saved")
+      return `Perfect! I've rewritten the caption. Here's the new version:\n\n"${rewrittenCaption.caption}"\n\nThe caption has been updated in your feed preview.`
+    } catch (error) {
+      console.error("[v0] [SERVER] Error rewriting caption:", error)
+      return "Error rewriting caption. Please try again."
+    }
+  },
+})
+
 export async function POST(req: Request) {
   console.log("[v0] 🚀 FEED CHAT API CALLED - INLINE USER CONTEXT")
 
@@ -723,6 +812,7 @@ export async function POST(req: Request) {
           generateCompleteFeed: generateCompleteFeedTool,
           generateStoryHighlights: generateStoryHighlightsTool,
           generateProfileImage: generateProfileImageTool,
+          rewriteCaption: rewriteCaptionTool,
         },
         maxSteps: 5,
       })

@@ -39,6 +39,7 @@ export default function FeedPostCard({ post, feedId, onGenerated }: FeedPostCard
   const [showGalleryModal, setShowGalleryModal] = useState(false)
   const [isReplacing, setIsReplacing] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [caption, setCaption] = useState(post.caption)
 
   const { data: galleryData } = useSWR("/api/images", fetcher)
   const galleryImages = galleryData?.images || []
@@ -208,9 +209,32 @@ export default function FeedPostCard({ post, feedId, onGenerated }: FeedPostCard
     await handleGenerate()
   }
 
+  const handleCaptionUpdate = async (newCaption: string) => {
+    try {
+      const response = await fetch(`/api/feed/${feedId}/update-caption`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          postId: post.id,
+          caption: newCaption,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to update caption")
+      }
+
+      setCaption(newCaption)
+      onGenerated?.() // Refresh feed data
+    } catch (err) {
+      console.error("[v0] Error updating caption:", err)
+      alert("Failed to update caption. Please try again.")
+    }
+  }
+
   const conceptData = {
     title: post.post_type,
-    description: post.caption, // Full caption with hashtags
+    description: caption, // Use local caption state instead of post.caption
     category: post.post_type,
     prompt: post.prompt,
   }
@@ -327,6 +351,7 @@ export default function FeedPostCard({ post, feedId, onGenerated }: FeedPostCard
               isFavorite={false}
               onFavoriteToggle={() => {}}
               onDelete={() => {}}
+              onCaptionUpdate={handleCaptionUpdate}
             />
           </DialogContent>
         </Dialog>
