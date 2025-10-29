@@ -155,7 +155,6 @@ export default function FeedDesignerScreen() {
         const data = await response.json()
 
         if (data.status === "succeeded" && data.imageUrl) {
-          // Save the image URL to the database
           await fetch(`/api/feed/${feedId}/profile-image`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -383,7 +382,12 @@ export default function FeedDesignerScreen() {
     const maxAttempts = 60
     let attempts = 0
 
-    console.log("[v0] Polling highlight", index, "with prediction", predictionId, "and ID", highlightId)
+    console.log("[v0] [HIGHLIGHT DEBUG] Starting poll for highlight:", {
+      feedId,
+      highlightId,
+      predictionId,
+      index,
+    })
 
     while (attempts < maxAttempts) {
       try {
@@ -392,19 +396,35 @@ export default function FeedDesignerScreen() {
         )
 
         if (!response.ok) {
+          console.error("[v0] [HIGHLIGHT DEBUG] Check highlight failed:", response.status)
           throw new Error("Failed to check highlight status")
         }
 
         const data = await response.json()
+        console.log("[v0] [HIGHLIGHT DEBUG] Poll attempt", attempts, "status:", data.status)
 
         if (data.status === "succeeded" && data.imageUrl) {
-          console.log("[v0] Highlight", index, "generation succeeded:", data.imageUrl)
+          console.log("[v0] [HIGHLIGHT DEBUG] Generation succeeded, saving to database:", {
+            highlightId,
+            imageUrl: data.imageUrl,
+          })
 
-          await fetch(`/api/feed/${feedId}/highlight-image`, {
+          const saveResponse = await fetch(`/api/feed/${feedId}/highlight-image`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ highlightId, imageUrl: data.imageUrl }),
           })
+
+          if (!saveResponse.ok) {
+            const errorText = await saveResponse.text()
+            console.error("[v0] [HIGHLIGHT DEBUG] Failed to save highlight image:", {
+              status: saveResponse.status,
+              error: errorText,
+            })
+          } else {
+            const saveData = await saveResponse.json()
+            console.log("[v0] [HIGHLIGHT DEBUG] Successfully saved highlight image:", saveData)
+          }
           // </CHANGE>
 
           // Update the local state
@@ -412,6 +432,8 @@ export default function FeedDesignerScreen() {
             ...prev,
             highlights: prev.highlights.map((h, i) => (i === index ? { ...h, coverUrl: data.imageUrl } : h)),
           }))
+
+          console.log("[v0] [HIGHLIGHT DEBUG] Updated local state for highlight", index)
 
           // Remove from polling map
           setHighlightPredictions((prev) => {
@@ -424,7 +446,7 @@ export default function FeedDesignerScreen() {
         }
 
         if (data.status === "failed") {
-          console.error("[v0] Highlight", index, "generation failed:", data.error)
+          console.error("[v0] [HIGHLIGHT DEBUG] Generation failed:", data.error)
           setHighlightPredictions((prev) => {
             const newMap = new Map(prev)
             newMap.delete(index)
@@ -436,13 +458,13 @@ export default function FeedDesignerScreen() {
         await new Promise((resolve) => setTimeout(resolve, 3000))
         attempts++
       } catch (error) {
-        console.error("[v0] Error polling highlight:", error)
+        console.error("[v0] [HIGHLIGHT DEBUG] Error polling highlight:", error)
         attempts++
       }
     }
 
     if (attempts >= maxAttempts) {
-      console.warn("[v0] Highlight", index, "polling timed out")
+      console.warn("[v0] [HIGHLIGHT DEBUG] Polling timed out for highlight", index)
       setHighlightPredictions((prev) => {
         const newMap = new Map(prev)
         newMap.delete(index)
@@ -549,18 +571,32 @@ export default function FeedDesignerScreen() {
 
   const loadLatestFeed = async () => {
     try {
-      console.log("[v0] Loading latest feed...")
+      console.log("[v0] [FEED DEBUG] Loading latest feed...")
       const response = await fetch("/api/feed/latest")
 
       if (!response.ok) {
-        console.error("[v0] Failed to load feed:", response.status)
+        console.error("[v0] [FEED DEBUG] Failed to load feed:", response.status)
         return
       }
 
       const data = await response.json()
 
       if (data.exists && data.feed) {
-        console.log("[v0] ✓ Latest feed found with", data.posts?.length || 0, "posts")
+        console.log("[v0] [FEED DEBUG] Latest feed found:", {
+          feedId: data.feed.id,
+          postsCount: data.posts?.length || 0,
+          highlightsCount: data.highlights?.length || 0,
+        })
+
+        console.log(
+          "[v0] [FEED DEBUG] Highlights from database:",
+          data.highlights.map((h: any) => ({
+            id: h.id,
+            title: h.title,
+            image_url: h.image_url,
+            generation_status: h.generation_status,
+          })),
+        )
 
         const strategy = {
           brandVibe: data.feed.brand_vibe,
@@ -595,7 +631,7 @@ export default function FeedDesignerScreen() {
 
           // Update profile image if it exists in feed
           if (data.feed.profile_image_url) {
-            console.log("[v0] Loading saved profile image:", data.feed.profile_image_url)
+            console.log("[v0] [FEED DEBUG] Loading saved profile image:", data.feed.profile_image_url)
             updatedProfile.profileImage = data.feed.profile_image_url
             setIsProfileGenerated(true)
           }
@@ -614,8 +650,12 @@ export default function FeedDesignerScreen() {
               type: h.icon_style || h.type || "image",
             }))
             console.log(
-              "[v0] Loaded highlights with IDs and image URLs:",
-              mappedHighlights.map((h) => ({ id: h.id, title: h.title, coverUrl: h.coverUrl })),
+              "[v0] [FEED DEBUG] Mapped highlights for state:",
+              mappedHighlights.map((h) => ({
+                id: h.id,
+                title: h.title,
+                coverUrl: h.coverUrl,
+              })),
             )
             updatedProfile.highlights = mappedHighlights
           }
