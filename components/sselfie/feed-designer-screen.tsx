@@ -43,7 +43,7 @@ interface InstagramProfile {
   name: string
   handle: string
   bio: string
-  highlights: Array<{ title: string; coverUrl: string; description: string; type: "image" | "color" }>
+  highlights: Array<{ title: string; coverUrl: string; description: string; type: "image" | "color"; id?: number }>
 }
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
@@ -359,7 +359,8 @@ export default function FeedDesignerScreen() {
           if (!response.ok) continue
 
           const data = await response.json()
-          const dbHighlight = data.highlights[index]
+          // Find the correct highlight using its potentially persisted ID
+          const dbHighlight = data.highlights.find((h: any) => h.id === highlight.id)
 
           if (!dbHighlight || !dbHighlight.prediction_id) continue
 
@@ -382,7 +383,7 @@ export default function FeedDesignerScreen() {
     const maxAttempts = 60
     let attempts = 0
 
-    console.log("[v0] Polling highlight", index, "with prediction", predictionId)
+    console.log("[v0] Polling highlight", index, "with prediction", predictionId, "and ID", highlightId)
 
     while (attempts < maxAttempts) {
       try {
@@ -399,12 +400,12 @@ export default function FeedDesignerScreen() {
         if (data.status === "succeeded" && data.imageUrl) {
           console.log("[v0] Highlight", index, "generation succeeded:", data.imageUrl)
 
-          // Save the image URL to the database
           await fetch(`/api/feed/${feedId}/highlight-image`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ highlightId, imageUrl: data.imageUrl }),
           })
+          // </CHANGE>
 
           // Update the local state
           setProfile((prev) => ({
@@ -604,20 +605,21 @@ export default function FeedDesignerScreen() {
             updatedProfile.bio = data.bio.bio_text
           }
 
-          // Update highlights if they exist in feed
           if (data.highlights.length > 0) {
             const mappedHighlights = data.highlights.map((h: any) => ({
+              id: h.id, // Preserve database ID
               title: h.title,
               coverUrl: h.image_url || "/placeholder.svg?height=64&width=64",
               description: h.prompt,
               type: h.icon_style || h.type || "image",
             }))
             console.log(
-              "[v0] Loaded highlights with image URLs:",
-              mappedHighlights.map((h) => ({ title: h.title, coverUrl: h.coverUrl })),
+              "[v0] Loaded highlights with IDs and image URLs:",
+              mappedHighlights.map((h) => ({ id: h.id, title: h.title, coverUrl: h.coverUrl })),
             )
             updatedProfile.highlights = mappedHighlights
           }
+          // </CHANGE>
 
           return updatedProfile
         })
@@ -864,11 +866,46 @@ export default function FeedDesignerScreen() {
     index: number,
     data: { title: string; coverUrl: string; description: string; type: "image" | "color" },
   ) => {
+    let finalCoverUrl = data.coverUrl
+
+    // If coverUrl is a base64 data URL, upload it to Blob storage first
+    if (data.coverUrl.startsWith("data:image/")) {
+      try {
+        console.log("[v0] Uploading base64 image to Blob storage...")
+
+        // Convert base64 to blob
+        const response = await fetch(data.coverUrl)
+        const blob = await response.blob()
+
+        // Upload to Vercel Blob
+        const formData = new FormData()
+        formData.append("file", blob, `highlight-${index}-${Date.now()}.png`)
+
+        const uploadResponse = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        })
+
+        if (uploadResponse.ok) {
+          const uploadData = await uploadResponse.json()
+          finalCoverUrl = uploadData.url
+          console.log("[v0] Image uploaded to Blob:", finalCoverUrl)
+        } else {
+          console.error("[v0] Failed to upload image to Blob")
+          // Keep the base64 URL as fallback (will be handled by backend)
+        }
+      } catch (error) {
+        console.error("[v0] Error uploading image:", error)
+        // Keep the base64 URL as fallback
+      }
+    }
+    // </CHANGE>
+
     setProfile((prev) => ({
       ...prev,
       highlights: prev.highlights.map((h, i) =>
         i === index
-          ? { title: data.title, coverUrl: data.coverUrl, description: data.description, type: data.type }
+          ? { title: data.title, coverUrl: finalCoverUrl, description: data.description, type: data.type }
           : h,
       ),
     }))
@@ -879,19 +916,27 @@ export default function FeedDesignerScreen() {
         try {
           const updatedHighlights = profile.highlights.map((h, i) =>
             i === index
-              ? { title: data.title, coverUrl: data.coverUrl, description: data.description, type: data.type }
+              ? { title: data.title, coverUrl: finalCoverUrl, description: data.description, type: data.type }
               : h,
           )
 
-          console.log("[v0] Saving highlight to database:", { index, coverUrl: data.coverUrl })
+          console.log("[v0] Saving highlight to database:", { index, coverUrl: finalCoverUrl })
 
-          await fetch(`/api/feed/${feedId}/highlights`, {
+          const response = await fetch(`/api/feed/${feedId}/highlights`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ highlights: updatedHighlights }),
           })
 
-          console.log("[v0] Highlight saved successfully")
+          if (!response.ok) {
+            const text = await response.text()
+            console.error("[v0] Failed to save highlights:", response.status, text)
+            throw new Error(`Failed to save highlights: ${response.status}`)
+          }
+
+          const result = await response.json()
+          console.log("[v0] Highlight saved successfully:", result)
+          // </CHANGE>
         } catch (error) {
           console.error("[v0] Error saving highlights:", error)
         }
