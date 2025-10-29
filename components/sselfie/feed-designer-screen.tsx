@@ -69,125 +69,88 @@ export default function FeedDesignerScreen() {
   const [isGeneratingProfile, setIsGeneratingProfile] = useState(false)
   const [profileError, setProfileError] = useState<string | null>(null)
   const [profilePredictionId, setProfilePredictionId] = useState<string | null>(null)
-  const [profileGenerationId, setProfileGenerationId] = useState<string | null>(null)
   const [isProfileGenerated, setIsProfileGenerated] = useState(false)
 
-  useEffect(() => {
-    if (!profilePredictionId || !profileGenerationId || isProfileGenerated) {
-      return
+  const isDesigningSetRef = useRef(false)
+
+  const handleGenerateProfileImage = async () => {
+    if (!feedUrl) return
+
+    const feedId = feedUrl.split("/").pop()
+    if (!feedId) return
+
+    try {
+      setIsGeneratingProfile(true)
+      setProfileError(null)
+
+      const response = await fetch(`/api/feed/${feedId}/generate-profile`, {
+        method: "POST",
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to start profile image generation")
+      }
+
+      const data = await response.json()
+      setProfilePredictionId(data.predictionId)
+
+      pollProfileImage(feedId, data.predictionId)
+    } catch (error) {
+      console.error("[v0] Error generating profile image:", error)
+      setProfileError("Failed to generate profile image")
+      setIsGeneratingProfile(false)
     }
+  }
 
-    console.log("[v0] Starting polling for profile image with prediction", profilePredictionId)
+  const pollProfileImage = async (feedId: string, predictionId: string) => {
+    const maxAttempts = 60
+    let attempts = 0
 
-    const pollInterval = setInterval(async () => {
+    while (attempts < maxAttempts) {
       try {
-        console.log("[v0] Polling profile image generation status...")
-        const response = await fetch(
-          `/api/maya/check-generation?predictionId=${profilePredictionId}&generationId=${profileGenerationId}`,
-        )
+        const response = await fetch(`/api/feed/${feedId}/check-profile?predictionId=${predictionId}`)
+
+        if (!response.ok) {
+          throw new Error("Failed to check profile image status")
+        }
+
         const data = await response.json()
 
-        console.log("[v0] Profile image generation status:", data.status)
+        if (data.status === "succeeded" && data.imageUrl) {
+          // Save the image URL to the database
+          await fetch(`/api/feed/${feedId}/profile-image`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ imageUrl: data.imageUrl }),
+          })
 
-        if (data.status === "succeeded") {
-          console.log("[v0] Profile image generation succeeded! Image URL:", data.imageUrl)
           setProfile((prev) => ({ ...prev, profileImage: data.imageUrl }))
           setIsProfileGenerated(true)
           setIsGeneratingProfile(false)
-          clearInterval(pollInterval)
-
-          if (feedUrl) {
-            const feedId = feedUrl.split("/").pop()
-            if (feedId) {
-              try {
-                await fetch(`/api/feed/${feedId}/profile-image`, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ profileImageUrl: data.imageUrl }),
-                })
-              } catch (error) {
-                console.error("[v0] Error saving profile image:", error)
-              }
-            }
-          }
-        } else if (data.status === "failed") {
-          console.log("[v0] Profile image generation failed:", data.error)
-          setProfileError(data.error || "Generation failed")
-          setIsGeneratingProfile(false)
-          clearInterval(pollInterval)
+          setProfilePredictionId(null)
+          break
         }
-      } catch (err) {
-        console.error("[v0] Error polling generation:", err)
-        setProfileError("Failed to check generation status")
-        setIsGeneratingProfile(false)
-        clearInterval(pollInterval)
+
+        if (data.status === "failed") {
+          setProfileError("Profile image generation failed")
+          setIsGeneratingProfile(false)
+          setProfilePredictionId(null)
+          break
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 3000))
+        attempts++
+      } catch (error) {
+        console.error("[v0] Error polling profile image:", error)
+        attempts++
       }
-    }, 3000)
-
-    return () => {
-      console.log("[v0] Cleaning up polling interval")
-      clearInterval(pollInterval)
-    }
-  }, [profilePredictionId, profileGenerationId, isProfileGenerated, feedUrl])
-
-  const handleGenerateProfileImage = async () => {
-    if (!brandData) {
-      setProfileError("Complete your brand profile first")
-      return
     }
 
-    setIsGeneratingProfile(true)
-    setProfileError(null)
-
-    try {
-      console.log("[v0] Generating profile image...")
-
-      const mayaResponse = await fetch("/api/maya/generate-feed-prompt", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          postType: "Profile Picture",
-          caption: `Professional profile picture for ${brandData.name || "personal brand"}`,
-          feedPosition: 0,
-          colorTheme: brandData.colorTheme,
-          brandVibe: brandData.brandVibe || brandData.futureVision,
-        }),
-      })
-
-      let conceptPrompt: string
-      if (!mayaResponse.ok) {
-        console.error("[v0] Maya prompt generation failed, using fallback")
-        conceptPrompt = `Professional Instagram profile picture for ${brandData.name || "personal brand"}. ${brandData.brandVibe || ""}. Clean, professional, and eye-catching.`
-      } else {
-        const mayaData = await mayaResponse.json()
-        conceptPrompt = mayaData.prompt
-        console.log("[v0] Maya generated profile prompt:", conceptPrompt)
-      }
-
-      const response = await fetch("/api/maya/generate-image", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          conceptTitle: "Profile Picture",
-          conceptDescription: `Professional profile picture for ${brandData.name || "personal brand"}`,
-          conceptPrompt,
-          category: "feed-design",
-        }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to generate image")
-      }
-
-      console.log("[v0] Generation started with prediction ID:", data.predictionId)
-      setProfilePredictionId(data.predictionId)
-      setProfileGenerationId(data.generationId)
-    } catch (err) {
-      console.error("[v0] Error generating profile image:", err)
-      setProfileError(err instanceof Error ? err.message : "Failed to generate image")
+    if (attempts >= maxAttempts) {
+      console.warn("[v0] Profile image polling timed out")
+      setProfileError("Profile image generation timed out")
       setIsGeneratingProfile(false)
+      setProfilePredictionId(null)
     }
   }
 
@@ -291,10 +254,10 @@ export default function FeedDesignerScreen() {
   useEffect(() => {
     if (isTyping && messages.length > 0) {
       const lastMessage = messages[messages.length - 1]
-      // Only set isDesigning when Maya is responding (assistant message being generated)
-      if (lastMessage.role === "assistant") {
+      if (lastMessage.role === "assistant" && !isDesigningSetRef.current) {
         console.log("[v0] Maya is designing feed strategy...")
         setIsDesigning(true)
+        isDesigningSetRef.current = true
       }
     }
 
@@ -303,6 +266,7 @@ export default function FeedDesignerScreen() {
       if (lastMessage.role === "assistant") {
         console.log("[v0] Maya finished responding, reloading feed data in 2 seconds...")
         setIsApplyingDesign(true)
+        isDesigningSetRef.current = false
         setTimeout(() => {
           loadLatestFeed()
           setIsDesigning(false)
@@ -337,8 +301,8 @@ export default function FeedDesignerScreen() {
           highlights: data.highlights.map((h: any) => ({
             title: h.title,
             description: h.prompt, // This is the FLUX prompt Maya generated
-            coverUrl: h.cover_url,
-            type: h.type || "image",
+            coverUrl: h.image_url || h.cover_url || "/placeholder.svg?height=64&width=64",
+            type: h.icon_style || h.type || "image",
           })),
           posts: data.posts.map((p: any) => ({
             id: p.id,
@@ -365,10 +329,14 @@ export default function FeedDesignerScreen() {
         if (data.highlights.length > 0) {
           const mappedHighlights = data.highlights.map((h: any) => ({
             title: h.title,
-            coverUrl: h.cover_url || "/placeholder.svg?height=64&width=64",
+            coverUrl: h.image_url || h.cover_url || "/placeholder.svg?height=64&width=64",
             description: h.prompt, // This is the FLUX prompt Maya generated
-            type: h.type || "image",
+            type: h.icon_style || h.type || "image",
           }))
+          console.log(
+            "[v0] Loaded highlights with image URLs:",
+            mappedHighlights.map((h) => ({ title: h.title, coverUrl: h.coverUrl })),
+          )
           setProfile((prev) => ({
             ...prev,
             highlights: mappedHighlights,
@@ -1029,19 +997,12 @@ export default function FeedDesignerScreen() {
               <div className="max-w-2xl mx-auto">
                 <div className="flex items-start gap-6">
                   <div className="relative group">
-                    {!isGeneratingProfile && !isProfileGenerated && brandData ? (
+                    {!isProfileGenerated && !isGeneratingProfile && profile.profileImage.includes("placeholder") ? (
                       <button
                         onClick={handleGenerateProfileImage}
-                        className="w-20 h-20 rounded-full overflow-hidden border-2 border-stone-200 hover:border-stone-400 transition-all relative group"
+                        className="w-20 h-20 rounded-full overflow-hidden border-2 border-dashed border-stone-300 bg-stone-50 flex flex-col items-center justify-center hover:border-stone-400 hover:bg-stone-100 transition-all"
                       >
-                        <img
-                          src={profile.profileImage || "/placeholder.svg"}
-                          alt={profile.name}
-                          className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
-                        />
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-stone-950/50 rounded-full">
-                          <span className="text-xs text-white font-medium">Generate</span>
-                        </div>
+                        <span className="text-xs font-medium text-stone-600">Generate</span>
                       </button>
                     ) : isGeneratingProfile ? (
                       <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-stone-200 bg-stone-100 flex items-center justify-center">

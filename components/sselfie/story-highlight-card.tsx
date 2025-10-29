@@ -36,13 +36,15 @@ export default function StoryHighlightCard({
     !!highlight.coverUrl &&
       !highlight.coverUrl.startsWith("#") &&
       !highlight.coverUrl.includes("placeholder.svg") &&
-      highlight.coverUrl !== "generating",
+      highlight.coverUrl !== "generating" &&
+      highlight.coverUrl.startsWith("http"), // Must be a real URL
   )
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(
     highlight.coverUrl &&
       !highlight.coverUrl.startsWith("#") &&
       !highlight.coverUrl.includes("placeholder.svg") &&
-      highlight.coverUrl !== "generating"
+      highlight.coverUrl !== "generating" &&
+      highlight.coverUrl.startsWith("http") // Must be a real URL
       ? highlight.coverUrl
       : null,
   )
@@ -83,7 +85,7 @@ export default function StoryHighlightCard({
       try {
         console.log("[v0] Polling highlight generation status...")
         const response = await fetch(
-          `/api/maya/check-generation?predictionId=${predictionId}&generationId=${generationId}&addTextOverlay=true&overlayText=${encodeURIComponent(highlight.title)}`,
+          `/api/maya/check-generation?predictionId=${predictionId}&generationId=${generationId}`,
         )
         const data = await response.json()
 
@@ -91,14 +93,20 @@ export default function StoryHighlightCard({
 
         if (data.status === "succeeded") {
           console.log("[v0] Highlight generation succeeded! Image URL:", data.imageUrl)
-          setGeneratedImageUrl(data.imageUrl)
+
+          const overlayedImageUrl = await addTextOverlay(data.imageUrl, highlight.title)
+
+          console.log("[v0] Text overlay complete, final URL:", overlayedImageUrl)
+
+          setGeneratedImageUrl(overlayedImageUrl)
           setIsGenerated(true)
           setIsGenerating(false)
           clearInterval(pollInterval)
 
+          console.log("[v0] Calling onUpdate to save highlight to database")
           onUpdate(index, {
             title: highlight.title,
-            coverUrl: data.imageUrl,
+            coverUrl: overlayedImageUrl,
             description: highlight.description,
             type: "image",
           })
@@ -121,6 +129,57 @@ export default function StoryHighlightCard({
       clearInterval(pollInterval)
     }
   }, [predictionId, generationId, isGenerated, index])
+
+  const addTextOverlay = async (imageUrl: string, text: string): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image()
+      img.crossOrigin = "anonymous"
+
+      img.onload = () => {
+        const canvas = document.createElement("canvas")
+        canvas.width = img.width
+        canvas.height = img.height
+        const ctx = canvas.getContext("2d")
+
+        if (!ctx) {
+          reject(new Error("Failed to get canvas context"))
+          return
+        }
+
+        // Draw the background image
+        ctx.drawImage(img, 0, 0)
+
+        // Add semi-transparent overlay for better text readability
+        ctx.fillStyle = "rgba(0, 0, 0, 0.2)"
+        ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+        // Configure text styling - elegant serif font
+        const fontSize = Math.floor(canvas.width * 0.15) // 15% of image width
+        ctx.font = `${fontSize}px "Playfair Display", serif`
+        ctx.fillStyle = "#FFFFFF"
+        ctx.textAlign = "center"
+        ctx.textBaseline = "middle"
+
+        // Add text shadow for depth
+        ctx.shadowColor = "rgba(0, 0, 0, 0.5)"
+        ctx.shadowBlur = 10
+        ctx.shadowOffsetX = 2
+        ctx.shadowOffsetY = 2
+
+        // Draw the text in the center
+        ctx.fillText(text, canvas.width / 2, canvas.height / 2)
+
+        // Convert canvas to blob and resolve with data URL
+        resolve(canvas.toDataURL("image/png"))
+      }
+
+      img.onerror = () => {
+        reject(new Error("Failed to load image"))
+      }
+
+      img.src = imageUrl
+    })
+  }
 
   const handleGenerate = async () => {
     if (!highlight.title) {

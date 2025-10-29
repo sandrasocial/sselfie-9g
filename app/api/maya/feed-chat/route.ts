@@ -430,43 +430,32 @@ const generateStoryHighlightsTool = tool({
 
 const generateProfileImageTool = tool({
   description:
-    "Generate a professional profile picture for the Instagram feed. Call this after creating the feed strategy.",
+    "Generate a FLUX prompt for the profile picture. This saves the prompt to the database so users can generate it later.",
   inputSchema: z.object({
+    feedId: z.string().describe("The feed layout ID from generateCompleteFeed"),
     businessType: z.string().describe("What the user does"),
     colorPalette: z.string().describe("The brand's color palette"),
     brandVibe: z.string().describe("The brand's aesthetic vibe"),
   }),
-  execute: async ({ businessType, colorPalette, brandVibe }) => {
-    console.log("[v0] [SERVER] === GENERATING PROFILE IMAGE ===")
-    console.log("[v0] [SERVER] Business Type:", businessType)
+  execute: async ({ feedId, businessType, colorPalette, brandVibe }) => {
+    console.log("[v0] [SERVER] === GENERATING PROFILE IMAGE PROMPT ===")
+    console.log("[v0] [SERVER] Feed ID:", feedId, "Business Type:", businessType)
 
     try {
-      const conceptPrompt = `Professional Instagram profile picture for a ${businessType}. ${colorPalette} color palette, ${brandVibe} aesthetic, close-up portrait, confident and approachable expression, shot on 85mm lens f/1.4, soft natural lighting, high-end editorial quality, authentic professional presence, perfect for Instagram profile, circular crop friendly`
+      const profileImagePrompt = `Professional Instagram profile picture for a ${businessType}. ${colorPalette} color palette, ${brandVibe} aesthetic, close-up portrait, confident and approachable expression, shot on 85mm lens f/1.4, soft natural lighting, high-end editorial quality, authentic professional presence, perfect for Instagram profile, circular crop friendly`
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/maya/generate-image`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            conceptTitle: "Profile Picture",
-            conceptDescription: `Professional profile picture for ${businessType}`,
-            conceptPrompt,
-            category: "feed-design",
-          }),
-        },
-      )
+      const sql = neon(process.env.DATABASE_URL!)
+      await sql`
+        UPDATE feed_layouts
+        SET profile_image_prompt = ${profileImagePrompt}
+        WHERE id = ${feedId}
+      `
 
-      if (response.ok) {
-        const data = await response.json()
-        console.log("[v0] [SERVER] ✓ Profile image generation started")
-        return `Started generating your professional profile picture. It'll appear in the preview when ready.`
-      } else {
-        throw new Error("Failed to start profile image generation")
-      }
+      console.log("[v0] [SERVER] ✓ Profile image prompt saved to database")
+      return `Profile image prompt created! Users can click the profile placeholder to generate it.`
     } catch (error) {
-      console.error("[v0] [SERVER] Error generating profile image:", error)
-      return "Error generating profile image"
+      console.error("[v0] [SERVER] Error saving profile image prompt:", error)
+      return "Error creating profile image prompt"
     }
   },
 })

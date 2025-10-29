@@ -110,3 +110,18 @@ export async function getNeonUserById(userId: string): Promise<NeonUser | null> 
     return null
   }
 }
+
+/**
+ * Gets user data from Neon by stack_auth_id
+ */
+export async function getUserByAuthId(authId: string): Promise<NeonUser | null> {
+  try {
+    const result = await sql`
+      SELECT * FROM users WHERE stack_auth_id = ${authId} LIMIT 1
+    `
+    return result.length > 0 ? (result[0] as NeonUser) : null
+  } catch (error) {
+    console.error("[v0] Error getting Neon user by auth ID:", error)
+    return null
+  }
+}
