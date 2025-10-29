@@ -27,7 +27,7 @@ export async function GET(request: Request, { params }: { params: { feedId: stri
 
     // Get all posts with their prediction IDs
     const posts = await sql`
-      SELECT id, position, prediction_id, status, image_url, text_overlay
+      SELECT id, position, prediction_id, generation_status, image_url, text_overlay
       FROM feed_posts
       WHERE feed_layout_id = ${feedId}
       ORDER BY position ASC
@@ -38,12 +38,12 @@ export async function GET(request: Request, { params }: { params: { feedId: stri
     let failedCount = 0
 
     for (const post of posts) {
-      if (post.status === "completed") {
+      if (post.generation_status === "completed") {
         completedCount++
         continue
       }
 
-      if (post.prediction_id && post.status === "generating") {
+      if (post.prediction_id && post.generation_status === "generating") {
         const prediction = await replicate.predictions.get(post.prediction_id)
 
         if (prediction.status === "succeeded" && prediction.output) {
@@ -54,12 +54,11 @@ export async function GET(request: Request, { params }: { params: { feedId: stri
             finalImageUrl = await applyTextOverlay(imageUrl, post.text_overlay)
           }
 
-          // Save to database
           await sql`
             UPDATE feed_posts
             SET 
               image_url = ${finalImageUrl},
-              status = 'completed',
+              generation_status = 'completed',
               updated_at = NOW()
             WHERE id = ${post.id}
           `
@@ -69,7 +68,7 @@ export async function GET(request: Request, { params }: { params: { feedId: stri
           await sql`
             UPDATE feed_posts
             SET 
-              status = 'failed',
+              generation_status = 'failed',
               updated_at = NOW()
             WHERE id = ${post.id}
           `
@@ -85,7 +84,7 @@ export async function GET(request: Request, { params }: { params: { feedId: stri
       progress: Math.round((completedCount / posts.length) * 100),
       posts: posts.map((p) => ({
         position: p.position,
-        status: p.status,
+        status: p.generation_status,
         imageUrl: p.image_url,
       })),
     })

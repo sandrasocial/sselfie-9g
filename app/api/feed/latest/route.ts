@@ -1,46 +1,39 @@
 import type { NextRequest } from "next/server"
 import { neon } from "@neondatabase/serverless"
-import { createServerClient } from "@/lib/supabase/server"
+import { getCurrentNeonUser } from "@/lib/user-sync"
 
 const sql = neon(process.env.DATABASE_URL!)
 
 export async function GET(req: NextRequest) {
+  console.log("[v0] Feed latest API called")
+
   try {
-    const supabase = await createServerClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    const user = await getCurrentNeonUser()
 
     if (!user) {
+      console.log("[v0] No authenticated user")
       return Response.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Get user's Neon ID
-    const neonUsers = await sql`
-      SELECT id FROM users
-      WHERE supabase_user_id = ${user.id}
-      LIMIT 1
-    `
-
-    if (neonUsers.length === 0) {
-      return Response.json({ error: "User not found" }, { status: 404 })
-    }
-
-    const neonUserId = neonUsers[0].id
+    console.log("[v0] Neon user ID:", user.id)
 
     // Get user's most recent feed layout
     const feedLayouts = await sql`
       SELECT * FROM feed_layouts
-      WHERE user_id = ${neonUserId}
+      WHERE user_id = ${user.id}
       ORDER BY created_at DESC
       LIMIT 1
     `
 
+    console.log("[v0] Feed layouts found:", feedLayouts.length)
+
     if (feedLayouts.length === 0) {
+      console.log("[v0] No feed found for user")
       return Response.json({ exists: false })
     }
 
     const feedLayout = feedLayouts[0]
+    console.log("[v0] Feed layout ID:", feedLayout.id)
 
     // Get feed posts
     const feedPosts = await sql`
@@ -56,12 +49,13 @@ export async function GET(req: NextRequest) {
       LIMIT 1
     `
 
-    // Get highlights
     const highlights = await sql`
-      SELECT * FROM highlight_covers
+      SELECT * FROM instagram_highlights
       WHERE feed_layout_id = ${feedLayout.id}
       ORDER BY created_at ASC
     `
+
+    console.log("[v0] Returning feed with", feedPosts.length, "posts")
 
     return Response.json({
       exists: true,

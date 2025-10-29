@@ -1,26 +1,32 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport } from "ai"
 import { Textarea } from "@/components/ui/textarea"
 import { Progress } from "@/components/ui/progress"
+import { Sparkles, Download } from "lucide-react"
+
+import FeedPostCard from "./feed-post-card"
 
 interface FeedPost {
-  id: string
+  id: string | number
   imageUrl: string | null
-  status: "empty" | "generating" | "ready" | "error"
+  status: "concept" | "generating" | "ready" | "error"
   title: string
   description: string
   prompt: string
   category: string
+  caption?: string
+  hashtags?: string
   textOverlay?: {
     text: string
     position: "top" | "center" | "bottom"
     font: string
     color: string
   }
+  position: number // Added for FeedPostCard
 }
 
 interface InstagramProfile {
@@ -33,19 +39,8 @@ interface InstagramProfile {
 
 export default function FeedDesignerScreen() {
   const [isInitializing, setIsInitializing] = useState(true)
-  const [feedPosts, setFeedPosts] = useState<FeedPost[]>(
-    Array(9)
-      .fill(null)
-      .map((_, i) => ({
-        id: `post-${i}`,
-        imageUrl: null,
-        status: "empty" as const,
-        title: "",
-        description: "",
-        prompt: "",
-        category: "",
-      })),
-  )
+  const [isDesigning, setIsDesigning] = useState(false)
+  const [feedPosts, setFeedPosts] = useState<FeedPost[]>([])
   const [profile, setProfile] = useState<InstagramProfile>({
     profileImage: "/placeholder.svg?height=80&width=80",
     name: "Your Brand",
@@ -62,51 +57,36 @@ export default function FeedDesignerScreen() {
   const [hasTrainedModel, setHasTrainedModel] = useState<boolean>(true)
   const [currentPrompts, setCurrentPrompts] = useState<Array<{ label: string; prompt: string }>>([])
   const [brandData, setBrandData] = useState<any>(null)
+  const { status, messages, sendMessage } = useChat({
+    transport: new DefaultChatTransport({ api: "/api/maya/feed-chat" }),
+    initialMessages: [],
+    onError: (error) => {
+      console.error("[v0] Feed chat error:", error)
+      setIsDesigning(false)
+    },
+  })
+  const isTyping = status === "submitted" || status === "streaming"
+  const [inputValue, setInputValue] = useState("")
+
+  const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const generatePersonalizedPrompts = (brand: any) => {
-    if (!brand || !brand.businessType) {
-      // Fallback to generic prompts if no brand data
-      return [
-        {
-          label: "Get Started",
-          prompt: "Create a 9-post feed strategy for my brand",
-        },
-        {
-          label: "Content Ideas",
-          prompt: "Help me plan engaging content for my audience",
-        },
-        {
-          label: "Brand Story",
-          prompt: "Design a feed that tells my brand story",
-        },
-        {
-          label: "Engagement",
-          prompt: "Create content that drives engagement and growth",
-        },
-      ]
-    }
-
-    const businessType = brand.businessType || "business"
-    const contentThemes = brand.contentThemes || "your expertise"
-    const targetAudience = brand.targetAudience || "your audience"
-    const contentGoals = brand.contentGoals || "engagement"
-
     return [
       {
-        label: `${businessType} Feed`,
-        prompt: `Create a 9-post feed for my ${businessType} that showcases ${contentThemes}`,
+        label: "Story Highlights",
+        prompt: "Create my story highlights",
       },
       {
-        label: "Audience Connection",
-        prompt: `Design content that resonates with ${targetAudience} and builds trust`,
+        label: "Profile Picture",
+        prompt: "Create my profile picture",
       },
       {
-        label: "Content Strategy",
-        prompt: `Help me plan a feed focused on ${contentGoals} with ${contentThemes}`,
+        label: "Feed Layout",
+        prompt: "Design my feed layout",
       },
       {
-        label: "Brand Growth",
-        prompt: `Create a strategic feed for my ${businessType} that drives ${contentGoals}`,
+        label: "Instagram Strategy",
+        prompt: "Create my instagram strategy",
       },
     ]
   }
@@ -166,16 +146,42 @@ export default function FeedDesignerScreen() {
     }
   }
 
+  useEffect(() => {
+    if (isTyping && messages.length > 0) {
+      const lastMessage = messages[messages.length - 1]
+      if (lastMessage.role === "user") {
+        console.log("[v0] Maya is designing feed strategy...")
+        setIsDesigning(true)
+      }
+    }
+
+    if (!isTyping && messages.length > 0) {
+      const lastMessage = messages[messages.length - 1]
+      if (lastMessage.role === "assistant") {
+        console.log("[v0] Maya finished responding, reloading feed data in 2 seconds...")
+        setTimeout(() => {
+          loadLatestFeed()
+          setIsDesigning(false)
+        }, 2000)
+      }
+    }
+  }, [isTyping, messages])
+
   const loadLatestFeed = async () => {
     try {
       console.log("[v0] Loading latest feed...")
       const response = await fetch("/api/feed/latest")
+
+      if (!response.ok) {
+        console.error("[v0] Failed to load feed:", response.status)
+        return
+      }
+
       const data = await response.json()
 
-      if (data.exists) {
-        console.log("[v0] Latest feed found:", data)
+      if (data.exists && data.feed) {
+        console.log("[v0] ✓ Latest feed found with", data.posts?.length || 0, "posts")
 
-        // Reconstruct feed strategy from database data
         const strategy = {
           brandVibe: data.feed.brand_vibe,
           businessType: data.feed.business_type,
@@ -189,20 +195,20 @@ export default function FeedDesignerScreen() {
             coverUrl: h.cover_url,
           })),
           posts: data.posts.map((p: any) => ({
-            title: p.title,
-            description: p.description,
+            id: p.id,
+            title: p.post_type || p.category,
+            description: p.prompt,
             prompt: p.prompt,
-            category: p.category,
+            category: p.post_type || p.category,
             caption: p.caption,
             hashtags: p.hashtags,
-            textOverlay: p.text_overlay,
+            textOverlay: p.text_overlay_style,
           })),
         }
 
         setFeedStrategy(strategy)
         setFeedUrl(`/feed/${data.feed.id}`)
 
-        // Update profile with bio and highlights
         if (data.bio) {
           setProfile((prev) => ({
             ...prev,
@@ -222,20 +228,22 @@ export default function FeedDesignerScreen() {
           }))
         }
 
-        // Update feed posts with generated images
-        const postsWithImages = data.posts.map((p: any, index: number) => ({
-          id: `post-${index}`,
+        const postsWithConcepts = data.posts.map((p: any) => ({
+          id: p.id, // Use actual database ID
           imageUrl: p.image_url,
-          status: p.image_url ? ("ready" as const) : ("empty" as const),
-          title: p.title,
-          description: p.description,
-          prompt: p.prompt,
-          category: p.category,
-          textOverlay: p.text_overlay,
+          status: p.image_url ? ("ready" as const) : ("concept" as const),
+          title: p.post_type || "Post",
+          description: p.prompt || "",
+          prompt: p.prompt || "",
+          category: p.post_type || "Portrait",
+          caption: p.caption,
+          hashtags: p.hashtags,
+          textOverlay: p.text_overlay_style,
+          position: p.position,
         }))
 
-        setFeedPosts(postsWithImages)
-        console.log("[v0] Feed loaded successfully")
+        setFeedPosts(postsWithConcepts)
+        console.log("[v0] ✓ Feed loaded with", postsWithConcepts.length, "concept cards")
       } else {
         console.log("[v0] No existing feed found")
       }
@@ -243,105 +251,6 @@ export default function FeedDesignerScreen() {
       console.error("[v0] Error loading latest feed:", error)
     }
   }
-
-  const { messages, sendMessage, status } = useChat({
-    transport: new DefaultChatTransport({ api: "/api/maya/feed-chat" }),
-    initialMessages: [],
-    onFinish: (message) => {
-      console.log("[v0] Maya response - full message:", JSON.stringify(message, null, 2))
-      console.log("[v0] Maya response - content type:", typeof message.content)
-      console.log("[v0] Maya response - content value:", message.content)
-      console.log("[v0] Maya response - toolInvocations:", message.toolInvocations)
-
-      if (message.content && typeof message.content === "string") {
-        const feedDataMatch = message.content.match(/\[FEED_STRATEGY_DATA\](.*?)\[\/FEED_STRATEGY_DATA\]/s)
-        if (feedDataMatch) {
-          try {
-            const feedData = JSON.parse(feedDataMatch[1])
-            console.log("[v0] Feed strategy extracted from text:", feedData)
-
-            setFeedStrategy(feedData)
-
-            if (feedData.instagramBio) {
-              setProfile((prev) => ({
-                ...prev,
-                bio: feedData.instagramBio,
-              }))
-            }
-
-            if (feedData.highlights && Array.isArray(feedData.highlights)) {
-              const mappedHighlights = feedData.highlights.map((h: any) => ({
-                title: h.title,
-                coverUrl: "/placeholder.svg?height=64&width=64",
-                description: h.description,
-              }))
-              console.log("[v0] Setting highlights:", mappedHighlights)
-              setProfile((prev) => ({
-                ...prev,
-                highlights: mappedHighlights,
-              }))
-            }
-
-            if (feedData.feedUrl) {
-              console.log("[v0] Feed URL:", feedData.feedUrl)
-              setFeedUrl(feedData.feedUrl)
-            }
-          } catch (error) {
-            console.error("[v0] Error parsing feed data from text:", error)
-          }
-        }
-      }
-
-      // Keep existing tool invocation handling as fallback
-      if (message.toolInvocations && message.toolInvocations.length > 0) {
-        message.toolInvocations.forEach((invocation: any) => {
-          if (invocation.toolName === "generateCompleteFeed" && invocation.result) {
-            const result = invocation.result
-
-            if (result.state === "ready" && result.feedData) {
-              setFeedStrategy(result.feedData)
-              console.log("[v0] Feed strategy received:", result.feedData)
-
-              if (result.feedData.instagramBio) {
-                setProfile((prev) => ({
-                  ...prev,
-                  bio: result.feedData.instagramBio,
-                }))
-              }
-
-              if (result.feedData.highlights && Array.isArray(result.feedData.highlights)) {
-                const mappedHighlights = result.feedData.highlights.map((h: any) => ({
-                  title: h.title,
-                  coverUrl: "/placeholder.svg?height=64&width=64",
-                  description: h.description,
-                }))
-                console.log("[v0] Setting highlights:", mappedHighlights)
-                setProfile((prev) => ({
-                  ...prev,
-                  highlights: mappedHighlights,
-                }))
-              }
-
-              if (result.feedUrl) {
-                console.log("[v0] Feed URL:", result.feedUrl)
-                setFeedUrl(result.feedUrl)
-              }
-            }
-          }
-        })
-      }
-    },
-    onError: (error) => {
-      console.error("[v0] Feed chat error:", {
-        error: error.message,
-        stack: error.stack,
-        timestamp: new Date().toISOString(),
-      })
-    },
-  })
-
-  const isTyping = status === "submitted" || status === "streaming"
-  const [inputValue, setInputValue] = useState("")
 
   const generateCompleteFeed = async () => {
     if (!feedStrategy) {
@@ -470,17 +379,24 @@ export default function FeedDesignerScreen() {
     }
   }
 
-  const pollSinglePost = async (feedId: string, postIndex: number) => {
+  const pollSinglePost = async (feedId: string, postIndex: number, predictionId?: string) => {
     const maxAttempts = 60
     let attempts = 0
 
     while (attempts < maxAttempts) {
       try {
-        const response = await fetch(`/api/feed/${feedId}/progress`)
+        const response = await fetch(
+          predictionId ? `/api/feed/${feedId}/prediction/${predictionId}` : `/api/feed/${feedId}/progress`,
+        )
         const data = await response.json()
-        const post = data.posts[postIndex]
+        const post = predictionId ? data.prediction : data.posts[postIndex]
 
-        if (post.status === "completed") {
+        if (!post) {
+          console.error(`[v0] Post data not found for index ${postIndex}`)
+          return
+        }
+
+        if (post.status === "completed" || post.status === "ready") {
           setFeedPosts((prev) =>
             prev.map((p, i) =>
               i === postIndex
@@ -506,6 +422,10 @@ export default function FeedDesignerScreen() {
         console.error("[v0] Error polling single post:", error)
         attempts++
       }
+    }
+    if (attempts >= maxAttempts) {
+      console.warn(`[v0] Polling for post ${postIndex} timed out.`)
+      setFeedPosts((prev) => prev.map((p, i) => (i === postIndex ? { ...p, status: "error" as const } : p)))
     }
   }
 
@@ -551,6 +471,62 @@ export default function FeedDesignerScreen() {
       console.log("[v0] Sending message:", messageText)
       sendMessage({ text: messageText })
       setInputValue("")
+    }
+  }
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages, isTyping])
+
+  const handleGeneratePost = async (feedId: string, postIndex: number) => {
+    console.log("[v0] Generating post:", { feedId, postIndex })
+
+    try {
+      setFeedPosts((prev) => prev.map((p, i) => (i === postIndex ? { ...p, status: "generating" as const } : p)))
+
+      const response = await fetch(`/api/feed/${feedId}/generate-post`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ postIndex }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to generate post")
+      }
+
+      // Poll for completion
+      const pollInterval = setInterval(async () => {
+        const progressResponse = await fetch(`/api/feed/${feedId}/progress`)
+        const data = await progressResponse.json()
+        const post = data.posts[postIndex]
+
+        if (post.status === "completed") {
+          clearInterval(pollInterval)
+          setFeedPosts((prev) =>
+            prev.map((p, i) =>
+              i === postIndex
+                ? {
+                    ...p,
+                    imageUrl: post.image_url,
+                    status: "ready" as const,
+                  }
+                : p,
+            ),
+          )
+        } else if (post.status === "failed") {
+          clearInterval(pollInterval)
+          setFeedPosts((prev) => prev.map((p, i) => (i === postIndex ? { ...p, status: "error" as const } : p)))
+        }
+      }, 3000)
+
+      setTimeout(() => clearInterval(pollInterval), 120000) // 2 min timeout
+    } catch (error) {
+      console.error("[v0] Error generating post:", error)
+      setFeedPosts((prev) => prev.map((p, i) => (i === postIndex ? { ...p, status: "error" as const } : p)))
     }
   }
 
@@ -629,15 +605,14 @@ export default function FeedDesignerScreen() {
                   Tell me about your brand and I'll create a strategic 9-post feed with captions, hashtags, and
                   personalized tips.
                 </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-xl">
+                <div className="grid grid-cols-2 gap-2 w-full max-w-md">
                   {currentPrompts.map((item, index) => (
                     <button
                       key={index}
                       onClick={() => handleQuickPrompt(item.prompt)}
-                      className="p-4 bg-stone-50 border border-stone-200 rounded-xl hover:bg-stone-100 hover:border-stone-300 transition-all text-left"
+                      className="px-3 py-2.5 bg-stone-50 border border-stone-200 rounded-lg hover:bg-stone-100 hover:border-stone-300 transition-all text-center group"
                     >
-                      <span className="text-xs font-medium text-stone-600 mb-1 block">{item.label}</span>
-                      <p className="text-sm text-stone-700 leading-relaxed">{item.prompt}</p>
+                      <span className="text-xs font-medium text-stone-700 transition-colors">{item.prompt}</span>
                     </button>
                   ))}
                 </div>
@@ -655,124 +630,24 @@ export default function FeedDesignerScreen() {
                     />
                   </div>
                 )}
-                <div
-                  className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                    message.role === "user" ? "bg-stone-950 text-white" : "bg-stone-100 text-stone-950"
-                  }`}
-                >
-                  {(() => {
-                    console.log("[v0] Rendering message:", {
-                      index,
-                      role: message.role,
-                      hasParts: !!message.parts,
-                      partsLength: message.parts?.length,
-                      contentType: typeof message.content,
-                      hasToolInvocations: !!message.toolInvocations,
-                      toolInvocationsLength: message.toolInvocations?.length,
-                    })
-
-                    // Handle tool invocations for research
-                    if (message.toolInvocations && message.toolInvocations.length > 0) {
-                      const researchInvocation = message.toolInvocations.find(
-                        (inv: any) => inv.toolName === "researchInstagramTrends",
-                      )
-                      if (researchInvocation && researchInvocation.state === "call") {
+                <div className={`max-w-[80%] ${message.role === "user" ? "order-2" : "order-1"}`}>
+                  {message.parts &&
+                    Array.isArray(message.parts) &&
+                    message.parts.map((part, partIndex) => {
+                      if (part.type === "text") {
                         return (
-                          <div className="flex items-center gap-3 text-stone-600">
-                            <div className="w-2 h-2 rounded-full bg-stone-600 animate-pulse"></div>
-                            <span className="text-xs tracking-wider uppercase font-light">
-                              Researching Instagram trends...
-                            </span>
+                          <div
+                            key={partIndex}
+                            className={`rounded-2xl px-4 py-3 ${
+                              message.role === "user" ? "bg-stone-950 text-white" : "bg-stone-100 text-stone-950"
+                            }`}
+                          >
+                            <p className="text-sm leading-relaxed whitespace-pre-wrap">{part.text}</p>
                           </div>
                         )
                       }
-                    }
-
-                    if (message.parts && Array.isArray(message.parts)) {
-                      return message.parts.map((part: any, partIndex: number) => {
-                        console.log("[v0] Rendering part:", { partIndex, type: part.type, part })
-
-                        if (part.type === "text") {
-                          return (
-                            <p key={partIndex} className="text-sm leading-relaxed whitespace-pre-wrap">
-                              {part.text}
-                            </p>
-                          )
-                        }
-                        if (part.type === "tool-generateCompleteFeed") {
-                          const toolPart = part as any
-                          const output = toolPart.output
-
-                          if (output && output.state === "ready" && output.feedData) {
-                            const feedData = output.feedData
-
-                            return (
-                              <div key={partIndex} className="mt-4 space-y-3">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-1 h-1 rounded-full bg-stone-600"></div>
-                                  <span className="text-xs tracking-wider uppercase font-light text-stone-600">
-                                    Feed Strategy
-                                  </span>
-                                </div>
-                                <div className="bg-white rounded-xl p-4 border border-stone-200">
-                                  <h4 className="font-bold text-stone-950 mb-2">{feedData.feedStory}</h4>
-                                  <div className="grid grid-cols-3 gap-1 mb-3">
-                                    {feedData.posts.slice(0, 9).map((post: any, i: number) => (
-                                      <div
-                                        key={i}
-                                        className="aspect-square bg-stone-100 rounded flex items-center justify-center"
-                                      >
-                                        <span className="text-stone-400 text-sm">{post.category}</span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                  <Button
-                                    onClick={() => {
-                                      setFeedStrategy(feedData)
-                                      setMobileView("preview")
-                                    }}
-                                    className="w-full bg-stone-950 hover:bg-stone-800 text-white"
-                                  >
-                                    View Full Feed Strategy
-                                  </Button>
-                                </div>
-                              </div>
-                            )
-                          } else if (output && output.state === "loading") {
-                            return (
-                              <div key={partIndex} className="mt-4">
-                                <div className="flex items-center gap-3 text-stone-600">
-                                  <div className="w-2 h-2 rounded-full bg-stone-600 animate-pulse"></div>
-                                  <span className="text-xs tracking-wider uppercase font-light">
-                                    Designing your feed strategy...
-                                  </span>
-                                </div>
-                              </div>
-                            )
-                          }
-                        }
-                        return null
-                      })
-                    }
-
-                    // Handle string content
-                    if (typeof message.content === "string") {
-                      return <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
-                    }
-
-                    // Handle object content (error case)
-                    if (typeof message.content === "object") {
-                      console.error("[v0] Message content is an object:", message.content)
-                      return (
-                        <div className="text-sm text-stone-600">
-                          <p className="mb-2">Maya is processing your request...</p>
-                          <p className="text-xs text-stone-500">Debug: Content type is {typeof message.content}</p>
-                        </div>
-                      )
-                    }
-
-                    return <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content || ""}</p>
-                  })()}
+                      return null
+                    })}
                 </div>
               </div>
             ))}
@@ -804,6 +679,7 @@ export default function FeedDesignerScreen() {
                 </div>
               </div>
             )}
+            <div ref={messagesEndRef} />
           </div>
 
           <div className="flex-shrink-0 border-t border-stone-200 p-4">
@@ -815,9 +691,9 @@ export default function FeedDesignerScreen() {
                       key={index}
                       onClick={() => handleQuickPrompt(item.prompt)}
                       disabled={isTyping || isGenerating}
-                      className="flex-shrink-0 px-3 py-2 bg-stone-50 border border-stone-200 rounded-lg hover:bg-stone-100 hover:border-stone-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex-shrink-0 px-3 py-1.5 bg-stone-50 border border-stone-200 rounded-lg hover:bg-stone-100 hover:border-stone-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <span className="text-xs font-medium text-stone-700 whitespace-nowrap">{item.label}</span>
+                      <span className="text-xs font-medium text-stone-700 whitespace-nowrap">{item.prompt}</span>
                     </button>
                   ))}
                 </div>
@@ -912,15 +788,15 @@ export default function FeedDesignerScreen() {
             <div className="p-6">
               <div className="max-w-2xl mx-auto">
                 {generationError && (
-                  <div className="mb-6 bg-stone-100 border border-stone-300 rounded-xl p-4">
+                  <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4">
                     <div className="flex items-start gap-3">
                       <div className="flex-1">
-                        <p className="text-sm font-medium text-stone-950 mb-1">Generation Error</p>
-                        <p className="text-sm text-stone-700">{generationError}</p>
+                        <p className="text-sm font-medium text-red-950 mb-1">Generation Error</p>
+                        <p className="text-sm text-red-700">{generationError}</p>
                       </div>
                       <button
                         onClick={() => setGenerationError(null)}
-                        className="text-stone-400 hover:text-stone-600 text-xl leading-none"
+                        className="text-red-400 hover:text-red-600 text-xl leading-none"
                       >
                         ×
                       </button>
@@ -929,22 +805,42 @@ export default function FeedDesignerScreen() {
                 )}
 
                 {!hasTrainedModel && (
-                  <div className="mb-6 bg-stone-100 border border-stone-300 rounded-xl p-4">
+                  <div className="mb-6 bg-amber-50 border border-amber-200 rounded-xl p-4">
                     <div className="flex items-start gap-3">
                       <div className="flex-1">
-                        <p className="text-sm font-medium text-stone-950 mb-1">Training Required</p>
-                        <p className="text-sm text-stone-700 mb-3">
-                          You need to train your personal model before generating feed images. This ensures all images
-                          feature you!
+                        <p className="text-sm font-medium text-amber-950 mb-1">Training Required</p>
+                        <p className="text-sm text-amber-700 mb-3">
+                          You need to train your personal model before generating feed images.
                         </p>
                         <Button
                           onClick={() => (window.location.href = "/?tab=studio")}
-                          className="bg-stone-950 hover:bg-stone-800 text-white text-sm"
+                          className="bg-amber-950 hover:bg-amber-800 text-white"
                         >
                           Go to Studio
                         </Button>
                       </div>
                     </div>
+                  </div>
+                )}
+
+                {feedStrategy && feedPosts.some((p) => p.status === "concept") && (
+                  <div className="mb-6 bg-white rounded-xl p-6 border border-stone-200">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <h3 className="text-lg font-bold text-stone-950 mb-1">Your Feed Strategy is Ready</h3>
+                        <p className="text-sm text-stone-600">
+                          Generate all 9 posts at once, or click individual cards to generate them one by one
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      onClick={generateCompleteFeed}
+                      disabled={!hasTrainedModel || isGenerating}
+                      className="w-full bg-stone-950 hover:bg-stone-800 text-white"
+                    >
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Generate All 9 Posts
+                    </Button>
                   </div>
                 )}
 
@@ -960,94 +856,89 @@ export default function FeedDesignerScreen() {
                   </div>
                 )}
 
-                {feedStrategy && !isGenerating && feedPosts.every((p) => p.status === "empty") && (
+                {isDesigning && feedPosts.every((p) => !p.title) && (
                   <div className="mb-6 bg-white rounded-xl p-6 border border-stone-200">
-                    <h3 className="text-lg font-bold text-stone-950 mb-4">Your Feed Strategy</h3>
-                    <div className="space-y-3 mb-6">
-                      {feedStrategy.posts?.map((post: any, index: number) => (
-                        <div key={index} className="flex gap-3 text-sm">
-                          <span className="font-semibold text-stone-950">{index + 1}.</span>
-                          <div>
-                            <p className="font-medium text-stone-950">{post.title}</p>
-                            <p className="text-stone-600">{post.description}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {feedUrl && (
-                      <div className="mb-4 p-4 bg-stone-50 rounded-lg border border-stone-200">
-                        <p className="text-sm text-stone-600 mb-2">Your feed is ready to view:</p>
-                        <a
-                          href={feedUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm font-medium text-stone-950 hover:underline break-all"
-                        >
-                          {window.location.origin}
-                          {feedUrl}
-                        </a>
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-stone-200 flex-shrink-0">
+                        <img
+                          src="https://i.postimg.cc/fTtCnzZv/out-1-22.png"
+                          alt="Maya"
+                          className="w-full h-full object-cover"
+                        />
                       </div>
-                    )}
-
-                    <div className="flex gap-3">
-                      <Button
-                        onClick={generateCompleteFeed}
-                        disabled={!hasTrainedModel}
-                        className="bg-stone-950 hover:bg-stone-800 text-white"
-                      >
-                        Generate All 9 Posts
-                      </Button>
-                      {feedUrl && (
-                        <Button
-                          onClick={() => window.open(feedUrl, "_blank")}
-                          variant="outline"
-                          className="border-stone-950 text-stone-950 hover:bg-stone-50"
-                        >
-                          View Your Feed
-                        </Button>
-                      )}
-                      <Button variant="outline" onClick={() => setFeedStrategy(null)}>
-                        Revise Strategy
-                      </Button>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="flex gap-1">
+                            <div className="w-2 h-2 rounded-full animate-bounce bg-stone-700"></div>
+                            <div
+                              className="w-2 h-2 rounded-full animate-bounce bg-stone-700"
+                              style={{ animationDelay: "0.2s" }}
+                            ></div>
+                            <div
+                              className="w-2 h-2 rounded-full animate-bounce bg-stone-700"
+                              style={{ animationDelay: "0.4s" }}
+                            ></div>
+                          </div>
+                          <span className="text-sm font-medium text-stone-950">Maya is designing your feed...</span>
+                        </div>
+                        <p className="text-xs text-stone-600">
+                          Creating a strategic 9-post layout with concepts tailored to your brand
+                        </p>
+                      </div>
                     </div>
                   </div>
                 )}
 
+                {/* Update the grid rendering to use FeedPostCard component */}
                 <div className="grid grid-cols-3 gap-1 bg-white rounded-xl overflow-hidden border border-stone-200">
-                  {feedPosts.map((post, index) => (
-                    <div key={post.id} className="aspect-square bg-stone-100 relative group">
-                      {post.status === "empty" && (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <span className="text-stone-400 text-sm">{index + 1}</span>
-                        </div>
-                      )}
-                      {post.status === "generating" && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-stone-950/10">
-                          <div className="w-6 h-6 border-2 border-stone-950 border-t-transparent rounded-full animate-spin mb-2"></div>
-                          <span className="text-xs text-stone-600">Generating...</span>
-                        </div>
-                      )}
-                      {post.status === "ready" && post.imageUrl && (
-                        <img
-                          src={post.imageUrl || "/placeholder.svg"}
-                          alt={post.title}
-                          className="w-full h-full object-cover"
-                        />
-                      )}
-                      {post.status === "error" && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-stone-200">
-                          <span className="text-stone-950 text-xs mb-2">Failed</span>
-                          <button
-                            onClick={() => retryFailedPost(index)}
-                            className="text-xs text-stone-950 hover:text-stone-700 underline"
-                          >
-                            Retry
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                  {feedPosts.map((post) => {
+                    const feedId = feedUrl?.split("/").pop()
+
+                    return (
+                      <div key={post.id} className="aspect-square bg-stone-100 relative group">
+                        {isDesigning && !post.title && (
+                          <div className="absolute inset-0 bg-gradient-to-br from-stone-200 to-stone-300 animate-pulse">
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="text-center">
+                                <div className="w-8 h-8 border-2 border-stone-400 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                                <span className="text-xs text-stone-500">Designing...</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {!isDesigning && post.status === "concept" && !post.title && (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <span className="text-stone-400 text-sm">{post.position + 1}</span>
+                          </div>
+                        )}
+
+                        {post.title && feedId && (
+                          <div className="absolute inset-0">
+                            <FeedPostCard
+                              post={{
+                                id: post.id, // Now this is the actual database ID
+                                position: post.position,
+                                post_type: post.category,
+                                prompt: post.prompt,
+                                caption: post.caption || "",
+                                image_url: post.imageUrl,
+                                generation_status:
+                                  post.status === "ready"
+                                    ? "completed"
+                                    : post.status === "generating"
+                                      ? "generating"
+                                      : "pending",
+                                prediction_id: null,
+                              }}
+                              feedId={feedId}
+                              onGenerated={() => loadLatestFeed()}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
 
                 {feedPosts.some((p) => p.status === "ready") && (
@@ -1057,10 +948,11 @@ export default function FeedDesignerScreen() {
                         onClick={() => window.open(feedUrl, "_blank")}
                         className="bg-stone-950 hover:bg-stone-800 text-white"
                       >
-                        View Your Feed
+                        View Full Feed
                       </Button>
                     )}
-                    <Button onClick={downloadFeed} variant="outline">
+                    <Button onClick={downloadFeed} variant="outline" className="border-stone-300 bg-transparent">
+                      <Download className="w-4 h-4 mr-2" />
                       Download ZIP
                     </Button>
                   </div>

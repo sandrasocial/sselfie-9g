@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Camera, User, Aperture, Grid, MessageCircle, ImageIcon, Infinity, LayoutGrid } from "lucide-react"
+import { Camera, User, Aperture, Grid, MessageCircle, ImageIcon, LayoutGrid } from "lucide-react"
 import LoadingScreen from "./loading-screen"
 import StudioScreen from "./studio-screen"
 import TrainingScreen from "./training-screen"
@@ -123,35 +123,9 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-stone-300/20 rounded-full blur-3xl"></div>
       </div>
 
-      <div className="relative h-full mx-1 sm:mx-2 md:mx-3 pt-1 sm:pt-2 pb-24 sm:pb-26 md:pb-28">
+      <div className="relative h-full mx-1 sm:mx-2 md:mx-3 pb-24 sm:pb-26 md:pb-28">
         <div className="h-full bg-white/30 backdrop-blur-3xl rounded-[2rem] sm:rounded-[2.5rem] md:rounded-[3rem] border border-white/40 overflow-hidden shadow-2xl shadow-stone-900/10">
-          <div className="flex justify-between items-center px-4 sm:px-6 md:px-8 py-4 sm:py-5 md:py-6 bg-gradient-to-b from-white/40 to-transparent backdrop-blur-xl border-b border-white/20">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 bg-black/80 backdrop-blur-xl rounded-full">
-                <div className="text-white font-medium tracking-wide text-xs sm:text-sm">
-                  {currentTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center space-x-2 sm:space-x-3">
-              {isUnlimited ? (
-                <div className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 backdrop-blur-xl rounded-full border border-amber-400/40">
-                  <Infinity size={14} className="text-amber-600" strokeWidth={2.5} />
-                  <span className="text-xs sm:text-sm font-semibold text-amber-700 tracking-wide">Unlimited</span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-white/60 backdrop-blur-xl rounded-full border border-white/40">
-                  <Camera size={14} className="text-stone-700" strokeWidth={2.5} />
-                  <span className="text-xs sm:text-sm font-bold text-stone-900 tracking-wide tabular-nums">
-                    {generationsRemaining}
-                  </span>
-                  <span className="text-[10px] sm:text-xs font-medium text-stone-500">left</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="h-[calc(100%-80px)] sm:h-[calc(100%-88px)] md:h-[calc(100%-96px)] px-4 sm:px-6 md:px-8 pb-4 sm:pb-6 md:pb-8 pt-0 overflow-y-auto">
+          <div className="h-full px-4 sm:px-6 md:px-8 pb-4 sm:pb-6 md:pb-8 pt-4 sm:pt-6 md:pt-8 overflow-y-auto">
             {activeTab === "studio" && (
               <StudioScreen
                 user={user}

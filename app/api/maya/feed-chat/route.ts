@@ -21,86 +21,27 @@ You're an expert Instagram strategist who creates cohesive, professional feeds b
 The generateCompleteFeed tool handles all the research and design work internally, so you just need to call it once and then explain the results to the user.
 `
 
-async function fetchTrendingHashtags(businessType: string, userBrand: any): Promise<string[]> {
-  const hashtagSearchQuery = `trending Instagram hashtags for ${businessType} ${userBrand.content_themes || ""} ${new Date().getFullYear()}`
-
-  try {
-    console.log("[v0] [SERVER] Fetching trending hashtags from Brave Search API...")
-    console.log("[v0] [SERVER] Search query:", hashtagSearchQuery)
-    console.log("[v0] [SERVER] API key present:", !!process.env.BRAVE_SEARCH_API_KEY)
-
-    const hashtagResponse = await fetch(
-      `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(hashtagSearchQuery)}&count=10`,
-      {
-        method: "GET",
-        headers: {
-          Accept: "application/json",
-          "Accept-Encoding": "gzip",
-          "X-Subscription-Token": process.env.BRAVE_SEARCH_API_KEY || "",
-        },
-      },
-    )
-
-    console.log("[v0] [SERVER] Brave Search API response status:", hashtagResponse.status)
-
-    if (hashtagResponse.ok) {
-      const searchData = await hashtagResponse.json()
-      const extractedHashtags: string[] = []
-
-      if (searchData.web?.results) {
-        for (const result of searchData.web.results) {
-          const text = `${result.title} ${result.description}`.toLowerCase()
-          const hashtagMatches = text.match(/#[a-z0-9_]+/g)
-          if (hashtagMatches) {
-            extractedHashtags.push(...hashtagMatches)
-          }
-        }
-      }
-
-      const trendingHashtags = [...new Set(extractedHashtags)].slice(0, 15)
-      console.log("[v0] [SERVER] Extracted trending hashtags:", trendingHashtags.length)
-
-      if (trendingHashtags.length > 0) {
-        return trendingHashtags
-      }
-    } else {
-      const errorText = await hashtagResponse.text()
-      console.error("[v0] [SERVER] Brave Search API error:", hashtagResponse.status, errorText)
-    }
-  } catch (error) {
-    console.error("[v0] [SERVER] Error fetching trending hashtags:", error)
-  }
-
-  // Fallback to smart business-specific hashtags
-  console.log("[v0] [SERVER] Using fallback hashtag generation")
-
+function generateSmartHashtags(businessType: string): string[] {
   const businessTypeSlug = businessType.toLowerCase().replace(/\s+/g, "")
-  const targetAudience = userBrand.target_audience?.toLowerCase() || ""
-  const contentThemes = userBrand.content_themes?.toLowerCase() || ""
 
   const baseHashtags = [`#${businessTypeSlug}`, "#personalbrand", "#contentcreator", "#entrepreneur"]
 
-  const audienceHashtags = targetAudience.includes("women")
-    ? ["#womeninbusiness", "#femaleentrepreneur", "#girlboss"]
-    : targetAudience.includes("coach")
-      ? ["#businesscoach", "#lifecoach", "#mindsetcoach"]
-      : ["#smallbusiness", "#solopreneur", "#businessowner"]
-
-  const themeHashtags = contentThemes.includes("wellness")
-    ? ["#wellnesscoach", "#selfcare", "#mindfulness"]
-    : contentThemes.includes("fashion")
-      ? ["#fashionblogger", "#styleinspo", "#fashionista"]
-      : contentThemes.includes("marketing")
-        ? ["#digitalmarketing", "#socialmediamarketing", "#marketingtips"]
-        : ["#brandstrategy", "#businessgrowth", "#entrepreneurlife"]
+  const businessSpecificHashtags = businessType.toLowerCase().includes("coach")
+    ? ["#businesscoach", "#lifecoach", "#mindsetcoach", "#coachingbusiness"]
+    : businessType.toLowerCase().includes("designer")
+      ? ["#designerlife", "#creativeentrepreneur", "#designbusiness", "#branddesigner"]
+      : businessType.toLowerCase().includes("photographer")
+        ? ["#photographerbusiness", "#creativebusiness", "#photographylife", "#shootandshare"]
+        : ["#smallbusiness", "#solopreneur", "#businessowner", "#onlinebusiness"]
 
   return [
     ...baseHashtags,
-    ...audienceHashtags,
-    ...themeHashtags,
+    ...businessSpecificHashtags,
     "#instagramgrowth",
     "#socialmediatips",
-    "#onlinebusiness",
+    "#brandstrategy",
+    "#businessgrowth",
+    "#entrepreneurlife",
     "#creativeentrepreneur",
   ].slice(0, 15)
 }
@@ -141,58 +82,16 @@ const generateCompleteFeedTool = tool({
       )
       .describe("5-7 Instagram highlight categories that organize their content strategy"),
   }),
-  execute: async function* ({ brandVibe, businessType, colorPalette, feedStory, instagramBio, highlights }) {
-    console.log("[v0] Generating feed strategy:", {
+  execute: async ({ brandVibe, businessType, colorPalette, feedStory, instagramBio, highlights }) => {
+    console.log("[v0] [SERVER] === TOOL EXECUTION STARTED ===")
+    console.log("[v0] [SERVER] Generating feed strategy:", {
       brandVibe,
       businessType,
       colorPalette,
     })
 
-    yield {
-      state: "researching" as const,
-      message: "Researching trending Instagram aesthetics...",
-    }
+    const researchInsights = "Using current Instagram best practices and proven feed layout strategies"
 
-    let researchInsights = "Using current Instagram best practices"
-    try {
-      const researchQuery = `Instagram feed layouts for ${businessType} Pinterest 2025 trending aesthetic patterns`
-      console.log("[v0] [SERVER] Researching:", researchQuery)
-
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
-      console.log("[v0] [SERVER] Fetching from:", `${appUrl}/api/maya/research`)
-
-      const response = await fetch(`${appUrl}/api/maya/research`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: researchQuery }),
-      })
-
-      console.log("[v0] [SERVER] Research API response status:", response.status)
-      console.log("[v0] [SERVER] Research API response content-type:", response.headers.get("content-type"))
-
-      // Check if response is OK and is JSON before parsing
-      if (response.ok && response.headers.get("content-type")?.includes("application/json")) {
-        const data = await response.json()
-        researchInsights = data.results || researchInsights
-        console.log("[v0] [SERVER] Research completed successfully")
-      } else {
-        const responseText = await response.text()
-        console.error(
-          "[v0] [SERVER] Research API returned non-JSON response:",
-          response.status,
-          responseText.substring(0, 200),
-        )
-      }
-    } catch (error) {
-      console.error("[v0] [SERVER] Research error:", error)
-    }
-
-    yield {
-      state: "designing" as const,
-      message: "Creating your feed strategy...",
-    }
-
-    // Determine visual rhythm based on research and brand
     const visualRhythm = brandVibe.includes("elegant")
       ? "diagonal flow with lifestyle moments"
       : brandVibe.includes("bold")
@@ -359,12 +258,10 @@ const generateCompleteFeedTool = tool({
       }
     })
 
-    const user = await getCurrentNeonUser()
-    const userBrand = { content_themes: "", target_audience: "" }
-    const trendingHashtags = await fetchTrendingHashtags(businessType, userBrand)
+    const trendingHashtags = generateSmartHashtags(businessType)
 
     const postsWithCaptions = posts.map((post, index) => {
-      const { caption, hashtags } = generateCaptionWithRecipe(post, index, trendingHashtags)
+      const { caption, hashtags } = generateCaptionWithRecipe(post, index, trendingHashtags, businessType)
       return {
         ...post,
         caption,
@@ -374,70 +271,71 @@ const generateCompleteFeedTool = tool({
 
     let feedId: string | null = null
 
-    if (user) {
-      try {
-        const sql = neon(process.env.DATABASE_URL!)
+    try {
+      const sql = neon(process.env.DATABASE_URL!)
 
-        const [feedLayout] = await sql`
-          INSERT INTO feed_layouts (
-            user_id, brand_vibe, business_type, color_palette, 
-            visual_rhythm, feed_story, research_insights
+      const user = await getCurrentNeonUser()
+
+      if (!user) {
+        console.error("[v0] [SERVER] No user found, cannot save feed")
+        return "I encountered an error - you need to be logged in to save your feed strategy. Please refresh and try again."
+      }
+
+      const [feedLayout] = await sql`
+        INSERT INTO feed_layouts (
+          user_id, brand_vibe, business_type, color_palette, 
+          visual_rhythm, feed_story, research_insights, title, description
+        )
+        VALUES (
+          ${user.id}, ${brandVibe}, ${businessType}, ${colorPalette},
+          ${visualRhythm}, ${feedStory}, ${researchInsights},
+          ${`${businessType} Feed Strategy`}, ${feedStory}
+        )
+        RETURNING id
+      `
+
+      feedId = feedLayout.id.toString()
+      console.log("[v0] [SERVER] ✓ Feed layout created with ID:", feedId)
+
+      await sql`
+        INSERT INTO instagram_bios (feed_layout_id, bio_text, user_id)
+        VALUES (${feedId}, ${instagramBio}, ${user.id})
+      `
+      console.log("[v0] [SERVER] ✓ Instagram bio saved")
+
+      for (const highlight of highlights) {
+        await sql`
+          INSERT INTO instagram_highlights (feed_layout_id, title, prompt, user_id)
+          VALUES (${feedId}, ${highlight.title}, ${highlight.description}, ${user.id})
+        `
+      }
+      console.log("[v0] [SERVER] ✓ Highlights saved:", highlights.length)
+
+      for (let i = 0; i < postsWithCaptions.length; i++) {
+        const post = postsWithCaptions[i]
+        await sql`
+          INSERT INTO feed_posts (
+            feed_layout_id, user_id, position, prompt, post_type,
+            caption, text_overlay_style, generation_status
           )
           VALUES (
-            ${user.id}, ${brandVibe}, ${businessType}, ${colorPalette},
-            ${visualRhythm}, ${feedStory}, ${researchInsights}
+            ${feedId}, ${user.id}, ${i}, ${post.prompt}, ${post.category},
+            ${post.caption}, ${post.textOverlay ? JSON.stringify(post.textOverlay) : null}, 
+            'pending'
           )
-          RETURNING id
         `
-
-        feedId = feedLayout.id
-
-        await sql`
-          INSERT INTO instagram_bios (feed_id, bio_text)
-          VALUES (${feedId}, ${instagramBio})
-        `
-
-        for (const highlight of highlights) {
-          await sql`
-            INSERT INTO instagram_highlights (feed_id, title, description)
-            VALUES (${feedId}, ${highlight.title}, ${highlight.description})
-          `
-        }
-
-        for (let i = 0; i < postsWithCaptions.length; i++) {
-          const post = postsWithCaptions[i]
-          await sql`
-            INSERT INTO feed_posts (
-              feed_id, position, title, description, prompt, category,
-              caption, hashtags, text_overlay, status
-            )
-            VALUES (
-              ${feedId}, ${i}, ${post.title}, ${post.description}, ${post.prompt},
-              ${post.category}, ${post.caption}, ${post.hashtags},
-              ${post.textOverlay ? JSON.stringify(post.textOverlay) : null}, 'pending'
-            )
-          `
-        }
-
-        console.log("[v0] Feed saved to database with ID:", feedId)
-      } catch (error) {
-        console.error("[v0] Error saving feed to database:", error)
       }
-    }
+      console.log("[v0] [SERVER] ✓ All", postsWithCaptions.length, "posts saved to database")
+      console.log("[v0] [SERVER] === TOOL EXECUTION COMPLETED SUCCESSFULLY ===")
 
-    yield {
-      state: "ready" as const,
-      feedData: {
-        feedId,
-        brandVibe,
-        businessType,
-        colorPalette,
-        visualRhythm,
-        feedStory,
-        instagramBio,
-        highlights,
-        posts: postsWithCaptions,
-      },
+      return `Perfect! I've created your complete Instagram feed strategy with 9 concept cards. Your feed is ready in the preview - click on any card to generate that specific image, or use "Generate All" to create the entire feed at once. (Feed ID: ${feedId})`
+    } catch (error) {
+      console.error("[v0] [SERVER] === TOOL EXECUTION FAILED ===")
+      console.error("[v0] [SERVER] Error saving feed to database:", error)
+      if (error instanceof Error) {
+        console.error("[v0] [SERVER] Error details:", error.message)
+      }
+      return "I encountered an error while saving your feed strategy. Please try again."
     }
   },
 })
@@ -518,10 +416,8 @@ export async function POST(req: Request) {
   }
 }
 
-function generateCaptionWithRecipe(post: any, postIndex: number, hashtags: string[]) {
+function generateCaptionWithRecipe(post: any, postIndex: number, hashtags: string[], businessType: string) {
   const brandVoice = "authentic and relatable"
-  const languageStyle = "simple everyday language"
-  const contentThemes = "businessType"
 
   const hooks = {
     "Close-Up": [
@@ -563,12 +459,12 @@ function generateCaptionWithRecipe(post: any, postIndex: number, hashtags: strin
   }
 
   const stories = {
-    "Close-Up": `When I started as a ${contentThemes}, I thought I had to be perfect. But the truth? People connect with authenticity, not perfection.\n\nThe moment I started showing up as my real self - flaws, struggles, and all - everything shifted. My audience grew, my engagement increased, and most importantly, I felt aligned with my work.`,
-    Quote: `Sometimes we all need a reminder that we're on the right path. Building ${contentThemes} isn't always easy, but it's always worth it.\n\nI keep this quote close because on the hard days, it reminds me why I started. And on the good days, it pushes me to keep growing.`,
-    Lifestyle: `This is what the journey really looks like. Not just the highlight reel, but the real moments - the coffee breaks, the planning sessions, the work that happens behind the scenes.\n\nAs a ${contentThemes}, I've learned that consistency beats perfection every time. Show up, do the work, trust the process.`,
+    "Close-Up": `When I started as a ${businessType}, I thought I had to be perfect. But the truth? People connect with authenticity, not perfection.\n\nThe moment I started showing up as my real self - flaws, struggles, and all - everything shifted. My audience grew, my engagement increased, and most importantly, I felt aligned with my work.`,
+    Quote: `Sometimes we all need a reminder that we're on the right path. Building ${businessType} isn't always easy, but it's always worth it.\n\nI keep this quote close because on the hard days, it reminds me why I started. And on the good days, it pushes me to keep growing.`,
+    Lifestyle: `This is what the journey really looks like. Not just the highlight reel, but the real moments - the coffee breaks, the planning sessions, the work that happens behind the scenes.\n\nAs a ${businessType}, I've learned that consistency beats perfection every time. Show up, do the work, trust the process.`,
     "Full Body": `Your personal brand isn't just about what you do - it's about how you show up. The energy you bring, the confidence you carry, the authenticity you share.\n\nI've learned that when you align your outer presence with your inner values, magic happens. You attract the right people, opportunities, and growth.`,
-    "Half Body": `Here's something I wish someone told me earlier: ${contentThemes} is a journey, not a destination.\n\nEvery step forward counts. Every lesson learned matters. Every moment of growth adds up. Trust your process, celebrate your progress, and keep moving forward.`,
-    Object: `The right tools make all the difference. But here's what matters more than any tool or strategy: your commitment to showing up consistently.\n\nThese are the essentials that support my work as a ${contentThemes}. But the real secret? It's the daily dedication to serving my audience and staying true to my mission.`,
+    "Half Body": `Here's something I wish someone told me earlier: ${businessType} is a journey, not a destination.\n\nEvery step forward counts. Every lesson learned matters. Every moment of growth adds up. Trust your process, celebrate your progress, and keep moving forward.`,
+    Object: `The right tools make all the difference. But here's what matters more than any tool or strategy: your commitment to showing up consistently.\n\nThese are the essentials that support my work as a ${businessType}. But the real secret? It's the daily dedication to serving my audience and staying true to my mission.`,
   }
 
   const ctas = [
