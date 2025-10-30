@@ -26,31 +26,6 @@ export default async function FeedPage({ params }: PageProps) {
     }
 
     const feedLayout = feedLayouts[0]
-    const userId = feedLayout.user_id
-
-    const [userProfile] = await sql`
-      SELECT instagram_handle, full_name FROM user_profiles
-      WHERE user_id = ${userId}
-      LIMIT 1
-    `
-
-    const [brandOnboarding] = await sql`
-      SELECT business_name, instagram_handle FROM brand_onboarding
-      WHERE user_id = ${userId}
-      LIMIT 1
-    `
-
-    const [personalBrand] = await sql`
-      SELECT name FROM user_personal_brand
-      WHERE user_id = ${userId}
-      AND is_completed = true
-      LIMIT 1
-    `
-
-    // Determine the best username and brand name
-    const instagramHandle = userProfile?.instagram_handle || brandOnboarding?.instagram_handle || "yourbrand"
-    const brandName = brandOnboarding?.business_name || personalBrand?.name || userProfile?.full_name || "Your Brand"
-    // </CHANGE>
 
     // Fetch posts
     const feedPosts = await sql`
@@ -78,8 +53,6 @@ export default async function FeedPage({ params }: PageProps) {
         posts={feedPosts}
         bio={bios[0] || null}
         highlights={highlights || []}
-        username={instagramHandle}
-        brandName={brandName}
       />
     )
   } catch (error) {

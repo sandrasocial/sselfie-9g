@@ -52,19 +52,9 @@ interface FeedPublishingHubProps {
   posts: FeedPost[]
   bio: InstagramBio | null
   highlights: Highlight[]
-  username?: string
-  brandName?: string
 }
 
-export default function FeedPublishingHub({
-  feedId,
-  feedLayout,
-  posts,
-  bio,
-  highlights,
-  username = "username",
-  brandName = "Your Brand",
-}: FeedPublishingHubProps) {
+export default function FeedPublishingHub({ feedId, feedLayout, posts, bio, highlights }: FeedPublishingHubProps) {
   const [selectedPost, setSelectedPost] = useState<FeedPost | null>(null)
   const [copiedCaption, setCopiedCaption] = useState(false)
   const [copiedHashtags, setCopiedHashtags] = useState(false)
@@ -246,7 +236,7 @@ export default function FeedPublishingHub({
             {/* Stats and Actions */}
             <div className="flex-1">
               <div className="flex items-center gap-4 mb-6">
-                <h2 className="text-xl text-stone-950">@{username}</h2>
+                <h2 className="text-xl text-stone-950">{layout.businessType || "username"}</h2>
                 <Button variant="outline" size="sm" className="rounded-lg px-6 font-semibold bg-transparent">
                   Edit profile
                 </Button>
@@ -275,9 +265,6 @@ export default function FeedPublishingHub({
           {/* Bio */}
           {bio && (
             <div className="mb-6 max-w-[600px]">
-              <div className="mb-2">
-                <p className="text-sm font-semibold text-stone-950">{brandName}</p>
-              </div>
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
                   <p className="text-sm text-stone-950 whitespace-pre-wrap leading-relaxed">{bio.bio_text}</p>
@@ -447,7 +434,7 @@ export default function FeedPublishingHub({
                   </div>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-stone-950 text-sm">@{username}</h3>
+                  <h3 className="font-semibold text-stone-950 text-sm">{layout.businessType || "username"}</h3>
                   <p className="text-xs text-stone-600">{selectedPost.post_type}</p>
                 </div>
               </div>
@@ -523,7 +510,7 @@ export default function FeedPublishingHub({
               <div>
                 <div className="flex items-start justify-between gap-3 mb-2">
                   <p className="text-sm text-stone-950 leading-relaxed flex-1">
-                    <span className="font-semibold mr-2">@{username}</span>
+                    <span className="font-semibold mr-2">{layout.businessType || "username"}</span>
                     {selectedPost.caption}
                   </p>
                   <Button
