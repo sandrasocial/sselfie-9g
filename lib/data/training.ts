@@ -65,6 +65,50 @@ export async function getLatestTrainedModel(userId: string): Promise<TrainedMode
   return models[0] as TrainedModel
 }
 
+export async function getOrCreateTrainingModel(
+  userId: string,
+  modelName: string,
+  modelType: string,
+  triggerWord: string,
+): Promise<TrainedModel> {
+  console.log("[v0] Getting or creating training model for user:", userId)
+
+  // Check if user already has a model
+  const existingModel = await getLatestTrainedModel(userId)
+
+  if (existingModel) {
+    console.log("[v0] Found existing model, updating it:", existingModel.id)
+
+    // Update the existing model
+    const result = await sql`
+      UPDATE user_models
+      SET 
+        model_name = ${modelName},
+        model_type = ${modelType},
+        trigger_word = ${triggerWord},
+        training_status = 'pending',
+        training_progress = 0,
+        training_id = NULL,
+        replicate_model_id = NULL,
+        replicate_version_id = NULL,
+        lora_weights_url = NULL,
+        started_at = NULL,
+        completed_at = NULL,
+        estimated_completion_time = NULL,
+        failure_reason = NULL,
+        updated_at = NOW()
+      WHERE id = ${existingModel.id}
+      RETURNING *
+    `
+
+    return result[0] as TrainedModel
+  }
+
+  // Create new model if none exists
+  console.log("[v0] No existing model found, creating new one")
+  return createTrainingModel(userId, modelName, modelType, "", triggerWord)
+}
+
 export async function getUserTrainingImages(userId: string): Promise<TrainingImage[]> {
   console.log("[v0] Fetching training images for user:", userId)
 
@@ -83,6 +127,7 @@ export async function createTrainingModel(
   modelName: string,
   modelType: string,
   gender: string,
+  triggerWord: string, // Made required again since DB has NOT NULL constraint
 ): Promise<TrainedModel> {
   console.log("[v0] Creating new training model for user:", userId)
 
@@ -93,6 +138,7 @@ export async function createTrainingModel(
       model_type,
       training_status,
       training_progress,
+      trigger_word,
       created_at,
       updated_at
     )
@@ -102,6 +148,7 @@ export async function createTrainingModel(
       ${modelType},
       'pending',
       0,
+      ${triggerWord},
       NOW(),
       NOW()
     )
@@ -178,5 +225,12 @@ export async function failTraining(modelId: number, reason: string): Promise<voi
       failure_reason = ${reason},
       updated_at = NOW()
     WHERE id = ${modelId}
+  `
+}
+
+export async function deleteTrainingImage(imageId: number, userId: string): Promise<void> {
+  await sql`
+    DELETE FROM selfie_uploads
+    WHERE id = ${imageId} AND user_id = ${userId}
   `
 }

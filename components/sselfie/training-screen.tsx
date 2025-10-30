@@ -5,6 +5,7 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { Camera, Aperture, ChevronRight, Loader2 } from "lucide-react"
 import useSWR from "swr"
+import JSZip from "jszip"
 
 interface TrainingScreenProps {
   user: any
@@ -15,42 +16,119 @@ interface TrainingScreenProps {
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
+const compressImage = async (file: File): Promise<File> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.readAsDataURL(file)
+    reader.onload = (e) => {
+      const img = new Image()
+      img.src = e.target?.result as string
+      img.onload = () => {
+        const canvas = document.createElement("canvas")
+        const ctx = canvas.getContext("2d")
+        if (!ctx) {
+          reject(new Error("Failed to get canvas context"))
+          return
+        }
+
+        // Calculate new dimensions (max 1920px on longest side)
+        const maxSize = 1920
+        let width = img.width
+        let height = img.height
+
+        if (width > height && width > maxSize) {
+          height = (height * maxSize) / width
+          width = maxSize
+        } else if (height > maxSize) {
+          width = (width * maxSize) / height
+          height = maxSize
+        }
+
+        canvas.width = width
+        canvas.height = height
+
+        // Draw and compress
+        ctx.drawImage(img, 0, 0, width, height)
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              reject(new Error("Failed to compress image"))
+              return
+            }
+            const compressedFile = new File([blob], file.name.replace(/\.\w+$/, ".jpg"), {
+              type: "image/jpeg",
+              lastModified: Date.now(),
+            })
+            console.log(
+              `[v0] Compressed ${file.name}: ${(file.size / 1024 / 1024).toFixed(2)}MB → ${(compressedFile.size / 1024 / 1024).toFixed(2)}MB`,
+            )
+            resolve(compressedFile)
+          },
+          "image/jpeg",
+          0.85,
+        )
+      }
+      img.onerror = () => reject(new Error("Failed to load image"))
+    }
+    reader.onerror = () => reject(new Error("Failed to read file"))
+  })
+}
+
 export default function TrainingScreen({ user, userId, setHasTrainedModel, setActiveTab }: TrainingScreenProps) {
   const [trainingStage, setTrainingStage] = useState<"upload" | "training" | "completed">("upload")
   const [selectedGender, setSelectedGender] = useState("")
   const [uploadedImages, setUploadedImages] = useState<File[]>([])
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 })
+  const [deletingImageId, setDeletingImageId] = useState<number | null>(null)
 
-  // Fetch training status
   const {
     data: trainingStatus,
     error,
     mutate,
   } = useSWR("/api/training/status", fetcher, {
-    refreshInterval: trainingStage === "training" ? 5000 : 0, // Poll every 5s during training
+    refreshInterval: 0, // Don't poll status endpoint
   })
 
-  console.log("[v0] Training status data:", trainingStatus)
+  const modelId = trainingStatus?.model?.id
+  const isTraining =
+    trainingStatus?.model?.training_status === "training" || trainingStatus?.model?.training_status === "processing"
 
-  // Determine initial state based on training status
+  const { data: progressData } = useSWR(
+    isTraining && modelId ? `/api/training/progress?modelId=${modelId}` : null,
+    fetcher,
+    {
+      refreshInterval: 5000, // Poll every 5 seconds when training
+      revalidateOnFocus: false,
+    },
+  )
+
+  console.log("[v0] Training status data:", trainingStatus)
+  console.log("[v0] Training progress data:", progressData)
+
   useEffect(() => {
-    if (trainingStatus) {
-      if (trainingStatus.model?.training_status === "completed") {
+    const currentModel = progressData?.model || trainingStatus?.model
+
+    if (currentModel) {
+      if (currentModel.training_status === "completed") {
         setTrainingStage("completed")
         setHasTrainedModel(true)
-      } else if (
-        trainingStatus.model?.training_status === "training" ||
-        trainingStatus.model?.training_status === "processing"
-      ) {
+        mutate()
+      } else if (currentModel.training_status === "training" || currentModel.training_status === "processing") {
         setTrainingStage("training")
       } else {
         setTrainingStage("upload")
       }
     }
-  }, [trainingStatus, setHasTrainedModel])
+  }, [trainingStatus, progressData, setHasTrainedModel, mutate])
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
     setUploadedImages((prev) => [...prev, ...files])
+  }
+
+  const handleRemoveUploadedImage = (index: number) => {
+    setUploadedImages((prev) => prev.filter((_, i) => i !== index))
   }
 
   const startTraining = async () => {
@@ -65,53 +143,61 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
     }
 
     try {
-      setTrainingStage("training")
+      setIsUploading(true)
+      setUploadProgress({ current: 0, total: uploadedImages.length })
 
-      // Upload images to storage first
+      console.log(`[v0] Compressing and creating ZIP file with ${uploadedImages.length} images`)
+      const zip = new JSZip()
+
+      for (let i = 0; i < uploadedImages.length; i++) {
+        const file = uploadedImages[i]
+        console.log(`[v0] Compressing image ${i + 1}/${uploadedImages.length}: ${file.name}`)
+
+        // Compress the image
+        const compressedFile = await compressImage(file)
+
+        // Add compressed file to ZIP
+        zip.file(compressedFile.name, compressedFile)
+
+        // Update progress
+        setUploadProgress({ current: i + 1, total: uploadedImages.length })
+      }
+
+      console.log("[v0] Generating ZIP blob...")
+      const zipBlob = await zip.generateAsync({ type: "blob" })
+      console.log(`[v0] ZIP created: ${(zipBlob.size / 1024 / 1024).toFixed(2)}MB`)
+
       const formData = new FormData()
-      uploadedImages.forEach((file) => {
-        formData.append("images", file)
-      })
+      formData.append("zipFile", zipBlob, `training-images-${Date.now()}.zip`)
+      formData.append("gender", selectedGender)
+      formData.append("modelName", `${user.display_name || "User"}'s Model`)
 
-      console.log("[v0] Uploading training images...")
-      const uploadResponse = await fetch("/api/training/upload", {
+      console.log("[v0] Uploading ZIP file...")
+      const uploadResponse = await fetch("/api/training/upload-zip", {
         method: "POST",
         body: formData,
       })
 
       if (!uploadResponse.ok) {
-        throw new Error("Failed to upload images")
+        const errorText = await uploadResponse.text()
+        throw new Error(`Failed to upload ZIP: ${errorText}`)
       }
 
-      const { imageUrls } = await uploadResponse.json()
-      console.log("[v0] Images uploaded:", imageUrls.length)
+      const result = await uploadResponse.json()
+      console.log("[v0] ZIP uploaded successfully:", result)
 
-      // Start training with uploaded image URLs
-      console.log("[v0] Starting training...")
-      const response = await fetch("/api/training/start", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          modelName: `${user.display_name || "User"}'s Model`,
-          modelType: "flux-dev-lora",
-          gender: selectedGender,
-          imageUrls: imageUrls,
-        }),
-      })
+      setUploadedImages([])
+      setIsUploading(false)
+      setUploadProgress({ current: 0, total: 0 })
+      setTrainingStage("training")
 
-      if (!response.ok) {
-        throw new Error("Failed to start training")
-      }
-
-      const result = await response.json()
-      console.log("[v0] Training started:", result)
-
-      // Refresh training status
       mutate()
     } catch (error) {
       console.error("[v0] Error starting training:", error)
-      alert("Failed to start training. Please try again.")
+      alert(`Failed to start training: ${error instanceof Error ? error.message : "Unknown error"}`)
       setTrainingStage("upload")
+      setIsUploading(false)
+      setUploadProgress({ current: 0, total: 0 })
     }
   }
 
@@ -119,9 +205,36 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
     setTrainingStage("upload")
     setUploadedImages([])
     setSelectedGender("")
+    setIsUploading(false)
+    setUploadProgress({ current: 0, total: 0 })
   }
 
-  // Loading state
+  const handleDeleteImage = async (imageId: number, imageUrl: string) => {
+    if (!confirm("Are you sure you want to delete this image?")) {
+      return
+    }
+
+    try {
+      setDeletingImageId(imageId)
+
+      const response = await fetch(`/api/training/delete?imageId=${imageId}&imageUrl=${encodeURIComponent(imageUrl)}`, {
+        method: "DELETE",
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to delete image")
+      }
+
+      // Refresh training status to update the UI
+      mutate()
+    } catch (error) {
+      console.error("Error deleting image:", error)
+      alert("Failed to delete image. Please try again.")
+    } finally {
+      setDeletingImageId(null)
+    }
+  }
+
   if (!trainingStatus && !error) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -130,9 +243,9 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
     )
   }
 
-  const model = trainingStatus?.model
-  const trainingProgress = model?.training_progress || 0
-  const imageCount = trainingStatus?.imageCount || uploadedImages.length
+  const model = progressData?.model || trainingStatus?.model
+  const trainingProgress = progressData?.progress || model?.training_progress || 0
+  const imageCount = trainingStatus?.trainingImages?.length || 0
 
   return (
     <div className="space-y-8 pb-24">
@@ -145,7 +258,6 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
         </p>
       </div>
 
-      {/* Show trained model status if exists */}
       {trainingStage === "completed" && model && (
         <div className="bg-white/50 backdrop-blur-2xl border border-white/60 rounded-xl sm:rounded-[1.75rem] p-5 sm:p-6 md:p-8 text-center shadow-xl shadow-stone-900/10">
           <div className="relative w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-4 sm:mb-6">
@@ -197,7 +309,6 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
         </div>
       )}
 
-      {/* Training in progress */}
       {trainingStage === "training" && (
         <div className="bg-white/50 backdrop-blur-2xl border border-white/60 rounded-[1.75rem] p-6 sm:p-8 shadow-xl shadow-stone-900/10">
           <div className="text-center mb-8">
@@ -269,10 +380,8 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
         </div>
       )}
 
-      {/* Upload flow for new users or retrain */}
       {trainingStage === "upload" && (
         <>
-          {/* Gender Selection */}
           <div className="bg-stone-100/50 border border-stone-200/40 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8">
             <div className="text-center mb-4 sm:mb-6">
               <h3 className="text-base sm:text-lg md:text-xl font-serif font-extralight tracking-[0.15em] text-stone-950 uppercase mb-2 sm:mb-3">
@@ -316,7 +425,6 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
             )}
           </div>
 
-          {/* Upload Section */}
           <div className="bg-stone-100/50 border border-stone-200/40 rounded-3xl p-6 sm:p-8">
             <div className="text-center mb-8">
               <div className="text-xs tracking-[0.15em] uppercase font-light mb-4 text-stone-500">Step 1 of 2</div>
@@ -378,7 +486,14 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
             </div>
 
             <label className="block border-2 border-dashed border-stone-300/60 rounded-[1.5rem] p-8 sm:p-12 text-center mb-6 bg-white/30 backdrop-blur-xl hover:bg-white/50 hover:border-stone-400/60 transition-all duration-300 cursor-pointer group">
-              <input type="file" multiple accept="image/*" onChange={handleImageUpload} className="hidden" />
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+                disabled={isUploading}
+              />
               <div className="w-16 h-16 bg-stone-950 rounded-[1.25rem] flex items-center justify-center mx-auto mb-6 shadow-xl shadow-stone-900/30 group-hover:scale-110 transition-transform duration-300">
                 <Camera size={28} className="text-white" strokeWidth={2.5} />
               </div>
@@ -392,21 +507,76 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
               </div>
             </label>
 
-            {/* Show uploaded images preview */}
-            {uploadedImages.length > 0 && (
+            {isUploading && (
+              <div className="mb-6 p-6 bg-white/50 backdrop-blur-xl rounded-xl border border-white/60">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-semibold text-stone-950">Uploading images...</span>
+                  <span className="text-sm font-semibold text-stone-950">
+                    {uploadProgress.current} / {uploadProgress.total}
+                  </span>
+                </div>
+                <div className="relative w-full h-2 bg-stone-200/40 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-stone-950 rounded-full transition-all duration-300"
+                    style={{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%` }}
+                  ></div>
+                </div>
+              </div>
+            )}
+
+            {uploadedImages.length > 0 && !isUploading && (
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 mb-6">
                 {uploadedImages.map((file, i) => (
                   <div
                     key={i}
-                    className="aspect-square bg-stone-200/30 rounded-xl border border-stone-300/30 overflow-hidden"
+                    className="relative aspect-square bg-stone-200/30 rounded-xl border border-stone-300/30 overflow-hidden group"
                   >
                     <img
                       src={URL.createObjectURL(file) || "/placeholder.svg"}
                       alt={`Upload ${i + 1}`}
                       className="w-full h-full object-cover"
                     />
+                    <button
+                      onClick={() => handleRemoveUploadedImage(i)}
+                      className="absolute top-1 right-1 w-6 h-6 bg-stone-950/80 hover:bg-stone-950 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                      aria-label="Remove image"
+                    >
+                      <span className="text-xs font-bold">×</span>
+                    </button>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {imageCount > 0 && !isUploading && uploadedImages.length === 0 && (
+              <div className="mb-6">
+                <h4 className="text-sm font-semibold text-stone-950 mb-3">Uploaded Training Images ({imageCount})</h4>
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                  {trainingStatus?.trainingImages?.map((image: any, i: number) => (
+                    <div
+                      key={i}
+                      className="relative aspect-square bg-stone-200/30 rounded-xl border border-stone-300/30 overflow-hidden group"
+                    >
+                      <img
+                        src={image.original_url || "/placeholder.svg"}
+                        alt={`Training image ${i + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                      <button
+                        onClick={() => handleDeleteImage(image.id, image.original_url)}
+                        disabled={deletingImageId === image.id}
+                        className="absolute top-1 right-1 w-6 h-6 bg-stone-950/80 hover:bg-stone-950 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 disabled:opacity-50"
+                        aria-label="Delete image"
+                      >
+                        {deletingImageId === image.id ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <span className="text-xs font-bold">×</span>
+                        )}
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
@@ -428,10 +598,10 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
 
             <button
               onClick={startTraining}
-              disabled={uploadedImages.length < 10 || !selectedGender}
+              disabled={uploadedImages.length < 10 || !selectedGender || isUploading}
               className="w-full bg-stone-950 text-stone-50 py-4 sm:py-5 rounded-2xl font-light tracking-[0.15em] uppercase text-sm transition-all duration-200 hover:bg-stone-800 min-h-[52px] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Start Training
+              {isUploading ? "Uploading..." : "Start Training"}
             </button>
           </div>
         </>

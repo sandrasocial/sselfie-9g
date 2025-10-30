@@ -9,6 +9,12 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '50mb',
+    },
+  },
+  // </CHANGE>
   async headers() {
     return [
       {
@@ -28,6 +34,16 @@ const nextConfig = {
           },
         ],
       },
+      {
+        source: '/api/:path*',
+        headers: [
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+        ],
+      },
+      // </CHANGE>
     ]
   },
 }

@@ -32,6 +32,7 @@ export function getReplicateClient() {
 
 // Flux LoRA training model
 export const FLUX_LORA_TRAINER = "ostris/flux-dev-lora-trainer"
+export const FLUX_LORA_TRAINER_VERSION = "26dce37af90b9d997eeb970d92e47de3064d46c300504ae376c75bef6a9022d2"
 
 // Default training parameters
 export const DEFAULT_TRAINING_PARAMS = {
