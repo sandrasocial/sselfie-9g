@@ -35,6 +35,32 @@ export async function GET(req: NextRequest) {
     const feedLayout = feedLayouts[0]
     console.log("[v0] Feed layout ID:", feedLayout.id)
 
+    const [userProfile] = await sql`
+      SELECT instagram_handle, full_name FROM user_profiles
+      WHERE user_id = ${user.id}
+      LIMIT 1
+    `
+
+    const [brandOnboarding] = await sql`
+      SELECT business_name, instagram_handle FROM brand_onboarding
+      WHERE user_id = ${user.id}
+      LIMIT 1
+    `
+
+    const [personalBrand] = await sql`
+      SELECT name FROM user_personal_brand
+      WHERE user_id = ${user.id}
+      AND is_completed = true
+      LIMIT 1
+    `
+
+    // Determine the best username and brand name
+    const username = userProfile?.instagram_handle || brandOnboarding?.instagram_handle || "yourbrand"
+    const brandName = brandOnboarding?.business_name || personalBrand?.name || userProfile?.full_name || "Your Brand"
+
+    console.log("[v0] Username:", username, "Brand Name:", brandName)
+    // </CHANGE>
+
     // Get feed posts
     const feedPosts = await sql`
       SELECT * FROM feed_posts
@@ -63,6 +89,8 @@ export async function GET(req: NextRequest) {
       posts: feedPosts,
       bio: bios[0] || null,
       highlights: highlights || [],
+      username, // Include username in response
+      brandName, // Include brandName in response
     })
   } catch (error) {
     console.error("[v0] Error fetching latest feed:", error)

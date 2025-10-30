@@ -505,6 +505,7 @@ export default function FeedDesignerScreen() {
           profileImage: "/placeholder.svg?height=80&width=80",
           name: displayName,
           handle: `@${instagramHandle}`,
+          // Use bio from brand data, fallback to a default
           bio: brandData.data.futureVision || brandData.data.currentSituation || "Building something amazing",
           highlights: [],
         })
@@ -606,16 +607,10 @@ export default function FeedDesignerScreen() {
           feedId: data.feed.id,
           postsCount: data.posts?.length || 0,
           highlightsCount: data.highlights?.length || 0,
+          username: data.username,
+          brandName: data.brandName,
+          bio: data.bio?.bio_text,
         })
-
-        console.log(
-          "[v0] [FEED DEBUG] Posts with captions from database:",
-          data.posts.map((p: any) => ({
-            id: p.id,
-            position: p.position,
-            caption: p.caption?.substring(0, 50) + "...",
-          })),
-        )
 
         const strategy = {
           brandVibe: data.feed.brand_vibe,
@@ -645,11 +640,14 @@ export default function FeedDesignerScreen() {
         setFeedStrategy(strategy)
         setFeedUrl(`/feed/${data.feed.id}`)
 
+        const actualBio =
+          data.bio?.bio_text || brandData?.futureVision || brandData?.currentSituation || "Building something amazing"
+
         const newProfile: InstagramProfile = {
           profileImage: data.feed.profile_image_url || profile.profileImage,
-          name: profile.name,
-          handle: profile.handle,
-          bio: data.bio?.bio_text || profile.bio,
+          name: data.brandName || profile.name, // Use brandName from database
+          handle: data.username ? `@${data.username.replace("@", "")}` : profile.handle, // Use username from database
+          bio: actualBio,
           highlights: data.highlights.map((h: any) => ({
             id: h.id,
             title: h.title,
@@ -658,6 +656,12 @@ export default function FeedDesignerScreen() {
             type: h.icon_style || h.type || "image",
           })),
         }
+
+        console.log("[v0] [FEED DEBUG] Setting profile with actual data:", {
+          name: newProfile.name,
+          handle: newProfile.handle,
+          bio: newProfile.bio?.substring(0, 50) + "...",
+        })
 
         if (data.feed.profile_image_url) {
           console.log("[v0] [FEED DEBUG] Loading saved profile image:", data.feed.profile_image_url)
@@ -967,7 +971,7 @@ export default function FeedDesignerScreen() {
       ...prev,
       highlights: prev.highlights.map((h, i) =>
         i === index
-          ? { title: data.title, coverUrl: finalCoverUrl, description: data.data.description, type: data.type }
+          ? { title: data.title, coverUrl: finalCoverUrl, description: data.description, type: data.type }
           : h,
       ),
     }))
