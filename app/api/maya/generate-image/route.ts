@@ -19,7 +19,17 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { conceptTitle, conceptDescription, conceptPrompt, category, chatId, referenceImageUrl, addTextOverlay, textOverlayConfig, isHighlight } = body
+    const {
+      conceptTitle,
+      conceptDescription,
+      conceptPrompt,
+      category,
+      chatId,
+      referenceImageUrl,
+      addTextOverlay,
+      textOverlayConfig,
+      isHighlight,
+    } = body
 
     console.log("[v0] Generating image for concept:", {
       conceptTitle,
@@ -80,16 +90,19 @@ export async function POST(request: NextRequest) {
       finalPrompt = `${conceptPrompt}, professional Instagram story highlight aesthetic, elegant and minimalistic design, soft lighting, high-end editorial quality, perfect for text overlay, circular crop friendly, trending Instagram aesthetic 2025`
     }
 
-    // Add trigger word if not present
-    if (!finalPrompt.toLowerCase().includes(triggerWord.toLowerCase())) {
+    if (!finalPrompt.toLowerCase().startsWith(triggerWord.toLowerCase())) {
       finalPrompt = `${triggerWord}, ${finalPrompt}`
     }
 
     if (category === "Full Body") {
-      // Emphasize facial clarity in full-body compositions
-      const facialEmphasis = "detailed face, clear facial features, sharp eyes"
-      if (!finalPrompt.toLowerCase().includes("face") && !finalPrompt.toLowerCase().includes("facial")) {
-        finalPrompt = `${finalPrompt}, ${facialEmphasis}`
+      // Emphasize facial clarity and resemblance in full-body compositions
+      const facialEmphasis =
+        "detailed face with clear features, sharp eyes, recognizable facial structure, strong facial resemblance, face in sharp focus"
+      if (!finalPrompt.toLowerCase().includes("detailed face")) {
+        // Insert facial emphasis after trigger word and before styling details
+        const parts = finalPrompt.split(", ")
+        parts.splice(1, 0, facialEmphasis)
+        finalPrompt = parts.join(", ")
       }
     }
 
@@ -102,7 +115,7 @@ export async function POST(request: NextRequest) {
       qualitySettings.lora_scale = Number(userLoraScale)
       console.log("[v0] Using user-specific LoRA scale:", qualitySettings.lora_scale)
     } else {
-      qualitySettings.lora_scale = 0.9
+      qualitySettings.lora_scale = 1.05
       console.log("[v0] Using default LoRA scale:", qualitySettings.lora_scale)
     }
 
@@ -184,10 +197,10 @@ export async function POST(request: NextRequest) {
         ${conceptDescription},
         ${category},
         ${conceptTitle},
-        ${JSON.stringify({ 
-          prediction_id: prediction.id, 
+        ${JSON.stringify({
+          prediction_id: prediction.id,
           status: "processing",
-          text_overlay: addTextOverlay ? textOverlayConfig : null
+          text_overlay: addTextOverlay ? textOverlayConfig : null,
         })},
         NOW()
       )

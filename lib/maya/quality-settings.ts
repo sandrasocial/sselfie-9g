@@ -15,7 +15,7 @@ export const MAYA_DEFAULT_QUALITY_SETTINGS: QualitySettings = {
   megapixels: "1",
   output_format: "png",
   output_quality: 95,
-  lora_scale: 0.9,
+  lora_scale: 1.05,
 }
 
 export const MAYA_QUALITY_PRESETS = {
@@ -23,25 +23,25 @@ export const MAYA_QUALITY_PRESETS = {
     ...MAYA_DEFAULT_QUALITY_SETTINGS,
     aspect_ratio: "4:5",
     guidance_scale: 3.5,
-    lora_scale: 0.9,
+    lora_scale: 1.05,
   },
   headshot: {
     ...MAYA_DEFAULT_QUALITY_SETTINGS,
     aspect_ratio: "1:1",
     guidance_scale: 4.0,
-    lora_scale: 0.9,
+    lora_scale: 1.05,
   },
   "Close-Up": {
     ...MAYA_DEFAULT_QUALITY_SETTINGS,
     aspect_ratio: "4:5",
     guidance_scale: 4.0,
-    lora_scale: 0.9,
+    lora_scale: 1.05,
   },
   "Half Body": {
     ...MAYA_DEFAULT_QUALITY_SETTINGS,
     aspect_ratio: "4:5",
     guidance_scale: 3.5,
-    lora_scale: 0.9,
+    lora_scale: 1.05,
   },
   "Full Body": {
     ...MAYA_DEFAULT_QUALITY_SETTINGS,
@@ -49,37 +49,37 @@ export const MAYA_QUALITY_PRESETS = {
     guidance_scale: 2.8,
     num_inference_steps: 50,
     megapixels: "1",
-    lora_scale: 0.95, // Increased from 0.9 to 0.95 for better face resemblance in full body shots
+    lora_scale: 1.05,
   },
   lifestyle: {
     ...MAYA_DEFAULT_QUALITY_SETTINGS,
     aspect_ratio: "4:5",
     guidance_scale: 3.5,
-    lora_scale: 0.9,
+    lora_scale: 1.05,
   },
   Lifestyle: {
     ...MAYA_DEFAULT_QUALITY_SETTINGS,
     aspect_ratio: "4:5",
     guidance_scale: 3.5,
-    lora_scale: 0.9,
+    lora_scale: 1.05,
   },
   Action: {
     ...MAYA_DEFAULT_QUALITY_SETTINGS,
     aspect_ratio: "4:5",
     guidance_scale: 3.5,
-    lora_scale: 0.9,
+    lora_scale: 1.05,
   },
   Environmental: {
     ...MAYA_DEFAULT_QUALITY_SETTINGS,
     aspect_ratio: "4:5",
     guidance_scale: 3.5,
-    lora_scale: 0.9,
+    lora_scale: 1.05,
   },
   editorial: {
     ...MAYA_DEFAULT_QUALITY_SETTINGS,
     aspect_ratio: "3:4",
     guidance_scale: 3.5,
-    lora_scale: 0.9,
+    lora_scale: 1.05,
   },
   default: MAYA_DEFAULT_QUALITY_SETTINGS,
 }

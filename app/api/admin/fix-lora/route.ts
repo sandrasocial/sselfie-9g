@@ -50,7 +50,7 @@ export async function POST(request: Request) {
     console.log("[v0] Found model:", model)
 
     // Update the lora_scale if it's missing or null
-    const defaultLoraScale = 1.0
+    const defaultLoraScale = 1.05
     const { data: updatedModel, error: updateError } = await supabase
       .from("user_models")
       .update({

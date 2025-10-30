@@ -13,6 +13,7 @@ import {
   Trash2,
   Download,
 } from "lucide-react"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 
 interface GeneratedVideo {
   id: number
@@ -50,6 +51,7 @@ export function InstagramReelPreview({
   const [liked, setLiked] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const currentVideo = videos[currentIndex]
+  const userInitial = userName.charAt(0).toUpperCase()
 
   useEffect(() => {
     if (videoRef.current) {
@@ -195,9 +197,10 @@ export function InstagramReelPreview({
         {/* Bottom info */}
         <div className="absolute bottom-0 left-0 right-0 p-4 z-10">
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-white">
-              <img src={userAvatar || "/placeholder.svg"} alt={userName} className="w-full h-full object-cover" />
-            </div>
+            <Avatar className="w-10 h-10 border-2 border-white">
+              <AvatarImage src={userAvatar || "/placeholder.svg"} alt={userName} />
+              <AvatarFallback className="bg-stone-700 text-white text-sm font-medium">{userInitial}</AvatarFallback>
+            </Avatar>
             <span className="text-sm font-medium text-white">{userName}</span>
             <button className="ml-auto text-white">
               <MoreHorizontal size={20} />

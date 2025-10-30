@@ -10,6 +10,7 @@ import { ProfileImageSelector } from "@/components/profile-image-selector"
 import type { User } from "./types"
 import Image from "next/image"
 import UnifiedLoading from "./unified-loading"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 
 interface ProfileScreenProps {
   user: User
@@ -157,6 +158,7 @@ export default function ProfileScreen({ user }: ProfileScreenProps) {
   const displayName = profileInfo?.name || user.email?.split("@")[0] || "User"
   const displayAvatar = profileInfo?.avatar || user.avatar || "/placeholder.svg"
   const displayPlan = profileInfo?.plan || user.membershipTier || "free"
+  const userInitial = displayName.charAt(0).toUpperCase()
 
   if (loading) {
     return <UnifiedLoading message="Loading your profile..." />
@@ -166,11 +168,16 @@ export default function ProfileScreen({ user }: ProfileScreenProps) {
     <div className="space-y-8 pb-24">
       <div className="text-center space-y-8 pt-4">
         <button onClick={() => setShowProfileSelector(true)} className="relative inline-block group">
-          <img
-            src={displayAvatar || "/placeholder.svg"}
-            alt={displayName}
-            className="w-32 h-32 sm:w-40 sm:h-40 rounded-full object-cover object-top border-2 border-stone-200/60 shadow-sm"
-          />
+          <Avatar className="w-32 h-32 sm:w-40 sm:h-40 border-2 border-stone-200/60 shadow-sm">
+            <AvatarImage
+              src={displayAvatar || "/placeholder.svg"}
+              alt={displayName}
+              className="object-cover object-top"
+            />
+            <AvatarFallback className="bg-stone-200 text-stone-700 text-5xl sm:text-6xl font-light">
+              {userInitial}
+            </AvatarFallback>
+          </Avatar>
           <div className="absolute inset-0 bg-stone-950/0 group-hover:bg-stone-950/40 rounded-full transition-all flex items-center justify-center">
             <ImageIcon size={24} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>

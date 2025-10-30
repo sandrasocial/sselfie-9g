@@ -13,6 +13,7 @@ import {
   Trash2,
 } from "lucide-react"
 import type { GalleryImage } from "@/lib/data/images"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 
 interface InstagramPhotoPreviewProps {
   image: GalleryImage
@@ -38,6 +39,7 @@ export function InstagramPhotoPreview({
   const [currentIndex, setCurrentIndex] = useState(images.findIndex((img) => img.id === image.id))
   const currentImage = images[currentIndex]
   const currentIsFavorited = currentImage.is_favorite || isFavorited
+  const userInitial = userName.charAt(0).toUpperCase()
 
   const handlePrevious = () => {
     setCurrentIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1))
@@ -90,9 +92,10 @@ export function InstagramPhotoPreview({
         {/* Header */}
         <div className="flex items-center justify-between p-3 border-b border-stone-800">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full overflow-hidden border border-stone-700">
-              <img src={userAvatar || "/placeholder.svg"} alt={userName} className="w-full h-full object-cover" />
-            </div>
+            <Avatar className="w-8 h-8 border border-stone-700">
+              <AvatarImage src={userAvatar || "/placeholder.svg"} alt={userName} />
+              <AvatarFallback className="bg-stone-700 text-white text-xs font-medium">{userInitial}</AvatarFallback>
+            </Avatar>
             <span className="text-sm font-medium text-white">{userName}</span>
           </div>
           <button className="text-white">

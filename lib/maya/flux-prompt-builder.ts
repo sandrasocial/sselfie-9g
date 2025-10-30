@@ -58,30 +58,27 @@ export class FluxPromptBuilder {
       pose: this.extractPoseFromDescription(conceptDescription),
       composition: this.buildCompositionSpecs(category),
       negatives: includeNegativePrompts
-        ? "blurry, low quality, distorted, deformed, ugly, bad anatomy, watermark, signature, text"
+        ? "blurry, low quality, distorted, deformed, ugly, bad anatomy, disfigured hands, extra fingers, missing fingers, fused fingers, too many fingers, extra limbs, missing limbs, extra arms, extra legs, malformed limbs, mutated hands, poorly drawn hands, poorly drawn face, mutation, watermark, signature, text, logo"
         : "",
     }
 
-    // Assemble final prompt
     const promptParts = [
-      // Core identity
+      // 1. Core identity (ALWAYS FIRST)
       components.trigger,
       components.gender,
 
-      // Quality foundation
+      // 2. Quality foundation
       ...components.quality,
 
-      // Technical specs
-      components.camera,
+      // 3. Styling details (lighting, setting, subject, pose, composition)
       components.lighting,
-
-      // Scene and subject
       components.setting,
       components.subject,
       components.pose,
-
-      // Composition
       components.composition,
+
+      // 4. Technical specs (camera/lens LAST so they don't overwrite styling)
+      components.camera,
     ].filter(Boolean)
 
     let prompt = promptParts.join(", ")

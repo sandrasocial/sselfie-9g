@@ -106,23 +106,80 @@ Generate ${count} unique, creative photo concepts. Each concept should be a work
    - Focus on the aesthetic and mood rather than gendered features
    - Example: "person with styled hair, confident expression, wearing elegant neutral-toned outfit, minimal accessories"
 
-**FLUX PROMPT STRUCTURE:**
-Write prompts as flowing, poetic descriptions. DO NOT use the old technical prefix format.
+**FLUX PROMPT STRUCTURE - EDITORIAL EXCELLENCE:**
+Write prompts as flowing, poetic descriptions that read like a Vogue photo caption. Think like a master photographer describing their vision.
 
-Instead of starting with "raw photo, editorial quality, professional photography..." 
-Write naturally like: "A confident [gender] with [hair description], [styling details], standing in [location], [lighting description], [mood and atmosphere]"
+**CRITICAL PROMPT ORDER (DO NOT DEVIATE):**
 
-**Camera & Lighting (integrate naturally into the description):**
-- Close-Up/Portrait: "shot on 85mm lens with shallow depth of field, soft bokeh background"
-- Half Body: "shot on 50mm lens with balanced composition"
-- Full Body: "shot on 35mm lens capturing full scene"
-- Lifestyle: "shot on 35mm lens with natural environment"
+1. **TRIGGER WORD** (ALWAYS FIRST - This is the user's trained model identifier)
+2. **STYLING DETAILS** (The heart of the image - give this space and detail):
+   - Fashion & outfit details
+   - Hair & makeup
+   - Emotional tone & expression
+   - Location & atmosphere
+   - Lighting quality and direction
+   - Composition and framing
+3. **TECHNICAL SPECIFICATIONS** (ALWAYS LAST - so they don't overwrite styling):
+   - Camera & lens specs
+   - Aperture settings
+   - Film grain or quality notes
 
-**Always include:**
-- Natural skin texture and film grain for realism
-- Specific lighting direction (golden hour, soft window light, dramatic shadows)
-- Environmental context (location, setting, atmosphere)
-- Emotional tone (confident, serene, powerful, approachable)
+**WHY THIS ORDER MATTERS:**
+- Trigger word first ensures the user's trained model is activated
+- Styling details in the middle get the most "attention" from the AI
+- Technical specs at the end provide guidance without overwhelming the creative vision
+
+**REQUIRED ELEMENTS IN EVERY PROMPT:**
+
+1. **TRIGGER WORD** (User's trained model - ALWAYS start with this)
+
+2. **FASHION & STYLING INTELLIGENCE** (Think like a Vogue editor - BE DETAILED):
+   - **Fabrics**: Be specific about textures - "buttery Italian leather", "flowing silk charmeuse", "structured virgin wool"
+   - **Colors**: Use sophisticated color language - "warm camel", "deep burgundy", "soft sage", not just "brown", "red", "green"
+   - **Silhouettes**: Describe the shape and drape - "relaxed oversized blazer with strong shoulders", "flowing midi dress with movement"
+   - **Accessories**: Curate thoughtfully - "delicate 18k gold layered necklaces", "structured cognac leather tote", "minimalist silver cuff"
+   - **Hair & Makeup**: Editorial precision - "effortless waves with natural texture", "sleek low bun with face-framing pieces", "glowing skin with subtle bronze warmth"
+
+3. **LIGHTING DIRECTION** (Be poetic and specific):
+   - "golden hour sunlight streaming from camera left, creating warm rim light on hair and shoulders"
+   - "soft north-facing window light at 45 degrees, wrapping gently around facial features"
+   - "dramatic Rembrandt lighting with single key light, creating sculptural shadows"
+   - "diffused overcast daylight creating even, flattering illumination with soft shadows"
+   - "warm tungsten light mixing with cool blue hour ambient, creating cinematic color contrast"
+
+4. **LOCATION & ATMOSPHERE** (Paint the scene):
+   - Don't just say "office" - say "minimalist Scandinavian office with floor-to-ceiling windows, natural oak floors, and soft linen curtains filtering golden light"
+   - Not "beach" - "serene Mediterranean coastline with white-washed architecture, bougainvillea cascading down stone walls, warm terracotta tiles underfoot"
+   - Not "city street" - "cobblestone Parisian street in Le Marais, historic architecture with wrought iron balconies, soft morning light creating long shadows"
+
+5. **EMOTIONAL TONE & MOOD** (The soul of the image):
+   - "confident yet approachable, with warm genuine smile and direct gaze"
+   - "contemplative and serene, lost in thought with soft expression"
+   - "powerful and commanding, with strong posture and intense presence"
+   - "effortlessly elegant, with relaxed confidence and natural grace"
+
+6. **CAMERA & LENS SPECIFICATIONS** (ALWAYS AT THE END - Be specific and technical):
+   - Close-Up/Portrait: "shot on 85mm f/1.4 lens with creamy bokeh, shallow depth of field at f/2.0"
+   - Half Body: "shot on 50mm f/1.8 lens with balanced composition, medium depth of field"
+   - Full Body: "shot on 35mm f/2.0 lens capturing full scene with environmental context, face in sharp focus"
+   - Lifestyle: "shot on 35mm f/1.4 lens with natural environment, documentary style"
+   - Wide Environmental: "shot on 24mm f/2.8 lens with expansive perspective"
+
+**EXAMPLE OF EXCELLENT PROMPT (CORRECT ORDER):**
+"TRIGGERWORD, a confident woman with long flowing hair catching golden light, wearing an oversized cream cashmere sweater with relaxed silhouette over high-waisted wide-leg linen trousers in warm sand, delicate 18k gold layered necklaces, standing in a minimalist Scandinavian interior with floor-to-ceiling windows and natural oak floors, soft morning light streaming from camera left at 45 degrees creating warm rim light and gentle shadows, natural skin texture with healthy glow, effortlessly elegant with warm genuine smile, editorial quality with film grain aesthetic, timeless sophistication, shot on 85mm f/1.4 lens with creamy bokeh background"
+
+**SPECIAL ATTENTION FOR FULL BODY SHOTS:**
+When creating full body prompts, add extra emphasis on facial details to ensure strong resemblance:
+- "detailed face with clear features, sharp eyes, recognizable facial structure"
+- "face in sharp focus with strong facial resemblance"
+- Place these facial details early in the prompt (right after trigger word) so they get priority
+
+**WHAT TO AVOID:**
+- Generic descriptions: "nice outfit", "good lighting", "professional look"
+- Technical prefix format: "raw photo, editorial quality, professional photography..." (these should be subtle, not leading)
+- Vague colors: "blue shirt" instead of "chambray blue linen shirt"
+- Camera specs at the beginning: Always put them at the END
+- Flat lighting descriptions: "good light" instead of specific direction and quality
 
 ${referenceImageUrl ? `\n**IMPORTANT**: Include the reference image URL in each concept's output so it can be used in image-to-image generation.` : ""}
 
@@ -131,10 +188,10 @@ Return ONLY a valid JSON array of concepts, no other text. Each concept must hav
   "title": "string - Short, catchy title",
   "description": "string - SIMPLE, WARM, FRIENDLY language that anyone can understand. No technical jargon. Focus on feeling and story.",
   "category": "Close-Up" | "Half Body" | "Full Body" | "Lifestyle" | "Action" | "Environmental",
-  "fashionIntelligence": "string",
-  "lighting": "string",
-  "location": "string",
-  "prompt": "string - FLOWING, POETIC, GENDER-AWARE description with camera/lens specs integrated naturally"${referenceImageUrl ? `,\n  "referenceImageUrl": "${referenceImageUrl}"` : ""}
+  "fashionIntelligence": "string - DETAILED fabric choices, color theory, silhouette analysis, accessory curation. Think like a Vogue fashion editor.",
+  "lighting": "string - POETIC and SPECIFIC lighting description with direction, quality, and emotional impact",
+  "location": "string - RICH, DETAILED location description that paints a complete picture",
+  "prompt": "string - FLOWING, POETIC, EDITORIAL description with ALL required elements: trigger word, styling details, lighting direction, fashion details, location atmosphere, emotional tone, camera/lens specs"${referenceImageUrl ? `,\n  "referenceImageUrl": "${referenceImageUrl}"` : ""}
 }`
 
       const { text } = await generateText({
@@ -182,7 +239,7 @@ Return ONLY a valid JSON array of concepts, no other text. Each concept must hav
             "Soft directional window light at 45 degrees creating gentle shadows, golden hour warmth, diffused through sheer curtains",
           location: "Modern minimalist office with concrete walls and natural wood elements, floor-to-ceiling windows",
           prompt:
-            "A confident person with styled hair and natural expression, wearing elegant neutral-toned professional attire with minimal accessories, standing in a minimalist Scandinavian interior with natural wood and white walls, soft golden hour light streaming through sheer curtains creating gentle shadows and warm glow, shot on 85mm lens with shallow depth of field and creamy bokeh background, natural skin texture with healthy glow, professional editorial quality, film grain aesthetic, timeless elegance",
+            "TRIGGERWORD, a confident person with styled hair and natural expression, wearing elegant neutral-toned professional attire with minimal accessories, standing in a minimalist Scandinavian interior with natural wood and white walls, soft golden hour light streaming through sheer curtains creating gentle shadows and warm glow, shot on 85mm lens with shallow depth of field and creamy bokeh background, natural skin texture with healthy glow, professional editorial quality, film grain aesthetic, timeless elegance",
         },
         {
           title: "Urban Sophisticate",
@@ -195,7 +252,7 @@ Return ONLY a valid JSON array of concepts, no other text. Each concept must hav
           location:
             "Contemporary city street with modern architecture and clean lines, glass facades reflecting ambient light",
           prompt:
-            "A confident person in tailored professional attire walking through a contemporary city street with modern architecture, natural overcast daylight creating even illumination and soft shadows, shot on 35mm lens with natural depth of field capturing environmental context, relaxed confident stride, urban sophistication, natural skin texture, editorial quality, authentic moment",
+            "TRIGGERWORD, a confident person in tailored professional attire walking through a contemporary city street with modern architecture, natural overcast daylight creating even illumination and soft shadows, shot on 35mm lens with natural depth of field capturing environmental context, relaxed confident stride, urban sophistication, natural skin texture, editorial quality, authentic moment",
         },
         {
           title: "Minimalist Elegance",
@@ -207,7 +264,7 @@ Return ONLY a valid JSON array of concepts, no other text. Each concept must hav
             "Studio lighting with key light at 45 degrees, subtle fill light, rim light separating subject from background",
           location: "Minimal white studio space with concrete floor, clean lines, architectural simplicity",
           prompt:
-            "A confident person in flowing elegant neutral-toned attire standing in a minimal white studio with concrete floor, warm studio lighting with beauty dish creating soft shadows and hair light adding dimension, shot on 50mm lens with balanced depth of field, elegant posture, natural skin texture with healthy glow, clean architectural lines, timeless minimalist aesthetic, editorial quality",
+            "TRIGGERWORD, a confident person in flowing elegant neutral-toned attire standing in a minimal white studio with concrete floor, warm studio lighting with beauty dish creating soft shadows and hair light adding dimension, shot on 50mm lens with balanced depth of field, elegant posture, natural skin texture with healthy glow, clean architectural lines, timeless minimalist aesthetic, editorial quality",
         },
         {
           title: "Golden Hour Warmth",
@@ -219,7 +276,7 @@ Return ONLY a valid JSON array of concepts, no other text. Each concept must hav
           location:
             "Bright, airy interior space with plants and natural textures, Scandinavian-inspired design, organic elements",
           prompt:
-            "A confident person in soft warm-toned comfortable attire in a bright airy interior with plants and natural textures, golden hour sunlight streaming through large windows creating warm diffused glow, shot on 50mm lens with medium depth of field and soft background, natural skin texture with healthy glow, warm approachable expression, organic atmosphere, editorial quality, timeless natural beauty",
+            "TRIGGERWORD, a confident person in soft warm-toned comfortable attire in a bright airy interior with plants and natural textures, golden hour sunlight streaming through large windows creating warm diffused glow, shot on 50mm lens with medium depth of field and soft background, natural skin texture with healthy glow, warm approachable expression, organic atmosphere, editorial quality, timeless natural beauty",
         },
       ]
 

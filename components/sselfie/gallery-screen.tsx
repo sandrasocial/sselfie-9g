@@ -9,6 +9,7 @@ import { InstagramPhotoPreview } from "./instagram-photo-preview"
 import { InstagramReelPreview } from "./instagram-reel-preview"
 import { ProfileImageSelector } from "@/components/profile-image-selector"
 import UnifiedLoading from "./unified-loading"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 
 interface GalleryScreenProps {
   user: User
@@ -204,6 +205,7 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
 
   if (galleryView === "instagram") {
     const displayName = user.name || user.email?.split("@")[0] || "User"
+    const userInitial = displayName.charAt(0).toUpperCase()
 
     return (
       <div className="space-y-4 sm:space-y-6 pb-24">
@@ -227,7 +229,12 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
               onClick={() => setShowProfileSelector(true)}
               className="relative w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full overflow-hidden border-2 border-stone-300/60 flex-shrink-0 group"
             >
-              <img src={profileImage || "/placeholder.svg"} alt={displayName} className="w-full h-full object-cover" />
+              <Avatar className="w-full h-full">
+                <AvatarImage src={profileImage || "/placeholder.svg"} alt={displayName} className="object-cover" />
+                <AvatarFallback className="bg-stone-200 text-stone-700 text-2xl sm:text-3xl md:text-4xl font-light">
+                  {userInitial}
+                </AvatarFallback>
+              </Avatar>
               <div className="absolute inset-0 bg-stone-950/0 group-hover:bg-stone-950/40 transition-all flex items-center justify-center">
                 <ImageIcon
                   size={18}
