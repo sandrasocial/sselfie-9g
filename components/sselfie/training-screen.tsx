@@ -98,7 +98,7 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
     isTraining && modelId ? `/api/training/progress?modelId=${modelId}` : null,
     fetcher,
     {
-      refreshInterval: 5000, // Poll every 5 seconds when training
+      refreshInterval: 30000, // Poll every 30 seconds when training
       revalidateOnFocus: false,
     },
   )
