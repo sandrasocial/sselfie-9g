@@ -475,26 +475,46 @@ export default function FeedDesignerScreen() {
 
   const loadBrandProfile = async () => {
     try {
-      const response = await fetch("/api/profile/personal-brand")
-      const data = await response.json()
+      const [brandResponse, profileResponse] = await Promise.all([
+        fetch("/api/profile/personal-brand"),
+        fetch("/api/profile/info"),
+      ])
 
-      if (data.exists && data.completed) {
-        setBrandData(data.data)
+      const brandData = await brandResponse.json()
+      const profileData = await profileResponse.json()
+
+      console.log("[v0] Brand profile data:", brandData)
+      console.log("[v0] User profile data:", profileData)
+
+      if (brandData.exists && brandData.completed) {
+        setBrandData(brandData.data)
         setBrandCompleted(true)
         setShowBrandWizard(false)
-        setProfile({
-          profileImage: "/placeholder.svg?height=80&width=80", // Default, will be overridden by feed
-          name: data.data.name || "Your Brand",
-          handle: `@${data.data.name?.toLowerCase().replace(/\s+/g, "") || "yourbrand"}`,
-          bio: data.data.futureVision || data.data.currentSituation || "Building something amazing",
-          highlights: [], // Will be overridden by feed highlights
+
+        // Use Instagram handle from user profile, fallback to brand name
+        const instagramHandle =
+          profileData.instagram_handle || brandData.data.name?.toLowerCase().replace(/\s+/g, "") || "yourbrand"
+        const displayName = brandData.data.name || profileData.full_name || "Your Brand"
+
+        console.log("[v0] Setting profile with:", {
+          name: displayName,
+          handle: `@${instagramHandle}`,
         })
-        setCurrentPrompts(generatePersonalizedPrompts(data.data))
+
+        setProfile({
+          profileImage: "/placeholder.svg?height=80&width=80",
+          name: displayName,
+          handle: `@${instagramHandle}`,
+          bio: brandData.data.futureVision || brandData.data.currentSituation || "Building something amazing",
+          highlights: [],
+        })
+        setCurrentPrompts(generatePersonalizedPrompts(brandData.data))
       } else {
         setShowBrandWizard(true)
         setBrandCompleted(false)
         setCurrentPrompts(generatePersonalizedPrompts(null))
       }
+      // </CHANGE>
     } catch (error) {
       console.error("[v0] Error loading brand profile:", error)
       setCurrentPrompts(generatePersonalizedPrompts(null))
@@ -1101,64 +1121,53 @@ export default function FeedDesignerScreen() {
   }
 
   const handleGenerateNewFeed = async () => {
-    console.log("[v0] [NEW FEED] Starting new feed generation...")
-    console.log("[v0] [NEW FEED] Current state:", {
-      feedPostsCount: feedPosts.length,
+    console.log("[v0] [NEW FEED] Button clicked")
+    console.log("[v0] [NEW FEED] Button state:", {
       isDesigning,
       isApplyingDesign,
-      feedUrl,
+      disabled: isDesigning || isApplyingDesign,
     })
 
-    setShowNewFeedModal(false)
-    setMayaThinking("Clearing current feed...")
-
-    // Delete the current feed if it exists
-    if (feedUrl) {
-      const feedId = feedUrl.split("/").pop()
-      if (feedId) {
-        try {
-          console.log("[v0] [NEW FEED] Deleting current feed:", feedId)
-          const deleteResponse = await fetch(`/api/feed/${feedId}`, {
-            method: "DELETE",
-          })
-
-          if (!deleteResponse.ok) {
-            throw new Error("Failed to delete current feed")
-          }
-
-          console.log("[v0] [NEW FEED] Current feed deleted successfully")
-        } catch (error) {
-          console.error("[v0] [NEW FEED] Error deleting feed:", error)
-          setMayaThinking(null)
-          alert("Failed to clear current feed. Please try again.")
-          return
-        }
-      }
+    if (isDesigning || isApplyingDesign) {
+      console.log("[v0] [NEW FEED] Button disabled, returning early")
+      return
     }
 
-    // Reset feed state
-    setFeedPosts([])
-    setFeedStrategy(null)
-    setFeedUrl(null)
-    setProactiveSuggestions([])
-    setIsProfileGenerated(false)
-    setHasShownSuggestions(false)
-
-    console.log("[v0] [NEW FEED] Feed state reset complete")
-
-    // Wait a moment for the thinking message to show
-    setTimeout(() => {
-      setMayaThinking("Analyzing your brand profile...")
-
-      setTimeout(() => {
-        setMayaThinking("Crafting your perfect Instagram strategy...")
-
-        console.log("[v0] [NEW FEED] Sending message to Maya...")
-        const autoPrompt = `Create my Instagram feed strategy based on my brand profile.`
-        sendMessage({ text: autoPrompt })
-      }, 1000)
-    }, 1000)
+    setShowNewFeedModal(false)
     // </CHANGE>
+
+    setMayaThinking("Starting your feed generation...")
+
+    try {
+      // Delete current feed if exists
+      if (feedUrl) {
+        const feedId = feedUrl.split("/").pop()
+        console.log("[v0] [NEW FEED] Deleting current feed:", feedId)
+
+        const deleteResponse = await fetch(`/api/feed-layouts/${feedId}`, {
+          method: "DELETE",
+        })
+
+        if (deleteResponse.ok) {
+          console.log("[v0] [NEW FEED] Current feed deleted successfully")
+        }
+      }
+
+      // Reset feed state
+      setFeedUrl(null)
+      setFeedPosts([])
+      setProfile((prev) => ({ ...prev, highlights: [] })) // Clear highlights
+      console.log("[v0] [NEW FEED] Feed state reset complete")
+
+      setMayaThinking("Maya is designing your feed strategy...")
+      const autoPrompt = "Generate a complete feed strategy for me based on my brand profile."
+      sendMessage({ text: autoPrompt })
+      // </CHANGE>
+    } catch (error) {
+      console.error("[v0] [NEW FEED] Error:", error)
+      setMayaThinking(null)
+      alert("Failed to generate feed. Please try again.")
+    }
   }
 
   const handleUploadProfileImage = async (event: React.ChangeEvent<HTMLInputElement>) => {
