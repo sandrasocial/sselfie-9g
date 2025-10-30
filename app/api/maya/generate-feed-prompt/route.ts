@@ -143,11 +143,11 @@ Example output format:
 Now generate the FLUX prompt for this feed post:`
 
     // Call AI to generate the prompt
-    console.log("[v0] [FEED-PROMPT] Calling AI SDK with model: anthropic/claude-3-5-sonnet-20241022")
+    console.log("[v0] [FEED-PROMPT] Calling AI SDK with model: anthropic/claude-sonnet-4.5")
     let result
     try {
-      result = await streamText({
-        model: "anthropic/claude-3-5-sonnet-20241022", // Use correct Anthropic model identifier
+      result = streamText({
+        model: "anthropic/claude-sonnet-4.5",
         messages: [
           {
             role: "system",
@@ -195,8 +195,22 @@ Now generate the FLUX prompt for this feed post:`
     // Collect the streamed response
     console.log("[v0] [FEED-PROMPT] Collecting streamed response...")
     let generatedPrompt = ""
-    for await (const chunk of result.textStream) {
-      generatedPrompt += chunk
+    try {
+      for await (const chunk of result.textStream) {
+        generatedPrompt += chunk
+      }
+    } catch (streamError: any) {
+      console.error("[v0] [FEED-PROMPT] Stream error:", {
+        message: streamError.message,
+        stack: streamError.stack,
+      })
+      return NextResponse.json(
+        {
+          error: "Failed to stream AI response",
+          details: streamError.message || "Stream error",
+        },
+        { status: 500 },
+      )
     }
 
     generatedPrompt = generatedPrompt.trim()

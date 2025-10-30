@@ -95,11 +95,18 @@ export default function FeedPostCard({ post, feedId, onGenerated }: FeedPostCard
   }, [predictionId, postId, isGenerated, feedId]) // Removed onGenerated from dependencies
 
   const handleGenerate = async () => {
+    console.log("[v0] [FEED POST] Starting generation:", {
+      postId: post.id,
+      feedId,
+      hasPrompt: !!post.prompt,
+      promptLength: post.prompt?.length || 0,
+    })
+
     setIsGenerating(true)
     setError(null)
 
     try {
-      console.log("[v0] Generating post with ID:", post.id)
+      console.log("[v0] [FEED POST] Calling generate-single API...")
 
       const response = await fetch(`/api/feed/${feedId}/generate-single`, {
         method: "POST",
@@ -107,17 +114,20 @@ export default function FeedPostCard({ post, feedId, onGenerated }: FeedPostCard
         body: JSON.stringify({ postId: post.id }),
       })
 
-      const data = await response.json()
+      console.log("[v0] [FEED POST] API response status:", response.status)
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to generate image")
+        const errorData = await response.json()
+        console.error("[v0] [FEED POST] API error:", errorData)
+        throw new Error(errorData.error || errorData.details || "Failed to generate image")
       }
 
-      console.log("[v0] Generation started with prediction ID:", data.predictionId)
+      const data = await response.json()
+      console.log("[v0] [FEED POST] Generation started with prediction ID:", data.predictionId)
+
       setPredictionId(data.predictionId)
-      // postId is already set from initial state
     } catch (err) {
-      console.error("[v0] Error generating image:", err)
+      console.error("[v0] [FEED POST] Error generating image:", err)
       setError(err instanceof Error ? err.message : "Failed to generate image")
       setIsGenerating(false)
     }

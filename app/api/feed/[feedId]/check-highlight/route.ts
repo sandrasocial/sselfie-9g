@@ -1,11 +1,7 @@
 import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import Replicate from "replicate"
-
-const replicate = new Replicate({
-  auth: process.env.REPLICATE_API_TOKEN!,
-})
+import { getReplicateClient } from "@/lib/replicate-client"
 
 export async function GET(request: Request, { params }: { params: { feedId: string } }) {
   try {
@@ -31,6 +27,7 @@ export async function GET(request: Request, { params }: { params: { feedId: stri
       return NextResponse.json({ error: "Missing predictionId or highlightId" }, { status: 400 })
     }
 
+    const replicate = getReplicateClient()
     const prediction = await replicate.predictions.get(predictionId)
 
     if (prediction.status === "succeeded" && prediction.output) {

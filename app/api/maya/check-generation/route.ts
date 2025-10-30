@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { neon } from "@neondatabase/serverless"
-import Replicate from "replicate"
+import { getReplicateClient } from "@/lib/replicate-client"
 import { put } from "@vercel/blob"
 
 const sql = neon(process.env.DATABASE_URL || "")
@@ -25,9 +25,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Missing parameters" }, { status: 400 })
     }
 
-    const replicate = new Replicate({
-      auth: process.env.REPLICATE_API_TOKEN,
-    })
+    const replicate = getReplicateClient()
 
     const prediction = await replicate.predictions.get(predictionId)
 

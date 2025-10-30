@@ -24,7 +24,8 @@ interface MayaChatHistoryProps {
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 export default function MayaChatHistory({ currentChatId, onSelectChat, onNewChat, chatType }: MayaChatHistoryProps) {
-  const apiUrl = chatType ? `/api/maya/chats?chatType=${chatType}` : "/api/maya/chats"
+  const apiUrl = chatType ? `/api/maya/chats?chatType=${chatType}` : "/api/maya/chats?chatType=feed-designer"
+  // </CHANGE>
 
   const { data, error, isLoading } = useSWR<{ chats: MayaChat[] }>(apiUrl, fetcher, {
     refreshInterval: 30000,

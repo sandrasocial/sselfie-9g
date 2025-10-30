@@ -56,99 +56,105 @@ export async function POST(req: NextRequest, { params }: { params: { feedId: str
       return Response.json({ error: "LoRA weights URL not found" }, { status: 400 })
     }
 
-    console.log("[v0] [GENERATE-SINGLE] Calling Maya to generate feed post prompt...")
-    console.log("[v0] [GENERATE-SINGLE] Request data:", {
-      postType: post.post_type,
-      caption: post.caption?.substring(0, 50),
-      feedPosition: post.position,
-      colorTheme: feedLayout?.color_palette,
-      brandVibe: feedLayout?.brand_vibe,
-    })
+    let finalPrompt = post.prompt
 
-    let mayaResponse
-    try {
-      mayaResponse = await fetch(`${req.nextUrl.origin}/api/maya/generate-feed-prompt`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          postType: post.post_type,
-          caption: post.caption,
-          feedPosition: post.position,
-          colorTheme: feedLayout?.color_palette,
-          brandVibe: feedLayout?.brand_vibe,
-        }),
+    // Only call Maya if prompt is missing (fallback)
+    if (!finalPrompt || finalPrompt.trim().length === 0) {
+      console.log("[v0] [GENERATE-SINGLE] No prompt found, calling Maya to generate one...")
+      console.log("[v0] [GENERATE-SINGLE] Request data:", {
+        postType: post.post_type,
+        caption: post.caption?.substring(0, 50),
+        feedPosition: post.position,
+        colorTheme: feedLayout?.color_palette,
+        brandVibe: feedLayout?.brand_vibe,
       })
-      console.log("[v0] [GENERATE-SINGLE] Maya response status:", mayaResponse.status)
-    } catch (fetchError: any) {
-      console.error("[v0] [GENERATE-SINGLE] Fetch error:", {
-        message: fetchError.message,
-        stack: fetchError.stack,
-        cause: fetchError.cause,
-      })
-      return Response.json(
-        {
-          error: "Failed to generate intelligent prompt",
-          details: "Maya's prompt generation service is unavailable. Please try again.",
-          shouldRetry: true,
-        },
-        { status: 503 },
-      )
-    }
 
-    if (!mayaResponse.ok) {
-      console.error("[v0] [GENERATE-SINGLE] Maya prompt generation failed with status:", mayaResponse.status)
-
-      let errorMessage = "Maya's prompt generation failed. Please try again."
-      const shouldRetry = true
-
+      let mayaResponse
       try {
-        const errorData = await mayaResponse.json()
-        console.error("[v0] [GENERATE-SINGLE] Error response:", errorData)
-
-        if (mayaResponse.status === 429) {
-          errorMessage = "Rate limit exceeded. Please wait a moment and try again."
-        } else if (errorData.error) {
-          errorMessage = errorData.error
-        }
-      } catch (e) {
-        console.error("[v0] [GENERATE-SINGLE] Could not parse error response")
-      }
-
-      return Response.json(
-        {
-          error: errorMessage,
-          details: "Maya's intelligent prompt generation is required for your designed feed.",
-          shouldRetry,
-        },
-        { status: mayaResponse.status },
-      )
-    }
-
-    let finalPrompt
-    try {
-      const mayaData = await mayaResponse.json()
-      finalPrompt = mayaData.prompt
-      console.log("[v0] [GENERATE-SINGLE] Maya generated prompt:", finalPrompt?.substring(0, 100))
-
-      if (!finalPrompt || finalPrompt.trim().length === 0) {
-        console.error("[v0] [GENERATE-SINGLE] Maya returned empty prompt")
+        mayaResponse = await fetch(`${req.nextUrl.origin}/api/maya/generate-feed-prompt`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            postType: post.post_type,
+            caption: post.caption,
+            feedPosition: post.position,
+            colorTheme: feedLayout?.color_palette,
+            brandVibe: feedLayout?.brand_vibe,
+          }),
+        })
+        console.log("[v0] [GENERATE-SINGLE] Maya response status:", mayaResponse.status)
+      } catch (fetchError: any) {
+        console.error("[v0] [GENERATE-SINGLE] Fetch error:", {
+          message: fetchError.message,
+          stack: fetchError.stack,
+          cause: fetchError.cause,
+        })
         return Response.json(
           {
-            error: "Maya generated an empty prompt. Please try again.",
+            error: "Failed to generate intelligent prompt",
+            details: "Maya's prompt generation service is unavailable. Please try again.",
+            shouldRetry: true,
+          },
+          { status: 503 },
+        )
+      }
+
+      if (!mayaResponse.ok) {
+        console.error("[v0] [GENERATE-SINGLE] Maya prompt generation failed with status:", mayaResponse.status)
+
+        let errorMessage = "Maya's prompt generation failed. Please try again."
+        const shouldRetry = true
+
+        try {
+          const errorData = await mayaResponse.json()
+          console.error("[v0] [GENERATE-SINGLE] Error response:", errorData)
+
+          if (mayaResponse.status === 429) {
+            errorMessage = "Rate limit exceeded. Please wait a moment and try again."
+          } else if (errorData.error) {
+            errorMessage = errorData.error
+          }
+        } catch (e) {
+          console.error("[v0] [GENERATE-SINGLE] Could not parse error response")
+        }
+
+        return Response.json(
+          {
+            error: errorMessage,
+            details: "Maya's intelligent prompt generation is required for your designed feed.",
+            shouldRetry,
+          },
+          { status: mayaResponse.status },
+        )
+      }
+
+      try {
+        const mayaData = await mayaResponse.json()
+        finalPrompt = mayaData.prompt
+        console.log("[v0] [GENERATE-SINGLE] Maya generated prompt:", finalPrompt?.substring(0, 100))
+
+        if (!finalPrompt || finalPrompt.trim().length === 0) {
+          console.error("[v0] [GENERATE-SINGLE] Maya returned empty prompt")
+          return Response.json(
+            {
+              error: "Maya generated an empty prompt. Please try again.",
+              shouldRetry: true,
+            },
+            { status: 500 },
+          )
+        }
+      } catch (jsonError) {
+        console.error("[v0] [GENERATE-SINGLE] Failed to parse Maya response as JSON:", jsonError)
+        return Response.json(
+          {
+            error: "Failed to parse Maya's response. Please try again.",
             shouldRetry: true,
           },
           { status: 500 },
         )
       }
-    } catch (jsonError) {
-      console.error("[v0] [GENERATE-SINGLE] Failed to parse Maya response as JSON:", jsonError)
-      return Response.json(
-        {
-          error: "Failed to parse Maya's response. Please try again.",
-          shouldRetry: true,
-        },
-        { status: 500 },
-      )
+    } else {
+      console.log("[v0] [GENERATE-SINGLE] Using existing prompt from database:", finalPrompt.substring(0, 100))
     }
 
     const qualitySettings =

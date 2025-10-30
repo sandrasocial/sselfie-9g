@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
 import { getUserTrainedModel } from "@/lib/data/studio"
 import { createServerClient } from "@/lib/supabase/server"
-import Replicate from "replicate"
+import { getReplicateClient } from "@/lib/replicate-client"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -52,10 +52,7 @@ export async function POST(request: Request) {
       )
     }
 
-    // Initialize Replicate
-    const replicate = new Replicate({
-      auth: process.env.REPLICATE_API_TOKEN!,
-    })
+    const replicate = getReplicateClient()
 
     // Construct the full prompt with trigger word
     const fullPrompt = `${model.trigger_word} ${prompt}`

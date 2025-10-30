@@ -1,7 +1,13 @@
 import Replicate from "replicate"
 
-// Initialize Replicate client
+let replicateInstance: Replicate | null = null
+
+// Initialize Replicate client with singleton pattern
 export function getReplicateClient() {
+  if (replicateInstance) {
+    return replicateInstance
+  }
+
   const apiToken = process.env.REPLICATE_API_TOKEN
 
   const tokenPreview = apiToken ? `${apiToken.substring(0, 8)}...${apiToken.substring(apiToken.length - 4)}` : "none"
@@ -17,9 +23,11 @@ export function getReplicateClient() {
     throw new Error("Invalid REPLICATE_API_TOKEN format. Please check your token in the Vars section.")
   }
 
-  return new Replicate({
+  replicateInstance = new Replicate({
     auth: apiToken,
   })
+
+  return replicateInstance
 }
 
 // Flux LoRA training model
