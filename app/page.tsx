@@ -1,5 +1,5 @@
 import { createServerClient } from "@/lib/supabase/server"
-import { getCurrentNeonUser } from "@/lib/user-sync"
+import { getUserByAuthId } from "@/lib/user-mapping"
 import { redirect } from "next/navigation"
 import SselfieApp from "@/components/sselfie/sselfie-app"
 
@@ -18,7 +18,7 @@ export default async function Home() {
     redirect("/auth/login")
   }
 
-  const neonUser = await getCurrentNeonUser()
+  const neonUser = await getUserByAuthId(user.id)
 
   console.log("[v0] Neon user:", neonUser ? { id: neonUser.id, email: neonUser.email } : "none")
 

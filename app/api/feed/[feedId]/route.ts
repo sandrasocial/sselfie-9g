@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server"
 import { neon } from "@neondatabase/serverless"
-import { getCurrentNeonUser } from "@/lib/user-sync"
+import { getUserByAuthId } from "@/lib/user-mapping"
+import { createServerClient } from "@/lib/supabase/server"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -9,16 +10,16 @@ export async function GET(req: NextRequest, { params }: { params: { feedId: stri
     const { feedId } = params
 
     if (feedId === "latest") {
-      let user
-      try {
-        user = await getCurrentNeonUser()
-      } catch (authError: any) {
-        console.error("[v0] Auth error in feed API:", authError?.message || authError)
-        return Response.json(
-          { error: "Authentication service temporarily unavailable. Please try again." },
-          { status: 503 },
-        )
+      const supabase = await createServerClient()
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser()
+
+      if (!authUser) {
+        return Response.json({ error: "Unauthorized" }, { status: 401 })
       }
+
+      const user = await getUserByAuthId(authUser.id)
 
       if (!user) {
         return Response.json({ error: "Unauthorized" }, { status: 401 })
@@ -153,16 +154,16 @@ export async function DELETE(req: NextRequest, { params }: { params: { feedId: s
   try {
     const { feedId } = params
 
-    let user
-    try {
-      user = await getCurrentNeonUser()
-    } catch (authError: any) {
-      console.error("[v0] Auth error in feed DELETE:", authError?.message || authError)
-      return Response.json(
-        { error: "Authentication service temporarily unavailable. Please try again." },
-        { status: 503 },
-      )
+    const supabase = await createServerClient()
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser()
+
+    if (!authUser) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 })
     }
+
+    const user = await getUserByAuthId(authUser.id)
 
     if (!user) {
       return Response.json({ error: "Unauthorized" }, { status: 401 })

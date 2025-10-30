@@ -1,7 +1,8 @@
 import { streamText, tool, generateText, type CoreMessage } from "ai"
 import { z } from "zod"
 import { MAYA_SYSTEM_PROMPT, type MayaConcept } from "@/lib/maya/personality"
-import { getCurrentNeonUser } from "@/lib/user-sync"
+import { getUserByAuthId } from "@/lib/user-mapping"
+import { createServerClient } from "@/lib/supabase/server"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 
 export const maxDuration = 60 // Increased from 30 to 60 seconds for nested AI calls
@@ -34,17 +35,24 @@ const generateConceptsTool = tool({
     }
 
     try {
-      const user = await getCurrentNeonUser()
+      const supabase = await createServerClient()
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser()
+
       let userGender = "person"
 
-      if (user) {
-        const { neon } = await import("@neondatabase/serverless")
-        const sql = neon(process.env.DATABASE_URL!)
-        const userDataResult = await sql`
-          SELECT gender FROM users WHERE id = ${user.id} LIMIT 1
-        `
-        if (userDataResult.length > 0 && userDataResult[0].gender) {
-          userGender = userDataResult[0].gender
+      if (authUser) {
+        const user = await getUserByAuthId(authUser.id)
+        if (user) {
+          const { neon } = await import("@neondatabase/serverless")
+          const sql = neon(process.env.DATABASE_URL!)
+          const userDataResult = await sql`
+            SELECT gender FROM users WHERE id = ${user.id} LIMIT 1
+          `
+          if (userDataResult.length > 0 && userDataResult[0].gender) {
+            userGender = userDataResult[0].gender
+          }
         }
       }
 
@@ -285,7 +293,11 @@ const generateVideoTool = tool({
 export async function POST(req: Request) {
   try {
     const { messages, chatId } = await req.json()
-    const user = await getCurrentNeonUser()
+
+    const supabase = await createServerClient()
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser()
 
     console.log("[v0] ========== MAYA API REQUEST START ==========")
     console.log("[v0] Maya API Environment:", {
@@ -301,6 +313,11 @@ export async function POST(req: Request) {
       return new Response("Invalid messages format", { status: 400 })
     }
 
+    if (!authUser) {
+      return new Response("Unauthorized", { status: 401 })
+    }
+
+    const user = await getUserByAuthId(authUser.id)
     if (!user) {
       return new Response("Unauthorized", { status: 401 })
     }

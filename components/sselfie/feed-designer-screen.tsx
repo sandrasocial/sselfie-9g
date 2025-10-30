@@ -55,9 +55,10 @@ export default function FeedDesignerScreen() {
   const [feedPosts, setFeedPosts] = useState<FeedPost[]>([])
   const [profile, setProfile] = useState<InstagramProfile>({
     profileImage: "/placeholder.svg?height=80&width=80",
-    name: "Your Brand",
-    handle: "@yourbrand",
-    bio: "Loading your brand story...",
+    name: "",
+    handle: "",
+    bio: "",
+    // </CHANGE>
     highlights: [],
   })
   const [feedStrategy, setFeedStrategy] = useState<any>(null)
@@ -483,39 +484,19 @@ export default function FeedDesignerScreen() {
       const brandData = await brandResponse.json()
       const profileData = await profileResponse.json()
 
-      console.log("[v0] Brand profile data:", brandData)
-      console.log("[v0] User profile data:", profileData)
+      console.log("[v0] Brand profile data (for Maya context only):", brandData)
 
       if (brandData.exists && brandData.completed) {
         setBrandData(brandData.data)
         setBrandCompleted(true)
         setShowBrandWizard(false)
-
-        // Use Instagram handle from user profile, fallback to brand name
-        const instagramHandle =
-          profileData.instagram_handle || brandData.data.name?.toLowerCase().replace(/\s+/g, "") || "yourbrand"
-        const displayName = brandData.data.name || profileData.full_name || "Your Brand"
-
-        console.log("[v0] Setting profile with:", {
-          name: displayName,
-          handle: `@${instagramHandle}`,
-        })
-
-        setProfile({
-          profileImage: "/placeholder.svg?height=80&width=80",
-          name: displayName,
-          handle: `@${instagramHandle}`,
-          // Use bio from brand data, fallback to a default
-          bio: brandData.data.futureVision || brandData.data.currentSituation || "Building something amazing",
-          highlights: [],
-        })
+        // Don't set profile state here - it will be set from feed data only
         setCurrentPrompts(generatePersonalizedPrompts(brandData.data))
       } else {
         setShowBrandWizard(true)
         setBrandCompleted(false)
         setCurrentPrompts(generatePersonalizedPrompts(null))
       }
-      // </CHANGE>
     } catch (error) {
       console.error("[v0] Error loading brand profile:", error)
       setCurrentPrompts(generatePersonalizedPrompts(null))
@@ -596,7 +577,7 @@ export default function FeedDesignerScreen() {
       const response = await fetch("/api/feed/latest")
 
       if (!response.ok) {
-        console.error("[v0] [FEED DEBUG] Failed to load feed:", response.status)
+        console.log("[v0] [FEED DEBUG] Failed to load feed:", response.status)
         return
       }
 
@@ -612,13 +593,24 @@ export default function FeedDesignerScreen() {
           bio: data.bio?.bio_text,
         })
 
+        const actualBio = data.bio?.bio_text || ""
+        const actualUsername = data.username || ""
+        const actualBrandName = data.brandName || ""
+
+        console.log("[v0] [FEED DEBUG] Using feed data:", {
+          actualUsername,
+          actualBrandName,
+          actualBio: actualBio.substring(0, 50) + "...",
+        })
+        // </CHANGE>
+
         const strategy = {
           brandVibe: data.feed.brand_vibe,
           businessType: data.feed.business_type,
           colorPalette: data.feed.color_palette,
           visualRhythm: data.feed.visual_rhythm,
           feedStory: data.feed.feed_story,
-          instagramBio: data.bio?.bio_text || profile.bio,
+          instagramBio: actualBio,
           highlights: data.highlights.map((h: any) => ({
             title: h.title,
             description: h.prompt,
@@ -640,13 +632,10 @@ export default function FeedDesignerScreen() {
         setFeedStrategy(strategy)
         setFeedUrl(`/feed/${data.feed.id}`)
 
-        const actualBio =
-          data.bio?.bio_text || brandData?.futureVision || brandData?.currentSituation || "Building something amazing"
-
         const newProfile: InstagramProfile = {
-          profileImage: data.feed.profile_image_url || profile.profileImage,
-          name: data.brandName || profile.name, // Use brandName from database
-          handle: data.username ? `@${data.username.replace("@", "")}` : profile.handle, // Use username from database
+          profileImage: data.feed.profile_image_url || "/placeholder.svg?height=80&width=80",
+          name: actualBrandName,
+          handle: actualUsername.startsWith("@") ? actualUsername : `@${actualUsername}`,
           bio: actualBio,
           highlights: data.highlights.map((h: any) => ({
             id: h.id,
@@ -657,7 +646,7 @@ export default function FeedDesignerScreen() {
           })),
         }
 
-        console.log("[v0] [FEED DEBUG] Setting profile with actual data:", {
+        console.log("[v0] [FEED DEBUG] Setting profile state:", {
           name: newProfile.name,
           handle: newProfile.handle,
           bio: newProfile.bio?.substring(0, 50) + "...",
@@ -668,15 +657,6 @@ export default function FeedDesignerScreen() {
           setIsProfileGenerated(true)
         }
 
-        console.log(
-          "[v0] [FEED DEBUG] Setting profile with highlights:",
-          newProfile.highlights.map((h) => ({
-            id: h.id,
-            title: h.title,
-          })),
-        )
-
-        // Force complete state replacement
         setProfile(newProfile)
         // </CHANGE>
 
@@ -708,6 +688,14 @@ export default function FeedDesignerScreen() {
         console.log("[v0] ✓ Feed loaded with", postsWithConcepts.length, "concept cards")
       } else {
         console.log("[v0] No existing feed found")
+        setProfile({
+          profileImage: "/placeholder.svg?height=80&width=80",
+          name: "",
+          handle: "",
+          bio: "",
+          highlights: [],
+        })
+        // </CHANGE>
       }
     } catch (error) {
       console.error("[v0] Error loading latest feed:", error)
@@ -1126,11 +1114,6 @@ export default function FeedDesignerScreen() {
 
   const handleGenerateNewFeed = async () => {
     console.log("[v0] [NEW FEED] Button clicked")
-    console.log("[v0] [NEW FEED] Button state:", {
-      isDesigning,
-      isApplyingDesign,
-      disabled: isDesigning || isApplyingDesign,
-    })
 
     if (isDesigning || isApplyingDesign) {
       console.log("[v0] [NEW FEED] Button disabled, returning early")
@@ -1138,17 +1121,14 @@ export default function FeedDesignerScreen() {
     }
 
     setShowNewFeedModal(false)
-    // </CHANGE>
-
     setMayaThinking("Starting your feed generation...")
 
     try {
-      // Delete current feed if exists
       if (feedUrl) {
         const feedId = feedUrl.split("/").pop()
         console.log("[v0] [NEW FEED] Deleting current feed:", feedId)
 
-        const deleteResponse = await fetch(`/api/feed-layouts/${feedId}`, {
+        const deleteResponse = await fetch(`/api/feed/${feedId}`, {
           method: "DELETE",
         })
 
@@ -1157,16 +1137,24 @@ export default function FeedDesignerScreen() {
         }
       }
 
-      // Reset feed state
       setFeedUrl(null)
       setFeedPosts([])
-      setProfile((prev) => ({ ...prev, highlights: [] })) // Clear highlights
+      setFeedStrategy(null)
+      setProfile({
+        profileImage: "/placeholder.svg?height=80&width=80",
+        name: "",
+        handle: "",
+        bio: "",
+        highlights: [],
+      })
+      setIsProfileGenerated(false)
+      setHasAutoGenerated(false)
       console.log("[v0] [NEW FEED] Feed state reset complete")
+      // </CHANGE>
 
       setMayaThinking("Maya is designing your feed strategy...")
       const autoPrompt = "Generate a complete feed strategy for me based on my brand profile."
       sendMessage({ text: autoPrompt })
-      // </CHANGE>
     } catch (error) {
       console.error("[v0] [NEW FEED] Error:", error)
       setMayaThinking(null)
@@ -1324,7 +1312,6 @@ export default function FeedDesignerScreen() {
                         disabled: isDesigning || isApplyingDesign,
                       })
                       setShowNewFeedModal(true)
-                      // </CHANGE>
                     }}
                     disabled={isDesigning || isApplyingDesign}
                     className="px-4 py-2 rounded-lg text-xs font-medium tracking-wider uppercase transition-all bg-stone-950 text-white hover:bg-stone-800 disabled:opacity-50 disabled:cursor-not-allowed"

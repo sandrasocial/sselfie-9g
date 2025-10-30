@@ -1,13 +1,23 @@
 import { streamText } from "ai"
 import { neon } from "@neondatabase/serverless"
-import { getCurrentNeonUser } from "@/lib/user-sync"
+import { getUserByAuthId } from "@/lib/user-mapping"
+import { createServerClient } from "@/lib/supabase/server"
 import { CONTENT_RESEARCH_STRATEGIST_PROMPT } from "@/lib/content-research-strategist/personality"
 
 const sql = neon(process.env.DATABASE_URL!)
 
 export async function POST(request: Request) {
   try {
-    const user = await getCurrentNeonUser()
+    const supabase = await createServerClient()
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser()
+
+    if (!authUser) {
+      return new Response("Unauthorized", { status: 401 })
+    }
+
+    const user = await getUserByAuthId(authUser.id)
     if (!user?.id) {
       return new Response("Unauthorized", { status: 401 })
     }

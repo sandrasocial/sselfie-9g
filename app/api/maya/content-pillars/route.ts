@@ -1,13 +1,23 @@
 import { generateText } from "ai"
-import { getCurrentNeonUser } from "@/lib/user-sync"
+import { getUserByAuthId } from "@/lib/user-mapping"
+import { createServerClient } from "@/lib/supabase/server"
 
 export const maxDuration = 60
 
 export async function POST(req: Request) {
   try {
     const { userAnswers } = await req.json()
-    const user = await getCurrentNeonUser()
 
+    const supabase = await createServerClient()
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser()
+
+    if (!authUser) {
+      return new Response("Unauthorized", { status: 401 })
+    }
+
+    const user = await getUserByAuthId(authUser.id)
     if (!user) {
       return new Response("Unauthorized", { status: 401 })
     }

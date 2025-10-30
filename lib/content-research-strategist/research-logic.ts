@@ -160,3 +160,28 @@ function extractHashtags(text: string): string[] {
   // Remove duplicates and return top 30
   return [...new Set(hashtags)].slice(0, 30)
 }
+
+export async function performContentResearch(params: {
+  userId: string
+  niche: string
+  brandProfile?: any
+}): Promise<{ success: boolean; research?: any; error?: string }> {
+  try {
+    const research = await conductContentResearch({
+      userId: params.userId,
+      niche: params.niche,
+      brandProfile: params.brandProfile || {},
+    })
+
+    return {
+      success: true,
+      research,
+    }
+  } catch (error) {
+    console.error("[v0] performContentResearch error:", error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    }
+  }
+}

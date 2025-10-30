@@ -1,7 +1,8 @@
 import { generateObject } from "ai"
 import { z } from "zod"
 import { neon } from "@neondatabase/serverless"
-import { getCurrentNeonUser } from "@/lib/user-sync"
+import { getUserByAuthId } from "@/lib/user-mapping"
+import { createServerClient } from "@/lib/supabase/server"
 import { INSTAGRAM_STRATEGIST_SYSTEM_PROMPT } from "@/lib/instagram-strategist/personality"
 
 const sql = neon(process.env.DATABASE_URL!)
@@ -21,7 +22,16 @@ export async function POST(request: Request) {
   try {
     console.log("[v0] Instagram Strategist: Starting caption generation...")
 
-    const neonUser = await getCurrentNeonUser()
+    const supabase = await createServerClient()
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser()
+
+    if (!authUser) {
+      return Response.json({ error: "Not authenticated" }, { status: 401 })
+    }
+
+    const neonUser = await getUserByAuthId(authUser.id)
     if (!neonUser) {
       return Response.json({ error: "Not authenticated" }, { status: 401 })
     }

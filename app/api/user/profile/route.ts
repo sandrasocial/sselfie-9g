@@ -1,13 +1,23 @@
 import { NextResponse } from "next/server"
-import { getCurrentNeonUser } from "@/lib/user-sync"
+import { getUserByAuthId } from "@/lib/user-mapping"
+import { createServerClient } from "@/lib/supabase/server"
 import { sql } from "@/lib/neon"
 
 export async function GET() {
   try {
     console.log("[v0] Profile API: Fetching user profile")
 
-    const user = await getCurrentNeonUser()
+    const supabase = await createServerClient()
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser()
 
+    if (!authUser) {
+      console.log("[v0] Profile API: No authenticated user")
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const user = await getUserByAuthId(authUser.id)
     if (!user) {
       console.log("[v0] Profile API: No authenticated user")
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })

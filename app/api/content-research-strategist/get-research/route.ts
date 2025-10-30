@@ -1,11 +1,21 @@
 import { neon } from "@neondatabase/serverless"
-import { getCurrentNeonUser } from "@/lib/user-sync"
+import { getUserByAuthId } from "@/lib/user-mapping"
+import { createServerClient } from "@/lib/supabase/server"
 
 const sql = neon(process.env.DATABASE_URL!)
 
 export async function GET(request: Request) {
   try {
-    const user = await getCurrentNeonUser()
+    const supabase = await createServerClient()
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser()
+
+    if (!authUser) {
+      return new Response("Unauthorized", { status: 401 })
+    }
+
+    const user = await getUserByAuthId(authUser.id)
     if (!user?.id) {
       return new Response("Unauthorized", { status: 401 })
     }

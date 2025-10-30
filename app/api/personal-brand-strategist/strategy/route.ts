@@ -1,6 +1,6 @@
 import { streamText } from "ai"
 import { createServerClient } from "@/lib/supabase/server"
-import { getCurrentNeonUser } from "@/lib/user-sync"
+import { getUserByAuthId } from "@/lib/user-mapping"
 import { PERSONAL_BRAND_STRATEGIST_PROMPT } from "@/lib/personal-brand-strategist/personality"
 
 export const maxDuration = 60
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
       })
     }
 
-    const neonUser = await getCurrentNeonUser(authUser.id)
+    const neonUser = await getUserByAuthId(authUser.id)
     if (!neonUser) {
       return new Response(JSON.stringify({ error: "User not found" }), {
         status: 404,

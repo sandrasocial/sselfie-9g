@@ -61,6 +61,12 @@ export async function GET(request: NextRequest) {
 
         // Update database with latest status
         if (training.status === "succeeded") {
+          const loraWeightsUrl =
+            training.output?.weights ||
+            (training.output?.version
+              ? `https://replicate.delivery/pbxt/${training.output.version}/trained_model.tar`
+              : null)
+
           await sql`
             UPDATE user_models
             SET 
@@ -68,14 +74,14 @@ export async function GET(request: NextRequest) {
               training_progress = 100,
               replicate_model_id = ${training.output?.model || null},
               replicate_version_id = ${training.output?.version || null},
-              lora_weights_url = ${training.output?.weights || null},
+              lora_weights_url = ${loraWeightsUrl},
               lora_scale = COALESCE(lora_scale, 1.0),
               completed_at = NOW(),
               updated_at = NOW()
             WHERE id = ${modelId}
           `
 
-          console.log("[v0] Training completed - saved LoRA weights:", training.output?.weights)
+          console.log("[v0] Training completed - saved LoRA weights:", loraWeightsUrl)
           console.log("[v0] Replicate model ID:", training.output?.model)
           console.log("[v0] Replicate version ID:", training.output?.version)
 
@@ -88,7 +94,7 @@ export async function GET(request: NextRequest) {
               training_progress: 100,
               replicate_model_id: training.output?.model,
               replicate_version_id: training.output?.version,
-              lora_weights_url: training.output?.weights,
+              lora_weights_url: loraWeightsUrl,
             },
           })
         } else if (training.status === "failed" || training.status === "canceled") {

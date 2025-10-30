@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { put } from "@vercel/blob"
 import { createServerClient } from "@/lib/supabase/server"
-import { getUserByAuthId } from "@/lib/user-sync"
+import { getUserByAuthId } from "@/lib/user-mapping"
 
 export async function POST(request: Request) {
   try {
@@ -55,7 +55,6 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "Invalid file type" }, { status: 400 })
       }
     }
-    // </CHANGE>
 
     if (contentType?.includes("application/json")) {
       const body = await request.json()
@@ -84,7 +83,6 @@ export async function POST(request: Request) {
       console.log("[v0] Base64 image uploaded to Blob:", blob.url)
       return NextResponse.json({ url: blob.url })
     }
-    // </CHANGE>
 
     console.error("[v0] Upload failed: Unsupported content type:", contentType)
     return NextResponse.json({ error: "Unsupported content type" }, { status: 400 })

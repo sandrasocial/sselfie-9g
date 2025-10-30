@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server"
 import { neon } from "@neondatabase/serverless"
-import { getCurrentNeonUser } from "@/lib/user-sync"
+import { createServerClient } from "@/lib/supabase/server"
+import { getUserByAuthId } from "@/lib/user-mapping"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -8,11 +9,20 @@ export async function GET(req: NextRequest) {
   console.log("[v0] Feed latest API called")
 
   try {
-    const user = await getCurrentNeonUser()
+    const supabase = await createServerClient()
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser()
 
-    if (!user) {
+    if (!authUser) {
       console.log("[v0] No authenticated user")
       return Response.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const user = await getUserByAuthId(authUser.id)
+    if (!user) {
+      console.log("[v0] User not found in Neon")
+      return Response.json({ error: "User not found" }, { status: 404 })
     }
 
     console.log("[v0] Neon user ID:", user.id)
@@ -33,33 +43,13 @@ export async function GET(req: NextRequest) {
     }
 
     const feedLayout = feedLayouts[0]
-    console.log("[v0] Feed layout ID:", feedLayout.id)
+    console.log("[v0] [SERVER] Feed layout ID:", feedLayout.id)
 
-    const [userProfile] = await sql`
-      SELECT instagram_handle, full_name FROM user_profiles
-      WHERE user_id = ${user.id}
-      LIMIT 1
-    `
-
-    const [brandOnboarding] = await sql`
-      SELECT business_name, instagram_handle FROM brand_onboarding
-      WHERE user_id = ${user.id}
-      LIMIT 1
-    `
-
-    const [personalBrand] = await sql`
-      SELECT name FROM user_personal_brand
-      WHERE user_id = ${user.id}
-      AND is_completed = true
-      LIMIT 1
-    `
-
-    // Determine the best username and brand name
-    const username = userProfile?.instagram_handle || brandOnboarding?.instagram_handle || "yourbrand"
-    const brandName = brandOnboarding?.business_name || personalBrand?.name || userProfile?.full_name || "Your Brand"
-
-    console.log("[v0] Username:", username, "Brand Name:", brandName)
+    const username = feedLayout.username || ""
+    const brandName = feedLayout.brand_name || ""
     // </CHANGE>
+
+    console.log("[v0] [SERVER] Username from feed:", username, "Brand Name from feed:", brandName)
 
     // Get feed posts
     const feedPosts = await sql`

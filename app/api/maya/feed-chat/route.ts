@@ -1,11 +1,13 @@
 import { streamText, tool, generateObject } from "ai"
 import { z } from "zod"
-import { getCurrentNeonUser } from "@/lib/user-sync"
+import { getUserByAuthId } from "@/lib/user-mapping"
+import { createServerClient } from "@/lib/supabase/server"
 import { MAYA_SYSTEM_PROMPT } from "@/lib/maya/personality"
 import type { CoreMessage } from "ai"
 import { neon } from "@neondatabase/serverless"
 import { generateCaptionsForFeed } from "@/lib/instagram-strategist/caption-logic"
 import { generateInstagramBio } from "@/lib/instagram-bio-strategist/bio-logic"
+import { performContentResearch } from "@/lib/content-research-strategist/research-logic"
 
 const MAYA_FEED_STRATEGIST_EXTENSION = `
 
@@ -48,6 +50,8 @@ const generateCompleteFeedTool = tool({
       .describe(
         "The complete narrative this feed tells (e.g., 'A confident life coach who empowers women to build their dream businesses')",
       ),
+    username: z.string().describe("Instagram username/handle (e.g., 'sandra.social', 'yourhandle') - without @ symbol"),
+    brandName: z.string().describe("Brand or business name to display (e.g., 'Sandra Social', 'Your Brand Name')"),
     highlights: z
       .array(
         z.object({
@@ -61,28 +65,86 @@ const generateCompleteFeedTool = tool({
       )
       .describe("4-5 Instagram highlight categories with detailed FLUX prompts for BACKGROUND images (no text)"),
   }),
-  execute: async ({ brandVibe, businessType, colorPalette, feedStory, highlights }) => {
+  execute: async ({ brandVibe, businessType, colorPalette, feedStory, username, brandName, highlights }) => {
     console.log("[v0] [SERVER] === TOOL EXECUTION STARTED ===")
     console.log("[v0] [SERVER] Generating feed strategy:", {
       brandVibe,
       businessType,
       colorPalette,
+      username,
+      brandName,
     })
 
-    const user = await getCurrentNeonUser()
+    const supabase = await createServerClient()
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser()
+
+    if (!authUser) {
+      console.error("[v0] [SERVER] No auth user found")
+      return "I encountered an error - you need to be logged in to save your feed strategy. Please refresh and try again."
+    }
+
+    const user = await getUserByAuthId(authUser.id)
+
     if (!user) {
       console.error("[v0] [SERVER] No user found, cannot save feed")
       return "I encountered an error - you need to be logged in to save your feed strategy. Please refresh and try again."
     }
 
-    console.log("[v0] [SERVER] 📝 Calling Instagram Bio Strategist...")
-    const sql = neon(process.env.DATABASE_URL!)
+    console.log("[v0] [SERVER] 🔍 Calling Content Research Strategist...")
+    const sql = neon(process.env.DATABASE_URL || "")
+
     const [brandProfile] = await sql`
       SELECT * FROM user_personal_brand
       WHERE user_id = ${user.id}
       AND is_completed = true
       LIMIT 1
     `
+
+    let researchInsights = "Using current Instagram best practices and proven feed layout strategies"
+
+    try {
+      const [existingResearch] = await sql`
+        SELECT * FROM content_research
+        WHERE user_id = ${user.id}
+        AND niche = ${businessType}
+        AND updated_at > NOW() - INTERVAL '7 days'
+        ORDER BY updated_at DESC
+        LIMIT 1
+      `
+
+      if (existingResearch) {
+        console.log("[v0] [SERVER] ✓ Using existing research data from database")
+        researchInsights =
+          existingResearch.research_summary ||
+          existingResearch.competitive_insights?.substring(0, 500) ||
+          researchInsights
+      } else {
+        console.log("[v0] [SERVER] 🌐 Generating fresh research data...")
+        const researchResult = await performContentResearch({
+          userId: user.id,
+          niche: businessType,
+          brandProfile: brandProfile || undefined,
+        })
+
+        if (researchResult.success && researchResult.research) {
+          researchInsights =
+            researchResult.research.research_summary ||
+            researchResult.research.competitive_insights?.substring(0, 500) ||
+            researchInsights
+          console.log("[v0] [SERVER] ✓ Fresh research data generated and saved")
+        } else {
+          console.warn("[v0] [SERVER] ⚠️ Research generation failed, using fallback")
+        }
+      }
+    } catch (researchError) {
+      console.error("[v0] [SERVER] ⚠️ Error with research data:", researchError)
+      // Continue with fallback research insights
+    }
+    // </CHANGE>
+
+    console.log("[v0] [SERVER] 📝 Calling Instagram Bio Strategist...")
 
     const bioResult = await generateInstagramBio({
       userId: user.id,
@@ -91,8 +153,9 @@ const generateCompleteFeedTool = tool({
       brandVoice: brandProfile?.brand_voice,
       targetAudience: brandProfile?.target_audience,
       businessGoals: brandProfile?.business_goals,
-      researchData: "Using Instagram bio best practices and proven conversion formulas",
+      researchData: researchInsights, // Now using real research data
     })
+    // </CHANGE>
 
     if (!bioResult.success) {
       console.error("[v0] [SERVER] ⚠️ Bio generation failed, using fallback")
@@ -100,8 +163,6 @@ const generateCompleteFeedTool = tool({
 
     const instagramBio = bioResult.bio || `${businessType} | ${brandVibe} | DM to connect ✨`
     console.log("[v0] [SERVER] ✓ Instagram bio generated:", instagramBio)
-
-    const researchInsights = "Using current Instagram best practices and proven feed layout strategies"
 
     console.log("[v0] [SERVER] 🎨 Using AI to design custom feed layout...")
 
@@ -127,6 +188,8 @@ Design a cohesive 9-post Instagram feed for a ${businessType} with this brand id
 - Brand Vibe: ${brandVibe}
 - Color Palette: ${colorPalette}
 - Feed Story: ${feedStory}
+- Username: ${username}
+- Brand Name: ${brandName}
 
 ${researchInsights ? `\n**Research Insights:**\n${researchInsights}\n` : ""}
 
@@ -212,18 +275,21 @@ Be creative and authentic. No generic templates - every element should feel cust
       const [feedLayout] = await sql`
         INSERT INTO feed_layouts (
           user_id, brand_vibe, business_type, color_palette,
-          visual_rhythm, feed_story, research_insights, title, description
+          visual_rhythm, feed_story, research_insights, title, description,
+          username, brand_name
         )
         VALUES (
           ${user.id}, ${brandVibe}, ${businessType}, ${colorPalette},
           ${feedDesign.visualRhythm}, ${feedStory}, ${researchInsights},
-          ${`${businessType} Feed Strategy`}, ${feedStory}
+          ${`${businessType} Feed Strategy`}, ${feedStory},
+          ${username}, ${brandName}
         )
         RETURNING id
       `
+      // </CHANGE>
 
       feedId = feedLayout.id.toString()
-      console.log("[v0] [SERVER] ✓ Feed layout created with ID:", feedId)
+      console.log("[v0] [SERVER] ✓ Feed layout created with ID:", feedId, "Username:", username, "Brand:", brandName)
 
       await sql`
         INSERT INTO instagram_bios (feed_layout_id, bio_text, user_id)
@@ -265,7 +331,7 @@ Be creative and authentic. No generic templates - every element should feel cust
           businessType,
           colorPalette,
           feedStory,
-          researchData: researchInsights,
+          researchData: researchInsights, // Now using real research data
         })
 
         if (captionResult.success) {
@@ -278,6 +344,7 @@ Be creative and authentic. No generic templates - every element should feel cust
       } catch (captionError) {
         console.error("[v0] [SERVER] ⚠️ Error calling Caption Strategist:", captionError)
       }
+      // </CHANGE>
 
       console.log("[v0] [SERVER] === TOOL EXECUTION COMPLETED SUCCESSFULLY ===")
 
@@ -306,8 +373,17 @@ const generateStoryHighlightsTool = tool({
     console.log("[v0] [SERVER] Feed ID:", feedId, "Color Palette:", colorPalette)
 
     try {
-      const sql = neon(process.env.DATABASE_URL!)
-      const user = await getCurrentNeonUser()
+      const sql = neon(process.env.DATABASE_URL || "")
+      const supabase = await createServerClient()
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser()
+
+      if (!authUser) {
+        return "Error: User not found"
+      }
+
+      const user = await getUserByAuthId(authUser.id)
 
       if (!user) {
         return "Error: User not found"
@@ -403,8 +479,17 @@ const generateProfileImageTool = tool({
     console.log("[v0] [SERVER] Feed ID:", feedId, "Business Type:", businessType)
 
     try {
-      const sql = neon(process.env.DATABASE_URL!)
-      const user = await getCurrentNeonUser()
+      const sql = neon(process.env.DATABASE_URL || "")
+      const supabase = await createServerClient()
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser()
+
+      if (!authUser) {
+        return "Error: User not found"
+      }
+
+      const user = await getUserByAuthId(authUser.id)
 
       if (!user) {
         return "Error: User not found"
@@ -552,8 +637,18 @@ Be creative and authentic - no generic templates.`,
 
       console.log("[v0] [MAYA] ✓ AI generated new caption:", rewrittenCaption.caption.substring(0, 100) + "...")
 
-      const sql = neon(process.env.DATABASE_URL!)
-      const user = await getCurrentNeonUser()
+      const sql = neon(process.env.DATABASE_URL || "")
+      const supabase = await createServerClient()
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser()
+
+      if (!authUser) {
+        console.error("[v0] [MAYA] ❌ No auth user found")
+        return "Error: User not found"
+      }
+
+      const user = await getUserByAuthId(authUser.id)
 
       if (!user) {
         console.error("[v0] [MAYA] ❌ No user found")
@@ -631,12 +726,22 @@ const callCaptionStrategistTool = tool({
     console.log("[v0] [MAYA] Feed ID:", feedId, "Post:", postNumber, "Instructions:", instructions)
 
     try {
-      const user = await getCurrentNeonUser()
+      const supabase = await createServerClient()
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser()
+
+      if (!authUser) {
+        return "Error: User not found"
+      }
+
+      const user = await getUserByAuthId(authUser.id)
+
       if (!user) {
         return "Error: User not found"
       }
 
-      const sql = neon(process.env.DATABASE_URL!)
+      const sql = neon(process.env.DATABASE_URL || "")
 
       const position = postNumber - 1
       const [post] = await sql`
@@ -718,8 +823,20 @@ export async function POST(req: Request) {
       return new Response("Invalid request body", { status: 400 })
     }
 
-    const user = await getCurrentNeonUser()
-    console.log("[v0] Step 2: Got current user:", user ? `ID ${user.id}` : "NO USER")
+    const supabase = await createServerClient()
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser()
+
+    console.log("[v0] Step 2: Got auth user:", authUser ? `ID ${authUser.id}` : "NO USER")
+
+    if (!authUser) {
+      console.error("[v0] ERROR: No auth user found")
+      return new Response("Unauthorized", { status: 401 })
+    }
+
+    const user = await getUserByAuthId(authUser.id)
+    console.log("[v0] Step 2b: Got Neon user:", user ? `ID ${user.id}` : "NO USER")
 
     if (!user) {
       console.error("[v0] ERROR: No user found")
@@ -774,13 +891,12 @@ export async function POST(req: Request) {
     console.log("[v0] Step 5: Getting user context (inline)...")
     let userContext = ""
     try {
-      const authId = user.stack_auth_id || user.supabase_user_id || user.id
+      const authId = authUser.id
       console.log("[v0] Using auth ID:", authId)
 
-      const sql = neon(process.env.DATABASE_URL!)
+      const sql = neon(process.env.DATABASE_URL || "")
 
-      const { getUserByAuthId } = await import("@/lib/user-sync") // Corrected import path
-      const neonUser = await getUserByAuthId(authId)
+      const neonUser = user
 
       if (neonUser) {
         const contextParts: string[] = []

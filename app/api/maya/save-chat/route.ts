@@ -1,12 +1,22 @@
 import { NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
-import { getCurrentNeonUser } from "@/lib/user-sync"
+import { getUserByAuthId } from "@/lib/user-mapping"
+import { createServerClient } from "@/lib/supabase/server"
 
 const sql = neon(process.env.DATABASE_URL || "")
 
 export async function POST(req: Request) {
   try {
-    const user = await getCurrentNeonUser()
+    const supabase = await createServerClient()
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser()
+
+    if (!authUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const user = await getUserByAuthId(authUser.id)
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
