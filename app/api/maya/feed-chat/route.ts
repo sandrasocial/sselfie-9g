@@ -485,7 +485,7 @@ const generateProfileImageTool = tool({
       }
 
       const { object: profileDesign } = await generateObject({
-        model: "anthropic/claude-sonnet-4",
+        model: "anthropic/claude-sonnet-4.5", // Fixed model identifier from claude-sonnet-4 to claude-sonnet-4.5
         schema: z.object({
           styleDirection: z.string().describe("Specific styling direction for this profile image"),
           composition: z.string().describe("Composition and framing details"),
@@ -953,7 +953,7 @@ export async function POST(req: Request) {
     console.log("[v0] [SERVER] Calling streamText...")
     try {
       const result = await streamText({
-        model: "anthropic/claude-sonnet-4",
+        model: "anthropic/claude-sonnet-4.5", // Fixed model identifier from claude-sonnet-4 to claude-sonnet-4.5
         system: enhancedSystemPrompt,
         messages: messagesArray,
         tools: {

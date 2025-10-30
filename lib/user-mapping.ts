@@ -4,14 +4,14 @@ import { createServerClient } from "@/lib/supabase/server"
 const sql = neon(process.env.DATABASE_URL!)
 
 export interface NeonUser {
-  id: string // String ID to match production
+  id: string
   email: string
   display_name?: string
   first_name?: string
   last_name?: string
   profile_image_url?: string
-  stack_auth_id?: string // Using stack_auth_id
-  supabase_user_id?: string // For new users (Supabase Auth)
+  stack_auth_id?: string
+  supabase_user_id?: string
   created_at: string
   updated_at: string
 }
@@ -21,7 +21,6 @@ export interface NeonUser {
  * Maps users by email address
  */
 export async function getOrCreateNeonUser(supabaseAuthId: string, email: string, name?: string): Promise<NeonUser> {
-  // First, try to find existing user by email
   const existingUsers = await sql`
     SELECT * FROM users WHERE email = ${email} LIMIT 1
   `
@@ -102,7 +101,7 @@ export async function getUserId(): Promise<string | null> {
     const neonUser = await getUserByAuthId(authUser.id)
     return neonUser?.id || null
   } catch (error) {
-    console.error("[v0] Error getting user ID:", error)
+    console.error("Error getting user ID:", error)
     return null
   }
 }
