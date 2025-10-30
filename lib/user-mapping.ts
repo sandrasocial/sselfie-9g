@@ -1,7 +1,11 @@
 import { neon } from "@neondatabase/serverless"
 import { createServerClient } from "@/lib/supabase/server"
 
-const sql = neon(process.env.DATABASE_URL!)
+if (!process.env.DATABASE_URL) {
+  throw new Error("DATABASE_URL environment variable is not set")
+}
+
+const sql = neon(process.env.DATABASE_URL)
 
 export interface NeonUser {
   id: string
@@ -21,30 +25,37 @@ export interface NeonUser {
  * Maps users by email address
  */
 export async function getOrCreateNeonUser(supabaseAuthId: string, email: string, name?: string): Promise<NeonUser> {
-  const existingUsers = await sql`
-    SELECT * FROM users WHERE email = ${email} LIMIT 1
-  `
+  try {
+    const existingUsers = await sql`
+      SELECT * FROM users WHERE email = ${email} LIMIT 1
+    `
 
-  if (existingUsers.length > 0) {
-    const user = existingUsers[0] as NeonUser
-    if (!user.supabase_user_id) {
-      await sql`
-        UPDATE users 
-        SET supabase_user_id = ${supabaseAuthId}, updated_at = NOW()
-        WHERE id = ${user.id}
-      `
-      user.supabase_user_id = supabaseAuthId
+    if (existingUsers.length > 0) {
+      const user = existingUsers[0] as NeonUser
+      if (!user.supabase_user_id) {
+        await sql`
+          UPDATE users 
+          SET supabase_user_id = ${supabaseAuthId}, updated_at = NOW()
+          WHERE id = ${user.id}
+        `
+        user.supabase_user_id = supabaseAuthId
+      }
+      return user
     }
-    return user
+
+    const userId = crypto.randomUUID()
+
+    const newUsers = await sql`
+      INSERT INTO users (id, email, display_name, supabase_user_id, created_at, updated_at)
+      VALUES (${userId}, ${email}, ${name || email.split("@")[0]}, ${supabaseAuthId}, NOW(), NOW())
+      RETURNING *
+    `
+
+    return newUsers[0] as NeonUser
+  } catch (error) {
+    console.error("Database error in getOrCreateNeonUser:", error)
+    throw error
   }
-
-  const newUsers = await sql`
-    INSERT INTO users (email, display_name, supabase_user_id, created_at, updated_at)
-    VALUES (${email}, ${name || email.split("@")[0]}, ${supabaseAuthId}, NOW(), NOW())
-    RETURNING *
-  `
-
-  return newUsers[0] as NeonUser
 }
 
 /**
@@ -74,13 +85,18 @@ export async function getNeonUserById(id: string): Promise<NeonUser | null> {
  * Supports both Stack Auth (existing users) and Supabase Auth (new users)
  */
 export async function getUserByAuthId(authId: string): Promise<NeonUser | null> {
-  const users = await sql`
-    SELECT * FROM users 
-    WHERE stack_auth_id = ${authId} OR supabase_user_id = ${authId}
-    LIMIT 1
-  `
+  try {
+    const users = await sql`
+      SELECT * FROM users 
+      WHERE stack_auth_id = ${authId} OR supabase_user_id = ${authId}
+      LIMIT 1
+    `
 
-  return users.length > 0 ? (users[0] as NeonUser) : null
+    return users.length > 0 ? (users[0] as NeonUser) : null
+  } catch (error) {
+    console.error("Database error in getUserByAuthId:", error)
+    throw error
+  }
 }
 
 /**
