@@ -319,7 +319,10 @@ export default function MayaChatScreen() {
       setIsLoadingChat(true)
       const url = specificChatId ? `/api/maya/load-chat?chatId=${specificChatId}` : "/api/maya/load-chat"
       console.log("[v0] Loading chat:", specificChatId || "active chat")
+      console.log("[v0] Fetching from URL:", url)
       const response = await fetch(url)
+      console.log("[v0] Load chat response status:", response.status, response.statusText)
+
       if (response.ok) {
         const data = await response.json()
         console.log(
@@ -352,15 +355,31 @@ export default function MayaChatScreen() {
         }
 
         setShowHistory(false)
+      } else {
+        console.error("[v0] ❌ Load chat failed with status:", response.status)
+        try {
+          const errorData = await response.json()
+          console.error("[v0] ❌ Error response:", errorData)
+        } catch (e) {
+          console.error("[v0] ❌ Could not parse error response")
+        }
       }
     } catch (error) {
       console.error("[v0] Error loading chat:", error)
+      if (error instanceof Error) {
+        console.error("[v0] ❌ Error details:", {
+          message: error.message,
+          stack: error.stack,
+          name: error.name,
+        })
+      }
     } finally {
       setIsLoadingChat(false)
     }
   }
 
   useEffect(() => {
+    console.log("[v0] 🚀 Maya chat screen mounted, calling loadChat()")
     loadChat()
   }, [])
 

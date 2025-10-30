@@ -1013,6 +1013,7 @@ export default function FeedDesignerScreen() {
   }
 
   useEffect(() => {
+    console.log("[v0] 🚀 Feed designer mounted, calling loadChat()")
     loadChat()
   }, [])
 
@@ -1057,9 +1058,14 @@ export default function FeedDesignerScreen() {
       const url = specificChatId
         ? `/api/maya/load-chat?chatId=${specificChatId}&chatType=feed-designer`
         : "/api/maya/load-chat?chatType=feed-designer"
+      console.log("[v0] Loading feed designer chat:", specificChatId || "active chat")
+      console.log("[v0] Fetching from URL:", url)
       const response = await fetch(url)
+      console.log("[v0] Load chat response status:", response.status, response.statusText)
+
       if (response.ok) {
         const data = await response.json()
+        console.log("[v0] Loaded chat ID:", data.chatId, "Messages:", data.messages?.length || 0)
         setChatId(data.chatId)
 
         if (data.messages && Array.isArray(data.messages) && data.messages.length > 0) {
@@ -1069,9 +1075,26 @@ export default function FeedDesignerScreen() {
         }
 
         setShowHistory(false)
+      } else {
+        console.error("[v0] ❌ Load chat failed with status:", response.status)
+        try {
+          const errorData = await response.json()
+          console.error("[v0] ❌ Error response:", errorData)
+        } catch (e) {
+          console.error("[v0] ❌ Could not parse error response")
+        }
       }
+      // </CHANGE>
     } catch (error) {
       console.error("[v0] Error loading chat:", error)
+      if (error instanceof Error) {
+        console.error("[v0] ❌ Error details:", {
+          message: error.message,
+          stack: error.stack,
+          name: error.name,
+        })
+      }
+      // </CHANGE>
     } finally {
       setIsLoadingChat(false)
     }

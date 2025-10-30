@@ -125,7 +125,7 @@ const generateCompleteFeedTool = tool({
       console.log("[v0] [SERVER] 🎨 Using AI to design custom feed layout...")
 
       const { object: feedDesign } = await generateObject({
-        model: "anthropic/claude-sonnet-4",
+        model: "anthropic/claude-sonnet-4.5", // Fixed model identifier from claude-sonnet-4 to claude-sonnet-4.5
         schema: z.object({
           visualRhythm: z.string().describe("Description of the visual flow and rhythm of this feed"),
           posts: z
