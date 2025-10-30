@@ -244,56 +244,85 @@ export default function FeedPostCard({ post, feedId, onGenerated }: FeedPostCard
     prompt: post.prompt,
   }
 
-  if (!isGenerating && !isGenerated && !error) {
-    return (
-      <div className="aspect-square flex flex-col items-center justify-center p-4 bg-gradient-to-br from-stone-100 to-stone-200 rounded-sm gap-3">
-        <span className="text-xs font-bold text-stone-950 text-center">{post.post_type}</span>
+  // Hidden file input for upload
+  const fileInput = (
+    <input ref={fileInputRef} type="file" accept="image/*" onChange={handleUploadImage} className="hidden" />
+  )
 
-        <div className="flex flex-col gap-2 w-full px-2">
-          <button
-            onClick={handleGenerate}
-            className="w-full px-4 py-2 bg-stone-950 text-white text-xs font-semibold rounded-full transition-all hover:bg-stone-800 hover:scale-105"
-          >
-            Generate
-          </button>
+  // Gallery Modal - always rendered so it works in all states
+  const galleryModal = showGalleryModal && (
+    <ImageGalleryModal
+      images={galleryImages}
+      onSelect={handleReplaceFromGallery}
+      onClose={() => setShowGalleryModal(false)}
+    />
+  )
 
-          <button
-            onClick={() => setShowGalleryModal(true)}
-            className="w-full px-4 py-2 bg-white text-stone-950 text-xs font-semibold rounded-full transition-all hover:bg-stone-100 hover:scale-105 border border-stone-300"
-          >
-            Choose from Gallery
+  // Full Preview Dialog
+  const fullPreviewDialog = showFullPreview && (
+    <Dialog open={showFullPreview} onOpenChange={setShowFullPreview}>
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto p-0 bg-transparent border-none">
+        <InstagramPhotoCard
+          concept={conceptData}
+          imageUrl={generatedImageUrl}
+          imageId={postId}
+          isFavorite={false}
+          onFavoriteToggle={() => {}}
+          onDelete={() => {}}
+          onCaptionUpdate={handleCaptionUpdate}
+        />
+      </DialogContent>
+    </Dialog>
+  )
+
+  return (
+    <>
+      {fileInput}
+      {galleryModal}
+      {fullPreviewDialog}
+
+      {!isGenerating && !isGenerated && !error && (
+        <div className="aspect-square flex flex-col items-center justify-center p-4 bg-gradient-to-br from-stone-100 to-stone-200 rounded-sm gap-3">
+          <span className="text-xs font-bold text-stone-950 text-center">{post.post_type}</span>
+
+          <div className="flex flex-col gap-2 w-full px-2">
+            <button
+              onClick={handleGenerate}
+              className="w-full px-4 py-2 bg-stone-950 text-white text-xs font-semibold rounded-full transition-all hover:bg-stone-800 hover:scale-105"
+            >
+              Generate
+            </button>
+
+            <button
+              onClick={() => setShowGalleryModal(true)}
+              className="w-full px-4 py-2 bg-white text-stone-950 text-xs font-semibold rounded-full transition-all hover:bg-stone-100 hover:scale-105 border border-stone-300"
+            >
+              Choose from Gallery
+            </button>
+          </div>
+        </div>
+      )}
+
+      {isGenerating && (
+        <div className="aspect-square flex flex-col items-center justify-center bg-stone-950/5">
+          <div className="relative w-10 h-10">
+            <div className="absolute inset-0 rounded-full bg-stone-200/20 animate-ping"></div>
+            <div className="relative w-10 h-10 rounded-full bg-stone-950 animate-spin border-4 border-transparent border-t-white"></div>
+          </div>
+          <span className="text-xs text-stone-600 mt-3">Creating...</span>
+        </div>
+      )}
+
+      {error && (
+        <div className="aspect-square flex flex-col items-center justify-center p-3 bg-red-50">
+          <span className="text-xs text-red-600 mb-2 text-center">{error}</span>
+          <button onClick={handleGenerate} className="text-xs font-semibold text-red-700 hover:text-red-900 underline">
+            Try Again
           </button>
         </div>
-      </div>
-    )
-  }
+      )}
 
-  if (isGenerating) {
-    return (
-      <div className="aspect-square flex flex-col items-center justify-center bg-stone-950/5">
-        <div className="relative w-10 h-10">
-          <div className="absolute inset-0 rounded-full bg-stone-200/20 animate-ping"></div>
-          <div className="relative w-10 h-10 rounded-full bg-stone-950 animate-spin border-4 border-transparent border-t-white"></div>
-        </div>
-        <span className="text-xs text-stone-600 mt-3">Creating...</span>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="aspect-square flex flex-col items-center justify-center p-3 bg-red-50">
-        <span className="text-xs text-red-600 mb-2 text-center">{error}</span>
-        <button onClick={handleGenerate} className="text-xs font-semibold text-red-700 hover:text-red-900 underline">
-          Try Again
-        </button>
-      </div>
-    )
-  }
-
-  if (isGenerated && generatedImageUrl) {
-    return (
-      <>
+      {isGenerated && generatedImageUrl && (
         <div className="aspect-square w-full h-full relative group overflow-hidden bg-stone-100">
           <img
             src={generatedImageUrl || "/placeholder.svg"}
@@ -348,36 +377,7 @@ export default function FeedPostCard({ post, feedId, onGenerated }: FeedPostCard
             </div>
           </div>
         </div>
-
-        {/* Hidden file input for upload */}
-        <input ref={fileInputRef} type="file" accept="image/*" onChange={handleUploadImage} className="hidden" />
-
-        {/* Gallery Modal */}
-        {showGalleryModal && (
-          <ImageGalleryModal
-            images={galleryImages}
-            onSelect={handleReplaceFromGallery}
-            onClose={() => setShowGalleryModal(false)}
-          />
-        )}
-
-        {/* Full Preview Dialog */}
-        <Dialog open={showFullPreview} onOpenChange={setShowFullPreview}>
-          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto p-0 bg-transparent border-none">
-            <InstagramPhotoCard
-              concept={conceptData}
-              imageUrl={generatedImageUrl}
-              imageId={postId}
-              isFavorite={false}
-              onFavoriteToggle={() => {}}
-              onDelete={() => {}}
-              onCaptionUpdate={handleCaptionUpdate}
-            />
-          </DialogContent>
-        </Dialog>
-      </>
-    )
-  }
-
-  return null
+      )}
+    </>
+  )
 }

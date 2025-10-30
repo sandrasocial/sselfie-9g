@@ -148,3 +148,54 @@ export async function PATCH(req: NextRequest, { params }: { params: { feedId: st
     return Response.json({ error: "Internal server error" }, { status: 500 })
   }
 }
+
+export async function DELETE(req: NextRequest, { params }: { params: { feedId: string } }) {
+  try {
+    const { feedId } = params
+
+    let user
+    try {
+      user = await getCurrentNeonUser()
+    } catch (authError: any) {
+      console.error("[v0] Auth error in feed DELETE:", authError?.message || authError)
+      return Response.json(
+        { error: "Authentication service temporarily unavailable. Please try again." },
+        { status: 503 },
+      )
+    }
+
+    if (!user) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    // Delete feed posts first (foreign key constraint)
+    await sql`
+      DELETE FROM feed_posts
+      WHERE feed_layout_id = ${feedId}
+    `
+
+    // Delete highlights
+    await sql`
+      DELETE FROM instagram_highlights
+      WHERE feed_layout_id = ${feedId}
+    `
+
+    // Delete bio
+    await sql`
+      DELETE FROM instagram_bios
+      WHERE feed_layout_id = ${feedId}
+    `
+
+    // Delete feed layout
+    await sql`
+      DELETE FROM feed_layouts
+      WHERE id = ${feedId} AND user_id = ${user.id}
+    `
+
+    console.log("[v0] Successfully deleted feed:", feedId)
+    return Response.json({ success: true })
+  } catch (error: any) {
+    console.error("[v0] Error deleting feed:", error?.message || error)
+    return Response.json({ error: "Failed to delete feed. Please try again." }, { status: 500 })
+  }
+}

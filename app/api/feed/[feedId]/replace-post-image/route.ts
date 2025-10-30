@@ -53,7 +53,7 @@ export async function POST(request: Request, { params }: { params: { feedId: str
         generation_status = 'completed',
         updated_at = NOW()
       WHERE id = ${postId}
-        AND feed_id = ${params.feedId}
+        AND feed_layout_id = ${params.feedId}
       RETURNING *
     `
 

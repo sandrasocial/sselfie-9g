@@ -10,11 +10,27 @@ export async function GET() {
     const supabase = await createServerClient()
     console.log("[v0] Images API: Supabase client created")
 
-    // Get authenticated user
-    const {
-      data: { user: authUser },
-      error: authError,
-    } = await supabase.auth.getUser()
+    let authUser
+    let authError
+    try {
+      const result = await supabase.auth.getUser()
+      authUser = result.data.user
+      authError = result.error
+    } catch (error) {
+      // Check if this is a rate limiting error (JSON parse error from HTML response)
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      if (errorMessage.includes("Too Many R") || errorMessage.includes("not valid JSON")) {
+        console.error("[v0] Images API: Supabase rate limit detected")
+        return NextResponse.json(
+          {
+            error: "Service temporarily unavailable due to high traffic. Please try again in a moment.",
+            retryAfter: 5,
+          },
+          { status: 503 },
+        )
+      }
+      throw error
+    }
 
     console.log("[v0] Images API: Auth user", authUser?.id, authError)
 

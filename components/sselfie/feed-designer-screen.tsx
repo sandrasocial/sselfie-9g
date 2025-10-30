@@ -203,7 +203,7 @@ export default function FeedDesignerScreen() {
       const response = await fetch(`/api/feed/${feedId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ bio: bioValue }),
+        body: JSON.JSON.stringify({ bio: bioValue }),
       })
 
       if (!response.ok) {
@@ -947,7 +947,7 @@ export default function FeedDesignerScreen() {
       ...prev,
       highlights: prev.highlights.map((h, i) =>
         i === index
-          ? { title: data.title, coverUrl: finalCoverUrl, description: data.description, type: data.type }
+          ? { title: data.title, coverUrl: finalCoverUrl, description: data.data.description, type: data.type }
           : h,
       ),
     }))
@@ -1100,16 +1100,51 @@ export default function FeedDesignerScreen() {
     )
   }
 
-  const handleGenerateNewFeed = () => {
+  const handleGenerateNewFeed = async () => {
+    console.log("[v0] [NEW FEED] Starting new feed generation...")
+    console.log("[v0] [NEW FEED] Current state:", {
+      feedPostsCount: feedPosts.length,
+      isDesigning,
+      isApplyingDesign,
+      feedUrl,
+    })
+
     setShowNewFeedModal(false)
-    setMayaThinking("Starting fresh with a new feed strategy...")
+    setMayaThinking("Clearing current feed...")
+
+    // Delete the current feed if it exists
+    if (feedUrl) {
+      const feedId = feedUrl.split("/").pop()
+      if (feedId) {
+        try {
+          console.log("[v0] [NEW FEED] Deleting current feed:", feedId)
+          const deleteResponse = await fetch(`/api/feed/${feedId}`, {
+            method: "DELETE",
+          })
+
+          if (!deleteResponse.ok) {
+            throw new Error("Failed to delete current feed")
+          }
+
+          console.log("[v0] [NEW FEED] Current feed deleted successfully")
+        } catch (error) {
+          console.error("[v0] [NEW FEED] Error deleting feed:", error)
+          setMayaThinking(null)
+          alert("Failed to clear current feed. Please try again.")
+          return
+        }
+      }
+    }
 
     // Reset feed state
     setFeedPosts([])
     setFeedStrategy(null)
+    setFeedUrl(null)
     setProactiveSuggestions([])
     setIsProfileGenerated(false)
     setHasShownSuggestions(false)
+
+    console.log("[v0] [NEW FEED] Feed state reset complete")
 
     // Wait a moment for the thinking message to show
     setTimeout(() => {
@@ -1118,11 +1153,12 @@ export default function FeedDesignerScreen() {
       setTimeout(() => {
         setMayaThinking("Crafting your perfect Instagram strategy...")
 
-        // Trigger Maya to generate new feed
-        const autoPrompt = `Create a completely new Instagram feed strategy based on my brand profile. Give me fresh creative direction.`
+        console.log("[v0] [NEW FEED] Sending message to Maya...")
+        const autoPrompt = `Create my Instagram feed strategy based on my brand profile.`
         sendMessage({ text: autoPrompt })
       }, 1000)
     }, 1000)
+    // </CHANGE>
   }
 
   const handleUploadProfileImage = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -1267,7 +1303,16 @@ export default function FeedDesignerScreen() {
               <div className="flex items-center gap-2">
                 {feedPosts.length > 0 && (
                   <button
-                    onClick={() => setShowNewFeedModal(true)}
+                    onClick={() => {
+                      console.log("[v0] [NEW FEED] Button clicked")
+                      console.log("[v0] [NEW FEED] Button state:", {
+                        isDesigning,
+                        isApplyingDesign,
+                        disabled: isDesigning || isApplyingDesign,
+                      })
+                      setShowNewFeedModal(true)
+                      // </CHANGE>
+                    }}
                     disabled={isDesigning || isApplyingDesign}
                     className="px-4 py-2 rounded-lg text-xs font-medium tracking-wider uppercase transition-all bg-stone-950 text-white hover:bg-stone-800 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
