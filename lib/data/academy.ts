@@ -12,7 +12,7 @@ export interface AcademyCourse {
   duration_minutes: number | null
   level: "Beginner" | "Intermediate" | "Advanced" | null
   category: string | null
-  tier: "foundation" | "professional" | "enterprise" | null
+  tier: "starter" | "pro" | "elite" | null
   thumbnail_url: string | null
   instructor_name: string | null
   total_lessons: number
@@ -132,30 +132,30 @@ export async function getCourses(filters?: {
 
 /**
  * Get courses available for a specific tier
- * Foundation tier: only foundation courses
- * Professional tier: foundation + professional courses
- * Enterprise tier: all courses
+ * Starter tier: only starter courses
+ * Pro tier: starter + pro courses
+ * Elite tier: all courses
  */
-export async function getCoursesForTier(tier: "foundation" | "professional" | "enterprise"): Promise<AcademyCourse[]> {
+export async function getCoursesForTier(tier: "starter" | "pro" | "elite"): Promise<AcademyCourse[]> {
   try {
     console.log("[v0] Fetching courses for tier:", tier)
 
     let query
 
-    if (tier === "foundation") {
+    if (tier === "starter") {
       query = sql`
         SELECT * FROM academy_courses
-        WHERE status = 'published' AND tier = 'foundation'
+        WHERE status = 'published' AND tier = 'starter'
         ORDER BY order_index ASC
       `
-    } else if (tier === "professional") {
+    } else if (tier === "pro") {
       query = sql`
         SELECT * FROM academy_courses
-        WHERE status = 'published' AND tier IN ('foundation', 'professional')
+        WHERE status = 'published' AND tier IN ('starter', 'pro')
         ORDER BY order_index ASC
       `
     } else {
-      // Enterprise gets all courses
+      // Elite gets all courses
       query = sql`
         SELECT * FROM academy_courses
         WHERE status = 'published'

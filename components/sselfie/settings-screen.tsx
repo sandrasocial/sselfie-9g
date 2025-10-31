@@ -33,7 +33,7 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
 
   const fetchUserInfo = async () => {
     try {
-      const response = await fetch("/api/profile/info", {
+      const response = await fetch("/api/user/info", {
         credentials: "include",
       })
       if (response.ok) {
@@ -155,7 +155,7 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
                 <CreditCard size={16} className="text-stone-500" />
                 <div>
                   <p className="text-xs text-stone-500 uppercase tracking-wider">Plan</p>
-                  <p className="text-sm font-medium text-stone-950 capitalize">{userInfo.plan.replace("-", " ")}</p>
+                  <p className="text-sm font-medium text-stone-950 uppercase">{userInfo.plan}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 py-3">

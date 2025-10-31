@@ -68,6 +68,39 @@ const COLOR_THEMES = [
   },
 ]
 
+const VISUAL_AESTHETICS = [
+  { id: "minimalist", name: "Minimalist & Clean", description: "Simple, uncluttered, lots of white space" },
+  { id: "bold", name: "Bold & Dramatic", description: "High contrast, striking visuals, confident" },
+  { id: "soft", name: "Soft & Elegant", description: "Gentle, refined, sophisticated" },
+  { id: "edgy", name: "Edgy & Modern", description: "Contemporary, urban, cutting-edge" },
+  { id: "natural", name: "Natural & Organic", description: "Earthy, authentic, grounded" },
+  { id: "luxurious", name: "Luxurious & Polished", description: "High-end, premium, refined" },
+]
+
+const SETTINGS_PREFERENCES = [
+  { id: "studio", name: "Studio", description: "Clean, controlled, professional" },
+  { id: "outdoor", name: "Outdoor/Nature", description: "Natural light, organic settings" },
+  { id: "urban", name: "Urban/City", description: "Street, architecture, modern" },
+  { id: "home", name: "Home/Cozy", description: "Intimate, personal, comfortable" },
+  { id: "mixed", name: "Mixed", description: "Variety of settings" },
+]
+
+const FASHION_STYLES = [
+  { id: "casual", name: "Casual", description: "Relaxed, everyday, approachable" },
+  { id: "business", name: "Business Professional", description: "Polished, corporate, formal" },
+  { id: "trendy", name: "Trendy/Fashion-Forward", description: "Current, stylish, bold" },
+  { id: "timeless", name: "Timeless Classic", description: "Elegant, enduring, sophisticated" },
+]
+
+const COMMUNICATION_VOICES = [
+  { id: "professional", name: "Professional & Polished", description: "Expert, authoritative, refined" },
+  { id: "warm", name: "Warm & Conversational", description: "Friendly, approachable, personal" },
+  { id: "bold", name: "Bold & Direct", description: "Confident, straightforward, powerful" },
+  { id: "playful", name: "Playful & Fun", description: "Lighthearted, energetic, entertaining" },
+  { id: "inspirational", name: "Inspirational & Uplifting", description: "Motivating, encouraging, positive" },
+  { id: "educational", name: "Educational & Expert", description: "Teaching, informative, knowledgeable" },
+]
+
 const STEPS = [
   {
     id: "intro",
@@ -79,7 +112,7 @@ const STEPS = [
   {
     id: "name",
     title: "What should I call your brand?",
-    subtitle: "Step 1 of 8",
+    subtitle: "Step 1 of 12",
     mayaMessage:
       "This could be your business name, your personal brand, or just your name. Whatever feels right to you!",
     field: "name",
@@ -88,7 +121,7 @@ const STEPS = [
   {
     id: "businessType",
     title: "What do you do?",
-    subtitle: "Step 2 of 8",
+    subtitle: "Step 2 of 12",
     mayaMessage:
       "Are you a coach, designer, entrepreneur, content creator? Tell me about your work - I want to understand what makes you unique.",
     field: "businessType",
@@ -97,16 +130,24 @@ const STEPS = [
   },
   {
     id: "colorTheme",
-    title: "What's your brand aesthetic?",
-    subtitle: "Step 3 of 8",
+    title: "What's your color aesthetic?",
+    subtitle: "Step 3 of 12",
     mayaMessage:
-      "Your color palette sets the mood for everything we create together. Choose the aesthetic that feels most like YOU. This helps me keep your images and brand visually consistent.",
+      "Your color palette sets the mood for everything we create together. Choose the aesthetic that feels most like YOU.",
     isColorThemeSelector: true,
+  },
+  {
+    id: "visualAesthetic",
+    title: "What's your visual style?",
+    subtitle: "Step 4 of 12",
+    mayaMessage:
+      "Beyond colors, what's the overall vibe of your brand? This helps me understand the mood and feeling of your content.",
+    isVisualAestheticSelector: true,
   },
   {
     id: "currentSituation",
     title: "Where are you right now?",
-    subtitle: "Step 4 of 8",
+    subtitle: "Step 5 of 12",
     mayaMessage:
       "Are you building your business foundation? Growing your online presence? Scaling? Understanding where you are helps me create photos that match your current journey.",
     field: "currentSituation",
@@ -116,7 +157,7 @@ const STEPS = [
   {
     id: "transformationStory",
     title: "What's your story?",
-    subtitle: "Step 5 of 8",
+    subtitle: "Step 6 of 12",
     mayaMessage:
       "Everyone has a story. What brought you here? What transformation are you going through or have you been through? Your story makes your brand authentic and relatable.",
     field: "transformationStory",
@@ -126,17 +167,32 @@ const STEPS = [
   {
     id: "futureVision",
     title: "Where are you headed?",
-    subtitle: "Step 6 of 8",
-    mayaMessage:
-      "Dream big! Where do you see yourself and your brand in the future? What impact do you want to make? This helps me create photos that align with your vision.",
+    subtitle: "Step 7 of 12",
+    mayaMessage: "Dream big! Where do you see yourself and your brand in the future? What impact do you want to make?",
     field: "futureVision",
     placeholder: "e.g., Recognized expert in my field, Financial freedom and impact...",
     isTextarea: true,
   },
   {
+    id: "idealAudience",
+    title: "Who is your ideal audience?",
+    subtitle: "Step 8 of 12",
+    mayaMessage:
+      "Understanding who you serve helps me create content that resonates with them. Describe your dream client or follower!",
+    isAudienceBuilder: true,
+  },
+  {
+    id: "communicationVoice",
+    title: "How do you communicate?",
+    subtitle: "Step 9 of 12",
+    mayaMessage:
+      "Your brand voice is how you sound when you speak or write. This helps me understand your personality and communication style.",
+    isCommunicationVoiceSelector: true,
+  },
+  {
     id: "photoGoals",
     title: "What do you need photos for?",
-    subtitle: "Step 7 of 8",
+    subtitle: "Step 10 of 12",
     mayaMessage:
       "Are you building a social media presence? Need professional headshots? Creating content for your website? Knowing this helps me create exactly what you need.",
     field: "photoGoals",
@@ -146,9 +202,19 @@ const STEPS = [
   {
     id: "contentPillars",
     title: "What will you post about?",
-    subtitle: "Step 8 of 8",
+    subtitle: "Step 11 of 12",
     mayaMessage: "Let me help you figure out your content strategy!",
     isContentPillarBuilder: true,
+  },
+  {
+    id: "brandInspiration",
+    title: "Who inspires you?",
+    subtitle: "Step 12 of 12",
+    mayaMessage:
+      "This is optional, but it really helps! Share 2-3 creators or brands you admire. This gives me insight into your taste and aspirations.",
+    field: "brandInspiration",
+    placeholder: "e.g., @creator1, @creator2, Brand Name...",
+    isOptional: true,
   },
 ]
 
@@ -159,12 +225,36 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
     name: existingData?.name || "",
     businessType: existingData?.businessType || "",
     colorTheme: existingData?.colorTheme || "",
+    visualAesthetic: existingData?.visualAesthetic
+      ? typeof existingData.visualAesthetic === "string"
+        ? JSON.parse(existingData.visualAesthetic)
+        : existingData.visualAesthetic
+      : [],
+    settingsPreference: existingData?.settingsPreference
+      ? typeof existingData.settingsPreference === "string"
+        ? JSON.parse(existingData.settingsPreference)
+        : existingData.settingsPreference
+      : [],
+    fashionStyle: existingData?.fashionStyle
+      ? typeof existingData.fashionStyle === "string"
+        ? JSON.parse(existingData.fashionStyle)
+        : existingData.fashionStyle
+      : [],
     currentSituation: existingData?.currentSituation || "",
     transformationStory: existingData?.transformationStory || "",
     futureVision: existingData?.futureVision || "",
-    businessGoals: existingData?.businessGoals || "",
+    idealAudience: existingData?.idealAudience || "",
+    audienceChallenge: existingData?.audienceChallenge || "",
+    audienceTransformation: existingData?.audienceTransformation || "",
+    communicationVoice: existingData?.communicationVoice
+      ? typeof existingData.communicationVoice === "string"
+        ? JSON.parse(existingData.communicationVoice)
+        : existingData.communicationVoice
+      : [],
+    signaturePhrases: existingData?.signaturePhrases || "",
     photoGoals: existingData?.photoGoals || "",
-    stylePreferences: existingData?.stylePreferences || "",
+    brandInspiration: existingData?.brandInspiration || "",
+    inspirationLinks: existingData?.inspirationLinks || "",
   })
   const [contentPillars, setContentPillars] = useState<any[]>([])
   const [customColors, setCustomColors] = useState<string[]>(
@@ -197,6 +287,10 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
         credentials: "include",
         body: JSON.stringify({
           ...formData,
+          visualAesthetic: JSON.stringify(formData.visualAesthetic),
+          settingsPreference: JSON.stringify(formData.settingsPreference),
+          fashionStyle: JSON.stringify(formData.fashionStyle),
+          communicationVoice: JSON.stringify(formData.communicationVoice),
           customColors: formData.colorTheme === "custom" ? JSON.stringify(customColors) : null,
           contentPillars: contentPillars.length > 0 ? JSON.stringify(contentPillars) : null,
           isCompleted: true,
@@ -219,6 +313,18 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
+  const handleMultiSelectToggle = (field: string, value: string) => {
+    setFormData((prev) => {
+      const currentValues = prev[field as keyof typeof prev] as string[]
+      const isSelected = currentValues.includes(value)
+
+      return {
+        ...prev,
+        [field]: isSelected ? currentValues.filter((v) => v !== value) : [...currentValues, value],
+      }
+    })
+  }
+
   const handleColorThemeSelect = (themeId: string) => {
     setFormData((prev) => ({ ...prev, colorTheme: themeId }))
   }
@@ -231,16 +337,20 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
 
   const handleContentPillarsComplete = (pillars: any[]) => {
     setContentPillars(pillars)
-    handleComplete()
+    handleNext()
   }
 
   const handleContentPillarsSkip = () => {
-    handleComplete()
+    handleNext()
   }
 
   const canProceed = () => {
     if (isIntroStep) return true
+    if (step.isOptional) return true
     if (step.isColorThemeSelector) return formData.colorTheme.length > 0
+    if (step.isVisualAestheticSelector) return formData.visualAesthetic.length > 0
+    if (step.isCommunicationVoiceSelector) return formData.communicationVoice.length > 0
+    if (step.isAudienceBuilder) return formData.idealAudience.trim().length > 0
     if (!step.field) return true
     return formData[step.field as keyof typeof formData]?.trim().length > 0
   }
@@ -325,7 +435,7 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {customColors.map((color, index) => (
                         <div key={index} className="space-y-2">
-                          <label className="text-xs font-light tracking-wider uppercase text-stone-500">
+                          <label className="text-xs font-light tracking-[0.2em] uppercase text-stone-500">
                             Color {index + 1}
                           </label>
                           <div className="flex gap-2">
@@ -346,6 +456,189 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
                         </div>
                       ))}
                     </div>
+                  </div>
+                )}
+              </div>
+            ) : step.isVisualAestheticSelector ? (
+              <div className="space-y-4">
+                <div className="space-y-3">
+                  <p className="text-xs font-light tracking-[0.2em] uppercase text-stone-500">SELECT ALL THAT APPLY</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {VISUAL_AESTHETICS.map((aesthetic) => {
+                      const isSelected = formData.visualAesthetic.includes(aesthetic.id)
+                      return (
+                        <button
+                          key={aesthetic.id}
+                          onClick={() => handleMultiSelectToggle("visualAesthetic", aesthetic.id)}
+                          className={`relative p-6 rounded-lg border transition-all text-left hover:shadow-sm ${
+                            isSelected ? "border-stone-950 bg-stone-50" : "border-stone-200 hover:border-stone-400"
+                          }`}
+                        >
+                          <div className="space-y-2">
+                            <p className="text-sm font-medium tracking-wider uppercase text-stone-950">
+                              {aesthetic.name}
+                            </p>
+                            <p className="text-sm font-light text-stone-600">{aesthetic.description}</p>
+                          </div>
+                          {isSelected && (
+                            <div className="absolute top-4 right-4 w-6 h-6 bg-stone-950 rounded-full flex items-center justify-center">
+                              <div className="w-3 h-3 bg-white rounded-sm" />
+                            </div>
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {formData.visualAesthetic.length > 0 && (
+                  <div className="space-y-4 pt-4">
+                    <div className="space-y-2">
+                      <label className="text-xs font-light tracking-[0.2em] uppercase text-stone-500">
+                        PREFERRED SETTINGS (SELECT ALL THAT APPLY)
+                      </label>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        {SETTINGS_PREFERENCES.map((setting) => {
+                          const isSelected = formData.settingsPreference.includes(setting.id)
+                          return (
+                            <button
+                              key={setting.id}
+                              onClick={() => handleMultiSelectToggle("settingsPreference", setting.id)}
+                              className={`p-4 rounded-lg border text-left transition-all ${
+                                isSelected ? "border-stone-950 bg-stone-50" : "border-stone-200 hover:border-stone-400"
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div>
+                                  <p className="text-sm font-medium text-stone-950">{setting.name}</p>
+                                  <p className="text-xs font-light text-stone-600 mt-1">{setting.description}</p>
+                                </div>
+                                {isSelected && (
+                                  <div className="w-5 h-5 bg-stone-950 rounded-full flex items-center justify-center flex-shrink-0">
+                                    <div className="w-2.5 h-2.5 bg-white rounded-sm" />
+                                  </div>
+                                )}
+                              </div>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-xs font-light tracking-[0.2em] uppercase text-stone-500">
+                        FASHION STYLE (SELECT ALL THAT APPLY)
+                      </label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {FASHION_STYLES.map((style) => {
+                          const isSelected = formData.fashionStyle.includes(style.id)
+                          return (
+                            <button
+                              key={style.id}
+                              onClick={() => handleMultiSelectToggle("fashionStyle", style.id)}
+                              className={`p-4 rounded-lg border text-left transition-all ${
+                                isSelected ? "border-stone-950 bg-stone-50" : "border-stone-200 hover:border-stone-400"
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div>
+                                  <p className="text-sm font-medium text-stone-950">{style.name}</p>
+                                  <p className="text-xs font-light text-stone-600 mt-1">{style.description}</p>
+                                </div>
+                                {isSelected && (
+                                  <div className="w-5 h-5 bg-stone-950 rounded-full flex items-center justify-center flex-shrink-0">
+                                    <div className="w-2.5 h-2.5 bg-white rounded-sm" />
+                                  </div>
+                                )}
+                              </div>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : step.isAudienceBuilder ? (
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <label className="text-xs font-light tracking-[0.2em] uppercase text-stone-500">
+                    DESCRIBE YOUR IDEAL CLIENT/FOLLOWER
+                  </label>
+                  <Textarea
+                    value={formData.idealAudience}
+                    onChange={(e) => handleInputChange("idealAudience", e.target.value)}
+                    placeholder="e.g., Female entrepreneurs in their 30s-40s who want to build a personal brand..."
+                    className="min-h-[100px] resize-none border-stone-200 focus:border-stone-400 text-base leading-relaxed"
+                    autoFocus
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-light tracking-[0.2em] uppercase text-stone-500">
+                    WHAT'S THEIR BIGGEST CHALLENGE?
+                  </label>
+                  <Textarea
+                    value={formData.audienceChallenge}
+                    onChange={(e) => handleInputChange("audienceChallenge", e.target.value)}
+                    placeholder="e.g., They struggle with showing up consistently on social media..."
+                    className="min-h-[80px] resize-none border-stone-200 focus:border-stone-400 text-base leading-relaxed"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-light tracking-[0.2em] uppercase text-stone-500">
+                    WHAT TRANSFORMATION DO THEY WANT?
+                  </label>
+                  <Textarea
+                    value={formData.audienceTransformation}
+                    onChange={(e) => handleInputChange("audienceTransformation", e.target.value)}
+                    placeholder="e.g., They want to become confident, visible leaders in their industry..."
+                    className="min-h-[80px] resize-none border-stone-200 focus:border-stone-400 text-base leading-relaxed"
+                  />
+                </div>
+              </div>
+            ) : step.isCommunicationVoiceSelector ? (
+              <div className="space-y-6">
+                <div className="space-y-3">
+                  <p className="text-xs font-light tracking-[0.2em] uppercase text-stone-500">SELECT ALL THAT APPLY</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {COMMUNICATION_VOICES.map((voice) => {
+                      const isSelected = formData.communicationVoice.includes(voice.id)
+                      return (
+                        <button
+                          key={voice.id}
+                          onClick={() => handleMultiSelectToggle("communicationVoice", voice.id)}
+                          className={`relative p-6 rounded-lg border transition-all text-left hover:shadow-sm ${
+                            isSelected ? "border-stone-950 bg-stone-50" : "border-stone-200 hover:border-stone-400"
+                          }`}
+                        >
+                          <div className="space-y-2">
+                            <p className="text-sm font-medium tracking-wider uppercase text-stone-950">{voice.name}</p>
+                            <p className="text-sm font-light text-stone-600">{voice.description}</p>
+                          </div>
+                          {isSelected && (
+                            <div className="absolute top-4 right-4 w-6 h-6 bg-stone-950 rounded-full flex items-center justify-center">
+                              <div className="w-3 h-3 bg-white rounded-sm" />
+                            </div>
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {formData.communicationVoice.length > 0 && (
+                  <div className="space-y-2 pt-4">
+                    <label className="text-xs font-light tracking-[0.2em] uppercase text-stone-500">
+                      ANY SIGNATURE PHRASES OR WORDS YOU USE? (OPTIONAL)
+                    </label>
+                    <Input
+                      value={formData.signaturePhrases}
+                      onChange={(e) => handleInputChange("signaturePhrases", e.target.value)}
+                      placeholder="e.g., Let's make it happen, Your time is now, etc."
+                      className="border-stone-200 focus:border-stone-400 text-base"
+                    />
                   </div>
                 )}
               </div>
@@ -373,6 +666,9 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
                     className="border-stone-200 focus:border-stone-400 text-base"
                     autoFocus
                   />
+                )}
+                {step.isOptional && (
+                  <p className="text-xs font-light text-stone-500 italic">This step is optional - skip if you prefer</p>
                 )}
               </div>
             ) : null}
@@ -403,7 +699,7 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
                   disabled={!canProceed()}
                   className="bg-stone-950 hover:bg-stone-800 text-white text-sm font-medium tracking-wider uppercase px-8 py-6 rounded-lg transition-all duration-200"
                 >
-                  {isIntroStep ? "LET'S START" : "NEXT"}
+                  {isIntroStep ? "LET'S START" : step.isOptional ? "SKIP" : "NEXT"}
                 </Button>
               )}
             </div>

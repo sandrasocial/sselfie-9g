@@ -7,12 +7,12 @@ interface CourseCardProps {
     title: string
     description: string
     thumbnail_url: string | null
-    tier: "foundation" | "professional" | "enterprise"
+    tier: "starter" | "pro" | "elite"
     lesson_count: number
     total_duration: number
     is_published: boolean
   }
-  userTier: "foundation" | "professional" | "enterprise"
+  userTier: "starter" | "pro" | "elite"
   progress?: {
     completed_lessons: number
     total_lessons: number
@@ -21,7 +21,7 @@ interface CourseCardProps {
   onCourseClick: (courseId: string) => void
 }
 
-const tierOrder = { foundation: 1, professional: 2, enterprise: 3 }
+const tierOrder = { starter: 1, pro: 2, elite: 3 }
 
 export default function CourseCard({ course, userTier, progress, onCourseClick }: CourseCardProps) {
   const isLocked = tierOrder[course.tier] > tierOrder[userTier]

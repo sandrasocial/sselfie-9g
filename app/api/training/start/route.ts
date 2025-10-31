@@ -5,6 +5,7 @@ import { createTrainingModel } from "@/lib/data/training"
 import { getReplicateClient, FLUX_LORA_TRAINER, DEFAULT_TRAINING_PARAMS } from "@/lib/replicate-client"
 import { createTrainingZip } from "@/lib/storage"
 import { neon } from "@neondatabase/serverless"
+import { checkCredits, deductCredits, CREDIT_COSTS } from "@/lib/credits"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -32,6 +33,18 @@ export async function POST(request: Request) {
     const neonUser = await getUserByAuthId(authUser.id)
     if (!neonUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
+    }
+
+    const hasEnoughCredits = await checkCredits(neonUser.id, CREDIT_COSTS.TRAINING)
+    if (!hasEnoughCredits) {
+      return NextResponse.json(
+        {
+          error: "Insufficient credits",
+          required: CREDIT_COSTS.TRAINING,
+          message: `Training requires ${CREDIT_COSTS.TRAINING} credits. Please purchase more credits or upgrade your plan.`,
+        },
+        { status: 402 },
+      )
     }
 
     // Validate images
@@ -66,6 +79,9 @@ export async function POST(request: Request) {
 
       // Generate trigger word
       const triggerWord = `user${neonUser.id}`
+
+      await deductCredits(neonUser.id, CREDIT_COSTS.TRAINING, "training", `Training model: ${modelName}`)
+      console.log("[v0] Deducted", CREDIT_COSTS.TRAINING, "credits for training")
 
       // Start training
       const training = await replicate.trainings.create(
@@ -104,9 +120,13 @@ export async function POST(request: Request) {
         trainingId: training.id,
         triggerWord,
         message: "Training started successfully",
+        creditsDeducted: CREDIT_COSTS.TRAINING,
       })
     } catch (replicateError) {
       console.error("[v0] Replicate training error:", replicateError)
+
+      await deductCredits(neonUser.id, -CREDIT_COSTS.TRAINING, "refund", "Training failed to start - refund")
+      console.log("[v0] Refunded", CREDIT_COSTS.TRAINING, "credits due to training failure")
 
       // Update model status to failed
       await sql`

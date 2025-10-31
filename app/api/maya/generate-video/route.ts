@@ -3,6 +3,7 @@ import { createServerClient } from "@/lib/supabase/server"
 import { neon } from "@neondatabase/serverless"
 import { getReplicateClient } from "@/lib/replicate-client"
 import { getUserByAuthId } from "@/lib/user-mapping"
+import { checkCredits, deductCredits, CREDIT_COSTS } from "@/lib/credits"
 
 const sql = neon(process.env.DATABASE_URL || "")
 
@@ -62,6 +63,18 @@ export async function POST(request: NextRequest) {
     }
 
     console.log("[v0] ✅ Neon user found:", neonUser.id)
+
+    const hasEnoughCredits = await checkCredits(neonUser.id, CREDIT_COSTS.ANIMATION)
+    if (!hasEnoughCredits) {
+      return NextResponse.json(
+        {
+          error: "Insufficient credits",
+          required: CREDIT_COSTS.ANIMATION,
+          message: `Video generation requires ${CREDIT_COSTS.ANIMATION} credits. Please purchase more credits or upgrade your plan.`,
+        },
+        { status: 402 },
+      )
+    }
 
     // Get user's trained LoRA model
     const userDataResult = await sql`
@@ -146,6 +159,9 @@ export async function POST(request: NextRequest) {
     console.log("[v0] Full prediction input:", JSON.stringify(predictionInput, null, 2))
     console.log("[v0] ================================================")
 
+    await deductCredits(neonUser.id, CREDIT_COSTS.ANIMATION, "video_generation", `Animated image: ${imageId}`)
+    console.log("[v0] Deducted", CREDIT_COSTS.ANIMATION, "credits for video generation")
+
     const prediction = await replicate.predictions.create({
       model: "wan-video/wan-2.2-i2v-fast",
       input: predictionInput,
@@ -192,6 +208,7 @@ export async function POST(request: NextRequest) {
       predictionId: prediction.id,
       status: "processing",
       estimatedTime: "40-60 seconds",
+      creditsDeducted: CREDIT_COSTS.ANIMATION,
     })
   } catch (error) {
     console.error("[v0] ========== VIDEO GENERATION ERROR ==========")

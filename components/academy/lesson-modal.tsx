@@ -80,7 +80,7 @@ export default function LessonModal({
   return (
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent
-        className="max-w-6xl max-h-[95vh] overflow-y-auto p-0 bg-stone-50 border-stone-200"
+        className="max-w-[95vw] sm:max-w-6xl lg:max-w-7xl max-h-[95vh] overflow-y-auto p-0 bg-stone-50 border-stone-200"
         showCloseButton={false}
       >
         {loading ? (
@@ -100,8 +100,8 @@ export default function LessonModal({
         ) : (
           <div className="relative">
             {/* Header with Close Button */}
-            <div className="sticky top-0 z-10 bg-stone-50/95 backdrop-blur-xl border-b border-stone-200 p-4 flex items-center justify-between">
-              <div className="flex items-center gap-4">
+            <div className="sticky top-0 z-10 bg-stone-50/95 backdrop-blur-xl border-b border-stone-200 p-3 sm:p-4 flex items-center justify-between">
+              <div className="flex items-center gap-2 sm:gap-4">
                 {/* Navigation Buttons */}
                 {onPrevLesson && (
                   <button
@@ -133,77 +133,86 @@ export default function LessonModal({
             </div>
 
             {/* Content */}
-            <div className="p-6 sm:p-8 space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {/* Lesson Header */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <span className="px-3 py-1 bg-stone-100 border border-stone-200 rounded-full text-xs tracking-[0.1em] uppercase font-light text-stone-700">
-                    Lesson {lesson.order_index + 1}
+              <div className="px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 space-y-3 sm:space-y-4">
+                <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                  <span className="px-2 sm:px-3 py-1 bg-stone-100 border border-stone-200 rounded-full text-[10px] sm:text-xs tracking-[0.1em] uppercase font-light text-stone-700">
+                    Lesson {(lesson.order_index ?? 0) + 1}
                   </span>
                   {isCompleted && (
-                    <span className="px-3 py-1 bg-stone-950 text-stone-50 rounded-full text-xs tracking-[0.1em] uppercase font-light">
+                    <span className="px-2 sm:px-3 py-1 bg-stone-950 text-stone-50 rounded-full text-[10px] sm:text-xs tracking-[0.1em] uppercase font-light">
                       Completed
                     </span>
                   )}
                 </div>
 
-                <h1 className="text-2xl sm:text-3xl font-serif font-extralight tracking-[0.2em] uppercase text-stone-950 leading-tight">
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-serif font-extralight tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-950 leading-tight">
                   {lesson.title}
                 </h1>
 
                 {lesson.description && (
-                  <p className="text-base font-light text-stone-600 leading-relaxed">{lesson.description}</p>
+                  <p className="text-sm sm:text-base font-light text-stone-600 leading-relaxed">{lesson.description}</p>
                 )}
 
-                <div className="flex items-center gap-2 text-xs tracking-[0.1em] uppercase font-light text-stone-500">
-                  <span>{Math.floor(lesson.duration_seconds / 60)} MINUTES</span>
+                <div className="flex items-center gap-2 text-[10px] sm:text-xs tracking-[0.1em] uppercase font-light text-stone-500">
+                  <span>{Math.floor((lesson.duration_seconds ?? 0) / 60)} MINUTES</span>
                 </div>
               </div>
 
-              {/* Video Player */}
               {lesson.lesson_type === "video" && lesson.video_url ? (
-                <VideoPlayer
-                  videoUrl={lesson.video_url}
-                  lessonId={Number.parseInt(lesson.id)}
-                  durationMinutes={Math.floor(lesson.duration_seconds / 60)}
-                  onComplete={handleLessonComplete}
-                  initialWatchTime={watchTimeSeconds}
-                />
+                <div className="w-full">
+                  <VideoPlayer
+                    videoUrl={lesson.video_url}
+                    lessonId={Number.parseInt(lesson.id)}
+                    durationMinutes={Math.floor((lesson.duration_seconds ?? 0) / 60)}
+                    onComplete={handleLessonComplete}
+                    initialWatchTime={watchTimeSeconds}
+                  />
+                </div>
               ) : (
-                <div className="bg-white/50 backdrop-blur-xl border border-white/60 rounded-[1.75rem] p-8 text-center">
-                  <p className="text-stone-600 font-light">This lesson type is not yet supported.</p>
+                <div className="mx-4 sm:mx-6 lg:mx-8 bg-white/50 backdrop-blur-xl border border-white/60 rounded-[1.75rem] p-6 sm:p-8 text-center">
+                  <p className="text-sm sm:text-base text-stone-600 font-light">
+                    This lesson type is not yet supported.
+                  </p>
                 </div>
               )}
 
               {/* Progress Indicator */}
-              <div className="bg-white/50 backdrop-blur-xl border border-white/60 rounded-[1.75rem] p-6">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs tracking-[0.15em] uppercase font-light text-stone-500">Your Progress</span>
-                  <span className="text-sm font-light text-stone-950">
-                    {isCompleted ? "100%" : `${Math.round((watchTimeSeconds / lesson.duration_seconds) * 100)}%`}
-                  </span>
-                </div>
-                <div className="w-full h-2 bg-stone-200 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-stone-950 transition-all duration-300"
-                    style={{
-                      width: isCompleted
+              <div className="px-4 sm:px-6 lg:px-8 pb-4 sm:pb-6">
+                <div className="bg-white/50 backdrop-blur-xl border border-white/60 rounded-[1.75rem] p-4 sm:p-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-[10px] sm:text-xs tracking-[0.15em] uppercase font-light text-stone-500">
+                      Your Progress
+                    </span>
+                    <span className="text-xs sm:text-sm font-light text-stone-950">
+                      {isCompleted
                         ? "100%"
-                        : `${Math.min(100, (watchTimeSeconds / lesson.duration_seconds) * 100)}%`,
-                    }}
-                  />
+                        : `${Math.round((watchTimeSeconds / (lesson.duration_seconds ?? 1)) * 100)}%`}
+                    </span>
+                  </div>
+                  <div className="w-full h-2 bg-stone-200 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-stone-950 transition-all duration-300"
+                      style={{
+                        width: isCompleted
+                          ? "100%"
+                          : `${Math.min(100, (watchTimeSeconds / (lesson.duration_seconds ?? 1)) * 100)}%`,
+                      }}
+                    />
+                  </div>
                 </div>
-              </div>
 
-              {/* Next Lesson Button */}
-              {onNextLesson && (
-                <button
-                  onClick={onNextLesson}
-                  className="w-full bg-stone-950 text-stone-50 py-4 rounded-[1.25rem] font-light tracking-[0.15em] uppercase text-sm hover:bg-stone-800 transition-all duration-200 shadow-xl shadow-stone-900/20"
-                >
-                  Next Lesson
-                </button>
-              )}
+                {/* Next Lesson Button */}
+                {onNextLesson && (
+                  <button
+                    onClick={onNextLesson}
+                    className="w-full mt-4 sm:mt-6 bg-stone-950 text-stone-50 py-3 sm:py-4 rounded-[1.25rem] font-light tracking-[0.15em] uppercase text-xs sm:text-sm hover:bg-stone-800 transition-all duration-200 shadow-xl shadow-stone-900/20"
+                  >
+                    Next Lesson
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         )}

@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
 import { createServerClient } from "@/lib/supabase/server"
+import { getUserByAuthId } from "@/lib/user-mapping"
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,16 +16,13 @@ export async function GET(request: NextRequest) {
 
     const sql = neon(process.env.DATABASE_URL!)
 
-    // Get Neon user ID
-    const neonUsers = await sql`
-      SELECT id FROM users WHERE stack_auth_id = ${user.id}
-    `
+    const neonUser = await getUserByAuthId(user.id)
 
-    if (neonUsers.length === 0) {
+    if (!neonUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    const neonUserId = neonUsers[0].id
+    console.log("[v0] Fetching brand profile for user:", neonUser.id)
 
     // Get personal brand information
     const personalBrand = await sql`
@@ -39,7 +37,7 @@ export async function GET(request: NextRequest) {
         usp.brand_references
       FROM user_personal_brand upb
       LEFT JOIN user_style_profile usp ON usp.personal_brand_id = upb.id
-      WHERE upb.user_id = ${neonUserId}
+      WHERE upb.user_id = ${neonUser.id}
       ORDER BY upb.created_at DESC
       LIMIT 1
     `
@@ -73,6 +71,18 @@ export async function GET(request: NextRequest) {
         contentGoals: brand.content_goals,
         photoGoals: brand.photo_goals,
         stylePreferences: brand.style_preferences,
+        visualAesthetic: brand.visual_aesthetic,
+        settingsPreference: brand.settings_preference,
+        fashionStyle: brand.fashion_style,
+        idealAudience: brand.ideal_audience,
+        audienceChallenge: brand.audience_challenge,
+        audienceTransformation: brand.audience_transformation,
+        communicationVoice: brand.communication_voice,
+        signaturePhrases: brand.signature_phrases,
+        brandInspiration: brand.brand_inspiration,
+        inspirationLinks: brand.inspiration_links,
+        contentPillars: brand.content_pillars,
+        // Style profile fields
         colorPreferences: brand.color_preferences,
         clothingPreferences: brand.clothing_preferences,
         styleCategories: brand.style_categories,
@@ -101,30 +111,32 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
     console.log("[v0] Saving brand profile with data:", {
+      userId: user.id,
       colorTheme: body.colorTheme,
       hasCustomColors: !!body.customColors,
+      name: body.name,
+      businessType: body.businessType,
     })
 
     const sql = neon(process.env.DATABASE_URL!)
 
-    // Get Neon user ID
-    const neonUsers = await sql`
-      SELECT id FROM users WHERE stack_auth_id = ${user.id}
-    `
+    const neonUser = await getUserByAuthId(user.id)
 
-    if (neonUsers.length === 0) {
+    if (!neonUser) {
+      console.error("[v0] User not found for auth ID:", user.id)
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    const neonUserId = neonUsers[0].id
+    console.log("[v0] Found Neon user:", neonUser.id, neonUser.email)
 
     const existingBrand = await sql`
-      SELECT id FROM user_personal_brand WHERE user_id = ${neonUserId}
+      SELECT id FROM user_personal_brand WHERE user_id = ${neonUser.id}
     `
 
     let brandId: number
 
     if (existingBrand.length > 0) {
+      console.log("[v0] Updating existing brand profile:", existingBrand[0].id)
       const result = await sql`
         UPDATE user_personal_brand
         SET
@@ -142,18 +154,27 @@ export async function POST(request: NextRequest) {
           color_palette = ${body.customColors || null},
           future_vision = ${body.futureVision || ""},
           content_goals = ${body.contentGoals || ""},
+          photo_goals = ${body.photoGoals || ""},
+          content_pillars = ${body.contentPillars || null},
+          visual_aesthetic = ${body.visualAesthetic || ""},
+          settings_preference = ${body.settingsPreference || ""},
+          fashion_style = ${body.fashionStyle || ""},
+          ideal_audience = ${body.idealAudience || ""},
+          audience_challenge = ${body.audienceChallenge || ""},
+          audience_transformation = ${body.audienceTransformation || ""},
+          communication_voice = ${body.communicationVoice || ""},
+          signature_phrases = ${body.signaturePhrases || ""},
+          brand_inspiration = ${body.brandInspiration || ""},
+          inspiration_links = ${body.inspirationLinks || ""},
           is_completed = ${body.isCompleted || false},
           updated_at = NOW()
-        WHERE user_id = ${neonUserId}
+        WHERE user_id = ${neonUser.id}
         RETURNING id
       `
       brandId = result[0].id
-      console.log("[v0] Updated brand profile with colors:", {
-        brandId,
-        colorTheme: body.colorTheme,
-        hasCustomColors: !!body.customColors,
-      })
+      console.log("[v0] Updated brand profile successfully:", brandId)
     } else {
+      console.log("[v0] Creating new brand profile for user:", neonUser.id)
       const result = await sql`
         INSERT INTO user_personal_brand (
           user_id,
@@ -171,11 +192,23 @@ export async function POST(request: NextRequest) {
           color_palette,
           future_vision,
           content_goals,
+          photo_goals,
+          content_pillars,
+          visual_aesthetic,
+          settings_preference,
+          fashion_style,
+          ideal_audience,
+          audience_challenge,
+          audience_transformation,
+          communication_voice,
+          signature_phrases,
+          brand_inspiration,
+          inspiration_links,
           is_completed,
           created_at,
           updated_at
         ) VALUES (
-          ${neonUserId},
+          ${neonUser.id},
           ${body.name || ""},
           ${body.businessType || ""},
           ${body.currentSituation || ""},
@@ -190,6 +223,18 @@ export async function POST(request: NextRequest) {
           ${body.customColors || null},
           ${body.futureVision || ""},
           ${body.contentGoals || ""},
+          ${body.photoGoals || ""},
+          ${body.contentPillars || null},
+          ${body.visualAesthetic || ""},
+          ${body.settingsPreference || ""},
+          ${body.fashionStyle || ""},
+          ${body.idealAudience || ""},
+          ${body.audienceChallenge || ""},
+          ${body.audienceTransformation || ""},
+          ${body.communicationVoice || ""},
+          ${body.signaturePhrases || ""},
+          ${body.brandInspiration || ""},
+          ${body.inspirationLinks || ""},
           ${body.isCompleted || false},
           NOW(),
           NOW()
@@ -197,17 +242,13 @@ export async function POST(request: NextRequest) {
         RETURNING id
       `
       brandId = result[0].id
-      console.log("[v0] Created brand profile with colors:", {
-        brandId,
-        colorTheme: body.colorTheme,
-        hasCustomColors: !!body.customColors,
-      })
+      console.log("[v0] Created brand profile successfully:", brandId)
     }
 
     // Update style profile if provided
     if (body.styleProfile) {
       const existingProfile = await sql`
-        SELECT id FROM user_style_profile WHERE user_id = ${neonUserId}
+        SELECT id FROM user_style_profile WHERE user_id = ${neonUser.id}
       `
 
       if (existingProfile.length > 0) {
@@ -224,7 +265,7 @@ export async function POST(request: NextRequest) {
             style_icons = ${JSON.stringify(body.styleProfile.styleIcons || {})},
             brand_references = ${JSON.stringify(body.styleProfile.brandReferences || {})},
             updated_at = NOW()
-          WHERE user_id = ${neonUserId}
+          WHERE user_id = ${neonUser.id}
         `
       } else {
         // Insert new profile
@@ -242,7 +283,7 @@ export async function POST(request: NextRequest) {
             created_at,
             updated_at
           ) VALUES (
-            ${neonUserId},
+            ${neonUser.id},
             ${brandId},
             ${JSON.stringify(body.styleProfile.colorPreferences || {})},
             ${JSON.stringify(body.styleProfile.clothingPreferences || {})},
@@ -259,7 +300,7 @@ export async function POST(request: NextRequest) {
     }
 
     const existingMemory = await sql`
-      SELECT id FROM maya_personal_memory WHERE user_id = ${neonUserId}
+      SELECT id FROM maya_personal_memory WHERE user_id = ${neonUser.id}
     `
 
     if (existingMemory.length > 0) {
@@ -267,7 +308,7 @@ export async function POST(request: NextRequest) {
       await sql`
         UPDATE maya_personal_memory
         SET personal_brand_id = ${brandId}, updated_at = NOW()
-        WHERE user_id = ${neonUserId}
+        WHERE user_id = ${neonUser.id}
       `
     } else {
       // Create new memory linked to brand
@@ -286,7 +327,7 @@ export async function POST(request: NextRequest) {
           updated_at,
           last_memory_update
         ) VALUES (
-          ${neonUserId},
+          ${neonUser.id},
           ${brandId},
           1,
           '[]'::jsonb,
@@ -302,7 +343,8 @@ export async function POST(request: NextRequest) {
       `
     }
 
-    return NextResponse.json({ success: true })
+    console.log("[v0] Brand profile save complete!")
+    return NextResponse.json({ success: true, brandId })
   } catch (error) {
     console.error("[v0] Error updating personal brand:", error)
     return NextResponse.json({ error: "Failed to update personal brand" }, { status: 500 })

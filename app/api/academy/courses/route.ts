@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getCoursesForTier } from "@/lib/data/academy"
+import { getUserTier } from "@/lib/subscription"
 
 export async function GET() {
   try {
@@ -28,7 +29,7 @@ export async function GET() {
 
     console.log("[v0] Fetching courses for user:", neonUser.id)
 
-    const userTier = (neonUser.membership_tier || "foundation") as "foundation" | "professional" | "enterprise"
+    const userTier = await getUserTier(neonUser.id)
     console.log("[v0] User tier:", userTier)
 
     // Get courses available for user's tier

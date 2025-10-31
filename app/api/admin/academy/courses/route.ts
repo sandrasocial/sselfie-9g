@@ -61,26 +61,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Admin access required" }, { status: 403 })
     }
 
-    const { title, description, thumbnail_url, tier, order_index, is_published } = await request.json()
+    const { title, description, thumbnail_url, tier, order_index, status } = await request.json()
 
     if (!title || !tier) {
       return NextResponse.json({ error: "Title and tier are required" }, { status: 400 })
     }
 
-    const courseId = crypto.randomUUID()
-
     const newCourse = await sql`
       INSERT INTO academy_courses (
-        id, title, description, thumbnail_url, tier, order_index, is_published, created_at, updated_at
+        title, description, thumbnail_url, tier, order_index, status, created_at, updated_at
       )
       VALUES (
-        ${courseId}, ${title}, ${description || null}, ${thumbnail_url || null}, 
-        ${tier}, ${order_index || 0}, ${is_published || false}, NOW(), NOW()
+        ${title}, ${description || null}, ${thumbnail_url || null}, 
+        ${tier}, ${order_index || 0}, ${status || "draft"}, NOW(), NOW()
       )
       RETURNING *
     `
 
-    console.log("[v0] Created course:", courseId)
+    console.log("[v0] Created course:", newCourse[0].id)
 
     return NextResponse.json({ course: newCourse[0] })
   } catch (error) {

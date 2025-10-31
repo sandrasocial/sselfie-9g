@@ -12,15 +12,15 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 export default function AcademyScreen() {
   const [selectedView, setSelectedView] = useState<AcademyView>("overview")
-  const [selectedTier, setSelectedTier] = useState<"all" | "foundation" | "professional" | "enterprise">("all")
+  const [selectedTier, setSelectedTier] = useState<"all" | "starter" | "pro" | "elite">("all")
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null)
 
   const { data: coursesData, error: coursesError, isLoading: coursesLoading } = useSWR("/api/academy/courses", fetcher)
   const { data: myCoursesData } = useSWR("/api/academy/my-courses", fetcher)
-  const { data: userData } = useSWR("/api/user", fetcher)
+  const { data: userInfoData } = useSWR("/api/user/info", fetcher)
 
-  const userTier = (userData?.user?.membership_tier || "foundation") as "foundation" | "professional" | "enterprise"
+  const userTier = (coursesData?.userTier || userInfoData?.plan || "starter") as "starter" | "pro" | "elite"
   const allCourses = coursesData?.courses || []
   const myCourses = myCoursesData?.courses || []
   const inProgressCourses = myCourses.filter((c: any) => c.progress_percentage > 0 && c.progress_percentage < 100)
@@ -45,45 +45,48 @@ export default function AcademyScreen() {
 
   const membershipTiers = [
     {
-      name: "Studio Essential",
+      name: "Starter",
       price: "$49",
       period: "month",
-      description: "Perfect for getting started with AI photography",
+      credits: 100,
+      description: "Perfect for getting started with personal branding",
       features: [
-        "50 AI photo generations per month",
-        "Basic training tutorials",
+        "100 credits per month",
+        "Basic Maya AI access",
+        "Feed Designer (10 designs/month)",
+        "Core Academy courses",
         "Email support",
-        "Standard quality exports",
       ],
       highlighted: false,
     },
     {
-      name: "Studio Professional",
+      name: "Pro",
       price: "$99",
       period: "month",
-      description: "For professionals who need more power",
+      credits: 250,
+      description: "For serious personal brands and entrepreneurs",
       features: [
-        "200 AI photo generations per month",
-        "All Academy courses included",
+        "250 credits per month",
+        "Full Maya AI access",
+        "Feed Designer (unlimited)",
+        "Full Academy + monthly drops",
         "Priority support",
-        "High-quality exports",
-        "Advanced editing tools",
-        "Commercial usage rights",
+        "Early access to new features",
       ],
       highlighted: true,
     },
     {
-      name: "Studio Enterprise",
-      price: "$299",
+      name: "Elite",
+      price: "$199",
       period: "month",
-      description: "Unlimited creation for agencies and teams",
+      credits: 600,
+      description: "Maximum power for agencies and power users",
       features: [
-        "Unlimited AI photo generations",
-        "Team collaboration tools",
-        "1-on-1 coaching sessions",
-        "API access",
-        "White-label options",
-        "Dedicated account manager",
+        "600 credits per month",
+        "Everything in Pro",
+        "Team collaboration (coming soon)",
+        "White-glove support",
+        "Quarterly strategy call",
       ],
       highlighted: false,
     },
@@ -231,9 +234,9 @@ export default function AcademyScreen() {
         <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
           {[
             { key: "all", label: "All Courses" },
-            { key: "foundation", label: "Foundation" },
-            { key: "professional", label: "Professional" },
-            { key: "enterprise", label: "Enterprise" },
+            { key: "starter", label: "Starter" },
+            { key: "pro", label: "Pro" },
+            { key: "elite", label: "Elite" },
           ].map((filter) => (
             <button
               key={filter.key}
@@ -327,15 +330,13 @@ export default function AcademyScreen() {
 
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: "Membership", value: userTier, desc: "Current Tier" },
+          { label: "Membership", value: userTier.toUpperCase(), desc: "Current Tier" },
           { label: "Completed", value: `${completedCoursesCount}/${totalEnrolledCourses}`, desc: "Courses" },
           { label: "In Progress", value: inProgressCourses.length, desc: "Learning" },
         ].map((stat, i) => (
           <div key={i} className="bg-stone-100/50 border border-stone-200/40 rounded-2xl p-4 sm:p-5">
             <div className="text-xs tracking-[0.1em] uppercase font-light mb-2 text-stone-500">{stat.label}</div>
-            <div className="text-2xl sm:text-3xl font-serif font-extralight text-stone-950 mb-1 capitalize">
-              {stat.value}
-            </div>
+            <div className="text-2xl sm:text-3xl font-serif font-extralight text-stone-950 mb-1">{stat.value}</div>
             <div className="text-xs font-light text-stone-600">{stat.desc}</div>
           </div>
         ))}

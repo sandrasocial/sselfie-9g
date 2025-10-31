@@ -18,7 +18,7 @@ interface Course {
   thumbnail_url: string | null
   tier: string
   order_index: number
-  is_published: boolean
+  status: string
   lesson_count: number
   enrollment_count: number
 }
@@ -50,7 +50,7 @@ export default function AdminAcademyPage() {
     thumbnail_url: "",
     tier: "foundation",
     order_index: 0,
-    is_published: false,
+    status: "draft",
   })
 
   // Lesson dialog state
@@ -123,7 +123,7 @@ export default function AdminAcademyPage() {
       thumbnail_url: "",
       tier: "foundation",
       order_index: courses.length,
-      is_published: false,
+      status: "draft",
     })
     setCourseDialogOpen(true)
   }
@@ -136,7 +136,7 @@ export default function AdminAcademyPage() {
       thumbnail_url: course.thumbnail_url || "",
       tier: course.tier,
       order_index: course.order_index,
-      is_published: course.is_published,
+      status: course.status,
     })
     setCourseDialogOpen(true)
   }
@@ -265,6 +265,14 @@ export default function AdminAcademyPage() {
     const file = e.target.files?.[0]
     if (!file) return
 
+    const maxSize = 500 * 1024 * 1024 // 500MB
+    if (file.size > maxSize) {
+      const sizeMB = Math.round(file.size / 1024 / 1024)
+      setUploadProgress(`File too large (${sizeMB}MB). Max 500MB. Use YouTube (unlisted) or Vimeo for larger videos.`)
+      setTimeout(() => setUploadProgress(""), 5000)
+      return
+    }
+
     setUploadingVideo(true)
     setUploadProgress(`Uploading video: ${file.name}...`)
 
@@ -284,11 +292,16 @@ export default function AdminAcademyPage() {
         setUploadProgress("Video uploaded successfully!")
         setTimeout(() => setUploadProgress(""), 2000)
       } else {
-        setUploadProgress("Upload failed. Please try again.")
+        const errorData = await response.json()
+        const errorMsg = errorData.error || "Upload failed"
+        const suggestion = errorData.suggestion || "Please try again or use a video URL instead."
+        setUploadProgress(`${errorMsg}. ${suggestion}`)
+        setTimeout(() => setUploadProgress(""), 8000)
       }
     } catch (error) {
       console.error("[v0] Error uploading video:", error)
-      setUploadProgress("Upload failed. Please try again.")
+      setUploadProgress("Upload failed. For large videos, use YouTube (unlisted) or Vimeo instead.")
+      setTimeout(() => setUploadProgress(""), 5000)
     } finally {
       setUploadingVideo(false)
     }
@@ -376,9 +389,9 @@ export default function AdminAcademyPage() {
                       <p className="text-xs text-stone-500 uppercase tracking-wider">
                         {course.tier} • {course.lesson_count} lessons • {course.enrollment_count} enrolled
                       </p>
-                      {!course.is_published && (
+                      {course.status !== "published" && (
                         <span className="inline-block mt-2 px-2 py-1 text-[10px] tracking-wider uppercase bg-stone-200 text-stone-600 rounded">
-                          Draft
+                          {course.status}
                         </span>
                       )}
                     </div>
@@ -556,17 +569,17 @@ export default function AdminAcademyPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="is_published"
-                checked={courseForm.is_published}
-                onChange={(e) => setCourseForm({ ...courseForm, is_published: e.target.checked })}
-                className="w-4 h-4"
-              />
-              <Label htmlFor="is_published" className="text-xs tracking-wider uppercase text-stone-600">
-                Published
-              </Label>
+            <div className="space-y-2">
+              <Label className="text-xs tracking-wider uppercase text-stone-600">Status</Label>
+              <select
+                value={courseForm.status}
+                onChange={(e) => setCourseForm({ ...courseForm, status: e.target.value })}
+                className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm"
+              >
+                <option value="draft">Draft</option>
+                <option value="published">Published</option>
+                <option value="archived">Archived</option>
+              </select>
             </div>
           </div>
           {uploadProgress && <p className="text-xs text-stone-600 text-center py-2">{uploadProgress}</p>}
@@ -621,6 +634,9 @@ export default function AdminAcademyPage() {
 
             <div className="space-y-2">
               <Label className="text-xs tracking-wider uppercase text-stone-600">Video</Label>
+              <p className="text-[10px] text-stone-500 mb-2">
+                Max 500MB. For larger videos, upload to YouTube (unlisted) or Vimeo and paste URL below.
+              </p>
               {lessonForm.video_url && (
                 <div className="relative w-full rounded-lg overflow-hidden border border-stone-200 mb-2">
                   <video src={lessonForm.video_url} controls className="w-full" style={{ maxHeight: "200px" }} />
@@ -639,7 +655,7 @@ export default function AdminAcademyPage() {
               <Input
                 value={lessonForm.video_url}
                 onChange={(e) => setLessonForm({ ...lessonForm, video_url: e.target.value })}
-                placeholder="Or paste video URL"
+                placeholder="Or paste video URL (YouTube, Vimeo, etc.)"
                 className="border-stone-300"
               />
             </div>

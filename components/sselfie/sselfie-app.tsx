@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Camera, User, Aperture, Grid, MessageCircle, ImageIcon, LayoutGrid } from "lucide-react"
+import { Camera, User, Aperture, Grid, MessageCircle, ImageIcon, LayoutGrid, Coins } from "lucide-react"
 import LoadingScreen from "./loading-screen"
 import StudioScreen from "./studio-screen"
 import TrainingScreen from "./training-screen"
@@ -25,38 +25,34 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
   const [currentTime, setCurrentTime] = useState(new Date())
   const [hasTrainedModel, setHasTrainedModel] = useState(false)
   const [isLoadingTrainingStatus, setIsLoadingTrainingStatus] = useState(true)
-  const [generationsRemaining, setGenerationsRemaining] = useState<number | null>(null)
-  const [isUnlimited, setIsUnlimited] = useState(false)
-  const [isLoadingQuota, setIsLoadingQuota] = useState(true)
+  const [creditBalance, setCreditBalance] = useState<number>(0)
+  const [isLoadingCredits, setIsLoadingCredits] = useState(true)
 
   useEffect(() => {
-    const fetchQuota = async () => {
+    const fetchCredits = async () => {
       try {
-        const response = await fetch("/api/quota/status")
+        const response = await fetch("/api/user/credits")
         const data = await response.json()
-        console.log("[v0] Quota status:", data)
-
-        if (data.isUnlimited) {
-          setIsUnlimited(true)
-          setGenerationsRemaining(null)
-        } else {
-          setIsUnlimited(false)
-          setGenerationsRemaining(data.remaining || 0)
-        }
+        console.log("[v0] Credit balance:", data)
+        setCreditBalance(data.balance || 0)
       } catch (error) {
-        console.error("[v0] Error fetching quota:", error)
-        setGenerationsRemaining(0)
+        console.error("[v0] Error fetching credits:", error)
+        setCreditBalance(0)
       } finally {
-        setIsLoadingQuota(false)
+        setIsLoadingCredits(false)
       }
     }
 
-    fetchQuota()
+    fetchCredits()
   }, [])
 
-  const decrementQuota = () => {
-    if (!isUnlimited && generationsRemaining !== null && generationsRemaining > 0) {
-      setGenerationsRemaining((prev) => (prev !== null ? prev - 1 : 0))
+  const refreshCredits = async () => {
+    try {
+      const response = await fetch("/api/user/credits")
+      const data = await response.json()
+      setCreditBalance(data.balance || 0)
+    } catch (error) {
+      console.error("[v0] Error refreshing credits:", error)
     }
   }
 
@@ -106,7 +102,7 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
     posts: "127",
   }
 
-  if (isLoading || isLoadingTrainingStatus || isLoadingQuota) {
+  if (isLoading || isLoadingTrainingStatus || isLoadingCredits) {
     return <LoadingScreen />
   }
 
@@ -125,13 +121,33 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
 
       <div className="relative h-full mx-1 sm:mx-2 md:mx-3 pb-24 sm:pb-26 md:pb-28">
         <div className="h-full bg-white/30 backdrop-blur-3xl rounded-[2rem] sm:rounded-[2.5rem] md:rounded-[3rem] border border-white/40 overflow-hidden shadow-2xl shadow-stone-900/10">
+          <div className="sticky top-0 z-10 bg-white/40 backdrop-blur-xl border-b border-stone-200/40 px-4 sm:px-6 md:px-8 py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-stone-950 rounded-xl flex items-center justify-center">
+                  <Coins size={16} className="text-stone-50" />
+                </div>
+                <div>
+                  <div className="text-xs tracking-[0.15em] uppercase font-light text-stone-500">Credits</div>
+                  <div className="text-lg font-serif font-extralight text-stone-950">{creditBalance.toFixed(1)}</div>
+                </div>
+              </div>
+              <button
+                onClick={() => setActiveTab("profile")}
+                className="text-xs tracking-[0.15em] uppercase font-light text-stone-600 hover:text-stone-900 transition-colors"
+              >
+                Buy More
+              </button>
+            </div>
+          </div>
+
           <div className="h-full px-4 sm:px-6 md:px-8 pb-4 sm:pb-6 md:pb-8 pt-4 sm:pt-6 md:pt-8 overflow-y-auto">
             {activeTab === "studio" && (
               <StudioScreen
                 user={user}
                 hasTrainedModel={hasTrainedModel}
                 setActiveTab={setActiveTab}
-                onImageGenerated={decrementQuota}
+                onImageGenerated={refreshCredits}
               />
             )}
             {activeTab === "training" && (
@@ -142,10 +158,10 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
                 setActiveTab={setActiveTab}
               />
             )}
-            {activeTab === "maya" && <MayaChatScreen onImageGenerated={decrementQuota} />}
+            {activeTab === "maya" && <MayaChatScreen onImageGenerated={refreshCredits} />}
             {activeTab === "gallery" && <GalleryScreen user={user} userId={userId} />}
             {activeTab === "academy" && <AcademyScreen />}
-            {activeTab === "profile" && <ProfileScreen user={user} />}
+            {activeTab === "profile" && <ProfileScreen user={user} creditBalance={creditBalance} />}
             {activeTab === "feed-designer" && <FeedDesignerScreen />}
           </div>
         </div>

@@ -34,7 +34,7 @@ export async function GET(request: Request) {
     const lessons = await sql`
       SELECT * FROM academy_lessons
       WHERE course_id = ${courseId}
-      ORDER BY order_index ASC, created_at ASC
+      ORDER BY lesson_number ASC, created_at ASC
     `
 
     return NextResponse.json({ lessons })
@@ -62,29 +62,27 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Admin access required" }, { status: 403 })
     }
 
-    const { course_id, title, description, lesson_type, video_url, duration_seconds, order_index, content } =
+    const { course_id, title, description, lesson_type, video_url, duration_minutes, lesson_number, content } =
       await request.json()
 
     if (!course_id || !title || !lesson_type) {
       return NextResponse.json({ error: "course_id, title, and lesson_type are required" }, { status: 400 })
     }
 
-    const lessonId = crypto.randomUUID()
-
     const newLesson = await sql`
       INSERT INTO academy_lessons (
-        id, course_id, title, description, lesson_type, video_url, 
-        duration_seconds, order_index, content, created_at, updated_at
+        course_id, title, description, lesson_type, video_url, 
+        duration_minutes, lesson_number, content, created_at, updated_at
       )
       VALUES (
-        ${lessonId}, ${course_id}, ${title}, ${description || null}, ${lesson_type},
-        ${video_url || null}, ${duration_seconds || 0}, ${order_index || 0}, 
+        ${course_id}, ${title}, ${description || null}, ${lesson_type},
+        ${video_url || null}, ${duration_minutes || 0}, ${lesson_number || 1}, 
         ${content ? JSON.stringify(content) : null}, NOW(), NOW()
       )
       RETURNING *
     `
 
-    console.log("[v0] Created lesson:", lessonId)
+    console.log("[v0] Created lesson:", newLesson[0].id)
 
     return NextResponse.json({ lesson: newLesson[0] })
   } catch (error) {

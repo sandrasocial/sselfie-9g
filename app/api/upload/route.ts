@@ -26,8 +26,15 @@ export async function POST(request: Request) {
     const contentType = request.headers.get("content-type")
     console.log("[v0] Content-Type:", contentType)
 
-    if (contentType?.includes("multipart/form-data")) {
-      const formData = await request.formData()
+    let formData: FormData | null = null
+    try {
+      formData = await request.formData()
+    } catch (formDataError) {
+      console.log("[v0] FormData parsing failed, will try JSON")
+      // FormData parsing failed, continue to JSON parsing below
+    }
+
+    if (formData) {
       const file = formData.get("file") || formData.get("image")
 
       console.log(
@@ -36,60 +43,109 @@ export async function POST(request: Request) {
         file instanceof File ? "File" : file instanceof Blob ? "Blob" : typeof file,
       )
 
-      if (!file) {
-        console.error("[v0] Upload failed: No file in FormData")
-        return NextResponse.json({ error: "No file provided" }, { status: 400 })
-      }
-
-      // Handle both File and Blob objects
-      if (file instanceof File || file instanceof Blob) {
+      if (file && (file instanceof File || file instanceof Blob)) {
         const fileName = file instanceof File ? file.name : `upload-${Date.now()}.png`
-        const blob = await put(`uploads/${neonUser.id}/${Date.now()}-${fileName}`, file, {
-          access: "public",
-        })
+        const fileSize = file.size
 
-        console.log("[v0] File uploaded to Blob:", blob.url)
-        return NextResponse.json({ url: blob.url })
-      } else {
-        console.error("[v0] Upload failed: Invalid file type")
-        return NextResponse.json({ error: "Invalid file type" }, { status: 400 })
+        console.log("[v0] Uploading file to Blob:", fileName, "Size:", fileSize, "bytes")
+
+        const maxSize = 500 * 1024 * 1024 // 500MB limit (Vercel Blob free/hobby tier limit)
+        if (fileSize > maxSize) {
+          console.error("[v0] File too large:", fileSize, "bytes")
+          return NextResponse.json(
+            {
+              error: `File too large (${Math.round(fileSize / 1024 / 1024)}MB). Maximum size is 500MB.`,
+              suggestion:
+                "For videos larger than 500MB, please upload to YouTube (unlisted) or Vimeo and paste the video URL instead. This provides better streaming and no file size limits.",
+            },
+            { status: 413 },
+          )
+        }
+
+        try {
+          const blob = await put(`uploads/${neonUser.id}/${Date.now()}-${fileName}`, file, {
+            access: "public",
+          })
+
+          console.log("[v0] File uploaded to Blob successfully:", blob.url)
+          return NextResponse.json({ url: blob.url })
+        } catch (blobError) {
+          console.error("[v0] Blob upload failed:", blobError)
+
+          const errorMessage = blobError instanceof Error ? blobError.message : String(blobError)
+
+          // Check if it's a file size error from Vercel Blob
+          if (errorMessage.includes("too large") || errorMessage.includes("Entity Too Large")) {
+            return NextResponse.json(
+              {
+                error: "File exceeds Vercel Blob's size limit (500MB)",
+                suggestion:
+                  "Please upload your video to YouTube (unlisted) or Vimeo and paste the video URL instead. This provides better streaming and no file size limits.",
+              },
+              { status: 413 },
+            )
+          }
+
+          return NextResponse.json(
+            {
+              error: "Failed to upload file to storage",
+              details: errorMessage,
+              suggestion: "For large videos, consider using YouTube (unlisted) or Vimeo instead.",
+            },
+            { status: 500 },
+          )
+        }
       }
+
+      console.error("[v0] No valid file found in FormData")
+      return NextResponse.json({ error: "No valid file provided in FormData" }, { status: 400 })
     }
 
     if (contentType?.includes("application/json")) {
-      const body = await request.json()
-      const { image } = body
+      try {
+        const body = await request.json()
+        const { image } = body
 
-      console.log("[v0] JSON image:", image ? "present" : "missing", image?.substring(0, 50))
+        console.log("[v0] JSON image:", image ? "present" : "missing", image?.substring(0, 50))
 
-      if (!image || !image.startsWith("data:image/")) {
-        console.error("[v0] Upload failed: Invalid image data")
-        return NextResponse.json({ error: "Invalid image data" }, { status: 400 })
+        if (!image || !image.startsWith("data:image/")) {
+          console.error("[v0] Upload failed: Invalid image data")
+          return NextResponse.json({ error: "Invalid image data" }, { status: 400 })
+        }
+
+        // Extract base64 data and convert to buffer
+        const base64Data = image.split(",")[1]
+        const buffer = Buffer.from(base64Data, "base64")
+
+        // Determine file extension from mime type
+        const mimeType = image.split(";")[0].split(":")[1]
+        const extension = mimeType.split("/")[1]
+
+        const blob = await put(`uploads/${neonUser.id}/${Date.now()}.${extension}`, buffer, {
+          access: "public",
+          contentType: mimeType,
+        })
+
+        console.log("[v0] Base64 image uploaded to Blob:", blob.url)
+        return NextResponse.json({ url: blob.url })
+      } catch (jsonError) {
+        console.error("[v0] JSON parsing or upload failed:", jsonError)
+        return NextResponse.json(
+          {
+            error: "Failed to process JSON upload",
+            details: jsonError instanceof Error ? jsonError.message : String(jsonError),
+          },
+          { status: 500 },
+        )
       }
-
-      // Extract base64 data and convert to buffer
-      const base64Data = image.split(",")[1]
-      const buffer = Buffer.from(base64Data, "base64")
-
-      // Determine file extension from mime type
-      const mimeType = image.split(";")[0].split(":")[1]
-      const extension = mimeType.split("/")[1]
-
-      const blob = await put(`uploads/${neonUser.id}/${Date.now()}.${extension}`, buffer, {
-        access: "public",
-        contentType: mimeType,
-      })
-
-      console.log("[v0] Base64 image uploaded to Blob:", blob.url)
-      return NextResponse.json({ url: blob.url })
     }
 
-    console.error("[v0] Upload failed: Unsupported content type:", contentType)
-    return NextResponse.json({ error: "Unsupported content type" }, { status: 400 })
+    console.error("[v0] Upload failed: No valid file or image data found")
+    return NextResponse.json({ error: "No valid file or image data provided" }, { status: 400 })
   } catch (error) {
-    console.error("[v0] Error uploading image:", error)
+    console.error("[v0] Unexpected error in upload endpoint:", error)
     return NextResponse.json(
-      { error: "Failed to upload image", details: error instanceof Error ? error.message : String(error) },
+      { error: "Failed to upload", details: error instanceof Error ? error.message : String(error) },
       { status: 500 },
     )
   }

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Camera, Settings, Aperture, TrendingUp, ImageIcon } from "lucide-react"
+import { Camera, Settings, Aperture, TrendingUp, ImageIcon, Coins, CreditCard } from "lucide-react"
 import SettingsScreen from "./settings-screen"
 import EditProfileDialog from "./edit-profile-dialog"
 import PersonalBrandSection from "./personal-brand-section"
@@ -14,6 +14,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 
 interface ProfileScreenProps {
   user: User
+  creditBalance: number
 }
 
 interface ProfileStats {
@@ -49,7 +50,7 @@ interface RecentImage {
   created_at: string
 }
 
-export default function ProfileScreen({ user }: ProfileScreenProps) {
+export default function ProfileScreen({ user, creditBalance }: ProfileScreenProps) {
   const [activeSection, setActiveSection] = useState("profile")
   const [stats, setStats] = useState<ProfileStats | null>(null)
   const [profileInfo, setProfileInfo] = useState<ProfileInfo | null>(null)
@@ -259,6 +260,39 @@ export default function ProfileScreen({ user }: ProfileScreenProps) {
           </div>
         </div>
       )}
+
+      {/* Credit Balance Section */}
+      <div className="bg-gradient-to-br from-stone-50 to-stone-100/50 rounded-2xl p-6 border border-stone-200/60 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-stone-700 to-stone-800 rounded-xl flex items-center justify-center">
+              <Coins size={18} className="text-white" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold tracking-wide text-stone-950">Credit Balance</h3>
+              <p className="text-2xl font-serif font-extralight text-stone-950">{creditBalance.toFixed(1)}</p>
+            </div>
+          </div>
+          <button className="bg-stone-950 text-white px-4 py-2 rounded-xl text-xs tracking-wider uppercase font-medium hover:bg-stone-800 transition-colors flex items-center gap-2">
+            <CreditCard size={14} />
+            Buy Credits
+          </button>
+        </div>
+        <div className="bg-white/60 rounded-xl p-4 border border-stone-200/40 space-y-2">
+          <div className="flex justify-between text-xs">
+            <span className="text-stone-600">Training (25 credits)</span>
+            <span className="text-stone-950 font-medium">{Math.floor(creditBalance / 25)} available</span>
+          </div>
+          <div className="flex justify-between text-xs">
+            <span className="text-stone-600">Images (1 credit)</span>
+            <span className="text-stone-950 font-medium">{Math.floor(creditBalance)} available</span>
+          </div>
+          <div className="flex justify-between text-xs">
+            <span className="text-stone-600">Videos (2.5 credits)</span>
+            <span className="text-stone-950 font-medium">{Math.floor(creditBalance / 2.5)} available</span>
+          </div>
+        </div>
+      </div>
 
       <PersonalBrandSection userId={user.id} />
 
