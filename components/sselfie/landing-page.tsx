@@ -262,11 +262,12 @@ export default function LandingPage() {
         </motion.div>
       </section>
 
-      <section ref={aboutContainer} className="relative py-32 bg-stone-50 overflow-hidden">
+      <section ref={aboutContainer} className="relative py-24 md:py-32 bg-stone-50 overflow-hidden">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="flex flex-col md:grid md:grid-cols-2 md:gap-16 md:items-center">
-            <motion.div style={{ y: aboutY }} className="relative mb-6 md:mb-0">
-              <div className="relative aspect-[3/4] rounded-2xl overflow-hidden max-w-[280px] mx-auto md:max-w-none">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16 items-start">
+            {/* Image Column */}
+            <motion.div style={{ y: aboutY }} className="relative order-2 md:order-1">
+              <div className="relative aspect-[3/4] rounded-2xl overflow-hidden max-w-md mx-auto">
                 <Image
                   src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/100-W8HXvEhCIG14XjVDUygpuBKAhlwZCj-WJvAoPmd0GqXTjJE1mvy77jVzJGvyA.png"
                   fill
@@ -274,16 +275,21 @@ export default function LandingPage() {
                   className="object-cover"
                 />
               </div>
+              {/* Image Caption - Vogue Style */}
+              <p className="text-xs md:text-sm font-light tracking-wider uppercase text-stone-500 mt-4 text-center">
+                SANDRA, FOUNDER
+              </p>
             </motion.div>
 
-            <div className="space-y-4 md:space-y-6">
+            {/* Text Column */}
+            <div className="space-y-6 md:space-y-8 order-1 md:order-2">
               <div>
-                <p className="text-[8px] md:text-xs font-light tracking-[0.3em] uppercase text-stone-500 mb-2 md:mb-4">
+                <p className="text-xs md:text-sm font-light tracking-[0.3em] uppercase text-stone-500 mb-4">
                   THE STORY
                 </p>
                 <h2
-                  className="text-xl md:text-4xl lg:text-5xl font-light mb-3 md:mb-6 leading-tight"
-                  style={{ fontFamily: "Georgia, serif" }}
+                  className="text-3xl md:text-5xl lg:text-6xl font-extralight mb-6 md:mb-8 leading-[1.1] tracking-tight"
+                  style={{ fontFamily: "'Times New Roman', serif" }}
                 >
                   Built from Nothing.
                   <br />
@@ -291,20 +297,29 @@ export default function LandingPage() {
                 </h2>
               </div>
 
-              <div className="space-y-2 md:space-y-4 text-xs md:text-base font-light leading-relaxed text-stone-700">
+              {/* Pull Quote - Vogue Style */}
+              <blockquote
+                className="text-xl md:text-2xl lg:text-3xl font-light leading-relaxed text-stone-900 border-l-2 border-stone-900 pl-6 my-8"
+                style={{ fontFamily: "'Times New Roman', serif" }}
+              >
+                "I built my business from nothing but selfies and a story."
+              </blockquote>
+
+              {/* Body Text - Larger, More Readable */}
+              <div className="space-y-4 text-base md:text-lg font-light leading-relaxed text-stone-700">
                 <p>
-                  I started as a single mom of three. Divorced, heartbroken, broke, and totally overwhelmed. I had to
-                  build my whole life and business from scratch, with nothing.
+                  Single mom of three. Divorced, broke, overwhelmed. I started by teaching women how to take better
+                  selfies on Instagram, then shared my own story.
                 </p>
                 <p>
-                  I began by teaching women how to take better selfies on Instagram. Then I shared my own story. That's
-                  how my "SSELFIE machine" was born.
+                  That's how SSELFIE was born—helping women who feel invisible get the professional photos they need to
+                  build their brands. No photoshoot needed.
                 </p>
-                <p>
-                  Today, SSELFIE Studio helps women who feel stuck or invisible. Women who don't have time or money for
-                  brand photoshoots but still need professional photos. I wanted them to see themselves in a new light
-                  and feel confident enough to build their own personal brands.
-                </p>
+              </div>
+
+              {/* Signature Element - Editorial Touch */}
+              <div className="pt-6 border-t border-stone-200">
+                <p className="text-sm font-light tracking-wider text-stone-600">— Sandra</p>
               </div>
             </div>
           </div>
