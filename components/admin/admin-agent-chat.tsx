@@ -1,7 +1,10 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useRef, useEffect } from "react"
-import { useChat } from "ai/react"
+import { useChat } from "@ai-sdk/react"
+import { DefaultChatTransport } from "ai"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Loader2 } from "lucide-react"
@@ -19,39 +22,45 @@ export default function AdminAgentChat({ userId, userName, userEmail }: AdminAge
   const [chatId, setChatId] = useState<number | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  const { messages, input, handleInputChange, handleSubmit, isLoading, setMessages } = useChat({
-    api: "/api/admin/agent/chat",
+  const { messages, sendMessage, status, setMessages } = useChat({
+    transport: new DefaultChatTransport({ api: "/api/admin/agent/chat" }),
+    initialMessages: [],
     body: {
       chatId,
       mode,
       userId,
     },
-    onFinish: async (message) => {
-      console.log("[v0] Message finished:", message)
-
-      // Create or update chat if needed
-      if (!chatId && messages.length === 0) {
-        try {
-          const response = await fetch("/api/admin/agent/chats", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              userId,
-              mode,
-              firstMessage: messages[0]?.content || input,
-            }),
-          })
-
-          if (response.ok) {
-            const { chatId: newChatId } = await response.json()
-            setChatId(newChatId)
-          }
-        } catch (error) {
-          console.error("[v0] Error creating chat:", error)
-        }
-      }
-    },
   })
+
+  const isLoading = status === "submitted" || status === "streaming"
+
+  useEffect(() => {
+    // Create or update chat when first message is sent
+    if (!chatId && messages.length > 0 && !isLoading) {
+      const lastMessage = messages[messages.length - 1]
+      if (lastMessage.role === "assistant") {
+        fetch("/api/admin/agent/chats", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId,
+            mode,
+            firstMessage: messages[0]?.content || "",
+          }),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.chatId) {
+              setChatId(data.chatId)
+              console.log("[v0] Created chat:", data.chatId)
+            }
+          })
+          .catch((error) => {
+            console.error("[v0] Error creating chat:", error)
+          })
+      }
+    }
+  }, [messages, chatId, isLoading, userId, mode])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -86,6 +95,18 @@ export default function AdminAgentChat({ userId, userName, userEmail }: AdminAge
         return "Write a newsletter about my latest product launch..."
       case "research":
         return "Analyze my top 3 competitors and their content strategy..."
+    }
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const form = e.target as HTMLFormElement
+    const textarea = form.elements.namedItem("message") as HTMLTextAreaElement
+    const message = textarea.value.trim()
+
+    if (message && !isLoading) {
+      sendMessage({ text: message })
+      textarea.value = ""
     }
   }
 
@@ -201,8 +222,7 @@ export default function AdminAgentChat({ userId, userName, userEmail }: AdminAge
           className="bg-white/50 backdrop-blur-xl rounded-[1.75rem] p-6 border border-white/60 shadow-xl"
         >
           <Textarea
-            value={input}
-            onChange={handleInputChange}
+            name="message"
             placeholder={getPlaceholder()}
             className="min-h-[100px] mb-4 border-stone-300 resize-none"
             disabled={isLoading}
@@ -210,7 +230,7 @@ export default function AdminAgentChat({ userId, userName, userEmail }: AdminAge
           <div className="flex justify-end">
             <Button
               type="submit"
-              disabled={isLoading || !input.trim()}
+              disabled={isLoading}
               className="bg-stone-950 text-white hover:bg-stone-800 px-8 py-3 text-sm uppercase tracking-wider"
             >
               {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "SEND"}
