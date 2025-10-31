@@ -264,12 +264,9 @@ export default function LandingPage() {
 
       <section ref={aboutContainer} className="relative py-32 bg-stone-50 overflow-hidden">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="md:grid md:grid-cols-2 md:gap-16 md:items-center">
-            <motion.div
-              style={{ y: aboutY }}
-              className="relative float-left mr-4 mb-4 w-[45%] md:float-none md:w-auto md:mr-0 md:mb-0"
-            >
-              <div className="relative aspect-[3/4] rounded-2xl overflow-hidden">
+          <div className="flex flex-col md:grid md:grid-cols-2 md:gap-16 md:items-center">
+            <motion.div style={{ y: aboutY }} className="relative mb-6 md:mb-0">
+              <div className="relative aspect-[3/4] rounded-2xl overflow-hidden max-w-[280px] mx-auto md:max-w-none">
                 <Image
                   src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/100-W8HXvEhCIG14XjVDUygpuBKAhlwZCj-WJvAoPmd0GqXTjJE1mvy77jVzJGvyA.png"
                   fill
