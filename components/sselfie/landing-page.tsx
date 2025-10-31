@@ -296,7 +296,7 @@ export default function LandingPage() {
                 </h2>
               </div>
 
-              <motion.div style={{ y: aboutY }} className="relative md:hidden my-8">
+              <div className="relative md:hidden my-8">
                 <div className="relative aspect-[3/4] rounded-2xl overflow-hidden max-w-[280px] mx-auto">
                   <Image
                     src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/100-W8HXvEhCIG14XjVDUygpuBKAhlwZCj-WJvAoPmd0GqXTjJE1mvy77jVzJGvyA.png"
@@ -308,7 +308,7 @@ export default function LandingPage() {
                 <p className="text-xs font-light tracking-wider uppercase text-stone-500 mt-4 text-center">
                   SANDRA, FOUNDER
                 </p>
-              </motion.div>
+              </div>
 
               {/* Pull Quote - Vogue Style */}
               <blockquote
