@@ -4,6 +4,11 @@ import type React from "react"
 import { useState, useRef, useEffect } from "react"
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport } from "ai"
+import { AdminAnalyticsPanel } from "./admin-analytics-panel"
+import { ContentCalendarExport } from "./content-calendar-export"
+import { CompetitorTracker } from "./competitor-tracker"
+import { EmailTemplateLibrary } from "./email-template-library"
+import { parseContentCalendar } from "@/lib/admin/parse-content-calendar"
 
 interface AdminAgentChatProps {
   userId: string
@@ -19,6 +24,12 @@ export default function AdminAgentChat({ userId, userName, userEmail }: AdminAge
   const [inputValue, setInputValue] = useState("")
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
+  const [showAnalytics, setShowAnalytics] = useState(false)
+  const [showExport, setShowExport] = useState(false)
+  const [showCompetitors, setShowCompetitors] = useState(false)
+  const [showTemplates, setShowTemplates] = useState(false)
+  const [parsedContent, setParsedContent] = useState<any[]>([])
+
   const { messages, sendMessage, status, setMessages } = useChat({
     transport: new DefaultChatTransport({ api: "/api/admin/agent/chat" }),
     initialMessages: [],
@@ -32,32 +43,14 @@ export default function AdminAgentChat({ userId, userName, userEmail }: AdminAge
   const isLoading = status === "submitted" || status === "streaming"
 
   useEffect(() => {
-    // Create or update chat when first message is sent
-    if (!chatId && messages.length > 0 && !isLoading) {
-      const lastMessage = messages[messages.length - 1]
-      if (lastMessage.role === "assistant") {
-        fetch("/api/admin/agent/chats", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            userId,
-            mode,
-            firstMessage: messages[0]?.content || "",
-          }),
-        })
-          .then((res) => res.json())
-          .then((data) => {
-            if (data.chatId) {
-              setChatId(data.chatId)
-              console.log("[v0] Created chat:", data.chatId)
-            }
-          })
-          .catch((error) => {
-            console.error("[v0] Error creating chat:", error)
-          })
+    const lastAssistantMessage = messages.filter((m) => m.role === "assistant").pop()
+    if (lastAssistantMessage && mode === "content") {
+      const parsed = parseContentCalendar(lastAssistantMessage.content)
+      if (parsed.length > 0) {
+        setParsedContent(parsed)
       }
     }
-  }, [messages, chatId, isLoading, userId, mode])
+  }, [messages, mode])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -71,6 +64,19 @@ export default function AdminAgentChat({ userId, userName, userEmail }: AdminAge
     setMode(newMode)
     setMessages([])
     setChatId(null)
+  }
+
+  const handleSelectTemplate = (template: any) => {
+    const templateMessage = `I'd like to use the "${template.name}" template. Here are the details:\n\nSubject: ${template.subject_line}\nCategory: ${template.category}\n\nPlease help me customize this template for my audience.`
+    setInputValue(templateMessage)
+    setShowTemplates(false)
+  }
+
+  const toggleSidebar = (sidebar: "analytics" | "export" | "competitors" | "templates") => {
+    setShowAnalytics(sidebar === "analytics" ? !showAnalytics : false)
+    setShowExport(sidebar === "export" ? !showExport : false)
+    setShowCompetitors(sidebar === "competitors" ? !showCompetitors : false)
+    setShowTemplates(sidebar === "templates" ? !showTemplates : false)
   }
 
   const getModeDescription = () => {
@@ -110,15 +116,67 @@ export default function AdminAgentChat({ userId, userName, userEmail }: AdminAge
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1
-            className="text-4xl sm:text-5xl font-extralight uppercase text-stone-950 mb-2"
-            style={{ fontFamily: "'Times New Roman', serif", letterSpacing: "0.3em" }}
-          >
-            ADMIN AGENT
-          </h1>
-          <p className="text-xs uppercase font-light text-stone-500" style={{ letterSpacing: "0.15em" }}>
-            Your AI Content & Strategy Partner
-          </p>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1
+                className="text-4xl sm:text-5xl font-extralight uppercase text-stone-950 mb-2"
+                style={{ fontFamily: "'Times New Roman', serif", letterSpacing: "0.3em" }}
+              >
+                ADMIN AGENT
+              </h1>
+              <p className="text-xs uppercase font-light text-stone-500" style={{ letterSpacing: "0.15em" }}>
+                Your AI Content & Strategy Partner
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => toggleSidebar("analytics")}
+                className={`px-3 py-2 text-xs uppercase rounded-lg transition-colors ${
+                  showAnalytics
+                    ? "bg-stone-950 text-white"
+                    : "bg-white text-stone-700 border border-stone-200 hover:bg-stone-100"
+                }`}
+                style={{ letterSpacing: "0.1em" }}
+              >
+                Analytics
+              </button>
+              {parsedContent.length > 0 && (
+                <button
+                  onClick={() => toggleSidebar("export")}
+                  className={`px-3 py-2 text-xs uppercase rounded-lg transition-colors ${
+                    showExport
+                      ? "bg-stone-950 text-white"
+                      : "bg-white text-stone-700 border border-stone-200 hover:bg-stone-100"
+                  }`}
+                  style={{ letterSpacing: "0.1em" }}
+                >
+                  Export
+                </button>
+              )}
+              <button
+                onClick={() => toggleSidebar("competitors")}
+                className={`px-3 py-2 text-xs uppercase rounded-lg transition-colors ${
+                  showCompetitors
+                    ? "bg-stone-950 text-white"
+                    : "bg-white text-stone-700 border border-stone-200 hover:bg-stone-100"
+                }`}
+                style={{ letterSpacing: "0.1em" }}
+              >
+                Competitors
+              </button>
+              <button
+                onClick={() => toggleSidebar("templates")}
+                className={`px-3 py-2 text-xs uppercase rounded-lg transition-colors ${
+                  showTemplates
+                    ? "bg-stone-950 text-white"
+                    : "bg-white text-stone-700 border border-stone-200 hover:bg-stone-100"
+                }`}
+                style={{ letterSpacing: "0.1em" }}
+              >
+                Templates
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Mode Selector */}
@@ -154,6 +212,15 @@ export default function AdminAgentChat({ userId, userName, userEmail }: AdminAge
           </div>
           <p className="text-sm text-stone-600 leading-relaxed">{getModeDescription()}</p>
         </div>
+
+        {(showAnalytics || showExport || showCompetitors || showTemplates) && (
+          <div className="bg-white rounded-3xl p-6 border border-stone-200 shadow-lg mb-6 max-h-[600px] overflow-y-auto">
+            {showAnalytics && <AdminAnalyticsPanel userId={userId} />}
+            {showExport && parsedContent.length > 0 && <ContentCalendarExport content={parsedContent} />}
+            {showCompetitors && <CompetitorTracker userId={userId} />}
+            {showTemplates && <EmailTemplateLibrary userId={userId} onSelectTemplate={handleSelectTemplate} />}
+          </div>
+        )}
 
         {/* Chat Messages */}
         <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-lg mb-6 min-h-[500px] max-h-[600px] overflow-y-auto">

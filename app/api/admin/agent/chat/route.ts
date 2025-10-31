@@ -3,6 +3,7 @@ import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 import { neon } from "@neondatabase/serverless"
+import { formatContentCalendarPrompt } from "@/lib/admin/parse-content-calendar"
 
 const sql = neon(process.env.DATABASE_URL!)
 const ADMIN_EMAIL = "ssa@ssasocial.com"
@@ -28,13 +29,7 @@ You have access to Sandra's complete brand profile, voice, style, and business g
 - Include clear calls-to-action when appropriate
 - Optimize for Instagram's algorithm (engagement, saves, shares)
 
-**OUTPUT FORMAT:**
-When creating content calendars, format as:
-- Day/Date
-- Post Type (Carousel, Reel, Single Image, Story)
-- Topic/Theme
-- Caption (with hashtags)
-- Visual Suggestion
+${formatContentCalendarPrompt()}
 
 Be specific, actionable, and always aligned with Sandra's brand voice.`
 
