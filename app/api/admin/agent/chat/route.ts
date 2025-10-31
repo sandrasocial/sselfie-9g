@@ -2,6 +2,7 @@ import { streamText, type CoreMessage } from "ai"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
+import { getCompleteAdminContext } from "@/lib/admin/get-complete-context"
 import { neon } from "@neondatabase/serverless"
 import { formatContentCalendarPrompt } from "@/lib/admin/parse-content-calendar"
 
@@ -193,9 +194,16 @@ export async function POST(req: Request) {
       return new Response("No valid messages", { status: 400 })
     }
 
-    // Get user context (brand voice, business info, etc.)
-    const authId = user.stack_auth_id || user.supabase_user_id || user.id
-    const userContext = await getUserContextForMaya(authId)
+    const completeContext = await getCompleteAdminContext(userId)
+
+    // Get user-specific context if userId provided
+    let userContext = ""
+    if (userId) {
+      const authId = await getUserByAuthId(userId)
+      if (authId) {
+        userContext = await getUserContextForMaya(authId.stack_auth_id || authId.supabase_user_id || authId.id)
+      }
+    }
 
     // Select system prompt based on mode
     let systemPrompt = ""
@@ -213,8 +221,7 @@ export async function POST(req: Request) {
         systemPrompt = CONTENT_CREATOR_PROMPT
     }
 
-    // Add user context to system prompt
-    const enhancedSystemPrompt = systemPrompt + "\n\n" + userContext
+    const enhancedSystemPrompt = `${systemPrompt}\n\n${completeContext}\n\n${userContext}`
 
     console.log("[v0] Streaming with mode:", mode, "model: anthropic/claude-sonnet-4.5")
 

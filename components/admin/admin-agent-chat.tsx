@@ -10,6 +10,8 @@ import { CompetitorTracker } from "./competitor-tracker"
 import { EmailTemplateLibrary } from "./email-template-library"
 import { SemanticSearchPanel } from "./semantic-search-panel"
 import { GalleryImageSelector } from "./gallery-image-selector"
+import { EmailCampaignManager } from "./email-campaign-manager"
+import { PerformanceTracker } from "./performance-tracker"
 import { parseContentCalendar } from "@/lib/admin/parse-content-calendar"
 
 interface AdminAgentChatProps {
@@ -32,6 +34,8 @@ export default function AdminAgentChat({ userId, userName, userEmail }: AdminAge
   const [showTemplates, setShowTemplates] = useState(false)
   const [showSemanticSearch, setShowSemanticSearch] = useState(false)
   const [showGallery, setShowGallery] = useState(false)
+  const [showEmailCampaigns, setShowEmailCampaigns] = useState(false)
+  const [showPerformance, setShowPerformance] = useState(false)
   const [parsedContent, setParsedContent] = useState<any[]>([])
 
   const { messages, sendMessage, status, setMessages } = useChat({
@@ -86,13 +90,17 @@ export default function AdminAgentChat({ userId, userName, userEmail }: AdminAge
     setShowGallery(false)
   }
 
-  const toggleSidebar = (sidebar: "analytics" | "export" | "competitors" | "templates" | "search" | "gallery") => {
+  const toggleSidebar = (
+    sidebar: "analytics" | "export" | "competitors" | "templates" | "search" | "gallery" | "campaigns" | "performance",
+  ) => {
     setShowAnalytics(sidebar === "analytics" ? !showAnalytics : false)
     setShowExport(sidebar === "export" ? !showExport : false)
     setShowCompetitors(sidebar === "competitors" ? !showCompetitors : false)
     setShowTemplates(sidebar === "templates" ? !showTemplates : false)
     setShowSemanticSearch(sidebar === "search" ? !showSemanticSearch : false)
     setShowGallery(sidebar === "gallery" ? !showGallery : false)
+    setShowEmailCampaigns(sidebar === "campaigns" ? !showEmailCampaigns : false)
+    setShowPerformance(sidebar === "performance" ? !showPerformance : false)
   }
 
   const getModeDescription = () => {
@@ -178,6 +186,17 @@ export default function AdminAgentChat({ userId, userName, userEmail }: AdminAge
               >
                 Analytics
               </button>
+              <button
+                onClick={() => toggleSidebar("performance")}
+                className={`px-3 py-2 text-xs uppercase rounded-lg transition-colors ${
+                  showPerformance
+                    ? "bg-stone-950 text-white"
+                    : "bg-white text-stone-700 border border-stone-200 hover:bg-stone-100"
+                }`}
+                style={{ letterSpacing: "0.1em" }}
+              >
+                Performance
+              </button>
               {parsedContent.length > 0 && (
                 <button
                   onClick={() => toggleSidebar("export")}
@@ -212,6 +231,17 @@ export default function AdminAgentChat({ userId, userName, userEmail }: AdminAge
                 style={{ letterSpacing: "0.1em" }}
               >
                 Templates
+              </button>
+              <button
+                onClick={() => toggleSidebar("campaigns")}
+                className={`px-3 py-2 text-xs uppercase rounded-lg transition-colors ${
+                  showEmailCampaigns
+                    ? "bg-stone-950 text-white"
+                    : "bg-white text-stone-700 border border-stone-200 hover:bg-stone-100"
+                }`}
+                style={{ letterSpacing: "0.1em" }}
+              >
+                Campaigns
               </button>
             </div>
           </div>
@@ -251,14 +281,23 @@ export default function AdminAgentChat({ userId, userName, userEmail }: AdminAge
           <p className="text-sm text-stone-600 leading-relaxed">{getModeDescription()}</p>
         </div>
 
-        {(showAnalytics || showExport || showCompetitors || showTemplates || showSemanticSearch || showGallery) && (
+        {(showAnalytics ||
+          showExport ||
+          showCompetitors ||
+          showTemplates ||
+          showSemanticSearch ||
+          showGallery ||
+          showEmailCampaigns ||
+          showPerformance) && (
           <div className="bg-white rounded-3xl p-6 border border-stone-200 shadow-lg mb-6 max-h-[600px] overflow-y-auto">
             {showSemanticSearch && <SemanticSearchPanel onInsertResult={handleInsertSearchResult} />}
             {showGallery && <GalleryImageSelector onSelectImage={handleSelectImage} />}
             {showAnalytics && <AdminAnalyticsPanel userId={userId} />}
+            {showPerformance && <PerformanceTracker userId={userId} />}
             {showExport && parsedContent.length > 0 && <ContentCalendarExport content={parsedContent} />}
             {showCompetitors && <CompetitorTracker userId={userId} />}
             {showTemplates && <EmailTemplateLibrary userId={userId} onSelectTemplate={handleSelectTemplate} />}
+            {showEmailCampaigns && <EmailCampaignManager />}
           </div>
         )}
 
