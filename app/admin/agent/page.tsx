@@ -23,7 +23,7 @@ export default async function AdminAgentPage() {
   try {
     neonUser = await getUserByAuthId(user.id)
   } catch (error) {
-    console.error("Error fetching user by auth ID:", error)
+    console.error("[v0] Error fetching user by auth ID:", error)
     userError = error
   }
 
@@ -32,14 +32,14 @@ export default async function AdminAgentPage() {
     try {
       neonUser = await getOrCreateNeonUser(user.id, user.email, user.user_metadata?.display_name)
     } catch (error) {
-      console.error("Error syncing user with database:", error)
+      console.error("[v0] Error syncing user with database:", error)
       userError = error
     }
   }
 
   // If still no user or there was an error, redirect to login
   if (!neonUser || userError) {
-    console.error("User authenticated but could not be synced with database")
+    console.error("[v0] User authenticated but could not be synced with database")
     redirect("/auth/login")
   }
 
@@ -48,5 +48,11 @@ export default async function AdminAgentPage() {
     redirect("/")
   }
 
-  return <AdminAgentChat userId={neonUser.id} userName={neonUser.display_name} userEmail={neonUser.email} />
+  return (
+    <AdminAgentChat
+      userId={String(neonUser.id)}
+      userName={neonUser.display_name || undefined}
+      userEmail={neonUser.email}
+    />
+  )
 }

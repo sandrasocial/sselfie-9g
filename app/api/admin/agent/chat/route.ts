@@ -103,21 +103,25 @@ export async function POST(req: Request) {
   try {
     const { messages, chatId, mode, userId } = await req.json()
 
+    console.log("[v0] Admin agent API called:", { mode, chatId, userId, messagesCount: messages?.length })
+
     const supabase = await createServerClient()
     const {
       data: { user: authUser },
     } = await supabase.auth.getUser()
 
     if (!authUser) {
+      console.error("[v0] No auth user")
       return new Response("Unauthorized", { status: 401 })
     }
 
     const user = await getUserByAuthId(authUser.id)
     if (!user || user.email !== ADMIN_EMAIL) {
+      console.error("[v0] Not admin user:", user?.email)
       return new Response("Admin access required", { status: 403 })
     }
 
-    console.log("[v0] Admin agent API called with mode:", mode, "messages:", messages.length)
+    console.log("[v0] Admin agent API called with mode:", mode, "messages:", messages?.length || 0)
 
     // Load chat history if chatId provided
     let chatHistory: CoreMessage[] = []
@@ -148,7 +152,7 @@ export async function POST(req: Request) {
     }
 
     // Convert current messages to CoreMessage format
-    const coreMessages: CoreMessage[] = messages
+    const coreMessages: CoreMessage[] = (messages || [])
       .map((msg: any) => {
         if (!msg.role || (msg.role !== "user" && msg.role !== "assistant")) {
           return null
@@ -190,6 +194,7 @@ export async function POST(req: Request) {
     console.log("[v0] Total messages for AI:", allMessages.length)
 
     if (allMessages.length === 0) {
+      console.error("[v0] No valid messages")
       return new Response("No valid messages", { status: 400 })
     }
 
@@ -216,18 +221,31 @@ export async function POST(req: Request) {
     // Add user context to system prompt
     const enhancedSystemPrompt = systemPrompt + "\n\n" + userContext
 
-    console.log("[v0] Streaming with mode:", mode)
+    console.log("[v0] Streaming with mode:", mode, "model: anthropic/claude-sonnet-4.5")
 
     const result = streamText({
-      model: "anthropic/claude-sonnet-4",
+      model: "anthropic/claude-sonnet-4.5",
       system: enhancedSystemPrompt,
       messages: allMessages,
       maxOutputTokens: 4000,
+      onError: (error) => {
+        console.error("[v0] Stream error:", error)
+      },
     })
 
     return result.toUIMessageStreamResponse()
   } catch (error) {
     console.error("[v0] Admin agent error:", error)
-    return new Response("Internal Server Error", { status: 500 })
+    if (error instanceof Error) {
+      console.error("[v0] Error details:", {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+      })
+    }
+    return new Response(JSON.stringify({ error: "Internal Server Error" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    })
   }
 }

@@ -1,13 +1,9 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useRef, useEffect } from "react"
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport } from "ai"
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { Loader2 } from "lucide-react"
 
 interface AdminAgentChatProps {
   userId: string
@@ -20,6 +16,7 @@ type AgentMode = "content" | "email" | "research"
 export default function AdminAgentChat({ userId, userName, userEmail }: AdminAgentChatProps) {
   const [mode, setMode] = useState<AgentMode>("content")
   const [chatId, setChatId] = useState<number | null>(null)
+  const [inputValue, setInputValue] = useState("")
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const { messages, sendMessage, status, setMessages } = useChat({
@@ -100,53 +97,57 @@ export default function AdminAgentChat({ userId, userName, userEmail }: AdminAge
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    const form = e.target as HTMLFormElement
-    const textarea = form.elements.namedItem("message") as HTMLTextAreaElement
-    const message = textarea.value.trim()
+    const message = inputValue.trim()
 
     if (message && !isLoading) {
       sendMessage({ text: message })
-      textarea.value = ""
+      setInputValue("")
     }
   }
 
   return (
-    <div className="min-h-screen bg-stone-50">
-      <div className="max-w-5xl mx-auto p-8">
+    <div className="min-h-screen bg-stone-50 p-4 sm:p-8">
+      <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="font-['Times_New_Roman'] text-5xl font-extralight tracking-[0.3em] uppercase text-stone-950 mb-2">
+          <h1
+            className="text-4xl sm:text-5xl font-extralight uppercase text-stone-950 mb-2"
+            style={{ fontFamily: "'Times New Roman', serif", letterSpacing: "0.3em" }}
+          >
             ADMIN AGENT
           </h1>
-          <p className="text-xs tracking-[0.15em] uppercase font-light text-stone-500">
+          <p className="text-xs uppercase font-light text-stone-500" style={{ letterSpacing: "0.15em" }}>
             Your AI Content & Strategy Partner
           </p>
         </div>
 
         {/* Mode Selector */}
-        <div className="bg-white/50 backdrop-blur-xl rounded-[1.75rem] p-6 border border-white/60 shadow-xl mb-6">
-          <div className="flex gap-3 mb-4">
+        <div className="bg-white rounded-3xl p-6 border border-stone-200 shadow-lg mb-6">
+          <div className="flex flex-col sm:flex-row gap-3 mb-4">
             <button
               onClick={() => handleModeChange("content")}
-              className={`flex-1 px-6 py-3 rounded-xl text-sm font-medium uppercase tracking-wider transition-all ${
+              className={`flex-1 px-6 py-3 rounded-xl text-sm font-medium uppercase transition-all ${
                 mode === "content" ? "bg-stone-950 text-white" : "bg-stone-100 text-stone-600 hover:bg-stone-200"
               }`}
+              style={{ letterSpacing: "0.1em" }}
             >
               CONTENT CREATOR
             </button>
             <button
               onClick={() => handleModeChange("email")}
-              className={`flex-1 px-6 py-3 rounded-xl text-sm font-medium uppercase tracking-wider transition-all ${
+              className={`flex-1 px-6 py-3 rounded-xl text-sm font-medium uppercase transition-all ${
                 mode === "email" ? "bg-stone-950 text-white" : "bg-stone-100 text-stone-600 hover:bg-stone-200"
               }`}
+              style={{ letterSpacing: "0.1em" }}
             >
               EMAIL WRITER
             </button>
             <button
               onClick={() => handleModeChange("research")}
-              className={`flex-1 px-6 py-3 rounded-xl text-sm font-medium uppercase tracking-wider transition-all ${
+              className={`flex-1 px-6 py-3 rounded-xl text-sm font-medium uppercase transition-all ${
                 mode === "research" ? "bg-stone-950 text-white" : "bg-stone-100 text-stone-600 hover:bg-stone-200"
               }`}
+              style={{ letterSpacing: "0.1em" }}
             >
               COMPETITOR RESEARCH
             </button>
@@ -155,18 +156,23 @@ export default function AdminAgentChat({ userId, userName, userEmail }: AdminAge
         </div>
 
         {/* Chat Messages */}
-        <div className="bg-white/50 backdrop-blur-xl rounded-[1.75rem] p-8 border border-white/60 shadow-xl mb-6 min-h-[500px] max-h-[600px] overflow-y-auto">
+        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-lg mb-6 min-h-[500px] max-h-[600px] overflow-y-auto">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <div className="max-w-md">
-                <h3 className="font-['Times_New_Roman'] text-2xl font-extralight tracking-[0.2em] uppercase text-stone-950 mb-4">
+                <h3
+                  className="text-2xl font-extralight uppercase text-stone-950 mb-4"
+                  style={{ fontFamily: "'Times New Roman', serif", letterSpacing: "0.2em" }}
+                >
                   {mode === "content" && "CONTENT CREATOR"}
                   {mode === "email" && "EMAIL WRITER"}
                   {mode === "research" && "COMPETITOR RESEARCH"}
                 </h3>
                 <p className="text-sm text-stone-600 leading-relaxed mb-6">{getModeDescription()}</p>
                 <div className="text-left space-y-3">
-                  <p className="text-xs tracking-wider uppercase text-stone-500 mb-2">TRY ASKING:</p>
+                  <p className="text-xs uppercase text-stone-500 mb-2" style={{ letterSpacing: "0.15em" }}>
+                    TRY ASKING:
+                  </p>
                   {mode === "content" && (
                     <>
                       <p className="text-sm text-stone-700">Create a 7-day content calendar for my business</p>
@@ -207,7 +213,17 @@ export default function AdminAgentChat({ userId, userName, userEmail }: AdminAge
               {isLoading && (
                 <div className="flex justify-start">
                   <div className="bg-stone-100 rounded-2xl px-6 py-4">
-                    <Loader2 className="w-5 h-5 animate-spin text-stone-950" />
+                    <div className="flex gap-1">
+                      <div className="w-2 h-2 rounded-full bg-stone-700 animate-bounce"></div>
+                      <div
+                        className="w-2 h-2 rounded-full bg-stone-700 animate-bounce"
+                        style={{ animationDelay: "0.2s" }}
+                      ></div>
+                      <div
+                        className="w-2 h-2 rounded-full bg-stone-700 animate-bounce"
+                        style={{ animationDelay: "0.4s" }}
+                      ></div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -217,24 +233,23 @@ export default function AdminAgentChat({ userId, userName, userEmail }: AdminAge
         </div>
 
         {/* Input Form */}
-        <form
-          onSubmit={handleSubmit}
-          className="bg-white/50 backdrop-blur-xl rounded-[1.75rem] p-6 border border-white/60 shadow-xl"
-        >
-          <Textarea
-            name="message"
+        <form onSubmit={handleSubmit} className="bg-white rounded-3xl p-6 border border-stone-200 shadow-lg">
+          <textarea
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
             placeholder={getPlaceholder()}
-            className="min-h-[100px] mb-4 border-stone-300 resize-none"
+            className="w-full min-h-[100px] mb-4 px-4 py-3 border border-stone-300 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-stone-950 focus:border-transparent"
             disabled={isLoading}
           />
           <div className="flex justify-end">
-            <Button
+            <button
               type="submit"
-              disabled={isLoading}
-              className="bg-stone-950 text-white hover:bg-stone-800 px-8 py-3 text-sm uppercase tracking-wider"
+              disabled={isLoading || !inputValue.trim()}
+              className="bg-stone-950 text-white hover:bg-stone-800 px-8 py-3 rounded-xl text-sm uppercase font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              style={{ letterSpacing: "0.1em" }}
             >
-              {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "SEND"}
-            </Button>
+              {isLoading ? "SENDING..." : "SEND"}
+            </button>
           </div>
         </form>
       </div>
