@@ -375,7 +375,7 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
           </div>
 
           <div className="space-y-6">
-            <h2 className="font-['Times_New_Roman'] text-3xl md:text-4xl font-extralight tracking-[0.1em] text-stone-950">
+            <h2 className="font-serif text-3xl md:text-4xl font-extralight tracking-[0.1em] text-stone-950">
               {step.title}
             </h2>
 

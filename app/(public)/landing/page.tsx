@@ -40,7 +40,7 @@ export default function LandingPage() {
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-stone-50/80 backdrop-blur-md border-b border-stone-200">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="font-['Times_New_Roman'] text-2xl font-extralight tracking-[0.3em] uppercase">
+          <Link href="/" className="font-serif text-2xl font-extralight tracking-[0.3em] uppercase">
             SSELFIE
           </Link>
           <div className="flex items-center gap-8">
@@ -90,7 +90,7 @@ export default function LandingPage() {
               </p>
             </div>
 
-            <h1 className="font-['Times_New_Roman'] text-6xl md:text-8xl lg:text-9xl font-extralight tracking-[0.4em] uppercase mb-8 text-stone-950">
+            <h1 className="font-serif text-6xl md:text-8xl lg:text-9xl font-extralight tracking-[0.4em] uppercase mb-8 text-stone-950">
               YOUR AI
               <br />
               PHOTO STUDIO
@@ -138,7 +138,7 @@ export default function LandingPage() {
             transition={{ duration: 0.8 }}
             className="text-center mb-24"
           >
-            <h2 className="font-['Times_New_Roman'] text-4xl md:text-6xl font-extralight tracking-[0.3em] uppercase mb-6 text-stone-950">
+            <h2 className="font-serif text-4xl md:text-6xl font-extralight tracking-[0.3em] uppercase mb-6 text-stone-950">
               EVERYTHING YOU NEED
             </h2>
             <p className="text-lg font-light text-stone-600 max-w-2xl mx-auto">
@@ -154,7 +154,7 @@ export default function LandingPage() {
               transition={{ duration: 0.8, delay: 0.2 }}
             >
               <div className="text-xs font-light tracking-[0.3em] uppercase text-stone-500 mb-4">FEATURE 01</div>
-              <h3 className="font-['Times_New_Roman'] text-3xl md:text-5xl font-extralight tracking-[0.2em] uppercase mb-6 text-stone-950">
+              <h3 className="font-serif text-3xl md:text-5xl font-extralight tracking-[0.2em] uppercase mb-6 text-stone-950">
                 MEET MAYA
               </h3>
               <p className="text-base font-light leading-relaxed text-stone-700 mb-6">
@@ -242,7 +242,7 @@ export default function LandingPage() {
               className="order-1 md:order-2"
             >
               <div className="text-xs font-light tracking-[0.3em] uppercase text-stone-500 mb-4">FEATURE 02</div>
-              <h3 className="font-['Times_New_Roman'] text-3xl md:text-5xl font-extralight tracking-[0.2em] uppercase mb-6 text-stone-950">
+              <h3 className="font-serif text-3xl md:text-5xl font-extralight tracking-[0.2em] uppercase mb-6 text-stone-950">
                 UNLIMITED PHOTOS
               </h3>
               <p className="text-base font-light leading-relaxed text-stone-700 mb-6">
@@ -273,7 +273,7 @@ export default function LandingPage() {
               transition={{ duration: 0.8, delay: 1.0 }}
             >
               <div className="text-xs font-light tracking-[0.3em] uppercase text-stone-500 mb-4">FEATURE 03</div>
-              <h3 className="font-['Times_New_Roman'] text-3xl md:text-5xl font-extralight tracking-[0.2em] uppercase mb-6 text-stone-950">
+              <h3 className="font-serif text-3xl md:text-5xl font-extralight tracking-[0.2em] uppercase mb-6 text-stone-950">
                 LEARN & GROW
               </h3>
               <p className="text-base font-light leading-relaxed text-stone-700 mb-6">
@@ -325,7 +325,7 @@ export default function LandingPage() {
             <div className="inline-block mb-6 px-4 py-2 bg-stone-950 text-stone-50">
               <p className="text-xs font-light tracking-[0.3em] uppercase">BETA PRICING • 50% OFF</p>
             </div>
-            <h2 className="font-['Times_New_Roman'] text-4xl md:text-6xl font-extralight tracking-[0.3em] uppercase mb-6 text-stone-950">
+            <h2 className="font-serif text-4xl md:text-6xl font-extralight tracking-[0.3em] uppercase mb-6 text-stone-950">
               CHOOSE YOUR PLAN
             </h2>
             <p className="text-lg font-light text-stone-600 max-w-2xl mx-auto">
@@ -344,7 +344,7 @@ export default function LandingPage() {
               <div className="text-xs font-light tracking-[0.3em] uppercase text-stone-500 mb-4">STARTER</div>
               <div className="mb-6">
                 <div className="flex items-baseline gap-2 mb-2">
-                  <span className="font-['Times_New_Roman'] text-5xl font-extralight">$24.50</span>
+                  <span className="font-serif text-5xl font-extralight">$24.50</span>
                   <span className="text-sm font-light text-stone-500 line-through">$49</span>
                 </div>
                 <p className="text-xs font-light tracking-wider uppercase text-stone-500">PER MONTH • BETA PRICING</p>
@@ -384,7 +384,7 @@ export default function LandingPage() {
               <div className="text-xs font-light tracking-[0.3em] uppercase text-stone-400 mb-4">PRO</div>
               <div className="mb-6">
                 <div className="flex items-baseline gap-2 mb-2">
-                  <span className="font-['Times_New_Roman'] text-5xl font-extralight">$49.50</span>
+                  <span className="font-serif text-5xl font-extralight">$49.50</span>
                   <span className="text-sm font-light text-stone-400 line-through">$99</span>
                 </div>
                 <p className="text-xs font-light tracking-wider uppercase text-stone-400">PER MONTH • BETA PRICING</p>
@@ -422,7 +422,7 @@ export default function LandingPage() {
               <div className="text-xs font-light tracking-[0.3em] uppercase text-stone-500 mb-4">ELITE</div>
               <div className="mb-6">
                 <div className="flex items-baseline gap-2 mb-2">
-                  <span className="font-['Times_New_Roman'] text-5xl font-extralight">$99.50</span>
+                  <span className="font-serif text-5xl font-extralight">$99.50</span>
                   <span className="text-sm font-light text-stone-500 line-through">$199</span>
                 </div>
                 <p className="text-xs font-light tracking-wider uppercase text-stone-500">PER MONTH • BETA PRICING</p>
@@ -466,7 +466,7 @@ export default function LandingPage() {
       {/* Waitlist Section */}
       <section className="py-32 px-6 bg-stone-950 text-stone-50">
         <div className="max-w-3xl mx-auto text-center">
-          <h2 className="font-['Times_New_Roman'] text-4xl md:text-6xl font-extralight tracking-[0.3em] uppercase mb-6">
+          <h2 className="font-serif text-4xl md:text-6xl font-extralight tracking-[0.3em] uppercase mb-6">
             NOT READY YET?
           </h2>
           <p className="text-lg font-light leading-relaxed text-stone-300 mb-12">
@@ -497,7 +497,7 @@ export default function LandingPage() {
       <footer className="sticky bottom-0 bg-stone-950 text-stone-50 py-6 px-6 border-t border-stone-800">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-8">
-            <Link href="/" className="font-['Times_New_Roman'] text-xl font-extralight tracking-[0.3em] uppercase">
+            <Link href="/" className="font-serif text-xl font-extralight tracking-[0.3em] uppercase">
               SSELFIE
             </Link>
             <p className="text-xs font-light tracking-wider uppercase text-stone-400">

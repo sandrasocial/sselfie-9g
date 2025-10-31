@@ -4,6 +4,7 @@ import Link from "next/link"
 
 import { useState, useEffect, useRef } from "react"
 import { motion, useInView } from "framer-motion"
+import MayaStylesCarousel from "./maya-styles-carousel"
 
 export default function InteractivePipelineShowcase() {
   const [activeStep, setActiveStep] = useState(0)
@@ -903,6 +904,9 @@ export default function InteractivePipelineShowcase() {
           </Link>
         </div>
       </div>
+
+      {/* Maya Styles Carousel Section */}
+      <MayaStylesCarousel />
     </section>
   )
 }

@@ -28,7 +28,7 @@ export default function ImageGalleryModal({ images, onSelect, onClose }: ImageGa
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-stone-200/40">
             <div>
-              <h2 className="font-['Times_New_Roman'] text-2xl font-extralight tracking-[0.2em] uppercase text-stone-950">
+              <h2 className="font-serif text-2xl font-extralight tracking-[0.2em] uppercase text-stone-950">
                 Select Image
               </h2>
               <p className="text-sm text-stone-500 font-light mt-1">Choose from your gallery</p>

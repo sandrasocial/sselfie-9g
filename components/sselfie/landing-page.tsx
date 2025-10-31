@@ -1,16 +1,25 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { useScroll, useTransform, motion } from "framer-motion"
 import Image from "next/image"
 import InteractivePipelineShowcase from "./interactive-pipeline-showcase"
+import InteractiveFeaturesShowcase from "./interactive-features-showcase"
+import { createLandingCheckoutSession } from "@/app/actions/landing-checkout"
 
 export default function LandingPage() {
   const [showStickyFooter, setShowStickyFooter] = useState(false)
   const [mayaMessages, setMayaMessages] = useState<string[]>([])
   const [isTyping, setIsTyping] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null)
+
+  const [waitlistEmail, setWaitlistEmail] = useState("")
+  const [waitlistLoading, setWaitlistLoading] = useState(false)
+  const [waitlistMessage, setWaitlistMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
 
   const heroContainer = useRef(null)
   const { scrollYProgress } = useScroll({
@@ -59,6 +68,57 @@ export default function LandingPage() {
     return () => clearInterval(interval)
   }, [])
 
+  const handleStartCheckout = async (tierId: string) => {
+    try {
+      setCheckoutLoading(tierId)
+      const checkoutUrl = await createLandingCheckoutSession(tierId)
+      if (checkoutUrl) {
+        window.location.href = checkoutUrl
+      }
+    } catch (error) {
+      console.error("Checkout error:", error)
+      alert("Failed to start checkout. Please try again.")
+      setCheckoutLoading(null)
+    }
+  }
+
+  const scrollToPricing = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault()
+    const pricingSection = document.getElementById("pricing")
+    if (pricingSection) {
+      pricingSection.scrollIntoView({ behavior: "smooth", block: "start" })
+    }
+    setIsMobileMenuOpen(false)
+  }
+
+  const handleWaitlistSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setWaitlistLoading(true)
+    setWaitlistMessage(null)
+
+    try {
+      const response = await fetch("/api/waitlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: waitlistEmail }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setWaitlistMessage({ type: "success", text: "You're on the list! We'll be in touch soon." })
+        setWaitlistEmail("")
+      } else {
+        setWaitlistMessage({ type: "error", text: data.error || "Something went wrong. Please try again." })
+      }
+    } catch (error) {
+      console.error("[v0] Waitlist submission error:", error)
+      setWaitlistMessage({ type: "error", text: "Network error. Please try again." })
+    } finally {
+      setWaitlistLoading(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-stone-50">
       <nav className="fixed top-0 left-0 right-0 z-50">
@@ -98,12 +158,13 @@ export default function LandingPage() {
             >
               LOGIN
             </Link>
-            <Link
-              href="/auth/sign-up"
+            <a
+              href="#pricing"
+              onClick={scrollToPricing}
               className="bg-white text-black px-6 py-2.5 text-xs uppercase tracking-wider transition-all duration-300 hover:bg-black hover:text-white border border-white"
             >
               START BETA
-            </Link>
+            </a>
           </div>
 
           <button
@@ -152,13 +213,13 @@ export default function LandingPage() {
             >
               LOGIN
             </Link>
-            <Link
-              href="/auth/sign-up"
-              onClick={() => setIsMobileMenuOpen(false)}
+            <a
+              href="#pricing"
+              onClick={scrollToPricing}
               className="bg-white text-black px-8 py-3 text-sm uppercase tracking-wider transition-all duration-300 hover:bg-black hover:text-white border border-white"
             >
               START BETA
-            </Link>
+            </a>
           </div>
         </div>
       </nav>
@@ -189,12 +250,13 @@ export default function LandingPage() {
                 Professional brand photos every month. No photographer needed. Just AI selfies that look like you,
                 styled for your brand, and ready to use everywhere.
               </p>
-              <Link
-                href="/auth/sign-up"
+              <a
+                href="#pricing"
+                onClick={scrollToPricing}
                 className="inline-block px-8 md:px-10 py-3 md:py-3.5 bg-white text-black text-xs md:text-sm uppercase tracking-wider transition-all duration-300 hover:bg-black hover:text-white border border-white"
               >
                 GET STARTED
-              </Link>
+              </a>
             </div>
           </div>
         </motion.div>
@@ -251,121 +313,22 @@ export default function LandingPage() {
 
       <InteractivePipelineShowcase />
 
-      <section id="features" className="py-32 bg-stone-100">
+      <section id="features" className="py-32 bg-stone-50">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
-            <p className="text-xs font-light tracking-[0.3em] uppercase text-stone-500 mb-4">MEET YOUR AI STRATEGIST</p>
-            <h2 className="font-['Times_New_Roman'] text-4xl md:text-6xl font-extralight tracking-[0.3em] uppercase">
-              MAYA KNOWS YOUR BRAND
+            <p className="text-xs font-light tracking-[0.3em] uppercase text-stone-500 mb-4">BUILD YOUR BRAND EMPIRE</p>
+            <h2
+              className="text-4xl md:text-6xl font-extralight tracking-[0.3em] uppercase"
+              style={{ fontFamily: "'Times New Roman', serif" }}
+            >
+              EVERYTHING YOU NEED
             </h2>
+            <p className="text-base md:text-lg font-light leading-relaxed text-stone-700 mt-6 max-w-2xl mx-auto">
+              From invisible to unmissable. The complete toolkit to build your personal brand, just like Sandra did.
+            </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div className="bg-stone-50 rounded-2xl p-8 shadow-lg">
-              <div className="space-y-4">
-                {mayaMessages.map((message, index) => (
-                  <div key={index} className="flex gap-3 animate-in fade-in slide-in-from-left duration-500">
-                    <div className="w-10 h-10 rounded-full bg-stone-950 flex items-center justify-center flex-shrink-0">
-                      <span className="text-stone-50 text-sm">M</span>
-                    </div>
-                    <div className="bg-stone-100 rounded-2xl rounded-tl-none px-4 py-3 max-w-[80%]">
-                      <p className="text-sm font-light text-stone-800">{message}</p>
-                    </div>
-                  </div>
-                ))}
-                {isTyping && (
-                  <div className="flex gap-3">
-                    <div className="w-10 h-10 rounded-full bg-stone-950 flex items-center justify-center flex-shrink-0">
-                      <span className="text-stone-50 text-sm">M</span>
-                    </div>
-                    <div className="bg-stone-100 rounded-2xl rounded-tl-none px-4 py-3">
-                      <div className="flex gap-1">
-                        <div className="w-2 h-2 bg-stone-400 rounded-full animate-bounce" />
-                        <div className="w-2 h-2 bg-stone-400 rounded-full animate-bounce [animation-delay:0.2s]" />
-                        <div className="w-2 h-2 bg-stone-400 rounded-full animate-bounce [animation-delay:0.4s]" />
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-8">
-              <div>
-                <h3 className="font-['Times_New_Roman'] text-2xl font-extralight tracking-[0.2em] uppercase mb-3">
-                  LEARNS YOUR STYLE
-                </h3>
-                <p className="text-base font-light leading-relaxed text-stone-700">
-                  Maya understands your brand, voice, and aesthetic. She creates photos that match your unique style and
-                  vision.
-                </p>
-              </div>
-              <div>
-                <h3 className="font-['Times_New_Roman'] text-2xl font-extralight tracking-[0.2em] uppercase mb-3">
-                  STRATEGIC GUIDANCE
-                </h3>
-                <p className="text-base font-light leading-relaxed text-stone-700">
-                  Get personalized photo concepts based on your content pillars, audience, and business goals.
-                </p>
-              </div>
-              <div>
-                <h3 className="font-['Times_New_Roman'] text-2xl font-extralight tracking-[0.2em] uppercase mb-3">
-                  INSTANT GENERATION
-                </h3>
-                <p className="text-base font-light leading-relaxed text-stone-700">
-                  Create professional photos in minutes, not days. No photographer, no studio, no expensive equipment.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-32 bg-stone-50">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <p className="text-xs font-light tracking-[0.3em] uppercase text-stone-500 mb-4">EVERYTHING YOU NEED</p>
-            <h2 className="font-['Times_New_Roman'] text-4xl md:text-6xl font-extralight tracking-[0.3em] uppercase">
-              COMPLETE PHOTO STUDIO
-            </h2>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              {
-                title: "AI PHOTO GENERATION",
-                description:
-                  "Create unlimited professional photos with AI. Choose from hundreds of styles and settings.",
-              },
-              {
-                title: "BRAND PROFILE",
-                description: "Build your personal brand profile so Maya understands your unique style and voice.",
-              },
-              {
-                title: "CONTENT ACADEMY",
-                description: "Learn photo strategy, personal branding, and content creation from industry experts.",
-              },
-              {
-                title: "FEED DESIGNER",
-                description: "Plan and visualize your Instagram feed before posting. See how photos work together.",
-              },
-              {
-                title: "MAYA AI ASSISTANT",
-                description: "Get personalized photo concepts, captions, and strategy advice from your AI strategist.",
-              },
-              {
-                title: "BRAND ASSETS",
-                description: "Upload your logo, colors, and brand elements to maintain consistency across all photos.",
-              },
-            ].map((feature, index) => (
-              <div key={index} className="bg-stone-100 rounded-2xl p-8">
-                <h3 className="font-['Times_New_Roman'] text-xl font-extralight tracking-[0.2em] uppercase mb-4">
-                  {feature.title}
-                </h3>
-                <p className="text-sm font-light leading-relaxed text-stone-700">{feature.description}</p>
-              </div>
-            ))}
-          </div>
+          <InteractiveFeaturesShowcase />
         </div>
       </section>
 
@@ -373,7 +336,10 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
             <p className="text-xs font-light tracking-[0.3em] uppercase text-stone-500 mb-4">BETA PRICING</p>
-            <h2 className="font-['Times_New_Roman'] text-4xl md:text-6xl font-extralight tracking-[0.3em] uppercase mb-4">
+            <h2
+              className="text-4xl md:text-6xl font-extralight tracking-[0.3em] uppercase mb-4"
+              style={{ fontFamily: "'Times New Roman', serif" }}
+            >
               50% OFF FOR FIRST 100
             </h2>
             <p className="text-lg font-light text-stone-700">
@@ -386,7 +352,9 @@ export default function LandingPage() {
               <p className="text-xs font-light tracking-[0.3em] uppercase text-stone-500 mb-2">STARTER</p>
               <div className="mb-6">
                 <div className="flex items-baseline gap-2">
-                  <span className="font-['Times_New_Roman'] text-5xl font-extralight">$24.50</span>
+                  <span className="text-5xl font-extralight" style={{ fontFamily: "'Times New Roman', serif" }}>
+                    $24.50
+                  </span>
                   <span className="text-stone-500 line-through">$49</span>
                 </div>
                 <p className="text-sm font-light text-stone-600 mt-1">per month • 100 credits</p>
@@ -397,12 +365,13 @@ export default function LandingPage() {
                 <li className="text-sm font-light text-stone-700">Brand profile builder</li>
                 <li className="text-sm font-light text-stone-700">Basic academy access</li>
               </ul>
-              <Link
-                href="/auth/sign-up?plan=starter"
-                className="block w-full bg-stone-950 text-stone-50 px-6 py-3 rounded-lg text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 text-center"
+              <button
+                onClick={() => handleStartCheckout("starter")}
+                disabled={checkoutLoading === "starter"}
+                className="w-full bg-stone-950 text-stone-50 px-6 py-3 rounded-lg text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                START BETA
-              </Link>
+                {checkoutLoading === "starter" ? "LOADING..." : "START BETA"}
+              </button>
             </div>
 
             <div className="bg-stone-950 text-stone-50 rounded-2xl p-8 border-2 border-stone-950 relative">
@@ -412,7 +381,9 @@ export default function LandingPage() {
               <p className="text-xs font-light tracking-[0.3em] uppercase text-stone-400 mb-2">PRO</p>
               <div className="mb-6">
                 <div className="flex items-baseline gap-2">
-                  <span className="font-['Times_New_Roman'] text-5xl font-extralight">$49.50</span>
+                  <span className="text-5xl font-extralight" style={{ fontFamily: "'Times New Roman', serif" }}>
+                    $49.50
+                  </span>
                   <span className="text-stone-400 line-through">$99</span>
                 </div>
                 <p className="text-sm font-light text-stone-300 mt-1">per month • 250 credits</p>
@@ -424,19 +395,22 @@ export default function LandingPage() {
                 <li className="text-sm font-light text-stone-100">Full academy access</li>
                 <li className="text-sm font-light text-stone-100">Feed designer</li>
               </ul>
-              <Link
-                href="/auth/sign-up?plan=pro"
-                className="block w-full bg-stone-50 text-stone-950 px-6 py-3 rounded-lg text-sm font-medium uppercase tracking-wider hover:bg-stone-100 transition-all duration-200 text-center"
+              <button
+                onClick={() => handleStartCheckout("pro")}
+                disabled={checkoutLoading === "pro"}
+                className="w-full bg-stone-50 text-stone-950 px-6 py-3 rounded-lg text-sm font-medium uppercase tracking-wider hover:bg-stone-100 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                START BETA
-              </Link>
+                {checkoutLoading === "pro" ? "LOADING..." : "START BETA"}
+              </button>
             </div>
 
             <div className="bg-stone-50 rounded-2xl p-8 border border-stone-200">
               <p className="text-xs font-light tracking-[0.3em] uppercase text-stone-500 mb-2">ELITE</p>
               <div className="mb-6">
                 <div className="flex items-baseline gap-2">
-                  <span className="font-['Times_New_Roman'] text-5xl font-extralight">$99.50</span>
+                  <span className="text-5xl font-extralight" style={{ fontFamily: "'Times New Roman', serif" }}>
+                    $99.50
+                  </span>
                   <span className="text-stone-500 line-through">$199</span>
                 </div>
                 <p className="text-sm font-light text-stone-600 mt-1">per month • 600 credits</p>
@@ -448,12 +422,13 @@ export default function LandingPage() {
                 <li className="text-sm font-light text-stone-700">Exclusive masterclasses</li>
                 <li className="text-sm font-light text-stone-700">Priority support</li>
               </ul>
-              <Link
-                href="/auth/sign-up?plan=elite"
-                className="block w-full bg-stone-950 text-stone-50 px-6 py-3 rounded-lg text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 text-center"
+              <button
+                onClick={() => handleStartCheckout("elite")}
+                disabled={checkoutLoading === "elite"}
+                className="w-full bg-stone-950 text-stone-50 px-6 py-3 rounded-lg text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                START BETA
-              </Link>
+                {checkoutLoading === "elite" ? "LOADING..." : "START BETA"}
+              </button>
             </div>
           </div>
 
@@ -466,23 +441,51 @@ export default function LandingPage() {
       <section className="py-32 bg-stone-50">
         <div className="max-w-2xl mx-auto px-6 text-center">
           <p className="text-xs font-light tracking-[0.3em] uppercase text-stone-500 mb-4">NOT READY YET?</p>
-          <h2 className="font-['Times_New_Roman'] text-4xl md:text-5xl font-extralight tracking-[0.3em] uppercase mb-6">
+          <h2
+            className="text-4xl md:text-5xl font-extralight tracking-[0.3em] uppercase mb-6"
+            style={{ fontFamily: "'Times New Roman', serif" }}
+          >
             JOIN THE WAITLIST
           </h2>
           <p className="text-base font-light leading-relaxed text-stone-700 mb-8">
             Get early access updates, photo strategy tips, and exclusive beta invites.
           </p>
-          <form className="flex gap-4 max-w-md mx-auto">
+
+          {waitlistMessage && (
+            <div
+              className={`mb-6 p-4 rounded-lg ${
+                waitlistMessage.type === "success"
+                  ? "bg-green-50 border border-green-200 text-green-800"
+                  : "bg-red-50 border border-red-200 text-red-800"
+              }`}
+            >
+              <p className="text-sm font-light">{waitlistMessage.text}</p>
+            </div>
+          )}
+
+          <form onSubmit={handleWaitlistSubmit} className="flex gap-4 max-w-md mx-auto">
             <input
               type="email"
               placeholder="YOUR EMAIL"
-              className="flex-1 px-6 py-3 bg-stone-100 border border-stone-200 rounded-lg text-sm font-light placeholder:text-stone-400 focus:outline-none focus:border-stone-400"
+              value={waitlistEmail}
+              onChange={(e) => setWaitlistEmail(e.target.value)}
+              required
+              disabled={waitlistLoading}
+              className="flex-1 px-6 py-3 bg-stone-100 border border-stone-200 rounded-lg text-sm font-light placeholder:text-stone-400 focus:outline-none focus:border-stone-400 disabled:opacity-50 disabled:cursor-not-allowed"
             />
             <button
               type="submit"
-              className="bg-stone-950 text-stone-50 px-8 py-3 rounded-lg text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200"
+              disabled={waitlistLoading}
+              className="bg-stone-950 text-stone-50 px-8 py-3 rounded-lg text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
-              JOIN
+              {waitlistLoading ? (
+                <>
+                  <span className="w-4 h-4 border-2 border-stone-50 border-t-transparent rounded-full animate-spin"></span>
+                  <span>JOINING...</span>
+                </>
+              ) : (
+                "JOIN"
+              )}
             </button>
           </form>
         </div>
@@ -491,7 +494,11 @@ export default function LandingPage() {
       <footer className="bg-stone-100 border-t border-stone-200 py-12">
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <Link href="/" className="font-['Times_New_Roman'] text-xl font-extralight tracking-[0.3em] uppercase">
+            <Link
+              href="/"
+              className="text-xl font-extralight tracking-[0.3em] uppercase"
+              style={{ fontFamily: "'Times New Roman', serif" }}
+            >
               SSELFIE
             </Link>
             <div className="flex items-center gap-8">
@@ -523,17 +530,21 @@ export default function LandingPage() {
         <div className="fixed bottom-0 left-0 right-0 z-50 bg-stone-950 text-stone-50 py-4 shadow-lg animate-in slide-in-from-bottom duration-300">
           <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
             <div>
-              <p className="font-['Times_New_Roman'] text-lg font-extralight tracking-[0.2em] uppercase">
+              <p
+                className="text-lg font-extralight tracking-[0.2em] uppercase"
+                style={{ fontFamily: "'Times New Roman', serif" }}
+              >
                 READY TO START?
               </p>
               <p className="text-xs font-light text-stone-400">50% off for first 100 beta users</p>
             </div>
-            <Link
-              href="/auth/sign-up"
+            <a
+              href="#pricing"
+              onClick={scrollToPricing}
               className="bg-stone-50 text-stone-950 px-8 py-3 rounded-lg text-sm font-medium uppercase tracking-wider hover:bg-stone-100 transition-all duration-200"
             >
               CLAIM YOUR SPOT
-            </Link>
+            </a>
           </div>
         </div>
       )}

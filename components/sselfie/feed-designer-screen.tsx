@@ -1270,7 +1270,7 @@ export default function FeedDesignerScreen() {
       {showNewFeedModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
-            <h3 className="font-['Times_New_Roman'] text-2xl font-extralight tracking-[0.2em] uppercase text-stone-950 mb-4">
+            <h3 className="font-serif text-2xl font-extralight tracking-[0.2em] uppercase text-stone-950 mb-4">
               GENERATE NEW FEED?
             </h3>
             <p className="text-sm text-stone-700 leading-relaxed mb-6">
@@ -1326,7 +1326,7 @@ export default function FeedDesignerScreen() {
 
           <div className="flex-shrink-0 bg-white border-b border-stone-200 px-6 py-3">
             <div className="flex items-center justify-between max-w-4xl mx-auto">
-              <h2 className="font-['Times_New_Roman'] text-xl font-extralight tracking-[0.2em] uppercase text-stone-950">
+              <h2 className="font-serif text-xl font-extralight tracking-[0.2em] uppercase text-stone-950">
                 INSTAGRAM FEED DESIGNER
               </h2>
               <div className="flex items-center gap-2">

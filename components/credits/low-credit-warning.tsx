@@ -32,7 +32,7 @@ export function LowCreditWarning({ credits, onBuyCredits }: LowCreditWarningProp
       }`}
     >
       <div className="flex items-start justify-between mb-4">
-        <h3 className="font-['Times_New_Roman'] text-xl font-extralight tracking-[0.2em] uppercase text-stone-900">
+        <h3 className="font-serif text-xl font-extralight tracking-[0.2em] uppercase text-stone-900">
           {isVeryLow ? "CREDITS LOW" : "RUNNING LOW"}
         </h3>
         <button

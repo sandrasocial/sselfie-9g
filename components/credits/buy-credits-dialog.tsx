@@ -44,7 +44,7 @@ export function BuyCreditsDialog({ onClose }: { onClose?: () => void }) {
           CLOSE
         </button>
 
-        <h2 className="font-['Times_New_Roman'] text-4xl md:text-5xl font-extralight tracking-[0.3em] uppercase text-stone-900 mb-4">
+        <h2 className="font-serif text-4xl md:text-5xl font-extralight tracking-[0.3em] uppercase text-stone-900 mb-4">
           BUY CREDITS
         </h2>
         <p className="text-sm text-stone-500 font-light mb-12">Purchase additional credits to continue creating</p>
@@ -65,14 +65,14 @@ export function BuyCreditsDialog({ onClose }: { onClose?: () => void }) {
               )}
 
               <div className="mb-6">
-                <h3 className="font-['Times_New_Roman'] text-2xl font-extralight tracking-[0.2em] uppercase text-stone-900 mb-2">
+                <h3 className="font-serif text-2xl font-extralight tracking-[0.2em] uppercase text-stone-900 mb-2">
                   {pkg.name}
                 </h3>
                 <p className="text-sm text-stone-500 font-light">{pkg.description}</p>
               </div>
 
               <div className="mb-6">
-                <div className="font-['Times_New_Roman'] text-4xl font-extralight text-stone-900">
+                <div className="font-serif text-4xl font-extralight text-stone-900">
                   ${(pkg.priceInCents / 100).toFixed(0)}
                 </div>
                 <div className="text-xs text-stone-500 font-light tracking-wider uppercase mt-1">
@@ -88,7 +88,7 @@ export function BuyCreditsDialog({ onClose }: { onClose?: () => void }) {
         </div>
 
         <div className="mt-12 p-6 bg-stone-100 rounded-lg">
-          <h3 className="font-['Times_New_Roman'] text-xl font-extralight tracking-[0.2em] uppercase text-stone-900 mb-4">
+          <h3 className="font-serif text-xl font-extralight tracking-[0.2em] uppercase text-stone-900 mb-4">
             CREDIT USAGE
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
