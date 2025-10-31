@@ -477,7 +477,7 @@ export default function InteractivePipelineShowcase() {
                       transition={{ duration: 0.5, delay: 0.3 }}
                       className="flex items-center gap-3 mb-3"
                     >
-                      <h2 className="text-base md:text-lg font-normal text-stone-950">@your_brand</h2>
+                      <h2 className="text-base md:text-lg font-normal text-stone-950">@sandra.social</h2>
                       <button className="px-3 md:px-4 py-1 md:py-1.5 bg-stone-100 hover:bg-stone-200 rounded-lg text-xs font-medium text-stone-950 transition-all">
                         Edit profile
                       </button>
@@ -513,7 +513,7 @@ export default function InteractivePipelineShowcase() {
                   transition={{ duration: 0.5, delay: 0.5 }}
                   className="mb-4"
                 >
-                  <div className="text-sm font-semibold text-stone-950 mb-1">Your Brand Name</div>
+                  <div className="text-sm font-semibold text-stone-950 mb-1">Sandra</div>
                   <div className="text-sm text-stone-700 leading-relaxed">
                     Building my personal brand ✨ Sharing my journey
                   </div>
@@ -526,7 +526,28 @@ export default function InteractivePipelineShowcase() {
                   transition={{ duration: 0.5, delay: 0.6 }}
                   className="flex items-center gap-4 overflow-x-auto pb-2 -mx-2 px-2"
                 >
-                  {["Brand", "Behind", "Tips", "Work"].map((title, index) => (
+                  {[
+                    {
+                      title: "Brand",
+                      image:
+                        "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/641-Yz6RWOHjtemWaGCwY5XQjtSCZX9LFH-XlXLIUPMbBwoHu6t3Cveer0IkMtj0s.png",
+                    },
+                    {
+                      title: "Behind",
+                      image:
+                        "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/618-TVCuZVG8V6R2Bput7pX8V06bCHRXGx-Tfoxt75X3UyvDtzbfEtkSa3qVTJZnw.png",
+                    },
+                    {
+                      title: "Tips",
+                      image:
+                        "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/616-nnePryg0hS2y745w8ZNU8TWvFrgude-rzHLfnuRz9hOKwAlpHhyvHsXI4qVjA.png",
+                    },
+                    {
+                      title: "Work",
+                      image:
+                        "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/maya_kjszrgh0nnrmc0cs60naappknc_0_1757449707221-Kv9x3iUJpIuh2hZK3lFDy0QrrvftCA.png",
+                    },
+                  ].map((highlight, index) => (
                     <motion.div
                       key={index}
                       initial={{ opacity: 0, scale: 0.8 }}
@@ -534,10 +555,14 @@ export default function InteractivePipelineShowcase() {
                       transition={{ duration: 0.5, delay: 0.7 + index * 0.1 }}
                       className="flex flex-col items-center gap-2 flex-shrink-0"
                     >
-                      <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-gradient-to-br from-stone-200 to-stone-300 border-2 border-stone-300 flex items-center justify-center">
-                        <span className="text-xs text-stone-600 font-medium">{title[0]}</span>
+                      <div className="w-14 h-14 md:w-16 md:h-16 rounded-full border-2 border-stone-300 overflow-hidden">
+                        <img
+                          src={highlight.image || "/placeholder.svg"}
+                          alt={highlight.title}
+                          className="w-full h-full object-cover"
+                        />
                       </div>
-                      <span className="text-xs text-stone-600">{title}</span>
+                      <span className="text-xs text-stone-600">{highlight.title}</span>
                     </motion.div>
                   ))}
                 </motion.div>
@@ -593,15 +618,132 @@ export default function InteractivePipelineShowcase() {
             transition={{ duration: 0.8 }}
             className="max-w-md mx-auto"
           >
-            <button
-              onClick={() => setShowInstagramModal(true)}
-              className="w-full bg-white rounded-2xl p-6 shadow-xl border border-stone-200 hover:shadow-2xl transition-all duration-300"
-            >
-              <div className="aspect-square bg-stone-200 rounded-lg mb-4 overflow-hidden">
-                <div className="w-full h-full bg-gradient-to-br from-stone-300 to-stone-400" />
+            <div className="bg-white rounded-xl shadow-2xl border border-stone-200 overflow-hidden">
+              {/* Instagram Header */}
+              <div className="p-3 flex items-center justify-between border-b border-stone-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full overflow-hidden border border-stone-200">
+                    <img
+                      src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/128-TqmkIgnUECmiAqYOzMcxWjoCGKuVX6-Fdh9eA4Mx5KQLbAPDZ0CFLJ5TZ6bUm.png"
+                      alt="Profile"
+                      className="w-full h-full object-cover object-[center_35%]"
+                    />
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-stone-950">sandra.social</div>
+                  </div>
+                </div>
+                <button className="text-stone-950 text-xl font-bold hover:text-stone-600">✕</button>
               </div>
-              <p className="text-sm font-light text-stone-600 text-center">Click to preview on Instagram</p>
-            </button>
+
+              {/* Instagram Post Image */}
+              <div className="aspect-square bg-stone-200 overflow-hidden">
+                <img
+                  src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/391-F5rpvWi7mr7HKsS31u6tkCzdWUWRE4-3HemN7NocUxfYNc71LnRVUHuzmLGdi.png"
+                  alt="Instagram post"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+
+              {/* Instagram Actions */}
+              <div className="p-3">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-4">
+                    {/* Heart Icon */}
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                      />
+                    </svg>
+                    {/* Comment Icon */}
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                      />
+                    </svg>
+                    {/* Share Icon */}
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                      />
+                    </svg>
+                  </div>
+                  {/* Bookmark Icon */}
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                    />
+                  </svg>
+                </div>
+
+                {/* Likes */}
+                <div className="text-sm font-semibold text-stone-950 mb-2">1,247 likes</div>
+
+                {/* Caption */}
+                <div className="text-sm text-stone-950 mb-2">
+                  <span className="font-semibold">sandra.social</span>{" "}
+                  <span className="font-normal">
+                    Finding moments of calm in the everyday ☕️ Building a brand that feels authentic starts with showing
+                    up as yourself.
+                  </span>
+                </div>
+
+                {/* Hashtags */}
+                <div className="text-sm text-stone-600 mb-3">
+                  #personalbrand #authenticity #brandphotography #contentcreator #entrepreneur #lifestyle
+                  #professionalphotos #aiheadshots
+                </div>
+
+                {/* View Comments */}
+                <button className="text-sm text-stone-500 mb-3">View all 42 comments</button>
+
+                {/* Sample Comments */}
+                <div className="space-y-2 mb-3">
+                  <div className="text-sm">
+                    <span className="font-semibold text-stone-950">maya.ai</span>{" "}
+                    <span className="text-stone-950">This turned out beautifully! 📸✨</span>
+                  </div>
+                  <div className="text-sm">
+                    <span className="font-semibold text-stone-950">creative_studio</span>{" "}
+                    <span className="text-stone-950">Love the natural lighting! 🔥</span>
+                  </div>
+                </div>
+
+                {/* Timestamp */}
+                <div className="text-xs text-stone-400 mb-3">2 HOURS AGO</div>
+
+                {/* Add Comment */}
+                <div className="flex items-center gap-3 pt-3 border-t border-stone-100">
+                  <svg className="w-6 h-6 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <input
+                    type="text"
+                    placeholder="Add a comment..."
+                    className="flex-1 text-sm text-stone-950 placeholder:text-stone-400 outline-none bg-transparent"
+                    disabled
+                  />
+                  <button className="text-sm font-semibold text-blue-500">Post</button>
+                </div>
+              </div>
+            </div>
           </motion.div>
         </div>
       </div>
@@ -622,23 +764,123 @@ export default function InteractivePipelineShowcase() {
             className="bg-white rounded-2xl max-w-md w-full overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-4 border-b border-stone-200 flex items-center justify-between">
+            {/* Instagram Header */}
+            <div className="p-3 flex items-center justify-between border-b border-stone-100">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-stone-300" />
-                <span className="text-sm font-medium">your_username</span>
+                <div className="w-8 h-8 rounded-full overflow-hidden border border-stone-200">
+                  <img
+                    src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/128-TqmkIgnUECmiAqYOzMcxWjoCGKuVX6-Fdh9eA4Mx5KQLbAPDZ0CFLJ5TZ6bUm.png"
+                    alt="Profile"
+                    className="w-full h-full object-cover object-[center_35%]"
+                  />
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-stone-950">sandra.social</div>
+                </div>
               </div>
-              <button onClick={() => setShowInstagramModal(false)} className="text-stone-600 hover:text-stone-950">
+              <button
+                onClick={() => setShowInstagramModal(false)}
+                className="text-stone-950 text-xl font-bold hover:text-stone-600"
+              >
                 ✕
               </button>
             </div>
-            <div className="aspect-square bg-stone-200">
-              <div className="w-full h-full bg-gradient-to-br from-stone-300 to-stone-400" />
+
+            {/* Instagram Post Image */}
+            <div className="aspect-square bg-stone-200 overflow-hidden">
+              <img
+                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/391-F5rpvWi7mr7HKsS31u6tkCzdWUWRE4-3HemN7NocUxfYNc71LnRVUHuzmLGdi.png"
+                alt="Instagram post"
+                className="w-full h-full object-cover"
+              />
             </div>
-            <div className="p-4">
-              <p className="text-sm font-light text-stone-700">
-                <span className="font-medium">your_username</span> Professional headshot ready for LinkedIn! Thanks to
-                @sselfie.studio for making this so easy ✨
-              </p>
+
+            {/* Instagram Actions */}
+            <div className="p-3">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-4">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                    />
+                  </svg>
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                    />
+                  </svg>
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                    />
+                  </svg>
+                </div>
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                  />
+                </svg>
+              </div>
+
+              <div className="text-sm font-semibold text-stone-950 mb-2">1,247 likes</div>
+
+              <div className="text-sm text-stone-950 mb-2">
+                <span className="font-semibold">sandra.social</span>{" "}
+                <span className="font-normal">
+                  Finding moments of calm in the everyday ☕️ Building a brand that feels authentic starts with showing
+                  up as yourself.
+                </span>
+              </div>
+
+              <div className="text-sm text-stone-600 mb-3">
+                #personalbrand #authenticity #brandphotography #contentcreator #entrepreneur #lifestyle
+                #professionalphotos #aiheadshots
+              </div>
+
+              <button className="text-sm text-stone-500 mb-3">View all 42 comments</button>
+
+              <div className="space-y-2 mb-3">
+                <div className="text-sm">
+                  <span className="font-semibold text-stone-950">maya.ai</span>{" "}
+                  <span className="text-stone-950">This turned out beautifully! 📸✨</span>
+                </div>
+                <div className="text-sm">
+                  <span className="font-semibold text-stone-950">creative_studio</span>{" "}
+                  <span className="text-stone-950">Love the natural lighting! 🔥</span>
+                </div>
+              </div>
+
+              <div className="text-xs text-stone-400 mb-3">2 HOURS AGO</div>
+
+              <div className="flex items-center gap-3 pt-3 border-t border-stone-100">
+                <svg className="w-6 h-6 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <input
+                  type="text"
+                  placeholder="Add a comment..."
+                  className="flex-1 text-sm text-stone-950 placeholder:text-stone-400 outline-none bg-transparent"
+                  disabled
+                />
+                <button className="text-sm font-semibold text-blue-500">Post</button>
+              </div>
             </div>
           </motion.div>
         </motion.div>
