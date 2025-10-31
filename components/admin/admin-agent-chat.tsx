@@ -8,6 +8,8 @@ import { AdminAnalyticsPanel } from "./admin-analytics-panel"
 import { ContentCalendarExport } from "./content-calendar-export"
 import { CompetitorTracker } from "./competitor-tracker"
 import { EmailTemplateLibrary } from "./email-template-library"
+import { SemanticSearchPanel } from "./semantic-search-panel"
+import { GalleryImageSelector } from "./gallery-image-selector"
 import { parseContentCalendar } from "@/lib/admin/parse-content-calendar"
 
 interface AdminAgentChatProps {
@@ -28,6 +30,8 @@ export default function AdminAgentChat({ userId, userName, userEmail }: AdminAge
   const [showExport, setShowExport] = useState(false)
   const [showCompetitors, setShowCompetitors] = useState(false)
   const [showTemplates, setShowTemplates] = useState(false)
+  const [showSemanticSearch, setShowSemanticSearch] = useState(false)
+  const [showGallery, setShowGallery] = useState(false)
   const [parsedContent, setParsedContent] = useState<any[]>([])
 
   const { messages, sendMessage, status, setMessages } = useChat({
@@ -72,11 +76,23 @@ export default function AdminAgentChat({ userId, userName, userEmail }: AdminAge
     setShowTemplates(false)
   }
 
-  const toggleSidebar = (sidebar: "analytics" | "export" | "competitors" | "templates") => {
+  const handleInsertSearchResult = (text: string) => {
+    setInputValue((prev) => prev + "\n\n" + text)
+    setShowSemanticSearch(false)
+  }
+
+  const handleSelectImage = (imageUrl: string, imageId: number) => {
+    setInputValue((prev) => prev + `\n\nSelected image: ${imageUrl} (ID: ${imageId})`)
+    setShowGallery(false)
+  }
+
+  const toggleSidebar = (sidebar: "analytics" | "export" | "competitors" | "templates" | "search" | "gallery") => {
     setShowAnalytics(sidebar === "analytics" ? !showAnalytics : false)
     setShowExport(sidebar === "export" ? !showExport : false)
     setShowCompetitors(sidebar === "competitors" ? !showCompetitors : false)
     setShowTemplates(sidebar === "templates" ? !showTemplates : false)
+    setShowSemanticSearch(sidebar === "search" ? !showSemanticSearch : false)
+    setShowGallery(sidebar === "gallery" ? !showGallery : false)
   }
 
   const getModeDescription = () => {
@@ -128,7 +144,29 @@ export default function AdminAgentChat({ userId, userName, userEmail }: AdminAge
                 Your AI Content & Strategy Partner
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
+              <button
+                onClick={() => toggleSidebar("search")}
+                className={`px-3 py-2 text-xs uppercase rounded-lg transition-colors ${
+                  showSemanticSearch
+                    ? "bg-stone-950 text-white"
+                    : "bg-white text-stone-700 border border-stone-200 hover:bg-stone-100"
+                }`}
+                style={{ letterSpacing: "0.1em" }}
+              >
+                Search
+              </button>
+              <button
+                onClick={() => toggleSidebar("gallery")}
+                className={`px-3 py-2 text-xs uppercase rounded-lg transition-colors ${
+                  showGallery
+                    ? "bg-stone-950 text-white"
+                    : "bg-white text-stone-700 border border-stone-200 hover:bg-stone-100"
+                }`}
+                style={{ letterSpacing: "0.1em" }}
+              >
+                Gallery
+              </button>
               <button
                 onClick={() => toggleSidebar("analytics")}
                 className={`px-3 py-2 text-xs uppercase rounded-lg transition-colors ${
@@ -213,8 +251,10 @@ export default function AdminAgentChat({ userId, userName, userEmail }: AdminAge
           <p className="text-sm text-stone-600 leading-relaxed">{getModeDescription()}</p>
         </div>
 
-        {(showAnalytics || showExport || showCompetitors || showTemplates) && (
+        {(showAnalytics || showExport || showCompetitors || showTemplates || showSemanticSearch || showGallery) && (
           <div className="bg-white rounded-3xl p-6 border border-stone-200 shadow-lg mb-6 max-h-[600px] overflow-y-auto">
+            {showSemanticSearch && <SemanticSearchPanel onInsertResult={handleInsertSearchResult} />}
+            {showGallery && <GalleryImageSelector onSelectImage={handleSelectImage} />}
             {showAnalytics && <AdminAnalyticsPanel userId={userId} />}
             {showExport && parsedContent.length > 0 && <ContentCalendarExport content={parsedContent} />}
             {showCompetitors && <CompetitorTracker userId={userId} />}
