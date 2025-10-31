@@ -342,9 +342,7 @@ export default function LandingPage() {
             >
               50% OFF FOR FIRST 100
             </h2>
-            <p className="text-lg font-light text-stone-700">
-              Lock in beta pricing forever. No credit card required to start.
-            </p>
+            <p className="text-lg font-light text-stone-700">Lock in beta pricing forever. Limited spots available.</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
@@ -433,7 +431,7 @@ export default function LandingPage() {
           </div>
 
           <p className="text-center mt-8 text-sm font-light text-stone-600">
-            Beta pricing locked in forever • Cancel anytime • No credit card required
+            Beta pricing locked in forever • Cancel anytime
           </p>
         </div>
       </section>
@@ -534,16 +532,16 @@ export default function LandingPage() {
                 className="text-lg font-extralight tracking-[0.2em] uppercase"
                 style={{ fontFamily: "'Times New Roman', serif" }}
               >
-                READY TO START?
+                JOIN THE BETA
               </p>
-              <p className="text-xs font-light text-stone-400">50% off for first 100 beta users</p>
+              <p className="text-xs font-light text-stone-400">50% off • Limited to first 100 users</p>
             </div>
             <a
               href="#pricing"
               onClick={scrollToPricing}
               className="bg-stone-50 text-stone-950 px-8 py-3 rounded-lg text-sm font-medium uppercase tracking-wider hover:bg-stone-100 transition-all duration-200"
             >
-              CLAIM YOUR SPOT
+              SEE PRICING
             </a>
           </div>
         </div>

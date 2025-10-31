@@ -71,7 +71,7 @@ export default function InteractiveFeaturesShowcase() {
   return (
     <div className="space-y-12">
       {/* Feature Display */}
-      <div className="relative bg-stone-950 rounded-3xl overflow-hidden min-h-[600px]">
+      <div className="relative bg-stone-950 rounded-3xl overflow-hidden min-h-[700px] md:min-h-[600px]">
         <AnimatePresence mode="wait">
           <motion.div
             key={feature.id}
@@ -83,7 +83,7 @@ export default function InteractiveFeaturesShowcase() {
           >
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.1),transparent_50%)]" />
 
-            <div className="relative h-full grid md:grid-cols-2 gap-12 p-8 md:p-16">
+            <div className="relative h-full grid md:grid-cols-2 gap-8 md:gap-12 p-6 md:p-16 overflow-y-auto">
               {/* Left: Content */}
               <motion.div
                 initial={{ x: -50, opacity: 0 }}
@@ -133,7 +133,7 @@ export default function InteractiveFeaturesShowcase() {
                 initial={{ x: 50, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ delay: 0.4, duration: 0.6 }}
-                className="flex items-center justify-center"
+                className="flex items-center justify-center flex-shrink-0"
               >
                 {feature.mockupType === "maya-chat" && <MayaChatMockup />}
                 {feature.mockupType === "brand-profile" && <BrandProfileMockup />}
@@ -210,7 +210,7 @@ function MayaChatMockup() {
           <p className="text-xs text-white/60">Your AI Strategist</p>
         </div>
       </div>
-      <div className="p-4 space-y-3 bg-stone-50 h-64 overflow-hidden">
+      <div className="p-4 space-y-3 bg-stone-50 h-48 overflow-hidden">
         <div className="flex gap-2">
           <div className="w-8 h-8 rounded-full bg-stone-950 flex-shrink-0" />
           <div className="bg-white rounded-2xl rounded-tl-none px-4 py-2 max-w-[80%]">
