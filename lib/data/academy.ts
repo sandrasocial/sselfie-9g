@@ -299,7 +299,7 @@ export async function updateVideoWatchTime(userId: string, lessonId: number, wat
 /**
  * Mark a lesson as completed
  */
-export async function completLesson(userId: string, lessonId: number): Promise<void> {
+export async function completeLesson(userId: string, lessonId: number): Promise<void> {
   try {
     await sql`
       INSERT INTO user_lesson_progress (user_id, lesson_id, status, completed_at, last_accessed_at)
@@ -541,6 +541,6 @@ export async function getUserCourseProgress(userId: string, courseId: number) {
 export const updateLessonProgress = updateVideoWatchTime
 
 /**
- * Alias for completLesson - marks lesson as complete
+ * Alias for completeLesson - marks lesson as complete
  */
-export const markLessonComplete = completLesson
+export const markLessonComplete = completeLesson

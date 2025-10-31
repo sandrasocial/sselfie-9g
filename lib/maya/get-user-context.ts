@@ -41,6 +41,101 @@ export async function getUserContextForMaya(authUserId: string): Promise<string>
 
       if (personalBrand.name) contextParts.push(`Name: ${personalBrand.name}`)
       if (personalBrand.business_type) contextParts.push(`Business Type: ${personalBrand.business_type}`)
+
+      // Visual Style & Aesthetic
+      if (personalBrand.visual_aesthetic) {
+        try {
+          const aesthetics =
+            typeof personalBrand.visual_aesthetic === "string"
+              ? JSON.parse(personalBrand.visual_aesthetic)
+              : personalBrand.visual_aesthetic
+          if (Array.isArray(aesthetics) && aesthetics.length > 0) {
+            contextParts.push(`Visual Aesthetic: ${aesthetics.join(", ")}`)
+            contextParts.push(`IMPORTANT: Generate concepts that match these aesthetics: ${aesthetics.join(", ")}`)
+          }
+        } catch (e) {
+          if (typeof personalBrand.visual_aesthetic === "string") {
+            contextParts.push(`Visual Aesthetic: ${personalBrand.visual_aesthetic}`)
+          }
+        }
+      }
+
+      if (personalBrand.settings_preference) {
+        try {
+          const settings =
+            typeof personalBrand.settings_preference === "string"
+              ? JSON.parse(personalBrand.settings_preference)
+              : personalBrand.settings_preference
+          if (Array.isArray(settings) && settings.length > 0) {
+            contextParts.push(`Preferred Settings: ${settings.join(", ")}`)
+            contextParts.push(`IMPORTANT: Use these location types in photo concepts: ${settings.join(", ")}`)
+          }
+        } catch (e) {
+          if (typeof personalBrand.settings_preference === "string") {
+            contextParts.push(`Preferred Settings: ${personalBrand.settings_preference}`)
+          }
+        }
+      }
+
+      if (personalBrand.fashion_style) {
+        try {
+          const styles =
+            typeof personalBrand.fashion_style === "string"
+              ? JSON.parse(personalBrand.fashion_style)
+              : personalBrand.fashion_style
+          if (Array.isArray(styles) && styles.length > 0) {
+            contextParts.push(`Fashion Style: ${styles.join(", ")}`)
+            contextParts.push(`IMPORTANT: Dress the user in these styles: ${styles.join(", ")}`)
+          }
+        } catch (e) {
+          if (typeof personalBrand.fashion_style === "string") {
+            contextParts.push(`Fashion Style: ${personalBrand.fashion_style}`)
+          }
+        }
+      }
+
+      // Communication & Voice
+      if (personalBrand.communication_voice) {
+        try {
+          const voices =
+            typeof personalBrand.communication_voice === "string"
+              ? JSON.parse(personalBrand.communication_voice)
+              : personalBrand.communication_voice
+          if (Array.isArray(voices) && voices.length > 0) {
+            contextParts.push(`Communication Voice: ${voices.join(", ")}`)
+            contextParts.push(`IMPORTANT: Match this tone in your responses: ${voices.join(", ")}`)
+          }
+        } catch (e) {
+          if (typeof personalBrand.communication_voice === "string") {
+            contextParts.push(`Communication Voice: ${personalBrand.communication_voice}`)
+          }
+        }
+      }
+
+      if (personalBrand.specific_phrases) {
+        contextParts.push(`Signature Phrases: ${personalBrand.specific_phrases}`)
+      }
+
+      // Target Audience
+      if (personalBrand.ideal_audience_description) {
+        contextParts.push(`Ideal Audience: ${personalBrand.ideal_audience_description}`)
+      }
+      if (personalBrand.ideal_audience_challenge) {
+        contextParts.push(`Audience Challenge: ${personalBrand.ideal_audience_challenge}`)
+      }
+      if (personalBrand.ideal_audience_transformation) {
+        contextParts.push(`Audience Transformation: ${personalBrand.ideal_audience_transformation}`)
+      }
+
+      // Brand Inspiration
+      if (personalBrand.brand_inspiration) {
+        contextParts.push(`Brand Inspiration: ${personalBrand.brand_inspiration}`)
+      }
+      if (personalBrand.inspiration_examples) {
+        contextParts.push(`Inspiration Examples: ${personalBrand.inspiration_examples}`)
+      }
+
+      // Original fields
       if (personalBrand.target_audience) contextParts.push(`Target Audience: ${personalBrand.target_audience}`)
       if (personalBrand.brand_voice) contextParts.push(`Brand Voice: ${personalBrand.brand_voice}`)
       if (personalBrand.language_style) contextParts.push(`Language Style: ${personalBrand.language_style}`)
