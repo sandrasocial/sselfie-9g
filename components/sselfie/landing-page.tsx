@@ -265,8 +265,8 @@ export default function LandingPage() {
       <section ref={aboutContainer} className="relative py-24 md:py-32 bg-stone-50 overflow-hidden">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16 items-start">
-            {/* Image Column */}
-            <motion.div style={{ y: aboutY }} className="relative order-2 md:order-1">
+            {/* Image Column - Desktop Only */}
+            <motion.div style={{ y: aboutY }} className="relative hidden md:block">
               <div className="relative aspect-[3/4] rounded-2xl overflow-hidden max-w-md mx-auto">
                 <Image
                   src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/100-W8HXvEhCIG14XjVDUygpuBKAhlwZCj-WJvAoPmd0GqXTjJE1mvy77jVzJGvyA.png"
@@ -275,14 +275,13 @@ export default function LandingPage() {
                   className="object-cover"
                 />
               </div>
-              {/* Image Caption - Vogue Style */}
               <p className="text-xs md:text-sm font-light tracking-wider uppercase text-stone-500 mt-4 text-center">
                 SANDRA, FOUNDER
               </p>
             </motion.div>
 
-            {/* Text Column */}
-            <div className="space-y-6 md:space-y-8 order-1 md:order-2">
+            {/* Text Column with Embedded Image on Mobile */}
+            <div className="space-y-6 md:space-y-8">
               <div>
                 <p className="text-xs md:text-sm font-light tracking-[0.3em] uppercase text-stone-500 mb-4">
                   THE STORY
@@ -296,6 +295,20 @@ export default function LandingPage() {
                   Built from Selfies.
                 </h2>
               </div>
+
+              <motion.div style={{ y: aboutY }} className="relative md:hidden my-8">
+                <div className="relative aspect-[3/4] rounded-2xl overflow-hidden max-w-[280px] mx-auto">
+                  <Image
+                    src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/100-W8HXvEhCIG14XjVDUygpuBKAhlwZCj-WJvAoPmd0GqXTjJE1mvy77jVzJGvyA.png"
+                    fill
+                    alt="Sandra - Founder of SSELFIE"
+                    className="object-cover"
+                  />
+                </div>
+                <p className="text-xs font-light tracking-wider uppercase text-stone-500 mt-4 text-center">
+                  SANDRA, FOUNDER
+                </p>
+              </motion.div>
 
               {/* Pull Quote - Vogue Style */}
               <blockquote
