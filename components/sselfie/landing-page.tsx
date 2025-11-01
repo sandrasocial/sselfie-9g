@@ -519,36 +519,84 @@ export default function LandingPage() {
 
       <footer className="bg-stone-100 border-t border-stone-200 py-12">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <Link
-              href="/"
-              className="text-xl font-extralight tracking-[0.3em] uppercase"
-              style={{ fontFamily: "'Times New Roman', serif" }}
-            >
-              SSELFIE
-            </Link>
-            <div className="flex items-center gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+            {/* Brand Column */}
+            <div>
               <Link
-                href="/privacy"
-                className="text-sm font-light tracking-wider uppercase text-stone-600 hover:text-stone-950 transition-colors"
+                href="/"
+                className="text-xl font-extralight tracking-[0.3em] uppercase mb-4 block"
+                style={{ fontFamily: "'Times New Roman', serif" }}
               >
-                PRIVACY
+                SSELFIE
               </Link>
-              <Link
-                href="/terms"
-                className="text-sm font-light tracking-wider uppercase text-stone-600 hover:text-stone-950 transition-colors"
-              >
-                TERMS
-              </Link>
-              <Link
-                href="/auth/sign-up"
-                className="text-sm font-light tracking-wider uppercase text-stone-600 hover:text-stone-950 transition-colors"
-              >
-                SIGN UP
-              </Link>
+              <p className="text-sm font-light text-stone-600 leading-relaxed">
+                Professional brand photos every month. No photographer needed. Built by Sandra, a single mom who turned
+                selfies into a business.
+              </p>
+            </div>
+
+            {/* Links Column */}
+            <div>
+              <h3 className="text-xs font-light tracking-[0.3em] uppercase text-stone-500 mb-4">QUICK LINKS</h3>
+              <div className="flex flex-col gap-3">
+                <Link
+                  href="/privacy"
+                  className="text-sm font-light tracking-wider uppercase text-stone-600 hover:text-stone-950 transition-colors"
+                >
+                  PRIVACY
+                </Link>
+                <Link
+                  href="/terms"
+                  className="text-sm font-light tracking-wider uppercase text-stone-600 hover:text-stone-950 transition-colors"
+                >
+                  TERMS
+                </Link>
+                <Link
+                  href="/auth/sign-up"
+                  className="text-sm font-light tracking-wider uppercase text-stone-600 hover:text-stone-950 transition-colors"
+                >
+                  SIGN UP
+                </Link>
+              </div>
+            </div>
+
+            {/* Contact & Social Column */}
+            <div>
+              <h3 className="text-xs font-light tracking-[0.3em] uppercase text-stone-500 mb-4">CONNECT</h3>
+              <div className="flex flex-col gap-3">
+                <a
+                  href="mailto:hello@sselfie.ai"
+                  className="text-sm font-light text-stone-600 hover:text-stone-950 transition-colors"
+                >
+                  hello@sselfie.ai
+                </a>
+                <a
+                  href="https://instagram.com/sandra.social"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm font-light text-stone-600 hover:text-stone-950 transition-colors flex items-center gap-2"
+                >
+                  <span>Instagram</span>
+                  <span className="text-xs">@sandra.social</span>
+                </a>
+                <a
+                  href="https://tiktok.com/@sandra.social"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm font-light text-stone-600 hover:text-stone-950 transition-colors flex items-center gap-2"
+                >
+                  <span>TikTok</span>
+                  <span className="text-xs">@sandra.social</span>
+                </a>
+              </div>
             </div>
           </div>
-          <p className="text-center mt-8 text-xs font-light text-stone-500">© 2025 SSELFIE. All rights reserved.</p>
+
+          <div className="border-t border-stone-200 pt-8">
+            <p className="text-center text-xs font-light text-stone-500">
+              © 2025 SSELFIE. All rights reserved. Made with love by Sandra.
+            </p>
+          </div>
         </div>
       </footer>
 
