@@ -1,6 +1,5 @@
 import { neon } from "@neondatabase/serverless"
 import { createServerClient } from "@/lib/supabase/server"
-import crypto from "crypto"
 
 if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL environment variable is not set")
@@ -96,7 +95,7 @@ export async function getUserByAuthId(authId: string): Promise<NeonUser | null> 
     return users.length > 0 ? (users[0] as NeonUser) : null
   } catch (error) {
     console.error("Database error in getUserByAuthId:", error)
-    throw new Error(`Error connecting to database: ${error instanceof Error ? error.message : String(error)}`)
+    throw error
   }
 }
 

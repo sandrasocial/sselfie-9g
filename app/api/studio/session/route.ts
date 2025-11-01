@@ -15,35 +15,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    let neonUser
-    try {
-      neonUser = await getUserByAuthId(authUser.id)
-    } catch (dbError) {
-      console.error("[v0] Database connection error in session route:", dbError)
-      // Return null session instead of crashing when database is temporarily unavailable
-      return NextResponse.json({ session: null })
-    }
-
+    // Get Neon user by auth ID
+    const neonUser = await getUserByAuthId(authUser.id)
     if (!neonUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
     console.log("[v0] Fetching active session for Neon user:", neonUser.id)
 
-    let session
-    try {
-      session = await getUserActiveSession(neonUser.id)
-    } catch (sessionError) {
-      console.error("[v0] Error fetching session:", sessionError)
-      // Return null session instead of crashing
-      return NextResponse.json({ session: null })
-    }
+    const session = await getUserActiveSession(neonUser.id)
 
     console.log("[v0] Active session:", session)
 
     return NextResponse.json({ session })
   } catch (error) {
     console.error("[v0] Error fetching active session:", error)
-    return NextResponse.json({ session: null })
+    return NextResponse.json({ error: "Failed to fetch active session" }, { status: 500 })
   }
 }

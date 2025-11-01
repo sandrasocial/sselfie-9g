@@ -62,7 +62,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Admin access required" }, { status: 403 })
     }
 
-    const { course_id, title, description, lesson_type, video_url, duration_minutes, lesson_number, content } =
+    const { course_id, title, description, lesson_type, video_url, duration_seconds, lesson_number, content } =
       await request.json()
 
     if (!course_id || !title || !lesson_type) {
@@ -72,11 +72,11 @@ export async function POST(request: Request) {
     const newLesson = await sql`
       INSERT INTO academy_lessons (
         course_id, title, description, lesson_type, video_url, 
-        duration_minutes, lesson_number, content, created_at, updated_at
+        duration_seconds, lesson_number, content, created_at, updated_at
       )
       VALUES (
         ${course_id}, ${title}, ${description || null}, ${lesson_type},
-        ${video_url || null}, ${duration_minutes || 0}, ${lesson_number || 1}, 
+        ${video_url || null}, ${duration_seconds || 0}, ${lesson_number || 1}, 
         ${content ? JSON.stringify(content) : null}, NOW(), NOW()
       )
       RETURNING *
