@@ -20,6 +20,8 @@ export interface AcademyCourse {
   status: "draft" | "published" | "archived"
   created_at: Date
   updated_at: Date
+  lesson_count?: number
+  total_duration?: number
 }
 
 export interface AcademyLesson {
@@ -30,7 +32,7 @@ export interface AcademyLesson {
   lesson_number: number
   lesson_type: "video" | "interactive"
   video_url: string | null
-  duration_minutes: number | null
+  duration_seconds: number | null
   content: any | null // JSONB for interactive lessons
   resources: any | null // JSONB array of resources
   created_at: Date
@@ -144,29 +146,53 @@ export async function getCoursesForTier(tier: "starter" | "pro" | "elite"): Prom
 
     if (tier === "starter") {
       query = sql`
-        SELECT * FROM academy_courses
-        WHERE status = 'published' AND tier = 'starter'
-        ORDER BY order_index ASC
+        SELECT 
+          c.*,
+          CAST(COUNT(l.id) AS INTEGER) as lesson_count,
+          CAST(COALESCE(SUM(l.duration_seconds), 0) AS INTEGER) as total_duration
+        FROM academy_courses c
+        LEFT JOIN academy_lessons l ON c.id = l.course_id
+        WHERE c.status = 'published' AND c.tier = 'starter'
+        GROUP BY c.id
+        ORDER BY c.order_index ASC
       `
     } else if (tier === "pro") {
       query = sql`
-        SELECT * FROM academy_courses
-        WHERE status = 'published' AND tier IN ('starter', 'pro')
-        ORDER BY order_index ASC
+        SELECT 
+          c.*,
+          CAST(COUNT(l.id) AS INTEGER) as lesson_count,
+          CAST(COALESCE(SUM(l.duration_seconds), 0) AS INTEGER) as total_duration
+        FROM academy_courses c
+        LEFT JOIN academy_lessons l ON c.id = l.course_id
+        WHERE c.status = 'published' AND c.tier IN ('starter', 'pro')
+        GROUP BY c.id
+        ORDER BY c.order_index ASC
       `
     } else {
       // Elite gets all courses
       query = sql`
-        SELECT * FROM academy_courses
-        WHERE status = 'published'
-        ORDER BY order_index ASC
+        SELECT 
+          c.*,
+          CAST(COUNT(l.id) AS INTEGER) as lesson_count,
+          CAST(COALESCE(SUM(l.duration_seconds), 0) AS INTEGER) as total_duration
+        FROM academy_courses c
+        LEFT JOIN academy_lessons l ON c.id = l.course_id
+        WHERE c.status = 'published'
+        GROUP BY c.id
+        ORDER BY c.order_index ASC
       `
     }
 
     const courses = await query
     console.log("[v0] Found", courses.length, "courses for tier:", tier)
 
-    return courses as AcademyCourse[]
+    const coursesWithNumbers = courses.map((course: any) => ({
+      ...course,
+      lesson_count: Number(course.lesson_count) || 0,
+      total_duration: Number(course.total_duration) || 0,
+    }))
+
+    return coursesWithNumbers as AcademyCourse[]
   } catch (error) {
     console.error("[v0] Error fetching courses for tier:", error)
     return []
@@ -372,9 +398,10 @@ async function updateCourseProgress(userId: string, lessonId: number): Promise<v
       WHERE al.course_id = ${courseId}
     `
 
-    const totalLessons = stats[0].total_lessons
-    const completedLessons = stats[0].completed_lessons
-    const progressPercentage = Math.round((completedLessons / totalLessons) * 100)
+    const totalLessons = Number(stats[0].total_lessons) || 0
+    const completedLessons = Number(stats[0].completed_lessons) || 0
+
+    const progressPercentage = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0
 
     // Update enrollment progress
     await sql`
@@ -386,7 +413,13 @@ async function updateCourseProgress(userId: string, lessonId: number): Promise<v
       WHERE user_id = ${userId} AND course_id = ${courseId}
     `
 
-    console.log("[v0] Updated course progress:", { userId, courseId, progressPercentage })
+    console.log("[v0] Updated course progress:", {
+      userId,
+      courseId,
+      progressPercentage,
+      completedLessons,
+      totalLessons,
+    })
   } catch (error) {
     console.error("[v0] Error updating course progress:", error)
   }

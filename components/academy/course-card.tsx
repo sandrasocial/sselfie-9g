@@ -26,16 +26,26 @@ const tierOrder = { starter: 1, pro: 2, elite: 3 }
 export default function CourseCard({ course, userTier, progress, onCourseClick }: CourseCardProps) {
   const isLocked = tierOrder[course.tier] > tierOrder[userTier]
   const hasStarted = progress && progress.completed_lessons > 0
-  const isCompleted = progress && progress.progress_percentage >= 100
+  const progressPercentage = progress?.progress_percentage ?? 0
+  const isCompleted = progressPercentage >= 100
 
-  const formatDuration = (minutes: number) => {
-    const hours = Math.floor(minutes / 60)
-    const mins = minutes % 60
-    if (hours > 0) {
-      return `${hours}h ${mins}m`
+  const formatDuration = (minutes: number | null | undefined) => {
+    if (minutes == null || isNaN(Number(minutes)) || Number(minutes) <= 0) {
+      return "0m"
     }
-    return `${mins}m`
+
+    const mins = Number(minutes)
+    const hours = Math.floor(mins / 60)
+    const remainingMins = Math.round(mins % 60)
+
+    if (hours > 0) {
+      return `${hours}h ${remainingMins}m`
+    }
+    return `${remainingMins}m`
   }
+
+  const lessonCount = Number(course.lesson_count) || 0
+  const totalDuration = Number(course.total_duration) || 0
 
   return (
     <button
@@ -95,8 +105,8 @@ export default function CourseCard({ course, userTier, progress, onCourseClick }
 
         {/* Meta info */}
         <div className="flex items-center gap-6 text-xs tracking-[0.1em] uppercase font-light text-stone-500">
-          <span>{formatDuration(course.total_duration)}</span>
-          <span>{course.lesson_count} Lessons</span>
+          <span>{formatDuration(totalDuration)}</span>
+          <span>{lessonCount} Lessons</span>
         </div>
 
         {/* Progress bar */}
@@ -104,12 +114,12 @@ export default function CourseCard({ course, userTier, progress, onCourseClick }
           <div className="space-y-2">
             <div className="flex justify-between text-xs">
               <span className="tracking-[0.1em] uppercase font-light text-stone-400">Progress</span>
-              <span className="font-light text-stone-500">{Math.round(progress.progress_percentage)}%</span>
+              <span className="font-light text-stone-500">{Math.round(progressPercentage)}%</span>
             </div>
             <div className="w-full h-1.5 bg-stone-200/60 rounded-full overflow-hidden">
               <div
                 className="h-full bg-stone-950 rounded-full transition-all duration-500"
-                style={{ width: `${progress.progress_percentage}%` }}
+                style={{ width: `${progressPercentage}%` }}
               ></div>
             </div>
           </div>

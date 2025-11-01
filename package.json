@@ -46,6 +46,7 @@
     "@supabase/ssr": "latest",
     "@supabase/supabase-js": "latest",
     "@upstash/redis": "latest",
+    "@upstash/vector": "latest",
     "@vercel/analytics": "latest",
     "@vercel/blob": "latest",
     "@vercel/postgres": "0.10.0",

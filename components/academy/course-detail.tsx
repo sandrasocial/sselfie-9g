@@ -158,6 +158,10 @@ export default function CourseDetail({ courseId, onBack }: CourseDetailProps) {
     )
   }
 
+  const progressPercentage = course.progress_percentage ?? 0
+  const completedLessons = course.completed_lessons ?? 0
+  const lessonCount = course.lesson_count ?? 0
+
   const currentLessonIndex = selectedLessonId ? lessons.findIndex((l) => l.id === selectedLessonId) : -1
   const hasNextLesson = currentLessonIndex >= 0 && currentLessonIndex < lessons.length - 1
   const hasPrevLesson = currentLessonIndex > 0
@@ -217,16 +221,16 @@ export default function CourseDetail({ courseId, onBack }: CourseDetailProps) {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs tracking-[0.15em] uppercase font-light text-stone-500">Course Progress</span>
-              <span className="text-sm font-light text-stone-950">{Math.round(course.progress_percentage)}%</span>
+              <span className="text-sm font-light text-stone-950">{Math.round(progressPercentage)}%</span>
             </div>
             <div className="w-full h-2 bg-stone-200 rounded-full overflow-hidden">
               <div
                 className="h-full bg-stone-950 transition-all duration-500"
-                style={{ width: `${course.progress_percentage}%` }}
+                style={{ width: `${progressPercentage}%` }}
               />
             </div>
             <p className="text-xs font-light text-stone-500">
-              {course.completed_lessons} of {course.lesson_count} lessons completed
+              {completedLessons} of {lessonCount} lessons completed
             </p>
           </div>
 
@@ -279,11 +283,11 @@ export default function CourseDetail({ courseId, onBack }: CourseDetailProps) {
                   <div className="flex items-start justify-between gap-4 mb-2">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-1">
-                        <span className="text-xs tracking-[0.1em] uppercase font-light text-stone-500">
+                        <span className="text-xs tracking-[0.15em] uppercase font-light text-stone-500">
                           Lesson {index + 1}
                         </span>
                         {lesson.is_completed && (
-                          <span className="px-2 py-0.5 bg-stone-950 text-stone-50 rounded-full text-[10px] tracking-[0.1em] uppercase font-light">
+                          <span className="px-2 py-0.5 bg-stone-950 text-stone-50 rounded-full text-[10px] tracking-[0.15em] uppercase font-light">
                             Done
                           </span>
                         )}

@@ -34,14 +34,23 @@ export async function GET(req: NextRequest, { params }: { params: { courseId: st
     }
 
     // Get user's progress for this course
-    const progress = await getUserCourseProgress(neonUser.id, Number.parseInt(courseId))
+    const progressData = await getUserCourseProgress(neonUser.id.toString(), Number.parseInt(courseId))
 
-    console.log("[v0] Course found:", course.title, "with", course.lessons?.length || 0, "lessons")
-    console.log("[v0] User progress:", progress?.completion_percentage || 0, "%")
+    const enrichedCourse = {
+      ...course,
+      progress_percentage: progressData?.enrollment?.progress_percentage ?? 0,
+      completed_lessons: progressData?.lessonProgress?.filter((lp: any) => lp.status === "completed").length ?? 0,
+      lesson_count: course.lessons?.length ?? 0,
+      is_completed: (progressData?.enrollment?.progress_percentage ?? 0) >= 100,
+      certificate_url: progressData?.enrollment?.certificate_url ?? null,
+    }
+
+    console.log("[v0] Course found:", enrichedCourse.title, "with", enrichedCourse.lessons?.length || 0, "lessons")
+    console.log("[v0] User progress:", enrichedCourse.progress_percentage, "%")
 
     return NextResponse.json({
-      course,
-      progress,
+      course: enrichedCourse,
+      progress: progressData,
     })
   } catch (error) {
     console.error("[v0] Error fetching course details:", error)

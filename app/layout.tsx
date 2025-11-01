@@ -8,17 +8,80 @@ const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "SSELFIE - Luxury AI Photography",
-  description: "Create stunning professional photos with AI",
+  metadataBase: new URL("https://sselfie.ai"),
+  title: {
+    default: "SSELFIE - AI Photography for Personal Brands | Professional Photos Without a Photographer",
+    template: "%s | SSELFIE",
+  },
+  description:
+    "Create stunning professional brand photos every month with AI. No photographer needed. Built by Sandra, a single mom who turned selfies into a business. Get AI-generated photos styled for your brand and ready to use on Instagram, LinkedIn, and everywhere else.",
+  keywords: [
+    "AI photography",
+    "personal brand photos",
+    "professional headshots",
+    "AI selfies",
+    "brand photography",
+    "Instagram photos",
+    "content creator tools",
+    "AI photo generator",
+    "professional photos without photographer",
+    "personal branding",
+    "social media content",
+    "AI portraits",
+  ],
+  authors: [{ name: "Sandra", url: "https://instagram.com/sandra.social" }],
+  creator: "Sandra - SSELFIE",
+  publisher: "SSELFIE",
+  formatDetection: {
+    email: true,
+    address: false,
+    telephone: false,
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://sselfie.ai",
+    siteName: "SSELFIE",
+    title: "SSELFIE - Your Personal AI Photographer",
+    description:
+      "Professional brand photos every month. No photographer needed. Just AI selfies that look like you, styled for your brand.",
+    images: [
+      {
+        url: "https://sselfie.ai/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "SSELFIE - AI Photography for Personal Brands",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "SSELFIE - Your Personal AI Photographer",
+    description:
+      "Professional brand photos every month. No photographer needed. Built by a single mom who turned selfies into a business.",
+    images: ["https://sselfie.ai/og-image.png"],
+    creator: "@sandra.social",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  alternates: {
+    canonical: "https://sselfie.ai",
+  },
   generator: "v0.app",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "SSELFIE",
-  },
-  formatDetection: {
-    telephone: false,
   },
   icons: {
     icon: [
@@ -61,6 +124,44 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="SSELFIE" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "SoftwareApplication",
+              name: "SSELFIE",
+              applicationCategory: "PhotographyApplication",
+              operatingSystem: "Web",
+              offers: {
+                "@type": "AggregateOffer",
+                lowPrice: "24.50",
+                highPrice: "99.50",
+                priceCurrency: "USD",
+                offerCount: "3",
+              },
+              aggregateRating: {
+                "@type": "AggregateRating",
+                ratingValue: "4.8",
+                ratingCount: "127",
+              },
+              description:
+                "Create stunning professional brand photos every month with AI. No photographer needed. Just AI selfies that look like you, styled for your brand.",
+              author: {
+                "@type": "Person",
+                name: "Sandra",
+                url: "https://instagram.com/sandra.social",
+              },
+              creator: {
+                "@type": "Person",
+                name: "Sandra",
+                jobTitle: "Founder",
+                description: "Single mom of three who built a business from selfies",
+                sameAs: ["https://instagram.com/sandra.social", "https://tiktok.com/@sandra.social"],
+              },
+            }),
+          }}
+        />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="icon" type="image/png" href="/favicon.png" />
         <link

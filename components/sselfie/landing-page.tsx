@@ -262,11 +262,12 @@ export default function LandingPage() {
         </motion.div>
       </section>
 
-      <section ref={aboutContainer} className="relative py-32 bg-stone-50 overflow-hidden">
+      <section ref={aboutContainer} className="relative py-24 md:py-32 bg-stone-50 overflow-hidden">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-2 gap-6 md:gap-16 items-center">
-            <motion.div style={{ y: aboutY }} className="relative">
-              <div className="relative aspect-[3/4] rounded-2xl overflow-hidden">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16 items-start">
+            {/* Image Column - Desktop Only */}
+            <motion.div style={{ y: aboutY }} className="relative hidden md:block">
+              <div className="relative aspect-[3/4] rounded-2xl overflow-hidden max-w-md mx-auto">
                 <Image
                   src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/100-W8HXvEhCIG14XjVDUygpuBKAhlwZCj-WJvAoPmd0GqXTjJE1mvy77jVzJGvyA.png"
                   fill
@@ -274,16 +275,20 @@ export default function LandingPage() {
                   className="object-cover"
                 />
               </div>
+              <p className="text-xs md:text-sm font-light tracking-wider uppercase text-stone-500 mt-4 text-center">
+                SANDRA, FOUNDER
+              </p>
             </motion.div>
 
-            <div className="space-y-4 md:space-y-6">
+            {/* Text Column with Embedded Image on Mobile */}
+            <div className="space-y-6 md:space-y-8">
               <div>
-                <p className="text-[8px] md:text-xs font-light tracking-[0.3em] uppercase text-stone-500 mb-2 md:mb-4">
+                <p className="text-xs md:text-sm font-light tracking-[0.3em] uppercase text-stone-500 mb-4">
                   THE STORY
                 </p>
                 <h2
-                  className="text-xl md:text-4xl lg:text-5xl font-light mb-3 md:mb-6 leading-tight"
-                  style={{ fontFamily: "Georgia, serif" }}
+                  className="text-3xl md:text-5xl lg:text-6xl font-extralight mb-6 md:mb-8 leading-[1.1] tracking-tight"
+                  style={{ fontFamily: "'Times New Roman', serif" }}
                 >
                   Built from Nothing.
                   <br />
@@ -291,20 +296,43 @@ export default function LandingPage() {
                 </h2>
               </div>
 
-              <div className="space-y-2 md:space-y-4 text-xs md:text-base font-light leading-relaxed text-stone-700">
+              <div className="relative md:hidden my-8">
+                <div className="relative aspect-[3/4] rounded-2xl overflow-hidden max-w-[280px] mx-auto">
+                  <Image
+                    src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/100-W8HXvEhCIG14XjVDUygpuBKAhlwZCj-WJvAoPmd0GqXTjJE1mvy77jVzJGvyA.png"
+                    fill
+                    alt="Sandra - Founder of SSELFIE"
+                    className="object-cover"
+                  />
+                </div>
+                <p className="text-xs font-light tracking-wider uppercase text-stone-500 mt-4 text-center">
+                  SANDRA, FOUNDER
+                </p>
+              </div>
+
+              {/* Pull Quote - Vogue Style */}
+              <blockquote
+                className="text-xl md:text-2xl lg:text-3xl font-light leading-relaxed text-stone-900 border-l-2 border-stone-900 pl-6 my-8"
+                style={{ fontFamily: "'Times New Roman', serif" }}
+              >
+                "I built my business from nothing but selfies and a story."
+              </blockquote>
+
+              {/* Body Text - Larger, More Readable */}
+              <div className="space-y-4 text-base md:text-lg font-light leading-relaxed text-stone-700">
                 <p>
-                  I started as a single mom of three. Divorced, heartbroken, broke, and totally overwhelmed. I had to
-                  build my whole life and business from scratch, with nothing.
+                  Single mom of three. Divorced, broke, overwhelmed. I started by teaching women how to take better
+                  selfies on Instagram, then shared my own story.
                 </p>
                 <p>
-                  I began by teaching women how to take better selfies on Instagram. Then I shared my own story. That's
-                  how my "SSELFIE machine" was born.
+                  That's how SSELFIE was born—helping women who feel invisible get the professional photos they need to
+                  build their brands. No photoshoot needed.
                 </p>
-                <p>
-                  Today, SSELFIE Studio helps women who feel stuck or invisible. Women who don't have time or money for
-                  brand photoshoots but still need professional photos. I wanted them to see themselves in a new light
-                  and feel confident enough to build their own personal brands.
-                </p>
+              </div>
+
+              {/* Signature Element - Editorial Touch */}
+              <div className="pt-6 border-t border-stone-200">
+                <p className="text-sm font-light tracking-wider text-stone-600">— Sandra</p>
               </div>
             </div>
           </div>
@@ -342,9 +370,7 @@ export default function LandingPage() {
             >
               50% OFF FOR FIRST 100
             </h2>
-            <p className="text-lg font-light text-stone-700">
-              Lock in beta pricing forever. No credit card required to start.
-            </p>
+            <p className="text-lg font-light text-stone-700">Lock in beta pricing forever. Limited spots available.</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
@@ -433,7 +459,7 @@ export default function LandingPage() {
           </div>
 
           <p className="text-center mt-8 text-sm font-light text-stone-600">
-            Beta pricing locked in forever • Cancel anytime • No credit card required
+            Beta pricing locked in forever • Cancel anytime
           </p>
         </div>
       </section>
@@ -493,36 +519,84 @@ export default function LandingPage() {
 
       <footer className="bg-stone-100 border-t border-stone-200 py-12">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <Link
-              href="/"
-              className="text-xl font-extralight tracking-[0.3em] uppercase"
-              style={{ fontFamily: "'Times New Roman', serif" }}
-            >
-              SSELFIE
-            </Link>
-            <div className="flex items-center gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+            {/* Brand Column */}
+            <div>
               <Link
-                href="/privacy"
-                className="text-sm font-light tracking-wider uppercase text-stone-600 hover:text-stone-950 transition-colors"
+                href="/"
+                className="text-xl font-extralight tracking-[0.3em] uppercase mb-4 block"
+                style={{ fontFamily: "'Times New Roman', serif" }}
               >
-                PRIVACY
+                SSELFIE
               </Link>
-              <Link
-                href="/terms"
-                className="text-sm font-light tracking-wider uppercase text-stone-600 hover:text-stone-950 transition-colors"
-              >
-                TERMS
-              </Link>
-              <Link
-                href="/auth/sign-up"
-                className="text-sm font-light tracking-wider uppercase text-stone-600 hover:text-stone-950 transition-colors"
-              >
-                SIGN UP
-              </Link>
+              <p className="text-sm font-light text-stone-600 leading-relaxed">
+                Professional brand photos every month. No photographer needed. Built by Sandra, a single mom who turned
+                selfies into a business.
+              </p>
+            </div>
+
+            {/* Links Column */}
+            <div>
+              <h3 className="text-xs font-light tracking-[0.3em] uppercase text-stone-500 mb-4">QUICK LINKS</h3>
+              <div className="flex flex-col gap-3">
+                <Link
+                  href="/privacy"
+                  className="text-sm font-light tracking-wider uppercase text-stone-600 hover:text-stone-950 transition-colors"
+                >
+                  PRIVACY
+                </Link>
+                <Link
+                  href="/terms"
+                  className="text-sm font-light tracking-wider uppercase text-stone-600 hover:text-stone-950 transition-colors"
+                >
+                  TERMS
+                </Link>
+                <Link
+                  href="/auth/sign-up"
+                  className="text-sm font-light tracking-wider uppercase text-stone-600 hover:text-stone-950 transition-colors"
+                >
+                  SIGN UP
+                </Link>
+              </div>
+            </div>
+
+            {/* Contact & Social Column */}
+            <div>
+              <h3 className="text-xs font-light tracking-[0.3em] uppercase text-stone-500 mb-4">CONNECT</h3>
+              <div className="flex flex-col gap-3">
+                <a
+                  href="mailto:hello@sselfie.ai"
+                  className="text-sm font-light text-stone-600 hover:text-stone-950 transition-colors"
+                >
+                  hello@sselfie.ai
+                </a>
+                <a
+                  href="https://instagram.com/sandra.social"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm font-light text-stone-600 hover:text-stone-950 transition-colors flex items-center gap-2"
+                >
+                  <span>Instagram</span>
+                  <span className="text-xs">@sandra.social</span>
+                </a>
+                <a
+                  href="https://tiktok.com/@sandra.social"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm font-light text-stone-600 hover:text-stone-950 transition-colors flex items-center gap-2"
+                >
+                  <span>TikTok</span>
+                  <span className="text-xs">@sandra.social</span>
+                </a>
+              </div>
             </div>
           </div>
-          <p className="text-center mt-8 text-xs font-light text-stone-500">© 2025 SSELFIE. All rights reserved.</p>
+
+          <div className="border-t border-stone-200 pt-8">
+            <p className="text-center text-xs font-light text-stone-500">
+              © 2025 SSELFIE. All rights reserved. Made with love by Sandra.
+            </p>
+          </div>
         </div>
       </footer>
 
@@ -534,16 +608,16 @@ export default function LandingPage() {
                 className="text-lg font-extralight tracking-[0.2em] uppercase"
                 style={{ fontFamily: "'Times New Roman', serif" }}
               >
-                READY TO START?
+                JOIN THE BETA
               </p>
-              <p className="text-xs font-light text-stone-400">50% off for first 100 beta users</p>
+              <p className="text-xs font-light text-stone-400">50% off • Limited to first 100 users</p>
             </div>
             <a
               href="#pricing"
               onClick={scrollToPricing}
               className="bg-stone-50 text-stone-950 px-8 py-3 rounded-lg text-sm font-medium uppercase tracking-wider hover:bg-stone-100 transition-all duration-200"
             >
-              CLAIM YOUR SPOT
+              SEE PRICING
             </a>
           </div>
         </div>
