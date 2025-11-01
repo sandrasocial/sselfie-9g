@@ -1,6 +1,6 @@
 import { neon } from "@neondatabase/serverless"
 import { createServerClient } from "@/lib/supabase/server"
-import { crypto } from "crypto"
+import crypto from "crypto"
 
 if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL environment variable is not set")
