@@ -21,15 +21,19 @@ export interface RecentGeneration {
 }
 
 export async function getGenerationStats(userId: string): Promise<GenerationStats> {
+  console.log("[v0] Fetching generation stats for user:", userId)
+
   const [stats] = await sql`
     SELECT 
       COUNT(*)::int as total_generated,
       COUNT(*) FILTER (WHERE saved = true)::int as total_favorites,
-      COUNT(*) FILTER (WHERE created_at >= date_trunc('month', CURRENT_DATE))::int as generations_this_month,
+      COUNT(*) FILTER (WHERE created_at >= date_trunc('month', NOW() AT TIME ZONE 'UTC'))::int as generations_this_month,
       COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '7 days')::int as recent_generations
     FROM generated_images
     WHERE user_id = ${userId}
   `
+
+  console.log("[v0] Raw stats from database:", stats)
 
   return {
     totalGenerated: stats.total_generated || 0,
