@@ -48,7 +48,7 @@ export default function AdminAcademyPage() {
     title: "",
     description: "",
     thumbnail_url: "",
-    tier: "foundation",
+    tier: "starter", // Updated default tier from 'foundation' to 'starter' to match database constraint
     order_index: 0,
     status: "draft",
   })
@@ -121,7 +121,7 @@ export default function AdminAcademyPage() {
       title: "",
       description: "",
       thumbnail_url: "",
-      tier: "foundation",
+      tier: "starter", // Updated default tier from 'foundation' to 'starter'
       order_index: courses.length,
       status: "draft",
     })
@@ -552,9 +552,9 @@ export default function AdminAcademyPage() {
                   onChange={(e) => setCourseForm({ ...courseForm, tier: e.target.value })}
                   className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm"
                 >
-                  <option value="foundation">Foundation</option>
-                  <option value="professional">Professional</option>
-                  <option value="enterprise">Enterprise</option>
+                  <option value="starter">Starter</option>
+                  <option value="pro">Pro</option>
+                  <option value="elite">Elite</option>
                 </select>
               </div>
 
