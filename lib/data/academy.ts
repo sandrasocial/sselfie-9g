@@ -149,7 +149,7 @@ export async function getCoursesForTier(tier: "starter" | "pro" | "elite"): Prom
         SELECT 
           c.*,
           CAST(COUNT(l.id) AS INTEGER) as lesson_count,
-          CAST(COALESCE(SUM(l.duration_seconds), 0) AS INTEGER) as total_duration
+          CAST(COALESCE(SUM(l.duration_seconds) / 60, 0) AS INTEGER) as total_duration
         FROM academy_courses c
         LEFT JOIN academy_lessons l ON c.id = l.course_id
         WHERE c.status = 'published' AND c.tier = 'starter'
@@ -161,7 +161,7 @@ export async function getCoursesForTier(tier: "starter" | "pro" | "elite"): Prom
         SELECT 
           c.*,
           CAST(COUNT(l.id) AS INTEGER) as lesson_count,
-          CAST(COALESCE(SUM(l.duration_seconds), 0) AS INTEGER) as total_duration
+          CAST(COALESCE(SUM(l.duration_seconds) / 60, 0) AS INTEGER) as total_duration
         FROM academy_courses c
         LEFT JOIN academy_lessons l ON c.id = l.course_id
         WHERE c.status = 'published' AND c.tier IN ('starter', 'pro')
@@ -174,7 +174,7 @@ export async function getCoursesForTier(tier: "starter" | "pro" | "elite"): Prom
         SELECT 
           c.*,
           CAST(COUNT(l.id) AS INTEGER) as lesson_count,
-          CAST(COALESCE(SUM(l.duration_seconds), 0) AS INTEGER) as total_duration
+          CAST(COALESCE(SUM(l.duration_seconds) / 60, 0) AS INTEGER) as total_duration
         FROM academy_courses c
         LEFT JOIN academy_lessons l ON c.id = l.course_id
         WHERE c.status = 'published'
