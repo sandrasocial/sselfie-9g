@@ -7,6 +7,7 @@ import type { CoreMessage } from "ai"
 import { neon } from "@neondatabase/serverless"
 import { generateCaptionsForFeed } from "@/lib/instagram-strategist/caption-logic"
 import { generateInstagramBio } from "@/lib/instagram-bio-strategist/bio-logic"
+import { getUserCredits, CREDIT_COSTS } from "@/lib/credits"
 
 // Global map to track active feed generations per user
 const activeFeedGenerations = new Map<number, boolean>()
@@ -82,19 +83,48 @@ const generateCompleteFeedTool = tool({
     const supabase = await createServerClient()
     const {
       data: { user: authUser },
+      error: authError,
     } = await supabase.auth.getUser()
 
+    if (authError) {
+      console.error("[v0] [SERVER] Auth error:", authError.message)
+      return "I encountered an authentication error - please refresh and try again."
+    }
+
     if (!authUser) {
-      console.error("[v0] [SERVER] No auth user found")
-      return "I encountered an error - you need to be logged in to save your feed strategy. Please refresh and try again."
+      console.error("[v0] [SERVER] No auth user - session may have expired")
+      return "I encountered an error - your session has expired. Please refresh and try again."
     }
 
     const user = await getUserByAuthId(authUser.id)
 
     if (!user) {
-      console.error("[v0] [SERVER] No user found, cannot save feed")
-      return "I encountered an error - you need to be logged in to save your feed strategy. Please refresh and try again."
+      console.error("[v0] [SERVER] No user found for auth ID:", authUser.id)
+      return "I encountered an error - your user account could not be found. Please contact support."
     }
+
+    console.log("[v0] [SERVER] User authenticated:", user.id)
+
+    const creditsNeeded = 9 * CREDIT_COSTS.IMAGE + highlights.length * CREDIT_COSTS.IMAGE + CREDIT_COSTS.IMAGE // 9 posts + highlights + profile
+    const currentCredits = await getUserCredits(user.id.toString())
+
+    console.log("[v0] [SERVER] Credit check:", {
+      needed: creditsNeeded,
+      available: currentCredits,
+      breakdown: {
+        posts: `9 posts × ${CREDIT_COSTS.IMAGE} = ${9 * CREDIT_COSTS.IMAGE}`,
+        highlights: `${highlights.length} highlights × ${CREDIT_COSTS.IMAGE} = ${highlights.length * CREDIT_COSTS.IMAGE}`,
+        profile: `1 profile × ${CREDIT_COSTS.IMAGE} = ${CREDIT_COSTS.IMAGE}`,
+      },
+    })
+
+    if (currentCredits < creditsNeeded) {
+      const shortfall = creditsNeeded - currentCredits
+      console.log("[v0] [SERVER] ⚠️ Insufficient credits for complete feed generation")
+      return `I'd love to create your complete Instagram feed, but you need ${creditsNeeded} credits for the full strategy (9 posts + ${highlights.length} highlights + profile image). You currently have ${currentCredits} credits, which is ${shortfall} short.\n\nYou can:\n1. Purchase more credits from your account settings\n2. Upgrade your subscription for monthly credits\n3. Generate a partial feed with fewer elements\n\nLet me know how you'd like to proceed! 💫`
+    }
+
+    console.log("[v0] [SERVER] ✓ User has sufficient credits to proceed")
 
     if (activeFeedGenerations.get(user.id)) {
       console.log("[v0] [SERVER] ⚠️ Feed generation already in progress for user:", user.id)
@@ -253,14 +283,33 @@ Be creative and authentic. No generic templates - every element should feel cust
         feedId = feedLayout.id.toString()
         console.log("[v0] [SERVER] ✓ Feed layout created with ID:", feedId, "Username:", username, "Brand:", brandName)
 
-        // Declare instagramBio variable here
-        const instagramBio = await generateInstagramBio(user.id)
+        console.log("[v0] [SERVER] 🎯 Step 2: Generating Instagram bio...")
+        try {
+          const bioResult = await generateInstagramBio({
+            userId: user.id.toString(),
+            businessType,
+            brandVibe,
+            brandVoice: brandProfile?.brand_voice || undefined,
+            targetAudience: brandProfile?.target_audience || undefined,
+            businessGoals: brandProfile?.business_goals || undefined,
+            researchData: researchInsights || undefined,
+          })
 
-        await sql`
-          INSERT INTO instagram_bios (feed_layout_id, bio_text, user_id)
-          VALUES (${feedId}, ${instagramBio}, ${user.id})
-        `
-        console.log("[v0] [SERVER] ✓ Instagram bio generated:", instagramBio)
+          const bioText = bioResult.success ? bioResult.bio : bioResult.bio || "Bio generation in progress..."
+
+          console.log("[v0] [SERVER] Bio result:", { success: bioResult.success, bioLength: bioText.length })
+          console.log("[v0] [SERVER] Bio text preview:", bioText.substring(0, 100) + "...")
+
+          await sql`
+            INSERT INTO instagram_bios (feed_layout_id, bio_text, user_id)
+            VALUES (${feedId}, ${bioText}, ${user.id})
+          `
+          console.log("[v0] [SERVER] ✓ Instagram bio saved to database")
+          // </CHANGE>
+        } catch (bioError) {
+          console.error("[v0] [SERVER] ⚠️ Error generating bio:", bioError)
+          // Continue with feed generation even if bio fails
+        }
 
         for (const highlight of highlights) {
           await sql`
@@ -303,6 +352,13 @@ Be creative and authentic. No generic templates - every element should feel cust
             console.log(
               `[v0] [SERVER] ✓ Instagram Caption Strategist generated ${captionResult.captionsGenerated}/${captionResult.totalPosts} captions`,
             )
+
+            await sql`
+              UPDATE feed_layouts
+              SET status = 'complete', updated_at = NOW()
+              WHERE id = ${feedId}
+            `
+            console.log("[v0] [SERVER] ✓ Feed marked as complete")
           } else {
             console.error("[v0] [SERVER] ⚠️ Caption Strategist completed with some errors")
           }
@@ -312,7 +368,7 @@ Be creative and authentic. No generic templates - every element should feel cust
 
         console.log("[v0] [SERVER] === TOOL EXECUTION COMPLETED SUCCESSFULLY ===")
 
-        return `Perfect! I've created your complete Instagram feed visual strategy with 9 concept cards, and the Instagram Caption Strategist has generated authentic, engaging captions for each post using current trends and competitive insights from our research. (Feed ID: ${feedId})`
+        return `Perfect! I've created your complete Instagram feed visual strategy with 9 concept cards, and the Instagram Caption Strategist has generated authentic, engaging captions for each post using current trends and competitive insights from our research. (Feed ID: ${feedId}, Status: complete)`
       } catch (error) {
         console.error("[v0] [SERVER] === TOOL EXECUTION FAILED ===")
         console.error("[v0] [SERVER] Error saving feed to database:", error)
@@ -787,20 +843,79 @@ export async function POST(req: Request) {
     console.log("[v0] [SERVER] Messages received:", messages?.length)
 
     const supabase = await createServerClient()
+
+    const { cookies: cookiesModule } = await import("next/headers")
+    const cookieStore = await cookiesModule()
+    const allCookies = cookieStore.getAll()
+    const authCookies = allCookies.filter((c) => c.name.includes("supabase") || c.name.includes("auth"))
+    console.log("[v0] [SERVER] Auth cookies present:", authCookies.length > 0)
+
     const {
       data: { user: authUser },
+      error: authError,
     } = await supabase.auth.getUser()
 
+    if (authError) {
+      const errorMessage = typeof authError === "string" ? authError : authError?.message || JSON.stringify(authError)
+
+      console.error("[v0] [SERVER] Auth error:", errorMessage)
+
+      // Check if it's a rate limiting error
+      if (errorMessage.includes("Too Many Requests") || errorMessage.includes("429")) {
+        return new Response(
+          JSON.stringify({
+            error: "Rate limit exceeded",
+            message: "Too many requests. Please wait a moment and try again.",
+          }),
+          {
+            status: 429,
+            headers: { "Content-Type": "application/json" },
+          },
+        )
+      }
+
+      return new Response(
+        JSON.stringify({
+          error: "Authentication error",
+          message: "Unable to authenticate. Please refresh the page and try again.",
+          details: errorMessage,
+        }),
+        {
+          status: 401,
+          headers: { "Content-Type": "application/json" },
+        },
+      )
+    }
+
     if (!authUser) {
-      console.error("[v0] [SERVER] No auth user")
-      return new Response("Unauthorized", { status: 401 })
+      console.error("[v0] [SERVER] No auth user - session may have expired")
+      console.error("[v0] [SERVER] Auth cookies found:", authCookies.length)
+      return new Response(
+        JSON.stringify({
+          error: "Unauthorized",
+          message: "Your session has expired. Please refresh the page and try again.",
+        }),
+        {
+          status: 401,
+          headers: { "Content-Type": "application/json" },
+        },
+      )
     }
 
     const user = await getUserByAuthId(authUser.id)
 
     if (!user) {
-      console.error("[v0] [SERVER] No user found")
-      return new Response("Unauthorized", { status: 401 })
+      console.error("[v0] [SERVER] No user found for auth ID:", authUser.id)
+      return new Response(
+        JSON.stringify({
+          error: "User not found",
+          message: "Your user account could not be found. Please contact support.",
+        }),
+        {
+          status: 401,
+          headers: { "Content-Type": "application/json" },
+        },
+      )
     }
 
     console.log("[v0] [SERVER] User authenticated:", user.id)

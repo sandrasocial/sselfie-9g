@@ -8,6 +8,7 @@ import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport } from "ai"
 import { Textarea } from "@/components/ui/textarea"
 import { Plus, History, MessageCircle, X, Minimize2, RefreshCw, ImageIcon, Upload } from "lucide-react"
+import { toast } from "@/components/ui/use-toast"
 
 import FeedPostCard from "./feed-post-card"
 import BrandProfileWizard from "./brand-profile-wizard"
@@ -52,6 +53,7 @@ export default function FeedDesignerScreen() {
   const [isInitializing, setIsInitializing] = useState(true)
   const [isDesigning, setIsDesigning] = useState(false)
   const [isApplyingDesign, setIsApplyingDesign] = useState(false)
+  const [isCreatingNewFeed, setIsCreatingNewFeed] = useState(false)
   const [feedPosts, setFeedPosts] = useState<FeedPost[]>([])
   const [profile, setProfile] = useState<InstagramProfile>({
     profileImage: "/placeholder.svg?height=80&width=80",
@@ -305,7 +307,6 @@ export default function FeedDesignerScreen() {
         const autoPrompt = `Create my Instagram feed strategy based on my brand profile.`
         sendMessage({ text: autoPrompt })
       }
-      // </CHANGE>
     }
 
     if (!isInitializing && !isLoadingChat) {
@@ -531,20 +532,77 @@ export default function FeedDesignerScreen() {
     }
   }
 
+  const checkFeedStatus = async () => {
+    if (!feedUrl) {
+      setMayaThinking(null)
+      setIsDesigning(false)
+      setIsApplyingDesign(false)
+      await loadLatestFeed()
+      return
+    }
+
+    const feedId = feedUrl.split("/").pop()
+    if (!feedId) {
+      setMayaThinking(null)
+      setIsDesigning(false)
+      setIsApplyingDesign(false)
+      return
+    }
+
+    try {
+      console.log("[v0] Checking feed status for feed ID:", feedId)
+      const response = await fetch(`/api/feed/${feedId}/status`)
+
+      if (!response.ok) {
+        console.error("[v0] Feed status check failed:", response.status)
+        setMayaThinking(null)
+        setIsDesigning(false)
+        setIsApplyingDesign(false)
+        await loadLatestFeed()
+        return
+      }
+
+      const data = await response.json()
+      console.log("[v0] Feed status response:", data)
+
+      if (data.status === "complete") {
+        console.log("[v0] Feed generation complete, clearing Maya thinking state")
+        setMayaThinking(null)
+        setIsDesigning(false)
+        await loadLatestFeed()
+        setIsApplyingDesign(false)
+      } else {
+        console.log("[v0] Feed not complete yet, status:", data.status)
+        // Feed not complete yet, wait and reload
+        setTimeout(async () => {
+          setMayaThinking(null)
+          setIsDesigning(false)
+          await loadLatestFeed()
+          setIsApplyingDesign(false)
+        }, 2000)
+      }
+    } catch (error) {
+      console.error("[v0] Error checking feed status:", error)
+      setMayaThinking(null)
+      setIsDesigning(false)
+      setIsApplyingDesign(false)
+      await loadLatestFeed()
+    }
+  }
+
   useEffect(() => {
-    if (isTyping && messages.length > 0) {
+    if (isTyping) {
       const lastMessage = messages[messages.length - 1]
-      if (lastMessage.role === "assistant" && !isDesigningSetRef.current) {
-        // Check if the message contains tool calls for feed design
-        const hasToolCalls = lastMessage.parts?.some(
+      if (lastMessage?.role === "assistant") {
+        const parts = lastMessage.parts || []
+        const hasToolCalls = parts.some(
           (part: any) =>
             part.type === "tool-call" &&
-            (part.toolName === "feed_strategy" ||
+            (part.toolName === "instagram_feed_strategist" ||
               part.toolName === "instagram_bio_strategist" ||
               part.toolName === "instagram_caption_strategist"),
         )
 
-        // Only show designing UI if Maya is using feed design tools
         if (hasToolCalls) {
           console.log("[v0] Maya is designing feed strategy...")
           setIsDesigning(true)
@@ -566,35 +624,52 @@ export default function FeedDesignerScreen() {
             }
           }, 2000)
           ;(window as any).__mayaThinkingInterval = thinkingInterval
+
+          // ✅ Fix #6: 5-minute timeout
+          const timeoutId = setTimeout(
+            () => {
+              console.warn("[v0] Feed generation timed out after 5 minutes")
+              if ((window as any).__mayaThinkingInterval) {
+                clearInterval((window as any).__mayaThinkingInterval)
+                ;(window as any).__mayaThinkingInterval = null
+              }
+              setMayaThinking(null) // ✅ Clear Maya thinking state
+              setIsDesigning(false)
+              setIsApplyingDesign(false)
+              isDesigningSetRef.current = false
+              setGenerationError("Feed generation timed out. Please try again.")
+            },
+            5 * 60 * 1000,
+          )
+          ;(window as any).__feedTimeoutId = timeoutId
         }
       }
     }
-    // </CHANGE>
 
     if (!isTyping && messages.length > 0) {
       const lastMessage = messages[messages.length - 1]
       if (lastMessage.role === "assistant") {
         if (isDesigningSetRef.current) {
-          console.log("[v0] Maya finished responding, reloading feed data in 2 seconds...")
+          console.log("[v0] Maya finished responding, checking feed status...")
           setIsApplyingDesign(true)
           isDesigningSetRef.current = false
+
+          if ((window as any).__feedTimeoutId) {
+            clearTimeout((window as any).__feedTimeoutId)
+            ;(window as any).__feedTimeoutId = null
+          }
 
           if ((window as any).__mayaThinkingInterval) {
             clearInterval((window as any).__mayaThinkingInterval)
             ;(window as any).__mayaThinkingInterval = null
           }
-          setMayaThinking(null)
 
-          setTimeout(() => {
-            loadLatestFeed()
-            setIsDesigning(false)
-            setIsApplyingDesign(false)
-          }, 2000)
+          // Execute the status check
+          checkFeedStatus()
         }
-        // </CHANGE>
       }
     }
-  }, [isTyping, messages])
+  }, [isTyping, messages, feedUrl])
 
   const loadLatestFeed = async () => {
     try {
@@ -1143,11 +1218,12 @@ export default function FeedDesignerScreen() {
   const handleGenerateNewFeed = async () => {
     console.log("[v0] [NEW FEED] Button clicked")
 
-    if (isDesigning || isApplyingDesign) {
-      console.log("[v0] [NEW FEED] Button disabled, returning early")
+    if (isDesigning || isApplyingDesign || isCreatingNewFeed) {
+      console.log("[v0] [NEW FEED] Operation already in progress, ignoring click")
       return
     }
 
+    setIsCreatingNewFeed(true)
     setShowNewFeedModal(false)
     setMayaThinking("Starting your feed generation...")
 
@@ -1176,9 +1252,8 @@ export default function FeedDesignerScreen() {
         highlights: [],
       })
       setIsProfileGenerated(false)
-      setHasAutoGenerated(false)
+      setHasAutoGenerated(true)
       console.log("[v0] [NEW FEED] Feed state reset complete")
-      // </CHANGE>
 
       setMayaThinking("Maya is designing your feed strategy...")
       const autoPrompt = "Generate a complete feed strategy for me based on my brand profile."
@@ -1186,7 +1261,15 @@ export default function FeedDesignerScreen() {
     } catch (error) {
       console.error("[v0] [NEW FEED] Error:", error)
       setMayaThinking(null)
-      alert("Failed to generate feed. Please try again.")
+      toast({
+        title: "Error",
+        description: "Failed to create new feed. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setTimeout(() => {
+        setIsCreatingNewFeed(false)
+      }, 2000)
     }
   }
 
@@ -1337,14 +1420,15 @@ export default function FeedDesignerScreen() {
                       console.log("[v0] [NEW FEED] Button state:", {
                         isDesigning,
                         isApplyingDesign,
-                        disabled: isDesigning || isApplyingDesign,
+                        isCreatingNewFeed,
+                        disabled: isDesigning || isApplyingDesign || isCreatingNewFeed,
                       })
                       setShowNewFeedModal(true)
                     }}
-                    disabled={isDesigning || isApplyingDesign}
+                    disabled={isDesigning || isApplyingDesign || isCreatingNewFeed}
                     className="px-4 py-2 rounded-lg text-xs font-medium tracking-wider uppercase transition-all bg-stone-950 text-white hover:bg-stone-800 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    NEW FEED
+                    {isCreatingNewFeed ? "CREATING..." : "NEW FEED"}
                   </button>
                 )}
                 <button

@@ -214,6 +214,11 @@ export default function StoryHighlightCard({
       const data = await response.json()
 
       if (!response.ok) {
+        if (response.status === 402 || data.error === "Insufficient credits") {
+          throw new Error(
+            `Need ${data.required || 1} credit${data.required > 1 ? "s" : ""}. Please purchase more credits or upgrade your plan.`,
+          )
+        }
         throw new Error(data.error || "Failed to generate image")
       }
 

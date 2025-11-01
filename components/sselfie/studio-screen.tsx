@@ -1,8 +1,8 @@
 "use client"
 import { Aperture, ChevronRight, Plus, Grid, Camera, ChevronDown, ChevronUp } from "lucide-react"
-import useSWR from "swr"
+import useSWR, { mutate } from "swr"
 import { InstagramPhotoPreview } from "./instagram-photo-preview"
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import BrandProfileWizard from "./brand-profile-wizard"
 
 interface StudioScreenProps {
@@ -109,6 +109,13 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
     if (diffHours < 24) return `${diffHours}h ago`
     return `${diffDays}d ago`
   }, [generationsData])
+
+  useEffect(() => {
+    if (hasTrainedModel) {
+      // Revalidate feed preview data when component mounts or when a new feed is created
+      mutate("/api/feed-designer/preview")
+    }
+  }, [hasTrainedModel])
 
   if (!hasTrainedModel) {
     return (
@@ -246,7 +253,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
               </div>
               <button
                 onClick={() => setShowBrandWizard(true)}
-                className="bg-stone-950 text-stone-50 px-6 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 hover:scale-105 active:scale-95"
+                className="bg-stone-950 text-stone-50 px-6 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-500 hover:scale-105 active:scale-95"
               >
                 Start Brand Profile
               </button>
@@ -723,7 +730,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
 
         {stats && (
           <div className="bg-white/50 backdrop-blur-3xl border border-white/60 rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-xl shadow-stone-900/5">
-            <h2 className="font-['Times_New_Roman'] text-xl sm:text-2xl md:text-3xl font-extralight tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-900 mb-6">
+            <h2 className="font-['Times_New_Roman'] text-xl sm:text-2xl md:text-3xl font-extralight tracking-[0.15em] sm:tracking-[0.2em] text-stone-900 uppercase mb-6">
               YOUR CREATIVE JOURNEY
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -880,9 +887,11 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
             onDelete={async () => {
               setShowPreview(false)
               onImageGenerated()
+              mutate("/api/studio/generations?limit=9")
             }}
             onFavorite={async () => {
               onImageGenerated()
+              mutate("/api/studio/generations?limit=9")
             }}
             isFavorited={lastGeneration.saved || false}
           />
@@ -894,6 +903,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
             onClose={() => setShowBrandWizard(false)}
             onComplete={() => {
               setShowBrandWizard(false)
+              mutate("/api/profile/personal-brand/status")
             }}
             existingData={null}
           />
