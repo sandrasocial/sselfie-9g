@@ -12,6 +12,23 @@ interface VideoPlayerProps {
   initialWatchTime?: number
 }
 
+function getVimeoVideoId(url: string): string | null {
+  // Match patterns like:
+  // https://vimeo.com/123456789
+  // https://player.vimeo.com/video/123456789
+  // vimeo.com/123456789
+  const patterns = [/vimeo\.com\/(\d+)/, /player\.vimeo\.com\/video\/(\d+)/]
+
+  for (const pattern of patterns) {
+    const match = url.match(pattern)
+    if (match && match[1]) {
+      return match[1]
+    }
+  }
+
+  return null
+}
+
 export default function VideoPlayer({
   videoUrl,
   lessonId,
@@ -20,6 +37,7 @@ export default function VideoPlayer({
   initialWatchTime = 0,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
+  const iframeRef = useRef<HTMLIFrameElement>(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
@@ -29,37 +47,103 @@ export default function VideoPlayer({
   const containerRef = useRef<HTMLDivElement>(null)
   const lastSaveTimeRef = useRef(0)
 
+  const vimeoVideoId = getVimeoVideoId(videoUrl)
+  const isVimeo = vimeoVideoId !== null
+  const vimeoEmbedUrl = isVimeo
+    ? `https://player.vimeo.com/video/${vimeoVideoId}?autoplay=0&title=0&byline=0&portrait=0`
+    : null
+
+  useEffect(() => {
+    if (isVimeo && durationMinutes) {
+      setDuration(durationMinutes * 60)
+    }
+  }, [isVimeo, durationMinutes])
+
+  useEffect(() => {
+    if (!isVimeo || !iframeRef.current) return
+
+    const handleVimeoMessage = (event: MessageEvent) => {
+      // Only accept messages from Vimeo
+      if (!event.origin.includes("vimeo.com")) return
+
+      try {
+        const data = JSON.parse(event.data)
+
+        switch (data.event) {
+          case "ready":
+            // Player is ready, set initial time if needed
+            if (initialWatchTime > 0 && iframeRef.current) {
+              iframeRef.current.contentWindow?.postMessage(
+                JSON.stringify({ method: "setCurrentTime", value: initialWatchTime }),
+                "*",
+              )
+            }
+            break
+          case "play":
+            setIsPlaying(true)
+            break
+          case "pause":
+            setIsPlaying(false)
+            break
+          case "timeupdate":
+            if (data.data?.seconds) {
+              setCurrentTime(data.data.seconds)
+            }
+            break
+          case "loaded":
+            if (data.data?.duration) {
+              setDuration(data.data.duration)
+            }
+            break
+        }
+      } catch (e) {
+        // Ignore parsing errors
+      }
+    }
+
+    window.addEventListener("message", handleVimeoMessage)
+
+    // Subscribe to events
+    if (iframeRef.current) {
+      const iframe = iframeRef.current
+      iframe.contentWindow?.postMessage(JSON.stringify({ method: "addEventListener", value: "play" }), "*")
+      iframe.contentWindow?.postMessage(JSON.stringify({ method: "addEventListener", value: "pause" }), "*")
+      iframe.contentWindow?.postMessage(JSON.stringify({ method: "addEventListener", value: "timeupdate" }), "*")
+      iframe.contentWindow?.postMessage(JSON.stringify({ method: "addEventListener", value: "loaded" }), "*")
+    }
+
+    return () => window.removeEventListener("message", handleVimeoMessage)
+  }, [isVimeo, initialWatchTime])
+
   // Auto-save watch time every 10 seconds
   useEffect(() => {
     if (!isPlaying) return
 
     const interval = setInterval(async () => {
-      if (videoRef.current) {
-        const watchTimeSeconds = Math.floor(videoRef.current.currentTime)
+      const watchTimeSeconds = Math.floor(currentTime)
 
-        // Only save if time has changed significantly (avoid duplicate saves)
-        if (Math.abs(watchTimeSeconds - lastSaveTimeRef.current) >= 5) {
-          lastSaveTimeRef.current = watchTimeSeconds
+      // Only save if time has changed significantly (avoid duplicate saves)
+      if (Math.abs(watchTimeSeconds - lastSaveTimeRef.current) >= 5) {
+        lastSaveTimeRef.current = watchTimeSeconds
 
-          try {
-            await fetch("/api/academy/progress", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                lessonId,
-                watchTimeSeconds,
-              }),
-            })
-            console.log("[v0] Saved watch time:", watchTimeSeconds)
-          } catch (error) {
-            console.error("[v0] Error saving watch time:", error)
-          }
+        try {
+          await fetch("/api/academy/progress", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              lessonId,
+              watchTimeSeconds,
+            }),
+          })
+          console.log("[v0] Saved watch time:", watchTimeSeconds)
+        } catch (error) {
+          console.error("[v0] Error saving watch time:", error)
         }
       }
     }, 10000) // Every 10 seconds
 
     return () => clearInterval(interval)
-  }, [isPlaying, lessonId])
+  }, [isPlaying, lessonId, currentTime])
 
   // Check for 90% completion
   useEffect(() => {
@@ -88,7 +172,10 @@ export default function VideoPlayer({
   }
 
   const handlePlayPause = () => {
-    if (videoRef.current) {
+    if (isVimeo && iframeRef.current) {
+      const method = isPlaying ? "pause" : "play"
+      iframeRef.current.contentWindow?.postMessage(JSON.stringify({ method }), "*")
+    } else if (videoRef.current) {
       if (isPlaying) {
         videoRef.current.pause()
       } else {
@@ -115,19 +202,25 @@ export default function VideoPlayer({
   }
 
   const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!videoRef.current) return
-
     const rect = e.currentTarget.getBoundingClientRect()
     const x = e.clientX - rect.left
     const percentage = x / rect.width
     const newTime = percentage * duration
 
-    videoRef.current.currentTime = newTime
+    if (isVimeo && iframeRef.current) {
+      iframeRef.current.contentWindow?.postMessage(JSON.stringify({ method: "setCurrentTime", value: newTime }), "*")
+    } else if (videoRef.current) {
+      videoRef.current.currentTime = newTime
+    }
+
     setCurrentTime(newTime)
   }
 
   const changeSpeed = (speed: number) => {
-    if (videoRef.current) {
+    if (isVimeo && iframeRef.current) {
+      iframeRef.current.contentWindow?.postMessage(JSON.stringify({ method: "setPlaybackRate", value: speed }), "*")
+      setPlaybackSpeed(speed)
+    } else if (videoRef.current) {
       videoRef.current.playbackRate = speed
       setPlaybackSpeed(speed)
     }
@@ -170,19 +263,30 @@ export default function VideoPlayer({
     <div ref={containerRef} className="bg-stone-950 overflow-hidden">
       {/* Video Element with proper 16:9 aspect ratio */}
       <div className="relative w-full aspect-video bg-stone-950">
-        <video
-          ref={videoRef}
-          src={videoUrl}
-          className="w-full h-full object-contain"
-          onPlay={() => setIsPlaying(true)}
-          onPause={() => setIsPlaying(false)}
-          onTimeUpdate={handleTimeUpdate}
-          onLoadedMetadata={handleLoadedMetadata}
-          playsInline
-        />
+        {isVimeo && vimeoEmbedUrl ? (
+          <iframe
+            ref={iframeRef}
+            src={vimeoEmbedUrl}
+            className="w-full h-full"
+            frameBorder="0"
+            allow="autoplay; fullscreen; picture-in-picture"
+            allowFullScreen
+          />
+        ) : (
+          <video
+            ref={videoRef}
+            src={videoUrl}
+            className="w-full h-full object-contain"
+            onPlay={() => setIsPlaying(true)}
+            onPause={() => setIsPlaying(false)}
+            onTimeUpdate={handleTimeUpdate}
+            onLoadedMetadata={handleLoadedMetadata}
+            playsInline
+          />
+        )}
 
-        {/* Play/Pause Overlay */}
-        {!isPlaying && (
+        {/* Play/Pause Overlay - Only show for native video when not playing */}
+        {!isVimeo && !isPlaying && (
           <div className="absolute inset-0 flex items-center justify-center bg-stone-950/40">
             <button
               onClick={handlePlayPause}
@@ -194,8 +298,8 @@ export default function VideoPlayer({
           </div>
         )}
 
-        {/* Click to pause when playing */}
-        {isPlaying && (
+        {/* Click to pause when playing - Only for native video */}
+        {!isVimeo && isPlaying && (
           <button onClick={handlePlayPause} className="absolute inset-0 cursor-pointer" aria-label="Pause video" />
         )}
       </div>
