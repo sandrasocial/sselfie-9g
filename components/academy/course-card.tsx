@@ -26,7 +26,8 @@ const tierOrder = { starter: 1, pro: 2, elite: 3 }
 export default function CourseCard({ course, userTier, progress, onCourseClick }: CourseCardProps) {
   const isLocked = tierOrder[course.tier] > tierOrder[userTier]
   const hasStarted = progress && progress.completed_lessons > 0
-  const isCompleted = progress && progress.progress_percentage >= 100
+  const progressPercentage = progress?.progress_percentage ?? 0
+  const isCompleted = progressPercentage >= 100
 
   const formatDuration = (minutes: number) => {
     const hours = Math.floor(minutes / 60)
@@ -104,12 +105,12 @@ export default function CourseCard({ course, userTier, progress, onCourseClick }
           <div className="space-y-2">
             <div className="flex justify-between text-xs">
               <span className="tracking-[0.1em] uppercase font-light text-stone-400">Progress</span>
-              <span className="font-light text-stone-500">{Math.round(progress.progress_percentage)}%</span>
+              <span className="font-light text-stone-500">{Math.round(progressPercentage)}%</span>
             </div>
             <div className="w-full h-1.5 bg-stone-200/60 rounded-full overflow-hidden">
               <div
                 className="h-full bg-stone-950 rounded-full transition-all duration-500"
-                style={{ width: `${progress.progress_percentage}%` }}
+                style={{ width: `${progressPercentage}%` }}
               ></div>
             </div>
           </div>

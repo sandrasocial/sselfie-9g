@@ -372,9 +372,10 @@ async function updateCourseProgress(userId: string, lessonId: number): Promise<v
       WHERE al.course_id = ${courseId}
     `
 
-    const totalLessons = stats[0].total_lessons
-    const completedLessons = stats[0].completed_lessons
-    const progressPercentage = Math.round((completedLessons / totalLessons) * 100)
+    const totalLessons = Number(stats[0].total_lessons) || 0
+    const completedLessons = Number(stats[0].completed_lessons) || 0
+
+    const progressPercentage = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0
 
     // Update enrollment progress
     await sql`
@@ -386,7 +387,13 @@ async function updateCourseProgress(userId: string, lessonId: number): Promise<v
       WHERE user_id = ${userId} AND course_id = ${courseId}
     `
 
-    console.log("[v0] Updated course progress:", { userId, courseId, progressPercentage })
+    console.log("[v0] Updated course progress:", {
+      userId,
+      courseId,
+      progressPercentage,
+      completedLessons,
+      totalLessons,
+    })
   } catch (error) {
     console.error("[v0] Error updating course progress:", error)
   }
