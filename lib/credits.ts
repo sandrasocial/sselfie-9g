@@ -29,8 +29,52 @@ export type TransactionType =
  * Check if user has enough credits for an action
  */
 export async function checkCredits(userId: string, requiredAmount: number): Promise<boolean> {
+  const hasUnlimitedAccess = await hasUnlimitedCredits(userId)
+  if (hasUnlimitedAccess) {
+    console.log("[v0] User has unlimited credits (elite plan or high balance)")
+    return true
+  }
+
   const currentBalance = await getUserCredits(userId)
+  console.log("[v0] Credit check:", {
+    userId,
+    currentBalance,
+    requiredAmount,
+    hasEnough: currentBalance >= requiredAmount,
+  })
   return currentBalance >= requiredAmount
+}
+
+/**
+ * Check if user has unlimited credits (elite plan or very high balance)
+ */
+async function hasUnlimitedCredits(userId: string): Promise<boolean> {
+  try {
+    // Check subscription plan
+    const subscriptionResult = await sql`
+      SELECT plan, status FROM subscriptions 
+      WHERE user_id = ${userId} 
+      AND status = 'active'
+      LIMIT 1
+    `
+
+    if (subscriptionResult.length > 0 && subscriptionResult[0].plan === "elite") {
+      console.log("[v0] User has active elite subscription - unlimited credits")
+      return true
+    }
+
+    // Check for very high balance (999999 = unlimited)
+    const currentBalance = await getUserCredits(userId)
+    if (currentBalance >= 999999) {
+      console.log("[v0] User has unlimited credit balance:", currentBalance)
+      return true
+    }
+
+    return false
+  } catch (error) {
+    console.error("[v0] Error checking unlimited credits:", error)
+    return false
+  }
 }
 
 /**
@@ -109,6 +153,13 @@ export async function deductCredits(
   referenceId?: string,
 ): Promise<{ success: boolean; newBalance: number; error?: string }> {
   try {
+    const hasUnlimitedAccess = await hasUnlimitedCredits(userId)
+    if (hasUnlimitedAccess) {
+      const currentBalance = await getUserCredits(userId)
+      console.log("[v0] User has unlimited credits - skipping deduction")
+      return { success: true, newBalance: currentBalance }
+    }
+
     // Get current balance
     const currentBalance = await getUserCredits(userId)
 

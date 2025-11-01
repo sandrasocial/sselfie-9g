@@ -197,10 +197,21 @@ export async function saveChatMessage(
     try {
       const redis = getRedisClient()
       const cacheKey = CacheKeys.mayaChatMessages(chatId)
-      await redis.del(cacheKey)
-      console.log("[v0] Cache invalidated for chat:", chatId)
-    } catch (cacheError) {
-      console.error("[v0] Error invalidating cache (non-critical):", cacheError)
+
+      // Ensure cacheKey is a string
+      if (typeof cacheKey === "string" && cacheKey.length > 0) {
+        await redis.del(cacheKey)
+        console.log("[v0] ✅ Cache invalidated for chat:", chatId)
+      } else {
+        console.warn("[v0] ⚠️ Invalid cache key format:", cacheKey)
+      }
+    } catch (cacheError: any) {
+      // Log the full error for debugging but don't break the flow
+      console.error("[v0] ⚠️ Cache invalidation failed (non-critical):", {
+        error: cacheError?.message || String(cacheError),
+        chatId,
+        stack: cacheError?.stack,
+      })
       // Don't throw - cache invalidation failure shouldn't break message saving
     }
 
