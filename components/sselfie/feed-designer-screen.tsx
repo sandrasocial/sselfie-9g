@@ -44,6 +44,7 @@ interface InstagramProfile {
   name: string
   handle: string
   bio: string
+  // </CHANGE>
   highlights: Array<{ title: string; coverUrl: string; description: string; type: "image" | "color"; id?: number }>
 }
 
@@ -54,6 +55,7 @@ export default function FeedDesignerScreen() {
   const [isDesigning, setIsDesigning] = useState(false)
   const [isApplyingDesign, setIsApplyingDesign] = useState(false)
   const [isCreatingNewFeed, setIsCreatingNewFeed] = useState(false)
+  const isCreatingNewFeedRef = useRef(false)
   const [feedPosts, setFeedPosts] = useState<FeedPost[]>([])
   const [profile, setProfile] = useState<InstagramProfile>({
     profileImage: "/placeholder.svg?height=80&width=80",
@@ -590,6 +592,7 @@ export default function FeedDesignerScreen() {
     }
   }
 
+  // </CHANGE>
   useEffect(() => {
     if (isTyping) {
       const lastMessage = messages[messages.length - 1]
@@ -598,10 +601,11 @@ export default function FeedDesignerScreen() {
         const hasToolCalls = parts.some(
           (part: any) =>
             part.type === "tool-call" &&
-            (part.toolName === "instagram_feed_strategist" ||
-              part.toolName === "instagram_bio_strategist" ||
-              part.toolName === "instagram_caption_strategist"),
+            (part.toolName === "generateCompleteFeed" ||
+              part.toolName === "rewriteCaption" ||
+              part.toolName === "callCaptionStrategist"),
         )
+        // </CHANGE>
 
         if (hasToolCalls) {
           console.log("[v0] Maya is designing feed strategy...")
@@ -633,7 +637,7 @@ export default function FeedDesignerScreen() {
                 clearInterval((window as any).__mayaThinkingInterval)
                 ;(window as any).__mayaThinkingInterval = null
               }
-              setMayaThinking(null) // ✅ Clear Maya thinking state
+              setMayaThinking(null)
               setIsDesigning(false)
               setIsApplyingDesign(false)
               isDesigningSetRef.current = false
@@ -1216,10 +1220,18 @@ export default function FeedDesignerScreen() {
   }
 
   const handleGenerateNewFeed = async () => {
-    console.log("[v0] [NEW FEED] Button clicked")
+    console.log("[v0] [NEW FEED] handleGenerateNewFeed called")
 
-    if (isDesigning || isApplyingDesign || isCreatingNewFeed) {
-      console.log("[v0] [NEW FEED] Operation already in progress, ignoring click")
+    if (isCreatingNewFeedRef.current) {
+      console.log("[v0] [NEW FEED] Already creating, ignoring duplicate call")
+      return
+    }
+
+    isCreatingNewFeedRef.current = true
+
+    if (isDesigning || isApplyingDesign) {
+      console.log("[v0] [NEW FEED] Operation already in progress, ignoring")
+      isCreatingNewFeedRef.current = false
       return
     }
 
@@ -1268,6 +1280,7 @@ export default function FeedDesignerScreen() {
       })
     } finally {
       setTimeout(() => {
+        isCreatingNewFeedRef.current = false
         setIsCreatingNewFeed(false)
       }, 2000)
     }
@@ -1351,8 +1364,11 @@ export default function FeedDesignerScreen() {
       )}
 
       {showNewFeedModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={() => setShowNewFeedModal(false)}
+        >
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
             <h3 className="font-serif text-2xl font-extralight tracking-[0.2em] uppercase text-stone-950 mb-4">
               GENERATE NEW FEED?
             </h3>
@@ -1368,8 +1384,12 @@ export default function FeedDesignerScreen() {
                 CANCEL
               </button>
               <button
-                onClick={handleGenerateNewFeed}
-                className="flex-1 px-6 py-3 bg-stone-950 hover:bg-stone-800 rounded-lg text-sm font-medium tracking-wider uppercase text-white transition-all"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleGenerateNewFeed()
+                }}
+                disabled={isCreatingNewFeedRef.current}
+                className="flex-1 px-6 py-3 bg-stone-950 hover:bg-stone-800 rounded-lg text-sm font-medium tracking-wider uppercase text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 CONTINUE
               </button>
@@ -1415,14 +1435,9 @@ export default function FeedDesignerScreen() {
               <div className="flex items-center gap-2">
                 {feedPosts.length > 0 && (
                   <button
-                    onClick={() => {
-                      console.log("[v0] [NEW FEED] Button clicked")
-                      console.log("[v0] [NEW FEED] Button state:", {
-                        isDesigning,
-                        isApplyingDesign,
-                        isCreatingNewFeed,
-                        disabled: isDesigning || isApplyingDesign || isCreatingNewFeed,
-                      })
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      console.log("[v0] [NEW FEED] Opening modal")
                       setShowNewFeedModal(true)
                     }}
                     disabled={isDesigning || isApplyingDesign || isCreatingNewFeed}
