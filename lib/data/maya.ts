@@ -170,10 +170,12 @@ export async function saveChatMessage(
     conceptCardsCount: conceptCards?.length || 0,
   })
 
+  const safeContent = content || ""
+
   try {
     const message = await sql`
       INSERT INTO maya_chat_messages (chat_id, role, content, concept_cards)
-      VALUES (${chatId}, ${role}, ${content}, ${conceptCards ? JSON.stringify(conceptCards) : null})
+      VALUES (${chatId}, ${role}, ${safeContent}, ${conceptCards ? JSON.stringify(conceptCards) : null})
       RETURNING *
     `
 

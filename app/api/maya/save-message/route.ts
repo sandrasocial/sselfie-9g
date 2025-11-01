@@ -43,13 +43,20 @@ export async function POST(request: NextRequest) {
       conceptCards,
     })
 
+    if (!chatId || !role) {
+      console.log("[v0] ❌ Missing required fields")
+      return NextResponse.json({ error: "Missing required fields: chatId and role" }, { status: 400 })
+    }
+
+    const safeContent = content || ""
+
     if (role === "user") {
       const existingMessages = await getChatMessages(chatId)
       const userMessages = existingMessages.filter((msg) => msg.role === "user")
 
       // If this is the first user message, generate and update the chat title
       if (userMessages.length === 0) {
-        const title = await generateChatTitle(content)
+        const title = await generateChatTitle(safeContent)
         await updateChatTitle(chatId, title)
         console.log("[v0] Generated chat title:", title)
       }
@@ -64,11 +71,11 @@ export async function POST(request: NextRequest) {
         console.log("[v0] Calling saveChatMessage with:", {
           chatId,
           role,
-          contentLength: content?.length || 0,
+          contentLength: safeContent?.length || 0,
           conceptCardsCount: Array.isArray(conceptCards) ? conceptCards.length : 0,
         })
 
-        message = await saveChatMessage(chatId, role, content, conceptCards)
+        message = await saveChatMessage(chatId, role, safeContent, conceptCards)
 
         console.log("[v0] ✅ Message saved to database:", {
           messageId: message.id,
