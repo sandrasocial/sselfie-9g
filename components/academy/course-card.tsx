@@ -30,18 +30,22 @@ export default function CourseCard({ course, userTier, progress, onCourseClick }
   const isCompleted = progressPercentage >= 100
 
   const formatDuration = (minutes: number | null | undefined) => {
-    // Handle invalid values
-    if (minutes == null || isNaN(minutes) || minutes <= 0) {
+    if (minutes == null || isNaN(Number(minutes)) || Number(minutes) <= 0) {
       return "0m"
     }
 
-    const hours = Math.floor(minutes / 60)
-    const mins = Math.round(minutes % 60)
+    const mins = Number(minutes)
+    const hours = Math.floor(mins / 60)
+    const remainingMins = Math.round(mins % 60)
+
     if (hours > 0) {
-      return `${hours}h ${mins}m`
+      return `${hours}h ${remainingMins}m`
     }
-    return `${mins}m`
+    return `${remainingMins}m`
   }
+
+  const lessonCount = Number(course.lesson_count) || 0
+  const totalDuration = Number(course.total_duration) || 0
 
   return (
     <button
@@ -101,8 +105,8 @@ export default function CourseCard({ course, userTier, progress, onCourseClick }
 
         {/* Meta info */}
         <div className="flex items-center gap-6 text-xs tracking-[0.1em] uppercase font-light text-stone-500">
-          <span>{formatDuration(course.total_duration)}</span>
-          <span>{course.lesson_count || 0} Lessons</span>
+          <span>{formatDuration(totalDuration)}</span>
+          <span>{lessonCount} Lessons</span>
         </div>
 
         {/* Progress bar */}

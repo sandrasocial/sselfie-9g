@@ -32,7 +32,7 @@ export interface AcademyLesson {
   lesson_number: number
   lesson_type: "video" | "interactive"
   video_url: string | null
-  duration_minutes: number | null
+  duration_seconds: number | null
   content: any | null // JSONB for interactive lessons
   resources: any | null // JSONB array of resources
   created_at: Date
@@ -148,8 +148,8 @@ export async function getCoursesForTier(tier: "starter" | "pro" | "elite"): Prom
       query = sql`
         SELECT 
           c.*,
-          COUNT(l.id) as lesson_count,
-          COALESCE(SUM(l.duration_minutes), 0) as total_duration
+          CAST(COUNT(l.id) AS INTEGER) as lesson_count,
+          CAST(COALESCE(SUM(l.duration_seconds), 0) AS INTEGER) as total_duration
         FROM academy_courses c
         LEFT JOIN academy_lessons l ON c.id = l.course_id
         WHERE c.status = 'published' AND c.tier = 'starter'
@@ -160,8 +160,8 @@ export async function getCoursesForTier(tier: "starter" | "pro" | "elite"): Prom
       query = sql`
         SELECT 
           c.*,
-          COUNT(l.id) as lesson_count,
-          COALESCE(SUM(l.duration_minutes), 0) as total_duration
+          CAST(COUNT(l.id) AS INTEGER) as lesson_count,
+          CAST(COALESCE(SUM(l.duration_seconds), 0) AS INTEGER) as total_duration
         FROM academy_courses c
         LEFT JOIN academy_lessons l ON c.id = l.course_id
         WHERE c.status = 'published' AND c.tier IN ('starter', 'pro')
@@ -173,8 +173,8 @@ export async function getCoursesForTier(tier: "starter" | "pro" | "elite"): Prom
       query = sql`
         SELECT 
           c.*,
-          COUNT(l.id) as lesson_count,
-          COALESCE(SUM(l.duration_minutes), 0) as total_duration
+          CAST(COUNT(l.id) AS INTEGER) as lesson_count,
+          CAST(COALESCE(SUM(l.duration_seconds), 0) AS INTEGER) as total_duration
         FROM academy_courses c
         LEFT JOIN academy_lessons l ON c.id = l.course_id
         WHERE c.status = 'published'
@@ -186,7 +186,13 @@ export async function getCoursesForTier(tier: "starter" | "pro" | "elite"): Prom
     const courses = await query
     console.log("[v0] Found", courses.length, "courses for tier:", tier)
 
-    return courses as AcademyCourse[]
+    const coursesWithNumbers = courses.map((course: any) => ({
+      ...course,
+      lesson_count: Number(course.lesson_count) || 0,
+      total_duration: Number(course.total_duration) || 0,
+    }))
+
+    return coursesWithNumbers as AcademyCourse[]
   } catch (error) {
     console.error("[v0] Error fetching courses for tier:", error)
     return []
