@@ -20,6 +20,8 @@ export interface AcademyCourse {
   status: "draft" | "published" | "archived"
   created_at: Date
   updated_at: Date
+  lesson_count?: number
+  total_duration?: number
 }
 
 export interface AcademyLesson {
@@ -144,22 +146,40 @@ export async function getCoursesForTier(tier: "starter" | "pro" | "elite"): Prom
 
     if (tier === "starter") {
       query = sql`
-        SELECT * FROM academy_courses
-        WHERE status = 'published' AND tier = 'starter'
-        ORDER BY order_index ASC
+        SELECT 
+          c.*,
+          COUNT(l.id) as lesson_count,
+          COALESCE(SUM(l.duration_minutes), 0) as total_duration
+        FROM academy_courses c
+        LEFT JOIN academy_lessons l ON c.id = l.course_id
+        WHERE c.status = 'published' AND c.tier = 'starter'
+        GROUP BY c.id
+        ORDER BY c.order_index ASC
       `
     } else if (tier === "pro") {
       query = sql`
-        SELECT * FROM academy_courses
-        WHERE status = 'published' AND tier IN ('starter', 'pro')
-        ORDER BY order_index ASC
+        SELECT 
+          c.*,
+          COUNT(l.id) as lesson_count,
+          COALESCE(SUM(l.duration_minutes), 0) as total_duration
+        FROM academy_courses c
+        LEFT JOIN academy_lessons l ON c.id = l.course_id
+        WHERE c.status = 'published' AND c.tier IN ('starter', 'pro')
+        GROUP BY c.id
+        ORDER BY c.order_index ASC
       `
     } else {
       // Elite gets all courses
       query = sql`
-        SELECT * FROM academy_courses
-        WHERE status = 'published'
-        ORDER BY order_index ASC
+        SELECT 
+          c.*,
+          COUNT(l.id) as lesson_count,
+          COALESCE(SUM(l.duration_minutes), 0) as total_duration
+        FROM academy_courses c
+        LEFT JOIN academy_lessons l ON c.id = l.course_id
+        WHERE c.status = 'published'
+        GROUP BY c.id
+        ORDER BY c.order_index ASC
       `
     }
 
