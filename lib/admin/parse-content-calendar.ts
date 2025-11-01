@@ -10,6 +10,10 @@ interface ContentItem {
 }
 
 export function parseContentCalendar(text: string): ContentItem[] {
+  if (!text || typeof text !== "string") {
+    return []
+  }
+
   const items: ContentItem[] = []
 
   // Try to parse structured content from AI response
@@ -46,7 +50,9 @@ export function parseContentCalendar(text: string): ContentItem[] {
       } else if (lowerKey.includes("caption") || lowerKey.includes("post")) {
         item.caption = value
       } else if (lowerKey.includes("hashtag")) {
-        item.hashtags = value.split(/\s+/).filter((tag) => tag.startsWith("#"))
+        if (value && typeof value === "string") {
+          item.hashtags = value.split(/\s+/).filter((tag) => tag.startsWith("#"))
+        }
       } else if (lowerKey.includes("note")) {
         item.notes = value
       }
@@ -61,7 +67,7 @@ export function parseContentCalendar(text: string): ContentItem[] {
   // If no structured content found, try to extract from markdown tables
   if (items.length === 0) {
     const tableMatch = text.match(/\|[^\n]+\|[\s\S]*?\n\|[-\s|]+\|\n([\s\S]*?)(?:\n\n|$)/)
-    if (tableMatch) {
+    if (tableMatch && tableMatch[1]) {
       const rows = tableMatch[1].split("\n").filter((row) => row.includes("|"))
 
       for (const row of rows) {
@@ -72,11 +78,14 @@ export function parseContentCalendar(text: string): ContentItem[] {
 
         if (cells.length >= 4) {
           items.push({
-            date: cells[0],
-            platform: cells[1],
-            contentType: cells[2],
-            caption: cells[3],
-            hashtags: cells[4]?.split(/\s+/).filter((tag) => tag.startsWith("#")),
+            date: cells[0] || "",
+            platform: cells[1] || "",
+            contentType: cells[2] || "",
+            caption: cells[3] || "",
+            hashtags:
+              cells[4] && typeof cells[4] === "string"
+                ? cells[4].split(/\s+/).filter((tag) => tag.startsWith("#"))
+                : undefined,
             notes: cells[5],
           })
         }

@@ -4,12 +4,22 @@ import { useEffect } from "react"
 
 export function ServiceWorkerProvider() {
   useEffect(() => {
-    if ("serviceWorker" in navigator && typeof window !== "undefined") {
-      console.log("[v0] Registering service worker...")
+    const isProduction = typeof window !== "undefined" && window.location.hostname === "sselfie.ai"
 
-      navigator.serviceWorker
-        .register("/sw.js")
-        .then((registration) => {
+    if (!isProduction) {
+      console.log("[v0] Skipping service worker registration - not on production domain")
+      return
+    }
+
+    if ("serviceWorker" in navigator && typeof window !== "undefined") {
+      const registerServiceWorker = async () => {
+        try {
+          console.log("[v0] Registering service worker...")
+
+          const registration = await navigator.serviceWorker.register("/sw.js", {
+            scope: "/",
+          })
+
           console.log("[v0] Service worker registered successfully:", registration.scope)
 
           // Check for updates periodically
@@ -27,10 +37,12 @@ export function ServiceWorkerProvider() {
               })
             }
           })
-        })
-        .catch((error) => {
+        } catch (error) {
           console.error("[v0] Service worker registration failed:", error)
-        })
+        }
+      }
+
+      registerServiceWorker()
     } else {
       console.log("[v0] Service workers not supported")
     }

@@ -8,6 +8,51 @@ export async function getCompleteAdminContext(targetUserId?: string): Promise<st
   try {
     const contextParts: string[] = []
 
+    // Fetch admin knowledge base
+    const adminKnowledge = await sql`
+      SELECT knowledge_type, category, title, content, confidence_level
+      FROM admin_knowledge_base
+      WHERE is_active = true
+      ORDER BY confidence_level DESC, updated_at DESC
+      LIMIT 15
+    `
+
+    if (adminKnowledge.length > 0) {
+      contextParts.push("\n=== ADMIN KNOWLEDGE BASE ===")
+      contextParts.push("Proprietary insights and best practices to enhance your responses:\n")
+
+      for (const knowledge of adminKnowledge) {
+        contextParts.push(`[${knowledge.category.toUpperCase()}] ${knowledge.title}`)
+        contextParts.push(`${knowledge.content}`)
+        contextParts.push(`Confidence: ${Math.round(knowledge.confidence_level * 100)}%\n`)
+      }
+    }
+
+    // Fetch context guidelines for this mode
+    const guidelines = await sql`
+      SELECT guideline_name, guideline_text, priority_level
+      FROM admin_context_guidelines
+      WHERE is_active = true
+      ORDER BY 
+        CASE priority_level
+          WHEN 'critical' THEN 1
+          WHEN 'high' THEN 2
+          WHEN 'medium' THEN 3
+          ELSE 4
+        END
+      LIMIT 10
+    `
+
+    if (guidelines.length > 0) {
+      contextParts.push("\n=== CONTEXT GUIDELINES ===")
+      contextParts.push("Important guidelines to follow when creating content:\n")
+
+      for (const guideline of guidelines) {
+        contextParts.push(`[${guideline.priority_level.toUpperCase()}] ${guideline.guideline_name}`)
+        contextParts.push(`${guideline.guideline_text}\n`)
+      }
+    }
+
     // If specific user requested, get their complete data
     if (targetUserId) {
       const user = await getUserByAuthId(targetUserId)

@@ -22,6 +22,33 @@ interface AdminAgentChatProps {
 
 type AgentMode = "content" | "email" | "research"
 
+const getMessageContent = (message: any): string => {
+  // Handle string content
+  if (typeof message.content === "string") {
+    return message.content
+  }
+
+  // Handle array of parts in content
+  if (Array.isArray(message.content)) {
+    return message.content
+      .filter((part: any) => part.type === "text" && part.text)
+      .map((part: any) => part.text)
+      .join("\n")
+      .trim()
+  }
+
+  // Handle parts array (alternative format)
+  if (message.parts && Array.isArray(message.parts)) {
+    return message.parts
+      .filter((part: any) => part.type === "text" && part.text)
+      .map((part: any) => part.text)
+      .join("\n")
+      .trim()
+  }
+
+  return ""
+}
+
 export default function AdminAgentChat({ userId, userName, userEmail }: AdminAgentChatProps) {
   const [mode, setMode] = useState<AgentMode>("content")
   const [chatId, setChatId] = useState<number | null>(null)
@@ -352,7 +379,7 @@ export default function AdminAgentChat({ userId, userName, userEmail }: AdminAge
                       message.role === "user" ? "bg-stone-950 text-white" : "bg-stone-100 text-stone-900"
                     }`}
                   >
-                    <div className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</div>
+                    <div className="text-sm leading-relaxed whitespace-pre-wrap">{getMessageContent(message)}</div>
                   </div>
                 </div>
               ))}

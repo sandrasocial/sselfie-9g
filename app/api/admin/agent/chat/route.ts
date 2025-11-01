@@ -78,6 +78,9 @@ export async function POST(req: Request) {
     const { messages, chatId, mode, userId } = await req.json()
 
     console.log("[v0] Admin agent API called:", { mode, chatId, userId, messagesCount: messages?.length })
+    if (messages && messages.length > 0) {
+      console.log("[v0] First message sample:", JSON.stringify(messages[0], null, 2))
+    }
 
     const supabase = await createServerClient()
     const {
@@ -125,15 +128,31 @@ export async function POST(req: Request) {
       }
     }
 
+    let invalidRoleCount = 0
+    let emptyContentCount = 0
+    let validCount = 0
+
     // Convert current messages to CoreMessage format
     const coreMessages: CoreMessage[] = (messages || [])
-      .map((msg: any) => {
+      .map((msg: any, index: number) => {
         if (!msg.role || (msg.role !== "user" && msg.role !== "assistant")) {
+          invalidRoleCount++
+          console.log(`[v0] Message ${index} has invalid role:`, msg.role)
           return null
         }
 
         let textContent = ""
-        if (typeof msg.content === "string") {
+
+        // Handle parts format (from AI SDK)
+        if (msg.parts && Array.isArray(msg.parts)) {
+          textContent = msg.parts
+            .filter((part: any) => part.type === "text" && part.text)
+            .map((part: any) => part.text)
+            .join(" ")
+            .trim()
+        }
+        // Handle content format (standard)
+        else if (typeof msg.content === "string") {
           textContent = msg.content
         } else if (Array.isArray(msg.content)) {
           textContent = msg.content
@@ -144,15 +163,25 @@ export async function POST(req: Request) {
         }
 
         if (!textContent || textContent.trim() === "") {
+          emptyContentCount++
+          console.log(`[v0] Message ${index} has empty content`)
           return null
         }
 
+        validCount++
         return {
           role: msg.role,
           content: textContent,
         } as CoreMessage
       })
       .filter((msg): msg is CoreMessage => msg !== null)
+
+    console.log("[v0] Message validation:", {
+      total: messages?.length || 0,
+      valid: validCount,
+      invalidRole: invalidRoleCount,
+      emptyContent: emptyContentCount,
+    })
 
     // Combine chat history with new messages
     const allMessages: CoreMessage[] = [...chatHistory]
@@ -168,8 +197,23 @@ export async function POST(req: Request) {
     console.log("[v0] Total messages for AI:", allMessages.length)
 
     if (allMessages.length === 0) {
-      console.error("[v0] No valid messages")
-      return new Response("No valid messages", { status: 400 })
+      const errorDetails = {
+        error: "No valid messages",
+        details: {
+          receivedMessages: messages?.length || 0,
+          chatHistoryMessages: chatHistory.length,
+          validationResults: {
+            valid: validCount,
+            invalidRole: invalidRoleCount,
+            emptyContent: emptyContentCount,
+          },
+        },
+      }
+      console.error("[v0] No valid messages:", errorDetails)
+      return new Response(JSON.stringify(errorDetails), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      })
     }
 
     const completeContext = await getCompleteAdminContext(userId)
