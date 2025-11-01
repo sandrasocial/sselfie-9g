@@ -9,9 +9,8 @@ export default async function StudioPage() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // No auth user - redirect to login
   if (!user) {
-    redirect("/auth/login")
+    redirect("/auth/login?returnTo=/studio")
   }
 
   // Try to get user from database
@@ -38,7 +37,7 @@ export default async function StudioPage() {
   // If still no user or there was an error, redirect to login
   if (!neonUser || userError) {
     console.error("User authenticated but could not be synced with database")
-    redirect("/auth/login")
+    redirect("/auth/login?returnTo=/studio")
   }
 
   return <SselfieApp userId={neonUser.id} userName={neonUser.display_name} userEmail={neonUser.email} />
