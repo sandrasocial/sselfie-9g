@@ -2,6 +2,10 @@ import { type NextRequest, NextResponse } from "next/server"
 import { stripe } from "@/lib/stripe"
 import { addCredits } from "@/lib/credits"
 import { neon } from "@/lib/db"
+import { createAdminClient } from "@/lib/supabase/admin"
+import { getOrCreateNeonUser } from "@/lib/user-mapping"
+import { sendEmail } from "@/lib/email/send-email"
+import { generateWelcomeEmail } from "@/lib/email/templates/welcome-email"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -41,8 +45,91 @@ export async function POST(request: NextRequest) {
           // Add credits to user account
           await addCredits(userId, credits, "purchase", `Purchased ${packageId} package`)
         } else if (session.mode === "subscription") {
-          // Subscription created - credits will be granted via subscription.created event
-          console.log("[v0] Subscription checkout completed")
+          const userId = session.metadata.user_id
+          const customerEmail = session.customer_details?.email || session.customer_email
+
+          if (!userId && customerEmail) {
+            // New user purchasing subscription - create account automatically
+            console.log(`[v0] New subscription purchase from ${customerEmail} - creating account...`)
+
+            try {
+              // Create Supabase auth user with admin API
+              const supabaseAdmin = createAdminClient()
+
+              const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+                email: customerEmail,
+                email_confirm: true, // Auto-confirm email
+                user_metadata: {
+                  created_via: "stripe_subscription",
+                  stripe_customer_id: session.customer,
+                },
+              })
+
+              if (authError) {
+                console.error(`[v0] Error creating auth user for ${customerEmail}:`, authError)
+                throw authError
+              }
+
+              if (!authData.user) {
+                throw new Error("No user data returned from Supabase")
+              }
+
+              console.log(`[v0] Created Supabase auth user for ${customerEmail}`)
+
+              // Create Neon database user
+              const neonUser = await getOrCreateNeonUser(authData.user.id, customerEmail)
+              console.log(`[v0] Created Neon user for ${customerEmail}`)
+
+              // Generate password reset link for welcome email
+              const { data: resetData, error: resetError } = await supabaseAdmin.auth.admin.generateLink({
+                type: "recovery",
+                email: customerEmail,
+                options: {
+                  redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || "https://sselfie.ai"}/studio`,
+                },
+              })
+
+              if (resetError) {
+                console.error(`[v0] Error generating reset link:`, resetError)
+              }
+
+              // Send welcome email
+              const tier = session.metadata.tier || "Subscription"
+              const credits = Number.parseInt(session.metadata.credits || "0")
+
+              const emailContent = generateWelcomeEmail({
+                email: customerEmail,
+                resetLink: resetData?.properties?.action_link || "#",
+                creditsGranted: credits,
+                subscriptionTier: tier,
+              })
+
+              await sendEmail({
+                to: customerEmail,
+                subject: "Welcome to SSelfie! Set up your account",
+                html: emailContent.html,
+                text: emailContent.text,
+              })
+
+              console.log(`[v0] Welcome email sent to ${customerEmail}`)
+
+              // Store the new user_id in session metadata for subscription.created event
+              await stripe.checkout.sessions.update(session.id, {
+                metadata: {
+                  ...session.metadata,
+                  user_id: neonUser.id,
+                  auto_created: "true",
+                },
+              })
+
+              console.log(`[v0] Account created successfully for ${customerEmail}`)
+            } catch (error) {
+              console.error(`[v0] Error creating account for ${customerEmail}:`, error)
+              // Don't fail the webhook - subscription will still be created
+            }
+          } else {
+            console.log("[v0] Subscription checkout completed for existing user")
+          }
         }
         break
       }
@@ -50,9 +137,27 @@ export async function POST(request: NextRequest) {
       // Subscription created - grant initial credits
       case "customer.subscription.created": {
         const subscription = event.data.object
-        const userId = subscription.metadata.user_id
+        let userId = subscription.metadata.user_id
         const tier = subscription.metadata.tier
         const credits = Number.parseInt(subscription.metadata.credits)
+
+        if (!userId) {
+          const customer = await stripe.customers.retrieve(subscription.customer)
+          if (customer && !customer.deleted && customer.email) {
+            const users = await sql`
+              SELECT id FROM users WHERE email = ${customer.email} LIMIT 1
+            `
+            if (users.length > 0) {
+              userId = users[0].id
+              console.log(`[v0] Found user ${userId} for email ${customer.email}`)
+            }
+          }
+        }
+
+        if (!userId) {
+          console.error("[v0] No user_id found for subscription - skipping credit grant")
+          break
+        }
 
         console.log(`[v0] Subscription created: ${tier} tier for user ${userId}`)
 

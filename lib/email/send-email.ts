@@ -1,5 +1,5 @@
-// Email sending utilities using fetch to external email service
-// In production, you would integrate with Resend, SendGrid, or similar
+// Email sending utilities using Resend
+import { Resend } from "resend"
 
 export interface EmailOptions {
   to: string | string[]
@@ -11,26 +11,36 @@ export interface EmailOptions {
   tags?: string[]
 }
 
+const resend = new Resend(process.env.RESEND_API_KEY)
+
 export async function sendEmail(
   options: EmailOptions,
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
-    console.log("[v0] Sending email:", { to: options.to, subject: options.subject })
+    console.log("[v0] Sending email via Resend:", { to: options.to, subject: options.subject })
 
-    // For now, we'll log the email instead of actually sending
-    // In production, integrate with Resend or similar service
-    console.log("[v0] Email content:", {
-      from: options.from || "sandra@ssasocial.com",
-      to: options.to,
+    const { data, error } = await resend.emails.send({
+      from: options.from || "SSelfie <hello@sselfie.ai>",
+      to: Array.isArray(options.to) ? options.to : [options.to],
       subject: options.subject,
-      textLength: options.text.length,
-      htmlLength: options.html.length,
+      html: options.html,
+      text: options.text,
+      reply_to: options.replyTo,
+      tags: options.tags?.map((tag) => ({ name: tag, value: tag })),
     })
 
-    // Simulate successful send
+    if (error) {
+      console.error("[v0] Resend error:", error)
+      return {
+        success: false,
+        error: error.message || "Failed to send email",
+      }
+    }
+
+    console.log("[v0] Email sent successfully:", data?.id)
     return {
       success: true,
-      messageId: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      messageId: data?.id,
     }
   } catch (error) {
     console.error("[v0] Error sending email:", error)
