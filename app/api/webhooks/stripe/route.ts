@@ -6,6 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin"
 import { getOrCreateNeonUser } from "@/lib/user-mapping"
 import { sendEmail } from "@/lib/email/send-email"
 import { generateWelcomeEmail } from "@/lib/email/templates/welcome-email"
+import crypto from "crypto"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -49,16 +50,19 @@ export async function POST(request: NextRequest) {
           const customerEmail = session.customer_details?.email || session.customer_email
 
           if (!userId && customerEmail) {
-            // New user purchasing subscription - create account automatically
             console.log(`[v0] New subscription purchase from ${customerEmail} - creating account...`)
 
             try {
-              // Create Supabase auth user with admin API
+              // Generate a secure random password
+              const tempPassword = crypto.randomBytes(32).toString("hex")
+
+              // Create Supabase auth user with password (no confirmation email sent)
               const supabaseAdmin = createAdminClient()
 
               const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
                 email: customerEmail,
-                email_confirm: true, // Auto-confirm email
+                password: tempPassword,
+                email_confirm: false, // Skip email confirmation
                 user_metadata: {
                   created_via: "stripe_subscription",
                   stripe_customer_id: session.customer,
@@ -80,12 +84,15 @@ export async function POST(request: NextRequest) {
               const neonUser = await getOrCreateNeonUser(authData.user.id, customerEmail)
               console.log(`[v0] Created Neon user for ${customerEmail}`)
 
-              // Generate password reset link for welcome email
+              // Generate password reset link (does NOT send email, just generates the link)
+              const baseUrl =
+                process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
+
               const { data: resetData, error: resetError } = await supabaseAdmin.auth.admin.generateLink({
                 type: "recovery",
                 email: customerEmail,
                 options: {
-                  redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || "https://sselfie.ai"}/studio`,
+                  redirectTo: `${baseUrl}/studio`,
                 },
               })
 
@@ -93,13 +100,17 @@ export async function POST(request: NextRequest) {
                 console.error(`[v0] Error generating reset link:`, resetError)
               }
 
-              // Send welcome email
+              const passwordSetupLink = resetData?.properties?.action_link || `${baseUrl}/auth/reset-password`
+
+              console.log(`[v0] Generated password setup link for ${customerEmail}`)
+
+              // Send ONLY our custom welcome email (Supabase won't send any email)
               const tier = session.metadata.tier || "Subscription"
               const credits = Number.parseInt(session.metadata.credits || "0")
 
               const emailContent = generateWelcomeEmail({
                 email: customerEmail,
-                resetLink: resetData?.properties?.action_link || "#",
+                resetLink: passwordSetupLink,
                 creditsGranted: credits,
                 subscriptionTier: tier,
               })
