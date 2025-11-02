@@ -180,9 +180,9 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
         </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 safe-area-bottom z-50 px-2 sm:px-3 md:px-4 pb-3 sm:pb-4 md:pb-5">
+      <div className="fixed bottom-0 left-0 right-0 safe-area-bottom z-50 px-2 sm:px-3 md:px-4 pb-2 sm:pb-2.5 md:pb-3">
         <div className="bg-white/20 backdrop-blur-3xl rounded-[1.75rem] sm:rounded-[2rem] md:rounded-[2.5rem] border border-white/40 shadow-2xl shadow-stone-900/20">
-          <div className="overflow-x-auto scrollbar-hide px-1.5 sm:px-2 md:px-3 py-2.5 sm:py-3 md:py-4">
+          <div className="overflow-x-auto scrollbar-hide px-1.5 sm:px-2 md:px-3 py-2 sm:py-2.5 md:py-3">
             <div className="flex gap-1 sm:gap-2 min-w-max sm:justify-around">
               {tabs.map((tab) => {
                 const Icon = tab.icon

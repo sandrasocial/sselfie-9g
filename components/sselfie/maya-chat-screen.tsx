@@ -708,7 +708,11 @@ export default function MayaChatScreen() {
 
   return (
     <div
-      className="h-full flex flex-col"
+      className="h-full flex flex-col relative"
+      style={{
+        paddingTop: "env(safe-area-inset-top)",
+        paddingBottom: "env(safe-area-inset-bottom)",
+      }}
       onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -726,7 +730,7 @@ export default function MayaChatScreen() {
         </div>
       )}
 
-      <div className="flex-shrink-0 flex items-center justify-between pt-3 sm:pt-4 pb-2">
+      <div className="flex-shrink-0 flex items-center justify-between px-4 pt-3 sm:pt-4 pb-3">
         <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
           <div className="w-11 h-11 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full border-2 border-stone-200/60 overflow-hidden flex-shrink-0">
             <img
@@ -776,48 +780,13 @@ export default function MayaChatScreen() {
         </div>
       </div>
 
-      {!isEmpty && (
-        <div className="flex-shrink-0 flex items-center gap-2 mb-3 pb-3 border-b border-white/30">
-          <button
-            onClick={() => setContentFilter("all")}
-            className={`px-4 py-2 rounded-xl text-xs font-medium tracking-wide transition-all duration-300 ${
-              contentFilter === "all"
-                ? "bg-stone-950 text-white"
-                : "bg-white/40 backdrop-blur-xl border border-white/60 text-stone-600 hover:bg-white/60"
-            }`}
-          >
-            All
-          </button>
-          <button
-            onClick={() => setContentFilter("photos")}
-            className={`px-4 py-2 rounded-xl text-xs font-medium tracking-wide transition-all duration-300 ${
-              contentFilter === "photos"
-                ? "bg-stone-950 text-white"
-                : "bg-white/40 backdrop-blur-xl border border-white/60 text-stone-600 hover:bg-white/60"
-            }`}
-          >
-            Photos
-          </button>
-          <button
-            onClick={() => setContentFilter("videos")}
-            className={`px-4 py-2 rounded-xl text-xs font-medium tracking-wide transition-all duration-300 ${
-              contentFilter === "videos"
-                ? "bg-stone-950 text-white"
-                : "bg-white/40 backdrop-blur-xl border border-white/60 text-stone-600 hover:bg-white/60"
-            }`}
-          >
-            Videos
-          </button>
-        </div>
-      )}
-
       {showHistory && (
-        <div className="flex-shrink-0 mb-3 sm:mb-4 bg-white/50 backdrop-blur-3xl border border-white/60 rounded-2xl p-4 shadow-xl shadow-stone-950/5 animate-in slide-in-from-top-2 duration-300">
+        <div className="flex-shrink-0 mx-4 mb-3 sm:mb-4 bg-white/50 backdrop-blur-3xl border border-white/60 rounded-2xl p-4 shadow-xl shadow-stone-950/5 animate-in slide-in-from-top-2 duration-300">
           <MayaChatHistory currentChatId={chatId} onSelectChat={handleSelectChat} onNewChat={handleNewChat} />
         </div>
       )}
 
-      <div className="flex-1 relative min-h-0">
+      <div className="flex-1 min-h-0 px-4">
         <div
           ref={messagesContainerRef}
           onScroll={handleScroll}
@@ -1029,7 +998,7 @@ export default function MayaChatScreen() {
         )}
       </div>
 
-      <div className="flex-shrink-0 border-t border-white/30 pt-3 sm:pt-4 mt-3 sm:mt-4 pb-2">
+      <div className="flex-shrink-0 border-t border-white/30 px-4 pt-3 sm:pt-4 pb-3 mt-auto">
         {uploadedImage ? (
           <div className="mb-3">
             <div className="flex items-center gap-2 mb-2">

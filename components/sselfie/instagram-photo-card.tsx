@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Image from "next/image"
 import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal } from "lucide-react"
-import ImageViewerModal from "./image-viewer-modal"
+import FullscreenImageModal from "./fullscreen-image-modal"
 import type { ConceptData } from "./types"
 
 interface InstagramPhotoCardProps {
@@ -222,8 +222,8 @@ export default function InstagramPhotoCard({
         </div>
       </div>
 
-      {/* Image Viewer Modal */}
-      <ImageViewerModal
+      {/* Fullscreen Image Modal */}
+      <FullscreenImageModal
         imageUrl={imageUrl}
         imageId={Number.parseInt(imageId)}
         title={concept.title}
