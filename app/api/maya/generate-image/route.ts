@@ -105,14 +105,11 @@ export async function POST(request: NextRequest) {
     }
 
     if (category === "Full Body") {
-      // Emphasize facial clarity and resemblance in full-body compositions
       const facialEmphasis =
-        "detailed face with clear features, sharp eyes, recognizable facial structure, strong facial resemblance, face in sharp focus"
+        "detailed face with clear features, recognizable facial structure, strong facial resemblance, face in sharp focus"
       if (!finalPrompt.toLowerCase().includes("detailed face")) {
-        // Insert facial emphasis after trigger word and before styling details
-        const parts = finalPrompt.split(", ")
-        parts.splice(1, 0, facialEmphasis)
-        finalPrompt = parts.join(", ")
+        // Append facial emphasis at the END of the prompt, not the beginning
+        finalPrompt = `${finalPrompt}, ${facialEmphasis}`
       }
     }
 
