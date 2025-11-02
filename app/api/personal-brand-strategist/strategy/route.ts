@@ -1,7 +1,7 @@
 import { streamText } from "ai"
-import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { PERSONAL_BRAND_STRATEGIST_PROMPT } from "@/lib/personal-brand-strategist/personality"
+import { getAuthenticatedUser } from "@/lib/auth-helper"
 
 export const maxDuration = 60
 
@@ -16,12 +16,7 @@ export async function POST(request: Request) {
       hasBrandProfile: !!brandProfile,
     })
 
-    // Get current user
-    const supabase = await createServerClient()
-    const {
-      data: { user: authUser },
-      error: authError,
-    } = await supabase.auth.getUser()
+    const { user: authUser, error: authError } = await getAuthenticatedUser()
 
     if (authError || !authUser) {
       console.error("[v0] Brand Strategist: Auth error", authError)

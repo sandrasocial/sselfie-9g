@@ -6,6 +6,7 @@ import { useState, useEffect, useRef } from "react"
 import { ImageIcon, Upload, RefreshCw } from "lucide-react"
 import InstagramPhotoCard from "./instagram-photo-card"
 import ImageGalleryModal from "./image-gallery-modal"
+import SchedulePostModal from "./schedule-post-modal"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import useSWR from "swr"
 
@@ -36,6 +37,7 @@ export default function FeedPostCard({ post, feedId, onGenerated }: FeedPostCard
   const [predictionId, setPredictionId] = useState<string | null>(post.prediction_id)
   const [postId, setPostId] = useState<string>(post.id.toString())
   const [showFullPreview, setShowFullPreview] = useState(false)
+  const [showScheduleModal, setShowScheduleModal] = useState(false)
   const [showGalleryModal, setShowGalleryModal] = useState(false)
   const [isReplacing, setIsReplacing] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -281,8 +283,43 @@ export default function FeedPostCard({ post, feedId, onGenerated }: FeedPostCard
           onDelete={() => {}}
           onCaptionUpdate={handleCaptionUpdate}
         />
+        <div className="mt-4 px-4 pb-4">
+          <button
+            onClick={() => {
+              setShowFullPreview(false)
+              setShowScheduleModal(true)
+            }}
+            className="w-full px-6 py-3 bg-stone-950 hover:bg-stone-800 text-white text-sm font-medium tracking-wider uppercase rounded-lg transition-all"
+          >
+            Add to Calendar
+          </button>
+        </div>
       </DialogContent>
     </Dialog>
+  )
+
+  // Schedule Modal
+  const scheduleModal = showScheduleModal && (
+    <SchedulePostModal
+      post={{
+        id: post.id,
+        feedId: Number.parseInt(feedId),
+        postType: post.post_type as "photo" | "reel" | "carousel",
+        imageUrl: generatedImageUrl,
+        caption: caption,
+        scheduledAt: null,
+        scheduledTime: "9:00 AM",
+        contentPillar: null,
+        status: "draft",
+        position: post.position,
+        prompt: post.prompt,
+      }}
+      onClose={() => setShowScheduleModal(false)}
+      onScheduled={() => {
+        setShowScheduleModal(false)
+        // Optionally show a success message
+      }}
+    />
   )
 
   return (
@@ -290,7 +327,7 @@ export default function FeedPostCard({ post, feedId, onGenerated }: FeedPostCard
       {fileInput}
       {galleryModal}
       {fullPreviewDialog}
-
+      {scheduleModal}
       {!isGenerating && !isGenerated && !error && (
         <div className="aspect-square flex flex-col items-center justify-center p-4 bg-gradient-to-br from-stone-100 to-stone-200 rounded-sm gap-3">
           <span className="text-xs font-bold text-stone-950 text-center">{post.post_type}</span>

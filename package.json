@@ -63,6 +63,7 @@
     "input-otp": "1.4.1",
     "jszip": "latest",
     "lucide-react": "^0.454.0",
+    "neon": "latest",
     "next": "16.0.0",
     "next-themes": "latest",
     "node-fetch": "latest",

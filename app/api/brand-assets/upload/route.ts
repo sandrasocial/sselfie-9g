@@ -3,21 +3,20 @@ import { type NextRequest, NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
+import { getAuthenticatedUser } from "@/lib/auth-helper"
 
 const sql = neon(process.env.DATABASE_URL!)
 
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createServerClient()
-    const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser()
 
-    if (!authUser) {
+    const { user: authUser, error: authError } = await getAuthenticatedUser()
+
+    if (authError || !authUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Get Neon user
     const neonUser = await getUserByAuthId(authUser.id)
     if (!neonUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
@@ -31,13 +30,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 })
     }
 
-    // Upload to Vercel Blob with user-specific path
     const blob = await put(`brand-assets/${neonUser.id}/${file.name}`, file, {
       access: "public",
       addRandomSuffix: true,
     })
 
-    // Save to database
     const result = await sql`
       INSERT INTO brand_assets (user_id, file_name, file_url, file_type, file_size, description)
       VALUES (${neonUser.id}, ${file.name}, ${blob.url}, ${file.type}, ${file.size}, ${description})

@@ -1,16 +1,13 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getOrCreateActiveChat, getChatMessages, loadChatById } from "@/lib/data/maya"
+import { getAuthenticatedUser } from "@/lib/auth-helper"
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createServerClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    const { user, error: authError } = await getAuthenticatedUser()
 
-    if (!user) {
+    if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 

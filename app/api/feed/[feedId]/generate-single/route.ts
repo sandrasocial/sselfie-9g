@@ -1,24 +1,49 @@
 import type { NextRequest } from "next/server"
-import { createServerClient } from "@/lib/supabase/server"
+import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { neon } from "@neondatabase/serverless"
 import { getReplicateClient } from "@/lib/replicate-client"
 import { MAYA_QUALITY_PRESETS } from "@/lib/maya/quality-settings"
+import { checkGenerationRateLimit } from "@/lib/rate-limit"
+import { checkCredits, deductCredits, CREDIT_COSTS } from "@/lib/credits"
 
 export async function POST(req: NextRequest, { params }: { params: { feedId: string } }) {
   try {
-    const supabase = await createServerClient()
-    const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser()
+    const { user: authUser, error: authError } = await getAuthenticatedUser()
 
-    if (!authUser) {
+    if (authError || !authUser) {
       return Response.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const user = await getUserByAuthId(authUser.id)
     if (!user) {
       return Response.json({ error: "User not found in database" }, { status: 404 })
+    }
+
+    const rateLimit = await checkGenerationRateLimit(user.id.toString())
+    if (!rateLimit.success) {
+      const resetDate = new Date(rateLimit.reset)
+      return Response.json(
+        {
+          error: "Rate limit exceeded",
+          details: `You've reached the limit of ${rateLimit.limit} images per hour. Resets at ${resetDate.toLocaleTimeString()}.`,
+          remaining: rateLimit.remaining,
+          reset: rateLimit.reset,
+        },
+        { status: 429 },
+      )
+    }
+
+    const hasCredits = await checkCredits(user.id.toString(), CREDIT_COSTS.image)
+    if (!hasCredits) {
+      return Response.json(
+        {
+          error: "Insufficient credits",
+          details: `You need ${CREDIT_COSTS.image} credit to generate an image. Please purchase more credits.`,
+          creditsNeeded: CREDIT_COSTS.image,
+        },
+        { status: 402 },
+      )
     }
 
     const { postId } = await req.json()
@@ -182,6 +207,21 @@ export async function POST(req: NextRequest, { params }: { params: { feedId: str
     })
 
     console.log("[v0] [GENERATE-SINGLE] Prediction created:", prediction.id)
+
+    const deduction = await deductCredits(
+      user.id.toString(),
+      CREDIT_COSTS.image,
+      "image",
+      `Feed post generation - ${post.post_type}`,
+      prediction.id,
+    )
+
+    if (!deduction.success) {
+      console.error("[v0] [GENERATE-SINGLE] Failed to deduct credits:", deduction.error)
+      // Note: Prediction already created, so we continue but log the error
+    } else {
+      console.log("[v0] [GENERATE-SINGLE] Credits deducted. New balance:", deduction.newBalance)
+    }
 
     await sql`
       UPDATE feed_posts

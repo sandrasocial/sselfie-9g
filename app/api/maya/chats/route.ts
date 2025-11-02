@@ -1,18 +1,15 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createServerClient } from "@/lib/supabase/server"
 import { getUserChats } from "@/lib/data/maya"
 import { getUserByAuthId } from "@/lib/user-mapping"
+import { getAuthenticatedUser } from "@/lib/auth-helper"
 
 export async function GET(request: NextRequest) {
   try {
     console.log("[v0] Fetching chat history...")
 
-    const supabase = await createServerClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    const { user, error: authError } = await getAuthenticatedUser()
 
-    if (!user) {
+    if (authError || !user) {
       console.log("[v0] No authenticated user")
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }

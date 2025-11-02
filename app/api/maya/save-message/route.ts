@@ -8,17 +8,17 @@ import {
   generateChatTitle,
   getChatMessages,
 } from "@/lib/data/maya"
+import { getAuthenticatedUser } from "@/lib/auth-helper"
 
 export async function POST(request: NextRequest) {
   try {
     console.log("[v0] ========== save-message API START ==========")
 
     const supabase = await createServerClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
 
-    if (!user) {
+    const { user, error: authError } = await getAuthenticatedUser()
+
+    if (authError || !user) {
       console.log("[v0] ❌ Unauthorized - no user")
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }

@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
-import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
+import { getAuthenticatedUser } from "@/lib/auth-helper"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -9,11 +9,7 @@ export async function GET(request: NextRequest) {
   try {
     console.log("[v0] === FETCHING USER VIDEOS ===")
 
-    const supabase = await createServerClient()
-    const {
-      data: { user: authUser },
-      error: authError,
-    } = await supabase.auth.getUser()
+    const { user: authUser, error: authError } = await getAuthenticatedUser()
 
     if (authError || !authUser) {
       console.log("[v0] No authenticated user")

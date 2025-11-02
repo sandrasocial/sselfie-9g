@@ -1,21 +1,18 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createServerClient } from "@/lib/supabase/server"
 import { neon } from "@neondatabase/serverless"
 import { getReplicateClient } from "@/lib/replicate-client"
 import { MAYA_QUALITY_PRESETS } from "@/lib/maya/quality-settings"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { checkCredits, deductCredits, CREDIT_COSTS } from "@/lib/credits"
+import { getAuthenticatedUser } from "@/lib/auth-helper"
 
 const sql = neon(process.env.DATABASE_URL || "")
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createServerClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    const { user, error: authError } = await getAuthenticatedUser()
 
-    if (!user) {
+    if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 

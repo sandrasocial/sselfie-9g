@@ -1,6 +1,6 @@
 import { generateText } from "ai"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { createServerClient } from "@/lib/supabase/server"
+import { getAuthenticatedUser } from "@/lib/auth-helper"
 
 export const maxDuration = 60
 
@@ -8,12 +8,9 @@ export async function POST(req: Request) {
   try {
     const { userAnswers } = await req.json()
 
-    const supabase = await createServerClient()
-    const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser()
+    const { user: authUser, error: authError } = await getAuthenticatedUser()
 
-    if (!authUser) {
+    if (authError || !authUser) {
       return new Response("Unauthorized", { status: 401 })
     }
 

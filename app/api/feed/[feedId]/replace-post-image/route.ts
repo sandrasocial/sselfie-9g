@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { createServerClient } from "@/lib/supabase/server"
+import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { neon } from "@neondatabase/serverless"
 
@@ -7,30 +7,26 @@ const sql = neon(process.env.DATABASE_URL!)
 
 export async function POST(request: Request, { params }: { params: { feedId: string } }) {
   try {
-    // 1. Authenticate user
-    const supabase = await createServerClient()
-    const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser()
+    const { user: authUser, error: authError } = await getAuthenticatedUser()
 
-    if (!authUser) {
+    if (authError || !authUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // 2. Get Neon user
+    // Get Neon user
     const neonUser = await getUserByAuthId(authUser.id)
     if (!neonUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    // 3. Parse request body
+    // Parse request body
     const { postId, imageUrl } = await request.json()
 
     if (!postId || !imageUrl) {
       return NextResponse.json({ error: "Missing postId or imageUrl" }, { status: 400 })
     }
 
-    // 4. Verify feed ownership
+    // Verify feed ownership
     const [feed] = await sql`
       SELECT id, user_id
       FROM feed_layouts
@@ -45,7 +41,7 @@ export async function POST(request: Request, { params }: { params: { feedId: str
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }
 
-    // 5. Update post image
+    // Update post image
     const [updatedPost] = await sql`
       UPDATE feed_posts
       SET 

@@ -3,21 +3,19 @@ import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getUserPersonalBrand } from "@/lib/data/maya"
 import { generateText } from "ai"
+import { getAuthenticatedUser } from "@/lib/auth-helper"
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = createServerClient()
-    const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser()
+    const { user: authUser, error: authError } = await getAuthenticatedUser()
 
-    if (!authUser) {
+    if (authError || !authUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { postType, caption, position } = await req.json()
+    const { data } = await createServerClient().auth.getUser()
+    const neonUser = await getUserByAuthId(data.user.id)
 
-    const neonUser = await getUserByAuthId(authUser.id)
     if (!neonUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
@@ -27,6 +25,8 @@ export async function POST(req: NextRequest) {
     const niche = personalBrand?.business_type || "general"
     const targetAudience = personalBrand?.target_audience || "general audience"
     const brandVoice = personalBrand?.brand_voice || "authentic and relatable"
+
+    const { postType, caption, position } = await req.json()
 
     const { text: tips } = await generateText({
       model: "openai/gpt-4o-mini",

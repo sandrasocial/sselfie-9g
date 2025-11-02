@@ -20,24 +20,59 @@ export interface NeonUser {
   updated_at: string
 }
 
+async function retryWithBackoff<T>(fn: () => Promise<T>, maxRetries = 3, baseDelay = 1000): Promise<T> {
+  let lastError: Error | null = null
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await fn()
+    } catch (error: any) {
+      lastError = error
+      const errorMessage = error?.message || String(error)
+
+      // Check if it's a rate limit error
+      const isRateLimit =
+        errorMessage.includes("Too Many Requests") ||
+        errorMessage.includes("429") ||
+        errorMessage.includes("rate limit")
+
+      if (isRateLimit && attempt < maxRetries - 1) {
+        const delay = baseDelay * (attempt + 1)
+        console.log(`[v0] Rate limit hit, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries})`)
+        await new Promise((resolve) => setTimeout(resolve, delay))
+        continue
+      }
+
+      // If not a rate limit error or last attempt, throw
+      throw error
+    }
+  }
+
+  throw lastError
+}
+
 /**
  * Get or create a Neon database user linked to a Supabase auth user
  * Maps users by email address
  */
 export async function getOrCreateNeonUser(supabaseAuthId: string, email: string, name?: string): Promise<NeonUser> {
   try {
-    const existingUsers = await sql`
+    const existingUsers = await retryWithBackoff(
+      () => sql`
       SELECT * FROM users WHERE email = ${email} LIMIT 1
-    `
+    `,
+    )
 
     if (existingUsers.length > 0) {
       const user = existingUsers[0] as NeonUser
       if (!user.supabase_user_id) {
-        await sql`
+        await retryWithBackoff(
+          () => sql`
           UPDATE users 
           SET supabase_user_id = ${supabaseAuthId}, updated_at = NOW()
           WHERE id = ${user.id}
-        `
+        `,
+        )
         user.supabase_user_id = supabaseAuthId
       }
       return user
@@ -45,11 +80,13 @@ export async function getOrCreateNeonUser(supabaseAuthId: string, email: string,
 
     const userId = crypto.randomUUID()
 
-    const newUsers = await sql`
+    const newUsers = await retryWithBackoff(
+      () => sql`
       INSERT INTO users (id, email, display_name, supabase_user_id, created_at, updated_at)
       VALUES (${userId}, ${email}, ${name || email.split("@")[0]}, ${supabaseAuthId}, NOW(), NOW())
       RETURNING *
-    `
+    `,
+    )
 
     return newUsers[0] as NeonUser
   } catch (error) {
@@ -62,9 +99,11 @@ export async function getOrCreateNeonUser(supabaseAuthId: string, email: string,
  * Get Neon user by email
  */
 export async function getNeonUserByEmail(email: string): Promise<NeonUser | null> {
-  const users = await sql`
+  const users = await retryWithBackoff(
+    () => sql`
     SELECT * FROM users WHERE email = ${email} LIMIT 1
-  `
+  `,
+  )
 
   return users.length > 0 ? (users[0] as NeonUser) : null
 }
@@ -73,9 +112,11 @@ export async function getNeonUserByEmail(email: string): Promise<NeonUser | null
  * Get Neon user by ID
  */
 export async function getNeonUserById(id: string): Promise<NeonUser | null> {
-  const users = await sql`
+  const users = await retryWithBackoff(
+    () => sql`
     SELECT * FROM users WHERE id = ${id} LIMIT 1
-  `
+  `,
+  )
 
   return users.length > 0 ? (users[0] as NeonUser) : null
 }
@@ -86,11 +127,13 @@ export async function getNeonUserById(id: string): Promise<NeonUser | null> {
  */
 export async function getUserByAuthId(authId: string): Promise<NeonUser | null> {
   try {
-    const users = await sql`
+    const users = await retryWithBackoff(
+      () => sql`
       SELECT * FROM users 
       WHERE stack_auth_id = ${authId} OR supabase_user_id = ${authId}
       LIMIT 1
-    `
+    `,
+    )
 
     return users.length > 0 ? (users[0] as NeonUser) : null
   } catch (error) {
@@ -106,9 +149,10 @@ export async function getUserByAuthId(authId: string): Promise<NeonUser | null> 
 export async function getUserId(): Promise<string | null> {
   try {
     const supabase = await createServerClient()
+
     const {
       data: { user: authUser },
-    } = await supabase.auth.getUser()
+    } = await retryWithBackoff(() => supabase.auth.getUser())
 
     if (!authUser) {
       return null

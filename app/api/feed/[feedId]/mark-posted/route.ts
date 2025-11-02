@@ -1,17 +1,14 @@
 import type { NextRequest } from "next/server"
 import { neon } from "@neondatabase/serverless"
-import { createServerClient } from "@/lib/supabase/server"
+import { getAuthenticatedUser } from "@/lib/auth-helper"
 
 const sql = neon(process.env.DATABASE_URL!)
 
 export async function POST(req: NextRequest, { params }: { params: { feedId: string } }) {
   try {
-    const supabase = createServerClient()
-    const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser()
+    const { user: authUser, error: authError } = await getAuthenticatedUser()
 
-    if (!authUser) {
+    if (authError || !authUser) {
       return Response.json({ error: "Unauthorized" }, { status: 401 })
     }
 

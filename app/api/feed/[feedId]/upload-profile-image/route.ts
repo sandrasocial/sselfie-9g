@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { createServerClient } from "@/lib/supabase/server"
+import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { neon } from "@neondatabase/serverless"
 import { put } from "@vercel/blob"
@@ -8,23 +8,19 @@ const sql = neon(process.env.DATABASE_URL!)
 
 export async function POST(request: Request, { params }: { params: { feedId: string } }) {
   try {
-    // 1. Authenticate user
-    const supabase = await createServerClient()
-    const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser()
+    const { user: authUser, error: authError } = await getAuthenticatedUser()
 
-    if (!authUser) {
+    if (authError || !authUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // 2. Get Neon user
+    // Get Neon user
     const neonUser = await getUserByAuthId(authUser.id)
     if (!neonUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    // 3. Parse form data
+    // Parse form data
     const formData = await request.formData()
     const image = formData.get("image") as File
 
@@ -32,12 +28,12 @@ export async function POST(request: Request, { params }: { params: { feedId: str
       return NextResponse.json({ error: "Missing image file" }, { status: 400 })
     }
 
-    // 4. Upload to Vercel Blob
+    // Upload to Vercel Blob
     const blob = await put(`profile-${params.feedId}-${Date.now()}.${image.name.split(".").pop()}`, image, {
       access: "public",
     })
 
-    // 5. Update feed layout with new profile image URL
+    // Update feed layout with new profile image URL
     const [updatedFeed] = await sql`
       UPDATE feed_layouts
       SET 
@@ -52,7 +48,7 @@ export async function POST(request: Request, { params }: { params: { feedId: str
       return NextResponse.json({ error: "Feed not found or unauthorized" }, { status: 404 })
     }
 
-    // 6. Also save to ai_images gallery
+    // Also save to ai_images gallery
     await sql`
       INSERT INTO ai_images (
         user_id,

@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { createServerClient } from "@/lib/supabase/server"
+import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { neon } from "@neondatabase/serverless"
 import { getReplicateClient } from "@/lib/replicate-client"
 import { MAYA_QUALITY_PRESETS } from "@/lib/maya/quality-settings"
@@ -9,12 +9,9 @@ import { z } from "zod"
 
 export async function POST(req: NextRequest, { params }: { params: { feedId: string } }) {
   try {
-    const supabase = await createServerClient()
-    const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser()
+    const { user: authUser, error: authError } = await getAuthenticatedUser()
 
-    if (!authUser) {
+    if (authError || !authUser) {
       return Response.json({ error: "Unauthorized" }, { status: 401 })
     }
 

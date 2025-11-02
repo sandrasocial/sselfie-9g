@@ -1,21 +1,20 @@
 import type { NextRequest } from "next/server"
-import { neon } from "@neondatabase/serverless"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { createServerClient } from "@/lib/supabase/server"
-
-const sql = neon(process.env.DATABASE_URL!)
+import { getAuthenticatedUser } from "@/lib/auth-helper"
+import { getDb } from "@/lib/db"
 
 export async function GET(req: NextRequest, { params }: { params: { feedId: string } }) {
   try {
     const { feedId } = params
+    const sql = getDb()
 
     if (feedId === "latest") {
       const supabase = await createServerClient()
-      const {
-        data: { user: authUser },
-      } = await supabase.auth.getUser()
 
-      if (!authUser) {
+      const { user: authUser, error: authError } = await getAuthenticatedUser()
+
+      if (authError || !authUser) {
         return Response.json({ error: "Unauthorized" }, { status: 401 })
       }
 
@@ -107,7 +106,8 @@ export async function GET(req: NextRequest, { params }: { params: { feedId: stri
     })
   } catch (error: any) {
     console.error("[v0] Error fetching feed:", error?.message || error)
-    return Response.json({ error: "Failed to load feed. Please try again." }, { status: 500 })
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    return Response.json({ error: "Failed to load feed. Please try again.", details: errorMessage }, { status: 500 })
   }
 }
 
@@ -116,6 +116,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { feedId: st
     const { feedId } = params
     const body = await req.json()
     const { bio } = body
+    const sql = getDb()
 
     if (!bio || typeof bio !== "string") {
       return Response.json({ error: "Bio is required" }, { status: 400 })
@@ -146,48 +147,59 @@ export async function PATCH(req: NextRequest, { params }: { params: { feedId: st
     return Response.json({ success: true, bio })
   } catch (error: any) {
     console.error("[v0] Error updating bio:", error?.message || error)
-    return Response.json({ error: "Internal server error" }, { status: 500 })
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    return Response.json({ error: "Internal server error", details: errorMessage }, { status: 500 })
   }
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: { feedId: string } }) {
   try {
+    console.log("[v0] DELETE feed request for feedId:", params.feedId)
     const { feedId } = params
+    const sql = getDb()
 
     const supabase = await createServerClient()
-    const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser()
 
-    if (!authUser) {
+    const { user: authUser, error: authError } = await getAuthenticatedUser()
+
+    if (authError || !authUser) {
+      console.error("[v0] DELETE feed auth error:", authError)
       return Response.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const user = await getUserByAuthId(authUser.id)
 
     if (!user) {
+      console.error("[v0] DELETE feed user not found")
       return Response.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Delete feed posts first (foreign key constraint)
+    console.log("[v0] Deleting feed for user:", user.id)
+
     await sql`
       DELETE FROM feed_posts
       WHERE feed_layout_id = ${feedId}
     `
+    console.log("[v0] Deleted feed posts")
 
-    // Delete highlights
+    await new Promise((resolve) => setTimeout(resolve, 100))
+
     await sql`
       DELETE FROM instagram_highlights
       WHERE feed_layout_id = ${feedId}
     `
+    console.log("[v0] Deleted highlights")
 
-    // Delete bio
+    await new Promise((resolve) => setTimeout(resolve, 100))
+
     await sql`
       DELETE FROM instagram_bios
       WHERE feed_layout_id = ${feedId}
     `
+    console.log("[v0] Deleted bio")
 
-    // Delete feed layout
+    await new Promise((resolve) => setTimeout(resolve, 100))
+
     await sql`
       DELETE FROM feed_layouts
       WHERE id = ${feedId} AND user_id = ${user.id}
@@ -196,7 +208,18 @@ export async function DELETE(req: NextRequest, { params }: { params: { feedId: s
     console.log("[v0] Successfully deleted feed:", feedId)
     return Response.json({ success: true })
   } catch (error: any) {
-    console.error("[v0] Error deleting feed:", error?.message || error)
-    return Response.json({ error: "Failed to delete feed. Please try again." }, { status: 500 })
+    console.error("[v0] Error deleting feed:", error)
+    let errorMessage = "Failed to delete feed. Please try again."
+
+    if (error instanceof Error) {
+      errorMessage = error.message
+    } else if (typeof error === "string") {
+      errorMessage = error
+    } else if (error?.message) {
+      errorMessage = String(error.message)
+    }
+
+    console.error("[v0] Serialized error message:", errorMessage)
+    return Response.json({ error: errorMessage }, { status: 500 })
   }
 }

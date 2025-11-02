@@ -155,6 +155,53 @@ export async function getChatMessages(chatId: number): Promise<MayaChatMessage[]
   }
 }
 
+async function retryDatabaseOperation<T>(operation: () => Promise<T>, maxRetries = 3, delayMs = 1000): Promise<T> {
+  let lastError: any
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await operation()
+    } catch (error: any) {
+      lastError = error
+
+      let errorMessage = ""
+
+      // Handle Response objects from fetch/Neon
+      if (error instanceof Response) {
+        errorMessage = `HTTP ${error.status}: ${error.statusText}`
+      } else if (error instanceof Error) {
+        errorMessage = error.message
+      } else if (error?.message) {
+        errorMessage = String(error.message)
+      } else if (typeof error === "string") {
+        errorMessage = error
+      } else {
+        // Safely convert to string without JSON.stringify
+        errorMessage = String(error)
+      }
+
+      // Check if it's a rate limit error
+      const isRateLimit =
+        errorMessage.includes("Too Many Requests") ||
+        errorMessage.includes("429") ||
+        errorMessage.includes("rate limit") ||
+        errorMessage.includes("too many requests")
+
+      if (isRateLimit && attempt < maxRetries) {
+        const delay = delayMs * Math.pow(2, attempt - 1) // Exponential backoff
+        console.log(`[v0] ⏳ Rate limit hit, retrying in ${delay}ms (attempt ${attempt}/${maxRetries})`)
+        await new Promise((resolve) => setTimeout(resolve, delay))
+        continue
+      }
+
+      // If not a rate limit error or we've exhausted retries, throw
+      throw error
+    }
+  }
+
+  throw lastError
+}
+
 // Save chat message
 export async function saveChatMessage(
   chatId: number,
@@ -173,11 +220,13 @@ export async function saveChatMessage(
   const safeContent = content || ""
 
   try {
-    const message = await sql`
-      INSERT INTO maya_chat_messages (chat_id, role, content, concept_cards)
-      VALUES (${chatId}, ${role}, ${safeContent}, ${conceptCards ? JSON.stringify(conceptCards) : null})
-      RETURNING *
-    `
+    const message = await retryDatabaseOperation(async () => {
+      return await sql`
+        INSERT INTO maya_chat_messages (chat_id, role, content, concept_cards)
+        VALUES (${chatId}, ${role}, ${safeContent}, ${conceptCards ? JSON.stringify(conceptCards) : null})
+        RETURNING *
+      `
+    })
 
     console.log("[v0] ✅ Message saved successfully:", {
       messageId: message[0].id,
@@ -185,12 +234,13 @@ export async function saveChatMessage(
       role: message[0].role,
     })
 
-    // Update chat last_activity
-    await sql`
-      UPDATE maya_chats
-      SET last_activity = NOW(), updated_at = NOW()
-      WHERE id = ${chatId}
-    `
+    await retryDatabaseOperation(async () => {
+      return await sql`
+        UPDATE maya_chats
+        SET last_activity = NOW(), updated_at = NOW()
+        WHERE id = ${chatId}
+      `
+    })
 
     console.log("[v0] ✅ Chat last_activity updated for chat:", chatId)
 
@@ -198,7 +248,6 @@ export async function saveChatMessage(
       const redis = getRedisClient()
       const cacheKey = CacheKeys.mayaChatMessages(chatId)
 
-      // Ensure cacheKey is a string
       if (typeof cacheKey === "string" && cacheKey.length > 0) {
         await redis.del(cacheKey)
         console.log("[v0] ✅ Cache invalidated for chat:", chatId)
@@ -206,33 +255,42 @@ export async function saveChatMessage(
         console.warn("[v0] ⚠️ Invalid cache key format:", cacheKey)
       }
     } catch (cacheError: any) {
-      // Log the full error for debugging but don't break the flow
-      console.error("[v0] ⚠️ Cache invalidation failed (non-critical):", {
-        error: cacheError?.message || String(cacheError),
-        chatId,
-        stack: cacheError?.stack,
-      })
-      // Don't throw - cache invalidation failure shouldn't break message saving
+      const cacheErrorMsg = cacheError instanceof Error ? cacheError.message : String(cacheError)
+      console.error("[v0] ⚠️ Cache invalidation failed (non-critical):", cacheErrorMsg)
     }
 
     return message[0] as MayaChatMessage
   } catch (error: any) {
-    console.error("[v0] ❌ Error in saveChatMessage:", {
-      chatId,
-      role,
-      error: error?.message || String(error),
-    })
+    let errorMessage = "Unknown error"
 
-    // Handle database errors and convert to proper Error objects
-    const errorMessage = error?.message || String(error)
+    // Handle different error types safely
+    if (error instanceof Response) {
+      errorMessage = `HTTP ${error.status}: ${error.statusText}`
+    } else if (error instanceof Error) {
+      errorMessage = error.message
+    } else if (error?.message) {
+      errorMessage = String(error.message)
+    } else if (typeof error === "string") {
+      errorMessage = error
+    } else {
+      // Convert to string without JSON.stringify to avoid parsing issues
+      errorMessage = String(error)
+    }
+
+    // Log error without creating JSON objects that might fail to parse
+    console.error("[v0] ❌ Error in saveChatMessage:")
+    console.error("  Chat ID:", chatId)
+    console.error("  Role:", role)
+    console.error("  Error:", errorMessage)
 
     // Check if it's a rate limit error
     if (
       errorMessage.includes("Too Many Requests") ||
       errorMessage.includes("429") ||
-      errorMessage.includes("rate limit")
+      errorMessage.includes("rate limit") ||
+      errorMessage.includes("too many requests")
     ) {
-      throw new Error("Too Many Requests: Database rate limit exceeded")
+      throw new Error("Too Many Requests: Database rate limit exceeded. Please try again in a moment.")
     }
 
     // Re-throw with proper error message

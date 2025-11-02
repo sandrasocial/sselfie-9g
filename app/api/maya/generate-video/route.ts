@@ -1,9 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createServerClient } from "@/lib/supabase/server"
 import { neon } from "@neondatabase/serverless"
 import { getReplicateClient } from "@/lib/replicate-client"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { checkCredits, deductCredits, CREDIT_COSTS } from "@/lib/credits"
+import { getAuthenticatedUser } from "@/lib/auth-helper"
 
 const sql = neon(process.env.DATABASE_URL || "")
 
@@ -35,12 +35,9 @@ function enhanceMotionPrompt(userPrompt: string | undefined, imageDescription?: 
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createServerClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    const { user, error: authError } = await getAuthenticatedUser()
 
-    if (!user) {
+    if (authError || !user) {
       console.log("[v0] ❌ No authenticated user")
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }

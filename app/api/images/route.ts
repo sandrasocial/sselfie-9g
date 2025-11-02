@@ -1,36 +1,15 @@
 import { NextResponse } from "next/server"
-import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getUserImages } from "@/lib/data/images"
+import { getAuthenticatedUser } from "@/lib/auth-helper"
 
 export async function GET() {
   console.log("[v0] Images API: Request received")
 
   try {
-    const supabase = await createServerClient()
-    console.log("[v0] Images API: Supabase client created")
+    console.log("[v0] Images API: Getting authenticated user")
 
-    let authUser
-    let authError
-    try {
-      const result = await supabase.auth.getUser()
-      authUser = result.data.user
-      authError = result.error
-    } catch (error) {
-      // Check if this is a rate limiting error (JSON parse error from HTML response)
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      if (errorMessage.includes("Too Many R") || errorMessage.includes("not valid JSON")) {
-        console.error("[v0] Images API: Supabase rate limit detected")
-        return NextResponse.json(
-          {
-            error: "Service temporarily unavailable due to high traffic. Please try again in a moment.",
-            retryAfter: 5,
-          },
-          { status: 503 },
-        )
-      }
-      throw error
-    }
+    const { user: authUser, error: authError } = await getAuthenticatedUser()
 
     console.log("[v0] Images API: Auth user", authUser?.id, authError)
 

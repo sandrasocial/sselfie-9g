@@ -202,3 +202,5 @@ export default function InstagramReelCard({
     </div>
   )
 }
+
+export { InstagramReelCard }

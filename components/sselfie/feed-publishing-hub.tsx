@@ -18,6 +18,7 @@ import {
   Bookmark,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import SchedulePostModal from "./schedule-post-modal"
 
 interface FeedPost {
   id: number
@@ -74,8 +75,8 @@ export default function FeedPublishingHub({
   )
   const [loadingTips, setLoadingTips] = useState(false)
   const [dynamicTips, setDynamicTips] = useState<Record<number, string>>({})
-  const [generatingImages, setGeneratingImages] = useState(false)
-  const [generationProgress, setGenerationProgress] = useState(0)
+  const [showScheduleModal, setShowScheduleModal] = useState(false)
+  const [postToSchedule, setPostToSchedule] = useState<FeedPost | null>(null)
 
   const layout = feedLayout.layout
 
@@ -128,6 +129,12 @@ export default function FeedPublishingHub({
     }
   }
 
+  const handleAddToCalendar = (post: FeedPost) => {
+    setPostToSchedule(post)
+    setShowScheduleModal(true)
+    setSelectedPost(null) // Close the preview modal
+  }
+
   useEffect(() => {
     if (selectedPost && !dynamicTips[selectedPost.id]) {
       fetchInstagramTips(selectedPost)
@@ -174,44 +181,6 @@ export default function FeedPublishingHub({
   }
 
   const postedCount = Object.values(postedStatus).filter(Boolean).length
-
-  // Function to start image generation
-  const startImageGeneration = async () => {
-    setGeneratingImages(true)
-    try {
-      const response = await fetch(`/api/feed/${feedId}/generate-images`, {
-        method: "POST",
-      })
-
-      if (response.ok) {
-        // Start polling for progress
-        pollGenerationProgress()
-      }
-    } catch (error) {
-      console.error("[v0] Error starting image generation:", error)
-      setGeneratingImages(false)
-    }
-  }
-
-  const pollGenerationProgress = async () => {
-    const interval = setInterval(async () => {
-      try {
-        const response = await fetch(`/api/feed/${feedId}/progress`)
-        const data = await response.json()
-
-        setGenerationProgress(data.progress)
-
-        if (data.progress === 100) {
-          clearInterval(interval)
-          setGeneratingImages(false)
-          // Refresh the page to show generated images
-          window.location.reload()
-        }
-      } catch (error) {
-        console.error("[v0] Error checking progress:", error)
-      }
-    }, 3000) // Check every 3 seconds
-  }
 
   return (
     <div className="min-h-screen bg-white">
@@ -326,46 +295,6 @@ export default function FeedPublishingHub({
             </button>
           </div>
         </div>
-
-        {/* Generate Images Button */}
-        {posts.some((post) => !post.image_url) && !generatingImages && (
-          <div className="mx-4 my-6 bg-gradient-to-br from-stone-950 to-stone-800 rounded-xl p-6 text-white">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center flex-shrink-0">
-                <Sparkles size={24} className="text-white" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-medium mb-2">Ready to Generate Your Feed</h3>
-                <p className="text-white/80 text-sm mb-4">
-                  Your feed strategy is complete. Click below to generate all 9 images using your trained model.
-                </p>
-                <Button onClick={startImageGeneration} className="bg-white text-stone-950 hover:bg-white/90">
-                  <Sparkles size={16} className="mr-2" />
-                  Generate All Images
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Progress Bar During Generation */}
-        {generatingImages && (
-          <div className="mx-4 my-6 bg-white rounded-xl p-6 border border-stone-200">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-10 h-10 border-2 border-stone-300 border-t-stone-950 rounded-full animate-spin" />
-              <div>
-                <h3 className="text-lg font-medium text-stone-950">Generating Your Feed</h3>
-                <p className="text-sm text-stone-600">Maya is creating your images... {generationProgress}% complete</p>
-              </div>
-            </div>
-            <div className="w-full bg-stone-200 rounded-full h-3">
-              <div
-                className="bg-stone-950 h-3 rounded-full transition-all duration-500"
-                style={{ width: `${generationProgress}%` }}
-              />
-            </div>
-          </div>
-        )}
 
         <div className="grid grid-cols-3 gap-1">
           {posts.map((post) => (
@@ -593,9 +522,45 @@ export default function FeedPublishingHub({
                   {postedStatus[selectedPost.id] ? "Posted" : "Mark as Posted"}
                 </Button>
               </div>
+
+              {/* Add to Calendar Button */}
+              <Button
+                onClick={() => handleAddToCalendar(selectedPost)}
+                className="w-full gap-2 bg-stone-950 hover:bg-stone-800 text-white"
+              >
+                Add to Calendar
+              </Button>
             </div>
           </div>
         </div>
+      )}
+
+      {/* Schedule Modal */}
+      {showScheduleModal && postToSchedule && (
+        <SchedulePostModal
+          post={{
+            id: postToSchedule.id,
+            feedId: Number.parseInt(feedId),
+            postType: postToSchedule.post_type as "photo" | "reel" | "carousel",
+            imageUrl: postToSchedule.image_url,
+            caption: postToSchedule.caption,
+            scheduledAt: null,
+            scheduledTime: "9:00 AM",
+            contentPillar: null,
+            status: "draft",
+            position: postToSchedule.position,
+            prompt: postToSchedule.prompt,
+          }}
+          onClose={() => {
+            setShowScheduleModal(false)
+            setPostToSchedule(null)
+          }}
+          onScheduled={() => {
+            setShowScheduleModal(false)
+            setPostToSchedule(null)
+            // Optionally show a success message or refresh data
+          }}
+        />
       )}
     </div>
   )

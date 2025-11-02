@@ -35,6 +35,15 @@ export default function InstagramPhotoCard({
   const [isEditingCaption, setIsEditingCaption] = useState(false)
   const [captionValue, setCaptionValue] = useState(concept.description)
 
+  const formatCaption = (text: string) => {
+    return text.split("\n").map((line, index, array) => (
+      <span key={index}>
+        {line}
+        {index < array.length - 1 && <br />}
+      </span>
+    ))
+  }
+
   const handleLike = () => {
     setLiked(!liked)
     onFavoriteToggle()
@@ -172,10 +181,10 @@ export default function InstagramPhotoCard({
               {!isEditingCaption ? (
                 <span
                   onClick={() => setIsEditingCaption(true)}
-                  className="text-stone-950 cursor-text hover:bg-stone-50 rounded px-1 -mx-1 transition-all"
+                  className="text-stone-950 cursor-text hover:bg-stone-50 rounded px-1 -mx-1 transition-all whitespace-pre-wrap"
                   title="Click to edit caption"
                 >
-                  {concept.description}
+                  {formatCaption(concept.description)}
                 </span>
               ) : (
                 <div className="mt-2 space-y-2">
@@ -208,7 +217,6 @@ export default function InstagramPhotoCard({
                 </div>
               )}
             </div>
-            {/* </CHANGE> */}
             <p className="text-xs text-stone-400 uppercase tracking-wide">Just now</p>
           </div>
         </div>
@@ -228,3 +236,5 @@ export default function InstagramPhotoCard({
     </>
   )
 }
+
+export { InstagramPhotoCard }
