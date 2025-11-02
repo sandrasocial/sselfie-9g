@@ -108,22 +108,22 @@ export default function InteractivePipelineShowcase() {
   ]
 
   return (
-    <section ref={containerRef} className="relative bg-stone-50">
+    <section ref={containerRef} className="relative bg-stone-50 overflow-x-hidden">
       {/* Sticky Step Navigation */}
-      <div className="sticky top-24 z-40 bg-stone-50/80 backdrop-blur-sm border-b border-stone-200 py-4">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex items-center justify-center gap-2 md:gap-4">
+      <div className="sticky top-20 sm:top-24 z-40 bg-stone-50/80 backdrop-blur-sm border-b border-stone-200 py-3 sm:py-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="flex items-center justify-center gap-1 sm:gap-2 md:gap-4 overflow-x-auto pb-2 sm:pb-0">
             {["TRAIN", "CHAT", "GENERATE", "DESIGN", "PREVIEW"].map((step, index) => (
-              <div key={index} className="flex items-center gap-2">
+              <div key={index} className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                 <div
-                  className={`w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center text-xs transition-all duration-300 ${
+                  className={`w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center text-[10px] sm:text-xs transition-all duration-300 ${
                     activeStep >= index ? "bg-stone-950 text-stone-50" : "bg-stone-200 text-stone-500"
                   }`}
                 >
                   {index + 1}
                 </div>
                 <span
-                  className={`hidden md:block text-xs font-light tracking-wider uppercase transition-colors ${
+                  className={`hidden sm:block text-[10px] sm:text-xs font-light tracking-wider uppercase transition-colors ${
                     activeStep >= index ? "text-stone-950" : "text-stone-400"
                   }`}
                 >
@@ -131,7 +131,7 @@ export default function InteractivePipelineShowcase() {
                 </span>
                 {index < 4 && (
                   <div
-                    className={`hidden md:block w-8 h-0.5 transition-colors ${
+                    className={`hidden md:block w-6 sm:w-8 h-0.5 transition-colors ${
                       activeStep > index ? "bg-stone-950" : "bg-stone-200"
                     }`}
                   />
@@ -143,38 +143,42 @@ export default function InteractivePipelineShowcase() {
       </div>
 
       {/* Hero Intro */}
-      <div className="py-24 md:py-32">
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <p className="text-xs font-light tracking-[0.3em] uppercase text-stone-500 mb-4">SEE HOW IT WORKS</p>
+      <div className="py-16 sm:py-24 md:py-32">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
+          <p className="text-[10px] sm:text-xs font-light tracking-[0.25em] sm:tracking-[0.3em] uppercase text-stone-500 mb-3 sm:mb-4">
+            SEE HOW IT WORKS
+          </p>
           <h2
-            className="text-4xl md:text-6xl lg:text-7xl font-light mb-6 leading-tight"
+            className="text-2xl sm:text-4xl md:text-6xl lg:text-7xl font-light mb-4 sm:mb-6 leading-tight"
             style={{ fontFamily: "Georgia, serif" }}
           >
             Meet Maya, Your AI Photo Strategist
           </h2>
-          <p className="text-base md:text-lg font-light leading-relaxed text-stone-700 max-w-2xl mx-auto">
+          <p className="text-sm sm:text-base md:text-lg font-light leading-relaxed text-stone-700 max-w-2xl mx-auto">
             Watch how SSELFIE transforms your selfies into professional brand photos in just 5 simple steps.
           </p>
         </div>
       </div>
 
       {/* Step 1: Training Your Model */}
-      <div ref={step1Ref} className="py-24 md:py-32 bg-stone-100">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
+      <div ref={step1Ref} className="py-16 sm:py-24 md:py-32 bg-stone-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 max-w-full">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-12 items-center">
             <motion.div
               initial={{ opacity: 0, x: -50 }}
               animate={step1InView ? { opacity: 1, x: 0 } : {}}
               transition={{ duration: 0.8 }}
             >
-              <p className="text-xs font-light tracking-[0.3em] uppercase text-stone-500 mb-4">STEP 1</p>
+              <p className="text-[10px] sm:text-xs font-light tracking-[0.25em] sm:tracking-[0.3em] uppercase text-stone-500 mb-3 sm:mb-4">
+                STEP 1
+              </p>
               <h3
-                className="text-3xl md:text-5xl font-light mb-6 leading-tight"
+                className="text-2xl sm:text-3xl md:text-5xl font-light mb-4 sm:mb-6 leading-tight"
                 style={{ fontFamily: "Georgia, serif" }}
               >
                 Train Your AI Model
               </h3>
-              <p className="text-base font-light leading-relaxed text-stone-700 mb-8">
+              <p className="text-sm sm:text-base font-light leading-relaxed text-stone-700 mb-6 sm:mb-8">
                 Upload 10-20 selfies and let AI learn your unique features. The more variety, the better your results.
               </p>
               <div className="space-y-4">
@@ -215,7 +219,7 @@ export default function InteractivePipelineShowcase() {
               initial={{ opacity: 0, x: 50 }}
               animate={step1InView ? { opacity: 1, x: 0 } : {}}
               transition={{ duration: 0.8, delay: 0.2 }}
-              className="grid grid-cols-3 gap-4"
+              className="grid grid-cols-3 gap-2 sm:gap-4"
             >
               {[
                 {
@@ -275,9 +279,9 @@ export default function InteractivePipelineShowcase() {
       </div>
 
       {/* Step 2: Chat with Maya */}
-      <div ref={step2Ref} className="py-24 md:py-32 bg-stone-50">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
+      <div ref={step2Ref} className="py-16 sm:py-24 md:py-32 bg-stone-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="grid md:grid-cols-2 gap-8 sm:gap-12 items-center">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={step2InView ? { opacity: 1, scale: 1 } : {}}
@@ -359,14 +363,16 @@ export default function InteractivePipelineShowcase() {
               transition={{ duration: 0.8 }}
               className="order-1 md:order-2"
             >
-              <p className="text-xs font-light tracking-[0.3em] uppercase text-stone-500 mb-4">STEP 2</p>
+              <p className="text-[10px] sm:text-xs font-light tracking-[0.25em] sm:tracking-[0.3em] uppercase text-stone-500 mb-3 sm:mb-4">
+                STEP 2
+              </p>
               <h3
-                className="text-3xl md:text-5xl font-light mb-6 leading-tight"
+                className="text-2xl sm:text-3xl md:text-5xl font-light mb-4 sm:mb-6 leading-tight"
                 style={{ fontFamily: "Georgia, serif" }}
               >
                 Chat with Maya
               </h3>
-              <p className="text-base font-light leading-relaxed text-stone-700">
+              <p className="text-sm sm:text-base font-light leading-relaxed text-stone-700">
                 Tell Maya what you need. She'll understand your vision and create personalized photo concepts that
                 capture your authentic style and build your personal brand.
               </p>
@@ -376,14 +382,19 @@ export default function InteractivePipelineShowcase() {
       </div>
 
       {/* Step 3: Generate Photos */}
-      <div ref={step3Ref} className="py-24 md:py-32 bg-stone-100">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-12">
-            <p className="text-xs font-light tracking-[0.3em] uppercase text-stone-500 mb-4">STEP 3</p>
-            <h3 className="text-3xl md:text-5xl font-light mb-6 leading-tight" style={{ fontFamily: "Georgia, serif" }}>
+      <div ref={step3Ref} className="py-16 sm:py-24 md:py-32 bg-stone-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-8 sm:mb-12">
+            <p className="text-[10px] sm:text-xs font-light tracking-[0.25em] sm:tracking-[0.3em] uppercase text-stone-500 mb-3 sm:mb-4">
+              STEP 3
+            </p>
+            <h3
+              className="text-2xl sm:text-3xl md:text-5xl font-light mb-4 sm:mb-6 leading-tight"
+              style={{ fontFamily: "Georgia, serif" }}
+            >
               Generate Professional Photos
             </h3>
-            <p className="text-base font-light leading-relaxed text-stone-700 max-w-2xl mx-auto">
+            <p className="text-sm sm:text-base font-light leading-relaxed text-stone-700 max-w-2xl mx-auto">
               Watch your concept transform into a stunning professional photo in seconds.
             </p>
           </div>
@@ -439,14 +450,19 @@ export default function InteractivePipelineShowcase() {
       </div>
 
       {/* Step 4: Feed Designer */}
-      <div ref={step4Ref} className="py-24 md:py-32 bg-stone-50">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-12">
-            <p className="text-xs font-light tracking-[0.3em] uppercase text-stone-500 mb-4">STEP 4</p>
-            <h3 className="text-3xl md:text-5xl font-light mb-6 leading-tight" style={{ fontFamily: "Georgia, serif" }}>
+      <div ref={step4Ref} className="py-16 sm:py-24 md:py-32 bg-stone-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-8 sm:mb-12">
+            <p className="text-[10px] sm:text-xs font-light tracking-[0.25em] sm:tracking-[0.3em] uppercase text-stone-500 mb-3 sm:mb-4">
+              STEP 4
+            </p>
+            <h3
+              className="text-2xl sm:text-3xl md:text-5xl font-light mb-4 sm:mb-6 leading-tight"
+              style={{ fontFamily: "Georgia, serif" }}
+            >
               Design Your Feed
             </h3>
-            <p className="text-base font-light leading-relaxed text-stone-700 max-w-2xl mx-auto">
+            <p className="text-sm sm:text-base font-light leading-relaxed text-stone-700 max-w-2xl mx-auto">
               Plan your Instagram feed strategy. See how your photos work together before posting.
             </p>
           </div>
@@ -601,14 +617,19 @@ export default function InteractivePipelineShowcase() {
       </div>
 
       {/* Step 5: Instagram Preview */}
-      <div ref={step5Ref} className="py-24 md:py-32 bg-stone-100">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-12">
-            <p className="text-xs font-light tracking-[0.3em] uppercase text-stone-500 mb-4">STEP 5</p>
-            <h3 className="text-3xl md:text-5xl font-light mb-6 leading-tight" style={{ fontFamily: "Georgia, serif" }}>
+      <div ref={step5Ref} className="py-16 sm:py-24 md:py-32 bg-stone-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-8 sm:mb-12">
+            <p className="text-[10px] sm:text-xs font-light tracking-[0.25em] sm:tracking-[0.3em] uppercase text-stone-500 mb-3 sm:mb-4">
+              STEP 5
+            </p>
+            <h3
+              className="text-2xl sm:text-3xl md:text-5xl font-light mb-4 sm:mb-6 leading-tight"
+              style={{ fontFamily: "Georgia, serif" }}
+            >
               Preview on Instagram
             </h3>
-            <p className="text-base font-light leading-relaxed text-stone-700 max-w-2xl mx-auto">
+            <p className="text-sm sm:text-base font-light leading-relaxed text-stone-700 max-w-2xl mx-auto">
               See exactly how your post will look on Instagram before you publish.
             </p>
           </div>
@@ -888,17 +909,20 @@ export default function InteractivePipelineShowcase() {
       )}
 
       {/* CTA Section */}
-      <div className="py-24 md:py-32 bg-stone-50">
-        <div className="max-w-3xl mx-auto px-6 text-center">
-          <h3 className="text-3xl md:text-5xl font-light mb-6 leading-tight" style={{ fontFamily: "Georgia, serif" }}>
+      <div className="py-16 sm:py-24 md:py-32 bg-stone-50">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
+          <h3
+            className="text-2xl sm:text-3xl md:text-5xl font-light mb-4 sm:mb-6 leading-tight"
+            style={{ fontFamily: "Georgia, serif" }}
+          >
             Ready to Create Your Photos?
           </h3>
-          <p className="text-base font-light leading-relaxed text-stone-700 mb-8">
+          <p className="text-sm sm:text-base font-light leading-relaxed text-stone-700 mb-6 sm:mb-8 px-4">
             Join the beta and get 50% off for life. No credit card required to start.
           </p>
           <Link
             href="/auth/sign-up"
-            className="inline-block bg-stone-950 text-stone-50 px-10 py-4 rounded-lg text-sm uppercase tracking-wider hover:bg-stone-800 transition-all duration-200"
+            className="inline-block bg-stone-950 text-stone-50 px-8 sm:px-10 py-3 sm:py-4 rounded-lg text-xs sm:text-sm uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 min-h-[44px] flex items-center justify-center mx-auto"
           >
             START YOUR FREE TRIAL
           </Link>

@@ -69,9 +69,9 @@ export default function InteractiveFeaturesShowcase() {
   const feature = FEATURES[activeFeature]
 
   return (
-    <div className="space-y-12">
+    <div className="space-y-8 sm:space-y-12 overflow-x-hidden">
       {/* Feature Display */}
-      <div className="relative bg-stone-950 rounded-3xl overflow-hidden min-h-[700px] md:min-h-[600px]">
+      <div className="relative bg-stone-950 rounded-2xl sm:rounded-3xl overflow-hidden min-h-[600px] sm:min-h-[700px] md:min-h-[600px] max-w-full">
         <AnimatePresence mode="wait">
           <motion.div
             key={feature.id}
@@ -83,27 +83,29 @@ export default function InteractiveFeaturesShowcase() {
           >
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.1),transparent_50%)]" />
 
-            <div className="relative h-full grid md:grid-cols-2 gap-8 md:gap-12 p-6 md:p-16 overflow-y-auto">
-              {/* Left: Content */}
+            <div className="relative h-full grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 md:gap-12 p-4 sm:p-6 md:p-16 overflow-y-auto">
               <motion.div
                 initial={{ x: -50, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ delay: 0.2, duration: 0.6 }}
-                className="flex flex-col justify-center space-y-6 text-white"
+                className="flex flex-col justify-center space-y-4 sm:space-y-6 text-white"
               >
                 <div>
-                  <p className="text-xs font-light tracking-[0.3em] uppercase text-white/60 mb-3">{feature.subtitle}</p>
+                  <p className="text-[10px] sm:text-xs font-light tracking-[0.25em] sm:tracking-[0.3em] uppercase text-white/60 mb-2 sm:mb-3">
+                    {feature.subtitle}
+                  </p>
                   <h3
-                    className="text-3xl md:text-5xl font-extralight tracking-[0.15em] uppercase leading-tight mb-6"
+                    className="text-xl sm:text-3xl md:text-5xl font-extralight tracking-[0.1em] sm:tracking-[0.15em] uppercase leading-tight mb-4 sm:mb-6"
                     style={{ fontFamily: "'Times New Roman', serif" }}
                   >
                     {feature.title}
                   </h3>
-                  <p className="text-base md:text-lg font-light leading-relaxed text-white/90">{feature.description}</p>
+                  <p className="text-sm sm:text-base md:text-lg font-light leading-relaxed text-white/90">
+                    {feature.description}
+                  </p>
                 </div>
 
-                {/* Progress Indicator */}
-                <div className="flex gap-2">
+                <div className="flex gap-1.5 sm:gap-2">
                   {FEATURES.map((_, index) => (
                     <button
                       key={index}
@@ -128,7 +130,6 @@ export default function InteractiveFeaturesShowcase() {
                 </div>
               </motion.div>
 
-              {/* Right: Visual Mockup */}
               <motion.div
                 initial={{ x: 50, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
@@ -156,7 +157,7 @@ export default function InteractiveFeaturesShowcase() {
       </div>
 
       {/* Feature Navigation */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4">
         {FEATURES.map((feat, index) => (
           <button
             key={feat.id}
@@ -164,21 +165,21 @@ export default function InteractiveFeaturesShowcase() {
               setActiveFeature(index)
               setIsAutoPlaying(false)
             }}
-            className={`p-4 rounded-xl border transition-all text-left ${
+            className={`p-3 sm:p-4 rounded-xl border transition-all text-left min-h-[80px] sm:min-h-auto ${
               activeFeature === index
                 ? "border-stone-950 bg-stone-950 text-white"
                 : "border-stone-200 bg-stone-50 hover:border-stone-400"
             }`}
           >
             <p
-              className={`text-xs font-light tracking-[0.2em] uppercase mb-2 ${
+              className={`text-[10px] sm:text-xs font-light tracking-[0.15em] sm:tracking-[0.2em] uppercase mb-1 sm:mb-2 ${
                 activeFeature === index ? "text-white/60" : "text-stone-500"
               }`}
             >
               {feat.subtitle}
             </p>
             <p
-              className={`text-sm font-medium tracking-wider uppercase ${
+              className={`text-xs sm:text-sm font-medium tracking-wider uppercase ${
                 activeFeature === index ? "text-white" : "text-stone-950"
               }`}
             >
