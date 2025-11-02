@@ -61,7 +61,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
     refreshInterval: 0,
     revalidateOnFocus: false,
     revalidateOnReconnect: false,
-    dedupingInterval: 60000,
+    dedupingInterval: 5000,
   })
 
   const { data: stats } = useSWR(hasTrainedModel ? "/api/studio/stats" : null, fetcher, {

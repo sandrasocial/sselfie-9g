@@ -12,6 +12,7 @@ import ProfileScreen from "./profile-screen"
 import FeedDesignerScreen from "./feed-designer-screen"
 import { InstallPrompt } from "./install-prompt"
 import { ServiceWorkerProvider } from "./service-worker-provider"
+import BuyCreditsModal from "./buy-credits-modal"
 import type { User as UserType } from "./types"
 
 interface SselfieAppProps {
@@ -28,6 +29,7 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
   const [isLoadingTrainingStatus, setIsLoadingTrainingStatus] = useState(true)
   const [creditBalance, setCreditBalance] = useState<number>(0)
   const [isLoadingCredits, setIsLoadingCredits] = useState(true)
+  const [showBuyCreditsModal, setShowBuyCreditsModal] = useState(false)
 
   useEffect(() => {
     const fetchCredits = async () => {
@@ -103,6 +105,10 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
     posts: "127",
   }
 
+  const handleCreditsPurchased = () => {
+    refreshCredits()
+  }
+
   if (isLoading || isLoadingTrainingStatus || isLoadingCredits) {
     return <LoadingScreen />
   }
@@ -136,7 +142,7 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
                 </div>
               </div>
               <button
-                onClick={() => setActiveTab("profile")}
+                onClick={() => setShowBuyCreditsModal(true)}
                 className="text-xs tracking-[0.15em] uppercase font-light text-stone-600 hover:text-stone-900 transition-colors"
               >
                 Buy More
@@ -217,6 +223,13 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
 
       {/* InstallPrompt component */}
       <InstallPrompt />
+
+      {/* Buy Credits Modal */}
+      <BuyCreditsModal
+        open={showBuyCreditsModal}
+        onOpenChange={setShowBuyCreditsModal}
+        onSuccess={handleCreditsPurchased}
+      />
     </div>
   )
 }

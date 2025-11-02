@@ -19,7 +19,7 @@ import HashtagStrategyPanel from "./hashtag-strategy-panel"
 import ImageGalleryModal from "./image-gallery-modal"
 import ComingSoonScreen from "./coming-soon-screen"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
-import useSWR from "swr"
+import useSWR, { mutate } from "swr"
 
 interface FeedPost {
   id: string | number
@@ -1040,6 +1040,9 @@ export default function FeedDesignerScreen() {
         setFeedPosts([...postsWithConcepts])
 
         console.log("[v0] ✓ Feed loaded with", postsWithConcepts.length, "concept cards")
+
+        mutate("/api/feed-designer/preview")
+        console.log("[v0] Invalidated studio feed preview cache")
       } else {
         console.log("[v0] No existing feed found")
         setProfile({

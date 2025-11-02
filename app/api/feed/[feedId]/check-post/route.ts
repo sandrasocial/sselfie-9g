@@ -51,11 +51,6 @@ export async function GET(request: Request) {
 
       console.log("[v0] Image uploaded to Blob:", blob.url)
 
-      const [post] = await sql`
-        SELECT post_type, prompt, caption FROM feed_posts
-        WHERE id = ${Number.parseInt(postId)}
-      `
-
       await sql`
         UPDATE feed_posts
         SET 
@@ -65,29 +60,7 @@ export async function GET(request: Request) {
         WHERE id = ${Number.parseInt(postId)}
       `
 
-      console.log("[v0] Database updated with image URL")
-
-      await sql`
-        INSERT INTO generated_images (
-          user_id,
-          category,
-          subcategory,
-          prompt,
-          image_urls,
-          selected_url,
-          saved
-        ) VALUES (
-          ${neonUser.id},
-          'feed-design',
-          ${post?.post_type || "instagram-post"},
-          ${post?.prompt || "Instagram feed post"},
-          ARRAY[${blob.url}],
-          ${blob.url},
-          true
-        )
-      `
-
-      console.log("[v0] Image saved to gallery")
+      console.log("[v0] Database updated with image URL (not saved to gallery)")
 
       return NextResponse.json({
         status: "succeeded",
