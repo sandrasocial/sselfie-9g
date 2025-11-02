@@ -11,10 +11,9 @@ const nextConfig = {
   },
   experimental: {
     serverActions: {
-      bodySizeLimit: '50mb',
+      bodySizeLimit: '100mb', // Increased body size limit to 100mb to support ZIP uploads
     },
   },
-  // </CHANGE>
   async headers() {
     return [
       {

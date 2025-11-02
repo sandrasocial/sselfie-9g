@@ -8,14 +8,6 @@ import { neon } from "@neondatabase/serverless"
 
 const sql = neon(process.env.DATABASE_URL!)
 
-export const config = {
-  api: {
-    bodyParser: {
-      sizeLimit: "100mb",
-    },
-  },
-}
-
 export async function POST(request: Request) {
   try {
     console.log("[v0] Upload ZIP API called")

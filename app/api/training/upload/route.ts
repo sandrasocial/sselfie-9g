@@ -6,14 +6,6 @@ import { neon } from "@neondatabase/serverless"
 
 const sql = neon(process.env.DATABASE_URL!)
 
-export const config = {
-  api: {
-    bodyParser: {
-      sizeLimit: "50mb",
-    },
-  },
-}
-
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createServerClient()
