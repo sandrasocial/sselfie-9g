@@ -329,20 +329,22 @@ export default function FeedPostCard({ post, feedId, onGenerated }: FeedPostCard
       {fullPreviewDialog}
       {scheduleModal}
       {!isGenerating && !isGenerated && !error && (
-        <div className="aspect-square flex flex-col items-center justify-center p-4 bg-gradient-to-br from-stone-100 to-stone-200 rounded-sm gap-3">
-          <span className="text-xs font-bold text-stone-950 text-center">{post.post_type}</span>
+        <div className="aspect-square flex flex-col items-center justify-center p-2 sm:p-3 md:p-4 bg-gradient-to-br from-stone-100 to-stone-200 rounded-sm gap-2 sm:gap-3">
+          <span className="text-[10px] sm:text-xs font-bold text-stone-950 text-center leading-tight">
+            {post.post_type}
+          </span>
 
-          <div className="flex flex-col gap-2 w-full px-2">
+          <div className="flex flex-col gap-1.5 sm:gap-2 w-full px-1 sm:px-2">
             <button
               onClick={handleGenerate}
-              className="w-full px-4 py-2 bg-stone-950 text-white text-xs font-semibold rounded-full transition-all hover:bg-stone-800 hover:scale-105"
+              className="w-full px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-stone-950 text-white text-[10px] sm:text-xs font-semibold rounded-full transition-all hover:bg-stone-800 hover:scale-105"
             >
               Generate
             </button>
 
             <button
               onClick={() => setShowGalleryModal(true)}
-              className="w-full px-4 py-2 bg-white text-stone-950 text-xs font-semibold rounded-full transition-all hover:bg-stone-100 hover:scale-105 border border-stone-300"
+              className="w-full px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-white text-stone-950 text-[10px] sm:text-xs font-semibold rounded-full transition-all hover:bg-stone-100 hover:scale-105 border border-stone-300"
             >
               Choose from Gallery
             </button>
@@ -352,18 +354,21 @@ export default function FeedPostCard({ post, feedId, onGenerated }: FeedPostCard
 
       {isGenerating && (
         <div className="aspect-square flex flex-col items-center justify-center bg-stone-950/5">
-          <div className="relative w-10 h-10">
+          <div className="relative w-8 h-8 sm:w-10 sm:h-10">
             <div className="absolute inset-0 rounded-full bg-stone-200/20 animate-ping"></div>
-            <div className="relative w-10 h-10 rounded-full bg-stone-950 animate-spin border-4 border-transparent border-t-white"></div>
+            <div className="relative w-full h-full rounded-full bg-stone-950 animate-spin border-4 border-transparent border-t-white"></div>
           </div>
-          <span className="text-xs text-stone-600 mt-3">Creating...</span>
+          <span className="text-[10px] sm:text-xs text-stone-600 mt-2 sm:mt-3">Creating...</span>
         </div>
       )}
 
       {error && (
-        <div className="aspect-square flex flex-col items-center justify-center p-3 bg-red-50">
-          <span className="text-xs text-red-600 mb-2 text-center">{error}</span>
-          <button onClick={handleGenerate} className="text-xs font-semibold text-red-700 hover:text-red-900 underline">
+        <div className="aspect-square flex flex-col items-center justify-center p-2 sm:p-3 bg-red-50">
+          <span className="text-[10px] sm:text-xs text-red-600 mb-2 text-center leading-tight">{error}</span>
+          <button
+            onClick={handleGenerate}
+            className="text-[10px] sm:text-xs font-semibold text-red-700 hover:text-red-900 underline"
+          >
             Try Again
           </button>
         </div>
@@ -377,49 +382,45 @@ export default function FeedPostCard({ post, feedId, onGenerated }: FeedPostCard
             className="w-full h-full object-cover object-top"
           />
 
-          {/* Hover overlay with actions - clicking overlay opens preview */}
           <div
             onClick={() => setShowFullPreview(true)}
             className="absolute inset-0 bg-stone-950/0 group-hover:bg-stone-950/60 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer"
           >
-            <div className="flex items-center gap-2">
-              {/* Replace from Gallery */}
+            <div className="flex items-center gap-1 sm:gap-2">
               <button
                 onClick={(e) => {
                   e.stopPropagation()
                   setShowGalleryModal(true)
                 }}
                 disabled={isReplacing}
-                className="p-3 bg-white/90 backdrop-blur-xl rounded-full hover:bg-white transition-all hover:scale-110 disabled:opacity-50 relative z-10"
+                className="p-2 sm:p-3 bg-white/90 backdrop-blur-xl rounded-full hover:bg-white transition-all hover:scale-110 disabled:opacity-50 relative z-10"
                 title="Replace from Gallery"
               >
-                <ImageIcon size={16} className="text-stone-950" strokeWidth={2} />
+                <ImageIcon size={14} className="text-stone-950 sm:w-4 sm:h-4" strokeWidth={2} />
               </button>
 
-              {/* Upload Own Image */}
               <button
                 onClick={(e) => {
                   e.stopPropagation()
                   fileInputRef.current?.click()
                 }}
                 disabled={isReplacing}
-                className="p-3 bg-white/90 backdrop-blur-xl rounded-full hover:bg-white transition-all hover:scale-110 disabled:opacity-50 relative z-10"
+                className="p-2 sm:p-3 bg-white/90 backdrop-blur-xl rounded-full hover:bg-white transition-all hover:scale-110 disabled:opacity-50 relative z-10"
                 title="Upload Image"
               >
-                <Upload size={16} className="text-stone-950" strokeWidth={2} />
+                <Upload size={14} className="text-stone-950 sm:w-4 sm:h-4" strokeWidth={2} />
               </button>
 
-              {/* Regenerate */}
               <button
                 onClick={(e) => {
                   e.stopPropagation()
                   handleRegenerate()
                 }}
                 disabled={isReplacing}
-                className="p-3 bg-white/90 backdrop-blur-xl rounded-full hover:bg-white transition-all hover:scale-110 disabled:opacity-50 relative z-10"
+                className="p-2 sm:p-3 bg-white/90 backdrop-blur-xl rounded-full hover:bg-white transition-all hover:scale-110 disabled:opacity-50 relative z-10"
                 title="Regenerate"
               >
-                <RefreshCw size={16} className="text-stone-950" strokeWidth={2} />
+                <RefreshCw size={14} className="text-stone-950 sm:w-4 sm:h-4" strokeWidth={2} />
               </button>
             </div>
           </div>

@@ -1837,34 +1837,34 @@ export default function FeedDesignerScreen() {
           </div>
 
           {activeScreen === "feed" && (
-            <div className="flex-1 overflow-y-auto">
-              <div className="max-w-4xl mx-auto p-6">
+            <div className="flex-1 overflow-y-auto pb-24 sm:pb-28 md:pb-32">
+              <div className="max-w-4xl mx-auto p-3 sm:p-4 md:p-6">
                 <div className="bg-white rounded-xl border border-stone-200 overflow-hidden mb-6">
                   {/* Profile Header */}
-                  <div className="p-6 border-b border-stone-200">
-                    <div className="flex items-start gap-6 mb-6">
+                  <div className="p-3 sm:p-4 md:p-6 border-b border-stone-200">
+                    <div className="flex items-start gap-3 sm:gap-4 md:gap-6 mb-4 sm:mb-6">
                       <div className="relative group flex-shrink-0">
                         {!isProfileGenerated && !isGeneratingProfile && profile.profileImage.includes("placeholder") ? (
                           <button
                             onClick={handleGenerateProfileImage}
-                            className="w-24 h-24 rounded-full overflow-hidden border-2 border-dashed border-stone-300 bg-stone-50 flex flex-col items-center justify-center hover:border-stone-400 hover:bg-stone-100 transition-all"
+                            className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full overflow-hidden border-2 border-dashed border-stone-300 bg-stone-50 flex flex-col items-center justify-center hover:border-stone-400 hover:bg-stone-100 transition-all"
                           >
-                            <span className="text-xs font-medium text-stone-600 text-center px-2">
+                            <span className="text-[10px] sm:text-xs font-medium text-stone-600 text-center px-2">
                               Generate Profile
                             </span>
                           </button>
                         ) : isGeneratingProfile ? (
-                          <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-stone-200 bg-stone-100 flex items-center justify-center">
-                            <div className="relative w-12 h-12">
+                          <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full overflow-hidden border-2 border-stone-200 bg-stone-100 flex items-center justify-center">
+                            <div className="relative w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12">
                               <div className="absolute inset-0 rounded-full bg-stone-200/20 animate-ping"></div>
-                              <div className="relative w-12 h-12 rounded-full bg-stone-950 animate-spin border-4 border-transparent border-t-white"></div>
+                              <div className="relative w-full h-full rounded-full bg-stone-950 animate-spin border-4 border-transparent border-t-white"></div>
                             </div>
                           </div>
                         ) : (
                           <>
                             <button
                               onClick={() => setShowProfileFullSize(true)}
-                              className="w-24 h-24 rounded-full overflow-hidden border-2 border-stone-200"
+                              className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full overflow-hidden border-2 border-stone-200"
                             >
                               <img
                                 src={profile.profileImage || "/placeholder.svg"}
@@ -1910,26 +1910,28 @@ export default function FeedDesignerScreen() {
                       </div>
 
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-4 mb-4">
-                          <h2 className="text-xl font-normal text-stone-950">{profile.handle}</h2>
-                          <button className="px-4 py-1.5 bg-stone-100 hover:bg-stone-200 rounded-lg text-sm font-medium text-stone-950 transition-all">
+                        <div className="flex items-center gap-2 sm:gap-3 md:gap-4 mb-3 sm:mb-4">
+                          <h2 className="text-sm sm:text-base md:text-xl font-normal text-stone-950 truncate">
+                            {profile.handle}
+                          </h2>
+                          <button className="px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 bg-stone-100 hover:bg-stone-200 rounded-lg text-[10px] sm:text-xs md:text-sm font-medium text-stone-950 transition-all whitespace-nowrap">
                             Edit profile
                           </button>
                         </div>
 
                         {/* Stats */}
-                        <div className="flex items-center gap-6 mb-4">
+                        <div className="flex items-center gap-3 sm:gap-4 md:gap-6 mb-3 sm:mb-4">
                           <div className="text-center">
-                            <div className="text-sm font-semibold text-stone-950">{feedPosts.length}</div>
-                            <div className="text-xs text-stone-500">posts</div>
+                            <div className="text-xs sm:text-sm font-semibold text-stone-950">{feedPosts.length}</div>
+                            <div className="text-[10px] sm:text-xs text-stone-500">posts</div>
                           </div>
                           <div className="text-center">
-                            <div className="text-sm font-semibold text-stone-950">1,234</div>
-                            <div className="text-xs text-stone-500">followers</div>
+                            <div className="text-xs sm:text-sm font-semibold text-stone-950">1,234</div>
+                            <div className="text-[10px] sm:text-xs text-stone-500">followers</div>
                           </div>
                           <div className="text-center">
-                            <div className="text-sm font-semibold text-stone-950">567</div>
-                            <div className="text-xs text-stone-500">following</div>
+                            <div className="text-xs sm:text-sm font-semibold text-stone-950">567</div>
+                            <div className="text-[10px] sm:text-xs text-stone-500">following</div>
                           </div>
                         </div>
 
@@ -1980,7 +1982,7 @@ export default function FeedDesignerScreen() {
                     </div>
 
                     {/* Story Highlights */}
-                    <div className="flex items-center gap-4 overflow-x-auto pb-2">
+                    <div className="flex items-center gap-3 sm:gap-4 overflow-x-auto pb-2 -mx-3 px-3 sm:mx-0 sm:px-0">
                       {profile.highlights.map((highlight, index) => (
                         <StoryHighlightCard
                           key={index}
@@ -1997,12 +1999,12 @@ export default function FeedDesignerScreen() {
                       {(editingHighlights || profile.highlights.length === 0) && profile.highlights.length < 10 && (
                         <button
                           onClick={handleAddHighlight}
-                          className="flex flex-col items-center gap-2 flex-shrink-0 w-[80px] group"
+                          className="flex flex-col items-center gap-2 flex-shrink-0 w-[70px] sm:w-[80px] group"
                         >
-                          <div className="w-16 h-16 rounded-full bg-stone-100 border-2 border-dashed border-stone-300 flex items-center justify-center group-hover:border-stone-400 group-hover:bg-stone-50 transition-all">
-                            <span className="text-2xl text-stone-400 group-hover:text-stone-600">+</span>
+                          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-stone-100 border-2 border-dashed border-stone-300 flex items-center justify-center group-hover:border-stone-400 group-hover:bg-stone-50 transition-all">
+                            <span className="text-xl sm:text-2xl text-stone-400 group-hover:text-stone-600">+</span>
                           </div>
-                          <span className="text-xs text-stone-400 group-hover:text-stone-600">New</span>
+                          <span className="text-[10px] sm:text-xs text-stone-400 group-hover:text-stone-600">New</span>
                         </button>
                       )}
                     </div>
@@ -2010,27 +2012,27 @@ export default function FeedDesignerScreen() {
 
                   {/* Feed Posts Grid */}
                   {feedPosts.length > 0 && (
-                    <div className="space-y-8">
-                      <div className="grid grid-cols-3 gap-1">
+                    <div className="space-y-6 sm:space-y-8">
+                      <div className="grid grid-cols-3 gap-0.5 sm:gap-1">
                         {feedPosts.map((post, index) => (
                           <FeedPostCard key={post.id} post={post} feedId={currentFeedId} onGenerated={loadLatestFeed} />
                         ))}
                       </div>
 
-                      <div className="flex justify-center pt-4">
+                      <div className="flex justify-center pt-2 sm:pt-4 pb-4">
                         <button
                           onClick={handleAddRow}
                           disabled={isAddingRow || !currentFeedId}
-                          className="px-8 py-4 bg-stone-950 hover:bg-stone-800 text-white rounded-lg font-medium tracking-wider uppercase text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3"
+                          className="px-6 sm:px-8 py-3 sm:py-4 bg-stone-950 hover:bg-stone-800 text-white rounded-lg font-medium tracking-wider uppercase text-xs sm:text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 sm:gap-3"
                         >
                           {isAddingRow ? (
                             <>
-                              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                              <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                               Adding Posts...
                             </>
                           ) : (
                             <>
-                              <Plus className="w-5 h-5" />
+                              <Plus className="w-4 h-4" />
                               Add Row (3 More Posts)
                             </>
                           )}

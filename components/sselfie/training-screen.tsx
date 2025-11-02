@@ -248,8 +248,8 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
   const imageCount = trainingStatus?.trainingImages?.length || 0
 
   return (
-    <div className="space-y-8 pb-24">
-      <div className="pt-3 sm:pt-4 md:pt-6 text-center">
+    <div className="space-y-6 sm:space-y-8 pb-28 sm:pb-32 md:pb-36">
+      <div className="pt-3 sm:pt-4 md:pt-6 px-4 sm:px-6 text-center">
         <h1 className="text-2xl sm:text-3xl md:text-5xl font-serif font-extralight tracking-[0.3em] text-stone-950 uppercase leading-none mb-2 sm:mb-3">
           AI Training
         </h1>
@@ -259,7 +259,7 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
       </div>
 
       {trainingStage === "completed" && model && (
-        <div className="bg-white/50 backdrop-blur-2xl border border-white/60 rounded-xl sm:rounded-[1.75rem] p-5 sm:p-6 md:p-8 text-center shadow-xl shadow-stone-900/10">
+        <div className="mx-4 sm:mx-6 bg-white/50 backdrop-blur-2xl border border-white/60 rounded-xl sm:rounded-[1.75rem] p-5 sm:p-6 md:p-8 text-center shadow-xl shadow-stone-900/10">
           <div className="relative w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-4 sm:mb-6">
             <div className="absolute inset-0 bg-stone-200/30 rounded-full animate-ping"></div>
             <div className="relative w-20 h-20 sm:w-24 sm:h-24 bg-stone-950 rounded-full flex items-center justify-center shadow-2xl shadow-stone-900/40">
@@ -310,7 +310,7 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
       )}
 
       {trainingStage === "training" && (
-        <div className="bg-white/50 backdrop-blur-2xl border border-white/60 rounded-[1.75rem] p-6 sm:p-8 shadow-xl shadow-stone-900/10">
+        <div className="mx-4 sm:mx-6 bg-white/50 backdrop-blur-2xl border border-white/60 rounded-xl sm:rounded-[1.75rem] p-5 sm:p-6 md:p-8 shadow-xl shadow-stone-900/10">
           <div className="text-center mb-8">
             <div className="relative w-24 h-24 mx-auto mb-6">
               <div className="absolute inset-0 rounded-full bg-stone-200/30 animate-ping"></div>
@@ -382,7 +382,7 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
 
       {trainingStage === "upload" && (
         <>
-          <div className="bg-stone-100/50 border border-stone-200/40 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8">
+          <div className="mx-4 sm:mx-6 bg-stone-100/50 border border-stone-200/40 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8">
             <div className="text-center mb-4 sm:mb-6">
               <h3 className="text-base sm:text-lg md:text-xl font-serif font-extralight tracking-[0.15em] text-stone-950 uppercase mb-2 sm:mb-3">
                 Select Your Gender
@@ -425,7 +425,7 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
             )}
           </div>
 
-          <div className="bg-stone-100/50 border border-stone-200/40 rounded-3xl p-6 sm:p-8">
+          <div className="mx-4 sm:mx-6 bg-stone-100/50 border border-stone-200/40 rounded-2xl sm:rounded-3xl p-5 sm:p-6 md:p-8">
             <div className="text-center mb-8">
               <div className="text-xs tracking-[0.15em] uppercase font-light mb-4 text-stone-500">Step 1 of 2</div>
               <h3 className="text-xl sm:text-2xl font-serif font-extralight tracking-[0.1em] text-stone-950 uppercase mb-4">

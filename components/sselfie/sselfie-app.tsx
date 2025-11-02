@@ -144,7 +144,7 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
             </div>
           </div>
 
-          <div className="h-full px-4 sm:px-6 md:px-8 pb-4 sm:pb-6 md:pb-8 pt-4 sm:pt-6 md:pt-8 overflow-y-auto">
+          <div className="h-full px-4 sm:px-6 md:px-8 pb-32 sm:pb-36 md:pb-40 pt-4 sm:pt-6 md:pt-8 overflow-y-auto">
             {activeTab === "studio" && (
               <StudioScreen
                 user={user}

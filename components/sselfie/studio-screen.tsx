@@ -119,7 +119,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
 
   if (!hasTrainedModel) {
     return (
-      <div className="space-y-6 sm:space-y-8 pb-4 overflow-x-hidden max-w-full">
+      <div className="space-y-6 sm:space-y-8 pb-24 sm:pb-28 md:pb-32 overflow-x-hidden max-w-full">
         <div className="pt-4 sm:pt-6 text-center">
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif font-extralight tracking-[0.1em] sm:tracking-[0.2em] md:tracking-[0.3em] text-stone-900 uppercase leading-none mb-2 sm:mb-3 px-4">
             Welcome to Studio
@@ -228,7 +228,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
         </div>
       </div>
 
-      <div className="space-y-6 sm:space-y-8 pb-8 pt-8 overflow-x-hidden max-w-full">
+      <div className="space-y-6 sm:space-y-8 pb-24 sm:pb-28 md:pb-32 pt-8 overflow-x-hidden max-w-full">
         {brandStatus && !brandStatus.isCompleted && (
           <div className="bg-white/50 backdrop-blur-3xl border border-white/60 rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-xl shadow-stone-900/5">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
