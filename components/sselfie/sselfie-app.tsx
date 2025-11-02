@@ -11,6 +11,7 @@ import AcademyScreen from "./academy-screen"
 import ProfileScreen from "./profile-screen"
 import FeedDesignerScreen from "./feed-designer-screen"
 import { InstallPrompt } from "./install-prompt"
+import { InstallButton } from "./install-button"
 import { ServiceWorkerProvider } from "./service-worker-provider"
 import BuyCreditsModal from "./buy-credits-modal"
 import type { User as UserType } from "./types"
@@ -141,12 +142,15 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
                   <div className="text-lg font-serif font-extralight text-stone-950">{creditBalance.toFixed(1)}</div>
                 </div>
               </div>
-              <button
-                onClick={() => setShowBuyCreditsModal(true)}
-                className="text-xs tracking-[0.15em] uppercase font-light text-stone-600 hover:text-stone-900 transition-colors"
-              >
-                Buy More
-              </button>
+              <div className="flex items-center gap-2">
+                <InstallButton />
+                <button
+                  onClick={() => setShowBuyCreditsModal(true)}
+                  className="text-xs tracking-[0.15em] uppercase font-light text-stone-600 hover:text-stone-900 transition-colors"
+                >
+                  Buy More
+                </button>
+              </div>
             </div>
           </div>
 

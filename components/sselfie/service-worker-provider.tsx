@@ -4,11 +4,19 @@ import { useEffect } from "react"
 
 export function ServiceWorkerProvider() {
   useEffect(() => {
-    const isProduction = typeof window !== "undefined" && window.location.hostname === "sselfie.ai"
+    const isPreview = typeof window !== "undefined" && window.location.hostname.includes("vusercontent.net")
+    const isSecure =
+      typeof window !== "undefined" &&
+      (window.location.protocol === "https:" || window.location.hostname === "localhost")
 
-    if (!isProduction) {
-      console.log("[v0] Skipping service worker registration - not on production domain")
+    if (!isSecure) {
+      console.log("[v0] Skipping service worker registration - not on secure connection")
       return
+    }
+
+    if (isPreview) {
+      console.log("[v0] Preview environment detected - service worker may not register correctly")
+      console.log("[v0] PWA installation will work properly in production (sselfie.ai)")
     }
 
     if ("serviceWorker" in navigator && typeof window !== "undefined") {
@@ -21,6 +29,11 @@ export function ServiceWorkerProvider() {
           })
 
           console.log("[v0] Service worker registered successfully:", registration.scope)
+          console.log("[v0] Service worker registration details:", {
+            active: registration.active?.state,
+            installing: registration.installing?.state,
+            waiting: registration.waiting?.state,
+          })
 
           // Check for updates periodically
           registration.update()
@@ -39,6 +52,13 @@ export function ServiceWorkerProvider() {
           })
         } catch (error) {
           console.error("[v0] Service worker registration failed:", error)
+          if (error instanceof Error) {
+            console.error("[v0] Error details:", {
+              message: error.message,
+              name: error.name,
+              stack: error.stack,
+            })
+          }
         }
       }
 

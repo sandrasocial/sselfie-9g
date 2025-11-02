@@ -1,3 +1,9 @@
+import { NextResponse } from "next/server"
+
+export const dynamic = "force-static"
+
+export async function GET() {
+  const swCode = `
 // SSELFIE Service Worker
 const CACHE_NAME = "sselfie-v1"
 const STATIC_ASSETS = ["/", "/manifest.json", "/icon-192.png", "/icon-512.png", "/apple-touch-icon.png"]
@@ -71,3 +77,13 @@ self.addEventListener("fetch", (event) => {
 })
 
 console.log("[SW] Service worker script loaded")
+`
+
+  return new NextResponse(swCode, {
+    headers: {
+      "Content-Type": "application/javascript",
+      "Cache-Control": "public, max-age=0, must-revalidate",
+      "Service-Worker-Allowed": "/",
+    },
+  })
+}
