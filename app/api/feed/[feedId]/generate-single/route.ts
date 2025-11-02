@@ -34,13 +34,13 @@ export async function POST(req: NextRequest, { params }: { params: { feedId: str
       )
     }
 
-    const hasCredits = await checkCredits(user.id.toString(), CREDIT_COSTS.image)
+    const hasCredits = await checkCredits(user.id.toString(), CREDIT_COSTS.IMAGE)
     if (!hasCredits) {
       return Response.json(
         {
           error: "Insufficient credits",
-          details: `You need ${CREDIT_COSTS.image} credit to generate an image. Please purchase more credits.`,
-          creditsNeeded: CREDIT_COSTS.image,
+          details: `You need ${CREDIT_COSTS.IMAGE} credit to generate an image. Please purchase more credits.`,
+          creditsNeeded: CREDIT_COSTS.IMAGE,
         },
         { status: 402 },
       )
@@ -210,7 +210,7 @@ export async function POST(req: NextRequest, { params }: { params: { feedId: str
 
     const deduction = await deductCredits(
       user.id.toString(),
-      CREDIT_COSTS.image,
+      CREDIT_COSTS.IMAGE,
       "image",
       `Feed post generation - ${post.post_type}`,
       prediction.id,

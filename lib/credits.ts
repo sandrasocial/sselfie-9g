@@ -5,9 +5,9 @@ import { neon } from "@neondatabase/serverless"
 const sql = neon(process.env.DATABASE_URL!)
 
 export const CREDIT_COSTS = {
-  training: 25, // $5 / $0.20 per credit
-  image: 1, // $0.20
-  animation: 2.5, // $0.50 (stored as 3 for integer math)
+  TRAINING: 25, // $5 / $0.20 per credit
+  IMAGE: 1, // $0.20
+  ANIMATION: 3, // $0.60 (changed from 2.5 to avoid decimal issues)
 } as const
 
 export const SUBSCRIPTION_CREDITS = {
