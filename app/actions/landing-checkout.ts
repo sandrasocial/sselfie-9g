@@ -13,10 +13,7 @@ export async function createLandingCheckoutSession(tierId: string) {
     throw new Error(`Subscription tier with id "${tierId}" not found`)
   }
 
-  const baseUrl =
-    process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : "https://sselfie.ai"
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://sselfie.ai"
 
   console.log("[v0] Landing checkout - NEXT_PUBLIC_SITE_URL:", process.env.NEXT_PUBLIC_SITE_URL)
   console.log("[v0] Landing checkout - NEXT_PUBLIC_APP_URL:", process.env.NEXT_PUBLIC_APP_URL)
