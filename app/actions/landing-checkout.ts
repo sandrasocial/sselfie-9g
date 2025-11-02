@@ -13,7 +13,15 @@ export async function createLandingCheckoutSession(tierId: string) {
     throw new Error(`Subscription tier with id "${tierId}" not found`)
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
+  const baseUrl =
+    process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : "https://sselfie.ai"
+
+  console.log("[v0] Landing checkout - NEXT_PUBLIC_SITE_URL:", process.env.NEXT_PUBLIC_SITE_URL)
+  console.log("[v0] Landing checkout - NEXT_PUBLIC_APP_URL:", process.env.NEXT_PUBLIC_APP_URL)
+  console.log("[v0] Landing checkout - Using baseUrl:", baseUrl)
+  console.log("[v0] Landing checkout - Success URL:", `${baseUrl}/checkout/success`)
 
   // Create Checkout Session with redirect URLs
   const session = await stripe.checkout.sessions.create({
@@ -44,6 +52,8 @@ export async function createLandingCheckoutSession(tierId: string) {
       source: "landing_page",
     },
   })
+
+  console.log("[v0] Landing checkout - Created session with URL:", session.url)
 
   return session.url
 }
