@@ -711,7 +711,6 @@ export default function MayaChatScreen() {
       className="h-full flex flex-col relative"
       style={{
         paddingTop: "env(safe-area-inset-top)",
-        paddingBottom: "env(safe-area-inset-bottom)",
       }}
       onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
@@ -998,7 +997,7 @@ export default function MayaChatScreen() {
         )}
       </div>
 
-      <div className="flex-shrink-0 border-t border-white/30 px-4 pt-3 sm:pt-4 mt-auto">
+      <div className="flex-shrink-0 border-t border-white/30 px-4 pt-3 sm:pt-4 pb-3 sm:pb-4 mt-auto">
         {uploadedImage ? (
           <div className="mb-3">
             <div className="flex items-center gap-2 mb-2">

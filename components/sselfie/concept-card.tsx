@@ -224,7 +224,7 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
               {concept.category}
             </span>
           </div>
-          <div className="w-2 h-2 rounded-full bg-stone-950 shadow-lg shadow-stone-950/50" aria-hidden="true"></div>
+          <div className="w-2 h-2 rounded-full bg-stone-950 shadow-lg shadow-stone-950/50"></div>
         </div>
 
         <div className="space-y-2 sm:space-y-3">
@@ -254,7 +254,7 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
             aria-label={`Create photo: ${concept.title}`}
           >
             <div
-              className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+              className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
               aria-hidden="true"
             ></div>
             <span className="relative z-10">Create This Photo</span>
@@ -268,7 +268,7 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
           role="status"
           aria-live="polite"
         >
-          <div className="relative w-10 h-10 sm:w-12 sm:h-12" aria-hidden="true">
+          <div className="relative w-10 h-10 sm:w-12 sm:h-12 pointer-events-none" aria-hidden="true">
             <div className="absolute inset-0 rounded-full bg-stone-200/20 animate-ping"></div>
             <div className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-stone-950 animate-spin border-4 border-transparent border-t-white shadow-lg shadow-stone-900/30"></div>
           </div>
@@ -276,7 +276,7 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
             <span className="text-xs sm:text-sm tracking-wider uppercase font-semibold text-stone-700">
               Creating Magic
             </span>
-            <div className="flex gap-1 justify-center" aria-hidden="true">
+            <div className="flex gap-1 justify-center pointer-events-none" aria-hidden="true">
               <div className="w-1.5 h-1.5 rounded-full bg-stone-950 animate-bounce"></div>
               <div
                 className="w-1.5 h-1.5 rounded-full bg-stone-950 animate-bounce"
@@ -299,7 +299,7 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
           >
             <div className="flex items-center gap-3">
               <div
-                className="w-9 h-9 sm:w-10 sm:h-10 bg-stone-950 rounded-xl flex items-center justify-center shadow-lg shadow-stone-900/30 flex-shrink-0"
+                className="w-9 h-9 sm:w-10 sm:h-10 bg-stone-950 rounded-xl flex items-center justify-center shadow-lg shadow-stone-900/30 flex-shrink-0 pointer-events-none"
                 aria-hidden="true"
               >
                 <Check className="w-4 h-4 sm:w-5 sm:h-5 text-white" />

@@ -129,9 +129,9 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-stone-300/20 rounded-full blur-3xl"></div>
       </div>
 
-      <div className="relative h-full mx-1 sm:mx-2 md:mx-3 pb-24 sm:pb-26 md:pb-28">
+      <main className="relative h-full mx-1 sm:mx-2 md:mx-3 pb-20 sm:pb-22 md:pb-24">
         <div className="h-full bg-white/30 backdrop-blur-3xl rounded-[2rem] sm:rounded-[2.5rem] md:rounded-[3rem] border border-white/40 overflow-hidden shadow-2xl shadow-stone-900/10">
-          <div className="sticky top-0 z-10 bg-white/40 backdrop-blur-xl border-b border-stone-200/40 px-4 sm:px-6 md:px-8 py-3">
+          <header className="sticky top-0 z-10 bg-white/40 backdrop-blur-xl border-b border-stone-200/40 px-4 sm:px-6 md:px-8 py-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 bg-stone-950 rounded-xl flex items-center justify-center">
@@ -152,9 +152,9 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
                 </button>
               </div>
             </div>
-          </div>
+          </header>
 
-          <div className="h-full px-4 sm:px-6 md:px-8 pb-32 sm:pb-36 md:pb-40 pt-4 sm:pt-6 md:pt-8 overflow-y-auto">
+          <div className="h-full px-4 sm:px-6 md:px-8 pb-4 sm:pb-5 md:pb-6 pt-4 sm:pt-6 md:pt-8 overflow-y-auto">
             {activeTab === "studio" && (
               <StudioScreen
                 user={user}
@@ -178,9 +178,12 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
             {activeTab === "feed-designer" && <FeedDesignerScreen />}
           </div>
         </div>
-      </div>
+      </main>
 
-      <div className="fixed bottom-0 left-0 right-0 safe-area-bottom z-50 px-2 sm:px-3 md:px-4 pb-2 sm:pb-2.5 md:pb-3">
+      <nav
+        className="fixed bottom-0 left-0 right-0 safe-area-bottom z-50 px-2 sm:px-3 md:px-4 pb-2 sm:pb-2.5 md:pb-3"
+        aria-label="Main navigation"
+      >
         <div className="bg-white/20 backdrop-blur-3xl rounded-[1.75rem] sm:rounded-[2rem] md:rounded-[2.5rem] border border-white/40 shadow-2xl shadow-stone-900/20">
           <div className="overflow-x-auto scrollbar-hide px-1.5 sm:px-2 md:px-3 py-2 sm:py-2.5 md:py-3">
             <div className="flex gap-1 sm:gap-2 min-w-max sm:justify-around">
@@ -195,6 +198,8 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
                     className={`flex flex-col items-center space-y-1 px-2 sm:px-2.5 md:px-4 py-2 sm:py-2.5 md:py-3 rounded-[1rem] sm:rounded-[1.25rem] md:rounded-[1.5rem] transition-all duration-500 ease-out min-w-[60px] sm:min-w-[68px] md:min-w-[76px] relative touch-manipulation ${
                       isActive ? "transform scale-105" : "hover:scale-[1.02] active:scale-95"
                     }`}
+                    aria-label={`Navigate to ${tab.label}`}
+                    aria-current={isActive ? "page" : undefined}
                   >
                     {isActive && (
                       <div className="absolute inset-0 bg-gradient-to-b from-white/90 to-white/70 backdrop-blur-2xl rounded-[1rem] sm:rounded-[1.25rem] md:rounded-[1.5rem] shadow-xl shadow-stone-900/20 border border-white/60"></div>
@@ -203,6 +208,7 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
                       className={`relative z-10 w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-[0.875rem] sm:rounded-[1rem] md:rounded-[1.125rem] flex items-center justify-center transition-all duration-500 ${
                         isActive ? "bg-stone-950 shadow-lg shadow-stone-900/30" : "bg-white/40 backdrop-blur-xl"
                       }`}
+                      aria-hidden="true"
                     >
                       <Icon
                         size={isActive ? 19 : 17}
@@ -223,7 +229,7 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
             </div>
           </div>
         </div>
-      </div>
+      </nav>
 
       {/* InstallPrompt component */}
       <InstallPrompt />
