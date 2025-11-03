@@ -79,7 +79,7 @@
     "replicate": "latest",
     "resend": "latest",
     "server-only": "latest",
-    "sonner": "^1.7.4",
+    "sonner": "latest",
     "stripe": "latest",
     "swr": "latest",
     "tailwind-merge": "^2.5.5",

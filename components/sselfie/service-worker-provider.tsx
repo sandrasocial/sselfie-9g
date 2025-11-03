@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect } from "react"
+import { toast } from "sonner"
 
 export function ServiceWorkerProvider() {
   useEffect(() => {
@@ -15,8 +16,9 @@ export function ServiceWorkerProvider() {
     }
 
     if (isPreview) {
-      console.log("[v0] Preview environment detected - service worker may not register correctly")
+      console.log("[v0] Preview environment detected - skipping service worker registration")
       console.log("[v0] PWA installation will work properly in production (sselfie.ai)")
+      return // Exit early in preview environments
     }
 
     if ("serviceWorker" in navigator && typeof window !== "undefined") {
@@ -29,14 +31,13 @@ export function ServiceWorkerProvider() {
           })
 
           console.log("[v0] Service worker registered successfully:", registration.scope)
-          console.log("[v0] Service worker registration details:", {
-            active: registration.active?.state,
-            installing: registration.installing?.state,
-            waiting: registration.waiting?.state,
-          })
 
-          // Check for updates periodically
-          registration.update()
+          setInterval(
+            () => {
+              registration.update()
+            },
+            60 * 60 * 1000,
+          )
 
           // Listen for updates
           registration.addEventListener("updatefound", () => {
@@ -46,19 +47,34 @@ export function ServiceWorkerProvider() {
               newWorker.addEventListener("statechange", () => {
                 if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
                   console.log("[v0] New service worker installed, refresh to activate")
+                  toast("Update Available", {
+                    description: "A new version of SSELFIE is available. Refresh to update.",
+                    action: {
+                      label: "Refresh",
+                      onClick: () => {
+                        newWorker.postMessage({ type: "SKIP_WAITING" })
+                        window.location.reload()
+                      },
+                    },
+                    duration: 10000,
+                  })
                 }
               })
             }
           })
+
+          navigator.serviceWorker.addEventListener("controllerchange", () => {
+            console.log("[v0] Service worker controller changed, reloading...")
+            window.location.reload()
+          })
+
+          navigator.serviceWorker.addEventListener("message", (event) => {
+            if (event.data && event.data.type === "SW_UPDATED") {
+              console.log("[v0] Service worker updated to version:", event.data.version)
+            }
+          })
         } catch (error) {
           console.error("[v0] Service worker registration failed:", error)
-          if (error instanceof Error) {
-            console.error("[v0] Error details:", {
-              message: error.message,
-              name: error.name,
-              stack: error.stack,
-            })
-          }
         }
       }
 
