@@ -10,7 +10,11 @@ import ConceptCard from "./concept-card"
 import MayaChatHistory from "./maya-chat-history"
 import UnifiedLoading from "./unified-loading"
 
-export default function MayaChatScreen() {
+interface MayaChatScreenProps {
+  onImageGenerated?: () => void
+}
+
+export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps = {}) {
   const [inputValue, setInputValue] = useState("")
   const [chatId, setChatId] = useState<number | null>(null)
   const [isLoadingChat, setIsLoadingChat] = useState(true)
@@ -557,6 +561,11 @@ export default function MayaChatScreen() {
       const { url } = await response.json()
       setUploadedImage(url)
       console.log("[v0] Image uploaded:", url)
+
+      // Call the onImageGenerated callback if provided
+      if (onImageGenerated) {
+        onImageGenerated()
+      }
     } catch (error) {
       console.error("[v0] Error uploading image:", error)
       alert("Failed to upload image. Please try again.")
@@ -597,6 +606,11 @@ export default function MayaChatScreen() {
       const { url } = await response.json()
       setUploadedImage(url)
       console.log("[v0] Image uploaded:", url)
+
+      // Call the onImageGenerated callback if provided
+      if (onImageGenerated) {
+        onImageGenerated()
+      }
     } catch (error) {
       console.error("[v0] Error uploading image:", error)
       alert("Failed to upload image. Please try again.")
@@ -707,16 +721,7 @@ export default function MayaChatScreen() {
   const isEmpty = !messages || messages.length === 0
 
   return (
-    <div
-      className="h-full flex flex-col relative"
-      style={{
-        paddingTop: "env(safe-area-inset-top)",
-      }}
-      onDragEnter={handleDragEnter}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
-    >
+    <div className="h-full flex flex-col relative">
       {isDragging && (
         <div className="fixed inset-0 z-50 bg-stone-950/80 backdrop-blur-sm flex items-center justify-center animate-in fade-in duration-200">
           <div className="bg-white/90 backdrop-blur-xl border-2 border-dashed border-stone-400 rounded-3xl p-12 text-center max-w-md mx-4">
@@ -729,7 +734,7 @@ export default function MayaChatScreen() {
         </div>
       )}
 
-      <div className="flex-shrink-0 flex items-center justify-between px-4 pt-3 sm:pt-4">
+      <div className="flex-shrink-0 flex items-center justify-between px-4 pt-2 sm:pt-3">
         <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
           <div className="w-11 h-11 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full border-2 border-stone-200/60 overflow-hidden flex-shrink-0">
             <img
@@ -785,7 +790,7 @@ export default function MayaChatScreen() {
         </div>
       )}
 
-      <div className="flex-1 min-h-0 px-4">
+      <div className="flex-1 min-h-0 px-4 pb-32 sm:pb-36">
         <div
           ref={messagesContainerRef}
           onScroll={handleScroll}
@@ -989,7 +994,7 @@ export default function MayaChatScreen() {
               setIsUserScrolling(false)
               scrollToBottom("smooth")
             }}
-            className="absolute bottom-24 left-6 p-3 bg-stone-950 text-white rounded-full shadow-2xl shadow-stone-900/40 hover:scale-110 active:scale-95 transition-all duration-300 z-10 animate-in fade-in slide-in-from-bottom-2 min-w-[44px] min-h-[44px] flex items-center justify-center"
+            className="absolute bottom-36 left-6 p-3 bg-stone-950 text-white rounded-full shadow-2xl shadow-stone-900/40 hover:scale-110 active:scale-95 transition-all duration-300 z-10 animate-in fade-in slide-in-from-bottom-2 min-w-[44px] min-h-[44px] flex items-center justify-center"
             aria-label="Scroll to bottom"
           >
             <ArrowDown size={18} strokeWidth={2.5} />
@@ -997,7 +1002,12 @@ export default function MayaChatScreen() {
         )}
       </div>
 
-      <div className="flex-shrink-0 border-t border-white/30 px-4 pt-3 sm:pt-4 pb-3 sm:pb-4 mt-auto">
+      <div
+        className="fixed bottom-0 left-0 right-0 bg-white/50 backdrop-blur-3xl border-t border-white/30 px-4 pt-3 sm:pt-4 z-[60]"
+        style={{
+          paddingBottom: "calc(env(safe-area-inset-bottom) + 5rem)",
+        }}
+      >
         {uploadedImage ? (
           <div className="mb-3">
             <div className="flex items-center gap-2 mb-2">

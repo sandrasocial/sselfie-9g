@@ -29,14 +29,17 @@ export type TransactionType =
  * Check if user has enough credits for an action
  */
 export async function checkCredits(userId: string, requiredAmount: number): Promise<boolean> {
+  console.log("[v0] [CREDITS] Checking credits for user:", userId)
+  console.log("[v0] [CREDITS] Required amount:", requiredAmount)
+
   const hasUnlimitedAccess = await hasUnlimitedCredits(userId)
   if (hasUnlimitedAccess) {
-    console.log("[v0] User has unlimited credits (elite plan or high balance)")
+    console.log("[v0] [CREDITS] User has unlimited credits (elite plan or high balance)")
     return true
   }
 
   const currentBalance = await getUserCredits(userId)
-  console.log("[v0] Credit check:", {
+  console.log("[v0] [CREDITS] Credit check result:", {
     userId,
     currentBalance,
     requiredAmount,
@@ -81,12 +84,17 @@ async function hasUnlimitedCredits(userId: string): Promise<boolean> {
  * Get user's current credit balance
  */
 export async function getUserCredits(userId: string): Promise<number> {
+  console.log("[v0] [CREDITS] Getting credits for user:", userId)
+
   const result = await sql`
     SELECT balance FROM user_credits WHERE user_id = ${userId}
   `
 
+  console.log("[v0] [CREDITS] Query result:", result)
+
   if (result.length === 0) {
     // Initialize user credits if they don't exist
+    console.log("[v0] [CREDITS] No credits record found, initializing with 0")
     await sql`
       INSERT INTO user_credits (user_id, balance)
       VALUES (${userId}, 0)
@@ -95,7 +103,9 @@ export async function getUserCredits(userId: string): Promise<number> {
     return 0
   }
 
-  return result[0].balance
+  const balance = Number(result[0].balance)
+  console.log("[v0] [CREDITS] Current balance:", balance)
+  return balance
 }
 
 /**
@@ -148,23 +158,36 @@ export async function addCredits(
 export async function deductCredits(
   userId: string,
   amount: number,
-  type: "training" | "image" | "animation",
+  type: "training" | "image" | "animation" | "refund",
   description: string,
   referenceId?: string,
 ): Promise<{ success: boolean; newBalance: number; error?: string }> {
   try {
+    console.log("[v0] [CREDITS] Deducting credits:", {
+      userId,
+      amount,
+      type,
+      description,
+    })
+
     const hasUnlimitedAccess = await hasUnlimitedCredits(userId)
     if (hasUnlimitedAccess) {
       const currentBalance = await getUserCredits(userId)
-      console.log("[v0] User has unlimited credits - skipping deduction")
+      console.log("[v0] [CREDITS] User has unlimited credits - skipping deduction")
       return { success: true, newBalance: currentBalance }
     }
 
     // Get current balance
     const currentBalance = await getUserCredits(userId)
+    console.log("[v0] [CREDITS] Current balance before deduction:", currentBalance)
 
     // Check if user has enough credits
     if (currentBalance < amount) {
+      console.log("[v0] [CREDITS] Insufficient credits:", {
+        currentBalance,
+        required: amount,
+        shortfall: amount - currentBalance,
+      })
       return {
         success: false,
         newBalance: currentBalance,
@@ -196,9 +219,10 @@ export async function deductCredits(
       )
     `
 
+    console.log("[v0] [CREDITS] Credits deducted successfully. New balance:", newBalance)
     return { success: true, newBalance }
   } catch (error) {
-    console.error("[v0] Error deducting credits:", error)
+    console.error("[v0] [CREDITS] Error deducting credits:", error)
     return { success: false, newBalance: 0, error: "Failed to deduct credits" }
   }
 }

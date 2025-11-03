@@ -3,7 +3,7 @@ import { neon } from "@neondatabase/serverless"
 import { getReplicateClient } from "@/lib/replicate-client"
 import { MAYA_QUALITY_PRESETS } from "@/lib/maya/quality-settings"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { checkCredits, deductCredits, CREDIT_COSTS } from "@/lib/credits"
+import { checkCredits, deductCredits, getUserCredits, CREDIT_COSTS } from "@/lib/credits"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 
 const sql = neon(process.env.DATABASE_URL || "")
@@ -43,13 +43,24 @@ export async function POST(request: NextRequest) {
 
     console.log("[v0] Neon user ID:", neonUser.id)
 
+    console.log("[v0] [CREDITS] Checking if user has enough credits...")
     const hasEnoughCredits = await checkCredits(neonUser.id, CREDIT_COSTS.IMAGE)
+    console.log("[v0] [CREDITS] Has enough credits:", hasEnoughCredits)
+
     if (!hasEnoughCredits) {
+      const currentBalance = await getUserCredits(neonUser.id)
+      console.log("[v0] [CREDITS] User has insufficient credits:", {
+        userId: neonUser.id,
+        currentBalance,
+        required: CREDIT_COSTS.IMAGE,
+      })
+
       return NextResponse.json(
         {
           error: "Insufficient credits",
           required: CREDIT_COSTS.IMAGE,
-          message: `Image generation requires ${CREDIT_COSTS.IMAGE} credit. Please purchase more credits or upgrade your plan.`,
+          current: currentBalance,
+          message: `Image generation requires ${CREDIT_COSTS.IMAGE} credit. You currently have ${currentBalance} credits. Please purchase more credits or upgrade your plan.`,
         },
         { status: 402 },
       )
@@ -178,9 +189,7 @@ export async function POST(request: NextRequest) {
     console.log("[v0] Prediction input:", JSON.stringify(predictionInput, null, 2))
     console.log("[v0] ================================================")
 
-    await deductCredits(neonUser.id, CREDIT_COSTS.IMAGE, "image_generation", `Generated: ${conceptTitle}`)
-    console.log("[v0] Deducted", CREDIT_COSTS.IMAGE, "credit for image generation")
-
+    console.log("[v0] [CREDITS] Creating Replicate prediction...")
     const prediction = await replicate.predictions.create({
       version: replicateVersionId,
       input: predictionInput,
@@ -191,6 +200,22 @@ export async function POST(request: NextRequest) {
     console.log("[v0] Prediction status:", prediction.status)
     console.log("[v0] Full prediction object:", JSON.stringify(prediction, null, 2))
     console.log("[v0] ================================================")
+
+    console.log("[v0] [CREDITS] Deducting credits after successful prediction creation...")
+    const deductionResult = await deductCredits(
+      neonUser.id,
+      CREDIT_COSTS.IMAGE,
+      "image", // Fixed: was "image_generation", should be "image"
+      `Generated: ${conceptTitle}`,
+      prediction.id,
+    )
+
+    if (!deductionResult.success) {
+      console.error("[v0] [CREDITS] Failed to deduct credits:", deductionResult.error)
+      // but log the error for investigation
+    } else {
+      console.log("[v0] [CREDITS] Deducted", CREDIT_COSTS.IMAGE, "credit. New balance:", deductionResult.newBalance)
+    }
 
     const insertResult = await sql`
       INSERT INTO generated_images (
@@ -227,6 +252,7 @@ export async function POST(request: NextRequest) {
       fluxPrompt: finalPrompt,
       textOverlay: addTextOverlay ? textOverlayConfig : null,
       creditsDeducted: CREDIT_COSTS.IMAGE,
+      newBalance: deductionResult.success ? deductionResult.newBalance : undefined,
     })
   } catch (error) {
     console.error("[v0] Error generating image:", error)

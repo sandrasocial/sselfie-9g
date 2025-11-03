@@ -20,7 +20,7 @@ export function InstallPrompt() {
     // Check if already installed
     const isStandalone =
       window.matchMedia("(display-mode: standalone)").matches || (window.navigator as any).standalone === true
-    console.log("[v0] Is standalone:", isStandalone)
+    console.log("[v0] Install prompt - Is standalone:", isStandalone)
 
     if (isStandalone) {
       setIsInstalled(true)
@@ -36,23 +36,23 @@ export function InstallPrompt() {
     if (dismissed) {
       const dismissedTime = Number.parseInt(dismissed)
       const daysSinceDismissed = (Date.now() - dismissedTime) / (1000 * 60 * 60 * 24)
-      console.log("[v0] Days since dismissed:", daysSinceDismissed)
+      console.log("[v0] Install prompt - Days since dismissed:", daysSinceDismissed)
       if (daysSinceDismissed < 7) {
-        console.log("[v0] Install prompt dismissed recently, not showing")
+        console.log("[v0] Install prompt - Dismissed recently, not showing")
         return
       }
     }
 
     if (iOS) {
       const timer = setTimeout(() => {
+        console.log("[v0] Install prompt - Showing iOS prompt after delay")
         setShowPrompt(true)
-      }, 5000) // Show after 5 seconds on iOS
+      }, 5000)
       return () => clearTimeout(timer)
     }
 
-    // Listen for the beforeinstallprompt event (Android/Chrome)
     const handler = (e: Event) => {
-      console.log("[v0] beforeinstallprompt event fired!")
+      console.log("[v0] Install prompt - beforeinstallprompt event fired!")
       e.preventDefault()
       setDeferredPrompt(e as BeforeInstallPromptEvent)
       setShowPrompt(true)
@@ -60,13 +60,16 @@ export function InstallPrompt() {
 
     window.addEventListener("beforeinstallprompt", handler)
 
-    // Listen for successful installation
     window.addEventListener("appinstalled", () => {
-      console.log("[v0] App installed successfully")
+      console.log("[v0] Install prompt - App installed successfully")
       setIsInstalled(true)
       setShowPrompt(false)
       setDeferredPrompt(null)
     })
+
+    console.log("[v0] Install prompt - Waiting for beforeinstallprompt event...")
+    console.log("[v0] Install prompt - HTTPS:", window.location.protocol === "https:")
+    console.log("[v0] Install prompt - Service Worker support:", "serviceWorker" in navigator)
 
     return () => {
       window.removeEventListener("beforeinstallprompt", handler)
@@ -74,37 +77,40 @@ export function InstallPrompt() {
   }, [])
 
   const handleInstall = async () => {
+    console.log("[v0] Install prompt - Install clicked, isIOS:", isIOS, "hasDeferredPrompt:", !!deferredPrompt)
+
     if (isIOS) {
       setShowIOSInstructions(true)
       return
     }
 
-    if (!deferredPrompt) return
+    if (!deferredPrompt) {
+      console.log("[v0] Install prompt - No deferred prompt, showing instructions")
+      setShowIOSInstructions(true)
+      return
+    }
 
     try {
+      console.log("[v0] Install prompt - Triggering native install dialog")
       await deferredPrompt.prompt()
       const { outcome } = await deferredPrompt.userChoice
-      console.log("[v0] Install outcome:", outcome)
+      console.log("[v0] Install prompt - Install outcome:", outcome)
 
       if (outcome === "accepted") {
         setShowPrompt(false)
         setDeferredPrompt(null)
       }
     } catch (error) {
-      console.error("[v0] Install error:", error)
+      console.error("[v0] Install prompt - Install error:", error)
     }
   }
 
   const handleDismiss = () => {
-    console.log("[v0] Install prompt dismissed")
+    console.log("[v0] Install prompt - Dismissed by user")
     setShowPrompt(false)
     setShowIOSInstructions(false)
     localStorage.setItem("installPromptDismissed", Date.now().toString())
   }
-
-  useEffect(() => {
-    console.log("[v0] Install prompt state:", { isInstalled, showPrompt, hasDeferredPrompt: !!deferredPrompt, isIOS })
-  }, [isInstalled, showPrompt, deferredPrompt, isIOS])
 
   if (isInstalled || !showPrompt) {
     return null
@@ -121,15 +127,23 @@ export function InstallPrompt() {
             </Button>
           </div>
           <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">To install SSELFIE on your iPhone or iPad:</p>
+            <p className="text-sm text-muted-foreground">To install SSELFIE on your device:</p>
             <ol className="text-sm space-y-2 list-decimal list-inside">
               <li className="flex items-start gap-2">
                 <span className="flex-1">
-                  Tap the <Share className="inline h-4 w-4 mx-1" /> Share button at the bottom of Safari
+                  {isIOS ? (
+                    <>
+                      Tap the <Share className="inline h-4 w-4 mx-1" /> Share button at the bottom of Safari
+                    </>
+                  ) : (
+                    "Tap the menu button (⋮) in your browser"
+                  )}
                 </span>
               </li>
-              <li>Scroll down and tap "Add to Home Screen"</li>
-              <li>Tap "Add" in the top right corner</li>
+              <li>
+                {isIOS ? 'Scroll down and tap "Add to Home Screen"' : 'Select "Add to Home screen" or "Install app"'}
+              </li>
+              <li>{isIOS ? 'Tap "Add" in the top right corner' : 'Tap "Add" or "Install" to confirm'}</li>
             </ol>
           </div>
           <Button onClick={handleDismiss} className="w-full">
@@ -163,7 +177,7 @@ export function InstallPrompt() {
             </div>
             <div className="flex gap-2">
               <Button size="sm" onClick={handleInstall} className="flex-1">
-                {isIOS ? "Show Instructions" : "Install"}
+                {deferredPrompt ? "Install" : isIOS ? "Show Instructions" : "Install"}
               </Button>
               <Button size="sm" variant="outline" onClick={handleDismiss}>
                 Not now

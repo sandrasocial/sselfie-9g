@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Camera, User, Aperture, Grid, MessageCircle, ImageIcon, LayoutGrid, Coins } from "lucide-react"
 import LoadingScreen from "./loading-screen"
 import StudioScreen from "./studio-screen"
@@ -31,6 +31,9 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
   const [creditBalance, setCreditBalance] = useState<number>(0)
   const [isLoadingCredits, setIsLoadingCredits] = useState(true)
   const [showBuyCreditsModal, setShowBuyCreditsModal] = useState(false)
+  const [isNavVisible, setIsNavVisible] = useState(true)
+  const lastScrollY = useRef(0)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const fetchCredits = async () => {
@@ -87,6 +90,29 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
     }
   }, [])
 
+  useEffect(() => {
+    const scrollContainer = scrollContainerRef.current
+    if (!scrollContainer) return
+
+    const handleScroll = () => {
+      const currentScrollY = scrollContainer.scrollTop
+      const scrollDifference = currentScrollY - lastScrollY.current
+
+      if (currentScrollY < 50) {
+        setIsNavVisible(true)
+      } else if (scrollDifference < -10) {
+        setIsNavVisible(true)
+      } else if (scrollDifference > 10) {
+        setIsNavVisible(false)
+      }
+
+      lastScrollY.current = currentScrollY
+    }
+
+    scrollContainer.addEventListener("scroll", handleScroll, { passive: true })
+    return () => scrollContainer.removeEventListener("scroll", handleScroll)
+  }, [])
+
   const tabs = [
     { id: "studio", label: "Studio", icon: Camera },
     { id: "training", label: "Training", icon: Aperture },
@@ -120,6 +146,7 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
       style={{
         fontFamily:
           '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+        paddingTop: "env(safe-area-inset-top)",
       }}
     >
       <ServiceWorkerProvider />
@@ -129,9 +156,9 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-stone-300/20 rounded-full blur-3xl"></div>
       </div>
 
-      <main className="relative h-full mx-1 sm:mx-2 md:mx-3 pb-20 sm:pb-22 md:pb-24">
+      <main className="relative h-full mx-1 sm:mx-2 md:mx-3 pb-2 sm:pb-3 md:pb-4">
         <div className="h-full bg-white/30 backdrop-blur-3xl rounded-[2rem] sm:rounded-[2.5rem] md:rounded-[3rem] border border-white/40 overflow-hidden shadow-2xl shadow-stone-900/10">
-          <header className="sticky top-0 z-10 bg-white/40 backdrop-blur-xl border-b border-stone-200/40 px-4 sm:px-6 md:px-8 py-3">
+          <header className="sticky top-0 z-10 bg-white/40 backdrop-blur-xl border-b border-stone-200/40 px-4 sm:px-6 md:px-8 py-3 pt-safe">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 bg-stone-950 rounded-xl flex items-center justify-center">
@@ -154,7 +181,10 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
             </div>
           </header>
 
-          <div className="h-full px-4 sm:px-6 md:px-8 pb-4 sm:pb-5 md:pb-6 pt-4 sm:pt-6 md:pt-8 overflow-y-auto">
+          <div
+            ref={scrollContainerRef}
+            className="h-full px-4 sm:px-6 md:px-8 pb-24 sm:pb-26 md:pb-28 pt-4 sm:pt-6 md:pt-8 overflow-y-auto"
+          >
             {activeTab === "studio" && (
               <StudioScreen
                 user={user}
@@ -181,8 +211,14 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
       </main>
 
       <nav
-        className="fixed bottom-0 left-0 right-0 safe-area-bottom z-50 px-2 sm:px-3 md:px-4 pb-2 sm:pb-2.5 md:pb-3"
+        className={`fixed bottom-0 left-0 right-0 z-40 px-2 sm:px-3 md:px-4 transition-transform duration-300 ease-in-out ${
+          isNavVisible ? "translate-y-0" : "translate-y-full"
+        }`}
+        style={{
+          paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))",
+        }}
         aria-label="Main navigation"
+        aria-hidden={!isNavVisible}
       >
         <div className="bg-white/20 backdrop-blur-3xl rounded-[1.75rem] sm:rounded-[2rem] md:rounded-[2.5rem] border border-white/40 shadow-2xl shadow-stone-900/20">
           <div className="overflow-x-auto scrollbar-hide px-1.5 sm:px-2 md:px-3 py-2 sm:py-2.5 md:py-3">
@@ -231,10 +267,8 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
         </div>
       </nav>
 
-      {/* InstallPrompt component */}
       <InstallPrompt />
 
-      {/* Buy Credits Modal */}
       <BuyCreditsModal
         open={showBuyCreditsModal}
         onOpenChange={setShowBuyCreditsModal}

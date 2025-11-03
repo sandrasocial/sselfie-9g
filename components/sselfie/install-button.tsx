@@ -24,12 +24,14 @@ export function InstallButton() {
     const isStandalone =
       window.matchMedia("(display-mode: standalone)").matches || (window.navigator as any).standalone === true
     setIsInstalled(isStandalone)
+    console.log("[v0] Install button - Is standalone:", isStandalone)
 
     const userAgent = window.navigator.userAgent.toLowerCase()
     setIsIOS(/iphone|ipad|ipod/.test(userAgent))
     setIsAndroid(/android/.test(userAgent))
 
     const handler = (e: Event) => {
+      console.log("[v0] Install button - beforeinstallprompt event captured!")
       e.preventDefault()
       setDeferredPrompt(e as BeforeInstallPromptEvent)
     }
@@ -37,9 +39,16 @@ export function InstallButton() {
     window.addEventListener("beforeinstallprompt", handler)
 
     window.addEventListener("appinstalled", () => {
+      console.log("[v0] Install button - App installed successfully")
       setIsInstalled(true)
       setDeferredPrompt(null)
     })
+
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.getRegistration().then((reg) => {
+        console.log("[v0] Install button - Service worker registered:", !!reg)
+      })
+    }
 
     return () => {
       window.removeEventListener("beforeinstallprompt", handler)
@@ -47,18 +56,24 @@ export function InstallButton() {
   }, [])
 
   const handleInstall = async () => {
+    console.log("[v0] Install button clicked - deferredPrompt:", !!deferredPrompt, "isIOS:", isIOS)
+
     if (deferredPrompt) {
       try {
+        console.log("[v0] Triggering native install prompt")
         await deferredPrompt.prompt()
         const { outcome } = await deferredPrompt.userChoice
+        console.log("[v0] Install outcome:", outcome)
         if (outcome === "accepted") {
           setDeferredPrompt(null)
           setShowDialog(false)
         }
       } catch (error) {
         console.error("[v0] Install error:", error)
+        setShowDialog(true)
       }
     } else {
+      console.log("[v0] No deferred prompt available, showing instructions")
       setShowDialog(true)
     }
   }

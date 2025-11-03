@@ -156,9 +156,6 @@ export async function POST(request: NextRequest) {
     console.log("[v0] Full prediction input:", JSON.stringify(predictionInput, null, 2))
     console.log("[v0] ================================================")
 
-    await deductCredits(neonUser.id, CREDIT_COSTS.ANIMATION, "video_generation", `Animated image: ${imageId}`)
-    console.log("[v0] Deducted", CREDIT_COSTS.ANIMATION, "credits for video generation")
-
     const prediction = await replicate.predictions.create({
       model: "wan-video/wan-2.2-i2v-fast",
       input: predictionInput,
@@ -170,6 +167,9 @@ export async function POST(request: NextRequest) {
     console.log("[v0] Prediction status:", prediction.status)
     console.log("[v0] Full prediction:", JSON.stringify(prediction, null, 2))
     console.log("[v0] ================================================")
+
+    await deductCredits(neonUser.id, CREDIT_COSTS.ANIMATION, "animation", `Animated image: ${imageId}`)
+    console.log("[v0] Deducted", CREDIT_COSTS.ANIMATION, "credits for video generation")
 
     // Store video generation in database
     const insertResult = await sql`
