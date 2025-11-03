@@ -36,18 +36,18 @@ export const FLUX_LORA_TRAINER_VERSION = "26dce37af90b9d997eeb970d92e47de3064d46
 
 // Default training parameters
 export const DEFAULT_TRAINING_PARAMS = {
-  steps: 1000,
-  lora_rank: 16,
+  steps: 1400,
+  lora_rank: 48,
   optimizer: "adamw8bit",
   batch_size: 1,
   resolution: "512,768,1024",
   autocaption: true,
   trigger_word: "",
-  learning_rate: 0.0004,
+  learning_rate: 0.00015,
   wandb_project: "flux_train_replicate",
-  caption_dropout_rate: 0.05,
+  caption_dropout_rate: 0.1,
   cache_latents_to_disk: false,
   wandb_save_interval: 100,
   caption_prefix: "",
-  num_repeats: 10,
+  num_repeats: 18,
 }

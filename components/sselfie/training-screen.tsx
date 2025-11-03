@@ -31,8 +31,7 @@ const compressImage = async (file: File): Promise<File> => {
           return
         }
 
-        // Calculate new dimensions (max 1920px on longest side)
-        const maxSize = 1920
+        const maxSize = 1600
         let width = img.width
         let height = img.height
 
@@ -65,7 +64,7 @@ const compressImage = async (file: File): Promise<File> => {
             resolve(compressedFile)
           },
           "image/jpeg",
-          0.85,
+          0.7,
         )
       }
       img.onerror = () => reject(new Error("Failed to load image"))
@@ -165,7 +164,14 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
 
       console.log("[v0] Generating ZIP blob...")
       const zipBlob = await zip.generateAsync({ type: "blob" })
-      console.log(`[v0] ZIP created: ${(zipBlob.size / 1024 / 1024).toFixed(2)}MB`)
+      const zipSizeMB = zipBlob.size / 1024 / 1024
+      console.log(`[v0] ZIP created: ${zipSizeMB.toFixed(2)}MB`)
+
+      if (zipSizeMB > 4.5) {
+        throw new Error(
+          `ZIP file is too large (${zipSizeMB.toFixed(2)}MB). Please use fewer images or lower quality photos. Maximum size is 4.5MB.`,
+        )
+      }
 
       const formData = new FormData()
       formData.append("zipFile", zipBlob, `training-images-${Date.now()}.zip`)
@@ -179,8 +185,20 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
       })
 
       if (!uploadResponse.ok) {
-        const errorText = await uploadResponse.text()
-        throw new Error(`Failed to upload ZIP: ${errorText}`)
+        let errorMessage = "Failed to upload ZIP"
+        try {
+          const errorData = await uploadResponse.json()
+          errorMessage = errorData.error || errorData.details || errorMessage
+        } catch {
+          const errorText = await uploadResponse.text()
+          if (errorText.includes("Request Entity Too Large") || uploadResponse.status === 413) {
+            errorMessage =
+              "File too large. Please use fewer images (10-15 recommended) or ensure photos are under 2MB each."
+          } else {
+            errorMessage = errorText || errorMessage
+          }
+        }
+        throw new Error(errorMessage)
       }
 
       const result = await uploadResponse.json()
@@ -248,8 +266,8 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
   const imageCount = trainingStatus?.trainingImages?.length || 0
 
   return (
-    <div className="space-y-6 sm:space-y-8 pb-28 sm:pb-32 md:pb-36">
-      <div className="pt-3 sm:pt-4 md:pt-6 px-4 sm:px-6 text-center">
+    <div className="space-y-6 sm:space-y-8 pb-28 sm:pb-32 md:pb-36 pt-safe">
+      <div className="pt-8 sm:pt-4 md:pt-6 px-4 sm:px-6 text-center">
         <h1 className="text-2xl sm:text-3xl md:text-5xl font-serif font-extralight tracking-[0.3em] text-stone-950 uppercase leading-none mb-2 sm:mb-3">
           AI Training
         </h1>
@@ -599,7 +617,7 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
             <button
               onClick={startTraining}
               disabled={uploadedImages.length < 10 || !selectedGender || isUploading}
-              className="w-full bg-stone-950 text-stone-50 py-4 sm:py-5 rounded-2xl font-light tracking-[0.15em] uppercase text-sm transition-all duration-200 hover:bg-stone-800 min-h-[52px] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-stone-950 text-stone-50 py-4 sm:py-5 rounded-2xl font-light tracking-[0.15em] uppercase text-sm transition-all duration-200 hover:bg-stone-800 min-h-[52px] disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation active:scale-95"
             >
               {isUploading ? "Uploading..." : "Start Training"}
             </button>

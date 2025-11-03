@@ -12,7 +12,21 @@ export async function POST(request: Request) {
   try {
     console.log("[v0] Upload ZIP API called")
 
-    const formData = await request.formData()
+    let formData
+    try {
+      formData = await request.formData()
+    } catch (error: any) {
+      console.error("[v0] Error parsing formData:", error)
+      return NextResponse.json(
+        {
+          error: "Request too large",
+          details:
+            "The uploaded file is too large. Please use fewer images (10-15 recommended) or ensure photos are under 2MB each.",
+        },
+        { status: 413 },
+      )
+    }
+
     const zipFile = formData.get("zipFile") as File
     const gender = formData.get("gender") as string
     const modelName = formData.get("modelName") as string
@@ -21,7 +35,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No ZIP file provided" }, { status: 400 })
     }
 
-    console.log(`[v0] Received ZIP file: ${zipFile.name}, size: ${(zipFile.size / 1024 / 1024).toFixed(2)}MB`)
+    const zipSizeMB = zipFile.size / 1024 / 1024
+    console.log(`[v0] Received ZIP file: ${zipFile.name}, size: ${zipSizeMB.toFixed(2)}MB`)
+
+    if (zipSizeMB > 4.5) {
+      return NextResponse.json(
+        {
+          error: "File too large",
+          details: `ZIP file is ${zipSizeMB.toFixed(2)}MB. Maximum size is 4.5MB. Please use fewer images or lower quality photos.`,
+        },
+        { status: 413 },
+      )
+    }
 
     // Get authenticated user
     const supabase = await createServerClient()
