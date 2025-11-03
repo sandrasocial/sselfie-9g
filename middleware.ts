@@ -66,6 +66,11 @@ self.addEventListener('activate', (event) => {
     })
   }
 
+  if (request.nextUrl.pathname.startsWith("/api/freebie/")) {
+    console.log("[v0] Skipping auth middleware for public freebie API")
+    return NextResponse.next()
+  }
+
   const response = await updateSession(request)
 
   // Preserve the previous URL in a custom header for navigation context
