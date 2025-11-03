@@ -26,11 +26,16 @@ export default function SignUpPage() {
     setError(null)
 
     try {
+      const isDevelopment = process.env.NODE_ENV === "development"
+      const redirectUrl = isDevelopment
+        ? process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${window.location.origin}/`
+        : process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || `${window.location.origin}/`
+
       const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${window.location.origin}/`,
+          emailRedirectTo: redirectUrl,
           data: {
             name,
           },
