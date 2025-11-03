@@ -8,6 +8,7 @@ import { ContentPillarTag } from "./content-pillar-tag"
 import { Button } from "@/components/ui/button"
 import { Plus, Filter, Calendar, ChevronLeft, ChevronRight } from "lucide-react"
 import { SchedulePostModal } from "./schedule-post-modal"
+import UnifiedLoading from "./unified-loading"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -176,12 +177,7 @@ export default function ContentCalendarScreen({ onNavigateToFeed }: ContentCalen
           </div>
 
           {isLoading ? (
-            <div className="flex h-64 items-center justify-center">
-              <div className="text-center">
-                <div className="h-8 w-8 animate-spin rounded-full border-4 border-stone-200 border-t-stone-950 mx-auto" />
-                <p className="mt-4 text-sm text-stone-600">Loading calendar...</p>
-              </div>
-            </div>
+            <UnifiedLoading message="Loading calendar..." />
           ) : error ? (
             <div className="flex h-64 items-center justify-center">
               <div className="text-center">

@@ -20,6 +20,7 @@ import ImageGalleryModal from "./image-gallery-modal"
 import ComingSoonScreen from "./coming-soon-screen"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import useSWR, { mutate } from "swr"
+import UnifiedLoading from "./unified-loading"
 
 interface FeedPost {
   id: string | number
@@ -1490,14 +1491,7 @@ export default function FeedDesignerScreen() {
   }, [messages])
 
   if (isInitializing || isLoadingChat) {
-    return (
-      <div className="h-full flex items-center justify-center bg-stone-50">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-stone-950 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-sm text-stone-600">Loading feed designer...</p>
-        </div>
-      </div>
-    )
+    return <UnifiedLoading message="Loading feed designer..." />
   }
 
   const handleGenerateNewFeed = async () => {

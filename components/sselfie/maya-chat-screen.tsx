@@ -730,7 +730,7 @@ export default function MayaChatScreen() {
         </div>
       )}
 
-      <div className="flex-shrink-0 flex items-center justify-between px-4 pt-3 sm:pt-4 pb-3">
+      <div className="flex-shrink-0 flex items-center justify-between px-4 pt-3 sm:pt-4">
         <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
           <div className="w-11 h-11 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full border-2 border-stone-200/60 overflow-hidden flex-shrink-0">
             <img
@@ -990,7 +990,7 @@ export default function MayaChatScreen() {
               setIsUserScrolling(false)
               scrollToBottom("smooth")
             }}
-            className="absolute bottom-6 right-6 p-3 bg-stone-950 text-white rounded-full shadow-2xl shadow-stone-900/40 hover:scale-110 active:scale-95 transition-all duration-300 z-10 animate-in fade-in slide-in-from-bottom-2 min-w-[44px] min-h-[44px] flex items-center justify-center"
+            className="absolute bottom-24 left-6 p-3 bg-stone-950 text-white rounded-full shadow-2xl shadow-stone-900/40 hover:scale-110 active:scale-95 transition-all duration-300 z-10 animate-in fade-in slide-in-from-bottom-2 min-w-[44px] min-h-[44px] flex items-center justify-center"
             aria-label="Scroll to bottom"
           >
             <ArrowDown size={18} strokeWidth={2.5} />
@@ -998,7 +998,7 @@ export default function MayaChatScreen() {
         )}
       </div>
 
-      <div className="flex-shrink-0 border-t border-white/30 px-4 pt-3 sm:pt-4 pb-3 mt-auto">
+      <div className="flex-shrink-0 border-t border-white/30 px-4 pt-3 sm:pt-4 mt-auto">
         {uploadedImage ? (
           <div className="mb-3">
             <div className="flex items-center gap-2 mb-2">
