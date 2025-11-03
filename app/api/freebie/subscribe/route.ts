@@ -103,6 +103,7 @@ export async function POST(request: NextRequest) {
     console.log("[v0] Subscriber created with ID:", result.id)
 
     let emailSent = false
+    let emailError = null
     try {
       if (process.env.RESEND_API_KEY) {
         console.log("[v0] Sending welcome email via Resend")
@@ -130,8 +131,16 @@ export async function POST(request: NextRequest) {
       } else {
         console.log("[v0] RESEND_API_KEY not configured, skipping email")
       }
-    } catch (emailError) {
-      console.error("[v0] Error sending email:", emailError)
+    } catch (error: any) {
+      console.error("[v0] Error sending email:", error)
+      emailError = error.message || "Unknown email error"
+
+      if (error.message && error.message.includes("domain is not verified")) {
+        console.error(
+          "[v0] IMPORTANT: Resend domain not verified. Please verify sselfie.studio at https://resend.com/domains",
+        )
+        emailError = "Domain not verified in Resend. Please verify sselfie.studio at https://resend.com/domains"
+      }
     }
 
     console.log("[v0] Returning success response")
@@ -139,7 +148,10 @@ export async function POST(request: NextRequest) {
       success: true,
       accessToken: result.access_token,
       emailSent,
-      message: "Successfully subscribed!",
+      emailError,
+      message: emailSent
+        ? "Successfully subscribed! Check your email for the guide link."
+        : "Successfully subscribed! Redirecting to your guide...",
     })
   } catch (error) {
     console.error("[v0] Error in POST handler:", error)

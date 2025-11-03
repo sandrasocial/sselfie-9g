@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { ArrowRight, Download, Sparkles, Camera, Sun, Smile, Edit3, TrendingUp } from "lucide-react"
+import { ArrowRight, Download, Sparkles, Camera, Sun, Smile, Edit3, TrendingUp, ChevronRight } from "lucide-react"
 import Link from "next/link"
 
 interface FreebieGuideContentProps {
@@ -11,6 +11,7 @@ interface FreebieGuideContentProps {
 
 export function FreebieGuideContent({ subscriberName }: FreebieGuideContentProps) {
   const [scrollProgress, setScrollProgress] = useState(0)
+  const [activeChapter, setActiveChapter] = useState(0)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -19,6 +20,14 @@ export function FreebieGuideContent({ subscriberName }: FreebieGuideContentProps
       const scrolled = window.scrollY
       const progress = Math.min((scrolled / documentHeight) * 100, 100)
       setScrollProgress(progress)
+
+      const chapterElements = document.querySelectorAll("[data-chapter]")
+      chapterElements.forEach((el, index) => {
+        const rect = el.getBoundingClientRect()
+        if (rect.top <= windowHeight / 2 && rect.bottom >= windowHeight / 2) {
+          setActiveChapter(index)
+        }
+      })
     }
 
     window.addEventListener("scroll", handleScroll)
@@ -65,6 +74,13 @@ export function FreebieGuideContent({ subscriberName }: FreebieGuideContentProps
     },
   ]
 
+  const scrollToChapter = (index: number) => {
+    const element = document.querySelector(`[data-chapter="${index}"]`)
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "start" })
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-stone-50 to-white">
       {/* Progress Bar */}
@@ -79,12 +95,18 @@ export function FreebieGuideContent({ subscriberName }: FreebieGuideContentProps
             <Camera className="h-6 w-6" />
             <span className="font-serif text-xl font-bold">SSELFIE</span>
           </div>
-          <Button variant="outline" size="sm" asChild>
-            <a href="/selfie-guide.pdf" download>
-              <Download className="mr-2 h-4 w-4" />
-              Download PDF
-            </a>
-          </Button>
+          <div className="flex items-center gap-2">
+            <span className="hidden sm:inline text-sm text-stone-600">
+              Chapter {activeChapter + 1} of {chapters.length}
+            </span>
+            <Button variant="outline" size="sm" asChild>
+              <a href="/selfie-guide.pdf" download>
+                <Download className="mr-2 h-4 w-4" />
+                <span className="hidden sm:inline">Download PDF</span>
+                <span className="sm:hidden">PDF</span>
+              </a>
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -115,27 +137,31 @@ export function FreebieGuideContent({ subscriberName }: FreebieGuideContentProps
         <div className="container mx-auto px-4">
           <h2 className="mb-12 text-center font-serif text-3xl font-bold md:text-4xl">What You'll Learn</h2>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {chapters.map((chapter) => (
-              <div
+            {chapters.map((chapter, index) => (
+              <button
                 key={chapter.number}
-                className="group rounded-lg border border-stone-200 bg-white p-6 transition-all hover:border-black hover:shadow-lg"
+                onClick={() => scrollToChapter(index)}
+                className="group rounded-lg border border-stone-200 bg-white p-6 text-left transition-all hover:border-black hover:shadow-lg"
               >
                 <div className="mb-4 flex items-center gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-stone-100 group-hover:bg-black group-hover:text-white">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-stone-100 group-hover:bg-black group-hover:text-white transition-colors">
                     <chapter.icon className="h-6 w-6" />
                   </div>
                   <span className="font-mono text-sm text-stone-400">{chapter.number}</span>
                 </div>
-                <h3 className="mb-2 font-serif text-xl font-bold">{chapter.title}</h3>
+                <h3 className="mb-2 font-serif text-xl font-bold flex items-center justify-between">
+                  {chapter.title}
+                  <ChevronRight className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </h3>
                 <p className="text-sm leading-relaxed text-stone-600">{chapter.description}</p>
-              </div>
+              </button>
             ))}
           </div>
         </div>
       </section>
 
       {/* Chapter 1: Camera Mastery */}
-      <section className="container mx-auto px-4 py-16">
+      <section data-chapter="0" className="container mx-auto px-4 py-16">
         <div className="mx-auto max-w-3xl">
           <div className="mb-8">
             <span className="mb-2 inline-block font-mono text-sm text-stone-400">Chapter 01</span>
@@ -217,7 +243,7 @@ export function FreebieGuideContent({ subscriberName }: FreebieGuideContentProps
       </section>
 
       {/* Chapter 2: Lighting Secrets */}
-      <section className="border-t border-stone-200 bg-stone-50 py-16">
+      <section data-chapter="1" className="border-t border-stone-200 bg-stone-50 py-16">
         <div className="container mx-auto px-4">
           <div className="mx-auto max-w-3xl">
             <div className="mb-8">
@@ -265,6 +291,274 @@ export function FreebieGuideContent({ subscriberName }: FreebieGuideContentProps
                   <li>Mixed color temperatures (creates unnatural skin tones)</li>
                 </ul>
               </div>
+
+              <h3>Creating Your Own Studio Lighting</h3>
+              <p>You don't need expensive equipment to create professional lighting at home. Here's a simple setup:</p>
+              <ul>
+                <li>
+                  <strong>Ring Light:</strong> Affordable and creates even, flattering light with beautiful catchlights
+                </li>
+                <li>
+                  <strong>White Reflector:</strong> Use a white poster board to bounce light and fill shadows
+                </li>
+                <li>
+                  <strong>Diffusion:</strong> Place a white sheet over harsh light sources to soften them
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section data-chapter="2" className="border-t border-stone-200 bg-white py-16">
+        <div className="container mx-auto px-4">
+          <div className="mx-auto max-w-3xl">
+            <div className="mb-8">
+              <span className="mb-2 inline-block font-mono text-sm text-stone-400">Chapter 03</span>
+              <h2 className="mb-4 font-serif text-4xl font-bold">Angles & Poses</h2>
+              <p className="text-lg leading-relaxed text-stone-600">
+                The right angle and pose can transform your selfie from awkward to amazing.
+              </p>
+            </div>
+
+            <div className="prose prose-stone max-w-none">
+              <h3>Finding Your Best Angle</h3>
+              <p>Everyone has a "good side." Take time to discover yours by taking selfies from different angles:</p>
+              <ul>
+                <li>
+                  <strong>The 45-Degree Turn:</strong> Turn your face slightly to one side—this is universally
+                  flattering
+                </li>
+                <li>
+                  <strong>The Chin Forward:</strong> Extend your chin slightly forward and down to define your jawline
+                </li>
+                <li>
+                  <strong>The Head Tilt:</strong> A subtle tilt adds personality without looking forced
+                </li>
+              </ul>
+
+              <h3>Natural Posing Techniques</h3>
+              <p>The key to natural-looking selfies is movement. Instead of freezing in one position:</p>
+              <ul>
+                <li>Take a burst of photos while slowly moving your head</li>
+                <li>Think of something that makes you genuinely smile</li>
+                <li>Try the "fake laugh" technique—it often leads to real smiles</li>
+                <li>Relax your shoulders and breathe naturally</li>
+              </ul>
+
+              <div className="my-8 rounded-lg bg-black p-8 text-center text-white">
+                <h4 className="mb-4 font-serif text-2xl font-bold">Skip the Guesswork</h4>
+                <p className="mb-6">
+                  SSELFIE Studio generates hundreds of professional selfies with perfect angles automatically.
+                </p>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="border-white text-white hover:bg-white hover:text-black bg-transparent"
+                  asChild
+                >
+                  <Link href="/studio">
+                    Start Creating
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section data-chapter="3" className="border-t border-stone-200 bg-stone-50 py-16">
+        <div className="container mx-auto px-4">
+          <div className="mx-auto max-w-3xl">
+            <div className="mb-8">
+              <span className="mb-2 inline-block font-mono text-sm text-stone-400">Chapter 04</span>
+              <h2 className="mb-4 font-serif text-4xl font-bold">Editing Like a Pro</h2>
+              <p className="text-lg leading-relaxed text-stone-600">
+                Professional editing enhances your natural beauty without looking overdone.
+              </p>
+            </div>
+
+            <div className="prose prose-stone max-w-none">
+              <h3>The Professional Editing Workflow</h3>
+              <p>Follow this order for the most natural-looking edits:</p>
+              <ol>
+                <li>
+                  <strong>Crop & Straighten:</strong> Fix composition and horizon lines first
+                </li>
+                <li>
+                  <strong>Exposure & Brightness:</strong> Adjust overall brightness without blowing out highlights
+                </li>
+                <li>
+                  <strong>Contrast:</strong> Add depth and dimension to your photo
+                </li>
+                <li>
+                  <strong>Saturation:</strong> Enhance colors subtly (less is more)
+                </li>
+                <li>
+                  <strong>Sharpness:</strong> Add clarity to make your photo pop
+                </li>
+                <li>
+                  <strong>Skin Retouching:</strong> Smooth skin while keeping texture
+                </li>
+              </ol>
+
+              <h3>Best Editing Apps</h3>
+              <ul>
+                <li>
+                  <strong>Lightroom Mobile:</strong> Professional-grade editing with presets
+                </li>
+                <li>
+                  <strong>VSCO:</strong> Beautiful film-inspired filters
+                </li>
+                <li>
+                  <strong>Facetune:</strong> Subtle retouching and smoothing
+                </li>
+                <li>
+                  <strong>Snapseed:</strong> Free and powerful with selective editing
+                </li>
+              </ul>
+
+              <div className="my-8 rounded-lg border border-stone-200 bg-white p-6">
+                <h4 className="mb-2 flex items-center gap-2 font-bold">
+                  <Edit3 className="h-5 w-5" />
+                  Editing Mistakes to Avoid
+                </h4>
+                <ul className="mb-0">
+                  <li>Over-smoothing skin (makes you look plastic)</li>
+                  <li>Too much saturation (creates unnatural colors)</li>
+                  <li>Heavy filters that hide your natural features</li>
+                  <li>Excessive whitening of teeth and eyes</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section data-chapter="4" className="border-t border-stone-200 bg-white py-16">
+        <div className="container mx-auto px-4">
+          <div className="mx-auto max-w-3xl">
+            <div className="mb-8">
+              <span className="mb-2 inline-block font-mono text-sm text-stone-400">Chapter 05</span>
+              <h2 className="mb-4 font-serif text-4xl font-bold">Building Confidence</h2>
+              <p className="text-lg leading-relaxed text-stone-600">
+                True beauty comes from confidence. Here's how to develop it.
+              </p>
+            </div>
+
+            <div className="prose prose-stone max-w-none">
+              <h3>Overcoming Camera Shyness</h3>
+              <p>Feeling awkward in front of the camera is normal. Here's how to get comfortable:</p>
+              <ul>
+                <li>
+                  <strong>Practice in Private:</strong> Take selfies when you're alone to build comfort
+                </li>
+                <li>
+                  <strong>Start with Video:</strong> Record yourself talking, then screenshot your favorite frames
+                </li>
+                <li>
+                  <strong>Focus on Expression:</strong> Think about conveying emotion rather than looking perfect
+                </li>
+                <li>
+                  <strong>Celebrate Progress:</strong> Compare your selfies from months ago to see improvement
+                </li>
+              </ul>
+
+              <h3>Developing Your Signature Style</h3>
+              <p>Your signature style makes you instantly recognizable:</p>
+              <ul>
+                <li>Choose consistent colors and tones in your photos</li>
+                <li>Develop go-to poses that feel natural to you</li>
+                <li>Find your preferred angles and stick with them</li>
+                <li>Create a consistent editing style</li>
+              </ul>
+
+              <div className="my-8 rounded-lg border border-stone-200 bg-stone-50 p-6">
+                <h4 className="mb-2 flex items-center gap-2 font-bold">
+                  <Sparkles className="h-5 w-5" />
+                  Confidence Affirmations
+                </h4>
+                <p className="mb-2">Repeat these before taking selfies:</p>
+                <ul className="mb-0">
+                  <li>"I am worthy of being seen"</li>
+                  <li>"My unique features make me beautiful"</li>
+                  <li>"I deserve to take up space"</li>
+                  <li>"Confidence is my best accessory"</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section data-chapter="5" className="border-t border-stone-200 bg-stone-50 py-16">
+        <div className="container mx-auto px-4">
+          <div className="mx-auto max-w-3xl">
+            <div className="mb-8">
+              <span className="mb-2 inline-block font-mono text-sm text-stone-400">Chapter 06</span>
+              <h2 className="mb-4 font-serif text-4xl font-bold">Social Strategy</h2>
+              <p className="text-lg leading-relaxed text-stone-600">
+                Turn your selfies into a powerful personal brand on social media.
+              </p>
+            </div>
+
+            <div className="prose prose-stone max-w-none">
+              <h3>Creating a Cohesive Instagram Feed</h3>
+              <p>A cohesive feed attracts followers and builds your brand:</p>
+              <ul>
+                <li>
+                  <strong>Color Palette:</strong> Stick to 3-5 main colors across all posts
+                </li>
+                <li>
+                  <strong>Consistent Editing:</strong> Use the same filters and editing style
+                </li>
+                <li>
+                  <strong>Grid Planning:</strong> Use apps like Preview to plan your feed layout
+                </li>
+                <li>
+                  <strong>Mix Content Types:</strong> Alternate between selfies, lifestyle shots, and quotes
+                </li>
+              </ul>
+
+              <h3>Optimizing for Engagement</h3>
+              <p>Get more likes, comments, and followers with these strategies:</p>
+              <ul>
+                <li>
+                  <strong>Post Timing:</strong> Share when your audience is most active (usually 7-9am and 5-7pm)
+                </li>
+                <li>
+                  <strong>Captions That Connect:</strong> Share personal stories and ask questions
+                </li>
+                <li>
+                  <strong>Strategic Hashtags:</strong> Use 10-15 relevant hashtags with varying popularity
+                </li>
+                <li>
+                  <strong>Engage Authentically:</strong> Respond to comments and engage with your community
+                </li>
+              </ul>
+
+              <div className="my-8 rounded-lg border border-stone-200 bg-white p-6">
+                <h4 className="mb-2 flex items-center gap-2 font-bold">
+                  <TrendingUp className="h-5 w-5" />
+                  Growth Tips
+                </h4>
+                <ul className="mb-0">
+                  <li>Post consistently (3-5 times per week minimum)</li>
+                  <li>Use Instagram Stories daily to stay top-of-mind</li>
+                  <li>Collaborate with other creators in your niche</li>
+                  <li>Save and share your best-performing content</li>
+                </ul>
+              </div>
+
+              <h3>Building Your Personal Brand</h3>
+              <p>Your selfies should tell a story about who you are:</p>
+              <ul>
+                <li>Define your niche and what you want to be known for</li>
+                <li>Show different aspects of your personality</li>
+                <li>Be authentic—people connect with real, not perfect</li>
+                <li>Share your journey, not just the highlights</li>
+              </ul>
             </div>
           </div>
         </div>
@@ -273,10 +567,10 @@ export function FreebieGuideContent({ subscriberName }: FreebieGuideContentProps
       {/* CTA Section */}
       <section className="border-y border-stone-200 bg-white py-16">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="mb-4 font-serif text-3xl font-bold md:text-4xl">Want Perfect Selfies Without the Work?</h2>
+          <h2 className="mb-4 font-serif text-3xl font-bold md:text-4xl">Ready to Put This Into Practice?</h2>
           <p className="mx-auto mb-8 max-w-2xl text-lg text-stone-600">
             SSELFIE Studio generates professional AI selfies with perfect lighting, angles, and composition. No camera
-            skills required.
+            skills required—just upload 10 photos and get hundreds of stunning selfies.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-4">
             <Button size="lg" asChild className="bg-black hover:bg-black/90">
