@@ -37,14 +37,50 @@ export async function POST(request: NextRequest) {
 
         if (session.mode === "payment") {
           // One-time credit purchase
-          const userId = session.metadata.user_id
+          let userId = session.metadata.user_id
           const credits = Number.parseInt(session.metadata.credits)
           const packageId = session.metadata.package_id
+          const customerEmail = session.customer_details?.email || session.customer_email
+
+          console.log(`[v0] Credit purchase - Initial userId: ${userId}, email: ${customerEmail}`)
+
+          if (!userId && customerEmail) {
+            console.log(`[v0] No user_id in metadata, looking up user by email: ${customerEmail}`)
+
+            const users = await sql`
+              SELECT id FROM users WHERE email = ${customerEmail} LIMIT 1
+            `
+
+            if (users.length > 0) {
+              userId = users[0].id
+              console.log(`[v0] Found user ${userId} for email ${customerEmail}`)
+            } else {
+              console.error(`[v0] No user found for email ${customerEmail} - cannot add credits`)
+              return NextResponse.json(
+                {
+                  error: "User not found for credit purchase",
+                },
+                { status: 400 },
+              )
+            }
+          }
+
+          if (!userId) {
+            console.error("[v0] No user_id found for credit purchase - skipping")
+            return NextResponse.json(
+              {
+                error: "Missing user_id for credit purchase",
+              },
+              { status: 400 },
+            )
+          }
 
           console.log(`[v0] Credit purchase completed: ${credits} credits for user ${userId}`)
 
           // Add credits to user account
           await addCredits(userId, credits, "purchase", `Purchased ${packageId} package`)
+
+          console.log(`[v0] Successfully added ${credits} credits to user ${userId}`)
         } else if (session.mode === "subscription") {
           const userId = session.metadata.user_id
           const customerEmail = session.customer_details?.email || session.customer_email
@@ -106,12 +142,12 @@ export async function POST(request: NextRequest) {
 
               // Send ONLY our custom welcome email (Supabase won't send any email)
               const tier = session.metadata.tier || "Subscription"
-              const credits = Number.parseInt(session.metadata.credits || "0")
+              const creditsGranted = Number.parseInt(session.metadata.credits || "0")
 
               const emailContent = generateWelcomeEmail({
                 email: customerEmail,
                 resetLink: passwordSetupLink,
-                creditsGranted: credits,
+                creditsGranted: creditsGranted,
                 subscriptionTier: tier,
               })
 

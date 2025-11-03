@@ -119,8 +119,18 @@ export async function addCredits(
   stripePaymentId?: string,
 ): Promise<{ success: boolean; newBalance: number }> {
   try {
+    console.log("[v0] [CREDITS] Adding credits:", {
+      userId,
+      amount,
+      type,
+      description,
+      stripePaymentId,
+    })
+
     // Get current balance
     const currentBalance = await getUserCredits(userId)
+    console.log("[v0] [CREDITS] Current balance before adding:", currentBalance)
+
     const newBalance = currentBalance + amount
 
     // Update balance
@@ -132,6 +142,8 @@ export async function addCredits(
         updated_at = NOW()
       WHERE user_id = ${userId}
     `
+
+    console.log("[v0] [CREDITS] Updated balance in database")
 
     // Record transaction
     await sql`
@@ -145,9 +157,12 @@ export async function addCredits(
       )
     `
 
+    console.log("[v0] [CREDITS] Recorded transaction in database")
+    console.log("[v0] [CREDITS] Successfully added credits. New balance:", newBalance)
+
     return { success: true, newBalance }
   } catch (error) {
-    console.error("[v0] Error adding credits:", error)
+    console.error("[v0] [CREDITS] Error adding credits:", error)
     return { success: false, newBalance: 0 }
   }
 }

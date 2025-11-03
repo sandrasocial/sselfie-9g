@@ -19,6 +19,7 @@ export async function createLandingCheckoutSession(tierId: string) {
   console.log("[v0] Landing checkout - NEXT_PUBLIC_APP_URL:", process.env.NEXT_PUBLIC_APP_URL)
   console.log("[v0] Landing checkout - Using baseUrl:", baseUrl)
   console.log("[v0] Landing checkout - Success URL:", `${baseUrl}/checkout/success`)
+  console.log("[v0] Landing checkout - Tier:", tierId, "Credits:", tier.credits)
 
   // Create Checkout Session with redirect URLs
   const session = await stripe.checkout.sessions.create({
