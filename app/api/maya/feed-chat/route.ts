@@ -5,10 +5,11 @@ import { neon } from "@neondatabase/serverless"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { MAYA_SYSTEM_PROMPT } from "@/lib/maya/personality"
+import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 import { generateCaptionsForFeed } from "@/lib/instagram-strategist/caption-logic"
 import { generateInstagramBio } from "@/lib/instagram-bio-strategist/bio-logic"
 import { setFeedProgress, clearFeedProgress } from "@/lib/feed-progress"
-import { createServerClient } from "@/lib/supabase/server" // Fixed import location
+import { createServerClient } from "@/lib/supabase/server"
 
 export const maxDuration = 300
 
@@ -149,6 +150,18 @@ const generateCompleteFeedTool = tool({
 
       console.log("[v0] [SERVER] Using AI to design custom feed layout...")
 
+      const [userModel] = await sql`
+        SELECT trigger_word
+        FROM user_models
+        WHERE user_id = ${user.id}
+        AND training_status = 'completed'
+        ORDER BY created_at DESC
+        LIMIT 1
+      `
+
+      const triggerWord = userModel?.trigger_word || "person"
+      console.log("[v0] [SERVER] User trigger word:", triggerWord)
+
       const { object: feedDesign } = await generateObject({
         model: "anthropic/claude-sonnet-4.5", // Fixed model identifier from claude-sonnet-4 to claude-sonnet-4.5
         schema: z.object({
@@ -197,12 +210,24 @@ Be creative and authentic. No generic templates - every element should feel cust
 
       const posts = feedDesign.posts.map((post, index) => {
         if (post.type === "Object") {
+          const genderObjectStyling =
+            user.gender === "woman" || user.gender === "female"
+              ? "elegant feminine aesthetic with refined details, soft textures and sophisticated arrangement, carefully curated objects that convey grace and professionalism"
+              : user.gender === "man" || user.gender === "male"
+                ? "masculine aesthetic with clean lines and strong composition, sophisticated objects like leather goods, watches, tech accessories, coffee setup, or professional tools, minimalist arrangement with intentional negative space, bold confident styling"
+                : "sophisticated neutral aesthetic with clean professional styling, carefully curated objects that convey expertise and authenticity"
+
+          const objectLighting =
+            colorPalette.includes("dark") || colorPalette.includes("moody")
+              ? "dramatic directional lighting with defined shadows and high contrast, moody atmospheric quality"
+              : "soft natural window light with gentle shadows, warm inviting glow, even exposure"
+
           return {
             id: `post-${index + 1}`,
             title: "Styled Moment",
             description: `${post.purpose}. ${post.composition}`,
             category: "Object",
-            prompt: `${colorPalette.replace(/#[0-9a-fA-F]{6}/g, "").trim()} styled flatlay photography, ${post.styleDirection}, elegant arrangement, overhead shot with soft directional natural lighting creating gentle shadows, professional editorial quality with ${brandVibe} aesthetic, carefully curated brand-aligned objects, shallow depth of field with creamy bokeh, subtle film grain texture, high-end commercial photography, sophisticated composition, trending Instagram aesthetic 2025, warm inviting atmosphere, cohesive color story`,
+            prompt: `${colorPalette.replace(/#[0-9a-fA-F]{6}/g, "").trim()} styled flatlay photography, ${genderObjectStyling}, ${post.styleDirection}, overhead shot with ${objectLighting}, professional editorial quality with ${brandVibe} aesthetic, carefully curated brand-aligned objects that tell a story about ${businessType}, shallow depth of field with creamy bokeh, subtle film grain texture for authenticity, high-end commercial photography, sophisticated composition that feels both aspirational and authentic, trending Instagram aesthetic 2025, cohesive color story, ${post.composition}`,
             textOverlay: undefined,
             purpose: post.purpose,
             composition: post.composition,
@@ -246,7 +271,7 @@ Be creative and authentic. No generic templates - every element should feel cust
           title: `${post.type} ${post.type === "Lifestyle" ? "Moment" : "Portrait"}`,
           description: `${post.purpose}. ${post.composition}`,
           category: post.type,
-          prompt: `${user.trigger_word}, ${genderStyling}, ${fashionDetails}, ${post.styleDirection}, ${lensSpecs[post.type as keyof typeof lensSpecs]}, ${lightingStyle}, natural skin texture with subtle film grain for authenticity, ${post.composition}, timeless elegance meets modern sophistication, high-end editorial photography with ${brandVibe} aesthetic, genuine professional presence that feels both aspirational and relatable, trending Instagram aesthetic 2025, cohesive visual story`,
+          prompt: `${triggerWord}, ${genderStyling}, ${fashionDetails}, ${post.styleDirection}, ${lensSpecs[post.type as keyof typeof lensSpecs]}, ${lightingStyle}, natural skin texture with subtle film grain for authenticity, ${post.composition}, timeless elegance meets modern sophistication, high-end editorial photography with ${brandVibe} aesthetic, genuine professional presence that feels both aspirational and relatable, trending Instagram aesthetic 2025, cohesive visual story`,
           textOverlay: undefined,
           purpose: post.purpose,
           composition: post.composition,
@@ -671,6 +696,11 @@ export async function POST(req: NextRequest) {
 
     console.log("[v0] ✅ User mapping found:", user.id)
 
+    console.log("[v0] Step 2.5: Fetching user brand profile context...")
+    const authId = user.stack_auth_id || user.supabase_user_id || user.id
+    const userContext = await getUserContextForMaya(authId)
+    console.log("[v0] ✅ User context fetched, length:", userContext.length)
+
     // Step 3: Parse request
     console.log("[v0] Step 3: Parsing request body...")
     const { messages } = await req.json()
@@ -748,7 +778,7 @@ export async function POST(req: NextRequest) {
         rewriteCaption: rewriteCaptionTool,
         callCaptionStrategist: callCaptionStrategistTool,
       },
-      system: MAYA_SYSTEM_PROMPT + MAYA_FEED_STRATEGIST_EXTENSION,
+      system: MAYA_SYSTEM_PROMPT + userContext + MAYA_FEED_STRATEGIST_EXTENSION,
     })
 
     console.log("[v0] ✅ Streaming response started")

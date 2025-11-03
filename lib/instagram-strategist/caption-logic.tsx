@@ -1,4 +1,4 @@
-import neon from "neon" // Declare the neon variable
+import { neon } from "@neondatabase/serverless" // Declare the neon variable
 
 export async function generateCaptionsForFeed({
   feedId,
@@ -53,7 +53,6 @@ export async function generateCaptionsForFeed({
         ORDER BY position ASC
       `
     }
-    // </CHANGE>
 
     return {
       success: true,
