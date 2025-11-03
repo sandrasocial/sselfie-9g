@@ -790,7 +790,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
         </div>
       )}
 
-      <div className="flex-1 min-h-0 px-4 pb-32 sm:pb-36">
+      <div className="flex-1 min-h-0 px-4 pb-48 sm:pb-52">
         <div
           ref={messagesContainerRef}
           onScroll={handleScroll}
