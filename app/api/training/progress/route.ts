@@ -9,18 +9,35 @@ const sql = neon(process.env.DATABASE_URL!)
 function extractProgressFromLogs(logs: string): number | null {
   if (!logs) return null
 
-  // Try to find percentage in logs (e.g., "50%", "Progress: 75%", etc.)
-  const percentMatch = logs.match(/(\d+)%/)
-  if (percentMatch) {
-    return Number.parseInt(percentMatch[1], 10)
+  const fluxStepMatch = logs.match(/step\s+(\d+)\/(\d+)/i)
+  if (fluxStepMatch) {
+    const current = Number.parseInt(fluxStepMatch[1], 10)
+    const total = Number.parseInt(fluxStepMatch[2], 10)
+    const progress = Math.round((current / total) * 100)
+    if (progress > 0 && progress <= 100) {
+      return progress
+    }
   }
 
-  // Try to find step progress (e.g., "Step 500/1000")
-  const stepMatch = logs.match(/Step\s+(\d+)\/(\d+)/)
-  if (stepMatch) {
-    const current = Number.parseInt(stepMatch[1], 10)
-    const total = Number.parseInt(stepMatch[2], 10)
-    return Math.round((current / total) * 100)
+  const percentMatches = logs.match(/(\d+)%/g)
+  if (percentMatches && percentMatches.length > 0) {
+    // Get the last percentage mentioned (most recent progress)
+    const lastPercent = percentMatches[percentMatches.length - 1]
+    const percentValue = Number.parseInt(lastPercent, 10)
+    // Only return if it's a meaningful progress value
+    if (percentValue > 0 && percentValue <= 100) {
+      return percentValue
+    }
+  }
+
+  const epochMatch = logs.match(/epoch\s+(\d+)\/(\d+)/i)
+  if (epochMatch) {
+    const current = Number.parseInt(epochMatch[1], 10)
+    const total = Number.parseInt(epochMatch[2], 10)
+    const progress = Math.round((current / total) * 100)
+    if (progress > 0 && progress <= 100) {
+      return progress
+    }
   }
 
   return null
@@ -48,6 +65,8 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const modelId = searchParams.get("modelId")
 
+    console.log("[v0] Training progress API called for modelId:", modelId)
+
     if (!modelId) {
       return NextResponse.json({ error: "Model ID required" }, { status: 400 })
     }
@@ -67,9 +86,27 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    // Get model from database
     const models = await sql`
-      SELECT * FROM user_models
+      SELECT 
+        id, 
+        user_id, 
+        replicate_model_id, 
+        trigger_word, 
+        training_status, 
+        training_progress, 
+        training_id,
+        started_at,
+        created_at,
+        completed_at,
+        replicate_version_id,
+        lora_weights_url,
+        failure_reason,
+        estimated_completion_time,
+        updated_at,
+        model_name,
+        trained_model_path,
+        lora_scale
+      FROM user_models
       WHERE id = ${modelId} AND user_id = ${neonUser.id}
     `
 
@@ -79,40 +116,93 @@ export async function GET(request: NextRequest) {
 
     const model = models[0]
 
+    console.log("[v0] Model data from database:", {
+      id: model.id,
+      training_id: model.training_id,
+      training_status: model.training_status,
+      training_progress: model.training_progress,
+      started_at: model.started_at,
+    })
+
+    const debugInfo = {
+      hasTrainingId: !!model.training_id,
+      trainingId: model.training_id,
+      trainingStatus: model.training_status,
+      currentProgress: model.training_progress,
+    }
+
     // If training is complete or failed, return current status
     if (model.training_status === "completed" || model.training_status === "failed") {
       return NextResponse.json({
         status: model.training_status,
         progress: model.training_progress || 100,
         model: model,
+        debug: debugInfo,
       })
     }
 
     // Check Replicate training status
     if (model.training_id) {
+      console.log("[v0] Checking Replicate for training_id:", model.training_id)
       try {
         const replicate = getReplicateClient()
         const training = await replicate.trainings.get(model.training_id)
 
-        console.log("[v0] Replicate training status:", training.status)
-        console.log("[v0] Replicate training logs:", training.logs?.substring(0, 200))
+        console.log(
+          "[v0] Full Replicate training object:",
+          JSON.stringify(
+            {
+              id: training.id,
+              status: training.status,
+              metrics: training.metrics,
+              logs_length: training.logs?.length,
+              output: training.output,
+              created_at: training.created_at,
+              started_at: training.started_at,
+              completed_at: training.completed_at,
+            },
+            null,
+            2,
+          ),
+        )
+
+        debugInfo.replicateStatus = training.status
+        debugInfo.replicateLogsLength = training.logs?.length || 0
+        debugInfo.replicateMetrics = training.metrics
 
         let progress = model.training_progress || 0
 
         if (training.status === "succeeded") {
           progress = 100
+          debugInfo.progressSource = "completed"
         } else if (training.status === "processing" || training.status === "starting") {
-          // Try to extract progress from logs first
-          const logProgress = extractProgressFromLogs(training.logs || "")
-          if (logProgress !== null) {
-            progress = logProgress
-            console.log("[v0] Extracted progress from logs:", progress)
+          if (training.metrics && typeof training.metrics === "object" && "progress" in training.metrics) {
+            progress = Math.round(training.metrics.progress * 100)
+            debugInfo.progressSource = "replicate_metrics"
+            debugInfo.metricsProgress = progress
+            console.log("[v0] Progress from Replicate metrics:", progress)
           } else {
-            // Estimate based on elapsed time
-            progress = estimateProgress(model.started_at || model.created_at, training.status)
-            console.log("[v0] Estimated progress based on time:", progress)
+            // Try to extract progress from logs first
+            const logProgress = extractProgressFromLogs(training.logs || "")
+            if (logProgress !== null) {
+              progress = logProgress
+              debugInfo.progressSource = "logs"
+              debugInfo.extractedProgress = logProgress
+              console.log("[v0] Progress from logs:", progress)
+            } else {
+              // Estimate based on elapsed time
+              const startTime = model.started_at || model.created_at
+              progress = estimateProgress(startTime, training.status)
+              debugInfo.progressSource = "estimated"
+              debugInfo.estimatedProgress = progress
+              debugInfo.startedAt = startTime
+              debugInfo.elapsedMinutes = Math.round((Date.now() - new Date(startTime).getTime()) / 60000)
+              console.log("[v0] Progress estimated:", progress, "elapsed minutes:", debugInfo.elapsedMinutes)
+            }
           }
         }
+
+        console.log("[v0] Final calculated progress:", progress)
 
         // Update database with latest status
         if (training.status === "succeeded") {
@@ -163,6 +253,7 @@ export async function GET(request: NextRequest) {
               replicate_version_id: training.output?.version,
               lora_weights_url: loraWeightsUrl,
             },
+            debug: debugInfo,
           })
         } else if (training.status === "failed" || training.status === "canceled") {
           await sql`
@@ -178,8 +269,10 @@ export async function GET(request: NextRequest) {
             status: "failed",
             progress: model.training_progress || 0,
             error: training.error,
+            debug: debugInfo,
           })
         } else {
+          console.log("[v0] Updating database with progress:", progress)
           await sql`
             UPDATE user_models
             SET 
@@ -187,6 +280,7 @@ export async function GET(request: NextRequest) {
               updated_at = NOW()
             WHERE id = ${modelId}
           `
+          console.log("[v0] Database updated successfully")
 
           return NextResponse.json({
             status: "training",
@@ -195,26 +289,42 @@ export async function GET(request: NextRequest) {
               ...model,
               training_progress: progress,
             },
+            debug: debugInfo,
           })
         }
       } catch (replicateError) {
+        debugInfo.replicateError = replicateError instanceof Error ? replicateError.message : String(replicateError)
+        debugInfo.errorStack = replicateError instanceof Error ? replicateError.stack : undefined
+
         console.error("[v0] Error checking Replicate status:", replicateError)
-        // Return current database status if Replicate check fails
+
+        // Return current database status with error info
         return NextResponse.json({
           status: model.training_status,
           progress: model.training_progress || 0,
           model: model,
+          debug: debugInfo,
+          error: "Failed to check Replicate status",
         })
       }
+    } else {
+      debugInfo.reason = "No training_id in database"
     }
 
     return NextResponse.json({
       status: model.training_status,
       progress: model.training_progress || 0,
       model: model,
+      debug: debugInfo,
     })
   } catch (error) {
     console.error("[v0] Error checking training progress:", error)
-    return NextResponse.json({ error: "Failed to check training progress" }, { status: 500 })
+    return NextResponse.json(
+      {
+        error: "Failed to check training progress",
+        details: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 },
+    )
   }
 }

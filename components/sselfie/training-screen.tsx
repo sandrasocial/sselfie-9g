@@ -104,6 +104,12 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
 
   console.log("[v0] Training status data:", trainingStatus)
   console.log("[v0] Training progress data:", progressData)
+  if (progressData?.debug) {
+    console.log("[v0] Progress API debug info:", progressData.debug)
+  }
+  if (progressData?.error) {
+    console.error("[v0] Progress API error:", progressData.error)
+  }
 
   useEffect(() => {
     const currentModel = progressData?.model || trainingStatus?.model
