@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Check } from "lucide-react"
+import { Check, Sparkles } from "lucide-react"
 import InstagramPhotoCard from "./instagram-photo-card"
 import InstagramReelCard from "./instagram-reel-card"
 import type { ConceptData } from "./types"
@@ -216,30 +216,28 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
   }
 
   return (
-    <div className="bg-white/50 backdrop-blur-2xl border border-white/70 rounded-[1.75rem] p-5 sm:p-6 transition-all duration-300 hover:bg-white/70 hover:border-white/90 hover:scale-[1.01] shadow-xl shadow-stone-900/10">
-      <div className="space-y-4 sm:space-y-5">
+    <div className="bg-white/50 backdrop-blur-2xl border border-white/70 rounded-2xl p-4 transition-all duration-300 hover:bg-white/70 hover:border-white/90 hover:scale-[1.01] shadow-lg shadow-stone-900/5">
+      <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <div className="px-3 sm:px-4 py-1.5 sm:py-2 bg-stone-100 backdrop-blur-xl rounded-full border border-stone-200 shadow-inner">
-            <span className="text-[10px] sm:text-xs tracking-wider uppercase font-semibold text-stone-950">
+          <div className="px-3 py-1 bg-stone-100 backdrop-blur-xl rounded-full border border-stone-200">
+            <span className="text-[10px] tracking-wider uppercase font-semibold text-stone-950">
               {concept.category}
             </span>
           </div>
-          <div className="w-2 h-2 rounded-full bg-stone-950 shadow-lg shadow-stone-950/50"></div>
         </div>
 
-        <div className="space-y-2 sm:space-y-3">
-          <h4 className="text-sm sm:text-base font-bold text-stone-950 leading-tight">{concept.title}</h4>
-          <p className="text-xs sm:text-sm font-medium leading-relaxed text-stone-600">{concept.description}</p>
+        <div className="space-y-1.5">
+          <h4 className="text-sm font-bold text-stone-950 leading-tight">{concept.title}</h4>
+          <p className="text-xs leading-relaxed text-stone-600 line-clamp-2">{concept.description}</p>
         </div>
       </div>
 
       {error && (
-        <div className="mt-5 sm:mt-6 p-3 sm:p-4 bg-red-50 border border-red-200 rounded-xl" role="alert">
-          <p className="text-xs sm:text-sm text-red-600">{error}</p>
+        <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-xl">
+          <p className="text-xs text-red-600">{error}</p>
           <button
             onClick={handleGenerate}
-            className="mt-2 text-xs sm:text-sm font-semibold text-red-700 hover:text-red-900 min-h-[44px] px-3 py-2"
-            aria-label="Retry image generation"
+            className="mt-2 text-xs font-semibold text-red-700 hover:text-red-900 min-h-[40px] px-3 py-2"
           >
             Try Again
           </button>
@@ -247,66 +245,37 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
       )}
 
       {!isGenerating && !isGenerated && !error && (
-        <div className="mt-5 sm:mt-6">
+        <div className="mt-3">
           <button
             onClick={handleGenerate}
-            className="group relative w-full bg-stone-950 text-white px-5 sm:px-6 py-4 rounded-[1.25rem] font-semibold tracking-wide text-sm transition-all duration-300 hover:shadow-2xl hover:shadow-stone-950/40 hover:scale-[1.02] active:scale-[0.98] min-h-[52px] overflow-hidden"
-            aria-label={`Create photo: ${concept.title}`}
+            className="group relative w-full bg-stone-950 text-white px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-300 hover:shadow-xl hover:shadow-stone-950/30 hover:scale-[1.02] active:scale-[0.98] min-h-[44px] flex items-center justify-center gap-2"
           >
-            <div
-              className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-              aria-hidden="true"
-            ></div>
-            <span className="relative z-10">Create This Photo</span>
+            <Sparkles size={14} className="animate-pulse" />
+            <span>Create Photo</span>
           </button>
         </div>
       )}
 
       {isGenerating && (
-        <div
-          className="mt-5 sm:mt-6 flex flex-col items-center justify-center py-6 sm:py-8 space-y-3 sm:space-y-4"
-          role="status"
-          aria-live="polite"
-        >
-          <div className="relative w-10 h-10 sm:w-12 sm:h-12 pointer-events-none" aria-hidden="true">
+        <div className="mt-3 flex flex-col items-center justify-center py-4 space-y-2">
+          <div className="relative w-8 h-8">
             <div className="absolute inset-0 rounded-full bg-stone-200/20 animate-ping"></div>
-            <div className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-stone-950 animate-spin border-4 border-transparent border-t-white shadow-lg shadow-stone-900/30"></div>
+            <div className="relative w-8 h-8 rounded-full bg-stone-950 animate-spin border-4 border-transparent border-t-white shadow-lg shadow-stone-900/30"></div>
           </div>
-          <div className="text-center space-y-2">
-            <span className="text-xs sm:text-sm tracking-wider uppercase font-semibold text-stone-700">
-              Creating Magic
-            </span>
-            <div className="flex gap-1 justify-center pointer-events-none" aria-hidden="true">
-              <div className="w-1.5 h-1.5 rounded-full bg-stone-950 animate-bounce"></div>
-              <div
-                className="w-1.5 h-1.5 rounded-full bg-stone-950 animate-bounce"
-                style={{ animationDelay: "0.1s" }}
-              ></div>
-              <div
-                className="w-1.5 h-1.5 rounded-full bg-stone-950 animate-bounce"
-                style={{ animationDelay: "0.2s" }}
-              ></div>
-            </div>
-          </div>
+          <span className="text-xs tracking-wider uppercase font-semibold text-stone-700">Creating...</span>
         </div>
       )}
 
       {isGenerated && generatedImageUrl && (
-        <div className="mt-5 sm:mt-6 space-y-4">
-          <div
-            className="p-4 sm:p-5 bg-stone-100 backdrop-blur-xl border border-stone-200 rounded-[1.25rem] shadow-xl shadow-stone-900/10"
-            role="status"
-          >
-            <div className="flex items-center gap-3">
-              <div
-                className="w-9 h-9 sm:w-10 sm:h-10 bg-stone-950 rounded-xl flex items-center justify-center shadow-lg shadow-stone-900/30 flex-shrink-0 pointer-events-none"
-                aria-hidden="true"
-              >
-                <Check className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+        <div className="mt-3 space-y-3">
+          <div className="p-3 bg-stone-100 backdrop-blur-xl border border-stone-200 rounded-xl shadow-lg shadow-stone-900/5">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 bg-stone-950 rounded-lg flex items-center justify-center shadow-lg shadow-stone-900/30 flex-shrink-0">
+                <Check className="w-4 h-4 text-white" />
               </div>
-              <div className="space-y-1 flex-1 min-w-0">
-                <h4 className="text-xs sm:text-sm font-semibold text-stone-950">Photo Ready</h4>
-                <p className="text-[10px] sm:text-xs font-medium text-stone-600">Looking absolutely stunning</p>
+              <div className="space-y-0.5 flex-1 min-w-0">
+                <h4 className="text-xs font-semibold text-stone-950">Photo Ready</h4>
+                <p className="text-[10px] font-medium text-stone-600">Looking stunning</p>
               </div>
             </div>
           </div>
@@ -322,37 +291,29 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
           />
 
           {isGeneratingVideo && (
-            <div
-              className="flex flex-col items-center justify-center py-6 sm:py-8 space-y-3 sm:space-y-4"
-              role="status"
-            >
-              <div className="relative w-10 h-10 sm:w-12 sm:h-12">
+            <div className="flex flex-col items-center justify-center py-4 space-y-2">
+              <div className="relative w-8 h-8">
                 <div className="absolute inset-0 rounded-full bg-stone-200/20 animate-ping"></div>
-                <div className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-stone-950 animate-spin border-4 border-transparent border-t-white shadow-lg shadow-stone-900/30"></div>
+                <div className="relative w-8 h-8 rounded-full bg-stone-950 animate-spin border-4 border-transparent border-t-white shadow-lg shadow-stone-900/30"></div>
               </div>
-              <div className="text-center space-y-2">
-                <span className="text-xs sm:text-sm tracking-wider uppercase font-semibold text-stone-700">
-                  Creating Reel
-                </span>
-                <p className="text-[10px] sm:text-xs text-stone-600">This takes 40-60 seconds</p>
+              <div className="text-center space-y-1">
+                <span className="text-xs tracking-wider uppercase font-semibold text-stone-700">Creating Reel</span>
+                <p className="text-[10px] text-stone-600">40-60 seconds</p>
               </div>
             </div>
           )}
 
           {videoError && (
-            <div className="p-3 sm:p-4 bg-red-50 border border-red-200 rounded-xl">
-              <p className="text-xs sm:text-sm text-red-600">{videoError}</p>
-              <button
-                onClick={handleAnimate}
-                className="mt-2 text-xs sm:text-sm font-semibold text-red-700 hover:text-red-900"
-              >
+            <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
+              <p className="text-xs text-red-600">{videoError}</p>
+              <button onClick={handleAnimate} className="mt-2 text-xs font-semibold text-red-700 hover:text-red-900">
                 Try Again
               </button>
             </div>
           )}
 
           {videoUrl && videoId && (
-            <div className="mt-4">
+            <div className="mt-3">
               <InstagramReelCard videoUrl={videoUrl} motionPrompt={concept.description} />
             </div>
           )}

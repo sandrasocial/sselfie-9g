@@ -33,6 +33,8 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
   const [contentFilter, setContentFilter] = useState<"all" | "photos" | "videos">("all")
   const [currentPrompts, setCurrentPrompts] = useState<Array<{ label: string; prompt: string }>>([])
   const [userGender, setUserGender] = useState<string | null>(null)
+  const [showHeader, setShowHeader] = useState(true)
+  const lastScrollY = useRef(0)
 
   const { messages, sendMessage, status, setMessages } = useChat({
     transport: new DefaultChatTransport({ api: "/api/maya/chat" }),
@@ -261,6 +263,14 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
     const isAtBottom = scrollHeight - scrollTop - clientHeight < 100
 
     setShowScrollButton(!isAtBottom)
+
+    // Hide header on scroll down, show on scroll up
+    if (scrollTop > lastScrollY.current && scrollTop > 50) {
+      setShowHeader(false)
+    } else if (scrollTop < lastScrollY.current) {
+      setShowHeader(true)
+    }
+    lastScrollY.current = scrollTop
 
     if (scrollTop < lastScrollTop.current) {
       setIsUserScrolling(true)
@@ -721,12 +731,18 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
   const isEmpty = !messages || messages.length === 0
 
   return (
-    <div className="h-full flex flex-col relative">
+    <div
+      className="flex flex-col h-full bg-gradient-to-b from-stone-50 to-white relative"
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
       {isDragging && (
         <div className="fixed inset-0 z-50 bg-stone-950/80 backdrop-blur-sm flex items-center justify-center animate-in fade-in duration-200">
           <div className="bg-white/90 backdrop-blur-xl border-2 border-dashed border-stone-400 rounded-3xl p-12 text-center max-w-md mx-4">
             <Camera size={48} className="mx-auto mb-4 text-stone-600" strokeWidth={1.5} />
-            <h3 className="text-xl sm:text-xl md:text-2xl font-serif font-extralight tracking-[0.2em] uppercase text-stone-950 mb-2">
+            <h3 className="text-xl font-serif font-extralight tracking-[0.2em] uppercase text-stone-950 mb-2">
               Drop Image Here
             </h3>
             <p className="text-sm text-stone-600 tracking-wide">Upload a reference image for Maya to work with</p>
@@ -734,104 +750,85 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
         </div>
       )}
 
-      <div className="flex-shrink-0 flex items-center justify-between px-4 pt-2 sm:pt-3">
-        <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
-          <div className="w-11 h-11 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full border-2 border-stone-200/60 overflow-hidden flex-shrink-0">
-            <img
-              src="https://i.postimg.cc/fTtCnzZv/out-1-22.png"
-              alt="Maya - Your Photo Stylist"
-              className="w-full h-full object-cover"
-            />
+      <div
+        className={`flex-shrink-0 flex items-center justify-between px-4 py-2 bg-white/80 backdrop-blur-xl border-b border-stone-200/50 transition-transform duration-300 ${
+          showHeader ? "translate-y-0" : "-translate-y-full"
+        }`}
+      >
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <div className="w-10 h-10 rounded-full border border-stone-200/60 overflow-hidden flex-shrink-0">
+            <img src="https://i.postimg.cc/fTtCnzZv/out-1-22.png" alt="Maya" className="w-full h-full object-cover" />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="text-lg sm:text-xl md:text-2xl font-serif font-extralight tracking-[0.25em] text-stone-950 uppercase">
-              Maya
-            </h3>
-            <p className="text-[10px] sm:text-xs tracking-[0.15em] uppercase font-light text-stone-500">
-              Your Photo Stylist
-            </p>
+            <h3 className="text-base font-serif font-extralight tracking-[0.2em] text-stone-950 uppercase">Maya</h3>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 sm:gap-4 ml-3 sm:ml-4 flex-shrink-0">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <button
             onClick={() => setShowHistory(!showHistory)}
-            className={`group relative p-3 sm:p-3 backdrop-blur-2xl border rounded-xl transition-all duration-300 hover:scale-105 active:scale-95 min-w-[44px] min-h-[44px] flex items-center justify-center ${
+            className={`p-2 backdrop-blur-2xl border rounded-lg transition-all duration-300 min-w-[40px] min-h-[40px] flex items-center justify-center ${
               showHistory
                 ? "bg-stone-900 border-stone-900 text-white"
-                : "bg-white/40 border-white/60 hover:bg-white/60 hover:border-stone-300 text-stone-600"
+                : "bg-white/40 border-white/60 hover:bg-white/60 text-stone-600"
             }`}
-            title="Chat history"
             aria-label="Toggle chat history"
-            aria-expanded={showHistory}
           >
-            <History size={18} strokeWidth={2} />
+            <History size={16} strokeWidth={2} />
           </button>
 
           <button
             onClick={handleNewChat}
-            className="group relative p-3 sm:p-3 bg-white/40 backdrop-blur-2xl border border-white/60 rounded-xl hover:bg-white/60 hover:border-stone-300 transition-all duration-300 hover:scale-105 active:scale-95 min-w-[44px] min-h-[44px] flex items-center justify-center"
-            title="Start new chat"
+            className="p-2 bg-white/40 backdrop-blur-2xl border border-white/60 rounded-lg hover:bg-white/60 transition-all duration-300 min-w-[40px] min-h-[40px] flex items-center justify-center"
             aria-label="Start new chat"
           >
-            <Plus size={18} className="text-stone-600" strokeWidth={2} />
+            <Plus size={16} className="text-stone-600" strokeWidth={2} />
           </button>
-
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            <div className="w-1.5 sm:w-2 h-1.5 sm:h-2 bg-stone-950 rounded-full" aria-hidden="true"></div>
-            <span className="text-xs tracking-[0.15em] font-light text-stone-600">Online</span>
-          </div>
         </div>
       </div>
 
       {showHistory && (
-        <div className="flex-shrink-0 mx-4 mb-3 sm:mb-4 bg-white/50 backdrop-blur-3xl border border-white/60 rounded-2xl p-4 shadow-xl shadow-stone-950/5 animate-in slide-in-from-top-2 duration-300">
+        <div className="flex-shrink-0 mx-4 mt-2 mb-2 bg-white/50 backdrop-blur-3xl border border-white/60 rounded-2xl p-4 shadow-xl shadow-stone-950/5 animate-in slide-in-from-top-2 duration-300">
           <MayaChatHistory currentChatId={chatId} onSelectChat={handleSelectChat} onNewChat={handleNewChat} />
         </div>
       )}
 
-      <div className="flex-1 min-h-0 px-4 pb-48 sm:pb-52">
+      <div className="flex-1 min-h-0 px-4">
         <div
           ref={messagesContainerRef}
           onScroll={handleScroll}
-          className="h-full overflow-y-auto space-y-3 sm:space-y-4 pr-1 scroll-smooth"
+          className="h-full overflow-y-auto space-y-3 pr-1 scroll-smooth pb-48"
           role="log"
           aria-live="polite"
           aria-label="Chat messages"
         >
           {isEmpty && !isTyping && (
             <div className="flex flex-col items-center justify-center h-full px-4 py-8 animate-in fade-in duration-500">
-              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-2 border-stone-200/60 overflow-hidden mb-6">
+              <div className="w-20 h-20 rounded-full border-2 border-stone-200/60 overflow-hidden mb-6">
                 <img
                   src="https://i.postimg.cc/fTtCnzZv/out-1-22.png"
                   alt="Maya"
                   className="w-full h-full object-cover"
                 />
               </div>
-              <h2 className="text-2xl sm:text-3xl font-serif font-extralight tracking-[0.3em] text-stone-950 uppercase mb-3 text-center">
+              <h2 className="text-2xl font-serif font-extralight tracking-[0.3em] text-stone-950 uppercase mb-3 text-center">
                 Welcome
               </h2>
-              <p className="text-sm sm:text-base text-stone-600 tracking-wide text-center mb-8 max-w-md leading-relaxed">
-                Hi, I'm Maya. I'll help you create beautiful photos and videos. Pick a style below or tell me what you'd
-                like to make.
+              <p className="text-sm text-stone-600 tracking-wide text-center mb-6 max-w-md leading-relaxed">
+                Hi, I'm Maya. I'll help you create beautiful photos and videos.
               </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-2xl">
-                {currentPrompts.map((item, index) => {
-                  return (
-                    <button
-                      key={index}
-                      onClick={() => handleSendMessage(item.prompt)}
-                      className="group p-4 bg-white/50 backdrop-blur-xl border border-white/70 rounded-2xl sm:rounded-[1.5rem] hover:bg-stone-100 hover:border-stone-300 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] text-left"
-                    >
-                      <span className="text-xs tracking-[0.15em] uppercase font-light text-stone-600 mb-2 block">
-                        {item.label}
-                      </span>
-                      <p className="text-sm text-stone-700 leading-relaxed group-hover:text-stone-950 transition-colors">
-                        {item.prompt}
-                      </p>
-                    </button>
-                  )
-                })}
+              <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 w-full max-w-2xl px-4">
+                {currentPrompts.map((item, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleSendMessage(item.prompt)}
+                    className="flex-shrink-0 px-4 py-3 bg-white/50 backdrop-blur-xl border border-white/70 rounded-xl hover:bg-stone-100 hover:border-stone-300 transition-all duration-300"
+                  >
+                    <span className="text-xs tracking-wide font-medium text-stone-700 whitespace-nowrap">
+                      {item.label}
+                    </span>
+                  </button>
+                ))}
               </div>
             </div>
           )}
@@ -840,7 +837,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
             Array.isArray(filteredMessages) &&
             filteredMessages.map((msg) => (
               <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                <div className={`max-w-[90%] sm:max-w-[85%] ${msg.role === "user" ? "order-2" : "order-1"}`}>
+                <div className={`max-w-[85%] ${msg.role === "user" ? "order-2" : "order-1"}`}>
                   {msg.parts &&
                     Array.isArray(msg.parts) &&
                     msg.parts.map((part, partIndex) => {
@@ -848,16 +845,14 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
                         return (
                           <div
                             key={partIndex}
-                            className={`p-4 sm:p-5 md:p-6 rounded-[1.5rem] sm:rounded-[1.75rem] transition-all duration-300 hover:scale-[1.01] ${
+                            className={`p-4 rounded-2xl transition-all duration-300 ${
                               msg.role === "user"
-                                ? "bg-stone-950 text-white shadow-xl shadow-stone-950/30"
-                                : "bg-white/50 backdrop-blur-2xl border border-white/70 shadow-xl shadow-stone-950/10 text-stone-950"
+                                ? "bg-stone-950 text-white shadow-lg shadow-stone-950/20"
+                                : "bg-white/50 backdrop-blur-2xl border border-white/70 shadow-lg shadow-stone-950/5 text-stone-950"
                             }`}
                             role={msg.role === "assistant" ? "article" : undefined}
                           >
-                            <p className="text-sm sm:text-base leading-relaxed font-medium whitespace-pre-wrap">
-                              {part.text}
-                            </p>
+                            <p className="text-sm leading-relaxed font-medium whitespace-pre-wrap">{part.text}</p>
                           </div>
                         )
                       }
@@ -879,26 +874,25 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
                           console.log("[v0] Rendering", concepts.length, "concept cards for message", msg.id)
 
                           return (
-                            <div key={partIndex} className="mt-4 space-y-3" role="region" aria-label="Photo concepts">
-                              <div className="flex items-center gap-3">
-                                <div className="w-1 h-1 rounded-full bg-stone-600" aria-hidden="true"></div>
+                            <div key={partIndex} className="mt-3 space-y-2">
+                              <div className="flex items-center gap-2">
+                                <div className="w-1 h-1 rounded-full bg-stone-600"></div>
                                 <span className="text-xs tracking-[0.15em] uppercase font-light text-stone-600">
                                   Photo Ideas
                                 </span>
                               </div>
-                              {concepts.map((concept: any, conceptIndex: number) => (
-                                <ConceptCard key={conceptIndex} concept={concept} />
-                              ))}
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {concepts.map((concept: any, conceptIndex: number) => (
+                                  <ConceptCard key={conceptIndex} concept={concept} />
+                                ))}
+                              </div>
                             </div>
                           )
                         } else if (output && output.state === "loading") {
                           return (
-                            <div key={partIndex} className="mt-4" role="status" aria-live="polite">
-                              <div className="flex items-center gap-3 text-stone-600">
-                                <div
-                                  className="w-2 h-2 rounded-full bg-stone-600 animate-pulse"
-                                  aria-hidden="true"
-                                ></div>
+                            <div key={partIndex} className="mt-3">
+                              <div className="flex items-center gap-2 text-stone-600">
+                                <div className="w-1.5 h-1.5 rounded-full bg-stone-600 animate-pulse"></div>
                                 <span className="text-xs tracking-[0.15em] uppercase font-light">
                                   Creating photo concepts...
                                 </span>
@@ -921,7 +915,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
 
                         if (output && output.state === "processing") {
                           return (
-                            <div key={partIndex} className="mt-4">
+                            <div key={partIndex} className="mt-3">
                               <VideoCard
                                 videoUrl=""
                                 status="processing"
@@ -934,7 +928,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
 
                         if (output && output.state === "ready" && output.videoUrl) {
                           return (
-                            <div key={partIndex} className="mt-4">
+                            <div key={partIndex} className="mt-3">
                               <VideoCard
                                 videoUrl={output.videoUrl}
                                 motionPrompt={toolPart.args?.motionPrompt}
@@ -946,9 +940,9 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
 
                         if (output && output.state === "loading") {
                           return (
-                            <div key={partIndex} className="mt-4">
-                              <div className="flex items-center gap-3 text-stone-600">
-                                <div className="w-2 h-2 rounded-full bg-stone-600 animate-pulse" />
+                            <div key={partIndex} className="mt-3">
+                              <div className="flex items-center gap-2 text-stone-600">
+                                <div className="w-1.5 h-1.5 rounded-full bg-stone-600 animate-pulse" />
                                 <span className="text-xs tracking-[0.15em] uppercase font-light">
                                   Starting video generation...
                                 </span>
@@ -965,21 +959,21 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
             ))}
 
           {isTyping && (
-            <div className="flex justify-start" role="status" aria-live="polite" aria-label="Maya is typing">
-              <div className="bg-white/50 backdrop-blur-xl border border-white/70 p-4 rounded-2xl max-w-[90%] sm:max-w-[85%] shadow-lg shadow-stone-900/5">
-                <div className="flex items-center gap-4">
-                  <div className="flex gap-1" aria-hidden="true">
-                    <div className="w-2 h-2 rounded-full animate-bounce bg-stone-700"></div>
+            <div className="flex justify-start">
+              <div className="bg-white/50 backdrop-blur-xl border border-white/70 p-3 rounded-2xl max-w-[85%] shadow-lg shadow-stone-900/5">
+                <div className="flex items-center gap-3">
+                  <div className="flex gap-1">
+                    <div className="w-1.5 h-1.5 rounded-full animate-bounce bg-stone-700"></div>
                     <div
-                      className="w-2 h-2 rounded-full animate-bounce bg-stone-700"
+                      className="w-1.5 h-1.5 rounded-full animate-bounce bg-stone-700"
                       style={{ animationDelay: "0.2s" }}
                     ></div>
                     <div
-                      className="w-2 h-2 rounded-full animate-bounce bg-stone-700"
+                      className="w-1.5 h-1.5 rounded-full animate-bounce bg-stone-700"
                       style={{ animationDelay: "0.4s" }}
                     ></div>
                   </div>
-                  <span className="text-sm font-light text-stone-600">Maya is thinking...</span>
+                  <span className="text-xs font-light text-stone-600">Maya is thinking...</span>
                 </div>
               </div>
             </div>
@@ -994,86 +988,56 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
               setIsUserScrolling(false)
               scrollToBottom("smooth")
             }}
-            className="absolute bottom-36 left-6 p-3 bg-stone-950 text-white rounded-full shadow-2xl shadow-stone-900/40 hover:scale-110 active:scale-95 transition-all duration-300 z-10 animate-in fade-in slide-in-from-bottom-2 min-w-[44px] min-h-[44px] flex items-center justify-center"
+            className="absolute bottom-32 right-6 p-3 bg-stone-950 text-white rounded-full shadow-2xl shadow-stone-900/40 hover:scale-110 active:scale-95 transition-all duration-300 z-10 animate-in fade-in slide-in-from-bottom-2 min-w-[44px] min-h-[44px] flex items-center justify-center"
             aria-label="Scroll to bottom"
           >
-            <ArrowDown size={18} strokeWidth={2.5} />
+            <ArrowDown size={16} strokeWidth={2.5} />
           </button>
         )}
       </div>
 
       <div
-        className="fixed bottom-0 left-0 right-0 bg-white/50 backdrop-blur-3xl border-t border-white/30 px-4 pt-3 sm:pt-4 z-[60]"
+        className="absolute bottom-0 left-0 right-0 bg-white/80 backdrop-blur-3xl border-t border-stone-200/50 px-4 py-3 z-10"
         style={{
-          paddingBottom: "calc(env(safe-area-inset-bottom) + 5rem)",
+          paddingBottom: "calc(env(safe-area-inset-bottom) + 5.5rem)",
         }}
       >
-        {uploadedImage ? (
-          <div className="mb-3">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-1 h-1 rounded-full bg-stone-600" aria-hidden="true"></div>
-              <span className="text-xs tracking-[0.15em] uppercase font-light text-stone-600">Try These</span>
-            </div>
-            <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
-              <button
-                onClick={() => handleSendMessage("Create variations of this product with different angles")}
-                className="flex-shrink-0 px-4 py-2 bg-white/40 backdrop-blur-xl border border-white/60 rounded-xl hover:bg-white/60 hover:border-stone-300 transition-all text-xs text-stone-700 whitespace-nowrap"
-              >
-                Product Variations
-              </button>
-              <button
-                onClick={() => handleSendMessage("Use this as inspiration for a lifestyle photo")}
-                className="flex-shrink-0 px-4 py-2 bg-white/40 backdrop-blur-xl border border-white/60 rounded-xl hover:bg-white/60 hover:border-stone-300 transition-all text-xs text-stone-700 whitespace-nowrap"
-              >
-                Lifestyle Shot
-              </button>
-              <button
-                onClick={() => handleSendMessage("Create a flatlay composition with this product")}
-                className="flex-shrink-0 px-4 py-2 bg-white/40 backdrop-blur-xl border border-white/60 rounded-xl hover:bg-white/60 hover:border-stone-300 transition-all text-xs text-stone-700 whitespace-nowrap"
-              >
-                Flatlay Design
-              </button>
+        {!isEmpty && !uploadedImage && (
+          <div className="mb-2">
+            <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+              {currentPrompts.map((item, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleSendMessage(item.prompt)}
+                  disabled={isTyping}
+                  className="flex-shrink-0 px-3 py-2 bg-white/40 backdrop-blur-xl border border-white/60 rounded-lg hover:bg-white/60 transition-all duration-300 disabled:opacity-50"
+                >
+                  <span className="text-xs tracking-wide font-medium text-stone-700 whitespace-nowrap">
+                    {item.label}
+                  </span>
+                </button>
+              ))}
             </div>
           </div>
-        ) : (
-          !isEmpty &&
-          !uploadedImage && (
-            <div className="mb-3">
-              <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
-                {currentPrompts.map((item, index) => {
-                  return (
-                    <button
-                      key={index}
-                      onClick={() => handleSendMessage(item.prompt)}
-                      disabled={isTyping}
-                      className="flex-shrink-0 px-4 py-2.5 bg-white/40 backdrop-blur-xl border border-white/60 rounded-xl hover:bg-white/60 hover:border-stone-300 transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <span className="text-xs tracking-wide font-medium text-stone-700">{item.label}</span>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          )
         )}
 
         {uploadedImage && (
-          <div className="mb-3 relative inline-block">
-            <div className="relative w-24 h-24 rounded-xl overflow-hidden border-2 border-white/60 shadow-lg">
+          <div className="mb-2 relative inline-block">
+            <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-white/60 shadow-lg">
               <img src={uploadedImage || "/placeholder.svg"} alt="Reference" className="w-full h-full object-cover" />
               <button
                 onClick={() => setUploadedImage(null)}
-                className="absolute top-1 right-1 w-6 h-6 bg-stone-950 text-white rounded-full flex items-center justify-center hover:scale-110 transition-transform"
+                className="absolute top-0.5 right-0.5 w-5 h-5 bg-stone-950 text-white rounded-full flex items-center justify-center hover:scale-110 transition-transform"
                 aria-label="Remove image"
               >
-                <X size={14} strokeWidth={2.5} />
+                <X size={12} strokeWidth={2.5} />
               </button>
             </div>
             <p className="text-xs text-stone-600 mt-1 tracking-wide">Reference Image</p>
           </div>
         )}
 
-        <div className="flex gap-2 sm:gap-3">
+        <div className="flex gap-2">
           <div className="flex-1 relative group">
             <input
               type="text"
@@ -1086,11 +1050,11 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
                 }
               }}
               placeholder={uploadedImage ? "Describe how to use this image..." : "Message Maya..."}
-              className="w-full px-4 sm:px-5 py-4 sm:py-4 bg-white/40 backdrop-blur-2xl border border-white/60 rounded-xl sm:rounded-[1.5rem] text-stone-950 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-950/50 focus:border-stone-950/50 focus:bg-white/60 pr-14 sm:pr-16 font-medium text-sm min-h-[52px] sm:min-h-[56px] max-h-[120px] shadow-lg shadow-stone-950/10 transition-all duration-300 overflow-y-auto resize-none"
+              className="w-full px-4 py-3 bg-white/40 backdrop-blur-2xl border border-white/60 rounded-xl text-stone-950 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-950/50 focus:bg-white/60 pr-12 font-medium text-sm min-h-[48px] shadow-lg shadow-stone-950/10 transition-all duration-300"
               disabled={isTyping || isUploadingImage}
               aria-label="Message input"
             />
-            <div className="absolute right-2 sm:right-3 top-1/2 transform -translate-y-1/2">
+            <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
               <input
                 ref={fileInputRef}
                 type="file"
@@ -1102,33 +1066,25 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploadingImage || isTyping}
-                className="w-10 h-10 sm:w-11 sm:h-11 bg-stone-950 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg shadow-stone-950/30 group-hover:shadow-xl group-hover:scale-105 transition-all duration-300 min-w-[44px] min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-9 h-9 bg-stone-950 rounded-lg flex items-center justify-center shadow-lg shadow-stone-950/30 transition-all duration-300 min-w-[40px] min-h-[40px] disabled:opacity-50"
                 aria-label="Attach image"
                 type="button"
               >
                 {isUploadingImage ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
-                  <Camera size={16} className="text-white" strokeWidth={2.5} />
+                  <Camera size={14} className="text-white" strokeWidth={2.5} />
                 )}
               </button>
             </div>
           </div>
           <button
             onClick={() => handleSendMessage()}
-            className="group relative px-4 sm:px-5 py-4 sm:py-4 bg-stone-950 text-white rounded-xl sm:rounded-[1.5rem] font-semibold transition-all duration-300 hover:shadow-2xl hover:shadow-stone-950/40 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden min-h-[52px] sm:min-h-[56px] min-w-[52px] sm:min-w-[56px] flex items-center justify-center hover:scale-105 active:scale-95"
+            className="px-4 py-3 bg-stone-950 text-white rounded-xl font-semibold transition-all duration-300 hover:shadow-xl hover:shadow-stone-950/40 disabled:opacity-50 min-h-[48px] min-w-[48px] flex items-center justify-center hover:scale-105 active:scale-95"
             disabled={isTyping || (!inputValue.trim() && !uploadedImage) || isUploadingImage}
             aria-label="Send message"
           >
-            <div
-              className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-              aria-hidden="true"
-            ></div>
-            <Send
-              size={18}
-              strokeWidth={2.5}
-              className="relative z-10 transition-transform duration-300 group-hover:translate-x-0.5"
-            />
+            <Send size={16} strokeWidth={2.5} />
           </button>
         </div>
       </div>
