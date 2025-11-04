@@ -126,21 +126,21 @@ Return ONLY a valid JSON array of 9 concepts:
       await sql`
         INSERT INTO feed_posts (
           feed_layout_id,
+          user_id,
           position,
-          concept_title,
-          concept_description,
-          concept_category,
-          concept_prompt,
-          status
+          prompt,
+          post_type,
+          caption,
+          generation_status
         )
         VALUES (
           ${feedId},
+          ${user.id},
           ${newStartPosition + i},
-          ${concept.title},
-          ${concept.description},
-          ${concept.category},
           ${concept.prompt},
-          'concept'
+          ${concept.category},
+          ${concept.description},
+          'pending'
         )
       `
     }

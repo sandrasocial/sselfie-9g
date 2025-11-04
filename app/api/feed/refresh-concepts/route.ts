@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     const conceptPostsResult = await sql`
       SELECT id, position FROM feed_posts
       WHERE feed_layout_id = ${feedId}
-      AND status = 'concept'
+      AND generation_status = 'pending'
       AND image_url IS NULL
       ORDER BY position
     `
@@ -136,10 +136,10 @@ Return ONLY a valid JSON array of ${conceptPostsResult.length} concepts:
       await sql`
         UPDATE feed_posts
         SET
-          concept_title = ${concept.title},
-          concept_description = ${concept.description},
-          concept_category = ${concept.category},
-          concept_prompt = ${concept.prompt},
+          prompt = ${concept.prompt},
+          post_type = ${concept.category},
+          caption = ${concept.description},
+          generation_status = 'pending',
           updated_at = NOW()
         WHERE id = ${postId}
       `
