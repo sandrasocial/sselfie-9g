@@ -108,11 +108,12 @@ export async function POST(request: NextRequest) {
       if (process.env.RESEND_API_KEY) {
         console.log("[v0] Sending welcome email via Resend")
 
-        const guideUrl = `${process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://sselfie.studio"}/freebie/selfie-guide/access/${accessToken}`
+        const guideUrl = `${process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://sselfie.ai"}/freebie/selfie-guide/access/${accessToken}`
 
         await resend.emails.send({
-          from: "SSELFIE Studio <hello@sselfie.studio>",
+          from: "SSELFIE <hello@sselfie.ai>",
           to: email,
+          replyTo: "hello@sselfie.ai",
           subject: "Your Selfie Guide is Ready! 📸",
           html: `
             <div style="font-family: system-ui, -apple-system, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -137,9 +138,9 @@ export async function POST(request: NextRequest) {
 
       if (error.message && error.message.includes("domain is not verified")) {
         console.error(
-          "[v0] IMPORTANT: Resend domain not verified. Please verify sselfie.studio at https://resend.com/domains",
+          "[v0] IMPORTANT: Resend domain not verified. Please verify sselfie.ai at https://resend.com/domains",
         )
-        emailError = "Domain not verified in Resend. Please verify sselfie.studio at https://resend.com/domains"
+        emailError = "Domain not verified in Resend. Please verify sselfie.ai at https://resend.com/domains"
       }
     }
 

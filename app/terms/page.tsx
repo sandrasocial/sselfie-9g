@@ -197,9 +197,9 @@ export default function TermsOfService() {
               If you have any questions about these Terms of Service, please contact us at:
             </p>
             <p className="text-base font-light leading-relaxed mt-4">
-              Email: support@sselfie.com
+              Email: hello@sselfie.ai
               <br />
-              Website: www.sselfie.com
+              Website: www.sselfie.ai
             </p>
           </section>
         </div>

@@ -90,7 +90,7 @@ export default function CheckoutCancelPage() {
         {/* Help */}
         <div className="mt-12 pt-8 border-t border-stone-200">
           <p className="text-sm text-stone-500 font-light mb-2">Have questions?</p>
-          <Link href="mailto:support@sselfie.com" className="text-sm text-stone-900 font-medium hover:underline">
+          <Link href="mailto:hello@sselfie.ai" className="text-sm text-stone-900 font-medium hover:underline">
             Contact Support
           </Link>
         </div>

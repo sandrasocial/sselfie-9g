@@ -109,7 +109,7 @@ export default function PrivacyPolicy() {
             <p className="text-base font-light leading-relaxed">
               We retain your personal information and photos for as long as your account is active or as needed to
               provide you services. If you wish to delete your account and all associated data, please contact us at
-              support@sselfie.com.
+              hello@sselfie.ai.
             </p>
           </section>
 
@@ -164,9 +164,9 @@ export default function PrivacyPolicy() {
               If you have questions about this Privacy Policy, please contact us at:
             </p>
             <p className="text-base font-light leading-relaxed mt-4">
-              Email: support@sselfie.com
+              Email: hello@sselfie.ai
               <br />
-              Website: www.sselfie.com
+              Website: www.sselfie.ai
             </p>
           </section>
         </div>
