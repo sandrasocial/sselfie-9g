@@ -59,6 +59,7 @@ export async function getUserImages(userId: string): Promise<GalleryImage[]> {
         style,
         category,
         is_favorite,
+        source,
         created_at
       FROM ai_images
       WHERE user_id = ${userId}
@@ -105,13 +106,13 @@ export async function getUserImages(userId: string): Promise<GalleryImage[]> {
       })),
     ]
 
-    // Sort by created_at descending
     allImages.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
-    console.log("[v0] Found images:", {
-      ai_images: aiImages.length,
-      generated_images: generatedImages.length,
-      total: allImages.length,
+    console.log("[v0] Gallery images breakdown:", {
+      ai_images_count: aiImages.length,
+      generated_images_count: generatedImages.length,
+      total_count: allImages.length,
+      sample_sources: allImages.slice(0, 5).map((img) => ({ id: img.id, source: img.source, category: img.category })),
     })
 
     return allImages
@@ -136,6 +137,7 @@ export async function getImageById(imageId: string): Promise<GalleryImage | null
           style,
           category,
           is_favorite,
+          source,
           created_at
         FROM ai_images
         WHERE id = ${id}

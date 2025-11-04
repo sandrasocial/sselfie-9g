@@ -2,8 +2,16 @@
 import { Aperture, ChevronRight, Plus, Grid, Camera, ChevronDown, ChevronUp } from "lucide-react"
 import useSWR, { mutate } from "swr"
 import { InstagramPhotoPreview } from "./instagram-photo-preview"
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import BrandProfileWizard from "./brand-profile-wizard"
+import {
+  StudioHeroSkeleton,
+  StudioBrandProfileSkeleton,
+  StudioGenerationsSkeleton,
+  StudioStatsSkeleton,
+} from "./studio-skeleton"
+import { DynamicHeroCarousel } from "./dynamic-hero-carousel"
+import { ContextualTips } from "./contextual-tips"
 
 interface StudioScreenProps {
   user: any
@@ -18,6 +26,8 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
   const [showPreview, setShowPreview] = useState(false)
   const [showBrandWizard, setShowBrandWizard] = useState(false)
   const [isBrandProfileExpanded, setIsBrandProfileExpanded] = useState(false)
+  const [showSecondaryContent, setShowSecondaryContent] = useState(false)
+  const [selectedGeneration, setSelectedGeneration] = useState<any>(null)
 
   const COLOR_THEME_MAP: Record<string, { name: string; colors: string[] }> = {
     "dark-moody": {
@@ -54,32 +64,63 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
     refreshInterval: 0,
     revalidateOnFocus: false,
     revalidateOnReconnect: false,
-    dedupingInterval: 60000, // Dedupe requests within 60 seconds
+    dedupingInterval: 60000,
   })
 
-  const { data: stats } = useSWR(hasTrainedModel ? "/api/studio/stats" : null, fetcher, {
-    refreshInterval: 30000,
-    revalidateOnFocus: false,
-    dedupingInterval: 10000,
-  })
+  const { data: stats, isLoading: statsLoading } = useSWR(
+    hasTrainedModel && showSecondaryContent ? "/api/studio/stats" : null,
+    fetcher,
+    {
+      refreshInterval: 60000,
+      revalidateOnFocus: false,
+      dedupingInterval: 30000,
+    },
+  )
 
-  const { data: generationsData } = useSWR(hasTrainedModel ? "/api/studio/generations?limit=9" : null, fetcher, {
-    refreshInterval: 30000,
-    revalidateOnFocus: false,
-    dedupingInterval: 10000,
-  })
+  const { data: generationsData, isLoading: generationsLoading } = useSWR(
+    hasTrainedModel ? "/api/studio/generations?limit=9" : null,
+    fetcher,
+    {
+      refreshInterval: 60000,
+      revalidateOnFocus: false,
+      dedupingInterval: 30000,
+    },
+  )
 
   const { data: sessionData } = useSWR(hasTrainedModel ? "/api/studio/session" : null, fetcher, {
-    refreshInterval: 10000,
-    revalidateOnFocus: false,
-    dedupingInterval: 5000,
-  })
-
-  const { data: sessionsData } = useSWR(hasTrainedModel ? "/api/studio/sessions" : null, fetcher, {
     refreshInterval: 60000,
     revalidateOnFocus: false,
     dedupingInterval: 30000,
   })
+
+  const { data: sessionsData, isLoading: sessionsLoading } = useSWR(
+    hasTrainedModel && showSecondaryContent ? "/api/studio/sessions" : null,
+    fetcher,
+    {
+      refreshInterval: 60000,
+      revalidateOnFocus: false,
+      dedupingInterval: 30000,
+    },
+  )
+
+  const { data: favoritesData } = useSWR(
+    hasTrainedModel && showSecondaryContent ? "/api/studio/favorites?limit=5" : null,
+    fetcher,
+    {
+      refreshInterval: 0,
+      revalidateOnFocus: false,
+      dedupingInterval: 60000,
+    },
+  )
+
+  useEffect(() => {
+    if (hasTrainedModel && generationsData) {
+      const timer = setTimeout(() => {
+        setShowSecondaryContent(true)
+      }, 300)
+      return () => clearTimeout(timer)
+    }
+  }, [hasTrainedModel, generationsData])
 
   const hasActiveSession = useMemo(() => sessionData?.session, [sessionData])
   const hasRecentGenerations = useMemo(
@@ -194,25 +235,21 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
     )
   }
 
+  if (generationsLoading && !generationsData) {
+    return (
+      <>
+        <StudioHeroSkeleton />
+        <div className="space-y-6 sm:space-y-8 pb-24 sm:pb-28 md:pb-32 pt-8 overflow-x-hidden max-w-full">
+          <StudioBrandProfileSkeleton />
+          <StudioGenerationsSkeleton />
+        </div>
+      </>
+    )
+  }
+
   return (
     <>
-      <div className="relative h-[40vh] overflow-hidden -mx-4 sm:-mx-6 md:-mx-8 -mt-4 sm:-mt-6">
-        <img
-          src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/618-TVCuZVG8V6R2Bput7pX8V06bCHRXGx-KiEHLMVJx8qGrf7hZT6zRgx93bcBkj.png"
-          alt="Studio workspace"
-          className="w-full h-full object-cover object-top"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-stone-50/50 to-stone-50" />
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-center">
-            <p className="text-xs sm:text-sm tracking-[0.3em] uppercase font-light text-stone-600 mb-4">Welcome Back</p>
-            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-['Times_New_Roman'] font-extralight tracking-[0.3em] sm:tracking-[0.4em] text-stone-950 uppercase leading-none mb-3">
-              {user?.name?.split(" ")[0] || "Creator"}
-            </h1>
-            <p className="text-sm sm:text-base font-light text-stone-600 tracking-wider">Your Creative Studio</p>
-          </div>
-        </div>
-      </div>
+      <DynamicHeroCarousel images={favoritesData?.favorites || []} userName={user?.name?.split(" ")[0] || "Creator"} />
 
       <div className="space-y-6 sm:space-y-8 pb-24 sm:pb-28 md:pb-32 pt-8 overflow-x-hidden max-w-full">
         {brandStatus && !brandStatus.isCompleted && (
@@ -368,6 +405,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
                 src={lastGeneratedImage || "/placeholder.svg"}
                 alt="Latest generation"
                 className="w-full h-full object-cover object-top"
+                loading="lazy"
               />
               <div className="absolute inset-0 bg-gradient-to-b from-stone-900/60 via-stone-900/40 to-stone-50" />
 
@@ -378,6 +416,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
                       src="https://i.postimg.cc/fTtCnzZv/out-1-22.png"
                       alt="Maya"
                       className="w-full h-full object-cover"
+                      loading="lazy"
                     />
                   </div>
                   <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-white rounded-full flex items-center justify-center shadow-lg">
@@ -418,6 +457,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
                   <div
                     key={gen.id}
                     onClick={() => {
+                      setSelectedGeneration(gen)
                       setShowPreview(true)
                     }}
                     className="aspect-square bg-stone-200 rounded-lg overflow-hidden cursor-pointer hover:scale-105 transition-transform duration-300 shadow-md hover:shadow-xl"
@@ -426,6 +466,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
                       src={gen.image_url || "/placeholder.svg"}
                       alt={`Generation ${index + 1}`}
                       className="w-full h-full object-cover"
+                      loading="lazy"
                     />
                   </div>
                 ))}
@@ -453,7 +494,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
                 </button>
                 <button
                   onClick={() => setActiveTab("gallery")}
-                  className="group relative bg-white/60 backdrop-blur-3xl border border-white/70 text-stone-900 px-6 py-4 rounded-xl font-light tracking-wider text-sm transition-all duration-500 hover:bg-white/80 hover:border-white/90 hover:shadow-xl hover:shadow-stone-900/10 hover:scale-105 active:scale-95"
+                  className="group relative bg-white/60 backdrop-blur-3xl border border-white/70 text-stone-900 px-6 py-4 rounded-xl font-light tracking-wider text-sm transition-all duration-500 hover:bg-white/80 hover:border-white/90 hover:shadow-xl hover:shadow-stone-900/10 hover:scale-[1.02] active:scale-95"
                 >
                   <span className="relative z-10 flex items-center justify-center gap-2">
                     <Grid size={16} strokeWidth={1.5} />
@@ -464,7 +505,6 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
             </div>
           </div>
         ) : (
-          /* Fallback: Simple Maya Card if no recent generations */
           <button
             onClick={() => setActiveTab("maya")}
             className="group w-full bg-white/50 backdrop-blur-3xl border border-white/60 rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-xl shadow-stone-900/5 hover:bg-white/70 hover:border-white/80 hover:shadow-2xl hover:shadow-stone-900/10 transition-all duration-500 hover:scale-[1.02] active:scale-95"
@@ -475,6 +515,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
                   src="https://i.postimg.cc/fTtCnzZv/out-1-22.png"
                   alt="Maya - Your Photo Stylist"
                   className="w-full h-full object-cover"
+                  loading="lazy"
                 />
               </div>
               <div className="flex-1 text-left">
@@ -500,6 +541,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
               src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/641-Yz6RWOHjtemWaGCwY5XQjtSCZX9LFH-PLsHrWqBMHmnlpwgDD2JI7xIv34r7Y.png"
               alt="Academy"
               className="w-full h-full object-cover object-center"
+              loading="lazy"
             />
             <div className="absolute inset-0 bg-gradient-to-b from-stone-900/60 via-stone-900/50 to-stone-50" />
 
@@ -535,34 +577,38 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
           </div>
         </div>
 
-        {stats && (
-          <div className="bg-white/50 backdrop-blur-3xl border border-white/60 rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-xl shadow-stone-900/5">
-            <h2 className="font-['Times_New_Roman'] text-xl sm:text-2xl md:text-3xl font-extralight tracking-[0.15em] sm:tracking-[0.2em] text-stone-900 uppercase mb-6">
-              YOUR CREATIVE JOURNEY
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="flex flex-col gap-2">
-                <span className="text-3xl font-light text-stone-900">{stats.generationsThisMonth || 0}</span>
-                <span className="text-xs uppercase tracking-wider text-stone-500">Photos Generated This Month</span>
+        {showSecondaryContent ? (
+          stats ? (
+            <div className="bg-white/50 backdrop-blur-3xl border border-white/60 rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-xl shadow-stone-900/5">
+              <h2 className="font-['Times_New_Roman'] text-xl sm:text-2xl md:text-3xl font-extralight tracking-[0.15em] sm:tracking-[0.2em] text-stone-900 uppercase mb-6">
+                YOUR CREATIVE JOURNEY
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="flex flex-col gap-2">
+                  <span className="text-3xl font-light text-stone-900">{stats.generationsThisMonth || 0}</span>
+                  <span className="text-xs uppercase tracking-wider text-stone-500">Photos Generated This Month</span>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <span className="text-3xl font-light text-stone-900">{stats.totalGenerated || 0}</span>
+                  <span className="text-xs uppercase tracking-wider text-stone-500">Total Photos Created</span>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <span className="text-3xl font-light text-stone-900">{stats.totalFavorites || 0}</span>
+                  <span className="text-xs uppercase tracking-wider text-stone-500">Favorite Photos</span>
+                </div>
               </div>
-              <div className="flex flex-col gap-2">
-                <span className="text-3xl font-light text-stone-900">{stats.totalGenerated || 0}</span>
-                <span className="text-xs uppercase tracking-wider text-stone-500">Total Photos Created</span>
-              </div>
-              <div className="flex flex-col gap-2">
-                <span className="text-3xl font-light text-stone-900">{stats.totalFavorites || 0}</span>
-                <span className="text-xs uppercase tracking-wider text-stone-500">Favorite Photos</span>
-              </div>
+              <p className="mt-6 text-sm font-light text-stone-600 italic">
+                {stats.generationsThisMonth > 0
+                  ? `Amazing work this month, ${user?.name?.split(" ")[0] || "Creator"}!`
+                  : `Ready to create something beautiful, ${user?.name?.split(" ")[0] || "Creator"}?`}
+              </p>
             </div>
-            <p className="mt-6 text-sm font-light text-stone-600 italic">
-              {stats.generationsThisMonth > 0
-                ? `Amazing work this month, ${user?.name?.split(" ")[0] || "Creator"}!`
-                : `Ready to create something beautiful, ${user?.name?.split(" ")[0] || "Creator"}?`}
-            </p>
-          </div>
-        )}
+          ) : statsLoading ? (
+            <StudioStatsSkeleton />
+          ) : null
+        ) : null}
 
-        {hasRecentGenerations && (
+        {showSecondaryContent && hasRecentGenerations ? (
           <div className="space-y-6">
             <h3 className="text-lg sm:text-xl md:text-2xl font-serif font-extralight tracking-[0.15em] sm:tracking-[0.2em] md:tracking-[0.3em] text-stone-900 uppercase">
               Recent Activity
@@ -601,9 +647,9 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
               })}
             </div>
           </div>
-        )}
+        ) : null}
 
-        {sessionsData?.sessions && sessionsData.sessions.length > 0 && (
+        {showSecondaryContent && sessionsData?.sessions && sessionsData.sessions.length > 0 ? (
           <div className="space-y-6">
             <h3 className="text-lg sm:text-xl md:text-2xl font-serif font-extralight tracking-[0.15em] sm:tracking-[0.2em] md:tracking-[0.3em] text-stone-900 uppercase">
               Session History
@@ -660,39 +706,41 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
               })}
             </div>
           </div>
-        )}
+        ) : null}
 
-        {showPreview && lastGeneration && (
+        {showPreview && selectedGeneration && (
           <InstagramPhotoPreview
             image={{
-              id: lastGeneration.id,
-              image_url: lastGeneration.image_url,
-              prompt: lastGeneration.prompt,
-              description: lastGeneration.description,
-              category: lastGeneration.category,
-              subcategory: lastGeneration.subcategory,
-              created_at: lastGeneration.created_at,
-              saved: lastGeneration.saved,
+              id: selectedGeneration.id,
+              image_url: selectedGeneration.image_url,
+              prompt: selectedGeneration.prompt,
+              description: selectedGeneration.description,
+              category: selectedGeneration.category,
+              subcategory: selectedGeneration.subcategory,
+              created_at: selectedGeneration.created_at,
+              saved: selectedGeneration.saved,
               user_id: user.id,
-              is_favorite: lastGeneration.saved || false,
+              is_favorite: selectedGeneration.saved || false,
             }}
-            images={[
-              {
-                id: lastGeneration.id,
-                image_url: lastGeneration.image_url,
-                prompt: lastGeneration.prompt,
-                description: lastGeneration.description,
-                category: lastGeneration.category,
-                subcategory: lastGeneration.subcategory,
-                created_at: lastGeneration.created_at,
-                saved: lastGeneration.saved,
-                user_id: user.id,
-                is_favorite: lastGeneration.saved || false,
-              },
-            ]}
-            onClose={() => setShowPreview(false)}
+            images={generationsData.generations.slice(0, 9).map((gen: any) => ({
+              id: gen.id,
+              image_url: gen.image_url,
+              prompt: gen.prompt,
+              description: gen.description,
+              category: gen.category,
+              subcategory: gen.subcategory,
+              created_at: gen.created_at,
+              saved: gen.saved,
+              user_id: user.id,
+              is_favorite: gen.saved || false,
+            }))}
+            onClose={() => {
+              setShowPreview(false)
+              setSelectedGeneration(null)
+            }}
             onDelete={async () => {
               setShowPreview(false)
+              setSelectedGeneration(null)
               onImageGenerated()
               mutate("/api/studio/generations?limit=9")
             }}
@@ -700,7 +748,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
               onImageGenerated()
               mutate("/api/studio/generations?limit=9")
             }}
-            isFavorited={lastGeneration.saved || false}
+            isFavorited={selectedGeneration.saved || false}
           />
         )}
 
@@ -713,6 +761,14 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
               mutate("/api/profile/personal-brand/status")
             }}
             existingData={null}
+          />
+        )}
+
+        {showSecondaryContent && stats && (
+          <ContextualTips
+            generationCount={stats.totalGenerated || 0}
+            hasCompletedBrand={brandStatus?.isCompleted || false}
+            favoriteCount={stats.totalFavorites || 0}
           />
         )}
       </div>

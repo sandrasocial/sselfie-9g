@@ -1,6 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import type React from "react"
+
+import { useState, useRef, useEffect } from "react"
 import {
   X,
   Heart,
@@ -14,6 +16,7 @@ import {
 } from "lucide-react"
 import type { GalleryImage } from "@/lib/data/images"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
+import { triggerHaptic, triggerSuccessHaptic } from "@/lib/utils/haptics"
 
 interface InstagramPhotoPreviewProps {
   image: GalleryImage
@@ -41,12 +44,60 @@ export function InstagramPhotoPreview({
   const currentIsFavorited = currentImage.is_favorite || isFavorited
   const userInitial = userName.charAt(0).toUpperCase()
 
+  const touchStartX = useRef(0)
+  const touchEndX = useRef(0)
+  const imageRef = useRef<HTMLDivElement>(null)
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.touches[0].clientX
+  }
+
+  const handleTouchEnd = () => {
+    const swipeDistance = touchStartX.current - touchEndX.current
+    const minSwipeDistance = 50
+
+    if (Math.abs(swipeDistance) > minSwipeDistance) {
+      if (swipeDistance > 0) {
+        // Swiped left - next image
+        handleNext()
+      } else {
+        // Swiped right - previous image
+        handlePrevious()
+      }
+      triggerHaptic("light")
+    }
+
+    touchStartX.current = 0
+    touchEndX.current = 0
+  }
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") {
+        handlePrevious()
+      } else if (e.key === "ArrowRight") {
+        handleNext()
+      } else if (e.key === "Escape") {
+        onClose()
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [currentIndex])
+
   const handlePrevious = () => {
     setCurrentIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1))
+    triggerHaptic("light")
   }
 
   const handleNext = () => {
     setCurrentIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0))
+    triggerHaptic("light")
   }
 
   const handleDownload = () => {
@@ -57,13 +108,27 @@ export function InstagramPhotoPreview({
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
+    triggerSuccessHaptic()
+  }
+
+  const handleFavoriteClick = () => {
+    onFavorite(currentImage.id, !currentIsFavorited)
+    triggerSuccessHaptic()
+  }
+
+  const handleDeleteClick = () => {
+    onDelete(currentImage.id)
+    triggerHaptic("medium")
   }
 
   return (
     <div className="fixed inset-0 z-50 bg-stone-950 flex items-center justify-center overflow-y-auto">
       {/* Close button */}
       <button
-        onClick={onClose}
+        onClick={() => {
+          triggerHaptic("light")
+          onClose()
+        }}
         className="absolute top-4 right-4 z-10 p-3 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
       >
         <X size={24} className="text-white" strokeWidth={1.5} />
@@ -74,13 +139,13 @@ export function InstagramPhotoPreview({
         <>
           <button
             onClick={handlePrevious}
-            className="absolute left-4 z-10 p-3 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+            className="absolute left-4 z-10 p-3 bg-white/10 hover:bg-white/20 rounded-full transition-colors hidden sm:flex items-center justify-center"
           >
             <ChevronLeft size={24} className="text-white" strokeWidth={1.5} />
           </button>
           <button
             onClick={handleNext}
-            className="absolute right-4 z-10 p-3 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+            className="absolute right-4 z-10 p-3 bg-white/10 hover:bg-white/20 rounded-full transition-colors hidden sm:flex items-center justify-center"
           >
             <ChevronRight size={24} className="text-white" strokeWidth={1.5} />
           </button>
@@ -103,41 +168,49 @@ export function InstagramPhotoPreview({
           </button>
         </div>
 
-        {/* Image */}
-        <div className="relative bg-stone-900">
+        <div
+          ref={imageRef}
+          className="relative bg-stone-900 touch-pan-y"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
           <img
             src={currentImage.image_url || "/placeholder.svg"}
             alt={currentImage.description || currentImage.prompt || "Photo"}
-            className="w-full h-auto object-contain"
+            className="w-full h-auto object-contain select-none"
+            draggable={false}
           />
+          {images.length > 1 && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-stone-950/60 backdrop-blur-sm px-3 py-1 rounded-full text-xs text-white/70 sm:hidden">
+              Swipe to navigate
+            </div>
+          )}
         </div>
 
         {/* Actions */}
         <div className="p-3 space-y-3 border-t border-stone-800">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <button
-                onClick={() => onFavorite(currentImage.id, !currentIsFavorited)}
-                className="transition-transform hover:scale-110"
-              >
+              <button onClick={handleFavoriteClick} className="transition-transform hover:scale-110 active:scale-95">
                 <Heart
                   size={24}
                   className={currentIsFavorited ? "text-red-500 fill-red-500" : "text-white"}
                   strokeWidth={1.5}
                 />
               </button>
-              <button className="transition-transform hover:scale-110">
+              <button className="transition-transform hover:scale-110 active:scale-95">
                 <MessageCircle size={24} className="text-white" strokeWidth={1.5} />
               </button>
-              <button onClick={handleDownload} className="transition-transform hover:scale-110">
+              <button onClick={handleDownload} className="transition-transform hover:scale-110 active:scale-95">
                 <Download size={24} className="text-white" strokeWidth={1.5} />
               </button>
             </div>
             <div className="flex items-center gap-4">
-              <button onClick={() => onDelete(currentImage.id)} className="transition-transform hover:scale-110">
+              <button onClick={handleDeleteClick} className="transition-transform hover:scale-110 active:scale-95">
                 <Trash2 size={24} className="text-red-400" strokeWidth={1.5} />
               </button>
-              <button className="transition-transform hover:scale-110">
+              <button className="transition-transform hover:scale-110 active:scale-95">
                 <Bookmark size={24} className="text-white" strokeWidth={1.5} />
               </button>
             </div>

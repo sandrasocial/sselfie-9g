@@ -18,6 +18,7 @@ import {
   ChevronRight,
 } from "lucide-react"
 import useSWR from "swr"
+import useSWRInfinite from "swr/infinite"
 import type { User } from "./types"
 import type { GalleryImage } from "@/lib/data/images"
 import { InstagramPhotoPreview } from "./instagram-photo-preview"
@@ -25,6 +26,8 @@ import { InstagramReelPreview } from "./instagram-reel-preview"
 import { ProfileImageSelector } from "@/components/profile-image-selector"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { GalleryAllViewSkeleton, GalleryInstagramSkeleton } from "./gallery-skeleton"
+import { triggerHaptic, triggerSuccessHaptic, triggerErrorHaptic } from "@/lib/utils/haptics"
+import { ProgressiveImage } from "./progressive-image"
 
 interface GalleryScreenProps {
   user: User
@@ -93,22 +96,32 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
   const [selectionMode, setSelectionMode] = useState(false)
   const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set())
   const [isPulling, setIsPulling] = useState(false)
-  const [pullDistance, setPullDistance] = useState(0)
   const touchStartY = useRef(0)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const categoryScrollRef = useRef<HTMLDivElement>(null)
   const [showLeftArrow, setShowLeftArrow] = useState(false)
   const [showRightArrow, setShowRightArrow] = useState(true)
+  const [pullDistance, setPullDistance] = useState(0) // Declare pullDistance variable
 
-  const { data, error, isLoading, mutate } = useSWR("/api/images", fetcher, {
+  // New state for pagination
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(true)
+  const loadMoreRef = useRef<HTMLDivElement>(null)
+
+  const getKey = (pageIndex: number, previousPageData: any) => {
+    if (previousPageData && !previousPageData.hasMore) return null
+    return `/api/images?limit=50&offset=${pageIndex * 50}`
+  }
+
+  const { data, error, isLoading, mutate, size, setSize } = useSWRInfinite(getKey, fetcher, {
     revalidateOnFocus: false,
     revalidateOnReconnect: false,
     dedupingInterval: 60000,
+    revalidateFirstPage: false,
   })
 
   const { data: videosData, mutate: mutateVideos } = useSWR("/api/maya/videos", fetcher, {
     revalidateOnFocus: false,
-    revalidateOnReconnect: false,
     dedupingInterval: 60000,
   })
 
@@ -116,6 +129,32 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
     revalidateOnFocus: false,
     dedupingInterval: 60000,
   })
+
+  useEffect(() => {
+    if (!loadMoreRef.current || !hasMore || isLoadingMore) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
+          setIsLoadingMore(true)
+          setSize((prev) => prev + 1)
+        }
+      },
+      { threshold: 0.1 },
+    )
+
+    observer.observe(loadMoreRef.current)
+
+    return () => observer.disconnect()
+  }, [hasMore, isLoadingMore, setSize])
+
+  useEffect(() => {
+    if (data) {
+      const lastPage = data[data.length - 1]
+      setHasMore(lastPage?.hasMore || false)
+      setIsLoadingMore(false)
+    }
+  }, [data])
 
   useEffect(() => {
     const handleTouchStart = (e: TouchEvent) => {
@@ -183,7 +222,7 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
     setProfileImage(userData.user.profile_image_url)
   }
 
-  const allImages: GalleryImage[] = data?.images || []
+  const allImages: GalleryImage[] = data ? data.flatMap((page) => page.images || []) : []
   const allVideos: GeneratedVideo[] = videosData?.videos || []
   const favoritedImages = allImages.filter((img) => img.is_favorite || favorites.has(img.id))
 
@@ -242,6 +281,8 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
     }
     setFavorites(newFavorites)
 
+    triggerSuccessHaptic()
+
     try {
       const response = await fetch("/api/images/favorite", {
         method: "POST",
@@ -256,6 +297,7 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
       mutate()
     } catch (error) {
       console.error("[v0] Error updating favorite:", error)
+      triggerErrorHaptic()
       const revertedFavorites = new Set(favorites)
       if (!newFavoriteState) {
         revertedFavorites.add(imageId)
@@ -271,6 +313,8 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
       return
     }
 
+    triggerHaptic("medium")
+
     try {
       const response = await fetch("/api/images/delete", {
         method: "DELETE",
@@ -282,10 +326,12 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
         throw new Error("Failed to delete image")
       }
 
+      triggerSuccessHaptic()
       mutate()
       setLightboxImage(null)
     } catch (error) {
       console.error("[v0] Error deleting image:", error)
+      triggerErrorHaptic()
       alert("Failed to delete image. Please try again.")
     }
   }
@@ -321,6 +367,7 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
       newSelected.add(imageId)
     }
     setSelectedImages(newSelected)
+    triggerHaptic("light")
   }
 
   const selectAll = () => {
@@ -335,6 +382,8 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
     if (selectedImages.size === 0) return
     if (!confirm(`Are you sure you want to delete ${selectedImages.size} image(s)?`)) return
 
+    triggerHaptic("medium")
+
     try {
       await Promise.all(
         Array.from(selectedImages).map((imageId) =>
@@ -345,17 +394,21 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
           }),
         ),
       )
+      triggerSuccessHaptic()
       mutate()
       setSelectedImages(new Set())
       setSelectionMode(false)
     } catch (error) {
       console.error("[v0] Error bulk deleting:", error)
+      triggerErrorHaptic()
       alert("Failed to delete some images. Please try again.")
     }
   }
 
   const bulkFavorite = async () => {
     if (selectedImages.size === 0) return
+
+    triggerHaptic("light")
 
     try {
       await Promise.all(
@@ -367,11 +420,13 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
           }),
         ),
       )
+      triggerSuccessHaptic()
       mutate()
       setSelectedImages(new Set())
       setSelectionMode(false)
     } catch (error) {
       console.error("[v0] Error bulk favoriting:", error)
+      triggerErrorHaptic()
       alert("Failed to favorite some images. Please try again.")
     }
   }
@@ -595,60 +650,85 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
         </div>
 
         {displayImages.length > 0 || displayVideos.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-1">
-            {/* Photos */}
-            {displayImages.map((image) => (
-              <button
-                key={`img-${image.id}`}
-                onClick={() => (selectionMode ? toggleImageSelection(image.id) : setLightboxImage(image))}
-                className="aspect-square relative group overflow-hidden bg-stone-200/30"
-              >
-                <img
-                  src={getOptimizedImageUrl(image.image_url, 600, 80) || "/placeholder.svg"}
-                  alt={image.prompt || `Gallery ${image.id}`}
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                />
-                {selectionMode && (
-                  <div className="absolute top-2 right-2 z-10">
-                    {selectedImages.has(image.id) ? (
-                      <CheckSquare size={24} className="text-stone-950 bg-white rounded" fill="currentColor" />
-                    ) : (
-                      <Square size={24} className="text-white drop-shadow-lg" />
-                    )}
-                  </div>
-                )}
-                {!selectionMode && (
-                  <div className="absolute inset-0 bg-stone-950/0 group-hover:bg-stone-950/30 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
-                    <div className="flex items-center gap-4 text-stone-50">
-                      <div className="flex items-center gap-1">
-                        <Heart size={16} fill="currentColor" strokeWidth={1.5} />
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1">
+              {/* Photos */}
+              {displayImages.map((image) => (
+                <button
+                  key={`img-${image.id}`}
+                  onClick={() => {
+                    triggerHaptic("light")
+                    selectionMode ? toggleImageSelection(image.id) : setLightboxImage(image)
+                  }}
+                  className="aspect-square relative group overflow-hidden bg-stone-200/30"
+                >
+                  <ProgressiveImage
+                    src={image.image_url || "/placeholder.svg"}
+                    thumbnailSrc={getOptimizedImageUrl(image.image_url, 600, 80)}
+                    alt={image.prompt || `Gallery ${image.id}`}
+                    className="w-full h-full object-cover"
+                  />
+                  {selectionMode && (
+                    <div className="absolute top-2 right-2 z-10">
+                      {selectedImages.has(image.id) ? (
+                        <CheckSquare size={24} className="text-stone-950 bg-white rounded" fill="currentColor" />
+                      ) : (
+                        <Square size={24} className="text-white drop-shadow-lg" />
+                      )}
+                    </div>
+                  )}
+                  {!selectionMode && (
+                    <div className="absolute inset-0 bg-stone-950/0 group-hover:bg-stone-950/30 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                      <div className="flex items-center gap-4 text-stone-50">
+                        <div className="flex items-center gap-1">
+                          <Heart size={16} fill="currentColor" strokeWidth={1.5} />
+                        </div>
                       </div>
                     </div>
+                  )}
+                </button>
+              ))}
+
+              {/* Videos */}
+              {displayVideos.map((video) => (
+                <button
+                  key={`vid-${video.id}`}
+                  onClick={() => {
+                    triggerHaptic("light")
+                    setPreviewVideo(video)
+                  }}
+                  className="aspect-square relative group overflow-hidden bg-stone-200/30"
+                >
+                  <video
+                    src={video.video_url}
+                    className="w-full h-full object-cover"
+                    muted
+                    playsInline
+                    preload="none"
+                  />
+                  <div className="absolute inset-0 bg-stone-950/40 flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center">
+                      <Play size={20} className="text-stone-950 ml-1" fill="currentColor" />
+                    </div>
+                  </div>
+                  <div className="absolute top-2 right-2">
+                    <Video size={16} className="text-white drop-shadow-lg" />
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            {hasMore && (
+              <div ref={loadMoreRef} className="py-8 flex justify-center">
+                {isLoadingMore && (
+                  <div className="flex items-center gap-2 text-sm text-stone-500">
+                    <div className="w-4 h-4 border-2 border-stone-300 border-t-stone-600 rounded-full animate-spin" />
+                    Loading more...
                   </div>
                 )}
-              </button>
-            ))}
-
-            {/* Videos */}
-            {displayVideos.map((video) => (
-              <button
-                key={`vid-${video.id}`}
-                onClick={() => setPreviewVideo(video)}
-                className="aspect-square relative group overflow-hidden bg-stone-200/30"
-              >
-                <video src={video.video_url} className="w-full h-full object-cover" muted playsInline preload="none" />
-                <div className="absolute inset-0 bg-stone-950/40 flex items-center justify-center">
-                  <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center">
-                    <Play size={20} className="text-stone-950 ml-1" fill="currentColor" />
-                  </div>
-                </div>
-                <div className="absolute top-2 right-2">
-                  <Video size={16} className="text-white drop-shadow-lg" />
-                </div>
-              </button>
-            ))}
-          </div>
+              </div>
+            )}
+          </>
         ) : (
           <div className="bg-stone-100/40 rounded-3xl p-8 sm:p-12 text-center border border-stone-200/40">
             {contentFilter === "videos" ? (
