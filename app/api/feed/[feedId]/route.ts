@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { createServerClient } from "@/lib/supabase/server"
-import { getAuthenticatedUser } from "@/lib/auth-helper"
+import { getAuthenticatedUserWithRetry } from "@/lib/auth-helper"
 import { getDb } from "@/lib/db"
 
 export async function GET(req: NextRequest, { params }: { params: { feedId: string } }) {
@@ -12,7 +12,7 @@ export async function GET(req: NextRequest, { params }: { params: { feedId: stri
     if (feedId === "latest") {
       const supabase = await createServerClient()
 
-      const { user: authUser, error: authError } = await getAuthenticatedUser()
+      const { user: authUser, error: authError } = await getAuthenticatedUserWithRetry()
 
       if (authError || !authUser) {
         return Response.json({ error: "Unauthorized" }, { status: 401 })
@@ -159,7 +159,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { feedId: s
 
     const supabase = await createServerClient()
 
-    const { user: authUser, error: authError } = await getAuthenticatedUser()
+    const { user: authUser, error: authError } = await getAuthenticatedUserWithRetry()
 
     if (authError || !authUser) {
       console.error("[v0] DELETE feed auth error:", authError)

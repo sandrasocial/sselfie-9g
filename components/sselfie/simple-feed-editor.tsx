@@ -71,6 +71,7 @@ export default function SimpleFeedEditor({ isOpen, onClose, feedId }: SimpleFeed
           })
           mutate(`/api/feed/${feedId}`)
           mutate("/api/feed/latest")
+          mutate("/api/feed-designer/preview") // Also invalidate studio preview
         } catch (error) {
           console.error("[v0] Error auto-saving bio:", error)
         }
@@ -92,6 +93,7 @@ export default function SimpleFeedEditor({ isOpen, onClose, feedId }: SimpleFeed
         })
         mutate(`/api/feed/${feedId}`)
         mutate("/api/feed/latest")
+        mutate("/api/feed-designer/preview") // Also invalidate studio preview
       } catch (error) {
         console.error("[v0] Error auto-saving caption:", error)
       }
@@ -127,6 +129,7 @@ export default function SimpleFeedEditor({ isOpen, onClose, feedId }: SimpleFeed
         })
         mutate(`/api/feed/${feedId}`)
         mutate("/api/feed/latest")
+        mutate("/api/feed-designer/preview") // Also invalidate studio preview
       } catch (error) {
         console.error("[v0] Error saving profile image:", error)
       }
@@ -144,6 +147,7 @@ export default function SimpleFeedEditor({ isOpen, onClose, feedId }: SimpleFeed
           })
           mutate(`/api/feed/${feedId}`)
           mutate("/api/feed/latest")
+          mutate("/api/feed-designer/preview") // Also invalidate studio preview
         } catch (error) {
           console.error("[v0] Error auto-saving post image:", error)
         }
@@ -162,7 +166,7 @@ export default function SimpleFeedEditor({ isOpen, onClose, feedId }: SimpleFeed
 
       if (response.ok) {
         mutate(`/api/feed/${feedId}`)
-        mutate("/api/feed-designer/preview")
+        mutate("/api/feed-designer/preview") // Invalidate studio preview on save
         onClose()
       }
     } catch (error) {
