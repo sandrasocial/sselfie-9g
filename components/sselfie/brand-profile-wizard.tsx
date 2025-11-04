@@ -301,6 +301,25 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
         throw new Error("Failed to save brand profile")
       }
 
+      console.log("[v0] Brand profile saved, triggering Maya feed generation...")
+      try {
+        const feedResponse = await fetch("/api/feed/auto-generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+        })
+
+        if (feedResponse.ok) {
+          const feedData = await feedResponse.json()
+          console.log("[v0] Maya generated", feedData.conceptCount, "feed concepts")
+        } else {
+          console.error("[v0] Failed to auto-generate feed concepts")
+        }
+      } catch (feedError) {
+        console.error("[v0] Error auto-generating feed:", feedError)
+        // Don't fail the whole flow if feed generation fails
+      }
+
       onComplete()
     } catch (error) {
       console.error("[v0] Error saving brand profile:", error)

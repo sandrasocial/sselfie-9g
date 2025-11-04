@@ -1,5 +1,16 @@
 "use client"
-import { Aperture, ChevronRight, Plus, Grid, Camera, ChevronDown, ChevronUp } from "lucide-react"
+import {
+  Aperture,
+  ChevronRight,
+  Plus,
+  Grid,
+  Camera,
+  ChevronDown,
+  ChevronUp,
+  MoreVertical,
+  RefreshCw,
+  Trash2,
+} from "lucide-react"
 import useSWR, { mutate } from "swr"
 import { InstagramPhotoPreview } from "./instagram-photo-preview"
 import { useState, useMemo, useEffect } from "react"
@@ -21,6 +32,8 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
   const [isBrandProfileExpanded, setIsBrandProfileExpanded] = useState(false)
   const [showFeedEditor, setShowFeedEditor] = useState(false)
   const [currentFeedId, setCurrentFeedId] = useState<number | null>(null)
+  const [showFeedOptions, setShowFeedOptions] = useState(false)
+  const [isRegenerating, setIsRegenerating] = useState(false)
 
   const COLOR_THEME_MAP: Record<string, { name: string; colors: string[] }> = {
     "dark-moody": {
@@ -62,7 +75,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
 
   const { data: feedPreview } = useSWR(hasTrainedModel ? "/api/feed-designer/preview" : null, fetcher, {
     refreshInterval: 0,
-    revalidateOnFocus: false,
+    revalidateOnFocus: true, // Enable revalidation to pick up new feed
     revalidateOnReconnect: false,
     dedupingInterval: 5000,
   })
@@ -119,6 +132,99 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
       mutate("/api/feed-designer/preview")
     }
   }, [hasTrainedModel])
+
+  const handleGenerateMore = async () => {
+    setIsRegenerating(true)
+    try {
+      const response = await fetch("/api/feed/add-more", {
+        method: "POST",
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to add more concepts")
+      }
+
+      const data = await response.json()
+      console.log("[v0] Added more concepts:", data)
+
+      // Refresh feed preview
+      mutate("/api/feed-designer/preview")
+      mutate("/api/feed/latest")
+    } catch (error) {
+      console.error("[v0] Error adding more concepts:", error)
+      alert("Failed to add more concepts. Please try again.")
+    } finally {
+      setIsRegenerating(false)
+      setShowFeedOptions(false)
+    }
+  }
+
+  const handleRefreshConcepts = async () => {
+    setIsRegenerating(true)
+    try {
+      const response = await fetch("/api/feed/refresh-concepts", {
+        method: "POST",
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to refresh concepts")
+      }
+
+      const data = await response.json()
+      console.log("[v0] Refreshed concepts:", data)
+
+      // Refresh feed preview
+      mutate("/api/feed-designer/preview")
+      mutate("/api/feed/latest")
+
+      alert(data.message)
+    } catch (error) {
+      console.error("[v0] Error refreshing concepts:", error)
+      alert("Failed to refresh concepts. Please try again.")
+    } finally {
+      setIsRegenerating(false)
+      setShowFeedOptions(false)
+    }
+  }
+
+  const handleStartFresh = async () => {
+    if (!confirm("This will clear your current feed. Are you sure you want to start fresh?")) {
+      return
+    }
+
+    setIsRegenerating(true)
+    try {
+      const response = await fetch("/api/feed/clear", {
+        method: "POST",
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to clear feed")
+      }
+
+      // Trigger auto-generation of new feed
+      const autoGenResponse = await fetch("/api/feed/auto-generate", {
+        method: "POST",
+      })
+
+      if (!autoGenResponse.ok) {
+        throw new Error("Failed to generate new feed")
+      }
+
+      const data = await autoGenResponse.json()
+      console.log("[v0] Started fresh with new feed:", data)
+
+      // Refresh feed preview
+      mutate("/api/feed-designer/preview")
+      mutate("/api/feed/latest")
+    } catch (error) {
+      console.error("[v0] Error starting fresh:", error)
+      alert("Failed to start fresh. Please try again.")
+    } finally {
+      setIsRegenerating(false)
+      setShowFeedOptions(false)
+    }
+  }
 
   if (!hasTrainedModel) {
     return (
@@ -564,15 +670,53 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
                     {feedPreview.feedStrategy.completedPosts} of {feedPreview.feedStrategy.totalPosts} posts generated
                   </p>
                 </div>
-                <button
-                  onClick={() => {
-                    setCurrentFeedId(feedPreview.feedStrategy.id)
-                    setShowFeedEditor(true)
-                  }}
-                  className="bg-stone-950 text-stone-50 px-4 sm:px-6 py-2 sm:py-3 rounded-xl text-sm font-light uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 hover:scale-105 active:scale-95"
-                >
-                  Edit Feed
-                </button>
+                <div className="flex gap-3 relative">
+                  <button
+                    onClick={() => {
+                      setCurrentFeedId(feedPreview.feedStrategy.id)
+                      setShowFeedEditor(true)
+                    }}
+                    className="bg-stone-950 text-stone-50 px-4 sm:px-6 py-2 sm:py-3 rounded-xl text-sm font-light uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 hover:scale-105 active:scale-95"
+                  >
+                    Edit Feed
+                  </button>
+                  <button
+                    onClick={() => setShowFeedOptions(!showFeedOptions)}
+                    className="border border-stone-300 text-stone-900 px-3 py-2 sm:py-3 rounded-xl hover:bg-stone-100 transition-all duration-200 hover:scale-105 active:scale-95"
+                    disabled={isRegenerating}
+                  >
+                    <MoreVertical size={20} strokeWidth={1.5} />
+                  </button>
+
+                  {showFeedOptions && (
+                    <div className="absolute right-0 top-full mt-2 bg-white border border-stone-200 rounded-xl shadow-xl z-10 min-w-[220px] overflow-hidden">
+                      <button
+                        onClick={handleGenerateMore}
+                        disabled={isRegenerating}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-sm text-stone-900 hover:bg-stone-50 transition-colors text-left disabled:opacity-50"
+                      >
+                        <Plus size={16} strokeWidth={1.5} />
+                        Generate More Posts
+                      </button>
+                      <button
+                        onClick={handleRefreshConcepts}
+                        disabled={isRegenerating}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-sm text-stone-900 hover:bg-stone-50 transition-colors text-left border-t border-stone-100 disabled:opacity-50"
+                      >
+                        <RefreshCw size={16} strokeWidth={1.5} />
+                        Refresh Concepts
+                      </button>
+                      <button
+                        onClick={handleStartFresh}
+                        disabled={isRegenerating}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors text-left border-t border-stone-100 disabled:opacity-50"
+                      >
+                        <Trash2 size={16} strokeWidth={1.5} />
+                        Start Fresh
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Instagram Feed Preview Container */}
