@@ -53,6 +53,12 @@ export async function checkCredits(userId: string, requiredAmount: number): Prom
  */
 async function hasUnlimitedCredits(userId: string): Promise<boolean> {
   try {
+    const currentBalance = await getUserCredits(userId)
+    if (currentBalance >= 999999) {
+      console.log("[v0] [CREDITS] User has unlimited credit balance:", currentBalance)
+      return true
+    }
+
     // Check subscription plan
     const subscriptionResult = await sql`
       SELECT plan, status FROM subscriptions 
@@ -62,20 +68,13 @@ async function hasUnlimitedCredits(userId: string): Promise<boolean> {
     `
 
     if (subscriptionResult.length > 0 && subscriptionResult[0].plan === "elite") {
-      console.log("[v0] User has active elite subscription - unlimited credits")
-      return true
-    }
-
-    // Check for very high balance (999999 = unlimited)
-    const currentBalance = await getUserCredits(userId)
-    if (currentBalance >= 999999) {
-      console.log("[v0] User has unlimited credit balance:", currentBalance)
+      console.log("[v0] [CREDITS] User has active elite subscription - unlimited credits")
       return true
     }
 
     return false
   } catch (error) {
-    console.error("[v0] Error checking unlimited credits:", error)
+    console.error("[v0] [CREDITS] Error checking unlimited credits:", error)
     return false
   }
 }
@@ -93,11 +92,10 @@ export async function getUserCredits(userId: string): Promise<number> {
   console.log("[v0] [CREDITS] Query result:", result)
 
   if (result.length === 0) {
-    // Initialize user credits if they don't exist
     console.log("[v0] [CREDITS] No credits record found, initializing with 0")
     await sql`
-      INSERT INTO user_credits (user_id, balance)
-      VALUES (${userId}, 0)
+      INSERT INTO user_credits (user_id, balance, total_purchased, total_used)
+      VALUES (${userId}, 0, 0, 0)
       ON CONFLICT (user_id) DO NOTHING
     `
     return 0

@@ -44,6 +44,14 @@ export async function createLandingCheckoutSession(tierId: string) {
     cancel_url: `${baseUrl}/checkout/cancel`,
     allow_promotion_codes: true,
     billing_address_collection: "auto",
+    subscription_data: {
+      // Ensure credits are properly set in subscription metadata
+      metadata: {
+        tier: tierId,
+        credits: tier.credits.toString(),
+        source: "landing_page",
+      },
+    },
     metadata: {
       tier: tierId,
       credits: tier.credits.toString(),
@@ -51,7 +59,8 @@ export async function createLandingCheckoutSession(tierId: string) {
     },
   })
 
-  console.log("[v0] Landing checkout - Created session with URL:", session.url)
+  console.log("[v0] Landing checkout - Created session:", session.id)
+  console.log("[v0] Landing checkout - Session metadata:", session.metadata)
 
   return session.url
 }

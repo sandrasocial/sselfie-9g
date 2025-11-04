@@ -918,13 +918,13 @@ export default function InteractivePipelineShowcase() {
             Ready to Create Your Photos?
           </h3>
           <p className="text-sm sm:text-base font-light leading-relaxed text-stone-700 mb-6 sm:mb-8 px-4">
-            Join the beta and get 50% off for life. No credit card required to start.
+            Join the beta and get 50% off for life.
           </p>
           <Link
             href="/auth/sign-up"
             className="inline-block bg-stone-950 text-stone-50 px-8 sm:px-10 py-3 sm:py-4 rounded-lg text-xs sm:text-sm uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 min-h-[44px] flex items-center justify-center mx-auto"
           >
-            START YOUR FREE TRIAL
+            GET STARTED
           </Link>
         </div>
       </div>

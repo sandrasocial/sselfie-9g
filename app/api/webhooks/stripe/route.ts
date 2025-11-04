@@ -170,6 +170,19 @@ export async function POST(request: NextRequest) {
               })
 
               console.log(`[v0] Account created successfully for ${customerEmail}`)
+
+              // Update the subscription metadata with the new user_id
+              const subscription = await stripe.subscriptions.retrieve(session.subscription as string)
+              await stripe.subscriptions.update(subscription.id, {
+                metadata: {
+                  ...subscription.metadata,
+                  user_id: neonUser.id,
+                  tier: session.metadata.tier,
+                  credits: session.metadata.credits,
+                },
+              })
+
+              console.log(`[v0] Updated subscription ${subscription.id} with user_id: ${neonUser.id}`)
             } catch (error) {
               console.error(`[v0] Error creating account for ${customerEmail}:`, error)
               // Don't fail the webhook - subscription will still be created
@@ -186,27 +199,47 @@ export async function POST(request: NextRequest) {
         const subscription = event.data.object
         let userId = subscription.metadata.user_id
         const tier = subscription.metadata.tier
-        const credits = Number.parseInt(subscription.metadata.credits)
+        const credits = Number.parseInt(subscription.metadata.credits || "0")
 
         if (!userId) {
-          const customer = await stripe.customers.retrieve(subscription.customer)
+          console.log("[v0] No user_id in subscription metadata, looking up by customer...")
+          const customer = await stripe.customers.retrieve(subscription.customer as string)
           if (customer && !customer.deleted && customer.email) {
+            console.log(`[v0] Looking up user by email: ${customer.email}`)
             const users = await sql`
               SELECT id FROM users WHERE email = ${customer.email} LIMIT 1
             `
             if (users.length > 0) {
               userId = users[0].id
               console.log(`[v0] Found user ${userId} for email ${customer.email}`)
+
+              await stripe.subscriptions.update(subscription.id, {
+                metadata: {
+                  ...subscription.metadata,
+                  user_id: userId,
+                },
+              })
+              console.log(`[v0] Updated subscription metadata with user_id: ${userId}`)
+            } else {
+              console.error(`[v0] No user found for email ${customer.email}`)
             }
           }
         }
 
         if (!userId) {
           console.error("[v0] No user_id found for subscription - skipping credit grant")
+          console.error("[v0] Subscription ID:", subscription.id)
+          console.error("[v0] Customer ID:", subscription.customer)
           break
         }
 
-        console.log(`[v0] Subscription created: ${tier} tier for user ${userId}`)
+        if (!credits || credits === 0) {
+          console.error("[v0] Invalid credits value in subscription metadata:", subscription.metadata.credits)
+          console.error("[v0] Tier:", tier)
+          break
+        }
+
+        console.log(`[v0] Subscription created: ${tier} tier for user ${userId}, granting ${credits} credits`)
 
         // Create or update subscription record
         await sql`
