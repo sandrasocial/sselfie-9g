@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Camera, User, Aperture, Grid, MessageCircle, ImageIcon } from "lucide-react"
+import { Camera, User, Aperture, Grid, MessageCircle, ImageIcon, Settings } from "lucide-react"
 import LoadingScreen from "./loading-screen"
 import StudioScreen from "./studio-screen"
 import TrainingScreen from "./training-screen"
@@ -9,6 +9,7 @@ import MayaChatScreen from "./maya-chat-screen"
 import GalleryScreen from "./gallery-screen"
 import AcademyScreen from "./academy-screen"
 import ProfileScreen from "./profile-screen"
+import SettingsScreen from "./settings-screen"
 import { InstallPrompt } from "./install-prompt"
 import { InstallButton } from "./install-button"
 import { ServiceWorkerProvider } from "./service-worker-provider"
@@ -119,6 +120,7 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
     { id: "gallery", label: "Gallery", icon: ImageIcon },
     { id: "academy", label: "Academy", icon: Grid },
     { id: "profile", label: "Profile", icon: User },
+    { id: "settings", label: "Settings", icon: Settings },
   ]
 
   const user: UserType = {
@@ -203,6 +205,7 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
             {activeTab === "gallery" && <GalleryScreen user={user} userId={userId} />}
             {activeTab === "academy" && <AcademyScreen />}
             {activeTab === "profile" && <ProfileScreen user={user} creditBalance={creditBalance} />}
+            {activeTab === "settings" && <SettingsScreen user={user} creditBalance={creditBalance} />}
           </div>
         </div>
       </main>

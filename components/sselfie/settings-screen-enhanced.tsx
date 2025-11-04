@@ -1,11 +1,15 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Bell, Aperture, Shield, User, ChevronRight, LogOut, Mail, Calendar, CreditCard } from "lucide-react"
+import { Bell, Aperture, Shield, User, LogOut, Mail, Calendar, CreditCard, Palette, ImageIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
+import PersonalBrandSection from "./personal-brand-section"
+import BrandAssetsManager from "./brand-assets-manager"
+import type { User as UserType } from "./types"
 
 interface SettingsScreenProps {
-  onBack: () => void
+  user: UserType
+  creditBalance: number
 }
 
 interface UserInfo {
@@ -15,14 +19,13 @@ interface UserInfo {
   memberSince: string
 }
 
-export default function SettingsScreen({ onBack }: SettingsScreenProps) {
+export default function SettingsScreen({ user, creditBalance }: SettingsScreenProps) {
   const router = useRouter()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null)
 
   const [emailNotifications, setEmailNotifications] = useState(true)
   const [mayaUpdates, setMayaUpdates] = useState(true)
-  const [defaultImageCount, setDefaultImageCount] = useState(5)
   const [saveToGallery, setSaveToGallery] = useState(true)
   const [dataForTraining, setDataForTraining] = useState(true)
 
@@ -48,14 +51,10 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
   const fetchSettings = async () => {
     try {
       const response = await fetch("/api/settings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ key: "value" }),
       })
 
       if (!response.ok) {
-        console.warn("[v0] Settings API returned error, using defaults")
         return
       }
 
@@ -64,13 +63,11 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
       if (data && data.settings) {
         setEmailNotifications(data.settings.emailNotifications ?? true)
         setMayaUpdates(data.settings.mayaUpdates ?? true)
-        setDefaultImageCount(data.settings.defaultImageCount ?? 5)
         setSaveToGallery(data.settings.saveToGallery ?? true)
         setDataForTraining(data.settings.dataForTraining ?? true)
       }
     } catch (error) {
       console.error("[v0] Error fetching settings:", error)
-      // Continue with default values
     }
   }
 
@@ -100,10 +97,8 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
       })
 
       if (response.ok) {
-        console.log("[v0] Logout successful, redirecting to login...")
         router.push("/auth/login")
       } else {
-        console.error("[v0] Logout failed")
         setIsLoggingOut(false)
       }
     } catch (error) {
@@ -120,30 +115,23 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
   }
 
   return (
-    <div className="space-y-8 pb-4">
-      <div className="flex items-center gap-4 pt-4">
-        <button
-          onClick={onBack}
-          className="p-4 bg-stone-100/50 rounded-2xl border border-stone-200/40 hover:bg-stone-100/70 hover:border-stone-300/50 transition-all duration-200"
-        >
-          <ChevronRight size={18} className="text-stone-600 transform rotate-180" strokeWidth={1.5} />
-        </button>
-        <div className="flex-1 min-w-0">
-          <h2 className="text-2xl sm:text-4xl font-serif font-extralight tracking-[0.3em] text-stone-950 uppercase">
-            Settings
-          </h2>
-          <p className="text-xs tracking-[0.15em] uppercase font-light mt-2 text-stone-500">Your Preferences</p>
-        </div>
+    <div className="space-y-8 pb-24">
+      <div className="pt-4">
+        <h2 className="text-2xl sm:text-4xl font-serif font-extralight tracking-[0.3em] text-stone-950 uppercase">
+          Settings
+        </h2>
+        <p className="text-xs tracking-[0.15em] uppercase font-light mt-2 text-stone-500">Manage Your Preferences</p>
       </div>
 
       <div className="space-y-6">
+        {/* Account Information */}
         {userInfo && (
           <div className="bg-white/50 backdrop-blur-2xl rounded-xl sm:rounded-[1.75rem] p-4 sm:p-6 md:p-8 border border-white/60 shadow-xl shadow-stone-900/10">
             <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
               <div className="p-2.5 sm:p-3.5 bg-stone-950 rounded-lg sm:rounded-[1.125rem] shadow-lg">
                 <User size={18} className="text-white" strokeWidth={2.5} />
               </div>
-              <h3 className="text-base sm:text-lg md:text-xl font-bold text-stone-950">Account Information</h3>
+              <h3 className="text-base sm:text-lg md:text-xl font-bold text-stone-950">Account</h3>
             </div>
 
             <div className="space-y-4">
@@ -172,6 +160,27 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
           </div>
         )}
 
+        <div className="bg-white/50 backdrop-blur-2xl rounded-xl sm:rounded-[1.75rem] p-4 sm:p-6 md:p-8 border border-white/60 shadow-xl shadow-stone-900/10">
+          <div className="flex items-center space-x-3 sm:space-x-4 mb-6">
+            <div className="p-2.5 sm:p-3.5 bg-stone-950 rounded-lg sm:rounded-[1.125rem] shadow-lg">
+              <Palette size={18} className="text-white" strokeWidth={2.5} />
+            </div>
+            <h3 className="text-base sm:text-lg md:text-xl font-bold text-stone-950">Personal Brand</h3>
+          </div>
+          <PersonalBrandSection userId={user.id || ""} />
+        </div>
+
+        <div className="bg-white/50 backdrop-blur-2xl rounded-xl sm:rounded-[1.75rem] p-4 sm:p-6 md:p-8 border border-white/60 shadow-xl shadow-stone-900/10">
+          <div className="flex items-center space-x-3 sm:space-x-4 mb-6">
+            <div className="p-2.5 sm:p-3.5 bg-stone-950 rounded-lg sm:rounded-[1.125rem] shadow-lg">
+              <ImageIcon size={18} className="text-white" strokeWidth={2.5} />
+            </div>
+            <h3 className="text-base sm:text-lg md:text-xl font-bold text-stone-950">Brand Assets</h3>
+          </div>
+          <BrandAssetsManager />
+        </div>
+
+        {/* Notifications */}
         <div className="bg-white/50 backdrop-blur-2xl rounded-xl sm:rounded-[1.75rem] p-4 sm:p-6 md:p-8 border border-white/60 shadow-xl shadow-stone-900/10">
           <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
             <div className="p-2.5 sm:p-3.5 bg-stone-950 rounded-lg sm:rounded-[1.125rem] shadow-lg">
@@ -202,6 +211,7 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
           </div>
         </div>
 
+        {/* Generation Preferences */}
         <div className="bg-white/50 backdrop-blur-2xl rounded-xl sm:rounded-[1.75rem] p-4 sm:p-6 md:p-8 border border-white/60 shadow-xl shadow-stone-900/10">
           <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
             <div className="p-2.5 sm:p-3.5 bg-stone-950 rounded-lg sm:rounded-[1.125rem] shadow-lg">
@@ -223,6 +233,7 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
           </div>
         </div>
 
+        {/* Privacy & Data */}
         <div className="bg-white/50 backdrop-blur-2xl rounded-xl sm:rounded-[1.75rem] p-4 sm:p-6 md:p-8 border border-white/60 shadow-xl shadow-stone-900/10">
           <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
             <div className="p-2.5 sm:p-3.5 bg-stone-950 rounded-lg sm:rounded-[1.125rem] shadow-lg">
@@ -245,6 +256,7 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
         </div>
       </div>
 
+      {/* Sign Out */}
       <div className="pt-6 border-t border-stone-200/30">
         <button
           onClick={handleLogout}
