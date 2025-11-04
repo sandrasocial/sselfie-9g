@@ -42,7 +42,7 @@ export default function SimpleFeedEditor({ isOpen, onClose, feedId }: SimpleFeed
 
   const { data: feedData } = useSWR(isOpen && feedId ? `/api/feed/${feedId}` : null, fetcher)
 
-  const { data: galleryData } = useSWR("/api/gallery/images", fetcher)
+  const { data: galleryData } = useSWR("/api/images", fetcher)
 
   useEffect(() => {
     if (feedData) {

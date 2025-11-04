@@ -130,10 +130,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { feedId: st
     `
 
     if (existingBios.length > 0) {
-      // Update existing bio
       await sql`
         UPDATE instagram_bios
-        SET bio_text = ${bio}, updated_at = NOW()
+        SET bio_text = ${bio}
         WHERE feed_layout_id = ${feedId}
       `
     } else {
