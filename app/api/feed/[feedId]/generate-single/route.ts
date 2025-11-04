@@ -49,11 +49,36 @@ export async function POST(req: NextRequest, { params }: { params: { feedId: str
     const { postId } = await req.json()
     const { feedId } = params
 
+    if (!feedId || feedId === "null" || feedId === "undefined") {
+      console.error("[v0] [GENERATE-SINGLE] Invalid feedId:", feedId)
+      return Response.json(
+        {
+          error: "Invalid feed ID",
+          details: "Feed ID is required to generate a post. Please refresh the page and try again.",
+          shouldRetry: false,
+        },
+        { status: 400 },
+      )
+    }
+
     const sql = neon(process.env.DATABASE_URL!)
+
+    const feedIdInt = Number.parseInt(feedId, 10)
+    if (isNaN(feedIdInt)) {
+      console.error("[v0] [GENERATE-SINGLE] feedId is not a valid integer:", feedId)
+      return Response.json(
+        {
+          error: "Invalid feed ID format",
+          details: "Feed ID must be a valid number. Please refresh the page and try again.",
+          shouldRetry: false,
+        },
+        { status: 400 },
+      )
+    }
 
     const [post] = await sql`
       SELECT * FROM feed_posts
-      WHERE feed_layout_id = ${feedId} AND id = ${postId}
+      WHERE feed_layout_id = ${feedIdInt} AND id = ${postId}
     `
 
     if (!post) {
@@ -61,7 +86,7 @@ export async function POST(req: NextRequest, { params }: { params: { feedId: str
     }
 
     const [feedLayout] = await sql`
-      SELECT color_palette, brand_vibe FROM feed_layouts WHERE id = ${feedId}
+      SELECT color_palette, brand_vibe FROM feed_layouts WHERE id = ${feedIdInt}
     `
 
     const [model] = await sql`

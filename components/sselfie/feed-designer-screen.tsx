@@ -289,13 +289,14 @@ export default function FeedDesignerScreen() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const handleStreamingEnd = async () => {
-      // When streaming ends, do one final poll to check for completion
-      if (prevStatusRef.current === "streaming" && status === "ready" && progressPolling) {
-        console.log("[v0] Chat finished, doing final progress check...")
+    // Start polling when streaming begins
+    if (status === "streaming" && !progressPolling) {
+      console.log("[v0] Starting progress polling...")
+      setProgressPolling(true)
 
+      const pollProgress = async () => {
         try {
-          // Get user ID from client-side Supabase session
+          // Get user ID from client-side Supabase session (no database query)
           const {
             data: { session },
           } = await fetch("/api/auth/session")
@@ -303,45 +304,87 @@ export default function FeedDesignerScreen() {
             .catch(() => ({ data: { session: null } }))
           const userId = session?.user?.id
 
-          if (userId) {
-            // Wait a moment for the final progress update to be written to Redis
-            await new Promise((resolve) => setTimeout(resolve, 500))
+          if (!userId) {
+            console.log("[v0] No user session, skipping progress poll")
+            return
+          }
 
-            const response = await fetch(`/api/maya/feed-progress?userId=${userId}`)
-            if (response.ok) {
-              const data = await response.json()
-              console.log("[v0] Final progress check:", data)
+          const response = await fetch(`/api/maya/feed-progress?userId=${userId}`)
+
+          if (response.ok) {
+            const data = await response.json()
+            console.log("[v0] Progress update:", data)
+
+            if (data.status !== "idle" && data.message) {
+              setMayaThinking(data.message)
 
               if (data.status === "complete") {
-                console.log("[v0] Feed generation complete, reloading...")
+                console.log("[v0] Feed generation complete!")
+                console.log("[v0] Feed ID from progress:", data.feedId)
+
+                // Stop polling immediately
+                setProgressPolling(false)
+                if (progressIntervalRef.current) {
+                  clearInterval(progressIntervalRef.current)
+                  progressIntervalRef.current = null
+                }
 
                 // Clear thinking state
                 setMayaThinking(null)
                 setIsDesigning(false)
                 setIsFeedGenerating(false)
 
-                // Reload the feed
+                // Reload the feed immediately (no delay)
+                console.log("[v0] Reloading feed now...")
                 await loadLatestFeed()
                 console.log("[v0] Feed reload complete")
               }
             }
           }
         } catch (error) {
-          console.error("[v0] Error in final progress check:", error)
+          console.error("[v0] Error polling progress:", error)
         }
+      }
 
-        // Stop polling after final check
-        console.log("[v0] Stopping progress polling...")
-        setProgressPolling(false)
-        if (progressIntervalRef.current) {
-          clearInterval(progressIntervalRef.current)
-          progressIntervalRef.current = null
-        }
+      // Poll immediately, then every 2 seconds for faster updates
+      pollProgress()
+      progressIntervalRef.current = setInterval(pollProgress, 2000)
+    }
+
+    // Only cleanup if we're explicitly stopping (not just because status changed)
+    return () => {
+      // Don't clear interval here - let the completion detection handle it
+      // This prevents race condition where cleanup runs before final poll
+    }
+  }, [status, progressPolling])
+
+  useEffect(() => {
+    return () => {
+      // Cleanup on component unmount only
+      if (progressIntervalRef.current) {
+        console.log("[v0] Component unmounting, cleaning up polling interval")
+        clearInterval(progressIntervalRef.current)
+        progressIntervalRef.current = null
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    const handleStreamingEnd = async () => {
+      if (status === "ready" && prevStatusRef.current === "streaming") {
+        console.log("[v0] Chat finished streaming")
+        prevStatusRef.current = status
+
+        // Don't stop polling here - let it continue until completion is detected
+        // The polling will stop itself when it sees status: "complete"
+        console.log("[v0] Polling will continue until feed generation completes...")
+      } else {
+        prevStatusRef.current = status
       }
     }
 
     handleStreamingEnd()
-  }, [status, progressPolling])
+  }, [status])
   // </CHANGE>
 
   useEffect(() => {

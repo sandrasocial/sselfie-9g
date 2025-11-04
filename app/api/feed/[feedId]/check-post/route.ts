@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { getAuthenticatedUser } from "@/lib/auth-helper"
+import { getAuthenticatedUserWithRetry } from "@/lib/auth-helper"
 import { neon } from "@neondatabase/serverless"
 import { getReplicateClient } from "@/lib/replicate-client"
 import { getUserByAuthId } from "@/lib/user-mapping"
@@ -7,9 +7,39 @@ import { put } from "@vercel/blob"
 
 const sql = neon(process.env.DATABASE_URL!)
 
+async function getReplicatePredictionWithRetry(predictionId: string, maxRetries = 3, baseDelay = 1000): Promise<any> {
+  const replicate = getReplicateClient()
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const prediction = await replicate.predictions.get(predictionId)
+      return prediction
+    } catch (error: any) {
+      const errorMessage = error?.message || String(error)
+      const isRateLimit =
+        error?.response?.status === 429 ||
+        errorMessage.includes("429") ||
+        errorMessage.includes("Too Many Requests") ||
+        errorMessage.includes("rate limit")
+
+      if (isRateLimit && attempt < maxRetries) {
+        const delay = baseDelay * Math.pow(2, attempt - 1)
+        console.log(`[v0] Replicate rate limit hit, retrying in ${delay}ms (attempt ${attempt}/${maxRetries})`)
+        await new Promise((resolve) => setTimeout(resolve, delay))
+        continue
+      }
+
+      // If not a rate limit error or we've exhausted retries, throw
+      throw error
+    }
+  }
+
+  throw new Error("Failed to get prediction after retries")
+}
+
 export async function GET(request: Request) {
   try {
-    const { user, error: authError } = await getAuthenticatedUser()
+    const { user, error: authError } = await getAuthenticatedUserWithRetry()
 
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -30,8 +60,35 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Missing parameters" }, { status: 400 })
     }
 
-    const replicate = getReplicateClient()
-    const prediction = await replicate.predictions.get(predictionId)
+    let prediction
+    try {
+      prediction = await getReplicatePredictionWithRetry(predictionId)
+    } catch (error: any) {
+      const errorMessage = error?.message || String(error)
+      const isRateLimit =
+        error?.response?.status === 429 ||
+        errorMessage.includes("429") ||
+        errorMessage.includes("Too Many Requests") ||
+        errorMessage.includes("rate limit")
+
+      if (isRateLimit) {
+        console.log("[v0] Replicate rate limit exceeded, returning processing status")
+        // Return processing status instead of error to allow polling to continue
+        return NextResponse.json({
+          status: "processing",
+          message: "Rate limit reached, please wait...",
+        })
+      }
+
+      console.error("[v0] Error getting Replicate prediction:", errorMessage)
+      return NextResponse.json(
+        {
+          error: "Failed to check generation status",
+          details: errorMessage,
+        },
+        { status: 500 },
+      )
+    }
 
     console.log("[v0] Replicate prediction status:", prediction.status)
 
@@ -60,7 +117,51 @@ export async function GET(request: Request) {
         WHERE id = ${Number.parseInt(postId)}
       `
 
-      console.log("[v0] Database updated with image URL (not saved to gallery)")
+      console.log("[v0] Feed post updated with image URL")
+
+      try {
+        const [post] = await sql`
+          SELECT prompt, post_type, user_id FROM feed_posts WHERE id = ${Number.parseInt(postId)}
+        `
+
+        if (post) {
+          // Check if this image already exists in the gallery by prediction_id
+          const [existing] = await sql`
+            SELECT id FROM ai_images WHERE prediction_id = ${predictionId}
+          `
+
+          if (!existing) {
+            // Only insert if it doesn't already exist
+            await sql`
+              INSERT INTO ai_images (
+                user_id,
+                image_url,
+                prompt,
+                prediction_id,
+                generation_status,
+                source,
+                category,
+                created_at
+              ) VALUES (
+                ${post.user_id},
+                ${blob.url},
+                ${post.prompt},
+                ${predictionId},
+                'completed',
+                'feed_designer',
+                ${post.post_type || "feed_post"},
+                NOW()
+              )
+            `
+            console.log("[v0] Image saved to ai_images gallery (new entry)")
+          } else {
+            console.log("[v0] Image already exists in gallery, skipping duplicate save")
+          }
+        }
+      } catch (galleryError) {
+        // Log but don't fail the request if gallery save fails
+        console.error("[v0] Failed to save to ai_images gallery:", galleryError)
+      }
 
       return NextResponse.json({
         status: "succeeded",
@@ -82,8 +183,14 @@ export async function GET(request: Request) {
     return NextResponse.json({
       status: prediction.status,
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error("[v0] Error checking post generation:", error)
-    return NextResponse.json({ error: "Failed to check generation status" }, { status: 500 })
+    return NextResponse.json(
+      {
+        error: "Failed to check generation status",
+        details: error?.message || String(error),
+      },
+      { status: 500 },
+    )
   }
 }

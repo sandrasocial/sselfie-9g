@@ -65,6 +65,15 @@ export default function FeedPostCard({ post, feedId, onGenerated }: FeedPostCard
       try {
         console.log("[v0] Polling post generation status...")
         const response = await fetch(`/api/feed/${feedId}/check-post?predictionId=${predictionId}&postId=${postId}`)
+
+        if (!response.ok) {
+          if (response.status === 429) {
+            console.log("[v0] Rate limit hit, will retry on next poll...")
+            return // Continue polling, don't clear interval
+          }
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+
         const data = await response.json()
 
         console.log("[v0] Post generation status:", data.status)
@@ -84,9 +93,7 @@ export default function FeedPostCard({ post, feedId, onGenerated }: FeedPostCard
         }
       } catch (err) {
         console.error("[v0] Error polling generation:", err)
-        setError("Failed to check generation status")
-        setIsGenerating(false)
-        clearInterval(pollInterval)
+        // Only log the error and continue polling
       }
     }, 3000) // Poll every 3 seconds
 
