@@ -11,6 +11,19 @@ interface ImageGalleryModalProps {
   onClose: () => void
 }
 
+function getOptimizedImageUrl(url: string, width?: number, quality?: number): string {
+  if (!url) return "/placeholder.svg"
+
+  if (url.includes("blob.vercel-storage.com") || url.includes("public.blob.vercel-storage.com")) {
+    const params = new URLSearchParams()
+    if (width) params.append("width", width.toString())
+    if (quality) params.append("quality", quality.toString())
+    return `${url}?${params.toString()}`
+  }
+
+  return url
+}
+
 export default function ImageGalleryModal({ images, onSelect, onClose }: ImageGalleryModalProps) {
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
 
@@ -62,9 +75,10 @@ export default function ImageGalleryModal({ images, onSelect, onClose }: ImageGa
                     }`}
                   >
                     <img
-                      src={image.image_url || "/placeholder.svg"}
+                      src={getOptimizedImageUrl(image.image_url, 400, 75) || "/placeholder.svg"}
                       alt={image.prompt || "Gallery image"}
                       className="w-full h-full object-cover"
+                      loading="lazy"
                     />
                     {selectedImage === image.image_url && (
                       <div className="absolute inset-0 bg-stone-950/40 flex items-center justify-center">
