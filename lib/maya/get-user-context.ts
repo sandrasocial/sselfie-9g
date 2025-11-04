@@ -17,7 +17,7 @@ export async function getUserContextForMaya(authUserId: string): Promise<string>
     }
 
     console.log("[v0] getUserContextForMaya: Fetching memory, brand, and assets...")
-    const [memory, personalBrand, assets] = await Promise.all([
+    const [memory, personalBrand, assets, userGender] = await Promise.all([
       getUserPersonalMemory(neonUser.id).catch((err) => {
         console.error("[v0] Error fetching memory:", err)
         return null
@@ -30,10 +30,25 @@ export async function getUserContextForMaya(authUserId: string): Promise<string>
         console.error("[v0] Error fetching assets:", err)
         return []
       }),
+      sql`SELECT gender FROM users WHERE id = ${neonUser.id} LIMIT 1`
+        .then((result: any) => result[0]?.gender || null)
+        .catch((err: any) => {
+          console.error("[v0] Error fetching gender:", err)
+          return null
+        }),
     ])
     console.log("[v0] getUserContextForMaya: Data fetched successfully")
 
     const contextParts: string[] = []
+
+    if (userGender) {
+      contextParts.push("=== USER INFORMATION ===")
+      contextParts.push(`Gender: ${userGender}`)
+      contextParts.push(
+        `IMPORTANT: This user identifies as ${userGender === "woman" || userGender === "female" ? "a woman" : userGender === "man" || userGender === "male" ? "a man" : "non-binary"}. Use your fashion expertise to create ${userGender}-appropriate styling, clothing, and descriptions.`,
+      )
+      contextParts.push("")
+    }
 
     if (personalBrand && personalBrand.is_completed) {
       console.log("[v0] getUserContextForMaya: Processing personal brand data...")

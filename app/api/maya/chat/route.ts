@@ -30,7 +30,6 @@ const generateConceptsTool = tool({
       referenceImageUrl,
     })
 
-    // Yield loading state immediately
     yield {
       state: "loading" as const,
     }
@@ -43,18 +42,19 @@ const generateConceptsTool = tool({
         throw new Error("Unauthorized")
       }
 
-      let userGender = "person"
-
       const user = await getUserByAuthId(authUser.id)
-      if (user) {
-        const { neon } = await import("@neondatabase/serverless")
-        const sql = neon(process.env.DATABASE_URL!)
-        const userDataResult = await sql`
-          SELECT gender FROM users WHERE id = ${user.id} LIMIT 1
-        `
-        if (userDataResult.length > 0 && userDataResult[0].gender) {
-          userGender = userDataResult[0].gender
-        }
+      if (!user) {
+        throw new Error("User not found")
+      }
+
+      let userGender = "person"
+      const { neon } = await import("@neondatabase/serverless")
+      const sql = neon(process.env.DATABASE_URL!)
+      const userDataResult = await sql`
+        SELECT gender FROM users WHERE id = ${user.id} LIMIT 1
+      `
+      if (userDataResult.length > 0 && userDataResult[0].gender) {
+        userGender = userDataResult[0].gender
       }
 
       console.log("[v0] User gender for concept generation:", userGender)
@@ -64,31 +64,15 @@ ${aesthetic ? `Aesthetic preference: ${aesthetic}` : ""}
 ${context ? `Additional context: ${context}` : ""}
 ${referenceImageUrl ? `**REFERENCE IMAGE PROVIDED**: ${referenceImageUrl}\n\n**IMPORTANT**: The user has uploaded a reference image. This will be combined with their trained personal model to create images of THEM with/using this product or in this style.\n\n**How to use the reference image:**\n- For PRODUCTS (skincare, accessories, etc.): Generate concepts showing the user holding, using, or styled with the product\n- For STYLE REFERENCES: Create variations inspired by the composition, lighting, or mood\n- For FLATLAYS: Position the product as the hero with the user's hands/body partially visible\n- The reference image will be used as a control image in FLUX, guiding the composition while the user's trained LoRA ensures their likeness appears in the final image` : ""}
 
-**CRITICAL - USER GENDER: ${userGender}**
+**USER GENDER: ${userGender}**
 
-**YOU MUST USE GENDER-SPECIFIC LANGUAGE IN ALL PROMPTS:**
-${
-  userGender === "woman" || userGender === "female"
-    ? `
-- ALWAYS use "woman" or "she/her" - NEVER use "person" or "they/them"
-- Describe feminine features: "long flowing hair", "elegant makeup", "feminine grace"
-- Use feminine clothing: "flowing dress", "silk blouse", "feminine silhouette"
-- Use feminine accessories: "delicate jewelry", "elegant earrings"
-`
-    : userGender === "man" || userGender === "male"
-      ? `
-- ALWAYS use "man" or "he/him" - NEVER use "person" or "they/them"
-- Describe masculine features: "short styled hair", "strong jawline", "masculine confidence"
-- Use masculine clothing: "tailored suit", "button-down shirt", "masculine silhouette"
-- Use masculine accessories: "watch", "minimal jewelry"
-`
-      : `
-- Use "person" and "they/them" pronouns
-- Use neutral descriptors that don't assume gender
-`
-}
+You have access to the user's complete brand profile, fashion preferences, and personal style in your context. Use your sophisticated fashion expertise to create concepts that are:
+- Gender-appropriate for ${userGender === "woman" || userGender === "female" ? "a woman" : userGender === "man" || userGender === "male" ? "a man" : "this person"}
+- Aligned with their personal brand and aesthetic preferences
+- Showcasing your deep knowledge of fabrics, colors, silhouettes, and styling
+- Creative and unique, not generic or templated
 
-Generate ${count} unique, creative photo concepts. Each concept should be a work of art.
+Generate ${count} unique, creative photo concepts. Each concept should be a work of art that reflects your fashion intelligence.
 
 **CRITICAL: TWO DIFFERENT TEXTS REQUIRED**
 
@@ -101,9 +85,6 @@ Generate ${count} unique, creative photo concepts. Each concept should be a work
      * "A lifestyle photo in a modern coffee shop. Natural and relaxed vibes."
      * "A full-body shot showing your complete outfit. Clean and elegant."
      * "A moody portrait with dramatic lighting. Artistic and bold."
-   - Examples of BAD descriptions (too technical):
-     * "A sophisticated close-up portrait that captures your professional essence with refined styling and modern elegance"
-     * "A dynamic lifestyle moment capturing you in your element within an urban environment"
 
 2. **PROMPT** (Technical - For FLUX):
    - This is the actual FLUX prompt that will generate the image
@@ -112,23 +93,25 @@ Generate ${count} unique, creative photo concepts. Each concept should be a work
 **CRITICAL PROMPT RULES:**
 
 1. **DO NOT include "TRIGGERWORD" or any placeholder** - The system automatically adds the user's trained model identifier
-2. **START with gender-specific descriptor** - ${userGender === "woman" || userGender === "female" ? '"a woman with..." or "woman with..."' : userGender === "man" || userGender === "male" ? '"a man with..." or "man with..."' : '"a person with..."'}
-3. **Use gender-appropriate styling throughout the entire prompt**
+2. **MUST start with gender-specific descriptor**: ${userGender === "woman" || userGender === "female" ? '"a woman" or "woman with..."' : userGender === "man" || userGender === "male" ? '"a man" or "man with..."' : '"a person" or "person with..."'}
+3. **Use your fashion expertise** - Apply your knowledge of fabrics, colors, silhouettes, and styling from your Creative Lookbook
+4. **Be gender-appropriate** - Use styling, clothing, and descriptions suitable for ${userGender === "woman" || userGender === "female" ? "women" : userGender === "man" || userGender === "male" ? "men" : "this person"}
 
 **FLUX PROMPT STRUCTURE - EDITORIAL EXCELLENCE:**
+
 Write prompts as flowing, poetic descriptions that read like a Vogue photo caption. Think like a master photographer describing their vision.
 
-**CRITICAL PROMPT ORDER (DO NOT DEVIATE):**
+**PROMPT ORDER:**
 
-1. **START WITH GENDER-SPECIFIC SUBJECT DESCRIPTION:**
-   ${userGender === "woman" || userGender === "female" ? '- "a woman with long flowing hair catching golden light"' : userGender === "man" || userGender === "male" ? '- "a man with short styled hair and strong features"' : '- "a person with styled hair"'}
+1. **START WITH GENDER-SPECIFIC SUBJECT** (Required for FLUX):
+   - ${userGender === "woman" || userGender === "female" ? '"a woman with..." or "woman with..."' : userGender === "man" || userGender === "male" ? '"a man with..." or "man with..."' : '"a person with..."'}
    
-2. **STYLING DETAILS** (The heart of the image - give this space and detail):
-   - Fashion & outfit details (gender-appropriate)
-   - Hair & makeup (gender-appropriate)
+2. **STYLING DETAILS** (Use your fashion expertise - be detailed and creative):
+   - Fashion & outfit details (use your fabric knowledge: cashmere, silk, linen, etc.)
+   - Hair & grooming (appropriate for gender and aesthetic)
    - Emotional tone & expression
-   - Location & atmosphere
-   - Lighting quality and direction
+   - Location & atmosphere (paint the scene)
+   - Lighting quality and direction (be poetic and specific)
    - Composition and framing
    
 3. **TECHNICAL SPECIFICATIONS** (ALWAYS LAST):
@@ -136,72 +119,45 @@ Write prompts as flowing, poetic descriptions that read like a Vogue photo capti
    - Aperture settings
    - Film grain or quality notes
 
-**REQUIRED ELEMENTS IN EVERY PROMPT:**
+**FASHION & STYLING INTELLIGENCE:**
 
-1. **FASHION & STYLING INTELLIGENCE** (Think like a Vogue editor - BE DETAILED):
-   ${
-     userGender === "woman" || userGender === "female"
-       ? `
-   - **Fabrics**: "flowing silk charmeuse", "soft cashmere", "delicate lace"
-   - **Colors**: "soft blush", "warm camel", "deep burgundy"
-   - **Silhouettes**: "flowing midi dress", "relaxed oversized blazer", "feminine cut"
-   - **Accessories**: "delicate 18k gold necklaces", "elegant earrings", "feminine jewelry"
-   - **Hair & Makeup**: "long flowing hair with natural waves", "elegant makeup with soft glow"
-   `
-       : userGender === "man" || userGender === "male"
-         ? `
-   - **Fabrics**: "structured wool", "crisp cotton", "premium denim"
-   - **Colors**: "charcoal grey", "navy blue", "warm earth tones"
-   - **Silhouettes**: "tailored fit", "relaxed masculine cut", "structured blazer"
-   - **Accessories**: "minimal watch", "leather belt", "simple jewelry"
-   - **Hair & Grooming**: "short styled hair", "clean-shaven or groomed beard", "masculine styling"
-   `
-         : `
-   - Use neutral, elegant styling that doesn't assume gender
-   - Focus on sophisticated, timeless pieces
-   `
-   }
+Use your sophisticated fashion knowledge:
+- **Fabrics**: Be specific - "Italian cashmere", "silk charmeuse", "Japanese denim", "Belgian linen"
+- **Colors**: Use your color theory - "warm camel", "deep burgundy", "soft blush", "charcoal grey"
+- **Silhouettes**: Describe the cut and fit - "relaxed oversized", "tailored slim-fit", "flowing midi"
+- **Accessories**: Be thoughtful - "delicate 18k gold layered necklaces", "minimal silver watch"
+- **Styling Details**: Show your expertise - hair, makeup/grooming, overall aesthetic
 
-2. **LIGHTING DIRECTION** (Be poetic and specific):
-   - "golden hour sunlight streaming from camera left, creating warm rim light"
-   - "soft north-facing window light at 45 degrees, wrapping gently around features"
-   - "dramatic Rembrandt lighting with single key light, creating sculptural shadows"
+**LIGHTING DIRECTION** (Be poetic and specific):
+- "golden hour sunlight streaming from camera left, creating warm rim light"
+- "soft north-facing window light at 45 degrees, wrapping gently around features"
+- "dramatic Rembrandt lighting with single key light, creating sculptural shadows"
 
-3. **LOCATION & ATMOSPHERE** (Paint the scene):
-   - Don't just say "office" - say "minimalist Scandinavian office with floor-to-ceiling windows"
-   - Not "beach" - "serene Mediterranean coastline with white-washed architecture"
+**LOCATION & ATMOSPHERE** (Paint the scene):
+- Don't just say "office" - say "minimalist Scandinavian office with floor-to-ceiling windows"
+- Not "beach" - "serene Mediterranean coastline with white-washed architecture"
 
-4. **EMOTIONAL TONE & MOOD** (The soul of the image):
-   - "confident yet approachable, with warm genuine smile"
-   - "contemplative and serene, lost in thought"
-   - "powerful and commanding, with strong posture"
+**CAMERA & LENS SPECIFICATIONS** (ALWAYS AT THE END):
+- Close-Up/Portrait: "shot on 85mm f/1.4 lens with creamy bokeh"
+- Half Body: "shot on 50mm f/1.8 lens with balanced composition"
+- Full Body: "shot on 35mm f/2.0 lens capturing full scene"
 
-5. **CAMERA & LENS SPECIFICATIONS** (ALWAYS AT THE END):
-   - Close-Up/Portrait: "shot on 85mm f/1.4 lens with creamy bokeh"
-   - Half Body: "shot on 50mm f/1.8 lens with balanced composition"
-   - Full Body: "shot on 35mm f/2.0 lens capturing full scene"
+**EXAMPLE OF EXCELLENT PROMPT:**
 
-**EXAMPLE OF EXCELLENT PROMPT (${userGender === "woman" || userGender === "female" ? "FOR WOMAN" : userGender === "man" || userGender === "male" ? "FOR MAN" : "GENDER NEUTRAL"}):**
 ${
   userGender === "woman" || userGender === "female"
-    ? `
-"a woman with long flowing hair catching golden light, wearing an oversized cream cashmere sweater with relaxed silhouette over high-waisted wide-leg linen trousers in warm sand, delicate 18k gold layered necklaces, standing in a minimalist Scandinavian interior with floor-to-ceiling windows and natural oak floors, soft morning light streaming from camera left at 45 degrees creating warm rim light and gentle shadows, natural skin texture with healthy glow, effortlessly elegant with warm genuine smile, editorial quality with film grain aesthetic, timeless sophistication, shot on 85mm f/1.4 lens with creamy bokeh background"
-`
+    ? `"a woman with long flowing hair catching golden light, wearing an oversized cream cashmere sweater with relaxed silhouette over high-waisted wide-leg linen trousers in warm sand, delicate 18k gold layered necklaces, standing in a minimalist Scandinavian interior with floor-to-ceiling windows and natural oak floors, soft morning light streaming from camera left at 45 degrees creating warm rim light and gentle shadows, natural skin texture with healthy glow, effortlessly elegant with warm genuine smile, editorial quality with film grain aesthetic, timeless sophistication, shot on 85mm f/1.4 lens with creamy bokeh background"`
     : userGender === "man" || userGender === "male"
-      ? `
-"a man with short styled hair and strong masculine features, wearing a tailored charcoal wool suit with crisp white dress shirt and silk tie, minimal silver watch, standing in a modern urban office with floor-to-ceiling windows overlooking the city, golden hour light streaming from camera right creating dramatic rim light and strong shadows, natural skin texture with healthy glow, confident and commanding presence with strong posture, editorial quality with subtle film grain, powerful sophistication, shot on 85mm f/1.4 lens with creamy bokeh background"
-`
-      : `
-"a person with styled hair and confident expression, wearing elegant neutral-toned attire with minimal accessories, standing in a minimalist interior with natural light, soft golden hour illumination creating warm atmosphere, natural skin texture, confident presence, editorial quality, timeless elegance, shot on 85mm f/1.4 lens"
-`
+      ? `"a man with short styled hair and strong features, wearing a tailored charcoal wool blazer over crisp white oxford shirt with rolled sleeves, minimal silver watch, standing in a modern urban office with floor-to-ceiling windows overlooking the city, golden hour light streaming from camera right creating dramatic rim light and strong shadows, natural skin texture with healthy glow, confident and commanding presence with strong posture, editorial quality with subtle film grain, powerful sophistication, shot on 85mm f/1.4 lens with creamy bokeh background"`
+      : `"a person with styled hair and confident expression, wearing elegant neutral-toned attire with minimal accessories, standing in a minimalist interior with natural light, soft golden hour illumination creating warm atmosphere, natural skin texture, confident presence, editorial quality, timeless elegance, shot on 85mm f/1.4 lens"`
 }
 
 **WHAT TO AVOID:**
 - Generic descriptions: "nice outfit", "good lighting"
-- Using "person" when gender is specified (${userGender === "woman" || userGender === "female" ? "ALWAYS use 'woman'" : userGender === "man" || userGender === "male" ? "ALWAYS use 'man'" : "use 'person'"})
+- Using wrong gender pronouns in the prompt start
 - Including "TRIGGERWORD" or any placeholder text
 - Camera specs at the beginning
-- Gender-inappropriate clothing or styling
+- Generic templated styling - use your creative expertise!
 
 ${referenceImageUrl ? `\n**IMPORTANT**: Include the reference image URL in each concept's output so it can be used in image-to-image generation.` : ""}
 
@@ -210,10 +166,10 @@ Return ONLY a valid JSON array of concepts, no other text. Each concept must hav
   "title": "string - Short, catchy title",
   "description": "string - SIMPLE, WARM, FRIENDLY language",
   "category": "Close-Up" | "Half Body" | "Lifestyle" | "Action" | "Environmental",
-  "fashionIntelligence": "string - DETAILED gender-appropriate styling",
+  "fashionIntelligence": "string - DETAILED gender-appropriate styling using your fashion expertise",
   "lighting": "string - POETIC lighting description",
   "location": "string - RICH location description",
-  "prompt": "string - MUST start with '${userGender === "woman" || userGender === "female" ? "a woman" : userGender === "man" || userGender === "male" ? "a man" : "a person"}' and use gender-appropriate styling throughout"${referenceImageUrl ? `,\n  "referenceImageUrl": "${referenceImageUrl}"` : ""}
+  "prompt": "string - MUST start with '${userGender === "woman" || userGender === "female" ? "a woman" : userGender === "man" || userGender === "male" ? "a man" : "a person"}' and showcase your fashion intelligence"${referenceImageUrl ? `,\n  "referenceImageUrl": "${referenceImageUrl}"` : ""}
 }`
 
       const { text } = await generateText({
@@ -224,7 +180,6 @@ Return ONLY a valid JSON array of concepts, no other text. Each concept must hav
 
       console.log("[v0] Generated concept text:", text.substring(0, 200))
 
-      // Parse the JSON response
       const jsonMatch = text.match(/\[[\s\S]*\]/)
       if (!jsonMatch) {
         throw new Error("No JSON array found in response")
@@ -242,7 +197,6 @@ Return ONLY a valid JSON array of concepts, no other text. Each concept must hav
 
       console.log("[v0] Successfully parsed", concepts.length, "concepts")
 
-      // Yield final result
       yield {
         state: "ready" as const,
         concepts: concepts.slice(0, count),
