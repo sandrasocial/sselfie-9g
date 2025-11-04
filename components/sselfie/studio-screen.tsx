@@ -4,6 +4,7 @@ import useSWR, { mutate } from "swr"
 import { InstagramPhotoPreview } from "./instagram-photo-preview"
 import { useState, useMemo, useEffect } from "react"
 import BrandProfileWizard from "./brand-profile-wizard"
+import SimpleFeedEditor from "./simple-feed-editor"
 
 interface StudioScreenProps {
   user: any
@@ -18,6 +19,8 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
   const [showPreview, setShowPreview] = useState(false)
   const [showBrandWizard, setShowBrandWizard] = useState(false)
   const [isBrandProfileExpanded, setIsBrandProfileExpanded] = useState(false)
+  const [showFeedEditor, setShowFeedEditor] = useState(false)
+  const [currentFeedId, setCurrentFeedId] = useState<number | null>(null)
 
   const COLOR_THEME_MAP: Record<string, { name: string; colors: string[] }> = {
     "dark-moody": {
@@ -26,7 +29,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
     },
     "minimalist-clean": {
       name: "Minimalistic & Clean",
-      colors: ["#FFFFFF", "#F5F5F0", "#E8E4DC", "#D4CFC4"],
+      colors: ["#FFFFFF", "#F5F5F0", "#E8E4DC", "#D4C5F0"],
     },
     "beige-creamy": {
       name: "Beige & Creamy",
@@ -561,21 +564,15 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
                     {feedPreview.feedStrategy.completedPosts} of {feedPreview.feedStrategy.totalPosts} posts generated
                   </p>
                 </div>
-                <div className="flex gap-3">
-                  {/* CHANGED: Changed font-medium to font-light for consistency */}
-                  <button
-                    onClick={() => setActiveTab("feed-designer")}
-                    className="border border-stone-300 text-stone-900 px-4 sm:px-6 py-2 sm:py-3 rounded-xl text-sm font-light uppercase tracking-wider hover:bg-stone-100 transition-all duration-200 hover:scale-105 active:scale-95"
-                  >
-                    View Full Feed
-                  </button>
-                  <button
-                    onClick={() => setActiveTab("feed-designer")}
-                    className="bg-stone-950 text-stone-50 px-4 sm:px-6 py-2 sm:py-3 rounded-xl text-sm font-light uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 hover:scale-105 active:scale-95"
-                  >
-                    Edit Design
-                  </button>
-                </div>
+                <button
+                  onClick={() => {
+                    setCurrentFeedId(feedPreview.feedStrategy.id)
+                    setShowFeedEditor(true)
+                  }}
+                  className="bg-stone-950 text-stone-50 px-4 sm:px-6 py-2 sm:py-3 rounded-xl text-sm font-light uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 hover:scale-105 active:scale-95"
+                >
+                  Edit Feed
+                </button>
               </div>
 
               {/* Instagram Feed Preview Container */}
@@ -704,7 +701,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
                   DESIGN YOUR INSTAGRAM FEED
                 </h2>
                 <p className="text-sm text-stone-600 font-light leading-relaxed mb-6">
-                  Create your perfect aesthetic with AI-powered feed design
+                  Create your perfect feed with simple templates - click to generate images
                 </p>
                 <div className="grid grid-cols-3 gap-2 max-w-md">
                   {Array.from({ length: 9 }).map((_, index) => (
@@ -717,12 +714,14 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
                   ))}
                 </div>
               </div>
-              {/* CHANGED: Changed font-medium to font-light for consistency */}
               <button
-                onClick={() => setActiveTab("feed-designer")}
+                onClick={() => {
+                  setCurrentFeedId(null)
+                  setShowFeedEditor(true)
+                }}
                 className="bg-stone-950 text-stone-50 px-6 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl text-sm font-light uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 hover:scale-105 active:scale-95"
               >
-                Start Feed Design
+                Create Feed
               </button>
             </div>
           </div>
@@ -906,6 +905,17 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
               mutate("/api/profile/personal-brand/status")
             }}
             existingData={null}
+          />
+        )}
+
+        {showFeedEditor && (
+          <SimpleFeedEditor
+            isOpen={showFeedEditor}
+            onClose={() => {
+              setShowFeedEditor(false)
+              setCurrentFeedId(null)
+            }}
+            feedId={currentFeedId}
           />
         )}
       </div>

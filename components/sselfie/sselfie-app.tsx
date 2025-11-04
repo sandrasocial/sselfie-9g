@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Camera, User, Aperture, Grid, MessageCircle, ImageIcon, LayoutGrid, Coins } from "lucide-react"
+import { Camera, User, Aperture, Grid, MessageCircle, ImageIcon } from "lucide-react"
 import LoadingScreen from "./loading-screen"
 import StudioScreen from "./studio-screen"
 import TrainingScreen from "./training-screen"
@@ -9,7 +9,6 @@ import MayaChatScreen from "./maya-chat-screen"
 import GalleryScreen from "./gallery-screen"
 import AcademyScreen from "./academy-screen"
 import ProfileScreen from "./profile-screen"
-import FeedDesignerScreen from "./feed-designer-screen"
 import { InstallPrompt } from "./install-prompt"
 import { InstallButton } from "./install-button"
 import { ServiceWorkerProvider } from "./service-worker-provider"
@@ -120,7 +119,6 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
     { id: "gallery", label: "Gallery", icon: ImageIcon },
     { id: "academy", label: "Academy", icon: Grid },
     { id: "profile", label: "Profile", icon: User },
-    { id: "feed-designer", label: "Feed Designer", icon: LayoutGrid },
   ]
 
   const user: UserType = {
@@ -162,7 +160,7 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 bg-stone-950 rounded-xl flex items-center justify-center">
-                  <Coins size={16} className="text-stone-50" />
+                  <Camera size={16} className="text-stone-50" />
                 </div>
                 <div>
                   <div className="text-xs tracking-[0.15em] uppercase font-light text-stone-500">Credits</div>
@@ -205,7 +203,6 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
             {activeTab === "gallery" && <GalleryScreen user={user} userId={userId} />}
             {activeTab === "academy" && <AcademyScreen />}
             {activeTab === "profile" && <ProfileScreen user={user} creditBalance={creditBalance} />}
-            {activeTab === "feed-designer" && <FeedDesignerScreen />}
           </div>
         </div>
       </main>
