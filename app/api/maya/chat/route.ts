@@ -209,7 +209,7 @@ Return ONLY a valid JSON array of concepts, no other text. Each concept must hav
 {
   "title": "string - Short, catchy title",
   "description": "string - SIMPLE, WARM, FRIENDLY language",
-  "category": "Close-Up" | "Half Body" | "Full Body" | "Lifestyle" | "Action" | "Environmental",
+  "category": "Close-Up" | "Half Body" | "Lifestyle" | "Action" | "Environmental",
   "fashionIntelligence": "string - DETAILED gender-appropriate styling",
   "lighting": "string - POETIC lighting description",
   "location": "string - RICH location description",
@@ -275,18 +275,6 @@ Return ONLY a valid JSON array of concepts, no other text. Each concept must hav
             "Contemporary city street with modern architecture and clean lines, glass facades reflecting ambient light",
           prompt:
             "a confident person in tailored professional attire walking through a contemporary city street with modern architecture, natural overcast daylight creating even illumination and soft shadows, relaxed confident stride, urban sophistication, natural skin texture, editorial quality, authentic moment, shot on 35mm lens with natural depth of field capturing environmental context",
-        },
-        {
-          title: "Minimalist Elegance",
-          description:
-            "A full-body shot showing your complete outfit against a clean backdrop. Simple, elegant, and timeless - perfect for showcasing your style.",
-          category: "Full Body" as const,
-          fashionIntelligence: "Flowing elegant attire in neutral tones, minimal sophisticated accessories",
-          lighting:
-            "Studio lighting with key light at 45 degrees, subtle fill light, rim light separating subject from background",
-          location: "Minimal white studio space with concrete floor, clean lines, architectural simplicity",
-          prompt:
-            "a confident person in flowing elegant neutral-toned attire standing in a minimal white studio with concrete floor, warm studio lighting with beauty dish creating soft shadows and hair light adding dimension, elegant posture, natural skin texture with healthy glow, clean architectural lines, timeless minimalist aesthetic, editorial quality, shot on 50mm lens with balanced depth of field",
         },
         {
           title: "Golden Hour Warmth",

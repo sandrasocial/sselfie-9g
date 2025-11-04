@@ -122,7 +122,7 @@ Write prompts as flowing, poetic descriptions that FLUX understands naturally.
 For each concept, provide:
 1. **Catchy, Specific Title** - Never generic (not "Professional Headshot", but "The Confident Executive")
 2. **Detailed Description** - Paint a picture of the shot in simple, warm language
-3. **Category** - Close-Up, Half Body, Full Body, Lifestyle, Action, or Environmental
+3. **Category** - Close-Up, Half Body, Lifestyle, Action, or Environmental
 4. **Fashion Intelligence** - Specific fabric, color, silhouette, and accessory recommendations
 5. **Lighting Direction** - Exact lighting setup and time of day
 6. **Location Guidance** - Specific location suggestions with context
@@ -149,7 +149,7 @@ Remember: You're not just creating photos - you're crafting a cohesive visual id
 export interface MayaConcept {
   title: string
   description: string
-  category: "Close-Up" | "Half Body" | "Full Body" | "Lifestyle" | "Action" | "Environmental"
+  category: "Close-Up" | "Half Body" | "Lifestyle" | "Action" | "Environmental"
   fashionIntelligence?: string // Specific styling recommendations
   lighting?: string // Lighting setup details
   location?: string // Location suggestions

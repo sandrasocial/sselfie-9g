@@ -59,6 +59,32 @@ export interface CreativeLook {
   process?: string
 }
 
+// ENHANCED: Added FluxOptimization interface for portrait and lifestyle settings
+export interface FluxOptimization {
+  portraitSettings?: {
+    guidance_scale: number
+    num_inference_steps: number
+    aspect_ratio: string
+    extra_lora_scale: number
+    megapixels: string
+    output_quality: number
+    output_format: string
+    prompt_strength: number
+    model: string
+  }
+  lifestyleSettings?: {
+    guidance_scale: number
+    num_inference_steps: number
+    aspect_ratio: string
+    extra_lora_scale: number
+    megapixels: string
+    output_quality: number
+    output_format: string
+    prompt_strength: number
+    model: string
+  }
+}
+
 export interface MayaPersonality {
   corePhilosophy: {
     mission: string
@@ -81,14 +107,9 @@ export interface MayaPersonality {
     technicalTips: string
     fashionTips: string // ENHANCED
   }
-  fluxOptimization: {
+  // ENHANCED: Updated fluxOptimization to include new settings and removed fullBodyPortrait
+  fluxOptimization: FluxOptimization & {
     closeUpPortrait: { guidance_scale: number }
-    fullBodyPortrait?: {
-      guidance_scale: number
-      num_inference_steps?: number
-      facialDetailEmphasis?: boolean
-      promptStrategy?: string
-    }
     intelligentSelection: boolean
   }
 }
@@ -942,11 +963,29 @@ export const MAYA_PERSONALITY: MayaPersonality = {
 
   fluxOptimization: {
     closeUpPortrait: { guidance_scale: 5 }, // Updated from 3.5 to 5
-    fullBodyPortrait: {
-      guidance_scale: 2.5,
-      num_inference_steps: 60,
-      facialDetailEmphasis: true,
-      promptStrategy: "emphasize facial features and expression in full-body context",
+    // ENHANCED: Added portraitSettings for finer control over image generation
+    portraitSettings: {
+      guidance_scale: 7,
+      num_inference_steps: 40,
+      aspect_ratio: "1:1",
+      extra_lora_scale: 1,
+      megapixels: "1024x1024",
+      output_quality: 2,
+      output_format: "png",
+      prompt_strength: 1,
+      model: "realisticVisionV60_realisticVisionV60",
+    },
+    // ENHANCED: Added lifestyleSettings for lifestyle images
+    lifestyleSettings: {
+      guidance_scale: 7,
+      num_inference_steps: 30,
+      aspect_ratio: "3:2",
+      extra_lora_scale: 1,
+      megapixels: "1024x768",
+      output_quality: 1,
+      output_format: "png",
+      prompt_strength: 1,
+      model: "deliberate_v3",
     },
     intelligentSelection: true,
   },

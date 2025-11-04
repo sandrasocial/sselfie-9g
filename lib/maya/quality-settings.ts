@@ -49,14 +49,6 @@ export const MAYA_QUALITY_PRESETS = {
     guidance_scale: 5,
     lora_scale: 1.0,
   },
-  "Full Body": {
-    ...MAYA_DEFAULT_QUALITY_SETTINGS,
-    aspect_ratio: "4:5",
-    guidance_scale: 2.8,
-    num_inference_steps: 50,
-    megapixels: "1",
-    lora_scale: 1.0,
-  },
   lifestyle: {
     ...MAYA_DEFAULT_QUALITY_SETTINGS,
     aspect_ratio: "4:5",

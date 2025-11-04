@@ -115,15 +115,6 @@ export async function POST(request: NextRequest) {
       finalPrompt = `${triggerWord}, ${finalPrompt}`
     }
 
-    if (category === "Full Body") {
-      const facialEmphasis =
-        "detailed face with clear features, recognizable facial structure, strong facial resemblance, face in sharp focus"
-      if (!finalPrompt.toLowerCase().includes("detailed face")) {
-        // Append facial emphasis at the END of the prompt, not the beginning
-        finalPrompt = `${finalPrompt}, ${facialEmphasis}`
-      }
-    }
-
     console.log("[v0] Final FLUX prompt (Maya's gender-aware prompt):", finalPrompt)
 
     const qualitySettings =
