@@ -60,6 +60,18 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Missing parameters" }, { status: 400 })
     }
 
+    const [existingPost] = await sql`
+      SELECT image_url, generation_status FROM feed_posts WHERE id = ${Number.parseInt(postId)}
+    `
+
+    if (existingPost?.generation_status === "completed" && existingPost?.image_url) {
+      console.log("[v0] Post already completed, returning cached result")
+      return NextResponse.json({
+        status: "succeeded",
+        imageUrl: existingPost.image_url,
+      })
+    }
+
     let prediction
     try {
       prediction = await getReplicatePredictionWithRetry(predictionId)
@@ -145,7 +157,7 @@ export async function GET(request: Request) {
               ) VALUES (
                 ${post.user_id},
                 ${blob.url},
-                ${post.prompt},
+                ${post.prompt || ""},
                 ${predictionId},
                 'completed',
                 'feed_designer',
@@ -158,9 +170,10 @@ export async function GET(request: Request) {
             console.log("[v0] Image already exists in gallery, skipping duplicate save")
           }
         }
-      } catch (galleryError) {
-        // Log but don't fail the request if gallery save fails
-        console.error("[v0] Failed to save to ai_images gallery:", galleryError)
+      } catch (galleryError: any) {
+        const errorMessage = galleryError?.message || String(galleryError)
+        console.error("[v0] Failed to save to ai_images gallery:", errorMessage)
+        // Don't fail the request if gallery save fails - the main post is still successful
       }
 
       return NextResponse.json({

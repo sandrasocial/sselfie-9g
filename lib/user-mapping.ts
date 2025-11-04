@@ -30,15 +30,20 @@ async function retryWithBackoff<T>(fn: () => Promise<T>, maxRetries = 3, baseDel
       lastError = error
       const errorMessage = error?.message || String(error)
 
-      // Check if it's a rate limit error
+      // Check if it's a rate limit error or JSON parsing error (which often indicates rate limiting)
       const isRateLimit =
         errorMessage.includes("Too Many Requests") ||
         errorMessage.includes("429") ||
-        errorMessage.includes("rate limit")
+        errorMessage.includes("rate limit") ||
+        errorMessage.includes("Unexpected token") ||
+        errorMessage.includes("is not valid JSON")
 
       if (isRateLimit && attempt < maxRetries - 1) {
-        const delay = baseDelay * (attempt + 1)
-        console.log(`[v0] Rate limit hit, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries})`)
+        // Exponential backoff with jitter
+        const delay = baseDelay * Math.pow(2, attempt) + Math.random() * 1000
+        console.log(
+          `[v0] Rate limit or parsing error, retrying in ${Math.round(delay)}ms (attempt ${attempt + 1}/${maxRetries})`,
+        )
         await new Promise((resolve) => setTimeout(resolve, delay))
         continue
       }
@@ -61,6 +66,8 @@ export async function getOrCreateNeonUser(supabaseAuthId: string, email: string,
       () => sql`
       SELECT * FROM users WHERE email = ${email} LIMIT 1
     `,
+      5, // Increased max retries for user operations
+      2000, // Increased base delay
     )
 
     if (existingUsers.length > 0) {
@@ -72,6 +79,8 @@ export async function getOrCreateNeonUser(supabaseAuthId: string, email: string,
           SET supabase_user_id = ${supabaseAuthId}, updated_at = NOW()
           WHERE id = ${user.id}
         `,
+          5,
+          2000,
         )
         user.supabase_user_id = supabaseAuthId
       }
@@ -86,6 +95,8 @@ export async function getOrCreateNeonUser(supabaseAuthId: string, email: string,
       VALUES (${userId}, ${email}, ${name || email.split("@")[0]}, ${supabaseAuthId}, NOW(), NOW())
       RETURNING *
     `,
+      5,
+      2000,
     )
 
     return newUsers[0] as NeonUser
@@ -103,6 +114,8 @@ export async function getNeonUserByEmail(email: string): Promise<NeonUser | null
     () => sql`
     SELECT * FROM users WHERE email = ${email} LIMIT 1
   `,
+    5,
+    2000,
   )
 
   return users.length > 0 ? (users[0] as NeonUser) : null
@@ -116,6 +129,8 @@ export async function getNeonUserById(id: string): Promise<NeonUser | null> {
     () => sql`
     SELECT * FROM users WHERE id = ${id} LIMIT 1
   `,
+    5,
+    2000,
   )
 
   return users.length > 0 ? (users[0] as NeonUser) : null
@@ -133,6 +148,8 @@ export async function getUserByAuthId(authId: string): Promise<NeonUser | null> 
       WHERE stack_auth_id = ${authId} OR supabase_user_id = ${authId}
       LIMIT 1
     `,
+      5, // Increased max retries
+      2000, // Increased base delay
     )
 
     return users.length > 0 ? (users[0] as NeonUser) : null
@@ -152,7 +169,7 @@ export async function getUserId(): Promise<string | null> {
 
     const {
       data: { user: authUser },
-    } = await retryWithBackoff(() => supabase.auth.getUser())
+    } = await retryWithBackoff(() => supabase.auth.getUser(), 5, 2000)
 
     if (!authUser) {
       return null

@@ -25,11 +25,19 @@ interface FeedPostCardProps {
   post: FeedPost
   feedId: string
   onGenerated?: () => void
+  generatingPostId?: number | null
+  onGeneratingChange?: (postId: number | null) => void
 }
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
-export default function FeedPostCard({ post, feedId, onGenerated }: FeedPostCardProps) {
+export default function FeedPostCard({
+  post,
+  feedId,
+  onGenerated,
+  generatingPostId,
+  onGeneratingChange,
+}: FeedPostCardProps) {
   const [isGenerating, setIsGenerating] = useState(false)
   const [isGenerated, setIsGenerated] = useState(!!post.image_url)
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(post.image_url)
@@ -61,49 +69,66 @@ export default function FeedPostCard({ post, feedId, onGenerated }: FeedPostCard
 
     console.log("[v0] Starting polling for post", postId, "with prediction", predictionId)
 
-    const pollInterval = setInterval(async () => {
-      try {
-        console.log("[v0] Polling post generation status...")
-        const response = await fetch(`/api/feed/${feedId}/check-post?predictionId=${predictionId}&postId=${postId}`)
+    const staggerDelay = Math.random() * 2000
+    const staggerTimeout = setTimeout(() => {
+      const pollInterval = setInterval(async () => {
+        try {
+          console.log("[v0] Polling post generation status...")
+          const response = await fetch(`/api/feed/${feedId}/check-post?predictionId=${predictionId}&postId=${postId}`)
 
-        if (!response.ok) {
-          if (response.status === 429) {
-            console.log("[v0] Rate limit hit, will retry on next poll...")
-            return // Continue polling, don't clear interval
+          if (!response.ok) {
+            if (response.status === 429) {
+              console.log("[v0] Rate limit hit, will retry on next poll...")
+              return
+            }
+            throw new Error(`HTTP error! status: ${response.status}`)
           }
-          throw new Error(`HTTP error! status: ${response.status}`)
+
+          const data = await response.json()
+
+          console.log("[v0] Post generation status:", data.status)
+
+          if (data.status === "succeeded") {
+            console.log("[v0] Post generation succeeded! Image URL:", data.imageUrl)
+            setGeneratedImageUrl(data.imageUrl)
+            setIsGenerated(true)
+            setIsGenerating(false)
+            if (onGeneratingChange) {
+              onGeneratingChange(null)
+            }
+            clearInterval(pollInterval)
+            onGenerated?.()
+          } else if (data.status === "failed") {
+            console.log("[v0] Post generation failed:", data.error)
+            setError(data.error || "Generation failed")
+            setIsGenerating(false)
+            if (onGeneratingChange) {
+              onGeneratingChange(null)
+            }
+            clearInterval(pollInterval)
+          }
+        } catch (err) {
+          console.error("[v0] Error polling generation:", err)
         }
+      }, 5000)
 
-        const data = await response.json()
-
-        console.log("[v0] Post generation status:", data.status)
-
-        if (data.status === "succeeded") {
-          console.log("[v0] Post generation succeeded! Image URL:", data.imageUrl)
-          setGeneratedImageUrl(data.imageUrl)
-          setIsGenerated(true)
-          setIsGenerating(false)
-          clearInterval(pollInterval)
-          onGenerated?.()
-        } else if (data.status === "failed") {
-          console.log("[v0] Post generation failed:", data.error)
-          setError(data.error || "Generation failed")
-          setIsGenerating(false)
-          clearInterval(pollInterval)
-        }
-      } catch (err) {
-        console.error("[v0] Error polling generation:", err)
-        // Only log the error and continue polling
+      return () => {
+        console.log("[v0] Cleaning up polling interval")
+        clearInterval(pollInterval)
       }
-    }, 3000) // Poll every 3 seconds
+    }, staggerDelay)
 
     return () => {
-      console.log("[v0] Cleaning up polling interval")
-      clearInterval(pollInterval)
+      clearTimeout(staggerTimeout)
     }
-  }, [predictionId, postId, isGenerated, feedId]) // Removed onGenerated from dependencies
+  }, [predictionId, postId, isGenerated, feedId, onGeneratingChange])
 
   const handleGenerate = async () => {
+    if (generatingPostId !== null && generatingPostId !== post.id) {
+      console.log("[v0] Another card is generating, please wait")
+      return
+    }
+
     console.log("[v0] [FEED POST] Starting generation:", {
       postId: post.id,
       feedId,
@@ -113,6 +138,9 @@ export default function FeedPostCard({ post, feedId, onGenerated }: FeedPostCard
 
     setIsGenerating(true)
     setError(null)
+    if (onGeneratingChange) {
+      onGeneratingChange(post.id)
+    }
 
     try {
       console.log("[v0] [FEED POST] Calling generate-single API...")
@@ -139,6 +167,9 @@ export default function FeedPostCard({ post, feedId, onGenerated }: FeedPostCard
       console.error("[v0] [FEED POST] Error generating image:", err)
       setError(err instanceof Error ? err.message : "Failed to generate image")
       setIsGenerating(false)
+      if (onGeneratingChange) {
+        onGeneratingChange(null)
+      }
     }
   }
 
@@ -249,7 +280,7 @@ export default function FeedPostCard({ post, feedId, onGenerated }: FeedPostCard
       }
 
       setCaption(newCaption)
-      onGenerated?.() // Refresh feed data
+      onGenerated?.()
     } catch (err) {
       console.error("[v0] Error updating caption:", err)
       alert("Failed to update caption. Please try again.")
@@ -258,17 +289,15 @@ export default function FeedPostCard({ post, feedId, onGenerated }: FeedPostCard
 
   const conceptData = {
     title: post.post_type,
-    description: caption, // Use local caption state instead of post.caption
+    description: caption,
     category: post.post_type,
     prompt: post.prompt,
   }
 
-  // Hidden file input for upload
   const fileInput = (
     <input ref={fileInputRef} type="file" accept="image/*" onChange={handleUploadImage} className="hidden" />
   )
 
-  // Gallery Modal - always rendered so it works in all states
   const galleryModal = showGalleryModal && (
     <ImageGalleryModal
       images={galleryImages}
@@ -277,7 +306,6 @@ export default function FeedPostCard({ post, feedId, onGenerated }: FeedPostCard
     />
   )
 
-  // Full Preview Dialog
   const fullPreviewDialog = showFullPreview && (
     <Dialog open={showFullPreview} onOpenChange={setShowFullPreview}>
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto p-0 bg-transparent border-none">
@@ -305,7 +333,6 @@ export default function FeedPostCard({ post, feedId, onGenerated }: FeedPostCard
     </Dialog>
   )
 
-  // Schedule Modal
   const scheduleModal = showScheduleModal && (
     <SchedulePostModal
       post={{
@@ -324,7 +351,6 @@ export default function FeedPostCard({ post, feedId, onGenerated }: FeedPostCard
       onClose={() => setShowScheduleModal(false)}
       onScheduled={() => {
         setShowScheduleModal(false)
-        // Optionally show a success message
       }}
     />
   )
@@ -336,7 +362,16 @@ export default function FeedPostCard({ post, feedId, onGenerated }: FeedPostCard
       {fullPreviewDialog}
       {scheduleModal}
       {!isGenerating && !isGenerated && !error && (
-        <div className="aspect-square flex flex-col items-center justify-center p-2 sm:p-3 md:p-4 bg-gradient-to-br from-stone-100 to-stone-200 rounded-sm gap-2 sm:gap-3">
+        <div className="aspect-square flex flex-col items-center justify-center p-2 sm:p-3 md:p-4 bg-gradient-to-br from-stone-100 to-stone-200 rounded-sm gap-2 sm:gap-3 relative">
+          {generatingPostId !== null && generatingPostId !== post.id && (
+            <div className="absolute inset-0 bg-stone-950/40 backdrop-blur-sm flex items-center justify-center z-10">
+              <div className="text-center space-y-1 px-2">
+                <div className="w-6 h-6 mx-auto border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <p className="text-[9px] sm:text-[10px] text-white/90 font-medium">Generating...</p>
+              </div>
+            </div>
+          )}
+
           <span className="text-[10px] sm:text-xs font-bold text-stone-950 text-center leading-tight">
             {post.post_type}
           </span>
@@ -344,14 +379,16 @@ export default function FeedPostCard({ post, feedId, onGenerated }: FeedPostCard
           <div className="flex flex-col gap-1.5 sm:gap-2 w-full px-1 sm:px-2">
             <button
               onClick={handleGenerate}
-              className="w-full px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-stone-950 text-white text-[10px] sm:text-xs font-semibold rounded-full transition-all hover:bg-stone-800 hover:scale-105"
+              disabled={generatingPostId !== null && generatingPostId !== post.id}
+              className="w-full px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-stone-950 text-white text-[10px] sm:text-xs font-semibold rounded-full transition-all hover:bg-stone-800 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Generate
             </button>
 
             <button
               onClick={() => setShowGalleryModal(true)}
-              className="w-full px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-white text-stone-950 text-[10px] sm:text-xs font-semibold rounded-full transition-all hover:bg-stone-100 hover:scale-105 border border-stone-300"
+              disabled={generatingPostId !== null && generatingPostId !== post.id}
+              className="w-full px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-white text-stone-950 text-[10px] sm:text-xs font-semibold rounded-full transition-all hover:bg-stone-100 hover:scale-105 border border-stone-300 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Choose from Gallery
             </button>

@@ -66,12 +66,16 @@ export async function POST(request: Request) {
         prompt: fullPrompt,
         num_outputs: 4,
         aspect_ratio: "1:1",
-        output_format: "webp",
-        output_quality: 90,
+        output_format: "png", // Updated from webp to png
+        output_quality: 100, // Updated from 90 to 100
         num_inference_steps: 28,
-        guidance_scale: 3.5,
+        guidance_scale: 5,
         lora: model.lora_weights_url,
         lora_scale: model.lora_scale || 0.9,
+        extra_lora_scale: 1, // Added new flux parameters
+        megapixels: "1",
+        prompt_strength: 0.8,
+        model: "dev",
       },
     })
 

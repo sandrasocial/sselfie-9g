@@ -941,7 +941,7 @@ export const MAYA_PERSONALITY: MayaPersonality = {
   ],
 
   fluxOptimization: {
-    closeUpPortrait: { guidance_scale: 3.5 },
+    closeUpPortrait: { guidance_scale: 5 }, // Updated from 3.5 to 5
     fullBodyPortrait: {
       guidance_scale: 2.5,
       num_inference_steps: 60,

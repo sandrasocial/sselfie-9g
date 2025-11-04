@@ -6,6 +6,7 @@ import { useState, useEffect } from "react"
 import { X, Plus, Trash2, ImageIcon, Upload, GripVertical, User } from "lucide-react"
 import useSWR, { mutate } from "swr"
 import ImageGalleryModal from "./image-gallery-modal"
+import FeedPostCard from "./feed-post-card"
 
 interface SimpleFeedEditorProps {
   isOpen: boolean
@@ -19,6 +20,9 @@ interface FeedPost {
   image_url: string | null
   caption: string | null
   prompt: string | null
+  generation_status?: string
+  post_type?: string
+  prediction_id: string | null
 }
 
 interface FeedProfile {
@@ -111,6 +115,9 @@ export default function SimpleFeedEditor({ isOpen, onClose, feedId }: SimpleFeed
       image_url: null,
       caption: "",
       prompt: "",
+      generation_status: "pending",
+      post_type: "Portrait",
+      prediction_id: null,
     }
     setPosts([...posts, newPost])
   }
@@ -196,6 +203,9 @@ export default function SimpleFeedEditor({ isOpen, onClose, feedId }: SimpleFeed
   }
 
   if (!isOpen) return null
+
+  const completedPosts = posts.filter((post) => post.image_url && post.generation_status === "completed")
+  const pendingConcepts = posts.filter((post) => !post.image_url && post.generation_status === "pending")
 
   return (
     <div className="fixed inset-0 z-50 bg-stone-950/95 backdrop-blur-xl overflow-y-auto">
@@ -303,10 +313,47 @@ export default function SimpleFeedEditor({ isOpen, onClose, feedId }: SimpleFeed
           />
         )}
 
+        {/* Concept Cards Section */}
+        {pendingConcepts.length > 0 && (
+          <div className="max-w-6xl mx-auto mb-8">
+            <div className="bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="font-['Times_New_Roman'] text-xl font-extralight tracking-[0.15em] uppercase text-white">
+                  CONCEPT CARDS
+                </h2>
+                <span className="text-sm text-white/60">{pendingConcepts.length} ready to generate</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {pendingConcepts.map((concept) => (
+                  <FeedPostCard
+                    key={concept.id}
+                    post={{
+                      id: concept.id,
+                      position: concept.position,
+                      post_type: concept.post_type || "Portrait",
+                      prompt: concept.prompt || "",
+                      caption: concept.caption || "",
+                      image_url: null,
+                      generation_status: "pending",
+                      prediction_id: null,
+                    }}
+                    feedId={feedId!.toString()}
+                    onGenerated={() => {
+                      mutate(`/api/feed/${feedId}`)
+                      mutate("/api/feed/latest")
+                      mutate("/api/feed-designer/preview")
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Feed Grid */}
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {posts.map((post, index) => (
+            {completedPosts.map((post, index) => (
               <div
                 key={post.id}
                 draggable
@@ -395,19 +442,19 @@ export default function SimpleFeedEditor({ isOpen, onClose, feedId }: SimpleFeed
                 </div>
               </div>
             ))}
-
-            {/* Add Post Button */}
-            <button
-              onClick={handleAddPost}
-              className="aspect-square bg-white/5 backdrop-blur-xl rounded-2xl border-2 border-dashed border-white/20 hover:border-white/40 hover:bg-white/10 transition-all duration-300 flex flex-col items-center justify-center gap-3 group"
-            >
-              <Plus size={32} className="text-white/40 group-hover:text-white/60 transition-colors" strokeWidth={1.5} />
-              <span className="text-sm text-white/40 group-hover:text-white/60 font-light tracking-wider transition-colors">
-                Add Post
-              </span>
-            </button>
           </div>
         </div>
+
+        {/* Add Post Button */}
+        <button
+          onClick={handleAddPost}
+          className="aspect-square bg-white/5 backdrop-blur-xl rounded-2xl border-2 border-dashed border-white/20 hover:border-white/40 hover:bg-white/10 transition-all duration-300 flex flex-col items-center justify-center gap-3 group"
+        >
+          <Plus size={32} className="text-white/40 group-hover:text-white/60 transition-colors" strokeWidth={1.5} />
+          <span className="text-sm text-white/40 group-hover:text-white/60 font-light tracking-wider transition-colors">
+            Add Post
+          </span>
+        </button>
       </div>
     </div>
   )

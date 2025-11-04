@@ -16,6 +16,7 @@ import { InstagramPhotoPreview } from "./instagram-photo-preview"
 import { useState, useMemo, useEffect } from "react"
 import BrandProfileWizard from "./brand-profile-wizard"
 import SimpleFeedEditor from "./simple-feed-editor"
+import FeedPostCard from "./feed-post-card"
 
 interface StudioScreenProps {
   user: any
@@ -34,6 +35,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
   const [currentFeedId, setCurrentFeedId] = useState<number | null>(null)
   const [showFeedOptions, setShowFeedOptions] = useState(false)
   const [isRegenerating, setIsRegenerating] = useState(false)
+  const [generatingPostId, setGeneratingPostId] = useState<number | null>(null)
 
   const COLOR_THEME_MAP: Record<string, { name: string; colors: string[] }> = {
     "dark-moody": {
@@ -75,7 +77,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
 
   const { data: feedPreview } = useSWR(hasTrainedModel ? "/api/feed-designer/preview" : null, fetcher, {
     refreshInterval: 0,
-    revalidateOnFocus: true, // Enable revalidation to pick up new feed
+    revalidateOnFocus: true,
     revalidateOnReconnect: false,
     dedupingInterval: 5000,
   })
@@ -146,6 +148,8 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
 
       const data = await response.json()
       console.log("[v0] Added more concepts:", data)
+
+      await new Promise((resolve) => setTimeout(resolve, 500))
 
       // Refresh feed preview
       mutate("/api/feed-designer/preview")
@@ -261,7 +265,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
                 key={i}
                 className="p-5 sm:p-6 bg-white/60 backdrop-blur-3xl rounded-xl sm:rounded-2xl border border-white/70 shadow-lg shadow-stone-900/5 hover:shadow-xl hover:shadow-stone-900/10 hover:scale-105 transition-all duration-500 group"
               >
-                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-stone-900 rounded-lg sm:rounded-xl flex items-center justify-center mx-auto mb-3 sm:mb-4 shadow-lg shadow-stone-900/20 group-hover:scale-110 transition-transform duration-500">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-stone-900 rounded-lg sm:rounded-2xl flex items-center justify-center mx-auto mb-3 sm:mb-4 shadow-lg shadow-stone-900/20 group-hover:scale-110 transition-transform duration-500">
                   <div className="text-base sm:text-lg font-light text-white">{i + 1}</div>
                 </div>
                 <div className="text-sm font-light text-stone-900 mb-2">{item.label}</div>
@@ -362,7 +366,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
               </div>
               <button
                 onClick={() => setShowBrandWizard(true)}
-                className="bg-stone-950 text-stone-50 px-6 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-500 hover:scale-105 active:scale-95"
+                className="bg-stone-950 text-stone-50 px-6 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 hover:scale-105 active:scale-95"
               >
                 Start Brand Profile
               </button>
@@ -668,6 +672,11 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
                   </h2>
                   <p className="text-sm text-stone-600 font-light">
                     {feedPreview.feedStrategy.completedPosts} of {feedPreview.feedStrategy.totalPosts} posts generated
+                    {feedPreview.feedStrategy.pendingConcepts > 0 && (
+                      <span className="ml-2 text-amber-600">
+                        • {feedPreview.feedStrategy.pendingConcepts} concepts ready
+                      </span>
+                    )}
                   </p>
                 </div>
                 <div className="flex gap-3 relative">
@@ -685,7 +694,11 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
                     className="border border-stone-300 text-stone-900 px-3 py-2 sm:py-3 rounded-xl hover:bg-stone-100 transition-all duration-200 hover:scale-105 active:scale-95"
                     disabled={isRegenerating}
                   >
-                    <MoreVertical size={20} strokeWidth={1.5} />
+                    {isRegenerating ? (
+                      <div className="w-5 h-5 border-2 border-stone-300 border-t-stone-900 rounded-full animate-spin" />
+                    ) : (
+                      <MoreVertical size={20} strokeWidth={1.5} />
+                    )}
                   </button>
 
                   {showFeedOptions && (
@@ -695,8 +708,17 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
                         disabled={isRegenerating}
                         className="w-full flex items-center gap-3 px-4 py-3 text-sm text-stone-900 hover:bg-stone-50 transition-colors text-left disabled:opacity-50"
                       >
-                        <Plus size={16} strokeWidth={1.5} />
-                        Generate More Posts
+                        {isRegenerating ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-stone-300 border-t-stone-900 rounded-full animate-spin" />
+                            Generating...
+                          </>
+                        ) : (
+                          <>
+                            <Plus size={16} strokeWidth={1.5} />
+                            Generate More Posts
+                          </>
+                        )}
                       </button>
                       <button
                         onClick={handleRefreshConcepts}
@@ -811,19 +833,54 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
                   </div>
                 )}
 
-                {/* Post Grid */}
                 <div className="grid grid-cols-3 gap-[2px] bg-stone-200">
-                  {feedPreview.previewImages.slice(0, 9).map((image: any, index: number) => (
-                    <div key={index} className="aspect-square bg-stone-100 overflow-hidden">
-                      <img
-                        src={image.url || "/placeholder.svg"}
-                        alt={`Feed post ${index + 1}`}
-                        className="w-full h-full object-cover hover:opacity-90 transition-opacity cursor-pointer"
-                        onClick={() => setActiveTab("feed-designer")}
+                  {feedPreview.conceptCards &&
+                    feedPreview.conceptCards.slice(0, 9).map((concept: any) => (
+                      <FeedPostCard
+                        key={concept.id}
+                        post={{
+                          id: concept.id,
+                          position: concept.position,
+                          post_type: concept.category,
+                          prompt: concept.prompt,
+                          caption: concept.description,
+                          image_url: null,
+                          generation_status: "pending",
+                          prediction_id: null,
+                        }}
+                        feedId={feedPreview.feedStrategy.id.toString()}
+                        onGenerated={() => {
+                          setTimeout(() => {
+                            mutate("/api/feed-designer/preview")
+                            mutate("/api/feed/latest")
+                          }, 1000)
+                        }}
+                        generatingPostId={generatingPostId}
+                        onGeneratingChange={setGeneratingPostId}
                       />
-                    </div>
-                  ))}
-                  {Array.from({ length: Math.max(0, 9 - feedPreview.previewImages.length) }).map((_, index) => (
+                    ))}
+
+                  {/* Then render completed posts */}
+                  {feedPreview.previewImages
+                    .slice(0, 9 - (feedPreview.conceptCards?.length || 0))
+                    .map((image: any, index: number) => (
+                      <div
+                        key={`completed-${image.position || index}`}
+                        className="aspect-square bg-stone-100 overflow-hidden"
+                      >
+                        <img
+                          src={image.url || "/placeholder.svg"}
+                          alt={`Feed post ${index + 1}`}
+                          className="w-full h-full object-cover hover:opacity-90 transition-opacity cursor-pointer"
+                          onClick={() => setActiveTab("feed-designer")}
+                        />
+                      </div>
+                    ))}
+
+                  {/* Fill remaining slots with placeholders */}
+                  {Array.from({
+                    length: Math.max(0, 9 - (feedPreview.conceptCards?.length || 0) - feedPreview.previewImages.length),
+                  }).map((_, index) => (
                     <div
                       key={`placeholder-${index}`}
                       className="aspect-square bg-stone-50 flex items-center justify-center"

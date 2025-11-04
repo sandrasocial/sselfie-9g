@@ -46,6 +46,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         hasDesign: false,
         previewImages: [],
+        conceptCards: [],
         feedStrategy: null,
       })
     }
@@ -58,27 +59,37 @@ export async function GET(request: NextRequest) {
         post_type,
         image_url,
         caption,
+        prompt,
         generation_status
       FROM feed_posts
       WHERE feed_layout_id = ${feedLayout.id}
       AND user_id = ${neonUser.id}
       ORDER BY position ASC
-      LIMIT 9
     `
 
-    // Get preview images (first 6-9 completed images)
-    const previewImages = feedPosts
-      .filter((post) => post.image_url && post.generation_status === "completed")
-      .slice(0, 9)
-      .map((post) => ({
-        url: post.image_url,
-        position: post.position,
-        type: post.post_type,
-      }))
+    const completedPosts = feedPosts.filter((post) => post.image_url && post.generation_status === "completed")
+    const pendingConcepts = feedPosts.filter((post) => !post.image_url && post.generation_status === "pending")
+
+    // Get preview images (first 9 completed images)
+    const previewImages = completedPosts.slice(0, 9).map((post) => ({
+      url: post.image_url,
+      position: post.position,
+      type: post.post_type,
+    }))
+
+    const conceptCards = pendingConcepts.slice(0, 9).map((post) => ({
+      id: post.id,
+      title: post.post_type || "New Post",
+      description: post.caption || "Click to generate this post",
+      category: post.post_type || "Portrait",
+      prompt: post.prompt || "",
+      position: post.position,
+    }))
 
     return NextResponse.json({
       hasDesign: true,
       previewImages,
+      conceptCards, // Added concept cards to response
       feedStrategy: {
         id: feedLayout.id,
         title: feedLayout.title,
@@ -92,6 +103,7 @@ export async function GET(request: NextRequest) {
         brandName: feedLayout.brand_name,
         totalPosts: feedPosts.length,
         completedPosts: previewImages.length,
+        pendingConcepts: conceptCards.length, // Added pending concepts count
         status: feedLayout.status,
       },
     })
