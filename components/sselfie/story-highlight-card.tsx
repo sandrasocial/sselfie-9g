@@ -381,6 +381,14 @@ export default function StoryHighlightCard({
                 </div>
               )}
 
+              {mode === "image" && (
+                <div className="w-full space-y-2">
+                  <p className="text-[10px] text-muted-foreground text-center">
+                    AI-generated covers may require refinement
+                  </p>
+                </div>
+              )}
+
               {error && <p className="text-sm text-destructive">{error}</p>}
 
               <div className="flex gap-2 pt-2">

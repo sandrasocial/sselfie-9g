@@ -871,7 +871,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
                                   Photo Ideas
                                 </span>
                               </div>
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                 {concepts.map((concept: any, conceptIndex: number) => (
                                   <ConceptCard key={conceptIndex} concept={concept} />
                                 ))}

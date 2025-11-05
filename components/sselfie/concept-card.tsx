@@ -253,7 +253,10 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
       )}
 
       {!isGenerating && !isGenerated && !error && (
-        <div className="mt-3">
+        <div className="mt-3 space-y-2">
+          <p className="text-[10px] text-stone-500 text-center leading-relaxed">
+            AI-generated photos may vary in quality and accuracy
+          </p>
           <button
             onClick={handleGenerate}
             className="group relative w-full bg-stone-950 text-white px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-300 hover:shadow-xl hover:shadow-stone-900/30 hover:scale-[1.02] active:scale-[0.98] min-h-[44px] flex items-center justify-center"

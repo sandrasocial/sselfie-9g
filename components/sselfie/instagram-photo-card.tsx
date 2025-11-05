@@ -217,6 +217,7 @@ export default function InstagramPhotoCard({
                 </div>
               )}
             </div>
+            {isGenerating && <p className="text-[10px] text-stone-400 tracking-wide">AI-generated</p>}
             <p className="text-xs text-stone-400 uppercase tracking-wide">Just now</p>
           </div>
         </div>

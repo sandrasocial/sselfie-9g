@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport } from "ai"
 import { Textarea } from "@/components/ui/textarea"
-import { Plus, History, MessageCircle, X, Minimize2, RefreshCw, ImageIcon, Upload } from "lucide-react"
+import { Plus, History, MessageCircle, X, Minimize2, RefreshCw, ImageIcon, Upload, ZoomIn } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 
 import FeedPostCard from "./feed-post-card"
@@ -1914,6 +1914,15 @@ export default function FeedDesignerScreen() {
                             </button>
                             <div className="absolute inset-0 rounded-full bg-stone-950/0 group-hover:bg-stone-950/60 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
                               <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => setShowProfileFullSize(true)}
+                                  disabled={isReplacingProfile}
+                                  className="p-2 bg-white/90 backdrop-blur-xl rounded-full hover:bg-white transition-all hover:scale-110 disabled:opacity-50"
+                                  title="View Full Size"
+                                >
+                                  <ZoomIn size={14} className="text-stone-950" strokeWidth={2} />
+                                </button>
+
                                 {/* Replace from Gallery */}
                                 <button
                                   onClick={() => setShowProfileGallery(true)}

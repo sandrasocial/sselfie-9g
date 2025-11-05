@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
-import { X, Heart, Download, Trash2, ZoomIn, ZoomOut } from "lucide-react"
+import { X, Heart, Download, Trash2, ZoomIn, ZoomOut, Info } from "lucide-react"
 import Image from "next/image"
 
 interface FullscreenImageModalProps {
@@ -30,6 +30,13 @@ export default function FullscreenImageModal({
   const [isFavoriting, setIsFavoriting] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [zoom, setZoom] = useState(1)
+  const [showInfo, setShowInfo] = useState(false)
+  const [imageMetadata, setImageMetadata] = useState<{
+    width?: number
+    height?: number
+    size?: string
+    format?: string
+  } | null>(null)
 
   useEffect(() => {
     setMounted(true)
@@ -37,9 +44,35 @@ export default function FullscreenImageModal({
   }, [])
 
   useEffect(() => {
+    if (isOpen && imageUrl) {
+      const img = document.createElement("img")
+      img.onload = () => {
+        setImageMetadata({
+          width: img.naturalWidth,
+          height: img.naturalHeight,
+          format: imageUrl.split(".").pop()?.toUpperCase() || "Unknown",
+        })
+      }
+      img.src = imageUrl
+
+      fetch(imageUrl, { method: "HEAD" })
+        .then((response) => {
+          const contentLength = response.headers.get("content-length")
+          if (contentLength) {
+            const sizeInBytes = Number.parseInt(contentLength)
+            const sizeInMB = (sizeInBytes / (1024 * 1024)).toFixed(2)
+            setImageMetadata((prev) => ({ ...prev, size: `${sizeInMB} MB` }))
+          }
+        })
+        .catch((error) => console.error("[v0] Error fetching image size:", error))
+    }
+  }, [isOpen, imageUrl])
+
+  useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden"
       setZoom(1)
+      setShowInfo(false)
     } else {
       document.body.style.overflow = ""
     }
@@ -161,7 +194,20 @@ export default function FullscreenImageModal({
       {/* Zoom Controls */}
       <div className="absolute top-20 right-4 sm:right-6 z-10 flex flex-col gap-2">
         <button
-          onClick={handleZoomIn}
+          onClick={(e) => {
+            e.stopPropagation()
+            setShowInfo(!showInfo)
+          }}
+          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors backdrop-blur-xl"
+          aria-label="Toggle image info"
+        >
+          <Info className="w-5 h-5 text-white" strokeWidth={2} />
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            handleZoomIn()
+          }}
           disabled={zoom >= 3}
           className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors backdrop-blur-xl disabled:opacity-50 disabled:cursor-not-allowed"
           aria-label="Zoom in"
@@ -169,7 +215,10 @@ export default function FullscreenImageModal({
           <ZoomIn className="w-5 h-5 text-white" strokeWidth={2} />
         </button>
         <button
-          onClick={handleZoomOut}
+          onClick={(e) => {
+            e.stopPropagation()
+            handleZoomOut()
+          }}
           disabled={zoom <= 0.5}
           className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors backdrop-blur-xl disabled:opacity-50 disabled:cursor-not-allowed"
           aria-label="Zoom out"
@@ -178,13 +227,46 @@ export default function FullscreenImageModal({
         </button>
       </div>
 
+      {/* Image Info Panel */}
+      {showInfo && imageMetadata && (
+        <div className="absolute top-20 left-4 sm:left-6 z-10 bg-black/80 backdrop-blur-xl rounded-2xl p-4 sm:p-6 max-w-xs animate-in fade-in slide-in-from-left-2 duration-200">
+          <h4 className="text-sm font-semibold text-white mb-3 tracking-wide">Image Info</h4>
+          <div className="space-y-2 text-xs text-stone-300">
+            <div className="flex justify-between gap-4">
+              <span className="text-stone-400">Dimensions:</span>
+              <span className="font-medium text-white">
+                {imageMetadata.width} × {imageMetadata.height}
+              </span>
+            </div>
+            {imageMetadata.size && (
+              <div className="flex justify-between gap-4">
+                <span className="text-stone-400">File Size:</span>
+                <span className="font-medium text-white">{imageMetadata.size}</span>
+              </div>
+            )}
+            {imageMetadata.format && (
+              <div className="flex justify-between gap-4">
+                <span className="text-stone-400">Format:</span>
+                <span className="font-medium text-white">{imageMetadata.format}</span>
+              </div>
+            )}
+            <div className="flex justify-between gap-4">
+              <span className="text-stone-400">Image ID:</span>
+              <span className="font-medium text-white">#{imageId}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Actions Bar */}
       <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 bg-gradient-to-t from-black/80 to-transparent">
         <div className="flex items-center justify-center gap-3 sm:gap-4 flex-wrap">
-          {/* Conditional rendering and improved button state */}
           {onFavoriteToggle && (
             <button
-              onClick={handleFavorite}
+              onClick={(e) => {
+                e.stopPropagation()
+                handleFavorite()
+              }}
               disabled={isFavoriting}
               className={`flex items-center gap-2 px-4 sm:px-6 py-3 rounded-2xl font-semibold text-sm transition-all duration-300 hover:scale-105 active:scale-95 min-h-[44px] backdrop-blur-xl disabled:opacity-50 disabled:cursor-not-allowed ${
                 isFavorite ? "bg-red-500 text-white hover:bg-red-600" : "bg-white/10 text-white hover:bg-white/20"
@@ -199,7 +281,10 @@ export default function FullscreenImageModal({
           )}
 
           <button
-            onClick={handleDownload}
+            onClick={(e) => {
+              e.stopPropagation()
+              handleDownload()
+            }}
             className="flex items-center gap-2 px-4 sm:px-6 py-3 bg-white/10 text-white rounded-2xl font-semibold text-sm transition-all duration-300 hover:bg-white/20 hover:scale-105 active:scale-95 min-h-[44px] backdrop-blur-xl"
             aria-label="Download image"
           >
@@ -209,7 +294,10 @@ export default function FullscreenImageModal({
 
           {onDelete && (
             <button
-              onClick={handleDelete}
+              onClick={(e) => {
+                e.stopPropagation()
+                handleDelete()
+              }}
               disabled={isDeleting}
               className="flex items-center gap-2 px-4 sm:px-6 py-3 bg-red-500/80 text-white rounded-2xl font-semibold text-sm transition-all duration-300 hover:bg-red-500 hover:scale-105 active:scale-95 min-h-[44px] backdrop-blur-xl disabled:opacity-50 disabled:cursor-not-allowed"
               aria-label="Delete image"
