@@ -1,8 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Bell, Aperture, Shield, User, ChevronRight, LogOut, Mail, Calendar, CreditCard } from "lucide-react"
+import { Bell, Aperture, Shield, User, ChevronRight, LogOut, Mail, Calendar, CreditCard, Package } from "lucide-react"
 import { useRouter } from "next/navigation"
+import BrandAssetsManager from "./brand-assets-manager"
 
 interface SettingsScreenProps {
   onBack: () => void
@@ -248,6 +249,16 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
               }}
             />
           </div>
+        </div>
+
+        <div className="bg-white/50 backdrop-blur-2xl rounded-xl sm:rounded-[1.75rem] p-4 sm:p-6 md:p-8 border border-white/60 shadow-xl shadow-stone-900/10">
+          <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
+            <div className="p-2.5 sm:p-3.5 bg-stone-950 rounded-lg sm:rounded-[1.125rem] shadow-lg">
+              <Package size={18} className="text-white" strokeWidth={2.5} />
+            </div>
+            <h3 className="text-base sm:text-lg md:text-xl font-bold text-stone-950">Brand Assets</h3>
+          </div>
+          <BrandAssetsManager />
         </div>
       </div>
 

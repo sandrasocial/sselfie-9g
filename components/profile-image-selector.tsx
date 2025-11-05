@@ -53,10 +53,10 @@ export function ProfileImageSelector({ images, currentAvatar, onSelect, onClose 
   }
 
   return (
-    <div className="fixed inset-0 z-[60] bg-stone-950/95 backdrop-blur-xl flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-[100] bg-stone-950/95 backdrop-blur-xl flex items-center justify-center p-4 pb-24 sm:pb-4">
+      <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[80vh] sm:max-h-[85vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-stone-200">
+        <div className="flex items-center justify-between p-6 border-b border-stone-200 flex-shrink-0">
           <h2 className="text-xl font-serif font-extralight tracking-[0.15em] text-stone-950 uppercase">
             Select Profile Image
           </h2>
@@ -66,7 +66,7 @@ export function ProfileImageSelector({ images, currentAvatar, onSelect, onClose 
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-6 min-h-0">
           {/* Upload option */}
           <div className="mb-6">
             <label className="flex items-center justify-center gap-3 p-6 border-2 border-dashed border-stone-300 rounded-2xl hover:border-stone-400 hover:bg-stone-50 transition-all cursor-pointer">
@@ -105,7 +105,7 @@ export function ProfileImageSelector({ images, currentAvatar, onSelect, onClose 
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 p-6 border-t border-stone-200">
+        <div className="flex items-center justify-end gap-3 p-6 border-t border-stone-200 bg-white flex-shrink-0">
           <button
             onClick={onClose}
             disabled={isSaving}

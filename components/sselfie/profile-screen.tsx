@@ -1,11 +1,13 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect } from "react"
 import { Camera, Edit2, ImageIcon, Plus, Aperture } from "lucide-react"
 import EditProfileDialog from "./edit-profile-dialog"
 import { ProfileImageSelector } from "@/components/profile-image-selector"
+import { BestWorkSelector } from "./best-work-selector"
 import PersonalBrandSection from "./personal-brand-section"
-import BrandAssetsManager from "./brand-assets-manager"
 import type { User } from "./types"
 import Image from "next/image"
 import UnifiedLoading from "./unified-loading"
@@ -33,11 +35,11 @@ interface ProfileInfo {
 }
 
 interface BestWorkImage {
-  id: number
-  selected_url: string
-  category: string
+  id: string // Changed from number to string to match GalleryImage
+  image_url: string // Changed from selected_url to image_url to match GalleryImage
+  category?: string
   created_at: string
-  is_favorite: boolean
+  is_favorite?: boolean
 }
 
 export default function ProfileScreen({ user, creditBalance }: ProfileScreenProps) {
@@ -49,14 +51,17 @@ export default function ProfileScreen({ user, creditBalance }: ProfileScreenProp
   const [showProfileSelector, setShowProfileSelector] = useState(false)
   const [showBestWorkSelector, setShowBestWorkSelector] = useState(false)
   const [allImages, setAllImages] = useState<BestWorkImage[]>([])
+  const [isBrandSectionExpanded, setIsBrandSectionExpanded] = useState(false)
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
 
   useEffect(() => {
     async function fetchProfileData() {
       try {
-        const [statsRes, infoRes, imagesRes] = await Promise.all([
+        const [statsRes, infoRes, imagesRes, bestWorkRes] = await Promise.all([
           fetch("/api/profile/stats", { credentials: "include" }),
           fetch("/api/profile/info", { credentials: "include" }),
           fetch("/api/images?limit=100", { credentials: "include" }),
+          fetch("/api/profile/best-work", { credentials: "include" }),
         ])
 
         if (statsRes.ok) {
@@ -76,8 +81,11 @@ export default function ProfileScreen({ user, creditBalance }: ProfileScreenProp
           const imagesData = await imagesRes.json()
           const images = imagesData.images || []
           setAllImages(images)
-          const favorites = images.filter((img: BestWorkImage) => img.is_favorite).slice(0, 9)
-          setBestWork(favorites)
+        }
+
+        if (bestWorkRes.ok) {
+          const bestWorkData = await bestWorkRes.json()
+          setBestWork(bestWorkData.bestWork || [])
         }
       } catch (error) {
         console.error("[v0] Error fetching profile data:", error)
@@ -118,16 +126,37 @@ export default function ProfileScreen({ user, creditBalance }: ProfileScreenProp
     setShowProfileSelector(false)
   }
 
-  const handleBestWorkImageSelect = async (imageUrl: string) => {
-    const imagesRes = await fetch("/api/images?limit=100", { credentials: "include" })
-    if (imagesRes.ok) {
-      const imagesData = await imagesRes.json()
-      const images = imagesData.images || []
-      setAllImages(images)
-      const favorites = images.filter((img: BestWorkImage) => img.is_favorite).slice(0, 9)
-      setBestWork(favorites)
+  const handleBestWorkImageSelect = async () => {
+    try {
+      const bestWorkRes = await fetch("/api/profile/best-work", { credentials: "include" })
+      if (bestWorkRes.ok) {
+        const bestWorkData = await bestWorkRes.json()
+        setBestWork(bestWorkData.bestWork || [])
+      }
+    } catch (error) {
+      console.error("[v0] Error refreshing best work:", error)
     }
     setShowBestWorkSelector(false)
+  }
+
+  const handleDragStart = (index: number) => {
+    setDraggedIndex(index)
+  }
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>, index: number) => {
+    e.preventDefault()
+    if (draggedIndex !== null && draggedIndex !== index) {
+      const newBestWork = [...bestWork]
+      const [draggedImage] = newBestWork.splice(draggedIndex, 1)
+      newBestWork.splice(index, 0, draggedImage)
+      setBestWork(newBestWork)
+      setDraggedIndex(index)
+    }
+  }
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null)
+    // TODO: Optionally save the new order to the backend
   }
 
   const displayName = profileInfo?.name || user.email?.split("@")[0] || "User"
@@ -198,19 +227,42 @@ export default function ProfileScreen({ user, creditBalance }: ProfileScreenProp
       </button>
 
       <div className="space-y-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-stone-950 rounded-lg shadow-lg">
-            <Aperture size={18} className="text-white" strokeWidth={2.5} />
+        <button
+          onClick={() => setIsBrandSectionExpanded(!isBrandSectionExpanded)}
+          className="w-full flex items-center justify-between p-4 bg-white/50 backdrop-blur-2xl rounded-xl border border-white/60 shadow-xl shadow-stone-900/10 hover:bg-white/60 transition-all"
+        >
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-stone-950 rounded-lg shadow-lg">
+              <Aperture size={18} className="text-white" strokeWidth={2.5} />
+            </div>
+            <h3 className="text-lg sm:text-xl md:text-2xl font-serif font-extralight tracking-[0.15em] text-stone-950 uppercase">
+              Personal Brand
+            </h3>
           </div>
-          <h3 className="text-lg sm:text-xl font-serif font-extralight tracking-[0.15em] text-stone-950 uppercase">
-            Personal Brand
-          </h3>
-        </div>
-        <PersonalBrandSection userId={user.id || ""} />
-      </div>
-
-      <div className="space-y-4">
-        <BrandAssetsManager />
+          <div className={`transform transition-transform duration-200 ${isBrandSectionExpanded ? "rotate-180" : ""}`}>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 20 20"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              className="text-stone-600"
+            >
+              <path
+                d="M5 7.5L10 12.5L15 7.5"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
+        </button>
+        {isBrandSectionExpanded && (
+          <div className="animate-in slide-in-from-top-2 duration-200">
+            <PersonalBrandSection userId={user.id || ""} />
+          </div>
+        )}
       </div>
 
       <div className="space-y-4 sm:space-y-6">
@@ -230,23 +282,34 @@ export default function ProfileScreen({ user, creditBalance }: ProfileScreenProp
         </div>
         <div className="grid grid-cols-3 gap-2 sm:gap-3 md:gap-4">
           {bestWork.length > 0
-            ? bestWork.map((image) => (
+            ? bestWork.map((image, index) => (
                 <div
                   key={image.id}
-                  className="aspect-square rounded-xl sm:rounded-2xl border border-stone-300/30 overflow-hidden cursor-pointer group transition-all duration-200 hover:scale-[1.02] hover:shadow-lg relative"
+                  draggable
+                  onDragStart={() => handleDragStart(index)}
+                  onDragOver={(e) => handleDragOver(e, index)}
+                  onDragEnd={handleDragEnd}
+                  className={`aspect-square rounded-xl sm:rounded-2xl border border-stone-300/30 overflow-hidden cursor-move group transition-all duration-200 hover:scale-[1.02] hover:shadow-lg relative ${
+                    draggedIndex === index ? "opacity-50 scale-95" : ""
+                  }`}
                 >
                   <Image
-                    src={image.selected_url || "/placeholder.svg"}
+                    src={image.image_url || "/placeholder.svg"}
                     alt={image.category || "Generated image"}
                     fill
-                    className="object-cover object-top"
+                    className="object-cover object-top pointer-events-none"
                     loading="lazy"
                   />
+                  <div className="absolute inset-0 bg-stone-950/0 group-hover:bg-stone-950/10 transition-all flex items-center justify-center">
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg">
+                      <p className="text-[10px] text-stone-600 font-light">Drag to reorder</p>
+                    </div>
+                  </div>
                 </div>
               ))
-            : [1, 2, 3, 4, 5, 6].map((i) => (
+            : Array.from({ length: 9 }).map((_, i) => (
                 <div
-                  key={i}
+                  key={`empty-${i}`}
                   onClick={() => setShowBestWorkSelector(true)}
                   className="aspect-square bg-stone-200/30 rounded-xl sm:rounded-2xl border border-stone-300/30 flex items-center justify-center cursor-pointer hover:bg-stone-200/50 transition-colors"
                 >
@@ -277,7 +340,7 @@ export default function ProfileScreen({ user, creditBalance }: ProfileScreenProp
         <ProfileImageSelector
           images={allImages.map((img) => ({
             id: img.id.toString(),
-            image_url: img.selected_url,
+            image_url: img.image_url, // Changed from selected_url to image_url
             prompt: img.category || "",
             is_favorite: img.is_favorite || false,
           }))}
@@ -288,16 +351,11 @@ export default function ProfileScreen({ user, creditBalance }: ProfileScreenProp
       )}
 
       {showBestWorkSelector && (
-        <ProfileImageSelector
-          images={allImages.map((img) => ({
-            id: img.id.toString(),
-            image_url: img.selected_url,
-            prompt: img.category || "",
-            is_favorite: img.is_favorite || false,
-          }))}
-          currentAvatar={displayAvatar}
-          onSelect={handleBestWorkImageSelect}
+        <BestWorkSelector
+          images={allImages}
+          currentBestWork={bestWork.map((img) => img.id)}
           onClose={() => setShowBestWorkSelector(false)}
+          onSave={handleBestWorkImageSelect}
         />
       )}
     </div>

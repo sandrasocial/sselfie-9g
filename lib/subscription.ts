@@ -14,7 +14,6 @@ export async function getUserSubscription(userId: string) {
         product_type,
         status,
         stripe_subscription_id,
-        stripe_customer_id,
         current_period_start,
         current_period_end,
         created_at
