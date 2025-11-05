@@ -161,20 +161,62 @@ export async function POST(request: NextRequest) {
               const productName = productType === "sselfie_studio_membership" ? "Studio Membership" : "Subscription"
 
               const emailContent = generateWelcomeEmail({
-                email: customerEmail,
-                resetLink: passwordSetupLink,
+                customerName: customerEmail.split("@")[0], // Use email prefix as name
+                customerEmail: customerEmail,
+                passwordSetupUrl: passwordSetupLink,
                 creditsGranted: creditsGranted,
-                subscriptionTier: productName,
+                packageName: productName,
               })
 
-              await sendEmail({
+              const emailResult = await sendEmail({
                 to: customerEmail,
-                subject: "Welcome to SSELFIE! Set up your account",
+                subject: "Welcome to SSelfie! Set up your account",
                 html: emailContent.html,
                 text: emailContent.text,
+                tags: ["welcome", "account-setup"],
               })
 
-              console.log(`[v0] Welcome email sent to ${customerEmail}`)
+              if (emailResult.success) {
+                console.log(`[v0] Welcome email sent to ${customerEmail}, message ID: ${emailResult.messageId}`)
+
+                // Store email delivery record
+                await sql`
+                  INSERT INTO email_logs (
+                    user_email,
+                    email_type,
+                    resend_message_id,
+                    status,
+                    sent_at
+                  )
+                  VALUES (
+                    ${customerEmail},
+                    'welcome',
+                    ${emailResult.messageId},
+                    'sent',
+                    NOW()
+                  )
+                `
+              } else {
+                console.error(`[v0] Failed to send welcome email to ${customerEmail}: ${emailResult.error}`)
+
+                // Store failed email record
+                await sql`
+                  INSERT INTO email_logs (
+                    user_email,
+                    email_type,
+                    status,
+                    error_message,
+                    sent_at
+                  )
+                  VALUES (
+                    ${customerEmail},
+                    'welcome',
+                    'failed',
+                    ${emailResult.error},
+                    NOW()
+                  )
+                `
+              }
 
               await stripe.checkout.sessions.update(session.id, {
                 metadata: {
