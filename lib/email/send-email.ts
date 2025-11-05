@@ -1,5 +1,6 @@
 // Email sending utilities using Resend
 import { Resend } from "resend"
+import { checkEmailRateLimit } from "@/lib/rate-limit"
 
 export interface EmailOptions {
   to: string | string[]
@@ -79,6 +80,17 @@ async function sendEmailWithRetry(
 export async function sendEmail(
   options: EmailOptions,
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  const recipient = Array.isArray(options.to) ? options.to[0] : options.to
+  const rateLimit = await checkEmailRateLimit(recipient)
+
+  if (!rateLimit.success) {
+    console.log(`[v0] Email rate limit exceeded for ${recipient}, skipping send`)
+    return {
+      success: false,
+      error: `Rate limit exceeded. Please try again in ${Math.ceil((rateLimit.reset - Date.now()) / 1000 / 60)} minutes.`,
+    }
+  }
+
   return sendEmailWithRetry(options, 3)
 }
 

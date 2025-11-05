@@ -3,9 +3,11 @@
 import { stripe } from "@/lib/stripe"
 import { getProductById } from "@/lib/products"
 
+const BETA_DISCOUNT_COUPON_ID = process.env.STRIPE_BETA_COUPON_ID || "BETA50" // 50% off coupon
+
 /**
  * Create a Stripe checkout session for landing page (pre-authentication)
- * Updated to use new pricing configuration
+ * Updated to use new pricing configuration with beta discount
  */
 export async function createLandingCheckoutSession(productId: string) {
   const product = getProductById(productId)
@@ -21,6 +23,8 @@ export async function createLandingCheckoutSession(productId: string) {
   // Determine if this is a subscription or one-time payment
   const isSubscription = product.type === "sselfie_studio_membership"
 
+  const discountedPrice = Math.round(product.priceInCents * 0.5) // 50% off
+
   const session = await stripe.checkout.sessions.create({
     mode: isSubscription ? "subscription" : "payment",
     line_items: [
@@ -29,9 +33,9 @@ export async function createLandingCheckoutSession(productId: string) {
           currency: "usd",
           product_data: {
             name: product.name,
-            description: product.description,
+            description: `${product.description} • BETA PRICING - 50% OFF`,
           },
-          unit_amount: product.priceInCents,
+          unit_amount: discountedPrice, // Apply 50% discount
           ...(isSubscription && {
             recurring: {
               interval: "month",
@@ -43,7 +47,7 @@ export async function createLandingCheckoutSession(productId: string) {
     ],
     success_url: `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${baseUrl}/checkout/cancel`,
-    allow_promotion_codes: true,
+    allow_promotion_codes: true, // Still allow additional promo codes
     billing_address_collection: "auto",
     ...(isSubscription && {
       subscription_data: {
@@ -52,6 +56,7 @@ export async function createLandingCheckoutSession(productId: string) {
           product_type: product.type,
           credits: product.credits?.toString() || "0",
           source: "landing_page",
+          beta_discount: "50_percent",
         },
       },
     }),
@@ -60,6 +65,7 @@ export async function createLandingCheckoutSession(productId: string) {
       product_type: product.type,
       credits: product.credits?.toString() || "0",
       source: "landing_page",
+      beta_discount: "50_percent",
     },
   })
 

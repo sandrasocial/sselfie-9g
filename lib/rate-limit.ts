@@ -29,6 +29,96 @@ export async function checkVideoRateLimit(userId: string): Promise<RateLimitResu
 }
 
 /**
+ * Check and increment rate limit for webhook events
+ */
+export async function checkWebhookRateLimit(identifier: string): Promise<RateLimitResult> {
+  try {
+    const redis = getRedisClient()
+    const config = RateLimits.webhook
+    const key = CacheKeys.rateLimitWebhook(identifier)
+
+    const current = (await redis.get<number>(key)) || 0
+    const ttl = await redis.ttl(key)
+    const reset = ttl > 0 ? Date.now() + ttl * 1000 : Date.now() + config.window * 1000
+
+    if (current >= config.max) {
+      console.log(`[v0] Webhook rate limit exceeded:`, { identifier, current, max: config.max })
+      return {
+        success: false,
+        limit: config.max,
+        remaining: 0,
+        reset,
+      }
+    }
+
+    const newCount = await redis.incr(key)
+    if (newCount === 1) {
+      await redis.expire(key, config.window)
+    }
+
+    return {
+      success: true,
+      limit: config.max,
+      remaining: config.max - newCount,
+      reset,
+    }
+  } catch (error) {
+    console.error("[v0] Error checking webhook rate limit (allowing request):", error)
+    return {
+      success: true,
+      limit: RateLimits.webhook.max,
+      remaining: RateLimits.webhook.max - 1,
+      reset: Date.now() + RateLimits.webhook.window * 1000,
+    }
+  }
+}
+
+/**
+ * Check and increment rate limit for email sending
+ */
+export async function checkEmailRateLimit(email: string): Promise<RateLimitResult> {
+  try {
+    const redis = getRedisClient()
+    const config = RateLimits.email
+    const key = CacheKeys.rateLimitEmail(email)
+
+    const current = (await redis.get<number>(key)) || 0
+    const ttl = await redis.ttl(key)
+    const reset = ttl > 0 ? Date.now() + ttl * 1000 : Date.now() + config.window * 1000
+
+    if (current >= config.max) {
+      console.log(`[v0] Email rate limit exceeded:`, { email, current, max: config.max })
+      return {
+        success: false,
+        limit: config.max,
+        remaining: 0,
+        reset,
+      }
+    }
+
+    const newCount = await redis.incr(key)
+    if (newCount === 1) {
+      await redis.expire(key, config.window)
+    }
+
+    return {
+      success: true,
+      limit: config.max,
+      remaining: config.max - newCount,
+      reset,
+    }
+  } catch (error) {
+    console.error("[v0] Error checking email rate limit (allowing request):", error)
+    return {
+      success: true,
+      limit: RateLimits.email.max,
+      remaining: RateLimits.email.max - 1,
+      reset: Date.now() + RateLimits.email.window * 1000,
+    }
+  }
+}
+
+/**
  * Generic rate limit checker
  */
 async function checkRateLimit(userId: string, type: "training" | "generation" | "video"): Promise<RateLimitResult> {

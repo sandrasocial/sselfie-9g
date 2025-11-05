@@ -30,6 +30,8 @@ export const CacheKeys = {
   rateLimitTraining: (userId: string) => `rate:limit:${userId}:training`,
   rateLimitGeneration: (userId: string) => `rate:limit:${userId}:generation`,
   rateLimitVideo: (userId: string) => `rate:limit:${userId}:video`,
+  rateLimitWebhook: (identifier: string) => `rate:limit:webhook:${identifier}`,
+  rateLimitEmail: (email: string) => `rate:limit:email:${email}`,
 }
 
 // Cache TTL (Time To Live) in seconds
@@ -52,6 +54,14 @@ export const RateLimits = {
   },
   video: {
     max: 10, // 10 video generations per hour
+    window: 3600,
+  },
+  webhook: {
+    max: 100, // 100 webhook events per minute per customer
+    window: 60,
+  },
+  email: {
+    max: 5, // 5 emails per hour per recipient
     window: 3600,
   },
 }

@@ -6,7 +6,8 @@ import { createAdminClient } from "@/lib/supabase/admin"
 import { getOrCreateNeonUser } from "@/lib/user-mapping"
 import { sendEmail } from "@/lib/email/send-email"
 import { generateWelcomeEmail } from "@/lib/email/templates/welcome-email"
-import crypto from "crypto"
+import { checkWebhookRateLimit } from "@/lib/rate-limit"
+import { logWebhookError, alertWebhookError, isCriticalError } from "@/lib/webhook-monitoring"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -25,6 +26,14 @@ export async function POST(request: NextRequest) {
   } catch (err: any) {
     console.error("[v0] Webhook signature verification failed:", err.message)
     return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 })
+  }
+
+  const customerId = event.data.object.customer || event.data.object.id
+  const rateLimit = await checkWebhookRateLimit(customerId)
+
+  if (!rateLimit.success) {
+    console.log(`[v0] Webhook rate limit exceeded for customer ${customerId}`)
+    return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 })
   }
 
   console.log("[v0] Stripe webhook event:", event.type)
@@ -117,53 +126,43 @@ export async function POST(request: NextRequest) {
             console.log(`[v0] New subscription purchase from ${customerEmail} - creating account...`)
 
             try {
-              const tempPassword = crypto.randomBytes(32).toString("hex")
-              const supabaseAdmin = createAdminClient()
-
-              const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-                email: customerEmail,
-                password: tempPassword,
-                email_confirm: true, // Auto-confirm since they paid via Stripe
-                user_metadata: {
-                  created_via: "stripe_subscription",
-                  stripe_customer_id: session.customer,
-                },
-              })
-
-              if (authError || !authData.user) {
-                console.error(`[v0] Error creating auth user for ${customerEmail}:`, authError)
-                throw authError || new Error("No user data returned")
-              }
-
-              console.log(`[v0] Created Supabase auth user for ${customerEmail}`)
-
-              const neonUser = await getOrCreateNeonUser(authData.user.id, customerEmail)
-              console.log(`[v0] Created Neon user for ${customerEmail}`)
-
               const productionUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
 
-              const { data: resetData, error: resetError } = await supabaseAdmin.auth.admin.generateLink({
-                type: "recovery",
-                email: customerEmail,
-                options: {
-                  redirectTo: `${productionUrl}/studio`,
-                },
-              })
+              // Invite user instead of creating with password - this prevents the generic confirmation email
+              const supabaseAdmin = createAdminClient()
 
-              if (resetError) {
-                console.error(`[v0] Error generating reset link:`, resetError)
+              const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
+                customerEmail,
+                {
+                  redirectTo: `${productionUrl}/auth/setup-password`,
+                  data: {
+                    created_via: "stripe_subscription",
+                    stripe_customer_id: session.customer,
+                  },
+                },
+              )
+
+              if (inviteError || !inviteData.user) {
+                console.error(`[v0] Error inviting user ${customerEmail}:`, inviteError)
+                throw inviteError || new Error("No user data returned")
               }
 
-              let passwordSetupLink = resetData?.properties?.action_link || `${productionUrl}/auth/reset-password`
+              console.log(`[v0] Invited Supabase auth user for ${customerEmail}`)
+
+              const neonUser = await getOrCreateNeonUser(inviteData.user.id, customerEmail)
+              console.log(`[v0] Created Neon user for ${customerEmail}`)
+
+              // Extract token from invite link for our custom email
+              let passwordSetupLink = inviteData.properties?.action_link || `${productionUrl}/auth/setup-password`
 
               // Replace any localhost or Supabase URLs with production domain
               if (passwordSetupLink.includes("localhost") || passwordSetupLink.includes("supabase.co")) {
                 const url = new URL(passwordSetupLink)
                 const token = url.searchParams.get("token")
-                const type = url.searchParams.get("type")
+                const type = url.searchParams.get("type") || "invite"
 
-                if (token && type) {
-                  passwordSetupLink = `${productionUrl}/auth/confirm?token=${token}&type=${type}&redirect_to=/studio`
+                if (token) {
+                  passwordSetupLink = `${productionUrl}/auth/confirm?token=${token}&type=${type}&redirect_to=/auth/setup-password`
                 }
               }
 
@@ -191,7 +190,6 @@ export async function POST(request: NextRequest) {
               if (emailResult.success) {
                 console.log(`[v0] Welcome email sent to ${customerEmail}, message ID: ${emailResult.messageId}`)
 
-                // Store email delivery record
                 await sql`
                   INSERT INTO email_logs (
                     user_email,
@@ -211,7 +209,6 @@ export async function POST(request: NextRequest) {
               } else {
                 console.error(`[v0] Failed to send welcome email to ${customerEmail}: ${emailResult.error}`)
 
-                // Store failed email record
                 await sql`
                   INSERT INTO email_logs (
                     user_email,
@@ -429,6 +426,23 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ received: true })
   } catch (error: any) {
     console.error("[v0] Webhook handler error:", error)
+
+    const webhookError = {
+      eventType: event.type,
+      errorMessage: error.message || "Unknown error",
+      errorStack: error.stack,
+      eventData: event.data.object,
+      timestamp: new Date(),
+    }
+
+    // Log error to database
+    await logWebhookError(webhookError)
+
+    // Send alert if critical
+    if (isCriticalError(event.type, error.message)) {
+      await alertWebhookError(webhookError)
+    }
+
     return NextResponse.json({ error: "Webhook handler failed" }, { status: 500 })
   }
 }

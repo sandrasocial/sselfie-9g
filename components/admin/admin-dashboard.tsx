@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Loader2 } from "lucide-react"
+import { SystemHealthMonitor } from "./system-health-monitor"
+import { BetaCountdown } from "./beta-countdown"
 
 interface DashboardStats {
   totalUsers: number
@@ -176,6 +178,14 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
             </div>
           </div>
         )}
+
+        <div className="mb-12">
+          <BetaCountdown />
+        </div>
+
+        <div className="mb-12">
+          <SystemHealthMonitor />
+        </div>
 
         {/* Quick Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
