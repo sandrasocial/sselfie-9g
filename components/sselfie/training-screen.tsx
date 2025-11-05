@@ -97,13 +97,16 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
     isTraining && modelId ? `/api/training/progress?modelId=${modelId}` : null,
     fetcher,
     {
-      refreshInterval: 30000, // Poll every 30 seconds when training
+      refreshInterval: isTraining ? 30000 : 0, // Only poll every 30 seconds when training, stop otherwise
       revalidateOnFocus: false,
+      revalidateOnReconnect: false, // Don't refetch on reconnect
     },
   )
 
   console.log("[v0] Training status data:", trainingStatus)
-  console.log("[v0] Training progress data:", progressData)
+  if (isTraining) {
+    console.log("[v0] Training progress data:", progressData)
+  }
   if (progressData?.debug) {
     console.log("[v0] Progress API debug info:", progressData.debug)
   }

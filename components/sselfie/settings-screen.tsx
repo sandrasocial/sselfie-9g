@@ -1,12 +1,33 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Bell, Aperture, Shield, User, ChevronRight, LogOut, Mail, Calendar, CreditCard, Package } from "lucide-react"
+import {
+  Bell,
+  Aperture,
+  Shield,
+  User,
+  ChevronRight,
+  LogOut,
+  Mail,
+  Calendar,
+  CreditCard,
+  Package,
+  ExternalLink,
+} from "lucide-react"
 import { useRouter } from "next/navigation"
 import BrandAssetsManager from "./brand-assets-manager"
 
 interface SettingsScreenProps {
   onBack: () => void
+  user?: {
+    name: string
+    avatar: string
+    membershipTier: string
+    followers: string
+    following: string
+    posts: string
+  }
+  creditBalance?: number
 }
 
 interface UserInfo {
@@ -16,10 +37,19 @@ interface UserInfo {
   memberSince: string
 }
 
-export default function SettingsScreen({ onBack }: SettingsScreenProps) {
+interface SubscriptionInfo {
+  product_type: string
+  status: string
+  current_period_end?: string
+  stripe_subscription_id?: string
+}
+
+export default function SettingsScreen({ onBack, user, creditBalance }: SettingsScreenProps) {
   const router = useRouter()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null)
+  const [subscriptionInfo, setSubscriptionInfo] = useState<SubscriptionInfo | null>(null)
+  const [isLoadingPortal, setIsLoadingPortal] = useState(false)
 
   const [emailNotifications, setEmailNotifications] = useState(true)
   const [mayaUpdates, setMayaUpdates] = useState(true)
@@ -29,6 +59,7 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
 
   useEffect(() => {
     fetchUserInfo()
+    fetchSubscriptionInfo()
     fetchSettings()
   }, [])
 
@@ -43,6 +74,22 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
       }
     } catch (error) {
       console.error("[v0] Error fetching user info:", error)
+    }
+  }
+
+  const fetchSubscriptionInfo = async () => {
+    try {
+      const response = await fetch("/api/profile/info", {
+        credentials: "include",
+      })
+      if (response.ok) {
+        const data = await response.json()
+        if (data.subscription) {
+          setSubscriptionInfo(data.subscription)
+        }
+      }
+    } catch (error) {
+      console.error("[v0] Error fetching subscription info:", error)
     }
   }
 
@@ -71,7 +118,6 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
       }
     } catch (error) {
       console.error("[v0] Error fetching settings:", error)
-      // Continue with default values
     }
   }
 
@@ -89,6 +135,29 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
       }
     } catch (error) {
       console.error("[v0] Error updating setting:", error)
+    }
+  }
+
+  const handleManageSubscription = async () => {
+    setIsLoadingPortal(true)
+    try {
+      const response = await fetch("/api/stripe/create-portal-session", {
+        method: "POST",
+        credentials: "include",
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        window.location.href = data.url
+      } else {
+        console.error("[v0] Failed to create portal session")
+        alert("Unable to open subscription management. Please try again.")
+      }
+    } catch (error) {
+      console.error("[v0] Error opening portal:", error)
+      alert("Unable to open subscription management. Please try again.")
+    } finally {
+      setIsLoadingPortal(false)
     }
   }
 
@@ -119,6 +188,17 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
       year: "numeric",
     })
   }
+
+  const formatRenewalDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    })
+  }
+
+  const isStudioMembership = subscriptionInfo?.product_type === "sselfie_studio_membership"
+  const hasActiveSubscription = subscriptionInfo?.status === "active"
 
   return (
     <div className="space-y-8 pb-4">
@@ -175,6 +255,60 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
                   <p className="text-sm font-medium text-stone-950">{formatDate(userInfo.memberSince)}</p>
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {hasActiveSubscription && (
+          <div className="bg-white/50 backdrop-blur-2xl rounded-xl sm:rounded-[1.75rem] p-4 sm:p-6 md:p-8 border border-white/60 shadow-xl shadow-stone-900/10">
+            <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
+              <div className="p-2.5 sm:p-3.5 bg-stone-950 rounded-lg sm:rounded-[1.125rem] shadow-lg">
+                <CreditCard size={18} className="text-white" strokeWidth={2.5} />
+              </div>
+              <h3 className="text-base sm:text-lg md:text-xl font-bold text-stone-950">Subscription Management</h3>
+            </div>
+
+            <div className="space-y-4">
+              {isStudioMembership && subscriptionInfo.current_period_end && (
+                <div className="flex items-center gap-3 py-3">
+                  <Calendar size={16} className="text-stone-500" />
+                  <div>
+                    <p className="text-xs text-stone-500 uppercase tracking-wider">Next Billing Date</p>
+                    <p className="text-sm font-medium text-stone-950">
+                      {formatRenewalDate(subscriptionInfo.current_period_end)}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {!isStudioMembership && subscriptionInfo.current_period_end && (
+                <div className="flex items-center gap-3 py-3">
+                  <Calendar size={16} className="text-stone-500" />
+                  <div>
+                    <p className="text-xs text-stone-500 uppercase tracking-wider">Session Expires</p>
+                    <p className="text-sm font-medium text-stone-950">
+                      {formatRenewalDate(subscriptionInfo.current_period_end)}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {isStudioMembership && (
+                <button
+                  onClick={handleManageSubscription}
+                  disabled={isLoadingPortal}
+                  className="w-full flex items-center justify-center gap-2 text-sm tracking-[0.15em] uppercase font-light border rounded-2xl py-5 transition-colors hover:text-stone-950 hover:bg-stone-100/30 min-h-[56px] text-stone-600 border-stone-300/40 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ExternalLink size={16} />
+                  {isLoadingPortal ? "Opening..." : "Manage Subscription"}
+                </button>
+              )}
+
+              <p className="text-xs text-stone-500 text-center">
+                {isStudioMembership
+                  ? "Update payment method, view billing history, or cancel subscription"
+                  : "Manage your session details and billing information"}
+              </p>
             </div>
           </div>
         )}
@@ -262,11 +396,11 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
         </div>
       </div>
 
-      <div className="pt-6 border-t border-stone-200/30">
+      <div className="pt-6 border-t border-stone-200/30 space-y-3">
         <button
           onClick={handleLogout}
           disabled={isLoggingOut}
-          className="w-full text-sm tracking-[0.15em] uppercase font-light border rounded-2xl py-5 transition-colors hover:text-stone-950 hover:bg-stone-100/30 min-h-[56px] text-stone-600 border-stone-300/40 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="w-full flex items-center justify-center gap-2 text-sm tracking-[0.15em] uppercase font-light border rounded-2xl py-5 transition-colors hover:text-stone-950 hover:bg-stone-100/30 min-h-[56px] text-stone-600 border-stone-300/40 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <LogOut size={16} />
           {isLoggingOut ? "Signing Out..." : "Sign Out"}

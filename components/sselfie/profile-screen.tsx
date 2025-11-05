@@ -36,7 +36,8 @@ interface ProfileInfo {
 
 interface BestWorkImage {
   id: string // Changed from number to string to match GalleryImage
-  image_url: string // Changed from selected_url to image_url to match GalleryImage
+  image_id: string // Added - This is the actual image ID (ai_123, gen_456)
+  image_url: string
   category?: string
   created_at: string
   is_favorite?: boolean
@@ -53,6 +54,7 @@ export default function ProfileScreen({ user, creditBalance }: ProfileScreenProp
   const [allImages, setAllImages] = useState<BestWorkImage[]>([])
   const [isBrandSectionExpanded, setIsBrandSectionExpanded] = useState(false)
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
+  const [isSavingBestWork, setIsSavingBestWork] = useState(false)
 
   useEffect(() => {
     async function fetchProfileData() {
@@ -128,6 +130,7 @@ export default function ProfileScreen({ user, creditBalance }: ProfileScreenProp
 
   const handleBestWorkImageSelect = async () => {
     try {
+      setIsSavingBestWork(true)
       const bestWorkRes = await fetch("/api/profile/best-work", { credentials: "include" })
       if (bestWorkRes.ok) {
         const bestWorkData = await bestWorkRes.json()
@@ -135,6 +138,8 @@ export default function ProfileScreen({ user, creditBalance }: ProfileScreenProp
       }
     } catch (error) {
       console.error("[v0] Error refreshing best work:", error)
+    } finally {
+      setIsSavingBestWork(false)
     }
     setShowBestWorkSelector(false)
   }
@@ -154,9 +159,28 @@ export default function ProfileScreen({ user, creditBalance }: ProfileScreenProp
     }
   }
 
-  const handleDragEnd = () => {
+  const handleDragEnd = async () => {
     setDraggedIndex(null)
-    // TODO: Optionally save the new order to the backend
+    if (bestWork.length > 0) {
+      try {
+        setIsSavingBestWork(true)
+        const imageIds = bestWork.map((img) => img.image_id)
+        const response = await fetch("/api/profile/best-work", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ imageIds }),
+        })
+
+        if (!response.ok) {
+          console.error("[v0] Failed to save best work order")
+        }
+      } catch (error) {
+        console.error("[v0] Error saving best work order:", error)
+      } finally {
+        setIsSavingBestWork(false)
+      }
+    }
   }
 
   const displayName = profileInfo?.name || user.email?.split("@")[0] || "User"
@@ -275,16 +299,25 @@ export default function ProfileScreen({ user, creditBalance }: ProfileScreenProp
             variant="ghost"
             size="sm"
             className="text-xs text-stone-600 hover:text-stone-950"
+            disabled={isSavingBestWork}
           >
             <Plus size={14} className="mr-1" />
             Select Photos
           </Button>
         </div>
+
+        {isSavingBestWork && (
+          <div className="flex items-center justify-center gap-2 py-2">
+            <div className="w-4 h-4 border-2 border-stone-300 border-t-stone-950 rounded-full animate-spin" />
+            <p className="text-xs text-stone-600">Saving...</p>
+          </div>
+        )}
+
         <div className="grid grid-cols-3 gap-2 sm:gap-3 md:gap-4">
           {bestWork.length > 0
             ? bestWork.map((image, index) => (
                 <div
-                  key={image.id}
+                  key={image.image_id} // Use image_id as key for stability
                   draggable
                   onDragStart={() => handleDragStart(index)}
                   onDragOver={(e) => handleDragOver(e, index)}
@@ -301,8 +334,8 @@ export default function ProfileScreen({ user, creditBalance }: ProfileScreenProp
                     loading="lazy"
                   />
                   <div className="absolute inset-0 bg-stone-950/0 group-hover:bg-stone-950/10 transition-all flex items-center justify-center">
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg">
-                      <p className="text-[10px] text-stone-600 font-light">Drag to reorder</p>
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-lg">
+                      <p className="text-xs text-stone-600 font-medium">#{index + 1}</p>
                     </div>
                   </div>
                 </div>
@@ -311,9 +344,18 @@ export default function ProfileScreen({ user, creditBalance }: ProfileScreenProp
                 <div
                   key={`empty-${i}`}
                   onClick={() => setShowBestWorkSelector(true)}
-                  className="aspect-square bg-stone-200/30 rounded-xl sm:rounded-2xl border border-stone-300/30 flex items-center justify-center cursor-pointer hover:bg-stone-200/50 transition-colors"
+                  className="aspect-square bg-stone-200/30 rounded-xl sm:rounded-2xl border border-stone-300/30 flex items-center justify-center cursor-pointer hover:bg-stone-200/50 transition-colors group"
                 >
-                  <Camera size={20} strokeWidth={1.5} className="text-stone-500" />
+                  <div className="flex flex-col items-center gap-1">
+                    <Camera
+                      size={20}
+                      strokeWidth={1.5}
+                      className="text-stone-400 group-hover:text-stone-600 transition-colors"
+                    />
+                    <span className="text-[10px] text-stone-400 group-hover:text-stone-600 transition-colors font-light">
+                      {i + 1}
+                    </span>
+                  </div>
                 </div>
               ))}
         </div>

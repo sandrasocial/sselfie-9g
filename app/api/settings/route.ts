@@ -1,14 +1,12 @@
 import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
-import { neon } from "@neondatabase/serverless"
-
-const sql = neon(process.env.DATABASE_URL!)
+import { getUserByAuthId } from "@/lib/user-mapping"
+import { sql } from "@/lib/neon"
 
 export async function GET() {
   try {
     console.log("[v0] Settings API: GET request")
 
-    // Authenticate user
     const supabase = await createServerClient()
     const {
       data: { user },
@@ -22,17 +20,13 @@ export async function GET() {
 
     console.log("[v0] Settings API: Auth user ID:", user.id)
 
-    // Get Neon user ID
-    const userResult = await sql`
-      SELECT id FROM users WHERE stack_auth_id = ${user.id}
-    `
-
-    if (userResult.length === 0) {
+    const neonUser = await getUserByAuthId(user.id)
+    if (!neonUser) {
       console.log("[v0] Settings API: User not found in Neon")
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    const neonUserId = userResult[0].id
+    const neonUserId = neonUser.id
     console.log("[v0] Settings API: Neon user ID:", neonUserId)
 
     // Get user settings from maya_profile
@@ -67,7 +61,6 @@ export async function POST(request: Request) {
     const body = await request.json()
     console.log("[v0] Settings API: Request body:", body)
 
-    // Authenticate user
     const supabase = await createServerClient()
     const {
       data: { user },
@@ -81,17 +74,13 @@ export async function POST(request: Request) {
 
     console.log("[v0] Settings API: Auth user ID:", user.id)
 
-    // Get Neon user ID
-    const userResult = await sql`
-      SELECT id FROM users WHERE stack_auth_id = ${user.id}
-    `
-
-    if (userResult.length === 0) {
+    const neonUser = await getUserByAuthId(user.id)
+    if (!neonUser) {
       console.log("[v0] Settings API: User not found in Neon")
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    const neonUserId = userResult[0].id
+    const neonUserId = neonUser.id
     console.log("[v0] Settings API: Neon user ID:", neonUserId)
 
     // Check if maya_profile exists

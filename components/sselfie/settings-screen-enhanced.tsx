@@ -1,7 +1,20 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Bell, Aperture, Shield, User, LogOut, Mail, Calendar, CreditCard, Palette, ImageIcon } from "lucide-react"
+import {
+  Bell,
+  Aperture,
+  Shield,
+  User,
+  LogOut,
+  Mail,
+  Calendar,
+  CreditCard,
+  Palette,
+  ImageIcon,
+  ExternalLink,
+  Loader2,
+} from "lucide-react"
 import { useRouter } from "next/navigation"
 import PersonalBrandSection from "./personal-brand-section"
 import BrandAssetsManager from "./brand-assets-manager"
@@ -17,11 +30,17 @@ interface UserInfo {
   name: string
   plan: string
   memberSince: string
+  subscription?: {
+    status: string
+    currentPeriodEnd: string
+    productType: string
+  }
 }
 
 export default function SettingsScreen({ user, creditBalance }: SettingsScreenProps) {
   const router = useRouter()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [isLoadingPortal, setIsLoadingPortal] = useState(false)
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null)
 
   const [emailNotifications, setEmailNotifications] = useState(true)
@@ -88,6 +107,29 @@ export default function SettingsScreen({ user, creditBalance }: SettingsScreenPr
     }
   }
 
+  const handleManageSubscription = async () => {
+    setIsLoadingPortal(true)
+    try {
+      const response = await fetch("/api/stripe/create-portal-session", {
+        method: "POST",
+        credentials: "include",
+      })
+
+      if (response.ok) {
+        const { url } = await response.json()
+        window.location.href = url
+      } else {
+        console.error("[v0] Failed to create portal session")
+        alert("Unable to open subscription management. Please try again.")
+      }
+    } catch (error) {
+      console.error("[v0] Error opening portal:", error)
+      alert("Unable to open subscription management. Please try again.")
+    } finally {
+      setIsLoadingPortal(false)
+    }
+  }
+
   const handleLogout = async () => {
     setIsLoggingOut(true)
     try {
@@ -112,6 +154,20 @@ export default function SettingsScreen({ user, creditBalance }: SettingsScreenPr
       month: "long",
       year: "numeric",
     })
+  }
+
+  const formatRenewalDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    })
+  }
+
+  const getPlanDisplayName = (plan: string) => {
+    if (plan === "sselfie_studio_membership") return "Studio Membership"
+    if (plan === "one_time_session") return "One-Time Session"
+    return "Free"
   }
 
   return (
@@ -144,9 +200,16 @@ export default function SettingsScreen({ user, creditBalance }: SettingsScreenPr
               </div>
               <div className="flex items-center gap-3 py-3">
                 <CreditCard size={16} className="text-stone-500" />
-                <div>
+                <div className="flex-1">
                   <p className="text-xs text-stone-500 uppercase tracking-wider">Plan</p>
-                  <p className="text-sm font-medium text-stone-950 uppercase">{userInfo.plan}</p>
+                  <p className="text-sm font-medium text-stone-950 uppercase">{getPlanDisplayName(userInfo.plan)}</p>
+                  {userInfo.subscription && userInfo.subscription.status === "active" && (
+                    <p className="text-xs text-stone-500 mt-1">
+                      {userInfo.subscription.productType === "sselfie_studio_membership"
+                        ? `Renews ${formatRenewalDate(userInfo.subscription.currentPeriodEnd)}`
+                        : `Expires ${formatRenewalDate(userInfo.subscription.currentPeriodEnd)}`}
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-3 py-3">
@@ -156,6 +219,31 @@ export default function SettingsScreen({ user, creditBalance }: SettingsScreenPr
                   <p className="text-sm font-medium text-stone-950">{formatDate(userInfo.memberSince)}</p>
                 </div>
               </div>
+
+              {userInfo.subscription && userInfo.subscription.productType === "sselfie_studio_membership" && (
+                <div className="pt-4 border-t border-stone-200/30">
+                  <button
+                    onClick={handleManageSubscription}
+                    disabled={isLoadingPortal}
+                    className="w-full text-sm tracking-[0.15em] uppercase font-light border rounded-2xl py-4 transition-colors hover:text-stone-950 hover:bg-stone-100/30 min-h-[52px] text-stone-600 border-stone-300/40 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {isLoadingPortal ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      <>
+                        <ExternalLink size={16} />
+                        Manage Subscription
+                      </>
+                    )}
+                  </button>
+                  <p className="text-xs text-stone-500 text-center mt-2">
+                    Update payment method, view billing history, or cancel subscription
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}
