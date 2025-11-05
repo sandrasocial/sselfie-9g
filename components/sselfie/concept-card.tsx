@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Check, Sparkles } from "lucide-react"
+import { Check } from "lucide-react"
 import InstagramPhotoCard from "./instagram-photo-card"
 import InstagramReelCard from "./instagram-reel-card"
 import type { ConceptData } from "./types"
@@ -254,21 +254,21 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
         <div className="mt-3">
           <button
             onClick={handleGenerate}
-            className="group relative w-full bg-stone-950 text-white px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-300 hover:shadow-xl hover:shadow-stone-950/30 hover:scale-[1.02] active:scale-[0.98] min-h-[44px] flex items-center justify-center gap-2"
+            className="group relative w-full bg-stone-950 text-white px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-300 hover:shadow-xl hover:shadow-stone-900/30 hover:scale-[1.02] active:scale-[0.98] min-h-[44px] flex items-center justify-center"
           >
-            <Sparkles size={14} className="animate-pulse" />
             <span>Create Photo</span>
           </button>
         </div>
       )}
 
       {isGenerating && (
-        <div className="mt-3 flex flex-col items-center justify-center py-4 space-y-2">
-          <div className="relative w-8 h-8">
-            <div className="absolute inset-0 rounded-full bg-stone-200/20 animate-ping"></div>
-            <div className="relative w-8 h-8 rounded-full bg-stone-950 animate-spin border-4 border-transparent border-t-white shadow-lg shadow-stone-900/30"></div>
+        <div className="mt-3 flex flex-col items-center justify-center py-6 space-y-3">
+          <div className="flex gap-1.5">
+            <div className="w-2 h-2 rounded-full bg-stone-950 animate-bounce"></div>
+            <div className="w-2 h-2 rounded-full bg-stone-950 animate-bounce" style={{ animationDelay: "0.2s" }}></div>
+            <div className="w-2 h-2 rounded-full bg-stone-950 animate-bounce" style={{ animationDelay: "0.4s" }}></div>
           </div>
-          <span className="text-xs tracking-wider uppercase font-semibold text-stone-700">Creating...</span>
+          <span className="text-xs tracking-wider uppercase font-semibold text-stone-700">Creating your photo</span>
         </div>
       )}
 
@@ -297,10 +297,17 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
           />
 
           {isGeneratingVideo && (
-            <div className="flex flex-col items-center justify-center py-4 space-y-2">
-              <div className="relative w-8 h-8">
-                <div className="absolute inset-0 rounded-full bg-stone-200/20 animate-ping"></div>
-                <div className="relative w-8 h-8 rounded-full bg-stone-950 animate-spin border-4 border-transparent border-t-white shadow-lg shadow-stone-900/30"></div>
+            <div className="flex flex-col items-center justify-center py-6 space-y-3">
+              <div className="flex gap-1.5">
+                <div className="w-2 h-2 rounded-full bg-stone-950 animate-bounce"></div>
+                <div
+                  className="w-2 h-2 rounded-full bg-stone-950 animate-bounce"
+                  style={{ animationDelay: "0.2s" }}
+                ></div>
+                <div
+                  className="w-2 h-2 rounded-full bg-stone-950 animate-bounce"
+                  style={{ animationDelay: "0.4s" }}
+                ></div>
               </div>
               <div className="text-center space-y-1">
                 <span className="text-xs tracking-wider uppercase font-semibold text-stone-700">Creating Reel</span>

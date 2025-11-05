@@ -278,37 +278,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
   }, [])
 
   const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
-    if (!messagesContainerRef.current) return
-
-    const container = messagesContainerRef.current
-    container.scrollTo({
-      top: container.scrollHeight,
-      behavior,
-    })
-  }, [])
-
-  const handleScroll = useCallback(() => {
-    if (!messagesContainerRef.current) return
-
-    const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current
-    const distanceFromBottom = scrollHeight - scrollTop - clientHeight
-
-    const isAtBottom = distanceFromBottom < 50
-    isAtBottomRef.current = isAtBottom
-
-    // Only update state if it actually changed to prevent unnecessary re-renders
-    setShowScrollButton((prev) => {
-      const newValue = !isAtBottom
-      return prev !== newValue ? newValue : prev
-    })
-
-    // Header visibility logic
-    if (scrollTop > lastScrollY.current && scrollTop > 50) {
-      setShowHeader((prev) => (prev ? false : prev))
-    } else if (scrollTop < lastScrollY.current) {
-      setShowHeader((prev) => (!prev ? true : prev))
-    }
-    lastScrollY.current = scrollTop
+    messagesEndRef.current?.scrollIntoView({ behavior })
   }, [])
 
   const retryFailedSaves = async () => {
@@ -347,17 +317,14 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
   }, [])
 
   useEffect(() => {
-    if (!messagesContainerRef.current) return
-
-    // Only scroll if message count actually increased
-    if (messages.length > lastMessageCountRef.current && isAtBottomRef.current) {
+    // Only auto-scroll if user is at bottom (respects manual scrolling up)
+    if (isAtBottomRef.current) {
+      // Use requestAnimationFrame to defer scroll and prevent render loops
       requestAnimationFrame(() => {
-        scrollToBottom(isTyping ? "instant" : "smooth")
+        scrollToBottom("smooth")
       })
     }
-
-    lastMessageCountRef.current = messages.length
-  }, [messages, isTyping, scrollToBottom]) // Updated to use messages instead of messages.length
+  }, [messages.length, scrollToBottom]) // Depend on length, not full messages array
 
   const loadChat = async (specificChatId?: number) => {
     try {
@@ -796,8 +763,10 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
       <div className="flex-1 min-h-0 px-4">
         <div
           ref={messagesContainerRef}
-          onScroll={handleScroll}
-          className="h-full overflow-y-auto space-y-3 pr-1 scroll-smooth pb-48"
+          className="h-full overflow-y-auto space-y-3 pr-1 scroll-smooth"
+          style={{
+            paddingBottom: "10rem", // Space for chat input (fixed at bottom)
+          }}
           role="log"
           aria-live="polite"
           aria-label="Chat messages"
@@ -981,9 +950,9 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
       </div>
 
       <div
-        className="absolute bottom-0 left-0 right-0 bg-white/80 backdrop-blur-3xl border-t border-stone-200/50 px-4 py-3 z-10"
+        className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-3xl border-t border-stone-200/50 px-4 py-3 z-50"
         style={{
-          paddingBottom: "calc(env(safe-area-inset-bottom) + 5.5rem)",
+          paddingBottom: "calc(env(safe-area-inset-bottom) + 5rem)", // 5rem = bottom nav height
         }}
       >
         {!isEmpty && !uploadedImage && (
