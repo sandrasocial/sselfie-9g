@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
               const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
                 email: customerEmail,
                 password: tempPassword,
-                email_confirm: false,
+                email_confirm: true, // Auto-confirm since they paid via Stripe
                 user_metadata: {
                   created_via: "stripe_subscription",
                   stripe_customer_id: session.customer,
@@ -140,14 +140,13 @@ export async function POST(request: NextRequest) {
               const neonUser = await getOrCreateNeonUser(authData.user.id, customerEmail)
               console.log(`[v0] Created Neon user for ${customerEmail}`)
 
-              const baseUrl =
-                process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
+              const productionUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
 
               const { data: resetData, error: resetError } = await supabaseAdmin.auth.admin.generateLink({
                 type: "recovery",
                 email: customerEmail,
                 options: {
-                  redirectTo: `${baseUrl}/studio`,
+                  redirectTo: `${productionUrl}/studio`,
                 },
               })
 
@@ -155,10 +154,23 @@ export async function POST(request: NextRequest) {
                 console.error(`[v0] Error generating reset link:`, resetError)
               }
 
-              const passwordSetupLink = resetData?.properties?.action_link || `${baseUrl}/auth/reset-password`
+              let passwordSetupLink = resetData?.properties?.action_link || `${productionUrl}/auth/reset-password`
+
+              // Replace any localhost or Supabase URLs with production domain
+              if (passwordSetupLink.includes("localhost") || passwordSetupLink.includes("supabase.co")) {
+                const url = new URL(passwordSetupLink)
+                const token = url.searchParams.get("token")
+                const type = url.searchParams.get("type")
+
+                if (token && type) {
+                  passwordSetupLink = `${productionUrl}/auth/confirm?token=${token}&type=${type}&redirect_to=/studio`
+                }
+              }
+
+              console.log(`[v0] Generated password setup link for ${customerEmail}`)
 
               const creditsGranted = Number.parseInt(session.metadata.credits || "0")
-              const productName = productType === "sselfie_studio_membership" ? "Studio Membership" : "Subscription"
+              const productName = productType === "sselfie_studio_membership" ? "STUDIO MEMBERSHIP" : "SUBSCRIPTION"
 
               const emailContent = generateWelcomeEmail({
                 customerName: customerEmail.split("@")[0], // Use email prefix as name

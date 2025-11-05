@@ -138,12 +138,12 @@ function SuccessContent() {
               </div>
               <div>
                 <h3 className="text-base text-stone-900 font-medium mb-1">
-                  {isAuthenticated ? "Access Your Dashboard" : "Create Your Account"}
+                  {isAuthenticated ? "Access Your Dashboard" : "Check Your Email"}
                 </h3>
                 <p className="text-sm text-stone-600 font-light">
                   {isAuthenticated
                     ? "Your dashboard is ready. Start creating your first photos."
-                    : "Check your email to set up your account and access your subscription."}
+                    : "We've sent you an email with a link to access your account. Click the link to get started."}
                 </p>
               </div>
             </div>
@@ -174,14 +174,51 @@ function SuccessContent() {
 
         {/* CTA */}
         <div className="text-center">
-          <button
-            onClick={() => router.push(isAuthenticated ? "/" : "/auth/sign-up")}
-            className="bg-stone-950 text-stone-50 px-12 py-5 rounded-lg text-base font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200"
-          >
-            {isAuthenticated ? "Go to Dashboard" : "Create Account"}
-          </button>
+          {isAuthenticated ? (
+            <button
+              onClick={() => router.push("/")}
+              className="bg-stone-950 text-stone-50 px-12 py-5 rounded-lg text-base font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200"
+            >
+              Go to Dashboard
+            </button>
+          ) : (
+            <div className="space-y-4">
+              <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6">
+                <div className="flex items-start gap-3">
+                  <svg
+                    className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                    />
+                  </svg>
+                  <div className="text-left">
+                    <h3 className="text-base text-blue-900 font-medium mb-1">Check Your Email</h3>
+                    <p className="text-sm text-blue-700 font-light">
+                      We've sent an access link to <span className="font-medium">{session.customerEmail}</span>. Click
+                      the link to access your account instantly.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => router.push("/")}
+                className="bg-stone-200 text-stone-700 px-8 py-3 rounded-lg text-sm font-medium uppercase tracking-wider hover:bg-stone-300 transition-all duration-200"
+              >
+                Return Home
+              </button>
+            </div>
+          )}
           <p className="text-xs text-stone-500 font-light mt-4">
-            A confirmation email has been sent to {session.customerEmail}
+            {isAuthenticated
+              ? "Your account is ready to use"
+              : "Didn't receive the email? Check your spam folder or contact support"}
           </p>
         </div>
       </div>
