@@ -16,7 +16,6 @@ interface Course {
   title: string
   description: string | null
   thumbnail_url: string | null
-  tier: string
   order_index: number
   status: string
   lesson_count: number
@@ -48,7 +47,6 @@ export default function AdminAcademyPage() {
     title: "",
     description: "",
     thumbnail_url: "",
-    tier: "starter", // Updated default tier from 'foundation' to 'starter' to match database constraint
     order_index: 0,
     status: "draft",
   })
@@ -121,7 +119,6 @@ export default function AdminAcademyPage() {
       title: "",
       description: "",
       thumbnail_url: "",
-      tier: "starter", // Updated default tier from 'foundation' to 'starter'
       order_index: courses.length,
       status: "draft",
     })
@@ -134,7 +131,6 @@ export default function AdminAcademyPage() {
       title: course.title,
       description: course.description || "",
       thumbnail_url: course.thumbnail_url || "",
-      tier: course.tier,
       order_index: course.order_index,
       status: course.status,
     })
@@ -387,7 +383,7 @@ export default function AdminAcademyPage() {
                     <div className="flex-1">
                       <h3 className="text-sm font-medium text-stone-950 mb-1">{course.title}</h3>
                       <p className="text-xs text-stone-500 uppercase tracking-wider">
-                        {course.tier} • {course.lesson_count} lessons • {course.enrollment_count} enrolled
+                        {course.lesson_count} lessons • {course.enrollment_count} enrolled
                       </p>
                       {course.status !== "published" && (
                         <span className="inline-block mt-2 px-2 py-1 text-[10px] tracking-wider uppercase bg-stone-200 text-stone-600 rounded">
@@ -474,7 +470,6 @@ export default function AdminAcademyPage() {
                     </div>
                   </div>
                 ))}
-
                 {lessons.length === 0 && (
                   <p className="text-sm text-stone-500 text-center py-8">No lessons yet. Add your first lesson!</p>
                 )}
@@ -546,19 +541,6 @@ export default function AdminAcademyPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-xs tracking-wider uppercase text-stone-600">Tier</Label>
-                <select
-                  value={courseForm.tier}
-                  onChange={(e) => setCourseForm({ ...courseForm, tier: e.target.value })}
-                  className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm"
-                >
-                  <option value="starter">Starter</option>
-                  <option value="pro">Pro</option>
-                  <option value="elite">Elite</option>
-                </select>
-              </div>
-
-              <div className="space-y-2">
                 <Label className="text-xs tracking-wider uppercase text-stone-600">Order</Label>
                 <Input
                   type="number"
@@ -567,19 +549,19 @@ export default function AdminAcademyPage() {
                   className="border-stone-300"
                 />
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label className="text-xs tracking-wider uppercase text-stone-600">Status</Label>
-              <select
-                value={courseForm.status}
-                onChange={(e) => setCourseForm({ ...courseForm, status: e.target.value })}
-                className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm"
-              >
-                <option value="draft">Draft</option>
-                <option value="published">Published</option>
-                <option value="archived">Archived</option>
-              </select>
+              <div className="space-y-2">
+                <Label className="text-xs tracking-wider uppercase text-stone-600">Status</Label>
+                <select
+                  value={courseForm.status}
+                  onChange={(e) => setCourseForm({ ...courseForm, status: e.target.value })}
+                  className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm"
+                >
+                  <option value="draft">Draft</option>
+                  <option value="published">Published</option>
+                  <option value="archived">Archived</option>
+                </select>
+              </div>
             </div>
           </div>
           {uploadProgress && <p className="text-xs text-stone-600 text-center py-2">{uploadProgress}</p>}

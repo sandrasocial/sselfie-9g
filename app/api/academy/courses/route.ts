@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { getCoursesForTier } from "@/lib/data/academy"
-import { getUserTier } from "@/lib/subscription"
+import { getCoursesForMembership } from "@/lib/data/academy"
+import { getUserProductAccess } from "@/lib/subscription"
 
 export async function GET() {
   try {
@@ -29,17 +29,18 @@ export async function GET() {
 
     console.log("[v0] Fetching courses for user:", neonUser.id)
 
-    const userTier = await getUserTier(neonUser.id)
-    console.log("[v0] User tier:", userTier)
+    const productAccess = await getUserProductAccess(neonUser.id)
+    console.log("[v0] User product access:", productAccess)
 
-    // Get courses available for user's tier
-    const courses = await getCoursesForTier(userTier)
+    // Get courses available for user's membership
+    const courses = await getCoursesForMembership(productAccess.hasMembership)
 
-    console.log("[v0] Found", courses.length, "courses for tier:", userTier)
+    console.log("[v0] Found", courses.length, "courses for membership:", productAccess.hasMembership)
 
     return NextResponse.json({
       courses,
-      userTier,
+      hasMembership: productAccess.hasMembership,
+      productType: productAccess.productType,
     })
   } catch (error) {
     console.error("[v0] Error fetching courses:", error)

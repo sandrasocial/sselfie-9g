@@ -279,7 +279,7 @@ export async function POST(request: NextRequest) {
           await sql`
             INSERT INTO subscription_credit_grants (
               user_id,
-              subscription_tier,
+              product_type,
               credits_granted,
               grant_period_start,
               grant_period_end
@@ -323,7 +323,7 @@ export async function POST(request: NextRequest) {
             await sql`
               INSERT INTO subscription_credit_grants (
                 user_id,
-                subscription_tier,
+                product_type,
                 credits_granted,
                 grant_period_start,
                 grant_period_end

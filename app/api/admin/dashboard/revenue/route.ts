@@ -27,26 +27,27 @@ export async function GET() {
     // Get active subscriptions for MRR calculation
     const subscriptionsResult = await sql`
       SELECT 
-        plan,
+        product_type,
         COUNT(*) as count,
         CASE 
-          WHEN plan = 'starter' THEN 4900
-          WHEN plan = 'pro' THEN 9900
-          WHEN plan = 'elite' THEN 19900
+          WHEN product_type = 'sselfie_studio_membership' THEN 9900
+          WHEN product_type = 'one_time_session' THEN 4900
           ELSE 0
         END as price_cents
       FROM subscriptions
       WHERE status = 'active'
-      GROUP BY plan
+      GROUP BY product_type
     `
 
     // Calculate MRR (Monthly Recurring Revenue)
     let mrr = 0
     const subscriptionBreakdown = subscriptionsResult.map((sub) => {
       const revenue = (Number(sub.count) * Number(sub.price_cents)) / 100
-      mrr += revenue
+      if (sub.product_type === "sselfie_studio_membership") {
+        mrr += revenue
+      }
       return {
-        tier: sub.plan, // Using 'plan' from database but returning as 'tier' for consistency
+        productType: sub.product_type,
         count: Number(sub.count),
         revenue: revenue,
       }
