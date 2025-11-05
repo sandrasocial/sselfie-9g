@@ -28,7 +28,7 @@ interface ProfileInfo {
   bio: string | null
   instagram: string | null
   location: string | null
-  plan: string
+  product_type: string
   memberSince: string
 }
 
@@ -132,7 +132,12 @@ export default function ProfileScreen({ user, creditBalance }: ProfileScreenProp
 
   const displayName = profileInfo?.name || user.email?.split("@")[0] || "User"
   const displayAvatar = profileInfo?.avatar || user.avatar || "/placeholder.svg"
-  const displayPlan = profileInfo?.plan || user.membershipTier || "free"
+  const displayPlan =
+    profileInfo?.product_type === "sselfie_studio_membership"
+      ? "Studio"
+      : profileInfo?.product_type === "one_time_session"
+        ? "Session"
+        : "Free"
   const userInitial = displayName.charAt(0).toUpperCase()
 
   if (loading) {

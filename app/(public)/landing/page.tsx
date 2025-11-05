@@ -9,7 +9,6 @@ import Link from "next/link"
 export default function LandingPage() {
   const [email, setEmail] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [betaCount, setBetaCount] = useState(23) // Mock beta user count
 
   const { scrollYProgress } = useScroll()
   const heroRef = useRef(null)
@@ -66,7 +65,7 @@ export default function LandingPage() {
               href="/auth/sign-up"
               className="bg-stone-950 text-stone-50 px-6 py-2 text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200"
             >
-              START BETA
+              GET STARTED
             </Link>
           </div>
         </div>
@@ -84,12 +83,6 @@ export default function LandingPage() {
             animate={heroInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.8 }}
           >
-            <div className="inline-block mb-6 px-4 py-2 bg-stone-950 text-stone-50">
-              <p className="text-xs font-light tracking-[0.3em] uppercase">
-                BETA LAUNCH • {100 - betaCount} SPOTS LEFT
-              </p>
-            </div>
-
             <h1 className="font-serif text-6xl md:text-8xl lg:text-9xl font-extralight tracking-[0.4em] uppercase mb-8 text-stone-950">
               YOUR AI
               <br />
@@ -106,16 +99,12 @@ export default function LandingPage() {
                 href="/auth/sign-up"
                 className="bg-stone-950 text-stone-50 px-12 py-4 text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200"
               >
-                CLAIM 50% OFF
+                GET STARTED
               </Link>
               <button className="border border-stone-300 text-stone-950 px-12 py-4 text-sm font-medium uppercase tracking-wider hover:bg-stone-100 transition-all duration-200">
                 WATCH DEMO
               </button>
             </div>
-
-            <p className="text-xs font-light tracking-wider uppercase text-stone-500">
-              BETA PRICING: $24.50/MONTH • FIRST 100 USERS ONLY
-            </p>
           </motion.div>
         </div>
 
@@ -322,40 +311,57 @@ export default function LandingPage() {
             transition={{ duration: 0.8 }}
             className="text-center mb-24"
           >
-            <div className="inline-block mb-6 px-4 py-2 bg-stone-950 text-stone-50">
-              <p className="text-xs font-light tracking-[0.3em] uppercase">BETA PRICING • 50% OFF</p>
-            </div>
             <h2 className="font-serif text-4xl md:text-6xl font-extralight tracking-[0.3em] uppercase mb-6 text-stone-950">
-              CHOOSE YOUR PLAN
+              SIMPLE PRICING
             </h2>
             <p className="text-lg font-light text-stone-600 max-w-2xl mx-auto">
-              Limited beta pricing for the first 100 users. Lock in 50% off forever.
+              Try it once, or join the studio for ongoing access to everything.
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {/* Starter Plan */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={pricingInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.8, delay: 0.1 }}
+            className="bg-stone-950 text-stone-50 p-6 rounded-lg text-center mb-12 max-w-3xl mx-auto"
+          >
+            <p className="text-sm font-light tracking-[0.3em] uppercase mb-2 text-stone-300">50% OFF FOR FIRST 100</p>
+            <p className="text-base font-light leading-relaxed">
+              Lock in beta pricing forever. Limited spots available.
+            </p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto mb-16">
+            {/* One-Time Session */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={pricingInView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.8, delay: 0.2 }}
               className="bg-stone-100 p-8 rounded-lg border border-stone-200"
             >
-              <div className="text-xs font-light tracking-[0.3em] uppercase text-stone-500 mb-4">STARTER</div>
+              <div className="text-xs font-light tracking-[0.3em] uppercase text-stone-500 mb-4">ONE-TIME</div>
+              <h3 className="font-serif text-3xl font-extralight tracking-[0.2em] uppercase mb-4 text-stone-950">
+                SSELFIE SESSION
+              </h3>
               <div className="mb-6">
                 <div className="flex items-baseline gap-2 mb-2">
-                  <span className="font-serif text-5xl font-extralight">$24.50</span>
-                  <span className="text-sm font-light text-stone-500 line-through">$49</span>
+                  <span className="font-serif text-5xl font-extralight">$49</span>
+                  <span className="text-2xl font-light text-stone-400 line-through">$99</span>
                 </div>
-                <p className="text-xs font-light tracking-wider uppercase text-stone-500">PER MONTH • BETA PRICING</p>
+                <p className="text-xs font-light tracking-wider uppercase text-stone-500">
+                  ONE-TIME PURCHASE • BETA PRICING
+                </p>
               </div>
+              <p className="text-sm font-light leading-relaxed text-stone-700 mb-6">
+                Try one professional AI photoshoot of you. No subscription, just a one-time session.
+              </p>
               <ul className="space-y-3 mb-8">
                 {[
-                  "100 credits/month",
-                  "1 AI model training",
-                  "Maya AI assistant",
-                  "Basic academy access",
-                  "Email support",
+                  "One AI model training",
+                  "Generate up to 50 photos",
+                  "All photo styles and settings",
+                  "High-resolution downloads",
+                  "Valid for 30 days",
                 ].map((item, i) => (
                   <li key={i} className="flex items-start gap-3">
                     <div className="w-1 h-1 bg-stone-950 mt-2" />
@@ -364,14 +370,14 @@ export default function LandingPage() {
                 ))}
               </ul>
               <Link
-                href="/auth/sign-up?plan=starter"
+                href="/auth/sign-up?product=one_time_session"
                 className="block w-full bg-stone-950 text-stone-50 px-6 py-3 text-center text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200"
               >
-                START BETA
+                TRY IT ONCE
               </Link>
             </motion.div>
 
-            {/* Pro Plan */}
+            {/* Studio Membership */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={pricingInView ? { opacity: 1, y: 0 } : {}}
@@ -381,22 +387,31 @@ export default function LandingPage() {
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-stone-50 text-stone-950 px-4 py-1">
                 <p className="text-xs font-light tracking-[0.3em] uppercase">MOST POPULAR</p>
               </div>
-              <div className="text-xs font-light tracking-[0.3em] uppercase text-stone-400 mb-4">PRO</div>
+              <div className="text-xs font-light tracking-[0.3em] uppercase text-stone-400 mb-4">MEMBERSHIP</div>
+              <h3 className="font-serif text-3xl font-extralight tracking-[0.2em] uppercase mb-4">STUDIO ACCESS</h3>
               <div className="mb-6">
                 <div className="flex items-baseline gap-2 mb-2">
-                  <span className="font-serif text-5xl font-extralight">$49.50</span>
-                  <span className="text-sm font-light text-stone-400 line-through">$99</span>
+                  <span className="font-serif text-5xl font-extralight">$99</span>
+                  <span className="text-2xl font-light text-stone-400 line-through">$199</span>
+                  <span className="text-sm font-light text-stone-400">/month</span>
                 </div>
-                <p className="text-xs font-light tracking-wider uppercase text-stone-400">PER MONTH • BETA PRICING</p>
+                <p className="text-xs font-light tracking-wider uppercase text-stone-400">
+                  CANCEL ANYTIME • BETA PRICING LOCKED
+                </p>
               </div>
+              <p className="text-sm font-light leading-relaxed text-stone-50 mb-6">
+                Join the Studio for new photos, fresh tools, and monthly brand drops.
+              </p>
               <ul className="space-y-3 mb-8">
                 {[
-                  "250 credits/month",
-                  "3 AI model trainings",
-                  "Maya AI assistant",
-                  "Full academy access",
+                  "Unlimited AI model trainings",
+                  "250 credits per month",
+                  "Full Maya AI access",
+                  "Complete Academy courses",
+                  "Monthly brand drops and bonuses",
+                  "Feed Designer (unlimited)",
                   "Priority support",
-                  "Advanced features",
+                  "Early access to new features",
                 ].map((item, i) => (
                   <li key={i} className="flex items-start gap-3">
                     <div className="w-1 h-1 bg-stone-50 mt-2" />
@@ -405,61 +420,30 @@ export default function LandingPage() {
                 ))}
               </ul>
               <Link
-                href="/auth/sign-up?plan=pro"
+                href="/auth/sign-up?product=sselfie_studio_membership"
                 className="block w-full bg-stone-50 text-stone-950 px-6 py-3 text-center text-sm font-medium uppercase tracking-wider hover:bg-stone-100 transition-all duration-200"
               >
-                START BETA
-              </Link>
-            </motion.div>
-
-            {/* Elite Plan */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={pricingInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.8, delay: 0.6 }}
-              className="bg-stone-100 p-8 rounded-lg border border-stone-200"
-            >
-              <div className="text-xs font-light tracking-[0.3em] uppercase text-stone-500 mb-4">ELITE</div>
-              <div className="mb-6">
-                <div className="flex items-baseline gap-2 mb-2">
-                  <span className="font-serif text-5xl font-extralight">$99.50</span>
-                  <span className="text-sm font-light text-stone-500 line-through">$199</span>
-                </div>
-                <p className="text-xs font-light tracking-wider uppercase text-stone-500">PER MONTH • BETA PRICING</p>
-              </div>
-              <ul className="space-y-3 mb-8">
-                {[
-                  "600 credits/month",
-                  "Unlimited AI trainings",
-                  "Maya AI assistant",
-                  "VIP academy access",
-                  "White-glove support",
-                  "All features",
-                  "Early access",
-                ].map((item, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <div className="w-1 h-1 bg-stone-950 mt-2" />
-                    <span className="text-sm font-light text-stone-700">{item}</span>
-                  </li>
-                ))}
-              </ul>
-              <Link
-                href="/auth/sign-up?plan=elite"
-                className="block w-full bg-stone-950 text-stone-50 px-6 py-3 text-center text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200"
-              >
-                START BETA
+                JOIN THE STUDIO
               </Link>
             </motion.div>
           </div>
 
-          <motion.p
+          <motion.div
             initial={{ opacity: 0 }}
             animate={pricingInView ? { opacity: 1 } : {}}
-            transition={{ duration: 0.8, delay: 0.8 }}
-            className="text-center text-sm font-light text-stone-600 mt-12"
+            transition={{ duration: 0.8, delay: 0.6 }}
+            className="text-center"
           >
-            Beta pricing locks in forever. Only {100 - betaCount} spots remaining.
-          </motion.p>
+            <p className="text-sm font-light text-stone-600 mb-4">
+              Need more credits? Top up anytime from your dashboard.
+            </p>
+            <Link
+              href="/auth/login"
+              className="inline-block text-sm font-light tracking-wider uppercase text-stone-700 hover:text-stone-950 transition-colors underline underline-offset-4"
+            >
+              VIEW CREDIT PACKAGES
+            </Link>
+          </motion.div>
         </div>
       </section>
 
@@ -470,7 +454,7 @@ export default function LandingPage() {
             NOT READY YET?
           </h2>
           <p className="text-lg font-light leading-relaxed text-stone-300 mb-12">
-            Join the waitlist and get exclusive early access, beta updates, and a free brand photography guide.
+            Join the waitlist and get exclusive early access, updates, and a free brand photography guide.
           </p>
 
           <form onSubmit={handleWaitlistSubmit} className="flex flex-col sm:flex-row gap-4 max-w-xl mx-auto">
@@ -500,9 +484,6 @@ export default function LandingPage() {
             <Link href="/" className="font-serif text-xl font-extralight tracking-[0.3em] uppercase">
               SSELFIE
             </Link>
-            <p className="text-xs font-light tracking-wider uppercase text-stone-400">
-              {100 - betaCount} BETA SPOTS LEFT
-            </p>
           </div>
           <div className="flex items-center gap-6">
             <Link
@@ -521,7 +502,7 @@ export default function LandingPage() {
               href="/auth/sign-up"
               className="bg-stone-50 text-stone-950 px-6 py-2 text-xs font-medium uppercase tracking-wider hover:bg-stone-100 transition-all duration-200"
             >
-              CLAIM 50% OFF
+              GET STARTED
             </Link>
           </div>
         </div>

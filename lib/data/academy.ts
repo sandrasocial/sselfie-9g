@@ -12,7 +12,6 @@ export interface AcademyCourse {
   duration_minutes: number | null
   level: "Beginner" | "Intermediate" | "Advanced" | null
   category: string | null
-  tier: "starter" | "pro" | "elite" | null
   thumbnail_url: string | null
   instructor_name: string | null
   total_lessons: number
@@ -80,10 +79,9 @@ export interface CourseWithProgress extends AcademyCourse {
 // Course Functions
 
 /**
- * Get all published courses, optionally filtered by tier or level
+ * Get all published courses, optionally filtered by level or status
  */
 export async function getCourses(filters?: {
-  tier?: string
   level?: string
   status?: string
 }): Promise<AcademyCourse[]> {
@@ -103,13 +101,6 @@ export async function getCourses(filters?: {
       SELECT * FROM academy_courses
       WHERE status = ${filters?.status || "published"}
     `
-
-    if (filters?.tier) {
-      query = sql`
-        SELECT * FROM academy_courses
-        WHERE status = ${filters?.status || "published"} AND tier = ${filters.tier}
-      `
-    }
 
     if (filters?.level) {
       query = sql`
@@ -133,58 +124,27 @@ export async function getCourses(filters?: {
 }
 
 /**
- * Get courses available for a specific tier
- * Starter tier: only starter courses
- * Pro tier: starter + pro courses
- * Elite tier: all courses
+ * Get all courses available to Studio Membership users
+ * All published courses are now available to Studio Membership
  */
-export async function getCoursesForTier(tier: "starter" | "pro" | "elite"): Promise<AcademyCourse[]> {
+export async function getCoursesForMembership(): Promise<AcademyCourse[]> {
   try {
-    console.log("[v0] Fetching courses for tier:", tier)
+    console.log("[v0] Fetching all courses for Studio Membership")
 
-    let query
-
-    if (tier === "starter") {
-      query = sql`
-        SELECT 
-          c.*,
-          CAST(COUNT(l.id) AS INTEGER) as lesson_count,
-          CAST(COALESCE(SUM(l.duration_seconds) / 60, 0) AS INTEGER) as total_duration
-        FROM academy_courses c
-        LEFT JOIN academy_lessons l ON c.id = l.course_id
-        WHERE c.status = 'published' AND c.tier = 'starter'
-        GROUP BY c.id
-        ORDER BY c.order_index ASC
-      `
-    } else if (tier === "pro") {
-      query = sql`
-        SELECT 
-          c.*,
-          CAST(COUNT(l.id) AS INTEGER) as lesson_count,
-          CAST(COALESCE(SUM(l.duration_seconds) / 60, 0) AS INTEGER) as total_duration
-        FROM academy_courses c
-        LEFT JOIN academy_lessons l ON c.id = l.course_id
-        WHERE c.status = 'published' AND c.tier IN ('starter', 'pro')
-        GROUP BY c.id
-        ORDER BY c.order_index ASC
-      `
-    } else {
-      // Elite gets all courses
-      query = sql`
-        SELECT 
-          c.*,
-          CAST(COUNT(l.id) AS INTEGER) as lesson_count,
-          CAST(COALESCE(SUM(l.duration_seconds) / 60, 0) AS INTEGER) as total_duration
-        FROM academy_courses c
-        LEFT JOIN academy_lessons l ON c.id = l.course_id
-        WHERE c.status = 'published'
-        GROUP BY c.id
-        ORDER BY c.order_index ASC
-      `
-    }
+    const query = sql`
+      SELECT 
+        c.*,
+        CAST(COUNT(l.id) AS INTEGER) as lesson_count,
+        CAST(COALESCE(SUM(l.duration_seconds) / 60, 0) AS INTEGER) as total_duration
+      FROM academy_courses c
+      LEFT JOIN academy_lessons l ON c.id = l.course_id
+      WHERE c.status = 'published'
+      GROUP BY c.id
+      ORDER BY c.order_index ASC
+    `
 
     const courses = await query
-    console.log("[v0] Found", courses.length, "courses for tier:", tier)
+    console.log("[v0] Found", courses.length, "courses for Studio Membership")
 
     const coursesWithNumbers = courses.map((course: any) => ({
       ...course,
@@ -194,7 +154,7 @@ export async function getCoursesForTier(tier: "starter" | "pro" | "elite"): Prom
 
     return coursesWithNumbers as AcademyCourse[]
   } catch (error) {
-    console.error("[v0] Error fetching courses for tier:", error)
+    console.error("[v0] Error fetching courses for membership:", error)
     return []
   }
 }

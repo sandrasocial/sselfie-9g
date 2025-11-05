@@ -1,7 +1,7 @@
 "use server"
 
 import { stripe } from "@/lib/stripe"
-import { CREDIT_PACKAGES, SUBSCRIPTION_TIERS } from "@/lib/products"
+import { CREDIT_PACKAGES, getProductById } from "@/lib/pricing.config"
 import { getUserByAuthId } from "@/lib/data/users"
 
 export async function startCreditCheckoutSession(packageId: string) {
@@ -15,7 +15,6 @@ export async function startCreditCheckoutSession(packageId: string) {
     throw new Error("User not authenticated")
   }
 
-  // Create Checkout Session for one-time credit purchase
   const session = await stripe.checkout.sessions.create({
     ui_mode: "embedded",
     redirect_on_completion: "never",
@@ -38,16 +37,17 @@ export async function startCreditCheckoutSession(packageId: string) {
       user_id: user.id,
       credits: creditPackage.credits.toString(),
       package_id: packageId,
+      product_type: "credit_topup",
     },
   })
 
   return session.client_secret
 }
 
-export async function startSubscriptionCheckoutSession(tierId: string) {
-  const tier = SUBSCRIPTION_TIERS.find((t) => t.id === tierId)
-  if (!tier) {
-    throw new Error(`Subscription tier with id "${tierId}" not found`)
+export async function startProductCheckoutSession(productId: string) {
+  const product = getProductById(productId)
+  if (!product) {
+    throw new Error(`Product with id "${productId}" not found`)
   }
 
   const user = await getUserByAuthId()
@@ -58,7 +58,6 @@ export async function startSubscriptionCheckoutSession(tierId: string) {
   // Create or retrieve Stripe customer
   let customerId: string | undefined
 
-  // Check if user already has a Stripe customer ID
   const { neon } = await import("@/lib/db")
   const sql = neon(process.env.DATABASE_URL!)
   const existingSubscription = await sql`
@@ -68,7 +67,6 @@ export async function startSubscriptionCheckoutSession(tierId: string) {
   if (existingSubscription[0]?.stripe_customer_id) {
     customerId = existingSubscription[0].stripe_customer_id
   } else {
-    // Create new Stripe customer
     const customer = await stripe.customers.create({
       email: user.email,
       metadata: {
@@ -78,7 +76,9 @@ export async function startSubscriptionCheckoutSession(tierId: string) {
     customerId = customer.id
   }
 
-  // Create Checkout Session for subscription
+  // Determine if this is a subscription or one-time payment
+  const isSubscription = product.type === "sselfie_studio_membership"
+
   const session = await stripe.checkout.sessions.create({
     ui_mode: "embedded",
     redirect_on_completion: "never",
@@ -88,22 +88,25 @@ export async function startSubscriptionCheckoutSession(tierId: string) {
         price_data: {
           currency: "usd",
           product_data: {
-            name: tier.name,
-            description: tier.description,
+            name: product.name,
+            description: product.description,
           },
-          unit_amount: tier.priceInCents,
-          recurring: {
-            interval: "month",
-          },
+          unit_amount: product.priceInCents,
+          ...(isSubscription && {
+            recurring: {
+              interval: "month",
+            },
+          }),
         },
         quantity: 1,
       },
     ],
-    mode: "subscription",
+    mode: isSubscription ? "subscription" : "payment",
     metadata: {
       user_id: user.id,
-      tier: tierId,
-      credits: tier.credits.toString(),
+      product_id: productId,
+      product_type: product.type,
+      credits: product.credits?.toString() || "0",
     },
   })
 

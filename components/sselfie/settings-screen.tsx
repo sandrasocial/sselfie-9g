@@ -11,7 +11,7 @@ interface SettingsScreenProps {
 interface UserInfo {
   email: string
   name: string
-  plan: string
+  product_type: string
   memberSince: string
 }
 
@@ -157,8 +157,14 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
               <div className="flex items-center gap-3 py-3">
                 <CreditCard size={16} className="text-stone-500" />
                 <div>
-                  <p className="text-xs text-stone-500 uppercase tracking-wider">Plan</p>
-                  <p className="text-sm font-medium text-stone-950 uppercase">{userInfo.plan}</p>
+                  <p className="text-xs text-stone-500 uppercase tracking-wider">Membership</p>
+                  <p className="text-sm font-medium text-stone-950 uppercase">
+                    {userInfo.product_type === "sselfie_studio_membership"
+                      ? "Studio Member"
+                      : userInfo.product_type === "one_time_session"
+                        ? "One-Time Session"
+                        : "Free"}
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-3 py-3">

@@ -94,13 +94,27 @@ function SuccessContent() {
           </h2>
           <div className="space-y-4">
             <div className="flex justify-between items-center pb-4 border-b border-stone-200">
-              <span className="text-sm text-stone-500 font-light tracking-wider uppercase">Plan</span>
-              <span className="text-base text-stone-900 font-medium">{session.metadata?.tier?.toUpperCase()}</span>
+              <span className="text-sm text-stone-500 font-light tracking-wider uppercase">Product</span>
+              <span className="text-base text-stone-900 font-medium">
+                {session.metadata?.product_type === "sselfie_studio_membership"
+                  ? "STUDIO MEMBERSHIP"
+                  : session.metadata?.product_type === "one_time_session"
+                    ? "ONE-TIME SESSION"
+                    : session.metadata?.product_type === "credit_topup"
+                      ? "CREDIT TOP-UP"
+                      : "PURCHASE"}
+              </span>
             </div>
-            <div className="flex justify-between items-center pb-4 border-b border-stone-200">
-              <span className="text-sm text-stone-500 font-light tracking-wider uppercase">Monthly Credits</span>
-              <span className="text-base text-stone-900 font-medium">{session.metadata?.credits} credits</span>
-            </div>
+            {session.metadata?.credits && Number(session.metadata.credits) > 0 && (
+              <div className="flex justify-between items-center pb-4 border-b border-stone-200">
+                <span className="text-sm text-stone-500 font-light tracking-wider uppercase">
+                  {session.metadata?.product_type === "sselfie_studio_membership"
+                    ? "Monthly Credits"
+                    : "Credits Included"}
+                </span>
+                <span className="text-base text-stone-900 font-medium">{session.metadata?.credits} credits</span>
+              </div>
+            )}
             <div className="flex justify-between items-center pb-4 border-b border-stone-200">
               <span className="text-sm text-stone-500 font-light tracking-wider uppercase">Email</span>
               <span className="text-base text-stone-900 font-medium">{session.customerEmail}</span>

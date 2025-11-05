@@ -374,10 +374,10 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8 max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 max-w-4xl mx-auto">
             <div className="bg-stone-50 rounded-2xl p-6 sm:p-8 border border-stone-200">
               <p className="text-[10px] sm:text-xs font-light tracking-[0.25em] sm:tracking-[0.3em] uppercase text-stone-500 mb-2">
-                STARTER
+                ONE-TIME SESSION
               </p>
               <div className="mb-4 sm:mb-6">
                 <div className="flex items-baseline gap-2">
@@ -389,31 +389,37 @@ export default function LandingPage() {
                   </span>
                   <span className="text-sm sm:text-base text-stone-500 line-through">$49</span>
                 </div>
-                <p className="text-xs sm:text-sm font-light text-stone-600 mt-1">per month • 100 credits</p>
+                <p className="text-xs sm:text-sm font-light text-stone-600 mt-1">one-time purchase</p>
               </div>
-              <ul className="space-y-2 sm:space-y-3 mb-6 sm:mb-8">
-                <li className="text-xs sm:text-sm font-light text-stone-700">100 AI photo credits/month</li>
-                <li className="text-xs sm:text-sm font-light text-stone-700">Maya AI assistant</li>
-                <li className="text-xs sm:text-sm font-light text-stone-700">Brand profile builder</li>
-                <li className="text-xs sm:text-sm font-light text-stone-700">Basic academy access</li>
-              </ul>
+              <div className="space-y-3 sm:space-y-4 mb-6 sm:mb-8">
+                <p className="text-sm sm:text-base font-light text-stone-700 leading-relaxed">
+                  Just want to try it out?
+                </p>
+                <p className="text-xs sm:text-sm font-light text-stone-600 leading-relaxed">
+                  Upload a few selfies once and let AI work its magic. Get a full set of professional-looking brand
+                  photos you can use anywhere, no subscription, no strings attached.
+                </p>
+                <p className="text-xs sm:text-sm font-light text-stone-600 leading-relaxed">
+                  Perfect for testing your vibe before joining the Studio.
+                </p>
+              </div>
               <button
-                onClick={() => handleStartCheckout("starter")}
-                disabled={checkoutLoading === "starter"}
+                onClick={() => handleStartCheckout("one_time_session")}
+                disabled={checkoutLoading === "one_time_session"}
                 className="w-full bg-stone-950 text-stone-50 px-6 py-3 rounded-lg text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
               >
-                {checkoutLoading === "starter" ? "LOADING..." : "START BETA"}
+                {checkoutLoading === "one_time_session" ? "LOADING..." : "TRY ONCE"}
               </button>
             </div>
 
-            <div className="bg-stone-950 text-stone-50 rounded-2xl p-6 sm:p-8 border-2 border-stone-950 relative sm:col-span-2 md:col-span-1">
+            <div className="bg-stone-950 text-stone-50 rounded-2xl p-6 sm:p-8 border-2 border-stone-950 relative">
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-stone-50 text-stone-950 px-3 sm:px-4 py-1 rounded-full">
                 <p className="text-[10px] sm:text-xs font-light tracking-[0.25em] sm:tracking-[0.3em] uppercase">
                   MOST POPULAR
                 </p>
               </div>
               <p className="text-[10px] sm:text-xs font-light tracking-[0.25em] sm:tracking-[0.3em] uppercase text-stone-400 mb-2">
-                PRO
+                STUDIO MEMBERSHIP
               </p>
               <div className="mb-4 sm:mb-6">
                 <div className="flex items-baseline gap-2">
@@ -425,59 +431,33 @@ export default function LandingPage() {
                   </span>
                   <span className="text-sm sm:text-base text-stone-400 line-through">$99</span>
                 </div>
-                <p className="text-xs sm:text-sm font-light text-stone-300 mt-1">per month • 250 credits</p>
+                <p className="text-xs sm:text-sm font-light text-stone-300 mt-1">per month</p>
               </div>
-              <ul className="space-y-2 sm:space-y-3 mb-6 sm:mb-8">
-                <li className="text-xs sm:text-sm font-light text-stone-100">250 AI photo credits/month</li>
-                <li className="text-xs sm:text-sm font-light text-stone-100">Priority Maya support</li>
-                <li className="text-xs sm:text-sm font-light text-stone-100">Advanced brand tools</li>
-                <li className="text-xs sm:text-sm font-light text-stone-100">Full academy access</li>
-                <li className="text-xs sm:text-sm font-light text-stone-100">Feed designer</li>
-              </ul>
+              <div className="space-y-3 sm:space-y-4 mb-6 sm:mb-8">
+                <p className="text-sm sm:text-base font-light text-stone-100 leading-relaxed">
+                  Your all-access pass to SSELFIE Studio.
+                </p>
+                <p className="text-xs sm:text-sm font-light text-stone-200 leading-relaxed">
+                  Get ongoing AI photos every month, plus full access to all AI tools, branding, content, and social
+                  media courses inside the Academy + Monthly Drops.
+                </p>
+                <p className="text-xs sm:text-sm font-light text-stone-200 leading-relaxed">
+                  Unlock exclusive templates, guides, and bonuses, and keep your brand visuals fresh, consistent, and
+                  totally you.
+                </p>
+              </div>
               <button
-                onClick={() => handleStartCheckout("pro")}
-                disabled={checkoutLoading === "pro"}
+                onClick={() => handleStartCheckout("sselfie_studio_membership")}
+                disabled={checkoutLoading === "sselfie_studio_membership"}
                 className="w-full bg-stone-50 text-stone-950 px-6 py-3 rounded-lg text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-100 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
               >
-                {checkoutLoading === "pro" ? "LOADING..." : "START BETA"}
-              </button>
-            </div>
-
-            <div className="bg-stone-50 rounded-2xl p-6 sm:p-8 border border-stone-200">
-              <p className="text-[10px] sm:text-xs font-light tracking-[0.25em] sm:tracking-[0.3em] uppercase text-stone-500 mb-2">
-                ELITE
-              </p>
-              <div className="mb-4 sm:mb-6">
-                <div className="flex items-baseline gap-2">
-                  <span
-                    className="text-4xl sm:text-5xl font-extralight"
-                    style={{ fontFamily: "'Times New Roman', serif" }}
-                  >
-                    $99.50
-                  </span>
-                  <span className="text-sm sm:text-base text-stone-500 line-through">$199</span>
-                </div>
-                <p className="text-xs sm:text-sm font-light text-stone-600 mt-1">per month • 600 credits</p>
-              </div>
-              <ul className="space-y-2 sm:space-y-3 mb-6 sm:mb-8">
-                <li className="text-xs sm:text-sm font-light text-stone-700">600 AI photo credits/month</li>
-                <li className="text-xs sm:text-sm font-light text-stone-700">VIP Maya access</li>
-                <li className="text-xs sm:text-sm font-light text-stone-700">Custom brand training</li>
-                <li className="text-xs sm:text-sm font-light text-stone-700">Exclusive masterclasses</li>
-                <li className="text-xs sm:text-sm font-light text-stone-700">Priority support</li>
-              </ul>
-              <button
-                onClick={() => handleStartCheckout("elite")}
-                disabled={checkoutLoading === "elite"}
-                className="w-full bg-stone-950 text-stone-50 px-6 py-3 rounded-lg text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
-              >
-                {checkoutLoading === "elite" ? "LOADING..." : "START BETA"}
+                {checkoutLoading === "sselfie_studio_membership" ? "LOADING..." : "JOIN STUDIO"}
               </button>
             </div>
           </div>
 
           <p className="text-center mt-6 sm:mt-8 text-xs sm:text-sm font-light text-stone-600 px-4">
-            Beta pricing locked in forever • Cancel anytime
+            Beta pricing locked in forever • Cancel anytime • Add credits anytime
           </p>
         </div>
       </section>

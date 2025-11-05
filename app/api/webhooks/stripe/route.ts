@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { stripe } from "@/lib/stripe"
-import { addCredits } from "@/lib/credits"
+import { addCredits, grantOneTimeSessionCredits, grantMonthlyCredits } from "@/lib/credits"
 import { neon } from "@/lib/db"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { getOrCreateNeonUser } from "@/lib/user-mapping"
@@ -31,18 +31,17 @@ export async function POST(request: NextRequest) {
 
   try {
     switch (event.type) {
-      // One-time credit purchase completed
       case "checkout.session.completed": {
         const session = event.data.object
 
         if (session.mode === "payment") {
-          // One-time credit purchase
+          // One-time purchase (credit top-up or one-time session)
           let userId = session.metadata.user_id
-          const credits = Number.parseInt(session.metadata.credits)
-          const packageId = session.metadata.package_id
+          const credits = Number.parseInt(session.metadata.credits || "0")
+          const productType = session.metadata.product_type
           const customerEmail = session.customer_details?.email || session.customer_email
 
-          console.log(`[v0] Credit purchase - Initial userId: ${userId}, email: ${customerEmail}`)
+          console.log(`[v0] Payment completed - Product type: ${productType}, Credits: ${credits}`)
 
           if (!userId && customerEmail) {
             console.log(`[v0] No user_id in metadata, looking up user by email: ${customerEmail}`)
@@ -55,10 +54,10 @@ export async function POST(request: NextRequest) {
               userId = users[0].id
               console.log(`[v0] Found user ${userId} for email ${customerEmail}`)
             } else {
-              console.error(`[v0] No user found for email ${customerEmail} - cannot add credits`)
+              console.error(`[v0] No user found for email ${customerEmail} - cannot process payment`)
               return NextResponse.json(
                 {
-                  error: "User not found for credit purchase",
+                  error: "User not found for payment",
                 },
                 { status: 400 },
               )
@@ -66,61 +65,81 @@ export async function POST(request: NextRequest) {
           }
 
           if (!userId) {
-            console.error("[v0] No user_id found for credit purchase - skipping")
+            console.error("[v0] No user_id found for payment - skipping")
             return NextResponse.json(
               {
-                error: "Missing user_id for credit purchase",
+                error: "Missing user_id for payment",
               },
               { status: 400 },
             )
           }
 
-          console.log(`[v0] Credit purchase completed: ${credits} credits for user ${userId}`)
+          // Handle different product types
+          if (productType === "one_time_session") {
+            console.log(`[v0] One-time session purchase for user ${userId}`)
 
-          // Add credits to user account
-          await addCredits(userId, credits, "purchase", `Purchased ${packageId} package`)
+            // Grant session credits
+            await grantOneTimeSessionCredits(userId)
 
-          console.log(`[v0] Successfully added ${credits} credits to user ${userId}`)
+            // Create subscription record for tracking
+            await sql`
+              INSERT INTO subscriptions (
+                user_id, 
+                product_type,
+                status, 
+                stripe_customer_id,
+                current_period_start,
+                current_period_end
+              )
+              VALUES (
+                ${userId},
+                'one_time_session',
+                'active',
+                ${session.customer},
+                NOW(),
+                NOW() + INTERVAL '30 days'
+              )
+            `
+
+            console.log(`[v0] One-time session activated for user ${userId}`)
+          } else if (productType === "credit_topup") {
+            console.log(`[v0] Credit top-up: ${credits} credits for user ${userId}`)
+            await addCredits(userId, credits, "purchase", `Credit top-up purchase`)
+            console.log(`[v0] Successfully added ${credits} credits to user ${userId}`)
+          }
         } else if (session.mode === "subscription") {
+          // Studio membership subscription
           const userId = session.metadata.user_id
           const customerEmail = session.customer_details?.email || session.customer_email
+          const productType = session.metadata.product_type
 
           if (!userId && customerEmail) {
             console.log(`[v0] New subscription purchase from ${customerEmail} - creating account...`)
 
             try {
-              // Generate a secure random password
               const tempPassword = crypto.randomBytes(32).toString("hex")
-
-              // Create Supabase auth user with password (no confirmation email sent)
               const supabaseAdmin = createAdminClient()
 
               const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
                 email: customerEmail,
                 password: tempPassword,
-                email_confirm: false, // Skip email confirmation
+                email_confirm: false,
                 user_metadata: {
                   created_via: "stripe_subscription",
                   stripe_customer_id: session.customer,
                 },
               })
 
-              if (authError) {
+              if (authError || !authData.user) {
                 console.error(`[v0] Error creating auth user for ${customerEmail}:`, authError)
-                throw authError
-              }
-
-              if (!authData.user) {
-                throw new Error("No user data returned from Supabase")
+                throw authError || new Error("No user data returned")
               }
 
               console.log(`[v0] Created Supabase auth user for ${customerEmail}`)
 
-              // Create Neon database user
               const neonUser = await getOrCreateNeonUser(authData.user.id, customerEmail)
               console.log(`[v0] Created Neon user for ${customerEmail}`)
 
-              // Generate password reset link (does NOT send email, just generates the link)
               const baseUrl =
                 process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
 
@@ -138,29 +157,25 @@ export async function POST(request: NextRequest) {
 
               const passwordSetupLink = resetData?.properties?.action_link || `${baseUrl}/auth/reset-password`
 
-              console.log(`[v0] Generated password setup link for ${customerEmail}`)
-
-              // Send ONLY our custom welcome email (Supabase won't send any email)
-              const tier = session.metadata.tier || "Subscription"
               const creditsGranted = Number.parseInt(session.metadata.credits || "0")
+              const productName = productType === "sselfie_studio_membership" ? "Studio Membership" : "Subscription"
 
               const emailContent = generateWelcomeEmail({
                 email: customerEmail,
                 resetLink: passwordSetupLink,
                 creditsGranted: creditsGranted,
-                subscriptionTier: tier,
+                subscriptionTier: productName,
               })
 
               await sendEmail({
                 to: customerEmail,
-                subject: "Welcome to SSelfie! Set up your account",
+                subject: "Welcome to SSELFIE! Set up your account",
                 html: emailContent.html,
                 text: emailContent.text,
               })
 
               console.log(`[v0] Welcome email sent to ${customerEmail}`)
 
-              // Store the new user_id in session metadata for subscription.created event
               await stripe.checkout.sessions.update(session.id, {
                 metadata: {
                   ...session.metadata,
@@ -169,23 +184,19 @@ export async function POST(request: NextRequest) {
                 },
               })
 
-              console.log(`[v0] Account created successfully for ${customerEmail}`)
-
-              // Update the subscription metadata with the new user_id
               const subscription = await stripe.subscriptions.retrieve(session.subscription as string)
               await stripe.subscriptions.update(subscription.id, {
                 metadata: {
                   ...subscription.metadata,
                   user_id: neonUser.id,
-                  tier: session.metadata.tier,
+                  product_type: productType,
                   credits: session.metadata.credits,
                 },
               })
 
-              console.log(`[v0] Updated subscription ${subscription.id} with user_id: ${neonUser.id}`)
+              console.log(`[v0] Account created successfully for ${customerEmail}`)
             } catch (error) {
               console.error(`[v0] Error creating account for ${customerEmail}:`, error)
-              // Don't fail the webhook - subscription will still be created
             }
           } else {
             console.log("[v0] Subscription checkout completed for existing user")
@@ -194,12 +205,11 @@ export async function POST(request: NextRequest) {
         break
       }
 
-      // Subscription created - grant initial credits
       case "customer.subscription.created": {
         const subscription = event.data.object
         let userId = subscription.metadata.user_id
-        const tier = subscription.metadata.tier
-        const credits = Number.parseInt(subscription.metadata.credits || "0")
+        const productType = subscription.metadata.product_type || "sselfie_studio_membership"
+        const credits = Number.parseInt(subscription.metadata.credits || "250")
 
         if (!userId) {
           console.log("[v0] No user_id in subscription metadata, looking up by customer...")
@@ -219,33 +229,22 @@ export async function POST(request: NextRequest) {
                   user_id: userId,
                 },
               })
-              console.log(`[v0] Updated subscription metadata with user_id: ${userId}`)
-            } else {
-              console.error(`[v0] No user found for email ${customer.email}`)
             }
           }
         }
 
         if (!userId) {
           console.error("[v0] No user_id found for subscription - skipping credit grant")
-          console.error("[v0] Subscription ID:", subscription.id)
-          console.error("[v0] Customer ID:", subscription.customer)
           break
         }
 
-        if (!credits || credits === 0) {
-          console.error("[v0] Invalid credits value in subscription metadata:", subscription.metadata.credits)
-          console.error("[v0] Tier:", tier)
-          break
-        }
-
-        console.log(`[v0] Subscription created: ${tier} tier for user ${userId}, granting ${credits} credits`)
+        console.log(`[v0] Subscription created: ${productType} for user ${userId}, granting ${credits} credits`)
 
         // Create or update subscription record
         await sql`
           INSERT INTO subscriptions (
             user_id, 
-            tier, 
+            product_type,
             status, 
             stripe_subscription_id,
             stripe_customer_id,
@@ -254,7 +253,7 @@ export async function POST(request: NextRequest) {
           )
           VALUES (
             ${userId},
-            ${tier},
+            ${productType},
             ${subscription.status},
             ${subscription.id},
             ${subscription.customer},
@@ -263,7 +262,7 @@ export async function POST(request: NextRequest) {
           )
           ON CONFLICT (user_id) 
           DO UPDATE SET
-            tier = ${tier},
+            product_type = ${productType},
             status = ${subscription.status},
             stripe_subscription_id = ${subscription.id},
             stripe_customer_id = ${subscription.customer},
@@ -272,41 +271,41 @@ export async function POST(request: NextRequest) {
             updated_at = NOW()
         `
 
-        // Grant initial credits
-        await addCredits(userId, credits, "subscription_grant", `${tier} subscription - initial grant`)
+        // Grant initial credits for studio membership
+        if (productType === "sselfie_studio_membership") {
+          await grantMonthlyCredits(userId, "sselfie_studio_membership")
 
-        // Record the grant
-        await sql`
-          INSERT INTO subscription_credit_grants (
-            user_id,
-            subscription_tier,
-            credits_granted,
-            grant_period_start,
-            grant_period_end
-          )
-          VALUES (
-            ${userId},
-            ${tier},
-            ${credits},
-            to_timestamp(${subscription.current_period_start}),
-            to_timestamp(${subscription.current_period_end})
-          )
-        `
+          // Record the grant
+          await sql`
+            INSERT INTO subscription_credit_grants (
+              user_id,
+              subscription_tier,
+              credits_granted,
+              grant_period_start,
+              grant_period_end
+            )
+            VALUES (
+              ${userId},
+              ${productType},
+              ${credits},
+              to_timestamp(${subscription.current_period_start}),
+              to_timestamp(${subscription.current_period_end})
+            )
+          `
+        }
         break
       }
 
-      // Subscription renewed - grant monthly credits
       case "invoice.payment_succeeded": {
         const invoice = event.data.object
 
-        // Only process subscription invoices (not one-time payments)
         if (invoice.subscription) {
           const subscription = await stripe.subscriptions.retrieve(invoice.subscription)
           const userId = subscription.metadata.user_id
-          const tier = subscription.metadata.tier
-          const credits = Number.parseInt(subscription.metadata.credits)
+          const productType = subscription.metadata.product_type || "sselfie_studio_membership"
+          const credits = Number.parseInt(subscription.metadata.credits || "250")
 
-          console.log(`[v0] Subscription renewed: ${tier} tier for user ${userId}`)
+          console.log(`[v0] Subscription renewed: ${productType} for user ${userId}`)
 
           // Check if we already granted credits for this period
           const existingGrant = await sql`
@@ -316,9 +315,9 @@ export async function POST(request: NextRequest) {
             AND grant_period_end = to_timestamp(${subscription.current_period_end})
           `
 
-          if (existingGrant.length === 0) {
+          if (existingGrant.length === 0 && productType === "sselfie_studio_membership") {
             // Grant monthly credits
-            await addCredits(userId, credits, "subscription_grant", `${tier} subscription - monthly renewal`)
+            await grantMonthlyCredits(userId, "sselfie_studio_membership")
 
             // Record the grant
             await sql`
@@ -331,7 +330,7 @@ export async function POST(request: NextRequest) {
               )
               VALUES (
                 ${userId},
-                ${tier},
+                ${productType},
                 ${credits},
                 to_timestamp(${subscription.current_period_start}),
                 to_timestamp(${subscription.current_period_end})
@@ -353,14 +352,12 @@ export async function POST(request: NextRequest) {
         break
       }
 
-      // Subscription cancelled
       case "customer.subscription.deleted": {
         const subscription = event.data.object
         const userId = subscription.metadata.user_id
 
         console.log(`[v0] Subscription cancelled for user ${userId}`)
 
-        // Update subscription status
         await sql`
           UPDATE subscriptions
           SET 

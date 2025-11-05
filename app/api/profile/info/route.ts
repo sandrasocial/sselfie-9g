@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
+import { getUserSubscription } from "@/lib/subscription"
 import { neon } from "@neondatabase/serverless"
 
 export async function GET() {
@@ -30,6 +31,8 @@ export async function GET() {
 
     const sql = neon(process.env.DATABASE_URL!)
 
+    const subscription = await getUserSubscription(neonUser.id)
+
     const userInfo = await sql`
       SELECT 
         u.id,
@@ -38,7 +41,6 @@ export async function GET() {
         u.last_name,
         u.display_name,
         u.profile_image_url,
-        u.plan,
         u.created_at,
         up.bio,
         up.instagram_handle,
@@ -66,7 +68,8 @@ export async function GET() {
       bio: profile.bio || null,
       instagram: profile.instagram_handle || null,
       location: profile.location || null,
-      plan: profile.plan || "free",
+      product_type: subscription?.product_type || null,
+      plan: subscription?.product_type || "free", // Keep for backwards compatibility
       memberSince: profile.created_at,
     }
 

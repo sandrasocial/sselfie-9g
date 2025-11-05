@@ -11,9 +11,8 @@ export const CREDIT_COSTS = {
 } as const
 
 export const SUBSCRIPTION_CREDITS = {
-  starter: 100,
-  pro: 250,
-  elite: 600,
+  sselfie_studio_membership: 250, // Studio membership gets 250 credits/month
+  one_time_session: 50, // One-time session gets 50 credits (one-time grant)
 } as const
 
 export type TransactionType =
@@ -49,7 +48,7 @@ export async function checkCredits(userId: string, requiredAmount: number): Prom
 }
 
 /**
- * Check if user has unlimited credits (elite plan or very high balance)
+ * Check if user has unlimited credits (studio membership with high balance)
  */
 async function hasUnlimitedCredits(userId: string): Promise<boolean> {
   try {
@@ -59,17 +58,16 @@ async function hasUnlimitedCredits(userId: string): Promise<boolean> {
       return true
     }
 
-    // Check subscription plan
     const subscriptionResult = await sql`
-      SELECT plan, status FROM subscriptions 
+      SELECT product_type, status FROM subscriptions 
       WHERE user_id = ${userId} 
       AND status = 'active'
       LIMIT 1
     `
 
-    if (subscriptionResult.length > 0 && subscriptionResult[0].plan === "elite") {
-      console.log("[v0] [CREDITS] User has active elite subscription - unlimited credits")
-      return true
+    if (subscriptionResult.length > 0 && subscriptionResult[0].product_type === "sselfie_studio_membership") {
+      console.log("[v0] [CREDITS] User has active studio membership - generous credit allocation")
+      return false // Studio members still use credits, but get 250/month
     }
 
     return false
@@ -259,9 +257,25 @@ export async function getCreditHistory(userId: string, limit = 50) {
 
 /**
  * Grant monthly subscription credits
+ * Updated to use new product types
  */
-export async function grantMonthlyCredits(userId: string, tier: "starter" | "pro" | "elite") {
-  const credits = SUBSCRIPTION_CREDITS[tier]
+export async function grantMonthlyCredits(userId: string, productType: "sselfie_studio_membership") {
+  const credits = SUBSCRIPTION_CREDITS[productType]
 
-  return await addCredits(userId, credits, "subscription_grant", `Monthly ${tier} subscription grant`)
+  return await addCredits(
+    userId,
+    credits,
+    "subscription_grant",
+    `Monthly ${productType === "sselfie_studio_membership" ? "Studio Membership" : "subscription"} grant`,
+  )
+}
+
+/**
+ * Grant one-time session credits
+ * New function for one-time session purchases
+ */
+export async function grantOneTimeSessionCredits(userId: string) {
+  const credits = SUBSCRIPTION_CREDITS.one_time_session
+
+  return await addCredits(userId, credits, "purchase", "One-Time SSELFIE Session purchase")
 }

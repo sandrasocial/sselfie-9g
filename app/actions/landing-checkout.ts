@@ -1,41 +1,42 @@
 "use server"
 
 import { stripe } from "@/lib/stripe"
-import { SUBSCRIPTION_TIERS } from "@/lib/products"
+import { getProductById } from "@/lib/pricing.config"
 
 /**
  * Create a Stripe checkout session for landing page (pre-authentication)
- * This uses redirect mode instead of embedded mode
+ * Updated to use new pricing configuration
  */
-export async function createLandingCheckoutSession(tierId: string) {
-  const tier = SUBSCRIPTION_TIERS.find((t) => t.id === tierId)
-  if (!tier) {
-    throw new Error(`Subscription tier with id "${tierId}" not found`)
+export async function createLandingCheckoutSession(productId: string) {
+  const product = getProductById(productId)
+  if (!product) {
+    throw new Error(`Product with id "${productId}" not found`)
   }
 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://sselfie.ai"
 
-  console.log("[v0] Landing checkout - NEXT_PUBLIC_SITE_URL:", process.env.NEXT_PUBLIC_SITE_URL)
-  console.log("[v0] Landing checkout - NEXT_PUBLIC_APP_URL:", process.env.NEXT_PUBLIC_APP_URL)
+  console.log("[v0] Landing checkout - Product:", productId)
   console.log("[v0] Landing checkout - Using baseUrl:", baseUrl)
-  console.log("[v0] Landing checkout - Success URL:", `${baseUrl}/checkout/success`)
-  console.log("[v0] Landing checkout - Tier:", tierId, "Credits:", tier.credits)
 
-  // Create Checkout Session with redirect URLs
+  // Determine if this is a subscription or one-time payment
+  const isSubscription = product.type === "sselfie_studio_membership"
+
   const session = await stripe.checkout.sessions.create({
-    mode: "subscription",
+    mode: isSubscription ? "subscription" : "payment",
     line_items: [
       {
         price_data: {
           currency: "usd",
           product_data: {
-            name: tier.name,
-            description: tier.description,
+            name: product.name,
+            description: product.description,
           },
-          unit_amount: tier.priceInCents,
-          recurring: {
-            interval: "month",
-          },
+          unit_amount: product.priceInCents,
+          ...(isSubscription && {
+            recurring: {
+              interval: "month",
+            },
+          }),
         },
         quantity: 1,
       },
@@ -44,23 +45,25 @@ export async function createLandingCheckoutSession(tierId: string) {
     cancel_url: `${baseUrl}/checkout/cancel`,
     allow_promotion_codes: true,
     billing_address_collection: "auto",
-    subscription_data: {
-      // Ensure credits are properly set in subscription metadata
-      metadata: {
-        tier: tierId,
-        credits: tier.credits.toString(),
-        source: "landing_page",
+    ...(isSubscription && {
+      subscription_data: {
+        metadata: {
+          product_id: productId,
+          product_type: product.type,
+          credits: product.credits?.toString() || "0",
+          source: "landing_page",
+        },
       },
-    },
+    }),
     metadata: {
-      tier: tierId,
-      credits: tier.credits.toString(),
+      product_id: productId,
+      product_type: product.type,
+      credits: product.credits?.toString() || "0",
       source: "landing_page",
     },
   })
 
   console.log("[v0] Landing checkout - Created session:", session.id)
-  console.log("[v0] Landing checkout - Session metadata:", session.metadata)
 
   return session.url
 }
