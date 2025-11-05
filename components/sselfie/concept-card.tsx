@@ -106,6 +106,11 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
       console.log("[v0] Full concept object:", JSON.stringify(concept, null, 2))
       console.log("[v0] ================================================")
 
+      const settingsStr = localStorage.getItem("mayaGenerationSettings")
+      console.log("[v0] 📊 Raw settings from localStorage:", settingsStr)
+      const customSettings = settingsStr ? JSON.parse(settingsStr) : null
+      console.log("[v0] 📊 Parsed custom settings:", customSettings)
+
       const response = await fetch("/api/maya/generate-image", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -117,6 +122,7 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
           category: concept.category,
           chatId,
           referenceImageUrl: concept.referenceImageUrl,
+          customSettings,
         }),
       })
 

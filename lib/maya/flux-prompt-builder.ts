@@ -127,7 +127,7 @@ export class FluxPromptBuilder {
     if (category === "portrait" || category === "headshot") {
       specs.push("85mm lens", "shallow depth of field", "bokeh background")
     } else if (category === "lifestyle") {
-      specs.push("35mm lens", "natural depth of field")
+      specs.push("50mm lens", "natural depth of field", "environmental storytelling")
     } else if (category === "editorial") {
       specs.push("50mm lens", "medium depth of field")
     } else {
@@ -216,7 +216,13 @@ export class FluxPromptBuilder {
     if (category === "portrait" || category === "headshot") {
       specs.push("medium shot", "centered composition", "professional framing")
     } else if (category === "lifestyle") {
-      specs.push("full body shot", "dynamic composition", "environmental context")
+      specs.push(
+        "3/4 body shot with face clearly visible",
+        "defined facial features with natural skin texture",
+        "warm lighting illuminating face",
+        "dynamic composition",
+        "environmental context without losing facial detail",
+      )
     } else if (category === "editorial") {
       specs.push("artistic composition", "strong visual impact", "magazine quality")
     } else {

@@ -67,9 +67,9 @@ export async function POST(request: Request) {
         num_outputs: 4,
         aspect_ratio: "1:1",
         output_format: "png", // Updated from webp to png
-        output_quality: 100, // Updated from 90 to 100
+        output_quality: 95, // Updated from 100 to 95
         num_inference_steps: 28,
-        guidance_scale: 5,
+        guidance_scale: 3.2, // Increased guidance_scale from 2.8 to 3.2 for more realistic images
         lora: model.lora_weights_url,
         lora_scale: model.lora_scale || 0.9,
         extra_lora_scale: 1, // Added new flux parameters

@@ -237,8 +237,10 @@ Be creative and authentic. No generic templates - every element should feel cust
         const lensSpecs = {
           "Close-Up": "shot on 85mm lens f/1.4, shallow depth of field, creamy bokeh, face focus",
           "Half Body": "shot on 50mm lens f/2.0, medium depth of field, balanced composition, upper body focus",
-          "Full Body": "shot on 35mm lens f/2.8, environmental context, full scene, head to toe",
-          Lifestyle: "shot on 35mm lens f/2.0, natural environment, authentic moment, environmental storytelling",
+          "Full Body":
+            "shot on 50mm lens f/2.8, 3/4 body framing with face clearly visible and well-defined, natural skin texture with healthy glow, catchlights in eyes, warm golden hour light illuminating face from favorable angle, environmental context without sacrificing facial detail, medium shot that shows outfit while maintaining facial clarity",
+          Lifestyle:
+            "shot on 50mm lens f/2.0, natural environment, authentic moment, environmental storytelling with clear facial features",
         }
 
         const colorDescription = colorPalette
@@ -259,7 +261,7 @@ Be creative and authentic. No generic templates - every element should feel cust
 
         const fashionDetails =
           post.type === "Full Body"
-            ? `wearing sophisticated ${colorDescription} attire with impeccable tailoring and refined silhouette, ${post.styleDirection}, styled with carefully chosen accessories that complement the overall aesthetic, complete outfit showcasing personal style and brand identity`
+            ? `wearing sophisticated ${colorDescription} attire with impeccable tailoring and refined silhouette, ${post.styleDirection}, styled with carefully chosen accessories that complement the overall aesthetic, complete outfit showcasing personal style and brand identity, defined facial features with natural skin texture and healthy glow, warm lighting illuminating face to ensure facial clarity, catchlights in eyes for engaging presence, 3/4 body framing that shows full outfit while keeping face sharp and well-defined`
             : post.type === "Half Body"
               ? `dressed in elegant ${colorDescription} professional attire with attention to fabric quality and fit, ${post.styleDirection}, styled with minimal sophisticated accessories, upper body styling that conveys both professionalism and approachability`
               : post.type === "Close-Up"

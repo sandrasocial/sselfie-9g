@@ -140,7 +140,7 @@ Use your sophisticated fashion knowledge:
 **CAMERA & LENS SPECIFICATIONS** (ALWAYS AT THE END):
 - Close-Up/Portrait: "shot on 85mm f/1.4 lens with creamy bokeh"
 - Half Body: "shot on 50mm f/1.8 lens with balanced composition"
-- Full Body: "shot on 35mm f/2.0 lens capturing full scene"
+- Full Body: "shot on 50mm f/2.0 lens, 3/4 body framing with face clearly visible, defined facial features, natural skin texture, warm lighting illuminating face"
 
 **EXAMPLE OF EXCELLENT PROMPT:**
 

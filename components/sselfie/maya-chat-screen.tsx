@@ -4,11 +4,13 @@ import type React from "react"
 import VideoCard from "./video-card"
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport } from "ai"
-import { Camera, Send, Plus, ArrowDown, History, X } from "lucide-react"
-import { useState, useEffect, useRef } from "react"
+import { Camera, Send, Plus, ArrowDown, History, X, Settings } from "lucide-react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import ConceptCard from "./concept-card"
 import MayaChatHistory from "./maya-chat-history"
 import UnifiedLoading from "./unified-loading"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Slider } from "@/components/ui/slider"
 
 interface MayaChatScreenProps {
   onImageGenerated?: () => void
@@ -23,8 +25,9 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const [showScrollButton, setShowScrollButton] = useState(false)
-  const [isUserScrolling, setIsUserScrolling] = useState(false)
-  const lastScrollTop = useRef(0)
+  const isAtBottomRef = useRef(true)
+  const lastScrollHeightRef = useRef(0)
+  const [userHasScrolledUp, setUserHasScrolledUp] = useState(false)
   const [uploadedImage, setUploadedImage] = useState<string | null>(null)
   const [isUploadingImage, setIsUploadingImage] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -35,6 +38,36 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
   const [userGender, setUserGender] = useState<string | null>(null)
   const [showHeader, setShowHeader] = useState(true)
   const lastScrollY = useRef(0)
+  const shouldAutoScrollRef = useRef(true)
+
+  const [styleStrength, setStyleStrength] = useState(1.0) // LoRA scale: 0.9-1.2
+  const [promptAccuracy, setPromptAccuracy] = useState(3.5) // Guidance scale: 2.5-5.0
+  const [showSettings, setShowSettings] = useState(false)
+
+  useEffect(() => {
+    const settingsStr = localStorage.getItem("mayaGenerationSettings")
+    if (settingsStr) {
+      try {
+        const settings = JSON.parse(settingsStr)
+        console.log("[v0] 📊 Loaded saved settings from localStorage:", settings)
+        setStyleStrength(settings.styleStrength || 1.0)
+        setPromptAccuracy(settings.promptAccuracy || 3.5)
+      } catch (error) {
+        console.error("[v0] ❌ Error loading settings:", error)
+      }
+    } else {
+      console.log("[v0] 📊 No saved settings found, using defaults")
+    }
+  }, [])
+
+  useEffect(() => {
+    const settings = {
+      styleStrength,
+      promptAccuracy,
+    }
+    console.log("[v0] 💾 Saving settings to localStorage:", settings)
+    localStorage.setItem("mayaGenerationSettings", JSON.stringify(settings))
+  }, [styleStrength, promptAccuracy])
 
   const { messages, sendMessage, status, setMessages } = useChat({
     transport: new DefaultChatTransport({ api: "/api/maya/chat" }),
@@ -252,16 +285,27 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
     fetchUserGender()
   }, [])
 
-  const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
-    messagesEndRef.current?.scrollIntoView({ behavior, block: "end" })
-  }
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
+    if (!messagesContainerRef.current) return
 
-  const handleScroll = () => {
+    const container = messagesContainerRef.current
+    container.scrollTo({
+      top: container.scrollHeight,
+      behavior,
+    })
+  }, [])
+
+  const handleScroll = useCallback(() => {
     if (!messagesContainerRef.current) return
 
     const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current
-    const isAtBottom = scrollHeight - scrollTop - clientHeight < 100
+    const distanceFromBottom = scrollHeight - scrollTop - clientHeight
 
+    // User is at bottom if within 50px
+    const isAtBottom = distanceFromBottom < 50
+    isAtBottomRef.current = isAtBottom
+
+    // Show scroll button when not at bottom
     setShowScrollButton(!isAtBottom)
 
     // Hide header on scroll down, show on scroll up
@@ -271,15 +315,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
       setShowHeader(true)
     }
     lastScrollY.current = scrollTop
-
-    if (scrollTop < lastScrollTop.current) {
-      setIsUserScrolling(true)
-    } else if (isAtBottom) {
-      setIsUserScrolling(false)
-    }
-
-    lastScrollTop.current = scrollTop
-  }
+  }, [])
 
   const retryFailedSaves = async () => {
     if (retryQueue.current.length === 0) return
@@ -317,16 +353,29 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
   }, [])
 
   useEffect(() => {
-    if (!isUserScrolling) {
-      scrollToBottom("smooth")
+    if (!messagesContainerRef.current) return
+
+    const container = messagesContainerRef.current
+    const currentScrollHeight = container.scrollHeight
+
+    // Only auto-scroll if user is at bottom
+    if (isAtBottomRef.current) {
+      // Use instant scroll during streaming for better performance
+      scrollToBottom(isTyping ? "instant" : "smooth")
     }
-  }, [messages, isTyping])
+
+    lastScrollHeightRef.current = currentScrollHeight
+  }, [messages, isTyping, scrollToBottom])
 
   useEffect(() => {
-    if (!isLoadingChat) {
-      setTimeout(() => scrollToBottom("auto"), 100)
+    if (!isLoadingChat && messages.length > 0) {
+      // Small delay to ensure DOM is ready
+      setTimeout(() => {
+        scrollToBottom("instant")
+        isAtBottomRef.current = true
+      }, 100)
     }
-  }, [isLoadingChat])
+  }, [isLoadingChat, scrollToBottom])
 
   const loadChat = async (specificChatId?: number) => {
     try {
@@ -402,55 +451,24 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
   }, [status, isTyping])
 
   useEffect(() => {
-    console.log("[v0] 🔍 Assistant save useEffect triggered:", {
-      chatId,
-      isTyping,
-      messagesCount: messages.length,
-      lastMessageRole: messages[messages.length - 1]?.role,
-      lastMessageId: messages[messages.length - 1]?.id,
-    })
-
-    if (!chatId) {
-      console.log("[v0] ⏭️ Skipping save - no chatId")
-      return
-    }
-
-    if (isTyping) {
-      console.log("[v0] ⏭️ Skipping save - still typing")
-      return
-    }
+    if (!chatId || isTyping) return
 
     const lastMessage = messages[messages.length - 1]
-    if (!lastMessage) {
-      console.log("[v0] ⏭️ Skipping save - no messages")
-      return
-    }
-
-    if (lastMessage.role !== "assistant") {
-      console.log("[v0] ⏭️ Skipping save - last message is not assistant, it's:", lastMessage.role)
-      return
-    }
-
-    if (savedMessageIds.current.has(lastMessage.id)) {
-      console.log("[v0] ⏭️ Skipping save - message already saved:", lastMessage.id)
-      return
-    }
+    if (!lastMessage || lastMessage.role !== "assistant") return
+    if (savedMessageIds.current.has(lastMessage.id)) return
 
     const parts = lastMessage.parts || []
-
-    // Extract text content from text parts
     const textParts = parts.filter((p: any) => p.type === "text")
     const textContent = textParts
       .map((p: any) => p.text)
       .join("\n")
       .trim()
 
-    // Extract concept cards from tool-generateConcepts parts
     const conceptParts = parts.filter((p: any) => p.type === "tool-generateConcepts")
     const conceptCards: any[] = []
 
     conceptParts.forEach((part: any) => {
-      if (part.output && part.output.state === "ready" && Array.isArray(part.output.concepts)) {
+      if (part.output?.state === "ready" && Array.isArray(part.output.concepts)) {
         conceptCards.push(...part.output.concepts)
       }
     })
@@ -458,62 +476,36 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
     const hasContent = textContent.length > 0
     const hasConcepts = conceptCards.length > 0
 
-    console.log("[v0] 📊 Message analysis:", {
-      messageId: lastMessage.id,
-      hasContent,
-      contentLength: textContent.length,
-      hasConcepts,
-      conceptsCount: conceptCards.length,
-      partsCount: parts.length,
-      textPartsCount: textParts.length,
-      conceptPartsCount: conceptParts.length,
-    })
+    if (!hasContent && !hasConcepts) return
 
-    if (!hasContent && !hasConcepts) {
-      console.log("[v0] ⏭️ Skipping save - no content and no concepts")
-      return
-    }
-
-    console.log("[v0] 💾 Saving assistant message:", {
-      messageId: lastMessage.id,
-      chatId,
-      hasContent,
-      conceptCount: conceptCards.length,
-      conceptCards: conceptCards.map((c: any) => ({
-        title: c.title,
-        category: c.category,
-        type: c.type,
-      })),
-    })
-
+    // Mark as saved immediately to prevent duplicate saves
     savedMessageIds.current.add(lastMessage.id)
 
-    fetch("/api/maya/save-message", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chatId,
-        role: lastMessage.role,
-        content: textContent || "",
-        conceptCards: conceptCards.length > 0 ? conceptCards : null,
-      }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          console.log("[v0] ✅ Assistant message saved successfully:", {
-            messageId: data.message?.id,
-            savedConceptsCount: data.message?.concept_cards?.length || 0,
-          })
-        } else {
-          console.error("[v0] ❌ Failed to save assistant message:", data.error)
+    const saveTimeout = setTimeout(() => {
+      fetch("/api/maya/save-message", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chatId,
+          role: lastMessage.role,
+          content: textContent || "",
+          conceptCards: conceptCards.length > 0 ? conceptCards : null,
+        }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (!data.success) {
+            console.error("[v0] ❌ Failed to save assistant message:", data.error)
+            savedMessageIds.current.delete(lastMessage.id)
+          }
+        })
+        .catch((error) => {
+          console.error("[v0] ❌ Save error:", error)
           savedMessageIds.current.delete(lastMessage.id)
-        }
-      })
-      .catch((error) => {
-        console.error("[v0] ❌ Save error:", error)
-        savedMessageIds.current.delete(lastMessage.id)
-      })
+        })
+    }, 500)
+
+    return () => clearTimeout(saveTimeout)
   }, [messages, chatId, isTyping])
 
   const handleDragEnter = (e: React.DragEvent) => {
@@ -637,15 +629,14 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
     if ((messageText || uploadedImage) && !isTyping) {
       const messageContent = uploadedImage ? `${messageText}\n\n[Reference Image: ${uploadedImage}]` : messageText
 
-      console.log("[v0] 📤 Sending user message:", {
-        chatId,
-        messageLength: messageContent.length,
-        hasImage: !!uploadedImage,
+      console.log("[v0] 📤 Sending message with settings:", {
+        styleStrength,
+        promptAccuracy,
       })
 
-      // Save user message immediately
+      isAtBottomRef.current = true
+
       if (chatId) {
-        console.log("[v0] 💾 Saving user message to database")
         fetch("/api/maya/save-message", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -654,26 +645,14 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
             role: "user",
             content: messageContent,
           }),
+        }).catch((error) => {
+          console.error("[v0] ❌ Error saving user message:", error)
         })
-          .then((res) => res.json())
-          .then((data) => {
-            if (data.success) {
-              console.log("[v0] ✅ User message saved successfully")
-            } else {
-              console.error("[v0] ❌ Failed to save user message:", data.error)
-            }
-          })
-          .catch((error) => {
-            console.error("[v0] ❌ Error saving user message:", error)
-          })
-      } else {
-        console.error("[v0] ❌ Cannot save user message - chatId is null")
       }
 
       sendMessage({ text: messageContent })
       setInputValue("")
       setUploadedImage(null)
-      setIsUserScrolling(false)
     }
   }
 
@@ -688,10 +667,10 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
         setChatId(data.chatId)
         savedMessageIds.current.clear()
         setMessages([])
-        setIsUserScrolling(false)
+        isAtBottomRef.current = true
         setShowHistory(false)
         setCurrentPrompts(getRandomPrompts(userGender))
-        setTimeout(() => scrollToBottom("auto"), 100)
+        setTimeout(() => scrollToBottom("instant"), 100)
       }
     } catch (error) {
       console.error("[v0] Error creating new chat:", error)
@@ -699,11 +678,11 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
   }
 
   const handleSelectChat = (selectedChatId: number) => {
-    console.log("[v0] Chat selected:", selectedChatId, "Current chat:", chatId)
     if (selectedChatId !== chatId) {
       setChatId(selectedChatId)
       setMessages([])
       savedMessageIds.current.clear()
+      isAtBottomRef.current = true
       loadChat(selectedChatId)
     }
   }
@@ -848,7 +827,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
                             className={`p-4 rounded-2xl transition-all duration-300 ${
                               msg.role === "user"
                                 ? "bg-stone-950 text-white shadow-lg shadow-stone-950/20"
-                                : "bg-white/50 backdrop-blur-2xl border border-white/70 shadow-lg shadow-stone-950/5 text-stone-950"
+                                : "bg-white/50 backdrop-blur-xl border border-white/70 shadow-lg shadow-stone-950/5 text-stone-950"
                             }`}
                             role={msg.role === "assistant" ? "article" : undefined}
                           >
@@ -861,17 +840,8 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
                         const toolPart = part as any
                         const output = toolPart.output
 
-                        console.log("[v0] Rendering concept card part:", {
-                          messageId: msg.id,
-                          hasOutput: !!output,
-                          outputState: output?.state,
-                          hasConcepts: Array.isArray(output?.concepts),
-                          conceptsLength: output?.concepts?.length || 0,
-                        })
-
                         if (output && output.state === "ready" && Array.isArray(output.concepts)) {
                           const concepts = output.concepts
-                          console.log("[v0] Rendering", concepts.length, "concept cards for message", msg.id)
 
                           return (
                             <div key={partIndex} className="mt-3 space-y-2">
@@ -899,13 +869,6 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
                               </div>
                             </div>
                           )
-                        } else {
-                          console.log("[v0] Concept cards not rendered - conditions not met:", {
-                            hasOutput: !!output,
-                            state: output?.state,
-                            hasConcepts: Array.isArray(output?.concepts),
-                            conceptsLength: output?.concepts?.length || 0,
-                          })
                         }
                       }
 
@@ -985,7 +948,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
         {showScrollButton && (
           <button
             onClick={() => {
-              setIsUserScrolling(false)
+              isAtBottomRef.current = true
               scrollToBottom("smooth")
             }}
             className="absolute bottom-32 right-6 p-3 bg-stone-950 text-white rounded-full shadow-2xl shadow-stone-900/40 hover:scale-110 active:scale-95 transition-all duration-300 z-10 animate-in fade-in slide-in-from-bottom-2 min-w-[44px] min-h-[44px] flex items-center justify-center"
@@ -1038,6 +1001,91 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
         )}
 
         <div className="flex gap-2">
+          <Popover open={showSettings} onOpenChange={setShowSettings}>
+            <PopoverTrigger asChild>
+              <button
+                className="p-3 bg-white/40 backdrop-blur-2xl border border-white/60 rounded-xl hover:bg-white/60 transition-all duration-300 min-h-[48px] min-w-[48px] flex items-center justify-center shadow-lg shadow-stone-950/10"
+                aria-label="Generation settings"
+                type="button"
+              >
+                <Settings size={16} className="text-stone-600" strokeWidth={2} />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              className="w-80 p-6 bg-white/95 backdrop-blur-xl border border-stone-200 shadow-2xl"
+              align="start"
+              side="top"
+            >
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-sm font-serif font-extralight tracking-[0.2em] uppercase text-stone-950 mb-4">
+                    Generation Settings
+                  </h3>
+                  <p className="text-xs text-stone-600 leading-relaxed mb-6">Fine-tune how Maya creates your images</p>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <label className="text-xs font-medium text-stone-700 tracking-wide">Style Strength</label>
+                      <span className="text-xs font-mono text-stone-500 bg-stone-100 px-2 py-0.5 rounded">
+                        {styleStrength.toFixed(1)}
+                      </span>
+                    </div>
+                    <Slider
+                      value={[styleStrength]}
+                      onValueChange={(value) => {
+                        console.log("[v0] 🎚️ Style Strength changed to:", value[0])
+                        setStyleStrength(value[0])
+                      }}
+                      min={0.9}
+                      max={1.2}
+                      step={0.1}
+                      className="w-full"
+                    />
+                    <p className="text-xs text-stone-500 mt-2 leading-relaxed">
+                      How strongly your trained style is applied
+                    </p>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <label className="text-xs font-medium text-stone-700 tracking-wide">Prompt Accuracy</label>
+                      <span className="text-xs font-mono text-stone-500 bg-stone-100 px-2 py-0.5 rounded">
+                        {promptAccuracy.toFixed(1)}
+                      </span>
+                    </div>
+                    <Slider
+                      value={[promptAccuracy]}
+                      onValueChange={(value) => {
+                        console.log("[v0] 🎚️ Prompt Accuracy changed to:", value[0])
+                        setPromptAccuracy(value[0])
+                      }}
+                      min={2.5}
+                      max={5.0}
+                      step={0.1}
+                      className="w-full"
+                    />
+                    <p className="text-xs text-stone-500 mt-2 leading-relaxed">
+                      How closely the AI follows your description
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    console.log("[v0] 🔄 Resetting settings to defaults")
+                    setStyleStrength(1.0)
+                    setPromptAccuracy(3.5)
+                  }}
+                  className="w-full py-2 text-xs text-stone-600 hover:text-stone-950 transition-colors tracking-wide"
+                >
+                  Reset to defaults
+                </button>
+              </div>
+            </PopoverContent>
+          </Popover>
+
           <div className="flex-1 relative group">
             <input
               type="text"

@@ -27,6 +27,7 @@ export async function POST(request: NextRequest) {
       addTextOverlay,
       textOverlayConfig,
       isHighlight,
+      customSettings,
     } = body
 
     console.log("[v0] Generating image for concept:", {
@@ -120,7 +121,16 @@ export async function POST(request: NextRequest) {
     const qualitySettings =
       MAYA_QUALITY_PRESETS[category as keyof typeof MAYA_QUALITY_PRESETS] || MAYA_QUALITY_PRESETS.default
 
-    if (userLoraScale !== null && userLoraScale !== undefined) {
+    if (customSettings) {
+      if (customSettings.styleStrength !== undefined) {
+        qualitySettings.lora_scale = Number(customSettings.styleStrength)
+        console.log("[v0] Using custom style strength (LoRA scale):", qualitySettings.lora_scale)
+      }
+      if (customSettings.promptAccuracy !== undefined) {
+        qualitySettings.guidance_scale = Number(customSettings.promptAccuracy)
+        console.log("[v0] Using custom prompt accuracy (guidance scale):", qualitySettings.guidance_scale)
+      }
+    } else if (userLoraScale !== null && userLoraScale !== undefined) {
       qualitySettings.lora_scale = Number(userLoraScale)
       console.log("[v0] Using user-specific LoRA scale:", qualitySettings.lora_scale)
     } else {
