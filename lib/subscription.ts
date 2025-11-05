@@ -86,3 +86,24 @@ export async function getUserProductAccess(userId: string): Promise<ProductType 
     return null
   }
 }
+
+/**
+ * @deprecated Use getUserProductAccess() instead
+ * Backward compatibility function for old tier-based system
+ * Maps product types to legacy tier names
+ */
+export async function getUserTier(userId: string): Promise<string> {
+  console.log("[v0] getUserTier is deprecated, using getUserProductAccess instead")
+  const productType = await getUserProductAccess(userId)
+
+  // Map new product types to legacy tier names for backward compatibility
+  if (productType === "sselfie_studio_membership") {
+    return "studio" // Map to a generic tier name
+  }
+
+  if (productType === "one_time_session") {
+    return "session" // Map one-time sessions to a basic tier
+  }
+
+  return "free" // No active subscription
+}

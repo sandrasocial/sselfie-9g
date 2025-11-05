@@ -1,34 +1,86 @@
+/**
+ * Products Configuration
+ * Part of the new simplified SSELFIE pricing model
+ */
+
 export interface CreditPackage {
   id: string
   name: string
+  displayName?: string
   credits: number
   priceInCents: number
   description: string
   popular?: boolean
 }
 
-// Credit packages for one-time purchases
+export interface PricingProduct {
+  id: string
+  name: string
+  displayName: string
+  description: string
+  priceInCents: number
+  type: "one_time_session" | "sselfie_studio_membership" | "credit_topup"
+  features?: string[]
+  credits?: number
+  stripePriceId?: string
+  popular?: boolean
+}
+
+// Re-export credit packages from the centralized location
 export const CREDIT_PACKAGES: CreditPackage[] = [
   {
-    id: "credits-50",
-    name: "50 CREDITS",
+    id: "credits_50",
+    name: "50 Credits",
+    displayName: "50 Credits",
     credits: 50,
-    priceInCents: 1200, // $12 ($0.24 per credit - 20% markup)
-    description: "Perfect for trying out features",
+    priceInCents: 1200,
+    description: "Perfect for a few extra photos",
   },
   {
-    id: "credits-150",
-    name: "150 CREDITS",
+    id: "credits_150",
+    name: "150 Credits",
+    displayName: "150 Credits",
     credits: 150,
-    priceInCents: 3300, // $33 ($0.22 per credit - 10% markup)
-    description: "Great for regular users",
+    priceInCents: 3300,
+    description: "Great for regular use",
     popular: true,
   },
   {
-    id: "credits-500",
-    name: "500 CREDITS",
+    id: "credits_500",
+    name: "500 Credits",
+    displayName: "500 Credits",
     credits: 500,
-    priceInCents: 10000, // $100 ($0.20 per credit - break even)
+    priceInCents: 10000,
     description: "Best value for power users",
   },
 ]
+
+export const PRICING_PRODUCTS: PricingProduct[] = [
+  {
+    id: "one_time_session",
+    name: "One-Time SSELFIE Session",
+    displayName: "One-Time Session",
+    description: "Try one professional AI photoshoot. No subscription, just a one-time session.",
+    priceInCents: 4900,
+    type: "one_time_session",
+    credits: 50,
+  },
+  {
+    id: "sselfie_studio_membership",
+    name: "SSELFIE Studio Membership",
+    displayName: "Studio Membership",
+    description: "Join the Studio for new photos, fresh tools, and monthly brand drops.",
+    priceInCents: 9900,
+    type: "sselfie_studio_membership",
+    credits: 250,
+    popular: true,
+  },
+]
+
+export function getProductById(productId: string): PricingProduct | undefined {
+  return PRICING_PRODUCTS.find((p) => p.id === productId)
+}
+
+export function getCreditPackageById(packageId: string): CreditPackage | undefined {
+  return CREDIT_PACKAGES.find((p) => p.id === packageId)
+}

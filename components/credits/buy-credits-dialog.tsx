@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react"
 import { loadStripe } from "@stripe/stripe-js"
 import { EmbeddedCheckout, EmbeddedCheckoutProvider } from "@stripe/react-stripe-js"
-import { CREDIT_PACKAGES } from "@/lib/products"
+import { CREDIT_PACKAGES } from "@/lib/credit-packages"
 import { startCreditCheckoutSession } from "@/app/actions/stripe"
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)

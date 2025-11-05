@@ -1,11 +1,12 @@
 "use server"
 
 import { stripe } from "@/lib/stripe"
-import { CREDIT_PACKAGES, getProductById } from "@/lib/pricing.config"
 import { getUserByAuthId } from "@/lib/data/users"
+import { getCreditPackageById } from "@/lib/credit-packages"
+import { getProductById } from "@/lib/products"
 
 export async function startCreditCheckoutSession(packageId: string) {
-  const creditPackage = CREDIT_PACKAGES.find((p) => p.id === packageId)
+  const creditPackage = getCreditPackageById(packageId)
   if (!creditPackage) {
     throw new Error(`Credit package with id "${packageId}" not found`)
   }

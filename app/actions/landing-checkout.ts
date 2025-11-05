@@ -1,7 +1,7 @@
 "use server"
 
 import { stripe } from "@/lib/stripe"
-import { getProductById } from "@/lib/pricing.config"
+import { getProductById } from "@/lib/products"
 
 /**
  * Create a Stripe checkout session for landing page (pre-authentication)

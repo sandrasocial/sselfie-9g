@@ -1,41 +1,47 @@
+/**
+ * Credit Packages Configuration
+ * Part of the new simplified SSELFIE pricing model
+ */
+
 export interface CreditPackage {
   id: string
   name: string
+  displayName?: string
   credits: number
   priceInCents: number
-  popular?: boolean
   description: string
+  popular?: boolean
 }
 
-// Source of truth for all credit packages
+// Centralized credit packages for the new pricing model
 export const CREDIT_PACKAGES: CreditPackage[] = [
   {
-    id: "credits-25",
-    name: "25 Credits",
-    credits: 25,
-    priceInCents: 999, // $9.99 = $0.40/credit (50% margin)
-    description: "Perfect for trying out the platform",
+    id: "credits_50",
+    name: "50 Credits",
+    displayName: "50 Credits",
+    credits: 50,
+    priceInCents: 1200,
+    description: "Perfect for a few extra photos",
   },
   {
-    id: "credits-80",
-    name: "80 Credits",
-    credits: 80,
-    priceInCents: 2499, // $24.99 = $0.31/credit (35% margin)
+    id: "credits_150",
+    name: "150 Credits",
+    displayName: "150 Credits",
+    credits: 150,
+    priceInCents: 3300,
+    description: "Great for regular use",
     popular: true,
-    description: "Most popular - Best value",
   },
   {
-    id: "credits-200",
-    name: "200 Credits",
-    credits: 200,
-    priceInCents: 4499, // $44.99 = $0.22/credit (10% margin)
-    description: "For power users",
-  },
-  {
-    id: "credits-500",
+    id: "credits_500",
     name: "500 Credits",
+    displayName: "500 Credits",
     credits: 500,
-    priceInCents: 12999, // $129.99 = $0.26/credit (23% margin)
-    description: "Ultimate package",
+    priceInCents: 10000,
+    description: "Best value for power users",
   },
 ]
+
+export function getCreditPackageById(packageId: string): CreditPackage | undefined {
+  return CREDIT_PACKAGES.find((p) => p.id === packageId)
+}

@@ -537,3 +537,13 @@ export const updateLessonProgress = updateVideoWatchTime
  * Alias for completeLesson - marks lesson as complete
  */
 export const markLessonComplete = completeLesson
+
+/**
+ * @deprecated Use getCoursesForMembership() instead
+ * Backward compatibility function for old tier-based system
+ */
+export async function getCoursesForTier(tier?: string): Promise<AcademyCourse[]> {
+  console.log("[v0] getCoursesForTier is deprecated, using getCoursesForMembership instead")
+  // All tiers now get access to all courses via Studio Membership
+  return getCoursesForMembership()
+}

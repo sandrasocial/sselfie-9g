@@ -1,11 +1,11 @@
 /**
  * Centralized Pricing Configuration for SSELFIE
- *
- * New simplified pricing model:
- * - One-Time SSELFIE Session: Single purchase for a professional AI photoshoot
- * - SSELFIE Studio Membership: Monthly recurring membership with full access
- * - Credit Top-Ups: Additional credits available for purchase
+ * Single source of truth for all pricing, products, and credit packages
  */
+
+// ============================================================================
+// TYPE DEFINITIONS
+// ============================================================================
 
 export interface PricingProduct {
   id: string
@@ -16,19 +16,33 @@ export interface PricingProduct {
   type: "one_time_session" | "sselfie_studio_membership" | "credit_topup"
   features?: string[]
   credits?: number
-  stripePriceId?: string // To be configured in Stripe dashboard
+  stripePriceId?: string
   popular?: boolean
 }
+
+export interface CreditPackage {
+  id: string
+  name: string
+  displayName: string
+  credits: number
+  priceInCents: number
+  description: string
+  popular?: boolean
+}
+
+// ============================================================================
+// PRICING PRODUCTS
+// ============================================================================
 
 export const PRICING_PRODUCTS: PricingProduct[] = [
   {
     id: "one_time_session",
     name: "One-Time SSELFIE Session",
     displayName: "One-Time Session",
-    description: "Try one professional AI photoshoot of you. No subscription, just a one-time session.",
-    priceInCents: 4900, // $49
+    description: "Try one professional AI photoshoot. No subscription, just a one-time session.",
+    priceInCents: 4900,
     type: "one_time_session",
-    credits: 50, // Enough for training + generating photos
+    credits: 50,
     features: [
       "One AI model training",
       "Generate up to 50 professional photos",
@@ -42,9 +56,9 @@ export const PRICING_PRODUCTS: PricingProduct[] = [
     name: "SSELFIE Studio Membership",
     displayName: "Studio Membership",
     description: "Join the Studio for new photos, fresh tools, and monthly brand drops.",
-    priceInCents: 9900, // $99/month
+    priceInCents: 9900,
     type: "sselfie_studio_membership",
-    credits: 250, // Monthly credit allocation
+    credits: 250,
     popular: true,
     features: [
       "Unlimited AI model trainings",
@@ -59,15 +73,9 @@ export const PRICING_PRODUCTS: PricingProduct[] = [
   },
 ]
 
-export interface CreditPackage {
-  id: string
-  name: string
-  displayName: string
-  credits: number
-  priceInCents: number
-  description: string
-  popular?: boolean
-}
+// ============================================================================
+// CREDIT PACKAGES
+// ============================================================================
 
 export const CREDIT_PACKAGES: CreditPackage[] = [
   {
@@ -75,7 +83,7 @@ export const CREDIT_PACKAGES: CreditPackage[] = [
     name: "50 Credits",
     displayName: "50 Credits",
     credits: 50,
-    priceInCents: 1200, // $12
+    priceInCents: 1200,
     description: "Perfect for a few extra photos",
   },
   {
@@ -83,7 +91,7 @@ export const CREDIT_PACKAGES: CreditPackage[] = [
     name: "150 Credits",
     displayName: "150 Credits",
     credits: 150,
-    priceInCents: 3300, // $33
+    priceInCents: 3300,
     description: "Great for regular use",
     popular: true,
   },
@@ -92,18 +100,25 @@ export const CREDIT_PACKAGES: CreditPackage[] = [
     name: "500 Credits",
     displayName: "500 Credits",
     credits: 500,
-    priceInCents: 10000, // $100
+    priceInCents: 10000,
     description: "Best value for power users",
   },
 ]
 
+// ============================================================================
+// CREDIT COSTS
+// ============================================================================
+
 export const CREDIT_COSTS = {
-  TRAINING: 25, // AI model training
-  IMAGE: 1, // Single image generation
-  ANIMATION: 3, // Video/animation generation
+  TRAINING: 25,
+  IMAGE: 1,
+  ANIMATION: 3,
 } as const
 
-// Helper functions
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
 export function getProductById(productId: string): PricingProduct | undefined {
   return PRICING_PRODUCTS.find((p) => p.id === productId)
 }
@@ -116,12 +131,10 @@ export function getProductByType(type: PricingProduct["type"]): PricingProduct |
   return PRICING_PRODUCTS.find((p) => p.type === type)
 }
 
-// Format price for display
 export function formatPrice(priceInCents: number): string {
   return `$${(priceInCents / 100).toFixed(2)}`
 }
 
-// Get product display name for UI
 export function getProductDisplayName(productId: string): string {
   const product = getProductById(productId)
   return product?.displayName || productId
