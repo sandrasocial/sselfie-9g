@@ -42,6 +42,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
 
   const [styleStrength, setStyleStrength] = useState(1.0) // LoRA scale: 0.9-1.2
   const [promptAccuracy, setPromptAccuracy] = useState(3.5) // Guidance scale: 2.5-5.0
+  const [aspectRatio, setAspectRatio] = useState("1:1")
   const [showSettings, setShowSettings] = useState(false)
 
   const settingsSaveTimerRef = useRef<NodeJS.Timeout | null>(null)
@@ -57,6 +58,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
         console.log("[v0] 📊 Loaded saved settings from localStorage:", settings)
         setStyleStrength(settings.styleStrength || 1.0)
         setPromptAccuracy(settings.promptAccuracy || 3.5)
+        setAspectRatio(settings.aspectRatio || "1:1")
       } catch (error) {
         console.error("[v0] ❌ Error loading settings:", error)
       }
@@ -76,6 +78,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
       const settings = {
         styleStrength,
         promptAccuracy,
+        aspectRatio,
       }
       console.log("[v0] 💾 Saving settings to localStorage:", settings)
       localStorage.setItem("mayaGenerationSettings", JSON.stringify(settings))
@@ -87,7 +90,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
         clearTimeout(settingsSaveTimerRef.current)
       }
     }
-  }, [styleStrength, promptAccuracy])
+  }, [styleStrength, promptAccuracy, aspectRatio]) // Added aspectRatio to dependencies
 
   const { messages, sendMessage, status, setMessages } = useChat({
     transport: new DefaultChatTransport({ api: "/api/maya/chat" }),
@@ -101,6 +104,58 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
         stack: error.stack,
         timestamp: new Date().toISOString(),
       })
+    },
+    onFinish: (message) => {
+      // Only save assistant messages with content
+      if (!chatId || message.role !== "assistant") return
+      if (savedMessageIds.current.has(message.id)) return
+
+      const parts = message.parts || []
+      const textParts = parts.filter((p: any) => p.type === "text")
+      const textContent = textParts
+        .map((p: any) => p.text)
+        .join("\n")
+        .trim()
+
+      const conceptParts = parts.filter((p: any) => p.type === "tool-generateConcepts")
+      const conceptCards: any[] = []
+
+      conceptParts.forEach((part: any) => {
+        if (part.output?.state === "ready" && Array.isArray(part.output.concepts)) {
+          conceptCards.push(...part.output.concepts)
+        }
+      })
+
+      const hasContent = textContent.length > 0
+      const hasConcepts = conceptCards.length > 0
+
+      if (!hasContent && !hasConcepts) return
+
+      // Mark as saved immediately
+      savedMessageIds.current.add(message.id)
+
+      // Save to database
+      fetch("/api/maya/save-message", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chatId,
+          role: message.role,
+          content: textContent || "",
+          conceptCards: conceptCards.length > 0 ? conceptCards : null,
+        }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (!data.success) {
+            console.error("[v0] ❌ Failed to save assistant message:", data.error)
+            savedMessageIds.current.delete(message.id)
+          }
+        })
+        .catch((error) => {
+          console.error("[v0] ❌ Save error:", error)
+          savedMessageIds.current.delete(message.id)
+        })
     },
   })
 
@@ -399,77 +454,6 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
     console.log("[v0] Maya chat status:", status, "isTyping:", isTyping)
   }, [status, isTyping])
 
-  useEffect(() => {
-    // Don't save during streaming or if already saving
-    if (!chatId || isTyping || isSavingMessageRef.current) return
-
-    const lastMessage = messages[messages.length - 1]
-    if (!lastMessage || lastMessage.role !== "assistant") return
-    if (savedMessageIds.current.has(lastMessage.id)) return
-
-    const parts = lastMessage.parts || []
-    const textParts = parts.filter((p: any) => p.type === "text")
-    const textContent = textParts
-      .map((p: any) => p.text)
-      .join("\n")
-      .trim()
-
-    const conceptParts = parts.filter((p: any) => p.type === "tool-generateConcepts")
-    const conceptCards: any[] = []
-
-    conceptParts.forEach((part: any) => {
-      if (part.output?.state === "ready" && Array.isArray(part.output.concepts)) {
-        conceptCards.push(...part.output.concepts)
-      }
-    })
-
-    const hasContent = textContent.length > 0
-    const hasConcepts = conceptCards.length > 0
-
-    if (!hasContent && !hasConcepts) return
-
-    // Mark as saved and set saving flag
-    savedMessageIds.current.add(lastMessage.id)
-    isSavingMessageRef.current = true
-
-    if (messageSaveTimerRef.current) {
-      clearTimeout(messageSaveTimerRef.current)
-    }
-
-    messageSaveTimerRef.current = setTimeout(() => {
-      fetch("/api/maya/save-message", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chatId,
-          role: lastMessage.role,
-          content: textContent || "",
-          conceptCards: conceptCards.length > 0 ? conceptCards : null,
-        }),
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (!data.success) {
-            console.error("[v0] ❌ Failed to save assistant message:", data.error)
-            savedMessageIds.current.delete(lastMessage.id)
-          }
-        })
-        .catch((error) => {
-          console.error("[v0] ❌ Save error:", error)
-          savedMessageIds.current.delete(lastMessage.id)
-        })
-        .finally(() => {
-          isSavingMessageRef.current = false
-        })
-    }, 1000) // Wait 1 second after message is complete before saving
-
-    return () => {
-      if (messageSaveTimerRef.current) {
-        clearTimeout(messageSaveTimerRef.current)
-      }
-    }
-  }, [chatId, isTyping]) // Removed 'messages' from dependencies - only trigger on isTyping/chatId changes
-
   const handleDragEnter = (e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
@@ -594,6 +578,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
       console.log("[v0] 📤 Sending message with settings:", {
         styleStrength,
         promptAccuracy,
+        aspectRatio,
       })
 
       isAtBottomRef.current = true
@@ -612,7 +597,16 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
         })
       }
 
-      sendMessage({ text: messageContent })
+      sendMessage({
+        text: messageContent,
+        experimental_providerMetadata: {
+          customSettings: {
+            styleStrength,
+            promptAccuracy,
+            aspectRatio,
+          },
+        },
+      })
       setInputValue("")
       setUploadedImage(null)
     }
@@ -1017,6 +1011,46 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
                 <div className="space-y-4">
                   <div>
                     <div className="flex items-center justify-between mb-3">
+                      <label className="text-xs font-medium text-stone-700 tracking-wide">Aspect Ratio</label>
+                      <span className="text-xs font-mono text-stone-500 bg-stone-100 px-2 py-0.5 rounded">
+                        {aspectRatio}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { value: "1:1", label: "Square", desc: "1:1" },
+                        { value: "4:5", label: "Portrait", desc: "4:5" },
+                        { value: "3:4", label: "Portrait", desc: "3:4" },
+                        { value: "16:9", label: "Landscape", desc: "16:9" },
+                        { value: "9:16", label: "Vertical", desc: "9:16" },
+                        { value: "21:9", label: "Cinematic", desc: "21:9" },
+                      ].map((ratio) => (
+                        <button
+                          key={ratio.value}
+                          onClick={() => {
+                            console.log("[v0] 📐 Aspect Ratio changed to:", ratio.value)
+                            setAspectRatio(ratio.value)
+                          }}
+                          className={`px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                            aspectRatio === ratio.value
+                              ? "bg-stone-950 text-white"
+                              : "bg-stone-100 text-stone-700 hover:bg-stone-200"
+                          }`}
+                        >
+                          <div className="text-center">
+                            <div className="font-semibold">{ratio.desc}</div>
+                            <div className="text-[10px] opacity-70">{ratio.label}</div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-xs text-stone-500 mt-2 leading-relaxed">
+                      Choose the image dimensions for your photos
+                    </p>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
                       <label className="text-xs font-medium text-stone-700 tracking-wide">Style Strength</label>
                       <span className="text-xs font-mono text-stone-500 bg-stone-100 px-2 py-0.5 rounded">
                         {styleStrength.toFixed(1)}
@@ -1067,6 +1101,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
                     console.log("[v0] 🔄 Resetting settings to defaults")
                     setStyleStrength(1.0)
                     setPromptAccuracy(3.5)
+                    setAspectRatio("1:1")
                   }}
                   className="w-full py-2 text-xs text-stone-600 hover:text-stone-950 transition-colors tracking-wide"
                 >

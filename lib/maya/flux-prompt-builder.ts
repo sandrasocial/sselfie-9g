@@ -41,6 +41,8 @@ export class FluxPromptBuilder {
       descriptionLength: conceptDescription.length,
     })
 
+    const categoryNegatives = this.getCategoryNegatives(category)
+
     const components: FluxPromptComponents = {
       trigger: userTriggerToken,
       gender: this.getGenderToken(userGender),
@@ -49,7 +51,7 @@ export class FluxPromptBuilder {
         : [],
       styleDescription: conceptDescription, // Maya's full creative vision - no template overrides
       negatives: includeNegativePrompts
-        ? "blurry, low quality, distorted, deformed, ugly, bad anatomy, disfigured hands, extra fingers, missing fingers, fused fingers, too many fingers, extra limbs, missing limbs, extra arms, extra legs, malformed limbs, mutated hands, poorly drawn hands, poorly drawn face, mutation, watermark, signature, text, logo"
+        ? `${categoryNegatives}, blurry, low quality, distorted, deformed, ugly, bad anatomy, disfigured hands, extra fingers, missing fingers, fused fingers, too many fingers, extra limbs, missing limbs, extra arms, extra legs, malformed limbs, mutated hands, poorly drawn hands, poorly drawn face, mutation, watermark, signature, text, logo`
         : "",
     }
 
@@ -71,6 +73,8 @@ export class FluxPromptBuilder {
       wordCount: prompt.split(/\s+/).length,
       characterCount: prompt.length,
       hasReferenceImage: !!referenceImageUrl,
+      category,
+      categoryNegatives,
     })
 
     return {
@@ -78,6 +82,26 @@ export class FluxPromptBuilder {
       components,
       wordCount: prompt.split(/\s+/).length,
       characterCount: prompt.length,
+    }
+  }
+
+  private static getCategoryNegatives(category: string): string {
+    switch (category) {
+      case "Close-Up":
+        return "full body, legs, feet, shoes, boots, waist, hips, walking, standing, full figure, distant shot, wide shot"
+      case "Half Body":
+        return "full body, legs visible, feet, shoes, boots, pants, jeans, walking, stride, full figure, distant shot, wide shot"
+      case "Lifestyle":
+        // Allow full body but prevent distant framing
+        return "distant figure, shot from far away, wide shot, small in frame, tiny person, far distance, blurry face, disfigured face"
+      case "Action":
+        // Allow movement and full body but prevent distant framing
+        return "distant figure, shot from far away, wide shot, small in frame, tiny person, far distance, blurry face, disfigured face"
+      case "Environmental":
+        // Allow environment but subject must be prominent
+        return "distant figure, shot from far away, wide environmental shot, small in frame, tiny person, vast landscape with small figure, far distance, blurry face, disfigured face"
+      default:
+        return "distant shot, wide shot, small in frame, blurry face, disfigured face"
     }
   }
 

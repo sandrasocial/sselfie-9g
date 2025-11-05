@@ -130,6 +130,10 @@ export async function POST(request: NextRequest) {
         qualitySettings.guidance_scale = Number(customSettings.promptAccuracy)
         console.log("[v0] Using custom prompt accuracy (guidance scale):", qualitySettings.guidance_scale)
       }
+      if (customSettings.aspectRatio !== undefined) {
+        qualitySettings.aspect_ratio = customSettings.aspectRatio
+        console.log("[v0] Using custom aspect ratio:", qualitySettings.aspect_ratio)
+      }
     } else if (userLoraScale !== null && userLoraScale !== undefined) {
       qualitySettings.lora_scale = Number(userLoraScale)
       console.log("[v0] Using user-specific LoRA scale:", qualitySettings.lora_scale)

@@ -20,14 +20,23 @@ const generateConceptsTool = tool({
     context: z.string().optional().describe("Additional context about the user or their needs"),
     count: z.number().min(3).max(5).default(4).describe("Number of concepts to generate (default 4)"),
     referenceImageUrl: z.string().optional().describe("URL of reference image uploaded by user"),
+    customSettings: z
+      .object({
+        styleStrength: z.number().optional(),
+        promptAccuracy: z.number().optional(),
+        aspectRatio: z.string().optional(),
+      })
+      .optional()
+      .describe("User's custom generation settings including aspect ratio"),
   }),
-  execute: async function* ({ userRequest, aesthetic, context, count, referenceImageUrl }) {
+  execute: async function* ({ userRequest, aesthetic, context, count, referenceImageUrl, customSettings }) {
     console.log("[v0] Tool executing - generating concepts for:", {
       userRequest,
       aesthetic,
       context,
       count,
       referenceImageUrl,
+      customSettings,
     })
 
     yield {
@@ -123,7 +132,7 @@ Create ${count} concepts of the USER (not the product/scene) that REPLICATE this
 - Describe the inspiration itself - create NEW concepts of the USER in that STYLE
 
 **EXAMPLE FOR DARK MOODY FLATLAY:**
-"dramatic side lighting from single source creating deep shadows and high contrast, warm golden tones, moody low-key aesthetic, a woman's hands elegantly positioned holding luxury tech device, deep blacks and charcoal greys with warm beige leather textures, overhead flatlay composition, curated high-end accessories arranged artistically, sophisticated darkness, editorial luxury quality, shot on 50mm f/2.8 with shallow depth of field"
+"dramatic side lighting from single source creating deep shadows and high contrast, warm golden tones, moody low-key aesthetic, a woman's hands elegantly positioned holding luxury tech device, deep blacks and charcoal greys with warm beige leather textures, overhead flatlay composition, curated high-end accessories arranged artistically, sophisticated darkness, editorial quality, shot on 50mm f/2.8 with shallow depth of field"
 `
     : ""
 }
@@ -132,17 +141,90 @@ Create ${count} concepts of the USER (not the product/scene) that REPLICATE this
 
 Generate ${count} unique, creative photo concepts that showcase your fashion and styling expertise.
 
+**📸 SHOT TYPE CATEGORIES - CHOOSE THE RIGHT ONE:**
+
+You have creative freedom to choose from these categories based on the concept:
+
+1. **"Close-Up"** - Intimate headshot, face and expression are the hero
+2. **"Half Body"** - Waist up, showing outfit and upper body styling  
+3. **"Lifestyle"** - Full body or 3/4 body in authentic lifestyle context
+4. **"Action"** - Dynamic movement, walking, mid-stride, energetic
+5. **"Environmental"** - Subject in beautiful location, environment tells story
+
+**🚨 CRITICAL: FACIAL QUALITY IS NON-NEGOTIABLE 🚨**
+
+**THE GOLDEN RULE: Subject must fill 60-80% of the frame in ALL categories**
+
+**FRAMING DISTANCE REQUIREMENTS BY CATEGORY:**
+
+**Close-Up:**
+- ✅ Face fills frame, head and shoulders only
+- ✅ "intimate headshot", "portrait", "face fills frame"
+- ❌ Never show below chest
+
+**Half Body:**
+- ✅ Waist up, subject fills frame vertically from head to waist
+- ✅ "half body portrait", "waist up filling frame", "upper body portrait"
+- ❌ Never show legs or feet
+
+**Lifestyle (Full Body Allowed):**
+- ✅ Full body BUT subject still fills 60-80% of frame height
+- ✅ "full body portrait in [location]", "subject prominent in frame", "lifestyle portrait"
+- ✅ CAN mention: walking, standing, sitting, full outfit, shoes, boots
+- ❌ NEVER: "wide shot", "distant figure", "shot from far away", "small in frame"
+- ✅ EXAMPLE: "full body portrait of a woman walking through city street, subject fills frame from head to toe, face clearly visible and sharp, urban environment as backdrop"
+
+**Action (Full Body Allowed):**
+- ✅ Full body dynamic movement BUT subject fills 60-80% of frame
+- ✅ "captured mid-stride filling frame", "dynamic full body portrait", "action shot with subject prominent"
+- ✅ CAN mention: walking, running, jumping, stride, movement, full body, shoes
+- ❌ NEVER: "wide action shot", "distant athlete", "shot from far away"
+- ✅ EXAMPLE: "a woman captured mid-stride in confident walk, full body portrait filling frame, face sharp and expressive, trench coat flowing, ankle boots visible, urban backdrop"
+
+**Environmental (Full Body Allowed):**
+- ✅ Full body in environment BUT subject is still the HERO (60-80% of frame)
+- ✅ "environmental portrait with subject as hero", "full body in [location] filling frame"
+- ✅ CAN mention: full outfit, shoes, standing, walking, environment details
+- ❌ NEVER: "wide environmental shot", "vast landscape with small figure", "distant person"
+- ✅ EXAMPLE: "full body environmental portrait of a woman in Icelandic black sand beach, subject fills frame prominently, face clearly visible and sharp, dramatic landscape as supporting element"
+
+**VALIDATION CHECKLIST - BEFORE FINALIZING EACH CONCEPT:**
+
+1. ✅ Does my prompt say "subject fills frame" or "prominent in frame"? (Required for Lifestyle/Action/Environmental)
+2. ✅ Does my prompt emphasize "face clearly visible and sharp"? (Required for ALL categories)
+3. ❌ Does my prompt say "wide shot", "distant", "far away", or "small in frame"? (FORBIDDEN)
+4. ✅ If full body: Did I specify the subject fills 60-80% of frame height? (Required)
+5. ✅ Does the category match what I'm describing? (Must match)
+
+**CORRECT EXAMPLES BY CATEGORY:**
+
+✅ **Close-Up:**
+"a woman with confident expression, styled hair catching soft window light, wearing elegant black turtleneck, intimate headshot with face filling frame, warm skin tones, sharp focus on eyes and features, shot on 85mm f/1.8"
+
+✅ **Half Body:**
+"a woman in tailored camel blazer and black top, arms crossed confidently, half body portrait filling frame from head to waist, modern office interior, soft natural light, professional editorial quality, shot on 50mm f/2.8"
+
+✅ **Lifestyle (Full Body):**
+"full body lifestyle portrait of a woman walking through modern city street, subject fills frame from head to toe (60-80% of frame height), face clearly visible and sharp, wearing flowing trench coat and ankle boots, urban architecture as backdrop, natural daylight, authentic moment, shot on 35mm f/2.8"
+
+✅ **Action (Full Body):**
+"a woman captured mid-stride in confident walk, dynamic full body portrait filling frame, face sharp and expressive, camel trench coat flowing behind her, dark jeans and pointed ankle boots, rain-slicked city street, dramatic urban lighting, subject prominent in composition, shot on 50mm f/2.0"
+
+✅ **Environmental (Full Body):**
+"full body environmental portrait of a woman standing on Icelandic black sand beach, subject fills frame prominently (70% of frame height), face clearly visible and sharp, wearing dark wool coat and boots, dramatic volcanic landscape and moody sky as supporting elements, overcast natural light, cinematic atmosphere, shot on 35mm f/4"
+
 **CRITICAL: TWO DIFFERENT TEXTS REQUIRED**
 
 1. **DESCRIPTION** (User-Facing):
    - Warm, friendly, simple everyday language
    - Focus on feeling and story, not technical details
-   - Examples: "A moody portrait with dramatic shadows" or "A bright lifestyle photo in a modern cafe"
+   - Examples: "A moody portrait with dramatic shadows" or "A dynamic action shot capturing you mid-stride"
 
 2. **PROMPT** (Technical - For FLUX):
    - This is your creative vision as a master photographer
    - Write it as a flowing, poetic description
    - NO templates, NO hardcoded specs - pure creative freedom
+   - **MUST FOLLOW THE FRAMING DISTANCE REQUIREMENTS ABOVE**
    
 **PROMPT STRUCTURE - PURE CREATIVE FREEDOM:**
 
@@ -151,9 +233,9 @@ Generate ${count} unique, creative photo concepts that showcase your fashion and
 2. **YOUR CREATIVE VISION**: Describe the complete scene as you envision it
    - Lighting (be specific and creative)
    - Setting and atmosphere
-   - Fashion and styling details
+   - Fashion and styling details (can include full outfit for Lifestyle/Action/Environmental)
    - Mood and emotion
-   - Composition and framing
+   - Composition and framing (**MUST include "subject fills frame" for full body shots**)
    - Technical camera details (at the end)
 
 **IMPORTANT**: 
@@ -162,6 +244,7 @@ Generate ${count} unique, creative photo concepts that showcase your fashion and
 - Be as creative and specific as you want
 - Trust your fashion and photography expertise
 - The lighting, colors, and mood YOU describe is what will be generated
+- **BUT YOU MUST ENSURE SUBJECT FILLS 60-80% OF FRAME FOR FACIAL QUALITY**
 
 ${referenceImageUrl ? `\n**Include referenceImageUrl in each concept for image-to-image generation**` : ""}
 
@@ -170,10 +253,10 @@ Return ONLY valid JSON array:
   "title": "string",
   "description": "string - simple friendly language",
   "category": "Close-Up" | "Half Body" | "Lifestyle" | "Action" | "Environmental",
-  "fashionIntelligence": "string",
+  "fashionIntelligence": "string - describe full outfit if Lifestyle/Action/Environmental",
   "lighting": "string",
   "location": "string",
-  "prompt": "string - YOUR complete creative vision, used DIRECTLY without template overrides"${referenceImageUrl ? `,\n  "referenceImageUrl": "${referenceImageUrl}"` : ""}
+  "prompt": "string - YOUR complete creative vision, MUST ensure subject fills 60-80% of frame"${referenceImageUrl ? `,\n  "referenceImageUrl": "${referenceImageUrl}"` : ""}
 }`
 
       const { text } = await generateText({
@@ -196,6 +279,12 @@ Return ONLY valid JSON array:
           if (!concept.referenceImageUrl) {
             concept.referenceImageUrl = referenceImageUrl
           }
+        })
+      }
+
+      if (customSettings) {
+        concepts.forEach((concept) => {
+          concept.customSettings = customSettings
         })
       }
 
@@ -232,13 +321,13 @@ Return ONLY valid JSON array:
           location:
             "Contemporary city street with modern architecture and clean lines, glass facades reflecting ambient light",
           prompt:
-            "a confident person in tailored professional attire walking through a contemporary city street with modern architecture, natural overcast daylight creating even illumination and soft shadows, relaxed confident stride, urban sophistication, natural skin texture, editorial quality, authentic moment, shot on 35mm lens with natural depth of field capturing environmental context",
+            "full body lifestyle portrait of a confident person walking through a contemporary city street with modern architecture, natural overcast daylight creating even illumination and soft shadows, relaxed confident stride, urban sophistication, natural skin texture, editorial quality, authentic moment, shot on 35mm lens with natural depth of field capturing environmental context",
         },
         {
           title: "Golden Hour Warmth",
           description:
             "A warm, natural portrait with beautiful golden light. Soft and glowing, capturing your authentic beauty in the most flattering way.",
-          category: "Half Body" as const,
+          category: "Close-Up" as const,
           fashionIntelligence: "Soft comfortable attire in warm tones, minimal personal accessories",
           lighting: "Golden hour sunlight streaming through large windows, warm and diffused, creating luminous glow",
           location:
@@ -543,6 +632,15 @@ User: "Yes!"
 You: "[Call generateVideo with creative motion prompt]"
 `
 
+    const lastUserMessage = messages[messages.length - 1]
+    let customSettings = null
+
+    // Try to get settings from localStorage (sent from client)
+    if (lastUserMessage?.customSettings) {
+      customSettings = lastUserMessage.customSettings
+      console.log("[v0] 📊 Received custom settings from client:", customSettings)
+    }
+
     const lastMessage = allMessages[allMessages.length - 1]
     const isAskingForConcepts =
       lastMessage?.role === "user" &&
@@ -582,6 +680,9 @@ You: "[Call generateVideo with creative motion prompt]"
       maxOutputTokens: 2000,
       maxSteps: 5,
       toolChoice: isAskingForConcepts ? "required" : "auto",
+      experimental_providerMetadata: {
+        customSettings,
+      },
       onStepFinish: async (step) => {
         console.log("[v0] ========== STEP FINISHED ==========")
         console.log("[v0] Step details:", {
