@@ -274,4 +274,53 @@
   .mr-safe {
     margin-right: env(safe-area-inset-right);
   }
+
+  /* Add animation utility classes to match keyframe definitions */
+  .animate-fade-in {
+    animation: fade-in 0.2s ease-out;
+  }
+
+  .animate-fade-out {
+    animation: fade-out 0.2s ease-out;
+  }
+
+  .animate-slide-in-from-top {
+    animation: slide-in-from-top 0.2s ease-out;
+  }
+
+  .animate-slide-in-from-bottom {
+    animation: slide-in-from-bottom 0.2s ease-out;
+  }
+
+  .animate-slide-in-from-left {
+    animation: slide-in-from-left 0.2s ease-out;
+  }
+
+  .animate-slide-in-from-right {
+    animation: slide-in-from-right 0.2s ease-out;
+  }
+
+  .animate-slide-out-to-top {
+    animation: slide-out-to-top 0.2s ease-out;
+  }
+
+  .animate-slide-out-to-bottom {
+    animation: slide-out-to-bottom 0.2s ease-out;
+  }
+
+  .animate-slide-out-to-left {
+    animation: slide-out-to-left 0.2s ease-out;
+  }
+
+  .animate-slide-out-to-right {
+    animation: slide-out-to-right 0.2s ease-out;
+  }
+
+  .animate-zoom-in {
+    animation: zoom-in 0.2s ease-out;
+  }
+
+  .animate-zoom-out {
+    animation: zoom-out 0.2s ease-out;
+  }
 }

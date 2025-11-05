@@ -10,7 +10,11 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>
 }
 
-export function InstallButton() {
+interface InstallButtonProps {
+  variant?: "default" | "menu"
+}
+
+export function InstallButton({ variant = "default" }: InstallButtonProps) {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [showDialog, setShowDialog] = useState(false)
   const [isInstalled, setIsInstalled] = useState(false)
@@ -80,6 +84,91 @@ export function InstallButton() {
 
   if (isInstalled) {
     return null
+  }
+
+  if (variant === "menu") {
+    return (
+      <>
+        <button onClick={handleInstall} className="flex items-center gap-2 w-full text-sm px-2 py-1.5">
+          <Download size={16} />
+          <span>Install App</span>
+        </button>
+
+        <Dialog open={showDialog} onOpenChange={setShowDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Download className="h-5 w-5" />
+                Install SSELFIE
+              </DialogTitle>
+              <DialogDescription>
+                {isPreview
+                  ? "PWA installation is only available in production. Deploy to sselfie.ai to enable native app installation."
+                  : "Add SSELFIE to your home screen for quick access and offline use"}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              {isPreview ? (
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    The preview environment has limitations that prevent service worker registration. Once deployed to
+                    production (sselfie.ai), users will be able to install the app natively with one click.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {isIOS && (
+                    <div className="space-y-3">
+                      <p className="text-sm font-medium">For iPhone/iPad:</p>
+                      <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
+                        <li className="flex items-start gap-2">
+                          <span className="flex-1">
+                            Tap the <Share className="inline h-4 w-4 mx-1" /> Share button at the bottom of Safari
+                          </span>
+                        </li>
+                        <li>Scroll down and tap "Add to Home Screen"</li>
+                        <li>Tap "Add" in the top right corner</li>
+                      </ol>
+                    </div>
+                  )}
+
+                  {isAndroid && !deferredPrompt && (
+                    <div className="space-y-3">
+                      <p className="text-sm font-medium">For Android:</p>
+                      <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
+                        <li className="flex items-start gap-2">
+                          <span className="flex-1">
+                            Tap the <MoreVertical className="inline h-4 w-4 mx-1" /> menu button in your browser
+                          </span>
+                        </li>
+                        <li>Select "Add to Home screen" or "Install app"</li>
+                        <li>Tap "Add" or "Install" to confirm</li>
+                      </ol>
+                    </div>
+                  )}
+
+                  {!isIOS && !isAndroid && (
+                    <div className="space-y-3">
+                      <p className="text-sm font-medium">For Desktop:</p>
+                      <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
+                        <li>Look for the install icon in your browser's address bar</li>
+                        <li>Click it and select "Install"</li>
+                        <li>Or use your browser's menu: Settings → Install SSELFIE</li>
+                      </ol>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            <div className="flex justify-end">
+              <Button onClick={() => setShowDialog(false)}>Got it</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </>
+    )
   }
 
   return (

@@ -78,10 +78,15 @@ export default function FullscreenImageModal({
   }
 
   const handleFavorite = async () => {
-    if (!onFavoriteToggle) return
+    if (!onFavoriteToggle) {
+      console.warn("[v0] No favorite toggle handler provided")
+      return
+    }
     setIsFavoriting(true)
     try {
       await onFavoriteToggle()
+    } catch (error) {
+      console.error("[v0] Error toggling favorite:", error)
     } finally {
       setIsFavoriting(false)
     }
@@ -176,17 +181,22 @@ export default function FullscreenImageModal({
       {/* Actions Bar */}
       <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 bg-gradient-to-t from-black/80 to-transparent">
         <div className="flex items-center justify-center gap-3 sm:gap-4 flex-wrap">
-          <button
-            onClick={handleFavorite}
-            disabled={isFavoriting}
-            className={`flex items-center gap-2 px-4 sm:px-6 py-3 rounded-2xl font-semibold text-sm transition-all duration-300 hover:scale-105 active:scale-95 min-h-[44px] backdrop-blur-xl ${
-              isFavorite ? "bg-red-500 text-white hover:bg-red-600" : "bg-white/10 text-white hover:bg-white/20"
-            }`}
-            aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
-          >
-            <Heart className={`w-5 h-5 ${isFavorite ? "fill-current" : ""}`} strokeWidth={2} />
-            <span className="hidden sm:inline">{isFavorite ? "Favorited" : "Favorite"}</span>
-          </button>
+          {/* Conditional rendering and improved button state */}
+          {onFavoriteToggle && (
+            <button
+              onClick={handleFavorite}
+              disabled={isFavoriting}
+              className={`flex items-center gap-2 px-4 sm:px-6 py-3 rounded-2xl font-semibold text-sm transition-all duration-300 hover:scale-105 active:scale-95 min-h-[44px] backdrop-blur-xl disabled:opacity-50 disabled:cursor-not-allowed ${
+                isFavorite ? "bg-red-500 text-white hover:bg-red-600" : "bg-white/10 text-white hover:bg-white/20"
+              }`}
+              aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+            >
+              <Heart className={`w-5 h-5 ${isFavorite ? "fill-current" : ""}`} strokeWidth={2} />
+              <span className="hidden sm:inline">
+                {isFavoriting ? "Saving..." : isFavorite ? "Favorited" : "Favorite"}
+              </span>
+            </button>
+          )}
 
           <button
             onClick={handleDownload}
@@ -201,7 +211,7 @@ export default function FullscreenImageModal({
             <button
               onClick={handleDelete}
               disabled={isDeleting}
-              className="flex items-center gap-2 px-4 sm:px-6 py-3 bg-red-500/80 text-white rounded-2xl font-semibold text-sm transition-all duration-300 hover:bg-red-500 hover:scale-105 active:scale-95 min-h-[44px] backdrop-blur-xl"
+              className="flex items-center gap-2 px-4 sm:px-6 py-3 bg-red-500/80 text-white rounded-2xl font-semibold text-sm transition-all duration-300 hover:bg-red-500 hover:scale-105 active:scale-95 min-h-[44px] backdrop-blur-xl disabled:opacity-50 disabled:cursor-not-allowed"
               aria-label="Delete image"
             >
               <Trash2 className="w-5 h-5" strokeWidth={2} />

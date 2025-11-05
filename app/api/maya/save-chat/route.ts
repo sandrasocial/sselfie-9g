@@ -28,8 +28,8 @@ export async function POST(req: Request) {
 
     for (const message of messages) {
       await sql`
-        INSERT INTO maya_chat_messages (chat_id, role, content, timestamp)
-        VALUES (${chat.id}, ${message.role}, ${message.content}, ${message.timestamp})
+        INSERT INTO maya_chat_messages (chat_id, role, content)
+        VALUES (${chat.id}, ${message.role}, ${message.content})
       `
     }
 
@@ -37,10 +37,10 @@ export async function POST(req: Request) {
       for (const concept of concepts) {
         await sql`
           INSERT INTO maya_concepts (
-            user_id, chat_id, title, description, category, prompt, created_at
+            user_id, title, description, type, prompt, created_at
           )
           VALUES (
-            ${user.id}, ${chat.id}, ${concept.title}, ${concept.description},
+            ${user.id}, ${concept.title}, ${concept.description},
             ${concept.category}, ${concept.prompt}, NOW()
           )
         `

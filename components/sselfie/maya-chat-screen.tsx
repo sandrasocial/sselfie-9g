@@ -101,59 +101,79 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
         timestamp: new Date().toISOString(),
       })
     },
-    onFinish: (message) => {
-      // Only save assistant messages with content
-      if (!chatId || message.role !== "assistant") return
-      if (savedMessageIds.current.has(message.id)) return
+  })
 
-      const parts = message.parts || []
-      const textParts = parts.filter((p: any) => p.type === "text")
-      const textContent = textParts
+  useEffect(() => {
+    if (status !== "ready" || !chatId || messages.length === 0) return
+
+    const lastMessage = messages[messages.length - 1]
+    if (!lastMessage || lastMessage.role !== "assistant") return
+
+    // Skip if already saved
+    if (savedMessageIds.current.has(lastMessage.id)) return
+
+    // Extract text content from parts
+    let textContent = ""
+    if (lastMessage.parts && Array.isArray(lastMessage.parts)) {
+      const textParts = lastMessage.parts.filter((p: any) => p.type === "text")
+      textContent = textParts
         .map((p: any) => p.text)
         .join("\n")
         .trim()
+    }
 
-      const conceptParts = parts.filter((p: any) => p.type === "tool-generateConcepts")
-      const conceptCards: any[] = []
+    // Extract concept cards from parts (matching the rendering logic)
+    const conceptCards: any[] = []
+    if (lastMessage.parts && Array.isArray(lastMessage.parts)) {
+      for (const part of lastMessage.parts) {
+        if (part.type === "tool-generateConcepts") {
+          const toolPart = part as any
+          const output = toolPart.output
+          if (output && output.state === "ready" && Array.isArray(output.concepts)) {
+            conceptCards.push(...output.concepts)
+          }
+        }
+      }
+    }
 
-      conceptParts.forEach((part: any) => {
-        if (part.output?.state === "ready" && Array.isArray(part.output.concepts)) {
-          conceptCards.push(...part.output.concepts)
+    // Only save if we have content or concepts AND they're from streaming (not loaded from DB)
+    // Messages loaded from DB won't have the tool output structure
+    const hasStreamingData = lastMessage.parts?.some(
+      (p: any) => p.type === "tool-generateConcepts" && p.output?.state === "ready",
+    )
+
+    if (!hasStreamingData && !textContent) {
+      return
+    }
+
+    // Mark as saved immediately to prevent duplicate saves
+    savedMessageIds.current.add(lastMessage.id)
+
+    // Save to database
+    fetch("/api/maya/save-message", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chatId,
+        role: "assistant",
+        content: textContent || "",
+        conceptCards: conceptCards.length > 0 ? conceptCards : null,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          console.log("[v0] ✅ Assistant message saved successfully")
+        } else {
+          console.error("[v0] ❌ Failed to save message:", data.error)
+          savedMessageIds.current.delete(lastMessage.id)
         }
       })
-
-      const hasContent = textContent.length > 0
-      const hasConcepts = conceptCards.length > 0
-
-      if (!hasContent && !hasConcepts) return
-
-      // Mark as saved immediately
-      savedMessageIds.current.add(message.id)
-
-      // Save to database
-      fetch("/api/maya/save-message", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chatId,
-          role: message.role,
-          content: textContent || "",
-          conceptCards: conceptCards.length > 0 ? conceptCards : null,
-        }),
+      .catch((error) => {
+        console.error("[v0] ❌ Save error:", error)
+        savedMessageIds.current.delete(lastMessage.id)
       })
-        .then((res) => res.json())
-        .then((data) => {
-          if (!data.success) {
-            console.error("[v0] ❌ Failed to save assistant message:", data.error)
-            savedMessageIds.current.delete(message.id)
-          }
-        })
-        .catch((error) => {
-          console.error("[v0] ❌ Save error:", error)
-          savedMessageIds.current.delete(message.id)
-        })
-    },
-  })
+  }, [status, messages, chatId]) // Use messages instead of messages.length to trigger re-evaluation when new messages arrive
 
   const isTyping = status === "submitted" || status === "streaming"
 
@@ -399,7 +419,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
         scrollToBottom("smooth")
       })
     }
-  }, [messages.length, scrollToBottom]) // Depend on length, not full messages array
+  }, [messages, scrollToBottom]) // Changed dependency to `messages` from `messages.length`
 
   const loadChat = async (specificChatId?: number) => {
     try {
@@ -668,12 +688,12 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
 
     if (contentFilter === "photos") {
       // Show messages with concept cards (photos)
-      return msg.parts?.some((inv: any) => inv.toolName === "generateConcepts" && inv.state === "result")
+      return msg.parts?.some((inv: any) => inv.type === "tool-generateConcepts" && inv.output?.state === "ready")
     }
 
     if (contentFilter === "videos") {
       // Show messages with video cards
-      return msg.parts?.some((inv: any) => inv.toolName === "generateVideo")
+      return msg.parts?.some((inv: any) => inv.type === "tool-generateVideo")
     }
 
     return true
@@ -731,11 +751,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
         </div>
       )}
 
-      <div
-        className={`flex-shrink-0 flex items-center justify-between px-4 py-2 bg-white/80 backdrop-blur-xl border-b border-stone-200/50 transition-transform duration-300 ${
-          showHeader ? "translate-y-0" : "-translate-y-full"
-        }`}
-      >
+      <div className="flex-shrink-0 flex items-center justify-between px-4 py-2 bg-white/80 backdrop-blur-xl border-b border-stone-200/50">
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <div className="w-10 h-10 rounded-full border border-stone-200/60 overflow-hidden flex-shrink-0">
             <img src="https://i.postimg.cc/fTtCnzZv/out-1-22.png" alt="Maya" className="w-full h-full object-cover" />
@@ -747,6 +763,14 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
 
         <div className="flex items-center gap-2 flex-shrink-0">
           <button
+            onClick={handleNewChat}
+            className="p-2 bg-white/40 backdrop-blur-2xl border border-white/60 rounded-lg hover:bg-white/60 transition-all duration-300 min-w-[40px] min-h-[40px] flex items-center justify-center"
+            aria-label="Start new chat"
+          >
+            <Plus size={16} className="text-stone-600" strokeWidth={2} />
+          </button>
+
+          <button
             onClick={() => setShowHistory(!showHistory)}
             className={`p-2 backdrop-blur-2xl border rounded-lg transition-all duration-300 min-w-[40px] min-h-[40px] flex items-center justify-center ${
               showHistory
@@ -756,14 +780,6 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
             aria-label="Toggle chat history"
           >
             <History size={16} strokeWidth={2} />
-          </button>
-
-          <button
-            onClick={handleNewChat}
-            className="p-2 bg-white/40 backdrop-blur-2xl border border-white/60 rounded-lg hover:bg-white/60 transition-all duration-300 min-w-[40px] min-h-[40px] flex items-center justify-center"
-            aria-label="Start new chat"
-          >
-            <Plus size={16} className="text-stone-600" strokeWidth={2} />
           </button>
         </div>
       </div>
@@ -866,7 +882,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
                           return (
                             <div key={partIndex} className="mt-3">
                               <div className="flex items-center gap-2 text-stone-600">
-                                <div className="w-1.5 h-1.5 rounded-full bg-stone-600 animate-pulse"></div>
+                                <div className="w-1.5 h-1.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                                 <span className="text-xs tracking-[0.15em] uppercase font-light">
                                   Creating photo concepts...
                                 </span>
@@ -909,7 +925,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
                           return (
                             <div key={partIndex} className="mt-3">
                               <div className="flex items-center gap-2 text-stone-600">
-                                <div className="w-1.5 h-1.5 rounded-full bg-stone-600 animate-pulse" />
+                                <div className="w-1.5 h-1.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                                 <span className="text-xs tracking-[0.15em] uppercase font-light">
                                   Starting video generation...
                                 </span>
@@ -1132,20 +1148,31 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
           </Popover>
 
           <div className="flex-1 relative group">
-            <input
-              type="text"
+            <textarea
               value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyPress={(e) => {
+              onChange={(e) => {
+                setInputValue(e.target.value)
+                // Auto-resize textarea based on content
+                e.target.style.height = "auto"
+                e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px"
+              }}
+              onKeyDown={(e) => {
+                // Enter sends message, Shift+Enter adds new line
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault()
                   handleSendMessage()
+                  // Reset height after sending
+                  setTimeout(() => {
+                    const textarea = e.target as HTMLTextAreaElement
+                    textarea.style.height = "48px"
+                  }, 0)
                 }
               }}
               placeholder={uploadedImage ? "Describe the style you want to recreate..." : "Message Maya..."}
-              className="w-full px-4 py-3 bg-white/40 backdrop-blur-2xl border border-white/60 rounded-xl text-stone-950 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-950/50 focus:bg-white/60 pr-12 font-medium text-sm min-h-[48px] shadow-lg shadow-stone-950/10 transition-all duration-300"
+              className="w-full px-4 py-3 bg-white/40 backdrop-blur-2xl border border-white/60 rounded-xl text-stone-950 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-950/50 focus:bg-white/60 pr-12 font-medium text-sm min-h-[48px] max-h-[120px] shadow-lg shadow-stone-950/10 transition-all duration-300 resize-none overflow-y-auto leading-relaxed"
               disabled={isTyping || isUploadingImage}
               aria-label="Message input"
+              rows={1}
             />
             <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
               <input
