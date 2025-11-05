@@ -16,7 +16,7 @@ interface MayaChatScreenProps {
   onImageGenerated?: () => void
 }
 
-export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps = {}) {
+export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps) {
   const [inputValue, setInputValue] = useState("")
   const [chatId, setChatId] = useState<number | null>(null)
   const [isLoadingChat, setIsLoadingChat] = useState(true)
@@ -44,6 +44,11 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
   const [promptAccuracy, setPromptAccuracy] = useState(3.5) // Guidance scale: 2.5-5.0
   const [showSettings, setShowSettings] = useState(false)
 
+  const settingsSaveTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const messageSaveTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const lastMessageCountRef = useRef(0)
+  const isSavingMessageRef = useRef(false)
+
   useEffect(() => {
     const settingsStr = localStorage.getItem("mayaGenerationSettings")
     if (settingsStr) {
@@ -58,15 +63,30 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
     } else {
       console.log("[v0] 📊 No saved settings found, using defaults")
     }
-  }, [])
+  }, []) // Empty dependency array - only run once on mount
 
   useEffect(() => {
-    const settings = {
-      styleStrength,
-      promptAccuracy,
+    // Clear any existing timer
+    if (settingsSaveTimerRef.current) {
+      clearTimeout(settingsSaveTimerRef.current)
     }
-    console.log("[v0] 💾 Saving settings to localStorage:", settings)
-    localStorage.setItem("mayaGenerationSettings", JSON.stringify(settings))
+
+    // Set new timer to save after 500ms of no changes
+    settingsSaveTimerRef.current = setTimeout(() => {
+      const settings = {
+        styleStrength,
+        promptAccuracy,
+      }
+      console.log("[v0] 💾 Saving settings to localStorage:", settings)
+      localStorage.setItem("mayaGenerationSettings", JSON.stringify(settings))
+    }, 500)
+
+    // Cleanup timer on unmount
+    return () => {
+      if (settingsSaveTimerRef.current) {
+        clearTimeout(settingsSaveTimerRef.current)
+      }
+    }
   }, [styleStrength, promptAccuracy])
 
   const { messages, sendMessage, status, setMessages } = useChat({
@@ -89,78 +109,64 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
   const promptPoolWoman = {
     photoStories: [
       {
-        label: "Golden Hour Glow",
-        prompt: "Take my photo during golden hour with warm, natural lighting highlighting my features",
+        label: "Golden Hour",
+        prompt: "Take my photo during golden hour with warm natural lighting",
       },
       {
-        label: "Editorial Elegance",
-        prompt: "Create an editorial-style photo with dramatic lighting and graceful composition",
+        label: "Editorial Style",
+        prompt: "Create an editorial photo with dramatic lighting",
       },
       {
-        label: "Flowing Movement",
-        prompt: "Capture me in motion with natural, flowing energy",
+        label: "In Motion",
+        prompt: "Capture me in motion with natural energy",
       },
       {
-        label: "Cinematic Beauty",
-        prompt: "Make a cinematic photo with beautiful scenery in the background",
+        label: "Cinematic",
+        prompt: "Make a cinematic photo with beautiful scenery",
       },
       {
         label: "Soft & Dreamy",
-        prompt: "Create a soft, dreamy photo with gentle natural light and ethereal mood",
+        prompt: "Create a soft dreamy photo with gentle lighting",
       },
       {
-        label: "Confident & Graceful",
-        prompt: "Show me looking confident and graceful with elegant posing",
-      },
-    ],
-    videoMoments: [
-      {
-        label: "Bring Photo to Life",
-        prompt: "Turn my photo into a video with subtle, natural movement",
-      },
-      {
-        label: "Cinematic Video",
-        prompt: "Make a cinematic video with smooth, flowing movement",
-      },
-      {
-        label: "Animated Portrait",
-        prompt: "Animate my portrait with lifelike, graceful motion",
+        label: "Confident",
+        prompt: "Show me looking confident with elegant posing",
       },
     ],
     storytelling: [
       {
         label: "Tell My Story",
-        prompt: "Create photos that tell my story through light and composition",
+        prompt: "Create photos that tell my story",
       },
       {
-        label: "Authentic Moment",
-        prompt: "Show who I am in this moment, authentic and real",
+        label: "Authentic",
+        prompt: "Show who I am, authentic and real",
       },
       {
-        label: "Moody & Contemplative",
-        prompt: "Create a moody photo with soft, contemplative lighting",
+        label: "Moody",
+        prompt: "Create a moody photo with soft lighting",
       },
       {
         label: "Natural Beauty",
-        prompt: "Highlight natural beauty with organic, flowing composition",
+        prompt: "Highlight natural beauty with flowing composition",
       },
     ],
     artistic: [
       {
         label: "Bold & Powerful",
-        prompt: "Make me look bold and powerful in a dramatic setting",
+        prompt: "Make me look bold and powerful",
       },
       {
-        label: "Timeless Elegance",
-        prompt: "Create something timeless and elegant, classic but fresh",
+        label: "Timeless",
+        prompt: "Create something timeless and elegant",
       },
       {
-        label: "Modern Chic",
-        prompt: "Capture modern, contemporary style with clean lines",
+        label: "Modern",
+        prompt: "Capture modern style with clean lines",
       },
       {
-        label: "Romantic Mood",
-        prompt: "Create a romantic, dreamy atmosphere with soft lighting",
+        label: "Romantic",
+        prompt: "Create a romantic atmosphere with soft lighting",
       },
     ],
   }
@@ -168,78 +174,64 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
   const promptPoolMan = {
     photoStories: [
       {
-        label: "Golden Hour Power",
-        prompt: "Take my photo during golden hour with strong, natural lighting",
+        label: "Golden Hour",
+        prompt: "Take my photo during golden hour with strong natural lighting",
       },
       {
         label: "Editorial Style",
-        prompt: "Create an editorial-style photo with dramatic lighting and bold composition",
+        prompt: "Create an editorial photo with dramatic lighting",
       },
       {
         label: "Action Shot",
-        prompt: "Capture me in motion with natural energy and strength",
+        prompt: "Capture me in motion with natural energy",
       },
       {
-        label: "Cinematic Look",
-        prompt: "Make a cinematic photo with striking scenery in the background",
+        label: "Cinematic",
+        prompt: "Make a cinematic photo with striking scenery",
       },
       {
         label: "Sharp & Modern",
-        prompt: "Create a sharp, modern photo with clean lines and contemporary style",
+        prompt: "Create a sharp modern photo with clean lines",
       },
       {
-        label: "Confident Look",
-        prompt: "Show me looking confident and strong with powerful posing",
-      },
-    ],
-    videoMoments: [
-      {
-        label: "Bring Photo to Life",
-        prompt: "Turn my photo into a video with subtle, natural movement",
-      },
-      {
-        label: "Cinematic Video",
-        prompt: "Make a cinematic video with smooth, dynamic movement",
-      },
-      {
-        label: "Animated Portrait",
-        prompt: "Animate my portrait with lifelike, natural motion",
+        label: "Confident",
+        prompt: "Show me looking confident with powerful posing",
       },
     ],
     storytelling: [
       {
         label: "Tell My Story",
-        prompt: "Create photos that tell my story through light and composition",
+        prompt: "Create photos that tell my story",
       },
       {
-        label: "Authentic Moment",
-        prompt: "Show who I am in this moment, authentic and real",
+        label: "Authentic",
+        prompt: "Show who I am, authentic and real",
       },
       {
-        label: "Moody Vibe",
-        prompt: "Create a moody photo with dramatic, contemplative lighting",
+        label: "Moody",
+        prompt: "Create a moody photo with dramatic lighting",
       },
       {
         label: "Natural Strength",
-        prompt: "Highlight natural strength with bold, powerful composition",
+        prompt: "Highlight natural strength with bold composition",
       },
     ],
     artistic: [
       {
         label: "Bold & Powerful",
-        prompt: "Make me look bold and powerful in a dramatic setting",
+        prompt: "Make me look bold and powerful",
       },
       {
-        label: "Timeless & Classic",
-        prompt: "Create something timeless and classic, refined but modern",
+        label: "Timeless",
+        prompt: "Create something timeless and classic",
       },
       {
-        label: "Urban Edge",
-        prompt: "Capture urban energy with modern, edgy style",
+        label: "Urban",
+        prompt: "Capture urban energy with modern style",
       },
       {
-        label: "Rugged & Natural",
-        prompt: "Create a rugged, natural look with authentic outdoor energy",
+        label: "Rugged",
+        prompt: "Create a rugged natural look with outdoor energy",
       },
     ],
   }
@@ -301,18 +293,20 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
     const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current
     const distanceFromBottom = scrollHeight - scrollTop - clientHeight
 
-    // User is at bottom if within 50px
     const isAtBottom = distanceFromBottom < 50
     isAtBottomRef.current = isAtBottom
 
-    // Show scroll button when not at bottom
-    setShowScrollButton(!isAtBottom)
+    // Only update state if it actually changed to prevent unnecessary re-renders
+    setShowScrollButton((prev) => {
+      const newValue = !isAtBottom
+      return prev !== newValue ? newValue : prev
+    })
 
-    // Hide header on scroll down, show on scroll up
+    // Header visibility logic
     if (scrollTop > lastScrollY.current && scrollTop > 50) {
-      setShowHeader(false)
+      setShowHeader((prev) => (prev ? false : prev))
     } else if (scrollTop < lastScrollY.current) {
-      setShowHeader(true)
+      setShowHeader((prev) => (!prev ? true : prev))
     }
     lastScrollY.current = scrollTop
   }, [])
@@ -355,27 +349,15 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
   useEffect(() => {
     if (!messagesContainerRef.current) return
 
-    const container = messagesContainerRef.current
-    const currentScrollHeight = container.scrollHeight
-
-    // Only auto-scroll if user is at bottom
-    if (isAtBottomRef.current) {
-      // Use instant scroll during streaming for better performance
-      scrollToBottom(isTyping ? "instant" : "smooth")
+    // Only scroll if message count actually increased
+    if (messages.length > lastMessageCountRef.current && isAtBottomRef.current) {
+      requestAnimationFrame(() => {
+        scrollToBottom(isTyping ? "instant" : "smooth")
+      })
     }
 
-    lastScrollHeightRef.current = currentScrollHeight
-  }, [messages, isTyping, scrollToBottom])
-
-  useEffect(() => {
-    if (!isLoadingChat && messages.length > 0) {
-      // Small delay to ensure DOM is ready
-      setTimeout(() => {
-        scrollToBottom("instant")
-        isAtBottomRef.current = true
-      }, 100)
-    }
-  }, [isLoadingChat, scrollToBottom])
+    lastMessageCountRef.current = messages.length
+  }, [messages, isTyping, scrollToBottom]) // Updated to use messages instead of messages.length
 
   const loadChat = async (specificChatId?: number) => {
     try {
@@ -451,7 +433,8 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
   }, [status, isTyping])
 
   useEffect(() => {
-    if (!chatId || isTyping) return
+    // Don't save during streaming or if already saving
+    if (!chatId || isTyping || isSavingMessageRef.current) return
 
     const lastMessage = messages[messages.length - 1]
     if (!lastMessage || lastMessage.role !== "assistant") return
@@ -478,10 +461,15 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
 
     if (!hasContent && !hasConcepts) return
 
-    // Mark as saved immediately to prevent duplicate saves
+    // Mark as saved and set saving flag
     savedMessageIds.current.add(lastMessage.id)
+    isSavingMessageRef.current = true
 
-    const saveTimeout = setTimeout(() => {
+    if (messageSaveTimerRef.current) {
+      clearTimeout(messageSaveTimerRef.current)
+    }
+
+    messageSaveTimerRef.current = setTimeout(() => {
       fetch("/api/maya/save-message", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -503,10 +491,17 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
           console.error("[v0] ❌ Save error:", error)
           savedMessageIds.current.delete(lastMessage.id)
         })
-    }, 500)
+        .finally(() => {
+          isSavingMessageRef.current = false
+        })
+    }, 1000) // Wait 1 second after message is complete before saving
 
-    return () => clearTimeout(saveTimeout)
-  }, [messages, chatId, isTyping])
+    return () => {
+      if (messageSaveTimerRef.current) {
+        clearTimeout(messageSaveTimerRef.current)
+      }
+    }
+  }, [chatId, isTyping]) // Removed 'messages' from dependencies - only trigger on isTyping/chatId changes
 
   const handleDragEnter = (e: React.DragEvent) => {
     e.preventDefault()
@@ -627,7 +622,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
   const handleSendMessage = (customPrompt?: string) => {
     const messageText = customPrompt || inputValue.trim()
     if ((messageText || uploadedImage) && !isTyping) {
-      const messageContent = uploadedImage ? `${messageText}\n\n[Reference Image: ${uploadedImage}]` : messageText
+      const messageContent = uploadedImage ? `${messageText}\n\n[Inspiration Image: ${uploadedImage}]` : messageText
 
       console.log("[v0] 📤 Sending message with settings:", {
         styleStrength,
@@ -702,6 +697,32 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
 
     return true
   })
+
+  const renderMessageContent = (text: string, isUser: boolean) => {
+    // Check if message contains an inspiration image
+    const inspirationImageMatch = text.match(/\[Inspiration Image: (https?:\/\/[^\]]+)\]/)
+
+    if (inspirationImageMatch) {
+      const imageUrl = inspirationImageMatch[1]
+      const textWithoutImage = text.replace(/\[Inspiration Image: https?:\/\/[^\]]+\]/g, "").trim()
+
+      return (
+        <div className="space-y-3">
+          {textWithoutImage && (
+            <p className="text-sm leading-relaxed font-medium whitespace-pre-wrap">{textWithoutImage}</p>
+          )}
+          <div className="mt-2">
+            <div className="relative w-32 h-32 rounded-xl overflow-hidden border border-white/60 shadow-lg">
+              <img src={imageUrl || "/placeholder.svg"} alt="Inspiration" className="w-full h-full object-cover" />
+            </div>
+            <p className="text-xs text-stone-500 mt-1.5 tracking-wide">Inspiration Image</p>
+          </div>
+        </div>
+      )
+    }
+
+    return <p className="text-sm leading-relaxed font-medium whitespace-pre-wrap">{text}</p>
+  }
 
   if (isLoadingChat) {
     return <UnifiedLoading message="Loading chat..." />
@@ -831,7 +852,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
                             }`}
                             role={msg.role === "assistant" ? "article" : undefined}
                           >
-                            <p className="text-sm leading-relaxed font-medium whitespace-pre-wrap">{part.text}</p>
+                            {renderMessageContent(part.text, msg.role === "user")}
                           </div>
                         )
                       }
@@ -987,7 +1008,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
         {uploadedImage && (
           <div className="mb-2 relative inline-block">
             <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-white/60 shadow-lg">
-              <img src={uploadedImage || "/placeholder.svg"} alt="Reference" className="w-full h-full object-cover" />
+              <img src={uploadedImage || "/placeholder.svg"} alt="Inspiration" className="w-full h-full object-cover" />
               <button
                 onClick={() => setUploadedImage(null)}
                 className="absolute top-0.5 right-0.5 w-5 h-5 bg-stone-950 text-white rounded-full flex items-center justify-center hover:scale-110 transition-transform"
@@ -996,7 +1017,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
                 <X size={12} strokeWidth={2.5} />
               </button>
             </div>
-            <p className="text-xs text-stone-600 mt-1 tracking-wide">Reference Image</p>
+            <p className="text-xs text-stone-600 mt-1 tracking-wide">Inspiration Image</p>
           </div>
         )}
 
@@ -1097,7 +1118,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
                   handleSendMessage()
                 }
               }}
-              placeholder={uploadedImage ? "Describe how to use this image..." : "Message Maya..."}
+              placeholder={uploadedImage ? "Describe the style you want to recreate..." : "Message Maya..."}
               className="w-full px-4 py-3 bg-white/40 backdrop-blur-2xl border border-white/60 rounded-xl text-stone-950 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-950/50 focus:bg-white/60 pr-12 font-medium text-sm min-h-[48px] shadow-lg shadow-stone-950/10 transition-all duration-300"
               disabled={isTyping || isUploadingImage}
               aria-label="Message input"

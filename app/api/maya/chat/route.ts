@@ -62,114 +62,118 @@ const generateConceptsTool = tool({
       const conceptPrompt = `Based on the user's request: "${userRequest}"
 ${aesthetic ? `Aesthetic preference: ${aesthetic}` : ""}
 ${context ? `Additional context: ${context}` : ""}
-${referenceImageUrl ? `**REFERENCE IMAGE PROVIDED**: ${referenceImageUrl}\n\n**IMPORTANT**: The user has uploaded a reference image. This will be combined with their trained personal model to create images of THEM with/using this product or in this style.\n\n**How to use the reference image:**\n- For PRODUCTS (skincare, accessories, etc.): Generate concepts showing the user holding, using, or styled with the product\n- For STYLE REFERENCES: Create variations inspired by the composition, lighting, or mood\n- For FLATLAYS: Position the product as the hero with the user's hands/body partially visible\n- The reference image will be used as a control image in FLUX, guiding the composition while the user's trained LoRA ensures their likeness appears in the final image` : ""}
+${
+  referenceImageUrl
+    ? `
+**🎨 INSPIRATION IMAGE PROVIDED: ${referenceImageUrl}**
+
+**CRITICAL: YOU ARE IN STYLE REPLICATION MODE**
+
+The user has uploaded an inspiration image. Your PRIMARY job is to ANALYZE and REPLICATE its exact aesthetic.
+
+**MANDATORY ANALYSIS - BE EXTREMELY SPECIFIC:**
+
+1. **LIGHTING** (Most Critical):
+   - Light source: ${""} (window, studio, golden hour, single dramatic source, overhead, etc.)
+   - Light quality: (soft/diffused, harsh/direct, moody/low-key, bright/high-key)
+   - Light direction: (front, side 45°, back, top, bottom, Rembrandt)
+   - Color temperature: (warm golden, cool blue, neutral, mixed warm/cool)
+   - Shadow depth: (deep dramatic, soft subtle, no shadows, high contrast)
+   - Example: "dramatic side lighting from single source at 45 degrees creating deep shadows and high contrast, warm golden tones, moody low-key aesthetic"
+
+2. **COLOR PALETTE**:
+   - Dominant colors: (be specific: "deep burgundy" not "red", "warm beige" not "tan")
+   - Temperature: (warm/golden, cool/blue, neutral/grey, monochrome)
+   - Contrast level: (high contrast, low contrast, medium)
+   - Saturation: (highly saturated, desaturated/muted, black and white)
+   - Example: "monochromatic dark aesthetic with deep blacks, charcoal greys, warm beige leather accents, low saturation, high contrast"
+
+3. **MOOD & ATMOSPHERE**:
+   - Emotion: (moody, bright, serene, dramatic, energetic, intimate, mysterious)
+   - Vibe: (editorial luxury, casual lifestyle, minimalist, maximalist, artistic, cinematic)
+   - Example: "moody, intimate, luxury editorial with dramatic shadows and sophisticated darkness"
+
+4. **COMPOSITION**:
+   - Camera angle: (eye-level, high angle looking down, low angle looking up, overhead flatlay, Dutch angle)
+   - Framing: (close-up face, medium waist-up, wide environmental, flatlay overhead)
+   - Depth of field: (shallow bokeh f/1.4, medium f/2.8, deep focus f/8)
+   - Example: "overhead flatlay composition with shallow depth of field f/2.8, hero subject in center with supporting elements arranged artistically"
+
+5. **STYLING & TEXTURES**:
+   - Visible materials: (leather, fabric, metal, wood, glass, etc.)
+   - Styling approach: (minimal, abundant, curated, organic, luxurious)
+   - Prominent textures: (smooth leather, rough concrete, soft fabric, metallic shine)
+   - Example: "luxury tech flatlay with buttery leather textures, metallic accents, minimal curated styling, high-end editorial aesthetic"
+
+**YOUR TASK:**
+Create ${count} concepts of the USER (not the product/scene) that REPLICATE this exact aesthetic.
+
+**PROMPT WRITING - CRITICAL RULES:**
+
+1. **START with analyzed lighting** - Copy it EXACTLY from your analysis
+2. **THEN describe the user** - Use gender-appropriate descriptor
+3. **THEN match colors and mood** - Be specific about colors and atmosphere
+4. **THEN replicate composition** - Match the framing and angle
+5. **END with technical specs** - Match the inspiration's technical qualities
+
+**DO NOT:**
+- Use generic "golden hour" or "soft studio light" if inspiration is dark/moody
+- Apply bright cheerful lighting to dark moody inspiration
+- Use your default templates - REPLICATE THE INSPIRATION
+- Describe the inspiration itself - create NEW concepts of the USER in that STYLE
+
+**EXAMPLE FOR DARK MOODY FLATLAY:**
+"dramatic side lighting from single source creating deep shadows and high contrast, warm golden tones, moody low-key aesthetic, a woman's hands elegantly positioned holding luxury tech device, deep blacks and charcoal greys with warm beige leather textures, overhead flatlay composition, curated high-end accessories arranged artistically, sophisticated darkness, editorial luxury quality, shot on 50mm f/2.8 with shallow depth of field"
+`
+    : ""
+}
 
 **USER GENDER: ${userGender}**
 
-You have access to the user's complete brand profile, fashion preferences, and personal style in your context. Use your sophisticated fashion expertise to create concepts that are:
-- Gender-appropriate for ${userGender === "woman" || userGender === "female" ? "a woman" : userGender === "man" || userGender === "male" ? "a man" : "this person"}
-- Aligned with their personal brand and aesthetic preferences
-- Showcasing your deep knowledge of fabrics, colors, silhouettes, and styling
-- Creative and unique, not generic or templated
-
-Generate ${count} unique, creative photo concepts. Each concept should be a work of art that reflects your fashion intelligence.
+Generate ${count} unique, creative photo concepts that showcase your fashion and styling expertise.
 
 **CRITICAL: TWO DIFFERENT TEXTS REQUIRED**
 
 1. **DESCRIPTION** (User-Facing):
-   - Write in Maya's voice: warm, friendly, simple everyday language
-   - Easy to understand, no technical jargon
-   - Focus on the feeling and story, not technical details
-   - Examples of GOOD descriptions:
-     * "A professional headshot with soft natural light. You'll look confident and approachable."
-     * "A lifestyle photo in a modern coffee shop. Natural and relaxed vibes."
-     * "A full-body shot showing your complete outfit. Clean and elegant."
-     * "A moody portrait with dramatic lighting. Artistic and bold."
+   - Warm, friendly, simple everyday language
+   - Focus on feeling and story, not technical details
+   - Examples: "A moody portrait with dramatic shadows" or "A bright lifestyle photo in a modern cafe"
 
 2. **PROMPT** (Technical - For FLUX):
-   - This is the actual FLUX prompt that will generate the image
-   - Write it as a flowing, poetic description that FLUX understands
+   - This is your creative vision as a master photographer
+   - Write it as a flowing, poetic description
+   - NO templates, NO hardcoded specs - pure creative freedom
    
-**CRITICAL PROMPT RULES:**
+**PROMPT STRUCTURE - PURE CREATIVE FREEDOM:**
 
-1. **DO NOT include "TRIGGERWORD" or any placeholder** - The system automatically adds the user's trained model identifier
-2. **MUST start with gender-specific descriptor**: ${userGender === "woman" || userGender === "female" ? '"a woman" or "woman with..."' : userGender === "man" || userGender === "male" ? '"a man" or "man with..."' : '"a person" or "person with..."'}
-3. **Use your fashion expertise** - Apply your knowledge of fabrics, colors, silhouettes, and styling from your Creative Lookbook
-4. **Be gender-appropriate** - Use styling, clothing, and descriptions suitable for ${userGender === "woman" || userGender === "female" ? "women" : userGender === "man" || userGender === "male" ? "men" : "this person"}
+1. **START with gender**: "${userGender === "woman" || userGender === "female" ? "a woman" : userGender === "man" || userGender === "male" ? "a man" : "a person"}"
 
-**FLUX PROMPT STRUCTURE - EDITORIAL EXCELLENCE:**
-
-Write prompts as flowing, poetic descriptions that read like a Vogue photo caption. Think like a master photographer describing their vision.
-
-**PROMPT ORDER:**
-
-1. **START WITH GENDER-SPECIFIC SUBJECT** (Required for FLUX):
-   - ${userGender === "woman" || userGender === "female" ? '"a woman with..." or "woman with..."' : userGender === "man" || userGender === "male" ? '"a man with..." or "man with..."' : '"a person with..."'}
-   
-2. **STYLING DETAILS** (Use your fashion expertise - be detailed and creative):
-   - Fashion & outfit details (use your fabric knowledge: cashmere, silk, linen, etc.)
-   - Hair & grooming (appropriate for gender and aesthetic)
-   - Emotional tone & expression
-   - Location & atmosphere (paint the scene)
-   - Lighting quality and direction (be poetic and specific)
+2. **YOUR CREATIVE VISION**: Describe the complete scene as you envision it
+   - Lighting (be specific and creative)
+   - Setting and atmosphere
+   - Fashion and styling details
+   - Mood and emotion
    - Composition and framing
-   
-3. **TECHNICAL SPECIFICATIONS** (ALWAYS LAST):
-   - Camera & lens specs
-   - Aperture settings
-   - Film grain or quality notes
+   - Technical camera details (at the end)
 
-**FASHION & STYLING INTELLIGENCE:**
+**IMPORTANT**: 
+- NO hardcoded templates will override your vision
+- Your prompt description is used DIRECTLY
+- Be as creative and specific as you want
+- Trust your fashion and photography expertise
+- The lighting, colors, and mood YOU describe is what will be generated
 
-Use your sophisticated fashion knowledge:
-- **Fabrics**: Be specific - "Italian cashmere", "silk charmeuse", "Japanese denim", "Belgian linen"
-- **Colors**: Use your color theory - "warm camel", "deep burgundy", "soft blush", "charcoal grey"
-- **Silhouettes**: Describe the cut and fit - "relaxed oversized", "tailored slim-fit", "flowing midi"
-- **Accessories**: Be thoughtful - "delicate 18k gold layered necklaces", "minimal silver watch"
-- **Styling Details**: Show your expertise - hair, makeup/grooming, overall aesthetic
+${referenceImageUrl ? `\n**Include referenceImageUrl in each concept for image-to-image generation**` : ""}
 
-**LIGHTING DIRECTION** (Be poetic and specific):
-- "golden hour sunlight streaming from camera left, creating warm rim light"
-- "soft north-facing window light at 45 degrees, wrapping gently around features"
-- "dramatic Rembrandt lighting with single key light, creating sculptural shadows"
-
-**LOCATION & ATMOSPHERE** (Paint the scene):
-- Don't just say "office" - say "minimalist Scandinavian office with floor-to-ceiling windows"
-- Not "beach" - "serene Mediterranean coastline with white-washed architecture"
-
-**CAMERA & LENS SPECIFICATIONS** (ALWAYS AT THE END):
-- Close-Up/Portrait: "shot on 85mm f/1.4 lens with creamy bokeh"
-- Half Body: "shot on 50mm f/1.8 lens with balanced composition"
-- Full Body: "shot on 50mm f/2.0 lens, 3/4 body framing with face clearly visible, defined facial features, natural skin texture, warm lighting illuminating face"
-
-**EXAMPLE OF EXCELLENT PROMPT:**
-
-${
-  userGender === "woman" || userGender === "female"
-    ? `"a woman with long flowing hair catching golden light, wearing an oversized cream cashmere sweater with relaxed silhouette over high-waisted wide-leg linen trousers in warm sand, delicate 18k gold layered necklaces, standing in a minimalist Scandinavian interior with floor-to-ceiling windows and natural oak floors, soft morning light streaming from camera left at 45 degrees creating warm rim light and gentle shadows, natural skin texture with healthy glow, effortlessly elegant with warm genuine smile, editorial quality with film grain aesthetic, timeless sophistication, shot on 85mm f/1.4 lens with creamy bokeh background"`
-    : userGender === "man" || userGender === "male"
-      ? `"a man with short styled hair and strong features, wearing a tailored charcoal wool blazer over crisp white oxford shirt with rolled sleeves, minimal silver watch, standing in a modern urban office with floor-to-ceiling windows overlooking the city, golden hour light streaming from camera right creating dramatic rim light and strong shadows, natural skin texture with healthy glow, confident and commanding presence with strong posture, editorial quality with subtle film grain, powerful sophistication, shot on 85mm f/1.4 lens with creamy bokeh background"`
-      : `"a person with styled hair and confident expression, wearing elegant neutral-toned attire with minimal accessories, standing in a minimalist interior with natural light, soft golden hour illumination creating warm atmosphere, natural skin texture, confident presence, editorial quality, timeless elegance, shot on 85mm f/1.4 lens"`
-}
-
-**WHAT TO AVOID:**
-- Generic descriptions: "nice outfit", "good lighting"
-- Using wrong gender pronouns in the prompt start
-- Including "TRIGGERWORD" or any placeholder text
-- Camera specs at the beginning
-- Generic templated styling - use your creative expertise!
-
-${referenceImageUrl ? `\n**IMPORTANT**: Include the reference image URL in each concept's output so it can be used in image-to-image generation.` : ""}
-
-Return ONLY a valid JSON array of concepts, no other text. Each concept must have this exact structure:
+Return ONLY valid JSON array:
 {
-  "title": "string - Short, catchy title",
-  "description": "string - SIMPLE, WARM, FRIENDLY language",
+  "title": "string",
+  "description": "string - simple friendly language",
   "category": "Close-Up" | "Half Body" | "Lifestyle" | "Action" | "Environmental",
-  "fashionIntelligence": "string - DETAILED gender-appropriate styling using your fashion expertise",
-  "lighting": "string - POETIC lighting description",
-  "location": "string - RICH location description",
-  "prompt": "string - MUST start with '${userGender === "woman" || userGender === "female" ? "a woman" : userGender === "man" || userGender === "male" ? "a man" : "a person"}' and showcase your fashion intelligence"${referenceImageUrl ? `,\n  "referenceImageUrl": "${referenceImageUrl}"` : ""}
+  "fashionIntelligence": "string",
+  "lighting": "string",
+  "location": "string",
+  "prompt": "string - YOUR complete creative vision, used DIRECTLY without template overrides"${referenceImageUrl ? `,\n  "referenceImageUrl": "${referenceImageUrl}"` : ""}
 }`
 
       const { text } = await generateText({
@@ -380,15 +384,15 @@ export async function POST(req: Request) {
         }
 
         let textContent = ""
-        let referenceImageUrl: string | null = null
+        let inspirationImageUrl: string | null = null
 
         if (typeof msg.content === "string") {
           textContent = msg.content
-          const imageMatch = textContent.match(/\[Reference Image: (https?:\/\/[^\]]+)\]/)
+          const imageMatch = textContent.match(/\[(Inspiration Image|Reference Image): (https?:\/\/[^\]]+)\]/)
           if (imageMatch) {
-            referenceImageUrl = imageMatch[1]
+            inspirationImageUrl = imageMatch[2]
             textContent = textContent.replace(imageMatch[0], "").trim()
-            console.log("[v0] Extracted reference image:", referenceImageUrl)
+            console.log("[v0] Extracted inspiration image:", inspirationImageUrl)
           }
         } else if (Array.isArray(msg.content)) {
           textContent = msg.content
@@ -409,8 +413,12 @@ export async function POST(req: Request) {
           return null
         }
 
-        if (referenceImageUrl) {
-          textContent = `[User has uploaded a reference image: ${referenceImageUrl}]\n\n${textContent}`
+        if (inspirationImageUrl) {
+          textContent = `[User has uploaded an inspiration image: ${inspirationImageUrl}]
+
+**IMPORTANT**: Analyze this image carefully and create concepts that capture its style, mood, composition, and aesthetic. The user wants photos of THEMSELVES that match this inspiration.
+
+${textContent}`
         }
 
         return {

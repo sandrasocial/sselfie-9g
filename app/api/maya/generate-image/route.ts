@@ -167,23 +167,6 @@ export async function POST(request: NextRequest) {
       lora: loraWeightsUrl,
     }
 
-    if (referenceImageUrl) {
-      console.log("[v0] ========== REFERENCE IMAGE DETECTED ==========")
-      console.log("[v0] Reference Image URL:", referenceImageUrl)
-      console.log("[v0] Adding to prediction input as 'image' parameter")
-
-      // For FLUX LoRA models, use 'image' parameter for img2img
-      predictionInput.image = referenceImageUrl
-      // prompt_strength controls how much the output matches the input (0-1)
-      // Lower = more like input image, Higher = more creative freedom
-      predictionInput.prompt_strength = 0.5
-
-      console.log("[v0] Image parameter set:", predictionInput.image)
-      console.log("[v0] Prompt strength set:", predictionInput.prompt_strength)
-      console.log("[v0] This will blend the reference image with your trained model")
-      console.log("[v0] ================================================")
-    }
-
     console.log("[v0] ========== FULL PREDICTION INPUT ==========")
     console.log("[v0] ✅ LoRA weights URL:", loraWeightsUrl)
     console.log("[v0] ✅ LoRA scale:", predictionInput.lora_scale)

@@ -2,12 +2,7 @@ export interface FluxPromptComponents {
   trigger: string
   gender: string
   quality: string[]
-  camera: string
-  lighting: string
-  setting: string
-  subject: string
-  pose: string
-  composition: string
+  styleDescription: string
   negatives: string
 }
 
@@ -28,81 +23,61 @@ export interface GeneratedFluxPrompt {
 export class FluxPromptBuilder {
   /**
    * Generate FLUX prompt from concept card
+   * Now uses Maya's creative description directly without template overrides
    */
   static generateFluxPrompt(
     conceptTitle: string,
     conceptDescription: string,
     category: string,
     options: FluxPromptOptions,
+    referenceImageUrl?: string,
   ): GeneratedFluxPrompt {
     const { userTriggerToken, userGender, includeQualityHints = true, includeNegativePrompts = true } = options
+
+    console.log("[v0] Generating FLUX prompt without template overrides")
+    console.log("[v0] Using Maya's creative description directly:", {
+      hasReferenceImage: !!referenceImageUrl,
+      category,
+      descriptionLength: conceptDescription.length,
+    })
 
     const components: FluxPromptComponents = {
       trigger: userTriggerToken,
       gender: this.getGenderToken(userGender),
       quality: includeQualityHints
-        ? [
-            "raw photo",
-            "editorial quality",
-            "professional photography",
-            "sharp focus",
-            "high resolution",
-            "8k uhd",
-            "dslr",
-          ]
+        ? ["raw photo", "editorial quality", "professional photography", "sharp focus", "high resolution"]
         : [],
-      camera: this.buildCameraSpecs(category),
-      lighting: this.buildLightingSpecs(category),
-      setting: this.extractSettingFromDescription(conceptDescription),
-      subject: this.buildSubjectSpecs(conceptDescription, userGender),
-      pose: this.extractPoseFromDescription(conceptDescription),
-      composition: this.buildCompositionSpecs(category),
+      styleDescription: conceptDescription, // Maya's full creative vision - no template overrides
       negatives: includeNegativePrompts
         ? "blurry, low quality, distorted, deformed, ugly, bad anatomy, disfigured hands, extra fingers, missing fingers, fused fingers, too many fingers, extra limbs, missing limbs, extra arms, extra legs, malformed limbs, mutated hands, poorly drawn hands, poorly drawn face, mutation, watermark, signature, text, logo"
         : "",
     }
 
+    // Simple, clean prompt structure - let Maya's creativity shine
     const promptParts = [
-      // 1. Core identity (ALWAYS FIRST)
       components.trigger,
       components.gender,
-
-      // 2. Quality foundation
       ...components.quality,
-
-      // 3. Styling details (lighting, setting, subject, pose, composition)
-      components.lighting,
-      components.setting,
-      components.subject,
-      components.pose,
-      components.composition,
-
-      // 4. Technical specs (camera/lens LAST so they don't overwrite styling)
-      components.camera,
+      components.styleDescription, // This is Maya's analyzed style - trust her expertise
     ].filter(Boolean)
 
     let prompt = promptParts.join(", ")
 
-    // Add negative prompts
     if (components.negatives && includeNegativePrompts) {
       prompt += ` --no ${components.negatives}`
     }
 
-    const wordCount = prompt.split(/\s+/).length
-    const characterCount = prompt.length
-
-    console.log("[v0] FLUX prompt generated:", {
-      wordCount,
-      characterCount,
-      trigger: components.trigger,
-      gender: components.gender,
+    console.log("[v0] Final prompt structure:", {
+      wordCount: prompt.split(/\s+/).length,
+      characterCount: prompt.length,
+      hasReferenceImage: !!referenceImageUrl,
     })
 
     return {
       prompt,
       components,
-      wordCount,
-      characterCount,
+      wordCount: prompt.split(/\s+/).length,
+      characterCount: prompt.length,
     }
   }
 
@@ -119,116 +94,5 @@ export class FluxPromptBuilder {
       default:
         return "person"
     }
-  }
-
-  private static buildCameraSpecs(category: string): string {
-    const specs = []
-
-    if (category === "portrait" || category === "headshot") {
-      specs.push("85mm lens", "shallow depth of field", "bokeh background")
-    } else if (category === "lifestyle") {
-      specs.push("50mm lens", "natural depth of field", "environmental storytelling")
-    } else if (category === "editorial") {
-      specs.push("50mm lens", "medium depth of field")
-    } else {
-      specs.push("professional camera", "optimal depth of field")
-    }
-
-    return specs.join(", ")
-  }
-
-  private static buildLightingSpecs(category: string): string {
-    const specs = []
-
-    if (category === "portrait" || category === "headshot") {
-      specs.push("soft studio lighting", "professional key light", "subtle fill light")
-    } else if (category === "lifestyle") {
-      specs.push("natural lighting", "golden hour", "soft ambient light")
-    } else if (category === "editorial") {
-      specs.push("dramatic lighting", "professional studio setup", "controlled shadows")
-    } else {
-      specs.push("professional lighting", "well-lit scene")
-    }
-
-    return specs.join(", ")
-  }
-
-  private static extractSettingFromDescription(description: string): string {
-    // Extract setting keywords from description
-    const settingKeywords = [
-      "studio",
-      "outdoor",
-      "indoor",
-      "office",
-      "cafe",
-      "street",
-      "park",
-      "home",
-      "minimalist",
-      "modern",
-      "elegant",
-      "urban",
-      "natural",
-    ]
-
-    const foundSettings = settingKeywords.filter((keyword) => description.toLowerCase().includes(keyword))
-
-    if (foundSettings.length > 0) {
-      return `${foundSettings.join(", ")} setting`
-    }
-
-    return "professional setting"
-  }
-
-  private static buildSubjectSpecs(description: string, userGender?: string | null): string {
-    const specs = []
-
-    // Extract attire/style from description
-    const styleKeywords = ["casual", "formal", "business", "elegant", "professional", "relaxed", "sophisticated"]
-
-    const foundStyles = styleKeywords.filter((keyword) => description.toLowerCase().includes(keyword))
-
-    if (foundStyles.length > 0) {
-      specs.push(`${foundStyles[0]} attire`)
-    }
-
-    // Add expression
-    specs.push("confident expression", "natural pose")
-
-    return specs.join(", ")
-  }
-
-  private static extractPoseFromDescription(description: string): string {
-    const poseKeywords = ["standing", "sitting", "leaning", "walking", "looking at camera", "profile", "three-quarter"]
-
-    const foundPoses = poseKeywords.filter((keyword) => description.toLowerCase().includes(keyword))
-
-    if (foundPoses.length > 0) {
-      return foundPoses.join(", ")
-    }
-
-    return "natural pose, looking at camera"
-  }
-
-  private static buildCompositionSpecs(category: string): string {
-    const specs = []
-
-    if (category === "portrait" || category === "headshot") {
-      specs.push("medium shot", "centered composition", "professional framing")
-    } else if (category === "lifestyle") {
-      specs.push(
-        "3/4 body shot with face clearly visible",
-        "defined facial features with natural skin texture",
-        "warm lighting illuminating face",
-        "dynamic composition",
-        "environmental context without losing facial detail",
-      )
-    } else if (category === "editorial") {
-      specs.push("artistic composition", "strong visual impact", "magazine quality")
-    } else {
-      specs.push("well-balanced composition", "professional framing")
-    }
-
-    return specs.join(", ")
   }
 }
