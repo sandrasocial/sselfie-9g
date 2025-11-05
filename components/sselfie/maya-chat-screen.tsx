@@ -26,8 +26,6 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const [showScrollButton, setShowScrollButton] = useState(false)
   const isAtBottomRef = useRef(true)
-  const lastScrollHeightRef = useRef(0)
-  const [userHasScrolledUp, setUserHasScrolledUp] = useState(false)
   const [uploadedImage, setUploadedImage] = useState<string | null>(null)
   const [isUploadingImage, setIsUploadingImage] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -37,8 +35,6 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
   const [currentPrompts, setCurrentPrompts] = useState<Array<{ label: string; prompt: string }>>([])
   const [userGender, setUserGender] = useState<string | null>(null)
   const [showHeader, setShowHeader] = useState(true)
-  const lastScrollY = useRef(0)
-  const shouldAutoScrollRef = useRef(true)
 
   const [styleStrength, setStyleStrength] = useState(1.0) // LoRA scale: 0.9-1.2
   const [promptAccuracy, setPromptAccuracy] = useState(3.5) // Guidance scale: 2.5-5.0
@@ -370,6 +366,30 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
     const interval = setInterval(retryFailedSaves, 30000)
     return () => clearInterval(interval)
   }, [])
+
+  const handleScroll = useCallback(() => {
+    if (!messagesContainerRef.current) return
+
+    const container = messagesContainerRef.current
+    const scrollTop = container.scrollTop
+    const scrollHeight = container.scrollHeight
+    const clientHeight = container.clientHeight
+
+    // Check if user is within 100px of bottom
+    const isNearBottom = scrollHeight - scrollTop - clientHeight < 100
+
+    // Update refs and state
+    isAtBottomRef.current = isNearBottom
+    setShowScrollButton(!isNearBottom)
+  }, [])
+
+  useEffect(() => {
+    const container = messagesContainerRef.current
+    if (!container) return
+
+    container.addEventListener("scroll", handleScroll)
+    return () => container.removeEventListener("scroll", handleScroll)
+  }, [handleScroll])
 
   useEffect(() => {
     // Only auto-scroll if user is at bottom (respects manual scrolling up)

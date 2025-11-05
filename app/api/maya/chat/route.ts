@@ -1,12 +1,28 @@
-import { streamText, tool, generateText, type CoreMessage } from "ai"
+import { streamText, tool, type CoreMessage, generateText } from "ai"
 import { z } from "zod"
-import { MAYA_SYSTEM_PROMPT, type MayaConcept } from "@/lib/maya/personality"
+import { MAYA_SYSTEM_PROMPT } from "@/lib/maya/personality"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 
-export const maxDuration = 60 // Increased from 30 to 60 seconds for nested AI calls
+export const maxDuration = 60
+
+interface MayaConcept {
+  title: string
+  description: string
+  category: "Close-Up" | "Half Body" | "Lifestyle" | "Action" | "Environmental"
+  fashionIntelligence: string
+  lighting: string
+  location: string
+  prompt: string
+  referenceImageUrl?: string
+  customSettings?: {
+    styleStrength?: number
+    promptAccuracy?: number
+    aspectRatio?: string
+  }
+}
 
 const generateConceptsTool = tool({
   description:
@@ -83,7 +99,7 @@ The user has uploaded an inspiration image. Your PRIMARY job is to ANALYZE and R
 **MANDATORY ANALYSIS - BE EXTREMELY SPECIFIC:**
 
 1. **LIGHTING** (Most Critical):
-   - Light source: ${""} (window, studio, golden hour, single dramatic source, overhead, etc.)
+   - Light source: (window, studio, golden hour, single dramatic source, overhead, etc.)
    - Light quality: (soft/diffused, harsh/direct, moody/low-key, bright/high-key)
    - Light direction: (front, side 45°, back, top, bottom, Rembrandt)
    - Color temperature: (warm golden, cool blue, neutral, mixed warm/cool)
@@ -114,13 +130,20 @@ The user has uploaded an inspiration image. Your PRIMARY job is to ANALYZE and R
    - Prominent textures: (smooth leather, rough concrete, soft fabric, metallic shine)
    - Example: "luxury tech flatlay with buttery leather textures, metallic accents, minimal curated styling, high-end editorial aesthetic"
 
+6. **HAIR & OUTFIT DETAILS** (if visible in inspiration):
+   - Hair style: (sleek, wavy, textured, up/down, length, color tones)
+   - Clothing style: (casual, formal, streetwear, elegant, specific garments)
+   - Colors worn: (specific shades and combinations)
+   - Accessories: (jewelry, bags, shoes, hats, etc.)
+   - Example: "sleek straight hair in warm brown tones, wearing oversized cream knit sweater and gold minimal jewelry, relaxed sophisticated styling"
+
 **YOUR TASK:**
-Create ${count} concepts of the USER (not the product/scene) that REPLICATE this exact aesthetic.
+Create ${count} concepts of the USER (not the product/scene) that REPLICATE this exact aesthetic, including hair style, outfit colors, and overall styling if visible in the inspiration.
 
 **PROMPT WRITING - CRITICAL RULES:**
 
 1. **START with analyzed lighting** - Copy it EXACTLY from your analysis
-2. **THEN describe the user** - Use gender-appropriate descriptor
+2. **THEN describe the user with hair/outfit from inspiration** - Match the styling you see
 3. **THEN match colors and mood** - Be specific about colors and atmosphere
 4. **THEN replicate composition** - Match the framing and angle
 5. **END with technical specs** - Match the inspiration's technical qualities
@@ -128,11 +151,12 @@ Create ${count} concepts of the USER (not the product/scene) that REPLICATE this
 **DO NOT:**
 - Use generic "golden hour" or "soft studio light" if inspiration is dark/moody
 - Apply bright cheerful lighting to dark moody inspiration
-- Use your default templates - REPLICATE THE INSPIRATION
+- Use default templates - REPLICATE THE INSPIRATION
+- Ignore hair style, outfit colors, or styling details from the inspiration
 - Describe the inspiration itself - create NEW concepts of the USER in that STYLE
 
-**EXAMPLE FOR DARK MOODY FLATLAY:**
-"dramatic side lighting from single source creating deep shadows and high contrast, warm golden tones, moody low-key aesthetic, a woman's hands elegantly positioned holding luxury tech device, deep blacks and charcoal greys with warm beige leather textures, overhead flatlay composition, curated high-end accessories arranged artistically, sophisticated darkness, editorial quality, shot on 50mm f/2.8 with shallow depth of field"
+**EXAMPLE FOR DARK MOODY PORTRAIT WITH STYLING:**
+"dramatic side lighting from single source creating deep shadows and high contrast, warm golden tones, moody low-key aesthetic, a woman with sleek straight dark hair wearing oversized cream knit sweater and gold minimal jewelry, deep blacks and charcoal greys with warm neutral tones, intimate portrait composition, sophisticated darkness, editorial quality, shot on 85mm f/1.8 with shallow depth of field"
 `
     : ""
 }
@@ -141,123 +165,21 @@ Create ${count} concepts of the USER (not the product/scene) that REPLICATE this
 
 Generate ${count} unique, creative photo concepts that showcase your fashion and styling expertise.
 
-**📸 SHOT TYPE CATEGORIES - CHOOSE THE RIGHT ONE:**
-
-You have creative freedom to choose from these categories based on the concept:
-
-1. **"Close-Up"** - Intimate headshot, face and expression are the hero
-2. **"Half Body"** - Waist up, showing outfit and upper body styling  
-3. **"Lifestyle"** - Full body or 3/4 body in authentic lifestyle context
-4. **"Action"** - Dynamic movement, walking, mid-stride, energetic
-5. **"Environmental"** - Subject in beautiful location, environment tells story
-
-**🚨 CRITICAL: FACIAL QUALITY IS NON-NEGOTIABLE 🚨**
-
-**THE GOLDEN RULE: Subject must fill 60-80% of the frame in ALL categories**
-
-**FRAMING DISTANCE REQUIREMENTS BY CATEGORY:**
-
-**Close-Up:**
-- ✅ Face fills frame, head and shoulders only
-- ✅ "intimate headshot", "portrait", "face fills frame"
-- ❌ Never show below chest
-
-**Half Body:**
-- ✅ Waist up, subject fills frame vertically from head to waist
-- ✅ "half body portrait", "waist up filling frame", "upper body portrait"
-- ❌ Never show legs or feet
-
-**Lifestyle (Full Body Allowed):**
-- ✅ Full body BUT subject still fills 60-80% of frame height
-- ✅ "full body portrait in [location]", "subject prominent in frame", "lifestyle portrait"
-- ✅ CAN mention: walking, standing, sitting, full outfit, shoes, boots
-- ❌ NEVER: "wide shot", "distant figure", "shot from far away", "small in frame"
-- ✅ EXAMPLE: "full body portrait of a woman walking through city street, subject fills frame from head to toe, face clearly visible and sharp, urban environment as backdrop"
-
-**Action (Full Body Allowed):**
-- ✅ Full body dynamic movement BUT subject fills 60-80% of frame
-- ✅ "captured mid-stride filling frame", "dynamic full body portrait", "action shot with subject prominent"
-- ✅ CAN mention: walking, running, jumping, stride, movement, full body, shoes
-- ❌ NEVER: "wide action shot", "distant athlete", "shot from far away"
-- ✅ EXAMPLE: "a woman captured mid-stride in confident walk, full body portrait filling frame, face sharp and expressive, trench coat flowing, ankle boots visible, urban backdrop"
-
-**Environmental (Full Body Allowed):**
-- ✅ Full body in environment BUT subject is still the HERO (60-80% of frame)
-- ✅ "environmental portrait with subject as hero", "full body in [location] filling frame"
-- ✅ CAN mention: full outfit, shoes, standing, walking, environment details
-- ❌ NEVER: "wide environmental shot", "vast landscape with small figure", "distant person"
-- ✅ EXAMPLE: "full body environmental portrait of a woman in Icelandic black sand beach, subject fills frame prominently, face clearly visible and sharp, dramatic landscape as supporting element"
-
-**VALIDATION CHECKLIST - BEFORE FINALIZING EACH CONCEPT:**
-
-1. ✅ Does my prompt say "subject fills frame" or "prominent in frame"? (Required for Lifestyle/Action/Environmental)
-2. ✅ Does my prompt emphasize "face clearly visible and sharp"? (Required for ALL categories)
-3. ❌ Does my prompt say "wide shot", "distant", "far away", or "small in frame"? (FORBIDDEN)
-4. ✅ If full body: Did I specify the subject fills 60-80% of frame height? (Required)
-5. ✅ Does the category match what I'm describing? (Must match)
-
-**CORRECT EXAMPLES BY CATEGORY:**
-
-✅ **Close-Up:**
-"a woman with confident expression, styled hair catching soft window light, wearing elegant black turtleneck, intimate headshot with face filling frame, warm skin tones, sharp focus on eyes and features, shot on 85mm f/1.8"
-
-✅ **Half Body:**
-"a woman in tailored camel blazer and black top, arms crossed confidently, half body portrait filling frame from head to waist, modern office interior, soft natural light, professional editorial quality, shot on 50mm f/2.8"
-
-✅ **Lifestyle (Full Body):**
-"full body lifestyle portrait of a woman walking through modern city street, subject fills frame from head to toe (60-80% of frame height), face clearly visible and sharp, wearing flowing trench coat and ankle boots, urban architecture as backdrop, natural daylight, authentic moment, shot on 35mm f/2.8"
-
-✅ **Action (Full Body):**
-"a woman captured mid-stride in confident walk, dynamic full body portrait filling frame, face sharp and expressive, camel trench coat flowing behind her, dark jeans and pointed ankle boots, rain-slicked city street, dramatic urban lighting, subject prominent in composition, shot on 50mm f/2.0"
-
-✅ **Environmental (Full Body):**
-"full body environmental portrait of a woman standing on Icelandic black sand beach, subject fills frame prominently (70% of frame height), face clearly visible and sharp, wearing dark wool coat and boots, dramatic volcanic landscape and moody sky as supporting elements, overcast natural light, cinematic atmosphere, shot on 35mm f/4"
-
-**CRITICAL: TWO DIFFERENT TEXTS REQUIRED**
-
-1. **DESCRIPTION** (User-Facing):
-   - Warm, friendly, simple everyday language
-   - Focus on feeling and story, not technical details
-   - Examples: "A moody portrait with dramatic shadows" or "A dynamic action shot capturing you mid-stride"
-
-2. **PROMPT** (Technical - For FLUX):
-   - This is your creative vision as a master photographer
-   - Write it as a flowing, poetic description
-   - NO templates, NO hardcoded specs - pure creative freedom
-   - **MUST FOLLOW THE FRAMING DISTANCE REQUIREMENTS ABOVE**
-   
-**PROMPT STRUCTURE - PURE CREATIVE FREEDOM:**
-
-1. **START with gender**: "${userGender === "woman" || userGender === "female" ? "a woman" : userGender === "man" || userGender === "male" ? "a man" : "a person"}"
-
-2. **YOUR CREATIVE VISION**: Describe the complete scene as you envision it
-   - Lighting (be specific and creative)
-   - Setting and atmosphere
-   - Fashion and styling details (can include full outfit for Lifestyle/Action/Environmental)
-   - Mood and emotion
-   - Composition and framing (**MUST include "subject fills frame" for full body shots**)
-   - Technical camera details (at the end)
-
-**IMPORTANT**: 
-- NO hardcoded templates will override your vision
-- Your prompt description is used DIRECTLY
-- Be as creative and specific as you want
-- Trust your fashion and photography expertise
-- The lighting, colors, and mood YOU describe is what will be generated
-- **BUT YOU MUST ENSURE SUBJECT FILLS 60-80% OF FRAME FOR FACIAL QUALITY**
+Return ONLY a valid JSON array with this exact structure:
+[
+  {
+    "title": "Concept Title",
+    "description": "Brief description for the user",
+    "category": "Close-Up" | "Half Body" | "Lifestyle" | "Action" | "Environmental",
+    "fashionIntelligence": "Fashion and styling notes",
+    "lighting": "Detailed lighting description",
+    "location": "Location description",
+    "prompt": "Complete detailed prompt for image generation"
+  }
+]
 
 ${referenceImageUrl ? `\n**Include referenceImageUrl in each concept for image-to-image generation**` : ""}
-
-Return ONLY valid JSON array:
-{
-  "title": "string",
-  "description": "string - simple friendly language",
-  "category": "Close-Up" | "Half Body" | "Lifestyle" | "Action" | "Environmental",
-  "fashionIntelligence": "string - describe full outfit if Lifestyle/Action/Environmental",
-  "lighting": "string",
-  "location": "string",
-  "prompt": "string - YOUR complete creative vision, MUST ensure subject fills 60-80% of frame"${referenceImageUrl ? `,\n  "referenceImageUrl": "${referenceImageUrl}"` : ""}
-}`
+`
 
       const { text } = await generateText({
         model: "anthropic/claude-sonnet-4",
@@ -547,7 +469,6 @@ ${textContent}`
 
     let authId = user.stack_auth_id || user.supabase_user_id
 
-    // If neither exists, use the user's Neon ID as fallback
     if (!authId) {
       console.log("[v0] No auth ID found, using Neon user ID as fallback")
       authId = user.id
@@ -597,45 +518,11 @@ IMPORTANT: Video generation requires a photo first. When users ask for videos, f
    - Generation takes 40-60 seconds
    - User's trained LoRA model ensures character consistency
    - Motion is controlled by motion_bucket_id (127 = balanced motion)
-
-**CRITICAL FRAMING GUIDELINES FOR ALL SHOT TYPES:**
-
-**Close-Up**: Head and shoulders, face fills most of frame, intimate connection
-**Half Body**: Waist up, subject fills frame vertically, face clearly visible and sharp
-**Lifestyle**: Full body or 3/4 body, BUT subject must still fill the frame - NOT shot from far away
-**Action**: Dynamic movement, subject prominent in frame, face visible and sharp
-**Environmental**: Subject in environment BUT still the clear hero - use "full body portrait in [location]" NOT "wide shot of [location] with small person"
-
-**FACIAL DETAIL IS NON-NEGOTIABLE:**
-- In ALL shot types, the subject's face must be large enough in frame to render clearly
-- NEVER use phrases like: "shot from far away", "distant figure", "small in frame", "wide environmental shot"
-- ALWAYS use phrases like: "full body portrait filling frame", "subject prominent in environment", "environmental portrait with subject as hero"
-- Think: "subject IN environment" not "environment WITH subject"
-
-**EXAMPLES OF CORRECT FRAMING:**
-
-❌ WRONG: "wide shot of a person standing in a vast Icelandic landscape, distant figure against mountains"
-✅ CORRECT: "full body portrait of a person in dramatic Icelandic landscape, subject fills frame from head to toe, mountains as backdrop, face clearly visible and sharp"
-
-❌ WRONG: "environmental shot showing the entire beach scene with a small figure walking"
-✅ CORRECT: "full body portrait of a person walking on beach, subject prominent in frame, ocean and sand as supporting elements, face sharp and expressive"
-
-❌ WRONG: "lifestyle photo in a large modern office, person at desk in background"
-✅ CORRECT: "lifestyle portrait of a person at modern desk, shot from medium distance showing full upper body and workspace, face clearly visible, office environment frames the subject"
-
-**Example Conversation:**
-User: "Create a video of me in Iceland, dark and moody"
-You: "I love that vision! Let me first create a stunning photo concept of you in Iceland's dramatic landscape, then we'll animate it into a cinematic 5-second video. [Call generateConcepts with Iceland theme]"
-[After concepts generated]
-You: "These concepts would animate beautifully! The 'Solitude Among Black Sands' would be perfect with subtle wind in your hair and a contemplative expression. Should I animate this one?"
-User: "Yes!"
-You: "[Call generateVideo with creative motion prompt]"
 `
 
     const lastUserMessage = messages[messages.length - 1]
     let customSettings = null
 
-    // Try to get settings from localStorage (sent from client)
     if (lastUserMessage?.customSettings) {
       customSettings = lastUserMessage.customSettings
       console.log("[v0] 📊 Received custom settings from client:", customSettings)
