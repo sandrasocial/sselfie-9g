@@ -26,6 +26,10 @@ export async function POST(request: NextRequest) {
   console.log("[v0] Body length:", body.length)
   console.log("[v0] Webhook secret configured:", !!process.env.STRIPE_WEBHOOK_SECRET)
   console.log("[v0] Webhook secret length:", process.env.STRIPE_WEBHOOK_SECRET?.length || 0)
+  if (process.env.STRIPE_WEBHOOK_SECRET) {
+    const secret = process.env.STRIPE_WEBHOOK_SECRET
+    console.log("[v0] Webhook secret preview:", `${secret.substring(0, 10)}...${secret.substring(secret.length - 4)}`)
+  }
 
   if (!signature) {
     console.error("[v0] ❌ ERROR: No Stripe signature in request headers")

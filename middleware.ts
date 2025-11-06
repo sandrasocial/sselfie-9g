@@ -66,6 +66,11 @@ self.addEventListener('activate', (event) => {
     })
   }
 
+  if (request.nextUrl.pathname.startsWith("/api/webhooks/stripe")) {
+    console.log("[v0] Skipping middleware for Stripe webhook")
+    return NextResponse.next()
+  }
+
   if (request.nextUrl.pathname.startsWith("/api/freebie/")) {
     console.log("[v0] Skipping auth middleware for public freebie API")
     return NextResponse.next()
