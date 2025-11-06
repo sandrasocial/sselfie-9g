@@ -88,6 +88,52 @@ export async function POST(request: NextRequest) {
             if (users.length > 0) {
               userId = users[0].id
               console.log(`[v0] Found existing user ${userId} for email ${customerEmail}`)
+
+              if (source === "landing_page") {
+                console.log(`[v0] Sending purchase confirmation email to existing user ${customerEmail}`)
+
+                const productName = productType === "one_time_session" ? "ONE-TIME SESSION" : "CREDIT PACKAGE"
+                const productionUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
+
+                const emailContent = generateWelcomeEmail({
+                  customerName: customerEmail.split("@")[0],
+                  customerEmail: customerEmail,
+                  passwordSetupUrl: `${productionUrl}/studio`,
+                  creditsGranted: credits,
+                  packageName: productName,
+                })
+
+                const emailResult = await sendEmail({
+                  to: customerEmail,
+                  subject: `Your ${productName} purchase is confirmed!`,
+                  html: emailContent.html,
+                  text: emailContent.text,
+                  tags: ["purchase-confirmation", "existing-user"],
+                })
+
+                if (emailResult.success) {
+                  console.log(`[v0] Purchase confirmation email sent, message ID: ${emailResult.messageId}`)
+
+                  await sql`
+                    INSERT INTO email_logs (
+                      user_email,
+                      email_type,
+                      resend_message_id,
+                      status,
+                      sent_at
+                    )
+                    VALUES (
+                      ${customerEmail},
+                      'purchase_confirmation',
+                      ${emailResult.messageId},
+                      'sent',
+                      NOW()
+                    )
+                  `
+                } else {
+                  console.error(`[v0] Failed to send purchase confirmation email: ${emailResult.error}`)
+                }
+              }
             } else if (source === "landing_page") {
               console.log(`[v0] Creating new account for landing page purchase: ${customerEmail}`)
 

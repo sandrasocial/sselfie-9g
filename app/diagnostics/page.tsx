@@ -5,14 +5,19 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { CheckCircle2, XCircle, Loader2 } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
 export default function DiagnosticsPage() {
   const [emailResult, setEmailResult] = useState<any>(null)
   const [emailLoading, setEmailLoading] = useState(false)
+  const [purchaseEmailResult, setPurchaseEmailResult] = useState<any>(null)
+  const [purchaseEmailLoading, setPurchaseEmailLoading] = useState(false)
+  const [testEmail, setTestEmail] = useState("")
   const [configResult, setConfigResult] = useState<any>(null)
   const [configLoading, setConfigLoading] = useState(false)
 
-  const testEmail = async () => {
+  const testBasicEmail = async () => {
     setEmailLoading(true)
     try {
       const response = await fetch("/api/diagnostics/test-email")
@@ -22,6 +27,28 @@ export default function DiagnosticsPage() {
       setEmailResult({ success: false, error: error.message })
     } finally {
       setEmailLoading(false)
+    }
+  }
+
+  const testPurchaseEmail = async () => {
+    if (!testEmail) {
+      setPurchaseEmailResult({ success: false, error: "Please enter an email address" })
+      return
+    }
+
+    setPurchaseEmailLoading(true)
+    try {
+      const response = await fetch("/api/test-purchase-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: testEmail }),
+      })
+      const data = await response.json()
+      setPurchaseEmailResult(data)
+    } catch (error: any) {
+      setPurchaseEmailResult({ success: false, error: error.message })
+    } finally {
+      setPurchaseEmailLoading(false)
     }
   }
 
@@ -43,14 +70,14 @@ export default function DiagnosticsPage() {
       <h1 className="text-3xl font-bold mb-8">System Diagnostics</h1>
 
       <div className="space-y-6">
-        {/* Email Test */}
+        {/* Basic Email Test */}
         <Card>
           <CardHeader>
-            <CardTitle>1. Test Email Sending</CardTitle>
+            <CardTitle>1. Test Basic Email Sending</CardTitle>
             <CardDescription>Verify that Resend is configured correctly and can send emails</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Button onClick={testEmail} disabled={emailLoading}>
+            <Button onClick={testBasicEmail} disabled={emailLoading}>
               {emailLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Send Test Email
             </Button>
@@ -77,10 +104,58 @@ export default function DiagnosticsPage() {
           </CardContent>
         </Card>
 
+        <Card>
+          <CardHeader>
+            <CardTitle>2. Test Purchase Email Flow</CardTitle>
+            <CardDescription>
+              Test the exact email that gets sent after a purchase (welcome email with password setup)
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="test-email">Your Email Address</Label>
+              <Input
+                id="test-email"
+                type="email"
+                placeholder="your@email.com"
+                value={testEmail}
+                onChange={(e) => setTestEmail(e.target.value)}
+              />
+            </div>
+
+            <Button onClick={testPurchaseEmail} disabled={purchaseEmailLoading || !testEmail}>
+              {purchaseEmailLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Send Purchase Email Test
+            </Button>
+
+            {purchaseEmailResult && (
+              <Alert variant={purchaseEmailResult.success ? "default" : "destructive"}>
+                {purchaseEmailResult.success ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+                <AlertDescription>
+                  {purchaseEmailResult.success ? (
+                    <div>
+                      <p className="font-semibold">✅ Purchase email sent successfully!</p>
+                      <p className="text-sm mt-1">Message ID: {purchaseEmailResult.messageId}</p>
+                      <p className="text-sm mt-2 text-muted-foreground">
+                        Check your inbox (and spam folder) for the welcome email with password setup link.
+                      </p>
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="font-semibold">❌ Email failed</p>
+                      <p className="text-sm mt-1">{purchaseEmailResult.error}</p>
+                    </div>
+                  )}
+                </AlertDescription>
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Configuration Check */}
         <Card>
           <CardHeader>
-            <CardTitle>2. Check Configuration</CardTitle>
+            <CardTitle>3. Check Configuration</CardTitle>
             <CardDescription>Verify all environment variables are configured correctly</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -117,7 +192,7 @@ export default function DiagnosticsPage() {
         {/* Stripe Webhook Instructions */}
         <Card>
           <CardHeader>
-            <CardTitle>3. Check Stripe Webhook Logs</CardTitle>
+            <CardTitle>4. Check Stripe Webhook Logs</CardTitle>
             <CardDescription>Verify that Stripe is actually sending webhooks to your endpoint</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -153,6 +228,10 @@ export default function DiagnosticsPage() {
                     <strong>Successful (200):</strong> Webhook working but email logic may have issues
                   </li>
                 </ul>
+              </li>
+              <li>
+                <strong>After making a test purchase:</strong> Wait 10-20 seconds, then refresh the webhook logs page to
+                see if Stripe sent the webhook
               </li>
             </ol>
 
