@@ -50,7 +50,7 @@
     "@upstash/vector": "latest",
     "@vercel/analytics": "latest",
     "@vercel/blob": "latest",
-    "@vercel/postgres": "latest",
+    "@vercel/postgres": "0.10.0",
     "ai": "latest",
     "autoprefixer": "^10.4.20",
     "canvas": "latest",

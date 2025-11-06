@@ -1,39 +1,28 @@
-import { NextResponse } from "next/server"
-import { neon } from "@vercel/postgres"
-import { getUserByAuthId } from "@/lib/user-mapping"
-import { hasStudioMembership } from "@/lib/subscription"
-import { createClient } from "@/lib/supabase/server"
+import { type NextRequest, NextResponse } from "next/server"
+import { neon } from "@neondatabase/serverless"
+import { getUserProductAccess } from "@/lib/subscription"
 
 const sql = neon(process.env.DATABASE_URL!)
 
-export async function POST(request: Request, { params }: { params: Promise<{ flatlayId: string }> }) {
+export async function POST(request: NextRequest, { params }: { params: { flatlayId: string } }) {
   try {
-    const { flatlayId } = await params
-    const supabase = await createClient()
-    const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser()
+    const { hasStudioMembership, userId } = await getUserProductAccess()
 
-    if (!authUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    if (!hasStudioMembership || !userId) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 })
     }
 
-    const neonUser = await getUserByAuthId(authUser.id)
-    if (!neonUser) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
-    }
+    const flatlayId = params.flatlayId
 
-    const hasAccess = await hasStudioMembership(neonUser.id)
-
-    if (!hasAccess) {
-      return NextResponse.json({ error: "Studio Membership required" }, { status: 403 })
-    }
-
-    // Track download
     await sql`
-      INSERT INTO academy_flatlay_downloads (flatlay_id, user_id)
-      VALUES (${flatlayId}, ${neonUser.id})
-      ON CONFLICT (flatlay_id, user_id) DO NOTHING
+      UPDATE academy_flatlay_images
+      SET download_count = download_count + 1
+      WHERE id = ${flatlayId}
+    `
+
+    await sql`
+      INSERT INTO user_resource_downloads (user_id, resource_type, resource_id)
+      VALUES (${userId}, 'flatlay-image', ${flatlayId})
     `
 
     return NextResponse.json({ success: true })
