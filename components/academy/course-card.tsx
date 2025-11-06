@@ -30,6 +30,7 @@ export default function CourseCard({ course, userTier, progress, onCourseClick }
   const isCompleted = progressPercentage >= 100
 
   const formatDuration = (minutes: number | null | undefined) => {
+    // Handle null, undefined, NaN, or non-positive values
     if (minutes == null || isNaN(Number(minutes)) || Number(minutes) <= 0) {
       return "0m"
     }

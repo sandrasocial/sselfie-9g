@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
-import { X, ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
+import { X, ChevronLeft, ChevronRight, Loader2, CheckCircle2 } from "lucide-react"
 import VideoPlayer from "./video-player"
 
 interface Lesson {
@@ -42,6 +42,7 @@ export default function LessonModal({
   const [progress, setProgress] = useState<LessonProgress | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [isMarkingComplete, setIsMarkingComplete] = useState(false)
 
   useEffect(() => {
     fetchLessonData()
@@ -72,6 +73,26 @@ export default function LessonModal({
   const handleLessonComplete = () => {
     setProgress((prev) => (prev ? { ...prev, status: "completed" } : null))
     onLessonComplete?.()
+  }
+
+  const handleMarkAsDone = async () => {
+    if (progress?.status === "completed") return
+
+    try {
+      setIsMarkingComplete(true)
+      await fetch("/api/academy/progress", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lessonId: Number.parseInt(lessonId) }),
+      })
+      console.log("[v0] Manually marked lesson as complete")
+      handleLessonComplete()
+    } catch (error) {
+      console.error("[v0] Error marking lesson complete:", error)
+      alert("Failed to mark lesson as complete. Please try again.")
+    } finally {
+      setIsMarkingComplete(false)
+    }
   }
 
   const isCompleted = progress?.status === "completed"
@@ -179,7 +200,7 @@ export default function LessonModal({
               )}
 
               {/* Progress Indicator */}
-              <div className="px-4 sm:px-6 lg:px-8 pb-4 sm:pb-6">
+              <div className="px-4 sm:px-6 lg:px-8 pb-4 sm:pb-6 space-y-4">
                 <div className="bg-white/50 backdrop-blur-xl border border-white/60 rounded-[1.75rem] p-4 sm:p-6">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-[10px] sm:text-xs tracking-[0.15em] uppercase font-light text-stone-500">
@@ -203,11 +224,32 @@ export default function LessonModal({
                   </div>
                 </div>
 
+                {/* Mark as Done button */}
+                {!isCompleted && (
+                  <button
+                    onClick={handleMarkAsDone}
+                    disabled={isMarkingComplete}
+                    className="w-full bg-white border-2 border-stone-950 text-stone-950 py-3 sm:py-4 rounded-[1.25rem] font-light tracking-[0.15em] uppercase text-xs sm:text-sm hover:bg-stone-950 hover:text-stone-50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {isMarkingComplete ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" />
+                        <span>Marking Complete...</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 size={16} />
+                        <span>Mark as Done</span>
+                      </>
+                    )}
+                  </button>
+                )}
+
                 {/* Next Lesson Button */}
                 {onNextLesson && (
                   <button
                     onClick={onNextLesson}
-                    className="w-full mt-4 sm:mt-6 bg-stone-950 text-stone-50 py-3 sm:py-4 rounded-[1.25rem] font-light tracking-[0.15em] uppercase text-xs sm:text-sm hover:bg-stone-800 transition-all duration-200 shadow-xl shadow-stone-900/20"
+                    className="w-full bg-stone-950 text-stone-50 py-3 sm:py-4 rounded-[1.25rem] font-light tracking-[0.15em] uppercase text-xs sm:text-sm hover:bg-stone-800 transition-all duration-200 shadow-xl shadow-stone-900/20"
                   >
                     Next Lesson
                   </button>
