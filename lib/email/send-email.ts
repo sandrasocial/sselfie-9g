@@ -25,6 +25,10 @@ async function sendEmailWithRetry(
       console.log(`[v0] Sending email via Resend (attempt ${attempt}/${maxRetries}):`, {
         to: options.to,
         subject: options.subject,
+        hasHtml: !!options.html,
+        hasText: !!options.text,
+        htmlLength: options.html?.length || 0,
+        textLength: options.text?.length || 0,
       })
 
       const { data, error } = await resend.emails.send({

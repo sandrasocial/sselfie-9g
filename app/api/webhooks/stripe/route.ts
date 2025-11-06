@@ -12,19 +12,38 @@ import { logWebhookError, alertWebhookError, isCriticalError } from "@/lib/webho
 const sql = neon(process.env.DATABASE_URL!)
 
 export async function POST(request: NextRequest) {
+  console.log("=".repeat(80))
+  console.log("[v0] 🔔 WEBHOOK RECEIVED at:", new Date().toISOString())
+  console.log("[v0] Request URL:", request.url)
+  console.log("[v0] Request method:", request.method)
+  console.log("=".repeat(80))
+
   const body = await request.text()
   const signature = request.headers.get("stripe-signature")
 
+  console.log("[v0] Signature present:", !!signature)
+  console.log("[v0] Signature length:", signature?.length || 0)
+  console.log("[v0] Body length:", body.length)
+  console.log("[v0] Webhook secret configured:", !!process.env.STRIPE_WEBHOOK_SECRET)
+  console.log("[v0] Webhook secret length:", process.env.STRIPE_WEBHOOK_SECRET?.length || 0)
+
   if (!signature) {
+    console.error("[v0] ❌ ERROR: No Stripe signature in request headers")
     return NextResponse.json({ error: "No signature" }, { status: 400 })
+  }
+
+  if (!process.env.STRIPE_WEBHOOK_SECRET) {
+    console.error("[v0] ❌ ERROR: STRIPE_WEBHOOK_SECRET environment variable not set")
+    return NextResponse.json({ error: "Webhook secret not configured" }, { status: 500 })
   }
 
   let event: any
 
   try {
     event = stripe.webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET!)
+    console.log("[v0] ✅ Webhook signature verified successfully")
   } catch (err: any) {
-    console.error("[v0] Webhook signature verification failed:", err.message)
+    console.error("[v0] ❌ Webhook signature verification failed:", err.message)
     return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 })
   }
 
@@ -171,12 +190,27 @@ export async function POST(request: NextRequest) {
               const creditsGranted = Number.parseInt(session.metadata.credits || "0")
               const productName = productType === "sselfie_studio_membership" ? "STUDIO MEMBERSHIP" : "SUBSCRIPTION"
 
+              console.log("[v0] Generating welcome email with params:", {
+                customerName: customerEmail.split("@")[0],
+                customerEmail: customerEmail,
+                passwordSetupUrl: passwordSetupLink,
+                creditsGranted: creditsGranted,
+                packageName: productName,
+              })
+
               const emailContent = generateWelcomeEmail({
                 customerName: customerEmail.split("@")[0], // Use email prefix as name
                 customerEmail: customerEmail,
                 passwordSetupUrl: passwordSetupLink,
                 creditsGranted: creditsGranted,
                 packageName: productName,
+              })
+
+              console.log("[v0] Email content generated:", {
+                hasHtml: !!emailContent.html,
+                hasText: !!emailContent.text,
+                htmlLength: emailContent.html?.length || 0,
+                textLength: emailContent.text?.length || 0,
               })
 
               const emailResult = await sendEmail({
