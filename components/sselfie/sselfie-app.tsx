@@ -186,60 +186,62 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
 
       <main className="relative h-full mx-1 sm:mx-2 md:mx-3 pb-2 sm:pb-3 md:pb-4">
         <div className="h-full bg-white/30 backdrop-blur-3xl rounded-[2rem] sm:rounded-[2.5rem] md:rounded-[3rem] border border-white/40 overflow-hidden shadow-2xl shadow-stone-900/10">
-          <header className="sticky top-0 z-10 bg-transparent backdrop-blur-xl border-b border-stone-200/20 px-3 sm:px-4 md:px-6 py-2.5 pt-safe">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <div className="font-serif text-xl sm:text-2xl font-extralight tracking-[0.3em] uppercase text-stone-950">
-                  SSELFIE
-                </div>
-              </div>
-
-              <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-lg hover:bg-stone-100/50 transition-colors"
-                    aria-label="Menu"
-                  >
-                    <MoreVertical size={18} className="text-stone-600" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 bg-white/95 backdrop-blur-xl border-stone-200/60">
-                  <div className="px-3 py-2">
-                    <div className="text-[10px] tracking-[0.15em] uppercase font-light text-stone-500">
-                      Your Credits
-                    </div>
-                    <div className="text-2xl font-serif font-extralight text-stone-950 tabular-nums mt-1">
-                      {creditBalance.toFixed(1)}
-                    </div>
+          {(activeTab === "studio" || activeTab === "training") && (
+            <header className="sticky top-0 z-10 bg-transparent backdrop-blur-xl border-b border-stone-200/20 px-3 sm:px-4 md:px-6 py-2.5 pt-safe">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="font-serif text-xl sm:text-2xl font-extralight tracking-[0.3em] uppercase text-stone-950">
+                    SSELFIE
                   </div>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() => {
-                      setShowBuyCreditsModal(true)
-                      setIsMenuOpen(false)
-                    }}
-                    className="cursor-pointer"
-                  >
-                    <span className="text-sm">Buy More Credits</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <div className="cursor-pointer">
-                      <InstallButton variant="menu" />
+                </div>
+
+                <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-lg hover:bg-stone-100/50 transition-colors"
+                      aria-label="Menu"
+                    >
+                      <MoreVertical size={18} className="text-stone-600" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56 bg-white/95 backdrop-blur-xl border-stone-200/60">
+                    <div className="px-3 py-2">
+                      <div className="text-[10px] tracking-[0.15em] uppercase font-light text-stone-500">
+                        Your Credits
+                      </div>
+                      <div className="text-2xl font-serif font-extralight text-stone-950 tabular-nums mt-1">
+                        {creditBalance.toFixed(1)}
+                      </div>
                     </div>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={handleLogout}
-                    disabled={isLoggingOut}
-                    className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
-                  >
-                    <LogOut size={16} className="mr-2" />
-                    <span className="text-sm">{isLoggingOut ? "Signing Out..." : "Sign Out"}</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </header>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setShowBuyCreditsModal(true)
+                        setIsMenuOpen(false)
+                      }}
+                      className="cursor-pointer"
+                    >
+                      <span className="text-sm">Buy More Credits</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <div className="cursor-pointer">
+                        <InstallButton variant="menu" />
+                      </div>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={handleLogout}
+                      disabled={isLoggingOut}
+                      className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
+                    >
+                      <LogOut size={16} className="mr-2" />
+                      <span className="text-sm">{isLoggingOut ? "Signing Out..." : "Sign Out"}</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </header>
+          )}
 
           <div
             ref={scrollContainerRef}

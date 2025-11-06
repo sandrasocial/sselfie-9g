@@ -1,5 +1,5 @@
 "use client"
-import { Aperture, ChevronRight, Plus, Grid, Camera, ChevronDown, ChevronUp } from "lucide-react"
+import { Aperture, ChevronRight, Plus, Grid, Camera, ChevronDown } from "lucide-react"
 import useSWR, { mutate } from "swr"
 import { InstagramPhotoPreview } from "./instagram-photo-preview"
 import { useState, useMemo, useEffect } from "react"
@@ -288,52 +288,34 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
           <div className="bg-white/50 backdrop-blur-3xl border border-white/60 rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-xl shadow-stone-900/5">
             <div className="flex flex-col gap-6">
               <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                <div className="flex items-center gap-4 flex-1">
-                  <h2 className="font-['Times_New_Roman'] text-xl sm:text-2xl md:text-3xl font-extralight tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-900">
-                    BRAND PROFILE
-                  </h2>
-                  {!isBrandProfileExpanded && brandStatus.summary.colorTheme && (
-                    <div className="flex gap-1.5">
-                      {COLOR_THEME_MAP[brandStatus.summary.colorTheme]?.colors.slice(0, 4).map((color, idx) => (
-                        <div
-                          key={idx}
-                          className="w-6 h-6 rounded-full border border-stone-200 shadow-sm"
-                          style={{ backgroundColor: color }}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <h2 className="font-['Times_New_Roman'] text-xl sm:text-2xl md:text-3xl font-extralight tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-900">
+                  BRAND PROFILE
+                </h2>
                 <div className="flex gap-3">
                   <button
                     onClick={() => setIsBrandProfileExpanded(!isBrandProfileExpanded)}
-                    className="border border-stone-300 text-stone-900 px-4 sm:px-6 py-2 sm:py-3 rounded-xl text-sm font-medium uppercase tracking-wider hover:bg-stone-100 transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-2"
+                    className="text-stone-600 hover:text-stone-900 px-2 py-1 text-xs font-light uppercase tracking-wider transition-all duration-200 flex items-center gap-1.5 group"
                   >
-                    {isBrandProfileExpanded ? (
-                      <>
-                        Collapse
-                        <ChevronUp size={16} strokeWidth={1.5} />
-                      </>
-                    ) : (
-                      <>
-                        View Details
-                        <ChevronDown size={16} strokeWidth={1.5} />
-                      </>
-                    )}
+                    {isBrandProfileExpanded ? "Collapse" : "View Details"}
+                    <ChevronDown
+                      size={12}
+                      strokeWidth={1.5}
+                      className={`transition-transform duration-300 group-hover:translate-y-0.5 ${isBrandProfileExpanded ? "rotate-180" : ""}`}
+                    />
                   </button>
                   {isBrandProfileExpanded && (
                     <button
                       onClick={() => setShowBrandWizard(true)}
-                      className="bg-stone-950 text-stone-50 px-4 sm:px-6 py-2 sm:py-3 rounded-xl text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 hover:scale-105 active:scale-95"
+                      className="bg-stone-950 text-stone-50 px-4 sm:px-6 py-2 sm:py-3 rounded-xl text-sm font-light uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 hover:scale-105 active:scale-95"
                     >
-                      Edit Profile
+                      Edit
                     </button>
                   )}
                 </div>
               </div>
 
               {isBrandProfileExpanded && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in slide-in-from-top-2 duration-300 pt-4 border-t border-stone-200">
                   {brandStatus.summary.colorTheme && (
                     <div className="flex flex-col gap-3">
                       <span className="text-xs uppercase tracking-[0.2em] text-stone-500 font-light">
