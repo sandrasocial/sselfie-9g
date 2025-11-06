@@ -1,7 +1,6 @@
 export interface WelcomeEmailParams {
-  customerName?: string
+  customerName: string
   customerEmail: string
-  passwordSetupUrl: string
   creditsGranted: number
   packageName: string
 }

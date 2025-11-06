@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useEffect, useState, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { getCheckoutSession } from "@/app/actions/landing-checkout"
@@ -11,6 +13,11 @@ function SuccessContent() {
   const [session, setSession] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [name, setName] = useState("")
+  const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState("")
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -34,6 +41,48 @@ function SuccessContent() {
       setLoading(false)
     }
   }, [searchParams])
+
+  const handleCompleteAccount = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError("")
+
+    if (password !== confirmPassword) {
+      setError("Passwords don't match")
+      return
+    }
+
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters")
+      return
+    }
+
+    setIsSubmitting(true)
+
+    try {
+      const response = await fetch("/api/complete-account", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: session.customerEmail,
+          password,
+          name,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setError(data.error || "Failed to complete account")
+        setIsSubmitting(false)
+        return
+      }
+
+      window.location.href = "/studio"
+    } catch (err) {
+      setError("Something went wrong. Please try again.")
+      setIsSubmitting(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -80,186 +129,155 @@ function SuccessContent() {
             </svg>
           </div>
           <h1 className="font-serif text-4xl md:text-6xl font-extralight tracking-[0.3em] uppercase text-stone-900 mb-4">
-            WELCOME TO SSELFIE
+            {isAuthenticated ? "WELCOME BACK" : "PAYMENT SUCCESSFUL"}
           </h1>
           <p className="text-lg text-stone-600 font-light leading-relaxed">
-            {session.metadata?.source === "landing_page"
-              ? "Your purchase is complete. Check your email to access your account."
-              : "Your subscription is active. Let's build your brand empire."}
+            {isAuthenticated
+              ? "Your purchase is complete. Let's continue building your brand empire."
+              : "Complete your account setup to access your studio."}
           </p>
         </div>
 
-        {/* Order Details */}
-        <div className="bg-white border-2 border-stone-200 rounded-lg p-8 mb-8">
-          <h2 className="font-serif text-2xl font-extralight tracking-[0.2em] uppercase text-stone-900 mb-6">
-            ORDER DETAILS
-          </h2>
-          <div className="space-y-4">
-            <div className="flex justify-between items-center pb-4 border-b border-stone-200">
-              <span className="text-sm text-stone-500 font-light tracking-wider uppercase">Product</span>
-              <span className="text-base text-stone-900 font-medium">
-                {session.metadata?.product_type === "sselfie_studio_membership"
-                  ? "STUDIO MEMBERSHIP"
-                  : session.metadata?.product_type === "one_time_session"
-                    ? "ONE-TIME SESSION"
-                    : session.metadata?.product_type === "credit_topup"
-                      ? "CREDIT TOP-UP"
-                      : "PURCHASE"}
-              </span>
-            </div>
-            {session.metadata?.credits && Number(session.metadata.credits) > 0 && (
-              <div className="flex justify-between items-center pb-4 border-b border-stone-200">
-                <span className="text-sm text-stone-500 font-light tracking-wider uppercase">
-                  {session.metadata?.product_type === "sselfie_studio_membership"
-                    ? "Monthly Credits"
-                    : "Credits Included"}
-                </span>
-                <span className="text-base text-stone-900 font-medium">{session.metadata?.credits} credits</span>
+        {session.metadata?.source === "landing_page" && !isAuthenticated ? (
+          <div className="bg-white border-2 border-stone-200 rounded-lg p-8 mb-8">
+            <h2 className="font-serif text-2xl font-extralight tracking-[0.2em] uppercase text-stone-900 mb-6">
+              COMPLETE YOUR ACCOUNT
+            </h2>
+            <form onSubmit={handleCompleteAccount} className="space-y-6">
+              <div>
+                <label htmlFor="name" className="block text-sm text-stone-700 font-medium mb-2">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  id="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 border-2 border-stone-200 rounded-lg focus:border-stone-900 focus:outline-none transition-colors"
+                  placeholder="Enter your full name"
+                />
               </div>
-            )}
-            <div className="flex justify-between items-center pb-4 border-b border-stone-200">
-              <span className="text-sm text-stone-500 font-light tracking-wider uppercase">Email</span>
-              <span className="text-base text-stone-900 font-medium">{session.customerEmail}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-stone-500 font-light tracking-wider uppercase">Status</span>
-              <span className="text-base text-green-600 font-medium">ACTIVE</span>
-            </div>
-          </div>
-        </div>
 
-        {/* Next Steps */}
-        <div className="bg-stone-100 rounded-lg p-8 mb-8">
-          <h2 className="font-serif text-2xl font-extralight tracking-[0.2em] uppercase text-stone-900 mb-6">
-            NEXT STEPS
-          </h2>
-          <div className="space-y-4">
-            <div className="flex gap-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-stone-900 text-stone-50 rounded-full flex items-center justify-center text-sm font-medium">
-                1
-              </div>
               <div>
-                <h3 className="text-base text-stone-900 font-medium mb-1">
-                  {isAuthenticated ? "Access Your Dashboard" : "Check Your Email"}
-                </h3>
-                <p className="text-sm text-stone-600 font-light">
-                  {isAuthenticated
-                    ? "Your dashboard is ready. Start creating your first photos."
-                    : "We've sent you an email with a link to access your account. Click the link to get started."}
-                </p>
+                <label htmlFor="email" className="block text-sm text-stone-700 font-medium mb-2">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  value={session.customerEmail}
+                  disabled
+                  className="w-full px-4 py-3 border-2 border-stone-200 rounded-lg bg-stone-50 text-stone-500"
+                />
               </div>
-            </div>
-            <div className="flex gap-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-stone-900 text-stone-50 rounded-full flex items-center justify-center text-sm font-medium">
-                2
-              </div>
-              <div>
-                <h3 className="text-base text-stone-900 font-medium mb-1">Upload Your Selfies</h3>
-                <p className="text-sm text-stone-600 font-light">
-                  Train your AI model with 10-20 selfies to get started.
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-stone-900 text-stone-50 rounded-full flex items-center justify-center text-sm font-medium">
-                3
-              </div>
-              <div>
-                <h3 className="text-base text-stone-900 font-medium mb-1">Meet Maya</h3>
-                <p className="text-sm text-stone-600 font-light">
-                  Your AI strategist will guide you through creating your first professional photos.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
 
-        {/* CTA */}
-        <div className="text-center">
-          {session.metadata?.source === "landing_page" && !isAuthenticated ? (
-            <div className="space-y-4">
-              <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6">
-                <div className="flex items-start gap-3">
-                  <svg
-                    className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                    />
-                  </svg>
-                  <div className="text-left">
-                    <h3 className="text-base text-blue-900 font-medium mb-1">Check Your Email</h3>
-                    <p className="text-sm text-blue-700 font-light">
-                      We've sent an access link to <span className="font-medium">{session.customerEmail}</span>. Click
-                      the link to set up your password and access your account.
-                    </p>
+              <div>
+                <label htmlFor="password" className="block text-sm text-stone-700 font-medium mb-2">
+                  Choose Password
+                </label>
+                <input
+                  type="password"
+                  id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={8}
+                  className="w-full px-4 py-3 border-2 border-stone-200 rounded-lg focus:border-stone-900 focus:outline-none transition-colors"
+                  placeholder="At least 8 characters"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm text-stone-700 font-medium mb-2">
+                  Confirm Password
+                </label>
+                <input
+                  type="password"
+                  id="confirmPassword"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  minLength={8}
+                  className="w-full px-4 py-3 border-2 border-stone-200 rounded-lg focus:border-stone-900 focus:outline-none transition-colors"
+                  placeholder="Re-enter your password"
+                />
+              </div>
+
+              {error && (
+                <div className="bg-red-50 border-2 border-red-200 rounded-lg p-4">
+                  <p className="text-sm text-red-700">{error}</p>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full bg-stone-950 text-stone-50 px-8 py-4 rounded-lg text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSubmitting ? "SETTING UP..." : "COMPLETE SETUP & ACCESS STUDIO"}
+              </button>
+
+              <p className="text-xs text-stone-500 font-light text-center">
+                By completing setup, you agree to our Terms of Service and Privacy Policy
+              </p>
+            </form>
+          </div>
+        ) : (
+          <>
+            {/* Order Details */}
+            <div className="bg-white border-2 border-stone-200 rounded-lg p-8 mb-8">
+              <h2 className="font-serif text-2xl font-extralight tracking-[0.2em] uppercase text-stone-900 mb-6">
+                ORDER DETAILS
+              </h2>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center pb-4 border-b border-stone-200">
+                  <span className="text-sm text-stone-500 font-light tracking-wider uppercase">Product</span>
+                  <span className="text-base text-stone-900 font-medium">
+                    {session.metadata?.product_type === "sselfie_studio_membership"
+                      ? "STUDIO MEMBERSHIP"
+                      : session.metadata?.product_type === "one_time_session"
+                        ? "ONE-TIME SESSION"
+                        : session.metadata?.product_type === "credit_topup"
+                          ? "CREDIT TOP-UP"
+                          : "PURCHASE"}
+                  </span>
+                </div>
+                {session.metadata?.credits && Number(session.metadata.credits) > 0 && (
+                  <div className="flex justify-between items-center pb-4 border-b border-stone-200">
+                    <span className="text-sm text-stone-500 font-light tracking-wider uppercase">
+                      {session.metadata?.product_type === "sselfie_studio_membership"
+                        ? "Monthly Credits"
+                        : "Credits Included"}
+                    </span>
+                    <span className="text-base text-stone-900 font-medium">{session.metadata?.credits} credits</span>
                   </div>
+                )}
+                <div className="flex justify-between items-center pb-4 border-b border-stone-200">
+                  <span className="text-sm text-stone-500 font-light tracking-wider uppercase">Email</span>
+                  <span className="text-base text-stone-900 font-medium">{session.customerEmail}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-stone-500 font-light tracking-wider uppercase">Status</span>
+                  <span className="text-base text-green-600 font-medium">ACTIVE</span>
                 </div>
               </div>
-              <button
-                onClick={() => router.push("/")}
-                className="bg-stone-200 text-stone-700 px-8 py-3 rounded-lg text-sm font-medium uppercase tracking-wider hover:bg-stone-300 transition-all duration-200"
-              >
-                Return Home
-              </button>
-              <p className="text-xs text-stone-500 font-light mt-4">
-                Didn't receive the email? Check your spam folder or contact support at hello@sselfie.ai
-              </p>
             </div>
-          ) : isAuthenticated ? (
-            <div className="space-y-4">
+
+            {/* CTA */}
+            <div className="text-center">
               <button
                 onClick={() => router.push("/studio")}
                 className="bg-stone-950 text-stone-50 px-12 py-5 rounded-lg text-base font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200"
               >
-                Go to Dashboard
-              </button>
-              <p className="text-xs text-stone-500 font-light">Your account is ready to use</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6">
-                <div className="flex items-start gap-3">
-                  <svg
-                    className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                    />
-                  </svg>
-                  <div className="text-left">
-                    <h3 className="text-base text-blue-900 font-medium mb-1">Check Your Email</h3>
-                    <p className="text-sm text-blue-700 font-light">
-                      We've sent an access link to <span className="font-medium">{session.customerEmail}</span>. Click
-                      the link to access your account instantly.
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <button
-                onClick={() => router.push("/")}
-                className="bg-stone-200 text-stone-700 px-8 py-3 rounded-lg text-sm font-medium uppercase tracking-wider hover:bg-stone-300 transition-all duration-200"
-              >
-                Return Home
+                Go to Studio
               </button>
               <p className="text-xs text-stone-500 font-light mt-4">
-                Didn't receive the email? Check your spam folder or contact support
+                A confirmation email has been sent to {session.customerEmail}
               </p>
             </div>
-          )}
-        </div>
+          </>
+        )}
       </div>
     </div>
   )

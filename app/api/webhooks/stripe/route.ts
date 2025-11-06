@@ -98,7 +98,6 @@ export async function POST(request: NextRequest) {
                 const emailContent = generateWelcomeEmail({
                   customerName: customerEmail.split("@")[0],
                   customerEmail: customerEmail,
-                  passwordSetupUrl: `${productionUrl}/studio`,
                   creditsGranted: credits,
                   packageName: productName,
                 })
@@ -227,7 +226,6 @@ export async function POST(request: NextRequest) {
                   const emailContent = generateWelcomeEmail({
                     customerName: customerEmail.split("@")[0],
                     customerEmail: customerEmail,
-                    passwordSetupUrl: passwordSetupLink,
                     creditsGranted: credits,
                     packageName: productName,
                   })
@@ -454,7 +452,6 @@ export async function POST(request: NextRequest) {
                 console.log("[v0] Generating welcome email with params:", {
                   customerName: customerEmail.split("@")[0],
                   customerEmail: customerEmail,
-                  passwordSetupUrl: passwordSetupLink,
                   creditsGranted: creditsGranted,
                   packageName: productName,
                 })
@@ -462,7 +459,6 @@ export async function POST(request: NextRequest) {
                 const emailContent = generateWelcomeEmail({
                   customerName: customerEmail.split("@")[0],
                   customerEmail: customerEmail,
-                  passwordSetupUrl: passwordSetupLink,
                   creditsGranted: creditsGranted,
                   packageName: productName,
                 })

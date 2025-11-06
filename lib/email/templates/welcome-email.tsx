@@ -4,7 +4,7 @@ export function generateWelcomeEmail(params: WelcomeEmailParams): {
   html: string
   text: string
 } {
-  const { customerName, customerEmail, passwordSetupUrl, creditsGranted, packageName } = params
+  const { customerName, customerEmail, creditsGranted, packageName } = params
 
   const html = `
 <!DOCTYPE html>
@@ -38,7 +38,7 @@ export function generateWelcomeEmail(params: WelcomeEmailParams): {
                 WELCOME TO SSELFIE
               </h1>
               <p style="margin: 0; color: #57534e; font-size: 18px; font-weight: 300; line-height: 1.6;">
-                Your subscription is active. Let's build your brand empire.
+                ${customerName ? `Hi ${customerName}, your` : "Your"} account is ready. Let's build your brand empire.
               </p>
             </td>
           </tr>
@@ -50,7 +50,7 @@ export function generateWelcomeEmail(params: WelcomeEmailParams): {
                 <tr>
                   <td>
                     <h2 style="margin: 0 0 24px; color: #1c1917; font-size: 20px; font-weight: 300; letter-spacing: 0.2em; text-transform: uppercase; font-family: Georgia, serif;">
-                      ORDER DETAILS
+                      ORDER CONFIRMATION
                     </h2>
                     
                     <table role="presentation" style="width: 100%;">
@@ -120,87 +120,29 @@ export function generateWelcomeEmail(params: WelcomeEmailParams): {
             </td>
           </tr>
           
-          <!-- Next Steps -->
+          <!-- What's Next -->
           <tr>
             <td style="padding: 0 40px 32px;">
               <table role="presentation" style="width: 100%; background-color: #fafaf9; border-radius: 8px; padding: 32px;">
                 <tr>
                   <td>
                     <h2 style="margin: 0 0 24px; color: #1c1917; font-size: 20px; font-weight: 300; letter-spacing: 0.2em; text-transform: uppercase; font-family: Georgia, serif;">
-                      NEXT STEPS
+                      WHAT'S NEXT
                     </h2>
                     
-                    <!-- Step 1 -->
-                    <table role="presentation" style="width: 100%; margin-bottom: 16px;">
-                      <tr>
-                        <td style="width: 32px; vertical-align: top; padding-top: 2px;">
-                          <div style="width: 32px; height: 32px; background-color: #1c1917; color: #fafaf9; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 500; text-align: center; line-height: 32px;">
-                            1
-                          </div>
-                        </td>
-                        <td style="padding-left: 16px;">
-                          <h3 style="margin: 0 0 4px; color: #1c1917; font-size: 16px; font-weight: 500;">
-                            Set Your Password
-                          </h3>
-                          <p style="margin: 0; color: #57534e; font-size: 14px; font-weight: 300; line-height: 1.5;">
-                            Choose a secure password to access your account and start creating.
-                          </p>
-                        </td>
-                      </tr>
-                    </table>
+                    <p style="margin: 0 0 16px; color: #57534e; font-size: 14px; font-weight: 300; line-height: 1.6;">
+                      Your account is ready to use. Here's what you can do:
+                    </p>
                     
-                    <!-- Step 2 -->
-                    <table role="presentation" style="width: 100%; margin-bottom: 16px;">
-                      <tr>
-                        <td style="width: 32px; vertical-align: top; padding-top: 2px;">
-                          <div style="width: 32px; height: 32px; background-color: #1c1917; color: #fafaf9; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 500; text-align: center; line-height: 32px;">
-                            2
-                          </div>
-                        </td>
-                        <td style="padding-left: 16px;">
-                          <h3 style="margin: 0 0 4px; color: #1c1917; font-size: 16px; font-weight: 500;">
-                            Upload Your Selfies
-                          </h3>
-                          <p style="margin: 0; color: #57534e; font-size: 14px; font-weight: 300; line-height: 1.5;">
-                            Train your AI model with 10-20 selfies to get started.
-                          </p>
-                        </td>
-                      </tr>
-                    </table>
-                    
-                    <!-- Step 3 -->
-                    <table role="presentation" style="width: 100%;">
-                      <tr>
-                        <td style="width: 32px; vertical-align: top; padding-top: 2px;">
-                          <div style="width: 32px; height: 32px; background-color: #1c1917; color: #fafaf9; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 500; text-align: center; line-height: 32px;">
-                            3
-                          </div>
-                        </td>
-                        <td style="padding-left: 16px;">
-                          <h3 style="margin: 0 0 4px; color: #1c1917; font-size: 16px; font-weight: 500;">
-                            Meet Maya
-                          </h3>
-                          <p style="margin: 0; color: #57534e; font-size: 14px; font-weight: 300; line-height: 1.5;">
-                            Your AI strategist will guide you through creating your first professional photos.
-                          </p>
-                        </td>
-                      </tr>
-                    </table>
+                    <ul style="margin: 0; padding-left: 20px; color: #57534e; font-size: 14px; font-weight: 300; line-height: 1.8;">
+                      <li>Upload 10-20 selfies to train your AI model</li>
+                      <li>Meet Maya, your AI strategist who will guide you</li>
+                      <li>Create your first professional photos</li>
+                      <li>Build your brand empire with AI-powered content</li>
+                    </ul>
                   </td>
                 </tr>
               </table>
-            </td>
-          </tr>
-          
-          <!-- CTA Button -->
-          <tr>
-            <td align="center" style="padding: 0 40px 40px;">
-              <a href="${passwordSetupUrl}" style="display: inline-block; padding: 20px 48px; background-color: #1c1917; color: #fafaf9; text-decoration: none; border-radius: 8px; font-weight: 500; font-size: 16px; letter-spacing: 0.1em; text-transform: uppercase;">
-                SET UP YOUR ACCOUNT
-              </a>
-              <p style="margin: 16px 0 0; color: #78716c; font-size: 12px; font-weight: 300;">
-                This link will expire in 24 hours for security reasons.
-              </p>
             </td>
           </tr>
           
@@ -226,9 +168,9 @@ export function generateWelcomeEmail(params: WelcomeEmailParams): {
   const text = `
 WELCOME TO SSELFIE
 
-Your subscription is active. Let's build your brand empire.
+${customerName ? `Hi ${customerName}, your` : "Your"} account is ready. Let's build your brand empire.
 
-ORDER DETAILS
+ORDER CONFIRMATION
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Product: ${packageName}
@@ -236,22 +178,15 @@ ${packageName.includes("MEMBERSHIP") ? "Monthly Credits" : "Credits Included"}: 
 Email: ${customerEmail}
 Status: ACTIVE
 
-NEXT STEPS
+WHAT'S NEXT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-1. Set Your Password
-   Choose a secure password to access your account and start creating.
+Your account is ready to use. Here's what you can do:
 
-2. Upload Your Selfies
-   Train your AI model with 10-20 selfies to get started.
-
-3. Meet Maya
-   Your AI strategist will guide you through creating your first professional photos.
-
-SET UP YOUR ACCOUNT
-${passwordSetupUrl}
-
-This link will expire in 24 hours for security reasons.
+• Upload 10-20 selfies to train your AI model
+• Meet Maya, your AI strategist who will guide you
+• Create your first professional photos
+• Build your brand empire with AI-powered content
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
