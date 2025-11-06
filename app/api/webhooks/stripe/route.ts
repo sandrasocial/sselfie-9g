@@ -158,59 +158,72 @@ export async function POST(request: NextRequest) {
                   userId = neonUser.id
                   console.log(`[v0] Linked existing Supabase user to Neon user ${userId}`)
                 } else {
-                  console.log(`[v0] Step 2: Inviting new user to Supabase auth...`)
+                  console.log(`[v0] Step 2: Creating new user in Supabase auth (no email sent)...`)
 
-                  const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
-                    customerEmail,
-                    {
-                      redirectTo: `${productionUrl}/auth/setup-password`,
-                      data: {
-                        created_via: "stripe_one_time_purchase",
-                        stripe_customer_id: session.customer,
-                        product_type: productType,
-                      },
+                  const { data: createData, error: createError } = await supabaseAdmin.auth.admin.createUser({
+                    email: customerEmail,
+                    email_confirm: true, // Auto-confirm email so they can log in
+                    user_metadata: {
+                      created_via: "stripe_one_time_purchase",
+                      stripe_customer_id: session.customer,
+                      product_type: productType,
                     },
-                  )
+                  })
 
-                  if (inviteError) {
-                    console.error(`[v0] Supabase invite error details:`, {
-                      message: inviteError.message,
-                      status: inviteError.status,
-                      name: inviteError.name,
-                      code: (inviteError as any).code,
+                  if (createError) {
+                    console.error(`[v0] Supabase create user error details:`, {
+                      message: createError.message,
+                      status: createError.status,
+                      name: createError.name,
+                      code: (createError as any).code,
                     })
-                    throw inviteError
+                    throw createError
                   }
 
-                  if (!inviteData.user) {
-                    console.error(`[v0] No user data returned from invite`)
-                    throw new Error("No user data returned from Supabase invite")
+                  if (!createData.user) {
+                    console.error(`[v0] No user data returned from create`)
+                    throw new Error("No user data returned from Supabase create")
                   }
 
-                  console.log(`[v0] Step 3: Invited Supabase auth user ${inviteData.user.id} for ${customerEmail}`)
+                  console.log(`[v0] Step 3: Created Supabase auth user ${createData.user.id} for ${customerEmail}`)
 
-                  console.log(`[v0] Step 4: Creating Neon user record...`)
-                  const neonUser = await getOrCreateNeonUser(inviteData.user.id, customerEmail)
+                  console.log(`[v0] Step 4: Generating password reset link...`)
+                  const { data: resetData, error: resetError } = await supabaseAdmin.auth.admin.generateLink({
+                    type: "recovery",
+                    email: customerEmail,
+                    options: {
+                      redirectTo: `${productionUrl}/auth/setup-password`,
+                    },
+                  })
+
+                  if (resetError) {
+                    console.error(`[v0] Error generating password reset link:`, resetError)
+                    throw resetError
+                  }
+
+                  console.log(`[v0] Step 5: Creating Neon user record...`)
+                  const neonUser = await getOrCreateNeonUser(createData.user.id, customerEmail)
                   userId = neonUser.id
-                  console.log(`[v0] Step 5: Created Neon user ${userId} for ${customerEmail}`)
+                  console.log(`[v0] Step 6: Created Neon user ${userId} for ${customerEmail}`)
 
-                  let passwordSetupLink = inviteData.properties?.action_link || `${productionUrl}/auth/setup-password`
+                  let passwordSetupLink = resetData.properties.action_link
 
+                  // Replace Supabase URLs with production URL
                   if (passwordSetupLink.includes("localhost") || passwordSetupLink.includes("supabase.co")) {
                     const url = new URL(passwordSetupLink)
                     const token = url.searchParams.get("token")
-                    const type = url.searchParams.get("type") || "invite"
+                    const type = url.searchParams.get("type") || "recovery"
 
                     if (token) {
                       passwordSetupLink = `${productionUrl}/auth/confirm?token=${token}&type=${type}&redirect_to=/auth/setup-password`
                     }
                   }
 
-                  console.log(`[v0] Step 6: Generated password setup link`)
+                  console.log(`[v0] Step 7: Generated password setup link`)
 
                   const productName = productType === "one_time_session" ? "ONE-TIME SESSION" : "CREDIT PACKAGE"
 
-                  console.log(`[v0] Step 7: Generating welcome email...`)
+                  console.log(`[v0] Step 8: Generating welcome email...`)
                   const emailContent = generateWelcomeEmail({
                     customerName: customerEmail.split("@")[0],
                     customerEmail: customerEmail,
@@ -226,7 +239,7 @@ export async function POST(request: NextRequest) {
                     textLength: emailContent.text?.length || 0,
                   })
 
-                  console.log(`[v0] Step 8: Sending welcome email...`)
+                  console.log(`[v0] Step 9: Sending welcome email via Resend...`)
                   const emailResult = await sendEmail({
                     to: customerEmail,
                     subject: "Welcome to SSelfie! Set up your account",
@@ -236,7 +249,7 @@ export async function POST(request: NextRequest) {
                   })
 
                   if (emailResult.success) {
-                    console.log(`[v0] Step 9: Welcome email sent successfully, message ID: ${emailResult.messageId}`)
+                    console.log(`[v0] Step 10: Welcome email sent successfully, message ID: ${emailResult.messageId}`)
 
                     await sql`
                       INSERT INTO email_logs (
@@ -374,54 +387,66 @@ export async function POST(request: NextRequest) {
                 userId = neonUser.id
                 console.log(`[v0] Linked existing Supabase user to Neon user ${userId}`)
               } else {
-                console.log(`[v0] Step 2: Inviting new user to Supabase auth...`)
+                console.log(`[v0] Step 2: Creating new user in Supabase auth (no email sent)...`)
 
-                const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
-                  customerEmail,
-                  {
-                    redirectTo: `${productionUrl}/auth/setup-password`,
-                    data: {
-                      created_via: "stripe_subscription",
-                      stripe_customer_id: session.customer,
-                    },
+                const { data: createData, error: createError } = await supabaseAdmin.auth.admin.createUser({
+                  email: customerEmail,
+                  email_confirm: true,
+                  user_metadata: {
+                    created_via: "stripe_subscription",
+                    stripe_customer_id: session.customer,
                   },
-                )
+                })
 
-                if (inviteError) {
-                  console.error(`[v0] Supabase invite error details:`, {
-                    message: inviteError.message,
-                    status: inviteError.status,
-                    name: inviteError.name,
-                    code: (inviteError as any).code,
+                if (createError) {
+                  console.error(`[v0] Supabase create user error details:`, {
+                    message: createError.message,
+                    status: createError.status,
+                    name: createError.name,
+                    code: (createError as any).code,
                   })
-                  throw inviteError
+                  throw createError
                 }
 
-                if (!inviteData.user) {
-                  console.error(`[v0] No user data returned from invite`)
-                  throw new Error("No user data returned from Supabase invite")
+                if (!createData.user) {
+                  console.error(`[v0] No user data returned from create`)
+                  throw new Error("No user data returned from Supabase create")
                 }
 
-                console.log(`[v0] Step 3: Invited Supabase auth user ${inviteData.user.id} for ${customerEmail}`)
+                console.log(`[v0] Step 3: Created Supabase auth user ${createData.user.id} for ${customerEmail}`)
 
-                console.log(`[v0] Step 4: Creating Neon user record...`)
-                const neonUser = await getOrCreateNeonUser(inviteData.user.id, customerEmail)
+                console.log(`[v0] Step 4: Generating password reset link...`)
+                const { data: resetData, error: resetError } = await supabaseAdmin.auth.admin.generateLink({
+                  type: "recovery",
+                  email: customerEmail,
+                  options: {
+                    redirectTo: `${productionUrl}/auth/setup-password`,
+                  },
+                })
+
+                if (resetError) {
+                  console.error(`[v0] Error generating password reset link:`, resetError)
+                  throw resetError
+                }
+
+                console.log(`[v0] Step 5: Creating Neon user record...`)
+                const neonUser = await getOrCreateNeonUser(createData.user.id, customerEmail)
                 userId = neonUser.id
-                console.log(`[v0] Step 5: Created Neon user ${userId} for ${customerEmail}`)
+                console.log(`[v0] Step 6: Created Neon user ${userId} for ${customerEmail}`)
 
-                let passwordSetupLink = inviteData.properties?.action_link || `${productionUrl}/auth/setup-password`
+                let passwordSetupLink = resetData.properties.action_link
 
                 if (passwordSetupLink.includes("localhost") || passwordSetupLink.includes("supabase.co")) {
                   const url = new URL(passwordSetupLink)
                   const token = url.searchParams.get("token")
-                  const type = url.searchParams.get("type") || "invite"
+                  const type = url.searchParams.get("type") || "recovery"
 
                   if (token) {
                     passwordSetupLink = `${productionUrl}/auth/confirm?token=${token}&type=${type}&redirect_to=/auth/setup-password`
                   }
                 }
 
-                console.log(`[v0] Step 6: Generated password setup link for ${customerEmail}`)
+                console.log(`[v0] Step 7: Generated password setup link for ${customerEmail}`)
 
                 const creditsGranted = Number.parseInt(session.metadata.credits || "0")
                 const productName = productType === "sselfie_studio_membership" ? "STUDIO MEMBERSHIP" : "SUBSCRIPTION"
@@ -449,7 +474,7 @@ export async function POST(request: NextRequest) {
                   textLength: emailContent.text?.length || 0,
                 })
 
-                console.log(`[v0] Step 7: Sending welcome email...`)
+                console.log(`[v0] Step 8: Sending welcome email via Resend...`)
                 const emailResult = await sendEmail({
                   to: customerEmail,
                   subject: "Welcome to SSelfie! Set up your account",
@@ -459,7 +484,7 @@ export async function POST(request: NextRequest) {
                 })
 
                 if (emailResult.success) {
-                  console.log(`[v0] Step 8: Welcome email sent successfully, message ID: ${emailResult.messageId}`)
+                  console.log(`[v0] Step 9: Welcome email sent successfully, message ID: ${emailResult.messageId}`)
 
                   await sql`
                     INSERT INTO email_logs (
