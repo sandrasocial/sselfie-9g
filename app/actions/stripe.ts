@@ -1,9 +1,10 @@
 "use server"
 
 import { stripe } from "@/lib/stripe"
-import { getUserByAuthId } from "@/lib/data/users"
+import { getUserByAuthId } from "@/lib/user-mapping"
 import { getCreditPackageById } from "@/lib/credit-packages"
 import { getProductById } from "@/lib/products"
+import { createServerClient } from "@/lib/supabase/server"
 
 export async function startCreditCheckoutSession(packageId: string) {
   const creditPackage = getCreditPackageById(packageId)
@@ -11,9 +12,18 @@ export async function startCreditCheckoutSession(packageId: string) {
     throw new Error(`Credit package with id "${packageId}" not found`)
   }
 
-  const user = await getUserByAuthId()
-  if (!user) {
+  const supabase = await createServerClient()
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser()
+
+  if (!authUser) {
     throw new Error("User not authenticated")
+  }
+
+  const user = await getUserByAuthId(authUser.id)
+  if (!user) {
+    throw new Error("User not found")
   }
 
   const session = await stripe.checkout.sessions.create({
@@ -51,12 +61,20 @@ export async function startProductCheckoutSession(productId: string) {
     throw new Error(`Product with id "${productId}" not found`)
   }
 
-  const user = await getUserByAuthId()
-  if (!user) {
+  const supabase = await createServerClient()
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser()
+
+  if (!authUser) {
     throw new Error("User not authenticated")
   }
 
-  // Create or retrieve Stripe customer
+  const user = await getUserByAuthId(authUser.id)
+  if (!user) {
+    throw new Error("User not found")
+  }
+
   let customerId: string | undefined
 
   const { neon } = await import("@/lib/db")
@@ -77,7 +95,6 @@ export async function startProductCheckoutSession(productId: string) {
     customerId = customer.id
   }
 
-  // Determine if this is a subscription or one-time payment
   const isSubscription = product.type === "sselfie_studio_membership"
 
   const session = await stripe.checkout.sessions.create({

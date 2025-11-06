@@ -35,4 +35,4 @@ export interface GalleryImage {
 
 export type TrainingStage = "upload" | "training" | "completed"
 export type GalleryView = "instagram" | "all"
-export type AcademyView = "overview" | "membership" | "courses"
+export type AcademyView = "overview" | "membership" | "courses" | "templates" | "monthly-drops" | "flatlay-images"

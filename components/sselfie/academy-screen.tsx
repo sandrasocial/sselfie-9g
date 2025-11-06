@@ -5,6 +5,7 @@ import useSWR from "swr"
 import type { AcademyView } from "./types"
 import CourseCard from "../academy/course-card"
 import CourseDetail from "../academy/course-detail"
+import ResourceCard from "../academy/resource-card"
 import UnifiedLoading from "./unified-loading"
 import { createLandingCheckout } from "@/app/actions/landing-checkout"
 
@@ -28,6 +29,9 @@ export default function AcademyScreen() {
   const [isUpgrading, setIsUpgrading] = useState(false)
 
   const { data: coursesData, error: coursesError, isLoading: coursesLoading } = useSWR("/api/academy/courses", fetcher)
+  const { data: templatesData, isLoading: templatesLoading } = useSWR("/api/academy/templates", fetcher)
+  const { data: monthlyDropsData, isLoading: monthlyDropsLoading } = useSWR("/api/academy/monthly-drops", fetcher)
+  const { data: flatlayImagesData, isLoading: flatlayImagesLoading } = useSWR("/api/academy/flatlay-images", fetcher)
   const { data: myCoursesData } = useSWR("/api/academy/my-courses", fetcher)
   const { data: userInfoData } = useSWR("/api/user/info", fetcher)
 
@@ -37,8 +41,16 @@ export default function AcademyScreen() {
 
   const userTier = (coursesData?.userTier || userInfoData?.plan || "starter") as string
   const allCourses = coursesData?.courses || []
+  const templates = templatesData?.templates || []
+  const monthlyDrops = monthlyDropsData?.monthlyDrops || []
+  const flatlayImages = flatlayImagesData?.flatlayImages || []
   const myCourses = myCoursesData?.courses || []
   const inProgressCourses = myCourses.filter((c: any) => c.progress_percentage > 0 && c.progress_percentage < 100)
+
+  if (flatlayImages.length > 0) {
+    console.log("[v0] Flatlay images data received:", flatlayImages)
+    console.log("[v0] First flatlay thumbnail_url:", flatlayImages[0]?.thumbnail_url)
+  }
 
   const handleUpgrade = async () => {
     try {
@@ -55,56 +67,27 @@ export default function AcademyScreen() {
     }
   }
 
-  if (!hasAccess && !coursesLoading) {
-    return (
-      <div className="pb-32">
-        {/* Full-bleed hero */}
-        <div className="relative h-[50vh] sm:h-[60vh] w-full overflow-hidden">
-          <img
-            src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/887-JHliMtQOFFLmPDRmabtQ9DAuiPDTOv-I0ltnA6ru3zz4C0YmuHYD8y66QZDB7.png"
-            alt="Academy"
-            className="absolute inset-0 w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/70" />
-          <div className="absolute inset-0 flex flex-col items-center justify-center px-4 text-center">
-            <h1 className="font-serif text-5xl sm:text-7xl tracking-wider text-white">Academy</h1>
-          </div>
-        </div>
+  const handleResourceDownload = async (
+    resourceId: string,
+    resourceUrl: string,
+    resourceType: "template" | "monthly_drop" | "flatlay_image",
+  ) => {
+    try {
+      // Track download
+      const endpoint =
+        resourceType === "template"
+          ? `/api/academy/templates/${resourceId}/download`
+          : resourceType === "monthly_drop"
+            ? `/api/academy/monthly-drops/${resourceId}/download`
+            : `/api/academy/flatlay-images/${resourceId}/download`
 
-        {/* Upgrade Prompt */}
-        <div className="px-4 sm:px-6 -mt-12 relative z-10 max-w-2xl mx-auto">
-          <div className="bg-white border border-stone-200 rounded-2xl p-8 sm:p-12 text-center space-y-6">
-            <div className="space-y-3">
-              <h2 className="font-serif text-3xl sm:text-4xl tracking-wider text-stone-950">Unlock the Academy</h2>
-              <p className="text-stone-600 text-base leading-relaxed">
-                Access our complete library of professional photography courses, tutorials, and resources. Available
-                exclusively to Studio Members.
-              </p>
-            </div>
+      await fetch(endpoint, { method: "POST", credentials: "include" })
 
-            <div className="border-t border-stone-200 pt-6 space-y-4">
-              <div className="text-sm text-stone-600 space-y-2">
-                <p>✓ Complete course library</p>
-                <p>✓ Step-by-step video tutorials</p>
-                <p>✓ Professional photography techniques</p>
-                <p>✓ Personal branding strategies</p>
-                <p>✓ Unlimited access to all content</p>
-              </div>
-            </div>
-
-            <button
-              onClick={handleUpgrade}
-              disabled={isUpgrading}
-              className="w-full bg-stone-950 text-stone-50 py-4 rounded-xl text-sm tracking-wider uppercase hover:bg-stone-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isUpgrading ? "Loading..." : "Upgrade to Studio Membership"}
-            </button>
-
-            <p className="text-xs text-stone-500">Your current plan: {getFriendlyTierName(productType)}</p>
-          </div>
-        </div>
-      </div>
-    )
+      // Open resource in new tab
+      window.open(resourceUrl, "_blank")
+    } catch (error) {
+      console.error("[v0] Error downloading resource:", error)
+    }
   }
 
   const filteredCourses = allCourses.filter((course: any) => {
@@ -115,12 +98,192 @@ export default function AcademyScreen() {
     return matchesSearch
   })
 
+  const filteredTemplates = templates.filter((template: any) => {
+    const matchesSearch =
+      searchQuery === "" ||
+      template.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (template.description && template.description.toLowerCase().includes(searchQuery.toLowerCase()))
+    return matchesSearch
+  })
+
+  const filteredMonthlyDrops = monthlyDrops.filter((drop: any) => {
+    const matchesSearch =
+      searchQuery === "" ||
+      drop.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (drop.description && drop.description.toLowerCase().includes(searchQuery.toLowerCase()))
+    return matchesSearch
+  })
+
+  const filteredFlatlayImages = flatlayImages.filter((flatlay: any) => {
+    const matchesSearch =
+      searchQuery === "" ||
+      flatlay.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (flatlay.description && flatlay.description.toLowerCase().includes(searchQuery.toLowerCase()))
+    return matchesSearch
+  })
+
   const handleCourseClick = (courseId: string) => {
     setSelectedCourseId(courseId)
   }
 
   const handleBackToCourses = () => {
     setSelectedCourseId(null)
+  }
+
+  if (selectedView === "templates") {
+    if (templatesLoading) {
+      return <UnifiedLoading message="Loading templates..." />
+    }
+
+    return (
+      <div className="space-y-10 pb-32 px-4 sm:px-6">
+        <div className="pt-8">
+          <button
+            onClick={() => setSelectedView("overview")}
+            className="text-sm tracking-wider uppercase text-stone-600 hover:text-stone-950 transition-colors"
+          >
+            ← Back
+          </button>
+        </div>
+
+        <div className="space-y-3">
+          <h1 className="font-serif text-4xl sm:text-5xl tracking-wider text-stone-950">Templates</h1>
+          <p className="text-stone-600 text-base font-light leading-relaxed">
+            Download professional templates for your brand
+          </p>
+        </div>
+
+        <div className="border border-stone-200 rounded-xl p-4">
+          <input
+            type="text"
+            placeholder="Search templates..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-transparent text-sm text-stone-950 placeholder:text-stone-400 focus:outline-none"
+          />
+        </div>
+
+        {filteredTemplates.length === 0 ? (
+          <div className="border border-stone-200 rounded-2xl p-16 text-center">
+            <p className="text-stone-600 text-sm">No templates found. Try adjusting your search.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredTemplates.map((template: any) => (
+              <ResourceCard
+                key={template.id}
+                resource={template}
+                onDownload={(id, url) => handleResourceDownload(id, url, "template")}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  if (selectedView === "monthly-drops") {
+    if (monthlyDropsLoading) {
+      return <UnifiedLoading message="Loading monthly drops..." />
+    }
+
+    return (
+      <div className="space-y-10 pb-32 px-4 sm:px-6">
+        <div className="pt-8">
+          <button
+            onClick={() => setSelectedView("overview")}
+            className="text-sm tracking-wider uppercase text-stone-600 hover:text-stone-950 transition-colors"
+          >
+            ← Back
+          </button>
+        </div>
+
+        <div className="space-y-3">
+          <h1 className="font-serif text-4xl sm:text-5xl tracking-wider text-stone-950">Monthly Drops</h1>
+          <p className="text-stone-600 text-base font-light leading-relaxed">
+            Exclusive monthly resources for Studio Members
+          </p>
+        </div>
+
+        <div className="border border-stone-200 rounded-xl p-4">
+          <input
+            type="text"
+            placeholder="Search monthly drops..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-transparent text-sm text-stone-950 placeholder:text-stone-400 focus:outline-none"
+          />
+        </div>
+
+        {filteredMonthlyDrops.length === 0 ? (
+          <div className="border border-stone-200 rounded-2xl p-16 text-center">
+            <p className="text-stone-600 text-sm">No monthly drops found. Try adjusting your search.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredMonthlyDrops.map((drop: any) => (
+              <ResourceCard
+                key={drop.id}
+                resource={drop}
+                onDownload={(id, url) => handleResourceDownload(id, url, "monthly_drop")}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  if (selectedView === "flatlay-images") {
+    if (flatlayImagesLoading) {
+      return <UnifiedLoading message="Loading flatlay images..." />
+    }
+
+    return (
+      <div className="space-y-10 pb-32 px-4 sm:px-6">
+        <div className="pt-8">
+          <button
+            onClick={() => setSelectedView("overview")}
+            className="text-sm tracking-wider uppercase text-stone-600 hover:text-stone-950 transition-colors"
+          >
+            ← Back
+          </button>
+        </div>
+
+        <div className="space-y-3">
+          <h1 className="font-serif text-4xl sm:text-5xl tracking-wider text-stone-950">Flatlay Images</h1>
+          <p className="text-stone-600 text-base font-light leading-relaxed">
+            Professional flatlay images for your content
+          </p>
+        </div>
+
+        <div className="border border-stone-200 rounded-xl p-4">
+          <input
+            type="text"
+            placeholder="Search flatlay images..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-transparent text-sm text-stone-950 placeholder:text-stone-400 focus:outline-none"
+          />
+        </div>
+
+        {filteredFlatlayImages.length === 0 ? (
+          <div className="border border-stone-200 rounded-2xl p-16 text-center">
+            <p className="text-stone-600 text-sm">No flatlay images found. Try adjusting your search.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredFlatlayImages.map((flatlay: any) => (
+              <ResourceCard
+                key={flatlay.id}
+                resource={flatlay}
+                onDownload={(id, url) => handleResourceDownload(id, url, "flatlay_image")}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    )
   }
 
   if (selectedView === "courses") {
@@ -282,6 +445,39 @@ export default function AcademyScreen() {
             branding
           </p>
           <div className="text-xs tracking-wider uppercase text-stone-600">See All Courses →</div>
+        </button>
+
+        <button
+          onClick={() => setSelectedView("templates")}
+          className="w-full border border-stone-200 rounded-2xl p-8 sm:p-10 text-left bg-white hover:bg-stone-50 hover:border-stone-300 transition-all"
+        >
+          <h2 className="font-serif text-2xl sm:text-3xl tracking-wider text-stone-950 mb-3">Templates</h2>
+          <p className="text-stone-600 text-sm sm:text-base font-light leading-relaxed mb-6">
+            Download professional templates for Canva, PDFs, and more to elevate your brand
+          </p>
+          <div className="text-xs tracking-wider uppercase text-stone-600">Browse Templates →</div>
+        </button>
+
+        <button
+          onClick={() => setSelectedView("monthly-drops")}
+          className="w-full border border-stone-200 rounded-2xl p-8 sm:p-10 text-left bg-white hover:bg-stone-50 hover:border-stone-300 transition-all"
+        >
+          <h2 className="font-serif text-2xl sm:text-3xl tracking-wider text-stone-950 mb-3">Monthly Drops</h2>
+          <p className="text-stone-600 text-sm sm:text-base font-light leading-relaxed mb-6">
+            Exclusive monthly resources and content drops for Studio Members
+          </p>
+          <div className="text-xs tracking-wider uppercase text-stone-600">View Monthly Drops →</div>
+        </button>
+
+        <button
+          onClick={() => setSelectedView("flatlay-images")}
+          className="w-full border border-stone-200 rounded-2xl p-8 sm:p-10 text-left bg-white hover:bg-stone-50 hover:border-stone-300 transition-all"
+        >
+          <h2 className="font-serif text-2xl sm:text-3xl tracking-wider text-stone-950 mb-3">Flatlay Images</h2>
+          <p className="text-stone-600 text-sm sm:text-base font-light leading-relaxed mb-6">
+            Professional flatlay images to elevate your content and brand aesthetic
+          </p>
+          <div className="text-xs tracking-wider uppercase text-stone-600">Browse Flatlay Images →</div>
         </button>
 
         {(inProgressCourses[0] || allCourses[0]) && (
