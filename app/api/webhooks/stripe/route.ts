@@ -278,12 +278,14 @@ export async function POST(request: NextRequest) {
               INSERT INTO subscriptions (
                 user_id, 
                 product_type,
+                plan,
                 status,
                 current_period_start,
                 current_period_end
               )
               VALUES (
                 ${userId},
+                'one_time_session',
                 'one_time_session',
                 'active',
                 NOW(),
@@ -523,6 +525,7 @@ export async function POST(request: NextRequest) {
           INSERT INTO subscriptions (
             user_id, 
             product_type,
+            plan,
             status, 
             stripe_subscription_id,
             current_period_start,
@@ -530,6 +533,7 @@ export async function POST(request: NextRequest) {
           )
           VALUES (
             ${userId},
+            ${productType},
             ${productType},
             ${subscription.status},
             ${subscription.id},
@@ -539,6 +543,7 @@ export async function POST(request: NextRequest) {
           ON CONFLICT (user_id) 
           DO UPDATE SET
             product_type = ${productType},
+            plan = ${productType},
             status = ${subscription.status},
             stripe_subscription_id = ${subscription.id},
             current_period_start = to_timestamp(${subscription.current_period_start}),
