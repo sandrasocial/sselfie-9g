@@ -60,6 +60,8 @@ export async function POST(request: NextRequest) {
   }
 
   console.log("[v0] Stripe webhook event:", event.type)
+  console.log("[v0] Event ID:", event.id)
+  console.log("[v0] Event data object type:", event.data.object.object)
 
   try {
     switch (event.type) {
@@ -458,7 +460,9 @@ export async function POST(request: NextRequest) {
       }
 
       default:
-        console.log(`[v0] Unhandled event type: ${event.type}`)
+        console.log(`[v0] ⚠️ UNHANDLED EVENT TYPE: ${event.type}`)
+        console.log(`[v0] This event was received but not processed. If this is expected, you can ignore this message.`)
+        console.log(`[v0] Event data:`, JSON.stringify(event.data.object, null, 2))
     }
 
     return NextResponse.json({ received: true })
