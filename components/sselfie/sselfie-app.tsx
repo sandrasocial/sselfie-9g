@@ -30,7 +30,16 @@ interface SselfieAppProps {
 }
 
 export default function SselfieApp({ userId, userName, userEmail }: SselfieAppProps) {
-  const [activeTab, setActiveTab] = useState("studio")
+  const getInitialTab = () => {
+    if (typeof window !== "undefined") {
+      const hash = window.location.hash.slice(1) // Remove the # symbol
+      const validTabs = ["studio", "training", "maya", "gallery", "academy", "profile", "settings"]
+      return validTabs.includes(hash) ? hash : "studio"
+    }
+    return "studio"
+  }
+
+  const [activeTab, setActiveTab] = useState(getInitialTab)
   const [isLoading, setIsLoading] = useState(true)
   const [currentTime, setCurrentTime] = useState(new Date())
   const [hasTrainedModel, setHasTrainedModel] = useState(false)
@@ -43,6 +52,27 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
   const [isNavVisible, setIsNavVisible] = useState(true)
   const lastScrollY = useRef(0)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const hash = window.location.hash.slice(1)
+      const validTabs = ["studio", "training", "maya", "gallery", "academy", "profile", "settings"]
+      if (validTabs.includes(hash)) {
+        setActiveTab(hash)
+      } else {
+        setActiveTab("studio")
+      }
+    }
+
+    window.addEventListener("popstate", handlePopState)
+    return () => window.removeEventListener("popstate", handlePopState)
+  }, [])
+
+  const handleTabChange = (tabId: string) => {
+    setActiveTab(tabId)
+    // Update URL without triggering a page reload
+    window.history.pushState(null, "", `#${tabId}`)
+  }
 
   useEffect(() => {
     const fetchCredits = async () => {
@@ -251,7 +281,7 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
               <StudioScreen
                 user={user}
                 hasTrainedModel={hasTrainedModel}
-                setActiveTab={setActiveTab}
+                setActiveTab={handleTabChange}
                 onImageGenerated={refreshCredits}
               />
             )}
@@ -260,7 +290,7 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
                 user={user}
                 userId={userId}
                 setHasTrainedModel={setHasTrainedModel}
-                setActiveTab={setActiveTab}
+                setActiveTab={handleTabChange}
               />
             )}
             {activeTab === "maya" && <MayaChatScreen onImageGenerated={refreshCredits} />}
@@ -292,7 +322,7 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
                 return (
                   <button
                     key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
+                    onClick={() => handleTabChange(tab.id)}
                     className={`flex flex-col items-center space-y-1 px-2 sm:px-2.5 md:px-4 py-2 sm:py-2.5 md:py-3 rounded-[1rem] sm:rounded-[1.25rem] md:rounded-[1.5rem] transition-all duration-500 ease-out min-w-[60px] sm:min-w-[68px] md:min-w-[76px] relative touch-manipulation ${
                       isActive ? "transform scale-105" : "hover:scale-[1.02] active:scale-95"
                     }`}
