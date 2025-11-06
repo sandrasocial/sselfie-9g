@@ -104,30 +104,6 @@ export default function InteractiveFeaturesShowcase() {
                     {feature.description}
                   </p>
                 </div>
-
-                <div className="flex gap-1.5 sm:gap-2">
-                  {FEATURES.map((_, index) => (
-                    <button
-                      key={index}
-                      onClick={() => {
-                        setActiveFeature(index)
-                        setIsAutoPlaying(false)
-                      }}
-                      className="group relative h-1 flex-1 bg-white/20 rounded-full overflow-hidden"
-                    >
-                      {index === activeFeature && isAutoPlaying && (
-                        <motion.div
-                          className="absolute inset-0 bg-white"
-                          initial={{ width: "0%" }}
-                          animate={{ width: "100%" }}
-                          transition={{ duration: 5, ease: "linear" }}
-                        />
-                      )}
-                      {index === activeFeature && !isAutoPlaying && <div className="absolute inset-0 bg-white" />}
-                      {index < activeFeature && <div className="absolute inset-0 bg-white" />}
-                    </button>
-                  ))}
-                </div>
               </motion.div>
 
               <motion.div
@@ -165,25 +141,23 @@ export default function InteractiveFeaturesShowcase() {
               setActiveFeature(index)
               setIsAutoPlaying(false)
             }}
-            className={`p-3 sm:p-4 rounded-xl border transition-all text-left min-h-[80px] sm:min-h-auto ${
-              activeFeature === index
-                ? "border-stone-950 bg-stone-950 text-white"
-                : "border-stone-200 bg-stone-50 hover:border-stone-400"
+            className={`p-4 sm:p-5 text-left transition-all border-b-2 ${
+              activeFeature === index ? "border-stone-950" : "border-transparent hover:border-stone-300"
             }`}
           >
             <p
-              className={`text-[10px] sm:text-xs font-light tracking-[0.15em] sm:tracking-[0.2em] uppercase mb-1 sm:mb-2 ${
-                activeFeature === index ? "text-white/60" : "text-stone-500"
+              className={`text-[10px] sm:text-xs font-light tracking-[0.15em] sm:tracking-[0.2em] uppercase mb-1.5 sm:mb-2 ${
+                activeFeature === index ? "text-stone-500" : "text-stone-400"
               }`}
             >
               {feat.subtitle}
             </p>
             <p
-              className={`text-xs sm:text-sm font-medium tracking-wider uppercase ${
-                activeFeature === index ? "text-white" : "text-stone-950"
+              className={`text-xs sm:text-sm font-light tracking-wider uppercase leading-snug ${
+                activeFeature === index ? "text-stone-950" : "text-stone-600"
               }`}
             >
-              {feat.title.split(" ").slice(0, 2).join(" ")}
+              {feat.title}
             </p>
           </button>
         ))}
@@ -314,6 +288,18 @@ function AcademyMockup() {
 }
 
 function FeedDesignerMockup() {
+  const feedImages = [
+    "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/1-wcQY4khUpWtaH0bXduDkx3yZJGsbRD.png",
+    "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/2-dnyqS5jXhfwAF2GPxqxmjYK8cInu67.png",
+    "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/3-UN8Yz7hlsypnTYE4PdfvvWlcFOn3kG.png",
+    "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/4-DOjZ0IQeVxgz9Tl0NhLBiirZSxIkq6.png",
+    "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/5-nxH74o8F3c0XfRJih1d7lqN6w6TfLt.png",
+    "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/6-kmxvWldOmnO1RdSSOlXthakRtwFPSZ.png",
+    "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/7-XMrH0zRxnfOnDSVFrCxPv9nLh5WOUi.png",
+    "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/8-BQUyww2nWxVGX9IB71gwtx3dkUH7FI.png",
+    "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/9-diobfYxAgVhfKnUE6E0pqmwrgfwiCa.png",
+  ]
+
   return (
     <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl overflow-hidden">
       <div className="bg-stone-950 p-6 text-white">
@@ -327,8 +313,10 @@ function FeedDesignerMockup() {
       </div>
       <div className="p-4 bg-stone-50">
         <div className="grid grid-cols-3 gap-1">
-          {Array.from({ length: 9 }).map((_, i) => (
-            <div key={i} className="aspect-square bg-gradient-to-br from-stone-200 to-stone-300 rounded-lg" />
+          {feedImages.map((imageUrl, i) => (
+            <div key={i} className="aspect-square relative rounded-lg overflow-hidden">
+              <Image src={imageUrl || "/placeholder.svg"} fill alt={`Feed image ${i + 1}`} className="object-cover" />
+            </div>
           ))}
         </div>
         <p className="text-xs text-center text-stone-500 mt-4">Preview your Instagram feed before posting</p>

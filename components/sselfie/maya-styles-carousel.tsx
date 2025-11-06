@@ -131,8 +131,11 @@ export default function MayaStylesCarousel() {
         {/* Section Header */}
         <div className="text-center mb-16">
           <p className="text-xs font-light tracking-[0.3em] uppercase text-stone-500 mb-4">MAYA'S SIGNATURE STYLES</p>
-          <h2 className="font-serif text-4xl md:text-6xl font-extralight tracking-[0.3em] uppercase mb-6 leading-tight">
-            ONE MAYA. ENDLESS STYLES
+          <h2
+            className="text-xl sm:text-2xl md:text-3xl font-light tracking-[0.15em] sm:tracking-[0.2em] uppercase mb-6 text-stone-900"
+            style={{ fontFamily: "'Times New Roman', serif" }}
+          >
+            One Maya. Endless Styles
           </h2>
           <p className="text-base font-light leading-relaxed text-stone-700 max-w-2xl mx-auto">
             Maya understands the 80/20 rule of personal branding. See how she creates cohesive feeds with variety that
