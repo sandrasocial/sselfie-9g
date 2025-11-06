@@ -89,123 +89,159 @@ export async function POST(request: NextRequest) {
               userId = users[0].id
               console.log(`[v0] Found existing user ${userId} for email ${customerEmail}`)
             } else if (source === "landing_page") {
-              // Create new account for landing page purchases
               console.log(`[v0] Creating new account for landing page purchase: ${customerEmail}`)
 
               try {
                 const productionUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
                 const supabaseAdmin = createAdminClient()
 
-                // Invite user to set up their account
-                const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
-                  customerEmail,
-                  {
-                    redirectTo: `${productionUrl}/auth/setup-password`,
-                    data: {
-                      created_via: "stripe_one_time_purchase",
-                      stripe_customer_id: session.customer,
-                      product_type: productType,
-                    },
-                  },
-                )
+                console.log(`[v0] Step 1: Checking if user already exists in Supabase auth...`)
 
-                if (inviteError || !inviteData.user) {
-                  console.error(`[v0] Error inviting user ${customerEmail}:`, inviteError)
-                  throw inviteError || new Error("No user data returned")
+                const { data: existingUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers()
+
+                if (listError) {
+                  console.error(`[v0] Error listing users:`, listError)
                 }
 
-                console.log(`[v0] Invited Supabase auth user for ${customerEmail}`)
+                const existingUser = existingUsers?.users?.find((u) => u.email === customerEmail)
 
-                const neonUser = await getOrCreateNeonUser(inviteData.user.id, customerEmail)
-                userId = neonUser.id
-                console.log(`[v0] Created Neon user ${userId} for ${customerEmail}`)
+                if (existingUser) {
+                  console.log(`[v0] User already exists in Supabase auth: ${existingUser.id}`)
 
-                // Extract token from invite link for custom email
-                let passwordSetupLink = inviteData.properties?.action_link || `${productionUrl}/auth/setup-password`
+                  const neonUser = await getOrCreateNeonUser(existingUser.id, customerEmail)
+                  userId = neonUser.id
+                  console.log(`[v0] Linked existing Supabase user to Neon user ${userId}`)
+                } else {
+                  console.log(`[v0] Step 2: Inviting new user to Supabase auth...`)
 
-                if (passwordSetupLink.includes("localhost") || passwordSetupLink.includes("supabase.co")) {
-                  const url = new URL(passwordSetupLink)
-                  const token = url.searchParams.get("token")
-                  const type = url.searchParams.get("type") || "invite"
+                  const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
+                    customerEmail,
+                    {
+                      redirectTo: `${productionUrl}/auth/setup-password`,
+                      data: {
+                        created_via: "stripe_one_time_purchase",
+                        stripe_customer_id: session.customer,
+                        product_type: productType,
+                      },
+                    },
+                  )
 
-                  if (token) {
-                    passwordSetupLink = `${productionUrl}/auth/confirm?token=${token}&type=${type}&redirect_to=/auth/setup-password`
+                  if (inviteError) {
+                    console.error(`[v0] Supabase invite error details:`, {
+                      message: inviteError.message,
+                      status: inviteError.status,
+                      name: inviteError.name,
+                      code: (inviteError as any).code,
+                    })
+                    throw inviteError
+                  }
+
+                  if (!inviteData.user) {
+                    console.error(`[v0] No user data returned from invite`)
+                    throw new Error("No user data returned from Supabase invite")
+                  }
+
+                  console.log(`[v0] Step 3: Invited Supabase auth user ${inviteData.user.id} for ${customerEmail}`)
+
+                  console.log(`[v0] Step 4: Creating Neon user record...`)
+                  const neonUser = await getOrCreateNeonUser(inviteData.user.id, customerEmail)
+                  userId = neonUser.id
+                  console.log(`[v0] Step 5: Created Neon user ${userId} for ${customerEmail}`)
+
+                  let passwordSetupLink = inviteData.properties?.action_link || `${productionUrl}/auth/setup-password`
+
+                  if (passwordSetupLink.includes("localhost") || passwordSetupLink.includes("supabase.co")) {
+                    const url = new URL(passwordSetupLink)
+                    const token = url.searchParams.get("token")
+                    const type = url.searchParams.get("type") || "invite"
+
+                    if (token) {
+                      passwordSetupLink = `${productionUrl}/auth/confirm?token=${token}&type=${type}&redirect_to=/auth/setup-password`
+                    }
+                  }
+
+                  console.log(`[v0] Step 6: Generated password setup link`)
+
+                  const productName = productType === "one_time_session" ? "ONE-TIME SESSION" : "CREDIT PACKAGE"
+
+                  console.log(`[v0] Step 7: Generating welcome email...`)
+                  const emailContent = generateWelcomeEmail({
+                    customerName: customerEmail.split("@")[0],
+                    customerEmail: customerEmail,
+                    passwordSetupUrl: passwordSetupLink,
+                    creditsGranted: credits,
+                    packageName: productName,
+                  })
+
+                  console.log("[v0] Email content generated:", {
+                    hasHtml: !!emailContent.html,
+                    hasText: !!emailContent.text,
+                    htmlLength: emailContent.html?.length || 0,
+                    textLength: emailContent.text?.length || 0,
+                  })
+
+                  console.log(`[v0] Step 8: Sending welcome email...`)
+                  const emailResult = await sendEmail({
+                    to: customerEmail,
+                    subject: "Welcome to SSelfie! Set up your account",
+                    html: emailContent.html,
+                    text: emailContent.text,
+                    tags: ["welcome", "account-setup", "one-time-purchase"],
+                  })
+
+                  if (emailResult.success) {
+                    console.log(`[v0] Step 9: Welcome email sent successfully, message ID: ${emailResult.messageId}`)
+
+                    await sql`
+                      INSERT INTO email_logs (
+                        user_email,
+                        email_type,
+                        resend_message_id,
+                        status,
+                        sent_at
+                      )
+                      VALUES (
+                        ${customerEmail},
+                        'welcome',
+                        ${emailResult.messageId},
+                        'sent',
+                        NOW()
+                      )
+                    `
+                  } else {
+                    console.error(`[v0] Failed to send welcome email: ${emailResult.error}`)
+
+                    await sql`
+                      INSERT INTO email_logs (
+                        user_email,
+                        email_type,
+                        status,
+                        error_message,
+                        sent_at
+                      )
+                      VALUES (
+                        ${customerEmail},
+                        'welcome',
+                        'failed',
+                        ${emailResult.error},
+                        NOW()
+                      )
+                    `
                   }
                 }
 
-                console.log(`[v0] Generated password setup link for ${customerEmail}`)
+                console.log(`[v0] ✅ Account creation completed successfully for ${customerEmail}`)
+              } catch (error: any) {
+                console.error(`[v0] ❌ DETAILED ERROR creating account for ${customerEmail}:`)
+                console.error(`[v0] Error type: ${error.constructor.name}`)
+                console.error(`[v0] Error message: ${error.message}`)
+                console.error(`[v0] Error stack:`, error.stack)
+                console.error(`[v0] Full error object:`, JSON.stringify(error, null, 2))
 
-                const productName = productType === "one_time_session" ? "ONE-TIME SESSION" : "CREDIT PACKAGE"
-
-                const emailContent = generateWelcomeEmail({
-                  customerName: customerEmail.split("@")[0],
-                  customerEmail: customerEmail,
-                  passwordSetupUrl: passwordSetupLink,
-                  creditsGranted: credits,
-                  packageName: productName,
-                })
-
-                console.log("[v0] Email content generated:", {
-                  hasHtml: !!emailContent.html,
-                  hasText: !!emailContent.text,
-                  htmlLength: emailContent.html?.length || 0,
-                  textLength: emailContent.text?.length || 0,
-                })
-
-                const emailResult = await sendEmail({
-                  to: customerEmail,
-                  subject: "Welcome to SSelfie! Set up your account",
-                  html: emailContent.html,
-                  text: emailContent.text,
-                  tags: ["welcome", "account-setup", "one-time-purchase"],
-                })
-
-                if (emailResult.success) {
-                  console.log(`[v0] Welcome email sent to ${customerEmail}, message ID: ${emailResult.messageId}`)
-
-                  await sql`
-                    INSERT INTO email_logs (
-                      user_email,
-                      email_type,
-                      resend_message_id,
-                      status,
-                      sent_at
-                    )
-                    VALUES (
-                      ${customerEmail},
-                      'welcome',
-                      ${emailResult.messageId},
-                      'sent',
-                      NOW()
-                    )
-                  `
-                } else {
-                  console.error(`[v0] Failed to send welcome email to ${customerEmail}: ${emailResult.error}`)
-
-                  await sql`
-                    INSERT INTO email_logs (
-                      user_email,
-                      email_type,
-                      status,
-                      error_message,
-                      sent_at
-                    )
-                    VALUES (
-                      ${customerEmail},
-                      'welcome',
-                      'failed',
-                      ${emailResult.error},
-                      NOW()
-                    )
-                  `
-                }
-
-                console.log(`[v0] Account created successfully for ${customerEmail}`)
-              } catch (error) {
-                console.error(`[v0] Error creating account for ${customerEmail}:`, error)
                 return NextResponse.json(
                   {
                     error: "Failed to create user account",
+                    details: error.message,
                   },
                   { status: 500 },
                 )
@@ -233,14 +269,11 @@ export async function POST(request: NextRequest) {
             )
           }
 
-          // Handle different product types
           if (productType === "one_time_session") {
             console.log(`[v0] One-time session purchase for user ${userId}`)
 
-            // Grant session credits
             await grantOneTimeSessionCredits(userId)
 
-            // Create subscription record for tracking
             await sql`
               INSERT INTO subscriptions (
                 user_id, 
@@ -267,8 +300,7 @@ export async function POST(request: NextRequest) {
             console.log(`[v0] Successfully added ${credits} credits to user ${userId}`)
           }
         } else if (session.mode === "subscription") {
-          // Studio membership subscription
-          const userId = session.metadata.user_id
+          let userId = session.metadata.user_id
           const customerEmail = session.customer_details?.email || session.customer_email
           const productType = session.metadata.product_type
 
@@ -277,142 +309,175 @@ export async function POST(request: NextRequest) {
 
             try {
               const productionUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
-
-              // Invite user instead of creating with password - this prevents the generic confirmation email
               const supabaseAdmin = createAdminClient()
 
-              const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
-                customerEmail,
-                {
-                  redirectTo: `${productionUrl}/auth/setup-password`,
-                  data: {
-                    created_via: "stripe_subscription",
-                    stripe_customer_id: session.customer,
-                  },
-                },
-              )
+              console.log(`[v0] Step 1: Checking if user already exists in Supabase auth...`)
 
-              if (inviteError || !inviteData.user) {
-                console.error(`[v0] Error inviting user ${customerEmail}:`, inviteError)
-                throw inviteError || new Error("No user data returned")
+              const { data: existingUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers()
+
+              if (listError) {
+                console.error(`[v0] Error listing users:`, listError)
               }
 
-              console.log(`[v0] Invited Supabase auth user for ${customerEmail}`)
+              const existingUser = existingUsers?.users?.find((u) => u.email === customerEmail)
 
-              const neonUser = await getOrCreateNeonUser(inviteData.user.id, customerEmail)
-              console.log(`[v0] Created Neon user for ${customerEmail}`)
+              if (existingUser) {
+                console.log(`[v0] User already exists in Supabase auth: ${existingUser.id}`)
 
-              // Extract token from invite link for our custom email
-              let passwordSetupLink = inviteData.properties?.action_link || `${productionUrl}/auth/setup-password`
-
-              // Replace any localhost or Supabase URLs with production domain
-              if (passwordSetupLink.includes("localhost") || passwordSetupLink.includes("supabase.co")) {
-                const url = new URL(passwordSetupLink)
-                const token = url.searchParams.get("token")
-                const type = url.searchParams.get("type") || "invite"
-
-                if (token) {
-                  passwordSetupLink = `${productionUrl}/auth/confirm?token=${token}&type=${type}&redirect_to=/auth/setup-password`
-                }
-              }
-
-              console.log(`[v0] Generated password setup link for ${customerEmail}`)
-
-              const creditsGranted = Number.parseInt(session.metadata.credits || "0")
-              const productName = productType === "sselfie_studio_membership" ? "STUDIO MEMBERSHIP" : "SUBSCRIPTION"
-
-              console.log("[v0] Generating welcome email with params:", {
-                customerName: customerEmail.split("@")[0],
-                customerEmail: customerEmail,
-                passwordSetupUrl: passwordSetupLink,
-                creditsGranted: creditsGranted,
-                packageName: productName,
-              })
-
-              const emailContent = generateWelcomeEmail({
-                customerName: customerEmail.split("@")[0], // Use email prefix as name
-                customerEmail: customerEmail,
-                passwordSetupUrl: passwordSetupLink,
-                creditsGranted: creditsGranted,
-                packageName: productName,
-              })
-
-              console.log("[v0] Email content generated:", {
-                hasHtml: !!emailContent.html,
-                hasText: !!emailContent.text,
-                htmlLength: emailContent.html?.length || 0,
-                textLength: emailContent.text?.length || 0,
-              })
-
-              const emailResult = await sendEmail({
-                to: customerEmail,
-                subject: "Welcome to SSelfie! Set up your account",
-                html: emailContent.html,
-                text: emailContent.text,
-                tags: ["welcome", "account-setup"],
-              })
-
-              if (emailResult.success) {
-                console.log(`[v0] Welcome email sent to ${customerEmail}, message ID: ${emailResult.messageId}`)
-
-                await sql`
-                  INSERT INTO email_logs (
-                    user_email,
-                    email_type,
-                    resend_message_id,
-                    status,
-                    sent_at
-                  )
-                  VALUES (
-                    ${customerEmail},
-                    'welcome',
-                    ${emailResult.messageId},
-                    'sent',
-                    NOW()
-                  )
-                `
+                const neonUser = await getOrCreateNeonUser(existingUser.id, customerEmail)
+                userId = neonUser.id
+                console.log(`[v0] Linked existing Supabase user to Neon user ${userId}`)
               } else {
-                console.error(`[v0] Failed to send welcome email to ${customerEmail}: ${emailResult.error}`)
+                console.log(`[v0] Step 2: Inviting new user to Supabase auth...`)
 
-                await sql`
-                  INSERT INTO email_logs (
-                    user_email,
-                    email_type,
-                    status,
-                    error_message,
-                    sent_at
-                  )
-                  VALUES (
-                    ${customerEmail},
-                    'welcome',
-                    'failed',
-                    ${emailResult.error},
-                    NOW()
-                  )
-                `
+                const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
+                  customerEmail,
+                  {
+                    redirectTo: `${productionUrl}/auth/setup-password`,
+                    data: {
+                      created_via: "stripe_subscription",
+                      stripe_customer_id: session.customer,
+                    },
+                  },
+                )
+
+                if (inviteError) {
+                  console.error(`[v0] Supabase invite error details:`, {
+                    message: inviteError.message,
+                    status: inviteError.status,
+                    name: inviteError.name,
+                    code: (inviteError as any).code,
+                  })
+                  throw inviteError
+                }
+
+                if (!inviteData.user) {
+                  console.error(`[v0] No user data returned from invite`)
+                  throw new Error("No user data returned from Supabase invite")
+                }
+
+                console.log(`[v0] Step 3: Invited Supabase auth user ${inviteData.user.id} for ${customerEmail}`)
+
+                console.log(`[v0] Step 4: Creating Neon user record...`)
+                const neonUser = await getOrCreateNeonUser(inviteData.user.id, customerEmail)
+                userId = neonUser.id
+                console.log(`[v0] Step 5: Created Neon user ${userId} for ${customerEmail}`)
+
+                let passwordSetupLink = inviteData.properties?.action_link || `${productionUrl}/auth/setup-password`
+
+                if (passwordSetupLink.includes("localhost") || passwordSetupLink.includes("supabase.co")) {
+                  const url = new URL(passwordSetupLink)
+                  const token = url.searchParams.get("token")
+                  const type = url.searchParams.get("type") || "invite"
+
+                  if (token) {
+                    passwordSetupLink = `${productionUrl}/auth/confirm?token=${token}&type=${type}&redirect_to=/auth/setup-password`
+                  }
+                }
+
+                console.log(`[v0] Step 6: Generated password setup link for ${customerEmail}`)
+
+                const creditsGranted = Number.parseInt(session.metadata.credits || "0")
+                const productName = productType === "sselfie_studio_membership" ? "STUDIO MEMBERSHIP" : "SUBSCRIPTION"
+
+                console.log("[v0] Generating welcome email with params:", {
+                  customerName: customerEmail.split("@")[0],
+                  customerEmail: customerEmail,
+                  passwordSetupUrl: passwordSetupLink,
+                  creditsGranted: creditsGranted,
+                  packageName: productName,
+                })
+
+                const emailContent = generateWelcomeEmail({
+                  customerName: customerEmail.split("@")[0],
+                  customerEmail: customerEmail,
+                  passwordSetupUrl: passwordSetupLink,
+                  creditsGranted: creditsGranted,
+                  packageName: productName,
+                })
+
+                console.log("[v0] Email content generated:", {
+                  hasHtml: !!emailContent.html,
+                  hasText: !!emailContent.text,
+                  htmlLength: emailContent.html?.length || 0,
+                  textLength: emailContent.text?.length || 0,
+                })
+
+                console.log(`[v0] Step 7: Sending welcome email...`)
+                const emailResult = await sendEmail({
+                  to: customerEmail,
+                  subject: "Welcome to SSelfie! Set up your account",
+                  html: emailContent.html,
+                  text: emailContent.text,
+                  tags: ["welcome", "account-setup"],
+                })
+
+                if (emailResult.success) {
+                  console.log(`[v0] Step 8: Welcome email sent successfully, message ID: ${emailResult.messageId}`)
+
+                  await sql`
+                    INSERT INTO email_logs (
+                      user_email,
+                      email_type,
+                      resend_message_id,
+                      status,
+                      sent_at
+                    )
+                    VALUES (
+                      ${customerEmail},
+                      'welcome',
+                      ${emailResult.messageId},
+                      'sent',
+                      NOW()
+                    )
+                  `
+                } else {
+                  console.error(`[v0] Failed to send welcome email: ${emailResult.error}`)
+
+                  await sql`
+                    INSERT INTO email_logs (
+                      user_email,
+                      email_type,
+                      status,
+                      error_message,
+                      sent_at
+                    )
+                    VALUES (
+                      ${customerEmail},
+                      'welcome',
+                      'failed',
+                      ${emailResult.error},
+                      NOW()
+                    )
+                  `
+                }
+
+                await stripe.checkout.sessions.update(session.id, {
+                  metadata: {
+                    ...session.metadata,
+                    user_id: userId,
+                    auto_created: "true",
+                  },
+                })
+
+                const subscription = await stripe.subscriptions.retrieve(session.subscription as string)
+                await stripe.subscriptions.update(subscription.id, {
+                  metadata: {
+                    ...subscription.metadata,
+                    user_id: userId,
+                    product_type: productType,
+                    credits: session.metadata.credits,
+                  },
+                })
+
+                console.log(`[v0] Account created successfully for ${customerEmail}`)
               }
-
-              await stripe.checkout.sessions.update(session.id, {
-                metadata: {
-                  ...session.metadata,
-                  user_id: neonUser.id,
-                  auto_created: "true",
-                },
-              })
-
-              const subscription = await stripe.subscriptions.retrieve(session.subscription as string)
-              await stripe.subscriptions.update(subscription.id, {
-                metadata: {
-                  ...subscription.metadata,
-                  user_id: neonUser.id,
-                  product_type: productType,
-                  credits: session.metadata.credits,
-                },
-              })
-
-              console.log(`[v0] Account created successfully for ${customerEmail}`)
-            } catch (error) {
-              console.error(`[v0] Error creating account for ${customerEmail}:`, error)
+            } catch (error: any) {
+              console.error(`[v0] ❌ DETAILED ERROR creating account for ${customerEmail}:`)
+              console.error(`[v0] Error type: ${error.constructor.name}`)
+              console.error(`[v0] Error message: ${error.message}`)
+              console.error(`[v0] Error stack:`, error.stack)
+              console.error(`[v0] Full error object:`, JSON.stringify(error, null, 2))
             }
           } else {
             console.log("[v0] Subscription checkout completed for existing user")
@@ -456,7 +521,6 @@ export async function POST(request: NextRequest) {
 
         console.log(`[v0] Subscription created: ${productType} for user ${userId}, granting ${credits} credits`)
 
-        // Create or update subscription record
         await sql`
           INSERT INTO subscriptions (
             user_id, 
@@ -487,11 +551,9 @@ export async function POST(request: NextRequest) {
             updated_at = NOW()
         `
 
-        // Grant initial credits for studio membership
         if (productType === "sselfie_studio_membership") {
           await grantMonthlyCredits(userId, "sselfie_studio_membership")
 
-          // Record the grant
           await sql`
             INSERT INTO subscription_credit_grants (
               user_id,
@@ -523,7 +585,6 @@ export async function POST(request: NextRequest) {
 
           console.log(`[v0] Subscription renewed: ${productType} for user ${userId}`)
 
-          // Check if we already granted credits for this period
           const existingGrant = await sql`
             SELECT id FROM subscription_credit_grants
             WHERE user_id = ${userId}
@@ -532,10 +593,8 @@ export async function POST(request: NextRequest) {
           `
 
           if (existingGrant.length === 0 && productType === "sselfie_studio_membership") {
-            // Grant monthly credits
             await grantMonthlyCredits(userId, "sselfie_studio_membership")
 
-            // Record the grant
             await sql`
               INSERT INTO subscription_credit_grants (
                 user_id,
@@ -554,7 +613,6 @@ export async function POST(request: NextRequest) {
             `
           }
 
-          // Update subscription record
           await sql`
             UPDATE subscriptions
             SET 
@@ -602,10 +660,8 @@ export async function POST(request: NextRequest) {
       timestamp: new Date(),
     }
 
-    // Log error to database
     await logWebhookError(webhookError)
 
-    // Send alert if critical
     if (isCriticalError(event.type, error.message)) {
       await alertWebhookError(webhookError)
     }
