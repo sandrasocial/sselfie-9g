@@ -74,8 +74,9 @@ export async function POST(request: NextRequest) {
           const credits = Number.parseInt(session.metadata.credits || "0")
           const productType = session.metadata.product_type
           const customerEmail = session.customer_details?.email || session.customer_email
+          const source = session.metadata.source
 
-          console.log(`[v0] Payment completed - Product type: ${productType}, Credits: ${credits}`)
+          console.log(`[v0] Payment completed - Product type: ${productType}, Credits: ${credits}, Source: ${source}`)
 
           if (!userId && customerEmail) {
             console.log(`[v0] No user_id in metadata, looking up user by email: ${customerEmail}`)
@@ -86,9 +87,133 @@ export async function POST(request: NextRequest) {
 
             if (users.length > 0) {
               userId = users[0].id
-              console.log(`[v0] Found user ${userId} for email ${customerEmail}`)
+              console.log(`[v0] Found existing user ${userId} for email ${customerEmail}`)
+            } else if (source === "landing_page") {
+              // Create new account for landing page purchases
+              console.log(`[v0] Creating new account for landing page purchase: ${customerEmail}`)
+
+              try {
+                const productionUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
+                const supabaseAdmin = createAdminClient()
+
+                // Invite user to set up their account
+                const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
+                  customerEmail,
+                  {
+                    redirectTo: `${productionUrl}/auth/setup-password`,
+                    data: {
+                      created_via: "stripe_one_time_purchase",
+                      stripe_customer_id: session.customer,
+                      product_type: productType,
+                    },
+                  },
+                )
+
+                if (inviteError || !inviteData.user) {
+                  console.error(`[v0] Error inviting user ${customerEmail}:`, inviteError)
+                  throw inviteError || new Error("No user data returned")
+                }
+
+                console.log(`[v0] Invited Supabase auth user for ${customerEmail}`)
+
+                const neonUser = await getOrCreateNeonUser(inviteData.user.id, customerEmail)
+                userId = neonUser.id
+                console.log(`[v0] Created Neon user ${userId} for ${customerEmail}`)
+
+                // Extract token from invite link for custom email
+                let passwordSetupLink = inviteData.properties?.action_link || `${productionUrl}/auth/setup-password`
+
+                if (passwordSetupLink.includes("localhost") || passwordSetupLink.includes("supabase.co")) {
+                  const url = new URL(passwordSetupLink)
+                  const token = url.searchParams.get("token")
+                  const type = url.searchParams.get("type") || "invite"
+
+                  if (token) {
+                    passwordSetupLink = `${productionUrl}/auth/confirm?token=${token}&type=${type}&redirect_to=/auth/setup-password`
+                  }
+                }
+
+                console.log(`[v0] Generated password setup link for ${customerEmail}`)
+
+                const productName = productType === "one_time_session" ? "ONE-TIME SESSION" : "CREDIT PACKAGE"
+
+                const emailContent = generateWelcomeEmail({
+                  customerName: customerEmail.split("@")[0],
+                  customerEmail: customerEmail,
+                  passwordSetupUrl: passwordSetupLink,
+                  creditsGranted: credits,
+                  packageName: productName,
+                })
+
+                console.log("[v0] Email content generated:", {
+                  hasHtml: !!emailContent.html,
+                  hasText: !!emailContent.text,
+                  htmlLength: emailContent.html?.length || 0,
+                  textLength: emailContent.text?.length || 0,
+                })
+
+                const emailResult = await sendEmail({
+                  to: customerEmail,
+                  subject: "Welcome to SSelfie! Set up your account",
+                  html: emailContent.html,
+                  text: emailContent.text,
+                  tags: ["welcome", "account-setup", "one-time-purchase"],
+                })
+
+                if (emailResult.success) {
+                  console.log(`[v0] Welcome email sent to ${customerEmail}, message ID: ${emailResult.messageId}`)
+
+                  await sql`
+                    INSERT INTO email_logs (
+                      user_email,
+                      email_type,
+                      resend_message_id,
+                      status,
+                      sent_at
+                    )
+                    VALUES (
+                      ${customerEmail},
+                      'welcome',
+                      ${emailResult.messageId},
+                      'sent',
+                      NOW()
+                    )
+                  `
+                } else {
+                  console.error(`[v0] Failed to send welcome email to ${customerEmail}: ${emailResult.error}`)
+
+                  await sql`
+                    INSERT INTO email_logs (
+                      user_email,
+                      email_type,
+                      status,
+                      error_message,
+                      sent_at
+                    )
+                    VALUES (
+                      ${customerEmail},
+                      'welcome',
+                      'failed',
+                      ${emailResult.error},
+                      NOW()
+                    )
+                  `
+                }
+
+                console.log(`[v0] Account created successfully for ${customerEmail}`)
+              } catch (error) {
+                console.error(`[v0] Error creating account for ${customerEmail}:`, error)
+                return NextResponse.json(
+                  {
+                    error: "Failed to create user account",
+                  },
+                  { status: 500 },
+                )
+              }
             } else {
-              console.error(`[v0] No user found for email ${customerEmail} - cannot process payment`)
+              console.error(
+                `[v0] No user found for email ${customerEmail} and not from landing page - cannot process payment`,
+              )
               return NextResponse.json(
                 {
                   error: "User not found for payment",
