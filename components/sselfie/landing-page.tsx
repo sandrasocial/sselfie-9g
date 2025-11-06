@@ -167,7 +167,7 @@ export default function LandingPage() {
           <Link
             href="/"
             className="text-xl sm:text-2xl font-light tracking-[0.25em] sm:tracking-[0.3em] uppercase text-white"
-            style={{ fontFamily: "Georgia, serif" }}
+            style={{ fontFamily: "'Times New Roman', Times, serif" }}
           >
             SSELFIE
           </Link>
@@ -276,7 +276,7 @@ export default function LandingPage() {
             <div className="text-left text-white max-w-4xl">
               <h1
                 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-light mb-3 sm:mb-4 md:mb-6 leading-tight tracking-tight"
-                style={{ fontFamily: "Georgia, serif" }}
+                style={{ fontFamily: "'Times New Roman', Times, serif" }}
               >
                 YOUR BRAND PHOTO STUDIO
               </h1>
@@ -299,7 +299,20 @@ export default function LandingPage() {
         </motion.div>
       </section>
 
-      <section ref={aboutContainer} className="relative py-20 sm:py-28 md:py-36 bg-stone-50 overflow-hidden">
+      {/* CHANGE: Add transformational quote section for emotional connection */}
+      <section className="py-16 sm:py-20 md:py-24 bg-stone-950">
+        <div className="max-w-4xl mx-auto px-6 sm:px-8 md:px-12 text-center">
+          <blockquote
+            className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-light leading-[1.3] text-stone-50 mb-6 sm:mb-8"
+            style={{ fontFamily: "'Times New Roman', Times, serif" }}
+          >
+            "I never imagined an AI photo could make me see myself this way."
+          </blockquote>
+          <p className="text-sm sm:text-base font-light tracking-wider uppercase text-stone-400">— SHANNON - MEMBER</p>
+        </div>
+      </section>
+
+      <section ref={aboutContainer} className="relative py-24 sm:py-32 md:py-40 bg-stone-50 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-12 md:gap-16 items-start">
             <motion.div style={{ y: aboutY }} className="relative hidden md:block">
@@ -318,12 +331,12 @@ export default function LandingPage() {
 
             <div className="space-y-4 sm:space-y-6 md:space-y-8">
               <div>
-                <p className="text-[10px] sm:text-xs md:text-sm font-light tracking-[0.25em] sm:tracking-[0.3em] uppercase text-stone-500 mb-3 sm:mb-4">
+                <p className="text-xs sm:text-sm md:text-sm font-light tracking-[0.25em] sm:tracking-[0.3em] uppercase text-stone-500 mb-4 sm:mb-6">
                   THE STORY
                 </p>
                 <h2
-                  className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-extralight mb-4 sm:mb-6 md:mb-8 leading-[1.1] tracking-tight"
-                  style={{ fontFamily: "'Times New Roman', serif" }}
+                  className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-light mb-6 sm:mb-8 md:mb-10 leading-[1.1] tracking-tight"
+                  style={{ fontFamily: "'Times New Roman', Times, serif" }}
                 >
                   Built from Nothing.
                   <br />
@@ -346,13 +359,13 @@ export default function LandingPage() {
               </div>
 
               <blockquote
-                className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-light leading-relaxed text-stone-900 border-l-2 border-stone-900 pl-4 sm:pl-6 my-6 sm:my-8"
-                style={{ fontFamily: "'Times New Roman', serif" }}
+                className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-light leading-relaxed text-stone-900 border-l-2 border-stone-900 pl-6 sm:pl-8 my-8 sm:my-10"
+                style={{ fontFamily: "'Times New Roman', Times, serif" }}
               >
                 "I built my business from nothing but selfies and a story."
               </blockquote>
 
-              <div className="space-y-3 sm:space-y-4 text-sm sm:text-base md:text-lg font-light leading-relaxed text-stone-700">
+              <div className="space-y-4 sm:space-y-5 text-base sm:text-lg md:text-xl font-light leading-relaxed text-stone-700">
                 <p>
                   Single mom of three. Divorced, broke, overwhelmed. I started by teaching women how to take better
                   selfies on Instagram, then shared my own story.
@@ -373,83 +386,83 @@ export default function LandingPage() {
 
       <InteractivePipelineShowcase />
 
-      <section className="py-20 sm:py-28 md:py-36 bg-stone-100">
+      <section className="py-24 sm:py-32 md:py-40 bg-stone-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-12 sm:mb-16">
-            <p className="text-[10px] sm:text-xs font-light tracking-[0.25em] sm:tracking-[0.3em] uppercase text-stone-500 mb-3 sm:mb-4">
+          <div className="text-center mb-16 sm:mb-20">
+            <p className="text-xs sm:text-sm md:text-sm font-light tracking-[0.25em] sm:tracking-[0.3em] uppercase text-stone-500 mb-4 sm:mb-6">
               WHO THIS IS FOR
             </p>
             <h2
-              className="text-xl sm:text-2xl md:text-3xl font-light tracking-[0.15em] sm:tracking-[0.2em] uppercase mb-6 sm:mb-8 text-stone-900"
-              style={{ fontFamily: "'Times New Roman', serif" }}
+              className="text-2xl sm:text-3xl md:text-4xl font-light tracking-[0.15em] sm:tracking-[0.2em] uppercase mb-8 sm:mb-10 text-stone-900"
+              style={{ fontFamily: "'Times New Roman', Times, serif" }}
             >
               This Is For You If...
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-10 max-w-6xl mx-auto">
-            <div className="space-y-4">
-              <p className="text-base sm:text-lg font-light text-stone-900 leading-relaxed">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 sm:gap-12 max-w-6xl mx-auto">
+            <div className="space-y-5">
+              <p className="text-lg sm:text-xl font-light text-stone-900 leading-relaxed">
                 You're building a personal brand but hate photoshoots
               </p>
-              <p className="text-sm sm:text-base font-light text-stone-600 leading-relaxed">
+              <p className="text-base sm:text-lg font-light text-stone-600 leading-relaxed">
                 You know you need professional photos, but the thought of hiring a photographer, planning outfits, and
                 posing for hours makes you want to hide.
               </p>
             </div>
 
-            <div className="space-y-4">
-              <p className="text-base sm:text-lg font-light text-stone-900 leading-relaxed">
+            <div className="space-y-5">
+              <p className="text-lg sm:text-xl font-light text-stone-900 leading-relaxed">
                 You're a coach or consultant who needs fresh content
               </p>
-              <p className="text-sm sm:text-base font-light text-stone-600 leading-relaxed">
+              <p className="text-base sm:text-lg font-light text-stone-600 leading-relaxed">
                 Your clients expect to see you showing up consistently. You need new photos every month, not the same
                 three headshots from 2022.
               </p>
             </div>
 
-            <div className="space-y-4">
-              <p className="text-base sm:text-lg font-light text-stone-900 leading-relaxed">
+            <div className="space-y-5">
+              <p className="text-lg sm:text-xl font-light text-stone-900 leading-relaxed">
                 You're tired of hiding behind stock photos
               </p>
-              <p className="text-sm sm:text-base font-light text-stone-600 leading-relaxed">
+              <p className="text-base sm:text-lg font-light text-stone-600 leading-relaxed">
                 Generic stock images don't represent you. You want photos that actually look like you and match your
                 brand—without the hassle.
               </p>
             </div>
           </div>
 
-          <div className="text-center mt-12 sm:mt-16 max-w-3xl mx-auto space-y-4 sm:space-y-6">
-            <p className="text-lg sm:text-xl md:text-2xl font-light leading-relaxed text-stone-900">
+          <div className="text-center mt-16 sm:mt-20 max-w-3xl mx-auto space-y-6 sm:space-y-8">
+            <p className="text-xl sm:text-2xl md:text-3xl font-light leading-relaxed text-stone-900">
               Don't let another month go by hiding behind stock photos.
             </p>
-            <p className="text-base sm:text-lg font-light leading-relaxed text-stone-700">
+            <p className="text-lg sm:text-xl font-light leading-relaxed text-stone-700">
               Your competitors are already showing up. Are you?
             </p>
           </div>
         </div>
       </section>
 
-      <section className="py-20 sm:py-28 md:py-36 bg-white">
+      <section className="py-24 sm:py-32 md:py-40 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-12 sm:mb-16">
-            <p className="text-[10px] sm:text-xs font-light tracking-[0.25em] sm:tracking-[0.3em] uppercase text-stone-500 mb-3 sm:mb-4">
+          <div className="text-center mb-16 sm:mb-20">
+            <p className="text-xs sm:text-sm md:text-sm font-light tracking-[0.25em] sm:tracking-[0.3em] uppercase text-stone-500 mb-4 sm:mb-6">
               WHY THIS MATTERS
             </p>
             <h2
-              className="text-xl sm:text-2xl md:text-3xl font-light tracking-[0.15em] sm:tracking-[0.2em] uppercase mb-6 sm:mb-8 text-stone-900"
-              style={{ fontFamily: "'Times New Roman', serif" }}
+              className="text-2xl sm:text-3xl md:text-4xl font-light tracking-[0.15em] sm:tracking-[0.2em] uppercase mb-8 sm:mb-10 text-stone-900"
+              style={{ fontFamily: "'Times New Roman', Times, serif" }}
             >
               Not Just Another AI Headshot Tool
             </h2>
-            <p className="text-sm sm:text-base md:text-lg font-light leading-relaxed text-stone-700 max-w-3xl mx-auto px-4 mb-8 sm:mb-12">
+            <p className="text-base sm:text-lg md:text-xl font-light leading-relaxed text-stone-700 max-w-3xl mx-auto px-4 mb-12 sm:mb-16">
               Most AI photo apps give you a one-time set of random portraits. That's it. But your brand needs more than
               that. You need fresh content every month, photos that match your vibe, and a consistent look across
               everything you post.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-12 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 sm:gap-16 max-w-5xl mx-auto">
             {/* Generic AI Headshot */}
             <div className="space-y-4 sm:space-y-6">
               <div className="relative aspect-[3/4] overflow-hidden">
@@ -522,19 +535,19 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section id="features" className="py-20 sm:py-28 md:py-36 bg-stone-50">
+      <section id="features" className="py-24 sm:py-32 md:py-40 bg-stone-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-12 sm:mb-16">
-            <p className="text-[10px] sm:text-xs font-light tracking-[0.25em] sm:tracking-[0.3em] uppercase text-stone-500 mb-3 sm:mb-4">
+          <div className="text-center mb-16 sm:mb-20">
+            <p className="text-xs sm:text-sm md:text-sm font-light tracking-[0.25em] sm:tracking-[0.3em] uppercase text-stone-500 mb-4 sm:mb-6">
               WHAT YOU GET
             </p>
             <h2
-              className="text-xl sm:text-2xl md:text-3xl font-light tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-900"
-              style={{ fontFamily: "'Times New Roman', serif" }}
+              className="text-2xl sm:text-3xl md:text-4xl font-light tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-900"
+              style={{ fontFamily: "'Times New Roman', Times, serif" }}
             >
               Everything You Need
             </h2>
-            <p className="text-sm sm:text-base md:text-lg font-light leading-relaxed text-stone-700 mt-4 sm:mt-6 max-w-2xl mx-auto px-4">
+            <p className="text-base sm:text-lg md:text-xl font-light leading-relaxed text-stone-700 mt-6 sm:mt-8 max-w-2xl mx-auto px-4">
               Stop hiding behind stock photos. Get everything you need to show up confident and build a brand that feels
               like you.
             </p>
@@ -544,49 +557,49 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section id="pricing" className="py-20 sm:py-28 md:py-36 bg-stone-100">
+      <section id="pricing" className="py-24 sm:py-32 md:py-40 bg-stone-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-12 sm:mb-16">
-            <p className="text-[10px] sm:text-xs font-light tracking-[0.25em] sm:tracking-[0.3em] uppercase text-stone-500 mb-3 sm:mb-4">
+          <div className="text-center mb-16 sm:mb-20">
+            <p className="text-xs sm:text-sm md:text-sm font-light tracking-[0.25em] sm:tracking-[0.3em] uppercase text-stone-500 mb-4 sm:mb-6">
               BETA PRICING
             </p>
             <h2
-              className="text-xl sm:text-2xl md:text-3xl font-light tracking-[0.15em] sm:tracking-[0.2em] uppercase mb-3 sm:mb-4 text-stone-900"
-              style={{ fontFamily: "'Times New Roman', serif" }}
+              className="text-2xl sm:text-3xl md:text-4xl font-light tracking-[0.15em] sm:tracking-[0.2em] uppercase mb-4 sm:mb-6 text-stone-900"
+              style={{ fontFamily: "'Times New Roman', Times, serif" }}
             >
               {stats.spotsRemaining} Spots Left
             </h2>
-            <p className="text-base sm:text-lg font-light text-stone-700 px-4 mb-2">
+            <p className="text-lg sm:text-xl font-light text-stone-700 px-4 mb-3">
               Lock in beta pricing forever. Limited spots available.
             </p>
-            <p className="text-sm font-light text-stone-600 px-4">
+            <p className="text-base font-light text-stone-600 px-4">
               Join {stats.waitlistCount.toLocaleString()} people on the waitlist
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 max-w-4xl mx-auto">
             <div className="bg-stone-50 rounded-2xl p-6 sm:p-8 border border-stone-200">
-              <p className="text-[10px] sm:text-xs font-light tracking-[0.25em] sm:tracking-[0.3em] uppercase text-stone-500 mb-2">
+              <p className="text-xs sm:text-sm font-light tracking-[0.25em] sm:tracking-[0.3em] uppercase text-stone-500 mb-2">
                 ONE-TIME SESSION
               </p>
-              <div className="mb-4 sm:mb-6">
+              <div className="mb-6 sm:mb-8">
                 <div className="flex items-baseline gap-2">
                   <span
-                    className="text-4xl sm:text-5xl font-extralight"
-                    style={{ fontFamily: "'Times New Roman', serif" }}
+                    className="text-5xl sm:text-6xl font-light"
+                    style={{ fontFamily: "'Times New Roman', Times, serif" }}
                   >
                     $24.50
                   </span>
-                  <span className="text-sm sm:text-base text-stone-500 line-through">$49</span>
+                  <span className="text-base sm:text-lg text-stone-500 line-through">$49</span>
                 </div>
-                <p className="text-xs sm:text-sm font-light text-stone-600 mt-1">one-time • 50 credits</p>
+                <p className="text-sm sm:text-base font-light text-stone-600 mt-2">one-time • 50 credits</p>
               </div>
-              <div className="space-y-2 sm:space-y-3 mb-6 sm:mb-8">
-                <p className="text-sm sm:text-base font-light text-stone-700">
+              <div className="space-y-3 sm:space-y-4 mb-8 sm:mb-10">
+                <p className="text-base sm:text-lg font-light text-stone-700">
                   Trained model that looks exactly like you
                 </p>
-                <p className="text-sm sm:text-base font-light text-stone-700">Basic Maya AI assistant</p>
-                <p className="text-sm sm:text-base font-light text-stone-700">Perfect for testing</p>
+                <p className="text-base sm:text-lg font-light text-stone-700">Basic Maya AI assistant</p>
+                <p className="text-base sm:text-lg font-light text-stone-700">Perfect for testing</p>
               </div>
               <button
                 onClick={() => handleStartCheckout("one_time_session")}
@@ -603,29 +616,29 @@ export default function LandingPage() {
                   Best for building a brand
                 </p>
               </div>
-              <p className="text-[10px] sm:text-xs font-light tracking-[0.25em] sm:tracking-[0.3em] uppercase text-stone-400 mb-2 mt-2">
+              <p className="text-xs sm:text-sm font-light tracking-[0.25em] sm:tracking-[0.3em] uppercase text-stone-400 mb-2 mt-2">
                 STUDIO MEMBERSHIP
               </p>
-              <div className="mb-4 sm:mb-6">
+              <div className="mb-6 sm:mb-8">
                 <div className="flex items-baseline gap-2">
                   <span
-                    className="text-4xl sm:text-5xl font-extralight"
-                    style={{ fontFamily: "'Times New Roman', serif" }}
+                    className="text-5xl sm:text-6xl font-light"
+                    style={{ fontFamily: "'Times New Roman', Times, serif" }}
                   >
                     $49.50
                   </span>
-                  <span className="text-sm sm:text-base text-stone-400 line-through">$99</span>
+                  <span className="text-base sm:text-lg text-stone-400 line-through">$99</span>
                 </div>
-                <p className="text-xs sm:text-sm font-light text-stone-300 mt-1">per month • 100 credits/month</p>
+                <p className="text-sm sm:text-base font-light text-stone-300 mt-2">per month • 100 credits/month</p>
               </div>
-              <div className="space-y-2 sm:space-y-3 mb-6 sm:mb-8">
-                <p className="text-sm sm:text-base font-light text-stone-100">
+              <div className="space-y-3 sm:space-y-4 mb-8 sm:mb-10">
+                <p className="text-base sm:text-lg font-light text-stone-100">
                   Trained model that looks exactly like you
                 </p>
-                <p className="text-sm sm:text-base font-light text-stone-100">Full Maya AI assistant access</p>
-                <p className="text-sm sm:text-base font-light text-stone-100">Complete Brand Academy</p>
-                <p className="text-sm sm:text-base font-light text-stone-100">Instagram feed designer</p>
-                <p className="text-sm sm:text-base font-light text-stone-100">Monthly content strategy</p>
+                <p className="text-base sm:text-lg font-light text-stone-100">Full Maya AI assistant access</p>
+                <p className="text-base sm:text-lg font-light text-stone-100">Complete Brand Academy</p>
+                <p className="text-base sm:text-lg font-light text-stone-100">Instagram feed designer</p>
+                <p className="text-base sm:text-lg font-light text-stone-100">Monthly content strategy</p>
               </div>
               <button
                 onClick={() => handleStartCheckout("sselfie_studio_membership")}
@@ -637,54 +650,54 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="text-center mt-8 sm:mt-10 space-y-3">
-            <p className="text-sm sm:text-base font-light text-stone-900">
+          <div className="text-center mt-10 sm:mt-12 space-y-4">
+            <p className="text-base sm:text-lg font-light text-stone-900">
               <strong className="font-medium">30-Day Money-Back Guarantee</strong>
             </p>
-            <p className="text-xs sm:text-sm font-light text-stone-600 px-4">
+            <p className="text-sm sm:text-base font-light text-stone-600 px-4">
               Beta pricing locked in forever • Cancel anytime • Add credits anytime
             </p>
           </div>
         </div>
       </section>
 
-      <footer className="bg-stone-100 border-t border-stone-200 py-8 sm:py-12 pb-32 sm:pb-36">
+      <footer className="bg-stone-100 border-t border-stone-200 py-12 sm:py-16 pb-36 sm:pb-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8 mb-6 sm:mb-8">
             <div>
               <Link
                 href="/"
-                className="text-lg sm:text-xl font-extralight tracking-[0.25em] sm:tracking-[0.3em] uppercase mb-3 sm:mb-4 block"
-                style={{ fontFamily: "'Times New Roman', serif" }}
+                className="text-xl sm:text-2xl font-light tracking-[0.25em] sm:tracking-[0.3em] uppercase mb-4 sm:mb-6 block"
+                style={{ fontFamily: "'Times New Roman', Times, serif" }}
               >
                 SSELFIE
               </Link>
-              <p className="text-xs sm:text-sm font-light text-stone-600 leading-relaxed">
+              <p className="text-sm sm:text-base font-light text-stone-600 leading-relaxed">
                 Professional brand photos every month. No photographer needed. Built by Sandra, a single mom who turned
                 selfies into a business.
               </p>
             </div>
 
             <div>
-              <h3 className="text-[10px] sm:text-xs font-light tracking-[0.25em] sm:tracking-[0.3em] uppercase text-stone-500 mb-3 sm:mb-4">
+              <h3 className="text-xs sm:text-sm font-light tracking-[0.25em] sm:tracking-[0.3em] uppercase text-stone-500 mb-4 sm:mb-6">
                 QUICK LINKS
               </h3>
-              <div className="flex flex-col gap-2 sm:gap-3">
+              <div className="flex flex-col gap-3 sm:gap-4">
                 <Link
                   href="/privacy"
-                  className="text-xs sm:text-sm font-light tracking-wider uppercase text-stone-600 hover:text-stone-950 transition-colors"
+                  className="text-sm sm:text-base font-light tracking-wider uppercase text-stone-600 hover:text-stone-950 transition-colors"
                 >
                   PRIVACY
                 </Link>
                 <Link
                   href="/terms"
-                  className="text-xs sm:text-sm font-light tracking-wider uppercase text-stone-600 hover:text-stone-950 transition-colors"
+                  className="text-sm sm:text-base font-light tracking-wider uppercase text-stone-600 hover:text-stone-950 transition-colors"
                 >
                   TERMS
                 </Link>
                 <Link
                   href="/auth/sign-up"
-                  className="text-xs sm:text-sm font-light tracking-wider uppercase text-stone-600 hover:text-stone-950 transition-colors"
+                  className="text-sm sm:text-base font-light tracking-wider uppercase text-stone-600 hover:text-stone-950 transition-colors"
                 >
                   SIGN UP
                 </Link>
@@ -692,13 +705,13 @@ export default function LandingPage() {
             </div>
 
             <div>
-              <h3 className="text-[10px] sm:text-xs font-light tracking-[0.25em] sm:tracking-[0.3em] uppercase text-stone-500 mb-3 sm:mb-4">
+              <h3 className="text-xs sm:text-sm font-light tracking-[0.25em] sm:tracking-[0.3em] uppercase text-stone-500 mb-4 sm:mb-6">
                 CONNECT
               </h3>
-              <div className="flex flex-col gap-2 sm:gap-3">
+              <div className="flex flex-col gap-3 sm:gap-4">
                 <a
                   href="mailto:hello@sselfie.ai"
-                  className="text-xs sm:text-sm font-light text-stone-600 hover:text-stone-950 transition-colors"
+                  className="text-sm sm:text-base font-light text-stone-600 hover:text-stone-950 transition-colors"
                 >
                   hello@sselfie.ai
                 </a>
@@ -706,26 +719,26 @@ export default function LandingPage() {
                   href="https://instagram.com/sandra.social"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs sm:text-sm font-light text-stone-600 hover:text-stone-950 transition-colors flex items-center gap-2"
+                  className="text-sm sm:text-base font-light text-stone-600 hover:text-stone-950 transition-colors flex items-center gap-2"
                 >
                   <span>Instagram</span>
-                  <span className="text-[10px] sm:text-xs">@sandra.social</span>
+                  <span className="text-xs sm:text-sm">@sandra.social</span>
                 </a>
                 <a
                   href="https://tiktok.com/@sandra.social"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs sm:text-sm font-light text-stone-600 hover:text-stone-950 transition-colors flex items-center gap-2"
+                  className="text-sm sm:text-base font-light text-stone-600 hover:text-stone-950 transition-colors flex items-center gap-2"
                 >
                   <span>TikTok</span>
-                  <span className="text-[10px] sm:text-xs">@sandra.social</span>
+                  <span className="text-xs sm:text-sm">@sandra.social</span>
                 </a>
               </div>
             </div>
           </div>
 
-          <div className="border-t border-stone-200 pt-6 sm:pt-8">
-            <p className="text-center text-[10px] sm:text-xs font-light text-stone-500">
+          <div className="border-t border-stone-200 pt-8 sm:pt-10">
+            <p className="text-center text-xs sm:text-sm font-light text-stone-500">
               © 2025 SSELFIE. All rights reserved. Made with love by Sandra.
             </p>
           </div>
@@ -733,23 +746,23 @@ export default function LandingPage() {
       </footer>
 
       {showStickyFooter && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-stone-950 text-stone-50 py-3 sm:py-4 shadow-lg animate-in slide-in-from-bottom duration-300">
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-stone-950 text-stone-50 py-4 sm:py-5 shadow-lg animate-in slide-in-from-bottom duration-300">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0">
             <div className="text-center sm:text-left">
               <p
-                className="text-base sm:text-lg font-light tracking-[0.15em] sm:tracking-[0.2em] uppercase"
-                style={{ fontFamily: "'Times New Roman', serif" }}
+                className="text-lg sm:text-xl font-light tracking-[0.15em] sm:tracking-[0.2em] uppercase"
+                style={{ fontFamily: "'Times New Roman', Times, serif" }}
               >
                 Join The Beta
               </p>
-              <p className="text-[10px] sm:text-xs font-light text-stone-400">
+              <p className="text-xs sm:text-sm font-light text-stone-400">
                 {stats.spotsRemaining} spots left • Beta closes in {stats.daysUntilClose} days
               </p>
             </div>
             <a
               href="#pricing"
               onClick={scrollToPricing}
-              className="bg-stone-50 text-stone-950 px-6 sm:px-8 py-2.5 sm:py-3 rounded-lg text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-100 transition-all duration-200 min-h-[44px] flex items-center"
+              className="bg-stone-50 text-stone-950 px-8 sm:px-10 py-3 sm:py-3.5 rounded-lg text-sm font-medium uppercase tracking-wider hover:bg-stone-100 transition-all duration-200 min-h-[44px] flex items-center"
             >
               SEE PRICING
             </a>
