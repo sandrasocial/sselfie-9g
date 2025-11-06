@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getCoursesForMembership } from "@/lib/data/academy"
-import { getUserProductAccess } from "@/lib/subscription"
+import { getUserProductAccess, hasStudioMembership } from "@/lib/subscription"
 
 export async function GET() {
   try {
@@ -29,18 +29,29 @@ export async function GET() {
 
     console.log("[v0] Fetching courses for user:", neonUser.id)
 
-    const productAccess = await getUserProductAccess(neonUser.id)
-    console.log("[v0] User product access:", productAccess)
+    const hasAccess = await hasStudioMembership(neonUser.id)
+    const productType = await getUserProductAccess(neonUser.id)
+
+    console.log("[v0] User has Academy access:", hasAccess, "Product type:", productType)
+
+    if (!hasAccess) {
+      return NextResponse.json({
+        courses: [],
+        hasAccess: false,
+        productType,
+        message: "Academy access requires Studio Membership",
+      })
+    }
 
     // Get courses available for user's membership
-    const courses = await getCoursesForMembership(productAccess.hasMembership)
+    const courses = await getCoursesForMembership()
 
-    console.log("[v0] Found", courses.length, "courses for membership:", productAccess.hasMembership)
+    console.log("[v0] Found", courses.length, "courses for Studio Membership")
 
     return NextResponse.json({
       courses,
-      hasMembership: productAccess.hasMembership,
-      productType: productAccess.productType,
+      hasAccess: true,
+      productType,
     })
   } catch (error) {
     console.error("[v0] Error fetching courses:", error)

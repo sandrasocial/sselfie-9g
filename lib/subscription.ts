@@ -87,6 +87,14 @@ export async function getUserProductAccess(userId: string): Promise<ProductType 
 }
 
 /**
+ * Check if user has access to Academy content
+ * Only Studio Membership users have access
+ */
+export async function hasAcademyAccess(userId: string): Promise<boolean> {
+  return await hasStudioMembership(userId)
+}
+
+/**
  * @deprecated Use getUserProductAccess() instead
  * Backward compatibility function for old tier-based system
  * Maps product types to legacy tier names

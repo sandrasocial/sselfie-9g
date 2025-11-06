@@ -1,7 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { getCourseWithLessons, getUserCourseProgress } from "@/lib/data/academy"
+import { getCourseWithLessons, getUserCourseProgress, enrollUserInCourse } from "@/lib/data/academy"
+import { hasStudioMembership } from "@/lib/subscription"
 
 export async function GET(req: NextRequest, { params }: { params: { courseId: string } }) {
   try {
@@ -26,6 +27,19 @@ export async function GET(req: NextRequest, { params }: { params: { courseId: st
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
+    const hasAccess = await hasStudioMembership(neonUser.id)
+
+    if (!hasAccess) {
+      console.log("[v0] User does not have Academy access")
+      return NextResponse.json(
+        {
+          error: "Academy access requires Studio Membership",
+          hasAccess: false,
+        },
+        { status: 403 },
+      )
+    }
+
     // Get course with lessons
     const course = await getCourseWithLessons(Number.parseInt(courseId))
 
@@ -33,11 +47,23 @@ export async function GET(req: NextRequest, { params }: { params: { courseId: st
       return NextResponse.json({ error: "Course not found" }, { status: 404 })
     }
 
+    await enrollUserInCourse(neonUser.id, Number.parseInt(courseId))
+
     // Get user's progress for this course
     const progressData = await getUserCourseProgress(neonUser.id.toString(), Number.parseInt(courseId))
 
+    const lessonsWithProgress = course.lessons?.map((lesson) => {
+      const lessonProgress = progressData?.lessonProgress?.find((lp: any) => lp.lesson_id === lesson.id)
+      return {
+        ...lesson,
+        is_completed: lessonProgress?.status === "completed",
+        is_locked: false, // All lessons unlocked for Studio members
+      }
+    })
+
     const enrichedCourse = {
       ...course,
+      lessons: lessonsWithProgress,
       progress_percentage: progressData?.enrollment?.progress_percentage ?? 0,
       completed_lessons: progressData?.lessonProgress?.filter((lp: any) => lp.status === "completed").length ?? 0,
       lesson_count: course.lessons?.length ?? 0,

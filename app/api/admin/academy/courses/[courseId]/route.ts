@@ -25,7 +25,7 @@ export async function PATCH(request: Request, { params }: { params: { courseId: 
     }
 
     const { courseId } = params
-    const { title, description, thumbnail_url, tier, order_index, status } = await request.json()
+    const { title, description, thumbnail_url, order_index, status } = await request.json()
 
     const updatedCourse = await sql`
       UPDATE academy_courses
@@ -33,7 +33,6 @@ export async function PATCH(request: Request, { params }: { params: { courseId: 
         title = COALESCE(${title}, title),
         description = COALESCE(${description}, description),
         thumbnail_url = COALESCE(${thumbnail_url}, thumbnail_url),
-        tier = COALESCE(${tier}, tier),
         order_index = COALESCE(${order_index}, order_index),
         status = COALESCE(${status}, status),
         updated_at = NOW()

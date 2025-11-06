@@ -214,7 +214,6 @@ export default function CourseDetail({ courseId, onBack }: CourseDetailProps) {
             {course.instructor_name && <span>By {course.instructor_name}</span>}
             <span>{formatTotalDuration(course.total_duration)}</span>
             <span>{course.lesson_count} Lessons</span>
-            <span className="capitalize">{course.tier} Tier</span>
           </div>
 
           {/* Progress Bar */}

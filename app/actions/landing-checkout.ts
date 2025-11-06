@@ -74,6 +74,8 @@ export async function createLandingCheckoutSession(productId: string) {
   return session.url
 }
 
+export const createLandingCheckout = createLandingCheckoutSession
+
 /**
  * Get checkout session details for success page
  */
