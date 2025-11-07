@@ -32,7 +32,7 @@ export function getReplicateClient() {
 
 // Flux LoRA training model - using fast-flux-trainer (May 2025 release)
 export const FLUX_LORA_TRAINER = "replicate/fast-flux-trainer"
-export const FLUX_LORA_TRAINER_VERSION = "e43bd8427cbb0eff747be5c5d62de7f62009ba5c"
+export const FLUX_LORA_TRAINER_VERSION = "56cb4a64"
 
 // Default training parameters - optimized for portrait quality and likeness
 export const DEFAULT_TRAINING_PARAMS = {
