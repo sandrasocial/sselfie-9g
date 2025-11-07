@@ -183,7 +183,7 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
       })
 
       if (response.ok) {
-        window.location.href = "/login"
+        window.location.href = "/auth/login"
       } else {
         console.error("[v0] Logout failed")
         setIsLoggingOut(false)

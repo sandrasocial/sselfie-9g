@@ -1186,25 +1186,25 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploadingImage || isTyping}
-                className="w-9 h-9 bg-stone-950 rounded-lg flex items-center justify-center shadow-lg shadow-stone-950/30 transition-all duration-300 min-w-[40px] min-h-[40px] disabled:opacity-50"
+                className="w-10 h-10 bg-stone-950 rounded-lg flex items-center justify-center hover:bg-stone-800 active:scale-95 shadow-lg shadow-stone-950/30 transition-all duration-300 disabled:opacity-50"
                 aria-label="Attach image"
                 type="button"
               >
                 {isUploadingImage ? (
                   <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
-                  <Camera size={14} className="text-white" strokeWidth={2.5} />
+                  <Camera size={16} className="text-white" strokeWidth={2} />
                 )}
               </button>
             </div>
           </div>
           <button
             onClick={() => handleSendMessage()}
-            className="px-4 py-3 bg-stone-950 text-white rounded-xl font-semibold transition-all duration-300 hover:shadow-xl hover:shadow-stone-950/40 disabled:opacity-50 min-h-[48px] min-w-[48px] flex items-center justify-center hover:scale-105 active:scale-95"
+            className="w-10 h-10 bg-stone-950 text-white rounded-lg flex items-center justify-center hover:bg-stone-800 active:scale-95 shadow-lg shadow-stone-950/30 transition-all duration-300 disabled:opacity-50"
             disabled={isTyping || (!inputValue.trim() && !uploadedImage) || isUploadingImage}
             aria-label="Send message"
           >
-            <Send size={16} strokeWidth={2.5} />
+            <Send size={16} strokeWidth={2} />
           </button>
         </div>
       </div>

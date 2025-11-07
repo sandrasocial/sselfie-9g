@@ -15,15 +15,16 @@ export function InstallPrompt() {
   const [isInstalled, setIsInstalled] = useState(false)
   const [isIOS, setIsIOS] = useState(false)
   const [showIOSInstructions, setShowIOSInstructions] = useState(false)
+  const [isWaitingForPrompt, setIsWaitingForPrompt] = useState(true)
 
   useEffect(() => {
-    // Check if already installed
     const isStandalone =
       window.matchMedia("(display-mode: standalone)").matches || (window.navigator as any).standalone === true
     console.log("[v0] Install prompt - Is standalone:", isStandalone)
 
     if (isStandalone) {
       setIsInstalled(true)
+      setIsWaitingForPrompt(false)
       return
     }
 
@@ -31,7 +32,6 @@ export function InstallPrompt() {
     const iOS = /iphone|ipad|ipod/.test(userAgent)
     setIsIOS(iOS)
 
-    // Check if dismissed recently
     const dismissed = localStorage.getItem("installPromptDismissed")
     if (dismissed) {
       const dismissedTime = Number.parseInt(dismissed)
@@ -39,11 +39,13 @@ export function InstallPrompt() {
       console.log("[v0] Install prompt - Days since dismissed:", daysSinceDismissed)
       if (daysSinceDismissed < 7) {
         console.log("[v0] Install prompt - Dismissed recently, not showing")
+        setIsWaitingForPrompt(false)
         return
       }
     }
 
     if (iOS) {
+      setIsWaitingForPrompt(false)
       const timer = setTimeout(() => {
         console.log("[v0] Install prompt - Showing iOS prompt after delay")
         setShowPrompt(true)
@@ -56,6 +58,7 @@ export function InstallPrompt() {
       e.preventDefault()
       setDeferredPrompt(e as BeforeInstallPromptEvent)
       setShowPrompt(true)
+      setIsWaitingForPrompt(false)
     }
 
     window.addEventListener("beforeinstallprompt", handler)
@@ -67,12 +70,23 @@ export function InstallPrompt() {
       setDeferredPrompt(null)
     })
 
+    const timeout = setTimeout(() => {
+      if (!deferredPrompt) {
+        console.log(
+          "[v0] Install prompt - No beforeinstallprompt event after 3s, likely already installed or not supported",
+        )
+        setIsWaitingForPrompt(false)
+        setShowPrompt(false)
+      }
+    }, 3000)
+
     console.log("[v0] Install prompt - Waiting for beforeinstallprompt event...")
     console.log("[v0] Install prompt - HTTPS:", window.location.protocol === "https:")
     console.log("[v0] Install prompt - Service Worker support:", "serviceWorker" in navigator)
 
     return () => {
       window.removeEventListener("beforeinstallprompt", handler)
+      clearTimeout(timeout)
     }
   }, [])
 
@@ -166,9 +180,11 @@ export function InstallPrompt() {
               <div>
                 <h3 className="font-semibold text-sm">Install SSELFIE</h3>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {isIOS
-                    ? "Add to your home screen for the best experience"
-                    : "Add to your home screen for quick access and offline use"}
+                  {deferredPrompt
+                    ? "Install with one tap for the best experience"
+                    : isIOS
+                      ? "Add to your home screen for the best experience"
+                      : "Add to your home screen for quick access"}
                 </p>
               </div>
               <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={handleDismiss}>
@@ -177,7 +193,7 @@ export function InstallPrompt() {
             </div>
             <div className="flex gap-2">
               <Button size="sm" onClick={handleInstall} className="flex-1">
-                {deferredPrompt ? "Install" : isIOS ? "Show Instructions" : "Install"}
+                {deferredPrompt ? "Install Now" : "Show Instructions"}
               </Button>
               <Button size="sm" variant="outline" onClick={handleDismiss}>
                 Not now
