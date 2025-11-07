@@ -25,39 +25,54 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
 
   useEffect(() => {
     if (!initialUserInfo && initialEmail) {
-      console.log("[v0] Starting user polling...")
+      console.log("[v0] Starting user polling for email:", initialEmail)
       let attempts = 0
       const MAX_ATTEMPTS = 10
 
       const pollInterval = setInterval(async () => {
         attempts++
-        console.log(`[v0] Polling for user creation (attempt ${attempts}/${MAX_ATTEMPTS})`)
+        console.log(`[v0] Polling attempt ${attempts}/${MAX_ATTEMPTS}`)
 
         try {
           const response = await fetch(`/api/user-by-email?email=${encodeURIComponent(initialEmail)}`)
+
+          if (!response.ok) {
+            console.error("[v0] API error:", response.status, response.statusText)
+            throw new Error(`API returned ${response.status}`)
+          }
+
           const data = await response.json()
+          console.log("[v0] Poll response:", data)
 
           if (data.userInfo) {
-            console.log("[v0] User found, updating UI")
+            console.log("[v0] User found! Email:", data.userInfo.email)
             setUserInfo(data.userInfo)
             setLoading(false)
             clearInterval(pollInterval)
           } else if (attempts >= MAX_ATTEMPTS) {
-            console.log("[v0] Max attempts reached, showing pending state")
+            console.log("[v0] Max polling attempts reached, showing pending")
             setLoading(false)
             clearInterval(pollInterval)
           }
         } catch (err) {
-          console.error("[v0] Error polling for user:", err)
+          console.error("[v0] Polling error:", err)
           if (attempts >= MAX_ATTEMPTS) {
+            console.log("[v0] Max attempts reached after error")
             setLoading(false)
             clearInterval(pollInterval)
           }
         }
       }, 2000) // Poll every 2 seconds
 
-      return () => clearInterval(pollInterval)
+      return () => {
+        console.log("[v0] Cleaning up polling interval")
+        clearInterval(pollInterval)
+      }
     } else if (initialUserInfo) {
+      console.log("[v0] Initial user info already present, skipping polling")
+      setLoading(false)
+    } else {
+      console.log("[v0] No initial email, showing pending state")
       setLoading(false)
     }
   }, [initialEmail, initialUserInfo])
