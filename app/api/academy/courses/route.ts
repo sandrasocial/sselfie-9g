@@ -39,6 +39,7 @@ export async function GET() {
         courses: [],
         hasAccess: false,
         productType,
+        userTier: productType || "free",
         message: "Academy access requires Studio Membership",
       })
     }
@@ -52,6 +53,7 @@ export async function GET() {
       courses,
       hasAccess: true,
       productType,
+      userTier: productType || "free",
     })
   } catch (error) {
     console.error("[v0] Error fetching courses:", error)

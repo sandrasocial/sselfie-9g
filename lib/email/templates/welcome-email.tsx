@@ -70,10 +70,10 @@ export function generateWelcomeEmail(params: WelcomeEmailParams): {
                           <table role="presentation" style="width: 100%;">
                             <tr>
                               <td style="color: #78716c; font-size: 13px; font-weight: 300;">
-                                Email
+                                ${packageName}
                               </td>
                               <td align="right" style="color: #1c1917; font-size: 14px; font-weight: 400;">
-                                ${customerEmail}
+                                ${creditsGranted} credits
                               </td>
                             </tr>
                           </table>
@@ -126,7 +126,7 @@ ORDER SUMMARY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Credits Purchased: ${creditsGranted} credits
-Email: ${customerEmail}
+${packageName}: ${creditsGranted} credits
 
 Start creating: ${process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"}/studio
 
@@ -232,10 +232,10 @@ XoXo Sandra 💋
                           <table role="presentation" style="width: 100%;">
                             <tr>
                               <td style="color: #78716c; font-size: 13px; font-weight: 300;">
-                                Email
+                                ${packageName}
                               </td>
                               <td align="right" style="color: #1c1917; font-size: 14px; font-weight: 400;">
-                                ${customerEmail}
+                                ${creditsGranted} credits
                               </td>
                             </tr>
                           </table>
@@ -350,7 +350,6 @@ YOUR ORDER
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ${packageName}: ${creditsGranted} credits
-Email: ${customerEmail}
 
 WHAT'S NEXT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

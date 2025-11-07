@@ -505,7 +505,8 @@ export async function POST(request: NextRequest) {
                   customerEmail: customerEmail,
                   creditsGranted: creditsGranted,
                   packageName: productName,
-                  productType: productType === "one_time_session" ? "one_time_purchase" : "credit_topup",
+                  productType:
+                    productType === "sselfie_studio_membership" ? "sselfie_studio_membership" : "one_time_session",
                 })
 
                 console.log("[v0] Email content generated:", {
