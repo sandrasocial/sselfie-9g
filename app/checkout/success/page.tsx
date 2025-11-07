@@ -5,12 +5,13 @@ import { getUserByEmail } from "@/app/actions/landing-checkout"
 export default async function CheckoutSuccessPage({
   searchParams,
 }: {
-  searchParams: { session_id?: string; email?: string; type?: string }
+  searchParams: Promise<{ session_id?: string; email?: string; type?: string }>
 }) {
+  const params = await searchParams
   let userInfo = null
 
-  if (searchParams.email) {
-    userInfo = await getUserByEmail(searchParams.email)
+  if (params.email) {
+    userInfo = await getUserByEmail(params.email)
   }
 
   return (
@@ -25,7 +26,7 @@ export default async function CheckoutSuccessPage({
         </div>
       }
     >
-      <SuccessContent initialUserInfo={userInfo} initialEmail={searchParams.email} purchaseType={searchParams.type} />
+      <SuccessContent initialUserInfo={userInfo} initialEmail={params.email} purchaseType={params.type} />
     </Suspense>
   )
 }
