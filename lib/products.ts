@@ -61,21 +61,32 @@ export const PRICING_PRODUCTS: PricingProduct[] = [
     name: "One-Time SSELFIE Session",
     displayName: "One-Time Session",
     description: "Try one professional AI photoshoot. No subscription, just a one-time session.",
-    priceInCents: 4900,
+    priceInCents: 2500, // Beta price
     type: "one_time_session",
-    credits: 50,
+    credits: 70, // Increased from 50 to 70
   },
   {
     id: "sselfie_studio_membership",
     name: "SSELFIE Studio Membership",
     displayName: "Studio Membership",
     description: "Join the Studio for new photos, fresh tools, and monthly brand drops.",
-    priceInCents: 9900,
+    priceInCents: 4900, // Beta price
     type: "sselfie_studio_membership",
-    credits: 250,
+    credits: 150, // Reduced from 250 to 150 (monthly)
     popular: true,
   },
 ]
+
+export const ORIGINAL_PRICING = {
+  one_time_session: {
+    priceInCents: 4900, // Original $49
+    credits: 70,
+  },
+  sselfie_studio_membership: {
+    priceInCents: 9900, // Original $99
+    credits: 150,
+  },
+} as const
 
 export function getProductById(productId: string): PricingProduct | undefined {
   return PRICING_PRODUCTS.find((p) => p.id === productId)

@@ -60,14 +60,18 @@ async function retryWithBackoff<T>(fn: () => Promise<T>, maxRetries = 3, baseDel
  * Get or create a Neon database user linked to a Supabase auth user
  * Maps users by email address
  */
-export async function getOrCreateNeonUser(supabaseAuthId: string, email: string, name?: string): Promise<NeonUser> {
+export async function getOrCreateNeonUser(
+  supabaseAuthId: string,
+  email: string,
+  name?: string | null, // Allow null to explicitly set no display_name
+): Promise<NeonUser> {
   try {
     const existingUsers = await retryWithBackoff(
       () => sql`
       SELECT * FROM users WHERE email = ${email} LIMIT 1
     `,
-      5, // Increased max retries for user operations
-      2000, // Increased base delay
+      5,
+      2000,
     )
 
     if (existingUsers.length > 0) {
@@ -87,12 +91,14 @@ export async function getOrCreateNeonUser(supabaseAuthId: string, email: string,
       return user
     }
 
-    const userId = crypto.randomUUID()
+    const userId = globalThis.crypto.randomUUID()
+
+    const displayName = name === null || name === undefined ? null : name
 
     const newUsers = await retryWithBackoff(
       () => sql`
       INSERT INTO users (id, email, display_name, supabase_user_id, created_at, updated_at)
-      VALUES (${userId}, ${email}, ${name || email.split("@")[0]}, ${supabaseAuthId}, NOW(), NOW())
+      VALUES (${userId}, ${email}, ${displayName}, ${supabaseAuthId}, NOW(), NOW())
       RETURNING *
     `,
       5,

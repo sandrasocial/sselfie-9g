@@ -5,7 +5,7 @@ import { createTrainingModel } from "@/lib/data/training"
 import { getReplicateClient, FLUX_LORA_TRAINER, DEFAULT_TRAINING_PARAMS } from "@/lib/replicate-client"
 import { createTrainingZip } from "@/lib/storage"
 import { neon } from "@neondatabase/serverless"
-import { checkCredits, deductCredits, CREDIT_COSTS } from "@/lib/credits"
+import { checkCredits, deductCredits, getUserCredits, CREDIT_COSTS } from "@/lib/credits"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -37,11 +37,20 @@ export async function POST(request: Request) {
 
     const hasEnoughCredits = await checkCredits(neonUser.id, CREDIT_COSTS.TRAINING)
     if (!hasEnoughCredits) {
+      const currentBalance = await getUserCredits(neonUser.id)
+      console.log("[v0] [TRAINING] ❌ Insufficient credits:", {
+        userId: neonUser.id,
+        currentBalance,
+        required: CREDIT_COSTS.TRAINING,
+        shortfall: CREDIT_COSTS.TRAINING - currentBalance,
+      })
+
       return NextResponse.json(
         {
           error: "Insufficient credits",
           required: CREDIT_COSTS.TRAINING,
-          message: `Training requires ${CREDIT_COSTS.TRAINING} credits. Please purchase more credits or upgrade your plan.`,
+          current: currentBalance,
+          message: `Training requires ${CREDIT_COSTS.TRAINING} credits. You currently have ${currentBalance} credits. Please purchase more credits or upgrade your plan.`,
         },
         { status: 402 },
       )
@@ -82,6 +91,9 @@ export async function POST(request: Request) {
 
       await deductCredits(neonUser.id, CREDIT_COSTS.TRAINING, "training", `Training model: ${modelName}`)
       console.log("[v0] Deducted", CREDIT_COSTS.TRAINING, "credits for training")
+
+      const finalBalance = await getUserCredits(neonUser.id)
+      console.log("[v0] [TRAINING] Training started. Credits remaining:", finalBalance)
 
       // Start training
       const training = await replicate.trainings.create(

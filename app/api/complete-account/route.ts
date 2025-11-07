@@ -14,9 +14,8 @@ export async function POST(request: NextRequest) {
 
     console.log("[v0] Complete account request for:", email)
 
-    // Check if user exists in database
     const users = await sql`
-      SELECT id FROM users WHERE email = ${email} LIMIT 1
+      SELECT id, supabase_user_id FROM users WHERE email = ${email} LIMIT 1
     `
 
     if (users.length === 0) {
@@ -24,20 +23,25 @@ export async function POST(request: NextRequest) {
     }
 
     const userId = users[0].id
+    const supabaseUserId = users[0].supabase_user_id
 
-    // Update user name in database
+    if (!supabaseUserId) {
+      console.error("[v0] No Supabase user ID found for user")
+      return NextResponse.json({ error: "Account setup incomplete. Please contact support." }, { status: 500 })
+    }
+
+    // Update display name in Neon database
     await sql`
       UPDATE users 
-      SET name = ${name}, updated_at = NOW()
+      SET display_name = ${name}, updated_at = NOW()
       WHERE id = ${userId}
     `
 
-    console.log("[v0] Updated user name in database")
+    console.log("[v0] Updated user display name in database")
 
     const supabaseAdmin = createAdminClient()
 
-    // Update Supabase auth user with password
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.updateUserById(supabaseUserId, {
       password: password,
       email_confirm: true,
     })

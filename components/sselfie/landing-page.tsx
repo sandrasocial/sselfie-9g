@@ -104,9 +104,9 @@ export default function LandingPage() {
   const handleStartCheckout = async (tierId: string) => {
     try {
       setCheckoutLoading(tierId)
-      const checkoutUrl = await createLandingCheckoutSession(tierId)
-      if (checkoutUrl) {
-        window.location.href = checkoutUrl
+      const clientSecret = await createLandingCheckoutSession(tierId)
+      if (clientSecret) {
+        window.location.href = `/checkout?client_secret=${clientSecret}`
       }
     } catch (error) {
       console.error("Checkout error:", error)

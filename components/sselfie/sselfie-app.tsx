@@ -14,6 +14,7 @@ import { InstallPrompt } from "./install-prompt"
 import { InstallButton } from "./install-button"
 import { ServiceWorkerProvider } from "./service-worker-provider"
 import BuyCreditsModal from "./buy-credits-modal"
+import { LowCreditModal } from "@/components/credits/low-credit-modal"
 import type { User as UserType } from "./types"
 import {
   DropdownMenu,
@@ -366,6 +367,8 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
         onOpenChange={setShowBuyCreditsModal}
         onSuccess={handleCreditsPurchased}
       />
+
+      <LowCreditModal credits={creditBalance} threshold={30} />
     </div>
   )
 }

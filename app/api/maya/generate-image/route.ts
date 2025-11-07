@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
 import { getReplicateClient } from "@/lib/replicate-client"
-import { MAYA_QUALITY_PRESETS } from "@/lib/maya/quality-settings"
+import { MAYA_QUALITY_PRESETS } from "@/lib/maya/quality-settings" // Removed unused imports
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { checkCredits, deductCredits, getUserCredits, CREDIT_COSTS } from "@/lib/credits"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
@@ -72,6 +72,7 @@ export async function POST(request: NextRequest) {
         u.gender,
         um.trigger_word,
         um.replicate_version_id,
+        um.replicate_model_id,
         um.training_status,
         um.lora_scale,
         um.lora_weights_url
@@ -91,24 +92,39 @@ export async function POST(request: NextRequest) {
     const triggerWord = userData.trigger_word || "person"
     const gender = userData.gender
     const replicateVersionId = userData.replicate_version_id
+    const replicateModelId = userData.replicate_model_id
     const userLoraScale = userData.lora_scale
     const loraWeightsUrl = userData.lora_weights_url
 
-    console.log("[v0] User training data:", { triggerWord, gender, replicateVersionId, userLoraScale, loraWeightsUrl })
+    console.log("[v0] User training data:", {
+      triggerWord,
+      gender,
+      replicateVersionId,
+      replicateModelId,
+      userLoraScale,
+      loraWeightsUrl,
+    })
 
-    if (!loraWeightsUrl || loraWeightsUrl.trim() === "") {
-      console.log("[v0] ❌ LoRA weights URL is missing for user")
+    let versionHash = replicateVersionId
+    if (replicateVersionId && replicateVersionId.includes(":")) {
+      versionHash = replicateVersionId.split(":").pop()
+    }
+
+    const userLoraPath = replicateModelId && versionHash ? `${replicateModelId}:${versionHash}` : loraWeightsUrl
+
+    if (!userLoraPath || userLoraPath.trim() === "") {
+      console.log("[v0] ❌ LoRA path/URL is missing for user")
       return NextResponse.json(
-        { error: "LoRA weights URL not found. Please contact support to fix your model." },
+        { error: "LoRA model not found. Please contact support to fix your model." },
         { status: 400 },
       )
     }
 
+    console.log("[v0] User LoRA path format:", userLoraPath)
+
     let finalPrompt = conceptPrompt
 
     if (isHighlight) {
-      // For highlights, we want elegant background images that will have text overlaid
-      // Focus on creating beautiful, minimalistic backgrounds
       finalPrompt = `${conceptPrompt}, professional Instagram story highlight aesthetic, elegant and minimalistic design, soft lighting, high-end editorial quality, perfect for text overlay, circular crop friendly, trending Instagram aesthetic 2025`
     }
 
@@ -168,11 +184,13 @@ export async function POST(request: NextRequest) {
       prompt: finalPrompt,
       ...qualitySettings,
       ...(qualitySettings.lora_scale !== undefined && { lora_scale: Number(qualitySettings.lora_scale) }),
-      lora: loraWeightsUrl,
+      hf_lora: userLoraPath,
+      seed: Math.floor(Math.random() * 1000000),
+      disable_safety_checker: false,
     }
 
     console.log("[v0] ========== FULL PREDICTION INPUT ==========")
-    console.log("[v0] ✅ LoRA weights URL:", loraWeightsUrl)
+    console.log("[v0] ✅ User LoRA path (hf_lora):", userLoraPath)
     console.log("[v0] ✅ LoRA scale:", predictionInput.lora_scale)
     console.log("[v0] Prediction input:", JSON.stringify(predictionInput, null, 2))
     console.log("[v0] ================================================")
@@ -193,14 +211,13 @@ export async function POST(request: NextRequest) {
     const deductionResult = await deductCredits(
       neonUser.id,
       CREDIT_COSTS.IMAGE,
-      "image", // Fixed: was "image_generation", should be "image"
+      "image",
       `Generated: ${conceptTitle}`,
       prediction.id,
     )
 
     if (!deductionResult.success) {
       console.error("[v0] [CREDITS] Failed to deduct credits:", deductionResult.error)
-      // but log the error for investigation
     } else {
       console.log("[v0] [CREDITS] Deducted", CREDIT_COSTS.IMAGE, "credit. New balance:", deductionResult.newBalance)
     }

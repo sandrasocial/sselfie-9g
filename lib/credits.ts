@@ -11,8 +11,8 @@ export const CREDIT_COSTS = {
 } as const
 
 export const SUBSCRIPTION_CREDITS = {
-  sselfie_studio_membership: 250, // Studio membership gets 250 credits/month
-  one_time_session: 50, // One-time session gets 50 credits (one-time grant)
+  sselfie_studio_membership: 150, // Studio membership gets 150 credits/month
+  one_time_session: 70, // One-time session gets 70 credits (one-time grant)
 } as const
 
 export type TransactionType =
@@ -67,7 +67,7 @@ async function hasUnlimitedCredits(userId: string): Promise<boolean> {
 
     if (subscriptionResult.length > 0 && subscriptionResult[0].product_type === "sselfie_studio_membership") {
       console.log("[v0] [CREDITS] User has active studio membership - generous credit allocation")
-      return false // Studio members still use credits, but get 250/month
+      return false // Studio members still use credits, but get 150/month
     }
 
     return false
@@ -208,6 +208,16 @@ export async function deductCredits(
 
     const newBalance = currentBalance - amount
 
+    console.log("[v0] [CREDITS] ⚠️ DEDUCTING CREDITS:", {
+      userId,
+      type,
+      amount,
+      currentBalance,
+      newBalance,
+      description,
+      timestamp: new Date().toISOString(),
+    })
+
     // Update balance
     await sql`
       UPDATE user_credits
@@ -230,10 +240,10 @@ export async function deductCredits(
       )
     `
 
-    console.log("[v0] [CREDITS] Credits deducted successfully. New balance:", newBalance)
+    console.log("[v0] [CREDITS] ✅ Credits deducted successfully. New balance:", newBalance)
     return { success: true, newBalance }
   } catch (error) {
-    console.error("[v0] [CREDITS] Error deducting credits:", error)
+    console.error("[v0] [CREDITS] ❌ Error deducting credits:", error)
     return { success: false, newBalance: 0, error: "Failed to deduct credits" }
   }
 }

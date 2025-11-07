@@ -86,7 +86,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
         clearTimeout(settingsSaveTimerRef.current)
       }
     }
-  }, [styleStrength, promptAccuracy, aspectRatio]) // Added aspectRatio to dependencies
+  }, [styleStrength, promptAccuracy, aspectRatio]) // Removed enableRealismBoost from dependencies
 
   const { messages, sendMessage, status, setMessages } = useChat({
     transport: new DefaultChatTransport({ api: "/api/maya/chat" }),
@@ -173,7 +173,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
         console.error("[v0] ❌ Save error:", error)
         savedMessageIds.current.delete(lastMessage.id)
       })
-  }, [status, messages, chatId]) // Use messages instead of messages.length to trigger re-evaluation when new messages arrive
+  }, [status, messages, chatId]) // Updated dependency to messages
 
   const isTyping = status === "submitted" || status === "streaming"
 
@@ -414,12 +414,11 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
   useEffect(() => {
     // Only auto-scroll if user is at bottom (respects manual scrolling up)
     if (isAtBottomRef.current) {
-      // Use requestAnimationFrame to defer scroll and prevent render loops
       requestAnimationFrame(() => {
         scrollToBottom("smooth")
       })
     }
-  }, [messages, scrollToBottom]) // Changed dependency to `messages` from `messages.length`
+  }, [messages.length, scrollToBottom]) // Changed from messages to messages.length to prevent infinite loop
 
   const loadChat = async (specificChatId?: number) => {
     try {

@@ -104,9 +104,9 @@ export default function AcademyScreen() {
   const handleUpgrade = async () => {
     try {
       setIsUpgrading(true)
-      const checkoutUrl = await createLandingCheckout("sselfie_studio_membership")
-      if (checkoutUrl) {
-        window.location.href = checkoutUrl
+      const clientSecret = await createLandingCheckout("sselfie_studio_membership")
+      if (clientSecret) {
+        window.location.href = `/checkout?client_secret=${clientSecret}`
       }
     } catch (error) {
       console.error("[v0] Error creating checkout:", error)

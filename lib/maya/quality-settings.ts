@@ -1,3 +1,7 @@
+export const DEFAULT_EXTRA_LORA_SCALE = 0.8
+
+export const RECOMMENDED_REALISM_LORA = "xlabs-ai/flux-dev-realism" // Alternative: "raulduke9119/flux_realism"
+
 export interface QualitySettings {
   guidance_scale: number
   num_inference_steps: number
@@ -6,9 +10,9 @@ export interface QualitySettings {
   output_format: string
   output_quality: number
   lora_scale?: number
-  extra_lora_scale?: number
   prompt_strength?: number
-  model?: string
+  seed?: number // Random seed for reproducibility (optional, random if not set)
+  disable_safety_checker?: boolean // Whether to disable safety checker (default: false)
 }
 
 export const MAYA_DEFAULT_QUALITY_SETTINGS: QualitySettings = {
@@ -19,9 +23,7 @@ export const MAYA_DEFAULT_QUALITY_SETTINGS: QualitySettings = {
   output_format: "png",
   output_quality: 95,
   lora_scale: 1.0,
-  extra_lora_scale: 1,
   prompt_strength: 0.8,
-  model: "dev",
 }
 
 export const MAYA_QUALITY_PRESETS = {

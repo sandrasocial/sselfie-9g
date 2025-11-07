@@ -279,6 +279,39 @@
     margin-right: env(safe-area-inset-right);
   }
 
+  /* Add animation-delay utility to prevent Tailwind v4 empty utility error */
+  .delay-75 {
+    animation-delay: 75ms;
+  }
+
+  .delay-100 {
+    animation-delay: 100ms;
+  }
+
+  .delay-150 {
+    animation-delay: 150ms;
+  }
+
+  .delay-200 {
+    animation-delay: 200ms;
+  }
+
+  .delay-300 {
+    animation-delay: 300ms;
+  }
+
+  .delay-500 {
+    animation-delay: 500ms;
+  }
+
+  .delay-700 {
+    animation-delay: 700ms;
+  }
+
+  .delay-1000 {
+    animation-delay: 1000ms;
+  }
+
   /* Add animation utility classes to match keyframe definitions */
   .animate-fade-in {
     animation: fade-in 0.2s ease-out;

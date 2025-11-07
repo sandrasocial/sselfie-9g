@@ -26,6 +26,8 @@ export async function startCreditCheckoutSession(packageId: string) {
     throw new Error("User not found")
   }
 
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://sselfie.ai"
+
   const session = await stripe.checkout.sessions.create({
     ui_mode: "embedded",
     redirect_on_completion: "never",
@@ -49,6 +51,7 @@ export async function startCreditCheckoutSession(packageId: string) {
       credits: creditPackage.credits.toString(),
       package_id: packageId,
       product_type: "credit_topup",
+      source: "app", // Mark as from app, not landing page
     },
   })
 
@@ -125,6 +128,7 @@ export async function startProductCheckoutSession(productId: string) {
       product_id: productId,
       product_type: product.type,
       credits: product.credits?.toString() || "0",
+      source: "app", // Mark as from app, not landing page
     },
   })
 
