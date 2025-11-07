@@ -24,6 +24,11 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
   const [error, setError] = useState("")
 
   useEffect(() => {
+    console.log("[v0] SuccessContent useEffect triggered")
+    console.log("[v0] initialUserInfo:", initialUserInfo ? "present" : "null")
+    console.log("[v0] initialEmail:", initialEmail)
+    console.log("[v0] purchaseType:", purchaseType)
+
     if (!initialUserInfo && initialEmail) {
       console.log("[v0] Starting user polling for email:", initialEmail)
       let attempts = 0
@@ -36,6 +41,8 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
         try {
           const response = await fetch(`/api/user-by-email?email=${encodeURIComponent(initialEmail)}`)
 
+          console.log(`[v0] Poll attempt ${attempts} - response status:`, response.status)
+
           if (!response.ok) {
             console.error("[v0] API error:", response.status, response.statusText)
             throw new Error(`API returned ${response.status}`)
@@ -45,7 +52,7 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
           console.log("[v0] Poll response:", data)
 
           if (data.userInfo) {
-            console.log("[v0] User found! Email:", data.userInfo.email)
+            console.log("[v0] User found! Email:", data.userInfo.email, "hasAccount:", data.userInfo.hasAccount)
             setUserInfo(data.userInfo)
             setLoading(false)
             clearInterval(pollInterval)
@@ -70,9 +77,10 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
       }
     } else if (initialUserInfo) {
       console.log("[v0] Initial user info already present, skipping polling")
+      console.log("[v0] User hasAccount:", initialUserInfo.hasAccount)
       setLoading(false)
     } else {
-      console.log("[v0] No initial email, showing pending state")
+      console.log("[v0] No initial email provided, cannot poll")
       setLoading(false)
     }
   }, [initialEmail, initialUserInfo])
