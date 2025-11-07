@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
 import { neon } from "@neondatabase/serverless"
 
 const sql = neon(process.env.DATABASE_URL!)
@@ -34,12 +34,10 @@ export async function POST(request: NextRequest) {
 
     console.log("[v0] Updated user name in database")
 
-    // Update Supabase auth user with password
-    const supabase = await createClient()
+    const supabaseAdmin = createAdminClient()
 
-    // Sign in with the temporary password first (if exists)
-    // Then update to the new password
-    const { data: authData, error: authError } = await supabase.auth.admin.updateUserById(userId, {
+    // Update Supabase auth user with password
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
       password: password,
       email_confirm: true,
     })
@@ -50,19 +48,6 @@ export async function POST(request: NextRequest) {
     }
 
     console.log("[v0] Password set successfully")
-
-    // Sign the user in
-    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-
-    if (signInError) {
-      console.error("[v0] Error signing in:", signInError)
-      return NextResponse.json({ error: "Failed to sign in" }, { status: 500 })
-    }
-
-    console.log("[v0] User signed in successfully")
 
     return NextResponse.json({
       success: true,

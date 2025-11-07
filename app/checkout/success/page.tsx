@@ -78,6 +78,18 @@ function SuccessContent() {
         return
       }
 
+      const supabase = createClient()
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: session.customerEmail,
+        password,
+      })
+
+      if (signInError) {
+        setError("Account created but failed to sign in. Please try logging in.")
+        setIsSubmitting(false)
+        return
+      }
+
       window.location.href = "/studio"
     } catch (err) {
       setError("Something went wrong. Please try again.")
@@ -132,7 +144,7 @@ function SuccessContent() {
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-stone-50" />
 
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
-          <div className="font-serif text-2xl sm:text-3xl md:text-4xl font-extralight tracking-[0.3em] uppercase text-white mb-3 sm:mb-4">
+          <div className="font-serif text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extralight tracking-[0.3em] uppercase text-white mb-3 sm:mb-4">
             S S E L F I E
           </div>
           <p className="text-sm sm:text-base md:text-lg text-white/90 font-light max-w-md">
@@ -145,10 +157,10 @@ function SuccessContent() {
         {session.metadata?.source === "landing_page" && !isAuthenticated ? (
           <>
             <div className="text-center mb-8 sm:mb-12">
-              <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl font-extralight tracking-[0.2em] uppercase text-stone-900 mb-3 sm:mb-4">
+              <h1 className="font-serif text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extralight tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-900 mb-3 sm:mb-4 px-2">
                 LET'S GET YOU STARTED
               </h1>
-              <p className="text-sm sm:text-base text-stone-600 font-light leading-relaxed max-w-xl mx-auto">
+              <p className="text-sm sm:text-base text-stone-600 font-light leading-relaxed max-w-xl mx-auto px-4">
                 Just a few quick details and you'll be creating your first AI photos. This takes less than a minute.
               </p>
             </div>
@@ -256,10 +268,10 @@ function SuccessContent() {
         ) : (
           <>
             <div className="text-center mb-8 sm:mb-12">
-              <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl font-extralight tracking-[0.2em] uppercase text-stone-900 mb-3 sm:mb-4">
+              <h1 className="font-serif text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extralight tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-900 mb-3 sm:mb-4 px-2">
                 {isAuthenticated ? "YOU'RE ALL SET" : "ORDER CONFIRMED"}
               </h1>
-              <p className="text-sm sm:text-base text-stone-600 font-light leading-relaxed max-w-xl mx-auto">
+              <p className="text-sm sm:text-base text-stone-600 font-light leading-relaxed max-w-xl mx-auto px-4">
                 {isAuthenticated
                   ? "Your purchase is complete. Time to create something amazing."
                   : "Check your email for next steps."}
