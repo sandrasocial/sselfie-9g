@@ -31,28 +31,41 @@ function CheckoutContent() {
   }, [searchParams])
 
   const handleComplete = async () => {
-    console.log("[v0] Payment completed, extracting session info")
+    console.log("[v0] ==================== PAYMENT COMPLETED ====================")
+    console.log("[v0] handleComplete triggered")
+    console.log("[v0] Client secret:", clientSecret ? "present" : "missing")
+
     if (clientSecret) {
       const sessionId = clientSecret.split("_secret_")[0]
+      console.log("[v0] Extracted session ID:", sessionId)
 
       try {
-        // Get the session from Stripe to extract the email
+        console.log("[v0] Fetching session email from API...")
         const response = await fetch(`/api/checkout-session?session_id=${sessionId}`)
+        console.log("[v0] API response status:", response.status)
+
         const sessionData = await response.json()
+        console.log("[v0] Session data:", JSON.stringify(sessionData, null, 2))
 
         if (sessionData.email) {
-          console.log("[v0] Got email from session, redirecting with email in URL")
-          router.push(`/checkout/success?session_id=${sessionId}&email=${encodeURIComponent(sessionData.email)}`)
+          const redirectUrl = `/checkout/success?session_id=${sessionId}&email=${encodeURIComponent(sessionData.email)}`
+          console.log("[v0] Redirecting to success page with email:", redirectUrl)
+          router.push(redirectUrl)
         } else {
-          console.log("[v0] No email found, redirecting with session_id only")
-          router.push(`/checkout/success?session_id=${sessionId}`)
+          const redirectUrl = `/checkout/success?session_id=${sessionId}`
+          console.log("[v0] No email found, redirecting with session_id only:", redirectUrl)
+          router.push(redirectUrl)
         }
       } catch (error) {
         console.error("[v0] Error getting session email:", error)
-        // Fallback to session_id only
-        router.push(`/checkout/success?session_id=${sessionId}`)
+        const fallbackUrl = `/checkout/success?session_id=${sessionId}`
+        console.log("[v0] Fallback redirect:", fallbackUrl)
+        router.push(fallbackUrl)
       }
+    } else {
+      console.error("[v0] No client secret available in handleComplete!")
     }
+    console.log("[v0] ==================== END PAYMENT COMPLETED ====================")
   }
 
   if (error) {

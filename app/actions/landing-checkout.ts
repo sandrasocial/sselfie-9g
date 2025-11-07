@@ -4,12 +4,8 @@ import { stripe } from "@/lib/stripe"
 import { getProductById } from "@/lib/products"
 import { neon } from "@neondatabase/serverless"
 
-const BETA_DISCOUNT_COUPON_ID = process.env.STRIPE_BETA_COUPON_ID || "BETA50" // 50% off coupon
+const BETA_DISCOUNT_COUPON_ID = process.env.STRIPE_BETA_COUPON_ID || "BETA50"
 
-/**
- * Create a Stripe checkout session for landing page (pre-authentication)
- * Updated to use embedded checkout for custom branded experience
- */
 export async function createLandingCheckoutSession(productId: string) {
   const product = getProductById(productId)
   if (!product) {
@@ -17,29 +13,22 @@ export async function createLandingCheckoutSession(productId: string) {
   }
 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://sselfie.ai"
-
-  console.log("[v0] Landing checkout - Product:", productId)
-  console.log("[v0] Landing checkout - Product type:", product.type)
-  console.log("[v0] Landing checkout - Using baseUrl:", baseUrl)
-
-  // Determine if this is a subscription or one-time payment
   const isSubscription = product.type === "sselfie_studio_membership"
-
-  const betaPrice = product.priceInCents // Use beta price directly from product config ($24.50 and $49.50)
+  const betaPrice = product.priceInCents
 
   const session = await stripe.checkout.sessions.create({
     ui_mode: "embedded",
     mode: isSubscription ? "subscription" : "payment",
-    redirect_on_completion: "never", // Remove return_url and set redirect_on_completion to never so onComplete callback fires
+    redirect_on_completion: "never",
     line_items: [
       {
         price_data: {
           currency: "usd",
           product_data: {
             name: product.name,
-            description: product.description, // Remove "BETA PRICING" suffix
+            description: product.description,
           },
-          unit_amount: betaPrice, // This will now correctly show $24.50 and $49.50 in Stripe checkout
+          unit_amount: betaPrice,
           ...(isSubscription && {
             recurring: {
               interval: "month",
@@ -49,7 +38,7 @@ export async function createLandingCheckoutSession(productId: string) {
         quantity: 1,
       },
     ],
-    allow_promotion_codes: true, // Still allow additional promo codes
+    allow_promotion_codes: true,
     ...(isSubscription && {
       subscription_data: {
         metadata: {
@@ -70,26 +59,16 @@ export async function createLandingCheckoutSession(productId: string) {
     },
   })
 
-  console.log("[v0] Landing checkout - Created embedded session:", session.id)
-
   return session.client_secret
 }
 
 export const createLandingCheckout = createLandingCheckoutSession
 
-/**
- * Get checkout session details for success page
- */
 export async function getCheckoutSession(sessionId: string) {
   try {
-    console.log("[v0] Retrieving checkout session:", sessionId)
-
     const session = await stripe.checkout.sessions.retrieve(sessionId, {
       expand: ["line_items", "customer"],
     })
-
-    console.log("[v0] Session retrieved successfully:", session.id)
-    console.log("[v0] Session status:", session.status)
 
     return {
       status: session.status,
@@ -99,26 +78,14 @@ export async function getCheckoutSession(sessionId: string) {
       metadata: session.metadata,
     }
   } catch (error: any) {
-    console.error("[v0] Error retrieving checkout session:", error)
-    console.error("[v0] Error type:", error?.type)
-    console.error("[v0] Error message:", error?.message)
-    console.error("[v0] Error code:", error?.code)
-    console.error("[v0] Full error:", JSON.stringify(error, null, 2))
     throw error
   }
 }
 
-/**
- * Get user information from database using email
- * Avoids Stripe API rate limits by only querying our database
- */
 export async function getUserByEmail(email: string) {
   const sql = neon(process.env.DATABASE_URL!)
 
-  console.log("[v0] getUserByEmail called with email:", email)
-
   try {
-    console.log("[v0] Querying users table...")
     const result = await sql`
       SELECT 
         id,
@@ -132,23 +99,12 @@ export async function getUserByEmail(email: string) {
       LIMIT 1
     `
 
-    console.log("[v0] Users query result count:", result.length)
-
     if (result.length === 0) {
-      console.log("[v0] No user found for email:", email)
       return null
     }
 
     const user = result[0]
-    console.log("[v0] Found user:", {
-      id: user.id,
-      email: user.email,
-      display_name: user.display_name,
-      supabase_user_id: user.supabase_user_id,
-    })
 
-    // Get subscription/purchase info
-    console.log("[v0] Querying subscriptions...")
     const subscriptionResult = await sql`
       SELECT 
         product_type,
@@ -159,9 +115,6 @@ export async function getUserByEmail(email: string) {
       LIMIT 1
     `
 
-    console.log("[v0] Subscription result:", subscriptionResult.length > 0 ? subscriptionResult[0] : "none")
-
-    console.log("[v0] Querying credits...")
     const creditsResult = await sql`
       SELECT balance
       FROM user_credits
@@ -169,69 +122,44 @@ export async function getUserByEmail(email: string) {
       LIMIT 1
     `
 
-    console.log("[v0] Credits result:", creditsResult.length > 0 ? creditsResult[0] : "none")
-
     const emailPrefix = email?.split("@")[0]
     const isAutoGeneratedName = !user.display_name || user.display_name === emailPrefix
     const hasAccount = !isAutoGeneratedName
 
-    console.log("[v0] User account status:", {
-      emailPrefix,
-      isAutoGeneratedName,
-      hasAccount,
-    })
-
-    const userInfo = {
+    return {
       email: user.email,
       displayName: user.display_name,
       hasAccount,
       productType: subscriptionResult[0]?.product_type || null,
       credits: creditsResult[0]?.balance || 0,
     }
-
-    console.log("[v0] Returning userInfo:", JSON.stringify(userInfo, null, 2))
-
-    return userInfo
   } catch (error: any) {
-    console.error("[v0] Error in getUserByEmail:", error.message)
-    console.error("[v0] Error stack:", error.stack)
     return null
   }
 }
 
 const emailCache = new Map<string, { email: string; timestamp: number }>()
-const CACHE_DURATION = 60000 // 1 minute
+const CACHE_DURATION = 60000
 
-/**
- * Get user information from database using Stripe session ID
- * Uses caching to avoid hitting Stripe rate limits
- */
 export async function getUserByStripeSession(sessionId: string) {
   try {
-    // Check cache first
     const cached = emailCache.get(sessionId)
     if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-      console.log("[v0] Using cached email for session:", sessionId)
       return getUserByEmail(cached.email)
     }
 
-    // Retrieve session from Stripe only once
     const session = await stripe.checkout.sessions.retrieve(sessionId)
 
     if (!session.customer_details?.email && !session.customer_email) {
-      console.log("[v0] No email found in session")
       return null
     }
 
     const email = session.customer_details?.email || session.customer_email
 
-    // Cache the email
     emailCache.set(sessionId, { email, timestamp: Date.now() })
 
-    // Use database-only lookup
     return getUserByEmail(email)
   } catch (error: any) {
-    console.error("[v0] Error in getUserByStripeSession:", error.message)
     return null
   }
 }

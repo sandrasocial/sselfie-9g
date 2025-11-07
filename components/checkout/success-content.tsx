@@ -24,70 +24,44 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
   const [error, setError] = useState("")
 
   useEffect(() => {
-    console.log("[v0] SuccessContent useEffect triggered")
-    console.log("[v0] initialUserInfo:", initialUserInfo ? "present" : "null")
-    console.log("[v0] initialEmail:", initialEmail)
-    console.log("[v0] purchaseType:", purchaseType)
-
-    if (initialUserInfo) {
-      console.log("[v0] Initial user info details:")
-      console.log("[v0]   hasAccount:", initialUserInfo.hasAccount)
-      console.log("[v0]   email:", initialUserInfo.email)
-      console.log("[v0]   displayName:", initialUserInfo.displayName)
-    }
-
     if (!initialUserInfo && initialEmail) {
-      console.log("[v0] Starting user polling for email:", initialEmail)
       let attempts = 0
       const MAX_ATTEMPTS = 10
 
       const pollInterval = setInterval(async () => {
         attempts++
-        console.log(`[v0] Polling attempt ${attempts}/${MAX_ATTEMPTS}`)
 
         try {
           const response = await fetch(`/api/user-by-email?email=${encodeURIComponent(initialEmail)}`)
 
-          console.log(`[v0] Poll attempt ${attempts} - response status:`, response.status)
-
           if (!response.ok) {
-            console.error("[v0] API error:", response.status, response.statusText)
             throw new Error(`API returned ${response.status}`)
           }
 
           const data = await response.json()
-          console.log("[v0] Poll response:", data)
 
           if (data.userInfo) {
-            console.log("[v0] User found! Email:", data.userInfo.email, "hasAccount:", data.userInfo.hasAccount)
             setUserInfo(data.userInfo)
             setLoading(false)
             clearInterval(pollInterval)
           } else if (attempts >= MAX_ATTEMPTS) {
-            console.log("[v0] Max polling attempts reached, showing pending")
             setLoading(false)
             clearInterval(pollInterval)
           }
         } catch (err) {
-          console.error("[v0] Polling error:", err)
           if (attempts >= MAX_ATTEMPTS) {
-            console.log("[v0] Max attempts reached after error")
             setLoading(false)
             clearInterval(pollInterval)
           }
         }
-      }, 2000) // Poll every 2 seconds
+      }, 2000)
 
       return () => {
-        console.log("[v0] Cleaning up polling interval")
         clearInterval(pollInterval)
       }
     } else if (initialUserInfo) {
-      console.log("[v0] Initial user info already present, skipping polling")
-      console.log("[v0] User hasAccount:", initialUserInfo.hasAccount)
       setLoading(false)
     } else {
-      console.log("[v0] No initial email provided, cannot poll")
       setLoading(false)
     }
   }, [initialEmail, initialUserInfo])

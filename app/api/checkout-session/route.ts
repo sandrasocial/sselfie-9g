@@ -7,7 +7,7 @@ export async function GET(request: Request) {
     const sessionId = searchParams.get("session_id")
 
     if (!sessionId) {
-      return NextResponse.json({ error: "Missing session_id" }, { status: 400 })
+      return NextResponse.json({ error: "Session ID required" }, { status: 400 })
     }
 
     const session = await stripe.checkout.sessions.retrieve(sessionId)
@@ -15,9 +15,9 @@ export async function GET(request: Request) {
     return NextResponse.json({
       email: session.customer_details?.email || session.customer_email,
       status: session.status,
+      sessionId: session.id,
     })
   } catch (error: any) {
-    console.error("[v0] Error retrieving session:", error.message)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }

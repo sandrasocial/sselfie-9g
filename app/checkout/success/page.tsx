@@ -7,16 +7,10 @@ export default async function CheckoutSuccessPage({
 }: {
   searchParams: { session_id?: string; email?: string; type?: string }
 }) {
-  console.log("[v0] Success page - searchParams:", JSON.stringify(searchParams))
-
   let userInfo = null
 
   if (searchParams.email) {
-    console.log("[v0] Success page - Attempting to get user by email:", searchParams.email)
     userInfo = await getUserByEmail(searchParams.email)
-    console.log("[v0] Success page - getUserByEmail returned:", userInfo ? "user found" : "null")
-  } else {
-    console.log("[v0] Success page - No email in searchParams!")
   }
 
   return (
