@@ -15,13 +15,44 @@ interface SuccessContentProps {
 export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: SuccessContentProps) {
   const router = useRouter()
   const [userInfo, setUserInfo] = useState(initialUserInfo)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(!initialUserInfo)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [name, setName] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState("")
+  const [retryCount, setRetryCount] = useState(0)
+  const MAX_RETRIES = 10
+
+  useEffect(() => {
+    if (!initialUserInfo && initialEmail && retryCount < MAX_RETRIES) {
+      console.log(`[v0] Polling for user creation (attempt ${retryCount + 1}/${MAX_RETRIES})`)
+      const pollTimer = setTimeout(async () => {
+        try {
+          const response = await fetch(`/api/user-by-email?email=${encodeURIComponent(initialEmail)}`)
+          const data = await response.json()
+
+          if (data.userInfo) {
+            console.log("[v0] User found, updating UI")
+            setUserInfo(data.userInfo)
+            setLoading(false)
+          } else {
+            console.log("[v0] User not found yet, retrying...")
+            setRetryCount((prev) => prev + 1)
+          }
+        } catch (err) {
+          console.error("[v0] Error polling for user:", err)
+          setRetryCount((prev) => prev + 1)
+        }
+      }, 2000) // Poll every 2 seconds
+
+      return () => clearTimeout(pollTimer)
+    } else if (retryCount >= MAX_RETRIES && !userInfo) {
+      console.log("[v0] Max retries reached, showing pending state")
+      setLoading(false)
+    }
+  }, [initialEmail, initialUserInfo, retryCount, userInfo])
 
   useEffect(() => {
     const checkAuth = async () => {
