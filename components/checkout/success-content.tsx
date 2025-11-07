@@ -15,7 +15,6 @@ interface SuccessContentProps {
 export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: SuccessContentProps) {
   const router = useRouter()
   const [userInfo, setUserInfo] = useState(initialUserInfo)
-  const [loading, setLoading] = useState(!initialUserInfo)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [name, setName] = useState("")
   const [password, setPassword] = useState("")
@@ -26,7 +25,7 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
   useEffect(() => {
     if (!initialUserInfo && initialEmail) {
       let attempts = 0
-      const MAX_ATTEMPTS = 10
+      const MAX_ATTEMPTS = 30
 
       const pollInterval = setInterval(async () => {
         attempts++
@@ -42,15 +41,14 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
 
           if (data.userInfo) {
             setUserInfo(data.userInfo)
-            setLoading(false)
             clearInterval(pollInterval)
           } else if (attempts >= MAX_ATTEMPTS) {
-            setLoading(false)
+            setUserInfo({ email: initialEmail, hasAccount: false })
             clearInterval(pollInterval)
           }
         } catch (err) {
           if (attempts >= MAX_ATTEMPTS) {
-            setLoading(false)
+            setUserInfo({ email: initialEmail, hasAccount: false })
             clearInterval(pollInterval)
           }
         }
@@ -59,10 +57,6 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
       return () => {
         clearInterval(pollInterval)
       }
-    } else if (initialUserInfo) {
-      setLoading(false)
-    } else {
-      setLoading(false)
     }
   }, [initialEmail, initialUserInfo])
 
@@ -185,6 +179,40 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
 
   if (!userInfo && initialEmail) {
     return (
+      <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="font-serif text-xl sm:text-2xl font-extralight tracking-[0.3em] sm:tracking-[0.2em] uppercase text-stone-900 mb-4 animate-pulse">
+            PREPARING YOUR ACCOUNT
+          </div>
+          <div className="text-xs sm:text-sm text-stone-500 font-light">Setting everything up for you...</div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!userInfo && !initialEmail) {
+    return (
+      <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4 sm:p-6">
+        <div className="max-w-2xl text-center">
+          <div className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-4xl font-extralight tracking-[0.3em] sm:tracking-[0.2em] uppercase text-stone-900 mb-4 sm:mb-6">
+            PAYMENT PENDING
+          </div>
+          <p className="text-sm sm:text-base text-stone-600 font-light leading-relaxed mb-6 sm:mb-8 px-4">
+            Your payment is being processed. Check your email for confirmation.
+          </p>
+          <button
+            onClick={() => router.push("/")}
+            className="bg-stone-950 text-stone-50 px-6 sm:px-8 py-3 sm:py-4 rounded-lg text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 min-h-[44px]"
+          >
+            Return Home
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (userInfo && !userInfo.hasAccount && !isAuthenticated) {
+    return (
       <div className="min-h-screen bg-stone-50">
         <div className="relative h-[40vh] sm:h-[50vh] md:h-[60vh] overflow-hidden">
           <Image
@@ -244,7 +272,7 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
                 <input
                   type="email"
                   id="email"
-                  value={initialEmail}
+                  value={userInfo.email || initialEmail}
                   disabled
                   className="w-full px-4 py-3 sm:py-4 bg-stone-100 border border-stone-200 rounded-lg text-stone-500 text-sm sm:text-base font-light"
                 />
@@ -318,40 +346,6 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
     )
   }
 
-  if (!userInfo && !initialEmail) {
-    return (
-      <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4 sm:p-6">
-        <div className="max-w-2xl text-center">
-          <div className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-4xl font-extralight tracking-[0.3em] uppercase text-stone-900 mb-4 sm:mb-6">
-            PAYMENT PENDING
-          </div>
-          <p className="text-sm sm:text-base text-stone-600 font-light leading-relaxed mb-6 sm:mb-8 px-4">
-            Your payment is being processed. Check your email for confirmation.
-          </p>
-          <button
-            onClick={() => router.push("/")}
-            className="bg-stone-950 text-stone-50 px-6 sm:px-8 py-3 sm:py-4 rounded-lg text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 min-h-[44px]"
-          >
-            Return Home
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
-        <div className="text-center">
-          <div className="font-serif text-xl sm:text-2xl font-extralight tracking-[0.3em] sm:tracking-[0.2em] uppercase text-stone-900 mb-4">
-            LOADING
-          </div>
-          <div className="text-xs sm:text-sm text-stone-500 font-light">Just a moment...</div>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="min-h-screen bg-stone-50">
       <div className="relative h-[40vh] sm:h-[50vh] md:h-[60vh] overflow-hidden">
@@ -369,7 +363,7 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
             S S E L F I E
           </div>
           <p className="text-sm sm:text-base md:text-lg text-white/90 font-light max-w-md">
-            {isAuthenticated || userInfo.hasAccount ? "Welcome back" : "You're in"}
+            {isAuthenticated ? "Welcome back" : "You're in"}
           </p>
         </div>
       </div>
