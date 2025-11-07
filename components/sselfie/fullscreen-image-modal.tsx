@@ -150,15 +150,8 @@ export default function FullscreenImageModal({
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 backdrop-blur-sm animate-in fade-in duration-200"
       onClick={onClose}
-      style={{
-        paddingTop: "env(safe-area-inset-top)",
-        paddingBottom: "env(safe-area-inset-bottom)",
-        paddingLeft: "env(safe-area-inset-left)",
-        paddingRight: "env(safe-area-inset-right)",
-      }}
     >
-      {/* Header */}
-      <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-4 sm:p-6 bg-gradient-to-b from-black/80 to-transparent">
+      <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-4 sm:p-6 bg-gradient-to-b from-black/80 to-transparent pt-[max(env(safe-area-inset-top),1rem)] pb-4">
         <h3 className="text-base sm:text-lg font-semibold text-white truncate max-w-[60%]">{title}</h3>
         <button
           onClick={onClose}
@@ -173,6 +166,10 @@ export default function FullscreenImageModal({
       <div
         className="relative w-full h-full flex items-center justify-center p-4 overflow-auto"
         onClick={(e) => e.stopPropagation()}
+        style={{
+          paddingTop: "calc(env(safe-area-inset-top) + 5rem)",
+          paddingBottom: "calc(env(safe-area-inset-bottom) + 5rem)",
+        }}
       >
         <div
           className="relative max-w-full max-h-full transition-transform duration-300 ease-out"
@@ -191,8 +188,10 @@ export default function FullscreenImageModal({
         </div>
       </div>
 
-      {/* Zoom Controls */}
-      <div className="absolute top-20 right-4 sm:right-6 z-10 flex flex-col gap-2">
+      <div
+        className="absolute right-4 sm:right-6 z-10 flex flex-col gap-2"
+        style={{ top: "calc(env(safe-area-inset-top) + 5rem)" }}
+      >
         <button
           onClick={(e) => {
             e.stopPropagation()
@@ -227,9 +226,11 @@ export default function FullscreenImageModal({
         </button>
       </div>
 
-      {/* Image Info Panel */}
       {showInfo && imageMetadata && (
-        <div className="absolute top-20 left-4 sm:left-6 z-10 bg-black/80 backdrop-blur-xl rounded-2xl p-4 sm:p-6 max-w-xs animate-in fade-in slide-in-from-left-2 duration-200">
+        <div
+          className="absolute left-4 sm:left-6 z-10 bg-black/80 backdrop-blur-xl rounded-2xl p-4 sm:p-6 max-w-xs animate-in fade-in slide-in-from-left-2 duration-200"
+          style={{ top: "calc(env(safe-area-inset-top) + 5rem)" }}
+        >
           <h4 className="text-sm font-semibold text-white mb-3 tracking-wide">Image Info</h4>
           <div className="space-y-2 text-xs text-stone-300">
             <div className="flex justify-between gap-4">
@@ -259,7 +260,7 @@ export default function FullscreenImageModal({
       )}
 
       {/* Actions Bar */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 bg-gradient-to-t from-black/80 to-transparent">
+      <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 bg-gradient-to-t from-black/80 to-transparent pb-[max(env(safe-area-inset-bottom),1rem)]">
         <div className="flex items-center justify-center gap-3 sm:gap-4 flex-wrap">
           {onFavoriteToggle && (
             <button

@@ -592,7 +592,7 @@ export default function LandingPage() {
                   </span>
                   <span className="text-base sm:text-lg text-stone-500 line-through">$49</span>
                 </div>
-                <p className="text-sm sm:text-base font-light text-stone-600 mt-2">one-time • 50 credits</p>
+                <p className="text-sm sm:text-base font-light text-stone-600 mt-2">one-time • 70 credits</p>
               </div>
               <div className="space-y-3 sm:space-y-4 mb-8 sm:mb-10">
                 <p className="text-base sm:text-lg font-light text-stone-700">
@@ -629,7 +629,7 @@ export default function LandingPage() {
                   </span>
                   <span className="text-base sm:text-lg text-stone-400 line-through">$99</span>
                 </div>
-                <p className="text-sm sm:text-base font-light text-stone-300 mt-2">per month • 100 credits/month</p>
+                <p className="text-sm sm:text-base font-light text-stone-300 mt-2">per month • 150 credits/month</p>
               </div>
               <div className="space-y-3 sm:space-y-4 mb-8 sm:mb-10">
                 <p className="text-base sm:text-lg font-light text-stone-100">
