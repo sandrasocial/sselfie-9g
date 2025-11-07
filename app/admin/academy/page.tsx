@@ -1561,12 +1561,20 @@ export default function AdminAcademyPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-xs tracking-wider uppercase text-stone-600">Category</Label>
-                <Input
+                <select
                   value={templateForm.category}
                   onChange={(e) => setTemplateForm({ ...templateForm, category: e.target.value })}
-                  placeholder="e.g. Social Media"
-                  className="border-stone-300"
-                />
+                  className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm"
+                >
+                  <option value="">Select Category...</option>
+                  <option value="social-media">Social Media</option>
+                  <option value="email-marketing">Email Marketing</option>
+                  <option value="branding">Branding & Identity</option>
+                  <option value="content-creation">Content Creation</option>
+                  <option value="business">Business & Planning</option>
+                  <option value="education">Education & Courses</option>
+                  <option value="other">Other</option>
+                </select>
               </div>
 
               <div className="space-y-2">

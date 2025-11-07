@@ -44,8 +44,10 @@ const getFriendlyTierName = (tier: string): string => {
 export default function AcademyScreen() {
   const [selectedView, setSelectedView] = useState<AcademyView>("overview")
   const [searchQuery, setSearchQuery] = useState("")
+  const [selectedTemplateCategory, setSelectedTemplateCategory] = useState<string>("all")
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null)
   const [isUpgrading, setIsUpgrading] = useState(false)
+  const [showCategoryGrid, setShowCategoryGrid] = useState(true)
 
   const {
     data: coursesData,
@@ -164,13 +166,39 @@ export default function AcademyScreen() {
     return matchesSearch
   })
 
+  console.log("[v0] All templates:", templates)
+  console.log(
+    "[v0] Templates with categories:",
+    templates.map((t: any) => ({ id: t.id, title: t.title, category: t.category })),
+  )
+  console.log("[v0] Selected template category:", selectedTemplateCategory)
+
   const filteredTemplates = templates.filter((template: any) => {
     const matchesSearch =
       searchQuery === "" ||
       template.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (template.description && template.description.toLowerCase().includes(searchQuery.toLowerCase()))
-    return matchesSearch
+    const matchesCategory = selectedTemplateCategory === "all" || template.category === selectedTemplateCategory
+
+    console.log(
+      "[v0] Template:",
+      template.title,
+      "Category:",
+      template.category,
+      "Matches category:",
+      matchesCategory,
+      "Selected:",
+      selectedTemplateCategory,
+    )
+
+    return matchesSearch && matchesCategory
   })
+
+  console.log("[v0] Filtered templates count:", filteredTemplates.length)
+  console.log(
+    "[v0] Filtered templates:",
+    filteredTemplates.map((t: any) => ({ id: t.id, title: t.title, category: t.category })),
+  )
 
   const filteredMonthlyDrops = monthlyDrops.filter((drop: any) => {
     const matchesSearch =
@@ -218,19 +246,124 @@ export default function AcademyScreen() {
       )
     }
 
+    const templateCategories = [
+      {
+        value: "all",
+        label: "All Templates",
+        image:
+          "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/_%20%2847%29-kGWMLFs2EnK6NrtqNjsIyS4kfQxer8.jpeg",
+      },
+      {
+        value: "social_media",
+        label: "Social Media",
+        image:
+          "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/_%20%2847%29-kGWMLFs2EnK6NrtqNjsIyS4kfQxer8.jpeg",
+      },
+      {
+        value: "email_marketing",
+        label: "Email Marketing",
+        image:
+          "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/_%20%2842%29-9YjBZswCzTL0RY7fbkRjXC2uzoaSdO.jpeg",
+      },
+      {
+        value: "branding",
+        label: "Branding",
+        image:
+          "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/887-JHliMtQOFFLmPDRmabtQ9DAuiPDTOv-WK6zYM31cXxUOP8ZIy4vGzN60qYe75.png",
+      },
+      {
+        value: "content_creation",
+        label: "Content Creation",
+        image:
+          "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/_%20%2841%29-GJFGAsjbFNigSGQs5jVo1Y9u3agBq6.jpeg",
+      },
+      {
+        value: "business",
+        label: "Business",
+        image:
+          "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/885-BRNmqKHXcPLB1Ff5XK1UYWRrSOnfVm-iOOarwktPIBXUZk0hyYqzL3ycGL9Ab.png",
+      },
+      {
+        value: "education",
+        label: "Education",
+        image:
+          "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/_%20%2843%29-L0w1kYOCCcM1XOPiqyzHcJ1CW9YU5T.jpeg",
+      },
+      {
+        value: "other",
+        label: "Other",
+        image:
+          "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/888-2PU4IDaX9DXr7N86jedTuQDak6KWxP-e8JM3OpuHd120n4RGK7QBY0dtrlHJ3.png",
+      },
+    ]
+
+    if (showCategoryGrid && selectedTemplateCategory === "all") {
+      return (
+        <div className="space-y-10 pb-32 px-4 sm:px-6">
+          <div className="pt-8">
+            <button
+              onClick={() => setSelectedView("overview")}
+              className="text-sm tracking-wider uppercase text-stone-600 hover:text-stone-950 transition-colors"
+            >
+              ← Back
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            <h1 className="font-serif text-4xl sm:text-5xl tracking-wider text-stone-950">Templates</h1>
+            <p className="text-stone-600 text-base font-light leading-relaxed">
+              Select a category to explore professional templates
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+            {templateCategories
+              .filter((cat) => cat.value !== "all")
+              .map((category) => (
+                <button
+                  key={category.value}
+                  onClick={() => {
+                    setSelectedTemplateCategory(category.value)
+                    setShowCategoryGrid(false)
+                  }}
+                  className="group relative aspect-square overflow-hidden rounded-xl transition-all active:scale-95 touch-manipulation"
+                >
+                  <img
+                    src={category.image || "/placeholder.svg"}
+                    alt={category.label}
+                    className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+                  <div className="absolute inset-0 flex items-end p-4">
+                    <h3 className="text-left text-sm sm:text-base font-semibold uppercase tracking-wider text-white">
+                      {category.label}
+                    </h3>
+                  </div>
+                </button>
+              ))}
+          </div>
+        </div>
+      )
+    }
+
     return (
       <div className="space-y-10 pb-32 px-4 sm:px-6">
         <div className="pt-8">
           <button
-            onClick={() => setSelectedView("overview")}
+            onClick={() => {
+              setShowCategoryGrid(true)
+              setSelectedTemplateCategory("all")
+            }}
             className="text-sm tracking-wider uppercase text-stone-600 hover:text-stone-950 transition-colors"
           >
-            ← Back
+            ← Back to Categories
           </button>
         </div>
 
         <div className="space-y-3">
-          <h1 className="font-serif text-4xl sm:text-5xl tracking-wider text-stone-950">Templates</h1>
+          <h1 className="font-serif text-4xl sm:text-5xl tracking-wider text-stone-950">
+            {templateCategories.find((cat) => cat.value === selectedTemplateCategory)?.label || "Templates"}
+          </h1>
           <p className="text-stone-600 text-base font-light leading-relaxed">
             Download professional templates for your brand
           </p>
@@ -248,7 +381,7 @@ export default function AcademyScreen() {
 
         {filteredTemplates.length === 0 ? (
           <div className="border border-stone-200 rounded-2xl p-16 text-center">
-            <p className="text-stone-600 text-sm">No templates found. Try adjusting your search.</p>
+            <p className="text-stone-600 text-sm">No templates found in this category. Try adjusting your search.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -304,7 +437,7 @@ export default function AcademyScreen() {
         <div className="space-y-3">
           <h1 className="font-serif text-4xl sm:text-5xl tracking-wider text-stone-950">Monthly Drops</h1>
           <p className="text-stone-600 text-base font-light leading-relaxed">
-            Exclusive monthly resources for Studio Members
+            Exclusive monthly resources and content drops for Studio Members
           </p>
         </div>
 
@@ -376,7 +509,7 @@ export default function AcademyScreen() {
         <div className="space-y-3">
           <h1 className="font-serif text-4xl sm:text-5xl tracking-wider text-stone-950">Flatlay Images</h1>
           <p className="text-stone-600 text-base font-light leading-relaxed">
-            Professional flatlay images for your content
+            Professional flatlay images for your content and brand aesthetic
           </p>
         </div>
 
@@ -465,7 +598,6 @@ export default function AcademyScreen() {
           />
         </div>
 
-        {/* Continue Learning section */}
         {inProgressCourses.length > 0 && (
           <div className="space-y-6">
             <h2 className="font-serif text-2xl tracking-wider text-stone-950">Continue Learning</h2>
@@ -487,7 +619,6 @@ export default function AcademyScreen() {
           </div>
         )}
 
-        {/* All courses */}
         <div className="space-y-6">
           <h2 className="font-serif text-2xl tracking-wider text-stone-950">All Courses</h2>
           {filteredCourses.length === 0 ? (
@@ -528,7 +659,6 @@ export default function AcademyScreen() {
 
   return (
     <div className="pb-32">
-      {/* Full-bleed hero with dark overlay and white text */}
       <div className="relative h-[50vh] sm:h-[60vh] w-full overflow-hidden">
         <img
           src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/887-JHliMtQOFFLmPDRmabtQ9DAuiPDTOv-I0ltnA6ru3zz4C0YmuHYD8y66QZDB7.png"
