@@ -29,6 +29,13 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
     console.log("[v0] initialEmail:", initialEmail)
     console.log("[v0] purchaseType:", purchaseType)
 
+    if (initialUserInfo) {
+      console.log("[v0] Initial user info details:")
+      console.log("[v0]   hasAccount:", initialUserInfo.hasAccount)
+      console.log("[v0]   email:", initialUserInfo.email)
+      console.log("[v0]   displayName:", initialUserInfo.displayName)
+    }
+
     if (!initialUserInfo && initialEmail) {
       console.log("[v0] Starting user polling for email:", initialEmail)
       let attempts = 0
