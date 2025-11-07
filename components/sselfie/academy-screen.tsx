@@ -9,7 +9,26 @@ import ResourceCard from "../academy/resource-card"
 import UnifiedLoading from "./unified-loading"
 import { createLandingCheckout } from "@/app/actions/landing-checkout"
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json())
+const fetcher = async (url: string) => {
+  console.log("[v0] Fetching Academy data from:", url)
+  try {
+    const res = await fetch(url, { credentials: "include" })
+    console.log("[v0] Academy fetch response status:", res.status, "for", url)
+
+    if (!res.ok) {
+      const errorText = await res.text()
+      console.error("[v0] Academy fetch error:", res.status, errorText)
+      throw new Error(`Failed to fetch: ${res.status}`)
+    }
+
+    const data = await res.json()
+    console.log("[v0] Academy data received from", url, ":", data)
+    return data
+  } catch (error) {
+    console.error("[v0] Academy fetcher error for", url, ":", error)
+    throw error
+  }
+}
 
 const getFriendlyTierName = (tier: string): string => {
   const tierMap: Record<string, string> = {
@@ -28,10 +47,38 @@ export default function AcademyScreen() {
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null)
   const [isUpgrading, setIsUpgrading] = useState(false)
 
-  const { data: coursesData, error: coursesError, isLoading: coursesLoading } = useSWR("/api/academy/courses", fetcher)
-  const { data: templatesData, isLoading: templatesLoading } = useSWR("/api/academy/templates", fetcher)
-  const { data: monthlyDropsData, isLoading: monthlyDropsLoading } = useSWR("/api/academy/monthly-drops", fetcher)
-  const { data: flatlayImagesData, isLoading: flatlayImagesLoading } = useSWR("/api/academy/flatlay-images", fetcher)
+  const {
+    data: coursesData,
+    error: coursesError,
+    isLoading: coursesLoading,
+  } = useSWR("/api/academy/courses", fetcher, {
+    onSuccess: (data) => console.log("[v0] Courses data loaded successfully:", data),
+    onError: (error) => console.error("[v0] Courses SWR error:", error),
+  })
+  const {
+    data: templatesData,
+    error: templatesError,
+    isLoading: templatesLoading,
+  } = useSWR("/api/academy/templates", fetcher, {
+    onSuccess: (data) => console.log("[v0] Templates data loaded successfully:", data),
+    onError: (error) => console.error("[v0] Templates SWR error:", error),
+  })
+  const {
+    data: monthlyDropsData,
+    error: monthlyDropsError,
+    isLoading: monthlyDropsLoading,
+  } = useSWR("/api/academy/monthly-drops", fetcher, {
+    onSuccess: (data) => console.log("[v0] Monthly drops data loaded successfully:", data),
+    onError: (error) => console.error("[v0] Monthly drops SWR error:", error),
+  })
+  const {
+    data: flatlayImagesData,
+    error: flatlayImagesError,
+    isLoading: flatlayImagesLoading,
+  } = useSWR("/api/academy/flatlay-images", fetcher, {
+    onSuccess: (data) => console.log("[v0] Flatlay images data loaded successfully:", data),
+    onError: (error) => console.error("[v0] Flatlay images SWR error:", error),
+  })
   const { data: myCoursesData } = useSWR("/api/academy/my-courses", fetcher)
   const { data: userInfoData } = useSWR("/api/user/info", fetcher)
 
@@ -72,6 +119,8 @@ export default function AcademyScreen() {
     resourceUrl: string,
     resourceType: "template" | "monthly_drop" | "flatlay_image",
   ) => {
+    console.log("[v0] handleResourceDownload called:", { resourceId, resourceUrl, resourceType })
+
     try {
       // Track download
       const endpoint =
@@ -81,12 +130,29 @@ export default function AcademyScreen() {
             ? `/api/academy/monthly-drops/${resourceId}/download`
             : `/api/academy/flatlay-images/${resourceId}/download`
 
-      await fetch(endpoint, { method: "POST", credentials: "include" })
+      console.log("[v0] Tracking download at endpoint:", endpoint)
+
+      const trackResponse = await fetch(endpoint, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+
+      console.log("[v0] Track download response:", trackResponse.status)
+
+      if (!trackResponse.ok) {
+        const errorText = await trackResponse.text()
+        console.error("[v0] Error tracking download:", trackResponse.status, errorText)
+      }
 
       // Open resource in new tab
-      window.open(resourceUrl, "_blank")
+      console.log("[v0] Opening resource URL:", resourceUrl)
+      window.open(resourceUrl, "_blank", "noopener,noreferrer")
     } catch (error) {
-      console.error("[v0] Error downloading resource:", error)
+      console.error("[v0] Error in handleResourceDownload:", error)
+      alert("Failed to download resource. Please try again.")
     }
   }
 
@@ -135,6 +201,23 @@ export default function AcademyScreen() {
       return <UnifiedLoading message="Loading templates..." />
     }
 
+    if (templatesError) {
+      console.error("[v0] Templates error:", templatesError)
+      return (
+        <div className="flex items-center justify-center min-h-[400px] px-4">
+          <div className="text-center space-y-4">
+            <p className="text-sm text-stone-600">Failed to load templates. Please try again.</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-6 py-3 text-sm tracking-wider uppercase bg-stone-950 text-stone-50 rounded-xl hover:bg-stone-800 transition-all"
+            >
+              Reload
+            </button>
+          </div>
+        </div>
+      )
+    }
+
     return (
       <div className="space-y-10 pb-32 px-4 sm:px-6">
         <div className="pt-8">
@@ -173,7 +256,10 @@ export default function AcademyScreen() {
               <ResourceCard
                 key={template.id}
                 resource={template}
-                onDownload={(id, url) => handleResourceDownload(id, url, "template")}
+                onDownload={(id, url) => {
+                  console.log("[v0] Template download clicked:", id, url)
+                  handleResourceDownload(id, url, "template")
+                }}
               />
             ))}
           </div>
@@ -185,6 +271,23 @@ export default function AcademyScreen() {
   if (selectedView === "monthly-drops") {
     if (monthlyDropsLoading) {
       return <UnifiedLoading message="Loading monthly drops..." />
+    }
+
+    if (monthlyDropsError) {
+      console.error("[v0] Monthly drops error:", monthlyDropsError)
+      return (
+        <div className="flex items-center justify-center min-h-[400px] px-4">
+          <div className="text-center space-y-4">
+            <p className="text-sm text-stone-600">Failed to load monthly drops. Please try again.</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-6 py-3 text-sm tracking-wider uppercase bg-stone-950 text-stone-50 rounded-xl hover:bg-stone-800 transition-all"
+            >
+              Reload
+            </button>
+          </div>
+        </div>
+      )
     }
 
     return (
@@ -225,7 +328,10 @@ export default function AcademyScreen() {
               <ResourceCard
                 key={drop.id}
                 resource={drop}
-                onDownload={(id, url) => handleResourceDownload(id, url, "monthly_drop")}
+                onDownload={(id, url) => {
+                  console.log("[v0] Monthly drop download clicked:", id, url)
+                  handleResourceDownload(id, url, "monthly_drop")
+                }}
               />
             ))}
           </div>
@@ -237,6 +343,23 @@ export default function AcademyScreen() {
   if (selectedView === "flatlay-images") {
     if (flatlayImagesLoading) {
       return <UnifiedLoading message="Loading flatlay images..." />
+    }
+
+    if (flatlayImagesError) {
+      console.error("[v0] Flatlay images error:", flatlayImagesError)
+      return (
+        <div className="flex items-center justify-center min-h-[400px] px-4">
+          <div className="text-center space-y-4">
+            <p className="text-sm text-stone-600">Failed to load flatlay images. Please try again.</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-6 py-3 text-sm tracking-wider uppercase bg-stone-950 text-stone-50 rounded-xl hover:bg-stone-800 transition-all"
+            >
+              Reload
+            </button>
+          </div>
+        </div>
+      )
     }
 
     return (
@@ -277,7 +400,10 @@ export default function AcademyScreen() {
               <ResourceCard
                 key={flatlay.id}
                 resource={flatlay}
-                onDownload={(id, url) => handleResourceDownload(id, url, "flatlay_image")}
+                onDownload={(id, url) => {
+                  console.log("[v0] Flatlay download clicked:", id, url)
+                  handleResourceDownload(id, url, "flatlay_image")
+                }}
               />
             ))}
           </div>

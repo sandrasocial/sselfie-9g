@@ -36,6 +36,15 @@ export default function ResourceCard({ resource, onDownload }: ResourceCardProps
     has_thumbnail: !!resource.thumbnail_url,
   })
 
+  const handleDownloadClick = () => {
+    console.log("[v0] ResourceCard download button clicked:", {
+      id: resource.id,
+      title: resource.title,
+      url: resource.resource_url,
+    })
+    onDownload(resource.id, resource.resource_url)
+  }
+
   return (
     <div className="bg-white border border-stone-200 rounded-2xl overflow-hidden hover:border-stone-300 transition-all group">
       {/* Thumbnail */}
@@ -79,8 +88,9 @@ export default function ResourceCard({ resource, onDownload }: ResourceCardProps
         </div>
 
         <button
-          onClick={() => onDownload(resource.id, resource.resource_url)}
-          className="w-full flex items-center justify-center gap-2 bg-stone-950 text-stone-50 py-3 rounded-xl text-sm tracking-wider uppercase hover:bg-stone-800 transition-all"
+          onClick={handleDownloadClick}
+          className="w-full flex items-center justify-center gap-2 bg-stone-950 text-stone-50 py-3 rounded-xl text-sm tracking-wider uppercase hover:bg-stone-800 transition-all active:scale-95"
+          style={{ touchAction: "manipulation" }}
         >
           <Download className="w-4 h-4" />
           Download
