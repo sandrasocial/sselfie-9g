@@ -6,7 +6,7 @@ import { hasStudioMembership } from "@/lib/subscription"
 
 export async function GET(req: NextRequest, { params }: { params: { courseId: string } }) {
   try {
-    const { courseId } = params
+    const { courseId } = await params
 
     console.log("[v0] Academy course details API called for course:", courseId)
 

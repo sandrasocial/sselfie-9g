@@ -25,8 +25,11 @@ export async function updateSession(request: NextRequest) {
     },
   )
 
-  // Only refresh the session, don't check user or redirect
-  await supabase.auth.getUser()
+  try {
+    await supabase.auth.getUser()
+  } catch (error) {
+    // Silently ignore auth errors - user might not be logged in
+  }
 
   return supabaseResponse
 }

@@ -35,7 +35,7 @@ async function checkAdminAccess() {
   }
 }
 
-export async function PATCH(request: NextRequest, { params }: { params: { templateId: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ templateId: string }> }) {
   const isAdmin = await checkAdminAccess()
   if (!isAdmin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
@@ -44,7 +44,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { templa
   try {
     const body = await request.json()
     const { title, description, thumbnail_url, resource_type, resource_url, category, order_index, status } = body
-    const templateId = params.templateId
+    const { templateId } = await params
 
     const result = await sql`
       UPDATE academy_templates
@@ -69,14 +69,14 @@ export async function PATCH(request: NextRequest, { params }: { params: { templa
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { templateId: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ templateId: string }> }) {
   const isAdmin = await checkAdminAccess()
   if (!isAdmin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
   }
 
   try {
-    const templateId = params.templateId
+    const { templateId } = await params
 
     await sql`
       DELETE FROM academy_templates

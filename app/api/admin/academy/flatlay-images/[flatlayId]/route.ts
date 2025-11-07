@@ -35,7 +35,7 @@ async function checkAdminAccess() {
   }
 }
 
-export async function PATCH(request: NextRequest, { params }: { params: { flatlayId: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ flatlayId: string }> }) {
   console.log("[v0] PATCH /api/admin/academy/flatlay-images/[id] called")
 
   const isAdmin = await checkAdminAccess()
@@ -49,7 +49,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { flatla
     console.log("[v0] Request body:", body)
 
     const { title, description, thumbnail_url, resource_type, resource_url, category, order_index, status } = body
-    const flatlayId = params.flatlayId
+    const { flatlayId } = await params
 
     console.log("[v0] Updating flatlay image:", flatlayId)
     console.log("[v0] Thumbnail URL to save:", thumbnail_url)
@@ -78,14 +78,14 @@ export async function PATCH(request: NextRequest, { params }: { params: { flatla
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { flatlayId: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ flatlayId: string }> }) {
   const isAdmin = await checkAdminAccess()
   if (!isAdmin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
   }
 
   try {
-    const flatlayId = params.flatlayId
+    const { flatlayId } = await params
 
     await sql`
       DELETE FROM academy_flatlay_images

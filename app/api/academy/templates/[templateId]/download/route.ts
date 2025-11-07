@@ -31,7 +31,7 @@ export async function POST(request: NextRequest, { params }: { params: { templat
       return NextResponse.json({ error: "Access denied" }, { status: 403 })
     }
 
-    const templateId = params.templateId
+    const { templateId } = await params
 
     // Increment download count
     await sql`
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest, { params }: { params: { templat
     // Track user download
     await sql`
       INSERT INTO user_resource_downloads (user_id, resource_type, resource_id)
-      VALUES (${neonUser.id}, 'template', ${templateId})
+      VALUES (${neonUser.id}, 'template', ${Number.parseInt(templateId)})
     `
 
     return NextResponse.json({ success: true })

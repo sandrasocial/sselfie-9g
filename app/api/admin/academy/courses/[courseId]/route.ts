@@ -7,7 +7,7 @@ const sql = neon(process.env.DATABASE_URL!)
 const ADMIN_EMAIL = "ssa@ssasocial.com"
 
 // PATCH update course
-export async function PATCH(request: Request, { params }: { params: { courseId: string } }) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ courseId: string }> }) {
   try {
     const supabase = await createServerClient()
     const {
@@ -24,7 +24,7 @@ export async function PATCH(request: Request, { params }: { params: { courseId: 
       return NextResponse.json({ error: "Admin access required" }, { status: 403 })
     }
 
-    const { courseId } = params
+    const { courseId } = await params
     const { title, description, thumbnail_url, order_index, status } = await request.json()
 
     const updatedCourse = await sql`
@@ -54,7 +54,7 @@ export async function PATCH(request: Request, { params }: { params: { courseId: 
 }
 
 // DELETE course
-export async function DELETE(request: Request, { params }: { params: { courseId: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ courseId: string }> }) {
   try {
     const supabase = await createServerClient()
     const {
@@ -71,7 +71,7 @@ export async function DELETE(request: Request, { params }: { params: { courseId:
       return NextResponse.json({ error: "Admin access required" }, { status: 403 })
     }
 
-    const { courseId } = params
+    const { courseId } = await params
 
     await sql`DELETE FROM academy_courses WHERE id = ${courseId}`
 

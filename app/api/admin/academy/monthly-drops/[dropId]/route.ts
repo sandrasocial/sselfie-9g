@@ -35,7 +35,7 @@ async function checkAdminAccess() {
   }
 }
 
-export async function PATCH(request: NextRequest, { params }: { params: { dropId: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ dropId: string }> }) {
   const isAdmin = await checkAdminAccess()
   if (!isAdmin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
@@ -45,7 +45,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { dropId
     const body = await request.json()
     const { title, description, thumbnail_url, resource_type, resource_url, month, category, order_index, status } =
       body
-    const dropId = params.dropId
+    const { dropId } = await params
 
     const result = await sql`
       UPDATE academy_monthly_drops
@@ -71,14 +71,14 @@ export async function PATCH(request: NextRequest, { params }: { params: { dropId
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { dropId: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ dropId: string }> }) {
   const isAdmin = await checkAdminAccess()
   if (!isAdmin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
   }
 
   try {
-    const dropId = params.dropId
+    const { dropId } = await params
 
     await sql`
       DELETE FROM academy_monthly_drops

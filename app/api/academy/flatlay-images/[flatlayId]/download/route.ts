@@ -31,7 +31,7 @@ export async function POST(request: NextRequest, { params }: { params: { flatlay
       return NextResponse.json({ error: "Access denied" }, { status: 403 })
     }
 
-    const flatlayId = params.flatlayId
+    const { flatlayId } = await params
 
     await sql`
       UPDATE academy_flatlay_images
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest, { params }: { params: { flatlay
 
     await sql`
       INSERT INTO user_resource_downloads (user_id, resource_type, resource_id)
-      VALUES (${neonUser.id}, 'flatlay-image', ${flatlayId})
+      VALUES (${neonUser.id}, 'flatlay-image', ${Number.parseInt(flatlayId)})
     `
 
     return NextResponse.json({ success: true })
