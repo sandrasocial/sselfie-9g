@@ -183,20 +183,142 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
     )
   }
 
-  if (loading) {
+  if (!userInfo && initialEmail) {
     return (
-      <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
-        <div className="text-center">
-          <div className="font-serif text-xl sm:text-2xl font-extralight tracking-[0.3em] uppercase text-stone-900 mb-4">
-            LOADING
+      <div className="min-h-screen bg-stone-50">
+        <div className="relative h-[40vh] sm:h-[50vh] md:h-[60vh] overflow-hidden">
+          <Image
+            src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/_%20%2842%29-7c6UXso773x523qKCiuawGNpuzsx8n.jpeg"
+            fill
+            alt="Welcome to SSELFIE"
+            className="object-cover object-center"
+            priority
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-stone-50" />
+
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
+            <div className="font-serif text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extralight tracking-[0.3em] sm:tracking-[0.2em] uppercase text-white mb-3 sm:mb-4">
+              S S E L F I E
+            </div>
+            <p className="text-sm sm:text-base md:text-lg text-white/90 font-light max-w-md">You're in</p>
           </div>
-          <div className="text-xs sm:text-sm text-stone-500 font-light">Just a moment...</div>
+        </div>
+
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12 md:py-16">
+          <div className="text-center mb-8 sm:mb-12">
+            <h1 className="font-serif text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extralight tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-900 mb-3 sm:mb-4 px-2">
+              LET'S GET YOU STARTED
+            </h1>
+            <p className="text-sm sm:text-base text-stone-600 font-light leading-relaxed max-w-xl mx-auto px-4">
+              Just a few quick details and you'll be creating your first AI photos. This takes less than a minute.
+            </p>
+          </div>
+
+          <div className="bg-white rounded-2xl p-6 sm:p-8 md:p-10 border border-stone-200 shadow-sm">
+            <form onSubmit={handleCompleteAccount} className="space-y-5 sm:space-y-6">
+              <div>
+                <label
+                  htmlFor="name"
+                  className="block text-xs sm:text-sm text-stone-700 font-light tracking-wider uppercase mb-2"
+                >
+                  Your Name
+                </label>
+                <input
+                  type="text"
+                  id="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 sm:py-4 bg-stone-50 border border-stone-200 rounded-lg focus:border-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900 transition-colors text-sm sm:text-base font-light"
+                  placeholder="What should we call you?"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="email"
+                  className="block text-xs sm:text-sm text-stone-700 font-light tracking-wider uppercase mb-2"
+                >
+                  Email
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  value={initialEmail}
+                  disabled
+                  className="w-full px-4 py-3 sm:py-4 bg-stone-100 border border-stone-200 rounded-lg text-stone-500 text-sm sm:text-base font-light"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="password"
+                  className="block text-xs sm:text-sm text-stone-700 font-light tracking-wider uppercase mb-2"
+                >
+                  Choose Password
+                </label>
+                <input
+                  type="password"
+                  id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={8}
+                  className="w-full px-4 py-3 sm:py-4 bg-stone-50 border border-stone-200 rounded-lg focus:border-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900 transition-colors text-sm sm:text-base font-light"
+                  placeholder="At least 8 characters"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="confirmPassword"
+                  className="block text-xs sm:text-sm text-stone-700 font-light tracking-wider uppercase mb-2"
+                >
+                  Confirm Password
+                </label>
+                <input
+                  type="password"
+                  id="confirmPassword"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  minLength={8}
+                  className="w-full px-4 py-3 sm:py-4 bg-stone-50 border border-stone-200 rounded-lg focus:border-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900 transition-colors text-sm sm:text-base font-light"
+                  placeholder="One more time"
+                />
+              </div>
+
+              {error && (
+                <div className="bg-stone-100 border border-stone-300 rounded-lg p-3 sm:p-4">
+                  <p className="text-xs sm:text-sm text-stone-700 font-light">{error}</p>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full bg-stone-950 text-stone-50 px-6 py-3 sm:py-4 rounded-lg text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
+              >
+                {isSubmitting ? "SETTING UP..." : "LET'S GO"}
+              </button>
+
+              <p className="text-[10px] sm:text-xs text-stone-500 font-light text-center leading-relaxed">
+                By continuing, you agree to our Terms of Service and Privacy Policy
+              </p>
+            </form>
+          </div>
+
+          <div className="mt-6 sm:mt-8 text-center">
+            <p className="text-xs sm:text-sm text-stone-600 font-light leading-relaxed">
+              Check your email for your receipt and welcome message from Sandra 💋
+            </p>
+          </div>
         </div>
       </div>
     )
   }
 
-  if (!userInfo) {
+  if (!userInfo && !initialEmail) {
     return (
       <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4 sm:p-6">
         <div className="max-w-2xl text-center">
@@ -212,6 +334,19 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
           >
             Return Home
           </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="font-serif text-xl sm:text-2xl font-extralight tracking-[0.3em] sm:tracking-[0.2em] uppercase text-stone-900 mb-4">
+            LOADING
+          </div>
+          <div className="text-xs sm:text-sm text-stone-500 font-light">Just a moment...</div>
         </div>
       </div>
     )
