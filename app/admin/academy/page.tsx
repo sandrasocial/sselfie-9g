@@ -1569,10 +1569,10 @@ export default function AdminAcademyPage() {
                   <option value="">Select Category...</option>
                   <option value="social-media">Social Media</option>
                   <option value="email-marketing">Email Marketing</option>
-                  <option value="branding">Branding & Identity</option>
+                  <option value="branding">Branding</option>
                   <option value="content-creation">Content Creation</option>
-                  <option value="business">Business & Planning</option>
-                  <option value="education">Education & Courses</option>
+                  <option value="business">Business</option>
+                  <option value="education">Education</option>
                   <option value="other">Other</option>
                 </select>
               </div>

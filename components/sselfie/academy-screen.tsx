@@ -224,6 +224,52 @@ export default function AcademyScreen() {
     setSelectedCourseId(null)
   }
 
+  const templateCategories = [
+    {
+      value: "all",
+      label: "All Templates",
+      image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/_%20%2847%29-kGWMLFs2EnK6NrtqNjsIyS4kfQxer8.jpeg",
+    },
+    {
+      value: "social-media",
+      label: "Social Media",
+      image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/_%20%2847%29-kGWMLFs2EnK6NrtqNjsIyS4kfQxer8.jpeg",
+    },
+    {
+      value: "email-marketing",
+      label: "Email Marketing",
+      image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/_%20%2842%29-9YjBZswCzTL0RY7fbkRjXC2uzoaSdO.jpeg",
+    },
+    {
+      value: "branding",
+      label: "Branding",
+      image:
+        "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/887-JHliMtQOFFLmPDRmabtQ9DAuiPDTOv-WK6zYM31cXxUOP8ZIy4vGzN60qYe75.png",
+    },
+    {
+      value: "content-creation",
+      label: "Content Creation",
+      image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/_%20%2841%29-GJFGAsjbFNigSGQs5jVo1Y9u3agBq6.jpeg",
+    },
+    {
+      value: "business",
+      label: "Business",
+      image:
+        "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/885-BRNmqKHXcPLB1Ff5XK1UYWRrSOnfVm-iOOarwktPIBXUZk0hyYqzL3ycGL9Ab.png",
+    },
+    {
+      value: "education",
+      label: "Education",
+      image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/_%20%2843%29-L0w1kYOCCcM1XOPiqyzHcJ1CW9YU5T.jpeg",
+    },
+    {
+      value: "other",
+      label: "Other",
+      image:
+        "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/888-2PU4IDaX9DXr7N86jedTuQDak6KWxP-e8JM3OpuHd120n4RGK7QBY0dtrlHJ3.png",
+    },
+  ]
+
   if (selectedView === "templates") {
     if (templatesLoading) {
       return <UnifiedLoading message="Loading templates..." />
@@ -245,57 +291,6 @@ export default function AcademyScreen() {
         </div>
       )
     }
-
-    const templateCategories = [
-      {
-        value: "all",
-        label: "All Templates",
-        image:
-          "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/_%20%2847%29-kGWMLFs2EnK6NrtqNjsIyS4kfQxer8.jpeg",
-      },
-      {
-        value: "social_media",
-        label: "Social Media",
-        image:
-          "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/_%20%2847%29-kGWMLFs2EnK6NrtqNjsIyS4kfQxer8.jpeg",
-      },
-      {
-        value: "email_marketing",
-        label: "Email Marketing",
-        image:
-          "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/_%20%2842%29-9YjBZswCzTL0RY7fbkRjXC2uzoaSdO.jpeg",
-      },
-      {
-        value: "branding",
-        label: "Branding",
-        image:
-          "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/887-JHliMtQOFFLmPDRmabtQ9DAuiPDTOv-WK6zYM31cXxUOP8ZIy4vGzN60qYe75.png",
-      },
-      {
-        value: "content_creation",
-        label: "Content Creation",
-        image:
-          "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/_%20%2841%29-GJFGAsjbFNigSGQs5jVo1Y9u3agBq6.jpeg",
-      },
-      {
-        value: "business",
-        label: "Business",
-        image:
-          "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/885-BRNmqKHXcPLB1Ff5XK1UYWRrSOnfVm-iOOarwktPIBXUZk0hyYqzL3ycGL9Ab.png",
-      },
-      {
-        value: "education",
-        label: "Education",
-        image:
-          "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/_%20%2843%29-L0w1kYOCCcM1XOPiqyzHcJ1CW9YU5T.jpeg",
-      },
-      {
-        value: "other",
-        label: "Other",
-        image:
-          "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/888-2PU4IDaX9DXr7N86jedTuQDak6KWxP-e8JM3OpuHd120n4RGK7QBY0dtrlHJ3.png",
-      },
-    ]
 
     if (showCategoryGrid && selectedTemplateCategory === "all") {
       return (
