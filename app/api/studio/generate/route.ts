@@ -59,20 +59,20 @@ export async function POST(request: Request) {
 
     console.log("[v0] Full prompt:", fullPrompt)
 
-    // Start generation using the trained model
+    // Start generation using the trained model with improved settings
     const prediction = await replicate.predictions.create({
       version: model.replicate_version_id,
       input: {
         prompt: fullPrompt,
         num_outputs: 4,
         aspect_ratio: "1:1",
-        output_format: "png", // Updated from webp to png
-        output_quality: 95, // Updated from 100 to 95
-        num_inference_steps: 28,
-        guidance_scale: 3.2, // Increased guidance_scale from 2.8 to 3.2 for more realistic images
+        output_format: "png",
+        output_quality: 95,
+        num_inference_steps: 50, // Increased from 28 for higher quality
+        guidance_scale: 3.5, // Increased from 3.2 for better prompt adherence
         lora: model.lora_weights_url,
-        lora_scale: model.lora_scale || 0.9,
-        extra_lora_scale: 1, // Added new flux parameters
+        lora_scale: 1.0, // Increased from 0.9 for stronger likeness
+        extra_lora_scale: 1,
         megapixels: "1",
         prompt_strength: 0.8,
         model: "dev",
@@ -81,7 +81,7 @@ export async function POST(request: Request) {
 
     console.log("[v0] Prediction created:", prediction.id)
     console.log("[v0] ✅ LoRA weights sent to Replicate:", model.lora_weights_url)
-    console.log("[v0] ✅ LoRA scale:", model.lora_scale || 0.9)
+    console.log("[v0] ✅ LoRA scale:", 1.0)
 
     // Save generation record to database
     const [generation] = await sql`

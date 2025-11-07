@@ -30,24 +30,25 @@ export function getReplicateClient() {
   return replicateInstance
 }
 
-// Flux LoRA training model
-export const FLUX_LORA_TRAINER = "ostris/flux-dev-lora-trainer"
-export const FLUX_LORA_TRAINER_VERSION = "26dce37af90b9d997eeb970d92e47de3064d46c300504ae376c75bef6a9022d2"
+// Flux LoRA training model - using fast-flux-trainer (May 2025 release)
+export const FLUX_LORA_TRAINER = "replicate/fast-flux-trainer"
+export const FLUX_LORA_TRAINER_VERSION = "e43bd8427cbb0eff747be5c5d62de7f62009ba5c"
 
-// Default training parameters
+// Default training parameters - optimized for portrait quality and likeness
 export const DEFAULT_TRAINING_PARAMS = {
-  steps: 1400,
-  lora_rank: 48,
+  steps: 1000, // Reduced from 1400 to prevent overfitting
+  lora_rank: 36, // Reduced from 48 for better generalization
   optimizer: "adamw8bit",
   batch_size: 1,
-  resolution: "512,768,1024",
+  resolution: "1024", // Focused on single high resolution for portraits
   autocaption: true,
   trigger_word: "",
-  learning_rate: 0.00015,
+  learning_rate: 0.0004, // Increased from 0.00015 (standard for flux)
   wandb_project: "flux_train_replicate",
-  caption_dropout_rate: 0.1,
+  caption_dropout_rate: 0.05, // Reduced from 0.1 for better caption consistency
   cache_latents_to_disk: false,
   wandb_save_interval: 100,
   caption_prefix: "",
-  num_repeats: 18,
+  num_repeats: 15, // Reduced from 18 to prevent memorization
+  lora_type: "subject", // Required for fast-flux-trainer
 }

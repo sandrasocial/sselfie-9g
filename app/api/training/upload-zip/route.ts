@@ -2,7 +2,12 @@ import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getOrCreateTrainingModel } from "@/lib/data/training"
-import { getReplicateClient, FLUX_LORA_TRAINER_VERSION, DEFAULT_TRAINING_PARAMS } from "@/lib/replicate-client"
+import {
+  getReplicateClient,
+  FLUX_LORA_TRAINER,
+  FLUX_LORA_TRAINER_VERSION,
+  DEFAULT_TRAINING_PARAMS,
+} from "@/lib/replicate-client"
 import { put } from "@vercel/blob"
 import { neon } from "@neondatabase/serverless"
 
@@ -137,18 +142,24 @@ export async function POST(request: Request) {
       }
 
       console.log("[v0] Starting Replicate training with SDK...")
-      const training = await replicate.trainings.create("ostris", "flux-dev-lora-trainer", FLUX_LORA_TRAINER_VERSION, {
-        destination,
-        input: {
-          ...DEFAULT_TRAINING_PARAMS,
-          input_images: blob.url,
-          trigger_word: triggerWord,
+      const training = await replicate.trainings.create(
+        FLUX_LORA_TRAINER.split("/")[0],
+        FLUX_LORA_TRAINER.split("/")[1],
+        FLUX_LORA_TRAINER_VERSION,
+        {
+          destination,
+          input: {
+            ...DEFAULT_TRAINING_PARAMS,
+            input_images: blob.url,
+            trigger_word: triggerWord,
+          },
         },
-      })
+      )
 
       console.log("[v0] Replicate training started successfully:", {
         id: training.id,
         status: training.status,
+        trainer: FLUX_LORA_TRAINER,
       })
 
       await sql`
