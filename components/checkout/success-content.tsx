@@ -22,13 +22,17 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
   const [confirmPassword, setConfirmPassword] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState("")
-  const [retryCount, setRetryCount] = useState(0)
-  const MAX_RETRIES = 10
 
   useEffect(() => {
-    if (!initialUserInfo && initialEmail && retryCount < MAX_RETRIES) {
-      console.log(`[v0] Polling for user creation (attempt ${retryCount + 1}/${MAX_RETRIES})`)
-      const pollTimer = setTimeout(async () => {
+    if (!initialUserInfo && initialEmail) {
+      console.log("[v0] Starting user polling...")
+      let attempts = 0
+      const MAX_ATTEMPTS = 10
+
+      const pollInterval = setInterval(async () => {
+        attempts++
+        console.log(`[v0] Polling for user creation (attempt ${attempts}/${MAX_ATTEMPTS})`)
+
         try {
           const response = await fetch(`/api/user-by-email?email=${encodeURIComponent(initialEmail)}`)
           const data = await response.json()
@@ -37,22 +41,26 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
             console.log("[v0] User found, updating UI")
             setUserInfo(data.userInfo)
             setLoading(false)
-          } else {
-            console.log("[v0] User not found yet, retrying...")
-            setRetryCount((prev) => prev + 1)
+            clearInterval(pollInterval)
+          } else if (attempts >= MAX_ATTEMPTS) {
+            console.log("[v0] Max attempts reached, showing pending state")
+            setLoading(false)
+            clearInterval(pollInterval)
           }
         } catch (err) {
           console.error("[v0] Error polling for user:", err)
-          setRetryCount((prev) => prev + 1)
+          if (attempts >= MAX_ATTEMPTS) {
+            setLoading(false)
+            clearInterval(pollInterval)
+          }
         }
       }, 2000) // Poll every 2 seconds
 
-      return () => clearTimeout(pollTimer)
-    } else if (retryCount >= MAX_RETRIES && !userInfo) {
-      console.log("[v0] Max retries reached, showing pending state")
+      return () => clearInterval(pollInterval)
+    } else if (initialUserInfo) {
       setLoading(false)
     }
-  }, [initialEmail, initialUserInfo, retryCount, userInfo])
+  }, [initialEmail, initialUserInfo])
 
   useEffect(() => {
     const checkAuth = async () => {
