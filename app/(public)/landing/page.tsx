@@ -105,7 +105,7 @@ export default function LandingPage() {
               </div>
 
               <p className="text-xs font-light tracking-wider uppercase text-stone-500">
-                50% OFF BETA PRICING • FIRST 100 MEMBERS
+                BETA PRICING • FIRST 100 MEMBERS
               </p>
             </motion.div>
 
@@ -272,7 +272,7 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={featuresInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.8 }}
-            className="text-center mb-16 sm:mb-24"
+            className="text-center mb-16 sm:mb-24 lg:mb-32"
           >
             <h2 className="font-serif text-3xl sm:text-4xl md:text-6xl font-extralight tracking-[0.3em] uppercase mb-6 text-stone-950 text-balance">
               EVERYTHING YOU NEED
@@ -485,10 +485,10 @@ export default function LandingPage() {
             className="bg-stone-950 text-stone-50 p-4 sm:p-6 rounded-lg text-center mb-8 sm:mb-12 max-w-3xl mx-auto"
           >
             <p className="text-xs sm:text-sm font-light tracking-[0.3em] uppercase mb-2 text-stone-300">
-              50% OFF FOR FIRST 100
+              BETA PRICING FOR FIRST 100
             </p>
             <p className="text-sm sm:text-base font-light leading-relaxed">
-              Lock in beta pricing forever. Limited spots available.
+              Lock in this pricing forever. Limited spots available.
             </p>
           </motion.div>
 
@@ -506,10 +506,10 @@ export default function LandingPage() {
               </h3>
               <div className="mb-6">
                 <div className="flex items-baseline gap-2 mb-2">
-                  <span className="font-serif text-4xl sm:text-5xl font-extralight">$49</span>
                   <span className="text-xl sm:text-2xl font-light text-stone-400 line-through">$99</span>
+                  <span className="font-serif text-4xl sm:text-5xl font-extralight">$49</span>
                 </div>
-                <p className="text-xs font-light tracking-wider uppercase text-stone-500">ONE-TIME • BETA PRICING</p>
+                <p className="text-xs font-light tracking-wider uppercase text-stone-500">ONE-TIME • 50% OFF BETA</p>
               </div>
               <p className="text-sm font-light leading-relaxed text-stone-700 mb-6 text-pretty">
                 Not ready to commit? Try one AI photoshoot first. No subscription, just see if you like it.
@@ -552,12 +552,12 @@ export default function LandingPage() {
               </h3>
               <div className="mb-6">
                 <div className="flex items-baseline gap-2 mb-2">
-                  <span className="font-serif text-4xl sm:text-5xl font-extralight">$99</span>
                   <span className="text-xl sm:text-2xl font-light text-stone-400 line-through">$199</span>
+                  <span className="font-serif text-4xl sm:text-5xl font-extralight">$99</span>
                   <span className="text-sm font-light text-stone-400">/month</span>
                 </div>
                 <p className="text-xs font-light tracking-wider uppercase text-stone-400">
-                  CANCEL ANYTIME • BETA PRICING LOCKED
+                  CANCEL ANYTIME • 50% OFF BETA
                 </p>
               </div>
               <p className="text-sm font-light leading-relaxed text-stone-50 mb-6 text-pretty">
@@ -583,7 +583,7 @@ export default function LandingPage() {
               </ul>
               <Link
                 href="/auth/sign-up?product=sselfie_studio_membership"
-                className="block w-full bg-stone-50 text-stone-950 px-6 py-3 text-center text-sm font-medium uppercase tracking-wider hover:bg-stone-100 transition-all duration-200"
+                className="block w-full bg-stone-50 text-stone-950 px-6 sm:px-8 py-3 sm:py-4 text-sm font-medium uppercase tracking-wider hover:bg-stone-100 transition-all duration-200"
               >
                 JOIN THE STUDIO
               </Link>

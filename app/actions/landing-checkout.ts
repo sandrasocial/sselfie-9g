@@ -25,7 +25,7 @@ export async function createLandingCheckoutSession(productId: string) {
   // Determine if this is a subscription or one-time payment
   const isSubscription = product.type === "sselfie_studio_membership"
 
-  const discountedPrice = Math.round(product.priceInCents * 0.5) // 50% off
+  const betaPrice = product.priceInCents // Use beta price directly from product config ($24.50 and $49.50)
 
   const session = await stripe.checkout.sessions.create({
     ui_mode: "embedded",
@@ -37,9 +37,9 @@ export async function createLandingCheckoutSession(productId: string) {
           currency: "usd",
           product_data: {
             name: product.name,
-            description: `${product.description} • BETA PRICING - 50% OFF`,
+            description: product.description, // Remove "BETA PRICING" suffix
           },
-          unit_amount: discountedPrice, // Apply 50% discount
+          unit_amount: betaPrice, // This will now correctly show $24.50 and $49.50 in Stripe checkout
           ...(isSubscription && {
             recurring: {
               interval: "month",
