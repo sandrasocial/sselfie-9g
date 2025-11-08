@@ -72,7 +72,7 @@ const generateConceptsTool = tool({
         throw new Error("User not found")
       }
 
-      let userGender = "person"
+      let userGender = "person" // Default fallback
       const { neon } = await import("@neondatabase/serverless")
       const sql = neon(process.env.DATABASE_URL!)
 
@@ -84,15 +84,31 @@ const generateConceptsTool = tool({
         LIMIT 1
       `
 
-      if (userDataResult.length > 0) {
-        if (userDataResult[0].gender) {
-          userGender = userDataResult[0].gender
+      console.log("[v0] User data from database:", userDataResult[0])
+
+      if (userDataResult.length > 0 && userDataResult[0].gender) {
+        // Normalize gender values: "woman"/"man"/"non-binary" from database
+        const dbGender = userDataResult[0].gender.toLowerCase().trim()
+
+        // Map database values to prompt-friendly values
+        if (dbGender === "woman" || dbGender === "female") {
+          userGender = "woman"
+        } else if (dbGender === "man" || dbGender === "male") {
+          userGender = "man"
+        } else if (dbGender === "non-binary" || dbGender === "nonbinary" || dbGender === "non binary") {
+          userGender = "person"
+        } else {
+          userGender = dbGender // Use whatever they provided
         }
       }
 
       const triggerWord = userDataResult[0]?.trigger_word || `user${user.id}`
 
-      console.log("[v0] User data for concept generation:", { userGender, triggerWord })
+      console.log("[v0] User data for concept generation:", {
+        userGender,
+        triggerWord,
+        rawGender: userDataResult[0]?.gender,
+      })
 
       const conceptPrompt = `You are Maya, SELFIE Studio's world-class AI Art Director with encyclopedic fashion knowledge and a signature poetic style.
 
