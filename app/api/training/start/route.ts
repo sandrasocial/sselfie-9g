@@ -2,7 +2,12 @@ import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { createTrainingModel } from "@/lib/data/training"
-import { getReplicateClient, DEFAULT_TRAINING_PARAMS } from "@/lib/replicate-client"
+import {
+  getReplicateClient,
+  DEFAULT_TRAINING_PARAMS,
+  FLUX_LORA_TRAINER,
+  FLUX_LORA_TRAINER_VERSION,
+} from "@/lib/replicate-client"
 import { createTrainingZip } from "@/lib/storage"
 import { neon } from "@neondatabase/serverless"
 import { checkCredits, deductCredits, getUserCredits, CREDIT_COSTS } from "@/lib/credits"
@@ -96,7 +101,7 @@ export async function POST(request: Request) {
       console.log("[v0] [TRAINING] Training started. Credits remaining:", finalBalance)
 
       // Start training with fast-flux-trainer
-      const training = await replicate.trainings.create("fast-flux-trainer", "fast-flux-trainer", {
+      const training = await replicate.trainings.create(FLUX_LORA_TRAINER, FLUX_LORA_TRAINER_VERSION, {
         destination: `${process.env.REPLICATE_USERNAME || "sandrasocial"}/${neonUser.id}-selfie-lora-${Date.now()}`,
         input: {
           ...DEFAULT_TRAINING_PARAMS,
