@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import Stripe from "stripe"
 
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
 export async function GET() {
   try {
     const stripeKey = process.env.STRIPE_SECRET_KEY
@@ -15,11 +17,19 @@ export async function GET() {
     // List all products
     const products = await stripe.products.list({ limit: 100, active: true })
 
-    // Get prices for each product
-    const productsWithPrices = await Promise.all(
-      products.data.map(async (product) => {
+    const productsWithPrices = []
+
+    for (let i = 0; i < products.data.length; i++) {
+      const product = products.data[i]
+
+      // Add 300ms delay between requests to avoid rate limit
+      if (i > 0) {
+        await delay(300)
+      }
+
+      try {
         const prices = await stripe.prices.list({ product: product.id, active: true })
-        return {
+        productsWithPrices.push({
           product_id: product.id,
           name: product.name,
           description: product.description,
@@ -34,9 +44,19 @@ export async function GET() {
                 }
               : null,
           })),
-        }
-      }),
-    )
+        })
+      } catch (error: any) {
+        console.error(`[v0] Error fetching prices for ${product.name}:`, error.message)
+        // Continue with product but no prices if rate limited
+        productsWithPrices.push({
+          product_id: product.id,
+          name: product.name,
+          description: product.description,
+          prices: [],
+          error: "Failed to fetch prices - rate limited",
+        })
+      }
+    }
 
     return NextResponse.json({
       mode: isTestMode ? "TEST" : "LIVE",
