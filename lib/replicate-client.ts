@@ -36,19 +36,19 @@ export const FLUX_LORA_TRAINER_VERSION = "56cb4a6447e586e40c6834a7a48b649336ade3
 
 // Default training parameters - optimized for portrait quality and likeness
 export const DEFAULT_TRAINING_PARAMS = {
-  steps: 1000, // Reduced from 1400 to prevent overfitting
-  lora_rank: 36, // Reduced from 48 for better generalization
+  steps: 1600, // Increased steps from 1000 to 1600 for better facial feature learning
+  lora_rank: 64, // Increased lora_rank from 36 to 64 for higher model capacity and detail
   optimizer: "adamw8bit",
   batch_size: 1,
   resolution: "1024", // Focused on single high resolution for portraits
   autocaption: true,
   trigger_word: "",
-  learning_rate: 0.0004, // Increased from 0.00015 (standard for flux)
+  learning_rate: 0.00015, // Reduced learning_rate from 0.0004 to 0.00015 (Flux standard) for precise, stable learning
   wandb_project: "flux_train_replicate",
-  caption_dropout_rate: 0.05, // Reduced from 0.1 for better caption consistency
+  caption_dropout_rate: 0.1, // Increased caption_dropout_rate from 0.05 to 0.10 for better trigger word learning
   cache_latents_to_disk: false,
   wandb_save_interval: 100,
   caption_prefix: "",
-  num_repeats: 15, // Reduced from 18 to prevent memorization
+  num_repeats: 20, // Increased num_repeats from 15 to 20 for more face exposure during training
   lora_type: "subject", // Required for fast-flux-trainer
 }
