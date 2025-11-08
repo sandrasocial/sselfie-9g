@@ -13,6 +13,7 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: '100mb', // Increased body size limit to 100mb to support ZIP uploads
     },
+    proxyClientMaxBodySize: '50mb', // Added proxy client max body size for API routes
   },
   async headers() {
     return [

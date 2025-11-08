@@ -150,6 +150,15 @@ export async function POST(request: NextRequest) {
         qualitySettings.aspect_ratio = customSettings.aspectRatio
         console.log("[v0] Using custom aspect ratio:", qualitySettings.aspect_ratio)
       }
+      // Add custom settings for extra LoRA
+      if (customSettings.extraLoRA !== undefined) {
+        qualitySettings.extra_lora = customSettings.extraLoRA
+        console.log("[v0] Using custom extra LoRA:", qualitySettings.extra_lora)
+      }
+      if (customSettings.extraLoRAStrength !== undefined) {
+        qualitySettings.extra_lora_scale = Number(customSettings.extraLoRAStrength)
+        console.log("[v0] Using custom extra LoRA strength:", qualitySettings.extra_lora_scale)
+      }
     } else if (userLoraScale !== null && userLoraScale !== undefined) {
       qualitySettings.lora_scale = Number(userLoraScale)
       console.log("[v0] Using user-specific LoRA scale:", qualitySettings.lora_scale)
@@ -182,16 +191,35 @@ export async function POST(request: NextRequest) {
 
     const predictionInput: any = {
       prompt: finalPrompt,
-      ...qualitySettings,
-      ...(qualitySettings.lora_scale !== undefined && { lora_scale: Number(qualitySettings.lora_scale) }),
+      guidance_scale: qualitySettings.guidance_scale,
+      num_inference_steps: qualitySettings.num_inference_steps,
+      aspect_ratio: qualitySettings.aspect_ratio,
+      megapixels: qualitySettings.megapixels,
+      output_format: qualitySettings.output_format,
+      output_quality: qualitySettings.output_quality,
+      prompt_strength: qualitySettings.prompt_strength,
+      lora_scale: Number(qualitySettings.lora_scale),
       hf_lora: userLoraPath,
-      seed: Math.floor(Math.random() * 1000000),
-      disable_safety_checker: false,
+      seed: qualitySettings.seed || Math.floor(Math.random() * 1000000),
+      disable_safety_checker: qualitySettings.disable_safety_checker ?? false,
+      go_fast: qualitySettings.go_fast ?? false,
+      num_outputs: qualitySettings.num_outputs ?? 1,
+      model: qualitySettings.model ?? "dev",
+      ...(qualitySettings.extra_lora && {
+        extra_lora: qualitySettings.extra_lora,
+        extra_lora_scale: qualitySettings.extra_lora_scale || 0.7,
+      }),
     }
 
     console.log("[v0] ========== FULL PREDICTION INPUT ==========")
     console.log("[v0] ✅ User LoRA path (hf_lora):", userLoraPath)
     console.log("[v0] ✅ LoRA scale:", predictionInput.lora_scale)
+    console.log("[v0] ✅ Extra LoRA (realism):", predictionInput.extra_lora || "none")
+    console.log("[v0] ✅ Extra LoRA scale:", predictionInput.extra_lora_scale || "none")
+    console.log("[v0] ✅ Model:", predictionInput.model)
+    console.log("[v0] ✅ Seed:", predictionInput.seed)
+    console.log("[v0] ✅ Num outputs:", predictionInput.num_outputs)
+    console.log("[v0] ✅ Go fast:", predictionInput.go_fast)
     console.log("[v0] Prediction input:", JSON.stringify(predictionInput, null, 2))
     console.log("[v0] ================================================")
 

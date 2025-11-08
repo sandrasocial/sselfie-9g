@@ -13,6 +13,16 @@ import { neon } from "@neondatabase/serverless"
 
 const sql = neon(process.env.DATABASE_URL!)
 
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: "50mb",
+    },
+  },
+}
+
+export const maxDuration = 300 // 5 minutes for file upload and processing
+
 export async function POST(request: Request) {
   try {
     console.log("[v0] Upload ZIP API called")
@@ -43,11 +53,11 @@ export async function POST(request: Request) {
     const zipSizeMB = zipFile.size / 1024 / 1024
     console.log(`[v0] Received ZIP file: ${zipFile.name}, size: ${zipSizeMB.toFixed(2)}MB`)
 
-    if (zipSizeMB > 15) {
+    if (zipSizeMB > 30) {
       return NextResponse.json(
         {
           error: "File too large",
-          details: `ZIP file is ${zipSizeMB.toFixed(2)}MB. Maximum size is 15MB. Please use fewer images or lower quality photos.`,
+          details: `ZIP file is ${zipSizeMB.toFixed(2)}MB. Maximum size is 30MB. Please use fewer images or lower quality photos.`,
         },
         { status: 413 },
       )
