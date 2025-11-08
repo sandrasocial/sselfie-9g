@@ -32,7 +32,7 @@ export function getReplicateClient() {
 
 // Flux LoRA training model - using fast-flux-trainer for superior realism
 export const FLUX_LORA_TRAINER = "replicate/fast-flux-trainer"
-export const FLUX_LORA_TRAINER_VERSION = "e43bd8427cbb0eff747be5c5d62de7f62009ba5c"
+export const FLUX_LORA_TRAINER_VERSION = "f463fbfc97389e10a2f443a8a84b6953b1058eafbf0c9af4d84457ff07cb04db"
 
 export const DEFAULT_TRAINING_PARAMS = {
   steps: 1400, // Increased from 1200 for better face detail learning
