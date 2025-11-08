@@ -101,14 +101,19 @@ export async function POST(request: Request) {
       console.log("[v0] [TRAINING] Training started. Credits remaining:", finalBalance)
 
       // Start training with fast-flux-trainer
-      const training = await replicate.trainings.create(FLUX_LORA_TRAINER, FLUX_LORA_TRAINER_VERSION, {
-        destination: `${process.env.REPLICATE_USERNAME || "sandrasocial"}/${neonUser.id}-selfie-lora-${Date.now()}`,
-        input: {
-          ...DEFAULT_TRAINING_PARAMS,
-          input_images: datasetUrl,
-          trigger_word: triggerWord,
+      const training = await replicate.trainings.create(
+        FLUX_LORA_TRAINER.split("/")[0], // "replicate"
+        FLUX_LORA_TRAINER.split("/")[1], // "fast-flux-trainer"
+        FLUX_LORA_TRAINER_VERSION, // "56cb4a64"
+        {
+          destination: `${process.env.REPLICATE_USERNAME || "sandrasocial"}/user-${neonUser.id.substring(0, 8)}-selfie-lora-${Date.now()}`,
+          input: {
+            ...DEFAULT_TRAINING_PARAMS,
+            input_images: datasetUrl,
+            trigger_word: triggerWord,
+          },
         },
-      })
+      )
 
       console.log("[v0] Replicate training started:", training.id)
       console.log("[v0] Trigger word:", triggerWord)
