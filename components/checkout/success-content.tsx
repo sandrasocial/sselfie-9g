@@ -23,42 +23,51 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
   const [error, setError] = useState("")
 
   useEffect(() => {
-    if (!initialUserInfo && initialEmail) {
+    if (initialEmail) {
       let attempts = 0
-      const MAX_ATTEMPTS = 30
+      const MAX_ATTEMPTS = 40 // Increased to 80 seconds total
+
+      console.log("[v0] Starting user info polling for email:", initialEmail)
 
       const pollInterval = setInterval(async () => {
         attempts++
+        console.log(`[v0] Polling attempt ${attempts}/${MAX_ATTEMPTS}`)
 
         try {
           const response = await fetch(`/api/user-by-email?email=${encodeURIComponent(initialEmail)}`)
 
           if (!response.ok) {
+            console.error(`[v0] API returned ${response.status}`)
             throw new Error(`API returned ${response.status}`)
           }
 
           const data = await response.json()
+          console.log("[v0] Poll response:", data)
 
           if (data.userInfo) {
+            console.log("[v0] User info found, setting state:", data.userInfo)
             setUserInfo(data.userInfo)
             clearInterval(pollInterval)
           } else if (attempts >= MAX_ATTEMPTS) {
+            console.log("[v0] Max attempts reached, showing default state")
             setUserInfo({ email: initialEmail, hasAccount: false })
             clearInterval(pollInterval)
           }
         } catch (err) {
+          console.error("[v0] Polling error:", err)
           if (attempts >= MAX_ATTEMPTS) {
+            console.log("[v0] Max attempts reached after error, showing default state")
             setUserInfo({ email: initialEmail, hasAccount: false })
             clearInterval(pollInterval)
           }
         }
-      }, 2000)
+      }, 2000) // Poll every 2 seconds
 
       return () => {
         clearInterval(pollInterval)
       }
     }
-  }, [initialEmail, initialUserInfo])
+  }, [initialEmail])
 
   useEffect(() => {
     const checkAuth = async () => {

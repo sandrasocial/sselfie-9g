@@ -30,14 +30,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Account setup incomplete. Please contact support." }, { status: 500 })
     }
 
-    // Update display name in Neon database
     await sql`
       UPDATE users 
-      SET display_name = ${name}, updated_at = NOW()
+      SET 
+        display_name = ${name}, 
+        password_setup_complete = TRUE,
+        updated_at = NOW()
       WHERE id = ${userId}
     `
 
-    console.log("[v0] Updated user display name in database")
+    console.log("[v0] Updated user display name and password setup status in database")
 
     const supabaseAdmin = createAdminClient()
 

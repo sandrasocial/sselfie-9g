@@ -360,4 +360,33 @@
   .animate-zoom-out {
     animation: zoom-out 0.2s ease-out;
   }
+
+  /* Added zoom utility classes with scale values for Tailwind v4 compatibility */
+  .zoom-in-90 {
+    animation: zoom-in 0.2s ease-out;
+    --tw-scale-x: 0.9;
+    --tw-scale-y: 0.9;
+  }
+
+  .zoom-in-95 {
+    animation: zoom-in 0.2s ease-out;
+    --tw-scale-x: 0.95;
+    --tw-scale-y: 0.95;
+  }
+
+  .zoom-out-95 {
+    animation: zoom-out 0.2s ease-out;
+    --tw-scale-x: 0.95;
+    --tw-scale-y: 0.95;
+  }
+
+  .fade-in-0 {
+    opacity: 0;
+    animation: fade-in 0.2s ease-out;
+  }
+
+  .fade-out-0 {
+    opacity: 1;
+    animation: fade-out 0.2s ease-out;
+  }
 }

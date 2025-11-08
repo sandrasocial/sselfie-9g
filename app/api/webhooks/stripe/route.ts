@@ -256,6 +256,13 @@ export async function POST(request: NextRequest) {
                   userId = neonUser.id
                   console.log(`[v0] Step 6: Created Neon user ${userId} for ${customerEmail}`)
 
+                  await sql`
+                    UPDATE users 
+                    SET password_setup_complete = FALSE
+                    WHERE id = ${userId}
+                  `
+                  console.log(`[v0] Set password_setup_complete to FALSE for new user ${userId}`)
+
                   let passwordSetupLink = resetData.properties.action_link
 
                   // Replace Supabase URLs with production URL
@@ -507,6 +514,13 @@ export async function POST(request: NextRequest) {
                 const neonUser = await getOrCreateNeonUser(createData.user.id, customerEmail, null)
                 userId = neonUser.id
                 console.log(`[v0] Step 6: Created Neon user ${userId} for ${customerEmail}`)
+
+                await sql`
+                  UPDATE users 
+                  SET password_setup_complete = FALSE
+                  WHERE id = ${userId}
+                `
+                console.log(`[v0] Set password_setup_complete to FALSE for new user ${userId}`)
 
                 if (productType === "sselfie_studio_membership") {
                   console.log(`[v0] Step 6.5: Granting ${credits} monthly credits to new user ${userId}`)

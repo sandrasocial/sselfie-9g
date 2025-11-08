@@ -1,6 +1,5 @@
 import { Suspense } from "react"
 import { SuccessContent } from "@/components/checkout/success-content"
-import { getUserByEmail } from "@/app/actions/landing-checkout"
 
 export default async function CheckoutSuccessPage({
   searchParams,
@@ -8,12 +7,8 @@ export default async function CheckoutSuccessPage({
   searchParams: Promise<{ session_id?: string; email?: string; type?: string }>
 }) {
   const params = await searchParams
-  let userInfo = null
 
-  if (params.email) {
-    userInfo = await getUserByEmail(params.email)
-  }
-
+  // This prevents race conditions where we fetch before webhook has processed
   return (
     <Suspense
       fallback={
@@ -26,7 +21,7 @@ export default async function CheckoutSuccessPage({
         </div>
       }
     >
-      <SuccessContent initialUserInfo={userInfo} initialEmail={params.email} purchaseType={params.type} />
+      <SuccessContent initialUserInfo={null} initialEmail={params.email} purchaseType={params.type} />
     </Suspense>
   )
 }

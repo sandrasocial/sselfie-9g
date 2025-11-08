@@ -4,7 +4,7 @@ import { getUserByAuthId } from "@/lib/user-mapping"
 import { neon } from "@neondatabase/serverless"
 import { stripe } from "@/lib/stripe"
 
-const ADMIN_EMAIL = "ssa@ssasocial.com"
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "ssa@ssasocial.com"
 
 export async function GET() {
   try {
@@ -22,7 +22,7 @@ export async function GET() {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    const sql = neon(process.env.DATABASE_URL!)
+    const sql = neon(process.env.DATABASE_URL || "")
 
     // Get active subscriptions for MRR calculation
     const subscriptionsResult = await sql`
@@ -57,7 +57,8 @@ export async function GET() {
     const creditPurchasesResult = await sql`
       SELECT 
         COUNT(*) as total_purchases,
-        SUM(amount) as total_credits_sold
+        SUM(amount) as total_credits_sold,
+        SUM(amount) FILTER (WHERE stripe_payment_id IS NOT NULL) as real_credit_revenue_cents
       FROM credit_transactions
       WHERE transaction_type = 'purchase'
       AND stripe_payment_id IS NOT NULL
@@ -104,21 +105,41 @@ export async function GET() {
         ct.transaction_type,
         ct.description,
         ct.created_at,
+        ct.stripe_payment_id,
         u.email as user_email
       FROM credit_transactions ct
       JOIN users u ON ct.user_id = u.id
-      WHERE ct.transaction_type IN ('purchase', 'subscription_grant')
+      WHERE ct.stripe_payment_id IS NOT NULL
       ORDER BY ct.created_at DESC
       LIMIT 10
     `
+
+    // Get stats for users with trained models
+    const userStats = await sql`
+      SELECT 
+        COUNT(DISTINCT u.id) as total_users,
+        COUNT(DISTINCT um.id) FILTER (WHERE um.training_status = 'completed') as users_with_models,
+        COUNT(DISTINCT s.id) FILTER (WHERE s.status = 'active') as active_subscribers
+      FROM users u
+      LEFT JOIN user_models um ON um.user_id = u.id
+      LEFT JOIN subscriptions s ON s.user_id = u.id
+    `
+
+    const realCreditRevenue = Number(creditPurchasesResult[0]?.real_credit_revenue_cents || 0) / 100
 
     return NextResponse.json({
       mrr: Math.round(mrr),
       totalRevenue: Math.round(totalRevenue + mrr),
       oneTimeRevenue: Math.round(oneTimeRevenue),
+      realCreditRevenue: Math.round(realCreditRevenue),
       subscriptionBreakdown,
       totalPurchases: Number(creditPurchasesResult[0]?.total_purchases || 0),
       totalCreditsSold: Number(creditPurchasesResult[0]?.total_credits_sold || 0),
+      userStats: {
+        totalUsers: Number(userStats[0]?.total_users || 0),
+        usersWithModels: Number(userStats[0]?.users_with_models || 0),
+        activeSubscribers: Number(userStats[0]?.active_subscribers || 0),
+      },
       revenueTrend: revenueTrend.map((item) => ({
         month: item.month,
         purchases: Number(item.purchases),
@@ -129,6 +150,7 @@ export async function GET() {
         type: tx.transaction_type,
         description: tx.description,
         userEmail: tx.user_email,
+        stripePaymentId: tx.stripe_payment_id,
         timestamp: tx.created_at,
       })),
     })

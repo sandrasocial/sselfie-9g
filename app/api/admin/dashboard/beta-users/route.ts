@@ -1,60 +1,58 @@
 import { NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
 
-const sql = neon(process.env.DATABASE_URL!)
+const sql = neon(process.env.DATABASE_URL || "")
 
 export async function GET() {
   try {
-    console.log("[v0] Beta users API: Fetching beta user count")
+    console.log("[v0] Beta users API: Fetching real user count")
 
-    // Count total users who have purchased (have subscriptions or credits)
     const result = await sql`
-      SELECT COUNT(DISTINCT u.id) as beta_count
+      SELECT COUNT(DISTINCT u.id) as real_user_count
       FROM users u
-      LEFT JOIN subscriptions s ON u.id = s.user_id
-      LEFT JOIN credit_transactions ct ON u.id = ct.user_id
-      WHERE u.created_at IS NOT NULL
-      AND (s.id IS NOT NULL OR ct.id IS NOT NULL)
+      INNER JOIN user_models um ON u.id = um.user_id
+      WHERE um.training_status = 'completed'
     `
 
-    const betaCount = Number.parseInt(result[0]?.beta_count || "0")
+    const realUserCount = Number.parseInt(result[0]?.real_user_count || "0")
     const betaLimit = 100
-    const remaining = Math.max(0, betaLimit - betaCount)
-    const percentageFilled = Math.min(100, (betaCount / betaLimit) * 100)
-    const shouldUpdatePricing = betaCount >= betaLimit
+    const remaining = Math.max(0, betaLimit - realUserCount)
+    const percentageFilled = Math.min(100, (realUserCount / betaLimit) * 100)
+    const shouldUpdatePricing = realUserCount >= betaLimit
 
-    // Get recent beta users
-    const recentBetaUsers = await sql`
+    const recentRealUsers = await sql`
       SELECT 
         u.email,
         u.created_at,
+        um.training_status,
         s.plan,
         s.status
       FROM users u
+      INNER JOIN user_models um ON u.id = um.user_id
       LEFT JOIN subscriptions s ON u.id = s.user_id
-      WHERE u.created_at IS NOT NULL
-      AND (s.id IS NOT NULL)
+      WHERE um.training_status = 'completed'
       ORDER BY u.created_at DESC
       LIMIT 10
     `
 
     console.log("[v0] Beta users API: Success", {
-      betaCount,
+      realUserCount,
       remaining,
       shouldUpdatePricing,
     })
 
     return NextResponse.json({
-      betaCount,
+      betaCount: realUserCount,
       betaLimit,
       remaining,
       percentageFilled,
       shouldUpdatePricing,
-      recentBetaUsers: recentBetaUsers.map((user) => ({
+      recentBetaUsers: recentRealUsers.map((user) => ({
         email: user.email,
         joinedAt: user.created_at,
         plan: user.plan || "one-time",
         status: user.status || "active",
+        hasTrainedModel: user.training_status === "completed",
       })),
     })
   } catch (error) {
