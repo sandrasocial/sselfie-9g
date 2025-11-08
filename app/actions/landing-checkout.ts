@@ -1,10 +1,9 @@
 "use server"
 
 import { stripe } from "@/lib/stripe"
-import { getProductById } from "@/lib/products"
+import { getProductById, ORIGINAL_PRICING } from "@/lib/products"
 import { neon } from "@neondatabase/serverless"
 
-const BETA_DISCOUNT_COUPON_ID = process.env.STRIPE_BETA_COUPON_ID || "BETA50"
 const ENABLE_BETA_DISCOUNT = process.env.ENABLE_BETA_DISCOUNT !== "false"
 
 export async function createLandingCheckoutSession(productId: string) {
@@ -15,7 +14,25 @@ export async function createLandingCheckoutSession(productId: string) {
 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://sselfie.ai"
   const isSubscription = product.type === "sselfie_studio_membership"
-  const betaPrice = product.priceInCents
+
+  const actualPrice = ENABLE_BETA_DISCOUNT
+    ? product.priceInCents
+    : ORIGINAL_PRICING[product.type as keyof typeof ORIGINAL_PRICING]?.priceInCents || product.priceInCents
+
+  console.log("[v0] Checkout:", {
+    productId,
+    betaEnabled: ENABLE_BETA_DISCOUNT,
+    price: actualPrice,
+    originalPrice: product.priceInCents,
+  })
+
+  const stripePriceId = isSubscription
+    ? process.env.STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID
+    : process.env.STRIPE_ONE_TIME_SESSION_PRICE_ID
+
+  if (!stripePriceId) {
+    throw new Error(`Stripe Price ID not configured for ${productId}`)
+  }
 
   const session = await stripe.checkout.sessions.create({
     ui_mode: "embedded",
@@ -23,46 +40,22 @@ export async function createLandingCheckoutSession(productId: string) {
     redirect_on_completion: "never",
     line_items: [
       {
-        price_data: {
-          currency: "usd",
-          product_data: {
-            name: product.name,
-            description: product.description,
-          },
-          unit_amount: betaPrice,
-          ...(isSubscription && {
-            recurring: {
-              interval: "month",
-            },
-          }),
-        },
+        price: stripePriceId,
         quantity: 1,
       },
     ],
     allow_promotion_codes: true,
-    ...(isSubscription &&
-      ENABLE_BETA_DISCOUNT && {
-        subscription_data: {
-          metadata: {
-            product_id: productId,
-            product_type: product.type,
-            credits: product.credits?.toString() || "0",
-            source: "landing_page",
-            beta_discount: "50_percent",
-          },
+    ...(isSubscription && {
+      subscription_data: {
+        metadata: {
+          product_id: productId,
+          product_type: product.type,
+          credits: product.credits?.toString() || "0",
+          source: "landing_page",
+          ...(ENABLE_BETA_DISCOUNT && { beta_discount: "50_percent" }),
         },
-      }),
-    ...(isSubscription &&
-      !ENABLE_BETA_DISCOUNT && {
-        subscription_data: {
-          metadata: {
-            product_id: productId,
-            product_type: product.type,
-            credits: product.credits?.toString() || "0",
-            source: "landing_page",
-          },
-        },
-      }),
+      },
+    }),
     metadata: {
       product_id: productId,
       product_type: product.type,
