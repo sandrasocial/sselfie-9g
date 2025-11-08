@@ -36,13 +36,31 @@ export default function ResourceCard({ resource, onDownload }: ResourceCardProps
     has_thumbnail: !!resource.thumbnail_url,
   })
 
-  const handleDownloadClick = () => {
-    console.log("[v0] ResourceCard download button clicked:", {
+  const isExternalLink =
+    resource.resource_type === "canva" ||
+    resource.resource_type === "drive" ||
+    resource.resource_type === "link" ||
+    resource.resource_url.includes("canva.com") ||
+    resource.resource_url.includes("drive.google.com") ||
+    resource.resource_url.includes("docs.google.com")
+
+  const handleClick = () => {
+    console.log("[v0] ResourceCard button clicked:", {
       id: resource.id,
       title: resource.title,
       url: resource.resource_url,
+      isExternalLink,
     })
-    onDownload(resource.id, resource.resource_url)
+
+    if (isExternalLink) {
+      // Open external links in new tab
+      window.open(resource.resource_url, "_blank", "noopener,noreferrer")
+      // Still track the "download" for analytics
+      onDownload(resource.id, resource.resource_url)
+    } else {
+      // Download actual files
+      onDownload(resource.id, resource.resource_url)
+    }
   }
 
   return (
@@ -88,12 +106,12 @@ export default function ResourceCard({ resource, onDownload }: ResourceCardProps
         </div>
 
         <button
-          onClick={handleDownloadClick}
+          onClick={handleClick}
           className="w-full flex items-center justify-center gap-2 bg-stone-950 text-stone-50 py-3 rounded-xl text-sm tracking-wider uppercase hover:bg-stone-800 transition-all active:scale-95"
           style={{ touchAction: "manipulation" }}
         >
           <Download className="w-4 h-4" />
-          Download
+          {isExternalLink ? "Open" : "Download"}
         </button>
 
         <div className="text-[10px] tracking-wider uppercase text-stone-400 text-center">

@@ -778,9 +778,15 @@ export default function AcademyScreen() {
                   {(inProgressCourses[0] || allCourses[0])?.title}
                 </h2>
                 <p className="text-stone-300 text-sm leading-relaxed">
-                  {(inProgressCourses[0] || allCourses[0])?.lesson_count} lessons •{" "}
-                  {Math.floor((inProgressCourses[0] || allCourses[0])?.total_duration / 60)}h{" "}
-                  {(inProgressCourses[0] || allCourses[0])?.total_duration % 60}m
+                  {(inProgressCourses[0] || allCourses[0])?.lesson_count || 0} lessons • {(() => {
+                    const duration = (inProgressCourses[0] || allCourses[0])?.total_duration
+                    if (!duration || isNaN(Number(duration)) || Number(duration) <= 0) {
+                      return "0m"
+                    }
+                    const hours = Math.floor(Number(duration) / 60)
+                    const mins = Number(duration) % 60
+                    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`
+                  })()}
                 </p>
               </div>
 
