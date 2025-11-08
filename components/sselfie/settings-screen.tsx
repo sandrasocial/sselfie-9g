@@ -18,7 +18,7 @@ import { useRouter } from "next/navigation"
 import BrandAssetsManager from "./brand-assets-manager"
 
 interface SettingsScreenProps {
-  onBack: () => void
+  onBack?: () => void // Made onBack optional since it's not always provided
   user?: {
     name: string
     avatar: string
@@ -197,18 +197,20 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
     })
   }
 
-  const isStudioMembership = subscriptionInfo?.product_type === "sselfie_studio_membership"
+  const isStudioMembership = userInfo?.product_type === "sselfie_studio_membership"
   const hasActiveSubscription = subscriptionInfo?.status === "active"
 
   return (
     <div className="space-y-8 pb-4">
       <div className="flex items-center gap-4 pt-4">
-        <button
-          onClick={onBack}
-          className="p-4 bg-stone-100/50 rounded-2xl border border-stone-200/40 hover:bg-stone-100/70 hover:border-stone-300/50 transition-all duration-200"
-        >
-          <ChevronRight size={18} className="text-stone-600 transform rotate-180" strokeWidth={1.5} />
-        </button>
+        {onBack && ( // Only show back button if onBack prop is provided
+          <button
+            onClick={onBack}
+            className="p-4 bg-stone-100/50 rounded-2xl border border-stone-200/40 hover:bg-stone-100/70 hover:border-stone-300/50 transition-all duration-200"
+          >
+            <ChevronRight size={18} className="text-stone-600 transform rotate-180" strokeWidth={1.5} />
+          </button>
+        )}
         <div className="flex-1 min-w-0">
           <h2 className="text-2xl sm:text-4xl font-serif font-extralight tracking-[0.3em] text-stone-950 uppercase">
             Settings
@@ -218,6 +220,11 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
       </div>
 
       <div className="space-y-6">
+        {console.log("[v0] Settings - userInfo:", userInfo)}
+        {console.log("[v0] Settings - subscriptionInfo:", subscriptionInfo)}
+        {console.log("[v0] Settings - hasActiveSubscription:", hasActiveSubscription)}
+        {console.log("[v0] Settings - isStudioMembership:", isStudioMembership)}
+
         {userInfo && (
           <div className="bg-white/50 backdrop-blur-2xl rounded-xl sm:rounded-[1.75rem] p-4 sm:p-6 md:p-8 border border-white/60 shadow-xl shadow-stone-900/10">
             <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
@@ -259,7 +266,7 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
           </div>
         )}
 
-        {hasActiveSubscription && (
+        {userInfo?.product_type === "sselfie_studio_membership" && (
           <div className="bg-white/50 backdrop-blur-2xl rounded-xl sm:rounded-[1.75rem] p-4 sm:p-6 md:p-8 border border-white/60 shadow-xl shadow-stone-900/10">
             <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
               <div className="p-2.5 sm:p-3.5 bg-stone-950 rounded-lg sm:rounded-[1.125rem] shadow-lg">
@@ -269,7 +276,7 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
             </div>
 
             <div className="space-y-4">
-              {isStudioMembership && subscriptionInfo.current_period_end && (
+              {subscriptionInfo?.current_period_end && (
                 <div className="flex items-center gap-3 py-3">
                   <Calendar size={16} className="text-stone-500" />
                   <div>
@@ -281,7 +288,45 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
                 </div>
               )}
 
-              {!isStudioMembership && subscriptionInfo.current_period_end && (
+              <button
+                onClick={handleManageSubscription}
+                disabled={isLoadingPortal}
+                className="w-full flex items-center justify-center gap-2 text-sm tracking-[0.15em] uppercase font-light border rounded-2xl py-5 transition-colors hover:text-stone-950 hover:bg-stone-100/30 min-h-[56px] text-stone-600 border-stone-300/40 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ExternalLink size={16} />
+                {isLoadingPortal ? "Opening..." : "Manage Subscription"}
+              </button>
+
+              <p className="text-xs text-stone-500 text-center">
+                Update your payment method, view billing history, or cancel your membership anytime
+              </p>
+            </div>
+          </div>
+        )}
+
+        {hasActiveSubscription && (
+          <div className="bg-white/50 backdrop-blur-2xl rounded-xl sm:rounded-[1.75rem] p-4 sm:p-6 md:p-8 border border-white/60 shadow-xl shadow-stone-900/10">
+            <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
+              <div className="p-2.5 sm:p-3.5 bg-stone-950 rounded-lg sm:rounded-[1.125rem] shadow-lg">
+                <CreditCard size={18} className="text-white" strokeWidth={2.5} />
+              </div>
+              <h3 className="text-base sm:text-lg md:text-xl font-bold text-stone-950">Subscription Management</h3>
+            </div>
+
+            <div className="space-y-4">
+              {isStudioMembership && subscriptionInfo?.current_period_end && (
+                <div className="flex items-center gap-3 py-3">
+                  <Calendar size={16} className="text-stone-500" />
+                  <div>
+                    <p className="text-xs text-stone-500 uppercase tracking-wider">Next Billing Date</p>
+                    <p className="text-sm font-medium text-stone-950">
+                      {formatRenewalDate(subscriptionInfo.current_period_end)}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {!isStudioMembership && subscriptionInfo?.current_period_end && (
                 <div className="flex items-center gap-3 py-3">
                   <Calendar size={16} className="text-stone-500" />
                   <div>

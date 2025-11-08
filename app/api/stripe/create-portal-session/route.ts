@@ -29,7 +29,9 @@ export async function POST(request: Request) {
 
     console.log("[v0] Create portal session: Neon user ID:", neonUser.id)
 
-    // Get user's Stripe customer ID
+    let stripeCustomerId: string | null = null
+
+    // First, try to get from subscriptions table
     const subscriptionResult = await sql`
       SELECT stripe_customer_id 
       FROM subscriptions 
@@ -39,13 +41,30 @@ export async function POST(request: Request) {
       LIMIT 1
     `
 
-    if (subscriptionResult.length === 0 || !subscriptionResult[0].stripe_customer_id) {
-      console.log("[v0] Create portal session: No subscription found")
-      return NextResponse.json({ error: "No subscription found" }, { status: 404 })
+    if (subscriptionResult.length > 0 && subscriptionResult[0].stripe_customer_id) {
+      stripeCustomerId = subscriptionResult[0].stripe_customer_id
+      console.log("[v0] Create portal session: Found Stripe customer ID in subscriptions table:", stripeCustomerId)
+    } else {
+      // Fall back to users table
+      console.log("[v0] Create portal session: No subscription found, checking users table")
+      const userResult = await sql`
+        SELECT stripe_customer_id 
+        FROM users 
+        WHERE id = ${neonUser.id} 
+        AND stripe_customer_id IS NOT NULL
+        LIMIT 1
+      `
+
+      if (userResult.length > 0 && userResult[0].stripe_customer_id) {
+        stripeCustomerId = userResult[0].stripe_customer_id
+        console.log("[v0] Create portal session: Found Stripe customer ID in users table:", stripeCustomerId)
+      }
     }
 
-    const stripeCustomerId = subscriptionResult[0].stripe_customer_id
-    console.log("[v0] Create portal session: Stripe customer ID:", stripeCustomerId)
+    if (!stripeCustomerId) {
+      console.log("[v0] Create portal session: No Stripe customer ID found")
+      return NextResponse.json({ error: "No subscription found. Please contact support." }, { status: 404 })
+    }
 
     const origin = request.headers.get("origin")
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || origin || "https://sselfie.ai"
