@@ -121,10 +121,10 @@ const generateConceptsTool = tool({
 - Example: User wants "white t-shirt and jeans" → Don't change it to blazer and trousers
 
 ✨ **MODE 2: USER IS OPEN-ENDED** (they say "create something beautiful" or "show me ideas")
-- UNLEASH your full creative power from your 13 signature lookbook styles
-- Use brand colors, visual aesthetic, and fashion intelligence
-- Create Instagram-worthy concepts that tell a story
-- This is where your editorial genius shines
+- UNLEASH your full creative power with 2025/2026 fashion intelligence
+- Create authentic, natural moments that feel real and lived-in
+- Your fashion expertise shines through natural styling choices
+- Think Instagram aesthetics (for FLUX understanding) but capture candid, genuine moments
 
 **ANALYZE THE USER REQUEST:**
 "${userRequest}"
@@ -134,154 +134,93 @@ ${
   userRequest.match(/\b(wear|wearing|dressed in|outfit|clothes|at|in front of|location|setting|background)\b/i)
     ? `
 🎯 **USER IS EXPLICIT** - They've specified styling or location details
-**YOUR TASK:** Honor their vision, enhance with your expertise
+**YOUR TASK:** Honor their vision, enhance with your 2025/2026 fashion expertise
 
 **EXTENDED PROMPT STRUCTURE FOR EXPLICIT REQUESTS (120-150 words):**
-1. START: Basic person description (expression, posture, presence) - DO NOT assume hair color or specific hair styles
-2. HONOR: User's specified outfit EXACTLY - add specific fabric names, textures, draping details
-3. LAYER: Describe how garments layer and move together, mention cut and fit
-4. ACCESSORIES: Add jewelry, bags, shoes if appropriate - be specific about materials
-5. HONOR: User's specified location - expand with architectural/environmental details
-6. LIGHTING: Detailed lighting setup - quality, direction, color temperature, shadows
-7. HANDS/BODY: **CRITICAL** - Always include natural hand position phrases
-8. CAMERA: Specific lens (85mm/50mm/35mm), aperture feel, depth of field, bokeh
-9. ATMOSPHERE: Mood, energy, emotional quality of the scene
-10. QUALITY: Natural skin texture, film aesthetic, editorial sophistication
+1. START: Natural person description (expression, posture, presence) - DO NOT assume hair color or specific hair styles
+2. HONOR: User's specified outfit EXACTLY - add specific fabric names, textures, how pieces drape and move naturally
+3. LAYER: Describe how garments layer and work together in real life, mention cut and fit
+4. ACCESSORIES: Add jewelry, bags, shoes if appropriate - be specific about materials and current trends
+5. HONOR: User's specified location - expand with architectural/environmental details that feel authentic
+6. LIGHTING: Natural, realistic lighting setup - quality, direction, color temperature, how it actually looks
+7. CAMERA: Specific lens (85mm/50mm/35mm), aperture feel, depth of field, how it captures real moments
+8. ATMOSPHERE: Mood, energy, authentic feeling - like a real photo someone would take
+9. QUALITY: Natural skin texture, authentic moment, candid presence, film grain for realism
 
 **CRITICAL: DO NOT ASSUME NATURAL FEATURES:**
 - NEVER describe specific hair color (sandy brown, blonde, brunette, etc.) unless user explicitly mentions it
 - NEVER assume hair length or style - especially for men who may have short hair, minimal hair, or no hair
 - ONLY describe hair if user specifically requests it or talks about hairstyling
-- Focus on clothing, accessories, lighting, location, and mood instead
-- If you must reference the person, use: "confident person", "serene presence", "natural expression"
+- Focus on clothing, accessories, lighting, location, and authentic mood instead
 
-**ANATOMY REQUIREMENTS (CRITICAL FOR IMAGE QUALITY):**
-- ALWAYS include hand descriptions when hands are visible: "natural hand position", "relaxed fingers", "well-formed hands", "elegant hand placement"
-- For full body: "natural body proportions", "balanced posture", "anatomically correct"
-- For feet: "natural foot position", "elegant stance"
-- These phrases are MANDATORY to prevent anatomical distortions
-
-Example for "silk slip dress at rooftop bar during sunset":
-"confident person with warm expression and natural presence, wearing luxurious champagne silk slip dress in Italian silk charmeuse with delicate bias-cut draping, thin spaghetti straps adorned with tiny gold hardware, fabric catching light with subtle sheen and natural flow, one hand resting naturally on the bar railing with relaxed fingers and well-formed hand, other hand holding champagne glass with elegant grip, layered gold chain necklaces in varying lengths with pendant details, standing at sophisticated rooftop bar with panoramic city skyline visible through modern glass railings, polished concrete floors and contemporary outdoor furniture, warm sunset hour creating rich amber and rose gold light flooding from the horizon, dramatic rim lighting outlining silhouette, soft fill from reflected skyline creating dimensional shadows, natural body proportions and balanced posture, shot on 85mm portrait lens at f/1.8 with dreamy bokeh separating subject from background, intimate editorial elegance meets urban sophistication, natural skin texture with healthy glow, authentic confident presence, cinematic atmosphere"
+**2025/2026 FASHION INTELLIGENCE:**
+- Use current season fabrics: technical materials, sustainable textures, elevated basics
+- Contemporary color stories: rich earth tones, warm neutrals, unexpected color pops (never dull or basic)
+- Modern silhouettes: relaxed tailoring, organic shapes, dimensional layering
+- Current accessories: minimal but intentional, quality materials, personal touches
 `
     : `
 ✨ **USER IS OPEN-ENDED** - They want your creative expertise
-**YOUR TASK:** Create stunning concepts from your lookbook styles
+**YOUR TASK:** Create stunning authentic moments using 2025/2026 fashion intelligence
 
-**YOUR 13 SIGNATURE STYLES TO CHOOSE FROM:**
-1. Scandinavian Minimalist (ivory, sand, greige - hygge, natural light, organic)
-2. Urban Moody (charcoal, black, olive - industrial, dramatic shadows, cinematic)
-3. Coastal Serene (cream, soft blue, sand - breezy, gentle light, effortless)
-4. Luxe Monochrome (white, grey, black - timeless, sophisticated, editorial)
-5. Warm Terracotta (rust, cream, olive - earthy, golden hour, natural textures)
-6. Soft Neutrals (beige, ivory, mushroom - gentle, flattering, timeless)
-7. Modern Editorial (black, white, statement color - bold, architectural, confident)
-8. Natural Earth (brown, cream, olive - organic, grounded, authentic)
-9. Ethereal Light (white, blush, cream - dreamy, soft focus, romantic)
-10. Sophisticated Dark (navy, charcoal, burgundy - dramatic, moody, luxe)
-11. Urban Minimalist (concrete, white, black - clean lines, modern, sharp)
-12. Golden Warmth (caramel, cream, gold - cozy, flattering, inviting)
-13. Classic Timeless (navy, white, tan - elegant, versatile, refined)
+**YOUR 13 SIGNATURE AESTHETIC DIRECTIONS:**
+1. Scandinavian Minimalist - ivory, sand, greige palette with hygge warmth and natural light
+2. Urban Moody - charcoal, black, olive tones with industrial spaces and dramatic shadows
+3. Coastal Serene - cream, soft blue, sand colors with breezy locations and gentle light
+4. Luxe Monochrome - white, grey, black spectrum with timeless sophistication
+5. Warm Terracotta - rust, cream, olive earth tones with golden hour and natural textures
+6. Soft Neutrals - beige, ivory, mushroom with gentle flattering light
+7. Modern Bold - black, white, statement color with architectural confidence
+8. Natural Earth - brown, cream, olive with organic grounded authenticity
+9. Ethereal Light - white, blush, cream with dreamy soft focus
+10. Sophisticated Dark - navy, charcoal, burgundy with dramatic moody atmosphere
+11. Urban Minimalist - concrete, white, black with clean modern lines
+12. Golden Warmth - caramel, cream, gold with cozy inviting light
+13. Classic Timeless - navy, white, tan with elegant refined presence
 
 **EXTENDED CREATIVE PROMPT STRUCTURE (120-150 words):**
-1. START: Simple person description - expression, presence, confidence - DO NOT assume hair
-2. OUTFIT: Choose lookbook style - describe every garment with specific fabrics and textures
-3. LAYERS: How pieces work together - fit, draping, movement
-4. ACCESSORIES: Jewelry, bags, shoes - be specific about materials and design
-5. HANDS/BODY: **CRITICAL** - Natural hand position, body proportions, anatomical correctness
-6. LOCATION: Match brand aesthetic with rich environmental details
-7. ARCHITECTURAL: Specific interior/exterior elements, materials, spatial quality
-8. LIGHTING: Comprehensive setup - quality, direction, color, shadows, atmosphere
-9. CAMERA: Lens choice, aperture, depth, bokeh character
-10. MOOD: Emotional quality, energy, editorial vision
-11. QUALITY: Natural texture, film aesthetic, sophistication markers
+1. START: Natural person description - expression, presence, confidence - DO NOT assume hair
+2. OUTFIT: Choose aesthetic direction - describe every garment with 2025/2026 specific fabrics and textures
+3. LAYERS: How pieces work together naturally - fit, draping, movement in real life
+4. ACCESSORIES: Jewelry, bags, shoes - specific about current materials and design (never boring or basic)
+5. LOCATION: Match aesthetic with rich environmental details that feel authentic and lived-in
+6. ARCHITECTURAL: Specific interior/exterior elements, materials, spatial quality
+7. LIGHTING: Natural, realistic lighting - quality, direction, color, shadows, authentic atmosphere
+8. CAMERA: Lens choice, aperture, depth, bokeh character for candid moment feel
+9. MOOD: Emotional quality, energy, authentic genuine presence
+10. QUALITY: Natural texture, film grain, candid realism, captured moment aesthetic
 
 **CRITICAL: DO NOT ASSUME NATURAL FEATURES:**
-- NEVER describe specific hair color (sandy brown, blonde, brunette, etc.) unless user explicitly mentions it
+- NEVER describe specific hair color (sandy brown, blonde, brunette, etc.) unless user explicitly asks for it
 - NEVER assume hair length or style - especially for men who may have short hair, minimal hair, or no hair
 - For men specifically: avoid all hair descriptions unless user asks for hairstyling
 - ONLY describe hair/hairstyles if user specifically requests different hair styling or makes suggestions about hair
-- Focus on expression, posture, clothing, accessories, lighting, and setting
-- Use neutral descriptions: "confident person", "serene presence", "warm expression", "natural features"
+- Use neutral descriptions: "confident person", "natural presence", "warm expression", "authentic features"
 
-**ANATOMY REQUIREMENTS (CRITICAL FOR IMAGE QUALITY):**
-- ALWAYS describe hands naturally: "hands resting naturally at sides", "one hand in pocket with relaxed fingers", "hands gently holding coffee cup with well-formed grip"
-- For sitting poses: "sitting naturally with elegant leg position"
-- For action shots: "walking with natural gait and balanced movement"
-- NEVER leave hands/feet to chance - always specify natural, anatomically correct positioning
+**2025/2026 FASHION INTELLIGENCE - NEVER BORING OR BASIC:**
+- Current fabrics: luxe technical blends, elevated natural fibers, textured materials with depth
+- Color stories: warm earth tones, rich neutrals, unexpected color moments (never dull or flat)
+- Silhouettes: relaxed tailoring, organic draping, dimensional proportions, contemporary cuts
+- Styling: minimal but intentional, quality over quantity, personal authentic touches
+- Accessories: considered pieces in interesting materials, never generic
+- Think: sophisticated but wearable, fashion-forward but authentic, trending but personal
 
-Example creative concept (notice NO hair color or hair description):
-"confident person with warm expression and natural presence, enveloped in oversized ivory cashmere turtleneck with luxurious drape and ribbed texture, layered under tailored sand linen blazer with boyfriend fit and rolled sleeves, paired with high-waisted wide-leg trousers in warm greige with perfect break at leather loafers in cognac, one hand tucked casually in trouser pocket with natural finger position, other hand holding ceramic coffee mug with relaxed elegant grip, minimal gold jewelry including delicate chain bracelet and small hoop earrings, standing in bright Scandinavian loft with floor-to-ceiling steel-framed windows and natural white oak flooring, white plaster walls with subtle texture, potted fiddle leaf fig and woven natural fiber textiles, soft diffused morning light streaming through sheer linen curtains creating gentle warmth and dimensional shadows, natural body proportions and balanced posture, shot on 85mm lens at f/2 with shallow depth creating creamy bokeh in background greenery, hygge meets editorial sophistication, natural skin texture with healthy glow, anatomically correct and well-formed features, authentic refined presence, timeless Nordic elegance, film grain aesthetic"
+**AESTHETIC GOAL:**
+Create images that look like authentic candid moments of a naturally stylish person - not posed fashion shoots. The fashion intelligence shows through their confident personal style, not through artificial staging. Think Instagram aesthetic (for FLUX understanding) but capture genuine lived-in moments with film grain realism.
 `
 }
 
 **USER GENDER: ${userGender}**
 **USER TRIGGER WORD: ${triggerWord}** (you will NOT include this in prompts - it's added automatically by the system)
 
-${
-  referenceImageUrl
-    ? `
-**🎨 INSPIRATION IMAGE PROVIDED**
-
-**YOU ARE NOW SEEING THE ACTUAL IMAGE** via Claude's vision capabilities.
-
-**YOUR TASK:** Analyze the EXACT visual details you see in this image and create concepts where the USER recreates this aesthetic:
-
-**DETAILED ANALYSIS REQUIRED:**
-
-1. **OUTFIT & STYLING** (be extremely specific):
-   - Every visible garment: exact type, color, fabric appearance, fit, styling
-   - Accessories: jewelry (type, placement, style), bags, hats, glasses, watches
-   - How items are layered and styled together
-   - Specific details like collar style, sleeve length, button/zipper placement
-
-2. **HAIR & MAKEUP** (ONLY if user specifically asks for hair styling changes):
-   - If user wants to change their hair: describe the hair in the reference image
-   - Otherwise: DO NOT describe hair color, length, or style
-   - Makeup style if visible (natural/bold/editorial)
-
-3. **LOCATION & ENVIRONMENT**:
-   - Indoor or outdoor? Urban, rural, commercial, residential?
-   - Specific background elements (walls, cars, storefronts, furniture, plants)
-   - Architectural style and materials
-   - Spatial depth and composition
-
-4. **LIGHTING CHARACTERISTICS**:
-   - Natural daylight / sunset / indoor artificial / mixed
-   - Light quality (harsh/soft/diffused)
-   - Direction (front/side/back/rim lighting)
-   - Color temperature (warm/cool/neutral)
-   - Shadow quality (hard/soft/long/short)
-
-5. **PHOTOGRAPHY STYLE**:
-   - Candid/posed
-   - Street style / editorial / lifestyle / professional
-   - Camera angle and framing
-   - Depth of field (sharp/blurry background)
-   - Overall mood and vibe
-
-**CREATE ${count} CONCEPTS** where the user (${userGender}) recreates this EXACT aesthetic in the same or similar settings. Each prompt should be 120-150 words capturing ALL these specific details.
-
-**REMEMBER: DO NOT assume or describe hair unless user specifically asked for hair styling suggestions!**
-
-**EXAMPLE ANALYSIS:**
-If you see: Person in black blazer, white top, baseball cap, gold necklaces, holding coffee cup on urban street
-
-Your prompt should include:
-"confident ${userGender} with relaxed expression and natural presence, wearing structured oversized black blazer in wool blend with peak lapels and boyfriend fit over casual white v-neck top, layered with multiple gold chain necklaces of varying lengths including one with pendant detail, black cotton baseball cap worn forward with curved brim, holding disposable coffee cup with branded sleeve, standing on busy urban street with parked cars and commercial storefronts in soft focus background, natural overcast daylight creating even soft illumination with minimal shadows, candid street style aesthetic with authentic moment feel, shot on 50mm lens with shallow depth creating natural bokeh, effortless chic sophistication meets urban lifestyle, natural skin texture, film grain aesthetic"
-`
-    : ""
-}
-
 **CRITICAL REQUIREMENTS:**
 
 1. **Prompts MUST be 120-150 words** - This is CRITICAL for image quality
 2. **DO NOT include trigger word** - System adds ${triggerWord} automatically
-3. **Be hyper-specific** - Name exact fabrics, colors, materials, lighting setups
-4. **Use brand colors** from user's palette
-5. **Match visual aesthetic** (Scandinavian/Urban/Coastal)
+3. **Be hyper-specific** - Name exact fabrics, colors, materials, lighting setups (never generic or boring)
+4. **Use 2025/2026 fashion intelligence** - current trends, never dull or basic
+5. **Create authentic candid moments** - not posed editorial shoots
 6. **DO NOT assume hair color or hair styles** unless user explicitly asks for it
-7. **Focus on clothing, accessories, lighting, setting, mood** - not natural features
 
 Generate ${count} concepts as JSON array:
 [
@@ -462,16 +401,16 @@ export async function POST(req: Request) {
 
     if (!messages || !Array.isArray(messages)) {
       console.error("[v0] Invalid messages array:", messages)
-      return new Response("Invalid messages format", { status: 400 })
+      throw new Error("Invalid messages format")
     }
 
     if (authError || !authUser) {
-      return new Response("Unauthorized", { status: 401 })
+      throw new Error("Unauthorized")
     }
 
     const user = await getUserByAuthId(authUser.id)
     if (!user) {
-      return new Response("Unauthorized", { status: 401 })
+      throw new Error("Unauthorized")
     }
 
     console.log("[v0] Maya chat API called with", messages.length, "messages, chatId:", chatId)
@@ -589,7 +528,7 @@ export async function POST(req: Request) {
 
     if (allMessages.length === 0) {
       console.error("[v0] No valid messages after filtering")
-      return new Response("No valid messages", { status: 400 })
+      throw new Error("No valid messages")
     }
 
     let authId = user.stack_auth_id || user.supabase_user_id
@@ -692,46 +631,6 @@ IMPORTANT: Video generation requires a photo first. When users ask for videos, f
       maxOutputTokens: 2000,
       maxSteps: 5,
       toolChoice: isAskingForConcepts ? "required" : "auto",
-      experimental_providerMetadata: {
-        customSettings,
-      },
-      onStepFinish: async (step) => {
-        console.log("[v0] ========== STEP FINISHED ==========")
-        console.log("[v0] Step details:", {
-          stepType: step.stepType,
-          toolCalls: step.toolCalls?.length || 0,
-          toolResults: step.toolResults?.length || 0,
-          hasText: !!step.text,
-          textLength: step.text?.length || 0,
-          finishReason: step.finishReason,
-        })
-
-        if (step.toolCalls && step.toolCalls.length > 0) {
-          console.log("[v0] ========== TOOL CALLS DETECTED ==========")
-          console.log(
-            "[v0] Tool calls made:",
-            step.toolCalls.map((tc) => ({
-              toolName: tc.toolName || "unknown",
-              toolCallId: tc.toolCallId || "unknown",
-              argsPreview: tc.args ? JSON.stringify(tc.args).substring(0, 200) : "no args",
-            })),
-          )
-        } else {
-          console.log("[v0] No tool calls in this step")
-        }
-
-        if (step.toolResults && step.toolResults.length > 0) {
-          console.log("[v0] ========== TOOL RESULTS ==========")
-          console.log(
-            "[v0] Tool results:",
-            step.toolResults.map((tr) => ({
-              toolName: tr.toolName || "unknown",
-              toolCallId: tr.toolCallId || "unknown",
-              resultPreview: tr.result ? JSON.stringify(tr.result).substring(0, 200) : "no result",
-            })),
-          )
-        }
-      },
     })
 
     console.log("[v0] ========== STREAMING STARTED ==========")

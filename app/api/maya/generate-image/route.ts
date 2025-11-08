@@ -127,6 +127,15 @@ export async function POST(request: NextRequest) {
       finalPrompt = `${conceptPrompt}, professional Instagram story highlight aesthetic, elegant and minimalistic design, soft lighting, high-end editorial quality, perfect for text overlay, circular crop friendly, trending Instagram aesthetic 2025`
     }
 
+    console.log("[v0] Final FLUX prompt (Maya's gender-aware prompt):", finalPrompt)
+
+    const anatomyNegatives =
+      "bad anatomy, disfigured hands, extra fingers, missing fingers, fused fingers, too many fingers, extra limbs, missing limbs, extra arms, extra legs, malformed limbs, mutated hands, poorly drawn hands, poorly drawn face, mutation, deformed body, unnatural posture, awkward pose, distorted proportions, blurry, low quality, distorted, deformed, ugly, watermark, signature, text, logo"
+
+    // Add negative prompts to ensure anatomical accuracy
+    finalPrompt = `${finalPrompt} --no ${anatomyNegatives}`
+    console.log("[v0] Added anatomy negative prompts for better quality")
+
     const promptLower = finalPrompt.toLowerCase().trim()
     const triggerLower = triggerWord.toLowerCase()
 
@@ -136,8 +145,6 @@ export async function POST(request: NextRequest) {
     } else {
       console.log("[v0] Trigger word already present, not adding duplicate")
     }
-
-    console.log("[v0] Final FLUX prompt (Maya's gender-aware prompt):", finalPrompt)
 
     const { MAYA_QUALITY_PRESETS } = await import("@/lib/maya/quality-settings")
     const categoryKey = category as keyof typeof MAYA_QUALITY_PRESETS
