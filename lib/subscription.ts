@@ -40,6 +40,20 @@ export async function getUserSubscription(userId: string) {
     }
 
     console.log(`[v0] [getUserSubscription] No active subscription found for user ${userId}`)
+    const allSubscriptions = await sql`
+      SELECT 
+        product_type,
+        status,
+        stripe_subscription_id,
+        created_at
+      FROM subscriptions 
+      WHERE user_id = ${userId}
+      ORDER BY created_at DESC
+    `
+    console.log(
+      `[v0] [getUserSubscription] DEBUG: User has ${allSubscriptions.length} total subscription(s) in database:`,
+      allSubscriptions,
+    )
     return null
   } catch (error) {
     console.error("[v0] [getUserSubscription] Error getting user subscription:", error)

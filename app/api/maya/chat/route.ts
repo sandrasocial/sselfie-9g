@@ -79,7 +79,7 @@ const generateConceptsTool = tool({
       const userDataResult = await sql`
         SELECT u.gender, um.trigger_word 
         FROM users u
-        LEFT JOIN user_models um ON u.id = um.user_id AND um.status = 'completed'
+        LEFT JOIN user_models um ON u.id = um.user_id AND um.training_status = 'completed'
         WHERE u.id = ${user.id} 
         LIMIT 1
       `
@@ -120,17 +120,26 @@ ${
 🎯 **USER IS EXPLICIT** - They've specified styling or location details
 **YOUR TASK:** Honor their vision, enhance with your expertise
 
-**PROMPT STRUCTURE FOR EXPLICIT REQUESTS:**
-1. START: [gender-aware description only - NO trigger word here]
-2. HONOR: User's specified outfit/styling EXACTLY as requested
-3. HONOR: User's specified location/setting EXACTLY as requested  
-4. ENHANCE: Add fabric details, specific color names, texture descriptions
-5. ENHANCE: Perfect the lighting for their scenario
-6. ENHANCE: Add technical specs naturally (lens, depth of field)
-7. CLOSE: Mood that matches their vision
+**EXTENDED PROMPT STRUCTURE FOR EXPLICIT REQUESTS (120-150 words):**
+1. START: Detailed gender-aware description of the person (face, hair, expression, posture)
+2. HONOR: User's specified outfit EXACTLY - add specific fabric names, textures, draping details
+3. LAYER: Describe how garments layer and move together, mention cut and fit
+4. ACCESSORIES: Add jewelry, bags, shoes if appropriate - be specific about materials
+5. HONOR: User's specified location - expand with architectural/environmental details
+6. LIGHTING: Detailed lighting setup - quality, direction, color temperature, shadows
+7. HANDS/BODY: **CRITICAL** - Always include natural hand position phrases
+8. CAMERA: Specific lens (85mm/50mm/35mm), aperture feel, depth of field, bokeh
+9. ATMOSPHERE: Mood, energy, emotional quality of the scene
+10. QUALITY: Natural skin texture, film aesthetic, editorial sophistication
 
-Example: If user says "silk slip dress at rooftop bar during sunset"
-→ "confident woman in luxurious champagne silk slip dress with delicate spaghetti straps, standing at a luxury rooftop bar with panoramic city views, golden sunset hour light creating warm amber glow, 85mm portrait lens with soft bokeh, intimate editorial elegance"
+**ANATOMY REQUIREMENTS (CRITICAL FOR IMAGE QUALITY):**
+- ALWAYS include hand descriptions when hands are visible: "natural hand position", "relaxed fingers", "well-formed hands", "elegant hand placement"
+- For full body: "natural body proportions", "balanced posture", "anatomically correct"
+- For feet: "natural foot position", "elegant stance"
+- These phrases are MANDATORY to prevent anatomical distortions
+
+Example for "silk slip dress at rooftop bar during sunset":
+"confident woman with luminous skin and sun-kissed complexion, cascading brunette waves catching golden light with natural movement, wearing luxurious champagne silk slip dress in Italian silk charmeuse with delicate bias-cut draping, thin spaghetti straps adorned with tiny gold hardware, fabric catching light with subtle sheen and natural flow, one hand resting naturally on the bar railing with relaxed fingers and well-formed hand, other hand holding champagne glass with elegant grip, layered gold chain necklaces in varying lengths with pendant details, standing at sophisticated rooftop bar with panoramic city skyline visible through modern glass railings, polished concrete floors and contemporary outdoor furniture, warm sunset hour creating rich amber and rose gold light flooding from the horizon, dramatic rim lighting outlining her silhouette, soft fill from reflected skyline creating dimensional shadows, natural body proportions and balanced posture, shot on 85mm portrait lens at f/1.8 with dreamy bokeh separating subject from background, intimate editorial elegance meets urban sophistication, natural skin texture with healthy glow, authentic confident presence, cinematic atmosphere"
 `
     : `
 ✨ **USER IS OPEN-ENDED** - They want your creative expertise
@@ -151,13 +160,27 @@ Example: If user says "silk slip dress at rooftop bar during sunset"
 12. Golden Warmth (caramel, cream, gold - cozy, flattering, inviting)
 13. Classic Timeless (navy, white, tan - elegant, versatile, refined)
 
-**PROMPT STRUCTURE FOR CREATIVE CONCEPTS:**
-1. START: [gender-aware description with brand styling - NO trigger word]
-2. OUTFIT: Choose from lookbook style - specific fabrics, colors FROM BRAND PALETTE
-3. LOCATION: Match brand aesthetic (Scandinavian loft / Urban street / Coastal villa)
-4. LIGHTING: Create Instagram-worthy lighting setup
-5. TECHNICAL: 85mm lens, natural depth, film aesthetic
-6. MOOD: Match brand values and emotional tone
+**EXTENDED CREATIVE PROMPT STRUCTURE (120-150 words):**
+1. START: Detailed person description - face, hair, expression, presence
+2. OUTFIT: Choose lookbook style - describe every garment with specific fabrics and textures
+3. LAYERS: How pieces work together - fit, draping, movement
+4. ACCESSORIES: Jewelry, bags, shoes - be specific about materials and design
+5. HANDS/BODY: **CRITICAL** - Natural hand position, body proportions, anatomical correctness
+6. LOCATION: Match brand aesthetic with rich environmental details
+7. ARCHITECTURAL: Specific interior/exterior elements, materials, spatial quality
+8. LIGHTING: Comprehensive setup - quality, direction, color, shadows, atmosphere
+9. CAMERA: Lens choice, aperture, depth, bokeh character
+10. MOOD: Emotional quality, energy, editorial vision
+11. QUALITY: Natural texture, film aesthetic, sophistication markers
+
+**ANATOMY REQUIREMENTS (CRITICAL FOR IMAGE QUALITY):**
+- ALWAYS describe hands naturally: "hands resting naturally at sides", "one hand in pocket with relaxed fingers", "hands gently holding coffee cup with well-formed grip"
+- For sitting poses: "sitting naturally with elegant leg position"
+- For action shots: "walking with natural gait and balanced movement"
+- NEVER leave hands/feet to chance - always specify natural, anatomically correct positioning
+
+Example creative concept:
+"serene woman with natural beauty and effortless grace, long golden blonde hair with natural highlights catching soft light, relaxed confident expression with subtle warmth, enveloped in oversized ivory cashmere turtleneck with luxurious drape and ribbed texture, layered under tailored sand linen blazer with boyfriend fit and rolled sleeves, paired with high-waisted wide-leg trousers in warm greige with perfect break at leather loafers in cognac, one hand tucked casually in trouser pocket with natural finger position, other hand holding ceramic coffee mug with relaxed elegant grip, minimal gold jewelry including delicate chain bracelet and small hoop earrings, standing in bright Scandinavian loft with floor-to-ceiling steel-framed windows and natural white oak flooring, white plaster walls with subtle texture, potted fiddle leaf fig and woven natural fiber textiles, soft diffused morning light streaming through sheer linen curtains creating gentle warmth and dimensional shadows, natural body proportions and balanced posture, shot on 85mm lens at f/2 with shallow depth creating creamy bokeh in background greenery, hygge meets editorial sophistication, natural skin texture with healthy glow, anatomically correct and well-formed features, authentic refined presence, timeless Nordic elegance, film grain aesthetic"
 `
 }
 
@@ -167,87 +190,67 @@ Example: If user says "silk slip dress at rooftop bar during sunset"
 ${
   referenceImageUrl
     ? `
-**🎨 INSPIRATION IMAGE PROVIDED: ${referenceImageUrl}**
+**🎨 INSPIRATION IMAGE PROVIDED**
 
-**CRITICAL: THIS IS NOT JUST A URL - YOU MUST ANALYZE THE ACTUAL IMAGE DETAILS FROM USER'S DESCRIPTION**
+**YOU ARE NOW SEEING THE ACTUAL IMAGE** via Claude's vision capabilities.
 
-When a user uploads an inspiration image, they want photos of THEMSELVES that replicate the EXACT aesthetic.
+**YOUR TASK:** Analyze the EXACT visual details you see in this image and create concepts where the USER recreates this aesthetic:
 
-**YOUR TASK:** Analyze what you can infer from the user's request and create concepts that capture:
+**DETAILED ANALYSIS REQUIRED:**
 
-1. **OUTFIT DETAILS** - If visible or described:
-   - Exact garments (blazer, dress, top, pants, etc.)
-   - Specific colors and fabrics
-   - Accessories (jewelry, bags, hats, etc.)
-   - How items are styled together
+1. **OUTFIT & STYLING** (be extremely specific):
+   - Every visible garment: exact type, color, fabric appearance, fit, styling
+   - Accessories: jewelry (type, placement, style), bags, hats, glasses, watches
+   - How items are layered and styled together
+   - Specific details like collar style, sleeve length, button/zipper placement
 
-2. **LOCATION & SETTING** - Where the photo was taken:
-   - Indoor or outdoor?
-   - Urban street, cafe, office, home, nature?
-   - Background elements (cars, storefronts, windows, etc.)
+2. **HAIR & MAKEUP**:
+   - Hair length, color, style (straight/wavy/curly)
+   - How hair is worn (down/up/half-up, parted where)
+   - Hair accessories if any
+   - Makeup style if visible (natural/bold/editorial)
 
-3. **LIGHTING STYLE**:
-   - Natural daylight, sunset, overcast, indoor lighting?
-   - Soft and diffused OR dramatic and contrasty?
-   - Light direction and color temperature
+3. **LOCATION & ENVIRONMENT**:
+   - Indoor or outdoor? Urban, rural, commercial, residential?
+   - Specific background elements (walls, cars, storefronts, furniture, plants)
+   - Architectural style and materials
+   - Spatial depth and composition
 
-4. **MOOD & COMPOSITION**:
-   - Casual or formal vibe?
-   - Candid street style OR posed editorial?
-   - Close-up, half-body, or environmental shot?
-   - Hair styling visible?
+4. **LIGHTING CHARACTERISTICS**:
+   - Natural daylight / sunset / indoor artificial / mixed
+   - Light quality (harsh/soft/diffused)
+   - Direction (front/side/back/rim lighting)
+   - Color temperature (warm/cool/neutral)
+   - Shadow quality (hard/soft/long/short)
 
-**IMPORTANT:** Create ${count} concepts where the USER (not a model) recreates this EXACT style in similar or varied settings. The user wants to look like the inspiration while being recognizably themselves.
+5. **PHOTOGRAPHY STYLE**:
+   - Candid/posed
+   - Street style / editorial / lifestyle / professional
+   - Camera angle and framing
+   - Depth of field (sharp/blurry background)
+   - Overall mood and vibe
+
+**CREATE ${count} CONCEPTS** where the user (${userGender}) recreates this EXACT aesthetic in the same or similar settings. Each prompt should be 120-150 words capturing ALL these specific details.
+
+**EXAMPLE ANALYSIS:**
+If you see: Woman in black blazer, white top, baseball cap, gold necklaces, holding coffee cup on urban street
+
+Your prompt should include:
+"confident ${userGender} with long flowing blonde hair cascading past shoulders with natural movement, relaxed expression with subtle smile, wearing structured oversized black blazer in wool blend with peak lapels and boyfriend fit over casual white v-neck top, layered with multiple gold chain necklaces of varying lengths including one with pendant detail, black cotton baseball cap worn forward with curved brim, holding disposable coffee cup with branded sleeve, standing on busy urban street with parked cars and commercial storefronts in soft focus background, natural overcast daylight creating even soft illumination with minimal shadows, candid street style aesthetic with authentic moment feel, shot on 50mm lens with shallow depth creating natural bokeh, effortless chic sophistication meets urban lifestyle, natural skin texture, film grain aesthetic"
 `
     : ""
 }
 
-**CRITICAL BRAND STYLING (ALWAYS REQUIRED):**
+**CRITICAL REQUIREMENTS:**
 
-1. **Brand Colors** - Use SPECIFIC colors from user's palette (not generic beige/blue)
-2. **Visual Aesthetic** - Match their style preference (Scandinavian/Urban/Coastal)
-3. **Fashion Intelligence** - Describe fabrics with luxury detail
-4. **Gender Awareness** - Use appropriate descriptors for ${userGender}
+1. **Prompts MUST be 120-150 words** - This is CRITICAL for image quality
+2. **DO NOT include trigger word** - System adds ${triggerWord} automatically
+3. **Be hyper-specific** - Name exact fabrics, colors, materials, lighting setups
+4. **Use brand colors** from user's palette
+5. **Match visual aesthetic** (Scandinavian/Urban/Coastal)
+6. **Gender-aware language** for ${userGender}
 
-**GENDER-AWARE LANGUAGE:**
-
-For WOMEN:
-- Hair: "cascading waves catching light", "sleek dark hair framing features"
-- Style: "draped in", "adorned with", "enveloped in"
-- Mood: "ethereal elegance", "sophisticated grace", "radiant confidence"
-
-For MEN:
-- Hair: "sharp styled cut", "textured modern style"
-- Style: "tailored in", "structured", "clean lines"
-- Mood: "commanding presence", "refined masculinity", "bold sophistication"
-
-**FLUX PROMPT BEST PRACTICES:**
-
-1. **DO NOT include trigger word** - The system adds it automatically (${triggerWord})
-2. **Keep under 75 words** for optimal FLUX performance
-3. **Structure**: Person → Outfit → Location → Lighting → Camera → Mood
-4. **Be specific**: "85mm portrait lens" not "camera", "Rembrandt lighting" not "good lighting"
-5. **Natural flow**: Integrate technical details poetically, not as list
-
-**EXAMPLE - EXPLICIT USER REQUEST:**
-User: "Hey Maya, can you create hyper-realistic portrait of me in silk slip dress at luxury rooftop bar during sunset"
-
-MAYA'S PROMPT (trigger word NOT included):
-"confident ${userGender} with luminous skin and cascading hair, wearing luxurious champagne silk slip dress with delicate straps catching golden light, standing at upscale rooftop bar with panoramic city skyline, warm sunset hour creating rich amber glow and soft shadows, 85mm portrait lens with dreamy bokeh, intimate editorial elegance meets urban sophistication"
-
-**EXAMPLE - OPEN-ENDED USER REQUEST:**  
-User: "Show me some beautiful concepts"
-
-MAYA'S PROMPT (trigger word NOT included):
-"serene ${userGender} with natural beauty and effortless style, enveloped in oversized ivory cashmere turtleneck and tailored sand linen trousers, standing in bright Scandinavian loft with floor-to-ceiling windows and natural wood, soft diffused morning light creating gentle warmth, 85mm lens with shallow depth, hygge meets editorial sophistication"
-
-**EXAMPLE - INSPIRATION IMAGE REQUEST:**
-User uploads photo of woman in black blazer with baseball cap holding coffee on urban street
-
-MAYA'S PROMPT (trigger word NOT included):
-"confident ${userGender} with long flowing hair and relaxed expression, wearing structured black oversized blazer over casual top with layered gold chain necklaces and black baseball cap, standing on busy urban street with storefronts and cars in background, holding coffee cup, natural daylight creating soft shadows, candid street style aesthetic, 50mm lens capturing authentic moment, effortless chic sophistication"
-
-Generate ${count} concepts as JSON array. DO NOT include trigger word in prompts - it's added by the system:
+Generate ${count} concepts as JSON array:
 [
   {
     "title": "Creative title",
@@ -256,7 +259,7 @@ Generate ${count} concepts as JSON array. DO NOT include trigger word in prompts
     "fashionIntelligence": "Specific styling details",
     "lighting": "Exact lighting setup",
     "location": "Specific location",
-    "prompt": "FLUX-optimized prompt WITHOUT trigger word"
+    "prompt": "120-150 word FLUX prompt WITHOUT trigger word"
   }
 ]
 `
@@ -505,34 +508,20 @@ export async function POST(req: Request) {
         }
 
         if (inspirationImageUrl) {
-          textContent = `[User has uploaded an inspiration image: ${inspirationImageUrl}]
-
-**IMPORTANT**: Analyze what you can infer from the user's request and create concepts that capture:
-
-1. **OUTFIT DETAILS** - If visible or described:
-   - Exact garments (blazer, dress, top, pants, etc.)
-   - Specific colors and fabrics
-   - Accessories (jewelry, bags, hats, etc.)
-   - How items are styled together
-
-2. **LOCATION & SETTING** - Where the photo was taken:
-   - Indoor or outdoor?
-   - Urban street, cafe, office, home, nature?
-   - Background elements (cars, storefronts, windows, etc.)
-
-3. **LIGHTING STYLE**:
-   - Natural daylight, sunset, overcast, indoor lighting?
-   - Soft and diffused OR dramatic and contrasty?
-   - Light direction and color temperature
-
-4. **MOOD & COMPOSITION**:
-   - Casual or formal vibe?
-   - Candid street style OR posed editorial?
-   - Close-up, half-body, or environmental shot?
-   - Hair styling visible?
-
-**IMPORTANT:** Create ${5} concepts where the USER (not a model) recreates this EXACT style in similar or varied settings. The user wants to look like the inspiration while being recognizably themselves.
-`
+          console.log("[v0] 🎨 Creating vision message with image URL:", inspirationImageUrl)
+          return {
+            role: msg.role,
+            content: [
+              {
+                type: "text" as const,
+                text: textContent,
+              },
+              {
+                type: "image" as const,
+                image: inspirationImageUrl,
+              },
+            ],
+          } as CoreMessage
         }
 
         return {

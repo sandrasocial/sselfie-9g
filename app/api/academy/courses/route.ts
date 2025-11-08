@@ -20,6 +20,9 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    console.log("[v0] Academy courses: Auth user ID:", authUser.id)
+    console.log("[v0] Academy courses: Auth user email:", authUser.email)
+
     // Get Neon user
     const neonUser = await getUserByAuthId(authUser.id)
     if (!neonUser) {
@@ -27,12 +30,23 @@ export async function GET() {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    console.log("[v0] Fetching courses for user:", neonUser.id)
+    console.log("[v0] Fetching courses for Neon user:", neonUser.id)
+    console.log("[v0] Neon user email:", neonUser.email)
 
     const hasAccess = await hasStudioMembership(neonUser.id)
     const productType = await getUserProductAccess(neonUser.id)
 
     console.log("[v0] User has Academy access:", hasAccess, "Product type:", productType)
+    console.log("[v0] ACADEMY ACCESS CHECK:", {
+      authUserId: authUser.id,
+      authUserEmail: authUser.email,
+      neonUserId: neonUser.id,
+      neonUserEmail: neonUser.email,
+      hasAccess,
+      productType,
+      expectedProductType: "sselfie_studio_membership",
+      accessGranted: hasAccess && productType === "sselfie_studio_membership",
+    })
 
     if (!hasAccess) {
       return NextResponse.json({

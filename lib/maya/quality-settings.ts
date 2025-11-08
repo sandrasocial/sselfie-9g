@@ -2,20 +2,20 @@
 import type { QualitySettings } from "./types" // Hypothetical import, adjust according to actual file structure
 
 export const MAYA_DEFAULT_QUALITY_SETTINGS: QualitySettings = {
-  guidance_scale: 3.5, // Conservative default for natural results
-  num_inference_steps: 50, // Max allowed by API
+  guidance_scale: 3.5,
+  num_inference_steps: 50,
   aspect_ratio: "4:5",
-  megapixels: "1", // Only "1" or "0.25" allowed by API
+  megapixels: "1",
   output_format: "png",
   output_quality: 95,
-  lora_scale: 1.0, // Standard LoRA strength
-  prompt_strength: 0.8, // Standard prompt strength
-  disable_safety_checker: false,
+  lora_scale: 1.0,
+  prompt_strength: 0.8,
+  disable_safety_checker: true,
   go_fast: false,
   num_outputs: 1,
   model: "dev",
   extra_lora: "https://huggingface.co/XLabs-AI/flux-RealismLora/resolve/main/lora.safetensors",
-  extra_lora_scale: 1.0,
+  extra_lora_scale: 1.0, // Reverted extra_lora_scale from 0.65 back to 1.0 per user request
 }
 
 export const MAYA_QUALITY_PRESETS = {

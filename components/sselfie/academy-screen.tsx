@@ -275,17 +275,22 @@ export default function AcademyScreen() {
       return <UnifiedLoading message="Loading templates..." />
     }
 
-    if (templatesError) {
-      console.error("[v0] Templates error:", templatesError)
+    if (templatesError || !hasAccess) {
       return (
         <div className="flex items-center justify-center min-h-[400px] px-4">
-          <div className="text-center space-y-4">
-            <p className="text-sm text-stone-600">Failed to load templates. Please try again.</p>
+          <div className="text-center space-y-6 max-w-md">
+            <div className="space-y-3">
+              <h3 className="font-serif text-2xl tracking-wider text-stone-950">Studio Membership Required</h3>
+              <p className="text-sm text-stone-600 leading-relaxed">
+                Access exclusive templates, monthly drops, and flatlay images with a Studio Membership
+              </p>
+            </div>
             <button
-              onClick={() => window.location.reload()}
-              className="px-6 py-3 text-sm tracking-wider uppercase bg-stone-950 text-stone-50 rounded-xl hover:bg-stone-800 transition-all"
+              onClick={handleUpgrade}
+              disabled={isUpgrading}
+              className="px-8 py-4 text-sm tracking-wider uppercase bg-stone-950 text-stone-50 rounded-xl hover:bg-stone-800 transition-all disabled:opacity-50"
             >
-              Reload
+              {isUpgrading ? "Processing..." : "Upgrade to Studio"}
             </button>
           </div>
         </div>
@@ -401,17 +406,22 @@ export default function AcademyScreen() {
       return <UnifiedLoading message="Loading monthly drops..." />
     }
 
-    if (monthlyDropsError) {
-      console.error("[v0] Monthly drops error:", monthlyDropsError)
+    if (monthlyDropsError || !hasAccess) {
       return (
         <div className="flex items-center justify-center min-h-[400px] px-4">
-          <div className="text-center space-y-4">
-            <p className="text-sm text-stone-600">Failed to load monthly drops. Please try again.</p>
+          <div className="text-center space-y-6 max-w-md">
+            <div className="space-y-3">
+              <h3 className="font-serif text-2xl tracking-wider text-stone-950">Studio Membership Required</h3>
+              <p className="text-sm text-stone-600 leading-relaxed">
+                Get exclusive monthly content drops with a Studio Membership
+              </p>
+            </div>
             <button
-              onClick={() => window.location.reload()}
-              className="px-6 py-3 text-sm tracking-wider uppercase bg-stone-950 text-stone-50 rounded-xl hover:bg-stone-800 transition-all"
+              onClick={handleUpgrade}
+              disabled={isUpgrading}
+              className="px-8 py-4 text-sm tracking-wider uppercase bg-stone-950 text-stone-50 rounded-xl hover:bg-stone-800 transition-all disabled:opacity-50"
             >
-              Reload
+              {isUpgrading ? "Processing..." : "Upgrade to Studio"}
             </button>
           </div>
         </div>
@@ -473,17 +483,22 @@ export default function AcademyScreen() {
       return <UnifiedLoading message="Loading flatlay images..." />
     }
 
-    if (flatlayImagesError) {
-      console.error("[v0] Flatlay images error:", flatlayImagesError)
+    if (flatlayImagesError || !hasAccess) {
       return (
         <div className="flex items-center justify-center min-h-[400px] px-4">
-          <div className="text-center space-y-4">
-            <p className="text-sm text-stone-600">Failed to load flatlay images. Please try again.</p>
+          <div className="text-center space-y-6 max-w-md">
+            <div className="space-y-3">
+              <h3 className="font-serif text-2xl tracking-wider text-stone-950">Studio Membership Required</h3>
+              <p className="text-sm text-stone-600 leading-relaxed">
+                Access professional flatlay images with a Studio Membership
+              </p>
+            </div>
             <button
-              onClick={() => window.location.reload()}
-              className="px-6 py-3 text-sm tracking-wider uppercase bg-stone-950 text-stone-50 rounded-xl hover:bg-stone-800 transition-all"
+              onClick={handleUpgrade}
+              disabled={isUpgrading}
+              className="px-8 py-4 text-sm tracking-wider uppercase bg-stone-950 text-stone-50 rounded-xl hover:bg-stone-800 transition-all disabled:opacity-50"
             >
-              Reload
+              {isUpgrading ? "Processing..." : "Upgrade to Studio"}
             </button>
           </div>
         </div>

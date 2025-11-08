@@ -422,6 +422,44 @@ export async function POST(request: NextRequest) {
                   console.log(`[v0] Granting ${credits} monthly credits to existing user ${userId}`)
                   await grantMonthlyCredits(userId, "sselfie_studio_membership")
                 }
+
+                if (session.subscription) {
+                  const subscriptionData = await stripe.subscriptions.retrieve(session.subscription as string)
+
+                  console.log(`[v0] Creating subscription record for existing user ${userId}`)
+
+                  await sql`
+                    INSERT INTO subscriptions (
+                      user_id, 
+                      product_type,
+                      plan,
+                      status, 
+                      stripe_subscription_id,
+                      current_period_start,
+                      current_period_end
+                    )
+                    VALUES (
+                      ${userId},
+                      ${productType},
+                      ${productType},
+                      ${subscriptionData.status},
+                      ${subscriptionData.id},
+                      to_timestamp(${subscriptionData.current_period_start}),
+                      to_timestamp(${subscriptionData.current_period_end})
+                    )
+                    ON CONFLICT (user_id) 
+                    DO UPDATE SET
+                      product_type = ${productType},
+                      plan = ${productType},
+                      status = ${subscriptionData.status},
+                      stripe_subscription_id = ${subscriptionData.id},
+                      current_period_start = to_timestamp(${subscriptionData.current_period_start}),
+                      current_period_end = to_timestamp(${subscriptionData.current_period_end}),
+                      updated_at = NOW()
+                  `
+
+                  console.log(`[v0] ✅ Subscription record created for existing user ${userId}`)
+                }
               } else {
                 console.log(`[v0] Step 2: Creating new user in Supabase auth (no email sent)...`)
 

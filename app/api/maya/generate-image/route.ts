@@ -139,51 +139,17 @@ export async function POST(request: NextRequest) {
 
     console.log("[v0] Final FLUX prompt (Maya's gender-aware prompt):", finalPrompt)
 
-    const qualitySettings = {
-      guidance_scale: 7.5,
-      num_inference_steps: 50,
-      aspect_ratio: "16:9",
-      megapixels: 4,
-      output_format: "png",
-      output_quality: "high",
-      prompt_strength: 0.8,
-      lora_scale: 1.05,
-      disable_safety_checker: false,
-      go_fast: false,
-      num_outputs: 1,
-      model: "dev",
-      extra_lora: null,
-      extra_lora_scale: 0.7,
-    }
+    const { MAYA_QUALITY_PRESETS } = await import("@/lib/maya/quality-settings")
+    const categoryKey = category as keyof typeof MAYA_QUALITY_PRESETS
+    const presetSettings = MAYA_QUALITY_PRESETS[categoryKey] || MAYA_QUALITY_PRESETS.default
 
-    if (customSettings) {
-      if (customSettings.styleStrength !== undefined) {
-        qualitySettings.lora_scale = Number(customSettings.styleStrength)
-        console.log("[v0] Using custom style strength (LoRA scale):", qualitySettings.lora_scale)
-      }
-      if (customSettings.promptAccuracy !== undefined) {
-        qualitySettings.guidance_scale = Number(customSettings.promptAccuracy)
-        console.log("[v0] Using custom prompt accuracy (guidance scale):", qualitySettings.guidance_scale)
-      }
-      if (customSettings.aspectRatio !== undefined) {
-        qualitySettings.aspect_ratio = customSettings.aspectRatio
-        console.log("[v0] Using custom aspect ratio:", qualitySettings.aspect_ratio)
-      }
-      // Add custom settings for extra LoRA
-      if (customSettings.extraLoRA !== undefined) {
-        qualitySettings.extra_lora = customSettings.extraLoRA
-        console.log("[v0] Using custom extra LoRA:", qualitySettings.extra_lora)
-      }
-      if (customSettings.extraLoRAStrength !== undefined) {
-        qualitySettings.extra_lora_scale = Number(customSettings.extraLoRAStrength)
-        console.log("[v0] Using custom extra LoRA strength:", qualitySettings.extra_lora_scale)
-      }
-    } else if (userLoraScale !== null && userLoraScale !== undefined) {
-      qualitySettings.lora_scale = Number(userLoraScale)
-      console.log("[v0] Using user-specific LoRA scale:", qualitySettings.lora_scale)
-    } else {
-      qualitySettings.lora_scale = 1.05
-      console.log("[v0] Using default LoRA scale:", qualitySettings.lora_scale)
+    console.log("[v0] Using quality preset for category:", category)
+
+    // Start with preset defaults, then apply custom overrides
+    const qualitySettings = {
+      ...presetSettings,
+      // Allow aspect ratio override from custom settings
+      aspect_ratio: customSettings?.aspectRatio || presetSettings.aspect_ratio,
     }
 
     console.log("[v0] Initializing Replicate client...")
