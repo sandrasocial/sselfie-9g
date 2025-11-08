@@ -34,11 +34,12 @@ export class FluxPromptBuilder {
   ): GeneratedFluxPrompt {
     const { userTriggerToken, userGender, includeQualityHints = true, includeNegativePrompts = true } = options
 
-    console.log("[v0] Generating FLUX prompt without template overrides")
-    console.log("[v0] Using Maya's creative description directly:", {
+    console.log("[v0] Generating FLUX prompt with brand-aware styling enforcement")
+    console.log("[v0] Using Maya's creative description with brand styling priority:", {
       hasReferenceImage: !!referenceImageUrl,
       category,
       descriptionLength: conceptDescription.length,
+      gender: userGender,
     })
 
     const categoryNegatives = this.getCategoryNegatives(category)
@@ -46,21 +47,18 @@ export class FluxPromptBuilder {
     const components: FluxPromptComponents = {
       trigger: userTriggerToken,
       gender: this.getGenderToken(userGender),
-      quality: includeQualityHints
-        ? ["raw photo", "editorial quality", "professional photography", "sharp focus", "high resolution"]
-        : [],
-      styleDescription: conceptDescription, // Maya's full creative vision - no template overrides
+      quality: includeQualityHints ? ["professional photography", "sharp focus"] : [],
+      styleDescription: conceptDescription, // Maya's brand-aware fashion vision
       negatives: includeNegativePrompts
-        ? `${categoryNegatives}, blurry, low quality, distorted, deformed, ugly, bad anatomy, disfigured hands, extra fingers, missing fingers, fused fingers, too many fingers, extra limbs, missing limbs, extra arms, extra legs, malformed limbs, mutated hands, poorly drawn hands, poorly drawn face, mutation, watermark, signature, text, logo`
+        ? `${categoryNegatives}, blurry, low quality, distorted, deformed, ugly, bad anatomy, disfigured hands, extra fingers, missing fingers, fused fingers, too many fingers, extra limbs, missing limbs, extra arms, extra legs, malformed limbs, mutated hands, poorly drawn hands, poorly drawn face, mutation, watermark, signature, text, logo, generic stock photo, cliche`
         : "",
     }
 
-    // Simple, clean prompt structure - let Maya's creativity shine
     const promptParts = [
       components.trigger,
       components.gender,
-      ...components.quality,
-      components.styleDescription, // This is Maya's analyzed style - trust her expertise
+      components.styleDescription, // Maya's full vision with brand colors and styling comes FIRST
+      ...components.quality, // Minimal technical hints come AFTER
     ].filter(Boolean)
 
     let prompt = promptParts.join(", ")
@@ -69,12 +67,12 @@ export class FluxPromptBuilder {
       prompt += ` --no ${components.negatives}`
     }
 
-    console.log("[v0] Final prompt structure:", {
+    console.log("[v0] Brand-aware prompt structure:", {
       wordCount: prompt.split(/\s+/).length,
       characterCount: prompt.length,
       hasReferenceImage: !!referenceImageUrl,
       category,
-      categoryNegatives,
+      prioritizesBrandStyling: true,
     })
 
     return {

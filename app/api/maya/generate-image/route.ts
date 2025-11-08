@@ -1,7 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
 import { getReplicateClient } from "@/lib/replicate-client"
-import { MAYA_QUALITY_PRESETS } from "@/lib/maya/quality-settings" // Removed unused imports
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { checkCredits, deductCredits, getUserCredits, CREDIT_COSTS } from "@/lib/credits"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
@@ -128,14 +127,34 @@ export async function POST(request: NextRequest) {
       finalPrompt = `${conceptPrompt}, professional Instagram story highlight aesthetic, elegant and minimalistic design, soft lighting, high-end editorial quality, perfect for text overlay, circular crop friendly, trending Instagram aesthetic 2025`
     }
 
-    if (!finalPrompt.toLowerCase().startsWith(triggerWord.toLowerCase())) {
+    const promptLower = finalPrompt.toLowerCase().trim()
+    const triggerLower = triggerWord.toLowerCase()
+
+    if (!promptLower.startsWith(triggerLower)) {
       finalPrompt = `${triggerWord}, ${finalPrompt}`
+      console.log("[v0] Added trigger word to start of prompt")
+    } else {
+      console.log("[v0] Trigger word already present, not adding duplicate")
     }
 
     console.log("[v0] Final FLUX prompt (Maya's gender-aware prompt):", finalPrompt)
 
-    const qualitySettings =
-      MAYA_QUALITY_PRESETS[category as keyof typeof MAYA_QUALITY_PRESETS] || MAYA_QUALITY_PRESETS.default
+    const qualitySettings = {
+      guidance_scale: 7.5,
+      num_inference_steps: 50,
+      aspect_ratio: "16:9",
+      megapixels: 4,
+      output_format: "png",
+      output_quality: "high",
+      prompt_strength: 0.8,
+      lora_scale: 1.05,
+      disable_safety_checker: false,
+      go_fast: false,
+      num_outputs: 1,
+      model: "dev",
+      extra_lora: null,
+      extra_lora_scale: 0.7,
+    }
 
     if (customSettings) {
       if (customSettings.styleStrength !== undefined) {
@@ -201,7 +220,7 @@ export async function POST(request: NextRequest) {
       lora_scale: Number(qualitySettings.lora_scale),
       hf_lora: userLoraPath,
       seed: qualitySettings.seed || Math.floor(Math.random() * 1000000),
-      disable_safety_checker: qualitySettings.disable_safety_checker ?? false,
+      disable_safety_checker: qualitySettings.disable_safety_checker ?? true,
       go_fast: qualitySettings.go_fast ?? false,
       num_outputs: qualitySettings.num_outputs ?? 1,
       model: qualitySettings.model ?? "dev",

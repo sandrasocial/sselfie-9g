@@ -173,7 +173,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
         console.error("[v0] ❌ Save error:", error)
         savedMessageIds.current.delete(lastMessage.id)
       })
-  }, [status, messages, chatId]) // Updated dependency to messages
+  }, [status, chatId]) // Updated dependency to messages
 
   const isTyping = status === "submitted" || status === "streaming"
 

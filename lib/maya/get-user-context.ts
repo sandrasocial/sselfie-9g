@@ -182,9 +182,20 @@ export async function getUserContextForMaya(authUserId: string): Promise<string>
           if (Array.isArray(colorPalette) && colorPalette.length > 0) {
             const colors = colorPalette.filter((c) => typeof c === "string" && c.trim().length > 0)
             if (colors.length > 0) {
-              contextParts.push(`Brand Colors: ${colors.join(", ")}`)
-              contextParts.push(`IMPORTANT: Use these exact brand colors in all visual prompts: ${colors.join(", ")}`)
-              console.log("[v0] getUserContextForMaya: Brand colors added to context:", colors)
+              contextParts.push(`\n**🎨 BRAND COLORS (MANDATORY - USE THESE EXACT COLORS):**`)
+              contextParts.push(`${colors.join(", ")}`)
+              contextParts.push(``)
+              contextParts.push(
+                `⚠️ CRITICAL REQUIREMENT: You MUST use these exact brand colors in EVERY outfit and styling description.`,
+              )
+              contextParts.push(
+                `- Do NOT default to generic warm tones, beige, or neutral colors unless they are in this palette`,
+              )
+              contextParts.push(`- Do NOT use colors that are NOT in this list`)
+              contextParts.push(`- If brand colors are blue and white → use blue and white clothing`)
+              contextParts.push(`- If brand colors are black and gold → use black and gold styling`)
+              contextParts.push(`- Brand color consistency is NON-NEGOTIABLE`)
+              console.log("[v0] getUserContextForMaya: Brand colors added to context with strict enforcement:", colors)
             }
           } else {
             console.log("[v0] getUserContextForMaya: color_palette is not a valid array")
@@ -192,6 +203,34 @@ export async function getUserContextForMaya(authUserId: string): Promise<string>
         } catch (colorError) {
           console.error("[v0] getUserContextForMaya: Error processing color palette:", colorError)
           // Continue without colors
+        }
+      }
+
+      if (personalBrand.visual_aesthetic) {
+        try {
+          const aesthetics =
+            typeof personalBrand.visual_aesthetic === "string"
+              ? JSON.parse(personalBrand.visual_aesthetic)
+              : personalBrand.visual_aesthetic
+          if (Array.isArray(aesthetics) && aesthetics.length > 0) {
+            contextParts.push(`\n**📐 VISUAL AESTHETIC PREFERENCE (AUTO-APPLY THIS LOOKBOOK):**`)
+            contextParts.push(`${aesthetics.join(", ")}`)
+            contextParts.push(``)
+            contextParts.push(`⚠️ CRITICAL REQUIREMENT: Every concept MUST match this aesthetic automatically.`)
+            contextParts.push(
+              `- Scandinavian Minimalist → Clean, bright, natural light, minimal styling, Nordic materials`,
+            )
+            contextParts.push(`- Urban Moody → Dramatic shadows, cinematic feel, sophisticated edge, city atmosphere`)
+            contextParts.push(`- High-End Coastal → Effortless luxury, seaside elegance, breezy sophistication`)
+            contextParts.push(
+              `- Apply the corresponding lookbook style from your creative intelligence WITHOUT being asked`,
+            )
+            contextParts.push(
+              `- This is the default aesthetic for ALL concepts unless user specifically requests different`,
+            )
+          }
+        } catch (e) {
+          // Already handled above in original code
         }
       }
 
