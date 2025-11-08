@@ -75,12 +75,15 @@ export async function POST(request: Request) {
         megapixels: "1",
         prompt_strength: 0.8,
         model: "dev",
+        extra_lora: "https://huggingface.co/XLabs-AI/flux-RealismLora/resolve/main/lora.safetensors",
+        extra_lora_scale: 0.6,
       },
     })
 
     console.log("[v0] Prediction created:", prediction.id)
     console.log("[v0] ✅ LoRA weights sent to Replicate:", model.lora_weights_url)
     console.log("[v0] ✅ LoRA scale:", 1.0)
+    console.log("[v0] ✅ Extra LoRA (Realism) scale:", 0.6)
 
     // Save generation record to database
     const [generation] = await sql`

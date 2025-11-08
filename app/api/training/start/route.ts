@@ -95,11 +95,11 @@ export async function POST(request: Request) {
       const finalBalance = await getUserCredits(neonUser.id)
       console.log("[v0] [TRAINING] Training started. Credits remaining:", finalBalance)
 
-      // Start training with Ostris flux-dev-lora-trainer
+      // Start training with fast-flux-trainer
       const training = await replicate.trainings.create(
-        "ostris", // "ostris"
-        "flux-dev-lora-trainer", // "flux-dev-lora-trainer"
-        "26dce37af90b9d997eeb970d92e47de3064d46c300504ae376c75bef6a9022d2", // "26dce37af90b9d997eeb970d92e47de3064d46c300504ae376c75bef6a9022d2"
+        "lucataco", // "lucataco"
+        "fast-flux-trainer", // "fast-flux-trainer"
+        "2295cf884e30e255b7f96c0e65e880c36e6f467cffa17a6b60413e0f230db412", // version
         {
           destination: `${process.env.REPLICATE_USERNAME || "sandrasocial"}/user-${neonUser.id.substring(0, 8)}-selfie-lora-${Date.now()}`,
           input: {
@@ -112,7 +112,7 @@ export async function POST(request: Request) {
 
       console.log("[v0] Replicate training started:", training.id)
       console.log("[v0] Trigger word:", triggerWord)
-      console.log("[v0] Using Ostris flux-dev-lora-trainer with layer optimization")
+      console.log("[v0] Using fast-flux-trainer with Claude's optimized settings")
 
       // Update model with training ID and trigger word
       await sql`

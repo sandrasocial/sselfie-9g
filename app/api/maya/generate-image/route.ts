@@ -165,6 +165,8 @@ export async function POST(request: NextRequest) {
       lora_scale: customSettings?.styleStrength ?? presetSettings.lora_scale,
       // User can override guidance_scale (promptAccuracy) - if not set, use preset's smart default
       guidance_scale: customSettings?.promptAccuracy ?? presetSettings.guidance_scale,
+      extra_lora: customSettings?.extraLora,
+      extra_lora_scale: customSettings?.extraLoraScale,
     }
 
     console.log("[v0] Final quality settings:", {
@@ -212,6 +214,13 @@ export async function POST(request: NextRequest) {
       go_fast: qualitySettings.go_fast ?? false,
       num_outputs: qualitySettings.num_outputs ?? 1,
       model: qualitySettings.model ?? "dev",
+    }
+
+    if (qualitySettings.extra_lora) {
+      predictionInput.extra_lora = qualitySettings.extra_lora
+      predictionInput.extra_lora_scale = qualitySettings.extra_lora_scale || 0.6
+      console.log("[v0] ✅ Extra LoRA (Realism):", predictionInput.extra_lora)
+      console.log("[v0] ✅ Extra LoRA scale:", predictionInput.extra_lora_scale)
     }
 
     console.log("[v0] ========== FULL PREDICTION INPUT ==========")

@@ -14,6 +14,8 @@ export const MAYA_DEFAULT_QUALITY_SETTINGS: QualitySettings = {
   go_fast: false,
   num_outputs: 1,
   model: "dev",
+  extra_lora: "https://huggingface.co/XLabs-AI/flux-RealismLora/resolve/main/lora.safetensors",
+  extra_lora_scale: 0.6,
 }
 
 export const MAYA_QUALITY_PRESETS = {
@@ -23,6 +25,8 @@ export const MAYA_QUALITY_PRESETS = {
     guidance_scale: 3.5,
     lora_scale: 1.0,
     num_inference_steps: 50,
+    extra_lora: "https://huggingface.co/XLabs-AI/flux-RealismLora/resolve/main/lora.safetensors",
+    extra_lora_scale: 0.6,
   },
   headshot: {
     ...MAYA_DEFAULT_QUALITY_SETTINGS,
@@ -30,6 +34,8 @@ export const MAYA_QUALITY_PRESETS = {
     guidance_scale: 3.5,
     lora_scale: 1.0,
     num_inference_steps: 50,
+    extra_lora: "https://huggingface.co/XLabs-AI/flux-RealismLora/resolve/main/lora.safetensors",
+    extra_lora_scale: 0.6,
   },
   "Close-Up": {
     ...MAYA_DEFAULT_QUALITY_SETTINGS,
@@ -37,6 +43,8 @@ export const MAYA_QUALITY_PRESETS = {
     guidance_scale: 3.5,
     lora_scale: 1.0,
     num_inference_steps: 50,
+    extra_lora: "https://huggingface.co/XLabs-AI/flux-RealismLora/resolve/main/lora.safetensors",
+    extra_lora_scale: 0.6,
   },
   "Half Body": {
     ...MAYA_DEFAULT_QUALITY_SETTINGS,
@@ -44,6 +52,8 @@ export const MAYA_QUALITY_PRESETS = {
     guidance_scale: 3.5,
     lora_scale: 1.0,
     num_inference_steps: 50,
+    extra_lora: "https://huggingface.co/XLabs-AI/flux-RealismLora/resolve/main/lora.safetensors",
+    extra_lora_scale: 0.6,
   },
   lifestyle: {
     ...MAYA_DEFAULT_QUALITY_SETTINGS,
@@ -51,6 +61,8 @@ export const MAYA_QUALITY_PRESETS = {
     guidance_scale: 3.5,
     lora_scale: 1.0,
     num_inference_steps: 50,
+    extra_lora: "https://huggingface.co/XLabs-AI/flux-RealismLora/resolve/main/lora.safetensors",
+    extra_lora_scale: 0.6,
   },
   Lifestyle: {
     ...MAYA_DEFAULT_QUALITY_SETTINGS,
@@ -58,6 +70,8 @@ export const MAYA_QUALITY_PRESETS = {
     guidance_scale: 3.5,
     lora_scale: 1.0,
     num_inference_steps: 50,
+    extra_lora: "https://huggingface.co/XLabs-AI/flux-RealismLora/resolve/main/lora.safetensors",
+    extra_lora_scale: 0.6,
   },
   Action: {
     ...MAYA_DEFAULT_QUALITY_SETTINGS,
@@ -65,6 +79,8 @@ export const MAYA_QUALITY_PRESETS = {
     guidance_scale: 3.5,
     lora_scale: 1.0,
     num_inference_steps: 50,
+    extra_lora: "https://huggingface.co/XLabs-AI/flux-RealismLora/resolve/main/lora.safetensors",
+    extra_lora_scale: 0.6,
   },
   Environmental: {
     ...MAYA_DEFAULT_QUALITY_SETTINGS,
@@ -72,6 +88,8 @@ export const MAYA_QUALITY_PRESETS = {
     guidance_scale: 3.5,
     lora_scale: 1.0,
     num_inference_steps: 50,
+    extra_lora: "https://huggingface.co/XLabs-AI/flux-RealismLora/resolve/main/lora.safetensors",
+    extra_lora_scale: 0.6,
   },
   editorial: {
     ...MAYA_DEFAULT_QUALITY_SETTINGS,
@@ -79,6 +97,8 @@ export const MAYA_QUALITY_PRESETS = {
     guidance_scale: 3.5,
     lora_scale: 1.0,
     num_inference_steps: 50,
+    extra_lora: "https://huggingface.co/XLabs-AI/flux-RealismLora/resolve/main/lora.safetensors",
+    extra_lora_scale: 0.6,
   },
   default: MAYA_DEFAULT_QUALITY_SETTINGS,
 }

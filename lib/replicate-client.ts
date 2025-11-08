@@ -30,21 +30,24 @@ export function getReplicateClient() {
   return replicateInstance
 }
 
-// Flux LoRA training model - using Ostris trainer for superior face likeness
-export const FLUX_LORA_TRAINER = "ostris/flux-dev-lora-trainer"
-export const FLUX_LORA_TRAINER_VERSION = "26dce37af90b9d997eeb970d92e47de3064d46c300504ae376c75bef6a9022d2"
+// Flux LoRA training model - using fast-flux-trainer for superior realism
+export const FLUX_LORA_TRAINER = "lucataco/fast-flux-trainer"
+export const FLUX_LORA_TRAINER_VERSION = "2295cf884e30e255b7f96c0e65e880c36e6f467cffa17a6b60413e0f230db412"
 
-// Default training parameters - optimized for maximum face quality and likeness
 export const DEFAULT_TRAINING_PARAMS = {
-  steps: 1200, // Balanced quality/speed
-  lora_rank: 32, // Higher rank for better face detail capture
-  optimizer: "adamw8bit", // 8-bit optimizer for memory efficiency
+  steps: 1400, // Increased from 1200 for better face detail learning
+  lora_rank: 48, // Increased from 16 to 48 for much better face detail capture
+  optimizer: "adamw_bf16", // BFloat16 optimizer for better precision
   batch_size: 1, // Standard batch size
   resolution: "1024", // Standard resolution for training
   autocaption: true, // Auto-caption training images
   trigger_word: "", // Will be set dynamically per user
-  learning_rate: 0.0004, // Higher learning rate for faster convergence
-  caption_dropout_rate: 0.1, // 10% dropout for better trigger word learning
+  learning_rate: 0.00008, // Lowered from 0.0001 for better photorealism and finer details
+  num_repeats: 20, // Increased from 18 for more face exposure
+  caption_dropout_rate: 0.15, // Increased from 0.1 for better trigger word learning
   cache_latents_to_disk: false, // Don't cache to disk
-  layers_to_optimize_regex: "transformer.single_transformer_blocks.(7|12|16|20).proj_out", // Focus training on key layers
+  network_alpha: 48, // Increased to match lora_rank (common practice)
+  save_every_n_steps: 250, // Save checkpoints
+  guidance_scale_training: 1.0, // Guidance scale during training
+  lr_scheduler: "constant_with_warmup", // Learning rate scheduler
 }
