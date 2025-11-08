@@ -435,38 +435,49 @@ export async function POST(request: NextRequest) {
 
                   console.log(`[v0] Creating subscription record for existing user ${userId}`)
 
-                  await sql`
-                    INSERT INTO subscriptions (
-                      user_id, 
-                      product_type,
-                      plan,
-                      status, 
-                      stripe_subscription_id,
-                      stripe_customer_id,
-                      current_period_start,
-                      current_period_end
-                    )
-                    VALUES (
-                      ${userId},
-                      ${productType},
-                      ${productType},
-                      ${subscriptionData.status},
-                      ${subscriptionData.id},
-                      ${subscriptionData.customer},
-                      to_timestamp(${subscriptionData.current_period_start}),
-                      to_timestamp(${subscriptionData.current_period_end})
-                    )
-                    ON CONFLICT (user_id) 
-                    DO UPDATE SET
-                      product_type = ${productType},
-                      plan = ${productType},
-                      status = ${subscriptionData.status},
-                      stripe_subscription_id = ${subscriptionData.id},
-                      stripe_customer_id = ${subscriptionData.customer},
-                      current_period_start = to_timestamp(${subscriptionData.current_period_start}),
-                      current_period_end = to_timestamp(${subscriptionData.current_period_end}),
-                      updated_at = NOW()
+                  const existingSubscription = await sql`
+                    SELECT id FROM subscriptions WHERE user_id = ${userId} LIMIT 1
                   `
+
+                  if (existingSubscription.length > 0) {
+                    console.log(`[v0] Updating existing subscription for user ${userId}`)
+                    await sql`
+                      UPDATE subscriptions SET
+                        product_type = ${productType},
+                        plan = ${productType},
+                        status = ${subscriptionData.status},
+                        stripe_subscription_id = ${subscriptionData.id},
+                        stripe_customer_id = ${subscriptionData.customer},
+                        current_period_start = to_timestamp(${subscriptionData.current_period_start}),
+                        current_period_end = to_timestamp(${subscriptionData.current_period_end}),
+                        updated_at = NOW()
+                      WHERE user_id = ${userId}
+                    `
+                  } else {
+                    console.log(`[v0] Inserting new subscription for user ${userId}`)
+                    await sql`
+                      INSERT INTO subscriptions (
+                        user_id, 
+                        product_type,
+                        plan,
+                        status, 
+                        stripe_subscription_id,
+                        stripe_customer_id,
+                        current_period_start,
+                        current_period_end
+                      )
+                      VALUES (
+                        ${userId},
+                        ${productType},
+                        ${productType},
+                        ${subscriptionData.status},
+                        ${subscriptionData.id},
+                        ${subscriptionData.customer},
+                        to_timestamp(${subscriptionData.current_period_start}),
+                        to_timestamp(${subscriptionData.current_period_end})
+                      )
+                    `
+                  }
 
                   console.log(`[v0] ✅ Subscription record created for existing user ${userId}`)
                 }
@@ -645,38 +656,49 @@ export async function POST(request: NextRequest) {
 
                   console.log(`[v0] Creating subscription record in database for user ${userId}`)
 
-                  await sql`
-                    INSERT INTO subscriptions (
-                      user_id, 
-                      product_type,
-                      plan,
-                      status, 
-                      stripe_subscription_id,
-                      stripe_customer_id,
-                      current_period_start,
-                      current_period_end
-                    )
-                    VALUES (
-                      ${userId},
-                      ${productType},
-                      ${productType},
-                      ${subscriptionData.status},
-                      ${subscriptionData.id},
-                      ${subscriptionData.customer},
-                      to_timestamp(${subscriptionData.current_period_start}),
-                      to_timestamp(${subscriptionData.current_period_end})
-                    )
-                    ON CONFLICT (user_id) 
-                    DO UPDATE SET
-                      product_type = ${productType},
-                      plan = ${productType},
-                      status = ${subscriptionData.status},
-                      stripe_subscription_id = ${subscriptionData.id},
-                      stripe_customer_id = ${subscriptionData.customer},
-                      current_period_start = to_timestamp(${subscriptionData.current_period_start}),
-                      current_period_end = to_timestamp(${subscriptionData.current_period_end}),
-                      updated_at = NOW()
+                  const existingSubscription = await sql`
+                    SELECT id FROM subscriptions WHERE user_id = ${userId} LIMIT 1
                   `
+
+                  if (existingSubscription.length > 0) {
+                    console.log(`[v0] Updating existing subscription for user ${userId}`)
+                    await sql`
+                      UPDATE subscriptions SET
+                        product_type = ${productType},
+                        plan = ${productType},
+                        status = ${subscriptionData.status},
+                        stripe_subscription_id = ${subscriptionData.id},
+                        stripe_customer_id = ${subscriptionData.customer},
+                        current_period_start = to_timestamp(${subscriptionData.current_period_start}),
+                        current_period_end = to_timestamp(${subscriptionData.current_period_end}),
+                        updated_at = NOW()
+                      WHERE user_id = ${userId}
+                    `
+                  } else {
+                    console.log(`[v0] Inserting new subscription for user ${userId}`)
+                    await sql`
+                      INSERT INTO subscriptions (
+                        user_id, 
+                        product_type,
+                        plan,
+                        status, 
+                        stripe_subscription_id,
+                        stripe_customer_id,
+                        current_period_start,
+                        current_period_end
+                      )
+                      VALUES (
+                        ${userId},
+                        ${productType},
+                        ${productType},
+                        ${subscriptionData.status},
+                        ${subscriptionData.id},
+                        ${subscriptionData.customer},
+                        to_timestamp(${subscriptionData.current_period_start}),
+                        to_timestamp(${subscriptionData.current_period_end})
+                      )
+                    `
+                  }
 
                   console.log(`[v0] Subscription record created successfully for user ${userId}`)
                 }
@@ -700,38 +722,49 @@ export async function POST(request: NextRequest) {
 
                 console.log(`[v0] Creating subscription record in database for existing user ${userId}`)
 
-                await sql`
-                  INSERT INTO subscriptions (
-                    user_id, 
-                    product_type,
-                    plan,
-                    status, 
-                    stripe_subscription_id,
-                    stripe_customer_id,
-                    current_period_start,
-                    current_period_end
-                  )
-                  VALUES (
-                    ${userId},
-                    ${productType},
-                    ${productType},
-                    ${subscriptionData.status},
-                    ${subscriptionData.id},
-                    ${subscriptionData.customer},
-                    to_timestamp(${subscriptionData.current_period_start}),
-                    to_timestamp(${subscriptionData.current_period_end})
-                  )
-                  ON CONFLICT (user_id) 
-                  DO UPDATE SET
-                    product_type = ${productType},
-                    plan = ${productType},
-                    status = ${subscriptionData.status},
-                    stripe_subscription_id = ${subscriptionData.id},
-                    stripe_customer_id = ${subscriptionData.customer},
-                    current_period_start = to_timestamp(${subscriptionData.current_period_start}),
-                    current_period_end = to_timestamp(${subscriptionData.current_period_end}),
-                    updated_at = NOW()
+                const existingSubscription = await sql`
+                  SELECT id FROM subscriptions WHERE user_id = ${userId} LIMIT 1
                 `
+
+                if (existingSubscription.length > 0) {
+                  console.log(`[v0] Updating existing subscription for user ${userId}`)
+                  await sql`
+                    UPDATE subscriptions SET
+                      product_type = ${productType},
+                      plan = ${productType},
+                      status = ${subscriptionData.status},
+                      stripe_subscription_id = ${subscriptionData.id},
+                      stripe_customer_id = ${subscriptionData.customer},
+                      current_period_start = to_timestamp(${subscriptionData.current_period_start}),
+                      current_period_end = to_timestamp(${subscriptionData.current_period_end}),
+                      updated_at = NOW()
+                    WHERE user_id = ${userId}
+                  `
+                } else {
+                  console.log(`[v0] Inserting new subscription for user ${userId}`)
+                  await sql`
+                    INSERT INTO subscriptions (
+                      user_id, 
+                      product_type,
+                      plan,
+                      status, 
+                      stripe_subscription_id,
+                      stripe_customer_id,
+                      current_period_start,
+                      current_period_end
+                    )
+                    VALUES (
+                      ${userId},
+                      ${productType},
+                      ${productType},
+                      ${subscriptionData.status},
+                      ${subscriptionData.id},
+                      ${subscriptionData.customer},
+                      to_timestamp(${subscriptionData.current_period_start}),
+                      to_timestamp(${subscriptionData.current_period_end})
+                    )
+                  `
+                }
 
                 console.log(`[v0] Subscription record created successfully for existing user ${userId}`)
               }
@@ -776,38 +809,49 @@ export async function POST(request: NextRequest) {
 
         console.log(`[v0] Subscription created: ${productType} for user ${userId}`)
 
-        await sql`
-          INSERT INTO subscriptions (
-            user_id, 
-            product_type,
-            plan,
-            status, 
-            stripe_subscription_id,
-            stripe_customer_id,
-            current_period_start,
-            current_period_end
-          )
-          VALUES (
-            ${userId},
-            ${productType},
-            ${productType},
-            ${subscription.status},
-            ${subscription.id},
-            ${subscription.customer},
-            to_timestamp(${subscription.current_period_start}),
-            to_timestamp(${subscription.current_period_end})
-          )
-          ON CONFLICT (user_id) 
-          DO UPDATE SET
-            product_type = ${productType},
-            plan = ${productType},
-            status = ${subscription.status},
-            stripe_subscription_id = ${subscription.id},
-            stripe_customer_id = ${subscription.customer},
-            current_period_start = to_timestamp(${subscription.current_period_start}),
-            current_period_end = to_timestamp(${subscription.current_period_end}),
-            updated_at = NOW()
+        const existingSubscription = await sql`
+          SELECT id FROM subscriptions WHERE user_id = ${userId} LIMIT 1
         `
+
+        if (existingSubscription.length > 0) {
+          console.log(`[v0] Updating existing subscription for user ${userId}`)
+          await sql`
+            UPDATE subscriptions SET
+              product_type = ${productType},
+              plan = ${productType},
+              status = ${subscription.status},
+              stripe_subscription_id = ${subscription.id},
+              stripe_customer_id = ${subscription.customer},
+              current_period_start = to_timestamp(${subscription.current_period_start}),
+              current_period_end = to_timestamp(${subscription.current_period_end}),
+              updated_at = NOW()
+            WHERE user_id = ${userId}
+          `
+        } else {
+          console.log(`[v0] Inserting new subscription for user ${userId}`)
+          await sql`
+            INSERT INTO subscriptions (
+              user_id, 
+              product_type,
+              plan,
+              status, 
+              stripe_subscription_id,
+              stripe_customer_id,
+              current_period_start,
+              current_period_end
+            )
+            VALUES (
+              ${userId},
+              ${productType},
+              ${productType},
+              ${subscription.status},
+              ${subscription.id},
+              ${subscription.customer},
+              to_timestamp(${subscription.current_period_start}),
+              to_timestamp(${subscription.current_period_end})
+            )
+          `
+        }
 
         const existingGrant = await sql`
           SELECT id FROM subscription_credit_grants
