@@ -43,11 +43,11 @@ export async function POST(request: Request) {
     const zipSizeMB = zipFile.size / 1024 / 1024
     console.log(`[v0] Received ZIP file: ${zipFile.name}, size: ${zipSizeMB.toFixed(2)}MB`)
 
-    if (zipSizeMB > 4.5) {
+    if (zipSizeMB > 15) {
       return NextResponse.json(
         {
           error: "File too large",
-          details: `ZIP file is ${zipSizeMB.toFixed(2)}MB. Maximum size is 4.5MB. Please use fewer images or lower quality photos.`,
+          details: `ZIP file is ${zipSizeMB.toFixed(2)}MB. Maximum size is 15MB. Please use fewer images or lower quality photos.`,
         },
         { status: 413 },
       )

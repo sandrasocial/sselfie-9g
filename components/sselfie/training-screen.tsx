@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { Camera, Aperture, ChevronRight, Loader2 } from "lucide-react"
+import { Camera, Aperture, ChevronRight, Loader2, X } from "lucide-react"
 import useSWR from "swr"
 import JSZip from "jszip"
 
@@ -46,7 +46,6 @@ const compressImage = async (file: File): Promise<File> => {
         canvas.width = width
         canvas.height = height
 
-        // Draw and compress
         ctx.drawImage(img, 0, 0, width, height)
         canvas.toBlob(
           (blob) => {
@@ -64,7 +63,7 @@ const compressImage = async (file: File): Promise<File> => {
             resolve(compressedFile)
           },
           "image/jpeg",
-          0.7,
+          0.85,
         )
       }
       img.onerror = () => reject(new Error("Failed to load image"))
@@ -176,9 +175,9 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
       const zipSizeMB = zipBlob.size / 1024 / 1024
       console.log(`[v0] ZIP created: ${zipSizeMB.toFixed(2)}MB`)
 
-      if (zipSizeMB > 4.5) {
+      if (zipSizeMB > 15) {
         throw new Error(
-          `ZIP file is too large (${zipSizeMB.toFixed(2)}MB). Please use fewer images or lower quality photos. Maximum size is 4.5MB.`,
+          `ZIP file is too large (${zipSizeMB.toFixed(2)}MB). Please use fewer images or lower quality photos. Maximum size is 15MB.`,
         )
       }
 
@@ -565,10 +564,10 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
                     />
                     <button
                       onClick={() => handleRemoveUploadedImage(i)}
-                      className="absolute top-1 right-1 w-6 h-6 bg-stone-950/80 hover:bg-stone-950 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                      className="absolute top-2 right-2 w-7 h-7 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg transition-all duration-200"
                       aria-label="Remove image"
                     >
-                      <span className="text-xs font-bold">×</span>
+                      <X size={16} strokeWidth={2.5} />
                     </button>
                   </div>
                 ))}
