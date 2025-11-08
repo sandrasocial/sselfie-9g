@@ -227,15 +227,75 @@ export default function VideoPlayer({
   }
 
   const toggleFullscreen = async () => {
-    if (!containerRef.current) return
-
     try {
-      if (!document.fullscreenElement) {
-        await containerRef.current.requestFullscreen()
+      // For Vimeo iframe
+      if (isVimeo && iframeRef.current) {
+        // Use the iframe's fullscreen API
+        const iframe = iframeRef.current as any
+
+        if (iframe.requestFullscreen) {
+          await iframe.requestFullscreen()
+        } else if (iframe.webkitRequestFullscreen) {
+          // iOS Safari
+          await iframe.webkitRequestFullscreen()
+        } else if (iframe.mozRequestFullScreen) {
+          // Firefox
+          await iframe.mozRequestFullScreen()
+        } else if (iframe.msRequestFullscreen) {
+          // IE/Edge
+          await iframe.msRequestFullscreen()
+        }
         setIsFullscreen(true)
-      } else {
-        await document.exitFullscreen()
-        setIsFullscreen(false)
+        return
+      }
+
+      // For native video element
+      if (videoRef.current) {
+        const video = videoRef.current as any
+
+        if (video.requestFullscreen) {
+          await video.requestFullscreen()
+        } else if (video.webkitEnterFullscreen) {
+          // iOS Safari - native video fullscreen
+          video.webkitEnterFullscreen()
+        } else if (video.webkitRequestFullscreen) {
+          await video.webkitRequestFullscreen()
+        } else if (video.mozRequestFullScreen) {
+          await video.mozRequestFullScreen()
+        } else if (video.msRequestFullscreen) {
+          await video.msRequestFullscreen()
+        }
+        setIsFullscreen(true)
+        return
+      }
+
+      // Fallback to container fullscreen (desktop)
+      if (containerRef.current) {
+        const container = containerRef.current as any
+
+        if (!document.fullscreenElement) {
+          if (container.requestFullscreen) {
+            await container.requestFullscreen()
+          } else if (container.webkitRequestFullscreen) {
+            await container.webkitRequestFullscreen()
+          } else if (container.mozRequestFullScreen) {
+            await container.mozRequestFullScreen()
+          } else if (container.msRequestFullscreen) {
+            await container.msRequestFullscreen()
+          }
+          setIsFullscreen(true)
+        } else {
+          if (document.exitFullscreen) {
+            await document.exitFullscreen()
+          } else if ((document as any).webkitExitFullscreen) {
+            await (document as any).webkitExitFullscreen()
+          } else if ((document as any).mozCancelFullScreen) {
+            await (document as any).mozCancelFullScreen()
+          } else if ((document as any).msExitFullscreen) {
+            await (document as any).msExitFullscreen()
+          }
+          setIsFullscreen(false)
+        }
       }
     } catch (error) {
       console.error("[v0] Error toggling fullscreen:", error)
@@ -248,7 +308,16 @@ export default function VideoPlayer({
     }
 
     document.addEventListener("fullscreenchange", handleFullscreenChange)
-    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange)
+    document.addEventListener("webkitfullscreenchange", handleFullscreenChange)
+    document.addEventListener("mozfullscreenchange", handleFullscreenChange)
+    document.addEventListener("msfullscreenchange", handleFullscreenChange)
+
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange)
+      document.removeEventListener("webkitfullscreenchange", handleFullscreenChange)
+      document.removeEventListener("mozfullscreenchange", handleFullscreenChange)
+      document.removeEventListener("msfullscreenchange", handleFullscreenChange)
+    }
   }, [])
 
   const formatTime = (seconds: number) => {

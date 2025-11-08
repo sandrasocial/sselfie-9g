@@ -306,7 +306,7 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
 
               <p className="text-xs text-stone-500 text-center">
                 {isStudioMembership
-                  ? "Update payment method, view billing history, or cancel subscription"
+                  ? "Update your payment method, view billing history, or cancel your membership anytime"
                   : "Manage your session details and billing information"}
               </p>
             </div>
