@@ -121,34 +121,51 @@ export async function POST(request: Request) {
 
       console.log("[v0] Using destination:", destination)
 
-      console.log("[v0] Creating destination model on Replicate...")
-      const createModelResponse = await fetch("https://api.replicate.com/v1/models", {
-        method: "POST",
+      console.log("[v0] Checking if destination model exists on Replicate...")
+      const checkModelResponse = await fetch(`https://api.replicate.com/v1/models/${destination}`, {
+        method: "GET",
         headers: {
           Authorization: `Bearer ${process.env.REPLICATE_API_TOKEN}`,
-          "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          owner: replicateUsername,
-          name: destinationModelName,
-          visibility: "private",
-          hardware: "gpu-t4",
-          description: `Selfie LoRA model for user ${neonUser.id}`,
-        }),
       })
 
-      if (createModelResponse.status === 409) {
-        console.log("[v0] Destination model already exists, continuing with training")
-      } else if (createModelResponse.status === 201 || createModelResponse.status === 200) {
-        const modelData = await createModelResponse.json()
-        console.log("[v0] Destination model created successfully:", modelData.name)
+      if (checkModelResponse.status === 404) {
+        // Model doesn't exist, create it
+        console.log("[v0] Model doesn't exist, creating it...")
+        const createModelResponse = await fetch("https://api.replicate.com/v1/models", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${process.env.REPLICATE_API_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            owner: replicateUsername,
+            name: destinationModelName,
+            visibility: "private",
+            hardware: "gpu-t4",
+            description: `Selfie LoRA model for user ${neonUser.id}`,
+          }),
+        })
+
+        if (!createModelResponse.ok && createModelResponse.status !== 409) {
+          const errorData = await createModelResponse.json().catch(() => ({}))
+          console.error("[v0] Failed to create destination model:", {
+            status: createModelResponse.status,
+            error: errorData,
+          })
+          throw new Error(`Failed to create destination model: ${JSON.stringify(errorData)}`)
+        }
+
+        console.log("[v0] Destination model created successfully")
+      } else if (checkModelResponse.ok) {
+        console.log("[v0] Destination model already exists, will use it for training")
       } else {
-        const errorData = await createModelResponse.json().catch(() => ({}))
-        console.error("[v0] Failed to create destination model:", {
-          status: createModelResponse.status,
+        const errorData = await checkModelResponse.json().catch(() => ({}))
+        console.error("[v0] Error checking model existence:", {
+          status: checkModelResponse.status,
           error: errorData,
         })
-        throw new Error(`Failed to create destination model: ${JSON.stringify(errorData)}`)
+        throw new Error(`Failed to check model existence: ${JSON.stringify(errorData)}`)
       }
 
       console.log("[v0] Starting Replicate training with SDK...")

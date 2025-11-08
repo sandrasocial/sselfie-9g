@@ -14,8 +14,6 @@ export const MAYA_DEFAULT_QUALITY_SETTINGS: QualitySettings = {
   go_fast: false,
   num_outputs: 1,
   model: "dev",
-  extra_lora: "https://huggingface.co/XLabs-AI/flux-RealismLora/resolve/main/lora.safetensors",
-  extra_lora_scale: 1.0, // Reverted extra_lora_scale from 0.65 back to 1.0 per user request
 }
 
 export const MAYA_QUALITY_PRESETS = {
@@ -25,7 +23,6 @@ export const MAYA_QUALITY_PRESETS = {
     guidance_scale: 3.5,
     lora_scale: 1.0,
     num_inference_steps: 50,
-    extra_lora_scale: 1.0,
   },
   headshot: {
     ...MAYA_DEFAULT_QUALITY_SETTINGS,
@@ -33,7 +30,6 @@ export const MAYA_QUALITY_PRESETS = {
     guidance_scale: 3.5,
     lora_scale: 1.0,
     num_inference_steps: 50,
-    extra_lora_scale: 1.0,
   },
   "Close-Up": {
     ...MAYA_DEFAULT_QUALITY_SETTINGS,
@@ -41,7 +37,6 @@ export const MAYA_QUALITY_PRESETS = {
     guidance_scale: 3.5,
     lora_scale: 1.0,
     num_inference_steps: 50,
-    extra_lora_scale: 1.0,
   },
   "Half Body": {
     ...MAYA_DEFAULT_QUALITY_SETTINGS,
@@ -49,7 +44,6 @@ export const MAYA_QUALITY_PRESETS = {
     guidance_scale: 3.5,
     lora_scale: 1.0,
     num_inference_steps: 50,
-    extra_lora_scale: 1.0,
   },
   lifestyle: {
     ...MAYA_DEFAULT_QUALITY_SETTINGS,
@@ -57,7 +51,6 @@ export const MAYA_QUALITY_PRESETS = {
     guidance_scale: 3.5,
     lora_scale: 1.0,
     num_inference_steps: 50,
-    extra_lora_scale: 1.0,
   },
   Lifestyle: {
     ...MAYA_DEFAULT_QUALITY_SETTINGS,
@@ -65,7 +58,6 @@ export const MAYA_QUALITY_PRESETS = {
     guidance_scale: 3.5,
     lora_scale: 1.0,
     num_inference_steps: 50,
-    extra_lora_scale: 1.0,
   },
   Action: {
     ...MAYA_DEFAULT_QUALITY_SETTINGS,
@@ -73,7 +65,6 @@ export const MAYA_QUALITY_PRESETS = {
     guidance_scale: 3.5,
     lora_scale: 1.0,
     num_inference_steps: 50,
-    extra_lora_scale: 1.0,
   },
   Environmental: {
     ...MAYA_DEFAULT_QUALITY_SETTINGS,
@@ -81,7 +72,6 @@ export const MAYA_QUALITY_PRESETS = {
     guidance_scale: 3.5,
     lora_scale: 1.0,
     num_inference_steps: 50,
-    extra_lora_scale: 1.0,
   },
   editorial: {
     ...MAYA_DEFAULT_QUALITY_SETTINGS,
@@ -89,7 +79,6 @@ export const MAYA_QUALITY_PRESETS = {
     guidance_scale: 3.5,
     lora_scale: 1.0,
     num_inference_steps: 50,
-    extra_lora_scale: 1.0,
   },
   default: MAYA_DEFAULT_QUALITY_SETTINGS,
 }

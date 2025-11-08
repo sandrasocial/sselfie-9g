@@ -71,8 +71,7 @@ export async function POST(request: Request) {
         num_inference_steps: 50, // Increased from 28 for higher quality
         guidance_scale: 3.5, // Increased from 3.2 for better prompt adherence
         lora: model.lora_weights_url,
-        lora_scale: 1.0, // Increased from 0.9 for stronger likeness
-        extra_lora_scale: 1,
+        lora_scale: 1.0, // Set to exactly 1.0
         megapixels: "1",
         prompt_strength: 0.8,
         model: "dev",

@@ -127,14 +127,19 @@ export async function POST(request: NextRequest) {
       finalPrompt = `${conceptPrompt}, professional Instagram story highlight aesthetic, elegant and minimalistic design, soft lighting, high-end editorial quality, perfect for text overlay, circular crop friendly, trending Instagram aesthetic 2025`
     }
 
+    // Instead of telling it what NOT to do, tell it what TO do
+    const handGuidance = "perfect hands with five fingers, well-formed hands, anatomically correct hands"
+    finalPrompt = `${finalPrompt}, ${handGuidance}`
+    console.log("[v0] Added positive hand guidance (Flux doesn't support negative prompts)")
+
     console.log("[v0] Final FLUX prompt (Maya's gender-aware prompt):", finalPrompt)
 
     const anatomyNegatives =
       "bad anatomy, disfigured hands, extra fingers, missing fingers, fused fingers, too many fingers, extra limbs, missing limbs, extra arms, extra legs, malformed limbs, mutated hands, poorly drawn hands, poorly drawn face, mutation, deformed body, unnatural posture, awkward pose, distorted proportions, blurry, low quality, distorted, deformed, ugly, watermark, signature, text, logo"
 
     // Add negative prompts to ensure anatomical accuracy
-    finalPrompt = `${finalPrompt} --no ${anatomyNegatives}`
-    console.log("[v0] Added anatomy negative prompts for better quality")
+    // finalPrompt = `${finalPrompt} --no ${anatomyNegatives}`
+    // console.log("[v0] Added anatomy negative prompts for better quality")
 
     const promptLower = finalPrompt.toLowerCase().trim()
     const triggerLower = triggerWord.toLowerCase()
@@ -152,12 +157,22 @@ export async function POST(request: NextRequest) {
 
     console.log("[v0] Using quality preset for category:", category)
 
-    // Start with preset defaults, then apply custom overrides
     const qualitySettings = {
       ...presetSettings,
-      // Allow aspect ratio override from custom settings
+      // User can override aspect ratio via settings
       aspect_ratio: customSettings?.aspectRatio || presetSettings.aspect_ratio,
+      // User can override lora_scale (styleStrength) - if not set, use preset's smart default
+      lora_scale: customSettings?.styleStrength ?? presetSettings.lora_scale,
+      // User can override guidance_scale (promptAccuracy) - if not set, use preset's smart default
+      guidance_scale: customSettings?.promptAccuracy ?? presetSettings.guidance_scale,
     }
+
+    console.log("[v0] Final quality settings:", {
+      category,
+      presetDefaults: presetSettings,
+      userOverrides: customSettings,
+      final: qualitySettings,
+    })
 
     console.log("[v0] Initializing Replicate client...")
     let replicate
@@ -197,17 +212,11 @@ export async function POST(request: NextRequest) {
       go_fast: qualitySettings.go_fast ?? false,
       num_outputs: qualitySettings.num_outputs ?? 1,
       model: qualitySettings.model ?? "dev",
-      ...(qualitySettings.extra_lora && {
-        extra_lora: qualitySettings.extra_lora,
-        extra_lora_scale: qualitySettings.extra_lora_scale || 0.7,
-      }),
     }
 
     console.log("[v0] ========== FULL PREDICTION INPUT ==========")
     console.log("[v0] ✅ User LoRA path (hf_lora):", userLoraPath)
     console.log("[v0] ✅ LoRA scale:", predictionInput.lora_scale)
-    console.log("[v0] ✅ Extra LoRA (realism):", predictionInput.extra_lora || "none")
-    console.log("[v0] ✅ Extra LoRA scale:", predictionInput.extra_lora_scale || "none")
     console.log("[v0] ✅ Model:", predictionInput.model)
     console.log("[v0] ✅ Seed:", predictionInput.seed)
     console.log("[v0] ✅ Num outputs:", predictionInput.num_outputs)

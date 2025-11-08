@@ -2,12 +2,7 @@ import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { createTrainingModel } from "@/lib/data/training"
-import {
-  getReplicateClient,
-  DEFAULT_TRAINING_PARAMS,
-  FLUX_LORA_TRAINER,
-  FLUX_LORA_TRAINER_VERSION,
-} from "@/lib/replicate-client"
+import { getReplicateClient, DEFAULT_TRAINING_PARAMS } from "@/lib/replicate-client"
 import { createTrainingZip } from "@/lib/storage"
 import { neon } from "@neondatabase/serverless"
 import { checkCredits, deductCredits, getUserCredits, CREDIT_COSTS } from "@/lib/credits"
@@ -100,11 +95,11 @@ export async function POST(request: Request) {
       const finalBalance = await getUserCredits(neonUser.id)
       console.log("[v0] [TRAINING] Training started. Credits remaining:", finalBalance)
 
-      // Start training with fast-flux-trainer
+      // Start training with Ostris flux-dev-lora-trainer
       const training = await replicate.trainings.create(
-        FLUX_LORA_TRAINER.split("/")[0], // "replicate"
-        FLUX_LORA_TRAINER.split("/")[1], // "fast-flux-trainer"
-        FLUX_LORA_TRAINER_VERSION, // "56cb4a64"
+        "ostris", // "ostris"
+        "flux-dev-lora-trainer", // "flux-dev-lora-trainer"
+        "26dce37af90b9d997eeb970d92e47de3064d46c300504ae376c75bef6a9022d2", // "26dce37af90b9d997eeb970d92e47de3064d46c300504ae376c75bef6a9022d2"
         {
           destination: `${process.env.REPLICATE_USERNAME || "sandrasocial"}/user-${neonUser.id.substring(0, 8)}-selfie-lora-${Date.now()}`,
           input: {
@@ -117,7 +112,7 @@ export async function POST(request: Request) {
 
       console.log("[v0] Replicate training started:", training.id)
       console.log("[v0] Trigger word:", triggerWord)
-      console.log("[v0] Using fast-flux-trainer with optimized parameters")
+      console.log("[v0] Using Ostris flux-dev-lora-trainer with layer optimization")
 
       // Update model with training ID and trigger word
       await sql`

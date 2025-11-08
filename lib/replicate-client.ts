@@ -30,25 +30,21 @@ export function getReplicateClient() {
   return replicateInstance
 }
 
-// Flux LoRA training model - using fast-flux-trainer (May 2025 release)
-export const FLUX_LORA_TRAINER = "replicate/fast-flux-trainer"
-export const FLUX_LORA_TRAINER_VERSION = "56cb4a6447e586e40c6834a7a48b649336ade35325479817ada41cd3d8dcc175"
+// Flux LoRA training model - using Ostris trainer for superior face likeness
+export const FLUX_LORA_TRAINER = "ostris/flux-dev-lora-trainer"
+export const FLUX_LORA_TRAINER_VERSION = "26dce37af90b9d997eeb970d92e47de3064d46c300504ae376c75bef6a9022d2"
 
-// Default training parameters - optimized for portrait quality and likeness
+// Default training parameters - optimized for maximum face quality and likeness
 export const DEFAULT_TRAINING_PARAMS = {
-  steps: 1600, // Increased steps from 1000 to 1600 for better facial feature learning
-  lora_rank: 64, // Increased lora_rank from 36 to 64 for higher model capacity and detail
-  optimizer: "adamw8bit",
-  batch_size: 1,
-  resolution: "1024", // Focused on single high resolution for portraits
-  autocaption: true,
-  trigger_word: "",
-  learning_rate: 0.00015, // Reduced learning_rate from 0.0004 to 0.00015 (Flux standard) for precise, stable learning
-  wandb_project: "flux_train_replicate",
-  caption_dropout_rate: 0.1, // Increased caption_dropout_rate from 0.05 to 0.10 for better trigger word learning
-  cache_latents_to_disk: false,
-  wandb_save_interval: 100,
-  caption_prefix: "",
-  num_repeats: 20, // Increased num_repeats from 15 to 20 for more face exposure during training
-  lora_type: "subject", // Required for fast-flux-trainer
+  steps: 1200, // Balanced quality/speed
+  lora_rank: 32, // Higher rank for better face detail capture
+  optimizer: "adamw8bit", // 8-bit optimizer for memory efficiency
+  batch_size: 1, // Standard batch size
+  resolution: "1024", // Standard resolution for training
+  autocaption: true, // Auto-caption training images
+  trigger_word: "", // Will be set dynamically per user
+  learning_rate: 0.0004, // Higher learning rate for faster convergence
+  caption_dropout_rate: 0.1, // 10% dropout for better trigger word learning
+  cache_latents_to_disk: false, // Don't cache to disk
+  layers_to_optimize_regex: "transformer.single_transformer_blocks.(7|12|16|20).proj_out", // Focus training on key layers
 }

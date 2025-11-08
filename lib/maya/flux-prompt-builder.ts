@@ -3,14 +3,14 @@ export interface FluxPromptComponents {
   gender: string
   quality: string[]
   styleDescription: string
-  negatives: string
+  handGuidance: string
 }
 
 export interface FluxPromptOptions {
   userTriggerToken: string
   userGender?: string | null
   includeQualityHints?: boolean
-  includeNegativePrompts?: boolean
+  includeHandGuidance?: boolean
 }
 
 export interface GeneratedFluxPrompt {
@@ -32,7 +32,7 @@ export class FluxPromptBuilder {
     options: FluxPromptOptions,
     referenceImageUrl?: string,
   ): GeneratedFluxPrompt {
-    const { userTriggerToken, userGender, includeQualityHints = true, includeNegativePrompts = true } = options
+    const { userTriggerToken, userGender, includeQualityHints = true, includeHandGuidance = true } = options
 
     console.log("[v0] Generating FLUX prompt with brand-aware styling enforcement")
     console.log("[v0] Using Maya's creative description with brand styling priority:", {
@@ -42,32 +42,27 @@ export class FluxPromptBuilder {
       gender: userGender,
     })
 
-    const categoryNegatives = this.getCategoryNegatives(category)
-
     const components: FluxPromptComponents = {
       trigger: userTriggerToken,
       gender: this.getGenderToken(userGender),
-      quality: includeQualityHints ? ["professional photography", "sharp focus"] : [],
-      styleDescription: conceptDescription, // Maya's brand-aware fashion vision
-      negatives: includeNegativePrompts
-        ? `${categoryNegatives}, blurry, low quality, distorted, deformed, ugly, bad anatomy, disfigured hands, extra fingers, missing fingers, fused fingers, too many fingers, extra limbs, missing limbs, extra arms, extra legs, malformed limbs, mutated hands, poorly drawn hands, poorly drawn face, mutation, watermark, signature, text, logo, generic stock photo, cliche`
+      quality: includeQualityHints ? ["professional photography", "sharp focus", "high resolution"] : [],
+      styleDescription: conceptDescription,
+      handGuidance: includeHandGuidance
+        ? "perfect hands with five fingers, well-formed hands, anatomically correct hands"
         : "",
     }
 
     const promptParts = [
       components.trigger,
       components.gender,
-      components.styleDescription, // Maya's full vision with brand colors and styling comes FIRST
-      ...components.quality, // Minimal technical hints come AFTER
+      components.styleDescription,
+      ...components.quality,
+      components.handGuidance,
     ].filter(Boolean)
 
-    let prompt = promptParts.join(", ")
+    const prompt = promptParts.join(", ")
 
-    if (components.negatives && includeNegativePrompts) {
-      prompt += ` --no ${components.negatives}`
-    }
-
-    console.log("[v0] Brand-aware prompt structure:", {
+    console.log("[v0] Brand-aware prompt structure (no negative prompts - Flux doesn't support them):", {
       wordCount: prompt.split(/\s+/).length,
       characterCount: prompt.length,
       hasReferenceImage: !!referenceImageUrl,
@@ -80,26 +75,6 @@ export class FluxPromptBuilder {
       components,
       wordCount: prompt.split(/\s+/).length,
       characterCount: prompt.length,
-    }
-  }
-
-  private static getCategoryNegatives(category: string): string {
-    switch (category) {
-      case "Close-Up":
-        return "full body, legs, feet, shoes, boots, waist, hips, walking, standing, full figure, distant shot, wide shot"
-      case "Half Body":
-        return "full body, legs visible, feet, shoes, boots, pants, jeans, walking, stride, full figure, distant shot, wide shot"
-      case "Lifestyle":
-        // Allow full body but prevent distant framing
-        return "distant figure, shot from far away, wide shot, small in frame, tiny person, far distance, blurry face, disfigured face"
-      case "Action":
-        // Allow movement and full body but prevent distant framing
-        return "distant figure, shot from far away, wide shot, small in frame, tiny person, far distance, blurry face, disfigured face"
-      case "Environmental":
-        // Allow environment but subject must be prominent
-        return "distant figure, shot from far away, wide environmental shot, small in frame, tiny person, vast landscape with small figure, far distance, blurry face, disfigured face"
-      default:
-        return "distant shot, wide shot, small in frame, blurry face, disfigured face"
     }
   }
 
