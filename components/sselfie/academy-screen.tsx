@@ -124,7 +124,6 @@ export default function AcademyScreen() {
     console.log("[v0] handleResourceDownload called:", { resourceId, resourceUrl, resourceType })
 
     try {
-      // Track download
       const endpoint =
         resourceType === "template"
           ? `/api/academy/templates/${resourceId}/download`
@@ -149,9 +148,31 @@ export default function AcademyScreen() {
         console.error("[v0] Error tracking download:", trackResponse.status, errorText)
       }
 
-      // Open resource in new tab
-      console.log("[v0] Opening resource URL:", resourceUrl)
-      window.open(resourceUrl, "_blank", "noopener,noreferrer")
+      console.log("[v0] Downloading resource as blob from:", resourceUrl)
+      const response = await fetch(resourceUrl)
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch resource: ${response.status}`)
+      }
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+
+      // Extract filename from URL or use type-based default
+      const urlPath = new URL(resourceUrl).pathname
+      const filename = urlPath.split("/").pop() || `${resourceType}-${resourceId}.download`
+
+      const a = document.createElement("a")
+      a.href = url
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+
+      // Cleanup
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+
+      console.log("[v0] Resource download initiated successfully")
     } catch (error) {
       console.error("[v0] Error in handleResourceDownload:", error)
       alert("Failed to download resource. Please try again.")

@@ -5,9 +5,21 @@ import { getLessonById, getLessonExercises, getUserLessonProgress } from "@/lib/
 
 export async function GET(req: NextRequest, { params }: { params: { lessonId: string } }) {
   try {
-    const { lessonId } = params
+    const { lessonId } = await params
 
     console.log("[v0] Academy lesson details API called for lesson:", lessonId)
+
+    if (!lessonId || lessonId === "undefined" || lessonId === "null") {
+      console.error("[v0] Invalid lessonId received:", lessonId)
+      return NextResponse.json({ error: "Invalid lesson ID" }, { status: 400 })
+    }
+
+    const lessonIdNum = Number.parseInt(lessonId, 10)
+
+    if (Number.isNaN(lessonIdNum)) {
+      console.error("[v0] lessonId is NaN after parsing:", lessonId)
+      return NextResponse.json({ error: "Invalid lesson ID format" }, { status: 400 })
+    }
 
     // Authenticate user
     const supabase = await createServerClient()
@@ -27,17 +39,17 @@ export async function GET(req: NextRequest, { params }: { params: { lessonId: st
     }
 
     // Get lesson details
-    const lesson = await getLessonById(Number.parseInt(lessonId))
+    const lesson = await getLessonById(lessonIdNum)
 
     if (!lesson) {
       return NextResponse.json({ error: "Lesson not found" }, { status: 404 })
     }
 
     // Get exercises for this lesson
-    const exercises = await getLessonExercises(Number.parseInt(lessonId))
+    const exercises = await getLessonExercises(lessonIdNum)
 
     // Get user's progress for this lesson
-    const progress = await getUserLessonProgress(neonUser.id, Number.parseInt(lessonId))
+    const progress = await getUserLessonProgress(neonUser.id, lessonIdNum)
 
     console.log("[v0] Lesson found:", lesson.title)
     console.log("[v0] Exercises:", exercises.length)
