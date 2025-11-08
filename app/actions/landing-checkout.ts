@@ -5,6 +5,7 @@ import { getProductById } from "@/lib/products"
 import { neon } from "@neondatabase/serverless"
 
 const BETA_DISCOUNT_COUPON_ID = process.env.STRIPE_BETA_COUPON_ID || "BETA50"
+const ENABLE_BETA_DISCOUNT = process.env.ENABLE_BETA_DISCOUNT !== "false"
 
 export async function createLandingCheckoutSession(productId: string) {
   const product = getProductById(productId)
@@ -39,23 +40,35 @@ export async function createLandingCheckoutSession(productId: string) {
       },
     ],
     allow_promotion_codes: true,
-    ...(isSubscription && {
-      subscription_data: {
-        metadata: {
-          product_id: productId,
-          product_type: product.type,
-          credits: product.credits?.toString() || "0",
-          source: "landing_page",
-          beta_discount: "50_percent",
+    ...(isSubscription &&
+      ENABLE_BETA_DISCOUNT && {
+        subscription_data: {
+          metadata: {
+            product_id: productId,
+            product_type: product.type,
+            credits: product.credits?.toString() || "0",
+            source: "landing_page",
+            beta_discount: "50_percent",
+          },
         },
-      },
-    }),
+      }),
+    ...(isSubscription &&
+      !ENABLE_BETA_DISCOUNT && {
+        subscription_data: {
+          metadata: {
+            product_id: productId,
+            product_type: product.type,
+            credits: product.credits?.toString() || "0",
+            source: "landing_page",
+          },
+        },
+      }),
     metadata: {
       product_id: productId,
       product_type: product.type,
       credits: product.credits?.toString() || "0",
       source: "landing_page",
-      beta_discount: "50_percent",
+      ...(ENABLE_BETA_DISCOUNT && { beta_discount: "50_percent" }),
     },
   })
 
