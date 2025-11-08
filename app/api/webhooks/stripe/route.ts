@@ -442,6 +442,7 @@ export async function POST(request: NextRequest) {
                       plan,
                       status, 
                       stripe_subscription_id,
+                      stripe_customer_id,
                       current_period_start,
                       current_period_end
                     )
@@ -451,6 +452,7 @@ export async function POST(request: NextRequest) {
                       ${productType},
                       ${subscriptionData.status},
                       ${subscriptionData.id},
+                      ${subscriptionData.customer},
                       to_timestamp(${subscriptionData.current_period_start}),
                       to_timestamp(${subscriptionData.current_period_end})
                     )
@@ -460,6 +462,7 @@ export async function POST(request: NextRequest) {
                       plan = ${productType},
                       status = ${subscriptionData.status},
                       stripe_subscription_id = ${subscriptionData.id},
+                      stripe_customer_id = ${subscriptionData.customer},
                       current_period_start = to_timestamp(${subscriptionData.current_period_start}),
                       current_period_end = to_timestamp(${subscriptionData.current_period_end}),
                       updated_at = NOW()
@@ -649,6 +652,7 @@ export async function POST(request: NextRequest) {
                       plan,
                       status, 
                       stripe_subscription_id,
+                      stripe_customer_id,
                       current_period_start,
                       current_period_end
                     )
@@ -658,6 +662,7 @@ export async function POST(request: NextRequest) {
                       ${productType},
                       ${subscriptionData.status},
                       ${subscriptionData.id},
+                      ${subscriptionData.customer},
                       to_timestamp(${subscriptionData.current_period_start}),
                       to_timestamp(${subscriptionData.current_period_end})
                     )
@@ -667,6 +672,7 @@ export async function POST(request: NextRequest) {
                       plan = ${productType},
                       status = ${subscriptionData.status},
                       stripe_subscription_id = ${subscriptionData.id},
+                      stripe_customer_id = ${subscriptionData.customer},
                       current_period_start = to_timestamp(${subscriptionData.current_period_start}),
                       current_period_end = to_timestamp(${subscriptionData.current_period_end}),
                       updated_at = NOW()
@@ -701,6 +707,7 @@ export async function POST(request: NextRequest) {
                     plan,
                     status, 
                     stripe_subscription_id,
+                    stripe_customer_id,
                     current_period_start,
                     current_period_end
                   )
@@ -710,6 +717,7 @@ export async function POST(request: NextRequest) {
                     ${productType},
                     ${subscriptionData.status},
                     ${subscriptionData.id},
+                    ${subscriptionData.customer},
                     to_timestamp(${subscriptionData.current_period_start}),
                     to_timestamp(${subscriptionData.current_period_end})
                   )
@@ -719,6 +727,7 @@ export async function POST(request: NextRequest) {
                     plan = ${productType},
                     status = ${subscriptionData.status},
                     stripe_subscription_id = ${subscriptionData.id},
+                    stripe_customer_id = ${subscriptionData.customer},
                     current_period_start = to_timestamp(${subscriptionData.current_period_start}),
                     current_period_end = to_timestamp(${subscriptionData.current_period_end}),
                     updated_at = NOW()
@@ -774,6 +783,7 @@ export async function POST(request: NextRequest) {
             plan,
             status, 
             stripe_subscription_id,
+            stripe_customer_id,
             current_period_start,
             current_period_end
           )
@@ -783,6 +793,7 @@ export async function POST(request: NextRequest) {
             ${productType},
             ${subscription.status},
             ${subscription.id},
+            ${subscription.customer},
             to_timestamp(${subscription.current_period_start}),
             to_timestamp(${subscription.current_period_end})
           )
@@ -792,6 +803,7 @@ export async function POST(request: NextRequest) {
             plan = ${productType},
             status = ${subscription.status},
             stripe_subscription_id = ${subscription.id},
+            stripe_customer_id = ${subscription.customer},
             current_period_start = to_timestamp(${subscription.current_period_start}),
             current_period_end = to_timestamp(${subscription.current_period_end}),
             updated_at = NOW()
