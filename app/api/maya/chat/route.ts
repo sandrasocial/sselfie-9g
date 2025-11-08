@@ -121,7 +121,7 @@ ${
 **YOUR TASK:** Honor their vision, enhance with your expertise
 
 **EXTENDED PROMPT STRUCTURE FOR EXPLICIT REQUESTS (120-150 words):**
-1. START: Detailed gender-aware description of the person (face, hair, expression, posture)
+1. START: Basic person description (expression, posture, presence) - DO NOT assume hair color or specific hair styles
 2. HONOR: User's specified outfit EXACTLY - add specific fabric names, textures, draping details
 3. LAYER: Describe how garments layer and move together, mention cut and fit
 4. ACCESSORIES: Add jewelry, bags, shoes if appropriate - be specific about materials
@@ -132,6 +132,13 @@ ${
 9. ATMOSPHERE: Mood, energy, emotional quality of the scene
 10. QUALITY: Natural skin texture, film aesthetic, editorial sophistication
 
+**CRITICAL: DO NOT ASSUME NATURAL FEATURES:**
+- NEVER describe specific hair color (sandy brown, blonde, brunette, etc.) unless user explicitly mentions it
+- NEVER assume hair length or style - especially for men who may have short hair, minimal hair, or no hair
+- ONLY describe hair if user specifically requests it or talks about hairstyling
+- Focus on clothing, accessories, lighting, location, and mood instead
+- If you must reference the person, use: "confident person", "serene presence", "natural expression"
+
 **ANATOMY REQUIREMENTS (CRITICAL FOR IMAGE QUALITY):**
 - ALWAYS include hand descriptions when hands are visible: "natural hand position", "relaxed fingers", "well-formed hands", "elegant hand placement"
 - For full body: "natural body proportions", "balanced posture", "anatomically correct"
@@ -139,7 +146,7 @@ ${
 - These phrases are MANDATORY to prevent anatomical distortions
 
 Example for "silk slip dress at rooftop bar during sunset":
-"confident woman with luminous skin and sun-kissed complexion, cascading brunette waves catching golden light with natural movement, wearing luxurious champagne silk slip dress in Italian silk charmeuse with delicate bias-cut draping, thin spaghetti straps adorned with tiny gold hardware, fabric catching light with subtle sheen and natural flow, one hand resting naturally on the bar railing with relaxed fingers and well-formed hand, other hand holding champagne glass with elegant grip, layered gold chain necklaces in varying lengths with pendant details, standing at sophisticated rooftop bar with panoramic city skyline visible through modern glass railings, polished concrete floors and contemporary outdoor furniture, warm sunset hour creating rich amber and rose gold light flooding from the horizon, dramatic rim lighting outlining her silhouette, soft fill from reflected skyline creating dimensional shadows, natural body proportions and balanced posture, shot on 85mm portrait lens at f/1.8 with dreamy bokeh separating subject from background, intimate editorial elegance meets urban sophistication, natural skin texture with healthy glow, authentic confident presence, cinematic atmosphere"
+"confident person with warm expression and natural presence, wearing luxurious champagne silk slip dress in Italian silk charmeuse with delicate bias-cut draping, thin spaghetti straps adorned with tiny gold hardware, fabric catching light with subtle sheen and natural flow, one hand resting naturally on the bar railing with relaxed fingers and well-formed hand, other hand holding champagne glass with elegant grip, layered gold chain necklaces in varying lengths with pendant details, standing at sophisticated rooftop bar with panoramic city skyline visible through modern glass railings, polished concrete floors and contemporary outdoor furniture, warm sunset hour creating rich amber and rose gold light flooding from the horizon, dramatic rim lighting outlining silhouette, soft fill from reflected skyline creating dimensional shadows, natural body proportions and balanced posture, shot on 85mm portrait lens at f/1.8 with dreamy bokeh separating subject from background, intimate editorial elegance meets urban sophistication, natural skin texture with healthy glow, authentic confident presence, cinematic atmosphere"
 `
     : `
 ✨ **USER IS OPEN-ENDED** - They want your creative expertise
@@ -161,7 +168,7 @@ Example for "silk slip dress at rooftop bar during sunset":
 13. Classic Timeless (navy, white, tan - elegant, versatile, refined)
 
 **EXTENDED CREATIVE PROMPT STRUCTURE (120-150 words):**
-1. START: Detailed person description - face, hair, expression, presence
+1. START: Simple person description - expression, presence, confidence - DO NOT assume hair
 2. OUTFIT: Choose lookbook style - describe every garment with specific fabrics and textures
 3. LAYERS: How pieces work together - fit, draping, movement
 4. ACCESSORIES: Jewelry, bags, shoes - be specific about materials and design
@@ -173,14 +180,22 @@ Example for "silk slip dress at rooftop bar during sunset":
 10. MOOD: Emotional quality, energy, editorial vision
 11. QUALITY: Natural texture, film aesthetic, sophistication markers
 
+**CRITICAL: DO NOT ASSUME NATURAL FEATURES:**
+- NEVER describe specific hair color (sandy brown, blonde, brunette, etc.) unless user explicitly mentions it
+- NEVER assume hair length or style - especially for men who may have short hair, minimal hair, or no hair
+- For men specifically: avoid all hair descriptions unless user asks for hairstyling
+- ONLY describe hair/hairstyles if user specifically requests different hair styling or makes suggestions about hair
+- Focus on expression, posture, clothing, accessories, lighting, and setting
+- Use neutral descriptions: "confident person", "serene presence", "warm expression", "natural features"
+
 **ANATOMY REQUIREMENTS (CRITICAL FOR IMAGE QUALITY):**
 - ALWAYS describe hands naturally: "hands resting naturally at sides", "one hand in pocket with relaxed fingers", "hands gently holding coffee cup with well-formed grip"
 - For sitting poses: "sitting naturally with elegant leg position"
 - For action shots: "walking with natural gait and balanced movement"
 - NEVER leave hands/feet to chance - always specify natural, anatomically correct positioning
 
-Example creative concept:
-"serene woman with natural beauty and effortless grace, long golden blonde hair with natural highlights catching soft light, relaxed confident expression with subtle warmth, enveloped in oversized ivory cashmere turtleneck with luxurious drape and ribbed texture, layered under tailored sand linen blazer with boyfriend fit and rolled sleeves, paired with high-waisted wide-leg trousers in warm greige with perfect break at leather loafers in cognac, one hand tucked casually in trouser pocket with natural finger position, other hand holding ceramic coffee mug with relaxed elegant grip, minimal gold jewelry including delicate chain bracelet and small hoop earrings, standing in bright Scandinavian loft with floor-to-ceiling steel-framed windows and natural white oak flooring, white plaster walls with subtle texture, potted fiddle leaf fig and woven natural fiber textiles, soft diffused morning light streaming through sheer linen curtains creating gentle warmth and dimensional shadows, natural body proportions and balanced posture, shot on 85mm lens at f/2 with shallow depth creating creamy bokeh in background greenery, hygge meets editorial sophistication, natural skin texture with healthy glow, anatomically correct and well-formed features, authentic refined presence, timeless Nordic elegance, film grain aesthetic"
+Example creative concept (notice NO hair color or hair description):
+"confident person with warm expression and natural presence, enveloped in oversized ivory cashmere turtleneck with luxurious drape and ribbed texture, layered under tailored sand linen blazer with boyfriend fit and rolled sleeves, paired with high-waisted wide-leg trousers in warm greige with perfect break at leather loafers in cognac, one hand tucked casually in trouser pocket with natural finger position, other hand holding ceramic coffee mug with relaxed elegant grip, minimal gold jewelry including delicate chain bracelet and small hoop earrings, standing in bright Scandinavian loft with floor-to-ceiling steel-framed windows and natural white oak flooring, white plaster walls with subtle texture, potted fiddle leaf fig and woven natural fiber textiles, soft diffused morning light streaming through sheer linen curtains creating gentle warmth and dimensional shadows, natural body proportions and balanced posture, shot on 85mm lens at f/2 with shallow depth creating creamy bokeh in background greenery, hygge meets editorial sophistication, natural skin texture with healthy glow, anatomically correct and well-formed features, authentic refined presence, timeless Nordic elegance, film grain aesthetic"
 `
 }
 
@@ -204,10 +219,9 @@ ${
    - How items are layered and styled together
    - Specific details like collar style, sleeve length, button/zipper placement
 
-2. **HAIR & MAKEUP**:
-   - Hair length, color, style (straight/wavy/curly)
-   - How hair is worn (down/up/half-up, parted where)
-   - Hair accessories if any
+2. **HAIR & MAKEUP** (ONLY if user specifically asks for hair styling changes):
+   - If user wants to change their hair: describe the hair in the reference image
+   - Otherwise: DO NOT describe hair color, length, or style
    - Makeup style if visible (natural/bold/editorial)
 
 3. **LOCATION & ENVIRONMENT**:
@@ -232,11 +246,13 @@ ${
 
 **CREATE ${count} CONCEPTS** where the user (${userGender}) recreates this EXACT aesthetic in the same or similar settings. Each prompt should be 120-150 words capturing ALL these specific details.
 
+**REMEMBER: DO NOT assume or describe hair unless user specifically asked for hair styling suggestions!**
+
 **EXAMPLE ANALYSIS:**
-If you see: Woman in black blazer, white top, baseball cap, gold necklaces, holding coffee cup on urban street
+If you see: Person in black blazer, white top, baseball cap, gold necklaces, holding coffee cup on urban street
 
 Your prompt should include:
-"confident ${userGender} with long flowing blonde hair cascading past shoulders with natural movement, relaxed expression with subtle smile, wearing structured oversized black blazer in wool blend with peak lapels and boyfriend fit over casual white v-neck top, layered with multiple gold chain necklaces of varying lengths including one with pendant detail, black cotton baseball cap worn forward with curved brim, holding disposable coffee cup with branded sleeve, standing on busy urban street with parked cars and commercial storefronts in soft focus background, natural overcast daylight creating even soft illumination with minimal shadows, candid street style aesthetic with authentic moment feel, shot on 50mm lens with shallow depth creating natural bokeh, effortless chic sophistication meets urban lifestyle, natural skin texture, film grain aesthetic"
+"confident ${userGender} with relaxed expression and natural presence, wearing structured oversized black blazer in wool blend with peak lapels and boyfriend fit over casual white v-neck top, layered with multiple gold chain necklaces of varying lengths including one with pendant detail, black cotton baseball cap worn forward with curved brim, holding disposable coffee cup with branded sleeve, standing on busy urban street with parked cars and commercial storefronts in soft focus background, natural overcast daylight creating even soft illumination with minimal shadows, candid street style aesthetic with authentic moment feel, shot on 50mm lens with shallow depth creating natural bokeh, effortless chic sophistication meets urban lifestyle, natural skin texture, film grain aesthetic"
 `
     : ""
 }
@@ -248,7 +264,8 @@ Your prompt should include:
 3. **Be hyper-specific** - Name exact fabrics, colors, materials, lighting setups
 4. **Use brand colors** from user's palette
 5. **Match visual aesthetic** (Scandinavian/Urban/Coastal)
-6. **Gender-aware language** for ${userGender}
+6. **DO NOT assume hair color or hair styles** unless user explicitly asks for it
+7. **Focus on clothing, accessories, lighting, setting, mood** - not natural features
 
 Generate ${count} concepts as JSON array:
 [
@@ -259,7 +276,7 @@ Generate ${count} concepts as JSON array:
     "fashionIntelligence": "Specific styling details",
     "lighting": "Exact lighting setup",
     "location": "Specific location",
-    "prompt": "120-150 word FLUX prompt WITHOUT trigger word"
+    "prompt": "120-150 word FLUX prompt WITHOUT trigger word and WITHOUT hair assumptions"
   }
 ]
 `

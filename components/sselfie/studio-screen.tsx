@@ -172,7 +172,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-8 sm:mb-10 max-w-2xl mx-auto">
             {[
               { label: "Accurate", desc: "Photos that look like you" },
-              { label: "Fast", desc: "20 minute training" },
+              { label: "Fast", desc: "A few minutes training" },
               { label: "Professional", desc: "Gallery ready results" },
             ].map((item, i) => (
               <div
@@ -214,7 +214,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
               { title: "10 to 20 Selfie Photos", desc: "Clear well lit photos of yourself" },
               { title: "Good Lighting", desc: "Natural window light works best" },
               { title: "Variety", desc: "Different angles and expressions" },
-              { title: "20 Minutes", desc: "Time for AI training to complete" },
+              { title: "A Few Minutes", desc: "Time for AI training to complete" },
             ].map((item, i) => (
               <div
                 key={i}

@@ -96,7 +96,7 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
     isTraining && modelId ? `/api/training/progress?modelId=${modelId}` : null,
     fetcher,
     {
-      refreshInterval: isTraining ? 30000 : 0, // Only poll every 30 seconds when training, stop otherwise
+      refreshInterval: isTraining ? 15000 : 0, // Poll every 15 seconds when training, stop otherwise
       revalidateOnFocus: false,
       revalidateOnReconnect: false, // Don't refetch on reconnect
     },
@@ -346,7 +346,8 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
             </div>
             <h3 className="text-xl sm:text-2xl font-bold text-stone-950 mb-4">Training Your Model</h3>
             <p className="text-sm font-medium text-stone-600 mb-8">
-              This takes about 20 minutes. You'll get a notification when it's ready.
+              Your AI is learning from your photos. This usually takes a couple of minutes. We'll let you know when it's
+              ready.
             </p>
           </div>
 
@@ -399,7 +400,7 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
                 ></div>
               </div>
               <span className="text-xs tracking-wider uppercase font-semibold text-stone-700">
-                {Math.max(0, Math.round((100 - trainingProgress) / 5))} minutes remaining
+                {Math.max(0, Math.round((100 - trainingProgress) / 20))} minutes remaining
               </span>
             </div>
           </div>

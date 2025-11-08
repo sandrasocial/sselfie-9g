@@ -45,7 +45,7 @@ function extractProgressFromLogs(logs: string): number | null {
 
 function estimateProgress(startedAt: Date, status: string): number {
   const elapsed = Date.now() - new Date(startedAt).getTime()
-  const estimatedTotalTime = 20 * 60 * 1000 // 20 minutes in milliseconds
+  const estimatedTotalTime = 5 * 60 * 1000 // 5 minutes in milliseconds
 
   if (status === "starting") {
     return Math.min(10, Math.round((elapsed / estimatedTotalTime) * 100))
