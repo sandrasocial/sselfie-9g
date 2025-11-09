@@ -1,14 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
-import { cookies } from "next/headers"
 import { createServerClient } from "@/lib/supabase/server"
 
 const sql = neon(process.env.DATABASE_URL!)
 
 export async function GET(request: NextRequest) {
   try {
-    const cookieStore = await cookies()
-    const supabase = createServerClient(cookieStore)
+    const supabase = await createServerClient()
 
     const {
       data: { user },
@@ -55,8 +53,7 @@ export async function GET(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const cookieStore = await cookies()
-    const supabase = createServerClient(cookieStore)
+    const supabase = await createServerClient()
 
     const {
       data: { user },

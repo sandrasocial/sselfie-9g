@@ -113,7 +113,7 @@ export default function AdminAgentChat({ userId, userName, userEmail }: AdminAge
   }
 
   const handleSelectImage = (imageUrl: string, imageId: number) => {
-    setInputValue((prev) => prev + `\n\nSelected image: ${imageUrl} (ID: ${imageId})`)
+    setInputValue((prev) => prev + `\n\nImage URL: ${imageUrl}`)
     setShowGallery(false)
   }
 

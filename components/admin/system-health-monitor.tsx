@@ -78,15 +78,15 @@ export function SystemHealthMonitor() {
   }
 
   const getStatusColor = (rate: number) => {
-    if (rate >= 95) return "text-green-600"
-    if (rate >= 85) return "text-yellow-600"
-    return "text-red-600"
+    if (rate >= 95) return "text-stone-600"
+    if (rate >= 85) return "text-stone-700"
+    return "text-stone-900"
   }
 
   const getStatusIcon = (rate: number) => {
-    if (rate >= 95) return <CheckCircle className="w-5 h-5 text-green-600" />
-    if (rate >= 85) return <Clock className="w-5 h-5 text-yellow-600" />
-    return <AlertCircle className="w-5 h-5 text-red-600" />
+    if (rate >= 95) return <CheckCircle className="w-5 h-5 text-stone-600" />
+    if (rate >= 85) return <Clock className="w-5 h-5 text-stone-700" />
+    return <AlertCircle className="w-5 h-5 text-stone-900" />
   }
 
   if (loading) {
@@ -110,7 +110,7 @@ export function SystemHealthMonitor() {
               SYSTEM HEALTH
             </h2>
             <div className="flex items-center gap-2 text-xs tracking-[0.2em] uppercase text-stone-400">
-              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              <div className="w-2 h-2 rounded-full bg-stone-300 animate-pulse" />
               Live Monitoring
             </div>
           </div>
@@ -143,7 +143,7 @@ export function SystemHealthMonitor() {
                       <p className="text-stone-400">Total Events</p>
                     </div>
                     <div>
-                      <p className="text-red-400 font-medium">{webhookHealth.stats.criticalErrors}</p>
+                      <p className="text-stone-300 font-medium">{webhookHealth.stats.criticalErrors}</p>
                       <p className="text-stone-400">Critical Errors</p>
                     </div>
                   </div>
@@ -178,7 +178,7 @@ export function SystemHealthMonitor() {
                       <p className="text-stone-400">Emails Sent</p>
                     </div>
                     <div>
-                      <p className="text-red-400 font-medium">{emailMetrics.stats.failed}</p>
+                      <p className="text-stone-300 font-medium">{emailMetrics.stats.failed}</p>
                       <p className="text-stone-400">Failed</p>
                     </div>
                   </div>
@@ -189,7 +189,6 @@ export function SystemHealthMonitor() {
         </div>
       </div>
 
-      {/* Recent Webhook Errors */}
       {webhookHealth && webhookHealth.recentErrors.length > 0 && (
         <div className="bg-white/80 backdrop-blur-xl rounded-[1.75rem] p-8 border border-white/60 shadow-xl">
           <h3 className="font-['Times_New_Roman'] text-2xl font-extralight tracking-[0.2em] uppercase text-stone-950 mb-6">
@@ -201,19 +200,19 @@ export function SystemHealthMonitor() {
                 key={error.id}
                 className={`flex items-start gap-4 p-4 rounded-xl border ${
                   error.severity === "critical"
-                    ? "bg-red-50 border-red-200"
+                    ? "bg-stone-100 border-stone-300"
                     : error.isResolved
-                      ? "bg-green-50 border-green-200"
-                      : "bg-yellow-50 border-yellow-200"
+                      ? "bg-stone-50 border-stone-200"
+                      : "bg-stone-50 border-stone-200"
                 }`}
               >
                 <AlertCircle
                   className={`w-5 h-5 mt-0.5 ${
                     error.severity === "critical"
-                      ? "text-red-600"
+                      ? "text-stone-900"
                       : error.isResolved
-                        ? "text-green-600"
-                        : "text-yellow-600"
+                        ? "text-stone-600"
+                        : "text-stone-700"
                   }`}
                 />
                 <div className="flex-1 min-w-0">
@@ -222,10 +221,10 @@ export function SystemHealthMonitor() {
                     <span
                       className={`text-xs px-2 py-0.5 rounded-full ${
                         error.severity === "critical"
-                          ? "bg-red-100 text-red-700"
+                          ? "bg-stone-200 text-stone-900"
                           : error.isResolved
-                            ? "bg-green-100 text-green-700"
-                            : "bg-yellow-100 text-yellow-700"
+                            ? "bg-stone-100 text-stone-600"
+                            : "bg-stone-100 text-stone-700"
                       }`}
                     >
                       {error.severity}
@@ -247,7 +246,6 @@ export function SystemHealthMonitor() {
         </div>
       )}
 
-      {/* Recent Email Logs */}
       {emailMetrics && emailMetrics.recentEmails.length > 0 && (
         <div className="bg-white/80 backdrop-blur-xl rounded-[1.75rem] p-8 border border-white/60 shadow-xl">
           <h3 className="font-['Times_New_Roman'] text-2xl font-extralight tracking-[0.2em] uppercase text-stone-950 mb-6">
@@ -259,19 +257,19 @@ export function SystemHealthMonitor() {
                 key={email.id}
                 className={`flex items-start gap-4 p-4 rounded-xl border ${
                   email.status === "delivered"
-                    ? "bg-green-50 border-green-200"
+                    ? "bg-stone-50 border-stone-200"
                     : email.status === "failed"
-                      ? "bg-red-50 border-red-200"
-                      : "bg-yellow-50 border-yellow-200"
+                      ? "bg-stone-100 border-stone-300"
+                      : "bg-stone-50 border-stone-200"
                 }`}
               >
                 <Mail
                   className={`w-5 h-5 mt-0.5 ${
                     email.status === "delivered"
-                      ? "text-green-600"
+                      ? "text-stone-600"
                       : email.status === "failed"
-                        ? "text-red-600"
-                        : "text-yellow-600"
+                        ? "text-stone-900"
+                        : "text-stone-700"
                   }`}
                 />
                 <div className="flex-1 min-w-0">
@@ -280,10 +278,10 @@ export function SystemHealthMonitor() {
                     <span
                       className={`text-xs px-2 py-0.5 rounded-full ${
                         email.status === "delivered"
-                          ? "bg-green-100 text-green-700"
+                          ? "bg-stone-100 text-stone-600"
                           : email.status === "failed"
-                            ? "bg-red-100 text-red-700"
-                            : "bg-yellow-100 text-yellow-700"
+                            ? "bg-stone-200 text-stone-900"
+                            : "bg-stone-100 text-stone-700"
                       }`}
                     >
                       {email.status}
@@ -293,7 +291,7 @@ export function SystemHealthMonitor() {
                     )}
                   </div>
                   <p className="text-xs text-stone-600 mb-2 truncate">{email.subject}</p>
-                  {email.errorMessage && <p className="text-xs text-red-600 mb-2 truncate">{email.errorMessage}</p>}
+                  {email.errorMessage && <p className="text-xs text-stone-700 mb-2 truncate">{email.errorMessage}</p>}
                   <p className="text-xs text-stone-400">
                     {new Date(email.createdAt).toLocaleString("en-US", {
                       month: "short",

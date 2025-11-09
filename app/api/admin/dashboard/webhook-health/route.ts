@@ -27,9 +27,8 @@ export async function GET() {
     const errorStats = await sql`
       SELECT 
         COUNT(*) as total_errors,
-        COUNT(CASE WHEN severity = 'critical' THEN 1 END) as critical_errors,
-        COUNT(CASE WHEN severity = 'warning' THEN 1 END) as warning_errors,
-        COUNT(CASE WHEN is_resolved = true THEN 1 END) as resolved_errors
+        COUNT(CASE WHEN resolved = true THEN 1 END) as resolved_errors,
+        COUNT(CASE WHEN resolved = false THEN 1 END) as unresolved_errors
       FROM webhook_errors
       WHERE created_at > NOW() - INTERVAL '24 hours'
     `
@@ -40,10 +39,9 @@ export async function GET() {
         id,
         event_type,
         error_message,
-        severity,
-        is_resolved,
+        resolved,
         created_at,
-        metadata
+        event_data
       FROM webhook_errors
       ORDER BY created_at DESC
       LIMIT 20
@@ -53,8 +51,7 @@ export async function GET() {
     const errorTrends = await sql`
       SELECT 
         DATE_TRUNC('day', created_at) as day,
-        COUNT(*) as error_count,
-        COUNT(CASE WHEN severity = 'critical' THEN 1 END) as critical_count
+        COUNT(*) as error_count
       FROM webhook_errors
       WHERE created_at > NOW() - INTERVAL '7 days'
       GROUP BY DATE_TRUNC('day', created_at)
@@ -77,9 +74,8 @@ export async function GET() {
     return NextResponse.json({
       stats: {
         totalErrors: Number(errorStats[0]?.total_errors || 0),
-        criticalErrors: Number(errorStats[0]?.critical_errors || 0),
-        warningErrors: Number(errorStats[0]?.warning_errors || 0),
         resolvedErrors: Number(errorStats[0]?.resolved_errors || 0),
+        unresolvedErrors: Number(errorStats[0]?.unresolved_errors || 0),
         successRate: Math.round(successRate * 10) / 10,
         totalWebhooks,
       },
@@ -87,15 +83,13 @@ export async function GET() {
         id: error.id,
         eventType: error.event_type,
         errorMessage: error.error_message,
-        severity: error.severity,
-        isResolved: error.is_resolved,
+        resolved: error.resolved,
         createdAt: error.created_at,
-        metadata: error.metadata,
+        eventData: error.event_data,
       })),
       errorTrends: errorTrends.map((trend) => ({
         day: trend.day,
         errorCount: Number(trend.error_count),
-        criticalCount: Number(trend.critical_count),
       })),
     })
   } catch (error) {

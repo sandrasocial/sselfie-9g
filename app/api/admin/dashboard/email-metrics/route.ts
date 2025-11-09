@@ -29,8 +29,7 @@ export async function GET() {
         COUNT(*) as total_sent,
         COUNT(CASE WHEN status = 'delivered' THEN 1 END) as delivered,
         COUNT(CASE WHEN status = 'failed' THEN 1 END) as failed,
-        COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending,
-        COUNT(CASE WHEN retry_count > 0 THEN 1 END) as retried
+        COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending
       FROM email_logs
       WHERE created_at > NOW() - INTERVAL '24 hours'
     `
@@ -39,12 +38,12 @@ export async function GET() {
     const recentEmails = await sql`
       SELECT 
         id,
-        recipient,
-        subject,
+        user_email,
+        email_type,
         status,
-        retry_count,
         error_message,
         resend_message_id,
+        sent_at,
         created_at
       FROM email_logs
       ORDER BY created_at DESC
@@ -74,17 +73,16 @@ export async function GET() {
         delivered,
         failed: Number(emailStats[0]?.failed || 0),
         pending: Number(emailStats[0]?.pending || 0),
-        retried: Number(emailStats[0]?.retried || 0),
         deliveryRate: Math.round(deliveryRate * 10) / 10,
       },
       recentEmails: recentEmails.map((email) => ({
         id: email.id,
-        recipient: email.recipient,
-        subject: email.subject,
+        userEmail: email.user_email,
+        emailType: email.email_type,
         status: email.status,
-        retryCount: email.retry_count,
         errorMessage: email.error_message,
         resendMessageId: email.resend_message_id,
+        sentAt: email.sent_at,
         createdAt: email.created_at,
       })),
       emailTrends: emailTrends.map((trend) => ({

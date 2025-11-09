@@ -55,15 +55,15 @@ export function BetaCountdown() {
   if (!betaData) return null
 
   const getStatusColor = () => {
-    if (betaData.shouldUpdatePricing) return "text-red-600"
-    if (betaData.percentageFilled >= 75) return "text-orange-600"
-    return "text-green-600"
+    if (betaData.shouldUpdatePricing) return "text-stone-900"
+    if (betaData.percentageFilled >= 75) return "text-stone-700"
+    return "text-stone-600"
   }
 
   const getStatusBgColor = () => {
-    if (betaData.shouldUpdatePricing) return "bg-red-50 border-red-200"
-    if (betaData.percentageFilled >= 75) return "bg-orange-50 border-orange-200"
-    return "bg-green-50 border-green-200"
+    if (betaData.shouldUpdatePricing) return "bg-stone-100 border-stone-300"
+    if (betaData.percentageFilled >= 75) return "bg-stone-100 border-stone-200"
+    return "bg-stone-50 border-stone-200"
   }
 
   return (
@@ -78,15 +78,14 @@ export function BetaCountdown() {
         </div>
       </div>
 
-      {/* Alert Banner */}
       {betaData.shouldUpdatePricing && (
-        <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+        <div className="mb-6 bg-stone-100 border border-stone-300 rounded-xl p-4 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-stone-700 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-medium text-red-900 mb-1">Beta Limit Reached!</p>
-            <p className="text-xs text-red-700 leading-relaxed">
+            <p className="text-sm font-medium text-stone-900 mb-1">Beta Limit Reached!</p>
+            <p className="text-xs text-stone-700 leading-relaxed">
               You've reached 100 beta users. It's time to update pricing to regular rates in{" "}
-              <code className="bg-red-100 px-2 py-0.5 rounded text-xs">app/actions/landing-checkout.ts</code>
+              <code className="bg-stone-200 px-2 py-0.5 rounded text-xs">app/actions/landing-checkout.ts</code>
             </p>
           </div>
         </div>
@@ -110,15 +109,14 @@ export function BetaCountdown() {
           </div>
         </div>
 
-        {/* Progress Bar */}
         <div className="relative h-3 bg-stone-100 rounded-full overflow-hidden">
           <div
             className={`absolute inset-y-0 left-0 transition-all duration-500 ${
               betaData.shouldUpdatePricing
-                ? "bg-red-500"
+                ? "bg-stone-700"
                 : betaData.percentageFilled >= 75
-                  ? "bg-orange-500"
-                  : "bg-green-500"
+                  ? "bg-stone-600"
+                  : "bg-stone-500"
             }`}
             style={{ width: `${betaData.percentageFilled}%` }}
           />
@@ -126,14 +124,13 @@ export function BetaCountdown() {
         <p className="text-xs text-stone-500 mt-2 text-right">{betaData.percentageFilled.toFixed(1)}% filled</p>
       </div>
 
-      {/* Status Cards */}
       <div className="grid grid-cols-2 gap-4 mb-6">
         <div className={`rounded-xl p-4 border ${getStatusBgColor()}`}>
           <div className="flex items-center gap-2 mb-2">
             {betaData.shouldUpdatePricing ? (
-              <AlertCircle className="w-4 h-4 text-red-600" />
+              <AlertCircle className="w-4 h-4 text-stone-700" />
             ) : (
-              <CheckCircle2 className="w-4 h-4 text-green-600" />
+              <CheckCircle2 className="w-4 h-4 text-stone-600" />
             )}
             <p className="text-xs tracking-wider uppercase text-stone-600">Pricing Status</p>
           </div>
@@ -168,7 +165,7 @@ export function BetaCountdown() {
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-stone-600 capitalize">{user.plan}</span>
-                <div className={`w-2 h-2 rounded-full ${user.status === "active" ? "bg-green-500" : "bg-stone-300"}`} />
+                <div className={`w-2 h-2 rounded-full ${user.status === "active" ? "bg-stone-700" : "bg-stone-300"}`} />
               </div>
             </div>
           ))}
