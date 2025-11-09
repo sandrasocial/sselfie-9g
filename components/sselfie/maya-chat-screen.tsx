@@ -750,35 +750,37 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
         </div>
       )}
 
-      <div className="flex-shrink-0 flex items-center justify-between px-4 py-2 bg-white/80 backdrop-blur-xl border-b border-stone-200/50">
-        <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div className="w-10 h-10 rounded-full border border-stone-200/60 overflow-hidden flex-shrink-0">
+      <div className="flex-shrink-0 flex items-center justify-between px-3 sm:px-4 py-3 bg-white/80 backdrop-blur-xl border-b border-stone-200/50">
+        <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-stone-200/60 overflow-hidden flex-shrink-0">
             <img src="https://i.postimg.cc/fTtCnzZv/out-1-22.png" alt="Maya" className="w-full h-full object-cover" />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="text-base font-serif font-extralight tracking-[0.2em] text-stone-950 uppercase">Maya</h3>
+            <h3 className="text-sm sm:text-base font-serif font-extralight tracking-[0.2em] text-stone-950 uppercase">
+              Maya
+            </h3>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
           <button
             onClick={handleNewChat}
-            className="p-2 bg-white/40 backdrop-blur-2xl border border-white/60 rounded-lg hover:bg-white/60 transition-all duration-300 min-w-[40px] min-h-[40px] flex items-center justify-center"
+            className="p-2.5 sm:p-2 bg-white/40 backdrop-blur-2xl border border-white/60 rounded-lg hover:bg-white/60 transition-all duration-300 min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation active:scale-95"
             aria-label="Start new chat"
           >
-            <Plus size={16} className="text-stone-600" strokeWidth={2} />
+            <Plus size={18} className="text-stone-600" strokeWidth={2} />
           </button>
 
           <button
             onClick={() => setShowHistory(!showHistory)}
-            className={`p-2 backdrop-blur-2xl border rounded-lg transition-all duration-300 min-w-[40px] min-h-[40px] flex items-center justify-center ${
+            className={`p-2.5 sm:p-2 backdrop-blur-2xl border rounded-lg transition-all duration-300 min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation active:scale-95 ${
               showHistory
                 ? "bg-stone-900 border-stone-900 text-white"
                 : "bg-white/40 border-white/60 hover:bg-white/60 text-stone-600"
             }`}
             aria-label="Toggle chat history"
           >
-            <History size={16} strokeWidth={2} />
+            <History size={18} strokeWidth={2} />
           </button>
         </div>
       </div>
@@ -789,12 +791,12 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
         </div>
       )}
 
-      <div className="flex-1 min-h-0 px-4">
+      <div className="flex-1 min-h-0 px-3 sm:px-4">
         <div
           ref={messagesContainerRef}
           className="h-full overflow-y-auto space-y-3 pr-1 scroll-smooth"
           style={{
-            paddingBottom: "10rem", // Space for chat input (fixed at bottom)
+            paddingBottom: "11rem",
           }}
           role="log"
           aria-live="polite"
@@ -802,25 +804,25 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
         >
           {isEmpty && !isTyping && (
             <div className="flex flex-col items-center justify-center h-full px-4 py-8 animate-in fade-in duration-500">
-              <div className="w-20 h-20 rounded-full border-2 border-stone-200/60 overflow-hidden mb-6">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-stone-200/60 overflow-hidden mb-4 sm:mb-6">
                 <img
                   src="https://i.postimg.cc/fTtCnzZv/out-1-22.png"
                   alt="Maya"
                   className="w-full h-full object-cover"
                 />
               </div>
-              <h2 className="text-2xl font-serif font-extralight tracking-[0.3em] text-stone-950 uppercase mb-3 text-center">
+              <h2 className="text-xl sm:text-2xl font-serif font-extralight tracking-[0.3em] text-stone-950 uppercase mb-2 sm:mb-3 text-center">
                 Welcome
               </h2>
-              <p className="text-sm text-stone-600 tracking-wide text-center mb-6 max-w-md leading-relaxed">
+              <p className="text-xs sm:text-sm text-stone-600 tracking-wide text-center mb-4 sm:mb-6 max-w-md leading-relaxed px-4">
                 Hi, I'm Maya. I'll help you create beautiful photos and videos.
               </p>
-              <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 w-full max-w-2xl px-4">
+              <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 w-full max-w-2xl px-2 sm:px-4 -mx-2 sm:-mx-0">
                 {currentPrompts.map((item, index) => (
                   <button
                     key={index}
                     onClick={() => handleSendMessage(item.prompt)}
-                    className="flex-shrink-0 px-4 py-3 bg-white/50 backdrop-blur-xl border border-white/70 rounded-xl hover:bg-stone-100 hover:border-stone-300 transition-all duration-300"
+                    className="flex-shrink-0 px-4 py-2.5 sm:py-3 bg-white/50 backdrop-blur-xl border border-white/70 rounded-xl hover:bg-stone-100 hover:border-stone-300 transition-all duration-300 touch-manipulation active:scale-95 min-h-[44px]"
                   >
                     <span className="text-xs tracking-wide font-medium text-stone-700 whitespace-nowrap">
                       {item.label}
@@ -835,7 +837,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
             Array.isArray(filteredMessages) &&
             filteredMessages.map((msg) => (
               <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                <div className={`max-w-[85%] ${msg.role === "user" ? "order-2" : "order-1"}`}>
+                <div className={`max-w-[90%] sm:max-w-[85%] ${msg.role === "user" ? "order-2" : "order-1"}`}>
                   {msg.parts &&
                     Array.isArray(msg.parts) &&
                     msg.parts.map((part, partIndex) => {
@@ -870,7 +872,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
                                   Photo Ideas
                                 </span>
                               </div>
-                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
                                 {concepts.map((concept: any, conceptIndex: number) => (
                                   <ConceptCard key={conceptIndex} concept={concept} />
                                 ))}
@@ -970,29 +972,29 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
               isAtBottomRef.current = true
               scrollToBottom("smooth")
             }}
-            className="absolute bottom-32 right-6 p-3 bg-stone-950 text-white rounded-full shadow-2xl shadow-stone-900/40 hover:scale-110 active:scale-95 transition-all duration-300 z-10 animate-in fade-in slide-in-from-bottom-2 min-w-[44px] min-h-[44px] flex items-center justify-center"
+            className="fixed bottom-[11rem] right-4 sm:right-6 p-3 bg-stone-950 text-white rounded-full shadow-2xl shadow-stone-900/40 hover:scale-110 active:scale-95 transition-all duration-300 z-10 animate-in fade-in slide-in-from-bottom-2 min-w-[48px] min-h-[48px] flex items-center justify-center touch-manipulation"
             aria-label="Scroll to bottom"
           >
-            <ArrowDown size={16} strokeWidth={2.5} />
+            <ArrowDown size={18} strokeWidth={2.5} />
           </button>
         )}
       </div>
 
       <div
-        className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-3xl border-t border-stone-200/50 px-4 py-3 z-50"
+        className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-3xl border-t border-stone-200/50 px-3 sm:px-4 py-2.5 sm:py-3 z-50 safe-bottom"
         style={{
-          paddingBottom: "calc(env(safe-area-inset-bottom) + 5rem)", // 5rem = bottom nav height
+          paddingBottom: "calc(env(safe-area-inset-bottom) + 5rem)",
         }}
       >
         {!isEmpty && !uploadedImage && (
           <div className="mb-2">
-            <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+            <div className="flex gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide pb-1 -mx-2 px-2 sm:mx-0 sm:px-0">
               {currentPrompts.map((item, index) => (
                 <button
                   key={index}
                   onClick={() => handleSendMessage(item.prompt)}
                   disabled={isTyping}
-                  className="flex-shrink-0 px-3 py-2 bg-white/40 backdrop-blur-xl border border-white/60 rounded-lg hover:bg-white/60 transition-all duration-300 disabled:opacity-50"
+                  className="flex-shrink-0 px-3 py-2 bg-white/40 backdrop-blur-xl border border-white/60 rounded-lg hover:bg-white/60 transition-all duration-300 disabled:opacity-50 touch-manipulation active:scale-95 min-h-[44px]"
                 >
                   <span className="text-xs tracking-wide font-medium text-stone-700 whitespace-nowrap">
                     {item.label}
@@ -1005,42 +1007,44 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
 
         {uploadedImage && (
           <div className="mb-2 relative inline-block">
-            <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-white/60 shadow-lg">
+            <div className="relative w-20 h-20 sm:w-16 sm:h-16 rounded-lg overflow-hidden border border-white/60 shadow-lg">
               <img src={uploadedImage || "/placeholder.svg"} alt="Inspiration" className="w-full h-full object-cover" />
               <button
                 onClick={() => setUploadedImage(null)}
-                className="absolute top-0.5 right-0.5 w-5 h-5 bg-stone-950 text-white rounded-full flex items-center justify-center hover:scale-110 transition-transform"
+                className="absolute top-1 right-1 w-6 h-6 bg-stone-950 text-white rounded-full flex items-center justify-center hover:scale-110 transition-transform touch-manipulation"
                 aria-label="Remove image"
               >
-                <X size={12} strokeWidth={2.5} />
+                <X size={14} strokeWidth={2.5} />
               </button>
             </div>
             <p className="text-xs text-stone-600 mt-1 tracking-wide">Inspiration Image</p>
           </div>
         )}
 
-        <div className="flex gap-2">
+        <div className="flex gap-1.5 sm:gap-2">
           <Popover open={showSettings} onOpenChange={setShowSettings}>
             <PopoverTrigger asChild>
               <button
-                className="p-3 bg-white/40 backdrop-blur-2xl border border-white/60 rounded-xl hover:bg-white/60 transition-all duration-300 min-h-[48px] min-w-[48px] flex items-center justify-center shadow-lg shadow-stone-950/10"
+                className="p-3 bg-white/40 backdrop-blur-2xl border border-white/60 rounded-xl hover:bg-white/60 transition-all duration-300 min-h-[48px] min-w-[48px] flex items-center justify-center shadow-lg shadow-stone-950/10 touch-manipulation active:scale-95"
                 aria-label="Generation settings"
                 type="button"
               >
-                <Settings size={16} className="text-stone-600" strokeWidth={2} />
+                <Settings size={18} className="text-stone-600" strokeWidth={2} />
               </button>
             </PopoverTrigger>
             <PopoverContent
-              className="w-80 p-6 bg-white/95 backdrop-blur-xl border border-stone-200 shadow-2xl"
+              className="w-[calc(100vw-2rem)] sm:w-80 p-4 sm:p-6 bg-white/95 backdrop-blur-xl border border-stone-200 shadow-2xl max-h-[80vh] overflow-y-auto"
               align="start"
               side="top"
             >
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 <div>
-                  <h3 className="text-sm font-serif font-extralight tracking-[0.2em] uppercase text-stone-950 mb-4">
+                  <h3 className="text-sm font-serif font-extralight tracking-[0.2em] uppercase text-stone-950 mb-3 sm:mb-4">
                     Generation Settings
                   </h3>
-                  <p className="text-xs text-stone-600 leading-relaxed mb-6">Fine-tune how Maya creates your images</p>
+                  <p className="text-xs text-stone-600 leading-relaxed mb-4 sm:mb-6">
+                    Fine-tune how Maya creates your images
+                  </p>
                 </div>
 
                 <div className="space-y-4">
@@ -1051,7 +1055,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
                         {aspectRatio}
                       </span>
                     </div>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
                       {[
                         { value: "1:1", label: "Square", desc: "1:1" },
                         { value: "4:5", label: "Portrait", desc: "4:5" },
@@ -1066,7 +1070,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
                             console.log("[v0] 📐 Aspect Ratio changed to:", ratio.value)
                             setAspectRatio(ratio.value)
                           }}
-                          className={`px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                          className={`px-2 sm:px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 touch-manipulation active:scale-95 min-h-[44px] ${
                             aspectRatio === ratio.value
                               ? "bg-stone-950 text-white"
                               : "bg-stone-100 text-stone-700 hover:bg-stone-200"
@@ -1074,7 +1078,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
                         >
                           <div className="text-center">
                             <div className="font-semibold">{ratio.desc}</div>
-                            <div className="text-[10px] opacity-70">{ratio.label}</div>
+                            <div className="text-[10px] opacity-70 hidden sm:block">{ratio.label}</div>
                           </div>
                         </button>
                       ))}
@@ -1138,7 +1142,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
                     setPromptAccuracy(3.5)
                     setAspectRatio("1:1")
                   }}
-                  className="w-full py-2 text-xs text-stone-600 hover:text-stone-950 transition-colors tracking-wide"
+                  className="w-full py-2.5 sm:py-2 text-xs text-stone-600 hover:text-stone-950 transition-colors tracking-wide touch-manipulation min-h-[44px]"
                 >
                   Reset to defaults
                 </button>
@@ -1153,7 +1157,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
                 setInputValue(e.target.value)
                 // Auto-resize textarea based on content
                 e.target.style.height = "auto"
-                e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px"
+                e.target.style.height = Math.min(e.target.scrollHeight, 100) + "px" // Reduced max from 120px to 100px for mobile
               }}
               onKeyDown={(e) => {
                 // Enter sends message, Shift+Enter adds new line
@@ -1167,13 +1171,13 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
                   }, 0)
                 }
               }}
-              placeholder={uploadedImage ? "Describe the style you want to recreate..." : "Message Maya..."}
-              className="w-full px-4 py-3 bg-white/40 backdrop-blur-2xl border border-white/60 rounded-xl text-stone-950 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-950/50 focus:bg-white/60 pr-12 font-medium text-sm min-h-[48px] max-h-[120px] shadow-lg shadow-stone-950/10 transition-all duration-300 resize-none overflow-y-auto leading-relaxed"
+              placeholder={uploadedImage ? "Describe the style..." : "Message Maya..."}
+              className="w-full px-3 sm:px-4 py-3 bg-white/40 backdrop-blur-2xl border border-white/60 rounded-xl text-stone-950 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-950/50 focus:bg-white/60 pr-11 sm:pr-12 font-medium text-sm min-h-[48px] max-h-[100px] shadow-lg shadow-stone-950/10 transition-all duration-300 resize-none overflow-y-auto leading-relaxed touch-manipulation"
               disabled={isTyping || isUploadingImage}
               aria-label="Message input"
               rows={1}
             />
-            <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+            <div className="absolute right-1.5 sm:right-2 top-1/2 transform -translate-y-1/2">
               <input
                 ref={fileInputRef}
                 type="file"
@@ -1185,25 +1189,25 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploadingImage || isTyping}
-                className="w-10 h-10 bg-stone-950 rounded-lg flex items-center justify-center hover:bg-stone-800 active:scale-95 shadow-lg shadow-stone-950/30 transition-all duration-300 disabled:opacity-50"
+                className="w-10 h-10 bg-stone-950 rounded-lg flex items-center justify-center hover:bg-stone-800 active:scale-95 shadow-lg shadow-stone-950/30 transition-all duration-300 disabled:opacity-50 touch-manipulation"
                 aria-label="Attach image"
                 type="button"
               >
                 {isUploadingImage ? (
                   <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
-                  <Camera size={16} className="text-white" strokeWidth={2} />
+                  <Camera size={18} className="text-white" strokeWidth={2} />
                 )}
               </button>
             </div>
           </div>
           <button
             onClick={() => handleSendMessage()}
-            className="w-10 h-10 bg-stone-950 text-white rounded-lg flex items-center justify-center hover:bg-stone-800 active:scale-95 shadow-lg shadow-stone-950/30 transition-all duration-300 disabled:opacity-50"
+            className="w-12 h-12 sm:w-10 sm:h-10 bg-stone-950 text-white rounded-lg flex items-center justify-center hover:bg-stone-800 active:scale-95 shadow-lg shadow-stone-950/30 transition-all duration-300 disabled:opacity-50 touch-manipulation min-h-[48px] min-w-[48px]"
             disabled={isTyping || (!inputValue.trim() && !uploadedImage) || isUploadingImage}
             aria-label="Send message"
           >
-            <Send size={16} strokeWidth={2} />
+            <Send size={18} strokeWidth={2} />
           </button>
         </div>
       </div>

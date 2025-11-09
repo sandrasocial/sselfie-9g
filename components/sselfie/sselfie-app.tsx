@@ -276,7 +276,7 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
 
           <div
             ref={scrollContainerRef}
-            className="h-full px-4 sm:px-6 md:px-8 pb-24 sm:pb-26 md:pb-28 pt-4 sm:pt-6 md:pt-8 overflow-y-auto"
+            className="h-full px-4 sm:px-6 md:px-8 pb-32 sm:pb-36 md:pb-40 pt-4 sm:pt-6 md:pt-8 overflow-y-auto"
           >
             {activeTab === "studio" && (
               <StudioScreen
