@@ -864,7 +864,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
             </div>
 
             {/* Navigation links - scrollable middle section */}
-            <div className="flex-1 overflow-y-auto py-2 min-h-0">
+            <div className="flex-1 overflow-y-auto py-2">
               <button
                 onClick={() => handleNavigation("studio")}
                 className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"

@@ -61,7 +61,7 @@ export const PRICING_PRODUCTS: PricingProduct[] = [
     name: "One-Time SSELFIE Session",
     displayName: "One-Time Session",
     description: "Try one professional AI photoshoot. No subscription, just a one-time session.",
-    priceInCents: 2450, // Beta price: $24.50 (50% off $49)
+    priceInCents: 2450, // Beta display price: $24.50 (shown on landing page)
     type: "one_time_session",
     credits: 70,
   },
@@ -70,7 +70,7 @@ export const PRICING_PRODUCTS: PricingProduct[] = [
     name: "SSELFIE Studio Membership",
     displayName: "Studio Membership",
     description: "Join the Studio for new photos, fresh tools, and monthly brand drops.",
-    priceInCents: 4950, // Beta price: $49.50 (50% off $99)
+    priceInCents: 4950, // Beta display price: $49.50 (shown on landing page)
     type: "sselfie_studio_membership",
     credits: 150,
     popular: true,

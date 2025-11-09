@@ -3,6 +3,7 @@
 import { stripe } from "@/lib/stripe"
 import { getProductById, ORIGINAL_PRICING } from "@/lib/products"
 import { neon } from "@neondatabase/serverless"
+import type Stripe from "stripe" // Declare the Stripe variable
 
 const ENABLE_BETA_DISCOUNT = process.env.ENABLE_BETA_DISCOUNT !== "false"
 
@@ -15,9 +16,8 @@ export async function createLandingCheckoutSession(productId: string) {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://sselfie.ai"
   const isSubscription = product.type === "sselfie_studio_membership"
 
-  const actualPrice = ENABLE_BETA_DISCOUNT
-    ? product.priceInCents
-    : ORIGINAL_PRICING[product.type as keyof typeof ORIGINAL_PRICING]?.priceInCents || product.priceInCents
+  const actualPrice =
+    ORIGINAL_PRICING[product.type as keyof typeof ORIGINAL_PRICING]?.priceInCents || product.priceInCents
 
   console.log("[v0] Checkout:", {
     productId,
@@ -34,7 +34,7 @@ export async function createLandingCheckoutSession(productId: string) {
     throw new Error(`Stripe Price ID not configured for ${productId}`)
   }
 
-  const session = await stripe.checkout.sessions.create({
+  const sessionConfig: Stripe.Checkout.SessionCreateParams = {
     ui_mode: "embedded",
     mode: isSubscription ? "subscription" : "payment",
     redirect_on_completion: "never",
@@ -45,6 +45,14 @@ export async function createLandingCheckoutSession(productId: string) {
       },
     ],
     allow_promotion_codes: true,
+    // Auto-apply the beta coupon if enabled
+    ...(ENABLE_BETA_DISCOUNT && {
+      discounts: [
+        {
+          coupon: process.env.STRIPE_BETA_COUPON_ID || "BETA50",
+        },
+      ],
+    }),
     ...(isSubscription && {
       subscription_data: {
         metadata: {
@@ -63,7 +71,9 @@ export async function createLandingCheckoutSession(productId: string) {
       source: "landing_page",
       ...(ENABLE_BETA_DISCOUNT && { beta_discount: "50_percent" }),
     },
-  })
+  }
+
+  const session = await stripe.checkout.sessions.create(sessionConfig)
 
   return session.client_secret
 }

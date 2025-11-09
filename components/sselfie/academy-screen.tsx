@@ -8,6 +8,8 @@ import CourseDetail from "../academy/course-detail"
 import ResourceCard from "../academy/resource-card"
 import UnifiedLoading from "./unified-loading"
 import { createLandingCheckout } from "@/app/actions/landing-checkout"
+import { X, Home, Aperture, MessageCircle, ImageIcon, Grid, User, SettingsIcon, LogOut } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 const fetcher = async (url: string) => {
   console.log("[v0] Fetching Academy data from:", url)
@@ -48,6 +50,10 @@ export default function AcademyScreen() {
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null)
   const [isUpgrading, setIsUpgrading] = useState(false)
   const [showCategoryGrid, setShowCategoryGrid] = useState(false)
+  const [showNavMenu, setShowNavMenu] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [creditBalance, setCreditBalance] = useState<number>(0)
+  const router = useRouter()
 
   const {
     data: coursesData,
@@ -83,6 +89,10 @@ export default function AcademyScreen() {
   })
   const { data: myCoursesData } = useSWR("/api/academy/my-courses", fetcher)
   const { data: userInfoData } = useSWR("/api/user/info", fetcher)
+
+  const { data: creditsData } = useSWR("/api/user/credits", fetcher, {
+    onSuccess: (data) => setCreditBalance(data?.balance || 0),
+  })
 
   const hasAccess = coursesData?.hasAccess ?? false
   const productType = coursesData?.productType || userInfoData?.product_type || "one_time_session"
@@ -131,7 +141,7 @@ export default function AcademyScreen() {
             ? `/api/academy/monthly-drops/${resourceId}/download`
             : `/api/academy/flatlay-images/${resourceId}/download`
 
-      console.log("[v0] Tracking download at endpoint:", endpoint)
+      console.log("[v0] Track download endpoint:", endpoint)
 
       const trackResponse = await fetch(endpoint, {
         method: "POST",
@@ -685,120 +695,257 @@ export default function AcademyScreen() {
     )
   }
 
+  const handleNavigation = (tab: string) => {
+    window.location.hash = tab
+    setSelectedView(tab as AcademyView) // Update selectedView based on the tab
+    setShowNavMenu(false)
+  }
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true)
+    try {
+      const response = await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      })
+
+      if (response.ok) {
+        router.push("/auth/login")
+      } else {
+        console.error("[v0] Logout failed")
+        setIsLoggingOut(false)
+      }
+    } catch (error) {
+      console.error("[v0] Error during logout:", error)
+      setIsLoggingOut(false)
+    }
+  }
+
   const completedCoursesCount = myCourses.filter((c: any) => c.progress_percentage >= 100).length
   const totalEnrolledCourses = myCourses.length
 
   return (
     <div className="pb-32">
-      <div className="relative h-[50vh] sm:h-[60vh] w-full overflow-hidden">
-        <img
-          src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/887-JHliMtQOFFLmPDRmabtQ9DAuiPDTOv-I0ltnA6ru3zz4C0YmuHYD8y66QZDB7.png"
-          alt="Academy"
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/70" />
-        <div className="absolute inset-0 flex flex-col items-center justify-center px-4 text-center">
-          <h1 className="font-serif text-5xl sm:text-7xl tracking-wider text-white">Academy</h1>
+      <div className="fixed top-0 left-0 right-0 z-30 bg-white/80 backdrop-blur-xl border-b border-stone-200/50 px-4 py-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl sm:text-2xl font-serif font-extralight tracking-[0.2em] sm:tracking-[0.3em] text-stone-950 uppercase">
+            Academy
+          </h2>
+          <button
+            onClick={() => setShowNavMenu(!showNavMenu)}
+            className="flex items-center justify-center px-3 h-9 sm:h-10 rounded-lg hover:bg-stone-100/50 transition-colors touch-manipulation active:scale-95"
+            aria-label="Navigation menu"
+            aria-expanded={showNavMenu}
+          >
+            <span className="text-xs sm:text-sm font-serif tracking-[0.2em] text-stone-950 uppercase">MENU</span>
+          </button>
         </div>
       </div>
 
-      <div className="px-4 sm:px-6 -mt-12 relative z-10">
-        <div className="grid grid-cols-3 gap-2 sm:gap-3 max-w-2xl mx-auto">
-          <div className="bg-white border border-stone-200 rounded-lg p-3 sm:p-4 text-center">
-            <div className="text-[10px] sm:text-xs tracking-wider uppercase text-stone-500 mb-1">Your Plan</div>
-            <div className="font-serif text-base sm:text-lg text-stone-950">{getFriendlyTierName(userTier)}</div>
-          </div>
-          <div className="bg-white border border-stone-200 rounded-lg p-3 sm:p-4 text-center">
-            <div className="text-[10px] sm:text-xs tracking-wider uppercase text-stone-500 mb-1">Completed</div>
-            <div className="font-serif text-base sm:text-lg text-stone-950">
-              {completedCoursesCount}/{totalEnrolledCourses}
-            </div>
-          </div>
-          <div className="bg-white border border-stone-200 rounded-lg p-3 sm:p-4 text-center">
-            <div className="text-[10px] sm:text-xs tracking-wider uppercase text-stone-500 mb-1">Learning</div>
-            <div className="font-serif text-base sm:text-lg text-stone-950">{inProgressCourses.length}</div>
-          </div>
-        </div>
-      </div>
+      {showNavMenu && (
+        <>
+          <div
+            className="fixed inset-0 bg-stone-950/20 backdrop-blur-sm z-40 animate-in fade-in duration-200"
+            onClick={() => setShowNavMenu(false)}
+          />
 
-      <div className="space-y-8 mt-12 px-4 sm:px-6">
-        <button
-          onClick={() => setSelectedView("courses")}
-          className="w-full border border-stone-200 rounded-2xl p-8 sm:p-10 text-left bg-stone-50 hover:bg-stone-100 hover:border-stone-300 transition-all"
-        >
-          <h2 className="font-serif text-2xl sm:text-3xl tracking-wider text-stone-950 mb-3">Browse Courses</h2>
-          <p className="text-stone-600 text-sm sm:text-base font-light leading-relaxed mb-6">
-            Explore our complete library of courses designed to help you master professional photography and personal
-            branding
-          </p>
-          <div className="text-xs tracking-wider uppercase text-stone-600">See All Courses →</div>
-        </button>
-
-        <button
-          onClick={() => setSelectedView("templates")}
-          className="w-full border border-stone-200 rounded-2xl p-8 sm:p-10 text-left bg-white hover:bg-stone-50 hover:border-stone-300 transition-all"
-        >
-          <h2 className="font-serif text-2xl sm:text-3xl tracking-wider text-stone-950 mb-3">Templates</h2>
-          <p className="text-stone-600 text-sm sm:text-base font-light leading-relaxed mb-6">
-            Download professional templates for Canva, PDFs, and more to elevate your brand
-          </p>
-          <div className="text-xs tracking-wider uppercase text-stone-600">Browse Templates →</div>
-        </button>
-
-        <button
-          onClick={() => setSelectedView("monthly-drops")}
-          className="w-full border border-stone-200 rounded-2xl p-8 sm:p-10 text-left bg-white hover:bg-stone-50 hover:border-stone-300 transition-all"
-        >
-          <h2 className="font-serif text-2xl sm:text-3xl tracking-wider text-stone-950 mb-3">Monthly Drops</h2>
-          <p className="text-stone-600 text-sm sm:text-base font-light leading-relaxed mb-6">
-            Exclusive monthly resources and content drops for Studio Members
-          </p>
-          <div className="text-xs tracking-wider uppercase text-stone-600">View Monthly Drops →</div>
-        </button>
-
-        <button
-          onClick={() => setSelectedView("flatlay-images")}
-          className="w-full border border-stone-200 rounded-2xl p-8 sm:p-10 text-left bg-white hover:bg-stone-50 hover:border-stone-300 transition-all"
-        >
-          <h2 className="font-serif text-2xl sm:text-3xl tracking-wider text-stone-950 mb-3">Flatlay Images</h2>
-          <p className="text-stone-600 text-sm sm:text-base font-light leading-relaxed mb-6">
-            Professional flatlay images to elevate your content and brand aesthetic
-          </p>
-          <div className="text-xs tracking-wider uppercase text-stone-600">Browse Flatlay Images →</div>
-        </button>
-
-        {(inProgressCourses[0] || allCourses[0]) && (
-          <div className="border border-stone-950 bg-stone-950 text-stone-50 rounded-2xl p-8 sm:p-10">
-            <div className="space-y-6">
-              <div>
-                <div className="inline-block px-3 py-1 bg-stone-800 rounded-full text-xs tracking-wider uppercase mb-4">
-                  {inProgressCourses[0] ? "Continue Learning" : "Recommended"}
-                </div>
-                <h2 className="font-serif text-2xl sm:text-3xl tracking-wider mb-3">
-                  {(inProgressCourses[0] || allCourses[0])?.title}
-                </h2>
-                <p className="text-stone-300 text-sm leading-relaxed">
-                  {(inProgressCourses[0] || allCourses[0])?.lesson_count || 0} lessons • {(() => {
-                    const duration = (inProgressCourses[0] || allCourses[0])?.total_duration
-                    if (!duration || isNaN(Number(duration)) || Number(duration) <= 0) {
-                      return "0m"
-                    }
-                    const hours = Math.floor(Number(duration) / 60)
-                    const mins = Number(duration) % 60
-                    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`
-                  })()}
-                </p>
-              </div>
-
+          <div className="fixed top-0 right-0 bottom-0 w-80 bg-white/95 backdrop-blur-3xl border-l border-stone-200 shadow-2xl z-50 animate-in slide-in-from-right duration-300 flex flex-col">
+            <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-stone-200/50">
+              <h3 className="text-sm font-serif font-extralight tracking-[0.2em] uppercase text-stone-950">Menu</h3>
               <button
-                onClick={() => handleCourseClick((inProgressCourses[0] || allCourses[0])?.id)}
-                className="w-full bg-stone-50 text-stone-950 py-4 rounded-xl text-sm tracking-wider uppercase hover:bg-stone-100 transition-all"
+                onClick={() => setShowNavMenu(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-100 transition-colors"
+                aria-label="Close menu"
               >
-                {inProgressCourses[0] ? "Continue" : "Start Learning"}
+                <X size={18} className="text-stone-600" strokeWidth={2} />
+              </button>
+            </div>
+
+            <div className="flex-shrink-0 px-6 py-6 border-b border-stone-200/50">
+              <div className="text-[10px] tracking-[0.15em] uppercase font-light text-stone-500 mb-2">Your Credits</div>
+              <div className="text-3xl font-serif font-extralight text-stone-950 tabular-nums">
+                {creditBalance.toFixed(1)}
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto min-h-0 py-2">
+              <button
+                onClick={() => handleNavigation("studio")}
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
+              >
+                <Home size={18} className="text-stone-600" strokeWidth={2} />
+                <span className="text-sm font-medium text-stone-700">Studio</span>
+              </button>
+              <button
+                onClick={() => handleNavigation("training")}
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
+              >
+                <Aperture size={18} className="text-stone-600" strokeWidth={2} />
+                <span className="text-sm font-medium text-stone-700">Training</span>
+              </button>
+              <button
+                onClick={() => handleNavigation("maya")}
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
+              >
+                <MessageCircle size={18} className="text-stone-600" strokeWidth={2} />
+                <span className="text-sm font-medium text-stone-700">Maya</span>
+              </button>
+              <button
+                onClick={() => handleNavigation("gallery")}
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
+              >
+                <ImageIcon size={18} className="text-stone-600" strokeWidth={2} />
+                <span className="text-sm font-medium text-stone-700">Gallery</span>
+              </button>
+              <button
+                onClick={() => handleNavigation("academy")}
+                className="w-full flex items-center gap-3 px-6 py-4 text-left bg-stone-100/50 border-l-2 border-stone-950"
+              >
+                <Grid size={18} className="text-stone-950" strokeWidth={2} />
+                <span className="text-sm font-medium text-stone-950">Academy</span>
+              </button>
+              <button
+                onClick={() => handleNavigation("profile")}
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
+              >
+                <User size={18} className="text-stone-600" strokeWidth={2} />
+                <span className="text-sm font-medium text-stone-700">Profile</span>
+              </button>
+              <button
+                onClick={() => handleNavigation("settings")}
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
+              >
+                <SettingsIcon size={18} className="text-stone-600" strokeWidth={2} />
+                <span className="text-sm font-medium text-stone-700">Settings</span>
+              </button>
+            </div>
+
+            <div className="flex-shrink-0 px-6 py-4 border-t border-stone-200/50 bg-white/95">
+              <button
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+              >
+                <LogOut size={16} strokeWidth={2} />
+                <span>{isLoggingOut ? "Signing Out..." : "Sign Out"}</span>
               </button>
             </div>
           </div>
-        )}
+        </>
+      )}
+
+      {/* Add top padding to content to account for fixed header */}
+      <div className="pt-16">
+        <div className="relative h-[50vh] sm:h-[60vh] w-full overflow-hidden">
+          <img
+            src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/887-JHliMtQOFFLmPDRmabtQ9DAuiPDTOv-I0ltnA6ru3zz4C0YmuHYD8y66QZDB7.png"
+            alt="Academy"
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/70" />
+          <div className="absolute inset-0 flex flex-col items-center justify-center px-4 text-center">
+            <h1 className="font-serif text-5xl sm:text-7xl tracking-wider text-white">Academy</h1>
+          </div>
+        </div>
+
+        <div className="px-4 sm:px-6 -mt-12 relative z-10">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3 max-w-2xl mx-auto">
+            <div className="bg-white border border-stone-200 rounded-lg p-3 sm:p-4 text-center">
+              <div className="text-[10px] sm:text-xs tracking-wider uppercase text-stone-500 mb-1">Your Plan</div>
+              <div className="font-serif text-base sm:text-lg text-stone-950">{getFriendlyTierName(userTier)}</div>
+            </div>
+            <div className="bg-white border border-stone-200 rounded-lg p-3 sm:p-4 text-center">
+              <div className="text-[10px] sm:text-xs tracking-wider uppercase text-stone-500 mb-1">Completed</div>
+              <div className="font-serif text-base sm:text-lg text-stone-950">
+                {completedCoursesCount}/{totalEnrolledCourses}
+              </div>
+            </div>
+            <div className="bg-white border border-stone-200 rounded-lg p-3 sm:p-4 text-center">
+              <div className="text-[10px] sm:text-xs tracking-wider uppercase text-stone-500 mb-1">Learning</div>
+              <div className="font-serif text-base sm:text-lg text-stone-950">{inProgressCourses.length}</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-8 mt-12 px-4 sm:px-6">
+          <button
+            onClick={() => setSelectedView("courses")}
+            className="w-full border border-stone-200 rounded-2xl p-8 sm:p-10 text-left bg-stone-50 hover:bg-stone-100 hover:border-stone-300 transition-all"
+          >
+            <h2 className="font-serif text-2xl sm:text-3xl tracking-wider text-stone-950 mb-3">Browse Courses</h2>
+            <p className="text-stone-600 text-sm sm:text-base font-light leading-relaxed mb-6">
+              Explore our complete library of courses designed to help you master professional photography and personal
+              branding
+            </p>
+            <div className="text-xs tracking-wider uppercase text-stone-600">See All Courses →</div>
+          </button>
+
+          <button
+            onClick={() => setSelectedView("templates")}
+            className="w-full border border-stone-200 rounded-2xl p-8 sm:p-10 text-left bg-white hover:bg-stone-50 hover:border-stone-300 transition-all"
+          >
+            <h2 className="font-serif text-2xl sm:text-3xl tracking-wider text-stone-950 mb-3">Templates</h2>
+            <p className="text-stone-600 text-sm sm:text-base font-light leading-relaxed mb-6">
+              Download professional templates for Canva, PDFs, and more to elevate your brand
+            </p>
+            <div className="text-xs tracking-wider uppercase text-stone-600">Browse Templates →</div>
+          </button>
+
+          <button
+            onClick={() => setSelectedView("monthly-drops")}
+            className="w-full border border-stone-200 rounded-2xl p-8 sm:p-10 text-left bg-white hover:bg-stone-50 hover:border-stone-300 transition-all"
+          >
+            <h2 className="font-serif text-2xl sm:text-3xl tracking-wider text-stone-950 mb-3">Monthly Drops</h2>
+            <p className="text-stone-600 text-sm sm:text-base font-light leading-relaxed mb-6">
+              Exclusive monthly resources and content drops for Studio Members
+            </p>
+            <div className="text-xs tracking-wider uppercase text-stone-600">View Monthly Drops →</div>
+          </button>
+
+          <button
+            onClick={() => setSelectedView("flatlay-images")}
+            className="w-full border border-stone-200 rounded-2xl p-8 sm:p-10 text-left bg-white hover:bg-stone-50 hover:border-stone-300 transition-all"
+          >
+            <h2 className="font-serif text-2xl sm:text-3xl tracking-wider text-stone-950 mb-3">Flatlay Images</h2>
+            <p className="text-stone-600 text-sm sm:text-base font-light leading-relaxed mb-6">
+              Professional flatlay images to elevate your content and brand aesthetic
+            </p>
+            <div className="text-xs tracking-wider uppercase text-stone-600">Browse Flatlay Images →</div>
+          </button>
+
+          {(inProgressCourses[0] || allCourses[0]) && (
+            <div className="border border-stone-950 bg-stone-950 text-stone-50 rounded-2xl p-8 sm:p-10">
+              <div className="space-y-6">
+                <div>
+                  <div className="inline-block px-3 py-1 bg-stone-800 rounded-full text-xs tracking-wider uppercase mb-4">
+                    {inProgressCourses[0] ? "Continue Learning" : "Recommended"}
+                  </div>
+                  <h2 className="font-serif text-2xl sm:text-3xl tracking-wider mb-3">
+                    {(inProgressCourses[0] || allCourses[0])?.title}
+                  </h2>
+                  <p className="text-stone-300 text-sm leading-relaxed">
+                    {(inProgressCourses[0] || allCourses[0])?.lesson_count || 0} lessons • {(() => {
+                      const duration = (inProgressCourses[0] || allCourses[0])?.total_duration
+                      if (!duration || isNaN(Number(duration)) || Number(duration) <= 0) {
+                        return "0m"
+                      }
+                      const hours = Math.floor(Number(duration) / 60)
+                      const mins = Number(duration) % 60
+                      return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`
+                    })()}
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => handleCourseClick((inProgressCourses[0] || allCourses[0])?.id)}
+                  className="w-full bg-stone-50 text-stone-950 py-4 rounded-xl text-sm tracking-wider uppercase hover:bg-stone-100 transition-all"
+                >
+                  {inProgressCourses[0] ? "Continue" : "Start Learning"}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

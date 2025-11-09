@@ -57,43 +57,76 @@ async function syncStripeProducts() {
   console.log("🔄 Syncing Stripe products...")
 
   try {
+    console.log("\n📋 Checking for existing products...")
+    const existingProducts = await stripe.products.list({ limit: 100 })
+    const existingProductMap = new Map(
+      existingProducts.data.map((p) => [p.metadata.product_id || p.metadata.package_id, p]),
+    )
+
     // Sync main pricing products (One-Time Session & Studio Membership)
     for (const product of PRICING_PRODUCTS) {
       console.log(`\n📦 Processing: ${product.name}`)
 
-      // Create or update product
-      const stripeProduct = await stripe.products.create({
-        name: product.name,
-        description: product.description,
-        metadata: {
-          product_id: product.id,
-          product_type: product.type,
-          credits: product.credits.toString(),
-        },
+      let stripeProduct = existingProductMap.get(product.id)
+
+      if (stripeProduct) {
+        console.log(`ℹ️  Product already exists: ${stripeProduct.id}`)
+        stripeProduct = await stripe.products.update(stripeProduct.id, {
+          name: product.name,
+          description: product.description,
+          metadata: {
+            product_id: product.id,
+            product_type: product.type,
+            credits: product.credits.toString(),
+          },
+        })
+        console.log(`✅ Product updated: ${stripeProduct.id}`)
+      } else {
+        // Create or update product
+        stripeProduct = await stripe.products.create({
+          name: product.name,
+          description: product.description,
+          metadata: {
+            product_id: product.id,
+            product_type: product.type,
+            credits: product.credits.toString(),
+          },
+        })
+        console.log(`✅ Product created: ${stripeProduct.id}`)
+      }
+
+      const existingPrices = await stripe.prices.list({
+        product: stripeProduct.id,
+        limit: 10,
       })
 
-      console.log(`✅ Product created: ${stripeProduct.id}`)
+      const existingPrice = existingPrices.data.find((p) => p.active && p.unit_amount === product.priceInCents)
 
-      const priceData = {
-        product: stripeProduct.id,
-        currency: "usd",
-        unit_amount: product.priceInCents,
-        metadata: {
-          product_id: product.id,
-        },
-      }
-
-      // Add recurring data for subscriptions
-      if (product.type === "sselfie_studio_membership") {
-        priceData.recurring = {
-          interval: "month",
+      if (existingPrice) {
+        console.log(`ℹ️  Price already exists: ${existingPrice.id}`)
+        console.log(`   Env variable: STRIPE_${product.id.toUpperCase()}_PRICE_ID=${existingPrice.id}`)
+      } else {
+        const priceData: Stripe.PriceCreateParams = {
+          product: stripeProduct.id,
+          currency: "usd",
+          unit_amount: product.priceInCents,
+          metadata: {
+            product_id: product.id,
+          },
         }
+
+        // Add recurring data for subscriptions
+        if (product.type === "sselfie_studio_membership") {
+          priceData.recurring = {
+            interval: "month",
+          }
+        }
+
+        const stripePrice = await stripe.prices.create(priceData)
+
+        console.log(`✅ Price created: ${stripePrice.id}`)
+        console.log(`   Add to .env: STRIPE_${product.id.toUpperCase()}_PRICE_ID=${stripePrice.id}`)
       }
-
-      const stripePrice = await stripe.prices.create(priceData)
-
-      console.log(`✅ Price created: ${stripePrice.id}`)
-      console.log(`   Add to .env: STRIPE_${product.id.toUpperCase()}_PRICE_ID=${stripePrice.id}`)
     }
 
     // Sync credit packages
@@ -101,29 +134,56 @@ async function syncStripeProducts() {
     for (const pkg of CREDIT_PACKAGES) {
       console.log(`\n📦 Processing: ${pkg.name}`)
 
-      const stripeProduct = await stripe.products.create({
-        name: pkg.name,
-        description: pkg.description,
-        metadata: {
-          package_id: pkg.id,
-          credits: pkg.credits.toString(),
-          product_type: "credit_topup",
-        },
-      })
+      let stripeProduct = existingProductMap.get(pkg.id)
 
-      console.log(`✅ Product created: ${stripeProduct.id}`)
+      if (stripeProduct) {
+        console.log(`ℹ️  Product already exists: ${stripeProduct.id}`)
+        stripeProduct = await stripe.products.update(stripeProduct.id, {
+          name: pkg.name,
+          description: pkg.description,
+          metadata: {
+            package_id: pkg.id,
+            credits: pkg.credits.toString(),
+            product_type: "credit_topup",
+          },
+        })
+        console.log(`✅ Product updated: ${stripeProduct.id}`)
+      } else {
+        stripeProduct = await stripe.products.create({
+          name: pkg.name,
+          description: pkg.description,
+          metadata: {
+            package_id: pkg.id,
+            credits: pkg.credits.toString(),
+            product_type: "credit_topup",
+          },
+        })
+        console.log(`✅ Product created: ${stripeProduct.id}`)
+      }
 
-      const stripePrice = await stripe.prices.create({
+      const existingPrices = await stripe.prices.list({
         product: stripeProduct.id,
-        currency: "usd",
-        unit_amount: pkg.priceInCents,
-        metadata: {
-          package_id: pkg.id,
-        },
+        limit: 10,
       })
 
-      console.log(`✅ Price created: ${stripePrice.id}`)
-      console.log(`   Add to .env: STRIPE_${pkg.id.toUpperCase()}_PRICE_ID=${stripePrice.id}`)
+      const existingPrice = existingPrices.data.find((p) => p.active && p.unit_amount === pkg.priceInCents)
+
+      if (existingPrice) {
+        console.log(`ℹ️  Price already exists: ${existingPrice.id}`)
+        console.log(`   Env variable: STRIPE_${pkg.id.toUpperCase()}_PRICE_ID=${existingPrice.id}`)
+      } else {
+        const stripePrice = await stripe.prices.create({
+          product: stripeProduct.id,
+          currency: "usd",
+          unit_amount: pkg.priceInCents,
+          metadata: {
+            package_id: pkg.id,
+          },
+        })
+
+        console.log(`✅ Price created: ${stripePrice.id}`)
+        console.log(`   Add to .env: STRIPE_${pkg.id.toUpperCase()}_PRICE_ID=${stripePrice.id}`)
+      }
     }
 
     console.log("\n✨ Stripe products synced successfully!")

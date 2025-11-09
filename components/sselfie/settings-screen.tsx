@@ -13,6 +13,12 @@ import {
   CreditCard,
   Package,
   ExternalLink,
+  X,
+  Home,
+  MessageCircle,
+  ImageIcon,
+  Grid,
+  SettingsIcon,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import BrandAssetsManager from "./brand-assets-manager"
@@ -46,6 +52,7 @@ interface SubscriptionInfo {
 
 export default function SettingsScreen({ onBack, user, creditBalance }: SettingsScreenProps) {
   const router = useRouter()
+  const [showNavMenu, setShowNavMenu] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null)
   const [subscriptionInfo, setSubscriptionInfo] = useState<SubscriptionInfo | null>(null)
@@ -200,10 +207,15 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
   const isStudioMembership = userInfo?.product_type === "sselfie_studio_membership"
   const hasActiveSubscription = subscriptionInfo?.status === "active"
 
+  const navigateToTab = (tabId: string) => {
+    window.location.hash = tabId
+    window.location.reload()
+  }
+
   return (
     <div className="space-y-8 pb-4">
       <div className="flex items-center gap-4 pt-4">
-        {onBack && ( // Only show back button if onBack prop is provided
+        {onBack && (
           <button
             onClick={onBack}
             className="p-4 bg-stone-100/50 rounded-2xl border border-stone-200/40 hover:bg-stone-100/70 hover:border-stone-300/50 transition-all duration-200"
@@ -217,7 +229,108 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
           </h2>
           <p className="text-xs tracking-[0.15em] uppercase font-light mt-2 text-stone-500">Your Preferences</p>
         </div>
+        <button
+          onClick={() => setShowNavMenu(true)}
+          className="font-serif text-sm tracking-[0.3em] uppercase text-stone-600 hover:text-stone-950 transition-colors px-4 py-2"
+        >
+          MENU
+        </button>
       </div>
+
+      {showNavMenu && (
+        <>
+          <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50" onClick={() => setShowNavMenu(false)} />
+          <div className="fixed inset-y-0 right-0 w-full max-w-sm bg-white z-50 shadow-2xl flex flex-col">
+            <div className="flex items-center justify-between p-6 border-b border-stone-200/40">
+              <h2 className="font-serif text-xl tracking-[0.3em] uppercase text-stone-950">MENU</h2>
+              <button
+                onClick={() => setShowNavMenu(false)}
+                className="p-2 hover:bg-stone-100 rounded-lg transition-colors"
+              >
+                <X size={20} className="text-stone-600" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto min-h-0 px-6 py-6">
+              <div className="mb-8">
+                <p className="text-[10px] tracking-[0.15em] uppercase font-light text-stone-500 mb-2">YOUR CREDITS</p>
+                <p className="text-3xl font-serif font-extralight text-stone-950 tabular-nums">
+                  {creditBalance?.toFixed(1) || "0.0"}
+                </p>
+              </div>
+
+              <nav className="space-y-2">
+                <button
+                  onClick={() => navigateToTab("studio")}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-stone-100/50 transition-colors text-left"
+                >
+                  <Home size={20} className="text-stone-600" />
+                  <span className="text-sm font-medium text-stone-900">Studio</span>
+                </button>
+
+                <button
+                  onClick={() => navigateToTab("training")}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-stone-100/50 transition-colors text-left"
+                >
+                  <Aperture size={20} className="text-stone-600" />
+                  <span className="text-sm font-medium text-stone-900">Training</span>
+                </button>
+
+                <button
+                  onClick={() => navigateToTab("maya")}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-stone-100/50 transition-colors text-left"
+                >
+                  <MessageCircle size={20} className="text-stone-600" />
+                  <span className="text-sm font-medium text-stone-900">Maya</span>
+                </button>
+
+                <button
+                  onClick={() => navigateToTab("gallery")}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-stone-100/50 transition-colors text-left"
+                >
+                  <ImageIcon size={20} className="text-stone-600" />
+                  <span className="text-sm font-medium text-stone-900">Gallery</span>
+                </button>
+
+                <button
+                  onClick={() => navigateToTab("academy")}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-stone-100/50 transition-colors text-left"
+                >
+                  <Grid size={20} className="text-stone-600" />
+                  <span className="text-sm font-medium text-stone-900">Academy</span>
+                </button>
+
+                <button
+                  onClick={() => navigateToTab("profile")}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-stone-100/50 transition-colors text-left"
+                >
+                  <User size={20} className="text-stone-600" />
+                  <span className="text-sm font-medium text-stone-900">Profile</span>
+                </button>
+
+                <button
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-stone-100/50 border-l-2 border-stone-950 text-left"
+                  disabled
+                >
+                  <SettingsIcon size={20} className="text-stone-900" />
+                  <span className="text-sm font-medium text-stone-900">Settings</span>
+                </button>
+              </nav>
+            </div>
+
+            <div className="p-6 border-t border-stone-200/40">
+              <button
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 rounded-xl transition-colors disabled:opacity-50"
+              >
+                <LogOut size={18} />
+                {isLoggingOut ? "Signing Out..." : "Sign Out"}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
 
       <div className="space-y-6">
         {console.log("[v0] Settings - userInfo:", userInfo)}
