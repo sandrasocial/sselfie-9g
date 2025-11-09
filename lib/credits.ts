@@ -113,6 +113,7 @@ export async function addCredits(
   type: "purchase" | "subscription_grant" | "bonus",
   description: string,
   stripePaymentId?: string,
+  isTestMode = false,
 ): Promise<{ success: boolean; newBalance: number }> {
   try {
     console.log("[v0] [CREDITS] Adding credits:", {
@@ -121,6 +122,7 @@ export async function addCredits(
       type,
       description,
       stripePaymentId,
+      isTestMode,
     })
 
     // Get current balance
@@ -141,19 +143,18 @@ export async function addCredits(
 
     console.log("[v0] [CREDITS] Updated balance in database")
 
-    // Record transaction
     await sql`
       INSERT INTO credit_transactions (
         user_id, amount, transaction_type, description, 
-        stripe_payment_id, balance_after
+        stripe_payment_id, balance_after, is_test_mode
       )
       VALUES (
         ${userId}, ${amount}, ${type}, ${description},
-        ${stripePaymentId || null}, ${newBalance}
+        ${stripePaymentId || null}, ${newBalance}, ${isTestMode}
       )
     `
 
-    console.log("[v0] [CREDITS] Recorded transaction in database")
+    console.log("[v0] [CREDITS] Recorded transaction in database (test mode:", isTestMode, ")")
     console.log("[v0] [CREDITS] Successfully added credits. New balance:", newBalance)
 
     const { invalidateCreditCache } = await import("./credits-cached")
@@ -276,7 +277,11 @@ export async function getCreditHistory(userId: string, limit = 50) {
  * Grant monthly subscription credits
  * Updated to use new product types
  */
-export async function grantMonthlyCredits(userId: string, productType: "sselfie_studio_membership") {
+export async function grantMonthlyCredits(
+  userId: string,
+  productType: "sselfie_studio_membership",
+  isTestMode = false,
+) {
   const credits = SUBSCRIPTION_CREDITS[productType]
 
   return await addCredits(
@@ -284,6 +289,8 @@ export async function grantMonthlyCredits(userId: string, productType: "sselfie_
     credits,
     "subscription_grant",
     `Monthly ${productType === "sselfie_studio_membership" ? "Studio Membership" : "subscription"} grant`,
+    undefined,
+    isTestMode,
   )
 }
 
@@ -291,8 +298,8 @@ export async function grantMonthlyCredits(userId: string, productType: "sselfie_
  * Grant one-time session credits
  * New function for one-time session purchases
  */
-export async function grantOneTimeSessionCredits(userId: string) {
+export async function grantOneTimeSessionCredits(userId: string, isTestMode = false) {
   const credits = SUBSCRIPTION_CREDITS.one_time_session
 
-  return await addCredits(userId, credits, "purchase", "One-Time SSELFIE Session purchase")
+  return await addCredits(userId, credits, "purchase", "One-Time SSELFIE Session purchase", undefined, isTestMode)
 }

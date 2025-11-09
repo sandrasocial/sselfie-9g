@@ -116,26 +116,18 @@ IMPORTANT INSTRUCTIONS:
 3. Use your Instagram knowledge: what works on feeds, visual storytelling, engagement
 4. ${brandColors ? `**CRITICAL**: Incorporate the user's brand colors (${brandColors}) into the styling, clothing, background, or props. These are their chosen brand colors and MUST be reflected in the image.` : ""}
 5. Consider the post type and create appropriate composition:
-   - "Full Body": Full body shot, show outfit, styling, environment
-   - "Half Body": Waist-up shot, focus on upper styling, expression
-   - "Close-Up": Face and shoulders, emphasize expression, details
-   - "Selfie": Natural selfie angle, authentic feel, relatable
-   - "Lifestyle": Environmental storytelling, activity, context
-   - "Object": Product/item focus, styling, flat lay or in-context
-   - "Place/Scenery": Location focus, atmosphere, mood
-   - "Hobby/Others": Activity-based, authentic moment, passion
+   - "Close-Up": Face and shoulders only, 85mm lens, f/1.4-f/2.0, intimate facial focus, natural expression
+   - "Half Body": Waist-up framing only, 50mm lens, f/2.0-f/2.8, shows upper styling and hands, relaxed natural pose
+   - "Flatlay": Overhead styled product/object shot, 50mm lens, f/2.8-f/4.0, NO person visible, editorial quality
+   
+   **NEVER create full-body shots** - they look unrealistic and AI-generated. Only use close-up, half-body, or flatlay.
 6. Match the color theme and brand vibe if provided
-7. Create prompts that feel authentic and Instagram-worthy
+7. Create prompts that feel authentic and Instagram-worthy with candid, natural poses
 8. ALWAYS start with the trigger word: ${triggerWord}
 9. Be specific about lighting, setting, styling, pose, and mood
 10. ${brandColors ? `Describe clothing, accessories, or background elements in the brand colors: ${brandColors}` : ""}
 11. Make it feel like a real Instagram post, not a studio photoshoot (unless that's the vibe)
-
-OUTPUT FORMAT:
-Generate ONLY the FLUX prompt. No explanations, no extra text. Just the prompt that will be sent to Replicate.
-
-Example output format:
-"${triggerWord}, woman in elegant beige linen blazer and white silk camisole, standing in minimalist modern office, soft natural window light, confident expression, looking at camera, professional yet approachable, warm neutral tones, shallow depth of field, 35mm lens, editorial quality, raw photo, high resolution"
+12. **CRITICAL**: Use natural, relaxed poses - avoid stiff, posed looks. Think candid moments.
 
 Now generate the FLUX prompt for this feed post:`
 

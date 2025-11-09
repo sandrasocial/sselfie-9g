@@ -121,6 +121,10 @@ export async function POST(request: NextRequest) {
       loraWeightsUrl,
     })
 
+    const genderTerm =
+      gender === "woman" || gender === "female" ? "woman" : gender === "man" || gender === "male" ? "man" : "person"
+    console.log("[v0] Gender term for FLUX:", genderTerm)
+
     let versionHash = replicateVersionId
     if (replicateVersionId && replicateVersionId.includes(":")) {
       versionHash = replicateVersionId.split(":").pop()
@@ -140,23 +144,21 @@ export async function POST(request: NextRequest) {
 
     let finalPrompt = conceptPrompt
 
-    if (isHighlight) {
-      finalPrompt = `${conceptPrompt}, professional Instagram story highlight aesthetic, elegant and minimalistic design, soft lighting, high-end editorial quality, perfect for text overlay, circular crop friendly, trending Instagram aesthetic 2025`
+    const promptStart = finalPrompt.toLowerCase().trim().substring(0, 50)
+    const hasGenderDescriptor = promptStart.includes(`a ${genderTerm}`) || promptStart.includes(`the ${genderTerm}`)
+
+    if (!hasGenderDescriptor) {
+      console.log("[v0] ⚠️ Gender descriptor missing from prompt, adding it now")
+      finalPrompt = `a ${genderTerm}, ${finalPrompt}`
+    } else {
+      console.log("[v0] ✅ Gender descriptor present in prompt:", genderTerm)
     }
 
-    // Instead of telling it what NOT to do, tell it what TO do
-    const handGuidance = "perfect hands with five fingers, well-formed hands, anatomically correct hands"
-    finalPrompt = `${finalPrompt}, ${handGuidance}`
-    console.log("[v0] Added positive hand guidance (Flux doesn't support negative prompts)")
+    if (isHighlight) {
+      finalPrompt = `${finalPrompt}, professional Instagram story highlight aesthetic, elegant and minimalistic design, soft lighting, high-end editorial quality, perfect for text overlay, circular crop friendly, trending Instagram aesthetic 2025`
+    }
 
     console.log("[v0] Final FLUX prompt (Maya's gender-aware prompt):", finalPrompt)
-
-    const anatomyNegatives =
-      "bad anatomy, disfigured hands, extra fingers, missing fingers, fused fingers, too many fingers, extra limbs, missing limbs, extra arms, extra legs, malformed limbs, mutated hands, poorly drawn hands, poorly drawn face, mutation, deformed body, unnatural posture, awkward pose, distorted proportions, blurry, low quality, distorted, deformed, ugly, watermark, signature, text, logo"
-
-    // Add negative prompts to ensure anatomical accuracy
-    // finalPrompt = `${finalPrompt} --no ${anatomyNegatives}`
-    // console.log("[v0] Added anatomy negative prompts for better quality")
 
     const promptLower = finalPrompt.toLowerCase().trim()
     const triggerLower = triggerWord.toLowerCase()
@@ -176,11 +178,8 @@ export async function POST(request: NextRequest) {
 
     const qualitySettings = {
       ...presetSettings,
-      // User can override aspect ratio via settings
       aspect_ratio: customSettings?.aspectRatio || presetSettings.aspect_ratio,
-      // User can override lora_scale (styleStrength) - if not set, use preset's smart default
       lora_scale: customSettings?.styleStrength ?? presetSettings.lora_scale,
-      // User can override guidance_scale (promptAccuracy) - if not set, use preset's smart default
       guidance_scale: customSettings?.promptAccuracy ?? presetSettings.guidance_scale,
       extra_lora: customSettings?.extraLora,
       extra_lora_scale: customSettings?.extraLoraScale,

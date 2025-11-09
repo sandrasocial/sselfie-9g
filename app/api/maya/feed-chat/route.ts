@@ -169,7 +169,9 @@ const generateCompleteFeedTool = tool({
           posts: z
             .array(
               z.object({
-                type: z.enum(["Close-Up", "Half Body", "Full Body", "Lifestyle", "Object"]).describe("Post type"),
+                type: z
+                  .enum(["Close-Up", "Half Body", "Flatlay"])
+                  .describe("Post type - Close-Up (face), Half Body (waist-up), or Flatlay (styled overhead shot)"),
                 tone: z.enum(["warm", "cool"]).describe("Color temperature for visual balance"),
                 purpose: z.string().describe("What this post achieves in the feed story"),
                 composition: z.string().describe("Specific composition and framing details"),
@@ -193,7 +195,7 @@ Create a unique feed layout that:
 1. Has visual rhythm and flow (balance warm/cool tones, vary post types strategically)
 2. Tells a compelling story across all 9 posts through VISUALS
 3. Showcases personality, expertise, and lifestyle authentically
-4. Uses diverse post types: Close-Up (face focus), Half Body (upper body), Full Body (complete outfit), Lifestyle (environment/activity), Object (styled flatlay)
+4. Uses diverse post types: Close-Up (face focus), Half Body (upper body), Flatlay (styled overhead product shot - NO person visible)
 5. Each post should have a clear visual purpose in the overall narrative
 
 For each post, provide:
@@ -209,7 +211,7 @@ Be creative and authentic. No generic templates - every element should feel cust
       console.log("[v0] [SERVER] AI-generated feed design complete:", feedDesign.visualRhythm)
 
       const posts = feedDesign.posts.map((post, index) => {
-        if (post.type === "Object") {
+        if (post.type === "Flatlay") {
           const genderObjectStyling =
             user.gender === "woman" || user.gender === "female"
               ? "elegant feminine aesthetic with refined details, soft textures and sophisticated arrangement, carefully curated objects that convey grace and professionalism"
@@ -224,9 +226,9 @@ Be creative and authentic. No generic templates - every element should feel cust
 
           return {
             id: `post-${index + 1}`,
-            title: "Styled Moment",
+            title: "Styled Shot",
             description: `${post.purpose}. ${post.composition}`,
-            category: "Object",
+            category: "Flatlay",
             prompt: `${colorPalette.replace(/#[0-9a-fA-F]{6}/g, "").trim()} styled flatlay photography, ${genderObjectStyling}, ${post.styleDirection}, overhead shot with ${objectLighting}, professional editorial quality with ${brandVibe} aesthetic, carefully curated brand-aligned objects that tell a story about ${businessType}, shallow depth of field with creamy bokeh, subtle film grain texture for authenticity, high-end commercial photography, sophisticated composition that feels both aspirational and authentic, trending Instagram aesthetic 2025, cohesive color story, ${post.composition}`,
             textOverlay: undefined,
             purpose: post.purpose,
@@ -235,12 +237,9 @@ Be creative and authentic. No generic templates - every element should feel cust
         }
 
         const lensSpecs = {
-          "Close-Up": "shot on 85mm lens f/1.4, shallow depth of field, creamy bokeh, face focus",
-          "Half Body": "shot on 50mm lens f/2.0, medium depth of field, balanced composition, upper body focus",
-          "Full Body":
-            "shot on 50mm lens f/2.8, 3/4 body framing with face clearly visible and well-defined, natural skin texture with healthy glow, catchlights in eyes, warm golden hour light illuminating face from favorable angle, environmental context without sacrificing facial detail, medium shot that shows outfit while maintaining facial clarity",
-          Lifestyle:
-            "shot on 50mm lens f/2.0, natural environment, authentic moment, environmental storytelling with clear facial features",
+          "Close-Up": "shot on 85mm lens f/1.4, shallow depth of field, creamy bokeh, face and shoulders focus",
+          "Half Body":
+            "shot on 50mm lens f/2.0, medium depth of field, balanced composition, waist-up framing with natural posture",
         }
 
         const colorDescription = colorPalette
@@ -260,20 +259,16 @@ Be creative and authentic. No generic templates - every element should feel cust
               : "styled appearance with confident presence, authentic professional energy"
 
         const fashionDetails =
-          post.type === "Full Body"
-            ? `wearing sophisticated ${colorDescription} attire with impeccable tailoring and refined silhouette, ${post.styleDirection}, styled with carefully chosen accessories that complement the overall aesthetic, complete outfit showcasing personal style and brand identity, defined facial features with natural skin texture and healthy glow, warm lighting illuminating face to ensure facial clarity, catchlights in eyes for engaging presence, 3/4 body framing that shows full outfit while keeping face sharp and well-defined`
-            : post.type === "Half Body"
-              ? `dressed in elegant ${colorDescription} professional attire with attention to fabric quality and fit, ${post.styleDirection}, styled with minimal sophisticated accessories, upper body styling that conveys both professionalism and approachability`
-              : post.type === "Close-Up"
-                ? `styled with ${colorDescription} tones in clothing and background, ${post.styleDirection}, natural skin texture with healthy radiant glow, authentic expression that connects with viewers`
-                : `authentic ${colorDescription} styling that feels natural and effortless, ${post.styleDirection}, environmental elements that tell a story, genuine moment captured with editorial quality`
+          post.type === "Half Body"
+            ? `dressed in elegant ${colorDescription} professional attire with attention to fabric quality and fit, ${post.styleDirection}, styled with minimal sophisticated accessories, waist-up framing showing upper body styling with relaxed shoulders and natural hand positions, defined facial features with natural skin texture and healthy glow, warm lighting illuminating face for clarity and engagement`
+            : `styled with ${colorDescription} tones in clothing and background, ${post.styleDirection}, natural skin texture with healthy radiant glow, authentic expression that connects with viewers, close-up focus on face and upper shoulders`
 
         return {
           id: `post-${index + 1}`,
-          title: `${post.type} ${post.type === "Lifestyle" ? "Moment" : "Portrait"}`,
+          title: "Portrait",
           description: `${post.purpose}. ${post.composition}`,
           category: post.type,
-          prompt: `${triggerWord}, ${genderStyling}, ${fashionDetails}, ${post.styleDirection}, ${lensSpecs[post.type as keyof typeof lensSpecs]}, ${lightingStyle}, natural skin texture with subtle film grain for authenticity, ${post.composition}, timeless elegance meets modern sophistication, high-end editorial photography with ${brandVibe} aesthetic, genuine professional presence that feels both aspirational and relatable, trending Instagram aesthetic 2025, cohesive visual story`,
+          prompt: `${triggerWord}, ${genderStyling}, ${fashionDetails}, ${post.styleDirection}, ${lensSpecs[post.type as keyof typeof lensSpecs]}, ${lightingStyle}, natural skin texture with subtle film grain for authenticity, ${post.composition}, timeless elegance meets modern sophistication, high-end editorial photography with ${brandVibe} aesthetic, genuine professional presence that feels both aspirational and relatable, trending Instagram aesthetic 2025, cohesive visual story, candid natural pose avoiding stiffness`,
           textOverlay: undefined,
           purpose: post.purpose,
           composition: post.composition,

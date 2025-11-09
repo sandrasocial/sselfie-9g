@@ -62,6 +62,7 @@ export async function POST(request: NextRequest) {
   console.log("[v0] Stripe webhook event:", event.type)
   console.log("[v0] Event ID:", event.id)
   console.log("[v0] Event data object type:", event.data.object.object)
+  console.log("[v0] Event livemode:", event.livemode ? "PRODUCTION" : "TEST MODE")
 
   try {
     switch (event.type) {
@@ -73,6 +74,7 @@ export async function POST(request: NextRequest) {
         console.log("[v0] Mode:", session.mode)
         console.log("[v0] Customer email:", session.customer_details?.email || session.customer_email)
         console.log("[v0] Metadata:", session.metadata)
+        console.log("[v0] Test mode:", !event.livemode ? "YES (TEST)" : "NO (PRODUCTION)")
 
         if (session.mode === "payment") {
           // One-time purchase (credit top-up or one-time session)
@@ -392,7 +394,7 @@ export async function POST(request: NextRequest) {
             // No subscription record is created - one-time purchases are tracked via credit transactions only
           } else if (productType === "credit_topup") {
             console.log(`[v0] Credit top-up: ${credits} credits for user ${userId}`)
-            await addCredits(userId, credits, "purchase", `Credit top-up purchase`)
+            await addCredits(userId, credits, "purchase", `Credit top-up purchase`, undefined, !event.livemode)
             console.log(`[v0] Successfully added ${credits} credits to user ${userId}`)
           }
         } else if (session.mode === "subscription") {
@@ -427,7 +429,7 @@ export async function POST(request: NextRequest) {
 
                 if (productType === "sselfie_studio_membership") {
                   console.log(`[v0] Granting ${credits} monthly credits to existing user ${userId}`)
-                  await grantMonthlyCredits(userId, "sselfie_studio_membership")
+                  await grantMonthlyCredits(userId, "sselfie_studio_membership", !event.livemode)
                 }
 
                 if (session.subscription) {
@@ -450,6 +452,7 @@ export async function POST(request: NextRequest) {
                         stripe_customer_id = ${subscriptionData.customer},
                         current_period_start = to_timestamp(${subscriptionData.current_period_start}),
                         current_period_end = to_timestamp(${subscriptionData.current_period_end}),
+                        is_test_mode = ${!event.livemode},
                         updated_at = NOW()
                       WHERE user_id = ${userId}
                     `
@@ -464,7 +467,8 @@ export async function POST(request: NextRequest) {
                         stripe_subscription_id,
                         stripe_customer_id,
                         current_period_start,
-                        current_period_end
+                        current_period_end,
+                        is_test_mode
                       )
                       VALUES (
                         ${userId},
@@ -474,7 +478,8 @@ export async function POST(request: NextRequest) {
                         ${subscriptionData.id},
                         ${subscriptionData.customer},
                         to_timestamp(${subscriptionData.current_period_start}),
-                        to_timestamp(${subscriptionData.current_period_end})
+                        to_timestamp(${subscriptionData.current_period_end}),
+                        ${!event.livemode}
                       )
                     `
                   }
@@ -538,7 +543,7 @@ export async function POST(request: NextRequest) {
 
                 if (productType === "sselfie_studio_membership") {
                   console.log(`[v0] Step 6.5: Granting ${credits} monthly credits to new user ${userId}`)
-                  await grantMonthlyCredits(userId, "sselfie_studio_membership")
+                  await grantMonthlyCredits(userId, "sselfie_studio_membership", !event.livemode)
                   console.log(`[v0] Successfully granted ${credits} credits to user ${userId}`)
                 }
 
@@ -671,6 +676,7 @@ export async function POST(request: NextRequest) {
                         stripe_customer_id = ${subscriptionData.customer},
                         current_period_start = to_timestamp(${subscriptionData.current_period_start}),
                         current_period_end = to_timestamp(${subscriptionData.current_period_end}),
+                        is_test_mode = ${!event.livemode},
                         updated_at = NOW()
                       WHERE user_id = ${userId}
                     `
@@ -685,7 +691,8 @@ export async function POST(request: NextRequest) {
                         stripe_subscription_id,
                         stripe_customer_id,
                         current_period_start,
-                        current_period_end
+                        current_period_end,
+                        is_test_mode
                       )
                       VALUES (
                         ${userId},
@@ -695,7 +702,8 @@ export async function POST(request: NextRequest) {
                         ${subscriptionData.id},
                         ${subscriptionData.customer},
                         to_timestamp(${subscriptionData.current_period_start}),
-                        to_timestamp(${subscriptionData.current_period_end})
+                        to_timestamp(${subscriptionData.current_period_end}),
+                        ${!event.livemode}
                       )
                     `
                   }
@@ -715,7 +723,7 @@ export async function POST(request: NextRequest) {
 
             if (userId && productType === "sselfie_studio_membership") {
               console.log(`[v0] Granting ${credits} monthly credits to existing user ${userId}`)
-              await grantMonthlyCredits(userId, "sselfie_studio_membership")
+              await grantMonthlyCredits(userId, "sselfie_studio_membership", !event.livemode)
 
               if (session.subscription) {
                 const subscriptionData = await stripe.subscriptions.retrieve(session.subscription as string)
@@ -737,6 +745,7 @@ export async function POST(request: NextRequest) {
                       stripe_customer_id = ${subscriptionData.customer},
                       current_period_start = to_timestamp(${subscriptionData.current_period_start}),
                       current_period_end = to_timestamp(${subscriptionData.current_period_end}),
+                      is_test_mode = ${!event.livemode},
                       updated_at = NOW()
                     WHERE user_id = ${userId}
                   `
@@ -751,7 +760,8 @@ export async function POST(request: NextRequest) {
                       stripe_subscription_id,
                       stripe_customer_id,
                       current_period_start,
-                      current_period_end
+                      current_period_end,
+                      is_test_mode
                     )
                     VALUES (
                       ${userId},
@@ -761,7 +771,8 @@ export async function POST(request: NextRequest) {
                       ${subscriptionData.id},
                       ${subscriptionData.customer},
                       to_timestamp(${subscriptionData.current_period_start}),
-                      to_timestamp(${subscriptionData.current_period_end})
+                      to_timestamp(${subscriptionData.current_period_end}),
+                      ${!event.livemode}
                     )
                   `
                 }
@@ -824,6 +835,7 @@ export async function POST(request: NextRequest) {
               stripe_customer_id = ${subscription.customer},
               current_period_start = to_timestamp(${subscription.current_period_start}),
               current_period_end = to_timestamp(${subscription.current_period_end}),
+              is_test_mode = ${!event.livemode},
               updated_at = NOW()
             WHERE user_id = ${userId}
           `
@@ -838,7 +850,8 @@ export async function POST(request: NextRequest) {
               stripe_subscription_id,
               stripe_customer_id,
               current_period_start,
-              current_period_end
+              current_period_end,
+              is_test_mode
             )
             VALUES (
               ${userId},
@@ -848,7 +861,8 @@ export async function POST(request: NextRequest) {
               ${subscription.id},
               ${subscription.customer},
               to_timestamp(${subscription.current_period_start}),
-              to_timestamp(${subscription.current_period_end})
+              to_timestamp(${subscription.current_period_end}),
+              ${!event.livemode}
             )
           `
         }
@@ -862,7 +876,7 @@ export async function POST(request: NextRequest) {
 
         if (existingGrant.length === 0 && productType === "sselfie_studio_membership") {
           console.log(`[v0] Granting ${credits} credits for subscription creation (not already granted)`)
-          await grantMonthlyCredits(userId, "sselfie_studio_membership")
+          await grantMonthlyCredits(userId, "sselfie_studio_membership", !event.livemode)
 
           await sql`
             INSERT INTO subscription_credit_grants (
@@ -905,7 +919,7 @@ export async function POST(request: NextRequest) {
           `
 
           if (existingGrant.length === 0 && productType === "sselfie_studio_membership") {
-            await grantMonthlyCredits(userId, "sselfie_studio_membership")
+            await grantMonthlyCredits(userId, "sselfie_studio_membership", !event.livemode)
 
             await sql`
               INSERT INTO subscription_credit_grants (
@@ -931,6 +945,7 @@ export async function POST(request: NextRequest) {
               status = ${subscription.status},
               current_period_start = to_timestamp(${subscription.current_period_start}),
               current_period_end = to_timestamp(${subscription.current_period_end}),
+              is_test_mode = ${!event.livemode},
               updated_at = NOW()
             WHERE user_id = ${userId}
           `

@@ -24,7 +24,6 @@ export async function GET() {
 
     const sql = neon(process.env.DATABASE_URL || "")
 
-    // Get active subscriptions for MRR calculation
     const subscriptionsResult = await sql`
       SELECT 
         product_type,
@@ -36,6 +35,7 @@ export async function GET() {
         END as price_cents
       FROM subscriptions
       WHERE status = 'active'
+      AND is_test_mode = FALSE
       GROUP BY product_type
     `
 
@@ -53,7 +53,6 @@ export async function GET() {
       }
     })
 
-    // Get one-time credit purchases from transactions
     const creditPurchasesResult = await sql`
       SELECT 
         COUNT(*) as total_purchases,
@@ -62,9 +61,9 @@ export async function GET() {
       FROM credit_transactions
       WHERE transaction_type = 'purchase'
       AND stripe_payment_id IS NOT NULL
+      AND is_test_mode = FALSE
     `
 
-    // Get revenue from Stripe for one-time purchases (last 30 days)
     const thirtyDaysAgo = Math.floor(Date.now() / 1000) - 30 * 24 * 60 * 60
     const charges = await stripe.charges.list({
       limit: 100,
@@ -72,20 +71,19 @@ export async function GET() {
     })
 
     const oneTimeRevenue =
-      charges.data.filter((charge) => charge.paid && !charge.refunded).reduce((sum, charge) => sum + charge.amount, 0) /
-      100
+      charges.data
+        .filter((charge) => charge.paid && !charge.refunded && charge.livemode === true)
+        .reduce((sum, charge) => sum + charge.amount, 0) / 100
 
-    // Get total revenue from all time
     const allCharges = await stripe.charges.list({
       limit: 100,
     })
 
     const totalRevenue =
       allCharges.data
-        .filter((charge) => charge.paid && !charge.refunded)
+        .filter((charge) => charge.paid && !charge.refunded && charge.livemode === true)
         .reduce((sum, charge) => sum + charge.amount, 0) / 100
 
-    // Get revenue trend (last 6 months)
     const revenueTrend = await sql`
       SELECT 
         DATE_TRUNC('month', created_at) as month,
@@ -94,11 +92,11 @@ export async function GET() {
       FROM credit_transactions
       WHERE transaction_type = 'purchase'
       AND created_at > NOW() - INTERVAL '6 months'
+      AND is_test_mode = FALSE
       GROUP BY DATE_TRUNC('month', created_at)
       ORDER BY month DESC
     `
 
-    // Get recent transactions
     const recentTransactions = await sql`
       SELECT 
         ct.amount,
@@ -106,20 +104,21 @@ export async function GET() {
         ct.description,
         ct.created_at,
         ct.stripe_payment_id,
+        ct.is_test_mode,
         u.email as user_email
       FROM credit_transactions ct
       JOIN users u ON ct.user_id = u.id
       WHERE ct.stripe_payment_id IS NOT NULL
+      AND ct.is_test_mode = FALSE
       ORDER BY ct.created_at DESC
       LIMIT 10
     `
 
-    // Get stats for users with trained models
     const userStats = await sql`
       SELECT 
         COUNT(DISTINCT u.id) as total_users,
         COUNT(DISTINCT um.id) FILTER (WHERE um.training_status = 'completed') as users_with_models,
-        COUNT(DISTINCT s.id) FILTER (WHERE s.status = 'active') as active_subscribers
+        COUNT(DISTINCT s.id) FILTER (WHERE s.status = 'active' AND s.is_test_mode = FALSE) as active_subscribers
       FROM users u
       LEFT JOIN user_models um ON um.user_id = u.id
       LEFT JOIN subscriptions s ON s.user_id = u.id
@@ -152,6 +151,7 @@ export async function GET() {
         userEmail: tx.user_email,
         stripePaymentId: tx.stripe_payment_id,
         timestamp: tx.created_at,
+        isTestMode: tx.is_test_mode || false,
       })),
     })
   } catch (error) {

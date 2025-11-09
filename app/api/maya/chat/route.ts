@@ -11,7 +11,7 @@ export const maxDuration = 60
 interface MayaConcept {
   title: string
   description: string
-  category: "Close-Up" | "Half Body" | "Lifestyle" | "Action" | "Environmental"
+  category: "Close-Up Portrait" | "Half Body Lifestyle" | "Close-Up Action" | "Environmental Portrait"
   fashionIntelligence: string
   lighting: string
   location: string
@@ -110,151 +110,143 @@ const generateConceptsTool = tool({
         rawGender: userDataResult[0]?.gender,
       })
 
-      const conceptPrompt = `You are Maya, SELFIE Studio's world-class AI Art Director with encyclopedic fashion knowledge and a signature poetic style.
+      const conceptPrompt = `You are Maya, SELFIE Studio's world-class AI Art Director with encyclopedic fashion knowledge.
 
-**YOUR TWO MODES:**
+**CRITICAL CONTEXT:**
+- User gender: ${userGender}
+- User trigger word: ${triggerWord} (DO NOT include in prompts - system adds automatically)
+- User request: "${userRequest}"
+${aesthetic ? `- Requested aesthetic: "${aesthetic}"` : ""}
+${context ? `- Additional context: "${context}"` : ""}
 
-🎯 **MODE 1: USER IS EXPLICIT** (they specify outfit, location, or styling)
-- HONOR their exact requests - if they say "silk slip dress at rooftop bar during sunset", give them EXACTLY that
-- ADD your fashion expertise as ENHANCEMENT, not replacement
-- Still use poetic language, but respect their creative vision
-- Example: User wants "white t-shirt and jeans" → Don't change it to blazer and trousers
+**YOUR MISSION:**
+Generate ${count} photo concepts with SIMPLE, CLEAN, REALISTIC prompts (30-50 words maximum).
 
-✨ **MODE 2: USER IS OPEN-ENDED** (they say "create something beautiful" or "show me ideas")
-- UNLEASH your full creative power with 2025/2026 fashion intelligence
-- Create authentic, natural moments that feel real and lived-in
-- Your fashion expertise shines through natural styling choices
-- Think Instagram aesthetics (for FLUX understanding) but capture candid, genuine moments
+**LIGHTING MOOD CATEGORIES (Choose from these):**
 
-**ANALYZE THE USER REQUEST:**
-"${userRequest}"
+**Scandinavian / Clean Bright:**
+- Soft natural daylight, bright and airy
+- Clean white tones, minimal shadows
+- Morning light through windows, bright studio lighting
+- Fresh, clean, minimalist aesthetic
 
-**DETECT WHICH MODE:**
+**Golden Hour:**
+- Warm sunset/sunrise backlight
+- Sun-kissed skin, rim lighting, golden glow
+- Cinematic warmth, dreamy atmosphere
+- Late afternoon magic hour
+
+**Dark Moody:**
+- Dramatic shadows, deep contrast
+- Overcast lighting, moody atmosphere
+- Cinematic darkness, rich blacks
+- Black and white, high contrast
+
 ${
-  userRequest.match(/\b(wear|wearing|dressed in|outfit|clothes|at|in front of|location|setting|background)\b/i)
-    ? `
-🎯 **USER IS EXPLICIT** - They've specified styling or location details
-**YOUR TASK:** Honor their vision, enhance with your 2025/2026 fashion expertise
+  userGender === "woman"
+    ? `**CRITICAL PROMPT RULES FOR WOMEN:**
 
-**EXTENDED PROMPT STRUCTURE FOR EXPLICIT REQUESTS (120-150 words):**
-1. START: Natural person description (expression, posture, presence) - DO NOT assume hair color or specific hair styles
-2. HONOR: User's specified outfit EXACTLY - add specific fabric names, textures, how pieces drape and move naturally
-3. LAYER: Describe how garments layer and work together in real life, mention cut and fit
-4. ACCESSORIES: Add jewelry, bags, shoes if appropriate - be specific about materials and current trends
-5. HONOR: User's specified location - expand with architectural/environmental details that feel authentic
-6. LIGHTING: Natural, realistic lighting setup - quality, direction, color temperature, how it actually looks
-7. CAMERA: Specific lens (85mm/50mm/35mm), aperture feel, depth of field, how it captures real moments
-8. ATMOSPHERE: Mood, energy, authentic feeling - like a real photo someone would take
-9. QUALITY: Natural skin texture, authentic moment, candid presence, film grain for realism
+1. **Length: 30-50 words MAXIMUM** - Shorter = more realistic, less AI-looking
+2. **NO trigger word** - System adds automatically
+3. **Simple structure:** Woman in [outfit] + [simple action/location] + [lighting] + [aesthetic] + skin texture + film grain
+4. **One fabric detail only** - Don't over-describe clothing
+5. **Natural moments** - Real activities, not posed
+6. **Specific lighting** - Use the mood categories above
+7. **Film aesthetic references** - Portra 400, Kodak Gold 200, Tri-X 400, etc.
+8. **Always mention:** real/natural skin texture, visible pores/detail, film grain
 
-**NATURAL POSES & EXPRESSIONS - CRITICAL:**
-- Use candid, relaxed body language: weight shifted naturally, one hip relaxed, shoulders at ease
-- Natural hand positions: hands in pockets, touching hair, holding objects, gesturing mid-conversation
-- Authentic facial expressions: soft genuine smile, thoughtful look, natural laughter, relaxed confidence
-- Avoid stiff poses: NO rigid straight-on facing, NO forced smiles, NO awkward hand placement
-- Create moments in motion: mid-step, turning head naturally, adjusting clothing, caught in authentic moment
-- Real-life scenarios: reading, looking away pensively, casual lean against wall, natural interaction with environment
-- Body language storytelling: convey mood through posture (confident stance, vulnerable lean, playful energy)
+**EXAMPLE PROMPT STRUCTURE (Follow this):**
 
-**CRITICAL: DO NOT ASSUME NATURAL FEATURES:**
-- NEVER describe specific hair color (sandy brown, blonde, brunette, etc.) unless user explicitly mentions it
-- NEVER assume hair length or style - especially for men who may have short hair, minimal hair, or no hair
-- ONLY describe hair if user specifically requests it or talks about hairstyling
-- Focus on clothing, accessories, lighting, location, and authentic mood instead
+"Woman in [one clothing item with fabric], [simple action/location], [specific lighting from mood category], [aesthetic descriptor], real skin texture with [detail], [film type] aesthetic"
 
-**2025/2026 FASHION INTELLIGENCE:**
-- Use current season fabrics: technical materials, sustainable textures, elevated basics
-- Contemporary color stories: rich earth tones, warm neutrals, unexpected color pops (never dull or basic)
-- Modern silhouettes: relaxed tailoring, organic shapes, dimensional layering
-- Current accessories: minimal but intentional, quality materials, personal touches
-`
-    : `
-✨ **USER IS OPEN-ENDED** - They want your creative expertise
-**YOUR TASK:** Create stunning authentic moments using 2025/2026 fashion intelligence
+**GOOD EXAMPLES:**
 
-**YOUR 13 SIGNATURE AESTHETIC DIRECTIONS:**
-1. Scandinavian Minimalist - ivory, sand, greige palette with hygge warmth and natural light
-2. Urban Moody - charcoal, black, olive tones with industrial spaces and dramatic shadows
-3. Coastal Serene - cream, soft blue, sand colors with breezy locations and gentle light
-4. Luxe Monochrome - white, grey, black spectrum with timeless sophistication
-5. Warm Terracotta - rust, cream, olive earth tones with golden hour and natural textures
-6. Soft Neutrals - beige, ivory, mushroom with gentle flattering light
-7. Modern Bold - black, white, statement color with architectural confidence
-8. Natural Earth - brown, cream, olive with organic grounded authenticity
-9. Ethereal Light - white, blush, cream with dreamy soft focus
-10. Sophisticated Dark - navy, charcoal, burgundy with dramatic moody atmosphere
-11. Urban Minimalist - concrete, white, black with clean modern lines
-12. Golden Warmth - caramel, cream, gold with cozy inviting light
-13. Classic Timeless - navy, white, tan with elegant refined presence
+"Woman in cream knit loungewear sitting beside large window with city view, soft natural window light, airy and bright atmosphere, real skin texture with visible pores, subtle film grain, editorial lifestyle photography"
 
-**EXTENDED CREATIVE PROMPT STRUCTURE (120-150 words):**
-1. START: Natural person description - expression, presence, confidence - DO NOT assume hair
-2. OUTFIT: Choose aesthetic direction - describe every garment with 2025/2026 specific fabrics and textures
-3. LAYERS: How pieces work together naturally - fit, draping, movement in real life
-4. ACCESSORIES: Jewelry, bags, shoes - specific about current materials and design (never boring or basic)
-5. LOCATION: Match aesthetic with rich environmental details that feel authentic and lived-in
-6. ARCHITECTURAL: Specific interior/exterior elements, materials, spatial quality
-7. LIGHTING: Natural, realistic lighting - quality, direction, color, shadows, authentic atmosphere
-8. CAMERA: Lens choice, aperture, depth, bokeh character for candid moment feel
-9. MOOD: Emotional quality, energy, authentic genuine presence
-10. QUALITY: Natural texture, film grain, candid realism, captured moment aesthetic
+"Woman in tailored black power suit, minimal beige backdrop, dramatic side lighting with deep shadows, sleek glam makeup, cinematic Vogue editorial style, rich blacks, film grain, visible skin detail"
 
-**NATURAL POSES & EXPRESSIONS - CRITICAL FOR CANDID AESTHETIC:**
-- Candid body language: weight on one leg, relaxed shoulders, natural slouch, asymmetrical stance
-- Authentic hand placement: hands in pockets casually, touching face thoughtfully, holding coffee naturally, mid-gesture
-- Genuine expressions: caught mid-laugh, contemplative gaze away from camera, soft natural smile, thinking look
-- Movement captured: mid-step walking, turning body naturally, adjusting outfit, hair caught in motion
-- Environmental interaction: leaning against wall casually, sitting naturally on steps, looking out window pensively
-- Avoid posed stiffness: NO straight-on rigid poses, NO forced "camera smile", NO awkward hand positions
-- Real moments: as if photographer caught them unaware, natural pause in daily life, authentic emotional state
-- Body storytelling: posture reveals mood (confident lean, vulnerable wrap, energetic bounce, serene stillness)
+"Woman in designer athleisure holding green juice, walking down palm-lined Beverly Hills street, warm golden hour backlight with soft glow and sun flares, natural skin texture, Kodak Portra 400 film grain aesthetic"
 
-**CRITICAL: DO NOT ASSUME NATURAL FEATURES:**
-- NEVER describe specific hair color (sandy brown, blonde, brunette, etc.) unless user explicitly asks for it
-- NEVER assume hair length or style - especially for men who may have short hair, minimal hair, or no hair
-- For men specifically: avoid all hair descriptions unless user asks for hairstyling
-- ONLY describe hair/hairstyles if user specifically requests different hair styling or makes suggestions about hair
-- Use neutral descriptions: "confident person", "natural presence", "warm expression", "authentic features"
+"Woman in vintage band tee and black leather jacket leaning against brick wall, moody overcast lighting with muted tones, effortless cool vibe, real skin with natural makeup, Tri-X 400 film grain"
 
-**2025/2026 FASHION INTELLIGENCE - NEVER BORING OR BASIC:**
-- Current fabrics: luxe technical blends, elevated natural fibers, textured materials with depth
-- Color stories: warm earth tones, rich neutrals, unexpected color moments (never dull or flat)
-- Silhouettes: relaxed tailoring, organic draping, dimensional proportions, contemporary cuts
-- Styling: minimal but intentional, quality over quantity, personal authentic touches
-- Accessories: considered pieces in interesting materials, never generic
-- Think: sophisticated but wearable, fashion-forward but authentic, trending but personal
+**ACTIVITIES FOR WOMEN:**
+- Sitting beside window, standing at café, walking down street
+- Lounging on chair, leaning against wall, adjusting clothing
+- Holding coffee/juice, looking at phone, relaxed moments
+- At rooftop, in doorway, by window, natural authentic poses`
+    : userGender === "man"
+      ? `**CRITICAL PROMPT RULES FOR MEN:**
 
-**AESTHETIC GOAL:**
-Create images that look like authentic candid moments of a naturally stylish person - not posed fashion shoots. The fashion intelligence shows through their confident personal style, not through artificial staging. Think Instagram aesthetic (for FLUX understanding) but capture genuine lived-in moments with film grain realism. Every image should feel like it was captured spontaneously during a real moment, not staged for the camera.
-`
+1. **Length: 30-50 words MAXIMUM**
+2. **NO trigger word** - System adds automatically
+3. **Simple structure:** Man in [outfit] + [location/action] + [lighting] + [aesthetic] + skin texture + film grain
+4. **One fabric detail only**
+5. **Confident masculine moments** - Strong, editorial poses
+6. **Specific lighting** - Use mood categories
+7. **Film aesthetic references** - Portra 400, Tri-X 400, Kodak Gold
+8. **Always mention:** real/natural skin texture, film grain
+9. **Masculine descriptors:** confident, sharp, powerful, cinematic GQ/Esquire style
+
+**EXAMPLE PROMPT STRUCTURE (Follow this):**
+
+"Man in [one clothing item with fabric], [simple action/location], [specific lighting from mood category], [aesthetic descriptor], real skin texture with [detail], [film type] aesthetic"
+
+**GOOD EXAMPLES:**
+
+"Man in grey knit sweater working at desk beside large window with city view, soft natural window light, airy and bright atmosphere, real skin texture with visible pores, subtle film grain, editorial lifestyle photography"
+
+"Man in tailored charcoal three-piece suit, minimal dark backdrop, dramatic side lighting with deep shadows, sharp grooming, cinematic GQ editorial style, rich blacks, film grain, visible skin detail"
+
+"Man in designer black bomber jacket and slim jeans walking down urban street, warm golden hour backlight with soft glow and sun flares, natural skin texture, Kodak Portra 400 film grain aesthetic"
+
+"Man in sleek black turtleneck, dramatic Rembrandt lighting with deep shadows, moody studio atmosphere, cinematic Esquire aesthetic, visible skin texture with stubble detail, pushed film grain"
+
+"Man in navy henley shirt sitting at kitchen counter with coffee cup, soft morning light through sheer curtains, bright and airy Scandinavian aesthetic, natural skin with beard texture visible, minimal grain"
+
+**ACTIVITIES FOR MEN:**
+- Working at desk, sitting with coffee, walking urban streets
+- Standing at windows, leaning against walls, confident poses
+- Adjusting watch/jacket, looking at cityscape, editorial stances
+- At rooftops, in offices, by architecture, strong masculine presence`
+      : `**CRITICAL PROMPT RULES:**
+
+1. **Length: 30-50 words MAXIMUM**
+2. **NO trigger word** - System adds automatically
+3. **Simple structure:** Person in [outfit] + [location/action] + [lighting] + [aesthetic] + skin texture + film grain
+4. **Natural authentic moments**
+5. **Specific lighting** - Use mood categories
+6. **Film aesthetic references** - Portra 400, Kodak Gold, Tri-X 400
+7. **Always mention:** real/natural skin texture, film grain`
 }
 
-**USER GENDER: ${userGender}**
-**USER TRIGGER WORD: ${triggerWord}** (you will NOT include this in prompts - it's added automatically by the system)
+**WHAT TO AVOID:**
+❌ Long descriptions (60+ words)
+❌ Excessive pose instructions
+❌ Multiple clothing items
+❌ Generic lighting
+❌ Missing skin texture or film grain
 
-**CRITICAL REQUIREMENTS:**
+**WHAT TO INCLUDE:**
+✅ One key clothing piece
+✅ Simple action or location
+✅ Specific lighting mood
+✅ Editorial aesthetic
+✅ Real skin texture
+✅ Film grain reference
 
-1. **Prompts MUST be 120-150 words** - This is CRITICAL for image quality
-2. **DO NOT include trigger word** - System adds ${triggerWord} automatically
-3. **Be hyper-specific** - Name exact fabrics, colors, materials, lighting setups (never generic or boring)
-4. **Use 2025/2026 fashion intelligence** - current trends, never dull or basic
-5. **Create authentic candid moments** - not posed editorial shoots
-6. **Natural, relaxed poses and expressions** - caught in genuine moments, never stiff or forced
-7. **DO NOT assume hair color or hair styles** unless user explicitly asks for it
+Now generate ${count} diverse concepts as JSON array. Mix different lighting moods, activities, and clothing styles.
 
-Generate ${count} concepts as JSON array:
 [
   {
-    "title": "Creative title",
-    "description": "Warm description for user",
-    "category": "Close-Up" | "Half Body" | "Lifestyle" | "Action" | "Environmental",
-    "fashionIntelligence": "Specific styling details",
-    "lighting": "Exact lighting setup",
-    "location": "Specific location",
-    "prompt": "120-150 word FLUX prompt WITHOUT trigger word, WITHOUT hair assumptions, WITH natural candid poses and expressions"
+    "title": "Brief evocative title",
+    "description": "2-3 sentence warm description",
+    "category": "Close-Up Portrait" | "Half Body Lifestyle" | "Close-Up Action" | "Environmental Portrait",
+    "fashionIntelligence": "Quick styling note",
+    "lighting": "Specific lighting from mood category",
+    "location": "Exact location",
+    "prompt": "30-50 word clean prompt following the examples"
   }
-]
-`
+]`
 
       const { text } = await generateText({
         model: "anthropic/claude-sonnet-4",
@@ -296,41 +288,35 @@ Generate ${count} concepts as JSON array:
 
       const fallbackConcepts: MayaConcept[] = [
         {
-          title: "The Modern Muse in Morning Light",
+          title: "Morning Coffee Ritual",
           description:
-            "A professional headshot with soft natural light and a clean background. You'll look confident and approachable, perfect for LinkedIn or your website.",
-          category: "Close-Up" as const,
-          fashionIntelligence: "Elegant neutral-toned attire, minimal accessories for timeless sophistication",
-          lighting:
-            "Soft directional window light at 45 degrees through sheer curtains, creating gentle Rembrandt lighting",
-          location: "Modern minimalist office with concrete walls and natural wood elements, floor-to-ceiling windows",
+            "A warm lifestyle moment captured while enjoying morning coffee by the window. Natural and authentic.",
+          category: "Half Body Lifestyle" as const,
+          fashionIntelligence: "Comfortable elevated style in soft neutrals",
+          lighting: "Soft morning window light, warm golden glow",
+          location: "Modern minimalist space with large windows",
           prompt:
-            "a confident person with styled hair and natural expression, wearing elegant neutral-toned professional attire with minimal accessories, standing in a minimalist Scandinavian interior with natural wood and white walls, soft golden hour light streaming through sheer curtains creating gentle shadows and warm glow, natural skin texture with healthy glow, professional editorial quality, film grain aesthetic, timeless elegance, shot on 85mm lens with shallow depth of field and creamy bokeh background",
+            "Person in cream knit sweater sitting beside large window with city view, soft natural window light, airy and bright atmosphere, real skin texture with visible pores, subtle film grain, editorial lifestyle photography",
         },
         {
-          title: "Urban Sophisticate",
-          description:
-            "A lifestyle photo in a modern city setting. Natural and relaxed, showing you in your element with great style and confidence.",
-          category: "Lifestyle" as const,
-          fashionIntelligence: "Tailored professional attire in sophisticated colors, minimal modern accessories",
-          lighting:
-            "Natural overcast daylight providing even, flattering illumination, soft shadows, diffused city light",
-          location:
-            "Contemporary city street with modern architecture and clean lines, glass facades reflecting ambient light",
+          title: "Urban Commute",
+          description: "Captured mid-stride walking through city streets. Dynamic and confident.",
+          category: "Environmental Portrait" as const,
+          fashionIntelligence: "Contemporary urban styling with structured outerwear",
+          lighting: "Overcast natural light, soft even illumination",
+          location: "Modern city street with clean architecture",
           prompt:
-            "full body lifestyle portrait of a confident person walking through a contemporary city street with modern architecture, natural overcast daylight creating even illumination and soft shadows, relaxed confident stride, urban sophistication, natural skin texture, editorial quality, authentic moment, shot on 35mm lens with natural depth of field capturing environmental context",
+            "Person in tailored black jacket, minimal backdrop, dramatic side lighting with deep shadows, cinematic editorial style, rich blacks, film grain, visible skin detail",
         },
         {
-          title: "Golden Hour Warmth",
-          description:
-            "A warm, natural portrait with beautiful golden light. Soft and glowing, capturing your authentic beauty in the most flattering way.",
-          category: "Close-Up" as const,
-          fashionIntelligence: "Soft comfortable attire in warm tones, minimal personal accessories",
-          lighting: "Golden hour sunlight streaming through large windows, warm and diffused, creating luminous glow",
-          location:
-            "Bright, airy interior space with plants and natural textures, Scandinavian-inspired design, organic elements",
+          title: "Creative Focus",
+          description: "Deep in concentration while working. Intimate and authentic.",
+          category: "Close-Up Portrait" as const,
+          fashionIntelligence: "Relaxed creative attire in warm tones",
+          lighting: "Warm desk lamp mixing with natural window light",
+          location: "Home creative workspace with natural textures",
           prompt:
-            "a confident person in soft warm-toned comfortable attire in a bright airy interior with plants and natural textures, golden hour sunlight streaming through large windows creating warm diffused glow, natural skin texture with healthy glow, warm approachable expression, organic atmosphere, editorial quality, timeless natural beauty, shot on 50mm lens with medium depth of field and soft background",
+            "Person in casual attire at workspace, warm golden hour light, natural concentration, real skin texture, Kodak Portra 400 film grain aesthetic",
         },
       ]
 
