@@ -44,7 +44,7 @@ export async function createLandingCheckoutSession(productId: string) {
         quantity: 1,
       },
     ],
-    allow_promotion_codes: true,
+    ...(!ENABLE_BETA_DISCOUNT && { allow_promotion_codes: true }),
     // Auto-apply the beta coupon if enabled
     ...(ENABLE_BETA_DISCOUNT && {
       discounts: [
