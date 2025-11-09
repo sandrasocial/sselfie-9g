@@ -4,13 +4,11 @@ import type React from "react"
 import VideoCard from "./video-card"
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport } from "ai"
-import { Camera, Send, Plus, ArrowDown, History, X, Settings } from "lucide-react"
+import { Camera, Send, ArrowDown, X, ArrowLeft } from "lucide-react"
 import { useState, useEffect, useRef, useCallback } from "react"
 import ConceptCard from "./concept-card"
 import MayaChatHistory from "./maya-chat-history"
 import UnifiedLoading from "./unified-loading"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Slider } from "@/components/ui/slider"
 
 interface MayaChatScreenProps {
   onImageGenerated?: () => void
@@ -21,6 +19,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
   const [chatId, setChatId] = useState<number | null>(null)
   const [isLoadingChat, setIsLoadingChat] = useState(true)
   const [showHistory, setShowHistory] = useState(false)
+  const [showMenu, setShowMenu] = useState(false) // Added state for menu
   const savedMessageIds = useRef(new Set<string>())
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
@@ -752,6 +751,14 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
 
       <div className="flex-shrink-0 flex items-center justify-between px-3 sm:px-4 py-3 bg-white/80 backdrop-blur-xl border-b border-stone-200/50">
         <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+          {/* Changed header to include back button */}
+          <button
+            onClick={() => window.history.back()}
+            className="p-2 hover:bg-stone-100 rounded-lg transition-colors touch-manipulation active:scale-95 flex-shrink-0"
+            aria-label="Go back"
+          >
+            <ArrowLeft size={20} className="text-stone-600" strokeWidth={2} />
+          </button>
           <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-stone-200/60 overflow-hidden flex-shrink-0">
             <img src="https://i.postimg.cc/fTtCnzZv/out-1-22.png" alt="Maya" className="w-full h-full object-cover" />
           </div>
@@ -762,28 +769,48 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-          <button
-            onClick={handleNewChat}
-            className="p-2.5 sm:p-2 bg-white/40 backdrop-blur-2xl border border-white/60 rounded-lg hover:bg-white/60 transition-all duration-300 min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation active:scale-95"
-            aria-label="Start new chat"
-          >
-            <Plus size={18} className="text-stone-600" strokeWidth={2} />
-          </button>
+        {/* Replaced icons with MENU text button */}
+        <button
+          onClick={() => setShowMenu(!showMenu)}
+          className="font-serif text-sm tracking-[0.15em] uppercase text-stone-600 hover:text-stone-950 transition-colors px-3 py-2 touch-manipulation active:scale-95"
+          aria-label="Menu"
+          aria-expanded={showMenu}
+        >
+          MENU
+        </button>
+      </div>
 
+      {showMenu && (
+        <div className="flex-shrink-0 mx-4 mt-2 mb-2 bg-white/95 backdrop-blur-3xl border border-stone-200 rounded-2xl overflow-hidden shadow-xl shadow-stone-950/10 animate-in slide-in-from-top-2 duration-300">
           <button
-            onClick={() => setShowHistory(!showHistory)}
-            className={`p-2.5 sm:p-2 backdrop-blur-2xl border rounded-lg transition-all duration-300 min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation active:scale-95 ${
-              showHistory
-                ? "bg-stone-900 border-stone-900 text-white"
-                : "bg-white/40 border-white/60 hover:bg-white/60 text-stone-600"
-            }`}
-            aria-label="Toggle chat history"
+            onClick={() => {
+              handleNewChat()
+              setShowMenu(false)
+            }}
+            className="w-full px-4 py-3 text-left text-sm text-stone-700 hover:bg-stone-50 transition-colors border-b border-stone-100 touch-manipulation"
           >
-            <History size={18} strokeWidth={2} />
+            <span className="font-medium">New Chat</span>
+          </button>
+          <button
+            onClick={() => {
+              setShowHistory(!showHistory)
+              setShowMenu(false)
+            }}
+            className="w-full px-4 py-3 text-left text-sm text-stone-700 hover:bg-stone-50 transition-colors border-b border-stone-100 touch-manipulation"
+          >
+            <span className="font-medium">Chat History</span>
+          </button>
+          <button
+            onClick={() => {
+              setShowSettings(!showSettings)
+              setShowMenu(false)
+            }}
+            className="w-full px-4 py-3 text-left text-sm text-stone-700 hover:bg-stone-50 transition-colors touch-manipulation"
+          >
+            <span className="font-medium">Generation Settings</span>
           </button>
         </div>
-      </div>
+      )}
 
       {showHistory && (
         <div className="flex-shrink-0 mx-4 mt-2 mb-2 bg-white/50 backdrop-blur-3xl border border-white/60 rounded-2xl p-4 shadow-xl shadow-stone-950/5 animate-in slide-in-from-top-2 duration-300">
@@ -983,7 +1010,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
       <div
         className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-3xl border-t border-stone-200/50 px-3 sm:px-4 py-2.5 sm:py-3 z-50 safe-bottom"
         style={{
-          paddingBottom: "calc(env(safe-area-inset-bottom) + 5rem)",
+          paddingBottom: "calc(env(safe-area-inset-bottom) + 0.75rem)",
         }}
       >
         {!isEmpty && !uploadedImage && (
@@ -1021,150 +1048,42 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
           </div>
         )}
 
-        <div className="flex gap-1.5 sm:gap-2">
-          <Popover open={showSettings} onOpenChange={setShowSettings}>
-            <PopoverTrigger asChild>
-              <button
-                className="p-3 bg-white/40 backdrop-blur-2xl border border-white/60 rounded-xl hover:bg-white/60 transition-all duration-300 min-h-[48px] min-w-[48px] flex items-center justify-center shadow-lg shadow-stone-950/10 touch-manipulation active:scale-95"
-                aria-label="Generation settings"
-                type="button"
-              >
-                <Settings size={18} className="text-stone-600" strokeWidth={2} />
-              </button>
-            </PopoverTrigger>
-            <PopoverContent
-              className="w-[calc(100vw-2rem)] sm:w-80 p-4 sm:p-6 bg-white/95 backdrop-blur-xl border border-stone-200 shadow-2xl max-h-[80vh] overflow-y-auto"
-              align="start"
-              side="top"
+        <div className="flex gap-2 items-end">
+          <div className="flex-1 relative">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="hidden"
+              aria-label="Upload image file"
+            />
+
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploadingImage || isTyping}
+              className="absolute left-2 bottom-2.5 w-9 h-9 flex items-center justify-center text-stone-600 hover:text-stone-950 transition-colors disabled:opacity-50 touch-manipulation active:scale-95 z-10"
+              aria-label="Attach image"
+              type="button"
             >
-              <div className="space-y-4 sm:space-y-6">
-                <div>
-                  <h3 className="text-sm font-serif font-extralight tracking-[0.2em] uppercase text-stone-950 mb-3 sm:mb-4">
-                    Generation Settings
-                  </h3>
-                  <p className="text-xs text-stone-600 leading-relaxed mb-4 sm:mb-6">
-                    Fine-tune how Maya creates your images
-                  </p>
-                </div>
+              {isUploadingImage ? (
+                <div className="w-4 h-4 border-2 border-stone-600 border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Camera size={20} strokeWidth={2} />
+              )}
+            </button>
 
-                <div className="space-y-4">
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <label className="text-xs font-medium text-stone-700 tracking-wide">Aspect Ratio</label>
-                      <span className="text-xs font-mono text-stone-500 bg-stone-100 px-2 py-0.5 rounded">
-                        {aspectRatio}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
-                      {[
-                        { value: "1:1", label: "Square", desc: "1:1" },
-                        { value: "4:5", label: "Portrait", desc: "4:5" },
-                        { value: "3:4", label: "Portrait", desc: "3:4" },
-                        { value: "16:9", label: "Landscape", desc: "16:9" },
-                        { value: "9:16", label: "Vertical", desc: "9:16" },
-                        { value: "21:9", label: "Cinematic", desc: "21:9" },
-                      ].map((ratio) => (
-                        <button
-                          key={ratio.value}
-                          onClick={() => {
-                            console.log("[v0] 📐 Aspect Ratio changed to:", ratio.value)
-                            setAspectRatio(ratio.value)
-                          }}
-                          className={`px-2 sm:px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 touch-manipulation active:scale-95 min-h-[44px] ${
-                            aspectRatio === ratio.value
-                              ? "bg-stone-950 text-white"
-                              : "bg-stone-100 text-stone-700 hover:bg-stone-200"
-                          }`}
-                        >
-                          <div className="text-center">
-                            <div className="font-semibold">{ratio.desc}</div>
-                            <div className="text-[10px] opacity-70 hidden sm:block">{ratio.label}</div>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                    <p className="text-xs text-stone-500 mt-2 leading-relaxed">
-                      Choose the image dimensions for your photos
-                    </p>
-                  </div>
-
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <label className="text-xs font-medium text-stone-700 tracking-wide">Style Strength</label>
-                      <span className="text-xs font-mono text-stone-500 bg-stone-100 px-2 py-0.5 rounded">
-                        {styleStrength.toFixed(1)}
-                      </span>
-                    </div>
-                    <Slider
-                      value={[styleStrength]}
-                      onValueChange={(value) => {
-                        console.log("[v0] 🎚️ Style Strength changed to:", value[0])
-                        setStyleStrength(value[0])
-                      }}
-                      min={0.9}
-                      max={1.2}
-                      step={0.1}
-                      className="w-full"
-                    />
-                    <p className="text-xs text-stone-500 mt-2 leading-relaxed">
-                      How strongly your trained style is applied
-                    </p>
-                  </div>
-
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <label className="text-xs font-medium text-stone-700 tracking-wide">Prompt Accuracy</label>
-                      <span className="text-xs font-mono text-stone-500 bg-stone-100 px-2 py-0.5 rounded">
-                        {promptAccuracy.toFixed(1)}
-                      </span>
-                    </div>
-                    <Slider
-                      value={[promptAccuracy]}
-                      onValueChange={(value) => {
-                        console.log("[v0] 🎚️ Prompt Accuracy changed to:", value[0])
-                        setPromptAccuracy(value[0])
-                      }}
-                      min={2.5}
-                      max={5.0}
-                      step={0.1}
-                      className="w-full"
-                    />
-                    <p className="text-xs text-stone-500 mt-2 leading-relaxed">
-                      How closely the AI follows your description
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => {
-                    console.log("[v0] 🔄 Resetting settings to defaults")
-                    setStyleStrength(1.0)
-                    setPromptAccuracy(3.5)
-                    setAspectRatio("1:1")
-                  }}
-                  className="w-full py-2.5 sm:py-2 text-xs text-stone-600 hover:text-stone-950 transition-colors tracking-wide touch-manipulation min-h-[44px]"
-                >
-                  Reset to defaults
-                </button>
-              </div>
-            </PopoverContent>
-          </Popover>
-
-          <div className="flex-1 relative group">
             <textarea
               value={inputValue}
               onChange={(e) => {
                 setInputValue(e.target.value)
-                // Auto-resize textarea based on content
                 e.target.style.height = "auto"
-                e.target.style.height = Math.min(e.target.scrollHeight, 100) + "px" // Reduced max from 120px to 100px for mobile
+                e.target.style.height = Math.min(e.target.scrollHeight, 100) + "px"
               }}
               onKeyDown={(e) => {
-                // Enter sends message, Shift+Enter adds new line
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault()
                   handleSendMessage()
-                  // Reset height after sending
                   setTimeout(() => {
                     const textarea = e.target as HTMLTextAreaElement
                     textarea.style.height = "48px"
@@ -1172,42 +1091,23 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
                 }
               }}
               placeholder={uploadedImage ? "Describe the style..." : "Message Maya..."}
-              className="w-full px-3 sm:px-4 py-3 bg-white/40 backdrop-blur-2xl border border-white/60 rounded-xl text-stone-950 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-950/50 focus:bg-white/60 pr-11 sm:pr-12 font-medium text-sm min-h-[48px] max-h-[100px] shadow-lg shadow-stone-950/10 transition-all duration-300 resize-none overflow-y-auto leading-relaxed touch-manipulation"
+              className="w-full pl-12 pr-3 py-3 bg-white/40 backdrop-blur-2xl border border-white/60 rounded-xl text-stone-950 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-950/50 focus:bg-white/60 font-medium text-sm min-h-[48px] max-h-[100px] shadow-lg shadow-stone-950/10 transition-all duration-300 resize-none overflow-y-auto leading-relaxed touch-manipulation"
               disabled={isTyping || isUploadingImage}
               aria-label="Message input"
               rows={1}
             />
-            <div className="absolute right-1.5 sm:right-2 top-1/2 transform -translate-y-1/2">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="hidden"
-                aria-label="Upload image file"
-              />
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploadingImage || isTyping}
-                className="w-10 h-10 bg-stone-950 rounded-lg flex items-center justify-center hover:bg-stone-800 active:scale-95 shadow-lg shadow-stone-950/30 transition-all duration-300 disabled:opacity-50 touch-manipulation"
-                aria-label="Attach image"
-                type="button"
-              >
-                {isUploadingImage ? (
-                  <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <Camera size={18} className="text-white" strokeWidth={2} />
-                )}
-              </button>
-            </div>
           </div>
+
           <button
             onClick={() => handleSendMessage()}
-            className="w-12 h-12 sm:w-10 sm:h-10 bg-stone-950 text-white rounded-lg flex items-center justify-center hover:bg-stone-800 active:scale-95 shadow-lg shadow-stone-950/30 transition-all duration-300 disabled:opacity-50 touch-manipulation min-h-[48px] min-w-[48px]"
+            className="flex-shrink-0 min-w-[48px] min-h-[48px] bg-stone-950 text-white rounded-xl flex items-center justify-center hover:bg-stone-800 active:scale-95 shadow-lg shadow-stone-950/30 transition-all duration-300 disabled:opacity-50 touch-manipulation"
+            style={{
+              height: "48px",
+            }}
             disabled={isTyping || (!inputValue.trim() && !uploadedImage) || isUploadingImage}
             aria-label="Send message"
           >
-            <Send size={18} strokeWidth={2} />
+            <Send size={20} strokeWidth={2} />
           </button>
         </div>
       </div>

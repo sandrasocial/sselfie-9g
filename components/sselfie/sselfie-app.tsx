@@ -303,62 +303,64 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
         </div>
       </main>
 
-      <nav
-        className={`fixed bottom-0 left-0 right-0 z-40 px-2 sm:px-3 md:px-4 transition-transform duration-300 ease-in-out ${
-          isNavVisible ? "translate-y-0" : "translate-y-full"
-        }`}
-        style={{
-          paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))",
-        }}
-        aria-label="Main navigation"
-        aria-hidden={!isNavVisible}
-      >
-        <div className="bg-white/20 backdrop-blur-3xl rounded-[1.75rem] sm:rounded-[2rem] md:rounded-[2.5rem] border border-white/40 shadow-2xl shadow-stone-900/20">
-          <div className="overflow-x-auto scrollbar-hide px-1.5 sm:px-2 md:px-3 py-2 sm:py-2.5 md:py-3">
-            <div className="flex gap-1 sm:gap-2 min-w-max sm:justify-around">
-              {tabs.map((tab) => {
-                const Icon = tab.icon
-                const isActive = activeTab === tab.id
+      {(activeTab === "studio" || activeTab === "training") && (
+        <nav
+          className={`fixed bottom-0 left-0 right-0 z-40 px-2 sm:px-3 md:px-4 transition-transform duration-300 ease-in-out ${
+            isNavVisible ? "translate-y-0" : "translate-y-full"
+          }`}
+          style={{
+            paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))",
+          }}
+          aria-label="Main navigation"
+          aria-hidden={!isNavVisible}
+        >
+          <div className="bg-white/20 backdrop-blur-3xl rounded-[1.75rem] sm:rounded-[2rem] md:rounded-[2.5rem] border border-white/40 shadow-2xl shadow-stone-900/20">
+            <div className="overflow-x-auto scrollbar-hide px-1.5 sm:px-2 md:px-3 py-2 sm:py-2.5 md:py-3">
+              <div className="flex gap-1 sm:gap-2 min-w-max sm:justify-around">
+                {tabs.map((tab) => {
+                  const Icon = tab.icon
+                  const isActive = activeTab === tab.id
 
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => handleTabChange(tab.id)}
-                    className={`flex flex-col items-center space-y-1 px-2 sm:px-2.5 md:px-4 py-2 sm:py-2.5 md:py-3 rounded-[1rem] sm:rounded-[1.25rem] md:rounded-[1.5rem] transition-all duration-500 ease-out min-w-[60px] sm:min-w-[68px] md:min-w-[76px] relative touch-manipulation ${
-                      isActive ? "transform scale-105" : "hover:scale-[1.02] active:scale-95"
-                    }`}
-                    aria-label={`Navigate to ${tab.label}`}
-                    aria-current={isActive ? "page" : undefined}
-                  >
-                    {isActive && (
-                      <div className="absolute inset-0 bg-gradient-to-b from-white/90 to-white/70 backdrop-blur-2xl rounded-[1rem] sm:rounded-[1.25rem] md:rounded-[1.5rem] shadow-xl shadow-stone-900/20 border border-white/60"></div>
-                    )}
-                    <div
-                      className={`relative z-10 w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-[0.875rem] sm:rounded-[1rem] md:rounded-[1.125rem] flex items-center justify-center transition-all duration-500 ${
-                        isActive ? "bg-stone-950 shadow-lg shadow-stone-900/30" : "bg-white/40 backdrop-blur-xl"
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => handleTabChange(tab.id)}
+                      className={`flex flex-col items-center space-y-1 px-2 sm:px-2.5 md:px-4 py-2 sm:py-2.5 md:py-3 rounded-[1rem] sm:rounded-[1.25rem] md:rounded-[1.5rem] transition-all duration-500 ease-out min-w-[60px] sm:min-w-[68px] md:min-w-[76px] relative touch-manipulation ${
+                        isActive ? "transform scale-105" : "hover:scale-[1.02] active:scale-95"
                       }`}
-                      aria-hidden="true"
+                      aria-label={`Navigate to ${tab.label}`}
+                      aria-current={isActive ? "page" : undefined}
                     >
-                      <Icon
-                        size={isActive ? 19 : 17}
-                        strokeWidth={2}
-                        className={`transition-all duration-500 ${isActive ? "text-white" : "text-stone-600"}`}
-                      />
-                    </div>
-                    <span
-                      className={`relative z-10 text-[9px] sm:text-[10px] md:text-[11px] font-semibold tracking-wide transition-all duration-500 whitespace-nowrap ${
-                        isActive ? "text-stone-900" : "text-stone-500 opacity-70"
-                      }`}
-                    >
-                      {tab.label}
-                    </span>
-                  </button>
-                )
-              })}
+                      {isActive && (
+                        <div className="absolute inset-0 bg-gradient-to-b from-white/90 to-white/70 backdrop-blur-2xl rounded-[1rem] sm:rounded-[1.25rem] md:rounded-[1.5rem] shadow-xl shadow-stone-900/20 border border-white/60"></div>
+                      )}
+                      <div
+                        className={`relative z-10 w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-[0.875rem] sm:rounded-[1rem] md:rounded-[1.125rem] flex items-center justify-center transition-all duration-500 ${
+                          isActive ? "bg-stone-950 shadow-lg shadow-stone-900/30" : "bg-white/40 backdrop-blur-xl"
+                        }`}
+                        aria-hidden="true"
+                      >
+                        <Icon
+                          size={isActive ? 19 : 17}
+                          strokeWidth={2}
+                          className={`transition-all duration-500 ${isActive ? "text-white" : "text-stone-600"}`}
+                        />
+                      </div>
+                      <span
+                        className={`relative z-10 text-[9px] sm:text-[10px] md:text-[11px] font-semibold tracking-wide transition-all duration-500 whitespace-nowrap ${
+                          isActive ? "text-stone-900" : "text-stone-500 opacity-70"
+                        }`}
+                      >
+                        {tab.label}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
             </div>
           </div>
-        </div>
-      </nav>
+        </nav>
+      )}
 
       <InstallPrompt />
 
