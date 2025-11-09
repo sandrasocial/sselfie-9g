@@ -73,6 +73,7 @@ export async function POST(request: Request) {
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: stripeCustomerId,
       return_url: `${baseUrl}/studio?tab=settings`,
+      configuration: process.env.STRIPE_PORTAL_CONFIGURATION_ID || "bpc_1SRX2wEVJvME7vkwu0rlIgfW",
     })
 
     console.log("[v0] Create portal session: Session created successfully")
