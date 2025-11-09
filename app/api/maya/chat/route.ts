@@ -26,7 +26,7 @@ interface MayaConcept {
 
 const generateConceptsTool = tool({
   description:
-    "Generate 3-5 photo concept ideas with detailed fashion and styling intelligence based on Maya's creative lookbook",
+    "Generate 3-5 photo concept ideas with detailed fashion and styling intelligence based on Maya's creative lookbook. If user uploaded a reference image, YOU MUST analyze it visually first.",
   inputSchema: z.object({
     userRequest: z.string().describe("What the user is asking for"),
     aesthetic: z
@@ -72,7 +72,7 @@ const generateConceptsTool = tool({
         throw new Error("User not found")
       }
 
-      let userGender = "person" // Default fallback
+      let userGender = "person"
       const { neon } = await import("@neondatabase/serverless")
       const sql = neon(process.env.DATABASE_URL!)
 
@@ -87,10 +87,8 @@ const generateConceptsTool = tool({
       console.log("[v0] User data from database:", userDataResult[0])
 
       if (userDataResult.length > 0 && userDataResult[0].gender) {
-        // Normalize gender values: "woman"/"man"/"non-binary" from database
         const dbGender = userDataResult[0].gender.toLowerCase().trim()
 
-        // Map database values to prompt-friendly values
         if (dbGender === "woman" || dbGender === "female") {
           userGender = "woman"
         } else if (dbGender === "man" || dbGender === "male") {
@@ -98,7 +96,7 @@ const generateConceptsTool = tool({
         } else if (dbGender === "non-binary" || dbGender === "nonbinary" || dbGender === "non binary") {
           userGender = "person"
         } else {
-          userGender = dbGender // Use whatever they provided
+          userGender = dbGender
         }
       }
 
@@ -110,6 +108,43 @@ const generateConceptsTool = tool({
         rawGender: userDataResult[0]?.gender,
       })
 
+      let imageAnalysis = ""
+      if (referenceImageUrl) {
+        console.log("[v0] 🔍 Analyzing reference image with Claude vision:", referenceImageUrl)
+
+        const visionAnalysisPrompt = `Analyze this fashion/style reference image in detail. Describe:
+
+1. **Clothing & Styling:** Exact items, fabrics, colors, fit, layering
+2. **Lighting & Mood:** Type of light, shadows, atmosphere, color temperature
+3. **Composition:** Framing, angle, background, setting
+4. **Aesthetic:** Overall vibe, fashion style (street, editorial, minimalist, etc.)
+5. **Key Details:** Accessories, hair styling, makeup, posture, expression
+
+Be specific and detailed - this analysis will be used to create similar photo concepts.`
+
+        const { text: visionText } = await generateText({
+          model: "anthropic/claude-sonnet-4",
+          messages: [
+            {
+              role: "user",
+              content: [
+                {
+                  type: "text",
+                  text: visionAnalysisPrompt,
+                },
+                {
+                  type: "image",
+                  image: referenceImageUrl,
+                },
+              ],
+            },
+          ],
+        })
+
+        imageAnalysis = visionText
+        console.log("[v0] 🎨 Vision analysis complete:", imageAnalysis.substring(0, 200))
+      }
+
       const conceptPrompt = `You are Maya, SELFIE Studio's world-class AI Art Director with encyclopedic fashion knowledge.
 
 **CRITICAL CONTEXT:**
@@ -118,9 +153,7 @@ const generateConceptsTool = tool({
 - User request: "${userRequest}"
 ${aesthetic ? `- Requested aesthetic: "${aesthetic}"` : ""}
 ${context ? `- Additional context: "${context}"` : ""}
-
-**YOUR MISSION:**
-Generate ${count} photo concepts with SIMPLE, CLEAN, REALISTIC prompts (30-50 words maximum).
+${imageAnalysis ? `\n**REFERENCE IMAGE ANALYSIS:**\n${imageAnalysis}\n\n⚠️ IMPORTANT: Use this analysis to create concepts that match the style, lighting, mood, and aesthetic of the reference image.` : ""}
 
 **LIGHTING MOOD CATEGORIES (Choose from these):**
 
@@ -492,12 +525,12 @@ export async function POST(req: Request) {
             role: msg.role,
             content: [
               {
-                type: "text" as const,
-                text: textContent,
-              },
-              {
                 type: "image" as const,
                 image: inspirationImageUrl,
+              },
+              {
+                type: "text" as const,
+                text: textContent,
               },
             ],
           } as CoreMessage
@@ -589,6 +622,15 @@ IMPORTANT: Video generation requires a photo first. When users ask for videos, f
    - Generation takes 40-60 seconds
    - User's trained LoRA model ensures character consistency
    - Motion is controlled by motion_bucket_id (127 = balanced motion)
+
+**IMPORTANT: YOU CAN SEE IMAGES DIRECTLY**
+When a user uploads a reference image, you will receive it as a multimodal message with both the image and text. You can DIRECTLY ANALYZE THE IMAGE - you don't need to wait or ask for more information. Look at the actual clothing, lighting, composition, and styling in the image and describe EXACTLY what you see, not what you imagine.
+
+When you see an image:
+1. ANALYZE IT VISUALLY FIRST - Look at the actual colors, fabrics, lighting, composition
+2. DESCRIBE WHAT YOU ACTUALLY SEE - Black leather jacket? Say it. White pants? Say it. Urban setting? Say it.
+3. NEVER HALLUCINATE - Don't describe "dreamy romantic aesthetic" if you see "edgy urban street style"
+4. BE SPECIFIC - "Black oversized leather moto jacket with white wide-leg pants" NOT "soft flowing aesthetic"
 `
 
     const lastUserMessage = messages[messages.length - 1]
