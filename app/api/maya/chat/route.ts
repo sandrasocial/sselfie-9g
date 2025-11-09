@@ -186,6 +186,7 @@ ${
 7. **Film aesthetic references** - Portra 400, Tri-X 400, Kodak Gold
 8. **Always mention:** real/natural skin texture, film grain
 9. **Masculine descriptors:** confident, sharp, powerful, cinematic GQ/Esquire style
+10. **NEVER describe hair, facial hair, beards, or hair color** - User's LoRA model handles this
 
 **EXAMPLE PROMPT STRUCTURE (Follow this):**
 
@@ -195,13 +196,13 @@ ${
 
 "Man in grey knit sweater working at desk beside large window with city view, soft natural window light, airy and bright atmosphere, real skin texture with visible pores, subtle film grain, editorial lifestyle photography"
 
-"Man in tailored charcoal three-piece suit, minimal dark backdrop, dramatic side lighting with deep shadows, sharp grooming, cinematic GQ editorial style, rich blacks, film grain, visible skin detail"
+"Man in tailored charcoal three-piece suit, minimal dark backdrop, dramatic side lighting with deep shadows, cinematic GQ editorial style, rich blacks, film grain, visible skin detail"
 
 "Man in designer black bomber jacket and slim jeans walking down urban street, warm golden hour backlight with soft glow and sun flares, natural skin texture, Kodak Portra 400 film grain aesthetic"
 
-"Man in sleek black turtleneck, dramatic Rembrandt lighting with deep shadows, moody studio atmosphere, cinematic Esquire aesthetic, visible skin texture with stubble detail, pushed film grain"
+"Man in sleek black turtleneck, dramatic Rembrandt lighting with deep shadows, moody studio atmosphere, cinematic Esquire aesthetic, visible skin texture with natural detail, pushed film grain"
 
-"Man in navy henley shirt sitting at kitchen counter with coffee cup, soft morning light through sheer curtains, bright and airy Scandinavian aesthetic, natural skin with beard texture visible, minimal grain"
+"Man in navy henley shirt sitting at kitchen counter with coffee cup, soft morning light through sheer curtains, bright and airy Scandinavian aesthetic, real natural skin texture, minimal grain"
 
 **ACTIVITIES FOR MEN:**
 - Working at desk, sitting with coffee, walking urban streets

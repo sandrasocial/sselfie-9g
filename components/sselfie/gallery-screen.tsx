@@ -31,6 +31,7 @@ import { GalleryInstagramSkeleton } from "./gallery-skeleton"
 import { triggerHaptic, triggerSuccessHaptic, triggerErrorHaptic } from "@/lib/utils/haptics"
 import { ProgressiveImage } from "./progressive-image"
 import { useRouter } from "next/navigation"
+import FullscreenImageModal from "./fullscreen-image-modal"
 
 interface GalleryScreenProps {
   user: any
@@ -1011,6 +1012,23 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
             </div>
           </div>
         </>
+      )}
+
+      {lightboxImage && (
+        <FullscreenImageModal
+          imageUrl={lightboxImage.image_url}
+          imageId={Number(lightboxImage.id)}
+          title={lightboxImage.prompt || `Gallery Image ${lightboxImage.id}`}
+          isOpen={!!lightboxImage}
+          onClose={() => setLightboxImage(null)}
+          isFavorite={lightboxImage.is_favorite || favorites.has(lightboxImage.id)}
+          onFavoriteToggle={async () => {
+            await toggleFavorite(lightboxImage.id, lightboxImage.is_favorite || favorites.has(lightboxImage.id))
+          }}
+          onDelete={async () => {
+            await deleteImage(lightboxImage.id)
+          }}
+        />
       )}
     </div>
   )
