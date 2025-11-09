@@ -41,6 +41,23 @@ interface RevenueData {
   }>
 }
 
+interface FeedbackData {
+  totalFeedback: number
+  unreadCount: number
+  bugReports: number
+  featureRequests: number
+  testimonials: number
+  sharedSSELFIEs: number
+  recentFeedback: Array<{
+    id: string
+    user_email: string
+    type: string
+    subject: string
+    created_at: string
+    status: string
+  }>
+}
+
 interface AdminDashboardProps {
   userId: string
   userName: string
@@ -49,11 +66,13 @@ interface AdminDashboardProps {
 export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [revenue, setRevenue] = useState<RevenueData | null>(null)
+  const [feedback, setFeedback] = useState<FeedbackData | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     fetchDashboardStats()
     fetchRevenueData()
+    fetchFeedbackData()
   }, [])
 
   const fetchDashboardStats = async () => {
@@ -79,6 +98,18 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
       }
     } catch (error) {
       console.error("[v0] Error fetching revenue data:", error)
+    }
+  }
+
+  const fetchFeedbackData = async () => {
+    try {
+      const response = await fetch("/api/admin/dashboard/feedback")
+      if (response.ok) {
+        const data = await response.json()
+        setFeedback(data)
+      }
+    } catch (error) {
+      console.error("[v0] Error fetching feedback data:", error)
     }
   }
 
@@ -213,14 +244,97 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
             <p className="text-xs text-stone-400 mt-1">AI conversations</p>
           </div>
 
+          {/* Feedback card */}
           <div className="bg-white/80 backdrop-blur-xl rounded-[1.75rem] p-8 border border-white/60 shadow-xl">
             <p className="text-4xl font-['Times_New_Roman'] font-extralight text-stone-950 mb-2">
-              {stats?.totalKnowledge || 0}
+              {feedback?.totalFeedback || 0}
             </p>
-            <p className="text-xs tracking-[0.2em] uppercase text-stone-500">Knowledge Items</p>
-            <p className="text-xs text-stone-400 mt-1">In knowledge base</p>
+            <p className="text-xs tracking-[0.2em] uppercase text-stone-500">User Feedback</p>
+            <p className="text-xs text-stone-400 mt-1">{feedback?.unreadCount || 0} new</p>
           </div>
         </div>
+
+        {/* User Feedback Overview Section */}
+        {feedback && (
+          <div className="mb-12 bg-white rounded-[1.75rem] overflow-hidden border border-stone-200 shadow-xl">
+            <div className="p-8 md:p-12">
+              <div className="flex items-center justify-between mb-8">
+                <h2 className="font-['Times_New_Roman'] text-3xl md:text-4xl font-extralight tracking-[0.3em] uppercase text-stone-950">
+                  USER FEEDBACK
+                </h2>
+                <Link
+                  href="/admin/feedback"
+                  className="text-xs tracking-[0.2em] uppercase text-stone-600 hover:text-stone-950 transition-colors"
+                >
+                  View All →
+                </Link>
+              </div>
+
+              {/* Feedback Stats Grid */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div className="bg-stone-50 rounded-xl p-4 border border-stone-100">
+                  <p className="text-2xl font-['Times_New_Roman'] font-extralight text-stone-950 mb-1">
+                    {feedback.bugReports}
+                  </p>
+                  <p className="text-xs tracking-wider uppercase text-stone-500">Bug Reports</p>
+                </div>
+                <div className="bg-stone-50 rounded-xl p-4 border border-stone-100">
+                  <p className="text-2xl font-['Times_New_Roman'] font-extralight text-stone-950 mb-1">
+                    {feedback.featureRequests}
+                  </p>
+                  <p className="text-xs tracking-wider uppercase text-stone-500">Feature Requests</p>
+                </div>
+                <div className="bg-stone-50 rounded-xl p-4 border border-stone-100">
+                  <p className="text-2xl font-['Times_New_Roman'] font-extralight text-stone-950 mb-1">
+                    {feedback.testimonials}
+                  </p>
+                  <p className="text-xs tracking-wider uppercase text-stone-500">Testimonials</p>
+                </div>
+                <div className="bg-stone-50 rounded-xl p-4 border border-stone-100">
+                  <p className="text-2xl font-['Times_New_Roman'] font-extralight text-stone-950 mb-1">
+                    {feedback.sharedSSELFIEs}
+                  </p>
+                  <p className="text-xs tracking-wider uppercase text-stone-500">Shared SSELFIEs</p>
+                </div>
+              </div>
+
+              {/* Recent Feedback */}
+              <div className="space-y-3">
+                <p className="text-sm tracking-[0.2em] uppercase text-stone-500 mb-4">Recent Submissions</p>
+                {feedback.recentFeedback && feedback.recentFeedback.length > 0 ? (
+                  feedback.recentFeedback.slice(0, 5).map((item) => (
+                    <Link
+                      key={item.id}
+                      href="/admin/feedback"
+                      className="flex items-center justify-between p-4 bg-stone-50 hover:bg-stone-100 rounded-xl border border-stone-100 transition-colors group"
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-1">
+                          <span className="text-xs tracking-wider uppercase text-stone-400 bg-stone-200 px-2 py-1 rounded">
+                            {item.type}
+                          </span>
+                          {item.status === "new" && <span className="w-2 h-2 rounded-full bg-stone-950" />}
+                        </div>
+                        <p className="text-sm text-stone-900 font-medium mb-1">{item.subject}</p>
+                        <p className="text-xs text-stone-500">{item.user_email}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-stone-400">
+                          {new Date(item.created_at).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                          })}
+                        </p>
+                      </div>
+                    </Link>
+                  ))
+                ) : (
+                  <p className="text-sm text-stone-500 text-center py-8">No feedback yet</p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Main Navigation Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">

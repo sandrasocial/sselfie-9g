@@ -147,6 +147,15 @@ ${
 8. ATMOSPHERE: Mood, energy, authentic feeling - like a real photo someone would take
 9. QUALITY: Natural skin texture, authentic moment, candid presence, film grain for realism
 
+**NATURAL POSES & EXPRESSIONS - CRITICAL:**
+- Use candid, relaxed body language: weight shifted naturally, one hip relaxed, shoulders at ease
+- Natural hand positions: hands in pockets, touching hair, holding objects, gesturing mid-conversation
+- Authentic facial expressions: soft genuine smile, thoughtful look, natural laughter, relaxed confidence
+- Avoid stiff poses: NO rigid straight-on facing, NO forced smiles, NO awkward hand placement
+- Create moments in motion: mid-step, turning head naturally, adjusting clothing, caught in authentic moment
+- Real-life scenarios: reading, looking away pensively, casual lean against wall, natural interaction with environment
+- Body language storytelling: convey mood through posture (confident stance, vulnerable lean, playful energy)
+
 **CRITICAL: DO NOT ASSUME NATURAL FEATURES:**
 - NEVER describe specific hair color (sandy brown, blonde, brunette, etc.) unless user explicitly mentions it
 - NEVER assume hair length or style - especially for men who may have short hair, minimal hair, or no hair
@@ -190,6 +199,16 @@ ${
 9. MOOD: Emotional quality, energy, authentic genuine presence
 10. QUALITY: Natural texture, film grain, candid realism, captured moment aesthetic
 
+**NATURAL POSES & EXPRESSIONS - CRITICAL FOR CANDID AESTHETIC:**
+- Candid body language: weight on one leg, relaxed shoulders, natural slouch, asymmetrical stance
+- Authentic hand placement: hands in pockets casually, touching face thoughtfully, holding coffee naturally, mid-gesture
+- Genuine expressions: caught mid-laugh, contemplative gaze away from camera, soft natural smile, thinking look
+- Movement captured: mid-step walking, turning body naturally, adjusting outfit, hair caught in motion
+- Environmental interaction: leaning against wall casually, sitting naturally on steps, looking out window pensively
+- Avoid posed stiffness: NO straight-on rigid poses, NO forced "camera smile", NO awkward hand positions
+- Real moments: as if photographer caught them unaware, natural pause in daily life, authentic emotional state
+- Body storytelling: posture reveals mood (confident lean, vulnerable wrap, energetic bounce, serene stillness)
+
 **CRITICAL: DO NOT ASSUME NATURAL FEATURES:**
 - NEVER describe specific hair color (sandy brown, blonde, brunette, etc.) unless user explicitly asks for it
 - NEVER assume hair length or style - especially for men who may have short hair, minimal hair, or no hair
@@ -206,7 +225,7 @@ ${
 - Think: sophisticated but wearable, fashion-forward but authentic, trending but personal
 
 **AESTHETIC GOAL:**
-Create images that look like authentic candid moments of a naturally stylish person - not posed fashion shoots. The fashion intelligence shows through their confident personal style, not through artificial staging. Think Instagram aesthetic (for FLUX understanding) but capture genuine lived-in moments with film grain realism.
+Create images that look like authentic candid moments of a naturally stylish person - not posed fashion shoots. The fashion intelligence shows through their confident personal style, not through artificial staging. Think Instagram aesthetic (for FLUX understanding) but capture genuine lived-in moments with film grain realism. Every image should feel like it was captured spontaneously during a real moment, not staged for the camera.
 `
 }
 
@@ -220,7 +239,8 @@ Create images that look like authentic candid moments of a naturally stylish per
 3. **Be hyper-specific** - Name exact fabrics, colors, materials, lighting setups (never generic or boring)
 4. **Use 2025/2026 fashion intelligence** - current trends, never dull or basic
 5. **Create authentic candid moments** - not posed editorial shoots
-6. **DO NOT assume hair color or hair styles** unless user explicitly asks for it
+6. **Natural, relaxed poses and expressions** - caught in genuine moments, never stiff or forced
+7. **DO NOT assume hair color or hair styles** unless user explicitly asks for it
 
 Generate ${count} concepts as JSON array:
 [
@@ -231,7 +251,7 @@ Generate ${count} concepts as JSON array:
     "fashionIntelligence": "Specific styling details",
     "lighting": "Exact lighting setup",
     "location": "Specific location",
-    "prompt": "120-150 word FLUX prompt WITHOUT trigger word and WITHOUT hair assumptions"
+    "prompt": "120-150 word FLUX prompt WITHOUT trigger word, WITHOUT hair assumptions, WITH natural candid poses and expressions"
   }
 ]
 `
