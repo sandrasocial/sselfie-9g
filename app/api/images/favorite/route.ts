@@ -32,21 +32,15 @@ export async function POST(request: Request) {
     console.log("[v0] Favorite image - isAiImage:", isAiImage, "numericId:", numericId)
 
     if (isAiImage) {
-      // Update ai_images table (integer ID)
       console.log("[v0] Updating ai_images table")
       await sql`
         UPDATE ai_images 
-        SET is_selected = ${isFavorite}
+        SET is_favorite = ${isFavorite}
         WHERE id = ${numericId} AND user_id = ${neonUser.id}
       `
     } else {
-      // Update generated_images table (integer ID)
-      console.log("[v0] Updating generated_images table")
-      await sql`
-        UPDATE generated_images 
-        SET saved = ${isFavorite}
-        WHERE id = ${numericId} AND user_id = ${neonUser.id}
-      `
+      console.warn("[v0] Attempting to favorite generated_images entry - this shouldn't happen")
+      return NextResponse.json({ error: "Invalid image source" }, { status: 400 })
     }
 
     return NextResponse.json({ success: true })

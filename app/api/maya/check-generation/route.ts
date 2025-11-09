@@ -45,9 +45,57 @@ export async function GET(request: NextRequest) {
         SET 
           image_urls = ${blob.url},
           selected_url = ${blob.url},
-          saved = true
+          saved = false
         WHERE id = ${Number.parseInt(generationId)}
       `
+
+      try {
+        const [generation] = await sql`
+          SELECT user_id, prompt, description, category, subcategory
+          FROM generated_images 
+          WHERE id = ${Number.parseInt(generationId)}
+        `
+
+        if (generation) {
+          // Check if this image already exists in the gallery by prediction_id
+          const [existing] = await sql`
+            SELECT id FROM ai_images WHERE prediction_id = ${predictionId}
+          `
+
+          if (!existing) {
+            // Only insert if it doesn't already exist
+            await sql`
+              INSERT INTO ai_images (
+                user_id,
+                image_url,
+                prompt,
+                generated_prompt,
+                prediction_id,
+                generation_status,
+                source,
+                category,
+                created_at
+              ) VALUES (
+                ${generation.user_id},
+                ${blob.url},
+                ${generation.description || generation.subcategory || ""},
+                ${generation.prompt || ""},
+                ${predictionId},
+                'completed',
+                'maya_chat',
+                ${generation.category || "concept"},
+                NOW()
+              )
+            `
+            console.log("[v0] Maya image saved to ai_images gallery")
+          } else {
+            console.log("[v0] Maya image already exists in gallery, skipping duplicate save")
+          }
+        }
+      } catch (galleryError: any) {
+        console.error("[v0] Failed to save to ai_images gallery:", galleryError?.message || String(galleryError))
+        // Don't fail the request if gallery save fails - the main generation is still successful
+      }
 
       return NextResponse.json({
         status: "succeeded",

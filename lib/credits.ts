@@ -156,6 +156,9 @@ export async function addCredits(
     console.log("[v0] [CREDITS] Recorded transaction in database")
     console.log("[v0] [CREDITS] Successfully added credits. New balance:", newBalance)
 
+    const { invalidateCreditCache } = await import("./credits-cached")
+    await invalidateCreditCache(userId)
+
     return { success: true, newBalance }
   } catch (error) {
     console.error("[v0] [CREDITS] Error adding credits:", error)
@@ -241,6 +244,10 @@ export async function deductCredits(
     `
 
     console.log("[v0] [CREDITS] ✅ Credits deducted successfully. New balance:", newBalance)
+
+    const { invalidateCreditCache } = await import("./credits-cached")
+    await invalidateCreditCache(userId)
+
     return { success: true, newBalance }
   } catch (error) {
     console.error("[v0] [CREDITS] ❌ Error deducting credits:", error)

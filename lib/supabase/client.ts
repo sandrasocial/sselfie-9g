@@ -8,32 +8,17 @@ export function createClient() {
 
   if (!supabaseUrl || !supabaseAnonKey) {
     console.error("[v0] Missing Supabase environment variables")
-    console.warn("[v0] Supabase client may not work correctly without proper environment variables")
+    throw new Error("Missing Supabase environment variables. Please check your configuration.")
   }
 
   console.log("[v0] Creating Supabase client with URL:", supabaseUrl?.substring(0, 20) + "...")
 
-  return createBrowserClient(supabaseUrl || "", supabaseAnonKey || "", {
+  return createBrowserClient(supabaseUrl, supabaseAnonKey, {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
       flowType: "pkce",
-    },
-    global: {
-      fetch: async (url, options) => {
-        try {
-          const response = await fetch(url, options)
-          return response
-        } catch (error) {
-          console.error("[v0] Supabase fetch error:", error)
-          // Return a mock response to prevent crashes
-          return new Response(JSON.stringify({ error: "Network error" }), {
-            status: 503,
-            headers: { "Content-Type": "application/json" },
-          })
-        }
-      },
     },
   })
 }

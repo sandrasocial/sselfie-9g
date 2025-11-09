@@ -1,12 +1,29 @@
-import { NextResponse } from "next/server"
-import { neon } from "@neondatabase/serverless"
+import { type NextRequest, NextResponse } from "next/server"
+import { getDbClient } from "@/lib/db-singleton"
+import { rateLimit } from "@/lib/rate-limit-api"
 import { getUserTrainedModel } from "@/lib/data/studio"
 import { createServerClient } from "@/lib/supabase/server"
 import { getReplicateClient } from "@/lib/replicate-client"
 
-const sql = neon(process.env.DATABASE_URL!)
+const sql = getDbClient()
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const rateLimitResult = await rateLimit(request, {
+    maxRequests: 30,
+    windowMs: 60000, // 1 minute
+  })
+
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      {
+        error: "Rate limit exceeded",
+        message: "Too many generation requests. Please wait a moment before trying again.",
+        retryAfter: rateLimitResult.retryAfter,
+      },
+      { status: 429 },
+    )
+  }
+
   try {
     const supabase = await createServerClient()
     const {

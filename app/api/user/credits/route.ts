@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { getUserCredits, getCreditHistory } from "@/lib/credits"
+import { getUserCreditsCached } from "@/lib/credits-cached"
+import { getCreditHistory } from "@/lib/credits"
 
 export async function GET() {
   try {
@@ -20,7 +21,7 @@ export async function GET() {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    const balance = await getUserCredits(neonUser.id)
+    const balance = await getUserCreditsCached(neonUser.id)
     const history = await getCreditHistory(neonUser.id, 50)
 
     return NextResponse.json({

@@ -1,13 +1,30 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { neon } from "@neondatabase/serverless"
+import { getDbClient } from "@/lib/db-singleton"
 import { getReplicateClient } from "@/lib/replicate-client"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { checkCredits, deductCredits, getUserCredits, CREDIT_COSTS } from "@/lib/credits"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
+import { rateLimit } from "@/lib/rate-limit-api"
 
-const sql = neon(process.env.DATABASE_URL || "")
+const sql = getDbClient()
 
 export async function POST(request: NextRequest) {
+  const rateLimitResult = await rateLimit(request, {
+    maxRequests: 30,
+    windowMs: 60000,
+  })
+
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      {
+        error: "Rate limit exceeded",
+        message: "Too many image generation requests. Please wait a moment before trying again.",
+        retryAfter: rateLimitResult.retryAfter,
+      },
+      { status: 429 },
+    )
+  }
+
   try {
     const { user, error: authError } = await getAuthenticatedUser()
 

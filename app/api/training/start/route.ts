@@ -1,15 +1,33 @@
-import { NextResponse } from "next/server"
+import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { createTrainingModel } from "@/lib/data/training"
 import { getReplicateClient, DEFAULT_TRAINING_PARAMS } from "@/lib/replicate-client"
 import { createTrainingZip } from "@/lib/storage"
-import { neon } from "@neondatabase/serverless"
+import { getDbClient } from "@/lib/db-singleton"
+import { rateLimit } from "@/lib/rate-limit-api"
 import { checkCredits, deductCredits, getUserCredits, CREDIT_COSTS } from "@/lib/credits"
 
-const sql = neon(process.env.DATABASE_URL!)
+const sql = getDbClient()
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const rateLimitResult = await rateLimit(request, {
+    maxRequests: 5,
+    windowMs: 3600000, // 1 hour
+  })
+
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      {
+        error: "Rate limit exceeded",
+        message:
+          "Too many training requests. You can start 5 trainings per hour. Please wait before starting another session.",
+        retryAfter: rateLimitResult.retryAfter,
+      },
+      { status: 429 },
+    )
+  }
+
   try {
     console.log("[v0] Start training API called")
 

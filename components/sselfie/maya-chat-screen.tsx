@@ -863,8 +863,8 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
               </div>
             </div>
 
-            {/* Navigation links - scrollable middle section */}
-            <div className="flex-1 overflow-y-auto py-2">
+            {/* Navigation links - scrollable middle section with bottom padding */}
+            <div className="flex-1 overflow-y-auto py-2 pb-32 min-h-0">
               <button
                 onClick={() => handleNavigation("studio")}
                 className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
@@ -1242,21 +1242,6 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
               type="button"
             >
               <Sliders size={20} strokeWidth={2} />
-            </button>
-
-            {/* Camera button */}
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isUploadingImage || isTyping}
-              className="absolute left-12 bottom-2.5 w-9 h-9 flex items-center justify-center text-stone-600 hover:text-stone-950 transition-colors disabled:opacity-50 touch-manipulation active:scale-95 z-10"
-              aria-label="Attach image"
-              type="button"
-            >
-              {isUploadingImage ? (
-                <div className="w-4 h-4 border-2 border-stone-600 border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <Camera size={20} strokeWidth={2} />
-              )}
             </button>
 
             <textarea

@@ -66,53 +66,24 @@ export async function getUserImages(userId: string): Promise<GalleryImage[]> {
       ORDER BY created_at DESC
     `
 
-    const generatedImages = await sql`
-      SELECT 
-        id,
-        user_id,
-        selected_url as image_url,
-        prompt,
-        category,
-        subcategory,
-        created_at
-      FROM generated_images
-      WHERE user_id = ${userId} AND selected_url IS NOT NULL
-      ORDER BY created_at DESC
-    `
+    const allImages: GalleryImage[] = aiImages.map((img: any) => ({
+      id: `ai_${img.id}`,
+      user_id: img.user_id,
+      image_url: img.image_url,
+      prompt: img.prompt || "",
+      description: img.generated_prompt || img.prompt || "",
+      category: img.category,
+      style: img.style,
+      is_favorite: img.is_favorite || false,
+      created_at: img.created_at,
+      source: "ai_images" as const,
+    }))
 
-    const allImages: GalleryImage[] = [
-      ...aiImages.map((img: any) => ({
-        id: `ai_${img.id}`,
-        user_id: img.user_id,
-        image_url: img.image_url,
-        prompt: img.prompt || "",
-        description: img.generated_prompt || img.prompt || "",
-        category: img.category,
-        style: img.style,
-        is_favorite: img.is_favorite || false,
-        created_at: img.created_at,
-        source: "ai_images" as const,
-      })),
-      ...generatedImages.map((img: any) => ({
-        id: `gen_${img.id}`,
-        user_id: img.user_id,
-        image_url: img.image_url,
-        prompt: img.prompt || "",
-        description: img.prompt || "",
-        category: img.category || img.subcategory,
-        is_favorite: false,
-        created_at: img.created_at,
-        source: "generated_images" as const,
-      })),
-    ]
-
-    allImages.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-
-    console.log("[v0] Gallery images breakdown:", {
-      ai_images_count: aiImages.length,
-      generated_images_count: generatedImages.length,
+    console.log("[v0] Gallery images from ai_images:", {
       total_count: allImages.length,
-      sample_sources: allImages.slice(0, 5).map((img) => ({ id: img.id, source: img.source, category: img.category })),
+      sample: allImages
+        .slice(0, 5)
+        .map((img) => ({ id: img.id, category: img.category, is_favorite: img.is_favorite })),
     })
 
     return allImages
@@ -168,6 +139,7 @@ export async function getImageById(imageId: string): Promise<GalleryImage | null
           prompt,
           category,
           subcategory,
+          saved,
           created_at
         FROM generated_images
         WHERE id = ${id}
@@ -183,7 +155,7 @@ export async function getImageById(imageId: string): Promise<GalleryImage | null
           prompt: img.prompt || "",
           description: img.prompt || "",
           category: img.category || img.subcategory,
-          is_favorite: false,
+          is_favorite: img.saved || false,
           created_at: img.created_at,
           source: "generated_images",
         }

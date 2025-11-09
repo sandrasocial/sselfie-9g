@@ -103,7 +103,7 @@ importers:
         version: 1.1.6(@types/react-dom@19.0.0)(@types/react@19.0.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       '@react-email/render':
         specifier: latest
-        version: 1.4.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+        version: 2.0.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       '@stackframe/stack':
         specifier: 2.8.47
         version: 2.8.47(@aws-sdk/credential-provider-web-identity@3.918.0)(@types/react-dom@19.0.0)(@types/react@19.0.0)(buffer@6.0.3)(next@16.0.0(@opentelemetry/api@1.9.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(tailwindcss@4.1.9)
@@ -217,7 +217,7 @@ importers:
         version: 1.3.1
       resend:
         specifier: latest
-        version: 6.4.1(@react-email/render@1.4.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0))
+        version: 6.4.2(@react-email/render@2.0.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0))
       server-only:
         specifier: latest
         version: 0.0.1
@@ -236,6 +236,9 @@ importers:
       tailwindcss-animate:
         specifier: ^1.0.7
         version: 1.0.7(tailwindcss@4.1.9)
+      tw-animate-css:
+        specifier: latest
+        version: 1.4.0
       vaul:
         specifier: ^0.9.9
         version: 0.9.9(@types/react-dom@19.0.0)(@types/react@19.0.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
@@ -1781,9 +1784,9 @@ packages:
   '@radix-ui/rect@1.1.1':
     resolution: {integrity: sha512-HPwpGIzkl28mWyZqG52jiqDJ12waP11Pa1lGoiyUkIEuMLBP0oeK/C89esbXrxsky5we7dfd8U58nm0SgAWpVw==}
 
-  '@react-email/render@1.4.0':
-    resolution: {integrity: sha512-ZtJ3noggIvW1ZAryoui95KJENKdCzLmN5F7hyZY1F/17B1vwzuxHB7YkuCg0QqHjDivc5axqYEYdIOw4JIQdUw==}
-    engines: {node: '>=18.0.0'}
+  '@react-email/render@2.0.0':
+    resolution: {integrity: sha512-rdjNj6iVzv8kRKDPFas+47nnoe6B40+nwukuXwY4FCwM7XBg6tmYr+chQryCuavUj2J65MMf6fztk1bxOUiSVA==}
+    engines: {node: '>=22.0.0'}
     peerDependencies:
       react: ^18.0 || ^19.0 || ^19.0.0-rc
       react-dom: ^18.0 || ^19.0 || ^19.0.0-rc
@@ -2675,9 +2678,6 @@ packages:
     resolution: {integrity: sha512-6CX17Cu+rC2Fi2CyZ4CkgVG3hLl6BFsdAxfXiZkmDFIDY4mRx2y2spdeH6dqPHI9rP+AsHEfGeKz84Uuw7+Pmg==}
     engines: {node: ^v12.20.0 || >=v14.13.0}
 
-  fast-deep-equal@2.0.1:
-    resolution: {integrity: sha512-bCK/2Z4zLidyB4ReuIsvALH6w31YfAQDmXMqMx6FyfHqvBxtjC0eRumeSu4Bs3XtXwpyIywtSTrVT99BxY1f9w==}
-
   fast-equals@5.3.2:
     resolution: {integrity: sha512-6rxyATwPCkaFIL3JLqw8qXqMpIZ942pTX/tbQFkRsDGblS8tNGtlUauA/+mt6RUfqn/4MoEr+WDkYoIQbibWuQ==}
     engines: {node: '>=6.0.0'}
@@ -3272,9 +3272,6 @@ packages:
   react-is@18.3.1:
     resolution: {integrity: sha512-/LLMVyas0ljjAtoYiPqYiL8VWXzUUdThrmU5+n20DZv+a+ClRoevUzw5JxU+Ieh5/c87ytoTBV9G1FiKfNJdmg==}
 
-  react-promise-suspense@0.3.4:
-    resolution: {integrity: sha512-I42jl7L3Ze6kZaq+7zXWSunBa3b1on5yfvUW6Eo/3fFOj6dZ5Bqmcd264nJbTK/gn1HjjILAjSwnZbV4RpSaNQ==}
-
   react-remove-scroll-bar@2.3.8:
     resolution: {integrity: sha512-9r+yi9+mgU33AKcj6IbT9oRCO78WriSj6t/cF8DWBZJ9aOGPOTEDvdUDz1FwKim7QXWwmHqtdHnRJfhAxEG46Q==}
     engines: {node: '>=10'}
@@ -3362,8 +3359,8 @@ packages:
   requires-port@1.0.0:
     resolution: {integrity: sha512-KigOCHcocU3XODJxsu8i/j8T9tzT4adHiecwORRQ0ZZFcp7ahwXuRU1m+yuO90C5ZUyGeGfocHDI14M3L3yDAQ==}
 
-  resend@6.4.1:
-    resolution: {integrity: sha512-+P1gF6bYT0lKd0vsYyKKTHd6PfMH37yDgNRA6wAARQgQbYlc2BZYuo9sB/uZKkVg1oGSh0cgpnxNKGsZJutXMg==}
+  resend@6.4.2:
+    resolution: {integrity: sha512-YnxmwneltZtjc7Xff+8ZjG1/xPLdstCiqsedgO/JxWTf7vKRAPCx6CkhQ3ZXskG0mrmf8+I5wr/wNRd8PQMUfw==}
     engines: {node: '>=18'}
     peerDependencies:
       '@react-email/render': '*'
@@ -3567,6 +3564,9 @@ packages:
 
   tunnel-agent@0.6.0:
     resolution: {integrity: sha512-McnNiV1l8RYeY8tBgEpuodCC1mLUdbSN+CYBL7kJsJNInOP8UjDDEwdk6Mw60vdLLrr5NHKZhMAOSrR2NZuQ+w==}
+
+  tw-animate-css@1.4.0:
+    resolution: {integrity: sha512-7bziOlRqH0hJx80h/3mbicLW7o8qLsH5+RaLR2t+OHM3D0JlWGODQKQ4cxbK7WlvmUxpcj6Kgu6EKqjrGFe3QQ==}
 
   type-fest@2.19.0:
     resolution: {integrity: sha512-RAH822pAdBgcNMAfWnCBU3CFZcfZ/i1eZjwFU/dsLKumyuuP3niueg2UAukXYF0E2AAoc82ZSSf9J0WQBinzHA==}
@@ -5349,13 +5349,12 @@ snapshots:
 
   '@radix-ui/rect@1.1.1': {}
 
-  '@react-email/render@1.4.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
+  '@react-email/render@2.0.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
     dependencies:
       html-to-text: 9.0.5
       prettier: 3.6.2
       react: 19.2.0
       react-dom: 19.2.0(react@19.2.0)
-      react-promise-suspense: 0.3.4
 
   '@selderee/plugin-htmlparser2@0.11.0':
     dependencies:
@@ -6383,8 +6382,6 @@ snapshots:
 
   export-to-csv@1.4.0: {}
 
-  fast-deep-equal@2.0.1: {}
-
   fast-equals@5.3.2: {}
 
   fast-sha256@1.3.0: {}
@@ -6917,10 +6914,6 @@ snapshots:
 
   react-is@18.3.1: {}
 
-  react-promise-suspense@0.3.4:
-    dependencies:
-      fast-deep-equal: 2.0.1
-
   react-remove-scroll-bar@2.3.8(@types/react@19.0.0)(react@19.2.0):
     dependencies:
       react: 19.2.0
@@ -7024,11 +7017,11 @@ snapshots:
 
   requires-port@1.0.0: {}
 
-  resend@6.4.1(@react-email/render@1.4.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)):
+  resend@6.4.2(@react-email/render@2.0.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)):
     dependencies:
       svix: 1.76.1
     optionalDependencies:
-      '@react-email/render': 1.4.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+      '@react-email/render': 2.0.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
 
   resolve-pkg-maps@1.0.0: {}
 
@@ -7252,6 +7245,8 @@ snapshots:
   tunnel-agent@0.6.0:
     dependencies:
       safe-buffer: 5.2.1
+
+  tw-animate-css@1.4.0: {}
 
   type-fest@2.19.0: {}
 
