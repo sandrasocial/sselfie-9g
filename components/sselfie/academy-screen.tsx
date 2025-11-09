@@ -47,7 +47,7 @@ export default function AcademyScreen() {
   const [selectedTemplateCategory, setSelectedTemplateCategory] = useState<string>("all")
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null)
   const [isUpgrading, setIsUpgrading] = useState(false)
-  const [showCategoryGrid, setShowCategoryGrid] = useState(true)
+  const [showCategoryGrid, setShowCategoryGrid] = useState(false)
 
   const {
     data: coursesData,

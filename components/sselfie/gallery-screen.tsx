@@ -14,20 +14,26 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
+  Home,
+  Aperture,
+  MessageCircle,
+  ImageIcon as ImageIconLucide,
+  Grid,
+  SettingsIcon,
+  LogOut,
 } from "lucide-react"
 import useSWR from "swr"
 import useSWRInfinite from "swr/infinite"
-import type { User } from "./types"
 import type { GalleryImage } from "@/lib/data/images"
-import FullscreenImageModal from "./fullscreen-image-modal"
 import { InstagramReelPreview } from "./instagram-reel-preview"
 import { ProfileImageSelector } from "@/components/profile-image-selector"
 import { GalleryInstagramSkeleton } from "./gallery-skeleton"
 import { triggerHaptic, triggerSuccessHaptic, triggerErrorHaptic } from "@/lib/utils/haptics"
 import { ProgressiveImage } from "./progressive-image"
+import { useRouter } from "next/navigation"
 
 interface GalleryScreenProps {
-  user: User
+  user: any
   userId: string
 }
 
@@ -87,6 +93,7 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
   const [previewVideo, setPreviewVideo] = useState<GeneratedVideo | null>(null)
   const [showProfileSelector, setShowProfileSelector] = useState(false)
   const [profileImage, setProfileImage] = useState(user.avatar || "/placeholder.svg")
+  const [creditBalance, setCreditBalance] = useState(0)
 
   const [searchQuery, setSearchQuery] = useState("")
   const [sortBy, setSortBy] = useState<"date-desc" | "date-asc" | "favorites">("date-desc")
@@ -104,6 +111,11 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(true)
   const loadMoreRef = useRef<HTMLDivElement>(null)
+
+  const router = useRouter()
+
+  const [showNavMenu, setShowNavMenu] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
 
   const getKey = (pageIndex: number, previousPageData: any) => {
     if (previousPageData && !previousPageData.hasMore) return null
@@ -215,9 +227,14 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
     }
   }, [selectedCategory])
 
-  if (userData?.user?.profile_image_url && profileImage !== userData.user.profile_image_url) {
-    setProfileImage(userData.user.profile_image_url)
-  }
+  useEffect(() => {
+    if (userData?.user?.profile_image_url && profileImage !== userData.user.profile_image_url) {
+      setProfileImage(userData.user.profile_image_url)
+    }
+    if (userData?.user?.credit_balance !== undefined) {
+      setCreditBalance(userData.user.credit_balance)
+    }
+  }, [userData])
 
   const allImages: GalleryImage[] = data ? data.flatMap((page) => page.images || []) : []
   const allVideos: GeneratedVideo[] = videosData?.videos || []
@@ -477,6 +494,31 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
     mutateUser()
   }
 
+  const handleNavigation = (tab: string) => {
+    window.location.hash = tab
+    setShowNavMenu(false)
+  }
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true)
+    try {
+      const response = await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      })
+
+      if (response.ok) {
+        router.push("/auth/login")
+      } else {
+        console.error("[v0] Logout failed")
+        setIsLoggingOut(false)
+      }
+    } catch (error) {
+      console.error("[v0] Error during logout:", error)
+      setIsLoggingOut(false)
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="space-y-4 sm:space-y-6 pb-24 pt-3 sm:pt-4">
@@ -529,12 +571,22 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
           </h1>
           <div className="flex items-center gap-2">
             {!selectionMode && (
-              <button
-                onClick={() => setSelectionMode(true)}
-                className="px-3 sm:px-4 py-2 text-[10px] sm:text-xs tracking-[0.15em] uppercase font-light bg-stone-100/50 border border-stone-200/40 rounded-lg sm:rounded-xl hover:bg-stone-100/70 transition-all duration-200 min-h-[36px] sm:min-h-[40px]"
-              >
-                Select
-              </button>
+              <>
+                <button
+                  onClick={() => setSelectionMode(true)}
+                  className="px-3 sm:px-4 py-2 text-[10px] sm:text-xs tracking-[0.15em] uppercase font-light bg-stone-100/50 border border-stone-200/40 rounded-lg sm:rounded-xl hover:bg-stone-100/70 transition-all duration-200 min-h-[36px] sm:min-h-[40px]"
+                >
+                  Select
+                </button>
+                <button
+                  onClick={() => setShowNavMenu(!showNavMenu)}
+                  className="flex items-center justify-center px-3 h-9 sm:h-10 rounded-lg hover:bg-stone-100/50 transition-colors touch-manipulation active:scale-95"
+                  aria-label="Navigation menu"
+                  aria-expanded={showNavMenu}
+                >
+                  <span className="text-xs sm:text-sm font-serif tracking-[0.2em] text-stone-950 uppercase">MENU</span>
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -848,20 +900,6 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
         </div>
       )}
 
-      <FullscreenImageModal
-        imageUrl={lightboxImage?.image_url || ""}
-        imageId={Number.parseInt(lightboxImage?.id || "0")}
-        title={lightboxImage ? categorizeImage(lightboxImage).replace("-", " ").toUpperCase() : "AI Generated Photo"}
-        isOpen={!!lightboxImage}
-        onClose={() => setLightboxImage(null)}
-        isFavorite={!!lightboxImage && (lightboxImage.is_favorite || favorites.has(lightboxImage.id))}
-        onFavoriteToggle={() =>
-          lightboxImage &&
-          toggleFavorite(lightboxImage.id, lightboxImage.is_favorite || favorites.has(lightboxImage.id))
-        }
-        onDelete={() => lightboxImage && deleteImage(lightboxImage.id)}
-      />
-
       {previewVideo && (
         <InstagramReelPreview
           video={previewVideo}
@@ -880,6 +918,99 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
           onSelect={handleProfileImageUpdate}
           onClose={() => setShowProfileSelector(false)}
         />
+      )}
+
+      {/* Added navigation menu */}
+      {showNavMenu && (
+        <>
+          <div
+            className="fixed inset-0 bg-stone-950/20 backdrop-blur-sm z-40 animate-in fade-in duration-200"
+            onClick={() => setShowNavMenu(false)}
+          />
+
+          <div className="fixed top-0 right-0 bottom-0 w-80 bg-white/95 backdrop-blur-3xl border-l border-stone-200 shadow-2xl z-50 animate-in slide-in-from-right duration-300 flex flex-col">
+            <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-stone-200/50">
+              <h3 className="text-sm font-serif font-extralight tracking-[0.2em] uppercase text-stone-950">Menu</h3>
+              <button
+                onClick={() => setShowNavMenu(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-100 transition-colors"
+                aria-label="Close menu"
+              >
+                <X size={18} className="text-stone-600" strokeWidth={2} />
+              </button>
+            </div>
+
+            <div className="flex-shrink-0 px-6 py-6 border-b border-stone-200/50">
+              <div className="text-[10px] tracking-[0.15em] uppercase font-light text-stone-500 mb-2">Your Credits</div>
+              <div className="text-3xl font-serif font-extralight text-stone-950 tabular-nums">
+                {creditBalance.toFixed(1)}
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto py-2 min-h-0">
+              <button
+                onClick={() => handleNavigation("studio")}
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
+              >
+                <Home size={18} className="text-stone-600" strokeWidth={2} />
+                <span className="text-sm font-medium text-stone-700">Studio</span>
+              </button>
+              <button
+                onClick={() => handleNavigation("training")}
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
+              >
+                <Aperture size={18} className="text-stone-600" strokeWidth={2} />
+                <span className="text-sm font-medium text-stone-700">Training</span>
+              </button>
+              <button
+                onClick={() => handleNavigation("maya")}
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
+              >
+                <MessageCircle size={18} className="text-stone-600" strokeWidth={2} />
+                <span className="text-sm font-medium text-stone-700">Maya</span>
+              </button>
+              <button
+                onClick={() => handleNavigation("gallery")}
+                className="w-full flex items-center gap-3 px-6 py-4 text-left bg-stone-100/50 border-l-2 border-stone-950"
+              >
+                <ImageIconLucide size={18} className="text-stone-950" strokeWidth={2} />
+                <span className="text-sm font-medium text-stone-950">Gallery</span>
+              </button>
+              <button
+                onClick={() => handleNavigation("academy")}
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
+              >
+                <Grid size={18} className="text-stone-600" strokeWidth={2} />
+                <span className="text-sm font-medium text-stone-700">Academy</span>
+              </button>
+              <button
+                onClick={() => handleNavigation("profile")}
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
+              >
+                <SettingsIcon size={18} className="text-stone-600" strokeWidth={2} />
+                <span className="text-sm font-medium text-stone-700">Profile</span>
+              </button>
+              <button
+                onClick={() => handleNavigation("settings")}
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
+              >
+                <LogOut size={18} className="text-stone-600" strokeWidth={2} />
+                <span className="text-sm font-medium text-stone-700">Settings</span>
+              </button>
+            </div>
+
+            <div className="flex-shrink-0 px-6 py-4 border-t border-stone-200/50 bg-white/95">
+              <button
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+              >
+                <LogOut size={16} strokeWidth={2} />
+                <span>{isLoggingOut ? "Signing Out..." : "Sign Out"}</span>
+              </button>
+            </div>
+          </div>
+        </>
       )}
     </div>
   )

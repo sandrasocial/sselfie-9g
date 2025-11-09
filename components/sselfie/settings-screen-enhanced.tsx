@@ -14,11 +14,19 @@ import {
   ImageIcon,
   ExternalLink,
   Loader2,
+  X,
+  Home,
+  MessageCircle,
+  ImageIcon as ImageIconLucide,
+  Grid,
+  UserIcon,
+  SettingsIcon,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import PersonalBrandSection from "./personal-brand-section"
 import BrandAssetsManager from "./brand-assets-manager"
 import type { User as UserType } from "./types"
+import ToggleItem from "./toggle-item" // Assuming ToggleItem is a separate component
 
 interface SettingsScreenProps {
   user: UserType
@@ -42,16 +50,11 @@ export default function SettingsScreen({ user, creditBalance }: SettingsScreenPr
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [isLoadingPortal, setIsLoadingPortal] = useState(false)
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null)
-
+  const [showNavMenu, setShowNavMenu] = useState(false)
   const [emailNotifications, setEmailNotifications] = useState(true)
   const [mayaUpdates, setMayaUpdates] = useState(true)
   const [saveToGallery, setSaveToGallery] = useState(true)
   const [dataForTraining, setDataForTraining] = useState(true)
-
-  useEffect(() => {
-    fetchUserInfo()
-    fetchSettings()
-  }, [])
 
   const fetchUserInfo = async () => {
     try {
@@ -70,6 +73,7 @@ export default function SettingsScreen({ user, creditBalance }: SettingsScreenPr
   const fetchSettings = async () => {
     try {
       const response = await fetch("/api/settings", {
+        method: "POST",
         credentials: "include",
       })
 
@@ -149,6 +153,11 @@ export default function SettingsScreen({ user, creditBalance }: SettingsScreenPr
     }
   }
 
+  const handleNavigation = (tab: string) => {
+    window.location.hash = tab
+    setShowNavMenu(false)
+  }
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       month: "long",
@@ -170,14 +179,125 @@ export default function SettingsScreen({ user, creditBalance }: SettingsScreenPr
     return "Free"
   }
 
+  useEffect(() => {
+    fetchUserInfo()
+    fetchSettings()
+  }, [])
+
   return (
     <div className="space-y-8 pb-24">
       <div className="pt-4">
-        <h2 className="text-2xl sm:text-4xl font-serif font-extralight tracking-[0.3em] text-stone-950 uppercase">
-          Settings
-        </h2>
-        <p className="text-xs tracking-[0.15em] uppercase font-light mt-2 text-stone-500">Manage Your Preferences</p>
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
+          <div>
+            <h2 className="text-2xl sm:text-4xl font-serif font-extralight tracking-[0.3em] text-stone-950 uppercase">
+              Settings
+            </h2>
+            <p className="text-xs tracking-[0.15em] uppercase font-light mt-2 text-stone-500">
+              Manage Your Preferences
+            </p>
+          </div>
+          <button
+            onClick={() => setShowNavMenu(!showNavMenu)}
+            className="flex items-center justify-center px-3 h-9 sm:h-10 rounded-lg hover:bg-stone-100/50 transition-colors touch-manipulation active:scale-95"
+            aria-label="Navigation menu"
+            aria-expanded={showNavMenu}
+          >
+            <span className="text-xs sm:text-sm font-serif tracking-[0.2em] text-stone-950 uppercase">MENU</span>
+          </button>
+        </div>
       </div>
+
+      {showNavMenu && (
+        <>
+          <div
+            className="fixed inset-0 bg-stone-950/20 backdrop-blur-sm z-40 animate-in fade-in duration-200"
+            onClick={() => setShowNavMenu(false)}
+          />
+
+          <div className="fixed top-0 right-0 bottom-0 w-80 bg-white/95 backdrop-blur-3xl border-l border-stone-200 shadow-2xl z-50 animate-in slide-in-from-right duration-300 flex flex-col">
+            <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-stone-200/50">
+              <h3 className="text-sm font-serif font-extralight tracking-[0.2em] uppercase text-stone-950">Menu</h3>
+              <button
+                onClick={() => setShowNavMenu(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-100 transition-colors"
+                aria-label="Close menu"
+              >
+                <X size={18} className="text-stone-600" strokeWidth={2} />
+              </button>
+            </div>
+
+            <div className="flex-shrink-0 px-6 py-6 border-b border-stone-200/50">
+              <div className="text-[10px] tracking-[0.15em] uppercase font-light text-stone-500 mb-2">Your Credits</div>
+              <div className="text-3xl font-serif font-extralight text-stone-950 tabular-nums">
+                {creditBalance.toFixed(1)}
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto py-2 min-h-0">
+              <button
+                onClick={() => handleNavigation("studio")}
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
+              >
+                <Home size={18} className="text-stone-600" strokeWidth={2} />
+                <span className="text-sm font-medium text-stone-700">Studio</span>
+              </button>
+              <button
+                onClick={() => handleNavigation("training")}
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
+              >
+                <Aperture size={18} className="text-stone-600" strokeWidth={2} />
+                <span className="text-sm font-medium text-stone-700">Training</span>
+              </button>
+              <button
+                onClick={() => handleNavigation("maya")}
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
+              >
+                <MessageCircle size={18} className="text-stone-600" strokeWidth={2} />
+                <span className="text-sm font-medium text-stone-700">Maya</span>
+              </button>
+              <button
+                onClick={() => handleNavigation("gallery")}
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
+              >
+                <ImageIconLucide size={18} className="text-stone-600" strokeWidth={2} />
+                <span className="text-sm font-medium text-stone-700">Gallery</span>
+              </button>
+              <button
+                onClick={() => handleNavigation("academy")}
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
+              >
+                <Grid size={18} className="text-stone-600" strokeWidth={2} />
+                <span className="text-sm font-medium text-stone-700">Academy</span>
+              </button>
+              <button
+                onClick={() => handleNavigation("profile")}
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
+              >
+                <UserIcon size={18} className="text-stone-600" strokeWidth={2} />
+                <span className="text-sm font-medium text-stone-700">Profile</span>
+              </button>
+              <button
+                onClick={() => handleNavigation("settings")}
+                className="w-full flex items-center gap-3 px-6 py-4 text-left bg-stone-100/50 border-l-2 border-stone-950"
+              >
+                <SettingsIcon size={18} className="text-stone-950" strokeWidth={2} />
+                <span className="text-sm font-medium text-stone-950">Settings</span>
+              </button>
+            </div>
+
+            <div className="flex-shrink-0 px-6 py-4 border-t border-stone-200/50 bg-white/95">
+              <button
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+              >
+                <LogOut size={16} strokeWidth={2} />
+                <span>{isLoggingOut ? "Signing Out..." : "Sign Out"}</span>
+              </button>
+            </div>
+          </div>
+        </>
+      )}
 
       <div className="space-y-6">
         {/* Account Information */}
@@ -342,53 +462,6 @@ export default function SettingsScreen({ user, creditBalance }: SettingsScreenPr
             />
           </div>
         </div>
-      </div>
-
-      {/* Sign Out */}
-      <div className="pt-6 border-t border-stone-200/30">
-        <button
-          onClick={handleLogout}
-          disabled={isLoggingOut}
-          className="w-full text-sm tracking-[0.15em] uppercase font-light border rounded-2xl py-5 transition-colors hover:text-stone-950 hover:bg-stone-100/30 min-h-[56px] text-stone-600 border-stone-300/40 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-        >
-          <LogOut size={16} />
-          {isLoggingOut ? "Signing Out..." : "Sign Out"}
-        </button>
-      </div>
-    </div>
-  )
-}
-
-function ToggleItem({
-  label,
-  description,
-  value,
-  onChange,
-}: {
-  label: string
-  description: string
-  value: boolean
-  onChange: (value: boolean) => void
-}) {
-  return (
-    <div
-      onClick={() => onChange(!value)}
-      className="flex items-start justify-between py-3 sm:py-5 hover:bg-white/30 rounded-lg sm:rounded-[1.25rem] px-3 sm:px-6 -mx-3 sm:-mx-6 transition-all duration-300 cursor-pointer group min-h-[68px] sm:min-h-[80px]"
-    >
-      <div className="flex-1 min-w-0 pr-4">
-        <p className="text-xs sm:text-sm md:text-base text-stone-950 font-medium">{label}</p>
-        <p className="text-[10px] sm:text-xs text-stone-500 mt-1">{description}</p>
-      </div>
-      <div
-        className={`relative w-12 h-7 sm:w-14 sm:h-8 md:w-16 md:h-9 rounded-full transition-all duration-300 cursor-pointer shadow-inner flex-shrink-0 ${
-          value ? "bg-stone-950 shadow-stone-900/30" : "bg-stone-300/60"
-        }`}
-      >
-        <div
-          className={`absolute top-1 w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 bg-white rounded-full shadow-lg transition-all duration-300 ${
-            value ? "translate-x-6 sm:translate-x-7 md:translate-x-8" : "translate-x-1"
-          }`}
-        ></div>
       </div>
     </div>
   )

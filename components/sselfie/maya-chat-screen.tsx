@@ -9,7 +9,6 @@ import {
   Send,
   ArrowDown,
   X,
-  Menu,
   Home,
   Aperture,
   MessageCircle,
@@ -826,11 +825,11 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
 
         <button
           onClick={() => setShowNavMenu(!showNavMenu)}
-          className="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-lg hover:bg-stone-100/50 transition-colors touch-manipulation active:scale-95"
+          className="flex items-center justify-center px-3 h-9 sm:h-10 rounded-lg hover:bg-stone-100/50 transition-colors touch-manipulation active:scale-95"
           aria-label="Navigation menu"
           aria-expanded={showNavMenu}
         >
-          <Menu size={20} className="text-stone-600" strokeWidth={2} />
+          <span className="text-xs sm:text-sm font-serif tracking-[0.2em] text-stone-950 uppercase">MENU</span>
         </button>
       </div>
 
@@ -865,7 +864,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
             </div>
 
             {/* Navigation links - scrollable middle section */}
-            <div className="flex-1 overflow-y-auto py-2">
+            <div className="flex-1 overflow-y-auto py-2 min-h-0">
               <button
                 onClick={() => handleNavigation("studio")}
                 className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
