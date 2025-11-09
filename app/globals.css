@@ -393,4 +393,86 @@
     opacity: 1;
     animation: fade-out 0.2s ease-out;
   }
+
+  /* Custom range slider styling - stone/black colors to match design system */
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  /* Webkit browsers (Chrome, Safari, Edge) - Track */
+  input[type="range"]::-webkit-slider-track {
+    background: #e7e5e4; /* stone-200 */
+    height: 4px;
+    border-radius: 2px;
+  }
+
+  /* Webkit browsers - Thumb */
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    background: #0a0a0a; /* black/stone-950 */
+    height: 18px;
+    width: 18px;
+    border-radius: 50%;
+    border: 2px solid #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+  }
+
+  input[type="range"]::-webkit-slider-thumb:hover {
+    background: #171717; /* stone-900 */
+    transform: scale(1.1);
+  }
+
+  input[type="range"]::-webkit-slider-thumb:active {
+    background: #000000;
+    transform: scale(1.05);
+  }
+
+  /* Firefox - Track */
+  input[type="range"]::-moz-range-track {
+    background: #e7e5e4; /* stone-200 */
+    height: 4px;
+    border-radius: 2px;
+  }
+
+  /* Firefox - Thumb */
+  input[type="range"]::-moz-range-thumb {
+    background: #0a0a0a; /* black/stone-950 */
+    height: 18px;
+    width: 18px;
+    border-radius: 50%;
+    border: 2px solid #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  input[type="range"]::-moz-range-thumb:hover {
+    background: #171717; /* stone-900 */
+    transform: scale(1.1);
+  }
+
+  input[type="range"]::-moz-range-thumb:active {
+    background: #000000;
+    transform: scale(1.05);
+  }
+
+  /* Focus state for accessibility */
+  input[type="range"]:focus {
+    outline: none;
+  }
+
+  input[type="range"]:focus-visible::-webkit-slider-thumb {
+    outline: 2px solid #0a0a0a;
+    outline-offset: 2px;
+  }
+
+  input[type="range"]:focus-visible::-moz-range-thumb {
+    outline: 2px solid #0a0a0a;
+    outline-offset: 2px;
+  }
 }

@@ -280,29 +280,29 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
             </div>
           </Link>
 
-          {/* Knowledge Card */}
-          <Link href="/admin/knowledge" className="group">
+          {/* Feedback Card */}
+          <Link href="/admin/feedback" className="group">
             <div className="bg-white rounded-[1.75rem] overflow-hidden border border-stone-200 shadow-xl hover:shadow-2xl transition-all duration-300 h-full">
               <div className="relative h-48 overflow-hidden">
                 <img
                   src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/616-nnePryg0hS2y745w8ZNU8TWvFrgude-Q2S6CSY6Sa2K2cy4vxgEMi0zyBBBIE.png"
-                  alt="Knowledge Base"
+                  alt="User Feedback"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-stone-950/60 to-transparent" />
                 <div className="absolute bottom-6 left-6">
                   <h3 className="font-['Times_New_Roman'] text-3xl font-extralight tracking-[0.3em] uppercase text-white">
-                    KNOWLEDGE
+                    FEEDBACK
                   </h3>
                 </div>
               </div>
               <div className="p-6">
                 <p className="text-sm text-stone-600 leading-relaxed mb-4">
-                  Advanced insights, strategies, and proprietary knowledge for AI agents
+                  View user feedback, bug reports, feature requests, and testimonials
                 </p>
                 <div className="flex gap-4 text-xs text-stone-500">
-                  <span>{stats?.totalKnowledge || 0} items</span>
-                  <span>Best practices</span>
+                  <span>Real-time updates</span>
+                  <span>Direct from users</span>
                 </div>
               </div>
             </div>
@@ -359,10 +359,10 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
                 START AGENT CHAT
               </Link>
               <Link
-                href="/admin/knowledge"
+                href="/admin/feedback"
                 className="block w-full bg-stone-100 text-stone-950 hover:bg-stone-200 px-6 py-4 rounded-xl text-sm tracking-wider uppercase transition-colors"
               >
-                ADD KNOWLEDGE
+                VIEW FEEDBACK
               </Link>
               <Link
                 href="/"

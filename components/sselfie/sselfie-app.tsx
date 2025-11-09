@@ -15,6 +15,7 @@ import { InstallButton } from "./install-button"
 import { ServiceWorkerProvider } from "./service-worker-provider"
 import BuyCreditsModal from "./buy-credits-modal"
 import { LowCreditModal } from "@/components/credits/low-credit-modal"
+import { FeedbackButton } from "@/components/feedback/feedback-button"
 import type { User as UserType } from "./types"
 import {
   DropdownMenu,
@@ -371,6 +372,8 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
       />
 
       <LowCreditModal credits={creditBalance} threshold={30} />
+
+      <FeedbackButton userId={userId} userEmail={userEmail} userName={userName} />
     </div>
   )
 }

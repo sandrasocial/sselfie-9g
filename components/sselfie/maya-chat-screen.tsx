@@ -938,64 +938,81 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
       )}
 
       {showSettings && (
-        <div className="flex-shrink-0 mx-4 mt-2 mb-2 bg-white/95 backdrop-blur-3xl border border-stone-200 rounded-2xl p-6 shadow-xl shadow-stone-950/10 animate-in slide-in-from-top-2 duration-300">
-          <h3 className="text-sm font-serif font-extralight tracking-[0.2em] uppercase text-stone-950 mb-4">
-            Generation Settings
-          </h3>
+        <>
+          <div
+            className="fixed inset-0 bg-stone-950/20 backdrop-blur-sm z-40 animate-in fade-in duration-200"
+            onClick={() => setShowSettings(false)}
+          />
 
-          <div className="space-y-6">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-xs tracking-wider uppercase text-stone-600">Style Strength</label>
-                <span className="text-sm font-medium text-stone-950">{styleStrength.toFixed(1)}</span>
-              </div>
-              <input
-                type="range"
-                min="0.9"
-                max="1.2"
-                step="0.1"
-                value={styleStrength}
-                onChange={(e) => setStyleStrength(Number.parseFloat(e.target.value))}
-                className="w-full"
-              />
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-xs tracking-wider uppercase text-stone-600">Prompt Accuracy</label>
-                <span className="text-sm font-medium text-stone-950">{promptAccuracy.toFixed(1)}</span>
-              </div>
-              <input
-                type="range"
-                min="2.5"
-                max="5.0"
-                step="0.5"
-                value={promptAccuracy}
-                onChange={(e) => setPromptAccuracy(Number.parseFloat(e.target.value))}
-                className="w-full"
-              />
-            </div>
-
-            <div>
-              <label className="text-xs tracking-wider uppercase text-stone-600 mb-2 block">Aspect Ratio</label>
-              <select
-                value={aspectRatio}
-                onChange={(e) => setAspectRatio(e.target.value)}
-                className="w-full px-3 py-2 bg-white border border-stone-200 rounded-lg text-sm"
+          <div className="fixed inset-x-4 top-20 bg-white/95 backdrop-blur-3xl border border-stone-200 rounded-2xl p-6 shadow-xl shadow-stone-950/10 animate-in slide-in-from-top-2 duration-300 z-50 max-w-md mx-auto">
+            {/* Close button */}
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-serif font-extralight tracking-[0.2em] uppercase text-stone-950">
+                Generation Settings
+              </h3>
+              <button
+                onClick={() => setShowSettings(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-100 transition-colors"
+                aria-label="Close settings"
               >
-                <option value="1:1">Square (1:1)</option>
-                <option value="4:5">Portrait (4:5)</option>
-                <option value="16:9">Landscape (16:9)</option>
-              </select>
+                <X size={18} className="text-stone-600" strokeWidth={2} />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs tracking-wider uppercase text-stone-600">Style Strength</label>
+                  <span className="text-sm font-medium text-stone-950">{styleStrength.toFixed(1)}</span>
+                </div>
+                <input
+                  type="range"
+                  min="0.9"
+                  max="1.2"
+                  step="0.1"
+                  value={styleStrength}
+                  onChange={(e) => setStyleStrength(Number.parseFloat(e.target.value))}
+                  className="w-full"
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs tracking-wider uppercase text-stone-600">Prompt Accuracy</label>
+                  <span className="text-sm font-medium text-stone-950">{promptAccuracy.toFixed(1)}</span>
+                </div>
+                <input
+                  type="range"
+                  min="2.5"
+                  max="5.0"
+                  step="0.5"
+                  value={promptAccuracy}
+                  onChange={(e) => setPromptAccuracy(Number.parseFloat(e.target.value))}
+                  className="w-full"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs tracking-wider uppercase text-stone-600 mb-2 block">Aspect Ratio</label>
+                <select
+                  value={aspectRatio}
+                  onChange={(e) => setAspectRatio(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-stone-200 rounded-lg text-sm"
+                >
+                  <option value="1:1">Square (1:1)</option>
+                  <option value="4:5">Portrait (4:5)</option>
+                  <option value="16:9">Landscape (16:9)</option>
+                </select>
+              </div>
             </div>
           </div>
-        </div>
+        </>
       )}
 
       <div className="flex-1 min-h-0 px-3 sm:px-4">
         <div
           ref={messagesContainerRef}
-          className="h-full overflow-y-auto space-y-3 pr-1 scroll-smooth"
+          className="h-full overflow-y-auto pr-1 scroll-smooth"
           style={{
             paddingBottom: "11rem",
           }}
@@ -1302,6 +1319,17 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
             >
               <Clock size={18} strokeWidth={2} />
               <span className="font-medium">Chat History</span>
+            </button>
+            <button
+              onClick={() => {
+                fileInputRef.current?.click()
+                setShowChatMenu(false)
+              }}
+              disabled={isUploadingImage}
+              className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-stone-700 hover:bg-stone-50 transition-colors border-b border-stone-100 touch-manipulation disabled:opacity-50"
+            >
+              <Camera size={18} strokeWidth={2} />
+              <span className="font-medium">{isUploadingImage ? "Uploading..." : "Upload Inspiration"}</span>
             </button>
             <button
               onClick={() => {

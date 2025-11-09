@@ -152,7 +152,10 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
       const response = await fetch("/api/images/favorite", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageId: generationId }),
+        body: JSON.stringify({
+          imageId: `ai_${generationId}`,
+          isFavorite: !isFavorite,
+        }),
       })
 
       if (!response.ok) throw new Error("Failed to toggle favorite")
