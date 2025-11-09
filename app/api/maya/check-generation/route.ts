@@ -26,8 +26,6 @@ export async function GET(request: NextRequest) {
 
     const prediction = await replicate.predictions.get(predictionId)
 
-    console.log("[v0] Prediction status:", prediction.status)
-
     if (prediction.status === "succeeded" && prediction.output) {
       const imageUrl = Array.isArray(prediction.output) ? prediction.output[0] : prediction.output
 
@@ -57,13 +55,11 @@ export async function GET(request: NextRequest) {
         `
 
         if (generation) {
-          // Check if this image already exists in the gallery by prediction_id
           const [existing] = await sql`
             SELECT id FROM ai_images WHERE prediction_id = ${predictionId}
           `
 
           if (!existing) {
-            // Only insert if it doesn't already exist
             await sql`
               INSERT INTO ai_images (
                 user_id,
@@ -87,14 +83,10 @@ export async function GET(request: NextRequest) {
                 NOW()
               )
             `
-            console.log("[v0] Maya image saved to ai_images gallery")
-          } else {
-            console.log("[v0] Maya image already exists in gallery, skipping duplicate save")
           }
         }
       } catch (galleryError: any) {
-        console.error("[v0] Failed to save to ai_images gallery:", galleryError?.message || String(galleryError))
-        // Don't fail the request if gallery save fails - the main generation is still successful
+        console.error("[v0] Failed to save to gallery:", galleryError?.message || String(galleryError))
       }
 
       return NextResponse.json({

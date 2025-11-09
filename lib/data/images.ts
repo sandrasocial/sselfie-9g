@@ -47,8 +47,6 @@ export interface GalleryImage {
  */
 export async function getUserImages(userId: string): Promise<GalleryImage[]> {
   try {
-    console.log("[v0] Fetching images for user:", userId)
-
     const aiImages = await sql`
       SELECT 
         id,
@@ -78,13 +76,6 @@ export async function getUserImages(userId: string): Promise<GalleryImage[]> {
       created_at: img.created_at,
       source: "ai_images" as const,
     }))
-
-    console.log("[v0] Gallery images from ai_images:", {
-      total_count: allImages.length,
-      sample: allImages
-        .slice(0, 5)
-        .map((img) => ({ id: img.id, category: img.category, is_favorite: img.is_favorite })),
-    })
 
     return allImages
   } catch (error) {

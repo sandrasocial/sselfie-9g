@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
 import { createServerClient } from "@/lib/supabase/server"
 import { getReplicateClient } from "@/lib/replicate-client"
+import { put } from "@vercel/blob"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -46,23 +47,78 @@ export async function GET(request: Request, { params }: { params: { id: string }
       // Get prediction status
       const prediction = await replicate.predictions.get(predictionId)
 
-      console.log("[v0] Prediction status:", prediction.status)
-
       if (prediction.status === "succeeded" && prediction.output) {
-        // Update database with generated image URLs
-        const imageUrls = Array.isArray(prediction.output) ? prediction.output.join(",") : prediction.output
+        const imageUrls = Array.isArray(prediction.output) ? prediction.output : [prediction.output]
+        const uploadedUrls: string[] = []
 
+        // Upload each image to Blob storage
+        for (const imageUrl of imageUrls) {
+          try {
+            const imageResponse = await fetch(imageUrl)
+            const imageBlob = await imageResponse.blob()
+
+            const blob = await put(`studio/${generationId}-${uploadedUrls.length}.png`, imageBlob, {
+              access: "public",
+              contentType: "image/png",
+              addRandomSuffix: true,
+            })
+
+            uploadedUrls.push(blob.url)
+          } catch (uploadError) {
+            console.error("[v0] Failed to upload image to Blob:", uploadError)
+            // Fall back to original URL if upload fails
+            uploadedUrls.push(imageUrl)
+          }
+        }
+
+        // Update generated_images table with uploaded URLs
         await sql`
           UPDATE generated_images
           SET 
-            image_urls = ${imageUrls},
-            selected_url = ${Array.isArray(prediction.output) ? prediction.output[0] : prediction.output}
+            image_urls = ${uploadedUrls.join(",")},
+            selected_url = ${uploadedUrls[0]}
           WHERE id = ${generationId}
         `
 
+        try {
+          for (const imageUrl of uploadedUrls) {
+            // Check if image already exists by URL
+            const [existing] = await sql`
+              SELECT id FROM ai_images WHERE image_url = ${imageUrl}
+            `
+
+            if (!existing) {
+              await sql`
+                INSERT INTO ai_images (
+                  user_id,
+                  image_url,
+                  prompt,
+                  prediction_id,
+                  generation_status,
+                  source,
+                  category,
+                  created_at
+                ) VALUES (
+                  ${neonUser.id},
+                  ${imageUrl},
+                  ${generation.prompt || ""},
+                  ${predictionId},
+                  'completed',
+                  'studio',
+                  ${generation.category || "custom"},
+                  NOW()
+                )
+              `
+            }
+          }
+        } catch (galleryError) {
+          console.error("[v0] Failed to save to gallery:", galleryError)
+          // Don't fail the request if gallery save fails
+        }
+
         return NextResponse.json({
           status: "succeeded",
-          imageUrls: Array.isArray(prediction.output) ? prediction.output : [prediction.output],
+          imageUrls: uploadedUrls,
         })
       } else if (prediction.status === "failed") {
         return NextResponse.json({
