@@ -4,11 +4,29 @@ import type React from "react"
 import VideoCard from "./video-card"
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport } from "ai"
-import { Camera, Send, ArrowDown, X, ArrowLeft } from "lucide-react"
+import {
+  Camera,
+  Send,
+  ArrowDown,
+  X,
+  Menu,
+  Home,
+  Aperture,
+  MessageCircle,
+  ImageIcon,
+  Grid,
+  User,
+  SettingsIcon,
+  LogOut,
+  Sliders,
+  Plus,
+  Clock,
+} from "lucide-react"
 import { useState, useEffect, useRef, useCallback } from "react"
 import ConceptCard from "./concept-card"
 import MayaChatHistory from "./maya-chat-history"
 import UnifiedLoading from "./unified-loading"
+import { useRouter } from "next/navigation"
 
 interface MayaChatScreenProps {
   onImageGenerated?: () => void
@@ -19,7 +37,8 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
   const [chatId, setChatId] = useState<number | null>(null)
   const [isLoadingChat, setIsLoadingChat] = useState(true)
   const [showHistory, setShowHistory] = useState(false)
-  const [showMenu, setShowMenu] = useState(false) // Added state for menu
+  const [showNavMenu, setShowNavMenu] = useState(false)
+  const [showChatMenu, setShowChatMenu] = useState(false)
   const savedMessageIds = useRef(new Set<string>())
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
@@ -34,6 +53,9 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
   const [currentPrompts, setCurrentPrompts] = useState<Array<{ label: string; prompt: string }>>([])
   const [userGender, setUserGender] = useState<string | null>(null)
   const [showHeader, setShowHeader] = useState(true)
+  const [creditBalance, setCreditBalance] = useState<number>(0)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const router = useRouter()
 
   const [styleStrength, setStyleStrength] = useState(1.0) // LoRA scale: 0.9-1.2
   const [promptAccuracy, setPromptAccuracy] = useState(3.5) // Guidance scale: 2.5-5.0
@@ -345,6 +367,20 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
       }
     }
     fetchUserGender()
+  }, [])
+
+  useEffect(() => {
+    const fetchCredits = async () => {
+      try {
+        const response = await fetch("/api/user/credits")
+        const data = await response.json()
+        setCreditBalance(data.balance || 0)
+      } catch (error) {
+        console.error("[v0] Error fetching credits:", error)
+        setCreditBalance(0)
+      }
+    }
+    fetchCredits()
   }, [])
 
   const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
@@ -663,6 +699,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
         setMessages([])
         isAtBottomRef.current = true
         setShowHistory(false)
+        setShowChatMenu(false)
         setCurrentPrompts(getRandomPrompts(userGender))
         setTimeout(() => scrollToBottom("instant"), 100)
       }
@@ -679,6 +716,32 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
       isAtBottomRef.current = true
       loadChat(selectedChatId)
     }
+  }
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true)
+    try {
+      const response = await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      })
+
+      if (response.ok) {
+        router.push("/auth/login")
+      } else {
+        console.error("[v0] Logout failed")
+        setIsLoggingOut(false)
+      }
+    } catch (error) {
+      console.error("[v0] Error during logout:", error)
+      setIsLoggingOut(false)
+    }
+  }
+
+  const handleNavigation = (tab: string) => {
+    // Navigate by updating the hash
+    window.location.hash = tab
+    setShowNavMenu(false)
   }
 
   const filteredMessages = messages.filter((msg) => {
@@ -731,7 +794,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
 
   return (
     <div
-      className="flex flex-col h-full bg-gradient-to-b from-stone-50 to-white relative"
+      className="flex flex-col h-full bg-gradient-to-b from-stone-50 to-white relative overflow-hidden"
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}
@@ -751,14 +814,6 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
 
       <div className="flex-shrink-0 flex items-center justify-between px-3 sm:px-4 py-3 bg-white/80 backdrop-blur-xl border-b border-stone-200/50">
         <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-          {/* Changed header to include back button */}
-          <button
-            onClick={() => window.history.back()}
-            className="p-2 hover:bg-stone-100 rounded-lg transition-colors touch-manipulation active:scale-95 flex-shrink-0"
-            aria-label="Go back"
-          >
-            <ArrowLeft size={20} className="text-stone-600" strokeWidth={2} />
-          </button>
           <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-stone-200/60 overflow-hidden flex-shrink-0">
             <img src="https://i.postimg.cc/fTtCnzZv/out-1-22.png" alt="Maya" className="w-full h-full object-cover" />
           </div>
@@ -769,52 +824,172 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
           </div>
         </div>
 
-        {/* Replaced icons with MENU text button */}
         <button
-          onClick={() => setShowMenu(!showMenu)}
-          className="font-serif text-sm tracking-[0.15em] uppercase text-stone-600 hover:text-stone-950 transition-colors px-3 py-2 touch-manipulation active:scale-95"
-          aria-label="Menu"
-          aria-expanded={showMenu}
+          onClick={() => setShowNavMenu(!showNavMenu)}
+          className="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-lg hover:bg-stone-100/50 transition-colors touch-manipulation active:scale-95"
+          aria-label="Navigation menu"
+          aria-expanded={showNavMenu}
         >
-          MENU
+          <Menu size={20} className="text-stone-600" strokeWidth={2} />
         </button>
       </div>
 
-      {showMenu && (
-        <div className="flex-shrink-0 mx-4 mt-2 mb-2 bg-white/95 backdrop-blur-3xl border border-stone-200 rounded-2xl overflow-hidden shadow-xl shadow-stone-950/10 animate-in slide-in-from-top-2 duration-300">
-          <button
-            onClick={() => {
-              handleNewChat()
-              setShowMenu(false)
-            }}
-            className="w-full px-4 py-3 text-left text-sm text-stone-700 hover:bg-stone-50 transition-colors border-b border-stone-100 touch-manipulation"
-          >
-            <span className="font-medium">New Chat</span>
-          </button>
-          <button
-            onClick={() => {
-              setShowHistory(!showHistory)
-              setShowMenu(false)
-            }}
-            className="w-full px-4 py-3 text-left text-sm text-stone-700 hover:bg-stone-50 transition-colors border-b border-stone-100 touch-manipulation"
-          >
-            <span className="font-medium">Chat History</span>
-          </button>
-          <button
-            onClick={() => {
-              setShowSettings(!showSettings)
-              setShowMenu(false)
-            }}
-            className="w-full px-4 py-3 text-left text-sm text-stone-700 hover:bg-stone-50 transition-colors touch-manipulation"
-          >
-            <span className="font-medium">Generation Settings</span>
-          </button>
-        </div>
+      {showNavMenu && (
+        <>
+          {/* Overlay */}
+          <div
+            className="fixed inset-0 bg-stone-950/20 backdrop-blur-sm z-40 animate-in fade-in duration-200"
+            onClick={() => setShowNavMenu(false)}
+          />
+
+          {/* Sliding menu from right */}
+          <div className="fixed top-0 right-0 bottom-0 w-80 bg-white/95 backdrop-blur-3xl border-l border-stone-200 shadow-2xl z-50 animate-in slide-in-from-right duration-300 flex flex-col">
+            {/* Header with close button - fixed at top */}
+            <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-stone-200/50">
+              <h3 className="text-sm font-serif font-extralight tracking-[0.2em] uppercase text-stone-950">Menu</h3>
+              <button
+                onClick={() => setShowNavMenu(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-100 transition-colors"
+                aria-label="Close menu"
+              >
+                <X size={18} className="text-stone-600" strokeWidth={2} />
+              </button>
+            </div>
+
+            {/* Credits display - fixed below header */}
+            <div className="flex-shrink-0 px-6 py-6 border-b border-stone-200/50">
+              <div className="text-[10px] tracking-[0.15em] uppercase font-light text-stone-500 mb-2">Your Credits</div>
+              <div className="text-3xl font-serif font-extralight text-stone-950 tabular-nums">
+                {creditBalance.toFixed(1)}
+              </div>
+            </div>
+
+            {/* Navigation links - scrollable middle section */}
+            <div className="flex-1 overflow-y-auto py-2">
+              <button
+                onClick={() => handleNavigation("studio")}
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
+              >
+                <Home size={18} className="text-stone-600" strokeWidth={2} />
+                <span className="text-sm font-medium text-stone-700">Studio</span>
+              </button>
+              <button
+                onClick={() => handleNavigation("training")}
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
+              >
+                <Aperture size={18} className="text-stone-600" strokeWidth={2} />
+                <span className="text-sm font-medium text-stone-700">Training</span>
+              </button>
+              <button
+                onClick={() => handleNavigation("maya")}
+                className="w-full flex items-center gap-3 px-6 py-4 text-left bg-stone-100/50 border-l-2 border-stone-950"
+              >
+                <MessageCircle size={18} className="text-stone-950" strokeWidth={2} />
+                <span className="text-sm font-medium text-stone-950">Maya</span>
+              </button>
+              <button
+                onClick={() => handleNavigation("gallery")}
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
+              >
+                <ImageIcon size={18} className="text-stone-600" strokeWidth={2} />
+                <span className="text-sm font-medium text-stone-700">Gallery</span>
+              </button>
+              <button
+                onClick={() => handleNavigation("academy")}
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
+              >
+                <Grid size={18} className="text-stone-600" strokeWidth={2} />
+                <span className="text-sm font-medium text-stone-700">Academy</span>
+              </button>
+              <button
+                onClick={() => handleNavigation("profile")}
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
+              >
+                <User size={18} className="text-stone-600" strokeWidth={2} />
+                <span className="text-sm font-medium text-stone-700">Profile</span>
+              </button>
+              <button
+                onClick={() => handleNavigation("settings")}
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
+              >
+                <SettingsIcon size={18} className="text-stone-600" strokeWidth={2} />
+                <span className="text-sm font-medium text-stone-700">Settings</span>
+              </button>
+            </div>
+
+            {/* Sign out button - fixed at bottom */}
+            <div className="flex-shrink-0 px-6 py-4 border-t border-stone-200/50 bg-white/95">
+              <button
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+              >
+                <LogOut size={16} strokeWidth={2} />
+                <span>{isLoggingOut ? "Signing Out..." : "Sign Out"}</span>
+              </button>
+            </div>
+          </div>
+        </>
       )}
 
       {showHistory && (
         <div className="flex-shrink-0 mx-4 mt-2 mb-2 bg-white/50 backdrop-blur-3xl border border-white/60 rounded-2xl p-4 shadow-xl shadow-stone-950/5 animate-in slide-in-from-top-2 duration-300">
           <MayaChatHistory currentChatId={chatId} onSelectChat={handleSelectChat} onNewChat={handleNewChat} />
+        </div>
+      )}
+
+      {showSettings && (
+        <div className="flex-shrink-0 mx-4 mt-2 mb-2 bg-white/95 backdrop-blur-3xl border border-stone-200 rounded-2xl p-6 shadow-xl shadow-stone-950/10 animate-in slide-in-from-top-2 duration-300">
+          <h3 className="text-sm font-serif font-extralight tracking-[0.2em] uppercase text-stone-950 mb-4">
+            Generation Settings
+          </h3>
+
+          <div className="space-y-6">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs tracking-wider uppercase text-stone-600">Style Strength</label>
+                <span className="text-sm font-medium text-stone-950">{styleStrength.toFixed(1)}</span>
+              </div>
+              <input
+                type="range"
+                min="0.9"
+                max="1.2"
+                step="0.1"
+                value={styleStrength}
+                onChange={(e) => setStyleStrength(Number.parseFloat(e.target.value))}
+                className="w-full"
+              />
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs tracking-wider uppercase text-stone-600">Prompt Accuracy</label>
+                <span className="text-sm font-medium text-stone-950">{promptAccuracy.toFixed(1)}</span>
+              </div>
+              <input
+                type="range"
+                min="2.5"
+                max="5.0"
+                step="0.5"
+                value={promptAccuracy}
+                onChange={(e) => setPromptAccuracy(Number.parseFloat(e.target.value))}
+                className="w-full"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs tracking-wider uppercase text-stone-600 mb-2 block">Aspect Ratio</label>
+              <select
+                value={aspectRatio}
+                onChange={(e) => setAspectRatio(e.target.value)}
+                className="w-full px-3 py-2 bg-white border border-stone-200 rounded-lg text-sm"
+              >
+                <option value="1:1">Square (1:1)</option>
+                <option value="4:5">Portrait (4:5)</option>
+                <option value="16:9">Landscape (16:9)</option>
+              </select>
+            </div>
+          </div>
         </div>
       )}
 
@@ -1059,10 +1234,22 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
               aria-label="Upload image file"
             />
 
+            {/* Chat menu button inside input */}
+            <button
+              onClick={() => setShowChatMenu(!showChatMenu)}
+              disabled={isTyping}
+              className="absolute left-2 bottom-2.5 w-9 h-9 flex items-center justify-center text-stone-600 hover:text-stone-950 transition-colors disabled:opacity-50 touch-manipulation active:scale-95 z-10"
+              aria-label="Chat menu"
+              type="button"
+            >
+              <Sliders size={20} strokeWidth={2} />
+            </button>
+
+            {/* Camera button */}
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploadingImage || isTyping}
-              className="absolute left-2 bottom-2.5 w-9 h-9 flex items-center justify-center text-stone-600 hover:text-stone-950 transition-colors disabled:opacity-50 touch-manipulation active:scale-95 z-10"
+              className="absolute left-12 bottom-2.5 w-9 h-9 flex items-center justify-center text-stone-600 hover:text-stone-950 transition-colors disabled:opacity-50 touch-manipulation active:scale-95 z-10"
               aria-label="Attach image"
               type="button"
             >
@@ -1091,25 +1278,59 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
                 }
               }}
               placeholder={uploadedImage ? "Describe the style..." : "Message Maya..."}
-              className="w-full pl-12 pr-3 py-3 bg-white/40 backdrop-blur-2xl border border-white/60 rounded-xl text-stone-950 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-950/50 focus:bg-white/60 font-medium text-sm min-h-[48px] max-h-[100px] shadow-lg shadow-stone-950/10 transition-all duration-300 resize-none overflow-y-auto leading-relaxed touch-manipulation"
+              className="w-full pl-[5.5rem] pr-12 py-3 bg-white/40 backdrop-blur-2xl border border-white/60 rounded-xl text-stone-950 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-950/50 focus:bg-white/60 font-medium text-sm min-h-[48px] max-h-[100px] shadow-lg shadow-stone-950/10 transition-all duration-300 resize-none overflow-y-auto leading-relaxed touch-manipulation"
               disabled={isTyping || isUploadingImage}
               aria-label="Message input"
               rows={1}
             />
-          </div>
 
-          <button
-            onClick={() => handleSendMessage()}
-            className="flex-shrink-0 min-w-[48px] min-h-[48px] bg-stone-950 text-white rounded-xl flex items-center justify-center hover:bg-stone-800 active:scale-95 shadow-lg shadow-stone-950/30 transition-all duration-300 disabled:opacity-50 touch-manipulation"
-            style={{
-              height: "48px",
-            }}
-            disabled={isTyping || (!inputValue.trim() && !uploadedImage) || isUploadingImage}
-            aria-label="Send message"
-          >
-            <Send size={20} strokeWidth={2} />
-          </button>
+            {/* Send button inside input */}
+            <button
+              onClick={() => handleSendMessage()}
+              className="absolute right-2 bottom-2.5 w-9 h-9 flex items-center justify-center text-stone-600 hover:text-stone-950 transition-colors disabled:opacity-50 touch-manipulation active:scale-95 z-10"
+              disabled={isTyping || (!inputValue.trim() && !uploadedImage) || isUploadingImage}
+              aria-label="Send message"
+              type="button"
+            >
+              <Send size={20} strokeWidth={2} />
+            </button>
+          </div>
         </div>
+
+        {showChatMenu && (
+          <div className="absolute bottom-full left-3 right-3 mb-2 bg-white/95 backdrop-blur-3xl border border-stone-200 rounded-2xl overflow-hidden shadow-xl shadow-stone-950/10 animate-in slide-in-from-bottom-2 duration-300">
+            <button
+              onClick={() => {
+                handleNewChat()
+                setShowChatMenu(false)
+              }}
+              className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-stone-700 hover:bg-stone-50 transition-colors border-b border-stone-100 touch-manipulation"
+            >
+              <Plus size={18} strokeWidth={2} />
+              <span className="font-medium">New Chat</span>
+            </button>
+            <button
+              onClick={() => {
+                setShowHistory(!showHistory)
+                setShowChatMenu(false)
+              }}
+              className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-stone-700 hover:bg-stone-50 transition-colors border-b border-stone-100 touch-manipulation"
+            >
+              <Clock size={18} strokeWidth={2} />
+              <span className="font-medium">Chat History</span>
+            </button>
+            <button
+              onClick={() => {
+                setShowSettings(!showSettings)
+                setShowChatMenu(false)
+              }}
+              className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-stone-700 hover:bg-stone-50 transition-colors touch-manipulation"
+            >
+              <Sliders size={18} strokeWidth={2} />
+              <span className="font-medium">Generation Settings</span>
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )
