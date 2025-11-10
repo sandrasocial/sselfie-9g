@@ -867,36 +867,11 @@ export async function POST(request: NextRequest) {
           `
         }
 
-        const existingGrant = await sql`
-          SELECT id FROM subscription_credit_grants
-          WHERE user_id = ${userId}
-          AND grant_period_start = to_timestamp(${subscription.current_period_start})
-          AND grant_period_end = to_timestamp(${subscription.current_period_end})
-        `
-
-        if (existingGrant.length === 0 && productType === "sselfie_studio_membership") {
-          console.log(`[v0] Granting ${credits} credits for subscription creation (not already granted)`)
+        if (productType === "sselfie_studio_membership") {
+          console.log(`[v0] Granting ${credits} credits for subscription creation`)
           await grantMonthlyCredits(userId, "sselfie_studio_membership", !event.livemode)
-
-          await sql`
-            INSERT INTO subscription_credit_grants (
-              user_id,
-              product_type,
-              credits_granted,
-              grant_period_start,
-              grant_period_end
-            )
-            VALUES (
-              ${userId},
-              ${productType},
-              ${credits},
-              to_timestamp(${subscription.current_period_start}),
-              to_timestamp(${subscription.current_period_end})
-            )
-          `
-        } else {
-          console.log(`[v0] Credits already granted for this period - skipping duplicate grant`)
         }
+
         break
       }
 
@@ -910,34 +885,6 @@ export async function POST(request: NextRequest) {
           const credits = Number.parseInt(subscription.metadata.credits || "250")
 
           console.log(`[v0] Subscription renewed: ${productType} for user ${userId}`)
-
-          const existingGrant = await sql`
-            SELECT id FROM subscription_credit_grants
-            WHERE user_id = ${userId}
-            AND grant_period_start = to_timestamp(${subscription.current_period_start})
-            AND grant_period_end = to_timestamp(${subscription.current_period_end})
-          `
-
-          if (existingGrant.length === 0 && productType === "sselfie_studio_membership") {
-            await grantMonthlyCredits(userId, "sselfie_studio_membership", !event.livemode)
-
-            await sql`
-              INSERT INTO subscription_credit_grants (
-                user_id,
-                product_type,
-                credits_granted,
-                grant_period_start,
-                grant_period_end
-              )
-              VALUES (
-                ${userId},
-                ${productType},
-                ${credits},
-                to_timestamp(${subscription.current_period_start}),
-                to_timestamp(${subscription.current_period_end})
-              )
-            `
-          }
 
           await sql`
             UPDATE subscriptions
