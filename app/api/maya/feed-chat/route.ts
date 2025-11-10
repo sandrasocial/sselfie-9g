@@ -236,52 +236,37 @@ Be creative and authentic. No generic templates - every element should feel cust
           }
         }
 
-        const lensSpecs = {
-          "Close-Up": "shot on 85mm lens f/1.4, shallow depth of field, creamy bokeh, face and shoulders focus",
-          "Half Body":
-            "shot on 50mm lens f/2.0, medium depth of field, balanced composition, waist-up framing with natural posture",
-        }
-
-        const colorDescription = colorPalette
-          .replace(/#[0-9a-fA-F]{6}/g, "")
-          .replace(/,\s*,/g, ",")
-          .trim()
-
         const lightingStyle = colorPalette.includes("dark")
-          ? "dramatic lighting with moody shadows and high contrast, cinematic atmosphere"
-          : "soft natural lighting with gentle shadows and even exposure, warm inviting glow"
+          ? "Dramatic lighting, moody shadows, high contrast."
+          : "Soft natural lighting, gentle shadows, warm glow."
 
         const genderStyling =
           user.gender === "woman" || user.gender === "female"
-            ? "confident woman with natural styled hair, refined minimal makeup, modern influencer presence, effortless chic energy"
+            ? "Confident woman with natural styled hair and refined minimal makeup showing modern influencer presence with effortless chic energy."
             : user.gender === "man" || user.gender === "male"
-              ? "confident man with clean styling, strong editorial presence, masculine sophistication"
-              : "confident person with styled appearance, authentic presence, editorial energy"
+              ? "Confident man with clean styling and strong editorial presence conveying masculine sophistication."
+              : "Confident person with styled appearance showing authentic presence and editorial energy."
 
         const fashionDetails =
           post.type === "Half Body"
-            ? `${post.styleDirection}, shot waist-up showing styling details and natural hand positions, ${genderStyling}, dressed in elevated ${colorDescription} outfit mixing luxury and comfort (think: oversized cashmere with tailored trousers, or designer athleisure with structured bag), Instagram influencer aesthetic with brands like The Row, Toteme, or elevated COS/Zara pieces, minimal sophisticated accessories (designer bag, simple jewelry, sunglasses), relaxed confident pose avoiding stiffness, natural skin texture with healthy glow, architectural or minimal backdrop`
-            : `${post.styleDirection}, close-up focus on face and upper shoulders, ${genderStyling}, styled in ${colorDescription} tones with premium fabric quality visible, natural skin texture with radiant healthy glow, authentic expression conveying confidence and approachability, film photography aesthetic with subtle grain`
+            ? `${post.styleDirection}. Waist-up framing shows styling details with natural hand positions. ${genderStyling} Dressed in elevated ${colorPalette.replace(/#[0-9a-fA-F]{6}/g, "").trim()} outfit mixing luxury and comfort like oversized cashmere with tailored trousers. Instagram influencer aesthetic with brands like The Row or Toteme. Minimal sophisticated accessories include designer bag and simple jewelry. Relaxed confident pose feels natural against architectural or minimal backdrop.`
+            : `${post.styleDirection}. Close-up focuses on face and upper shoulders. ${genderStyling} Styled in ${colorPalette.replace(/#[0-9a-fA-F]{6}/g, "").trim()} tones with premium fabric quality visible. Natural skin texture has radiant healthy glow. Authentic expression conveys confidence and approachability with natural photography aesthetic and subtle grain.`
 
         const colorGrading =
           colorPalette.includes("dark") || colorPalette.includes("moody")
-            ? "desaturated color palette with muted tones, faded blacks, crushed shadows, cool grey undertones, low contrast color grading"
-            : "desaturated warm tones with beige undertones, slightly washed out highlights, soft muted color palette, low contrast"
+            ? "Desaturated tones, faded blacks, cool grey."
+            : "Warm muted tones, soft highlights."
 
-        const realismDetails =
-          "raw street photography aesthetic, natural fabric wrinkles and texture, realistic skin texture with visible pores and natural imperfections, environmental grit, subtle film grain, unpolished authentic moment"
+        const realismDetails = "Raw photography, realistic skin texture." // Simplified realism descriptors
 
-        const atmosphericElements =
-          post.type === "Half Body"
-            ? "urban haze in background, city atmosphere, architectural setting"
-            : "soft atmospheric lighting, natural environment"
+        const atmosphericElements = post.type === "Half Body" ? "Urban haze." : "Subtle film grain." // Simplified atmospheric elements
 
         return {
           id: `post-${index + 1}`,
           title: post.type === "Close-Up" ? "Portrait" : "Lifestyle Shot",
           description: `${post.purpose}`,
           category: post.type,
-          prompt: `${triggerWord}, ${fashionDetails}, ${lensSpecs[post.type as keyof typeof lensSpecs]}, ${lightingStyle}, ${colorGrading}, ${post.composition}, ${realismDetails}, ${atmosphericElements}, high-end Instagram influencer aesthetic with editorial quality, mixing luxury brands with elevated basics, confident effortless pose (walking naturally, hand in pocket, adjusting sunglasses, or sitting casually), trending Instagram aesthetic 2025, cohesive visual story, candid natural movement`,
+          prompt: `${triggerWord}, ${fashionDetails} ${lightingStyle} ${colorGrading} ${post.composition}. ${realismDetails} ${atmosphericElements} High-end Instagram influencer aesthetic with candid natural movement.`,
           textOverlay: undefined,
           purpose: post.purpose,
           composition: post.composition,

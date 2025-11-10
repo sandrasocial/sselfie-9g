@@ -99,17 +99,9 @@ Be creative and ensure these posts feel like a natural extension of the existing
     const postPrompts = newPosts.posts.map((post, index) => {
       if (post.type === "Object") {
         return {
-          prompt: `${feed.color_palette.replace(/#[0-9a-fA-F]{6}/g, "").trim()} styled flatlay photography, ${post.styleDirection}, elegant arrangement, overhead shot with soft directional natural lighting creating gentle shadows, professional editorial quality with ${feed.brand_vibe} aesthetic, carefully curated brand-aligned objects, shallow depth of field with creamy bokeh, subtle film grain texture, high-end commercial photography, sophisticated composition, trending Instagram aesthetic 2025, warm inviting atmosphere, cohesive color story`,
+          prompt: `${feed.color_palette.replace(/#[0-9a-fA-F]{6}/g, "").trim()} styled flatlay photography, ${post.styleDirection}, elegant arrangement, overhead shot with soft directional natural lighting creating gentle shadows, professional editorial quality with ${feed.brand_vibe} aesthetic, carefully curated brand-aligned objects, subtle film grain texture, high-end commercial photography, sophisticated composition, trending Instagram aesthetic 2025, warm inviting atmosphere, cohesive color story`,
           category: "Object",
         }
-      }
-
-      const lensSpecs = {
-        "Close-Up": "shot on 85mm lens f/1.4, shallow depth of field, creamy bokeh, face focus",
-        "Half Body": "shot on 50mm lens f/2.0, medium depth of field, balanced composition, upper body focus",
-        "Full Body":
-          "shot on 50mm lens f/2.8, 3/4 body framing with face clearly visible, defined facial features with natural skin texture, warm lighting illuminating face, environmental context",
-        Lifestyle: "shot on 50mm lens f/2.0, natural environment, authentic moment, environmental storytelling",
       }
 
       const colorDescription = feed.color_palette
@@ -130,7 +122,7 @@ Be creative and ensure these posts feel like a natural extension of the existing
 
       const fashionDetails =
         post.type === "Full Body"
-          ? `wearing sophisticated ${colorDescription} attire with impeccable tailoring and refined silhouette, ${post.styleDirection}, styled with carefully chosen accessories that complement the overall aesthetic, complete outfit showcasing personal style and brand identity, defined facial features with natural skin texture and healthy glow, warm lighting illuminating face to ensure facial clarity, catchlights in eyes for engaging presence, 3/4 body framing that shows full outfit while keeping face sharp and well-defined`
+          ? `wearing sophisticated ${colorDescription} attire with impeccable tailoring and refined silhouette, ${post.styleDirection}, styled with carefully chosen accessories that complement the overall aesthetic, complete outfit showcasing personal style and brand identity, defined facial features with natural skin texture and healthy glow, warm lighting illuminating face to ensure facial clarity, engaging presence, full outfit visible while keeping face sharp and well-defined`
           : post.type === "Half Body"
             ? `dressed in elegant ${colorDescription} professional attire with attention to fabric quality and fit, ${post.styleDirection}, styled with minimal sophisticated accessories, upper body styling that conveys both professionalism and approachability`
             : post.type === "Close-Up"
@@ -138,7 +130,7 @@ Be creative and ensure these posts feel like a natural extension of the existing
               : `authentic ${colorDescription} styling that feels natural and effortless, ${post.styleDirection}, environmental elements that tell a story, genuine moment captured with editorial quality`
 
       return {
-        prompt: `${user.trigger_word}, ${genderStyling}, ${fashionDetails}, ${post.styleDirection}, ${lensSpecs[post.type as keyof typeof lensSpecs]}, ${lightingStyle}, natural skin texture with subtle film grain for authenticity, ${post.composition}, timeless elegance meets modern sophistication, high-end editorial photography with ${feed.brand_vibe} aesthetic, genuine professional presence that feels both aspirational and relatable, trending Instagram aesthetic 2025, cohesive visual story`,
+        prompt: `${user.trigger_word}, ${genderStyling}, ${fashionDetails}, ${post.styleDirection}, ${lightingStyle}, natural skin texture with subtle film grain for authenticity, ${post.composition}, timeless elegance meets modern sophistication, high-end editorial photography with ${feed.brand_vibe} aesthetic, genuine professional presence that feels both aspirational and relatable, trending Instagram aesthetic 2025, cohesive visual story`,
         category: post.type,
       }
     })

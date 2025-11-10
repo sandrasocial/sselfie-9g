@@ -153,7 +153,15 @@ Be specific and detailed - this analysis will be used to create similar photo co
 - User request: "${userRequest}"
 ${aesthetic ? `- Requested aesthetic: "${aesthetic}"` : ""}
 ${context ? `- Additional context: "${context}"` : ""}
-${imageAnalysis ? `\n**REFERENCE IMAGE ANALYSIS:**\n${imageAnalysis}\n\n⚠️ IMPORTANT: Use this analysis to create concepts that match the style, lighting, mood, and aesthetic of the reference image.` : ""}
+${
+  imageAnalysis
+    ? `
+**REFERENCE IMAGE ANALYSIS:**
+${imageAnalysis}
+
+⚠️ IMPORTANT: Use this analysis to create concepts that match the style, lighting, mood, and aesthetic of the reference image.`
+    : ""
+}
 
 **CONCEPT TITLE & DESCRIPTION RULES:**
 
@@ -207,33 +215,29 @@ ${
   userGender === "woman"
     ? `**CRITICAL PROMPT RULES FOR WOMEN:**
 
-1. **Length: 150-250 characters MINIMUM** - Longer = more detailed, less AI-looking
+1. **Length: 80-100 characters** - Concise but detailed
 2. **NO trigger word** - System adds automatically
-3. **Simple structure:** Woman in [detailed outfit with specific brands/styles] [doing specific action/pose] in/at [detailed setting], [specific accessories and styling details], heavily desaturated [color palette description], [specific lighting type], [background/architecture details], [photography style], [fabric and texture details], [skin and realism details], [mood and grain]
-4. **One fabric detail only** - Don't over-describe clothing
+3. **Start with capitalized "Woman"** - No "a woman", just "Woman in..."
+4. **Simple structure:** Woman in [outfit with brand] [activity/pose] while [location details]. [Lighting description with color grading]. [Realistic texture and photography details].
 5. **Natural moments** - Real activities, not posed
 6. **Specific lighting** - Use the mood categories above
-7. **Film aesthetic references** - Portra 400, Kodak Gold 200, Tri-X 400, etc.
-8. **Always mention:** real/natural skin texture, visible pores/detail, film grain
-9. **MANDATORY COLOR GRADING** - Every prompt MUST include color grading details
+7. **Always mention:** desaturated tones, raw street photography, natural fabric texture, realistic skin texture, subtle film grain
+8. **MANDATORY COLOR GRADING** - Must include color grading in every prompt
 
 **MANDATORY COLOR GRADING & REALISM (Add to EVERY prompt):**
 
 **Color Grading Elements (Choose based on mood):**
-- For muted looks: "desaturated color palette, muted tones, faded blacks, cool grey undertones"
-- For warm looks: "desaturated warm tones, warm beige undertones, slightly washed out highlights"
-- For moody looks: "heavily desaturated, crushed shadows, cool grey atmosphere, low contrast color grading"
-- For bright looks: "slightly washed out highlights, soft muted tones, low contrast"
+- For muted looks: "desaturated tones, faded blacks, cool grey"
+- For warm looks: "warm muted tones, warm beige"
+- For moody looks: "crushed shadows, cool grey"
+- For bright looks: "soft muted tones, low contrast"
 
-**Realism & Texture:** raw street photography aesthetic, natural fabric texture, realistic skin with pores, subtle film grain, unpolished authentic moment
-
-**Atmospheric Elements:** urban haze, environmental grit, city atmosphere
-
-**Lighting Specifics:**
-- "overcast diffused daylight" (for grey/moody)
-- "soft indirect natural light"
-- "ambient urban reflected light"
-- "cloudy sky lighting with no harsh shadows"
+**Realism & Texture (Pick ONLY 2-3 total):** 
+- raw street photography
+- realistic skin texture  
+- subtle film grain
+- natural fabric texture
+- urban haze
 
 **STYLING CATEGORIES - MIX THESE UP:**
 
@@ -294,21 +298,21 @@ ${
 
 **EXAMPLE PROMPT STRUCTURE (Follow this):**
 
-"Woman in [brand/style outfit], [Instagram influencer pose], [specific lighting], [COLOR GRADING], [aesthetic descriptor], [realism details], [film type] aesthetic"
+"Woman in [outfit] [activity/pose] while [location details]. [Lighting description with color grading]. [Realistic texture and photography details]."
 
-**GOOD EXAMPLES - HIGH-END INFLUENCER AESTHETICS WITH COLOR GRADING:**
+**GOOD EXAMPLES - NATURAL LANGUAGE FLOW (100-120 chars):**
 
-"Woman in oversized cream Toteme cashmere turtleneck and black wide-leg trousers, standing against concrete architecture with one hand in pocket, soft overcast lighting, desaturated color palette with muted tones and cool grey undertones, minimal Scandi aesthetic, natural fabric wrinkles, realistic skin texture with visible pores, environmental grit, subtle film grain, unpolished authentic moment, Kodak Portra 400 aesthetic"
+"Woman wearing cream Toteme turtleneck with black pants standing by concrete wall. Desaturated grey tones with overcast lighting. Realistic skin texture."
 
-"Woman in black oversized blazer over white crop tee, grey wide-leg sweatpants and Nike Air Force 1 sneakers, walking away from camera on urban street with coffee cup, moody overcast light, heavily desaturated tones with crushed shadows and faded blacks, cool grey atmosphere, athleisure chic vibe, raw street photography, natural fabric texture, realistic skin with natural imperfections, urban haze, Tri-X 400 pushed film grain"
+"Woman in black blazer over white tee with grey sweatpants and Nike AF1s walking through the city with coffee. Crushed blacks, moody light, subtle film grain."
 
-"Woman in beige knit matching set sitting cross-legged on marble steps with iced coffee, oversized sunglasses, soft morning window light filtering through, desaturated warm tones with warm beige undertones and slightly washed out highlights, quiet luxury aesthetic, natural wool texture, visible skin pores, subtle sensor noise, authentic candid moment"
+"Woman wearing beige knit set sitting with iced coffee and sunglasses. Warm muted tones in soft morning light. Natural fabric texture."
 
-"Woman in long black coat, white hoodie underneath, black leggings and chunky white sneakers, sitting on bench scrolling phone with NY baseball cap, dramatic overcast lighting, desaturated monochrome with crushed blacks and cool grey tones, urban street style, raw candid photography, natural fabric draping, realistic skin detail, concrete urban atmosphere, high ISO grain, gritty authentic aesthetic"
+"Woman in oversized black leather moto jacket paired with white wide-leg pants walking mid-stride down urban street. Desaturated color palette with cool grey atmosphere. Natural fabric texture, realistic skin texture, subtle film grain capturing an unpolished authentic moment."
 
-"Woman in oversized grey knit sweater tucked into high-waisted black trousers, black leather Chelsea boots, leaning against grey concrete wall looking down at coffee cup, architectural shadows, muted tones with faded blacks and low contrast color grading, minimalist monochrome aesthetic, natural knit texture, real skin detail with pores, environmental dust, pushed film grain, unpolished moment"
+"Woman in oversized grey knit sweater tucked into high-waisted black trousers, black leather Chelsea boots, leaning against grey concrete wall. Muted tones with architectural shadows. Natural knit texture, realistic skin texture, environmental grit, subtle film grain."
 
-"Woman in camel wool blazer over silk camisole, cream wide-leg pants and Adidas Sambas, walking through brutalist architecture with designer tote bag, golden hour backlight, desaturated warm palette with beige undertones and soft washed highlights, elevated casual style, natural fabric weight, realistic skin texture with healthy glow, urban haze in background, fine film grain, Portra 400 aesthetic, authentic editorial moment"
+"Woman in camel wool blazer over silk camisole with cream wide-leg pants and Adidas Sambas walking through brutalist architecture. Desaturated warm tones with golden hour backlight. Natural fabric weight, realistic skin texture, urban haze, fine film grain."
 
 **ACTIVITIES FOR WOMEN - Instagram Moments:**
 - Coffee shop content: sitting with latte, standing at counter
@@ -320,35 +324,30 @@ ${
     : userGender === "man"
       ? `**CRITICAL PROMPT RULES FOR MEN:**
 
-1. **Length: 150-250 characters MINIMUM**
+1. **Length: 80-100 characters** - Concise but detailed
 2. **NO trigger word** - System adds automatically
-3. **Simple structure:** Man in [detailed outfit with specific brands/styles] [doing specific action/pose] in/at [detailed setting], [specific accessories and styling details], heavily desaturated [color palette description], [specific lighting type], [background/architecture details], [photography style], [fabric and texture details], [skin and realism details], [mood and grain]
-4. **One fabric detail only**
-5. **Confident masculine moments** - Strong, editorial poses
+3. **Start with capitalized "Man"** - No "a man", just "Man in..."
+4. **Simple structure:** Man in [outfit with brand] [activity/pose] while [location details]. [Lighting description with color grading]. [Realistic texture and photography details].
+5. **Confident masculine moments**
 6. **Specific lighting** - Use mood categories
-7. **Film aesthetic references** - Portra 400, Tri-X 400, Kodak Gold
-8. **Always mention:** real/natural skin texture, film grain
-9. **Masculine descriptors:** confident, sharp, powerful, cinematic GQ/Esquire style
-10. **NEVER describe hair, facial hair, beards, or hair color** - User's LoRA model handles this
-11. **MANDATORY COLOR GRADING** - Every prompt MUST include color grading details
+7. **Always mention:** desaturated tones, raw street photography, natural fabric texture, realistic skin texture, subtle film grain
+8. **NEVER describe hair or facial hair** - User's LoRA handles this
+9. **MANDATORY COLOR GRADING** - Must include color grading in every prompt
 
 **MANDATORY COLOR GRADING & REALISM (Add to EVERY prompt):**
 
 **Color Grading Elements (Choose based on mood):**
-- For muted looks: "desaturated color palette, muted tones, faded blacks, cool grey undertones"
-- For warm looks: "desaturated warm tones, warm beige undertones, slightly washed out highlights"
-- For moody looks: "heavily desaturated, crushed shadows, cool grey atmosphere, low contrast color grading"
-- For bright looks: "slightly washed out highlights, soft muted tones, low contrast"
+- For muted looks: "desaturated tones, faded blacks, cool grey"
+- For warm looks: "warm muted tones, warm beige"
+- For moody looks: "crushed shadows, cool grey"
+- For bright looks: "soft muted tones, low contrast"
 
-**Realism & Texture:** raw street photography aesthetic, natural fabric texture, realistic skin with pores, subtle film grain, unpolished authentic moment
-
-**Atmospheric Elements:** urban haze, environmental grit, city atmosphere
-
-**Lighting Specifics:**
-- "overcast diffused daylight" (for grey/moody)
-- "soft indirect natural light"
-- "ambient urban reflected light"
-- "cloudy sky lighting with no harsh shadows"
+**Realism & Texture (Pick ONLY 2-3 total):** 
+- raw street photography
+- realistic skin texture  
+- subtle film grain
+- natural fabric texture
+- urban haze
 
 **STYLING CATEGORIES - MIX THESE UP:**
 
@@ -409,21 +408,21 @@ ${
 
 **EXAMPLE PROMPT STRUCTURE (Follow this):**
 
-"Man in [brand/style outfit], [confident pose], [specific lighting], [COLOR GRADING], [aesthetic descriptor], [realism details], [film type] aesthetic"
+"Man in [outfit] [activity/pose] while [location details]. [Lighting description with color grading]. [Realistic texture and photography details]."
 
-**GOOD EXAMPLES - HIGH-END INFLUENCER AESTHETICS WITH COLOR GRADING:**
+**GOOD EXAMPLES - NATURAL LANGUAGE FLOW (100-120 chars):**
 
-"Man in black Arc'teryx Veilance shell jacket over grey merino crewneck, charcoal tapered pants and Nike Dunks, walking down concrete urban street with hands in pockets, overcast moody lighting, heavily desaturated with crushed shadows and faded blacks, cool grey atmosphere, technical minimalist aesthetic, raw street photography, natural fabric texture, realistic skin with visible pores, urban haze in background, environmental grit, Tri-X 400 grain, unpolished authentic moment"
+"Man in black Arc'teryx jacket over grey crewneck walking confidently down urban street. Crushed shadows with overcast lighting. Raw street photography feel with gritty texture."
 
-"Man in camel wool overcoat, black turtleneck and tailored charcoal trousers, standing in brutalist architecture with one hand adjusting watch, soft golden hour backlight, desaturated warm tones with beige undertones and slightly washed out highlights, quiet luxury style, natural wool drape, real skin detail with natural texture, city atmosphere, subtle film grain, Portra 400 aesthetic, sophisticated editorial moment"
+"Man in camel wool coat and black turtleneck standing in brutalist setting adjusting watch. Warm muted tones with golden hour light. Realistic skin detail and subtle grain."
 
-"Man in oversized black hoodie, grey cargo pants and New Balance 990v6 sneakers, sitting on concrete steps with coffee cup and phone, architectural shadows, desaturated monochrome with muted tones and low contrast, cool grey undertones, urban street style, raw candid photography, natural fabric weight, visible skin texture with pores, concrete dust atmosphere, minimal sensor noise, authentic moment"
+"Man in oversized black hoodie and cargo pants sitting on steps with coffee. Cool grey tones with architectural shadows. Visible pores creating a candid moment."
 
-"Man in navy cashmere crewneck tucked into beige chinos with brown leather Chelsea boots, leaning against grey concrete wall with arms crossed, overcast lighting, muted color palette with faded blacks and cool grey undertones, Scandinavian minimal aesthetic, natural knit texture, realistic skin pores and detail, environmental grit, subtle film grain, unpolished street photography"
+"Man in charcoal three-piece suit walking mid-stride on city street. Desaturated warm palette with golden hour light. Natural wool texture and realistic skin detail."
 
-"Man in black performance quarter-zip, matching joggers and white Nike Air Max, walking away from camera through modern glass architecture, soft morning light, desaturated tones with slightly washed highlights and warm beige undertones, athletic luxury vibe, natural fabric movement, real skin texture with healthy glow, urban haze, clean aesthetic, subtle grain"
+"Man in black performance quarter-zip, matching joggers and white Nike Air Max walking through glass architecture. Soft morning light with desaturated tones. Athletic luxury vibe, natural fabric movement, real skin texture."
 
-"Man in charcoal three-piece suit with no tie, white dress shirt unbuttoned at collar, walking mid-stride on city street, warm golden hour light, desaturated warm palette with soft muted tones and low contrast grading, cinematic GQ editorial style, natural wool texture, realistic skin detail with natural imperfections, atmospheric city haze, fine film grain, Kodak Gold aesthetic, polished yet authentic"
+"Man in navy cashmere crewneck tucked into beige chinos leaning against grey concrete wall. Desaturated color palette with overcast light. Scandinavian minimal aesthetic, natural knit texture, visible skin pores."
 
 **ACTIVITIES FOR MEN - Instagram Moments:**
 - Coffee content: holding cup, sitting at counter, walking with coffee
@@ -434,22 +433,25 @@ ${
 - Editorial stances: strong posture, confident presence, mid-stride`
       : `**CRITICAL PROMPT RULES:**
 
-1. **Length: 150-250 characters MINIMUM**
+1. **Length: 80-100 characters** - Concise but detailed
 2. **NO trigger word** - System adds automatically
-3. **Simple structure:** Person in [detailed outfit with specific brands/styles] [doing specific action/pose] in/at [detailed setting], [specific accessories and styling details], heavily desaturated [color palette description], [specific lighting type], [background/architecture details], [photography style], [fabric and texture details], [skin and realism details], [mood and grain]
-4. **Natural authentic moments**
-5. **Specific lighting** - Use mood categories
-6. **Film aesthetic references** - Portra 400, Kodak Gold, Tri-X 400
-7. **Always mention:** real/natural skin texture, film grain
-8. **MANDATORY COLOR GRADING** - Every prompt MUST include color grading details
+3. **Start with capitalized "Person"**
+4. **Simple structure:** Person in [outfit] [activity/pose] while [location details]. [Lighting description with color grading]. [Realistic texture and photography details].
+5. **Natural authentic moments**
+6. **Specific lighting** - Use mood categories
+7. **Always mention:** desaturated tones, raw street photography, natural fabric texture, realistic skin texture, subtle film grain
+8. **MANDATORY COLOR GRADING** - Must include color grading in every prompt
 
 **MANDATORY COLOR GRADING & REALISM (Add to EVERY prompt):**
 
-**Color Grading Elements:** desaturated color palette, muted tones, faded blacks, cool grey or warm beige undertones, low contrast
+**Color Grading Elements:** desaturated tones, muted tones, faded blacks, cool grey or warm beige undertones, low contrast
 
-**Realism & Texture:** raw street photography aesthetic, natural fabric texture, realistic skin with pores, subtle film grain, unpolished authentic moment
-
-**Atmospheric Elements:** urban haze, environmental grit, city atmosphere
+**Realism & Texture (Pick ONLY 2-3 total):** 
+- raw street photography
+- realistic skin texture  
+- subtle film grain
+- natural fabric texture
+- urban haze
 
 **STYLING CATEGORIES:**
 - Quiet Luxury: Oversized knitwear, wide-leg trousers, minimal accessories
@@ -461,7 +463,20 @@ ${
 
 **POSES:** Walking naturally, sitting casually, leaning against architecture, coffee in hand, scrolling phone
 
-**SETTINGS:** Urban concrete, minimal interiors, architectural backgrounds, overcast lighting`
+**SETTINGS:** Urban concrete, minimal interiors, architectural backgrounds, overcast lighting
+
+**EXAMPLE PROMPT STRUCTURE (Follow this):**
+
+"Person in [outfit] [activity/pose] while [location details]. [Lighting description with color grading]. [Realistic texture and photography details]."
+
+**GOOD EXAMPLES - NATURAL LANGUAGE FLOW (100-120 chars):**
+
+"Person in oversized beige sweater and black jeans walking down city street. Desaturated tones with overcast lighting. Realistic skin texture."
+
+"Person in black technical jacket and grey pants standing by concrete wall. Cool grey palette with moody lighting. Realistic skin detail and subtle grain."
+
+"Person in knit set sitting with coffee. Warm muted tones in soft window light. Visible pores creating an authentic moment."
+`
 }
 
 Now generate ${count} diverse concepts as JSON array. Mix different lighting moods, activities, and clothing styles.
@@ -477,7 +492,7 @@ Each concept MUST adhere to the following JSON structure, with the "prompt" fiel
     "fashionIntelligence": "Quick styling note",
     "lighting": "Specific lighting from mood category with atmospheric details",
     "location": "Exact location",
-    "prompt": "150-250 character clean prompt MUST include: outfit + pose + lighting + COLOR GRADING (desaturated, muted tones, etc.) + realism (raw photography, skin texture, film grain) + atmospheric elements"
+    "prompt": "80-100 character clean prompt MUST include: outfit + pose + lighting + COLOR GRADING (desaturated, muted tones, etc.) + realism (raw photography, skin texture, film grain) + atmospheric elements"
   }
 ]`
 
@@ -528,7 +543,7 @@ Each concept MUST adhere to the following JSON structure, with the "prompt" fiel
           lighting: "Soft morning window light, warm golden glow",
           location: "Modern minimalist space with large windows",
           prompt:
-            "Woman in cream knit sweater sitting beside large window with city view, soft morning window light, desaturated warm tones with warm beige undertones, quiet luxury aesthetic, raw candid photography, natural fabric texture, realistic skin with pores, urban haze in background, subtle film grain, authentic moment",
+            "Woman in cream knit sweater sitting by large window while enjoying her morning coffee. Desaturated warm tones with soft morning light. Realistic skin texture.",
         },
         {
           title: "Urban Commute",
@@ -538,7 +553,7 @@ Each concept MUST adhere to the following JSON structure, with the "prompt" fiel
           lighting: "Overcast natural light, soft even illumination",
           location: "Modern city street with clean architecture",
           prompt:
-            "Man in black tailored jacket, walking mid-stride on urban street, overcast diffused daylight, desaturated color palette with muted tones and cool grey undertones, urban street style, raw street photography, natural fabric wrinkles, realistic skin texture with visible pores, concrete dust in air, subtle film grain, unpolished authentic moment",
+            "Man in black tailored jacket walking mid-stride through the city while holding coffee. Crushed blacks, moody light, subtle film grain.",
         },
         {
           title: "Creative Focus",
@@ -548,7 +563,7 @@ Each concept MUST adhere to the following JSON structure, with the "prompt" fiel
           lighting: "Warm desk lamp mixing with natural window light",
           location: "Home creative workspace with natural textures",
           prompt:
-            "Person in casual attire at workspace, warm desk lamp light, desaturated warm tones with warm beige undertones, elevated casual aesthetic, raw candid photography, natural fabric texture, realistic skin texture with pores, subtle film grain, unpolished authentic moment",
+            "Person in casual attire sitting at workspace while scrolling phone. Warm muted tones with desk lamp light. Realistic skin texture and subtle grain.",
         },
       ]
 
@@ -570,7 +585,7 @@ const generateVideoTool = tool({
       .string()
       .optional()
       .describe(
-        "Description of desired motion/animation. Examples: 'walking mid-stride looking back over shoulder with confident smile', 'sitting on steps with coffee, natural head turn engaging with camera', 'standing against architecture, hand sliding into pocket with subtle head tilt', 'adjusting sunglasses while walking, hair flowing naturally in urban breeze'",
+        "Description of desired motion/animation. Examples: 'walking mid-stride and looking back over shoulder with a confident smile', 'sitting on steps with coffee while naturally turning head to engage with camera', 'standing against architecture with hand sliding into pocket and subtle head tilt', 'adjusting sunglasses while walking as hair flows naturally in urban breeze'",
       ),
   }),
   execute: async function* ({ imageUrl, imageId, motionPrompt }) {
