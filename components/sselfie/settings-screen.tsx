@@ -19,6 +19,7 @@ import {
   ImageIcon,
   Grid,
   SettingsIcon,
+  Lock,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import BrandAssetsManager from "./brand-assets-manager"
@@ -189,6 +190,10 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
     }
   }
 
+  const handleAdminAccess = () => {
+    router.push("/admin")
+  }
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       month: "long",
@@ -314,6 +319,14 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
                 >
                   <SettingsIcon size={20} className="text-stone-900" />
                   <span className="text-sm font-medium text-stone-900">Settings</span>
+                </button>
+
+                <button
+                  onClick={handleAdminAccess}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-stone-100/50 transition-colors text-left"
+                >
+                  <Lock size={20} className="text-stone-600" />
+                  <span className="text-sm font-medium text-stone-900">Admin Dashboard</span>
                 </button>
               </nav>
             </div>
@@ -551,6 +564,27 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
             <h3 className="text-base sm:text-lg md:text-xl font-bold text-stone-950">Brand Assets</h3>
           </div>
           <BrandAssetsManager />
+        </div>
+
+        <div className="bg-white/50 backdrop-blur-2xl rounded-xl sm:rounded-[1.75rem] p-4 sm:p-6 md:p-8 border border-white/60 shadow-xl shadow-stone-900/10">
+          <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
+            <div className="p-2.5 sm:p-3.5 bg-stone-950 rounded-lg sm:rounded-[1.125rem] shadow-lg">
+              <Lock size={18} className="text-white" strokeWidth={2.5} />
+            </div>
+            <h3 className="text-base sm:text-lg md:text-xl font-bold text-stone-950">Admin Access</h3>
+          </div>
+
+          <div className="space-y-4">
+            <button
+              onClick={handleAdminAccess}
+              className="w-full flex items-center justify-center gap-2 text-sm tracking-[0.15em] uppercase font-light border rounded-2xl py-5 transition-colors hover:text-stone-950 hover:bg-stone-100/30 min-h-[56px] text-stone-600 border-stone-300/40"
+            >
+              <Lock size={16} />
+              Admin Dashboard
+            </button>
+
+            <p className="text-xs text-stone-500 text-center">Access admin tools and content management</p>
+          </div>
         </div>
       </div>
 

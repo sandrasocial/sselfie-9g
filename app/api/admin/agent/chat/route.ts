@@ -1,10 +1,11 @@
-import { streamText, type CoreMessage } from "ai"
+import { streamText, tool, type CoreMessage } from "ai"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 import { getCompleteAdminContext } from "@/lib/admin/get-complete-context"
 import { neon } from "@neondatabase/serverless"
 import { formatContentCalendarPrompt } from "@/lib/admin/parse-content-calendar"
+import { z } from "zod"
 
 const sql = neon(process.env.DATABASE_URL!)
 const ADMIN_EMAIL = "ssa@ssasocial.com"
@@ -54,15 +55,22 @@ When creating content calendars, I balance:
 
 ${formatContentCalendarPrompt()}
 
-**Output Format:**
-Always provide captions ready to copy-paste, including:
-- Engaging hook first line
-- Story or value in the body
-- Clear call-to-action
-- 3-5 relevant hashtags for reach
-- Suggested image/video concept
+Let's create content that builds your authority and grows your community. What's on your mind?
 
-Let's create content that builds your authority and grows your community. What's on your mind?`
+**CRITICAL INSTRUCTION FOR CONTENT CALENDARS:**
+When a user asks you to create a content calendar, you MUST:
+1. Use the createCalendarPost tool for EVERY SINGLE POST
+2. Do NOT just write the content as text in your response
+3. Call createCalendarPost separately for each post with these exact parameters:
+   - caption: Full Instagram caption with hooks, story, CTA, and hashtags
+   - scheduled_at: ISO 8601 datetime (e.g., "2025-01-20T09:00:00Z")
+   - scheduled_time: Human-readable time (e.g., "9:00 AM")
+   - content_pillar: One of "education", "inspiration", "personal", or "promotion"
+   - post_type: "single", "carousel", or "reel"
+
+Example: If they ask for 5 posts, you must call createCalendarPost 5 times, once per post.
+
+You MUST use the tool - the posts won't appear in their calendar otherwise.`
 
 const EMAIL_WRITER_PROMPT = `You are Sandra's Personal Brand Email Marketing Expert - specializing in email campaigns that build deep relationships, nurture community, and drive conversions for personal brands.
 
@@ -404,15 +412,96 @@ export async function POST(req: Request) {
         systemPrompt = CONTENT_CREATOR_PROMPT
     }
 
-    const enhancedSystemPrompt = `${systemPrompt}\n\n${completeContext}\n\n${userContext}`
+    const targetUserId = userId || user.id
+    console.log("[v0] Target user ID for calendar posts:", targetUserId)
+
+    const enhancedSystemPrompt = `${systemPrompt}
+
+**ADMIN CONTEXT:**
+${completeContext}
+
+${userContext ? `**USER CONTEXT:**\n${userContext}` : ""}
+
+**TOOL USAGE REQUIREMENT:**
+You have access to the createCalendarPost tool. When creating content calendars, you MUST call this tool for each post. Failure to use the tool means posts won't be saved to the database and won't appear in the calendar. Always use tools when available.`
 
     console.log("[v0] Streaming with mode:", mode, "model: anthropic/claude-sonnet-4.5")
+
+    const tools =
+      mode === "content"
+        ? {
+            createCalendarPost: tool({
+              description:
+                "REQUIRED: Creates a calendar post in the database. You MUST use this tool for EVERY post when a user asks for a content calendar. Do not just write content as text - use this tool so posts actually appear in their calendar.",
+              parameters: z.object({
+                caption: z.string().describe("Full Instagram caption including hooks, body text, hashtags, and CTA"),
+                scheduled_at: z.string().describe("ISO 8601 date/time when to post (e.g., '2025-01-15T09:00:00Z')"),
+                scheduled_time: z.string().describe("Display time like '9:00 AM' for UI"),
+                content_pillar: z
+                  .enum(["education", "inspiration", "personal", "promotion"])
+                  .describe("Content category: education, inspiration, personal, or promotion"),
+                post_type: z
+                  .enum(["single", "carousel", "reel"])
+                  .optional()
+                  .default("single")
+                  .describe("Type of Instagram post"),
+                timezone: z.string().optional().default("UTC").describe("User timezone"),
+                image_url: z.string().optional().describe("URL of generated image if available"),
+                prompt: z.string().optional().describe("Image generation prompt if applicable"),
+              }),
+              execute: async (params) => {
+                console.log("[v0] createCalendarPost tool called with params:", params)
+                try {
+                  const response = await fetch(
+                    `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/api/admin/agent/create-calendar-post`,
+                    {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                        Cookie: req.headers.get("cookie") || "",
+                      },
+                      body: JSON.stringify({
+                        ...params,
+                        target_user_id: targetUserId,
+                      }),
+                    },
+                  )
+
+                  const result = await response.json()
+                  console.log("[v0] createCalendarPost API response:", result)
+
+                  if (!response.ok) {
+                    console.error("[v0] createCalendarPost failed:", result)
+                    return {
+                      success: false,
+                      error: result.error || "Failed to create calendar post",
+                    }
+                  }
+
+                  return {
+                    success: true,
+                    post: result.post,
+                    message: `✅ Post scheduled for ${params.scheduled_time} on ${params.scheduled_at.split("T")[0]}`,
+                  }
+                } catch (error: any) {
+                  console.error("[v0] createCalendarPost tool error:", error)
+                  return {
+                    success: false,
+                    error: error.message,
+                  }
+                }
+              },
+            }),
+          }
+        : {}
 
     const result = streamText({
       model: "anthropic/claude-sonnet-4.5",
       system: enhancedSystemPrompt,
       messages: allMessages,
       maxOutputTokens: 4000,
+      tools,
+      maxSteps: 20,
       onError: (error) => {
         console.error("[v0] Stream error:", error)
       },

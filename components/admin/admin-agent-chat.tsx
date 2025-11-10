@@ -4,6 +4,7 @@ import type React from "react"
 import { useState, useRef, useEffect } from "react"
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport } from "ai"
+import { Calendar } from "lucide-react"
 import { AdminAnalyticsPanel } from "./admin-analytics-panel"
 import { ContentCalendarExport } from "./content-calendar-export"
 import { CompetitorTracker } from "./competitor-tracker"
@@ -426,6 +427,20 @@ export default function AdminAgentChat({ userId, userName, userEmail }: AdminAge
           </div>
         </form>
       </div>
+
+      {/* Floating button to view calendar when in content mode with messages */}
+      {mode === "content" && messages.length > 1 && (
+        <div className="fixed bottom-8 right-8 z-50">
+          <a
+            href="/admin/calendar"
+            className="flex items-center gap-2 bg-stone-950 text-white px-5 py-3 rounded-xl shadow-xl hover:bg-stone-800 transition-all hover:scale-105 text-sm uppercase"
+            style={{ letterSpacing: "0.1em" }}
+          >
+            <Calendar className="w-4 h-4" />
+            VIEW CALENDAR
+          </a>
+        </div>
+      )}
     </div>
   )
 }
