@@ -14,32 +14,31 @@ function enhanceMotionPrompt(userPrompt: string | undefined, imageDescription?: 
   }
 
   const storyDrivenPrompts = [
-    // CONFIDENT & POWERFUL
-    "She locks eyes with the camera, her gaze unwavering and magnetic. A slow, confident smile spreads across her face as she tilts her chin up slightly, owning her space. Her shoulders roll back naturally, chest rising with a deep, powerful breath. Hair catches movement, flowing with intention as she shifts her weight. The energy is commanding yet effortless - this is someone who knows exactly who she is. Her presence fills the frame, radiating quiet power and unshakeable confidence that stops the scroll instantly.",
+    // CONFIDENT STREET STYLE
+    "She walks down the urban street with effortless confidence, mid-stride movement natural and fluid. One hand adjusts designer sunglasses as she glances back over her shoulder with a knowing look. Her coat flows behind her with each step, hair catching the breeze naturally. The energy is editorial street style - confident, intentional, magnetic. Overcast light creates that moody Instagram aesthetic. This is the kind of content that stops the scroll - real life luxury meets candid moment.",
 
-    // PLAYFUL & MAGNETIC
-    "A spontaneous laugh bubbles up as she glances away, then back with sparkling eyes and a mischievous grin. Her head tilts playfully to one side, hair cascading naturally as she moves. She bites her lip briefly, suppressing a smile that breaks through anyway. Her whole energy is infectious - carefree, joyful, magnetic. Shoulders lift in a light, teasing shrug. The moment feels stolen, candid, like catching someone in their most genuine, playful state. Pure charisma that makes you want to know their story.",
+    // COFFEE CULTURE MOMENT
+    "Sitting casually on concrete steps with iced coffee in hand, she scrolls her phone then looks up with genuine warmth. A natural smile spreads across her face as she tilts her head slightly, hair falling over one shoulder. She takes a sip, the movement unhurried and authentic. The vibe is elevated casual - that perfect Instagram lifestyle moment captured in real time. Architectural shadows play across the scene, moody and minimal.",
 
-    // MYSTERIOUS & ALLURING
-    "She turns her head slowly, deliberately, revealing her profile in dramatic shadows and light. Eyes half-lidded, she looks back over her shoulder with an enigmatic expression that hints at secrets untold. Her breathing is slow, measured, creating subtle chest movement. Hair flows like silk as she moves through the moment. There's an intensity here - captivating, hypnotic, impossible to look away from. The mood is cinematic, like a pivotal scene where everything changes. Scroll-stopping mystery.",
+    // QUIET LUXURY ELEGANCE
+    "She stands against brutalist architecture, hand sliding into her oversized coat pocket as she shifts her weight naturally. Head turns slowly to reveal her profile in soft overcast light. Hair moves like silk with the motion, perfectly imperfect. Eyes connect with camera briefly - powerful, present, elevated. This is The Row energy, Toteme sophistication. Minimal, intentional, expensive-looking without trying. Pure high-end influencer aesthetic.",
 
-    // EDITORIAL & ELEVATED
-    "Her gaze sweeps across the scene with editorial precision, then lands directly on camera with striking intensity. She takes a slow, intentional breath, posture elongating naturally as she settles into her power. Hair moves as if styled by an invisible wind, perfectly tousled. Her expression transitions from contemplative to engaging - subtle but transformative. Every micro-movement is purposeful, elevated, sophisticated. This is high fashion energy meeting authentic presence. The moment feels luxurious, aspirational, yet genuinely human.",
+    // ATHLEISURE CHIC MOVEMENT
+    "Walking away from camera in chunky white sneakers and wide-leg pants, she looks back over her shoulder with a playful confidence. Baseball cap catches the light as she adjusts her crossbody bag naturally. Movement is casual but captivating - that effortless athleisure vibe mixing luxury and comfort. Urban concrete backdrop, moody lighting. This is how modern influencers move through cities.",
 
-    // SOFT & INTIMATE
-    "She closes her eyes briefly, a peaceful smile forming as she breathes deeply, savoring the moment. When her eyes open, there's warmth and vulnerability - a genuine, tender expression. Her head tilts gently, hair falling naturally across one shoulder. Lips part slightly as if about to share something meaningful. The movement is subtle, intimate, like being let into a private moment of joy or reflection. Soft, authentic, deeply relatable. The kind of human connection that makes people pause and feel something real.",
+    // EDITORIAL POWER STANCE
+    "She takes a slow, intentional breath, shoulders rolling back as she settles into her power pose against clean architecture. Gaze sweeps across then locks onto camera with striking intensity. Head tilts ever so slightly, expression shifting from contemplative to engaging. Every micro-movement screams editorial sophistication. This is high fashion meets authentic presence - aspirational yet genuinely human. Scroll-stopping luxury aesthetic.",
 
-    // BOLD & EDGY
-    "She whips her head around sharply, hair flying dramatically as her expression shifts to bold confidence. Eyes narrow with fierce determination, jaw set with attitude. A smirk plays at the corners of her mouth - she knows she's got it. Her breathing quickens slightly, energy ramping up. This is unapologetic, boundary-pushing presence. She owns every second, every angle, every frame. The vibe is rebellious luxury, fashion-forward edge. Impossible to scroll past without stopping to stare.",
+    // WINDOW LIGHT CONTEMPLATION
+    "Standing by large windows with coffee cup in hand, soft natural light illuminating her profile. She turns slowly from the view to face camera, expression warm and inviting. Hair catches the morning light naturally. The moment feels intimate, like being let into a private morning ritual. Quiet luxury aesthetic with architectural interiors. That coveted golden hour content creators dream of.",
 
-    // DREAMY & CINEMATIC
-    "Soft morning light catches her profile as she turns slowly, lost in thought, eyes distant and dreamy. A gentle breeze moves her hair in slow, romantic waves. She bites her lip softly, a small smile emerging as if remembering something beautiful. Her breathing is deep and peaceful, chest rising and falling rhythmically. The moment feels suspended in time - ethereal, poetic, like a memory you can't quite place but makes you feel everything. Pure cinematic magic that commands attention.",
+    // CASUAL SEATED CONFIDENCE
+    "Sitting cross-legged on marble steps in oversized knitwear, she glances up from her phone with genuine engagement. One hand moves naturally through hair as she shifts position slightly. The movement is unhurried, authentic, magnetic. Sunglasses rest nearby, iced coffee on the step beside her. This is elevated casual lifestyle content - the kind that builds a following.",
 
-    // FIERCE & UNSTOPPABLE
-    "She strides forward with purpose, each step radiating unstoppable energy and determination. Her jaw is set, eyes laser-focused ahead with fierce intensity. Hair flows dramatically behind her with the motion. She doesn't just walk - she conquers space. A slight smirk crosses her face, confidence radiating from every movement. This is power in motion, ambition visualized, strength personified. The energy is electric, dynamic, absolutely magnetic. You can't look away from someone moving through the world like this.",
+    // URBAN MINIMALIST STRIDE
+    "Mid-stride walking through concrete architecture, long coat flowing dramatically with purposeful movement. She adjusts something on her wrist - watch or bracelet - without breaking pace. Hair moves naturally with each confident step. The energy is unstoppable, ambitious, fashion-forward. Clean minimal backdrop, overcast moody lighting. GQ-level editorial content but for the Instagram age.",
   ]
 
-  // Select a random story-driven prompt for variety
   const selectedPrompt = storyDrivenPrompts[Math.floor(Math.random() * storyDrivenPrompts.length)]
 
   return selectedPrompt

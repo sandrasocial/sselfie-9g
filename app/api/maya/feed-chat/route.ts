@@ -227,7 +227,7 @@ Be creative and authentic. No generic templates - every element should feel cust
           return {
             id: `post-${index + 1}`,
             title: "Styled Shot",
-            description: `${post.purpose}. ${post.composition}`,
+            description: `${post.purpose}`,
             category: "Flatlay",
             prompt: `${colorPalette.replace(/#[0-9a-fA-F]{6}/g, "").trim()} styled flatlay photography, ${genderObjectStyling}, ${post.styleDirection}, overhead shot with ${objectLighting}, professional editorial quality with ${brandVibe} aesthetic, carefully curated brand-aligned objects that tell a story about ${businessType}, shallow depth of field with creamy bokeh, subtle film grain texture for authenticity, high-end commercial photography, sophisticated composition that feels both aspirational and authentic, trending Instagram aesthetic 2025, cohesive color story, ${post.composition}`,
             textOverlay: undefined,
@@ -263,12 +263,25 @@ Be creative and authentic. No generic templates - every element should feel cust
             ? `${post.styleDirection}, shot waist-up showing styling details and natural hand positions, ${genderStyling}, dressed in elevated ${colorDescription} outfit mixing luxury and comfort (think: oversized cashmere with tailored trousers, or designer athleisure with structured bag), Instagram influencer aesthetic with brands like The Row, Toteme, or elevated COS/Zara pieces, minimal sophisticated accessories (designer bag, simple jewelry, sunglasses), relaxed confident pose avoiding stiffness, natural skin texture with healthy glow, architectural or minimal backdrop`
             : `${post.styleDirection}, close-up focus on face and upper shoulders, ${genderStyling}, styled in ${colorDescription} tones with premium fabric quality visible, natural skin texture with radiant healthy glow, authentic expression conveying confidence and approachability, film photography aesthetic with subtle grain`
 
+        const colorGrading =
+          colorPalette.includes("dark") || colorPalette.includes("moody")
+            ? "desaturated color palette with muted tones, faded blacks, crushed shadows, cool grey undertones, low contrast color grading"
+            : "desaturated warm tones with beige undertones, slightly washed out highlights, soft muted color palette, low contrast"
+
+        const realismDetails =
+          "raw street photography aesthetic, natural fabric wrinkles and texture, realistic skin texture with visible pores and natural imperfections, environmental grit, subtle film grain, unpolished authentic moment"
+
+        const atmosphericElements =
+          post.type === "Half Body"
+            ? "urban haze in background, city atmosphere, architectural setting"
+            : "soft atmospheric lighting, natural environment"
+
         return {
           id: `post-${index + 1}`,
-          title: "Portrait",
-          description: `${post.purpose}. ${post.composition}`,
+          title: post.type === "Close-Up" ? "Portrait" : "Lifestyle Shot",
+          description: `${post.purpose}`,
           category: post.type,
-          prompt: `${triggerWord}, ${fashionDetails}, ${lensSpecs[post.type as keyof typeof lensSpecs]}, ${lightingStyle}, natural skin texture with subtle film grain for authenticity, ${post.composition}, high-end Instagram influencer aesthetic with editorial quality, mixing luxury brands with elevated basics, confident effortless pose (walking naturally, hand in pocket, adjusting sunglasses, or sitting casually), architectural or minimal urban backdrop, trending Instagram aesthetic 2025, cohesive visual story, candid natural movement`,
+          prompt: `${triggerWord}, ${fashionDetails}, ${lensSpecs[post.type as keyof typeof lensSpecs]}, ${lightingStyle}, ${colorGrading}, ${post.composition}, ${realismDetails}, ${atmosphericElements}, high-end Instagram influencer aesthetic with editorial quality, mixing luxury brands with elevated basics, confident effortless pose (walking naturally, hand in pocket, adjusting sunglasses, or sitting casually), trending Instagram aesthetic 2025, cohesive visual story, candid natural movement`,
           textOverlay: undefined,
           purpose: post.purpose,
           composition: post.composition,

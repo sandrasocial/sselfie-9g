@@ -56,9 +56,9 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const router = useRouter()
 
-  const [styleStrength, setStyleStrength] = useState(1.0) // LoRA scale: 0.9-1.2
+  const [styleStrength, setStyleStrength] = useState(1.1) // LoRA scale: 0.9-1.2
   const [promptAccuracy, setPromptAccuracy] = useState(3.5) // Guidance scale: 2.5-5.0
-  const [aspectRatio, setAspectRatio] = useState("1:1")
+  const [aspectRatio, setAspectRatio] = useState("4:5")
   const [showSettings, setShowSettings] = useState(false)
 
   const settingsSaveTimerRef = useRef<NodeJS.Timeout | null>(null)
@@ -72,9 +72,9 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
       try {
         const settings = JSON.parse(settingsStr)
         console.log("[v0] 📊 Loaded saved settings from localStorage:", settings)
-        setStyleStrength(settings.styleStrength || 1.0)
+        setStyleStrength(settings.styleStrength || 1.1) // Updated default from 1.0 to 1.1
         setPromptAccuracy(settings.promptAccuracy || 3.5)
-        setAspectRatio(settings.aspectRatio || "1:1")
+        setAspectRatio(settings.aspectRatio || "4:5") // Updated default from "1:1" to "4:5"
       } catch (error) {
         console.error("[v0] ❌ Error loading settings:", error)
       }
@@ -1266,7 +1266,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
               onChange={(e) => {
                 setInputValue(e.target.value)
                 e.target.style.height = "auto"
-                e.target.style.height = Math.min(e.target.scrollHeight, 100) + "px"
+                e.target.style.height = Math.min(e.target.scrollHeight, 80) + "px"
               }}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
@@ -1279,7 +1279,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
                 }
               }}
               placeholder={uploadedImage ? "Describe the style..." : "Message Maya..."}
-              className="w-full pl-[5.5rem] pr-12 py-3 bg-white/40 backdrop-blur-2xl border border-white/60 rounded-xl text-stone-950 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-950/50 focus:bg-white/60 font-medium text-sm min-h-[48px] max-h-[100px] shadow-lg shadow-stone-950/10 transition-all duration-300 resize-none overflow-y-auto leading-relaxed touch-manipulation"
+              className="w-full pl-[5.5rem] pr-12 py-3 bg-white/40 backdrop-blur-2xl border border-white/60 rounded-xl text-stone-950 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-950/50 focus:bg-white/60 font-medium text-[16px] min-h-[48px] max-h-[80px] shadow-lg shadow-stone-950/10 transition-all duration-300 resize-none overflow-y-auto leading-relaxed touch-manipulation"
               disabled={isTyping || isUploadingImage}
               aria-label="Message input"
               rows={1}

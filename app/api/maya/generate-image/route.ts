@@ -144,21 +144,11 @@ export async function POST(request: NextRequest) {
 
     let finalPrompt = conceptPrompt
 
-    const promptStart = finalPrompt.toLowerCase().trim().substring(0, 50)
-    const hasGenderDescriptor = promptStart.includes(`a ${genderTerm}`) || promptStart.includes(`the ${genderTerm}`)
-
-    if (!hasGenderDescriptor) {
-      console.log("[v0] ⚠️ Gender descriptor missing from prompt, adding it now")
-      finalPrompt = `a ${genderTerm}, ${finalPrompt}`
-    } else {
-      console.log("[v0] ✅ Gender descriptor present in prompt:", genderTerm)
-    }
-
     if (isHighlight) {
       finalPrompt = `${finalPrompt}, professional Instagram story highlight aesthetic, elegant and minimalistic design, soft lighting, high-end editorial quality, perfect for text overlay, circular crop friendly, trending Instagram aesthetic 2025`
     }
 
-    console.log("[v0] Final FLUX prompt (Maya's gender-aware prompt):", finalPrompt)
+    console.log("[v0] Final FLUX prompt (Maya's creative prompt):", finalPrompt)
 
     const promptLower = finalPrompt.toLowerCase().trim()
     const triggerLower = triggerWord.toLowerCase()
