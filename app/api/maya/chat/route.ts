@@ -215,7 +215,7 @@ ${
   userGender === "woman"
     ? `**CRITICAL PROMPT RULES FOR WOMEN:**
 
-1. **Length: 80-100 characters** - Concise but detailed
+1. **Length: 200-250 characters** - Detailed natural language descriptions
 2. **NO trigger word** - System adds automatically
 3. **Start with capitalized "Woman"** - No "a woman", just "Woman in..."
 4. **Simple structure:** Woman in [outfit with brand] [activity/pose] while [location details]. [Lighting description with color grading]. [Realistic texture and photography details].
@@ -296,35 +296,23 @@ ${
 - Large windows with city views
 - Industrial spaces, gallery-like settings
 
-**EXAMPLE PROMPT STRUCTURE (Follow this):**
+**GOOD EXAMPLES - NATURAL LANGUAGE FLOW (200-250 chars):**
 
-"Woman in [outfit] [activity/pose] while [location details]. [Lighting description with color grading]. [Realistic texture and photography details]."
+"Woman in oversized black leather moto jacket paired with white wide-leg pants walking mid-stride down urban street adjusting sunglasses. Desaturated color palette with cool grey atmosphere, overcast diffused lighting. Natural fabric texture, realistic skin texture, subtle film grain."
 
-**GOOD EXAMPLES - NATURAL LANGUAGE FLOW (100-120 chars):**
+"Woman wearing cream Toteme cashmere turtleneck tucked into black wide-leg trousers with white Nike AF1s, standing by floor-to-ceiling windows holding iPhone. Warm muted tones with soft golden hour rim lighting casting long shadows. Natural knit texture, realistic skin with pores, subtle environmental grit."
 
-"Woman wearing cream Toteme turtleneck with black pants standing by concrete wall. Desaturated grey tones with overcast lighting. Realistic skin texture."
+"Woman in oversized grey knit sweater with high-waisted black trousers and black leather Chelsea boots, leaning against brutalist concrete wall looking down thoughtfully. Heavily desaturated grey tones with architectural shadows creating moody atmosphere. Raw street photography, natural fabric wrinkles, realistic skin texture."
 
-"Woman in black blazer over white tee with grey sweatpants and Nike AF1s walking through the city with coffee. Crushed blacks, moody light, subtle film grain."
+"Woman wearing black blazer over white tee with grey wide-leg sweatpants and chunky sneakers, walking through city street mid-stride holding iced coffee. Crushed blacks with cool grey undertones, overcast urban lighting creating flat diffused shadows. Urban haze atmosphere, subtle film grain, unpolished street moment."
 
-"Woman wearing beige knit set sitting with iced coffee and sunglasses. Warm muted tones in soft morning light. Natural fabric texture."
+"Woman in beige linen set sitting cross-legged on marble cafe counter with iced latte and sunglasses pushed up on head. Soft warm beige tones with morning golden hour light streaming through large windows. Natural linen fabric texture, realistic skin with visible pores, low contrast dreamy aesthetic."
 
-"Woman in oversized black leather moto jacket paired with white wide-leg pants walking mid-stride down urban street. Desaturated color palette with cool grey atmosphere. Natural fabric texture, realistic skin texture, subtle film grain capturing an unpolished authentic moment."
-
-"Woman in oversized grey knit sweater tucked into high-waisted black trousers, black leather Chelsea boots, leaning against grey concrete wall. Muted tones with architectural shadows. Natural knit texture, realistic skin texture, environmental grit, subtle film grain."
-
-"Woman in camel wool blazer over silk camisole with cream wide-leg pants and Adidas Sambas walking through brutalist architecture. Desaturated warm tones with golden hour backlight. Natural fabric weight, realistic skin texture, urban haze, fine film grain."
-
-**ACTIVITIES FOR WOMEN - Instagram Moments:**
-- Coffee shop content: sitting with latte, standing at counter
-- Street style: walking mid-stride, looking over shoulder, hand adjusting sunglasses
-- Casual seated: on steps, bench, floor with legs crossed
-- Architectural: leaning against walls, standing in doorways, by windows
-- Lifestyle: scrolling phone, holding coffee, adjusting outfit
-- Candid movements: walking away, turning head, natural gestures`
+`
     : userGender === "man"
       ? `**CRITICAL PROMPT RULES FOR MEN:**
 
-1. **Length: 80-100 characters** - Concise but detailed
+1. **Length: 200-250 characters** - Detailed natural language descriptions
 2. **NO trigger word** - System adds automatically
 3. **Start with capitalized "Man"** - No "a man", just "Man in..."
 4. **Simple structure:** Man in [outfit with brand] [activity/pose] while [location details]. [Lighting description with color grading]. [Realistic texture and photography details].
@@ -406,11 +394,7 @@ ${
 - Brutalist architecture, geometric backgrounds
 - Overcast weather, moody lighting
 
-**EXAMPLE PROMPT STRUCTURE (Follow this):**
-
-"Man in [outfit] [activity/pose] while [location details]. [Lighting description with color grading]. [Realistic texture and photography details]."
-
-**GOOD EXAMPLES - NATURAL LANGUAGE FLOW (100-120 chars):**
+**GOOD EXAMPLES - NATURAL LANGUAGE FLOW (200-250 chars):**
 
 "Man in black Arc'teryx jacket over grey crewneck walking confidently down urban street. Crushed shadows with overcast lighting. Raw street photography feel with gritty texture."
 
@@ -433,7 +417,7 @@ ${
 - Editorial stances: strong posture, confident presence, mid-stride`
       : `**CRITICAL PROMPT RULES:**
 
-1. **Length: 80-100 characters** - Concise but detailed
+1. **Length: 200-250 characters** - Detailed natural language descriptions
 2. **NO trigger word** - System adds automatically
 3. **Start with capitalized "Person"**
 4. **Simple structure:** Person in [outfit] [activity/pose] while [location details]. [Lighting description with color grading]. [Realistic texture and photography details].
@@ -465,11 +449,7 @@ ${
 
 **SETTINGS:** Urban concrete, minimal interiors, architectural backgrounds, overcast lighting
 
-**EXAMPLE PROMPT STRUCTURE (Follow this):**
-
-"Person in [outfit] [activity/pose] while [location details]. [Lighting description with color grading]. [Realistic texture and photography details]."
-
-**GOOD EXAMPLES - NATURAL LANGUAGE FLOW (100-120 chars):**
+**GOOD EXAMPLES - NATURAL LANGUAGE FLOW (200-250 chars):**
 
 "Person in oversized beige sweater and black jeans walking down city street. Desaturated tones with overcast lighting. Realistic skin texture."
 
@@ -492,7 +472,7 @@ Each concept MUST adhere to the following JSON structure, with the "prompt" fiel
     "fashionIntelligence": "Quick styling note",
     "lighting": "Specific lighting from mood category with atmospheric details",
     "location": "Exact location",
-    "prompt": "80-100 character clean prompt MUST include: outfit + pose + lighting + COLOR GRADING (desaturated, muted tones, etc.) + realism (raw photography, skin texture, film grain) + atmospheric elements"
+    "prompt": "200-250 character clean prompt MUST include: outfit + pose + lighting + COLOR GRADING (desaturated, muted tones, etc.) + realism (raw photography, skin texture, film grain) + atmospheric elements"
   }
 ]`
 

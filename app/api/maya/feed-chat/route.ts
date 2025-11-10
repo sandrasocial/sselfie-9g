@@ -254,12 +254,16 @@ Be creative and authentic. No generic templates - every element should feel cust
 
         const colorGrading =
           colorPalette.includes("dark") || colorPalette.includes("moody")
-            ? "Desaturated tones, faded blacks, cool grey."
-            : "Warm muted tones, soft highlights."
+            ? "Desaturated tones with faded blacks and cool grey undertones creating moody atmospheric depth."
+            : "Warm muted tones with soft highlights and low contrast for an inviting aesthetic."
 
-        const realismDetails = "Raw photography, realistic skin texture." // Simplified realism descriptors
+        const realismDetails =
+          "Raw photography feel with realistic skin texture showing natural pores and authentic imperfections." // Enhanced realism descriptors
 
-        const atmosphericElements = post.type === "Half Body" ? "Urban haze." : "Subtle film grain." // Simplified atmospheric elements
+        const atmosphericElements =
+          post.type === "Half Body"
+            ? "Urban haze adds environmental depth and street photography authenticity."
+            : "Subtle film grain texture adds cinematic quality and authenticity." // Enhanced atmospheric elements
 
         return {
           id: `post-${index + 1}`,
