@@ -188,25 +188,88 @@ ${
 7. **Film aesthetic references** - Portra 400, Kodak Gold 200, Tri-X 400, etc.
 8. **Always mention:** real/natural skin texture, visible pores/detail, film grain
 
+**STYLING CATEGORIES - MIX THESE UP:**
+
+**Quiet Luxury / Old Money:**
+- Oversized cashmere sweaters (The Row, Toteme), wide-leg trousers
+- Tailored blazers, silk button-downs in neutrals
+- Minimal jewelry, structured leather bags
+- Beige, cream, caramel, ivory, charcoal tones
+
+**Athleisure Chic:**
+- Oversized hoodies, track pants, puffer jackets
+- Chunky sneakers (Nike Air Force 1, Adidas Sambas, New Balance 550)
+- Baseball caps (Yankees, minimalist logos), crossbody bags
+- Mix luxury and athletic (e.g., "Lululemon Define jacket with Prada nylon bag")
+
+**Minimalist Scandi:**
+- Clean lines, monochrome palettes
+- Architectural silhouettes, quality basics (COS, Arket)
+- Black, white, grey, no patterns
+- Less is more aesthetic
+
+**Urban Street Style:**
+- Oversized blazers, leather jackets, long coats
+- Wide-leg jeans, cargo pants, baggy silhouettes  
+- Combat boots, chunky sneakers, platform shoes
+- Baseball caps, small shoulder bags, sunglasses always
+
+**Elevated Casual:**
+- Knit sets, matching loungewear in luxe fabrics
+- Silk slip dresses with sneakers or boots
+- Cashmere hoodies, designer sweatpants
+- Unexpected high-low mixing
+
+**BRAND NAME EXAMPLES (use naturally, not forced):**
+- Luxury: The Row, Toteme, Khaite, Jil Sander, Loro Piana
+- Athleisure: Lululemon, Alo Yoga, Girlfriend Collective, Outdoor Voices
+- Sneakers: Nike (Air Force 1, Dunks), Adidas (Sambas), New Balance (550, 990)
+- Accessible Luxury: COS, Arket, Zara, Mango, & Other Stories
+- Bags: Bottega Veneta pouch, Prada nylon bag, The Row bag, Saint Laurent
+
+**POSES & MOODS - Instagram Influencer Vibes:**
+- Walking away from camera, looking over shoulder
+- Sitting on steps/bench with coffee, scrolling phone
+- Hand in coat pocket, adjusting sunglasses
+- Leaning against concrete wall, looking down
+- Overhead angle sitting cross-legged
+- Mid-stride walking down urban street
+- Standing at window with coffee, back to camera
+- Casual seated pose, one leg up
+
+**SETTINGS & BACKDROPS:**
+- Concrete architecture, brutalist buildings
+- Minimal cafe interiors, marble counters
+- Urban streets, clean sidewalks
+- Grey overcast days, moody weather
+- Large windows with city views
+- Industrial spaces, gallery-like settings
+
 **EXAMPLE PROMPT STRUCTURE (Follow this):**
 
-"Woman in [one clothing item with fabric], [simple action/location], [specific lighting from mood category], [aesthetic descriptor], real skin texture with [detail], [film type] aesthetic"
+"Woman in [brand/style outfit], [Instagram influencer pose], [specific lighting], [aesthetic descriptor], real skin texture with [detail], [film type] aesthetic"
 
-**GOOD EXAMPLES:**
+**GOOD EXAMPLES - HIGH-END INFLUENCER AESTHETICS:**
 
-"Woman in cream knit loungewear sitting beside large window with city view, soft natural window light, airy and bright atmosphere, real skin texture with visible pores, subtle film grain, editorial lifestyle photography"
+"Woman in oversized cream Toteme cashmere turtleneck and black wide-leg trousers, standing against concrete architecture with one hand in pocket, soft overcast lighting, minimal Scandi aesthetic, natural skin texture, Kodak Portra 400 film grain"
 
-"Woman in tailored black power suit, minimal beige backdrop, dramatic side lighting with deep shadows, sleek glam makeup, cinematic Vogue editorial style, rich blacks, film grain, visible skin detail"
+"Woman in black oversized blazer over white crop tee, grey wide-leg sweatpants and Nike Air Force 1 sneakers, walking away from camera on urban street with coffee cup, moody overcast light, athleisure chic vibe, real skin texture, minimal grain"
 
-"Woman in designer athleisure holding green juice, walking down palm-lined Beverly Hills street, warm golden hour backlight with soft glow and sun flares, natural skin texture, Kodak Portra 400 film grain aesthetic"
+"Woman in beige knit matching set sitting cross-legged on marble steps with iced coffee, oversized sunglasses, soft morning window light filtering through, quiet luxury aesthetic, visible skin pores, subtle film grain"
 
-"Woman in vintage band tee and black leather jacket leaning against brick wall, moody overcast lighting with muted tones, effortless cool vibe, real skin with natural makeup, Tri-X 400 film grain"
+"Woman in long black coat, white hoodie underneath, black leggings and chunky white sneakers, sitting on bench scrolling phone with NY baseball cap, dramatic overcast lighting, urban street style, natural skin texture, Tri-X 400 grain"
 
-**ACTIVITIES FOR WOMEN:**
-- Sitting beside window, standing at café, walking down street
-- Lounging on chair, leaning against wall, adjusting clothing
-- Holding coffee/juice, looking at phone, relaxed moments
-- At rooftop, in doorway, by window, natural authentic poses`
+"Woman in oversized grey knit sweater tucked into high-waisted black trousers, black leather Chelsea boots, leaning against grey concrete wall looking down at coffee cup, architectural shadows, minimalist monochrome aesthetic, real skin detail, pushed film grain"
+
+"Woman in camel wool blazer over silk camisole, cream wide-leg pants and Adidas Sambas, walking through brutalist architecture with designer tote bag, golden hour backlight, elevated casual style, natural skin texture, Portra 400 aesthetic"
+
+**ACTIVITIES FOR WOMEN - Instagram Moments:**
+- Coffee shop content: sitting with latte, standing at counter
+- Street style: walking mid-stride, looking over shoulder, hand adjusting sunglasses
+- Casual seated: on steps, bench, floor with legs crossed
+- Architectural: leaning against walls, standing in doorways, by windows
+- Lifestyle: scrolling phone, holding coffee, adjusting outfit
+- Candid movements: walking away, turning head, natural gestures`
     : userGender === "man"
       ? `**CRITICAL PROMPT RULES FOR MEN:**
 
@@ -221,27 +284,88 @@ ${
 9. **Masculine descriptors:** confident, sharp, powerful, cinematic GQ/Esquire style
 10. **NEVER describe hair, facial hair, beards, or hair color** - User's LoRA model handles this
 
+**STYLING CATEGORIES - MIX THESE UP:**
+
+**Quiet Luxury / Old Money:**
+- Tailored wool coats, cashmere crewnecks, Italian knitwear
+- Tailored trousers, Oxford shirts, minimal jewelry (watch, simple chain)
+- Leather loafers, Chelsea boots, clean sneakers
+- Navy, charcoal, camel, cream, black tones
+
+**Urban Streetwear:**
+- Oversized hoodies, tech jackets, puffer coats
+- Cargo pants, wide-leg jeans, track pants
+- Chunky sneakers (Nike Dunks, New Balance 990, Jordans)
+- Baseball caps, crossbody bags, minimalist backpacks
+
+**Minimal Menswear:**
+- Black turtlenecks, grey crewnecks, white tees
+- Clean tailored pants, straight-leg denim
+- Architectural silhouettes, monochrome palettes
+- Scandinavian simplicity, quality over flash
+
+**Athletic Luxury:**
+- Technical outerwear, performance materials
+- Zip-ups, quarter-zips, athletic pants
+- Running shoes elevated to style (Nike, Adidas, New Balance)
+- Mix athletic and tailored pieces
+
+**GQ Editorial:**
+- Structured blazers, three-piece suits
+- Dress shirts, silk scarves, statement outerwear
+- Polished leather shoes, designer sneakers
+- High-fashion menswear, editorial confidence
+
+**BRAND NAME EXAMPLES (use naturally):**
+- Luxury: The Row, Loro Piana, Brunello Cucinelli, AMI Paris
+- Streetwear: Stone Island, Arc'teryx, Carhartt WIP, Stussy
+- Sneakers: Nike (Dunks, Jordan 1, Air Max), New Balance (990, 550), Adidas (Samba)
+- Minimalist: COS, Norse Projects, APC, Sunspel
+- Technical: Arc'teryx, Patagonia, The North Face Purple Label
+
+**POSES & MOODS - Men's Influencer Vibes:**
+- Walking confidently down urban street
+- Leaning against concrete/brick wall, arms crossed
+- Sitting on bench/steps, elbows on knees
+- Standing in doorway, one hand in pocket
+- Walking away from camera, looking over shoulder
+- Adjusting watch or jacket collar
+- Seated at cafe counter with coffee
+- Mid-stride with hands in coat pockets
+
+**SETTINGS & BACKDROPS:**
+- Industrial architecture, concrete buildings
+- Urban streets, clean cityscapes
+- Modern offices, minimalist interiors
+- Coffee shops, natural wood and concrete
+- Brutalist architecture, geometric backgrounds
+- Overcast weather, moody lighting
+
 **EXAMPLE PROMPT STRUCTURE (Follow this):**
 
-"Man in [one clothing item with fabric], [simple action/location], [specific lighting from mood category], [aesthetic descriptor], real skin texture with [detail], [film type] aesthetic"
+"Man in [brand/style outfit], [confident pose], [specific lighting], [aesthetic descriptor], real skin texture with [detail], [film type] aesthetic"
 
-**GOOD EXAMPLES:**
+**GOOD EXAMPLES - HIGH-END INFLUENCER AESTHETICS:**
 
-"Man in grey knit sweater working at desk beside large window with city view, soft natural window light, airy and bright atmosphere, real skin texture with visible pores, subtle film grain, editorial lifestyle photography"
+"Man in black Arc'teryx Veilance shell jacket over grey merino crewneck, charcoal tapered pants and Nike Dunks, walking down concrete urban street with hands in pockets, overcast moody lighting, technical minimalist aesthetic, natural skin texture, Tri-X 400 grain"
 
-"Man in tailored charcoal three-piece suit, minimal dark backdrop, dramatic side lighting with deep shadows, cinematic GQ editorial style, rich blacks, film grain, visible skin detail"
+"Man in camel wool overcoat, black turtleneck and tailored charcoal trousers, standing in brutalist architecture with one hand adjusting watch, soft golden hour backlight, quiet luxury style, real skin detail, Portra 400 film grain"
 
-"Man in designer black bomber jacket and slim jeans walking down urban street, warm golden hour backlight with soft glow and sun flares, natural skin texture, Kodak Portra 400 film grain aesthetic"
+"Man in oversized black hoodie, grey cargo pants and New Balance 990v6 sneakers, sitting on concrete steps with coffee cup and phone, architectural shadows, urban street style, visible skin texture, minimal grain"
 
-"Man in sleek black turtleneck, dramatic Rembrandt lighting with deep shadows, moody studio atmosphere, cinematic Esquire aesthetic, visible skin texture with natural detail, pushed film grain"
+"Man in navy cashmere crewneck tucked into beige chinos with brown leather Chelsea boots, leaning against grey concrete wall with arms crossed, overcast lighting, Scandinavian minimal aesthetic, natural skin pores, subtle film grain"
 
-"Man in navy henley shirt sitting at kitchen counter with coffee cup, soft morning light through sheer curtains, bright and airy Scandinavian aesthetic, real natural skin texture, minimal grain"
+"Man in black performance quarter-zip, matching joggers and white Nike Air Max, walking away from camera through modern glass architecture, soft morning light, athletic luxury vibe, real skin texture, clean aesthetic"
 
-**ACTIVITIES FOR MEN:**
-- Working at desk, sitting with coffee, walking urban streets
-- Standing at windows, leaning against walls, confident poses
-- Adjusting watch/jacket, looking at cityscape, editorial stances
-- At rooftops, in offices, by architecture, strong masculine presence`
+"Man in charcoal three-piece suit with no tie, white dress shirt unbuttoned at collar, walking mid-stride on city street, warm golden hour light, cinematic GQ editorial style, natural skin detail, Kodak Gold aesthetic"
+
+**ACTIVITIES FOR MEN - Instagram Moments:**
+- Coffee content: holding cup, sitting at counter, walking with coffee
+- Street style: confident walking, hands in pockets, looking over shoulder
+- Casual seated: on steps, bench, elbows on knees, relaxed posture
+- Architectural: leaning on walls, standing in doorways, geometric backgrounds
+- Lifestyle: adjusting watch/jacket, checking phone, natural movements
+- Editorial stances: strong posture, confident presence, mid-stride`
       : `**CRITICAL PROMPT RULES:**
 
 1. **Length: 30-50 words MAXIMUM**
@@ -250,23 +374,20 @@ ${
 4. **Natural authentic moments**
 5. **Specific lighting** - Use mood categories
 6. **Film aesthetic references** - Portra 400, Kodak Gold, Tri-X 400
-7. **Always mention:** real/natural skin texture, film grain`
+7. **Always mention:** real/natural skin texture, film grain
+
+**STYLING CATEGORIES:**
+- Quiet Luxury: Oversized knitwear, wide-leg trousers, minimal accessories
+- Athleisure: Performance wear with luxury touches, chunky sneakers
+- Urban Minimal: Monochrome palettes, architectural silhouettes, clean lines
+- Street Style: Oversized outerwear, designer athletic shoes, baseball caps
+
+**BRAND EXAMPLES:** The Row, COS, Nike, New Balance, Adidas, Lululemon, Arc'teryx
+
+**POSES:** Walking naturally, sitting casually, leaning against architecture, coffee in hand, scrolling phone
+
+**SETTINGS:** Urban concrete, minimal interiors, architectural backgrounds, overcast lighting`
 }
-
-**WHAT TO AVOID:**
-❌ Long descriptions (60+ words)
-❌ Excessive pose instructions
-❌ Multiple clothing items
-❌ Generic lighting
-❌ Missing skin texture or film grain
-
-**WHAT TO INCLUDE:**
-✅ One key clothing piece
-✅ Simple action or location
-✅ Specific lighting mood
-✅ Editorial aesthetic
-✅ Real skin texture
-✅ Film grain reference
 
 Now generate ${count} diverse concepts as JSON array. Mix different lighting moods, activities, and clothing styles.
 

@@ -253,22 +253,22 @@ Be creative and authentic. No generic templates - every element should feel cust
 
         const genderStyling =
           user.gender === "woman" || user.gender === "female"
-            ? "elegant flowing hair styled naturally, refined makeup with natural glow, feminine grace and confidence"
+            ? "confident woman with natural styled hair, refined minimal makeup, modern influencer presence, effortless chic energy"
             : user.gender === "man" || user.gender === "male"
-              ? "styled hair with clean lines, masculine confidence and presence, strong professional demeanor"
-              : "styled appearance with confident presence, authentic professional energy"
+              ? "confident man with clean styling, strong editorial presence, masculine sophistication"
+              : "confident person with styled appearance, authentic presence, editorial energy"
 
         const fashionDetails =
           post.type === "Half Body"
-            ? `dressed in elegant ${colorDescription} professional attire with attention to fabric quality and fit, ${post.styleDirection}, styled with minimal sophisticated accessories, waist-up framing showing upper body styling with relaxed shoulders and natural hand positions, defined facial features with natural skin texture and healthy glow, warm lighting illuminating face for clarity and engagement`
-            : `styled with ${colorDescription} tones in clothing and background, ${post.styleDirection}, natural skin texture with healthy radiant glow, authentic expression that connects with viewers, close-up focus on face and upper shoulders`
+            ? `${post.styleDirection}, shot waist-up showing styling details and natural hand positions, ${genderStyling}, dressed in elevated ${colorDescription} outfit mixing luxury and comfort (think: oversized cashmere with tailored trousers, or designer athleisure with structured bag), Instagram influencer aesthetic with brands like The Row, Toteme, or elevated COS/Zara pieces, minimal sophisticated accessories (designer bag, simple jewelry, sunglasses), relaxed confident pose avoiding stiffness, natural skin texture with healthy glow, architectural or minimal backdrop`
+            : `${post.styleDirection}, close-up focus on face and upper shoulders, ${genderStyling}, styled in ${colorDescription} tones with premium fabric quality visible, natural skin texture with radiant healthy glow, authentic expression conveying confidence and approachability, film photography aesthetic with subtle grain`
 
         return {
           id: `post-${index + 1}`,
           title: "Portrait",
           description: `${post.purpose}. ${post.composition}`,
           category: post.type,
-          prompt: `${triggerWord}, ${genderStyling}, ${fashionDetails}, ${post.styleDirection}, ${lensSpecs[post.type as keyof typeof lensSpecs]}, ${lightingStyle}, natural skin texture with subtle film grain for authenticity, ${post.composition}, timeless elegance meets modern sophistication, high-end editorial photography with ${brandVibe} aesthetic, genuine professional presence that feels both aspirational and relatable, trending Instagram aesthetic 2025, cohesive visual story, candid natural pose avoiding stiffness`,
+          prompt: `${triggerWord}, ${fashionDetails}, ${lensSpecs[post.type as keyof typeof lensSpecs]}, ${lightingStyle}, natural skin texture with subtle film grain for authenticity, ${post.composition}, high-end Instagram influencer aesthetic with editorial quality, mixing luxury brands with elevated basics, confident effortless pose (walking naturally, hand in pocket, adjusting sunglasses, or sitting casually), architectural or minimal urban backdrop, trending Instagram aesthetic 2025, cohesive visual story, candid natural movement`,
           textOverlay: undefined,
           purpose: post.purpose,
           composition: post.composition,
