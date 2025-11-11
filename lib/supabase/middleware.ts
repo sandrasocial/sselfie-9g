@@ -26,7 +26,15 @@ export async function updateSession(request: NextRequest) {
   )
 
   try {
-    await supabase.auth.getUser()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    // If user is authenticated and visiting the landing page, redirect to studio
+    if (user && request.nextUrl.pathname === "/") {
+      const studioUrl = new URL("/studio", request.url)
+      return NextResponse.redirect(studioUrl)
+    }
   } catch (error) {
     // Silently ignore auth errors - user might not be logged in
   }

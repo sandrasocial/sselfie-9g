@@ -26,10 +26,14 @@ export default function ForgotPasswordPage() {
     const supabase = createClient()
 
     try {
-      const isDevelopment = process.env.NODE_ENV === "development"
-      const redirectUrl = isDevelopment
-        ? process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${window.location.origin}/auth/confirm`
-        : `${window.location.origin}/auth/confirm`
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || window.location.origin
+      const redirectUrl = `${siteUrl}/auth/callback`
+
+      console.log("[v0] 📧 Sending password reset email to:", email)
+      console.log("[v0] 🔗 Redirect URL being sent to Supabase:", redirectUrl)
+      console.log("[v0] 🌐 Window origin:", window.location.origin)
+      console.log("[v0] 🔑 Site URL env:", process.env.NEXT_PUBLIC_SITE_URL)
+      console.log("[v0] 🔑 App URL env:", process.env.NEXT_PUBLIC_APP_URL)
 
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: redirectUrl,
@@ -37,10 +41,10 @@ export default function ForgotPasswordPage() {
 
       if (error) throw error
 
-      console.log("[v0] Password reset email sent successfully")
+      console.log("[v0] ✅ Password reset email sent successfully to Supabase")
       setSuccess(true)
     } catch (error: unknown) {
-      console.error("[v0] Password reset error:", error)
+      console.error("[v0] ❌ Password reset error:", error)
       setError(error instanceof Error ? error.message : "Failed to send reset email. Please try again.")
     } finally {
       setIsLoading(false)

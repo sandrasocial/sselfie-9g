@@ -4,7 +4,7 @@ export function generateWelcomeEmail(params: WelcomeEmailParams): {
   html: string
   text: string
 } {
-  const { customerName, customerEmail, creditsGranted, packageName, productType } = params
+  const { customerName, customerEmail, creditsGranted, packageName, productType, passwordSetupUrl } = params
 
   if (productType === "credit_topup") {
     const html = `
@@ -155,6 +155,12 @@ XoXo Sandra 💋
     ? "This is where we create the content that builds empires. Every month, you get fresh tools, new styles, and exclusive drops that keep your brand ahead of the curve."
     : "No more waiting for the \"perfect\" photoshoot. No more feeling invisible online. You're about to create professional photos that actually look like you—and they're going to be stunning."
 
+  const ctaUrl = passwordSetupUrl || `${process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"}/studio`
+  const ctaText = passwordSetupUrl ? "Set Up Your Password" : "Go to Studio"
+  const ctaDescription = passwordSetupUrl
+    ? "First, let's secure your account. Click below to create your password and get started."
+    : ""
+
   const html = `
 <!DOCTYPE html>
 <html>
@@ -255,6 +261,14 @@ XoXo Sandra 💋
                 What's Next
               </h2>
               
+              ${
+                passwordSetupUrl
+                  ? `
+              <p style="margin: 0 0 12px; color: #57534e; font-size: 14px; font-weight: 300; line-height: 1.7;">
+                ${ctaDescription}
+              </p>
+              `
+                  : `
               <p style="margin: 0 0 12px; color: #57534e; font-size: 14px; font-weight: 300; line-height: 1.7;">
                 Here's how to get started:
               </p>
@@ -289,6 +303,8 @@ XoXo Sandra 💋
                   </td>
                 </tr>
               </table>
+              `
+              }
             </td>
           </tr>
           
@@ -309,8 +325,8 @@ XoXo Sandra 💋
           <!-- CTA Button -->
           <tr>
             <td style="padding: 0 30px 40px; text-align: center;">
-              <a href="${process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"}/studio" style="display: inline-block; background-color: #1c1917; color: #fafaf9; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-size: 13px; font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase;">
-                Go to Studio
+              <a href="${ctaUrl}" style="display: inline-block; background-color: #1c1917; color: #fafaf9; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-size: 13px; font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase;">
+                ${ctaText}
               </a>
             </td>
           </tr>
@@ -354,12 +370,18 @@ ${packageName}: ${creditsGranted} credits
 WHAT'S NEXT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Here's how to get started:
+${
+  passwordSetupUrl
+    ? `${ctaDescription}
+
+${ctaText}: ${ctaUrl}`
+    : `Here's how to get started:
 
 1. Upload 10-20 selfies (the more variety, the better)
 2. Let the AI train on your unique look
 3. Create your first professional photos
-4. Start building your brand empire
+4. Start building your brand empire`
+}
 
 "I built my business from nothing but selfies and a story. Now it's your turn."
 — Sandra

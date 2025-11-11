@@ -334,6 +334,7 @@ export async function POST(request: NextRequest) {
                     creditsGranted: credits,
                     packageName: productName,
                     productType: productType as "one_time_session" | "credit_topup",
+                    passwordSetupUrl: passwordSetupLink,
                   })
 
                   console.log("[v0] Email content generated:", {
@@ -614,6 +615,7 @@ export async function POST(request: NextRequest) {
                   customerEmail: customerEmail,
                   creditsGranted: creditsGranted,
                   packageName: productName,
+                  passwordSetupUrl: passwordSetupLink,
                 })
 
                 const emailContent = generateWelcomeEmail({
@@ -623,6 +625,7 @@ export async function POST(request: NextRequest) {
                   packageName: productName,
                   productType:
                     productType === "sselfie_studio_membership" ? "sselfie_studio_membership" : "one_time_session",
+                  passwordSetupUrl: passwordSetupLink,
                 })
 
                 console.log("[v0] Email content generated:", {

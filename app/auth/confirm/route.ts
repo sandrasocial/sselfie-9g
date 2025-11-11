@@ -1,16 +1,20 @@
 import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
-import { NextResponse, type NextRequest } from "next/server"
+import { type NextRequest, NextResponse } from "next/server"
+import type { EmailOtpType } from "@supabase/supabase-js"
 
 export async function GET(request: NextRequest) {
-  const requestUrl = new URL(request.url)
-  const token = requestUrl.searchParams.get("token")
-  const type = requestUrl.searchParams.get("type")
-  const redirectTo = requestUrl.searchParams.get("redirect_to") || "/studio"
+  const { searchParams } = new URL(request.url)
+  const token_hash = searchParams.get("token_hash")
+  const type = searchParams.get("type") as EmailOtpType | null
+  const next = searchParams.get("next") ?? "/studio"
 
-  console.log("[v0] Auth confirm - Token type:", type)
+  console.log("[v0] Auth confirm - Full URL:", request.url)
+  console.log("[v0] Auth confirm - token_hash:", token_hash ? "present" : "missing")
+  console.log("[v0] Auth confirm - type:", type)
+  console.log("[v0] Auth confirm - next:", next)
 
-  if (token && type) {
+  if (token_hash && type) {
     const cookieStore = await cookies()
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -24,9 +28,7 @@ export async function GET(request: NextRequest) {
             try {
               cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
             } catch {
-              // The `setAll` method was called from a Server Component.
-              // This can be ignored if you have middleware refreshing
-              // user sessions.
+              // Ignore - handled by middleware
             }
           },
         },
@@ -34,20 +36,19 @@ export async function GET(request: NextRequest) {
     )
 
     const { error } = await supabase.auth.verifyOtp({
-      token_hash: token,
-      type: type as any,
+      type,
+      token_hash,
     })
 
-    if (error) {
-      console.error("[v0] Auth confirm error:", error)
-      return NextResponse.redirect(new URL("/auth/error?error=Invalid or expired link", requestUrl.origin))
+    if (!error) {
+      console.log("[v0] Auth verification successful, redirecting to:", next)
+      return NextResponse.redirect(new URL(next, request.url))
     }
 
-    console.log("[v0] Auth confirm successful")
-
-    // This allows users to choose their own password
-    return NextResponse.redirect(new URL("/auth/setup-password", requestUrl.origin))
+    console.error("[v0] Auth verification error:", error)
+    return NextResponse.redirect(new URL(`/auth/error?error=${encodeURIComponent(error.message)}`, request.url))
   }
 
-  return NextResponse.redirect(new URL("/auth/error?error=Missing authentication token", requestUrl.origin))
+  console.error("[v0] Auth confirm - Missing required parameters")
+  return NextResponse.redirect(new URL("/auth/error?error=Missing authentication token", request.url))
 }
