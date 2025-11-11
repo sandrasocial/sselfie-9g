@@ -17,6 +17,8 @@ export function FreebieGuideCapture() {
     setError("")
     setIsSubmitting(true)
 
+    console.log("[v0] Starting freebie subscribe request")
+
     try {
       const response = await fetch("/api/freebie/subscribe", {
         method: "POST",
@@ -33,14 +35,25 @@ export function FreebieGuideCapture() {
         }),
       })
 
+      console.log("[v0] Response status:", response.status)
       const data = await response.json()
+      console.log("[v0] Response data:", data)
 
       if (!response.ok) {
+        if (data.details) {
+          throw new Error(`${data.error}: ${data.details}`)
+        }
         throw new Error(data.error || "Something went wrong")
       }
 
+      if (!data.emailSent && data.emailError) {
+        console.warn("[v0] Email failed but user was saved:", data.emailError)
+      }
+
+      console.log("[v0] Redirecting to access page with token:", data.accessToken)
       window.location.href = `/freebie/selfie-guide/access/${data.accessToken}`
     } catch (err) {
+      console.error("[v0] Freebie subscribe error:", err)
       setError(err instanceof Error ? err.message : "Failed to subscribe. Please try again.")
     } finally {
       setIsSubmitting(false)

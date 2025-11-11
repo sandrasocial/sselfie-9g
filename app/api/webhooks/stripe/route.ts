@@ -8,6 +8,7 @@ import { sendEmail } from "@/lib/email/send-email"
 import { generateWelcomeEmail } from "@/lib/email/templates/welcome-email"
 import { checkWebhookRateLimit } from "@/lib/rate-limit"
 import { logWebhookError, alertWebhookError, isCriticalError } from "@/lib/webhook-monitoring"
+import { updateContactTags } from "@/lib/resend/manage-contact"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -84,7 +85,7 @@ export async function POST(request: NextRequest) {
               UPDATE freebie_subscribers 
               SET 
                 email_tags = CASE 
-                  WHEN email_tags IS NULL THEN ARRAY['purchased']
+                  WHEN email_tags IS NULL THEN ARRAY['purchased', 'customer']
                   WHEN NOT ('purchased' = ANY(email_tags)) THEN array_append(email_tags, 'purchased')
                   ELSE email_tags
                 END,
@@ -94,6 +95,27 @@ export async function POST(request: NextRequest) {
               WHERE email = ${customerEmail}
             `
             console.log(`[v0] Tagged ${customerEmail} as purchased in freebie_subscribers`)
+
+            const productType = session.metadata.product_type
+            let productTag = "unknown"
+
+            if (productType === "one_time_session") {
+              productTag = "one-time-session"
+            } else if (productType === "sselfie_studio_membership") {
+              productTag = "studio-membership"
+            } else if (productType === "credit_topup") {
+              productTag = "credit-topup"
+            }
+
+            await updateContactTags(customerEmail, {
+              status: "customer",
+              journey: "onboarding",
+              converted: "true",
+              product: productTag,
+              conversion_date: new Date().toISOString().split("T")[0],
+            })
+
+            console.log(`[v0] Updated Resend tags for ${customerEmail} to customer status`)
           } catch (tagError) {
             console.error(`[v0] Failed to tag subscriber as purchased:`, tagError)
           }

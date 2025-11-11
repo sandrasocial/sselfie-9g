@@ -152,6 +152,39 @@ export default function LandingPage() {
         </motion.div>
       </motion.section>
 
+      {/* Free Selfie Guide Lead Magnet Section */}
+      <section className="py-16 sm:py-24 lg:py-32 px-4 sm:px-6 bg-white border-t border-b border-stone-200">
+        <div className="max-w-4xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="text-center"
+          >
+            <div className="inline-block bg-stone-950 text-stone-50 px-4 py-1 text-xs font-light tracking-[0.3em] uppercase mb-6">
+              FREE GUIDE
+            </div>
+            <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-extralight tracking-[0.3em] uppercase mb-6 text-stone-950 text-balance">
+              BECOME A SELFIE QUEEN
+            </h2>
+            <p className="text-base sm:text-lg font-light leading-relaxed text-stone-700 mb-8 max-w-2xl mx-auto text-pretty">
+              Before you commit to anything, learn how to take better selfies with what you already have. Get our free
+              guide with simple tips for lighting, angles, and camera tricks that actually work.
+            </p>
+            <Link
+              href="/freebie/selfie-guide"
+              className="inline-block bg-stone-950 text-stone-50 px-8 sm:px-12 py-4 text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200"
+            >
+              GET FREE GUIDE
+            </Link>
+            <p className="mt-4 text-xs font-light tracking-wider uppercase text-stone-500">
+              NO CREDIT CARD • INSTANT ACCESS
+            </p>
+          </motion.div>
+        </div>
+      </section>
+
       <section ref={whyRef} className="py-16 sm:py-24 lg:py-32 px-4 sm:px-6 bg-stone-950 text-stone-50">
         <div className="max-w-4xl mx-auto">
           <motion.div

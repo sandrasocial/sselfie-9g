@@ -1278,11 +1278,20 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
                   }, 0)
                 }
               }}
+              onTouchStart={(e) => {
+                // Ensure focus on mobile touch
+                ;(e.currentTarget as HTMLTextAreaElement).focus()
+              }}
               placeholder={uploadedImage ? "Describe the style..." : "Message Maya..."}
               className="w-full pl-[5.5rem] pr-12 py-3 bg-white/40 backdrop-blur-2xl border border-white/60 rounded-xl text-stone-950 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-950/50 focus:bg-white/60 font-medium text-[16px] min-h-[48px] max-h-[80px] shadow-lg shadow-stone-950/10 transition-all duration-300 resize-none overflow-y-auto leading-relaxed touch-manipulation"
               disabled={isTyping || isUploadingImage}
               aria-label="Message input"
               rows={1}
+              inputMode="text"
+              autoCapitalize="sentences"
+              autoCorrect="on"
+              spellCheck="true"
+              autoComplete="off"
             />
 
             {/* Send button inside input */}
