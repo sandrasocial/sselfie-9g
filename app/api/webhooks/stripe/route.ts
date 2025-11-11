@@ -76,6 +76,29 @@ export async function POST(request: NextRequest) {
         console.log("[v0] Metadata:", session.metadata)
         console.log("[v0] Test mode:", !event.livemode ? "YES (TEST)" : "NO (PRODUCTION)")
 
+        const customerEmail = session.customer_details?.email || session.customer_email
+        if (customerEmail) {
+          try {
+            // Tag the subscriber as having purchased
+            await sql`
+              UPDATE freebie_subscribers 
+              SET 
+                email_tags = CASE 
+                  WHEN email_tags IS NULL THEN ARRAY['purchased']
+                  WHEN NOT ('purchased' = ANY(email_tags)) THEN array_append(email_tags, 'purchased')
+                  ELSE email_tags
+                END,
+                converted_to_user = TRUE,
+                converted_at = NOW(),
+                updated_at = NOW()
+              WHERE email = ${customerEmail}
+            `
+            console.log(`[v0] Tagged ${customerEmail} as purchased in freebie_subscribers`)
+          } catch (tagError) {
+            console.error(`[v0] Failed to tag subscriber as purchased:`, tagError)
+          }
+        }
+
         if (session.mode === "payment") {
           // One-time purchase (credit top-up or one-time session)
           let userId = session.metadata.user_id

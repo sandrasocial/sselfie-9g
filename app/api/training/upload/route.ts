@@ -22,7 +22,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    const formData = await request.formData()
+    let formData
+    try {
+      formData = await request.formData()
+    } catch (error: any) {
+      console.error("[v0] Error parsing formData:", error)
+
+      if (
+        error.message?.includes("disturbed") ||
+        error.message?.includes("locked") ||
+        error.message?.includes("already been consumed")
+      ) {
+        return NextResponse.json(
+          {
+            error: "Upload failed",
+            details: "The request body was already read. Please refresh the page and try again.",
+          },
+          { status: 400 },
+        )
+      }
+
+      return NextResponse.json({ error: "Failed to parse upload" }, { status: 400 })
+    }
+
     const file = formData.get("image") as File
 
     if (!file) {

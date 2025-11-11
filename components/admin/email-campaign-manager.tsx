@@ -3,8 +3,9 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { Upload, Eye } from "lucide-react"
+import { Upload, Eye, Rocket } from "lucide-react"
 import { EmailPreviewModal } from "./email-preview-modal"
+import { LaunchEmailSender } from "./launch-email-sender"
 
 interface EmailCampaign {
   id: number
@@ -28,10 +29,27 @@ export function EmailCampaignManager() {
   const [loading, setLoading] = useState(true)
   const [selectedCampaign, setSelectedCampaign] = useState<EmailCampaign | null>(null)
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [showLaunchEmail, setShowLaunchEmail] = useState(false)
+  const [subscriberCount, setSubscriberCount] = useState(0)
 
   useEffect(() => {
     loadCampaigns()
+    loadSubscriberCount()
   }, [])
+
+  const loadSubscriberCount = async () => {
+    console.log("[v0] Loading subscriber count...")
+    try {
+      const response = await fetch("/api/admin/email/subscriber-count")
+      console.log("[v0] Subscriber count response status:", response.status)
+      const data = await response.json()
+      console.log("[v0] Subscriber count data:", data)
+      setSubscriberCount(data.count || 0)
+      console.log("[v0] Subscriber count set to:", data.count || 0)
+    } catch (error) {
+      console.error("[v0] Error loading subscriber count:", error)
+    }
+  }
 
   const loadCampaigns = async () => {
     try {
@@ -181,18 +199,37 @@ export function EmailCampaignManager() {
           >
             Email Campaigns
           </h3>
-          <label className="px-4 py-2 bg-stone-900 text-white text-sm rounded-lg hover:bg-stone-800 transition-colors cursor-pointer flex items-center gap-2 uppercase tracking-wider">
-            <Upload className="w-4 h-4" />
-            {uploadingImage ? "Uploading..." : "Upload Image"}
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageUpload}
-              className="hidden"
-              disabled={uploadingImage}
-            />
-          </label>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowLaunchEmail(!showLaunchEmail)}
+              className={`px-4 py-2 text-sm rounded-lg transition-colors flex items-center gap-2 uppercase tracking-wider ${
+                showLaunchEmail
+                  ? "bg-stone-900 text-white"
+                  : "bg-white text-stone-900 border border-stone-200 hover:bg-stone-100"
+              }`}
+            >
+              <Rocket className="w-4 h-4" />
+              Launch Email
+            </button>
+            <label className="px-4 py-2 bg-stone-900 text-white text-sm rounded-lg hover:bg-stone-800 transition-colors cursor-pointer flex items-center gap-2 uppercase tracking-wider">
+              <Upload className="w-4 h-4" />
+              {uploadingImage ? "Uploading..." : "Upload Image"}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+                disabled={uploadingImage}
+              />
+            </label>
+          </div>
         </div>
+
+        {showLaunchEmail && (
+          <div className="bg-white p-6 rounded-lg border-2 border-stone-900">
+            <LaunchEmailSender totalSubscribers={subscriberCount} />
+          </div>
+        )}
 
         {campaigns.length === 0 ? (
           <div className="text-center py-8 text-sm text-stone-500">No campaigns yet. Create one in the chat!</div>

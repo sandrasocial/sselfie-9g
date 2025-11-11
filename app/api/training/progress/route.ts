@@ -292,19 +292,58 @@ export async function GET(request: NextRequest) {
             debug: debugInfo,
           })
         }
-      } catch (replicateError) {
-        debugInfo.replicateError = replicateError instanceof Error ? replicateError.message : String(replicateError)
-        debugInfo.errorStack = replicateError instanceof Error ? replicateError.stack : undefined
+      } catch (replicateError: any) {
+        const errorMessage = replicateError?.message || String(replicateError)
+        const isTemporaryError =
+          errorMessage.includes("502") ||
+          errorMessage.includes("503") ||
+          errorMessage.includes("Bad gateway") ||
+          errorMessage.includes("Service unavailable")
 
-        console.error("[v0] Error checking Replicate status:", replicateError)
+        debugInfo.replicateError = errorMessage
+        debugInfo.isTemporaryError = isTemporaryError
 
-        // Return current database status with error info
+        console.error("[v0] Error checking Replicate status:", {
+          error: errorMessage,
+          isTemporary: isTemporaryError,
+          trainingId: model.training_id,
+        })
+
+        // For temporary errors, estimate progress and continue showing training state
+        if (isTemporaryError && model.training_status === "training") {
+          const startTime = model.started_at || model.created_at
+          const estimatedProgress = estimateProgress(startTime, "processing")
+
+          console.log("[v0] Replicate API temporarily unavailable, using estimated progress:", estimatedProgress)
+
+          // Update progress in database
+          await sql`
+            UPDATE user_models
+            SET 
+              training_progress = ${estimatedProgress},
+              updated_at = NOW()
+            WHERE id = ${modelId}
+          `
+
+          return NextResponse.json({
+            status: "training",
+            progress: estimatedProgress,
+            model: {
+              ...model,
+              training_progress: estimatedProgress,
+            },
+            debug: debugInfo,
+            warning: "Replicate API temporarily unavailable. Using estimated progress.",
+          })
+        }
+
+        // For other errors or non-training states, return current database status
         return NextResponse.json({
           status: model.training_status,
           progress: model.training_progress || 0,
           model: model,
           debug: debugInfo,
-          error: "Failed to check Replicate status",
+          error: isTemporaryError ? "Replicate API temporarily unavailable" : "Failed to check Replicate status",
         })
       }
     } else {

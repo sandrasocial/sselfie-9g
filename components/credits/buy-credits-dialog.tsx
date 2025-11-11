@@ -11,9 +11,23 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
 
 export function BuyCreditsDialog({ onClose }: { onClose?: () => void }) {
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null)
+  const [promoCode, setPromoCode] = useState("")
+  const [promoError, setPromoError] = useState("")
+  const [isValidatingPromo, setIsValidatingPromo] = useState(false)
   const router = useRouter()
 
-  const startCheckout = useCallback(() => startCreditCheckoutSession(selectedPackage!), [selectedPackage])
+  const startCheckout = useCallback(async () => {
+    try {
+      setIsValidatingPromo(true)
+      setPromoError("")
+      return await startCreditCheckoutSession(selectedPackage!, promoCode || undefined)
+    } catch (error: any) {
+      setPromoError(error.message || "Failed to start checkout")
+      throw error
+    } finally {
+      setIsValidatingPromo(false)
+    }
+  }, [selectedPackage, promoCode])
 
   const handleComplete = useCallback(async () => {
     router.push("/checkout/success?type=credit_topup")
@@ -25,6 +39,8 @@ export function BuyCreditsDialog({ onClose }: { onClose?: () => void }) {
         <button
           onClick={() => {
             setSelectedPackage(null)
+            setPromoCode("")
+            setPromoError("")
             onClose?.()
           }}
           className="fixed top-4 right-4 z-10 text-stone-500 hover:text-stone-900 text-xs font-light tracking-wider uppercase transition-colors bg-white/80 backdrop-blur-sm px-3 py-2 rounded-lg min-h-[44px]"
@@ -51,6 +67,12 @@ export function BuyCreditsDialog({ onClose }: { onClose?: () => void }) {
               Your payment is encrypted and secure
             </p>
           </div>
+
+          {promoError && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-center">
+              <p className="text-xs text-red-600">{promoError}</p>
+            </div>
+          )}
 
           <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 lg:p-8 border border-stone-200 shadow-sm">
             <EmbeddedCheckoutProvider
@@ -87,6 +109,24 @@ export function BuyCreditsDialog({ onClose }: { onClose?: () => void }) {
         <h2 className="font-serif text-xl sm:text-2xl md:text-3xl font-extralight tracking-[0.2em] uppercase text-stone-900 mb-6 sm:mb-8 pr-12">
           TOP UP
         </h2>
+
+        <div className="mb-4 sm:mb-6">
+          <label htmlFor="promo-code" className="block text-xs font-light tracking-wider uppercase text-stone-600 mb-2">
+            Promo Code (Optional)
+          </label>
+          <input
+            id="promo-code"
+            type="text"
+            value={promoCode}
+            onChange={(e) => {
+              setPromoCode(e.target.value.toUpperCase())
+              setPromoError("")
+            }}
+            placeholder="Enter code"
+            className="w-full px-4 py-3 border border-stone-200 rounded-lg font-light text-sm focus:outline-none focus:border-stone-900 transition-colors uppercase"
+          />
+          {promoCode && <p className="mt-1 text-xs text-stone-500 font-light">Code will be applied at checkout</p>}
+        </div>
 
         <div className="space-y-3 sm:space-y-4">
           {CREDIT_PACKAGES.map((pkg) => (

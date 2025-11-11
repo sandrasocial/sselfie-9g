@@ -5,6 +5,16 @@ import { NextResponse } from "next/server"
 export async function middleware(request: NextRequest) {
   console.log("[v0] Middleware called for:", request.nextUrl.pathname)
 
+  if (
+    request.nextUrl.pathname.startsWith("/api/training/upload") ||
+    request.nextUrl.pathname.startsWith("/api/upload") ||
+    request.nextUrl.pathname.startsWith("/api/brand-assets/upload") ||
+    request.nextUrl.pathname.startsWith("/api/feedback/upload-image")
+  ) {
+    console.log("[v0] Skipping middleware for upload route to preserve request body")
+    return NextResponse.next()
+  }
+
   if (request.nextUrl.pathname === "/sw.js") {
     console.log("[v0] Serving service worker from middleware")
 

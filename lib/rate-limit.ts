@@ -82,8 +82,30 @@ export async function checkEmailRateLimit(email: string): Promise<RateLimitResul
     const config = RateLimits.email
     const key = CacheKeys.rateLimitEmail(email)
 
-    const current = (await redis.get<number>(key)) || 0
-    const ttl = await redis.ttl(key)
+    let current = 0
+    try {
+      const value = await redis.get(key)
+      // Handle various response types from Redis
+      if (typeof value === "number") {
+        current = value
+      } else if (typeof value === "string") {
+        current = Number.parseInt(value, 10) || 0
+      } else if (value !== null && value !== undefined) {
+        console.warn("[v0] Unexpected Redis value type:", typeof value, value)
+        current = 0
+      }
+    } catch (err) {
+      console.warn("[v0] Redis get error, defaulting to 0:", err)
+      current = 0
+    }
+
+    let ttl = -1
+    try {
+      ttl = await redis.ttl(key)
+    } catch (err) {
+      console.warn("[v0] Redis ttl error:", err)
+    }
+
     const reset = ttl > 0 ? Date.now() + ttl * 1000 : Date.now() + config.window * 1000
 
     if (current >= config.max) {
@@ -96,15 +118,21 @@ export async function checkEmailRateLimit(email: string): Promise<RateLimitResul
       }
     }
 
-    const newCount = await redis.incr(key)
-    if (newCount === 1) {
-      await redis.expire(key, config.window)
+    let newCount = current + 1
+    try {
+      newCount = await redis.incr(key)
+      if (newCount === 1) {
+        await redis.expire(key, config.window)
+      }
+    } catch (err) {
+      console.warn("[v0] Redis incr/expire error:", err)
+      // Allow the request even if Redis fails
     }
 
     return {
       success: true,
       limit: config.max,
-      remaining: config.max - newCount,
+      remaining: Math.max(0, config.max - newCount),
       reset,
     }
   } catch (error) {

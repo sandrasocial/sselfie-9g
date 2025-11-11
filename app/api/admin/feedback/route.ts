@@ -21,28 +21,44 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get("type")
     const status = searchParams.get("status")
 
-    let query = `
-      SELECT id, user_id, user_email, user_name, type, subject, message, 
-             images, status, admin_notes, admin_reply, replied_at, created_at, updated_at
-      FROM feedback
-      WHERE 1=1
-    `
+    let feedback
 
-    const params: any[] = []
-
-    if (type) {
-      params.push(type)
-      query += ` AND type = $${params.length}`
+    if (type && status) {
+      feedback = await sql`
+        SELECT id, user_id, user_email, user_name, type, subject, message, 
+               images, status, admin_notes, admin_reply, replied_at, created_at, updated_at
+        FROM feedback
+        WHERE type = ${type} AND status = ${status}
+        ORDER BY created_at DESC 
+        LIMIT 100
+      `
+    } else if (type) {
+      feedback = await sql`
+        SELECT id, user_id, user_email, user_name, type, subject, message, 
+               images, status, admin_notes, admin_reply, replied_at, created_at, updated_at
+        FROM feedback
+        WHERE type = ${type}
+        ORDER BY created_at DESC 
+        LIMIT 100
+      `
+    } else if (status) {
+      feedback = await sql`
+        SELECT id, user_id, user_email, user_name, type, subject, message, 
+               images, status, admin_notes, admin_reply, replied_at, created_at, updated_at
+        FROM feedback
+        WHERE status = ${status}
+        ORDER BY created_at DESC 
+        LIMIT 100
+      `
+    } else {
+      feedback = await sql`
+        SELECT id, user_id, user_email, user_name, type, subject, message, 
+               images, status, admin_notes, admin_reply, replied_at, created_at, updated_at
+        FROM feedback
+        ORDER BY created_at DESC 
+        LIMIT 100
+      `
     }
-
-    if (status) {
-      params.push(status)
-      query += ` AND status = $${params.length}`
-    }
-
-    query += ` ORDER BY created_at DESC LIMIT 100`
-
-    const feedback = await sql(query, params)
 
     return NextResponse.json({ feedback })
   } catch (error) {

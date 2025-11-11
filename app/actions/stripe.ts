@@ -6,7 +6,7 @@ import { getCreditPackageById } from "@/lib/credit-packages"
 import { getProductById } from "@/lib/products"
 import { createServerClient } from "@/lib/supabase/server"
 
-export async function startCreditCheckoutSession(packageId: string) {
+export async function startCreditCheckoutSession(packageId: string, promoCode?: string) {
   const creditPackage = getCreditPackageById(packageId)
   if (!creditPackage) {
     throw new Error(`Credit package with id "${packageId}" not found`)
@@ -28,6 +28,19 @@ export async function startCreditCheckoutSession(packageId: string) {
 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://sselfie.ai"
 
+  let validatedCoupon = null
+  if (promoCode) {
+    try {
+      const coupon = await stripe.coupons.retrieve(promoCode.toUpperCase())
+      if (coupon.valid) {
+        validatedCoupon = coupon.id
+      }
+    } catch (error) {
+      // Invalid coupon code - will be handled by showing error to user
+      throw new Error("Invalid promo code")
+    }
+  }
+
   const session = await stripe.checkout.sessions.create({
     ui_mode: "embedded",
     redirect_on_completion: "never",
@@ -46,12 +59,23 @@ export async function startCreditCheckoutSession(packageId: string) {
       },
     ],
     mode: "payment",
+    ...(validatedCoupon && {
+      discounts: [
+        {
+          coupon: validatedCoupon,
+        },
+      ],
+    }),
+    ...(!validatedCoupon && {
+      allow_promotion_codes: true,
+    }),
     metadata: {
       user_id: user.id,
       credits: creditPackage.credits.toString(),
       package_id: packageId,
       product_type: "credit_topup",
-      source: "app", // Mark as from app, not landing page
+      source: "app",
+      ...(promoCode && { promo_code: promoCode }),
     },
   })
 
@@ -128,7 +152,7 @@ export async function startProductCheckoutSession(productId: string) {
       product_id: productId,
       product_type: product.type,
       credits: product.credits?.toString() || "0",
-      source: "app", // Mark as from app, not landing page
+      source: "app",
     },
   })
 

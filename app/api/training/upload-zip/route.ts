@@ -24,6 +24,23 @@ export async function POST(request: Request) {
       formData = await request.formData()
     } catch (error: any) {
       console.error("[v0] Error parsing formData:", error)
+
+      if (
+        error.message?.includes("disturbed") ||
+        error.message?.includes("locked") ||
+        error.message?.includes("already been consumed") ||
+        error.message?.includes("body stream")
+      ) {
+        console.error("[v0] Body stream error detected - body was already consumed")
+        return NextResponse.json(
+          {
+            error: "Upload failed",
+            details: "The request body was already read. Please refresh the page and try again.",
+          },
+          { status: 400 },
+        )
+      }
+
       return NextResponse.json(
         {
           error: "Request too large",
