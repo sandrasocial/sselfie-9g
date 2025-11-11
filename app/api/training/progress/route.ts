@@ -45,19 +45,42 @@ function extractProgressFromLogs(logs: string): number | null {
 
 function estimateProgress(startedAt: Date, status: string): number {
   const elapsed = Date.now() - new Date(startedAt).getTime()
-  const estimatedTotalTime = 5 * 60 * 1000 // 5 minutes in milliseconds
+  const elapsedMinutes = elapsed / (60 * 1000)
+
+  const estimatedTotalMinutes = 5
 
   if (status === "starting") {
-    return Math.min(10, Math.round((elapsed / estimatedTotalTime) * 100))
+    return Math.min(10, Math.round((elapsedMinutes / estimatedTotalMinutes) * 100))
   } else if (status === "processing") {
-    // Start at 10% and go up to 95% based on elapsed time
     const baseProgress = 10
     const maxProgress = 95
-    const timeProgress = Math.round((elapsed / estimatedTotalTime) * 100)
-    return Math.min(maxProgress, Math.max(baseProgress, timeProgress))
+    const progressRange = maxProgress - baseProgress
+
+    const timeProgress = (elapsedMinutes / estimatedTotalMinutes) * 100
+    const estimatedProgress = baseProgress + (timeProgress * progressRange) / 100
+
+    return Math.min(maxProgress, Math.max(baseProgress, Math.round(estimatedProgress)))
   }
 
   return 10
+}
+
+function calculateRemainingMinutes(startedAt: Date, currentProgress: number): number {
+  const elapsed = Date.now() - new Date(startedAt).getTime()
+  const elapsedMinutes = elapsed / (60 * 1000)
+
+  // Avoid division by zero
+  if (currentProgress <= 0 || currentProgress >= 100) {
+    return 0
+  }
+
+  // Calculate estimated total time based on current progress and elapsed time
+  const estimatedTotalMinutes = (elapsedMinutes / currentProgress) * 100
+
+  // Calculate remaining time
+  const remainingMinutes = Math.max(0, estimatedTotalMinutes - elapsedMinutes)
+
+  return Math.round(remainingMinutes)
 }
 
 export async function GET(request: NextRequest) {
@@ -285,6 +308,7 @@ export async function GET(request: NextRequest) {
           return NextResponse.json({
             status: "training",
             progress: progress,
+            estimated_remaining_minutes: calculateRemainingMinutes(model.started_at || model.created_at, progress),
             model: {
               ...model,
               training_progress: progress,
@@ -328,6 +352,10 @@ export async function GET(request: NextRequest) {
           return NextResponse.json({
             status: "training",
             progress: estimatedProgress,
+            estimated_remaining_minutes: calculateRemainingMinutes(
+              model.started_at || model.created_at,
+              estimatedProgress,
+            ),
             model: {
               ...model,
               training_progress: estimatedProgress,

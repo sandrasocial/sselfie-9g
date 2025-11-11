@@ -441,7 +441,9 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
                 ></div>
               </div>
               <span className="text-xs tracking-wider uppercase font-semibold text-stone-700">
-                {Math.max(0, Math.round((100 - trainingProgress) / 20))} minutes remaining
+                {progressData?.estimated_remaining_minutes !== undefined
+                  ? `${progressData.estimated_remaining_minutes} minutes remaining`
+                  : `${Math.max(1, Math.round((100 - trainingProgress) / 4))} minutes remaining`}
               </span>
             </div>
           </div>
