@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { Camera, Aperture, ChevronRight, Loader2, X } from "lucide-react"
 import useSWR from "swr"
@@ -18,6 +17,16 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 const compressImage = async (file: File): Promise<File> => {
   return new Promise((resolve, reject) => {
+    const MAX_FILE_SIZE_MB = 10
+    if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+      reject(
+        new Error(
+          `${file.name} is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum is ${MAX_FILE_SIZE_MB}MB per image.`,
+        ),
+      )
+      return
+    }
+
     const reader = new FileReader()
     reader.readAsDataURL(file)
     reader.onload = (e) => {
@@ -66,9 +75,9 @@ const compressImage = async (file: File): Promise<File> => {
           0.85,
         )
       }
-      img.onerror = () => reject(new Error("Failed to load image"))
+      img.onerror = () => reject(new Error(`Failed to load ${file.name}. Please make sure it's a valid image file.`))
     }
-    reader.onerror = () => reject(new Error("Failed to read file"))
+    reader.onerror = () => reject(new Error(`Failed to read ${file.name}`))
   })
 }
 
@@ -131,21 +140,39 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
+
+    const MAX_FILE_SIZE_MB = 10
+    const invalidFiles = files.filter((file) => file.size > MAX_FILE_SIZE_MB * 1024 * 1024)
+
+    if (invalidFiles.length > 0) {
+      const fileList = invalidFiles.map((f) => `${f.name} (${(f.size / 1024 / 1024).toFixed(1)}MB)`).join("\n")
+      alert(
+        `These images are too large:\n\n${fileList}\n\nMaximum size is ${MAX_FILE_SIZE_MB}MB per image. Please resize them and try again.`,
+      )
+      return
+    }
+
+    if (uploadedImages.length + files.length > 20) {
+      alert(`You can upload up to 20 images total. You currently have ${uploadedImages.length} uploaded.`)
+      return
+    }
+
     setUploadedImages((prev) => [...prev, ...files])
   }
 
   const handleRemoveUploadedImage = (index: number) => {
+    console.log(`[v0] Removing image at index ${index}`)
     setUploadedImages((prev) => prev.filter((_, i) => i !== index))
   }
 
   const startTraining = async () => {
     if (uploadedImages.length < 10) {
-      alert("Please upload at least 10 images")
+      alert("Please upload at least 10 images to train your AI model.")
       return
     }
 
     if (!selectedGender) {
-      alert("Please select your gender")
+      alert("Please select your gender so we can train your model accurately.")
       return
     }
 
@@ -153,114 +180,90 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
       setIsUploading(true)
       setUploadProgress({ current: 0, total: uploadedImages.length })
 
-      console.log(`[v0] Compressing and creating ZIP file with ${uploadedImages.length} images`)
-      const zip = new JSZip()
+      console.log(`[v0] Starting compression for ${uploadedImages.length} images`)
 
+      const compressedFiles = []
       for (let i = 0; i < uploadedImages.length; i++) {
         const file = uploadedImages[i]
-        console.log(`[v0] Compressing image ${i + 1}/${uploadedImages.length}: ${file.name}`)
+        console.log(`[v0] Processing image ${i + 1}/${uploadedImages.length}: ${file.name}`)
 
-        // Compress the image
-        const compressedFile = await compressImage(file)
+        try {
+          setUploadProgress({ current: i, total: uploadedImages.length })
 
-        // Add compressed file to ZIP
-        zip.file(compressedFile.name, compressedFile)
+          const compressPromise = compressImage(file)
+          const timeoutPromise = new Promise<File>((_, reject) =>
+            setTimeout(() => reject(new Error(`Timeout compressing ${file.name}`)), 30000),
+          )
 
-        // Update progress
-        setUploadProgress({ current: i + 1, total: uploadedImages.length })
+          const compressedFile = await Promise.race([compressPromise, timeoutPromise])
+          compressedFiles.push(compressedFile)
+
+          await new Promise((resolve) => setTimeout(resolve, 10))
+        } catch (error) {
+          console.error(`[v0] Error processing image ${i + 1}:`, error)
+          throw error
+        }
       }
 
-      console.log("[v0] Generating ZIP blob...")
-      const zipBlob = await zip.generateAsync({ type: "blob" })
-      const zipSizeMB = zipBlob.size / 1024 / 1024
-      console.log(`[v0] ZIP created: ${zipSizeMB.toFixed(2)}MB`)
+      console.log("[v0] All images compressed, creating ZIP...")
 
-      if (zipSizeMB > 15) {
-        throw new Error("Your photos are too large. Please use fewer images or smaller file sizes.")
-      }
+      const zip = new JSZip()
+      compressedFiles.forEach((file, i) => {
+        zip.file(`image_${i + 1}.jpg`, file)
+      })
+
+      const zipBlob = await zip.generateAsync({
+        type: "blob",
+        compression: "DEFLATE",
+        compressionOptions: { level: 6 },
+      })
+
+      const zipSizeMB = (zipBlob.size / (1024 * 1024)).toFixed(2)
+      console.log(`[v0] ZIP created, size: ${zipSizeMB}MB`)
+
+      console.log("[v0] Uploading ZIP to server...")
 
       const formData = new FormData()
-      formData.append("zipFile", zipBlob, `training-images-${Date.now()}.zip`)
+      formData.append("zipFile", zipBlob, "training_images.zip")
       formData.append("gender", selectedGender)
       formData.append("modelName", `${user.display_name || "User"}'s Model`)
 
-      console.log("[v0] Uploading ZIP file...")
-      let retryCount = 0
-      const maxRetries = 2
-      let uploadResponse
+      const uploadResponse = await fetch("/api/training/upload-zip", {
+        method: "POST",
+        body: formData,
+      })
 
-      while (retryCount <= maxRetries) {
-        try {
-          uploadResponse = await fetch("/api/training/upload-zip", {
-            method: "POST",
-            body: formData,
-            signal: AbortSignal.timeout(300000), // 5 minute timeout
-          })
-
-          if (uploadResponse.ok) {
-            break // Success, exit retry loop
-          }
-
-          // If we get an error and haven't exhausted retries, try again
-          if (retryCount < maxRetries) {
-            console.log(`[v0] Upload failed, retrying (${retryCount + 1}/${maxRetries})...`)
-            retryCount++
-            await new Promise((resolve) => setTimeout(resolve, 1000)) // Wait 1 second before retry
-            continue
-          }
-
-          break // Don't retry anymore
-        } catch (fetchError: any) {
-          if (fetchError.name === "TimeoutError") {
-            throw new Error("Upload is taking too long. Please check your internet connection and try again.")
-          }
-          throw fetchError
-        }
-      }
-
-      if (!uploadResponse || !uploadResponse.ok) {
-        let errorMessage = "Upload failed. Please try again."
-        try {
-          const errorData = await uploadResponse!.json()
-          console.error("[v0] Upload error details:", errorData)
-
-          // Show user-friendly messages only
-          if (uploadResponse!.status === 413 || errorData.error?.includes("too large")) {
-            errorMessage = "Your photos are too large. Please use fewer images or smaller file sizes."
-          } else if (errorData.error?.includes("Body is disturbed")) {
-            errorMessage = "Upload interrupted. Please try again."
-          }
-        } catch {
-          // If we can't parse the error, use generic message
-          if (uploadResponse!.status === 413) {
-            errorMessage = "Your photos are too large. Please use fewer images."
-          }
-        }
-        throw new Error(errorMessage)
+      if (!uploadResponse.ok) {
+        const errorData = await uploadResponse.json()
+        console.error("[v0] Upload error:", errorData)
+        throw new Error(errorData.error || errorData.details || "Upload failed")
       }
 
       const result = await uploadResponse.json()
-      console.log("[v0] ZIP uploaded successfully:", result)
+      console.log("[v0] Training started successfully:", result)
 
       setUploadedImages([])
       setIsUploading(false)
       setUploadProgress({ current: 0, total: 0 })
-      setTrainingStage("training")
 
+      await new Promise((resolve) => setTimeout(resolve, 500))
+
+      setTrainingStage("training")
       mutate()
-    } catch (error) {
+    } catch (error: any) {
       console.error("[v0] Error starting training:", error)
 
-      const errorMessage = error instanceof Error ? error.message : "Something went wrong. Please try again."
+      let errorMessage = "Something went wrong. Please try again."
 
-      // If it's a generic error, add support contact info
-      const displayMessage =
-        errorMessage.includes("Unknown error") || errorMessage.includes("Something went wrong")
-          ? "Upload failed. Please try again or contact support if the problem continues."
-          : errorMessage
+      if (error.name === "TimeoutError" || error.message?.includes("Timeout")) {
+        errorMessage =
+          "Upload is taking too long. Please check your internet connection and try again with fewer or smaller images."
+      } else if (error.message) {
+        errorMessage = error.message
+      }
 
-      alert(displayMessage)
-      setTrainingStage("upload")
+      alert(`Upload Failed\n\n${errorMessage}\n\nIf this keeps happening, please contact support.`)
+
       setIsUploading(false)
       setUploadProgress({ current: 0, total: 0 })
     }
@@ -290,7 +293,6 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
         throw new Error("Failed to delete image")
       }
 
-      // Refresh training status to update the UI
       mutate()
     } catch (error) {
       console.error("Error deleting image:", error)
@@ -604,10 +606,10 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
                     />
                     <button
                       onClick={() => handleRemoveUploadedImage(i)}
-                      className="absolute top-2 right-2 w-7 h-7 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg transition-all duration-200"
+                      className="absolute top-2 right-2 w-8 h-8 bg-red-500 hover:bg-red-600 active:bg-red-700 text-white rounded-full flex items-center justify-center shadow-lg transition-all duration-200 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200"
                       aria-label="Remove image"
                     >
-                      <X size={16} strokeWidth={2.5} />
+                      <X size={18} strokeWidth={2.5} />
                     </button>
                   </div>
                 ))}
