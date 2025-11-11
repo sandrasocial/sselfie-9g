@@ -176,9 +176,7 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
       console.log(`[v0] ZIP created: ${zipSizeMB.toFixed(2)}MB`)
 
       if (zipSizeMB > 15) {
-        throw new Error(
-          `ZIP file is too large (${zipSizeMB.toFixed(2)}MB). Please use fewer images or lower quality photos. Maximum size is 15MB.`,
-        )
+        throw new Error("Your photos are too large. Please use fewer images or smaller file sizes.")
       }
 
       const formData = new FormData()
@@ -187,23 +185,55 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
       formData.append("modelName", `${user.display_name || "User"}'s Model`)
 
       console.log("[v0] Uploading ZIP file...")
-      const uploadResponse = await fetch("/api/training/upload-zip", {
-        method: "POST",
-        body: formData,
-      })
+      let retryCount = 0
+      const maxRetries = 2
+      let uploadResponse
 
-      if (!uploadResponse.ok) {
-        let errorMessage = "Failed to upload ZIP"
+      while (retryCount <= maxRetries) {
         try {
-          const errorData = await uploadResponse.json()
-          errorMessage = errorData.error || errorData.details || errorMessage
+          uploadResponse = await fetch("/api/training/upload-zip", {
+            method: "POST",
+            body: formData,
+            signal: AbortSignal.timeout(300000), // 5 minute timeout
+          })
+
+          if (uploadResponse.ok) {
+            break // Success, exit retry loop
+          }
+
+          // If we get an error and haven't exhausted retries, try again
+          if (retryCount < maxRetries) {
+            console.log(`[v0] Upload failed, retrying (${retryCount + 1}/${maxRetries})...`)
+            retryCount++
+            await new Promise((resolve) => setTimeout(resolve, 1000)) // Wait 1 second before retry
+            continue
+          }
+
+          break // Don't retry anymore
+        } catch (fetchError: any) {
+          if (fetchError.name === "TimeoutError") {
+            throw new Error("Upload is taking too long. Please check your internet connection and try again.")
+          }
+          throw fetchError
+        }
+      }
+
+      if (!uploadResponse || !uploadResponse.ok) {
+        let errorMessage = "Upload failed. Please try again."
+        try {
+          const errorData = await uploadResponse!.json()
+          console.error("[v0] Upload error details:", errorData)
+
+          // Show user-friendly messages only
+          if (uploadResponse!.status === 413 || errorData.error?.includes("too large")) {
+            errorMessage = "Your photos are too large. Please use fewer images or smaller file sizes."
+          } else if (errorData.error?.includes("Body is disturbed")) {
+            errorMessage = "Upload interrupted. Please try again."
+          }
         } catch {
-          const errorText = await uploadResponse.text()
-          if (errorText.includes("Request Entity Too Large") || uploadResponse.status === 413) {
-            errorMessage =
-              "File too large. Please use fewer images (10-15 recommended) or ensure photos are under 2MB each."
-          } else {
-            errorMessage = errorText || errorMessage
+          // If we can't parse the error, use generic message
+          if (uploadResponse!.status === 413) {
+            errorMessage = "Your photos are too large. Please use fewer images."
           }
         }
         throw new Error(errorMessage)
@@ -220,7 +250,16 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
       mutate()
     } catch (error) {
       console.error("[v0] Error starting training:", error)
-      alert(`Failed to start training: ${error instanceof Error ? error.message : "Unknown error"}`)
+
+      const errorMessage = error instanceof Error ? error.message : "Something went wrong. Please try again."
+
+      // If it's a generic error, add support contact info
+      const displayMessage =
+        errorMessage.includes("Unknown error") || errorMessage.includes("Something went wrong")
+          ? "Upload failed. Please try again or contact support if the problem continues."
+          : errorMessage
+
+      alert(displayMessage)
       setTrainingStage("upload")
       setIsUploading(false)
       setUploadProgress({ current: 0, total: 0 })

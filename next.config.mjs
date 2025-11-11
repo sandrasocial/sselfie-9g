@@ -15,6 +15,12 @@ const nextConfig = {
     },
     proxyClientMaxBodySize: '100mb', // Increased to support larger ZIP files with 15-20 images
   },
+  api: {
+    bodyParser: {
+      sizeLimit: '100mb', // Increase API route body size limit
+    },
+    responseLimit: '100mb',
+  },
   async headers() {
     return [
       {
@@ -40,6 +46,19 @@ const nextConfig = {
           {
             key: 'X-Content-Type-Options',
             value: 'nosniff',
+          },
+          {
+            key: 'X-Max-Body-Size',
+            value: '100mb',
+          },
+        ],
+      },
+      {
+        source: '/api/training/upload-zip',
+        headers: [
+          {
+            key: 'X-Upload-Route',
+            value: 'true',
           },
         ],
       },

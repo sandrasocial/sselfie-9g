@@ -60,6 +60,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
   const [promptAccuracy, setPromptAccuracy] = useState(3.5) // Guidance scale: 2.5-5.0
   const [aspectRatio, setAspectRatio] = useState("4:5")
   const [showSettings, setShowSettings] = useState(false)
+  const [userId, setUserId] = useState<string | null>(null)
 
   const settingsSaveTimerRef = useRef<NodeJS.Timeout | null>(null)
   const messageSaveTimerRef = useRef<NodeJS.Timeout | null>(null)
@@ -67,7 +68,25 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
   const isSavingMessageRef = useRef(false)
 
   useEffect(() => {
-    const settingsStr = localStorage.getItem("mayaGenerationSettings")
+    const fetchUserId = async () => {
+      try {
+        const response = await fetch("/api/user/profile")
+        if (response.ok) {
+          const data = await response.json()
+          setUserId(data.userId || data.id || null)
+        }
+      } catch (error) {
+        console.error("[v0] Error fetching user ID:", error)
+      }
+    }
+    fetchUserId()
+  }, [])
+
+  useEffect(() => {
+    if (!userId) return // Wait for userId to be loaded
+
+    const storageKey = `mayaGenerationSettings_${userId}`
+    const settingsStr = localStorage.getItem(storageKey)
     if (settingsStr) {
       try {
         const settings = JSON.parse(settingsStr)
@@ -81,9 +100,11 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
     } else {
       console.log("[v0] 📊 No saved settings found, using defaults")
     }
-  }, []) // Empty dependency array - only run once on mount
+  }, [userId]) // Run when userId becomes available
 
   useEffect(() => {
+    if (!userId) return // Don't save until userId is available
+
     // Clear any existing timer
     if (settingsSaveTimerRef.current) {
       clearTimeout(settingsSaveTimerRef.current)
@@ -96,8 +117,9 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
         promptAccuracy,
         aspectRatio,
       }
+      const storageKey = `mayaGenerationSettings_${userId}`
       console.log("[v0] 💾 Saving settings to localStorage:", settings)
-      localStorage.setItem("mayaGenerationSettings", JSON.stringify(settings))
+      localStorage.setItem(storageKey, JSON.stringify(settings))
     }, 500)
 
     // Cleanup timer on unmount
@@ -106,7 +128,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
         clearTimeout(settingsSaveTimerRef.current)
       }
     }
-  }, [styleStrength, promptAccuracy, aspectRatio]) // Removed enableRealismBoost from dependencies
+  }, [userId, styleStrength, promptAccuracy, aspectRatio]) // Removed enableRealismBoost from dependencies
 
   const { messages, sendMessage, status, setMessages } = useChat({
     transport: new DefaultChatTransport({ api: "/api/maya/chat" }),

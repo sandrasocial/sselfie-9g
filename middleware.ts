@@ -5,13 +5,13 @@ import { NextResponse } from "next/server"
 export async function middleware(request: NextRequest) {
   console.log("[v0] Middleware called for:", request.nextUrl.pathname)
 
-  if (
-    request.nextUrl.pathname.startsWith("/api/training/upload") ||
-    request.nextUrl.pathname.startsWith("/api/upload") ||
-    request.nextUrl.pathname.startsWith("/api/brand-assets/upload") ||
-    request.nextUrl.pathname.startsWith("/api/feedback/upload-image")
-  ) {
-    console.log("[v0] Skipping middleware for upload route to preserve request body")
+  const isUploadRoute =
+    request.nextUrl.pathname.includes("/upload") ||
+    (request.nextUrl.pathname.includes("/training") && request.method === "POST")
+
+  if (isUploadRoute) {
+    console.log("[v0] Upload route detected - completely bypassing all middleware to preserve request body")
+    // Return immediately without any processing to avoid consuming the body
     return NextResponse.next()
   }
 

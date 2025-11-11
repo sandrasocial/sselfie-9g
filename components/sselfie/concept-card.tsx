@@ -20,12 +20,28 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
   const [generationId, setGenerationId] = useState<string | null>(null)
   const [isViewerOpen, setIsViewerOpen] = useState(false)
   const [isFavorite, setIsFavorite] = useState(false)
+  const [userId, setUserId] = useState<string | null>(null)
 
   const [isGeneratingVideo, setIsGeneratingVideo] = useState(false)
   const [videoUrl, setVideoUrl] = useState<string | null>(null)
   const [videoId, setVideoId] = useState<string | null>(null)
   const [videoPredictionId, setVideoPredictionId] = useState<string | null>(null)
   const [videoError, setVideoError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchUserId = async () => {
+      try {
+        const response = await fetch("/api/user/profile")
+        if (response.ok) {
+          const data = await response.json()
+          setUserId(data.userId || data.id || null)
+        }
+      } catch (error) {
+        console.error("[v0] Error fetching user ID:", error)
+      }
+    }
+    fetchUserId()
+  }, [])
 
   useEffect(() => {
     if (!predictionId || !generationId || isGenerated) return
@@ -106,7 +122,8 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
       console.log("[v0] Full concept object:", JSON.stringify(concept, null, 2))
       console.log("[v0] ================================================")
 
-      const settingsStr = localStorage.getItem("mayaGenerationSettings")
+      const storageKey = userId ? `mayaGenerationSettings_${userId}` : "mayaGenerationSettings"
+      const settingsStr = localStorage.getItem(storageKey)
       console.log("[v0] 📊 Raw settings from localStorage:", settingsStr)
       const customSettings = settingsStr ? JSON.parse(settingsStr) : null
       console.log("[v0] 📊 Parsed custom settings (including aspect ratio):", customSettings)
