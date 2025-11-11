@@ -173,6 +173,8 @@ export async function POST(request: NextRequest) {
       guidance_scale: customSettings?.promptAccuracy ?? presetSettings.guidance_scale,
       extra_lora: customSettings?.extraLora,
       extra_lora_scale: customSettings?.extraLoraScale,
+      // Always use preset default (50 steps), don't let slider affect steps
+      num_inference_steps: presetSettings.num_inference_steps,
     }
 
     console.log("[v0] Final quality settings:", {
@@ -180,6 +182,7 @@ export async function POST(request: NextRequest) {
       presetDefaults: presetSettings,
       userOverrides: customSettings,
       final: qualitySettings,
+      note: "num_inference_steps always uses preset default (50), guidance_scale adjustable via promptAccuracy slider",
     })
 
     console.log("[v0] Initializing Replicate client...")
@@ -212,7 +215,6 @@ export async function POST(request: NextRequest) {
       megapixels: qualitySettings.megapixels,
       output_format: qualitySettings.output_format,
       output_quality: qualitySettings.output_quality,
-      prompt_strength: qualitySettings.prompt_strength,
       lora_scale: Number(qualitySettings.lora_scale),
       hf_lora: userLoraPath,
       seed: qualitySettings.seed || Math.floor(Math.random() * 1000000),

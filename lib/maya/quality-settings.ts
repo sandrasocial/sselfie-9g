@@ -9,7 +9,6 @@ export const MAYA_DEFAULT_QUALITY_SETTINGS: QualitySettings = {
   output_format: "png",
   output_quality: 95,
   lora_scale: 1.1,
-  prompt_strength: 0.8,
   disable_safety_checker: true,
   go_fast: false,
   num_outputs: 1,

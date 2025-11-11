@@ -85,12 +85,11 @@ export async function POST(request: NextRequest) {
         aspect_ratio: "1:1",
         output_format: "png",
         output_quality: 95,
-        num_inference_steps: 50, // Increased from 28 for higher quality
-        guidance_scale: 3.5, // Increased from 3.2 for better prompt adherence
+        num_inference_steps: 50,
+        guidance_scale: 3.5,
         lora: model.lora_weights_url,
-        lora_scale: 1.0, // Set to exactly 1.0
+        lora_scale: 1.0,
         megapixels: "1",
-        prompt_strength: 0.8,
         model: "dev",
         extra_lora: "https://huggingface.co/XLabs-AI/flux-RealismLora/resolve/main/lora.safetensors",
         extra_lora_scale: 0.6,

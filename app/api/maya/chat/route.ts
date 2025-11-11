@@ -26,7 +26,7 @@ interface MayaConcept {
 
 const generateConceptsTool = tool({
   description:
-    "Generate 3-5 photo concept ideas with detailed fashion and styling intelligence based on Maya's creative lookbook. If user uploaded a reference image, YOU MUST analyze it visually first.",
+    "Generate 3-5 photo concept ideas with detailed fashion and styling intelligence based on Maya's creative lookbook. If user uploaded a reference image, YOU MUST analyze it visually first. Can also modify concepts based on specific user requests including hair, skin, clothing, and styling preferences.",
   inputSchema: z.object({
     userRequest: z.string().describe("What the user is asking for"),
     aesthetic: z
@@ -34,6 +34,12 @@ const generateConceptsTool = tool({
       .optional()
       .describe("Which creative look to base concepts on (e.g., 'Scandinavian Minimalist', 'Urban Moody')"),
     context: z.string().optional().describe("Additional context about the user or their needs"),
+    userModifications: z
+      .string()
+      .optional()
+      .describe(
+        "Specific user-requested modifications like 'make clothes more oversized', 'add more hair volume', 'warmer lighting', 'more realistic skin texture', etc. Apply ALL requests to prompts.",
+      ),
     count: z.number().min(3).max(5).default(4).describe("Number of concepts to generate (default 4)"),
     referenceImageUrl: z.string().optional().describe("URL of reference image uploaded by user"),
     customSettings: z
@@ -45,11 +51,20 @@ const generateConceptsTool = tool({
       .optional()
       .describe("User's custom generation settings including aspect ratio"),
   }),
-  execute: async function* ({ userRequest, aesthetic, context, count, referenceImageUrl, customSettings }) {
+  execute: async function* ({
+    userRequest,
+    aesthetic,
+    context,
+    userModifications,
+    count,
+    referenceImageUrl,
+    customSettings,
+  }) {
     console.log("[v0] Tool executing - generating concepts for:", {
       userRequest,
       aesthetic,
       context,
+      userModifications,
       count,
       referenceImageUrl,
       customSettings,
@@ -154,6 +169,33 @@ Be specific and detailed - this analysis will be used to create similar photo co
 ${aesthetic ? `- Requested aesthetic: "${aesthetic}"` : ""}
 ${context ? `- Additional context: "${context}"` : ""}
 ${
+  userModifications
+    ? `
+**USER-REQUESTED MODIFICATIONS:**
+"${userModifications}"
+
+⚠️ IMPORTANT: ADD these user requests directly to your prompts as additional descriptive details:
+
+**How to apply user modifications:**
+- Styling requests (oversized clothes, specific fabrics, colors): ADD to outfit descriptions
+- Hair requests (more volume, different style, color): ADD hair descriptions to prompts
+- Skin requests (more realistic, specific texture): ADD skin texture details to prompts  
+- Lighting requests (warmer, more dramatic, film grain): ADJUST lighting and color grading
+- Setting requests (different location, weather, time): INCORPORATE into location descriptions
+- Physical feature requests: ADD the specific details they want to see
+
+**Examples:**
+- "make clothes more oversized" → use "oversized" for all clothing items
+- "add more hair volume" → add "voluminous flowing hair" or "full textured hair" to prompts
+- "make skin more realistic" → add "realistic skin texture, visible pores" to prompts
+- "warmer lighting" → change to "warm golden hour tones, amber highlights"
+- "add facial hair" → add "well-groomed beard" or "stubble" to prompts
+
+ALWAYS honor the user's specific requests - they know what they want to see.
+`
+    : ""
+}
+${
   imageAnalysis
     ? `
 **REFERENCE IMAGE ANALYSIS:**
@@ -168,28 +210,46 @@ ${imageAnalysis}
 **Titles (Keep it simple):**
 - Use EVERYDAY language - how you'd text a friend
 - 2-4 words max, super casual
-- Examples: "Coffee Run", "City Stroll", "Weekend Mood", "Morning Vibes", "Street Style", "Casual Friday"
-- NOT: "Urban Sophistication Portrait" or "Elevated Minimalist Aesthetic"
-- Think Instagram caption energy, not art gallery labels
+- Examples: "Coffee Run", "City Stroll", "Weekend Mood", "Morning Vibes"
 
 **Descriptions (Natural & friendly):**
 - Write like you're texting someone about the photo
 - Simple, conversational sentences
-- NO fancy words or formal language
-- NO phrases like "captured moment" or "showcasing" or "exudes"
-- Just describe what's happening naturally
-- Keep it 1-2 short sentences max
+- 1-2 short sentences max
 
-**Good Examples:**
-- Title: "Coffee Run" / Description: "Grabbing your usual latte before work. That perfect in-between moment."
-- Title: "Street Style" / Description: "Walking through the city in your favorite coat. Just vibing."
-- Title: "Weekend Mood" / Description: "Chilling at home in comfy clothes. Nothing fancy, just you."
-- Title: "Morning Light" / Description: "Sitting by the window with coffee. Natural morning energy."
+**PROMPT GENERATION PHILOSOPHY:**
 
-**Bad Examples (TOO FORMAL):**
-- ❌ Title: "Architectural Portrait Session" / Description: "A sophisticated capture showcasing elevated minimalism against urban architecture"
-- ❌ Title: "Golden Hour Editorial" / Description: "Exuding confidence in this carefully curated moment of authentic expression"
-- ❌ Title: "Minimalist Aesthetic Portrait" / Description: "Captured in soft natural light, this image embodies quiet luxury"
+**DEFAULT BEHAVIOR (when no user modifications requested):**
+Your user's LoRA contains their trained appearance. By default, DON'T describe their natural features - let the LoRA handle it.
+Focus on: outfit styling, setting, lighting, photography style.
+
+**WHEN USER REQUESTS SPECIFIC CHANGES:**
+ALWAYS add their requested modifications to prompts. If they want:
+- Hair changes → ADD hair descriptions
+- Skin changes → ADD skin texture details
+- Body changes → ADD physique descriptions
+- Any styling change → ADD it to the prompt
+
+The user knows what they want. Your job is to create beautiful prompts that incorporate their requests.
+
+**FORBIDDEN CONTENT (Ethics only):**
+❌ Sexual or pornographic content
+❌ Violence, gore, or harmful imagery
+❌ Hate speech or discriminatory content
+❌ Illegal activities or dangerous behavior
+
+**EVERYTHING ELSE IS ALLOWED** - Users can request any styling, hair, skin, body, or physical feature changes.
+
+**WHAT YOU CONTROL (Describe in rich detail):**
+✅ Clothing: specific brands, fabrics, fits, colors, styling choices
+✅ Setting: detailed environment, atmosphere, weather, location, architecture
+✅ Lighting: specific techniques, color temperatures, time of day, mood, shadows
+✅ Photography: camera angles, depth of field, film aesthetic, composition
+✅ Pose & Activity: body language, movement, positioning, gestures
+✅ Color Grading: desaturated tones, muted aesthetics, cool/warm palettes
+✅ Hair (when requested): style, length, texture, volume, color
+✅ Skin (when requested): texture, tone, realistic details, pores
+✅ Physical features (when requested): any specific attributes user wants
 
 **LIGHTING MOOD CATEGORIES (Choose from these):**
 
@@ -211,255 +271,303 @@ ${imageAnalysis}
 - Cinematic darkness, rich blacks
 - Black and white, high contrast
 
+**CRITICAL: LORA PRESERVATION RULES**
+
+Your user's LoRA model contains their AUTHENTIC appearance trained from their selfies:
+- Hair (color, length, style, texture, baldness, hairline, facial hair, eyebrows)
+- Facial features (bone structure, skin tone, wrinkles, pores, age indicators)
+- Body type and natural physique (build, proportions, posture)
+- All natural physical characteristics they were born with
+
+**YOU MUST NEVER describe these features in prompts.**
+
+The LoRA will automatically apply their authentic look. Your job is to style AROUND their natural appearance, not describe it.
+
+**WHAT YOU CONTROL (Describe in rich detail):**
+✅ Clothing: specific brands, fabrics, fits, colors, styling choices
+✅ Setting: detailed environment, atmosphere, weather, location, architecture
+✅ Lighting: specific techniques, color temperatures, time of day, mood, shadows
+✅ Photography: camera angles, depth of field, film aesthetic, composition
+✅ Pose & Activity: body language, movement, positioning, gestures
+✅ Color Grading: desaturated tones, muted aesthetics, cool/warm palettes
+
+**WHAT THE LORA CONTROLS (NEVER describe):**
+❌ Hair (NEVER mention - even "styled hair" or "flowing hair" or general references)
+❌ Facial hair (NEVER mention beards, stubble, mustaches, etc.)
+❌ Facial features, skin characteristics, wrinkles, pores, age indicators
+❌ Body type descriptors, physique descriptions, build references
+❌ Any physical attributes the person was born with
+
+**USER MODIFICATION RULES:**
+${
+  userModifications
+    ? `
+The user requested: "${userModifications}"
+
+If this is about CONTROLLABLE elements (clothes, setting, lighting, photography):
+- ADD specific details to prompts as requested
+- Example: "more oversized" → use "oversized" descriptors for clothing items
+- Example: "warmer tones" → adjust color grading to "warm golden tones" or "warm muted amber"
+- Example: "more dramatic lighting" → add "dramatic shadows" or "high contrast lighting"
+- Example: "vintage aesthetic" → add "film grain, vintage color grading, retro photography"
+
+If this is about LORA-CONTROLLED features (hair, skin, face, body):
+- DO NOT add to prompts (LoRA will maintain authentic appearance)
+- Focus modifications on styling, atmosphere, and photography instead
+- Example: "more hair volume" request → Keep hair out of prompts entirely, enhance outfit/setting instead
+`
+    : ""
+}
+
+**FORBIDDEN PHRASES - NEVER USE:**
+- "realistic skin texture" / "visible pores" / "skin detail" / "natural skin"
+- "natural fabric movement" / "fabric wrinkles" (LoRA knows this)
+- Any hair descriptions whatsoever (including bald, balding, receding, styled, etc.)
+- Any facial hair descriptions (beard, stubble, clean-shaven, etc.)
+- Age descriptors, facial feature descriptions
+- Body type descriptions (athletic, slim, muscular, etc.)
+- "subtle film grain" as a texture - use ONLY as photography technique
+
+**LIGHTING MOODS - Your Creative Playground:**
+
 ${
   userGender === "woman"
     ? `**CRITICAL PROMPT RULES FOR WOMEN:**
 
-1. **Length: 200-250 characters** - Detailed natural language descriptions
-2. **NO trigger word** - System adds automatically
-3. **Start with capitalized "Woman"** - No "a woman", just "Woman in..."
-4. **Simple structure:** Woman in [outfit with brand] [activity/pose] while [location details]. [Lighting description with color grading]. [Realistic texture and photography details].
-5. **Natural moments** - Real activities, not posed
-6. **Specific lighting** - Use the mood categories above
-7. **Always mention:** desaturated tones, raw street photography, natural fabric texture, realistic skin texture, subtle film grain
-8. **MANDATORY COLOR GRADING** - Must include color grading in every prompt
+**STRUCTURE & LENGTH:**
+- **Target: 200-250 characters** (strictly enforce this range)
+- **NO trigger word in your prompt** - System adds automatically
+- **Start with "Woman"** - Capitalized, no "a woman"
+- **Natural flowing language** - Not robotic lists
 
-**MANDATORY COLOR GRADING & REALISM (Add to EVERY prompt):**
+**GOLDEN RULE: NEVER DESCRIBE THE PERSON, ONLY STYLE THE SCENE**
 
-**Color Grading Elements (Choose based on mood):**
-- For muted looks: "desaturated tones, faded blacks, cool grey"
-- For warm looks: "warm muted tones, warm beige"
-- For moody looks: "crushed shadows, cool grey"
-- For bright looks: "soft muted tones, low contrast"
+**PROMPT FORMULA:**
+[Activity/pose in natural language] in [detailed outfit with specific brands/fabrics], 
+[detailed setting/location], [specific lighting mood with color grading], 
+[photography style]
 
-**Realism & Texture (Pick ONLY 2-3 total):** 
-- raw street photography
-- realistic skin texture  
-- subtle film grain
-- natural fabric texture
-- urban haze
+**MANDATORY ELEMENTS (Pick 1 from each):**
 
-**STYLING CATEGORIES - MIX THESE UP:**
+**Color Grading (REQUIRED - Choose 1):**
+- Muted aesthetic: "desaturated tones with faded blacks"
+- Warm aesthetic: "warm muted tones with soft beige undertones"  
+- Cool aesthetic: "cool grey tones with crushed shadows"
+- Bright aesthetic: "soft muted tones with low contrast"
 
-**Quiet Luxury / Old Money:**
-- Oversized cashmere sweaters (The Row, Toteme), wide-leg trousers
-- Tailored blazers, silk button-downs in neutrals
+**Photography Style (REQUIRED - Choose 1):**
+- "raw street photography aesthetic"
+- "editorial fashion photography"
+- "candid lifestyle moment"
+- "cinematic shallow depth of field"
+
+**STYLING VOCABULARY - Feminine Elegance:**
+
+Use flowing, sophisticated language:
+- "elegant", "flowing", "sophisticated", "polished", "chic"
+- "effortless", "refined", "timeless", "confident", "elevated"
+
+**STYLING CATEGORIES:**
+
+**Quiet Luxury:**
+- Oversized cashmere (The Row, Toteme), wide-leg trousers
+- Tailored blazers, silk shirts in neutrals
 - Minimal jewelry, structured leather bags
-- Beige, cream, caramel, ivory, charcoal tones
+- Colors: beige, cream, caramel, ivory, charcoal
 
 **Athleisure Chic:**
 - Oversized hoodies, track pants, puffer jackets
-- Chunky sneakers (Nike Air Force 1, Adidas Sambas, New Balance 550)
-- Baseball caps (Yankees, minimalist logos), crossbody bags
-- Mix luxury and athletic (e.g., "Lululemon Define jacket with Prada nylon bag")
+- Nike AF1, Adidas Sambas, New Balance 550
+- Mix luxury with athletic (Lululemon + Prada)
 
 **Minimalist Scandi:**
-- Clean lines, monochrome palettes
-- Architectural silhouettes, quality basics (COS, Arket)
-- Black, white, grey, no patterns
-- Less is more aesthetic
+- Clean lines, monochrome palettes (COS, Arket)
+- Architectural silhouettes, quality basics
+- Black, white, grey - no patterns
 
-**Urban Street Style:**
+**Urban Street:**
 - Oversized blazers, leather jackets, long coats
-- Wide-leg jeans, cargo pants, baggy silhouettes  
+- Wide-leg jeans, cargo pants, baggy silhouettes
 - Combat boots, chunky sneakers, platform shoes
-- Baseball caps, small shoulder bags, sunglasses always
 
-**Elevated Casual:**
-- Knit sets, matching loungewear in luxe fabrics
-- Silk slip dresses with sneakers or boots
-- Cashmere hoodies, designer sweatpants
-- Unexpected high-low mixing
-
-**BRAND NAME EXAMPLES (use naturally, not forced):**
+**BRAND VOCABULARY (use naturally):**
 - Luxury: The Row, Toteme, Khaite, Jil Sander, Loro Piana
-- Athleisure: Lululemon, Alo Yoga, Girlfriend Collective, Outdoor Voices
-- Sneakers: Nike (Air Force 1, Dunks), Adidas (Sambas), New Balance (550, 990)
-- Accessible Luxury: COS, Arket, Zara, Mango, & Other Stories
-- Bags: Bottega Veneta pouch, Prada nylon bag, The Row bag, Saint Laurent
+- Athleisure: Lululemon, Alo Yoga, Outdoor Voices
+- Sneakers: Nike Air Force 1, Adidas Samba, New Balance 550
+- Accessible: COS, Arket, Zara premium line
 
-**POSES & MOODS - Instagram Influencer Vibes:**
-- Walking away from camera, looking over shoulder
-- Sitting on steps/bench with coffee, scrolling phone
-- Hand in coat pocket, adjusting sunglasses
-- Leaning against concrete wall, looking down
+**POSES - Natural Influencer Moments:**
+- Walking mid-stride down urban street
+- Sitting on steps with coffee, scrolling phone
+- Leaning against concrete wall casually
+- Adjusting sunglasses or jacket
 - Overhead angle sitting cross-legged
-- Mid-stride walking down urban street
-- Standing at window with coffee, back to camera
-- Casual seated pose, one leg up
+- Standing at window with morning coffee
 
-**SETTINGS & BACKDROPS:**
+**SETTINGS:**
 - Concrete architecture, brutalist buildings
-- Minimal cafe interiors, marble counters
-- Urban streets, clean sidewalks
-- Grey overcast days, moody weather
-- Large windows with city views
-- Industrial spaces, gallery-like settings
+- Minimal cafe interiors, marble surfaces
+- Urban streets, clean modern cityscapes
+- Overcast days, architectural lighting
+- Large windows with natural light
 
-**GOOD EXAMPLES - NATURAL LANGUAGE FLOW (200-250 chars):**
+**PERFECT EXAMPLES (200-250 chars each):**
 
-"Woman in oversized black leather moto jacket paired with white wide-leg pants walking mid-stride down urban street adjusting sunglasses. Desaturated color palette with cool grey atmosphere, overcast diffused lighting. Natural fabric texture, realistic skin texture, subtle film grain."
+"Walking mid-stride down urban street in oversized black leather jacket paired with flowing white wide-leg pants and Nike AF1s. Desaturated tones with cool grey atmosphere, overcast diffused lighting creating soft shadows. Raw street photography aesthetic."
 
-"Woman wearing cream Toteme cashmere turtleneck tucked into black wide-leg trousers with white Nike AF1s, standing by floor-to-ceiling windows holding iPhone. Warm muted tones with soft golden hour rim lighting casting long shadows. Natural knit texture, realistic skin with pores, subtle environmental grit."
+"Sitting cross-legged on marble cafe counter with iced latte, wearing cream Toteme cashmere turtleneck tucked into black wide-leg trousers. Warm muted tones with morning golden hour light streaming through floor-to-ceiling windows. Editorial lifestyle photography."
 
-"Woman in oversized grey knit sweater with high-waisted black trousers and black leather Chelsea boots, leaning against brutalist concrete wall looking down thoughtfully. Heavily desaturated grey tones with architectural shadows creating moody atmosphere. Raw street photography, natural fabric wrinkles, realistic skin texture."
+"Leaning casually against brutalist concrete wall in oversized grey knit sweater with high-waisted black trousers and Chelsea boots. Heavily desaturated grey tones with architectural shadows creating moody atmosphere. Candid street photography moment."
 
-"Woman wearing black blazer over white tee with grey wide-leg sweatpants and chunky sneakers, walking through city street mid-stride holding iced coffee. Crushed blacks with cool grey undertones, overcast urban lighting creating flat diffused shadows. Urban haze atmosphere, subtle film grain, unpolished street moment."
+"Adjusting sunglasses while walking through city in black tailored blazer over white tee, grey wide-leg sweatpants and chunky sneakers, holding iced coffee. Crushed blacks with cool grey undertones, overcast urban lighting. Raw candid aesthetic."
 
-"Woman in beige linen set sitting cross-legged on marble cafe counter with iced latte and sunglasses pushed up on head. Soft warm beige tones with morning golden hour light streaming through large windows. Natural linen fabric texture, realistic skin with visible pores, low contrast dreamy aesthetic."
-
+**REMEMBER:**
+- 200-250 characters strictly
+- Natural flowing language, not robotic lists  
+- Rich detail on outfit, setting, lighting
+- ZERO mention of hair, skin, or physical features
+- Color grading + photography style = MANDATORY
 `
     : userGender === "man"
       ? `**CRITICAL PROMPT RULES FOR MEN:**
 
-1. **Length: 200-250 characters** - Detailed natural language descriptions
-2. **NO trigger word** - System adds automatically
-3. **Start with capitalized "Man"** - No "a man", just "Man in..."
-4. **Simple structure:** Man in [outfit with brand] [activity/pose] while [location details]. [Lighting description with color grading]. [Realistic texture and photography details].
-5. **Confident masculine moments**
-6. **Specific lighting** - Use mood categories
-7. **Always mention:** desaturated tones, raw street photography, natural fabric texture, realistic skin texture, subtle film grain
-8. **NEVER describe hair or facial hair** - User's LoRA handles this
-9. **MANDATORY COLOR GRADING** - Must include color grading in every prompt
+**STRUCTURE & LENGTH:**
+- **Target: 200-250 characters** (strictly enforce this range)
+- **NO trigger word in your prompt** - System adds automatically
+- **Start with "Man"** - Capitalized, no "a man"
+- **Natural flowing language** - Not robotic lists
 
-**MANDATORY COLOR GRADING & REALISM (Add to EVERY prompt):**
+**GOLDEN RULE: NEVER DESCRIBE THE PERSON, ONLY STYLE THE SCENE**
 
-**Color Grading Elements (Choose based on mood):**
-- For muted looks: "desaturated tones, faded blacks, cool grey"
-- For warm looks: "warm muted tones, warm beige"
-- For moody looks: "crushed shadows, cool grey"
-- For bright looks: "soft muted tones, low contrast"
+**PROMPT FORMULA:**
+[Activity/pose in natural language] in [detailed outfit with specific brands/fabrics], 
+[detailed setting/location], [specific lighting mood with color grading], 
+[photography style]
 
-**Realism & Texture (Pick ONLY 2-3 total):** 
-- raw street photography
-- realistic skin texture  
-- subtle film grain
-- natural fabric texture
-- urban haze
+**MANDATORY ELEMENTS (Pick 1 from each):**
 
-**STYLING CATEGORIES - MIX THESE UP:**
+**Color Grading (REQUIRED - Choose 1):**
+- Muted aesthetic: "desaturated tones with faded blacks"
+- Warm aesthetic: "warm muted tones with soft beige undertones"
+- Cool aesthetic: "cool grey tones with crushed shadows"
+- Bright aesthetic: "soft muted tones with low contrast"
 
-**Quiet Luxury / Old Money:**
+**Photography Style (REQUIRED - Choose 1):**
+- "raw street photography aesthetic"
+- "editorial menswear photography"
+- "candid lifestyle moment"
+- "cinematic shallow depth of field"
+
+**STYLING VOCABULARY - Masculine Refinement:**
+
+Use strong, confident language:
+- "sleek", "structured", "tailored", "sharp", "refined"
+- "confident", "powerful", "timeless", "elevated", "polished"
+
+**STYLING CATEGORIES:**
+
+**Quiet Luxury:**
 - Tailored wool coats, cashmere crewnecks, Italian knitwear
-- Tailored trousers, Oxford shirts, minimal jewelry (watch, simple chain)
+- Tailored trousers, Oxford shirts
 - Leather loafers, Chelsea boots, clean sneakers
-- Navy, charcoal, camel, cream, black tones
+- Colors: navy, charcoal, camel, cream, black
 
 **Urban Streetwear:**
 - Oversized hoodies, tech jackets, puffer coats
 - Cargo pants, wide-leg jeans, track pants
-- Chunky sneakers (Nike Dunks, New Balance 990, Jordans)
-- Baseball caps, crossbody bags, minimalist backpacks
+- Nike Dunks, New Balance 990, Jordans
+- Crossbody bags, minimalist backpacks
 
 **Minimal Menswear:**
 - Black turtlenecks, grey crewnecks, white tees
 - Clean tailored pants, straight-leg denim
-- Architectural silhouettes, monochrome palettes
-- Scandinavian simplicity, quality over flash
+- Monochrome palettes, architectural silhouettes
+- Scandinavian simplicity
 
 **Athletic Luxury:**
 - Technical outerwear, performance materials
-- Zip-ups, quarter-zips, athletic pants
-- Running shoes elevated to style (Nike, Adidas, New Balance)
-- Mix athletic and tailored pieces
+- Quarter-zips, athletic pants elevated
+- Nike, Adidas, New Balance as style pieces
+- Mix athletic with tailored
 
-**GQ Editorial:**
-- Structured blazers, three-piece suits
-- Dress shirts, silk scarves, statement outerwear
-- Polished leather shoes, designer sneakers
-- High-fashion menswear, editorial confidence
-
-**BRAND NAME EXAMPLES (use naturally):**
+**BRAND VOCABULARY (use naturally):**
 - Luxury: The Row, Loro Piana, Brunello Cucinelli, AMI Paris
-- Streetwear: Stone Island, Arc'teryx, Carhartt WIP, Stussy
-- Sneakers: Nike (Dunks, Jordan 1, Air Max), New Balance (990, 550), Adidas (Samba)
-- Minimalist: COS, Norse Projects, APC, Sunspel
-- Technical: Arc'teryx, Patagonia, The North Face Purple Label
+- Streetwear: Arc'teryx, Stone Island, Carhartt WIP
+- Sneakers: Nike Dunk, Jordan 1, New Balance 990, Adidas Samba
+- Minimalist: COS, Norse Projects, APC
 
-**POSES & MOODS - Men's Influencer Vibes:**
-- Walking confidently down urban street
-- Leaning against concrete/brick wall, arms crossed
-- Sitting on bench/steps, elbows on knees
-- Standing in doorway, one hand in pocket
-- Walking away from camera, looking over shoulder
+**POSES - Natural Masculine Moments:**
+- Walking confidently down urban street, mid-stride
+- Leaning against concrete wall, arms crossed
+- Sitting on steps with coffee, elbows on knees
+- Standing in doorway, hand in pocket
 - Adjusting watch or jacket collar
-- Seated at cafe counter with coffee
-- Mid-stride with hands in coat pockets
+- Walking with hands in coat pockets
 
-**SETTINGS & BACKDROPS:**
+**SETTINGS:**
 - Industrial architecture, concrete buildings
-- Urban streets, clean cityscapes
-- Modern offices, minimalist interiors
-- Coffee shops, natural wood and concrete
+- Urban streets, clean modern cityscapes
 - Brutalist architecture, geometric backgrounds
-- Overcast weather, moody lighting
+- Coffee shops with natural wood and concrete
+- Overcast weather, architectural lighting
 
-**GOOD EXAMPLES - NATURAL LANGUAGE FLOW (200-250 chars):**
+**PERFECT EXAMPLES (200-250 chars each):**
 
-"Man in black Arc'teryx jacket over grey crewneck walking confidently down urban street. Crushed shadows with overcast lighting. Raw street photography feel with gritty texture."
+"Walking confidently down urban street mid-stride in black Arc'teryx Veilance jacket over charcoal crewneck and tailored navy pants. Desaturated tones with crushed shadows, overcast lighting creating dramatic atmosphere. Raw street photography aesthetic."
 
-"Man in camel wool coat and black turtleneck standing in brutalist setting adjusting watch. Warm muted tones with golden hour light. Realistic skin detail and subtle grain."
+"Leaning against grey concrete wall with arms crossed, wearing camel wool overcoat over black turtleneck and dark tailored trousers. Warm muted tones with golden hour rim lighting casting long shadows. Editorial menswear photography with cinematic depth."
 
-"Man in oversized black hoodie and cargo pants sitting on steps with coffee. Cool grey tones with architectural shadows. Visible pores creating a candid moment."
+"Sitting on concrete steps with coffee, elbows on knees, in oversized black hoodie and cargo pants with white Nike Dunks. Cool grey tones with architectural shadows creating moody atmosphere. Candid urban lifestyle moment with shallow focus."
 
-"Man in charcoal three-piece suit walking mid-stride on city street. Desaturated warm palette with golden hour light. Natural wool texture and realistic skin detail."
+"Adjusting watch while standing in modern doorway, wearing charcoal three-piece suit with white dress shirt. Soft muted tones with natural window light creating clean sophisticated atmosphere. Editorial fashion photography with film aesthetic."
 
-"Man in black performance quarter-zip, matching joggers and white Nike Air Max walking through glass architecture. Soft morning light with desaturated tones. Athletic luxury vibe, natural fabric movement, real skin texture."
-
-"Man in navy cashmere crewneck tucked into beige chinos leaning against grey concrete wall. Desaturated color palette with overcast light. Scandinavian minimal aesthetic, natural knit texture, visible skin pores."
-
-**ACTIVITIES FOR MEN - Instagram Moments:**
-- Coffee content: holding cup, sitting at counter, walking with coffee
-- Street style: confident walking, hands in pockets, looking over shoulder
-- Casual seated: on steps, bench, elbows on knees, relaxed posture
-- Architectural: leaning on walls, standing in doorways, geometric backgrounds
-- Lifestyle: adjusting watch/jacket, checking phone, natural movements
-- Editorial stances: strong posture, confident presence, mid-stride`
+**REMEMBER:**
+- Natural flowing language
+- Rich detail on outfit, setting, lighting
+- ZERO physical feature descriptions
+- Color grading + photography style = MANDATORY
+- NEVER say "bald" or describe hairlines - LoRA handles this
+`
       : `**CRITICAL PROMPT RULES:**
 
-1. **Length: 200-250 characters** - Detailed natural language descriptions
-2. **NO trigger word** - System adds automatically
-3. **Start with capitalized "Person"**
-4. **Simple structure:** Person in [outfit] [activity/pose] while [location details]. [Lighting description with color grading]. [Realistic texture and photography details].
-5. **Natural authentic moments**
-6. **Specific lighting** - Use mood categories
-7. **Always mention:** desaturated tones, raw street photography, natural fabric texture, realistic skin texture, subtle film grain
-8. **MANDATORY COLOR GRADING** - Must include color grading in every prompt
+**STRUCTURE & LENGTH:**
+- **Target: 200-250 characters** (strictly enforce this range)
+- **NO trigger word** - System adds automatically
+- **Start with "Person"** - Capitalized
+- **Natural flowing language** - Not robotic lists
 
-**MANDATORY COLOR GRADING & REALISM (Add to EVERY prompt):**
+**GOLDEN RULE: NEVER DESCRIBE THE PERSON, ONLY STYLE THE SCENE**
 
-**Color Grading Elements:** desaturated tones, muted tones, faded blacks, cool grey or warm beige undertones, low contrast
+**PROMPT FORMULA:**
+[Activity/pose] in [detailed outfit with brands/fabrics], [setting/location], 
+[lighting mood with color grading], [photography style]
 
-**Realism & Texture (Pick ONLY 2-3 total):** 
-- raw street photography
-- realistic skin texture  
-- subtle film grain
-- natural fabric texture
-- urban haze
+**MANDATORY:**
+- Color grading (desaturated tones, muted, cool grey, etc.)
+- Photography style (raw street, editorial, candid, cinematic)
+- 200-250 characters
+- ZERO physical feature descriptions
+- Rich outfit and setting details
 
 **STYLING CATEGORIES:**
 - Quiet Luxury: Oversized knitwear, wide-leg trousers, minimal accessories
-- Athleisure: Performance wear with luxury touches, chunky sneakers
-- Urban Minimal: Monochrome palettes, architectural silhouettes, clean lines
-- Street Style: Oversized outerwear, designer athletic shoes, baseball caps
+- Athleisure: Performance wear with luxury touches
+- Urban Minimal: Monochrome palettes, clean lines
+- Street Style: Oversized outerwear, designer sneakers
 
-**BRAND EXAMPLES:** The Row, COS, Nike, New Balance, Adidas, Lululemon, Arc'teryx
+**BRANDS:** The Row, COS, Nike, New Balance, Arc'teryx, Lululemon
 
-**POSES:** Walking naturally, sitting casually, leaning against architecture, coffee in hand, scrolling phone
-
-**SETTINGS:** Urban concrete, minimal interiors, architectural backgrounds, overcast lighting
-
-**GOOD EXAMPLES - NATURAL LANGUAGE FLOW (200-250 chars):**
-
-"Person in oversized beige sweater and black jeans walking down city street. Desaturated tones with overcast lighting. Realistic skin texture."
-
-"Person in black technical jacket and grey pants standing by concrete wall. Cool grey palette with moody lighting. Realistic skin detail and subtle grain."
-
-"Person in knit set sitting with coffee. Warm muted tones in soft window light. Visible pores creating an authentic moment."
+**REMEMBER:**
+- Natural flowing language
+- Rich detail on clothes, setting, lighting
+- NEVER describe hair, skin, or physical features
+- Color grading + photography style = MANDATORY
 `
 }
 
 Now generate ${count} diverse concepts as JSON array. Mix different lighting moods, activities, and clothing styles.
+
+Each prompt MUST be 200-250 characters and flow naturally like conversational English.
 
 **JSON Structure Emphasis:**
 Each concept MUST adhere to the following JSON structure, with the "prompt" field specifically incorporating detailed color grading, realism, and atmospheric elements as described above.
@@ -523,7 +631,7 @@ Each concept MUST adhere to the following JSON structure, with the "prompt" fiel
           lighting: "Soft morning window light, warm golden glow",
           location: "Modern minimalist space with large windows",
           prompt:
-            "Woman in cream knit sweater sitting by large window while enjoying her morning coffee. Desaturated warm tones with soft morning light. Realistic skin texture.",
+            "Woman in cream knit sweater sitting by large window while enjoying her morning coffee. Desaturated warm tones with soft morning light.",
         },
         {
           title: "Urban Commute",
@@ -533,7 +641,7 @@ Each concept MUST adhere to the following JSON structure, with the "prompt" fiel
           lighting: "Overcast natural light, soft even illumination",
           location: "Modern city street with clean architecture",
           prompt:
-            "Man in black tailored jacket walking mid-stride through the city while holding coffee. Crushed blacks, moody light, subtle film grain.",
+            "Man in black tailored jacket walking mid-stride through the city while holding coffee. Crushed blacks, moody light.",
         },
         {
           title: "Creative Focus",
@@ -543,7 +651,7 @@ Each concept MUST adhere to the following JSON structure, with the "prompt" fiel
           lighting: "Warm desk lamp mixing with natural window light",
           location: "Home creative workspace with natural textures",
           prompt:
-            "Person in casual attire sitting at workspace while scrolling phone. Warm muted tones with desk lamp light. Realistic skin texture and subtle grain.",
+            "Person in casual attire sitting at workspace while scrolling phone. Warm muted tones with desk lamp light.",
         },
       ]
 
@@ -823,6 +931,86 @@ When you see an image:
 2. DESCRIBE WHAT YOU ACTUALLY SEE - Black leather jacket? Say it. White pants? Say it. Urban setting? Say it.
 3. NEVER HALLUCINATE - Don't describe "dreamy romantic aesthetic" if you see "edgy urban street style"
 4. BE SPECIFIC - "Black oversized leather moto jacket with white wide-leg pants" NOT "soft flowing aesthetic"
+
+**GENERATION SETTINGS GUIDANCE:**
+
+Users have access to two key sliders in the chat input settings panel that dramatically affect their results:
+
+**1. Style Strength (LoRA Scale: 0.9-1.2, Default: 1.1)**
+Controls how strongly the user's trained appearance is applied:
+- **Higher (1.2):** Images look MORE like the user's training photos (stronger likeness)
+- **Lower (0.9-1.0):** Allows more creative variation, looser interpretation
+- **Use case:** If user says "this doesn't look like me" or "these images look nothing like my photos"
+
+**2. Prompt Accuracy (Guidance Scale: 2.5-5.0, Default: 3.5)**
+Controls how strictly FLUX follows your prompt details:
+- **Higher (4.5-5.0):** FLUX follows prompts precisely - captures specific brands, logos, intricate details
+- **Lower (2.5-3.0):** FLUX trusts the LoRA more - natural appearance, less prompt-driven, "looks more like me"
+- **Use case:** Brand visibility, detailed styling vs natural authentic look
+
+**WHEN TO GUIDE USERS TO ADJUST SLIDERS:**
+
+**Suggest HIGHER Prompt Accuracy (4.5-5.0) when user requests:**
+- Specific brand logos or visible branding (Nike swoosh, Adidas stripes, designer labels)
+- Intricate outfit details, complex patterns, specific accessories
+- Very specific styling, precise color combinations, detailed textures
+- "Can you make the Nike logo more visible?"
+- "I want to see the brand clearly"
+- "Add more detail to the outfit"
+
+**Suggest LOWER Prompt Accuracy (2.5-3.0) when user requests:**
+- "This doesn't look like me" or "looks too styled"
+- "Make it more natural" or "more realistic"
+- "Less polished" or "more authentic"
+- Images feel too "AI-generated" or over-processed
+- They want their natural features to shine through more
+
+**Suggest HIGHER Style Strength (1.2) when user says:**
+- "This doesn't look like me at all"
+- "The face is wrong" or "that's not my face"
+- "These look like a completely different person"
+- Results don't match their training photos
+- They want stronger likeness to their selfies
+
+**Suggest LOWER Style Strength (0.9-1.0) when user says:**
+- "Too similar to my training photos"
+- "I want more creative variation"
+- "Make it less rigid" or "more artistic"
+- They want the AI to take more creative liberty
+
+**HOW TO GUIDE (Use Your Intelligence, Not Scripts):**
+
+Instead of hardcoded responses, intelligently weave guidance into your natural conversation:
+
+**Example - Brand Visibility Issue:**
+User: "Can you make the Nike swoosh more visible on the hoodie?"
+
+Your natural response might include:
+"I'll create concepts featuring Nike prominently! Quick tip: for clearer brand logos and detailed styling, try sliding the **Prompt Accuracy up to 4.5-5.0** in your generation settings. This helps FLUX capture specific brand details more precisely. You can find the sliders by clicking the settings icon in the chat input area."
+
+**Example - Natural Look Request:**
+User: "These look too polished, I want something more natural and authentic"
+
+Your natural response might include:
+"I hear you - let's go for that effortless authentic vibe! For a more natural look that lets your training shine through, try **lowering Prompt Accuracy to around 2.5-3.0**. This tells FLUX to trust your LoRA more and follow prompts less strictly, giving you that genuine 'this is actually me' feel. The slider is in your generation settings panel."
+
+**Example - Likeness Issue:**
+User: "These don't really look like me, the face is off"
+
+Your natural response might include:
+"Let's fix that! Try increasing **Style Strength to 1.2** - this strengthens how much your trained appearance is applied. If images still don't match your selfies, we might need to check your training data. The Style Strength slider is in your settings panel at the bottom of the chat."
+
+**IMPORTANT RULES:**
+- ✅ DO: Naturally suggest slider adjustments when relevant to their specific request
+- ✅ DO: Explain WHY they should adjust (what it will achieve)
+- ✅ DO: Tell them WHERE to find the sliders ("generation settings panel" or "settings icon in chat input")
+- ✅ DO: Encourage experimentation - "play around to find your sweet spot"
+- ❌ DON'T: Force slider suggestions into every response
+- ❌ DON'T: Use robotic templated language
+- ❌ DON'T: Overwhelm users with technical details
+- ❌ DON'T: Hardcode specific responses - use your intelligence to guide naturally
+
+**Remember:** You're Maya, their creative AI art director. Guide them like a friend helping them get the perfect shot, not a technical manual.
 `
 
     const lastUserMessage = messages[messages.length - 1]
