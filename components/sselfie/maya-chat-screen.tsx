@@ -55,6 +55,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
   const [creditBalance, setCreditBalance] = useState<number>(0)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const router = useRouter()
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const [styleStrength, setStyleStrength] = useState(1.1) // LoRA scale: 0.9-1.2
   const [promptAccuracy, setPromptAccuracy] = useState(3.5) // Guidance scale: 2.5-5.0
@@ -1250,11 +1251,10 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
               aria-label="Upload image file"
             />
 
-            {/* Chat menu button inside input */}
             <button
               onClick={() => setShowChatMenu(!showChatMenu)}
               disabled={isTyping}
-              className="absolute left-2 bottom-2.5 w-9 h-9 flex items-center justify-center text-stone-600 hover:text-stone-950 transition-colors disabled:opacity-50 touch-manipulation active:scale-95 z-10"
+              className="absolute left-2 bottom-2.5 w-9 h-9 flex items-center justify-center text-stone-600 hover:text-stone-950 transition-colors disabled:opacity-50 touch-manipulation active:scale-95 z-10 pointer-events-auto"
               aria-label="Chat menu"
               type="button"
             >
@@ -1262,6 +1262,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
             </button>
 
             <textarea
+              ref={textareaRef}
               value={inputValue}
               onChange={(e) => {
                 setInputValue(e.target.value)
@@ -1278,9 +1279,11 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
                   }, 0)
                 }
               }}
-              onTouchStart={(e) => {
-                // Ensure focus on mobile touch
-                ;(e.currentTarget as HTMLTextAreaElement).focus()
+              onClick={(e) => {
+                e.currentTarget.focus()
+              }}
+              onTouchEnd={(e) => {
+                e.currentTarget.focus()
               }}
               placeholder={uploadedImage ? "Describe the style..." : "Message Maya..."}
               className="w-full pl-[5.5rem] pr-12 py-3 bg-white/40 backdrop-blur-2xl border border-white/60 rounded-xl text-stone-950 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-950/50 focus:bg-white/60 font-medium text-[16px] min-h-[48px] max-h-[80px] shadow-lg shadow-stone-950/10 transition-all duration-300 resize-none overflow-y-auto leading-relaxed touch-manipulation"
@@ -1292,12 +1295,12 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
               autoCorrect="on"
               spellCheck="true"
               autoComplete="off"
+              enterKeyHint="send"
             />
 
-            {/* Send button inside input */}
             <button
               onClick={() => handleSendMessage()}
-              className="absolute right-2 bottom-2.5 w-9 h-9 flex items-center justify-center text-stone-600 hover:text-stone-950 transition-colors disabled:opacity-50 touch-manipulation active:scale-95 z-10"
+              className="absolute right-2 bottom-2.5 w-9 h-9 flex items-center justify-center text-stone-600 hover:text-stone-950 transition-colors disabled:opacity-50 touch-manipulation active:scale-95 z-10 pointer-events-auto"
               disabled={isTyping || (!inputValue.trim() && !uploadedImage) || isUploadingImage}
               aria-label="Send message"
               type="button"
