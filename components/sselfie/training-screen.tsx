@@ -81,21 +81,39 @@ const compressImage = async (file: File, maxSize = 1600, quality = 0.85): Promis
 }
 
 const createZipFromFiles = async (files: File[]): Promise<Blob> => {
+  console.log(`[v0] Creating ZIP from ${files.length} files...`)
   const zip = new JSZip()
-  const dataFolder = zip.folder("data")
-  if (!dataFolder) {
-    throw new Error("Failed to create data folder in ZIP")
+
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i]
+    console.log(`[v0] Adding file ${i + 1}/${files.length} to ZIP: ${file.name} (${(file.size / 1024).toFixed(2)}KB)`)
+
+    if (file.size === 0) {
+      throw new Error(`File ${file.name} is empty`)
+    }
+
+    const fileName = `image_${i + 1}.jpg`
+    zip.file(fileName, file)
   }
 
-  files.forEach((file, i) => {
-    dataFolder.file(`image_${i + 1}.jpg`, file)
-  })
-
-  return await zip.generateAsync({
+  console.log("[v0] Generating ZIP with DEFLATE compression...")
+  const zipBlob = await zip.generateAsync({
     type: "blob",
     compression: "DEFLATE",
-    compressionOptions: { level: 9 }, // Maximum compression
+    compressionOptions: { level: 9 },
   })
+
+  console.log(`[v0] ZIP generated successfully: ${(zipBlob.size / 1024 / 1024).toFixed(2)}MB`)
+
+  if (zipBlob.size === 0) {
+    throw new Error("Generated ZIP file is empty")
+  }
+
+  if (zipBlob.size < 1000) {
+    throw new Error(`Generated ZIP file is suspiciously small (${zipBlob.size} bytes)`)
+  }
+
+  return zipBlob
 }
 
 export default function TrainingScreen({ user, userId, setHasTrainedModel, setActiveTab }: TrainingScreenProps) {
@@ -105,6 +123,7 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 })
   const [deletingImageId, setDeletingImageId] = useState<number | null>(null)
+  const [isCanceling, setIsCanceling] = useState(false)
 
   const {
     data: trainingStatus,
@@ -345,6 +364,39 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
     }
   }
 
+  const handleCancelTraining = async () => {
+    if (!confirm("Are you sure you want to stop this training? This cannot be undone and you'll lose your progress.")) {
+      return
+    }
+
+    try {
+      setIsCanceling(true)
+
+      const response = await fetch("/api/training/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ modelId }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || "Failed to cancel training")
+      }
+
+      console.log("[v0] Training canceled successfully")
+      alert("Training has been stopped. You can start a new training whenever you're ready.")
+
+      // Reset to upload stage
+      setTrainingStage("upload")
+      mutate()
+    } catch (error) {
+      console.error("[v0] Error canceling training:", error)
+      alert(`Failed to stop training: ${error instanceof Error ? error.message : "Unknown error"}`)
+    } finally {
+      setIsCanceling(false)
+    }
+  }
+
   if (!trainingStatus && !error) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -489,6 +541,29 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
                   : `${Math.max(1, Math.round((100 - trainingProgress) / 4))} minutes remaining`}
               </span>
             </div>
+          </div>
+
+          <div className="mt-6">
+            <button
+              onClick={handleCancelTraining}
+              disabled={isCanceling}
+              className="w-full bg-red-500 hover:bg-red-600 active:bg-red-700 text-white py-4 sm:py-5 rounded-xl sm:rounded-[1.5rem] font-semibold text-xs sm:text-sm transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed min-h-[52px] sm:min-h-[60px] shadow-lg shadow-red-900/20 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
+            >
+              {isCanceling ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Stopping...
+                </>
+              ) : (
+                <>
+                  <X size={16} strokeWidth={2.5} />
+                  Stop Training
+                </>
+              )}
+            </button>
+            <p className="text-xs text-stone-500 text-center mt-2">
+              Training taking too long? You can stop it and try again.
+            </p>
           </div>
         </div>
       )}
