@@ -147,22 +147,38 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
   }
 
   const handleManageSubscription = async () => {
+    console.log("[v0] Settings: handleManageSubscription called")
     setIsLoadingPortal(true)
     try {
+      console.log("[v0] Settings: Calling create-portal-session API")
       const response = await fetch("/api/stripe/create-portal-session", {
         method: "POST",
         credentials: "include",
       })
 
+      console.log("[v0] Settings: API response status:", response.status)
+      console.log("[v0] Settings: API response ok:", response.ok)
+
       if (response.ok) {
         const data = await response.json()
+        console.log("[v0] Settings: Portal URL received:", data.url)
         window.location.href = data.url
       } else {
-        console.error("[v0] Failed to create portal session")
-        alert("Unable to open subscription management. Please try again.")
+        const errorData = await response.json().catch(() => ({}))
+        console.error("[v0] Settings: Failed to create portal session. Status:", response.status, "Error:", errorData)
+
+        if (errorData.error === "no_stripe_customer") {
+          alert(
+            "Your subscription is managed directly by our team. Please contact hello@sselfie.ai for any subscription changes or billing questions.",
+          )
+        } else {
+          alert(
+            `Unable to open subscription management. ${errorData.message || errorData.details || "Please try again."}`,
+          )
+        }
       }
     } catch (error) {
-      console.error("[v0] Error opening portal:", error)
+      console.error("[v0] Settings: Error opening portal:", error)
       alert("Unable to open subscription management. Please try again.")
     } finally {
       setIsLoadingPortal(false)
@@ -317,7 +333,7 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
                   className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-stone-100/50 border-l-2 border-stone-950 text-left"
                   disabled
                 >
-                  <SettingsIcon size={20} className="text-stone-900" />
+                  <SettingsIcon size={20} className="text-stone-950" />
                   <span className="text-sm font-medium text-stone-900">Settings</span>
                 </button>
 
@@ -335,7 +351,7 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
               <button
                 onClick={handleLogout}
                 disabled={isLoggingOut}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 rounded-xl transition-colors disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <LogOut size={18} />
                 {isLoggingOut ? "Signing Out..." : "Sign Out"}

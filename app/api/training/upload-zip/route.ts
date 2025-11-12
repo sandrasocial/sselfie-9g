@@ -8,7 +8,6 @@ import {
   FLUX_LORA_TRAINER_VERSION,
   DEFAULT_TRAINING_PARAMS,
 } from "@/lib/replicate-client"
-import { put } from "@vercel/blob"
 import { neon } from "@neondatabase/serverless"
 
 const sql = neon(process.env.DATABASE_URL!)
@@ -19,42 +18,13 @@ export const dynamic = "force-dynamic" // Prevent static optimization
 
 export async function POST(request: Request) {
   console.log("[v0] Upload ZIP API called - starting request processing")
-  console.log("[v0] Request headers:", {
-    contentType: request.headers.get("content-type"),
-    contentLength: request.headers.get("content-length"),
-  })
 
   let formData
   try {
-    console.log("[v0] Attempting to parse FormData...")
     formData = await request.formData()
     console.log("[v0] FormData parsed successfully")
   } catch (error: any) {
-    console.error("[v0] Error parsing formData:", {
-      message: error.message,
-      name: error.name,
-      stack: error.stack?.split("\n").slice(0, 3),
-    })
-
-    if (
-      error.message?.includes("disturbed") ||
-      error.message?.includes("locked") ||
-      error.message?.includes("already been consumed") ||
-      error.message?.includes("body stream") ||
-      error.message?.includes("Body is unusable")
-    ) {
-      console.error("[v0] Body stream error detected - body was already consumed by another handler")
-      return NextResponse.json(
-        {
-          error: "Upload failed: Body is disturbed or locked",
-          details:
-            "The request body was already read by another process. This is usually caused by middleware or error handlers consuming the request. Please try again.",
-          troubleshooting:
-            "If this persists, try: 1) Refreshing the page 2) Using fewer/smaller images 3) Checking your internet connection",
-        },
-        { status: 400 },
-      )
-    }
+    console.error("[v0] Error parsing formData:", error)
 
     if (error.message?.includes("too large") || error.message?.includes("exceeded")) {
       return NextResponse.json(
@@ -114,19 +84,51 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "User not found" }, { status: 404 })
   }
 
-  // Upload ZIP to Vercel Blob
-  console.log("[v0] Uploading ZIP to Vercel Blob...")
-  const blob = await put(`training/${neonUser.id}/${zipFile.name}`, zipFile, {
-    access: "public",
-    contentType: "application/zip",
-    addRandomSuffix: true, // Prevents duplicate blob errors when users re-upload
-  })
+  console.log("[v0] Uploading ZIP directly to Replicate...")
+  let replicateFileUrl: string
+  try {
+    const replicateFormData = new FormData()
+    replicateFormData.append("content", zipFile, "training_images.zip")
 
-  console.log("[v0] ZIP uploaded to Blob:", blob.url)
+    const uploadResponse = await fetch("https://api.replicate.com/v1/files", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.REPLICATE_API_TOKEN}`,
+      },
+      body: replicateFormData,
+    })
+
+    if (!uploadResponse.ok) {
+      const errorData = await uploadResponse.json().catch(() => ({}))
+      console.error("[v0] Failed to upload to Replicate:", errorData)
+      throw new Error(`Replicate upload failed: ${JSON.stringify(errorData)}`)
+    }
+
+    const fileData = await uploadResponse.json()
+    console.log("[v0] ZIP uploaded to Replicate successfully:", {
+      id: fileData.id,
+      name: fileData.name,
+      size: fileData.size,
+    })
+
+    // Use the Replicate file URL format
+    replicateFileUrl = fileData.urls.get
+    console.log("[v0] Replicate file URL:", replicateFileUrl)
+  } catch (uploadError: any) {
+    console.error("[v0] Replicate upload error:", uploadError)
+    return NextResponse.json(
+      {
+        error: "Failed to upload training images",
+        details: uploadError.message || "Could not upload images to Replicate. Please try again.",
+      },
+      { status: 500 },
+    )
+  }
 
   const triggerWord = `user${neonUser.id.substring(0, 8)}`
   console.log("[v0] Generated trigger word:", triggerWord)
 
+  // Get or create training model
   const model = await getOrCreateTrainingModel(
     neonUser.id,
     modelName || `${neonUser.display_name || "User"}'s Model`,
@@ -203,7 +205,7 @@ export async function POST(request: Request) {
       throw new Error(`Failed to check model existence: ${JSON.stringify(errorData)}`)
     }
 
-    console.log("[v0] Starting Replicate training with SDK...")
+    console.log("[v0] Starting Replicate training with file URL...")
     const training = await replicate.trainings.create(
       FLUX_LORA_TRAINER.split("/")[0],
       FLUX_LORA_TRAINER.split("/")[1],
@@ -212,7 +214,7 @@ export async function POST(request: Request) {
         destination,
         input: {
           ...DEFAULT_TRAINING_PARAMS,
-          input_images: blob.url,
+          input_images: replicateFileUrl,
           trigger_word: triggerWord,
         },
       },
@@ -242,7 +244,6 @@ export async function POST(request: Request) {
       modelId: model.id,
       trainingId: training.id,
       triggerWord,
-      zipUrl: blob.url,
       message: "Training started successfully",
     })
   } catch (replicateError: any) {

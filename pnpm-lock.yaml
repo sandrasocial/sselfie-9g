@@ -10,7 +10,7 @@ importers:
     dependencies:
       '@ai-sdk/react':
         specifier: latest
-        version: 2.0.92(react@19.2.0)(zod@3.25.76)
+        version: 2.0.93(react@19.2.0)(zod@3.25.76)
       '@clerk/nextjs':
         specifier: 6.34.5
         version: 6.34.5(next@16.0.0(@opentelemetry/api@1.9.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
@@ -118,10 +118,10 @@ importers:
         version: 8.4.0
       '@supabase/ssr':
         specifier: latest
-        version: 0.7.0(@supabase/supabase-js@2.81.0(bufferutil@4.0.9))
+        version: 0.7.0(@supabase/supabase-js@2.81.1(bufferutil@4.0.9))
       '@supabase/supabase-js':
         specifier: latest
-        version: 2.81.0(bufferutil@4.0.9)
+        version: 2.81.1(bufferutil@4.0.9)
       '@upstash/redis':
         specifier: latest
         version: 1.35.6
@@ -134,12 +134,15 @@ importers:
       '@vercel/blob':
         specifier: latest
         version: 2.0.0
+      '@vercel/functions':
+        specifier: 3.3.0
+        version: 3.3.0(@aws-sdk/credential-provider-web-identity@3.918.0)
       '@vercel/postgres':
         specifier: 0.10.0
         version: 0.10.0
       ai:
         specifier: latest
-        version: 5.0.92(zod@3.25.76)
+        version: 5.0.93(zod@3.25.76)
       autoprefixer:
         specifier: ^10.4.20
         version: 10.4.20(postcss@8.5.0)
@@ -229,7 +232,7 @@ importers:
         version: 2.0.7(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       stripe:
         specifier: latest
-        version: 19.3.0(@types/node@22.0.0)
+        version: 19.3.1(@types/node@22.0.0)
       swr:
         specifier: latest
         version: 2.3.6(react@19.2.0)
@@ -273,8 +276,8 @@ importers:
 
 packages:
 
-  '@ai-sdk/gateway@2.0.8':
-    resolution: {integrity: sha512-cA5Sh5pjmsMOlzCxsX9B4bGB9qOn9/HRxKb8ry1OYmrXP3i1t34eZMHA7EVFoB09I41p0LPwkRBACYXm15xokw==}
+  '@ai-sdk/gateway@2.0.9':
+    resolution: {integrity: sha512-E6x4h5CPPPJ0za1r5HsLtHbeI+Tp3H+YFtcH8G3dSSPFE6w+PZINzB4NxLZmg1QqSeA5HTP3ZEzzsohp0o2GEw==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -289,8 +292,8 @@ packages:
     resolution: {integrity: sha512-6o7Y2SeO9vFKB8lArHXehNuusnpddKPk7xqL7T2/b+OvXMRIXUO1rR4wcv1hAFUAT9avGZshty3Wlua/XA7TvA==}
     engines: {node: '>=18'}
 
-  '@ai-sdk/react@2.0.92':
-    resolution: {integrity: sha512-6rvwHQnmlMF32ANWPyFSIYZPDXBzytOWkU6m7spN30lqAFVuvzInt3CDDJVRCSIlfX4FplK1si4ZUgxuH0yODw==}
+  '@ai-sdk/react@2.0.93':
+    resolution: {integrity: sha512-2TzhpQr10HuWxpqyHpSAUMRUqD1G2O73J2sAaJChomVDbjr7BwpM0mdR3aRamCXNtuLiJmTFQhbNzw8fXMBdYw==}
     engines: {node: '>=18'}
     peerDependencies:
       react: ^18 || ^19 || ^19.0.0-rc
@@ -2090,20 +2093,20 @@ packages:
     resolution: {integrity: sha512-3LYVbK3Yg6NTGq3xB8jHSZF8VhoVjb3qJSAorzh2yuva/g4FMRmdQq68euk4hqaq2nRJHkr6x+Id473roUky1w==}
     engines: {node: '>=12.16'}
 
-  '@supabase/auth-js@2.81.0':
-    resolution: {integrity: sha512-mWyRPO+XUo19MHNBFg5qdH8cMIyxRNj9HXhwkwToxDHYRZWru96hWZFCVb7trOrTpPVe4TgLer2yy3KMvYBMPw==}
+  '@supabase/auth-js@2.81.1':
+    resolution: {integrity: sha512-K20GgiSm9XeRLypxYHa5UCnybWc2K0ok0HLbqCej/wRxDpJxToXNOwKt0l7nO8xI1CyQ+GrNfU6bcRzvdbeopQ==}
     engines: {node: '>=20.0.0'}
 
-  '@supabase/functions-js@2.81.0':
-    resolution: {integrity: sha512-yxxIGbXm1TtRpP5VwXKEZIdQMd2XUrWS1xt3zPF3jMItX5dXfdpbz5YRPY3IfebR8gXB113d/APWvYLiNuzI1Q==}
+  '@supabase/functions-js@2.81.1':
+    resolution: {integrity: sha512-sYgSO3mlgL0NvBFS3oRfCK4OgKGQwuOWJLzfPyWg0k8MSxSFSDeN/JtrDJD5GQrxskP6c58+vUzruBJQY78AqQ==}
     engines: {node: '>=20.0.0'}
 
-  '@supabase/postgrest-js@2.81.0':
-    resolution: {integrity: sha512-HdybTRf5Sy+gBxzgwkag+WkvV8QqMXhnKQ383YG51lCbm8p82CuCcUTzGy2xFHiA2ZXnnlkSzrfw8uKFAiAiog==}
+  '@supabase/postgrest-js@2.81.1':
+    resolution: {integrity: sha512-DePpUTAPXJyBurQ4IH2e42DWoA+/Qmr5mbgY4B6ZcxVc/ZUKfTVK31BYIFBATMApWraFc8Q/Sg+yxtfJ3E0wSg==}
     engines: {node: '>=20.0.0'}
 
-  '@supabase/realtime-js@2.81.0':
-    resolution: {integrity: sha512-WCL9kMbmHQNGAG4ep+jfU22+h9OiQVv7bbkOmLy4gwlqtE+SJszkAtRp3l3xthqYkbxHbIqGc/BlHv3Dh79cXg==}
+  '@supabase/realtime-js@2.81.1':
+    resolution: {integrity: sha512-ViQ+Kxm8BuUP/TcYmH9tViqYKGSD1LBjdqx2p5J+47RES6c+0QHedM0PPAjthMdAHWyb2LGATE9PD2++2rO/tw==}
     engines: {node: '>=20.0.0'}
 
   '@supabase/ssr@0.7.0':
@@ -2111,12 +2114,12 @@ packages:
     peerDependencies:
       '@supabase/supabase-js': ^2.43.4
 
-  '@supabase/storage-js@2.81.0':
-    resolution: {integrity: sha512-gj9u+EyEVLgDA9jW8JOsAgEc8H79zg01STK5KLv9EU45kf5Qh7kAoCmG090Jkp/YEGvSiaR/Ta7Xs/gUTLqflw==}
+  '@supabase/storage-js@2.81.1':
+    resolution: {integrity: sha512-UNmYtjnZnhouqnbEMC1D5YJot7y0rIaZx7FG2Fv8S3hhNjcGVvO+h9We/tggi273BFkiahQPS/uRsapo1cSapw==}
     engines: {node: '>=20.0.0'}
 
-  '@supabase/supabase-js@2.81.0':
-    resolution: {integrity: sha512-FkiqUYCzsT92V/mfvoFueszkQrPqSTHgXhN9ADqeMpY5j0tUqeAZu8g2ptLYiDmx1pBbh4xoiqxWAf3UDIv4Bw==}
+  '@supabase/supabase-js@2.81.1':
+    resolution: {integrity: sha512-KSdY7xb2L0DlLmlYzIOghdw/na4gsMcqJ8u4sD6tOQJr+x3hLujU9s4R8N3ob84/1bkvpvlU5PYKa1ae+OICnw==}
     engines: {node: '>=20.0.0'}
 
   '@swc/helpers@0.5.15':
@@ -2320,6 +2323,15 @@ packages:
       '@aws-sdk/credential-provider-web-identity':
         optional: true
 
+  '@vercel/functions@3.3.0':
+    resolution: {integrity: sha512-u5UrM2BX7gdMMXaJph3ZxgjAczv5/3oCG4H37BcnDDiXO7hJnN9C7pNX1v4mSmMLQ22n44C2bqN0d87lxfxYXQ==}
+    engines: {node: '>= 20'}
+    peerDependencies:
+      '@aws-sdk/credential-provider-web-identity': '*'
+    peerDependenciesMeta:
+      '@aws-sdk/credential-provider-web-identity':
+        optional: true
+
   '@vercel/oidc@2.0.2':
     resolution: {integrity: sha512-59PBFx3T+k5hLTEWa3ggiMpGRz1OVvl9eN8SUai+A43IsqiOuAe7qPBf+cray/Fj6mkgnxm/D7IAtjc8zSHi7g==}
     engines: {node: '>= 18'}
@@ -2336,8 +2348,8 @@ packages:
     resolution: {integrity: sha512-h8lQ8tacZYnR3vNQTgibj+tODHI5/+l06Au2Pcriv/Gmet0eaj4TwWH41sO9wnHDiQsEj19q0drzdWdeAHtweg==}
     engines: {node: '>=6.5'}
 
-  ai@5.0.92:
-    resolution: {integrity: sha512-EnPe3QXiD06Tg7iAt/oU3JSwedI1nuhEBnTjyfn1qTXaqmJ6qI4YG8wn/eBHRVXnmljDFDNYvGBC5pALYV1rAA==}
+  ai@5.0.93:
+    resolution: {integrity: sha512-9eGcu+1PJgPg4pRNV4L7tLjRR3wdJC9CXQoNMvtqvYNOLZHFCzjHtVIOr2SIkoJJeu2+sOy3hyiSuTmy2MA40g==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -3529,8 +3541,8 @@ packages:
     resolution: {integrity: sha512-4gB8na07fecVVkOI6Rs4e7T6NOTki5EmL7TUduTs6bu3EdnSycntVJ4re8kgZA+wx9IueI2Y11bfbgwtzuE0KQ==}
     engines: {node: '>=0.10.0'}
 
-  stripe@19.3.0:
-    resolution: {integrity: sha512-3MbqRkw5LXb4LWP1LgIEYxUAYhYDDU5pcHZj4Xha6VWPnN1wrUmQ7Htsgm8wR584s0hn1aQg1lYD0Hi+F37E5g==}
+  stripe@19.3.1:
+    resolution: {integrity: sha512-5NXhLxTZ+4uO1wnsmNysILVuyeZ1Xia7niz/8ykBkGJkCcrY2WyQZwcfYuWZmZEJtWr2+0j49JXwNC6y9CHL7Q==}
     engines: {node: '>=16'}
     peerDependencies:
       '@types/node': '>=16'
@@ -3768,7 +3780,7 @@ packages:
 
 snapshots:
 
-  '@ai-sdk/gateway@2.0.8(zod@3.25.76)':
+  '@ai-sdk/gateway@2.0.9(zod@3.25.76)':
     dependencies:
       '@ai-sdk/provider': 2.0.0
       '@ai-sdk/provider-utils': 3.0.17(zod@3.25.76)
@@ -3786,10 +3798,10 @@ snapshots:
     dependencies:
       json-schema: 0.4.0
 
-  '@ai-sdk/react@2.0.92(react@19.2.0)(zod@3.25.76)':
+  '@ai-sdk/react@2.0.93(react@19.2.0)(zod@3.25.76)':
     dependencies:
       '@ai-sdk/provider-utils': 3.0.17(zod@3.25.76)
-      ai: 5.0.92(zod@3.25.76)
+      ai: 5.0.93(zod@3.25.76)
       react: 19.2.0
       swr: 2.3.6(react@19.2.0)
       throttleit: 2.1.0
@@ -5881,19 +5893,19 @@ snapshots:
 
   '@stripe/stripe-js@8.4.0': {}
 
-  '@supabase/auth-js@2.81.0':
+  '@supabase/auth-js@2.81.1':
     dependencies:
       tslib: 2.8.1
 
-  '@supabase/functions-js@2.81.0':
+  '@supabase/functions-js@2.81.1':
     dependencies:
       tslib: 2.8.1
 
-  '@supabase/postgrest-js@2.81.0':
+  '@supabase/postgrest-js@2.81.1':
     dependencies:
       tslib: 2.8.1
 
-  '@supabase/realtime-js@2.81.0(bufferutil@4.0.9)':
+  '@supabase/realtime-js@2.81.1(bufferutil@4.0.9)':
     dependencies:
       '@types/phoenix': 1.6.6
       '@types/ws': 8.18.1
@@ -5903,22 +5915,22 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  '@supabase/ssr@0.7.0(@supabase/supabase-js@2.81.0(bufferutil@4.0.9))':
+  '@supabase/ssr@0.7.0(@supabase/supabase-js@2.81.1(bufferutil@4.0.9))':
     dependencies:
-      '@supabase/supabase-js': 2.81.0(bufferutil@4.0.9)
+      '@supabase/supabase-js': 2.81.1(bufferutil@4.0.9)
       cookie: 1.0.2
 
-  '@supabase/storage-js@2.81.0':
+  '@supabase/storage-js@2.81.1':
     dependencies:
       tslib: 2.8.1
 
-  '@supabase/supabase-js@2.81.0(bufferutil@4.0.9)':
+  '@supabase/supabase-js@2.81.1(bufferutil@4.0.9)':
     dependencies:
-      '@supabase/auth-js': 2.81.0
-      '@supabase/functions-js': 2.81.0
-      '@supabase/postgrest-js': 2.81.0
-      '@supabase/realtime-js': 2.81.0(bufferutil@4.0.9)
-      '@supabase/storage-js': 2.81.0
+      '@supabase/auth-js': 2.81.1
+      '@supabase/functions-js': 2.81.1
+      '@supabase/postgrest-js': 2.81.1
+      '@supabase/realtime-js': 2.81.1(bufferutil@4.0.9)
+      '@supabase/storage-js': 2.81.1
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
@@ -6092,6 +6104,12 @@ snapshots:
     optionalDependencies:
       '@aws-sdk/credential-provider-web-identity': 3.918.0
 
+  '@vercel/functions@3.3.0(@aws-sdk/credential-provider-web-identity@3.918.0)':
+    dependencies:
+      '@vercel/oidc': 3.0.3
+    optionalDependencies:
+      '@aws-sdk/credential-provider-web-identity': 3.918.0
+
   '@vercel/oidc@2.0.2':
     dependencies:
       '@types/ms': 2.1.0
@@ -6112,9 +6130,9 @@ snapshots:
       event-target-shim: 5.0.1
     optional: true
 
-  ai@5.0.92(zod@3.25.76):
+  ai@5.0.93(zod@3.25.76):
     dependencies:
-      '@ai-sdk/gateway': 2.0.8(zod@3.25.76)
+      '@ai-sdk/gateway': 2.0.9(zod@3.25.76)
       '@ai-sdk/provider': 2.0.0
       '@ai-sdk/provider-utils': 3.0.17(zod@3.25.76)
       '@opentelemetry/api': 1.9.0
@@ -7274,7 +7292,7 @@ snapshots:
 
   strip-json-comments@2.0.1: {}
 
-  stripe@19.3.0(@types/node@22.0.0):
+  stripe@19.3.1(@types/node@22.0.0):
     dependencies:
       qs: 6.14.0
     optionalDependencies:

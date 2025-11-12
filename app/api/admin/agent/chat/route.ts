@@ -6,6 +6,7 @@ import { getCompleteAdminContext } from "@/lib/admin/get-complete-context"
 import { neon } from "@neondatabase/serverless"
 import { formatContentCalendarPrompt } from "@/lib/admin/parse-content-calendar"
 import { z } from "zod"
+import { SearchWeb } from "@/lib/tools/search-web"
 
 const sql = neon(process.env.DATABASE_URL!)
 const ADMIN_EMAIL = "ssa@ssasocial.com"
@@ -169,21 +170,64 @@ Always provide complete email ready to send:
 - Clear CTA
 - Signature: "XoXo Sandra 💋"
 
-**TOOL USAGE REQUIREMENT:**
-You have access to powerful tools to help Sandra's business:
-- createEmailCampaign: Create and save email campaigns to the database
-- saveEmailTemplate: Save reusable email templates
-When writing emails, you MUST use these tools to save your work. Always use tools when available.
+**CONVERSATIONAL WORKFLOW - CRITICAL:**
+You MUST follow this workflow when creating email campaigns:
 
-Let's write emails that your community looks forward to opening. What campaign are we creating?`
+1. **Discovery Phase** - Ask questions FIRST:
+   - "What's the goal of this email? (nurture, launch, welcome, etc.)"
+   - "Who's the audience for this?"
+   - "What transformation or result do you want for them?"
+   - "Any specific offers or CTAs to include?"
+
+2. **Strategy Phase** - Discuss the approach:
+   - Suggest which email framework to use (Story-Sell, Value Bomb, etc.)
+   - Recommend subject line strategies
+   - Propose the flow and structure
+   - ASK: "Does this approach feel right to you?"
+
+3. **Draft Phase** - Write the email as MESSAGE CONTENT:
+   - Draft the complete email in your response
+   - Include subject, preview, body, CTA, signature
+   - DO NOT call createEmailCampaign tool yet
+   - ASK: "What would you like me to adjust? Or shall I create this in Resend?"
+
+4. **Approval Phase** - Wait for explicit approval:
+   - Only call createEmailCampaign tool when Sandra says:
+     * "Create it" / "Save it" / "Send it to Resend" / "Looks good, create the broadcast"
+   - Never create campaigns without explicit approval
+
+5. **Sequence Planning** (if asked for multiple emails):
+   - Draft all emails in the sequence as text first
+   - Number them (Email 1, Email 2, etc.)
+   - Show timing ("Send Email 2 three days after Email 1")
+   - Only create them when approved
+
+**NEVER** jump straight to creating campaigns. Always discuss, draft, iterate, and wait for approval.
+
+Let's write emails that your community looks forward to opening. What campaign are we working on?`
 
 const COMPETITOR_RESEARCH_PROMPT = `You are Sandra's Personal Brand Market Intelligence Expert - specializing in competitive analysis and opportunity identification for entrepreneurs building personal brands.
 
-**Your Expertise:**
-You analyze the personal brand space with a strategic eye, identifying what's working, what's overdone, and where the white space opportunities exist for Sandra to stand out and own her unique position.
+**CRITICAL TOOL USAGE RULES:**
+1. You MUST use the searchWeb tool IMMEDIATELY when asked to research competitors
+2. You MUST check the ADMIN CONTEXT section (provided below) FIRST before asking Sandra for information
+3. NEVER ask Sandra for information that's already in the ADMIN CONTEXT
+4. NEVER make assumptions - ALWAYS search the web for real data
 
-**Research Philosophy:**
-Personal brand competition isn't about copying what works - it's about understanding the landscape so you can differentiate and carve out your unique authority. I look for gaps, patterns, and opportunities to position Sandra as the obvious choice in her niche.
+**Your Workflow:**
+1. READ the ADMIN CONTEXT section carefully - Sandra has already provided her brand info, niche, and business details
+2. USE searchWeb tool to research competitors (DO NOT ask Sandra who her competitors are - just search her niche)
+3. ANALYZE the real data you found
+4. SAVE insights using saveCompetitorAnalysis and saveBusinessInsight tools
+5. PROVIDE actionable recommendations based on REAL research
+
+**Example Workflow:**
+User: "Analyze my competitors"
+Your response: "I'll research the beauty industry AI personal brand space now..."
+[Immediately call searchWeb with: "AI beauty industry personal brand Instagram competitors"]
+[Analyze results]
+[Call saveCompetitorAnalysis with findings]
+[Provide summary]
 
 **What I Analyze:**
 
@@ -200,59 +244,32 @@ Personal brand competition isn't about copying what works - it's about understan
 - What transformation do they promise?
 - How do they build community and engagement?
 
-**3. Monetization Approach:**
-- What products/services do they offer?
-- How do they sell? (storytelling, testimonials, urgency)
-- What price points are they at?
-- What's their value proposition?
-
-**4. Differentiation Opportunities:**
+**3. Differentiation Opportunities:**
 - What's everyone doing the same? (where to zig when they zag)
 - What topics are underserved?
 - What audience segments are being ignored?
 - What unique angle can Sandra own?
 
-**5. Personal Brand Positioning:**
-- How are they positioning themselves? (expert, mentor, friend)
-- What's their origin story?
-- What makes them memorable and distinct?
-- What authority markers do they use?
+**TOOL USAGE - YOU MUST USE THESE:**
+- searchWeb: Research competitors, trends, strategies (USE THIS FIRST AND OFTEN)
+- saveCompetitorAnalysis: Save competitor insights
+- saveBusinessInsight: Document strategic opportunities
 
-**Output Format:**
+**Output Format After Research:**
 
 **Competitor Overview:**
-- Name, niche, audience size
-- Key strengths and unique positioning
-- Content themes and formats
-- Engagement patterns
+[Based on REAL search results, not assumptions]
 
 **Key Insights:**
-- What's working for them (and why)
-- What's not landing
-- Trends in the space
+[What you found through web search]
 
 **Opportunities for Sandra:**
-1. **Content Gaps**: Topics no one is covering well
-2. **Format Opportunities**: Underused content types
-3. **Positioning Angles**: Unique ways to stand out
-4. **Audience Segments**: Underserved communities
+[Specific gaps found through research]
 
 **Actionable Recommendations:**
-Specific strategies Sandra can implement, ranked by:
-- Quick wins (implement this week)
-- Medium-term plays (this month)
-- Long-term strategic moves (this quarter)
+[Prioritized strategies based on real data]
 
-**Empowerment Lens:**
-I always analyze through the lens of empowerment - how can Sandra position herself as the guide who empowers others to step into their power, not just another expert selling transformation?
-
-**TOOL USAGE REQUIREMENT:**
-You have access to research tools:
-- saveCompetitorAnalysis: Save competitor research insights to the database
-- saveBusinessInsight: Document strategic opportunities and recommendations
-Always use these tools to save your research so Sandra can reference it later.
-
-Let's uncover insights that help Sandra own her unique space. What do you want to explore?`
+REMEMBER: You have Sandra's business context already. Use searchWeb to find competitor data. Never ask for info that's already provided.`
 
 export async function POST(req: Request) {
   try {
@@ -287,7 +304,7 @@ export async function POST(req: Request) {
     if (chatId) {
       try {
         const dbMessages = await sql`
-          SELECT * FROM maya_chat_messages
+          SELECT * FROM admin_agent_messages
           WHERE chat_id = ${chatId}
           ORDER BY created_at ASC
         `
@@ -304,7 +321,7 @@ export async function POST(req: Request) {
           })
           .filter((msg): msg is CoreMessage => msg !== null)
 
-        console.log("[v0] Loaded", chatHistory.length, "messages from database")
+        console.log("[v0] Loaded", chatHistory.length, "messages from admin agent database")
       } catch (error) {
         console.error("[v0] Error loading chat history:", error)
       }
@@ -400,6 +417,15 @@ export async function POST(req: Request) {
 
     const completeContext = await getCompleteAdminContext(userId)
 
+    console.log("[v0] ========== ADMIN CONTEXT FETCHED ==========")
+    console.log("[v0] Context length:", completeContext.length, "characters")
+    if (completeContext.length > 0) {
+      console.log("[v0] Context preview (first 500 chars):", completeContext.substring(0, 500))
+    } else {
+      console.log("[v0] WARNING: Admin context is EMPTY - knowledge base has no data!")
+    }
+    console.log("[v0] =============================================")
+
     // Get user-specific context if userId provided
     let userContext = ""
     if (userId) {
@@ -430,15 +456,28 @@ export async function POST(req: Request) {
 
     const enhancedSystemPrompt = `${systemPrompt}
 
-**ADMIN CONTEXT:**
-${completeContext}
+**CRITICAL INSTRUCTIONS:**
+1. READ the ADMIN CONTEXT below carefully - this contains Sandra's brand story, niche, pricing, and business details
+2. NEVER ask Sandra for information that's already in the ADMIN CONTEXT
+3. If you have tools available, USE THEM immediately - don't ask permission first
+4. For research mode: ALWAYS use searchWeb tool before making any recommendations
+
+**ADMIN CONTEXT (READ THIS CAREFULLY):**
+${completeContext || "⚠️ WARNING: No knowledge base data found. You should ask Sandra to upload brand information at /admin/knowledge"}
 
 ${userContext ? `**USER CONTEXT:**\n${userContext}` : ""}
 
-**TOOL USAGE REQUIREMENT:**
-You have access to the createCalendarPost tool. When creating content calendars, you MUST call this tool for each post. Failure to use the tool means posts won't be saved to the database and won't appear in the calendar. Always use tools when available.`
+**AVAILABLE TOOLS:**
+${mode === "research" ? "- searchWeb (USE THIS IMMEDIATELY for competitor research)\n- saveCompetitorAnalysis\n- saveBusinessInsight" : ""}
+${mode === "content" ? "- createCalendarPost (USE THIS for every post in content calendars)" : ""}
+${mode === "email" ? "- createEmailCampaign (only after Sandra approves)\n- createEmailSequence\n- saveEmailTemplate" : ""}
 
-    console.log("[v0] Streaming with mode:", mode, "model: anthropic/claude-sonnet-4.5")
+You MUST use tools when they're relevant to the user's request. Don't ask - just use them.`
+
+    console.log("[v0] ========== ENHANCED SYSTEM PROMPT ==========")
+    console.log("[v0] Prompt length:", enhancedSystemPrompt.length, "characters")
+    console.log("[v0] Prompt preview (first 1000 chars):", enhancedSystemPrompt.substring(0, 1000))
+    console.log("[v0] ==============================================")
 
     const tools: any = {}
 
@@ -505,16 +544,20 @@ You have access to the createCalendarPost tool. When creating content calendars,
     // Email mode tools
     if (mode === "email") {
       tools.createEmailCampaign = tool({
-        description: "Creates an email campaign in the database for Sandra to review and send later",
+        description:
+          "Creates an email campaign and Resend Broadcast. ONLY call this when Sandra explicitly approves and asks you to create/save the campaign. First draft emails as conversation content.",
         parameters: z.object({
           campaign_name: z.string().describe("Name of the email campaign"),
           subject_line: z.string().describe("Email subject line"),
           preview_text: z.string().describe("Preview text shown in inbox"),
-          email_body: z.string().describe("Full email body content"),
+          email_body: z.string().describe("Full email body content in HTML format"),
           campaign_type: z
             .enum(["newsletter", "launch", "nurture", "welcome", "promotional"])
             .describe("Type of email campaign"),
           notes: z.string().optional().describe("Internal notes about this campaign"),
+          sequence_position: z.number().optional().describe("Position in email sequence (1, 2, 3, etc.)"),
+          sequence_total: z.number().optional().describe("Total emails in this sequence"),
+          send_delay_days: z.number().optional().describe("Days to wait before sending (for sequences)"),
         }),
         execute: async (params) => {
           console.log("[v0] createEmailCampaign tool called:", params)
@@ -528,11 +571,111 @@ You have access to the createCalendarPost tool. When creating content calendars,
               },
             )
             const result = await response.json()
-            return response.ok
-              ? { success: true, campaign: result.campaign, message: "Email campaign saved successfully" }
-              : { success: false, error: result.error }
+
+            if (response.ok) {
+              return {
+                success: true,
+                campaign: result.campaign,
+                broadcast_id: result.broadcast_id,
+                message: result.message || "Email campaign created successfully",
+                instructions: result.instructions,
+              }
+            } else {
+              return {
+                success: false,
+                error: result.error,
+                warning: result.warning,
+              }
+            }
           } catch (error: any) {
             return { success: false, error: error.message }
+          }
+        },
+      })
+
+      tools.createEmailSequence = tool({
+        description:
+          "Creates a complete email sequence (multiple emails) after Sandra approves. Use this for welcome sequences, launch campaigns, or drip campaigns.",
+        parameters: z.object({
+          sequence_name: z.string().describe("Name of the email sequence"),
+          sequence_type: z
+            .enum(["welcome", "launch", "nurture", "onboarding", "promotional"])
+            .describe("Type of email sequence"),
+          emails: z
+            .array(
+              z.object({
+                email_number: z.number().describe("Email position in sequence (1, 2, 3, etc.)"),
+                send_delay_days: z.number().describe("Days to wait before sending (0 for immediate)"),
+                subject_line: z.string(),
+                preview_text: z.string(),
+                email_body: z.string().describe("HTML email body"),
+                campaign_name: z.string().describe("Individual email name"),
+              }),
+            )
+            .describe("Array of emails in the sequence"),
+          notes: z.string().optional().describe("Internal notes about this sequence"),
+        }),
+        execute: async (params) => {
+          console.log("[v0] createEmailSequence tool called with", params.emails.length, "emails")
+
+          const results = []
+          for (const email of params.emails) {
+            try {
+              const response = await fetch(
+                `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/api/admin/agent/email-campaigns`,
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json", Cookie: req.headers.get("cookie") || "" },
+                  body: JSON.stringify({
+                    campaign_name: `${params.sequence_name} - ${email.campaign_name}`,
+                    subject_line: email.subject_line,
+                    preview_text: email.preview_text,
+                    email_body: email.email_body,
+                    campaign_type: params.sequence_type,
+                    sequence_position: email.email_number,
+                    sequence_total: params.emails.length,
+                    send_delay_days: email.send_delay_days,
+                    notes: `Part of ${params.sequence_name}. ${params.notes || ""}`,
+                    user_id: targetUserId,
+                  }),
+                },
+              )
+
+              const result = await response.json()
+              results.push({
+                email_number: email.email_number,
+                success: response.ok,
+                campaign_id: result.campaign?.id,
+                broadcast_id: result.broadcast_id,
+                error: result.error,
+              })
+            } catch (error: any) {
+              results.push({
+                email_number: email.email_number,
+                success: false,
+                error: error.message,
+              })
+            }
+          }
+
+          const successCount = results.filter((r) => r.success).length
+
+          return {
+            success: successCount > 0,
+            sequence_name: params.sequence_name,
+            total_emails: params.emails.length,
+            created_successfully: successCount,
+            results,
+            message:
+              successCount === params.emails.length
+                ? `All ${successCount} emails in ${params.sequence_name} created successfully in Resend!`
+                : `Created ${successCount} of ${params.emails.length} emails. Check results for errors.`,
+            instructions: [
+              "1. Go to https://resend.com/broadcasts",
+              `2. Find your sequence: ${params.sequence_name}`,
+              "3. Note: Emails show send timing in campaign name",
+              "4. Schedule each email based on the delay days specified",
+            ],
           }
         },
       })
@@ -570,6 +713,37 @@ You have access to the createCalendarPost tool. When creating content calendars,
 
     // Research mode tools
     if (mode === "research") {
+      tools.searchWeb = tool({
+        description:
+          "REQUIRED: Search the web for competitor analysis, Instagram profiles, content strategies, and industry trends. You MUST use this tool to gather real data before making recommendations.",
+        parameters: z.object({
+          query: z
+            .string()
+            .describe(
+              "Search query. Examples: '[competitor name] Instagram content strategy', '[niche] trends 2025', '[brand] pricing model'",
+            ),
+        }),
+        execute: async ({ query }) => {
+          console.log("[v0] searchWeb tool called with query:", query)
+          try {
+            const results = await SearchWeb(query)
+            console.log("[v0] searchWeb results obtained")
+            return {
+              success: true,
+              results,
+              query,
+            }
+          } catch (error: any) {
+            console.error("[v0] searchWeb error:", error)
+            return {
+              success: false,
+              error: error.message,
+              query,
+            }
+          }
+        },
+      })
+
       tools.saveCompetitorAnalysis = tool({
         description: "Saves competitor analysis insights to the database for future reference",
         parameters: z.object({
@@ -585,10 +759,10 @@ You have access to the createCalendarPost tool. When creating content calendars,
           console.log("[v0] saveCompetitorAnalysis tool called:", params)
           try {
             await sql`
-              INSERT INTO admin_competitor_analyses 
-              (user_id, competitor_name, competitor_url, strengths, weaknesses, 
+              INSERT INTO admin_competitor_analyses_ai
+              (created_by, competitor_name, competitor_url, strengths, weaknesses, 
                content_strategy, differentiation_opportunities, key_insights)
-              VALUES (${targetUserId}, ${params.competitor_name}, ${params.competitor_url || null},
+              VALUES ('research_agent', ${params.competitor_name}, ${params.competitor_url || null},
                       ${params.strengths}, ${params.weaknesses}, ${params.content_strategy},
                       ${params.differentiation_opportunities}, ${params.key_insights})
             `
@@ -617,16 +791,19 @@ You have access to the createCalendarPost tool. When creating content calendars,
         execute: async (params) => {
           console.log("[v0] saveBusinessInsight tool called:", params)
           try {
-            await sql`
+            const result = await sql`
               INSERT INTO admin_business_insights 
-              (user_id, insight_title, insight_category, insight_description, 
-               action_items, priority)
-              VALUES (${targetUserId}, ${params.insight_title}, ${params.insight_category},
-                      ${params.insight_description}, ${params.action_items}, ${params.priority})
+              (insight_title, insight_category, insight_description, 
+               action_items, priority, created_by)
+              VALUES (${params.insight_title}, ${params.insight_category},
+                      ${params.insight_description}, ${params.action_items}, ${params.priority}, 
+                      'research_agent')
+              RETURNING *
             `
             return {
               success: true,
               message: `Business insight "${params.insight_title}" saved successfully`,
+              insight: result[0],
             }
           } catch (error: any) {
             console.error("[v0] Error saving business insight:", error)
@@ -653,10 +830,10 @@ You have access to the createCalendarPost tool. When creating content calendars,
 
           if (textContent) {
             await sql`
-              INSERT INTO maya_chat_messages (chat_id, role, content)
+              INSERT INTO admin_agent_messages (chat_id, role, content)
               VALUES (${chatId}, 'user', ${textContent})
             `
-            console.log("[v0] Saved user message to database")
+            console.log("[v0] Saved user message to admin agent database")
           }
         } catch (error) {
           console.error("[v0] Error saving user message:", error)
@@ -664,26 +841,27 @@ You have access to the createCalendarPost tool. When creating content calendars,
       }
     }
 
-    const result = streamText({
+    const streamConfig: any = {
       model: "anthropic/claude-sonnet-4.5",
       system: enhancedSystemPrompt,
       messages: allMessages,
       maxOutputTokens: 4000,
       tools,
       maxSteps: 20,
+      experimental_toolCallStreaming: false,
       onFinish: async ({ text }) => {
         if (chatId && text) {
           try {
             await sql`
-              INSERT INTO maya_chat_messages (chat_id, role, content)
+              INSERT INTO admin_agent_messages (chat_id, role, content)
               VALUES (${chatId}, 'assistant', ${text})
             `
             await sql`
-              UPDATE maya_chats
+              UPDATE admin_agent_chats
               SET last_activity = NOW()
               WHERE id = ${chatId}
             `
-            console.log("[v0] Saved assistant message to database")
+            console.log("[v0] Saved assistant message to admin agent database")
           } catch (error) {
             console.error("[v0] Error saving assistant message:", error)
           }
@@ -692,7 +870,14 @@ You have access to the createCalendarPost tool. When creating content calendars,
       onError: (error) => {
         console.error("[v0] Stream error:", error)
       },
-    })
+    }
+
+    if (mode === "research" && Object.keys(tools).length > 0 && allMessages.length === 1) {
+      streamConfig.toolChoice = "required"
+      console.log("[v0] Research mode: Forcing tool usage on first message")
+    }
+
+    const result = streamText(streamConfig)
 
     return result.toUIMessageStreamResponse()
   } catch (error) {

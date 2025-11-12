@@ -337,7 +337,7 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
         )}
 
         {/* Main Navigation Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
           {/* Academy Card */}
           <Link href="/admin/academy" className="group">
             <div className="bg-white rounded-[1.75rem] overflow-hidden border border-stone-200 shadow-xl hover:shadow-2xl transition-all duration-300 h-full">
@@ -421,6 +421,62 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
               </div>
             </div>
           </Link>
+
+          {/* Knowledge Base Card */}
+          <Link href="/admin/knowledge" className="group">
+            <div className="bg-white rounded-[1.75rem] overflow-hidden border border-stone-200 shadow-xl hover:shadow-2xl transition-all duration-300 h-full">
+              <div className="relative h-48 overflow-hidden">
+                <img
+                  src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/618-TVCuZVG8V6R2Bput7pX8V06bCHRXGx-TD03ySws0dHTOBOHA3nEypKB2ryX8K.png"
+                  alt="Knowledge Base"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-stone-950/60 to-transparent" />
+                <div className="absolute bottom-6 left-6">
+                  <h3 className="font-['Times_New_Roman'] text-3xl font-extralight tracking-[0.3em] uppercase text-white">
+                    KNOWLEDGE
+                  </h3>
+                </div>
+              </div>
+              <div className="p-6">
+                <p className="text-sm text-stone-600 leading-relaxed mb-4">
+                  Upload and manage brand info, user journey, pricing, and stories for AI agents
+                </p>
+                <div className="flex gap-4 text-xs text-stone-500">
+                  <span>{stats?.totalKnowledge || 0} articles</span>
+                  <span>Agent training</span>
+                </div>
+              </div>
+            </div>
+          </Link>
+
+          {/* Business Advisor Card */}
+          <Link href="/admin/business-advisor" className="group">
+            <div className="bg-white rounded-[1.75rem] overflow-hidden border border-stone-200 shadow-xl hover:shadow-2xl transition-all duration-300 h-full">
+              <div className="relative h-48 overflow-hidden">
+                <img
+                  src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/maya_68de145ae1rme0cs07ja9mcp90_0_1756673402614%20%281%29-v0JUZYIdnHyMNS5iYx5wGACaoJUT3R.png"
+                  alt="Business Advisor"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-stone-950/60 to-transparent" />
+                <div className="absolute bottom-6 left-6">
+                  <h3 className="font-['Times_New_Roman'] text-3xl font-extralight tracking-[0.3em] uppercase text-white">
+                    BUSINESS ADVISOR
+                  </h3>
+                </div>
+              </div>
+              <div className="p-6">
+                <p className="text-sm text-stone-600 leading-relaxed mb-4">
+                  Strategic mentor connected to revenue and user data for scaling to $1M+ ARR
+                </p>
+                <div className="flex gap-4 text-xs text-stone-500">
+                  <span>AI-powered strategy</span>
+                  <span>Growth insights</span>
+                </div>
+              </div>
+            </div>
+          </Link>
         </div>
 
         {/* Business Insights Section */}
@@ -471,6 +527,18 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
                 className="block w-full bg-stone-100 text-stone-950 hover:bg-stone-200 px-6 py-4 rounded-xl text-sm tracking-wider uppercase transition-colors"
               >
                 START AGENT CHAT
+              </Link>
+              <Link
+                href="/admin/knowledge"
+                className="block w-full bg-stone-100 text-stone-950 hover:bg-stone-200 px-6 py-4 rounded-xl text-sm tracking-wider uppercase transition-colors"
+              >
+                MANAGE KNOWLEDGE BASE
+              </Link>
+              <Link
+                href="/admin/business-advisor"
+                className="block w-full bg-stone-100 text-stone-950 hover:bg-stone-200 px-6 py-4 rounded-xl text-sm tracking-wider uppercase transition-colors"
+              >
+                BUSINESS ADVISOR
               </Link>
               <Link
                 href="/admin/feedback"

@@ -14,6 +14,7 @@ import { GalleryImageSelector } from "./gallery-image-selector"
 import { EmailCampaignManager } from "./email-campaign-manager"
 import { PerformanceTracker } from "./performance-tracker"
 import { parseContentCalendar } from "@/lib/admin/parse-content-calendar"
+import AdminChatHistory from "./admin-chat-history"
 
 interface AdminAgentChatProps {
   userId: string
@@ -65,6 +66,7 @@ export default function AdminAgentChat({ userId, userName, userEmail }: AdminAge
   const [showEmailCampaigns, setShowEmailCampaigns] = useState(false)
   const [showPerformance, setShowPerformance] = useState(false)
   const [parsedContent, setParsedContent] = useState<any[]>([])
+  const [showChatHistory, setShowChatHistory] = useState(false)
 
   const { messages, sendMessage, status, setMessages } = useChat({
     transport: new DefaultChatTransport({ api: "/api/admin/agent/chat" }),
@@ -155,6 +157,30 @@ export default function AdminAgentChat({ userId, userName, userEmail }: AdminAge
     setShowPerformance(sidebar === "performance" ? !showPerformance : false)
   }
 
+  const handleSelectChat = async (selectedChatId: number) => {
+    if (selectedChatId !== chatId) {
+      try {
+        const response = await fetch(`/api/admin/agent/load-chat?chatId=${selectedChatId}`)
+        if (response.ok) {
+          const data = await response.json()
+          setChatId(data.chatId)
+          if (data.messages && Array.isArray(data.messages)) {
+            setMessages(data.messages)
+          }
+          setShowChatHistory(false)
+        }
+      } catch (error) {
+        console.error("[v0] Error loading chat:", error)
+      }
+    }
+  }
+
+  const handleNewChat = () => {
+    setChatId(null)
+    setMessages([])
+    setShowChatHistory(false)
+  }
+
   const getModeDescription = () => {
     switch (mode) {
       case "content":
@@ -205,6 +231,17 @@ export default function AdminAgentChat({ userId, userName, userEmail }: AdminAge
               </p>
             </div>
             <div className="flex gap-2 flex-wrap">
+              <button
+                onClick={() => setShowChatHistory(!showChatHistory)}
+                className={`px-3 py-2 text-xs uppercase rounded-lg transition-colors ${
+                  showChatHistory
+                    ? "bg-stone-950 text-white"
+                    : "bg-white text-stone-700 border border-stone-200 hover:bg-stone-100"
+                }`}
+                style={{ letterSpacing: "0.1em" }}
+              >
+                History
+              </button>
               <button
                 onClick={() => toggleSidebar("search")}
                 className={`px-3 py-2 text-xs uppercase rounded-lg transition-colors ${
@@ -332,6 +369,17 @@ export default function AdminAgentChat({ userId, userName, userEmail }: AdminAge
           </div>
           <p className="text-sm text-stone-600 leading-relaxed">{getModeDescription()}</p>
         </div>
+
+        {showChatHistory && (
+          <div className="bg-white rounded-3xl p-6 border border-stone-200 shadow-lg mb-6 max-h-[600px] overflow-y-auto">
+            <AdminChatHistory
+              currentChatId={chatId}
+              onSelectChat={handleSelectChat}
+              onNewChat={handleNewChat}
+              userId={userId}
+            />
+          </div>
+        )}
 
         {(showAnalytics ||
           showExport ||

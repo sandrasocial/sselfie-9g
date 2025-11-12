@@ -82,8 +82,13 @@ const compressImage = async (file: File, maxSize = 1600, quality = 0.85): Promis
 
 const createZipFromFiles = async (files: File[]): Promise<Blob> => {
   const zip = new JSZip()
+  const dataFolder = zip.folder("data")
+  if (!dataFolder) {
+    throw new Error("Failed to create data folder in ZIP")
+  }
+
   files.forEach((file, i) => {
-    zip.file(`image_${i + 1}.jpg`, file)
+    dataFolder.file(`image_${i + 1}.jpg`, file)
   })
 
   return await zip.generateAsync({
