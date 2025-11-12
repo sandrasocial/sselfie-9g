@@ -15,13 +15,13 @@ interface TrainingScreenProps {
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
-const compressImage = async (file: File): Promise<File> => {
+const compressImage = async (file: File, maxSize = 1600, quality = 0.85): Promise<File> => {
   return new Promise((resolve, reject) => {
     const MAX_FILE_SIZE_MB = 10
     if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
       reject(
         new Error(
-          `${file.name} is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum is ${MAX_FILE_SIZE_MB}MB per image.`,
+          `${file.name} is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum is ${MAX_FILE_SIZE_MB} per image.`,
         ),
       )
       return
@@ -40,7 +40,6 @@ const compressImage = async (file: File): Promise<File> => {
           return
         }
 
-        const maxSize = 1600
         let width = img.width
         let height = img.height
 
@@ -67,17 +66,30 @@ const compressImage = async (file: File): Promise<File> => {
               lastModified: Date.now(),
             })
             console.log(
-              `[v0] Compressed ${file.name}: ${(file.size / 1024 / 1024).toFixed(2)}MB → ${(compressedFile.size / 1024 / 1024).toFixed(2)}MB`,
+              `[v0] Compressed ${file.name}: ${(file.size / 1024 / 1024).toFixed(2)}MB → ${(compressedFile.size / 1024 / 1024).toFixed(2)}MB (${maxSize}px, ${(quality * 100).toFixed(0)}% quality)`,
             )
             resolve(compressedFile)
           },
           "image/jpeg",
-          0.85,
+          quality,
         )
       }
       img.onerror = () => reject(new Error(`Failed to load ${file.name}. Please make sure it's a valid image file.`))
     }
     reader.onerror = () => reject(new Error(`Failed to read ${file.name}`))
+  })
+}
+
+const createZipFromFiles = async (files: File[]): Promise<Blob> => {
+  const zip = new JSZip()
+  files.forEach((file, i) => {
+    zip.file(`image_${i + 1}.jpg`, file)
+  })
+
+  return await zip.generateAsync({
+    type: "blob",
+    compression: "DEFLATE",
+    compressionOptions: { level: 9 }, // Maximum compression
   })
 }
 
@@ -94,7 +106,7 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
     error,
     mutate,
   } = useSWR("/api/training/status", fetcher, {
-    refreshInterval: 0, // Don't poll status endpoint
+    refreshInterval: 0,
   })
 
   const modelId = trainingStatus?.model?.id
@@ -105,9 +117,9 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
     isTraining && modelId ? `/api/training/progress?modelId=${modelId}` : null,
     fetcher,
     {
-      refreshInterval: isTraining ? 15000 : 0, // Poll every 15 seconds when training, stop otherwise
+      refreshInterval: isTraining ? 15000 : 0,
       revalidateOnFocus: false,
-      revalidateOnReconnect: false, // Don't refetch on reconnect
+      revalidateOnReconnect: false,
     },
   )
 
@@ -180,7 +192,7 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
       setIsUploading(true)
       setUploadProgress({ current: 0, total: uploadedImages.length })
 
-      console.log(`[v0] Starting upload - ${uploadedImages.length} images, gender: ${selectedGender}`)
+      console.log(`[v0] Starting adaptive compression - ${uploadedImages.length} images, gender: ${selectedGender}`)
       console.log("[v0] Browser:", navigator.userAgent)
       console.log(
         "[v0] Total size before compression:",
@@ -188,100 +200,76 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
         "MB",
       )
 
-      const compressedFiles = []
-      for (let i = 0; i < uploadedImages.length; i++) {
-        const file = uploadedImages[i]
-        console.log(`[v0] Processing image ${i + 1}/${uploadedImages.length}: ${file.name}`)
+      const compressionLevels = [
+        { maxSize: 1600, quality: 0.85, name: "High quality" },
+        { maxSize: 1400, quality: 0.75, name: "Medium-high quality" },
+        { maxSize: 1200, quality: 0.7, name: "Medium quality" },
+        { maxSize: 1000, quality: 0.65, name: "Standard quality" },
+        { maxSize: 800, quality: 0.6, name: "Lower quality" },
+        { maxSize: 600, quality: 0.55, name: "Minimum quality" },
+      ]
 
-        try {
+      let compressedFiles: File[] = []
+      let zipBlob: Blob | null = null
+      let successfulLevel: (typeof compressionLevels)[0] | null = null
+
+      for (const level of compressionLevels) {
+        console.log(`[v0] Trying compression: ${level.name} (${level.maxSize}px, ${(level.quality * 100).toFixed(0)}%)`)
+        compressedFiles = []
+
+        for (let i = 0; i < uploadedImages.length; i++) {
+          const file = uploadedImages[i]
           setUploadProgress({ current: i, total: uploadedImages.length })
 
-          const compressPromise = compressImage(file)
-          const timeoutPromise = new Promise<File>((_, reject) =>
-            setTimeout(() => reject(new Error(`Timeout compressing ${file.name}`)), 30000),
-          )
+          try {
+            const compressedFile = await compressImage(file, level.maxSize, level.quality)
+            compressedFiles.push(compressedFile)
+            await new Promise((resolve) => setTimeout(resolve, 10))
+          } catch (error) {
+            console.error(`[v0] Error processing image ${i + 1}:`, error)
+            throw error
+          }
+        }
 
-          const compressedFile = await Promise.race([compressPromise, timeoutPromise])
-          compressedFiles.push(compressedFile)
+        // Create ZIP and check size
+        zipBlob = await createZipFromFiles(compressedFiles)
+        const zipSizeMB = zipBlob.size / (1024 * 1024)
+        console.log(`[v0] ZIP size with ${level.name}: ${zipSizeMB.toFixed(2)}MB`)
 
-          await new Promise((resolve) => setTimeout(resolve, 10))
-        } catch (error) {
-          console.error(`[v0] Error processing image ${i + 1}:`, error)
-          throw error
+        // If ZIP is under 4MB, we're good!
+        if (zipSizeMB < 4.0) {
+          successfulLevel = level
+          console.log(`[v0] Success! ZIP fits under 4MB with ${level.name}`)
+          break
+        } else {
+          console.log(`[v0] ZIP too large (${zipSizeMB.toFixed(2)}MB), trying next compression level...`)
         }
       }
 
-      console.log("[v0] All images compressed, creating ZIP...")
-
-      const zip = new JSZip()
-      compressedFiles.forEach((file, i) => {
-        zip.file(`image_${i + 1}.jpg`, file)
-      })
-
-      const zipBlob = await zip.generateAsync({
-        type: "blob",
-        compression: "DEFLATE",
-        compressionOptions: { level: 6 },
-      })
+      if (!zipBlob || !successfulLevel) {
+        throw new Error(
+          "Unable to compress images small enough. Please try with fewer images (10-12) or use smaller original files.",
+        )
+      }
 
       const zipSizeMB = (zipBlob.size / (1024 * 1024)).toFixed(2)
-      console.log(`[v0] ZIP created, size: ${zipSizeMB}MB`)
+      console.log(`[v0] Final ZIP created with ${successfulLevel.name}, size: ${zipSizeMB}MB`)
 
       console.log("[v0] Uploading ZIP to server...")
-      console.log("[v0] Upload URL:", window.location.origin + "/api/training/upload-zip")
-
       const formData = new FormData()
       formData.append("zipFile", zipBlob, "training_images.zip")
       formData.append("gender", selectedGender)
       formData.append("modelName", `${user.display_name || "User"}'s Model`)
 
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 120000) // 2 minute timeout
-
-      let uploadResponse
-      try {
-        uploadResponse = await fetch("/api/training/upload-zip", {
-          method: "POST",
-          body: formData,
-          signal: controller.signal,
-        })
-        clearTimeout(timeoutId)
-
-        console.log("[v0] Upload response status:", uploadResponse.status)
-        console.log("[v0] Upload response headers:", Object.fromEntries(uploadResponse.headers.entries()))
-      } catch (fetchError: any) {
-        clearTimeout(timeoutId)
-        console.error("[v0] Fetch error details:", {
-          name: fetchError.name,
-          message: fetchError.message,
-          stack: fetchError.stack,
-        })
-
-        if (fetchError.name === "AbortError") {
-          throw new Error(
-            "Upload timed out after 2 minutes. Your connection may be too slow or the files are too large. Try using fewer images (10-12) or check your internet connection.",
-          )
-        }
-
-        throw new Error(`Network error: ${fetchError.message}. Please check your internet connection and try again.`)
-      }
+      const uploadResponse = await fetch("/api/training/upload-zip", {
+        method: "POST",
+        body: formData,
+      })
 
       if (!uploadResponse.ok) {
         const errorData = await uploadResponse.json().catch(() => ({ error: "Unknown error" }))
-        console.error("[v0] Upload error response:", errorData)
-
-        let userMessage = errorData.error || errorData.details || "Upload failed"
-
-        if (uploadResponse.status === 413) {
-          userMessage =
-            "Your images are too large. Try uploading fewer images (10-12) or compress them before uploading."
-        } else if (uploadResponse.status === 401) {
-          userMessage = "Your session expired. Please refresh the page and try again."
-        } else if (uploadResponse.status === 400 && errorData.details) {
-          userMessage = errorData.details
-        }
-
-        throw new Error(userMessage)
+        console.error("[v0] Upload error:", errorData)
+        throw new Error(errorData.error || "Failed to upload and start training")
       }
 
       const result = await uploadResponse.json()
@@ -312,9 +300,7 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
         errorMessage = error.message
       }
 
-      alert(
-        `Upload Failed\n\n${errorMessage}\n\nIf this keeps happening, please contact support with a screenshot of this message.`,
-      )
+      alert(`Failed to start training\n\n${errorMessage}`)
 
       setIsUploading(false)
       setUploadProgress({ current: 0, total: 0 })

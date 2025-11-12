@@ -1,39 +1,51 @@
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client"
 import { NextResponse } from "next/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
+import { createServerClient } from "@/lib/supabase/server"
 
 export async function POST(request: Request): Promise<NextResponse> {
   const body = (await request.json()) as HandleUploadBody
 
   try {
-    // Get authenticated user
-    const user = await getUserByAuthId()
+    const supabase = await createServerClient()
+    const {
+      data: { user: authUser },
+      error: authError,
+    } = await supabase.auth.getUser()
 
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    if (authError || !authUser) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
+    }
+
+    const neonUser = await getUserByAuthId(authUser.id)
+    if (!neonUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
     const jsonResponse = await handleUpload({
       body,
       request,
       onBeforeGenerateToken: async (pathname) => {
-        // Validate file type and generate secure token
+        console.log("[v0] Generating upload token for:", pathname)
+
         return {
-          allowedContentTypes: ["image/jpeg", "image/png", "image/jpg", "image/webp"],
+          allowedContentTypes: ["application/zip", "application/x-zip-compressed", "application/octet-stream"],
+          maximumSizeInBytes: 60 * 1024 * 1024, // 60MB max for ZIP files
+          addRandomSuffix: true,
           tokenPayload: JSON.stringify({
-            userId: user.id,
+            userId: neonUser.id,
+            uploadedAt: new Date().toISOString(),
           }),
         }
       },
       onUploadCompleted: async ({ blob, tokenPayload }) => {
-        // This runs after upload completes
-        console.log("Blob upload completed:", blob.url)
+        console.log("[v0] Blob upload completed:", blob.url)
       },
     })
 
     return NextResponse.json(jsonResponse)
-  } catch (error) {
-    console.error("Error generating upload token:", error)
-    return NextResponse.json({ error: "Failed to generate upload token" }, { status: 500 })
+  } catch (error: any) {
+    console.error("[v0] Error generating upload token:", error)
+    return NextResponse.json({ error: error.message || "Failed to generate upload token" }, { status: 500 })
   }
 }
