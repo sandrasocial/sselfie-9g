@@ -180,7 +180,13 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
       setIsUploading(true)
       setUploadProgress({ current: 0, total: uploadedImages.length })
 
-      console.log(`[v0] Starting compression for ${uploadedImages.length} images`)
+      console.log(`[v0] Starting upload - ${uploadedImages.length} images, gender: ${selectedGender}`)
+      console.log("[v0] Browser:", navigator.userAgent)
+      console.log(
+        "[v0] Total size before compression:",
+        uploadedImages.reduce((sum, f) => sum + f.size, 0) / 1024 / 1024,
+        "MB",
+      )
 
       const compressedFiles = []
       for (let i = 0; i < uploadedImages.length; i++) {
@@ -222,21 +228,60 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
       console.log(`[v0] ZIP created, size: ${zipSizeMB}MB`)
 
       console.log("[v0] Uploading ZIP to server...")
+      console.log("[v0] Upload URL:", window.location.origin + "/api/training/upload-zip")
 
       const formData = new FormData()
       formData.append("zipFile", zipBlob, "training_images.zip")
       formData.append("gender", selectedGender)
       formData.append("modelName", `${user.display_name || "User"}'s Model`)
 
-      const uploadResponse = await fetch("/api/training/upload-zip", {
-        method: "POST",
-        body: formData,
-      })
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 120000) // 2 minute timeout
+
+      let uploadResponse
+      try {
+        uploadResponse = await fetch("/api/training/upload-zip", {
+          method: "POST",
+          body: formData,
+          signal: controller.signal,
+        })
+        clearTimeout(timeoutId)
+
+        console.log("[v0] Upload response status:", uploadResponse.status)
+        console.log("[v0] Upload response headers:", Object.fromEntries(uploadResponse.headers.entries()))
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId)
+        console.error("[v0] Fetch error details:", {
+          name: fetchError.name,
+          message: fetchError.message,
+          stack: fetchError.stack,
+        })
+
+        if (fetchError.name === "AbortError") {
+          throw new Error(
+            "Upload timed out after 2 minutes. Your connection may be too slow or the files are too large. Try using fewer images (10-12) or check your internet connection.",
+          )
+        }
+
+        throw new Error(`Network error: ${fetchError.message}. Please check your internet connection and try again.`)
+      }
 
       if (!uploadResponse.ok) {
-        const errorData = await uploadResponse.json()
-        console.error("[v0] Upload error:", errorData)
-        throw new Error(errorData.error || errorData.details || "Upload failed")
+        const errorData = await uploadResponse.json().catch(() => ({ error: "Unknown error" }))
+        console.error("[v0] Upload error response:", errorData)
+
+        let userMessage = errorData.error || errorData.details || "Upload failed"
+
+        if (uploadResponse.status === 413) {
+          userMessage =
+            "Your images are too large. Try uploading fewer images (10-12) or compress them before uploading."
+        } else if (uploadResponse.status === 401) {
+          userMessage = "Your session expired. Please refresh the page and try again."
+        } else if (uploadResponse.status === 400 && errorData.details) {
+          userMessage = errorData.details
+        }
+
+        throw new Error(userMessage)
       }
 
       const result = await uploadResponse.json()
@@ -252,17 +297,24 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
       mutate()
     } catch (error: any) {
       console.error("[v0] Error starting training:", error)
+      console.error("[v0] Full error object:", {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+      })
 
       let errorMessage = "Something went wrong. Please try again."
 
-      if (error.name === "TimeoutError" || error.message?.includes("Timeout")) {
+      if (error.name === "TimeoutError" || error.message?.includes("Timeout") || error.message?.includes("timed out")) {
         errorMessage =
-          "Upload is taking too long. Please check your internet connection and try again with fewer or smaller images."
+          "Upload is taking too long. Please check your internet connection and try again with fewer or smaller images (10-12 photos)."
       } else if (error.message) {
         errorMessage = error.message
       }
 
-      alert(`Upload Failed\n\n${errorMessage}\n\nIf this keeps happening, please contact support.`)
+      alert(
+        `Upload Failed\n\n${errorMessage}\n\nIf this keeps happening, please contact support with a screenshot of this message.`,
+      )
 
       setIsUploading(false)
       setUploadProgress({ current: 0, total: 0 })

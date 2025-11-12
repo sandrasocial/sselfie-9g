@@ -108,11 +108,6 @@ export function FeedbackModal({ open, onOpenChange, userId, userEmail, userName 
   const handleSubmit = async () => {
     if (!selectedType || !subject.trim() || !message.trim()) return
 
-    if (selectedType === "share_sselfies" && uploadedImages.length === 0) {
-      alert("Please upload at least one SSELFIE to share!")
-      return
-    }
-
     setIsSubmitting(true)
 
     try {
@@ -202,63 +197,67 @@ export function FeedbackModal({ open, onOpenChange, userId, userEmail, userName 
           </div>
         ) : (
           <div className="space-y-4 py-4">
-            {selectedType === "share_sselfies" && (
-              <div>
-                <label className="text-xs tracking-[0.15em] uppercase text-stone-500 mb-2 block font-light">
-                  Upload Your SSELFIEs (up to 4 images)
-                </label>
-                <div className="space-y-3">
-                  {uploadedImages.length > 0 && (
-                    <div className="grid grid-cols-2 gap-3">
-                      {uploadedImages.map((url, index) => (
-                        <div key={url} className="relative group">
-                          <img
-                            src={url || "/placeholder.svg"}
-                            alt={`Upload ${index + 1}`}
-                            className="w-full h-32 object-cover rounded-lg border border-stone-200"
-                          />
-                          <button
-                            onClick={() => removeImage(index)}
-                            className="absolute top-2 right-2 w-6 h-6 bg-stone-950 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <X className="w-4 h-4" strokeWidth={2} />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {uploadedImages.length < 4 && (
-                    <label
-                      className={`border-2 border-dashed border-stone-300 rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer hover:border-stone-400 hover:bg-stone-50 transition-colors ${isUploading ? "opacity-50 pointer-events-none" : ""}`}
-                    >
-                      {isUploading ? (
-                        <Loader2 className="w-8 h-8 text-stone-400 animate-spin mb-2" />
-                      ) : (
-                        <Upload className="w-8 h-8 text-stone-400 mb-2" strokeWidth={1.5} />
-                      )}
-                      <span className="text-xs text-stone-600 text-center font-light">
-                        {isUploading ? "Uploading..." : "Click to upload or drag & drop"}
-                      </span>
-                      <span className="text-xs text-stone-400 mt-1 font-light">
-                        Before & afters, favorites, any shots you love
-                      </span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={handleImageUpload}
-                        className="hidden"
-                        disabled={isUploading}
-                      />
-                    </label>
-                  )}
-                </div>
+            <div>
+              <label className="text-xs tracking-[0.15em] uppercase text-stone-500 mb-2 block font-light">
+                {selectedType === "share_sselfies"
+                  ? "Upload Your SSELFIEs (up to 4 images)"
+                  : "Upload Screenshots or Images (optional, up to 4)"}
+              </label>
+              <div className="space-y-3">
+                {uploadedImages.length > 0 && (
+                  <div className="grid grid-cols-2 gap-3">
+                    {uploadedImages.map((url, index) => (
+                      <div key={url} className="relative group">
+                        <img
+                          src={url || "/placeholder.svg"}
+                          alt={`Upload ${index + 1}`}
+                          className="w-full h-32 object-cover rounded-lg border border-stone-200"
+                        />
+                        <button
+                          onClick={() => removeImage(index)}
+                          className="absolute top-2 right-2 w-6 h-6 bg-stone-950 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="w-4 h-4" strokeWidth={2} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {uploadedImages.length < 4 && (
+                  <label
+                    className={`border-2 border-dashed border-stone-300 rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer hover:border-stone-400 hover:bg-stone-50 transition-colors ${isUploading ? "opacity-50 pointer-events-none" : ""}`}
+                  >
+                    {isUploading ? (
+                      <Loader2 className="w-8 h-8 text-stone-400 animate-spin mb-2" />
+                    ) : (
+                      <Upload className="w-8 h-8 text-stone-400 mb-2" strokeWidth={1.5} />
+                    )}
+                    <span className="text-xs text-stone-600 text-center font-light">
+                      {isUploading ? "Uploading..." : "Click to upload or drag & drop"}
+                    </span>
+                    <span className="text-xs text-stone-400 mt-1 font-light">
+                      {selectedType === "share_sselfies"
+                        ? "Before & afters, favorites, any shots you love"
+                        : "Screenshots, error messages, or anything visual"}
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleImageUpload}
+                      className="hidden"
+                      disabled={isUploading}
+                    />
+                  </label>
+                )}
+              </div>
+              {selectedType === "share_sselfies" && (
                 <p className="text-xs text-stone-500 mt-2 font-light leading-relaxed">
                   I may feature your SSELFIEs on Instagram, TikTok, or other social media. By uploading, you're giving
                   me permission to share them.
                 </p>
-              </div>
-            )}
+              )}
+            </div>
 
             <div>
               <label className="text-xs tracking-[0.15em] uppercase text-stone-500 mb-2 block font-light">
@@ -306,12 +305,7 @@ export function FeedbackModal({ open, onOpenChange, userId, userEmail, userName 
               </Button>
               <Button
                 onClick={handleSubmit}
-                disabled={
-                  !subject.trim() ||
-                  !message.trim() ||
-                  isSubmitting ||
-                  (selectedType === "share_sselfies" && uploadedImages.length === 0)
-                }
+                disabled={!subject.trim() || !message.trim() || isSubmitting}
                 className="flex-1 bg-stone-950 hover:bg-stone-800 text-white"
               >
                 {isSubmitting ? (
