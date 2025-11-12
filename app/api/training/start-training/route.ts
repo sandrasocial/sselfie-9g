@@ -44,27 +44,6 @@ export async function POST(request: Request) {
   console.log("[v0] Starting training for user:", neonUser.id)
   console.log("[v0] ZIP URL:", zipUrl)
 
-  const existingTraining = await sql`
-    SELECT id, training_id, training_status
-    FROM user_models
-    WHERE user_id = ${neonUser.id}
-    AND training_status = 'training'
-    LIMIT 1
-  `
-
-  if (existingTraining.length > 0) {
-    console.log("[v0] User already has an active training in progress:", existingTraining[0])
-    return NextResponse.json(
-      {
-        error: "Training already in progress",
-        message:
-          "You already have a training session running. Please wait for it to complete or contact support to cancel it.",
-        existingTrainingId: existingTraining[0].training_id,
-      },
-      { status: 409 },
-    )
-  }
-
   const triggerWord = `user${neonUser.id.substring(0, 8)}`
   console.log("[v0] Generated trigger word:", triggerWord)
 

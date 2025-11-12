@@ -134,9 +134,6 @@ importers:
       '@vercel/blob':
         specifier: latest
         version: 2.0.0
-      '@vercel/functions':
-        specifier: 3.3.0
-        version: 3.3.0(@aws-sdk/credential-provider-web-identity@3.918.0)
       '@vercel/postgres':
         specifier: 0.10.0
         version: 0.10.0
@@ -2317,15 +2314,6 @@ packages:
   '@vercel/functions@2.2.13':
     resolution: {integrity: sha512-14ArBSIIcOBx9nrEgaJb4Bw+en1gl6eSoJWh8qjifLl5G3E4dRXCFOT8HP+w66vb9Wqyd1lAQBrmRhRwOj9X9A==}
     engines: {node: '>= 18'}
-    peerDependencies:
-      '@aws-sdk/credential-provider-web-identity': '*'
-    peerDependenciesMeta:
-      '@aws-sdk/credential-provider-web-identity':
-        optional: true
-
-  '@vercel/functions@3.3.0':
-    resolution: {integrity: sha512-u5UrM2BX7gdMMXaJph3ZxgjAczv5/3oCG4H37BcnDDiXO7hJnN9C7pNX1v4mSmMLQ22n44C2bqN0d87lxfxYXQ==}
-    engines: {node: '>= 20'}
     peerDependencies:
       '@aws-sdk/credential-provider-web-identity': '*'
     peerDependenciesMeta:
@@ -6101,12 +6089,6 @@ snapshots:
   '@vercel/functions@2.2.13(@aws-sdk/credential-provider-web-identity@3.918.0)':
     dependencies:
       '@vercel/oidc': 2.0.2
-    optionalDependencies:
-      '@aws-sdk/credential-provider-web-identity': 3.918.0
-
-  '@vercel/functions@3.3.0(@aws-sdk/credential-provider-web-identity@3.918.0)':
-    dependencies:
-      '@vercel/oidc': 3.0.3
     optionalDependencies:
       '@aws-sdk/credential-provider-web-identity': 3.918.0
 

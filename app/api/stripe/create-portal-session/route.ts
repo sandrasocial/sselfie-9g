@@ -15,7 +15,7 @@ export async function POST(request: Request) {
     } = await supabase.auth.getUser()
 
     if (authError || !authUser) {
-      console.error("[v0] Create portal session: Auth error:", authError)
+      console.log("[v0] Create portal session: Unauthorized")
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
@@ -23,7 +23,7 @@ export async function POST(request: Request) {
 
     const neonUser = await getUserByAuthId(authUser.id)
     if (!neonUser) {
-      console.error("[v0] Create portal session: User not found for auth ID:", authUser.id)
+      console.log("[v0] Create portal session: User not found")
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
@@ -41,8 +41,6 @@ export async function POST(request: Request) {
       LIMIT 1
     `
 
-    console.log("[v0] Create portal session: Subscription query result:", subscriptionResult)
-
     if (subscriptionResult.length > 0 && subscriptionResult[0].stripe_customer_id) {
       stripeCustomerId = subscriptionResult[0].stripe_customer_id
       console.log("[v0] Create portal session: Found Stripe customer ID in subscriptions table:", stripeCustomerId)
@@ -57,8 +55,6 @@ export async function POST(request: Request) {
         LIMIT 1
       `
 
-      console.log("[v0] Create portal session: User query result:", userResult)
-
       if (userResult.length > 0 && userResult[0].stripe_customer_id) {
         stripeCustomerId = userResult[0].stripe_customer_id
         console.log("[v0] Create portal session: Found Stripe customer ID in users table:", stripeCustomerId)
@@ -66,40 +62,25 @@ export async function POST(request: Request) {
     }
 
     if (!stripeCustomerId) {
-      console.error("[v0] Create portal session: No Stripe customer ID found for user:", neonUser.id)
-      return NextResponse.json(
-        {
-          error: "no_stripe_customer",
-          message:
-            "Your subscription is not managed through Stripe. Please contact support@sselfie.studio for subscription management.",
-        },
-        { status: 400 },
-      )
+      console.log("[v0] Create portal session: No Stripe customer ID found")
+      return NextResponse.json({ error: "No subscription found. Please contact support." }, { status: 404 })
     }
 
     const origin = request.headers.get("origin")
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || origin || "https://sselfie.ai"
 
-    console.log("[v0] Create portal session: Creating portal session for customer:", stripeCustomerId)
-    console.log("[v0] Create portal session: Return URL will be:", `${baseUrl}/studio#settings`)
-
+    // Create Stripe customer portal session
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: stripeCustomerId,
-      return_url: `${baseUrl}/studio#settings`,
+      return_url: `${baseUrl}/studio?tab=settings`,
       configuration: process.env.STRIPE_PORTAL_CONFIGURATION_ID || "bpc_1SRX2wEVJvME7vkwu0rlIgfW",
     })
 
-    console.log("[v0] Create portal session: Portal URL created:", portalSession.url)
+    console.log("[v0] Create portal session: Session created successfully")
 
     return NextResponse.json({ url: portalSession.url })
   } catch (error) {
     console.error("[v0] Error creating portal session:", error)
-    return NextResponse.json(
-      {
-        error: "Failed to create portal session",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 },
-    )
+    return NextResponse.json({ error: "Failed to create portal session" }, { status: 500 })
   }
 }

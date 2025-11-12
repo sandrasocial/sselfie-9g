@@ -81,39 +81,16 @@ const compressImage = async (file: File, maxSize = 1600, quality = 0.85): Promis
 }
 
 const createZipFromFiles = async (files: File[]): Promise<Blob> => {
-  console.log(`[v0] Creating ZIP from ${files.length} files...`)
   const zip = new JSZip()
-
-  for (let i = 0; i < files.length; i++) {
-    const file = files[i]
-    console.log(`[v0] Adding file ${i + 1}/${files.length} to ZIP: ${file.name} (${(file.size / 1024).toFixed(2)}KB)`)
-
-    if (file.size === 0) {
-      throw new Error(`File ${file.name} is empty`)
-    }
-
-    const fileName = `image_${i + 1}.jpg`
-    zip.file(fileName, file)
-  }
-
-  console.log("[v0] Generating ZIP with DEFLATE compression...")
-  const zipBlob = await zip.generateAsync({
-    type: "blob",
-    compression: "DEFLATE",
-    compressionOptions: { level: 9 },
+  files.forEach((file, i) => {
+    zip.file(`image_${i + 1}.jpg`, file)
   })
 
-  console.log(`[v0] ZIP generated successfully: ${(zipBlob.size / 1024 / 1024).toFixed(2)}MB`)
-
-  if (zipBlob.size === 0) {
-    throw new Error("Generated ZIP file is empty")
-  }
-
-  if (zipBlob.size < 1000) {
-    throw new Error(`Generated ZIP file is suspiciously small (${zipBlob.size} bytes)`)
-  }
-
-  return zipBlob
+  return await zip.generateAsync({
+    type: "blob",
+    compression: "DEFLATE",
+    compressionOptions: { level: 9 }, // Maximum compression
+  })
 }
 
 export default function TrainingScreen({ user, userId, setHasTrainedModel, setActiveTab }: TrainingScreenProps) {
@@ -339,6 +316,43 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
     setUploadProgress({ current: 0, total: 0 })
   }
 
+  const handleCancelTraining = async () => {
+    if (!confirm("Are you sure you want to stop training? You'll need to start over.")) {
+      return
+    }
+
+    try {
+      setIsCanceling(true)
+      console.log("[v0] Canceling training for model:", modelId)
+
+      const response = await fetch("/api/training/cancel", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ modelId }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || "Failed to cancel training")
+      }
+
+      console.log("[v0] Training canceled successfully")
+
+      // Refresh the training status
+      await mutate()
+
+      // Reset to upload stage
+      setTrainingStage("upload")
+    } catch (error) {
+      console.error("[v0] Error canceling training:", error)
+      alert(`Failed to cancel training: ${error instanceof Error ? error.message : "Unknown error"}`)
+    } finally {
+      setIsCanceling(false)
+    }
+  }
+
   const handleDeleteImage = async (imageId: number, imageUrl: string) => {
     if (!confirm("Are you sure you want to delete this image?")) {
       return
@@ -361,39 +375,6 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
       alert("Failed to delete image. Please try again.")
     } finally {
       setDeletingImageId(null)
-    }
-  }
-
-  const handleCancelTraining = async () => {
-    if (!confirm("Are you sure you want to stop this training? This cannot be undone and you'll lose your progress.")) {
-      return
-    }
-
-    try {
-      setIsCanceling(true)
-
-      const response = await fetch("/api/training/cancel", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ modelId }),
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || "Failed to cancel training")
-      }
-
-      console.log("[v0] Training canceled successfully")
-      alert("Training has been stopped. You can start a new training whenever you're ready.")
-
-      // Reset to upload stage
-      setTrainingStage("upload")
-      mutate()
-    } catch (error) {
-      console.error("[v0] Error canceling training:", error)
-      alert(`Failed to stop training: ${error instanceof Error ? error.message : "Unknown error"}`)
-    } finally {
-      setIsCanceling(false)
     }
   }
 
@@ -547,23 +528,17 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
             <button
               onClick={handleCancelTraining}
               disabled={isCanceling}
-              className="w-full bg-red-500 hover:bg-red-600 active:bg-red-700 text-white py-4 sm:py-5 rounded-xl sm:rounded-[1.5rem] font-semibold text-xs sm:text-sm transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed min-h-[52px] sm:min-h-[60px] shadow-lg shadow-red-900/20 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
+              className="w-full bg-white/60 backdrop-blur-xl text-stone-950 border border-white/70 py-4 sm:py-5 rounded-xl sm:rounded-[1.5rem] font-semibold text-xs sm:text-sm transition-all duration-300 hover:bg-red-50/70 hover:border-red-200/80 hover:text-red-700 min-h-[52px] sm:min-h-[60px] shadow-lg shadow-stone-900/10 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
               {isCanceling ? (
-                <>
+                <span className="flex items-center justify-center gap-2">
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Stopping...
-                </>
+                  Stopping Training...
+                </span>
               ) : (
-                <>
-                  <X size={16} strokeWidth={2.5} />
-                  Stop Training
-                </>
+                "Stop Training"
               )}
             </button>
-            <p className="text-xs text-stone-500 text-center mt-2">
-              Training taking too long? You can stop it and try again.
-            </p>
           </div>
         </div>
       )}

@@ -4,7 +4,7 @@ import { getUserByAuthId } from "@/lib/user-mapping"
 import { getReplicateClient } from "@/lib/replicate-client"
 import { neon } from "@neondatabase/serverless"
 
-const sql = neon(process.env.DATABASE_URL || "")
+const sql = neon(process.env.DATABASE_URL!)
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,9 +29,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    // Get the model
+    // Get the model and verify ownership
     const models = await sql`
-      SELECT id, user_id, training_id, training_status
+      SELECT 
+        id, 
+        user_id, 
+        training_id,
+        training_status
       FROM user_models
       WHERE id = ${modelId} AND user_id = ${neonUser.id}
     `
@@ -42,40 +46,58 @@ export async function POST(request: NextRequest) {
 
     const model = models[0]
 
-    // Check if training can be canceled
-    if (model.training_status === "completed" || model.training_status === "failed") {
-      return NextResponse.json({ error: "Training already finished" }, { status: 400 })
-    }
-
     if (!model.training_id) {
-      return NextResponse.json({ error: "No active training found" }, { status: 400 })
+      return NextResponse.json({ error: "No active training to cancel" }, { status: 400 })
     }
 
-    console.log("[v0] Canceling training:", model.training_id)
+    if (model.training_status !== "training" && model.training_status !== "processing") {
+      return NextResponse.json({ error: "Training is not in progress", status: model.training_status }, { status: 400 })
+    }
 
-    // Cancel on Replicate
+    console.log("[v0] Canceling training:", { modelId, trainingId: model.training_id })
+
     try {
+      // Cancel the training on Replicate
       const replicate = getReplicateClient()
       await replicate.trainings.cancel(model.training_id)
+
       console.log("[v0] Training canceled on Replicate")
-    } catch (replicateError) {
-      console.error("[v0] Error canceling on Replicate:", replicateError)
-      // Continue anyway to update database
+
+      // Update database to mark as canceled/failed
+      await sql`
+        UPDATE user_models
+        SET 
+          training_status = 'failed',
+          failure_reason = 'Canceled by user',
+          updated_at = NOW()
+        WHERE id = ${modelId}
+      `
+
+      console.log("[v0] Database updated with canceled status")
+
+      return NextResponse.json({
+        success: true,
+        message: "Training canceled successfully",
+      })
+    } catch (replicateError: any) {
+      console.error("[v0] Error canceling training on Replicate:", replicateError)
+
+      // Even if Replicate fails, update our database
+      await sql`
+        UPDATE user_models
+        SET 
+          training_status = 'failed',
+          failure_reason = 'Canceled by user (Replicate error)',
+          updated_at = NOW()
+        WHERE id = ${modelId}
+      `
+
+      return NextResponse.json({
+        success: true,
+        message: "Training marked as canceled in database",
+        warning: "Could not confirm cancellation with Replicate",
+      })
     }
-
-    // Update database
-    await sql`
-      UPDATE user_models
-      SET 
-        training_status = 'failed',
-        failure_reason = 'Canceled by user',
-        updated_at = NOW()
-      WHERE id = ${modelId}
-    `
-
-    console.log("[v0] Training marked as canceled in database")
-
-    return NextResponse.json({ success: true, message: "Training canceled successfully" })
   } catch (error) {
     console.error("[v0] Error canceling training:", error)
     return NextResponse.json(
