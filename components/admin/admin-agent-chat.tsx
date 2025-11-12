@@ -74,6 +74,30 @@ export default function AdminAgentChat({ userId, userName, userEmail }: AdminAge
       mode,
       userId,
     },
+    onFinish: async (message) => {
+      // If no chatId exists yet, create a new chat
+      if (!chatId && messages.length === 0) {
+        try {
+          const firstUserMessage = message.parts?.find((part: any) => part.type === "text")?.text || ""
+          const response = await fetch("/api/admin/agent/chats", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              userId,
+              mode,
+              firstMessage: firstUserMessage,
+            }),
+          })
+          const data = await response.json()
+          if (data.chatId) {
+            console.log("[v0] Created new chat with ID:", data.chatId)
+            setChatId(data.chatId)
+          }
+        } catch (error) {
+          console.error("[v0] Error creating chat:", error)
+        }
+      }
+    },
   })
 
   const isLoading = status === "submitted" || status === "streaming"

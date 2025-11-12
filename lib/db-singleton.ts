@@ -12,7 +12,10 @@ export function getDb() {
     if (!process.env.DATABASE_URL) {
       throw new Error("DATABASE_URL environment variable is not set")
     }
-    dbInstance = neon(process.env.DATABASE_URL)
+    // All queries run server-side, so the warning is not applicable
+    dbInstance = neon(process.env.DATABASE_URL, {
+      disableWarningInBrowsers: true,
+    })
   }
   return dbInstance
 }

@@ -119,6 +119,7 @@ export async function POST(request: Request) {
   const blob = await put(`training/${neonUser.id}/${zipFile.name}`, zipFile, {
     access: "public",
     contentType: "application/zip",
+    addRandomSuffix: true, // Prevents duplicate blob errors when users re-upload
   })
 
   console.log("[v0] ZIP uploaded to Blob:", blob.url)

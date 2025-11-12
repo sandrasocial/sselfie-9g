@@ -28,7 +28,22 @@ export async function updateSession(request: NextRequest) {
   try {
     const {
       data: { user },
+      error,
     } = await supabase.auth.getUser()
+
+    // If there's a refresh token error, clear the auth cookies
+    if (error) {
+      if (error.message?.includes("refresh_token_already_used") || error.code === "refresh_token_already_used") {
+        // Clear all auth cookies to force re-authentication
+        supabaseResponse.cookies.delete("sb-access-token")
+        supabaseResponse.cookies.delete("sb-refresh-token")
+
+        // Log the error but don't crash
+        console.error("[v0] [Middleware] Refresh token error - clearing cookies:", error.message)
+      }
+      // Don't throw - just continue with no user
+      return supabaseResponse
+    }
 
     // If user is authenticated and visiting the landing page, redirect to studio
     if (user && request.nextUrl.pathname === "/") {
@@ -36,7 +51,8 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(studioUrl)
     }
   } catch (error) {
-    // Silently ignore auth errors - user might not be logged in
+    // Catch any unexpected errors
+    console.error("[v0] [Middleware] Unexpected auth error:", error)
   }
 
   return supabaseResponse

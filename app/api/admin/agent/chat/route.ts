@@ -169,6 +169,12 @@ Always provide complete email ready to send:
 - Clear CTA
 - Signature: "XoXo Sandra 💋"
 
+**TOOL USAGE REQUIREMENT:**
+You have access to powerful tools to help Sandra's business:
+- createEmailCampaign: Create and save email campaigns to the database
+- saveEmailTemplate: Save reusable email templates
+When writing emails, you MUST use these tools to save your work. Always use tools when available.
+
 Let's write emails that your community looks forward to opening. What campaign are we creating?`
 
 const COMPETITOR_RESEARCH_PROMPT = `You are Sandra's Personal Brand Market Intelligence Expert - specializing in competitive analysis and opportunity identification for entrepreneurs building personal brands.
@@ -240,6 +246,12 @@ Specific strategies Sandra can implement, ranked by:
 **Empowerment Lens:**
 I always analyze through the lens of empowerment - how can Sandra position herself as the guide who empowers others to step into their power, not just another expert selling transformation?
 
+**TOOL USAGE REQUIREMENT:**
+You have access to research tools:
+- saveCompetitorAnalysis: Save competitor research insights to the database
+- saveBusinessInsight: Document strategic opportunities and recommendations
+Always use these tools to save your research so Sandra can reference it later.
+
 Let's uncover insights that help Sandra own her unique space. What do you want to explore?`
 
 export async function POST(req: Request) {
@@ -247,6 +259,7 @@ export async function POST(req: Request) {
     const { messages, chatId, mode, userId } = await req.json()
 
     console.log("[v0] Admin agent API called:", { mode, chatId, userId, messagesCount: messages?.length })
+
     if (messages && messages.length > 0) {
       console.log("[v0] First message sample:", JSON.stringify(messages[0], null, 2))
     }
@@ -427,73 +440,229 @@ You have access to the createCalendarPost tool. When creating content calendars,
 
     console.log("[v0] Streaming with mode:", mode, "model: anthropic/claude-sonnet-4.5")
 
-    const tools =
-      mode === "content"
-        ? {
-            createCalendarPost: tool({
-              description:
-                "REQUIRED: Creates a calendar post in the database. You MUST use this tool for EVERY post when a user asks for a content calendar. Do not just write content as text - use this tool so posts actually appear in their calendar.",
-              parameters: z.object({
-                caption: z.string().describe("Full Instagram caption including hooks, body text, hashtags, and CTA"),
-                scheduled_at: z.string().describe("ISO 8601 date/time when to post (e.g., '2025-01-15T09:00:00Z')"),
-                scheduled_time: z.string().describe("Display time like '9:00 AM' for UI"),
-                content_pillar: z
-                  .enum(["education", "inspiration", "personal", "promotion"])
-                  .describe("Content category: education, inspiration, personal, or promotion"),
-                post_type: z
-                  .enum(["single", "carousel", "reel"])
-                  .optional()
-                  .default("single")
-                  .describe("Type of Instagram post"),
-                timezone: z.string().optional().default("UTC").describe("User timezone"),
-                image_url: z.string().optional().describe("URL of generated image if available"),
-                prompt: z.string().optional().describe("Image generation prompt if applicable"),
-              }),
-              execute: async (params) => {
-                console.log("[v0] createCalendarPost tool called with params:", params)
-                try {
-                  const response = await fetch(
-                    `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/api/admin/agent/create-calendar-post`,
-                    {
-                      method: "POST",
-                      headers: {
-                        "Content-Type": "application/json",
-                        Cookie: req.headers.get("cookie") || "",
-                      },
-                      body: JSON.stringify({
-                        ...params,
-                        target_user_id: targetUserId,
-                      }),
-                    },
-                  )
+    const tools: any = {}
 
-                  const result = await response.json()
-                  console.log("[v0] createCalendarPost API response:", result)
-
-                  if (!response.ok) {
-                    console.error("[v0] createCalendarPost failed:", result)
-                    return {
-                      success: false,
-                      error: result.error || "Failed to create calendar post",
-                    }
-                  }
-
-                  return {
-                    success: true,
-                    post: result.post,
-                    message: `✅ Post scheduled for ${params.scheduled_time} on ${params.scheduled_at.split("T")[0]}`,
-                  }
-                } catch (error: any) {
-                  console.error("[v0] createCalendarPost tool error:", error)
-                  return {
-                    success: false,
-                    error: error.message,
-                  }
-                }
+    // Content mode tools
+    if (mode === "content") {
+      tools.createCalendarPost = tool({
+        description:
+          "REQUIRED: Creates a calendar post in the database. You MUST use this tool for EVERY post when a user asks for a content calendar.",
+        parameters: z.object({
+          caption: z.string().describe("Full Instagram caption"),
+          scheduled_at: z.string().describe("ISO 8601 date/time"),
+          scheduled_time: z.string().describe("Display time like '9:00 AM'"),
+          content_pillar: z.enum(["education", "inspiration", "personal", "promotion"]),
+          post_type: z.enum(["single", "carousel", "reel"]).optional().default("single"),
+          timezone: z.string().optional().default("UTC"),
+          image_url: z.string().optional(),
+          prompt: z.string().optional(),
+        }),
+        execute: async (params) => {
+          console.log("[v0] createCalendarPost tool called with params:", params)
+          try {
+            const response = await fetch(
+              `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/api/admin/agent/create-calendar-post`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Cookie: req.headers.get("cookie") || "",
+                },
+                body: JSON.stringify({
+                  ...params,
+                  target_user_id: targetUserId,
+                }),
               },
-            }),
+            )
+
+            const result = await response.json()
+            console.log("[v0] createCalendarPost API response:", result)
+
+            if (!response.ok) {
+              console.error("[v0] createCalendarPost failed:", result)
+              return {
+                success: false,
+                error: result.error || "Failed to create calendar post",
+              }
+            }
+
+            return {
+              success: true,
+              post: result.post,
+              message: `✅ Post scheduled for ${params.scheduled_time} on ${params.scheduled_at.split("T")[0]}`,
+            }
+          } catch (error: any) {
+            console.error("[v0] createCalendarPost tool error:", error)
+            return {
+              success: false,
+              error: error.message,
+            }
           }
-        : {}
+        },
+      })
+    }
+
+    // Email mode tools
+    if (mode === "email") {
+      tools.createEmailCampaign = tool({
+        description: "Creates an email campaign in the database for Sandra to review and send later",
+        parameters: z.object({
+          campaign_name: z.string().describe("Name of the email campaign"),
+          subject_line: z.string().describe("Email subject line"),
+          preview_text: z.string().describe("Preview text shown in inbox"),
+          email_body: z.string().describe("Full email body content"),
+          campaign_type: z
+            .enum(["newsletter", "launch", "nurture", "welcome", "promotional"])
+            .describe("Type of email campaign"),
+          notes: z.string().optional().describe("Internal notes about this campaign"),
+        }),
+        execute: async (params) => {
+          console.log("[v0] createEmailCampaign tool called:", params)
+          try {
+            const response = await fetch(
+              `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/api/admin/agent/email-campaigns`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Cookie: req.headers.get("cookie") || "" },
+                body: JSON.stringify({ ...params, user_id: targetUserId }),
+              },
+            )
+            const result = await response.json()
+            return response.ok
+              ? { success: true, campaign: result.campaign, message: "Email campaign saved successfully" }
+              : { success: false, error: result.error }
+          } catch (error: any) {
+            return { success: false, error: error.message }
+          }
+        },
+      })
+
+      tools.saveEmailTemplate = tool({
+        description: "Saves a reusable email template to the library",
+        parameters: z.object({
+          template_name: z.string().describe("Name of the template"),
+          subject_line: z.string().describe("Template subject line"),
+          email_body: z.string().describe("Template email body"),
+          category: z.enum(["welcome", "launch", "newsletter", "nurture", "promotional"]).describe("Template category"),
+          use_case: z.string().optional().describe("When to use this template"),
+        }),
+        execute: async (params) => {
+          console.log("[v0] saveEmailTemplate tool called:", params)
+          try {
+            const response = await fetch(
+              `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/api/admin/agent/email-templates`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Cookie: req.headers.get("cookie") || "" },
+                body: JSON.stringify({ ...params, user_id: targetUserId }),
+              },
+            )
+            const result = await response.json()
+            return response.ok
+              ? { success: true, template: result.template, message: "Email template saved" }
+              : { success: false, error: result.error }
+          } catch (error: any) {
+            return { success: false, error: error.message }
+          }
+        },
+      })
+    }
+
+    // Research mode tools
+    if (mode === "research") {
+      tools.saveCompetitorAnalysis = tool({
+        description: "Saves competitor analysis insights to the database for future reference",
+        parameters: z.object({
+          competitor_name: z.string().describe("Name of the competitor"),
+          competitor_url: z.string().optional().describe("Website or social media URL"),
+          strengths: z.string().describe("What they're doing well"),
+          weaknesses: z.string().describe("Areas where they're falling short"),
+          content_strategy: z.string().describe("Their content approach and themes"),
+          differentiation_opportunities: z.string().describe("How Sandra can stand out"),
+          key_insights: z.string().describe("Important takeaways and patterns"),
+        }),
+        execute: async (params) => {
+          console.log("[v0] saveCompetitorAnalysis tool called:", params)
+          try {
+            await sql`
+              INSERT INTO admin_competitor_analyses 
+              (user_id, competitor_name, competitor_url, strengths, weaknesses, 
+               content_strategy, differentiation_opportunities, key_insights)
+              VALUES (${targetUserId}, ${params.competitor_name}, ${params.competitor_url || null},
+                      ${params.strengths}, ${params.weaknesses}, ${params.content_strategy},
+                      ${params.differentiation_opportunities}, ${params.key_insights})
+            `
+            return {
+              success: true,
+              message: `Competitor analysis for ${params.competitor_name} saved successfully`,
+            }
+          } catch (error: any) {
+            console.error("[v0] Error saving competitor analysis:", error)
+            return { success: false, error: error.message }
+          }
+        },
+      })
+
+      tools.saveBusinessInsight = tool({
+        description: "Documents strategic business insights and recommendations",
+        parameters: z.object({
+          insight_title: z.string().describe("Title of the insight"),
+          insight_category: z
+            .enum(["content_opportunity", "market_gap", "trend_analysis", "strategy_recommendation"])
+            .describe("Category of insight"),
+          insight_description: z.string().describe("Detailed description of the insight"),
+          action_items: z.string().describe("Recommended actions Sandra should take"),
+          priority: z.enum(["high", "medium", "low"]).describe("Priority level"),
+        }),
+        execute: async (params) => {
+          console.log("[v0] saveBusinessInsight tool called:", params)
+          try {
+            await sql`
+              INSERT INTO admin_business_insights 
+              (user_id, insight_title, insight_category, insight_description, 
+               action_items, priority)
+              VALUES (${targetUserId}, ${params.insight_title}, ${params.insight_category},
+                      ${params.insight_description}, ${params.action_items}, ${params.priority})
+            `
+            return {
+              success: true,
+              message: `Business insight "${params.insight_title}" saved successfully`,
+            }
+          } catch (error: any) {
+            console.error("[v0] Error saving business insight:", error)
+            return { success: false, error: error.message }
+          }
+        },
+      })
+    }
+
+    if (chatId && messages && messages.length > 0) {
+      const lastMessage = messages[messages.length - 1]
+      if (lastMessage.role === "user") {
+        try {
+          let textContent = ""
+          if (lastMessage.parts && Array.isArray(lastMessage.parts)) {
+            textContent = lastMessage.parts
+              .filter((part: any) => part.type === "text" && part.text)
+              .map((part: any) => part.text)
+              .join(" ")
+              .trim()
+          } else if (typeof lastMessage.content === "string") {
+            textContent = lastMessage.content
+          }
+
+          if (textContent) {
+            await sql`
+              INSERT INTO maya_chat_messages (chat_id, role, content)
+              VALUES (${chatId}, 'user', ${textContent})
+            `
+            console.log("[v0] Saved user message to database")
+          }
+        } catch (error) {
+          console.error("[v0] Error saving user message:", error)
+        }
+      }
+    }
 
     const result = streamText({
       model: "anthropic/claude-sonnet-4.5",
@@ -502,6 +671,24 @@ You have access to the createCalendarPost tool. When creating content calendars,
       maxOutputTokens: 4000,
       tools,
       maxSteps: 20,
+      onFinish: async ({ text }) => {
+        if (chatId && text) {
+          try {
+            await sql`
+              INSERT INTO maya_chat_messages (chat_id, role, content)
+              VALUES (${chatId}, 'assistant', ${text})
+            `
+            await sql`
+              UPDATE maya_chats
+              SET last_activity = NOW()
+              WHERE id = ${chatId}
+            `
+            console.log("[v0] Saved assistant message to database")
+          } catch (error) {
+            console.error("[v0] Error saving assistant message:", error)
+          }
+        }
+      },
       onError: (error) => {
         console.error("[v0] Stream error:", error)
       },
