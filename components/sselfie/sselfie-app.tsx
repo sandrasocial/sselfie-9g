@@ -29,9 +29,17 @@ interface SselfieAppProps {
   userId: string
   userName: string | null
   userEmail: string | null
+  isWelcome?: boolean
+  shouldShowCheckout?: boolean
 }
 
-export default function SselfieApp({ userId, userName, userEmail }: SselfieAppProps) {
+export default function SselfieApp({
+  userId,
+  userName,
+  userEmail,
+  isWelcome = false,
+  shouldShowCheckout = false,
+}: SselfieAppProps) {
   const getInitialTab = () => {
     if (typeof window !== "undefined") {
       const hash = window.location.hash.slice(1) // Remove the # symbol
@@ -154,6 +162,12 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
     return () => scrollContainer.removeEventListener("scroll", handleScroll)
   }, [])
 
+  useEffect(() => {
+    if (shouldShowCheckout && !isLoadingCredits) {
+      // Only show modal if explicitly requested via URL param
+    }
+  }, [shouldShowCheckout, isLoadingCredits])
+
   const tabs = [
     { id: "studio", label: "Studio", icon: Camera },
     { id: "training", label: "Training", icon: Aperture },
@@ -215,6 +229,14 @@ export default function SselfieApp({ userId, userName, userEmail }: SselfieAppPr
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-stone-200/20 rounded-full blur-3xl"></div>
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-stone-300/20 rounded-full blur-3xl"></div>
       </div>
+
+      {isWelcome && creditBalance === 0 && (
+        <div className="hidden absolute top-0 left-0 right-0 z-50 bg-stone-900 text-white py-3 px-4 text-center">
+          <p className="text-sm font-medium">
+            Welcome to SSELFIE! 🎉 Purchase credits to start creating your professional selfies
+          </p>
+        </div>
+      )}
 
       <main className="relative h-full mx-1 sm:mx-2 md:mx-3 pb-2 sm:pb-3 md:pb-4">
         <div className="h-full bg-white/30 backdrop-blur-3xl rounded-[2rem] sm:rounded-[2.5rem] md:rounded-[3rem] border border-white/40 overflow-hidden shadow-2xl shadow-stone-900/10">

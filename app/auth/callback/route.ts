@@ -33,8 +33,9 @@ export async function GET(request: Request) {
       }
 
       console.log("[v0] 👤 Regular auth, syncing user with Neon")
-      await syncUserWithNeon(data.user.id, data.user.email!, data.user.user_metadata?.name)
+      const neonUser = await syncUserWithNeon(data.user.id, data.user.email!, data.user.user_metadata?.name)
 
+      // Let the studio page handle access control based on credits
       return NextResponse.redirect(`${origin}/studio`)
     } else {
       console.error("[v0] ❌ Error exchanging code:", error)

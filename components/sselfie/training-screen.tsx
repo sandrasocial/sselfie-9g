@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
-import { Camera, Aperture, ChevronRight, Loader2, X } from "lucide-react"
+import { Camera, Aperture, ChevronRight, Loader2, X, AlertCircle } from 'lucide-react'
 import useSWR from "swr"
 import JSZip from "jszip"
 
@@ -101,6 +101,7 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
   const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 })
   const [deletingImageId, setDeletingImageId] = useState<number | null>(null)
   const [isCanceling, setIsCanceling] = useState(false)
+  const [showVolumeBanner, setShowVolumeBanner] = useState(true)
 
   const {
     data: trainingStatus,
@@ -401,6 +402,29 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
         </p>
       </div>
 
+      {showVolumeBanner && (
+        <div className="mx-4 sm:mx-6 bg-stone-50/80 backdrop-blur-xl border border-stone-200/60 rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-lg relative">
+          <button
+            onClick={() => setShowVolumeBanner(false)}
+            className="absolute top-3 right-3 w-6 h-6 flex items-center justify-center text-stone-400 hover:text-stone-600 transition-colors"
+            aria-label="Dismiss banner"
+          >
+            <X size={16} strokeWidth={2.5} />
+          </button>
+          <div className="flex items-start gap-3 pr-8">
+            <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-stone-950/10 rounded-full flex items-center justify-center">
+              <AlertCircle size={18} className="text-stone-950" strokeWidth={2.5} />
+            </div>
+            <div>
+              <h4 className="text-sm sm:text-base font-semibold text-stone-950 mb-1">High Training Volume</h4>
+              <p className="text-xs sm:text-sm text-stone-600 leading-relaxed">
+                Due to beta launch demand, training may take longer than usual. We're actively working on expanding capacity. Thank you for your patience.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {trainingStage === "completed" && model && (
         <div className="mx-4 sm:mx-6 bg-white/50 backdrop-blur-2xl border border-white/60 rounded-xl sm:rounded-[1.75rem] p-5 sm:p-6 md:p-8 text-center shadow-xl shadow-stone-900/10">
           <div className="relative w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-4 sm:mb-6">
@@ -462,10 +486,16 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
               </div>
             </div>
             <h3 className="text-xl sm:text-2xl font-bold text-stone-950 mb-4">Training Your Model</h3>
-            <p className="text-sm font-medium text-stone-600 mb-8">
+            <p className="text-sm font-medium text-stone-600 mb-4">
               Your AI is learning from your photos. This usually takes a couple of minutes. We'll let you know when it's
               ready.
             </p>
+            <div className="inline-flex items-center gap-2 px-3 py-2 bg-stone-100/80 backdrop-blur-xl rounded-full border border-stone-200/60">
+              <AlertCircle size={14} className="text-stone-600" strokeWidth={2.5} />
+              <span className="text-xs text-stone-600">
+                Training may take longer during high demand periods
+              </span>
+            </div>
           </div>
 
           <div className="mb-8">

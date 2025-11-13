@@ -1,15 +1,20 @@
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId, getOrCreateNeonUser } from "@/lib/user-mapping"
+import { getUserCredits } from "@/lib/credits"
+import { hasStudioMembership } from "@/lib/subscription"
 import { redirect } from "next/navigation"
 import SselfieApp from "@/components/sselfie/sselfie-app"
 
-export default async function StudioPage() {
+export default async function StudioPage({
+  searchParams,
+}: {
+  searchParams: { welcome?: string; showCheckout?: string; checkout?: string }
+}) {
   let supabase
   try {
     supabase = await createServerClient()
   } catch (error) {
     console.error("[v0] Error creating Supabase client:", error)
-    // Redirect to login with error message
     redirect("/auth/login?error=supabase_config&returnTo=/studio")
   }
 
@@ -21,7 +26,6 @@ export default async function StudioPage() {
     redirect("/auth/login?returnTo=/studio")
   }
 
-  // Try to get user from database
   let neonUser = null
   let userError = null
 
@@ -32,7 +36,6 @@ export default async function StudioPage() {
     userError = error
   }
 
-  // If user not found and we have email, try to sync/create
   if (!neonUser && user.email && !userError) {
     try {
       neonUser = await getOrCreateNeonUser(user.id, user.email, user.user_metadata?.display_name)
@@ -42,11 +45,36 @@ export default async function StudioPage() {
     }
   }
 
-  // If still no user or there was an error, redirect to login
   if (!neonUser || userError) {
     console.error("[v0] User authenticated but could not be synced with database")
     redirect("/auth/login?returnTo=/studio")
   }
 
-  return <SselfieApp userId={neonUser.id} userName={neonUser.display_name} userEmail={neonUser.email} />
+  const creditBalance = await getUserCredits(neonUser.id)
+  const hasActiveMembership = await hasStudioMembership(neonUser.id)
+
+  console.log("[v0] [ACCESS CONTROL] User:", neonUser.email)
+  console.log("[v0] [ACCESS CONTROL] Credits:", creditBalance)
+  console.log("[v0] [ACCESS CONTROL] Has Membership:", hasActiveMembership)
+
+  // If user has no credits AND no active membership, redirect to checkout
+  if (creditBalance === 0 && !hasActiveMembership) {
+    console.log("[v0] [ACCESS CONTROL] ❌ User has no access - redirecting to checkout")
+    redirect("/checkout/one-time")
+  }
+
+  console.log("[v0] [ACCESS CONTROL] ✅ User has access to studio")
+
+  const isWelcome = searchParams.welcome === "true"
+  const shouldShowCheckout = searchParams.showCheckout === "true" || searchParams.checkout === "one_time"
+
+  return (
+    <SselfieApp
+      userId={neonUser.id}
+      userName={neonUser.display_name}
+      userEmail={neonUser.email}
+      isWelcome={isWelcome}
+      shouldShowCheckout={shouldShowCheckout}
+    />
+  )
 }
