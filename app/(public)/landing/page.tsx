@@ -120,7 +120,7 @@ export default function LandingPage() {
                 <div className="space-y-4">
                   <div className="relative aspect-[3/4] rounded-lg overflow-hidden">
                     <Image
-                      src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/IMG_8033.PNG-xmqjOwoJ8buVw8VTaNJEKAn2ZSDv1M.png"
+                      src="/images/img-8033.png"
                       alt="Professional brand photo example"
                       fill
                       className="object-cover"
@@ -130,7 +130,7 @@ export default function LandingPage() {
                 <div className="space-y-4 pt-8">
                   <div className="relative aspect-[3/4] rounded-lg overflow-hidden">
                     <Image
-                      src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/IMG_8032.PNG-A9BkmHKWG8N3CUOQ5g4we0ZiMKwhkA.png"
+                      src="/images/img-8032.png"
                       alt="Professional brand photo example"
                       fill
                       className="object-cover"
@@ -173,7 +173,7 @@ export default function LandingPage() {
               guide with simple tips for lighting, angles, and camera tricks that actually work.
             </p>
             <Link
-              href="/freebie/selfie-guide"
+              href="/blueprint"
               className="inline-block bg-stone-950 text-stone-50 px-8 sm:px-12 py-4 text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200"
             >
               GET FREE GUIDE
@@ -273,7 +273,7 @@ export default function LandingPage() {
               <div className="text-xs font-light tracking-[0.3em] uppercase text-stone-400 mb-4">SSELFIE STUDIO</div>
               <div className="relative aspect-square mb-6 rounded-lg overflow-hidden">
                 <Image
-                  src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/nano-banana-2025-09-07T16-04-25%202.PNG-sxsI2ljcVjAC9lCJsFZTfVuAuxydvj.png"
+                  src="/images/nano-banana-2025-09-07t16-04-25-202.png"
                   alt="SSELFIE Studio professional brand photo"
                   fill
                   className="object-cover"
@@ -395,20 +395,10 @@ export default function LandingPage() {
               <div className="bg-stone-100 p-6 sm:p-8 rounded-lg border border-stone-200">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="relative aspect-[3/4] rounded-lg overflow-hidden">
-                    <Image
-                      src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/IMG_8033.PNG-xmqjOwoJ8buVw8VTaNJEKAn2ZSDv1M.png"
-                      alt="Professional brand photo"
-                      fill
-                      className="object-cover"
-                    />
+                    <Image src="/images/img-8033.png" alt="Professional brand photo" fill className="object-cover" />
                   </div>
                   <div className="relative aspect-[3/4] rounded-lg overflow-hidden">
-                    <Image
-                      src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/IMG_8032.PNG-A9BkmHKWG8N3CUOQ5g4we0ZiMKwhkA.png"
-                      alt="Professional brand photo"
-                      fill
-                      className="object-cover"
-                    />
+                    <Image src="/images/img-8032.png" alt="Professional brand photo" fill className="object-cover" />
                   </div>
                 </div>
               </div>

@@ -4,7 +4,15 @@ import { redirect } from "next/navigation"
 import SselfieApp from "@/components/sselfie/sselfie-app"
 
 export default async function StudioPage() {
-  const supabase = await createServerClient()
+  let supabase
+  try {
+    supabase = await createServerClient()
+  } catch (error) {
+    console.error("[v0] Error creating Supabase client:", error)
+    // Redirect to login with error message
+    redirect("/auth/login?error=supabase_config&returnTo=/studio")
+  }
+
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -20,7 +28,7 @@ export default async function StudioPage() {
   try {
     neonUser = await getUserByAuthId(user.id)
   } catch (error) {
-    console.error("Error fetching user by auth ID:", error)
+    console.error("[v0] Error fetching user by auth ID:", error)
     userError = error
   }
 
@@ -29,14 +37,14 @@ export default async function StudioPage() {
     try {
       neonUser = await getOrCreateNeonUser(user.id, user.email, user.user_metadata?.display_name)
     } catch (error) {
-      console.error("Error syncing user with database:", error)
+      console.error("[v0] Error syncing user with database:", error)
       userError = error
     }
   }
 
   // If still no user or there was an error, redirect to login
   if (!neonUser || userError) {
-    console.error("User authenticated but could not be synced with database")
+    console.error("[v0] User authenticated but could not be synced with database")
     redirect("/auth/login?returnTo=/studio")
   }
 

@@ -5,7 +5,7 @@ import { generateFeedbackAdminNotification } from "@/lib/email/templates/feedbac
 
 const sql = neon(process.env.DATABASE_URL!)
 
-const ADMIN_EMAILS = ["ssa@ssasocial.no", "hello@sselfie.ai"]
+const ADMIN_EMAILS = ["ssa@ssasocial.com", "hello@sselfie.ai"]
 
 export async function POST(request: NextRequest) {
   try {

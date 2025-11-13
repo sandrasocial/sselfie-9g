@@ -307,7 +307,7 @@ async function sendCriticalAlertEmail(feedback: any, bugAnalysis: BugAnalysis) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        to: ["ssa@ssasocial.no", "hello@sselfie.ai"],
+        to: ["ssa@ssasocial.com", "hello@sselfie.ai"],
         subject: `Critical Issue Detected: ${bugAnalysis.category.toUpperCase()}`,
         template: "critical-bug-alert",
         data: {

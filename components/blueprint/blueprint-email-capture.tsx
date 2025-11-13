@@ -1,12 +1,17 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { Input } from "@/components/ui/input"
 import Image from "next/image"
 
-export function FreebieGuideCapture() {
+interface BlueprintEmailCaptureProps {
+  onSuccess: (email: string, name: string, accessToken: string) => void
+  formData?: any
+  currentStep?: number
+}
+
+export function BlueprintEmailCapture({ onSuccess, formData, currentStep }: BlueprintEmailCaptureProps) {
   const [email, setEmail] = useState("")
   const [name, setName] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -17,16 +22,18 @@ export function FreebieGuideCapture() {
     setError("")
     setIsSubmitting(true)
 
-    console.log("[v0] Starting freebie subscribe request")
+    console.log("[v0] Starting blueprint subscribe request")
 
     try {
-      const response = await fetch("/api/freebie/subscribe", {
+      const response = await fetch("/api/blueprint/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email,
           name,
-          source: "selfie-guide",
+          formData,
+          step: currentStep,
+          source: "brand-blueprint",
           utm_source: new URLSearchParams(window.location.search).get("utm_source"),
           utm_medium: new URLSearchParams(window.location.search).get("utm_medium"),
           utm_campaign: new URLSearchParams(window.location.search).get("utm_campaign"),
@@ -46,15 +53,11 @@ export function FreebieGuideCapture() {
         throw new Error(data.error || "Something went wrong")
       }
 
-      if (!data.emailSent && data.emailError) {
-        console.warn("[v0] Email failed but user was saved:", data.emailError)
-      }
-
-      console.log("[v0] Redirecting to access page with token:", data.accessToken)
-      window.location.href = `/freebie/selfie-guide/access/${data.accessToken}`
+      console.log("[v0] Successfully saved blueprint progress")
+      onSuccess(email, name, data.accessToken)
     } catch (err) {
-      console.error("[v0] Freebie subscribe error:", err)
-      setError(err instanceof Error ? err.message : "Failed to subscribe. Please try again.")
+      console.error("[v0] Blueprint subscribe error:", err)
+      setError(err instanceof Error ? err.message : "Failed to save. Please try again.")
     } finally {
       setIsSubmitting(false)
     }
@@ -64,7 +67,7 @@ export function FreebieGuideCapture() {
     <div className="relative min-h-screen w-full overflow-hidden bg-stone-950">
       <div className="absolute inset-0">
         <Image
-          src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/380-iihCcjIPJSnT0XFvpT7urKD4bZHtyR-Eq59f64ApxEsAZdyPsutbM1Z9WhTt3.png"
+          src="/images/380-iihccjipjsnt0xfvpt7urkd4bzhtyr.png"
           alt="SSELFIE Brand"
           fill
           className="object-cover"
@@ -86,18 +89,21 @@ export function FreebieGuideCapture() {
             />
           </div>
 
-          <p className="text-xs font-light tracking-[0.3em] uppercase text-white/70 mb-4">FREE GUIDE</p>
+          <p className="text-xs font-light tracking-[0.3em] uppercase text-white/70 mb-4">
+            {currentStep === 2 ? "UNLOCK YOUR RESULTS" : "SAVE YOUR PROGRESS"}
+          </p>
 
           <h1
             className="mb-6 text-4xl sm:text-5xl md:text-6xl font-extralight leading-tight tracking-tight text-white"
             style={{ fontFamily: "'Times New Roman', serif" }}
           >
-            Become a Selfie Queen
+            {currentStep === 2 ? "See Your Personalized Feed Strategy" : "Get Your Brand Blueprint"}
           </h1>
 
           <p className="mb-12 text-base sm:text-lg font-light leading-relaxed text-white/80 max-w-xl mx-auto px-4">
-            Learn how to take selfies that make you feel amazing. Simple tips for lighting, angles, and camera tricks
-            that actually work—no fancy equipment needed.
+            {currentStep === 2
+              ? "Enter your email to unlock your personalized feed aesthetic, selfie score, 30-day content calendar, and caption templates."
+              : "Save your progress and get your personalized 30-day content calendar, caption templates, and brand strategy guide sent to your email."}
           </p>
 
           <form onSubmit={handleSubmit} className="mx-auto max-w-md space-y-4 px-4">
@@ -128,10 +134,10 @@ export function FreebieGuideCapture() {
               {isSubmitting ? (
                 <>
                   <span className="w-4 h-4 border-2 border-stone-950 border-t-transparent rounded-full animate-spin"></span>
-                  <span>LOADING...</span>
+                  <span>SAVING...</span>
                 </>
               ) : (
-                "GET INSTANT ACCESS"
+                "SAVE & CONTINUE"
               )}
             </button>
 
