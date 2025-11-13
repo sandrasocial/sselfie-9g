@@ -88,7 +88,7 @@ export function BlueprintConceptCard({ concept, index, onImageGenerated }: Bluep
           {imageUrl ? (
             <button
               onClick={() => setIsModalOpen(true)}
-              className="w-full h-full focus:outline-none focus:ring-2 focus:ring-stone-400 group"
+              className="w-full h-full focus:outline-none focus:ring-2 focus:ring-stone-400 group active:scale-95 transition-transform"
             >
               <img
                 src={imageUrl || "/placeholder.svg"}
@@ -121,7 +121,7 @@ export function BlueprintConceptCard({ concept, index, onImageGenerated }: Bluep
         </div>
 
         {/* Content */}
-        <div className="p-4 space-y-3">
+        <div className="p-4 sm:p-5 space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-[10px] tracking-wider uppercase font-medium text-stone-500 bg-stone-100 px-3 py-1 rounded-full">
               {concept.category}
@@ -143,7 +143,7 @@ export function BlueprintConceptCard({ concept, index, onImageGenerated }: Bluep
             <button
               onClick={handleGenerate}
               disabled={isGenerating}
-              className="w-full bg-stone-950 text-stone-50 py-3 text-xs tracking-wider uppercase font-medium hover:bg-stone-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-stone-950 text-stone-50 py-3 sm:py-3.5 text-xs tracking-wider uppercase font-medium hover:bg-stone-800 active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
             >
               Generate Concept
             </button>

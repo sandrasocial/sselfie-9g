@@ -34,6 +34,7 @@ export function BeforeAfterSlider({
 
   const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
     if (!isDragging) return
+    e.preventDefault()
     handleMove(e.clientX)
   }
 
@@ -42,13 +43,14 @@ export function BeforeAfterSlider({
 
   const handleTouchMove = (e: TouchEvent<HTMLDivElement>) => {
     if (!isDragging) return
+    e.preventDefault()
     handleMove(e.touches[0].clientX)
   }
 
   return (
     <div
       ref={containerRef}
-      className="relative w-full aspect-[9/16] overflow-hidden cursor-ew-resize select-none rounded-lg border-2 border-stone-300"
+      className="relative w-full max-w-sm mx-auto aspect-[9/16] overflow-hidden cursor-ew-resize select-none rounded-lg border-2 border-stone-300 touch-none"
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}
       onMouseMove={handleMouseMove}
@@ -68,22 +70,25 @@ export function BeforeAfterSlider({
       </div>
 
       {/* Slider Line */}
-      <div className="absolute top-0 bottom-0 w-1 bg-white shadow-lg" style={{ left: `${sliderPosition}%` }}>
+      <div
+        className="absolute top-0 bottom-0 w-1 bg-white shadow-lg pointer-events-none"
+        style={{ left: `${sliderPosition}%` }}
+      >
         {/* Slider Handle */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center border-2 border-stone-300">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 sm:w-10 sm:h-10 bg-white rounded-full shadow-lg flex items-center justify-center border-2 border-stone-300 pointer-events-auto">
           <div className="flex gap-1">
-            <div className="w-0.5 h-4 bg-stone-400"></div>
-            <div className="w-0.5 h-4 bg-stone-400"></div>
+            <div className="w-0.5 h-5 sm:h-4 bg-stone-400"></div>
+            <div className="w-0.5 h-5 sm:h-4 bg-stone-400"></div>
           </div>
         </div>
       </div>
 
-      {/* Instruction Text (shows briefly on hover) */}
-      {!isDragging && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 text-white px-4 py-2 text-xs font-light rounded-full opacity-0 hover:opacity-100 transition-opacity pointer-events-none">
-          Drag to compare
-        </div>
-      )}
+      {/* Instruction Text */}
+      <div
+        className={`absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 text-white px-4 py-2 text-xs font-light rounded-full transition-opacity pointer-events-none ${isDragging ? "opacity-0" : "opacity-100 sm:opacity-0 sm:hover:opacity-100"}`}
+      >
+        {isDragging ? "Release to stop" : "Drag to compare"}
+      </div>
     </div>
   )
 }

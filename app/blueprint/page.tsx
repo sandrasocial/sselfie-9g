@@ -43,6 +43,17 @@ export default function BrandBlueprintPage() {
   const [showCheckout, setShowCheckout] = useState(false)
   const [checkoutClientSecret, setCheckoutClientSecret] = useState<string | null>(null)
 
+  useEffect(() => {
+    if (showCheckout) {
+      document.body.style.overflow = "hidden"
+    } else {
+      document.body.style.overflow = "unset"
+    }
+    return () => {
+      document.body.style.overflow = "unset"
+    }
+  }, [showCheckout])
+
   const calculateScore = () => {
     let score = 0
     if (formData.lightingKnowledge === "expert") score += 20
@@ -398,7 +409,7 @@ export default function BrandBlueprintPage() {
           </Link>
           <Link
             href="/auth/sign-up"
-            className="bg-stone-950 text-stone-50 px-4 py-2 sm:px-6 text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200"
+            className="bg-stone-950 text-stone-50 px-3 py-1.5 sm:px-6 sm:py-2 text-[10px] sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200"
           >
             GET STARTED
           </Link>
@@ -1258,41 +1269,59 @@ export default function BrandBlueprintPage() {
       </div>
 
       {showCheckout && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center p-0 sm:p-4 z-50 overflow-y-auto">
-          <div className="bg-white w-full sm:max-w-2xl min-h-screen sm:min-h-0 sm:max-h-[90vh] sm:rounded-lg relative flex flex-col">
-            <div className="sticky top-0 bg-white z-10 p-4 border-b border-stone-200 flex items-center justify-between sm:relative">
-              <h3 className="text-sm font-medium tracking-wider uppercase text-stone-950">Complete Purchase</h3>
+        <div
+          className="fixed inset-0 bg-black/50 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowCheckout(false)
+              setCheckoutClientSecret(null)
+            }
+          }}
+        >
+          <div
+            className="bg-white w-full h-[100vh] sm:h-auto sm:max-h-[90vh] sm:max-w-2xl sm:rounded-lg flex flex-col shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Sticky Header */}
+            <div className="flex-shrink-0 bg-white z-20 px-4 sm:px-6 py-4 border-b border-stone-200 flex items-center justify-between sticky top-0">
+              <h3 className="text-sm sm:text-base font-medium tracking-wider uppercase text-stone-950">
+                Complete Purchase
+              </h3>
               <button
                 onClick={() => {
                   setShowCheckout(false)
                   setCheckoutClientSecret(null)
                 }}
-                className="p-2 hover:bg-stone-100 rounded-full transition-colors"
+                className="p-2 hover:bg-stone-100 rounded-full transition-colors flex-shrink-0"
+                aria-label="Close checkout"
               >
-                <X className="w-5 h-5" />
+                <X className="w-5 h-5 sm:w-6 sm:h-6" />
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-              {checkoutClientSecret ? (
-                <EmbeddedCheckoutProvider stripe={stripePromise} options={{ clientSecret: checkoutClientSecret }}>
-                  <EmbeddedCheckout />
-                </EmbeddedCheckoutProvider>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-12 space-y-4">
-                  <div className="flex gap-2">
-                    <div className="w-3 h-3 rounded-full bg-stone-950 animate-bounce"></div>
-                    <div
-                      className="w-3 h-3 rounded-full bg-stone-950 animate-bounce"
-                      style={{ animationDelay: "0.2s" }}
-                    ></div>
-                    <div
-                      className="w-3 h-3 rounded-full bg-stone-950 animate-bounce"
-                      style={{ animationDelay: "0.4s" }}
-                    ></div>
+
+            <div className="flex-1 overflow-y-auto overflow-x-hidden overscroll-contain -webkit-overflow-scrolling-touch">
+              <div className="p-4 sm:p-6 min-h-full">
+                {checkoutClientSecret ? (
+                  <EmbeddedCheckoutProvider stripe={stripePromise} options={{ clientSecret: checkoutClientSecret }}>
+                    <EmbeddedCheckout />
+                  </EmbeddedCheckoutProvider>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-12 sm:py-20 space-y-4">
+                    <div className="flex gap-2">
+                      <div className="w-3 h-3 rounded-full bg-stone-950 animate-bounce"></div>
+                      <div
+                        className="w-3 h-3 rounded-full bg-stone-950 animate-bounce"
+                        style={{ animationDelay: "0.2s" }}
+                      ></div>
+                      <div
+                        className="w-3 h-3 rounded-full bg-stone-950 animate-bounce"
+                        style={{ animationDelay: "0.4s" }}
+                      ></div>
+                    </div>
+                    <p className="text-sm text-stone-600 font-light">Loading checkout...</p>
                   </div>
-                  <p className="text-sm text-stone-600 font-light">Loading checkout...</p>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -1320,6 +1349,13 @@ export default function BrandBlueprintPage() {
         }
         .animate-fade-in {
           animation: fade-in 0.5s ease-out forwards;
+        }
+        
+        /* Mobile optimization: Prevent scroll issues on iOS */
+        @supports (-webkit-touch-callout: none) {
+          .-webkit-overflow-scrolling-touch {
+            -webkit-overflow-scrolling: touch;
+          }
         }
       `}</style>
     </div>
