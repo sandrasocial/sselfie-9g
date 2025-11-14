@@ -1,6 +1,7 @@
 // Importing necessary types or interfaces
 import type { QualitySettings } from "./types" // Hypothetical import, adjust according to actual file structure
 
+// Instagram aesthetic is now achieved through prompt keywords instead of LoRA
 export const MAYA_DEFAULT_QUALITY_SETTINGS: QualitySettings = {
   guidance_scale: 3.5,
   num_inference_steps: 50,

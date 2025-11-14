@@ -171,8 +171,8 @@ export async function POST(request: NextRequest) {
       aspect_ratio: customSettings?.aspectRatio || presetSettings.aspect_ratio,
       lora_scale: customSettings?.styleStrength ?? presetSettings.lora_scale,
       guidance_scale: customSettings?.promptAccuracy ?? presetSettings.guidance_scale,
-      extra_lora: customSettings?.extraLora,
-      extra_lora_scale: customSettings?.extraLoraScale,
+      extra_lora: customSettings?.extraLora || presetSettings.extra_lora,
+      extra_lora_scale: customSettings?.extraLoraScale || presetSettings.extra_lora_scale,
       // Always use preset default (50 steps), don't let slider affect steps
       num_inference_steps: presetSettings.num_inference_steps,
     }
@@ -226,8 +226,8 @@ export async function POST(request: NextRequest) {
 
     if (qualitySettings.extra_lora) {
       predictionInput.extra_lora = qualitySettings.extra_lora
-      predictionInput.extra_lora_scale = qualitySettings.extra_lora_scale || 0.6
-      console.log("[v0] ✅ Extra LoRA (Realism):", predictionInput.extra_lora)
+      predictionInput.extra_lora_scale = qualitySettings.extra_lora_scale || 0.8
+      console.log("[v0] ✅ Extra LoRA (Instagram Aesthetic):", predictionInput.extra_lora)
       console.log("[v0] ✅ Extra LoRA scale:", predictionInput.extra_lora_scale)
     }
 
