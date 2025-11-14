@@ -2,9 +2,11 @@
 
 import { useState } from "react"
 import useSWR from "swr"
-import { Loader2 } from 'lucide-react'
+import { Loader2, X, Home, Aperture, MessageCircle, ImageIcon, Grid, UserIcon, SettingsIcon, LogOut, Film } from 'lucide-react'
 import InstagramPhotoCard from "./instagram-photo-card"
 import InstagramReelCard from "./instagram-reel-card"
+import { InstagramReelPreview } from "./instagram-reel-preview"
+import { useRouter } from 'next/navigation'
 
 interface BRollScreenProps {
   user: any
@@ -40,6 +42,14 @@ export default function BRollScreen({ user, userId }: BRollScreenProps) {
   const [videoPredictions, setVideoPredictions] = useState<Map<string, { predictionId: string; videoId: string }>>(
     new Map(),
   )
+  const [completedVideos, setCompletedVideos] = useState<Map<string, { videoUrl: string; motionPrompt: string | null }>>(
+    new Map(),
+  )
+  const [previewVideo, setPreviewVideo] = useState<GeneratedVideo | null>(null)
+  const [showNavMenu, setShowNavMenu] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [creditBalance, setCreditBalance] = useState(0)
+  const router = useRouter()
 
   const { data: imagesData, error: imagesError, isLoading: imagesLoading } = useSWR(
     "/api/maya/b-roll-images",
@@ -55,8 +65,42 @@ export default function BRollScreen({ user, userId }: BRollScreenProps) {
     revalidateOnFocus: false,
   })
 
+  const { data: userData } = useSWR("/api/user", fetcher, {
+    revalidateOnFocus: false,
+    onSuccess: (data) => {
+      if (data?.user?.credit_balance !== undefined) {
+        setCreditBalance(data.user.credit_balance)
+      }
+    }
+  })
+
   const images: BRollImage[] = imagesData?.images || []
   const allVideos: GeneratedVideo[] = videosData?.videos || []
+
+  const handleNavigation = (tab: string) => {
+    window.location.hash = tab
+    setShowNavMenu(false)
+  }
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true)
+    try {
+      const response = await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      })
+
+      if (response.ok) {
+        router.push("/auth/login")
+      } else {
+        console.error("[v0] Logout failed")
+        setIsLoggingOut(false)
+      }
+    } catch (error) {
+      console.error("[v0] Error during logout:", error)
+      setIsLoggingOut(false)
+    }
+  }
 
   const handleAnimate = async (imageId: string, imageUrl: string, description: string, fluxPrompt: string, category: string) => {
     setAnalyzingMotion((prev) => new Set(prev).add(imageId))
@@ -148,43 +192,75 @@ export default function BRollScreen({ user, userId }: BRollScreenProps) {
 
     const poll = async () => {
       try {
-        console.log("[v0] Polling video status for imageId:", imageId)
+        console.log("[v0] ========== POLLING VIDEO STATUS ==========")
+        console.log("[v0] Image ID:", imageId)
+        console.log("[v0] Prediction ID:", predictionId)
+        console.log("[v0] Video ID:", videoId)
+        console.log("[v0] Attempt:", attempts + 1, "of", maxAttempts)
+        
         const response = await fetch(`/api/maya/check-video?predictionId=${predictionId}&videoId=${videoId}`)
         const data = await response.json()
 
-        console.log("[v0] Video polling response:", { imageId, status: data.status, videoUrl: data.videoUrl })
+        console.log("[v0] ✅ Polling response:", {
+          status: data.status,
+          videoUrl: data.videoUrl ? `${data.videoUrl.substring(0, 50)}...` : 'null',
+          progress: data.progress,
+        })
 
         if (data.status === "succeeded") {
-          console.log("[v0] Video generation succeeded! Refreshing videos list...")
-          await mutateVideos()
+          console.log("[v0] ========== VIDEO GENERATION SUCCEEDED ==========")
+          console.log("[v0] Video URL received:", data.videoUrl ? 'YES' : 'NO')
           
-          // Give the UI a moment to update with the new video
-          setTimeout(() => {
-            setGeneratingVideos((prev) => {
-              const newSet = new Set(prev)
-              newSet.delete(imageId)
-              console.log("[v0] Cleared generating state for imageId:", imageId)
-              return newSet
+          if (data.videoUrl) {
+            setCompletedVideos((prev) => {
+              const newMap = new Map(prev)
+              newMap.set(imageId, {
+                videoUrl: data.videoUrl,
+                motionPrompt: data.motionPrompt || null
+              })
+              console.log("[v0] ✅ Stored video URL in completedVideos state for imageId:", imageId)
+              return newMap
             })
-            setVideoPredictions((prev) => {
-              const newPredictions = new Map(prev)
-              newPredictions.delete(imageId)
-              return newPredictions
-            })
-          }, 500)
+          }
+          
+          console.log("[v0] Calling mutateVideos() to refresh video list...")
+          await mutateVideos()
+          console.log("[v0] ✅ mutateVideos() completed")
+          console.log("[v0] Clearing generating state for imageId:", imageId)
+          console.log("[v0] ================================================")
+          
+          setGeneratingVideos((prev) => {
+            const newSet = new Set(prev)
+            newSet.delete(imageId)
+            console.log("[v0] Cleared generating state. Remaining generating:", Array.from(newSet))
+            return newSet
+          })
+          setVideoPredictions((prev) => {
+            const newPredictions = new Map(prev)
+            newPredictions.delete(imageId)
+            return newPredictions
+          })
           return
         } else if (data.status === "failed") {
+          console.log("[v0] ========== VIDEO GENERATION FAILED ==========")
+          console.log("[v0] Error:", data.error)
+          console.log("[v0] ================================================")
           throw new Error(data.error || "Video generation failed")
         }
 
         attempts++
+        console.log("[v0] Still processing... Will poll again in 5 seconds")
+        console.log("[v0] ================================================")
+        
         if (attempts < maxAttempts) {
           setTimeout(poll, 5000)
         } else {
           throw new Error("Video generation timed out")
         }
       } catch (err) {
-        console.error("[v0] Error polling video:", err)
+        console.error("[v0] ========== VIDEO POLLING ERROR ==========")
+        console.error("[v0] ❌ Error:", err)
+        console.error("[v0] ================================================")
         setVideoErrors((prev) => {
           const newErrors = new Map(prev)
           newErrors.set(imageId, err instanceof Error ? err.message : "Failed to check video status")
@@ -232,6 +308,30 @@ export default function BRollScreen({ user, userId }: BRollScreenProps) {
     }
   }
 
+  const deleteVideo = async (videoId: number) => {
+    if (!confirm("Are you sure you want to delete this video?")) {
+      return
+    }
+
+    try {
+      const response = await fetch("/api/maya/delete-video", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ videoId }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to delete video")
+      }
+
+      mutateVideos()
+      setPreviewVideo(null)
+    } catch (error) {
+      console.error("[v0] Error deleting video:", error)
+      alert("Failed to delete video. Please try again.")
+    }
+  }
+
   if (imagesLoading) {
     return (
       <div className="space-y-4 sm:space-y-6 pb-24 pt-3 sm:pt-4">
@@ -276,7 +376,114 @@ export default function BRollScreen({ user, userId }: BRollScreenProps) {
         <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-extralight tracking-[0.2em] sm:tracking-[0.3em] text-stone-950 uppercase">
           B-Roll
         </h1>
+        <button
+          onClick={() => setShowNavMenu(!showNavMenu)}
+          className="flex items-center justify-center px-3 h-9 sm:h-10 rounded-lg hover:bg-stone-100/50 transition-colors touch-manipulation active:scale-95"
+          aria-label="Navigation menu"
+          aria-expanded={showNavMenu}
+        >
+          <span className="text-xs sm:text-sm font-serif tracking-[0.2em] text-stone-950 uppercase">MENU</span>
+        </button>
       </div>
+
+      {showNavMenu && (
+        <>
+          <div
+            className="fixed inset-0 bg-stone-950/20 backdrop-blur-sm z-40 animate-in fade-in duration-200"
+            onClick={() => setShowNavMenu(false)}
+          />
+
+          <div className="fixed top-0 right-0 bottom-0 w-80 bg-white/95 backdrop-blur-3xl border-l border-stone-200 shadow-2xl z-50 animate-in slide-in-from-right duration-300 flex flex-col">
+            <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-stone-200/50">
+              <h3 className="text-sm font-serif font-extralight tracking-[0.2em] uppercase text-stone-950">Menu</h3>
+              <button
+                onClick={() => setShowNavMenu(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-100 transition-colors"
+                aria-label="Close menu"
+              >
+                <X size={18} className="text-stone-600" strokeWidth={2} />
+              </button>
+            </div>
+
+            <div className="flex-shrink-0 px-6 py-6 border-b border-stone-200/50">
+              <div className="text-[10px] tracking-[0.15em] uppercase font-light text-stone-500 mb-2">Your Credits</div>
+              <div className="text-3xl font-serif font-extralight text-stone-950 tabular-nums">
+                {creditBalance.toFixed(1)}
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto min-h-0 py-2">
+              <button
+                onClick={() => handleNavigation("studio")}
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
+              >
+                <Home size={18} className="text-stone-600" strokeWidth={2} />
+                <span className="text-sm font-medium text-stone-700">Studio</span>
+              </button>
+              <button
+                onClick={() => handleNavigation("training")}
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
+              >
+                <Aperture size={18} className="text-stone-600" strokeWidth={2} />
+                <span className="text-sm font-medium text-stone-700">Training</span>
+              </button>
+              <button
+                onClick={() => handleNavigation("maya")}
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
+              >
+                <MessageCircle size={18} className="text-stone-600" strokeWidth={2} />
+                <span className="text-sm font-medium text-stone-700">Maya</span>
+              </button>
+              <button
+                onClick={() => handleNavigation("gallery")}
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
+              >
+                <ImageIcon size={18} className="text-stone-600" strokeWidth={2} />
+                <span className="text-sm font-medium text-stone-700">Gallery</span>
+              </button>
+              <button
+                onClick={() => handleNavigation("b-roll")}
+                className="w-full flex items-center gap-3 px-6 py-4 text-left bg-stone-100/50 border-l-2 border-stone-950"
+              >
+                <Film size={18} className="text-stone-950" strokeWidth={2} />
+                <span className="text-sm font-medium text-stone-950">B-roll</span>
+              </button>
+              <button
+                onClick={() => handleNavigation("academy")}
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
+              >
+                <Grid size={18} className="text-stone-600" strokeWidth={2} />
+                <span className="text-sm font-medium text-stone-700">Academy</span>
+              </button>
+              <button
+                onClick={() => handleNavigation("profile")}
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
+              >
+                <UserIcon size={18} className="text-stone-600" strokeWidth={2} />
+                <span className="text-sm font-medium text-stone-700">Profile</span>
+              </button>
+              <button
+                onClick={() => handleNavigation("settings")}
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
+              >
+                <SettingsIcon size={18} className="text-stone-600" strokeWidth={2} />
+                <span className="text-sm font-medium text-stone-700">Settings</span>
+              </button>
+            </div>
+
+            <div className="flex-shrink-0 px-6 py-4 border-t border-stone-200/50 bg-white/95">
+              <button
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+              >
+                <LogOut size={16} strokeWidth={2} />
+                <span>{isLoggingOut ? "Signing Out..." : "Sign Out"}</span>
+              </button>
+            </div>
+          </div>
+        </>
+      )}
 
       <div className="bg-stone-100/40 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 border border-stone-200/40">
         <div className="mb-4">
@@ -314,17 +521,29 @@ export default function BRollScreen({ user, userId }: BRollScreenProps) {
             const isGenerating = generatingVideos.has(image.id)
             const isAnalyzing = analyzingMotion.has(image.id)
             const error = videoErrors.get(image.id)
-            const video = allVideos.find((v) => v.image_id?.toString() === image.id)
+            const completedVideo = completedVideos.get(image.id)
+            const video = completedVideo 
+              ? { video_url: completedVideo.videoUrl, motion_prompt: completedVideo.motionPrompt, id: 0, image_id: parseInt(image.id), status: 'completed', progress: 100, created_at: new Date().toISOString() } as GeneratedVideo
+              : allVideos.find((v) => v.image_id?.toString() === image.id)
 
-            console.log("[v0] Rendering image:", { 
-              imageId: image.id, 
-              isGenerating, 
-              isAnalyzing, 
-              hasVideo: !!video,
-              videoId: video?.id,
-              videoUrl: video?.video_url,
-              allVideosCount: allVideos.length
-            })
+            console.log("[v0] ========== RENDERING IMAGE ==========")
+            console.log("[v0] Image ID:", image.id)
+            console.log("[v0] Is Generating:", isGenerating)
+            console.log("[v0] Is Analyzing:", isAnalyzing)
+            console.log("[v0] Has Error:", !!error)
+            console.log("[v0] Completed video from state:", !!completedVideo)
+            console.log("[v0] Video found:", !!video)
+            if (video) {
+              console.log("[v0] Video details:", {
+                videoId: video.id,
+                imageId: video.image_id,
+                status: video.status,
+                videoUrl: video.video_url ? `${video.video_url.substring(0, 50)}...` : 'NULL',
+                hasVideoUrl: !!video.video_url,
+              })
+            }
+            console.log("[v0] All videos count:", allVideos.length)
+            console.log("[v0] ================================================")
 
             return (
               <div key={image.id} className="space-y-3">
@@ -419,13 +638,30 @@ export default function BRollScreen({ user, userId }: BRollScreenProps) {
 
                 {video && video.video_url && (
                   <div className="mt-3">
-                    <InstagramReelCard videoUrl={video.video_url} motionPrompt={video.motion_prompt || undefined} />
+                    {console.log("[v0] ✅ Rendering InstagramReelCard for video:", video.id || 'client-state')}
+                    <button 
+                      onClick={() => setPreviewVideo(video)}
+                      className="w-full"
+                    >
+                      <InstagramReelCard videoUrl={video.video_url} motionPrompt={video.motion_prompt || undefined} />
+                    </button>
                   </div>
                 )}
               </div>
             )
           })}
         </div>
+      )}
+
+      {previewVideo && (
+        <InstagramReelPreview
+          video={previewVideo}
+          videos={allVideos}
+          onClose={() => setPreviewVideo(null)}
+          onDelete={deleteVideo}
+          userName={user.name || user.email?.split("@")[0] || "sselfie"}
+          userAvatar={user.avatar || "/placeholder.svg"}
+        />
       )}
     </div>
   )

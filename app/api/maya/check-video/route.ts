@@ -31,7 +31,11 @@ export async function GET(request: NextRequest) {
     const replicate = getReplicateClient()
     const prediction = await replicate.predictions.get(predictionId)
 
-    console.log("[v0] Video generation status:", prediction.status)
+    console.log("[v0] ========== VIDEO POLLING CHECK ==========")
+    console.log("[v0] Video ID:", videoId)
+    console.log("[v0] Prediction ID:", predictionId)
+    console.log("[v0] Prediction status:", prediction.status)
+    console.log("[v0] ================================================")
 
     // Update database with current status
     if (prediction.status === "succeeded" && prediction.output) {
@@ -56,6 +60,9 @@ export async function GET(request: NextRequest) {
       console.log("[v0] ✅ Permanent Blob URL:", blob.url)
       console.log("[v0] ================================================")
 
+      console.log("[v0] ========== UPDATING DATABASE ==========")
+      console.log("[v0] Setting status='completed' and video_url for videoId:", videoId)
+      
       await sql`
         UPDATE generated_videos
         SET 
@@ -68,6 +75,17 @@ export async function GET(request: NextRequest) {
         AND user_id = ${neonUser.id}
       `
 
+      const verifyResult = await sql`
+        SELECT id, status, video_url, progress
+        FROM generated_videos
+        WHERE id = ${Number.parseInt(videoId)}
+        AND user_id = ${neonUser.id}
+      `
+      
+      console.log("[v0] ✅ Database update complete. Verification:")
+      console.log("[v0] Record:", JSON.stringify(verifyResult[0], null, 2))
+      console.log("[v0] ================================================")
+
       return NextResponse.json({
         status: "succeeded",
         videoUrl: blob.url,
@@ -75,6 +93,10 @@ export async function GET(request: NextRequest) {
       })
     } else if (prediction.status === "failed") {
       const errorMessage = prediction.error || "Video generation failed"
+
+      console.log("[v0] ========== VIDEO GENERATION FAILED ==========")
+      console.log("[v0] Error:", errorMessage)
+      console.log("[v0] ================================================")
 
       await sql`
         UPDATE generated_videos
@@ -94,6 +116,8 @@ export async function GET(request: NextRequest) {
       // Still processing
       const progress = prediction.status === "starting" ? 10 : prediction.status === "processing" ? 50 : 0
 
+      console.log("[v0] Video still processing. Status:", prediction.status, "Progress:", progress)
+
       await sql`
         UPDATE generated_videos
         SET 
@@ -109,7 +133,14 @@ export async function GET(request: NextRequest) {
       })
     }
   } catch (error) {
-    console.error("[v0] Error checking video status:", error)
+    console.error("[v0] ========== VIDEO GENERATION ERROR ==========")
+    console.error("[v0] ❌ Error:", error)
+    if (error instanceof Error) {
+      console.error("[v0] Error message:", error.message)
+      console.error("[v0] Error stack:", error.stack)
+    }
+    console.error("[v0] ================================================")
+
     return NextResponse.json(
       {
         error: "Failed to check video status",

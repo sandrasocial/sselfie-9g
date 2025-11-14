@@ -8,8 +8,8 @@ import CourseDetail from "../academy/course-detail"
 import ResourceCard from "../academy/resource-card"
 import UnifiedLoading from "./unified-loading"
 import { createLandingCheckout } from "@/app/actions/landing-checkout"
-import { X, Home, Aperture, MessageCircle, ImageIcon, Grid, User, SettingsIcon, LogOut } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { X, Home, Aperture, MessageCircle, ImageIcon, Grid, User, SettingsIcon, LogOut, Film } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
 const fetcher = async (url: string) => {
   console.log("[v0] Fetching Academy data from:", url)
@@ -796,6 +796,13 @@ export default function AcademyScreen() {
               >
                 <ImageIcon size={18} className="text-stone-600" strokeWidth={2} />
                 <span className="text-sm font-medium text-stone-700">Gallery</span>
+              </button>
+              <button
+                onClick={() => handleNavigation("b-roll")}
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
+              >
+                <Film size={18} className="text-stone-600" strokeWidth={2} />
+                <span className="text-sm font-medium text-stone-700">B-roll</span>
               </button>
               <button
                 onClick={() => handleNavigation("academy")}

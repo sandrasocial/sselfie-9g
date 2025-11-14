@@ -1,27 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import {
-  Heart,
-  Camera,
-  Trash2,
-  Video,
-  Play,
-  Search,
-  X,
-  CheckSquare,
-  Square,
-  ChevronLeft,
-  ChevronRight,
-  Download,
-  Home,
-  Aperture,
-  MessageCircle,
-  ImageIcon as ImageIconLucide,
-  Grid,
-  SettingsIcon,
-  LogOut,
-} from "lucide-react"
+import { Heart, Camera, Trash2, Video, Play, Search, X, CheckSquare, Square, ChevronLeft, ChevronRight, Download, Home, Aperture, MessageCircle, ImageIcon as ImageIconLucide, Grid, SettingsIcon, LogOut, Film } from 'lucide-react'
 import useSWR from "swr"
 import useSWRInfinite from "swr/infinite"
 import type { GalleryImage } from "@/lib/data/images"
@@ -30,7 +10,7 @@ import { ProfileImageSelector } from "@/components/profile-image-selector"
 import { GalleryInstagramSkeleton } from "./gallery-skeleton"
 import { triggerHaptic, triggerSuccessHaptic, triggerErrorHaptic } from "@/lib/utils/haptics"
 import { ProgressiveImage } from "./progressive-image"
-import { useRouter } from "next/navigation"
+import { useRouter } from 'next/navigation'
 import FullscreenImageModal from "./fullscreen-image-modal"
 
 interface GalleryScreenProps {
@@ -978,6 +958,13 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
                 <span className="text-sm font-medium text-stone-950">Gallery</span>
               </button>
               <button
+                onClick={() => handleNavigation("b-roll")}
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
+              >
+                <Film size={18} className="text-stone-600" strokeWidth={2} />
+                <span className="text-sm font-medium text-stone-700">B-roll</span>
+              </button>
+              <button
                 onClick={() => handleNavigation("academy")}
                 className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
               >
@@ -993,17 +980,6 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
               </button>
               <button
                 onClick={() => handleNavigation("settings")}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
-              >
-                <LogOut size={18} className="text-stone-600" strokeWidth={2} />
-                <span className="text-sm font-medium text-stone-700">Settings</span>
-              </button>
-            </div>
-
-            <div className="flex-shrink-0 px-6 py-4 border-t border-stone-200/50 bg-white/95">
-              <button
-                onClick={handleLogout}
-                disabled={isLoggingOut}
                 className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
               >
                 <LogOut size={16} strokeWidth={2} />
