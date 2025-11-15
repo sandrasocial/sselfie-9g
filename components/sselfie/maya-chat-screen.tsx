@@ -4,28 +4,12 @@ import type React from "react"
 import VideoCard from "./video-card"
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport } from "ai"
-import {
-  Camera,
-  Send,
-  ArrowDown,
-  X,
-  Home,
-  Aperture,
-  MessageCircle,
-  ImageIcon,
-  Grid,
-  User,
-  SettingsIcon,
-  LogOut,
-  Sliders,
-  Plus,
-  Clock,
-} from "lucide-react"
+import { Camera, Send, ArrowDown, X, Home, Aperture, MessageCircle, ImageIcon, Grid, User, SettingsIcon, LogOut, Sliders, Plus, Clock } from 'lucide-react'
 import { useState, useEffect, useRef, useCallback } from "react"
 import ConceptCard from "./concept-card"
 import MayaChatHistory from "./maya-chat-history"
 import UnifiedLoading from "./unified-loading"
-import { useRouter } from "next/navigation"
+import { useRouter } from 'next/navigation'
 
 interface MayaChatScreenProps {
   onImageGenerated?: () => void
@@ -57,7 +41,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
   const router = useRouter()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  const [styleStrength, setStyleStrength] = useState(1.1) // LoRA scale: 0.9-1.2
+  const [styleStrength, setStyleStrength] = useState(1.0) // LoRA scale: 0.9-1.2
   const [promptAccuracy, setPromptAccuracy] = useState(3.5) // Guidance scale: 2.5-5.0
   const [aspectRatio, setAspectRatio] = useState("4:5")
   const [showSettings, setShowSettings] = useState(false)
@@ -73,7 +57,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
       try {
         const settings = JSON.parse(settingsStr)
         console.log("[v0] 📊 Loaded saved settings from localStorage:", settings)
-        setStyleStrength(settings.styleStrength || 1.1) // Updated default from 1.0 to 1.1
+        setStyleStrength(settings.styleStrength || 1.0) // Updated default from 1.1 to 1.0
         setPromptAccuracy(settings.promptAccuracy || 3.5)
         setAspectRatio(settings.aspectRatio || "4:5") // Updated default from "1:1" to "4:5"
       } catch (error) {
