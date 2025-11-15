@@ -155,42 +155,6 @@ Be specific and detailed - this analysis will be used to create similar photo co
 
       const conceptPrompt = `You are Maya, an elite fashion expert with deep knowledge of current Instagram trends and Flux AI prompting.
 
-**REFERENCE AESTHETIC (Urban Luxury Street Style - Current 2025 Trend):**
-- Oversized leather blazers, belted coats, structured outerwear
-- Wide-leg jeans, tailored trousers with cropped tops
-- Structured designer bags (Celine, Bottega Veneta style)
-- Oversized rectangular sunglasses, minimal gold jewelry
-- Color palette: Black, beige, grey, cream, stone tones
-- European urban architecture backgrounds
-- Overcast moody lighting (NOT golden hour unless explicitly requested)
-
-**CRITICAL POSE GUIDELINES:**
-NEVER: Direct eye contact, straight-on poses, smiling directly at camera
-ALWAYS USE NATURAL POSES:
-- "looking away over shoulder"
-- "profile shot walking mid-stride"
-- "leaning against stone wall"
-- "sitting casually on urban steps"
-- "hand sliding into pocket while walking"
-- "adjusting sunglasses, looking down"
-- "looking to the side past camera"
-- "gazing off into distance"
-
-**LIGHTING REQUIREMENTS:**
-- Overcast urban lighting (default aesthetic - muted, soft, even)
-- Muted desaturated tones
-- Crushed blacks in shadows
-- Cool or neutral color temperature
-- European street photography feel
-- Golden hour ONLY if user explicitly requests warm lighting
-
-**IDEAL LOCATIONS:**
-- European stone architecture
-- Modern black architectural walls
-- Minimal urban cafe exteriors
-- Clean city streets with interesting architecture
-- Shopping center interiors with natural light
-
 **CURRENT INSTAGRAM TRENDS (2025):**
 ${JSON.stringify(FASHION_TRENDS_2025.instagram.aesthetics, null, 2)}
 
@@ -204,27 +168,43 @@ ${JSON.stringify(FASHION_TRENDS_2025.fluxPrompting, null, 2)}
 - Gender: ${userGender}
 - Current Styling Trends for ${userGender}: ${GENDER_SPECIFIC_STYLING[userGender]?.current_trends?.join(", ") || "Contemporary styling"}
 - Request: "${userRequest}"
+${aesthetic ? `- Desired Aesthetic: "${aesthetic}"` : ""}
+${context ? `- Additional Context: "${context}"` : ""}
 ${imageAnalysis ? `\n- Reference Image Analysis: ${imageAnalysis}` : ""}
 ${userModifications ? `\n- User Modifications: "${userModifications}"` : ""}
 
 **YOUR TASK:**
-Generate ${count} Instagram-worthy urban luxury street style concepts that feel current, authentic, and trend-aware.
+Generate ${count} photo concepts that EXACTLY match what the user asked for: "${userRequest}"
+
+${aesthetic ? `**PRIMARY AESTHETIC TO USE: "${aesthetic}"**\n- Choose locations, lighting, styling, and mood that fit THIS aesthetic\n- Be authentic to the aesthetic's core characteristics\n` : ""}
+
+**IMPORTANT RULES:**
+1. **Honor user's aesthetic request** - If they want "Cozy Luxe Morning", give them warm cozy interiors with soft lighting, NOT urban streets
+2. **Match lighting to aesthetic** - Warm golden hour for cozy/romantic, overcast for moody/editorial, bright for clean girl, etc.
+3. **Match locations to aesthetic** - Cozy = home interior, Urban = city streets, Coastal = beach/ocean, etc.
+4. **Be context-aware** - Analyze what the user is asking for and deliver that specific vibe
+
+**POSE GUIDELINES (Natural & Authentic):**
+- Use natural poses that avoid direct eye contact: "looking away over shoulder", "profile walking", "looking down at coffee", "gazing off into distance"
+- Match poses to the setting and action: reading in cafe, walking on street, sitting on steps, etc.
 
 **CONCEPT TITLE & DESCRIPTION (Natural Language):**
-- **Titles:** 2-4 casual words like you're texting a friend ("City Stroll", "Coffee Run", "Morning Mood")
-- **Descriptions:** 1-2 simple sentences about what's happening and the vibe
+- **Titles:** 2-4 casual words that capture the vibe
+- **Descriptions:** 1-2 simple sentences about what's happening and the mood
 
 **EACH FLUX PROMPT MUST INCLUDE (in this order):**
-1. **Specific oversized luxury piece** (leather blazer, belted coat, structured bag, etc.)
-2. **Natural pose** - ALWAYS looking away/profile (NEVER at camera)
-3. **Urban architecture location** (European stone building, modern black wall, etc.)
-4. **Overcast moody lighting** (unless user requests warm/golden hour)
-5. **Color grading:** muted, desaturated, crushed blacks
-6. **Instagram aesthetic keywords:** shot on iPhone, amateur cellphone quality, visible sensor noise, heavy HDR glow
-7. **Realism keywords:** skin texture visible, film grain, raw photography
+1. **Trigger word:** "${triggerWord}"
+2. **Gender:** "${userGender === "woman" ? "woman" : userGender === "man" ? "man" : "person"}"
+3. **Outfit details** appropriate to the aesthetic (specific pieces, fabrics, colors)
+4. **Natural pose** relevant to the setting and aesthetic
+5. **Location** that matches the aesthetic
+6. **Lighting** that matches the aesthetic mood
+7. **Color grading** appropriate to aesthetic
+8. **Instagram aesthetic keywords:** shot on iPhone, amateur cellphone quality, visible sensor noise, heavy HDR glow
+9. **Realism keywords:** skin texture visible, film grain, raw photography
 
 **FLUX PROMPT STRUCTURE EXAMPLE:**
-"${triggerWord}, ${userGender === "woman" ? "woman" : userGender === "man" ? "man" : "person"} in oversized black leather blazer and wide-leg jeans, leaning against European stone building looking over shoulder away from camera, structured black designer bag, oversized sunglasses, overcast urban lighting, muted desaturated tones, crushed blacks, moody atmosphere, minimal clean background, amateur cellphone quality, visible sensor noise, heavy HDR glow, raw photography, skin texture visible, film grain, shot on iPhone"
+"${triggerWord}, ${userGender === "woman" ? "woman" : userGender === "man" ? "man" : "person"} in [outfit matching aesthetic], [natural pose matching setting], [location matching aesthetic], [lighting matching aesthetic mood], [color grading], amateur cellphone quality, visible sensor noise, heavy HDR glow, raw photography, skin texture visible, film grain"
 
 **FLUX PROMPT RULES:**
 - Start with trigger word: "${triggerWord}"
@@ -234,8 +214,6 @@ Generate ${count} Instagram-worthy urban luxury street style concepts that feel 
 - Rich detail on outfit, setting, lighting
 - NEVER describe physical features (LoRA handles this)
 - Include color grading + Instagram aesthetic + photography style
-- Reference current trends from knowledge base
-- ALWAYS include looking away/profile poses (never direct eye contact)
 
 ${
   userModifications
@@ -259,17 +237,17 @@ Match the style, lighting, mood, and aesthetic from the reference analysis above
 **JSON STRUCTURE:**
 [
   {
-    "title": "Casual 2-4 word title",
-    "description": "Simple 1-2 sentence description",
+    "title": "Casual 2-4 word title matching the aesthetic",
+    "description": "Simple 1-2 sentence description that captures the requested vibe",
     "category": "Close-Up Portrait" | "Half Body Lifestyle" | "Close-Up Action" | "Environmental Portrait",
-    "fashionIntelligence": "Quick styling note with trend reference",
-    "lighting": "Specific lighting mood (default: overcast moody)",
-    "location": "Exact urban location",
-    "prompt": "${triggerWord}, 200-250 char FLUX prompt with oversized luxury piece + looking away pose + urban architecture + overcast lighting + color grading + Instagram aesthetic + realism"
+    "fashionIntelligence": "Styling note relevant to the aesthetic",
+    "lighting": "Lighting mood matching the aesthetic",
+    "location": "Location matching the aesthetic",
+    "prompt": "${triggerWord}, 200-250 char FLUX prompt with aesthetic-appropriate outfit + pose + location + lighting + color grading + Instagram aesthetic + realism"
   }
 ]
 
-Generate ${count} diverse concepts now with urban luxury street style aesthetic.`
+Generate ${count} diverse concepts that EXACTLY match the user's requested aesthetic: "${userRequest}"${aesthetic ? ` with ${aesthetic} vibe` : ""}.`
 
       const { text } = await generateText({
         model: "anthropic/claude-sonnet-4",
@@ -327,7 +305,7 @@ const generateVideoTool = tool({
       .string()
       .optional()
       .describe(
-        "SHORT motion description (max 15 words, ONE action only). Examples: 'Brings coffee cup to lips for slow sip', 'Standing still, slowly turns head to look out window', 'Hand slides into coat pocket naturally', 'Walking two steps, glances back over shoulder'. NEVER include camera instructions or multiple simultaneous actions."
+        "ANALYZE THE IMAGE and create intelligent 10-15 word motion prompt describing ONE realistic action that matches what's in the image. Be context-aware and dynamic. Examples: 'Standing at counter with coffee, brings cup to lips for slow sip' (if coffee visible), 'Standing by window, slowly turns head to look at light' (if window visible), 'Walking down street mid-stride, glances back over shoulder' (if walking). Match the action to actual image content - be dynamic, not generic."
       ),
   }),
   execute: async function* ({ imageUrl, imageId, motionPrompt }) {
@@ -347,7 +325,7 @@ const generateVideoTool = tool({
           body: JSON.stringify({
             imageUrl,
             imageId: imageId || null,
-            motionPrompt: motionPrompt || "subtle natural movement",
+            motionPrompt: motionPrompt,
           }),
         },
       )

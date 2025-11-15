@@ -8,34 +8,15 @@ import { getAuthenticatedUser } from "@/lib/auth-helper"
 const sql = neon(process.env.DATABASE_URL || "")
 
 function enhanceMotionPrompt(userPrompt: string | undefined, imageDescription?: string): string {
-  // If user provided a SHORT creative prompt (under 15 words), use it
-  if (userPrompt) {
-    const wordCount = userPrompt.split(' ').length
-    if (wordCount <= 15) {
-      return userPrompt
-    }
-    // If their prompt is too long, we'll create a simpler one instead
-    console.log("[v0] User prompt too long, creating simplified version")
+  // If Maya (the AI agent) provided a prompt, trust it completely
+  if (userPrompt && userPrompt.trim().length > 0) {
+    console.log("[v0] ✅ Using Maya's intelligent motion prompt:", userPrompt)
+    return userPrompt
   }
-
-  // Fallback: Ultra simple minimal motion
-  const simpleMotions = [
-    "Brings coffee cup to lips for slow sip",
-    "Standing still, slowly turns head to look out window",
-    "Hand slides into coat pocket naturally",
-    "Leaning against wall, subtle shift of weight",
-    "Walking two steps, glances back over shoulder",
-    "Sitting on steps, natural shift of posture",
-    "Standing naturally, fingers adjust necklace briefly",
-    "Holding coffee, slight weight shift",
-    "Takes one step forward, looks back",
-    "Standing with arms at sides, subtle breathing visible",
-  ]
-
-  const selectedPrompt = simpleMotions[Math.floor(Math.random() * simpleMotions.length)]
   
-  console.log("[v0] Using fallback simple motion:", selectedPrompt)
-  return selectedPrompt
+  // Only use fallback if Maya somehow didn't provide a prompt (shouldn't happen)
+  console.log("[v0] ⚠️ WARNING: No motion prompt from Maya, using minimal fallback")
+  return "Standing naturally, subtle breathing motion visible"
 }
 
 export async function POST(request: NextRequest) {

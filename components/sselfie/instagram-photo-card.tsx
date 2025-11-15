@@ -141,11 +141,11 @@ export default function InstagramPhotoCard({
           />
           
           {showAnimateOverlay && onAnimate && (
-            <div className="animate-overlay absolute inset-0 bg-stone-950/0 group-hover:bg-stone-950/30 transition-all duration-300 flex flex-col items-center justify-center">
-              <div className="w-16 h-16 bg-white/95 backdrop-blur-sm rounded-full flex items-center justify-center shadow-2xl transform scale-90 opacity-0 group-hover:scale-100 group-hover:opacity-100 transition-all duration-300">
+            <div className="animate-overlay absolute inset-0 bg-stone-950/30 md:bg-stone-950/0 md:group-hover:bg-stone-950/30 transition-all duration-300 flex flex-col items-center justify-center">
+              <div className="w-16 h-16 bg-white/95 backdrop-blur-sm rounded-full flex items-center justify-center shadow-2xl transform scale-100 opacity-100 md:scale-90 md:opacity-0 md:group-hover:scale-100 md:group-hover:opacity-100 transition-all duration-300">
                 <Play size={28} className="text-stone-950 ml-1" fill="currentColor" />
               </div>
-              <p className="text-white font-serif text-sm tracking-wide opacity-0 group-hover:opacity-100 transition-opacity duration-300 mt-3">
+              <p className="text-white font-serif text-sm tracking-wide opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300 mt-3">
                 Click to Create B-Roll
               </p>
             </div>
