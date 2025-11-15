@@ -200,11 +200,11 @@ ${aesthetic ? `**PRIMARY AESTHETIC TO USE: "${aesthetic}"**\n- Choose locations,
 5. **Location** that matches the aesthetic
 6. **Lighting** that matches the aesthetic mood
 7. **Color grading** appropriate to aesthetic
-8. **Instagram aesthetic keywords:** shot on iPhone, amateur cellphone quality, visible sensor noise, heavy HDR glow
+8. **Instagram aesthetic keywords:** shot on iPhone, amateur cellphone quality, visible sensor noise, subtle HDR glow
 9. **Realism keywords:** skin texture visible, film grain, raw photography
 
 **FLUX PROMPT STRUCTURE EXAMPLE:**
-"${triggerWord}, ${userGender === "woman" ? "woman" : userGender === "man" ? "man" : "person"} in [outfit matching aesthetic], [natural pose matching setting], [location matching aesthetic], [lighting matching aesthetic mood], [color grading], amateur cellphone quality, visible sensor noise, heavy HDR glow, raw photography, skin texture visible, film grain"
+"${triggerWord}, ${userGender === "woman" ? "woman" : userGender === "man" ? "man" : "person"} in [outfit matching aesthetic], [natural pose matching setting], [location matching aesthetic], [lighting matching aesthetic mood], [color grading], amateur cellphone quality, visible sensor noise, subtle HDR glow, raw photography, skin texture visible, film grain"
 
 **FLUX PROMPT RULES:**
 - Start with trigger word: "${triggerWord}"
@@ -297,7 +297,7 @@ Generate ${count} diverse concepts that EXACTLY match the user's requested aesth
 
 const generateVideoTool = tool({
   description:
-    "Generate a 5-second animated video from a generated image using the user's trained LoRA model for character consistency. Create SHORT, SIMPLE motion prompts with ONE action maximum for smooth, natural movement.",
+    "Generate a 5-second animated video from a generated image using the user's trained LoRA model for character consistency. Videos work best with SHORT, SIMPLE motion prompts.",
   inputSchema: z.object({
     imageUrl: z.string().describe("URL of the image to animate"),
     imageId: z.string().optional().describe("Database ID of the image (if available)"),
@@ -305,7 +305,7 @@ const generateVideoTool = tool({
       .string()
       .optional()
       .describe(
-        "ANALYZE THE IMAGE and create intelligent 10-15 word motion prompt describing ONE realistic action that matches what's in the image. Be context-aware and dynamic. Examples: 'Standing at counter with coffee, brings cup to lips for slow sip' (if coffee visible), 'Standing by window, slowly turns head to look at light' (if window visible), 'Walking down street mid-stride, glances back over shoulder' (if walking). Match the action to actual image content - be dynamic, not generic."
+        "SHORT motion prompt (MAXIMUM 15 words, ONE action only). Analyze image and create directive command. Examples: 'Brings coffee cup to lips' (5 words), 'Turns head to look out window' (6 words), 'Sitting on bed, shifts weight naturally' (6 words), 'Takes two steps, glances back' (5 words). NEVER use narrative voice, camera words, or atmosphere words. Use command verbs only."
       ),
   }),
   execute: async function* ({ imageUrl, imageId, motionPrompt }) {
