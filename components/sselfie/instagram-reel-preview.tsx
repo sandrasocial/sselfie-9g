@@ -126,6 +126,9 @@ export function InstagramReelPreview({
             playsInline
             autoPlay
             onClick={handleVideoClick}
+            onTouchStart={(e) => {
+              e.stopPropagation()
+            }}
           />
         </div>
 

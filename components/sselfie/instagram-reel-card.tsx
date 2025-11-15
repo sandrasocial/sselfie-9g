@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useRef, useEffect } from "react"
-import { Heart, MessageCircle, Send, MoreVertical, Volume2, VolumeX, Play } from "lucide-react"
+import { Heart, MessageCircle, Send, MoreVertical, Volume2, VolumeX, Play } from 'lucide-react'
 
 interface InstagramReelCardProps {
   videoUrl: string
@@ -157,6 +157,15 @@ export default function InstagramReelCard({
           </div>
           {showMenu && (
             <div className="absolute right-full mr-2 bottom-0 bg-white rounded-xl shadow-2xl border border-stone-200 py-2 w-48">
+              <button
+                onClick={() => {
+                  window.open(videoUrl, '_blank')
+                  setShowMenu(false)
+                }}
+                className="w-full px-4 py-2.5 text-left text-sm hover:bg-stone-50 transition-colors text-stone-950"
+              >
+                View Fullscreen
+              </button>
               <button
                 onClick={() => {
                   const a = document.createElement("a")

@@ -521,28 +521,34 @@ export default function BRollScreen({ user, userId }: BRollScreenProps) {
             const isGenerating = generatingVideos.has(image.id)
             const isAnalyzing = analyzingMotion.has(image.id)
             const error = videoErrors.get(image.id)
-            const completedVideo = completedVideos.get(image.id)
-            const video = completedVideo 
-              ? { video_url: completedVideo.videoUrl, motion_prompt: completedVideo.motionPrompt, id: 0, image_id: parseInt(image.id), status: 'completed', progress: 100, created_at: new Date().toISOString() } as GeneratedVideo
-              : allVideos.find((v) => v.image_id?.toString() === image.id)
+            
+            const dbVideo = allVideos.find((v) => v.image_id?.toString() === image.id && v.video_url && v.status === 'completed')
+            const clientVideo = completedVideos.get(image.id)
+            
+            // Use database video if available, otherwise use client state (for immediate display after generation)
+            const video = dbVideo || (clientVideo ? {
+              video_url: clientVideo.videoUrl,
+              motion_prompt: clientVideo.motionPrompt,
+              id: 0,
+              image_id: parseInt(image.id),
+              status: 'completed',
+              progress: 100,
+              created_at: new Date().toISOString()
+            } as GeneratedVideo : null)
 
             console.log("[v0] ========== RENDERING IMAGE ==========")
             console.log("[v0] Image ID:", image.id)
             console.log("[v0] Is Generating:", isGenerating)
             console.log("[v0] Is Analyzing:", isAnalyzing)
             console.log("[v0] Has Error:", !!error)
-            console.log("[v0] Completed video from state:", !!completedVideo)
-            console.log("[v0] Video found:", !!video)
+            console.log("[v0] DB video found:", !!dbVideo)
+            console.log("[v0] Client video found:", !!clientVideo)
+            console.log("[v0] Final video:", !!video)
             if (video) {
-              console.log("[v0] Video details:", {
-                videoId: video.id,
-                imageId: video.image_id,
-                status: video.status,
-                videoUrl: video.video_url ? `${video.video_url.substring(0, 50)}...` : 'NULL',
-                hasVideoUrl: !!video.video_url,
-              })
+              console.log("[v0] Video URL exists:", !!video.video_url)
+              console.log("[v0] Video URL:", video.video_url ? `${video.video_url.substring(0, 60)}...` : 'NULL')
             }
-            console.log("[v0] All videos count:", allVideos.length)
+            console.log("[v0] All videos in DB:", allVideos.length)
             console.log("[v0] ================================================")
 
             return (
@@ -640,29 +646,17 @@ export default function BRollScreen({ user, userId }: BRollScreenProps) {
                 {video && video.video_url && (
                   <div className="mt-3">
                     {console.log("[v0] ✅ Rendering InstagramReelCard for video:", video.id || 'client-state')}
-                    <button 
-                      onClick={() => setPreviewVideo(video)}
-                      className="w-full"
-                    >
-                      <InstagramReelCard videoUrl={video.video_url} motionPrompt={video.motion_prompt || undefined} />
-                    </button>
+                    <InstagramReelCard 
+                      videoUrl={video.video_url} 
+                      motionPrompt={video.motion_prompt || undefined}
+                      onDelete={video.id ? () => deleteVideo(video.id) : undefined}
+                    />
                   </div>
                 )}
               </div>
             )
           })}
         </div>
-      )}
-
-      {previewVideo && (
-        <InstagramReelPreview
-          video={previewVideo}
-          videos={allVideos}
-          onClose={() => setPreviewVideo(null)}
-          onDelete={deleteVideo}
-          userName={user.name || user.email?.split("@")[0] || "sselfie"}
-          userAvatar={user.avatar || "/placeholder.svg"}
-        />
       )}
     </div>
   )

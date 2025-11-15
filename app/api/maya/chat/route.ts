@@ -588,76 +588,76 @@ IMPORTANT: Video generation requires a photo first. When users ask for videos, f
 
 3. **CRITICAL: Motion Prompt Creation Rules**
 
-   **THE GOLDEN RULE: ONE ACTION MAXIMUM**
+   **THE GOLDEN RULE: NATURAL INSTAGRAM B-ROLL MOVEMENT**
    
-   Video models (Wan 2.1/2.2) create realistic movement ONLY when prompts are SHORT and SIMPLE.
-   Complex multi-action prompts = janky unnatural movement.
+   Video models (Wan 2.1/2.2) create realistic movement with 10-15 word prompts that include context, pacing, and one clear action.
+   Too short = abrupt/janky. Too long = multi-action chaos. Sweet spot = 10-15 words.
 
-   **✅ CORRECT Examples (Copy this style):**
-   - "Brings coffee cup to lips for slow sip" (8 words, 1 action)
-   - "Standing still, slowly turns head to look out window" (9 words, 1 action)
-   - "Hand slides into coat pocket naturally" (6 words, 1 action)
-   - "Walking two steps, glances back over shoulder" (7 words, 2 sequential)
-   - "Leaning against wall, subtle shift of weight" (7 words, 1 action)
-   - "Sitting on steps, brings coffee to lips" (7 words, 1 action)
-   - "Standing with arms at sides, fingers fidget slightly" (8 words, 1 action)
-   - "Adjusts necklace with natural hand movement" (6 words, 1 action)
+   **✅ CORRECT Examples (10-15 words with natural flow):**
+   - "Standing in cozy kitchen, slowly brings coffee mug to lips for gentle sip" (13 words)
+   - "Walking casually on city sidewalk, glances back over shoulder with slight smile" (12 words)
+   - "Sitting relaxed on cafe chair, naturally looks up from phone toward window" (12 words)
+   - "Leaning against brick wall, casually adjusts sunglasses with confident hand movement" (11 words)
+   - "Standing by window with morning light, gently tucks hair behind ear" (11 words)
+   - "In bedroom mirror, slowly adjusts necklace with natural delicate hand gesture" (11 words)
 
-   **❌ WRONG Examples (NEVER create prompts like this):**
-   - ❌ "She gracefully sips coffee while turning her head to gaze out the window as her hair flows naturally and she leans against the counter" (25 words, 5 actions = WRONG)
-   - ❌ "The camera drifts smoothly following her elegant movement through the space" (11 words, camera talk = WRONG)
-   - ❌ "Creating an authentic moment of morning contemplation with natural energy" (10 words, narrative = WRONG)
-   - ❌ "Walking with confidence, looking back with smile, hair catching light, adjusting sunglasses, coat flowing" (14 words, 5 actions = WRONG)
+   **❌ WRONG Examples (Too short - causes abrupt movement):**
+   - ❌ "Brings coffee to lips" (4 words = too abrupt, no flow)
+   - ❌ "Turns head slowly" (3 words = lacks context)
+   - ❌ "Adjusts sunglasses" (2 words = jerky motion)
+
+   **❌ WRONG Examples (Too long - causes multi-action chaos):**
+   - ❌ "She gracefully walks through the sunlit kitchen while turning her head to smile at the camera and brushes her flowing hair" (20+ words, 4+ actions = WRONG)
 
    **MANDATORY PROMPT REQUIREMENTS:**
-   1. **Maximum 15 words total** - Brevity = smooth motion
-   2. **ONE primary action only** - Two actions max if sequential (sip THEN look), never simultaneous
-   3. **ZERO camera instructions** - Never mention: camera, pan, drift, arc, following, tracking
-   4. **ZERO atmosphere words** - Never use: gracefully, effortlessly, authentically, creating, capturing, showcasing
-   5. **Directive commands** - "Brings cup to lips" NOT "She gracefully sips her coffee"
-   6. **No hair descriptions** - Never mention hair flowing, catching light, or falling
-   7. **Subtle expressions only** - Use "slight smile" or "calm expression", never "massive smile" or "big grin"
-   8. **No talking/speaking** - This is b-roll footage, no dialogue
+   1. **10-15 words ideal** (8-17 acceptable range) - Creates smooth natural motion
+   2. **Brief context** (2-3 words): "in kitchen", "on sidewalk", "by window"
+   3. **Pacing word**: slowly, gently, casually, naturally, smoothly, softly
+   4. **ONE primary action** - Clear what moves and how
+   5. **Optional subtle detail**: "with smile", "toward light", "over shoulder"
+   6. **ZERO camera instructions** - Never: camera, pan, drift, arc, following, tracking
+   7. **ZERO narrative voice** - Never: she, he, her, his, the woman, the man
+   8. **Natural expressions** - Use "slight smile" or "calm expression", never exaggerated
+   9. **No dialogue** - This is b-roll footage, no talking/speaking
 
    **SCENE ANALYSIS GUIDE:**
 
    When you see these elements in a photo, use these prompt patterns:
 
    **Coffee/Drink in photo:**
-   - "Brings coffee cup to lips for slow sip"
-   - "Holding coffee, slight shift of weight"
-   - "Standing with coffee, looks toward window"
+   - "Holding coffee in cozy cafe, slowly brings cup to lips for warm sip"
+   - "Standing in kitchen with mug, gently lifts coffee while looking toward window"
+   - "Sitting at table with latte, casually brings cup up with natural gesture"
 
    **Window/Natural Light:**
-   - "Standing still, slowly turns head to look out window"
-   - "Looking down, lifts gaze to window"
-   - "Facing forward, turns head toward light"
+   - "Standing by bright window, slowly turns head toward natural morning light"
+   - "Near window with soft glow, gently looks outside with calm expression"
+   - "By sunny window, naturally shifts gaze from down to light outside"
 
    **Walking/Street:**
-   - "Takes two steps forward with natural stride"
-   - "Mid-stride, glances back over shoulder"
-   - "Walking slowly, looks back once"
+   - "Walking casually down urban sidewalk, glances back over shoulder with slight smile"
+   - "Strolling through city street with confident stride, looks to side naturally"
+   - "Taking slow steps on pavement, turns head to look back briefly"
 
    **Leaning Against Wall/Architecture:**
-   - "Leaning against wall, subtle weight shift"
-   - "Standing at wall, hand slides into pocket"
-   - "Leaning casually, slight turn of head"
+   - "Leaning against brick wall, casually adjusts sunglasses with confident hand movement"
+   - "Standing by wall in coat, smoothly slides hand into pocket naturally"
+   - "Leaning relaxed on architecture, gentle weight shift with calm posture"
 
    **Sitting/Steps:**
-   - "Sitting on steps, brings coffee to lips"
-   - "Seated, natural shift of sitting posture"
-   - "Sitting still, slight adjustment of position"
+   - "Sitting relaxed on chair, casually shifts weight and looks up naturally"
+   - "Seated on steps with coffee, brings cup to lips with calm motion"
+   - "Sitting on bed cross-legged, gently adjusts position and looks to camera"
 
    **Adjusting Outfit/Accessories:**
-   - "Hand adjusts necklace briefly"
-   - "Fingers tuck hair behind ear"
-   - "Adjusts sunglasses on head"
-   - "Hand slides into coat pocket"
+   - "In stylish coat, casually adjusts sunglasses on head with natural confidence"
+   - "Wearing statement necklace, gently touches jewelry with delicate hand gesture"
+   - "In full outfit, smoothly slides hand through hair with relaxed movement"
 
    **Minimal/Breathing Only:**
-   - "Standing naturally, subtle breathing visible"
-   - "Standing still, minimal head movement"
-   - "Static pose, slight weight shift"
+   - "Standing still in natural pose, subtle breathing and minimal head movement visible"
+   - "Facing camera in calm stance, slight weight shift with gentle expression"
+   - "Static position by wall, soft breathing and tiny natural body adjustments"
 
 4. **Technical Details:**
    - Videos are 5-6 seconds long at 16fps (interpolated to 30fps)
