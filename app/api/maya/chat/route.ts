@@ -161,8 +161,23 @@ ${JSON.stringify(FASHION_TRENDS_2025.instagram.aesthetics, null, 2)}
 **VIRAL CONTENT FORMATS:**
 ${JSON.stringify(FASHION_TRENDS_2025.viral, null, 2)}
 
-**FLUX PROMPTING BEST PRACTICES:**
-${JSON.stringify(FASHION_TRENDS_2025.fluxPrompting, null, 2)}
+**FLUX PROMPTING BEST PRACTICES (2025 Research):**
+- **Optimal length: 20-35 words** (research shows 40+ words dilutes model focus)
+- Natural conversational language, not keyword stuffing
+- Specific lighting details (golden hour, soft window light, overcast, etc.)
+- Include "shot on iPhone" for authentic cellphone aesthetic
+- Add "natural skin texture" to avoid over-smoothing
+- Use "film grain" or "subtle grain" for authenticity
+- Technical details enhance realism: "shallow depth of field", "f/1.8", "85mm lens"
+- For Instagram aesthetic: "amateur cellphone quality, visible sensor noise, subtle HDR glow"
+
+**FLUX PROMPT FORMULA:**
+[trigger_word], [subject + clothing], [location], [lighting], [camera details], [aesthetic keywords], [texture details]
+
+**GOOD PROMPT EXAMPLES (20-35 words):**
+- "user_trigger, woman in cream sweater, tennis court, golden hour light, shot on iPhone 15, natural skin texture, film grain, muted tones" (22 words - PERFECT)
+- "user_trigger, lifestyle photo with coffee, cozy kitchen, morning window light, candid composition, authentic feel, shallow depth of field" (21 words - PERFECT)
+- "user_trigger, man in tailored coat, urban street, overcast soft light, 85mm f/1.8, editorial quality, visible grain" (19 words - PERFECT)
 
 **USER CONTEXT:**
 - Gender: ${userGender}
@@ -187,33 +202,23 @@ ${aesthetic ? `**PRIMARY AESTHETIC TO USE: "${aesthetic}"**\n- Choose locations,
 **POSE GUIDELINES (Natural & Authentic):**
 - Use natural poses that avoid direct eye contact: "looking away over shoulder", "profile walking", "looking down at coffee", "gazing off into distance"
 - Match poses to the setting and action: reading in cafe, walking on street, sitting on steps, etc.
+- STATIC poses only - NO motion verbs like "walking", "bringing", "turning" (those are for video, not photos)
 
 **CONCEPT TITLE & DESCRIPTION (Natural Language):**
 - **Titles:** 2-4 casual words that capture the vibe
 - **Descriptions:** 1-2 simple sentences about what's happening and the mood
 
-**EACH FLUX PROMPT MUST INCLUDE (in this order):**
-1. **Trigger word:** "${triggerWord}"
-2. **Gender:** "${userGender === "woman" ? "woman" : userGender === "man" ? "man" : "person"}"
-3. **Outfit details** appropriate to the aesthetic (specific pieces, fabrics, colors)
-4. **Natural pose** relevant to the setting and aesthetic
-5. **Location** that matches the aesthetic
-6. **Lighting** that matches the aesthetic mood
-7. **Color grading** appropriate to aesthetic
-8. **Instagram aesthetic keywords:** shot on iPhone, amateur cellphone quality, visible sensor noise, subtle HDR glow
-9. **Realism keywords:** skin texture visible, film grain, raw photography
+**EACH FLUX PROMPT MUST:**
+1. Start with "${triggerWord}, ${userGender === "woman" ? "woman" : userGender === "man" ? "man" : "person"}"
+2. Describe static composition (outfit, pose, location, lighting)
+3. **Be 20-35 words total** (optimal length for FLUX quality)
+4. Include Instagram aesthetic keywords: "shot on iPhone", "natural skin texture", "film grain"
+5. Include camera details: "shallow depth of field", "85mm", "f/1.8"
+6. NO motion verbs (slowly, brings, walks, turns) - those confuse FLUX
+7. Natural flowing language, not robotic lists
 
 **FLUX PROMPT STRUCTURE EXAMPLE:**
-"${triggerWord}, ${userGender === "woman" ? "woman" : userGender === "man" ? "man" : "person"} in [outfit matching aesthetic], [natural pose matching setting], [location matching aesthetic], [lighting matching aesthetic mood], [color grading], amateur cellphone quality, visible sensor noise, subtle HDR glow, raw photography, skin texture visible, film grain"
-
-**FLUX PROMPT RULES:**
-- Start with trigger word: "${triggerWord}"
-- Then gender: "${userGender === "woman" ? "woman" : userGender === "man" ? "man" : "person"}"
-- 200-250 characters total
-- Natural flowing language, not robotic lists
-- Rich detail on outfit, setting, lighting
-- NEVER describe physical features (LoRA handles this)
-- Include color grading + Instagram aesthetic + photography style
+"${triggerWord}, ${userGender === "woman" ? "woman" : userGender === "man" ? "man" : "person"} in [outfit], [static pose], [location], [lighting], shot on iPhone 15, natural skin texture, film grain, [aesthetic mood]"
 
 ${
   userModifications
@@ -243,7 +248,7 @@ Match the style, lighting, mood, and aesthetic from the reference analysis above
     "fashionIntelligence": "Styling note relevant to the aesthetic",
     "lighting": "Lighting mood matching the aesthetic",
     "location": "Location matching the aesthetic",
-    "prompt": "${triggerWord}, 200-250 char FLUX prompt with aesthetic-appropriate outfit + pose + location + lighting + color grading + Instagram aesthetic + realism"
+    "prompt": "${triggerWord}, [20-35 word FLUX prompt with static composition + aesthetic-appropriate outfit + location + lighting + Instagram aesthetic + camera details]"
   }
 ]
 
@@ -325,12 +330,85 @@ const generateVideoTool = tool({
 
         const visionAnalysisPrompt = `Analyze this image carefully and create a natural motion prompt for Instagram B-roll video generation (Wan 2.1/2.2 model).
 
+**MOTION PROMPT BEST PRACTICES:**
+
+**THE GOLDEN RULE: NATURAL INSTAGRAM B-ROLL MOVEMENT**
+
+Video models (Wan 2.1/2.2) create realistic movement with 10-15 word prompts that include context, pacing, and one clear action.
+- Too short (under 8 words) = abrupt/janky motion
+- Too long (over 17 words) = multi-action chaos
+- Sweet spot = **10-15 words**
+
+**✅ CORRECT Examples (10-15 words with natural flow):**
+- "Standing in cozy kitchen, slowly brings coffee mug to lips for gentle sip" (13 words)
+- "Walking casually on city sidewalk, glances back over shoulder with slight smile" (12 words)
+- "Sitting relaxed on cafe chair, naturally looks up from phone toward window" (12 words)
+- "Leaning against brick wall, casually adjusts sunglasses with confident hand movement" (11 words)
+- "Standing by window with morning light, gently tucks hair behind ear" (11 words)
+- "In bedroom mirror, slowly adjusts necklace with natural delicate hand gesture" (11 words)
+
+**❌ WRONG Examples (Too short - causes abrupt movement):**
+- ❌ "Brings coffee to lips" (4 words = too abrupt, no flow)
+- ❌ "Turns head slowly" (3 words = lacks context)
+- ❌ "Adjusts sunglasses" (2 words = jerky motion)
+
+**❌ WRONG Examples (Too long - causes multi-action chaos):**
+- ❌ "She gracefully walks through the sunlit kitchen while turning her head to smile at the camera and brushes her flowing hair" (20+ words, 4+ actions = WRONG)
+
+**MANDATORY PROMPT REQUIREMENTS:**
+1. **10-15 words ideal** (8-17 acceptable range) - Creates smooth natural motion
+2. **Brief context** (2-3 words): "in kitchen", "on sidewalk", "by window"
+3. **Pacing word**: slowly, gently, casually, naturally, smoothly, softly
+4. **ONE primary action** - Clear what moves and how
+5. **Optional subtle detail**: "with smile", "toward light", "over shoulder"
+6. **ZERO camera instructions** - Never: camera, pan, drift, arc, following, tracking
+7. **ZERO narrative voice** - Never: she, he, her, his, the woman, the man
+8. **Natural expressions** - Use "slight smile" or "calm expression", never exaggerated
+9. **No dialogue** - This is b-roll footage, no talking/speaking
+
+**SCENE ANALYSIS GUIDE:**
+
+When you see these elements in a photo, use these prompt patterns:
+
+**Coffee/Drink in photo:**
+- "Holding coffee in cozy cafe, slowly brings cup to lips for warm sip"
+- "Standing in kitchen with mug, gently lifts coffee while looking toward window"
+- "Sitting at table with latte, casually brings cup up with natural gesture"
+
+**Window/Natural Light:**
+- "Standing by bright window, slowly turns head toward natural morning light"
+- "Near window with soft glow, gently looks outside with calm expression"
+- "By sunny window, naturally shifts gaze from down to light outside"
+
+**Walking/Street:**
+- "Walking casually down urban sidewalk, glances back over shoulder with slight smile"
+- "Strolling through city street with confident stride, looks to side naturally"
+- "Taking slow steps on pavement, turns head to look back briefly"
+
+**Leaning Against Wall/Architecture:**
+- "Leaning against brick wall, casually adjusts sunglasses with confident hand movement"
+- "Standing by wall in coat, smoothly slides hand into pocket naturally"
+- "Leaning relaxed on architecture, gentle weight shift with calm posture"
+
+**Sitting/Steps:**
+- "Sitting relaxed on chair, casually shifts weight and looks up naturally"
+- "Seated on steps with coffee, brings cup to lips with calm motion"
+- "Sitting on bed cross-legged, gently adjusts position and looks to camera"
+
+**Adjusting Outfit/Accessories:**
+- "In stylish coat, casually adjusts sunglasses on head with natural confidence"
+- "Wearing statement necklace, gently touches jewelry with delicate hand gesture"
+- "In full outfit, smoothly slides hand through hair with relaxed movement"
+
+**Minimal/Breathing Only:**
+- "Standing still in natural pose, subtle breathing and minimal head movement visible"
+- "Facing camera in calm stance, slight weight shift with gentle expression"
+- "Static position by wall, soft breathing and tiny natural body adjustments"
+
 **YOUR TASK:**
 1. Look at the person's pose, position, body language, and what they're doing
 2. Identify natural movements that FIT this exact pose and setup
-3. Create ONE motion prompt that would look smooth and authentic
-
-**WAN 2.1/2.2 FORMULA: Subject + Scene + Motion Description**
+3. Create ONE motion prompt (10-15 words) that would look smooth and authentic
 
 **CRITICAL RULES:**
 - Only suggest movements that are PHYSICALLY POSSIBLE given the person's position
@@ -338,22 +416,6 @@ const generateVideoTool = tool({
 - If standing still → DON'T suggest walking
 - If no coffee/drink visible → DON'T mention bringing cup to lips
 - Match the motion to what's ACTUALLY in the frame
-
-**PROMPT STRUCTURE (10-15 words):**
-[Brief scene context] + [speed modifier] + [ONE natural action that matches the pose]
-
-**Speed Modifiers (REQUIRED):** slowly, gently, casually, naturally, softly
-
-**GOOD Examples (match reality):**
-- Image shows person looking forward: "Standing by window, slowly turns head toward natural light"
-- Image shows person with coffee: "Holding cup in cafe, gently brings coffee to lips"
-- Image shows person walking: "Walking casually on sidewalk, takes two slow steps forward"
-- Image shows static pose: "Standing in natural pose, subtle breathing and minimal head turn"
-
-**BAD Examples (don't match reality):**
-- ❌ Image shows forward gaze, prompt says: "glances back over shoulder" (WRONG - not looking back!)
-- ❌ Image shows standing, prompt says: "walking casually" (WRONG - not moving!)
-- ❌ No drink visible, prompt says: "brings coffee to lips" (WRONG - no coffee!)
 
 Analyze THIS image and create a 10-15 word motion prompt that matches what you actually see.`
 

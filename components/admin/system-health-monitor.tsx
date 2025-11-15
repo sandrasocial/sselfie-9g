@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { AlertCircle, CheckCircle, Clock, Mail, Webhook } from "lucide-react"
+import { AlertCircle, CheckCircle, Clock, Mail, Webhook } from 'lucide-react'
 
 interface WebhookHealth {
   stats: {
@@ -42,7 +42,7 @@ interface EmailMetrics {
   }>
 }
 
-export function SystemHealthMonitor() {
+export function SystemHealthMonitor({ compact }: { compact?: boolean }) {
   const [webhookHealth, setWebhookHealth] = useState<WebhookHealth | null>(null)
   const [emailMetrics, setEmailMetrics] = useState<EmailMetrics | null>(null)
   const [loading, setLoading] = useState(true)
@@ -62,13 +62,45 @@ export function SystemHealthMonitor() {
       ])
 
       if (webhookRes.ok) {
-        const webhookData = await webhookRes.json()
-        setWebhookHealth(webhookData)
+        try {
+          const webhookData = await webhookRes.json()
+          setWebhookHealth(webhookData)
+        } catch (parseError) {
+          console.error("[v0] Error parsing webhook data:", parseError)
+          // Set default data if JSON parsing fails
+          setWebhookHealth({
+            stats: {
+              totalErrors: 0,
+              criticalErrors: 0,
+              warningErrors: 0,
+              resolvedErrors: 0,
+              successRate: 100,
+              totalWebhooks: 0,
+            },
+            recentErrors: [],
+          })
+        }
       }
 
       if (emailRes.ok) {
-        const emailData = await emailRes.json()
-        setEmailMetrics(emailData)
+        try {
+          const emailData = await emailRes.json()
+          setEmailMetrics(emailData)
+        } catch (parseError) {
+          console.error("[v0] Error parsing email data:", parseError)
+          // Set default data if JSON parsing fails
+          setEmailMetrics({
+            stats: {
+              totalSent: 0,
+              delivered: 0,
+              failed: 0,
+              pending: 0,
+              retried: 0,
+              deliveryRate: 100,
+            },
+            recentEmails: [],
+          })
+        }
       }
     } catch (error) {
       console.error("[v0] Error fetching health data:", error)
@@ -87,6 +119,46 @@ export function SystemHealthMonitor() {
     if (rate >= 95) return <CheckCircle className="w-5 h-5 text-stone-600" />
     if (rate >= 85) return <Clock className="w-5 h-5 text-stone-700" />
     return <AlertCircle className="w-5 h-5 text-stone-900" />
+  }
+
+  if (compact) {
+    const calculateOverallHealth = () => {
+      if (!webhookHealth || !emailMetrics) return { status: "healthy", message: "All systems operational" }
+      
+      const issues = []
+      if (webhookHealth.stats.successRate < 90) {
+        issues.push(`Webhook success: ${webhookHealth.stats.successRate}%`)
+      }
+      if (emailMetrics.stats.deliveryRate < 90) {
+        issues.push(`Email delivery: ${emailMetrics.stats.deliveryRate}%`)
+      }
+      if (webhookHealth.stats.criticalErrors > 0) {
+        issues.push(`${webhookHealth.stats.criticalErrors} critical errors`)
+      }
+      
+      if (issues.length === 0) return { status: "healthy", message: "All systems operational" }
+      if (webhookHealth.stats.successRate < 90 || emailMetrics.stats.deliveryRate < 90 || webhookHealth.stats.criticalErrors > 5) {
+        return { status: "warning", message: issues.join(" • ") }
+      }
+      return { status: "warning", message: issues.join(" • ") }
+    }
+
+    const { status: overallHealth, message } = calculateOverallHealth()
+    return (
+      <div className="h-full flex flex-col justify-center">
+        <div className="flex items-center gap-2 mb-1">
+          <div className={`w-3 h-3 rounded-full ${
+            overallHealth === "healthy" ? "bg-green-500" : 
+            overallHealth === "warning" ? "bg-yellow-500" : "bg-red-500"
+          }`} />
+          <p className="text-2xl font-['Times_New_Roman'] font-extralight text-stone-950 capitalize">
+            {overallHealth}
+          </p>
+        </div>
+        <p className="text-xs tracking-[0.2em] uppercase text-stone-500 mb-2">System Status</p>
+        <p className="text-xs text-stone-600 leading-relaxed">{message}</p>
+      </div>
+    )
   }
 
   if (loading) {

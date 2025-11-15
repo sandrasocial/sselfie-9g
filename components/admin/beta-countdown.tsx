@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { AlertCircle, CheckCircle2, Loader2, TrendingUp, Users } from "lucide-react"
+import { AlertCircle, CheckCircle2, Loader2, TrendingUp, Users } from 'lucide-react'
 
 interface BetaData {
   betaCount: number
@@ -17,7 +17,7 @@ interface BetaData {
   }>
 }
 
-export function BetaCountdown() {
+export function BetaCountdown({ compact }: { compact?: boolean }) {
   const [betaData, setBetaData] = useState<BetaData | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -48,6 +48,20 @@ export function BetaCountdown() {
         <div className="flex items-center justify-center h-48">
           <Loader2 className="w-8 h-8 animate-spin text-stone-400" />
         </div>
+      </div>
+    )
+  }
+
+  if (compact) {
+    return (
+      <div className="h-full flex flex-col justify-center">
+        <p className="text-3xl font-['Times_New_Roman'] font-extralight text-stone-950 mb-1">
+          {betaData?.betaCount || 0} / 100
+        </p>
+        <p className="text-xs tracking-[0.2em] uppercase text-stone-500">Beta Users</p>
+        {betaData && betaData.betaCount >= 100 && (
+          <span className="text-xs text-red-600 mt-1">Limit reached</span>
+        )}
       </div>
     )
   }

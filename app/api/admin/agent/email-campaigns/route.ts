@@ -2,8 +2,10 @@ import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { neon } from "@neondatabase/serverless"
+import { Resend } from "resend"
 
 const sql = neon(process.env.DATABASE_URL!)
+const resend = new Resend(process.env.RESEND_API_KEY!)
 const ADMIN_EMAIL = "ssa@ssasocial.com"
 
 export async function GET(request: Request) {
@@ -54,33 +56,62 @@ export async function POST(request: Request) {
     const body = await request.json()
     const {
       campaign_name,
-      campaign_type,
       subject_line,
-      preview_text,
-      body_html,
-      body_text,
-      target_audience,
-      scheduled_for,
-      image_urls,
+      email_body,
+      campaign_type = "newsletter",
     } = body
 
+    const audienceId = process.env.RESEND_AUDIENCE_ID
+
+    if (!audienceId) {
+      return NextResponse.json(
+        {
+          error: "RESEND_AUDIENCE_ID not configured",
+        },
+        { status: 400 },
+      )
+    }
+
+    console.log("[v0] Creating Resend broadcast for:", campaign_name)
+
+    const broadcast = await resend.broadcasts.create({
+      audienceId: audienceId,
+      from: "Sandra from SSELFIE <hello@sselfie.ai>",
+      subject: subject_line,
+      html: email_body,
+    })
+
+    console.log("[v0] Broadcast created successfully:", broadcast.data?.id)
+
+    // Save to database for tracking
     const result = await sql`
       INSERT INTO admin_email_campaigns (
-        campaign_name, campaign_type, subject_line, preview_text,
-        body_html, body_text, target_audience, scheduled_for,
-        status, approval_status, image_urls, created_by, created_at, updated_at
+        campaign_name, campaign_type, subject_line,
+        body_html, status, approval_status, 
+        resend_broadcast_id, created_by, created_at, updated_at
       ) VALUES (
-        ${campaign_name}, ${campaign_type}, ${subject_line}, ${preview_text || null},
-        ${body_html}, ${body_text}, ${JSON.stringify(target_audience || {})}, ${scheduled_for || null},
-        'draft', 'draft', ${image_urls || []}, ${ADMIN_EMAIL}, NOW(), NOW()
+        ${campaign_name}, ${campaign_type}, ${subject_line},
+        ${email_body}, 'draft', 'draft',
+        ${broadcast.data?.id || null}, ${ADMIN_EMAIL}, NOW(), NOW()
       )
       RETURNING *
     `
 
-    return NextResponse.json(result[0])
-  } catch (error) {
+    return NextResponse.json({
+      success: true,
+      campaign: result[0],
+      broadcastId: broadcast.data?.id,
+      message: "Email created in Resend! Visit https://resend.com/broadcasts to review and send.",
+    })
+  } catch (error: any) {
     console.error("[v0] Error creating email campaign:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json(
+      { 
+        error: "Failed to create broadcast",
+        details: error.message 
+      }, 
+      { status: 500 }
+    )
   }
 }
 

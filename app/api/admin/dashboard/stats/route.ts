@@ -23,11 +23,16 @@ export async function GET() {
 
     const sql = neon(process.env.DATABASE_URL!)
 
-    // Get total users
     const usersResult = await sql`
-      SELECT COUNT(*) as total,
-             COUNT(CASE WHEN last_login_at > NOW() - INTERVAL '30 days' THEN 1 END) as active
+      SELECT 
+        COUNT(*) as total,
+        COUNT(CASE 
+          WHEN last_login_at > NOW() - INTERVAL '30 days' 
+          OR created_at > NOW() - INTERVAL '60 days' 
+          THEN 1 
+        END) as active_users
       FROM users
+      WHERE email IS NOT NULL
     `
 
     // Get courses stats
@@ -43,11 +48,10 @@ export async function GET() {
       FROM academy_lessons
     `
 
-    // Get chats count
     const chatsResult = await sql`
       SELECT COUNT(*) as total
       FROM maya_chats
-      WHERE chat_type = 'admin_agent'
+      WHERE user_id IS NOT NULL
     `
 
     // Get knowledge count
@@ -69,9 +73,9 @@ export async function GET() {
       LIMIT 10
     `
 
-    return NextResponse.json({
+    const stats = {
       totalUsers: Number(usersResult[0]?.total || 0),
-      activeUsers: Number(usersResult[0]?.active || 0),
+      activeUsers: Number(usersResult[0]?.active_users || 0),
       totalCourses: Number(coursesResult[0]?.total || 0),
       publishedCourses: Number(coursesResult[0]?.published || 0),
       totalLessons: Number(lessonsResult[0]?.total || 0),
@@ -82,7 +86,11 @@ export async function GET() {
         description: activity.description,
         timestamp: activity.timestamp,
       })),
-    })
+    }
+
+    console.log("[v0] Dashboard stats API: Data fetched", stats)
+
+    return NextResponse.json(stats)
   } catch (error) {
     console.error("[v0] Error fetching dashboard stats:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })

@@ -948,13 +948,13 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-xs tracking-wider uppercase text-stone-600">Style Strength</label>
-                  <span className="text-sm font-medium text-stone-950">{styleStrength.toFixed(1)}</span>
+                  <span className="text-sm font-medium text-stone-950">{styleStrength.toFixed(2)}</span>
                 </div>
                 <input
                   type="range"
                   min="0.9"
                   max="1.2"
-                  step="0.1"
+                  step="0.05"
                   value={styleStrength}
                   onChange={(e) => setStyleStrength(Number.parseFloat(e.target.value))}
                   className="w-full"

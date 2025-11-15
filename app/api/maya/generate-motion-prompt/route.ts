@@ -35,34 +35,51 @@ export async function POST(request: Request) {
     if (imageUrl) {
       console.log("[v0] 🔍 Image provided - using vision analysis for accurate motion prompt")
 
-      const visionPrompt = `Analyze this image and create a natural Instagram B-roll motion prompt for video generation (Wan 2.1/2.2 model).
+      const visionPrompt = `Analyze this image and create a natural Instagram B-roll motion prompt optimized for Wan 2.2 video model.
 
 **CRITICAL: Only suggest movements that match what you SEE in the image.**
 
-**WAN 2.1/2.2 BEST PRACTICES:**
-- Formula: Subject + Scene + Motion Description
-- Include speed/amplitude modifiers: slowly, gently, casually, naturally
-- Describe the action of elements IN the image
-- 10-15 words ideal (creates smooth, natural motion)
+**WAN 2.2 OPTIMIZATION REQUIREMENTS:**
+Formula: Subject + Scene + Motion Description + Amplitude/Speed modifiers
+- **Ideal length: 12-16 words** (Wan 2.2's sweet spot for smooth motion)
+- Include amplitude descriptors: subtle, slight, gentle, moderate, natural, smooth
+- Include speed modifiers: slowly, gradually, smoothly, gently, casually, naturally
+- Add depth cues when relevant: "while background stays still", "with soft focus behind"
 
 **ANALYZE THE IMAGE:**
 1. What is the person's exact pose and position?
 2. What direction are they facing?
 3. What objects are nearby or in hand?
 4. What movement would be NATURAL from this position?
+5. What's the depth/background context?
 
 **ONLY suggest movements that are PHYSICALLY POSSIBLE:**
 - If facing forward → subtle head turn, weight shift, breathing
-- If holding coffee → bring cup to lips
-- If walking pose → takes steps forward
-- If static pose → minimal movement, breathing, slight adjustment
-- If looking down → looks up naturally
+- If holding coffee → brings cup to lips with smooth motion
+- If walking pose → takes gradual steps forward with natural stride
+- If static pose → minimal movement, gentle breathing, slight adjustment
+- If looking down → looks up naturally with fluid motion
 - NEVER suggest "looks over shoulder" unless already in that position!
 
-**PROMPT STRUCTURE (10-15 words):**
-[Scene context] + [speed modifier] + [ONE action matching the pose]
+**WAN 2.2 OPTIMIZED PROMPT STRUCTURE (12-16 words):**
+[Scene context 2-3 words] + [amplitude word] + [speed modifier] + [ONE action] + [optional: depth cue]
 
-Return ONLY the motion prompt, no explanation.
+**PERFECT EXAMPLES (12-16 words):**
+- "Standing in bright kitchen, subtle and smooth head turn toward window with soft expression" (14 words)
+- "Walking casually on sidewalk, gradual glance back over shoulder with natural confident smile" (13 words)
+- "Sitting relaxed at table, gentle and slow lift of coffee cup toward lips" (13 words)
+- "By sunny window, slight natural turn to face light with smooth fluid motion" (13 words)
+- "Leaning on wall, subtle hand adjustment to sunglasses with gradual confident movement" (12 words)
+
+**AMPLITUDE DESCRIPTORS (choose ONE that fits):**
+- subtle, slight, gentle (for minimal movements)
+- moderate, natural, smooth (for medium movements)  
+- fluid, gradual, continuous (for flowing movements)
+
+**SPEED MODIFIERS (choose ONE):**
+- slowly, gradually, smoothly, gently, casually, naturally, fluidly
+
+Return ONLY the motion prompt (12-16 words), no explanation.
 
 FLUX description for context: "${fluxPrompt}"
 ${description ? `Scene description: "${description}"` : ""}`
@@ -91,6 +108,24 @@ ${description ? `Scene description: "${description}"` : ""}`
 
       console.log("[v0] 🎨 Vision-generated motion prompt:", trimmedPrompt)
       console.log("[v0] Word count:", wordCount)
+      console.log("[v0] Wan 2.2 optimization:", wordCount >= 12 && wordCount <= 16 ? "✅ OPTIMAL" : "⚠️ Suboptimal")
+
+      if (wordCount < 12) {
+        console.warn("[v0] ⚠️ Motion prompt too short, expanding for natural flow")
+        const expandedPrompt = `Standing naturally in scene, gentle and smooth ${trimmedPrompt} with fluid motion`
+        return NextResponse.json({
+          motionPrompt: expandedPrompt,
+          success: true,
+        })
+      }
+
+      if (wordCount > 16) {
+        console.warn("[v0] ⚠️ Motion prompt too long, using fallback")
+        return NextResponse.json({
+          motionPrompt: "Standing in natural pose, subtle and smooth head turn with gentle fluid movement",
+          success: true,
+        })
+      }
 
       return NextResponse.json({
         motionPrompt: trimmedPrompt,
@@ -102,103 +137,94 @@ ${description ? `Scene description: "${description}"` : ""}`
 
     const { text: motionPrompt } = await generateText({
       model: "anthropic/claude-sonnet-4",
-      system: `You create natural, smooth motion prompts for Instagram B-roll video generation (using Wan 2.1/2.2 model).
+      system: `You create natural, smooth motion prompts optimized for Instagram B-roll video generation using Wan 2.2 model.
 
-**WHAT MAKES INSTAGRAM B-ROLL LOOK NATURAL:**
-1. Slow, deliberate movements with timing cues
-2. Context about the setting and mood
-3. Natural pacing descriptors (slowly, gently, casually, naturally)
-4. Single fluid action with clear start and end
-5. Relatable, authentic influencer movements
+**WAN 2.2 OPTIMIZATION:**
+The Wan 2.2 video model performs best with prompts that include:
+1. Scene context (2-3 words about setting)
+2. Amplitude descriptor (subtle, slight, gentle, moderate, natural, smooth, fluid, gradual)
+3. Speed modifier (slowly, gradually, smoothly, gently, casually, naturally, fluidly, softly)
+4. Single clear action description
+5. Optional: depth/parallax cues
 
-**PROMPT LENGTH: 10-15 words (sweet spot for natural movement)**
+**IDEAL PROMPT LENGTH: 12-16 words**
+- Wan 2.2 handles 12-16 words optimally (creates smooth, natural motion)
 - Not too short (causes abrupt motion)
-- Not too long (causes janky multi-tasking)
+- Not too long (causes janky multi-action)
 
-**THE FORMULA:**
-[Brief context] + [pacing word] + [one action] + [optional: subtle detail]
+**THE OPTIMIZED FORMULA:**
+[Scene context] + [amplitude] + [speed] + [one action] + [optional depth cue]
 
-**PERFECT Examples (10-15 words):**
-- "Standing in cozy kitchen, slowly brings coffee mug to lips for gentle sip" (13 words)
-- "Walking casually on city sidewalk, glances back over shoulder with slight smile" (12 words)
-- "Sitting relaxed on cafe chair, naturally looks up from phone toward window" (12 words)
-- "Leaning against brick wall, casually adjusts sunglasses with confident hand movement" (11 words)
-- "Standing by window with morning light, gently tucks hair behind ear" (11 words)
-- "Strolling through urban street, takes two slow steps and smiles softly" (11 words)
+**PERFECT Examples (12-16 words, Wan 2.2 optimized):**
+- "Standing in cozy kitchen, gentle and slow lift of coffee mug toward lips" (13 words)
+- "Walking casually on city street, gradual glance back over shoulder with slight smile" (13 words)
+- "Sitting relaxed on cafe chair, subtle and smooth look up from phone toward window" (14 words)
+- "Leaning against brick wall, moderate and casual adjustment of sunglasses with confident motion" (13 words)
+- "Standing by window with morning light, gentle and gradual tuck of hair behind ear" (14 words)
+- "Strolling through urban sidewalk, smooth and natural two steps forward with slight smile" (13 words)
 
-**GOOD Examples (Acceptable):**
-- "In bedroom mirror, slowly adjusts necklace with natural hand gesture" (10 words)
-- "Walking down sidewalk with confident stride, brief glance to camera" (10 words)
-- "Sitting on steps with coffee, brings cup to lips naturally" (10 words)
+**AMPLITUDE DESCRIPTORS (essential for Wan 2.2):**
+- **Minimal motion:** subtle, slight, gentle, soft, delicate
+- **Medium motion:** moderate, natural, smooth, easy, casual
+- **Flowing motion:** fluid, gradual, continuous, seamless
 
-**TOO SHORT (Causes abrupt movement):**
-- ❌ "Brings coffee to lips" (4 words - too abrupt)
-- ❌ "Turns head slowly" (3 words - lacks context)
-- ❌ "Adjusts sunglasses" (2 words - no flow)
+**SPEED MODIFIERS (essential for Wan 2.2):**
+- slowly, gradually, smoothly, gently, casually, naturally, fluidly, softly
 
-**TOO LONG (Causes janky multi-action):**
-- ❌ "She gracefully walks through the sunlit kitchen while turning her elegant head to smile at the camera and gently brushes her flowing hair aside" (24 words - too many actions)
+**DEPTH/PARALLAX CUES (when relevant):**
+- "while background stays still"
+- "with soft focus behind"
+- "as foreground blurs slightly"
 
-**REQUIRED ELEMENTS:**
-✅ Brief scene context (1-3 words): "in kitchen", "on sidewalk", "by window"
-✅ Pacing word: slowly, gently, casually, naturally, smoothly, softly
-✅ ONE primary action: brings cup, turns head, adjusts hair, glances back, looks up
-✅ Optional subtle detail: "with smile", "toward light", "over shoulder"
-
-**FORBIDDEN WORDS (Never use these):**
-❌ Camera language: camera, pan, zoom, drift, arc, following, tracking, capturing
-❌ Narrative voice: she, he, her, his, the woman, the man
-❌ Over-dramatic: dramatically, powerfully, intensely, extremely, massively
-❌ Vague atmosphere: vibe, energy, moment, aesthetic, creating, showcasing
-
-**ACTION CATEGORIES:**
+**ACTION CATEGORIES WITH WAN 2.2 OPTIMIZATION:**
 
 **Coffee/Drink scenes:**
-- "Holding coffee in cozy cafe, slowly brings cup to lips for warm sip"
-- "Standing in kitchen with mug, gently lifts coffee while looking toward window"
-- "Sitting at table with latte, casually brings cup up with natural gesture"
+- "Holding coffee in cozy cafe, gentle and slow lift of cup toward lips" (13 words)
+- "Standing in kitchen with mug, smooth and gradual raise of coffee while looking outside" (14 words)
+- "Sitting at table with latte, subtle and natural bring cup up with calm expression" (14 words)
 
 **Walking/Street scenes:**
-- "Walking casually down urban sidewalk, glances back over shoulder with slight smile"
-- "Strolling through city street with confident stride, looks to side naturally"
-- "Taking slow steps on pavement, turns head to look back briefly"
+- "Walking casually down urban sidewalk, gradual glance back over shoulder with slight smile" (13 words)
+- "Strolling through city street, smooth and natural stride with confident look to side" (13 words)
+- "Taking slow steps on pavement, gentle and fluid head turn to look back" (14 words)
 
 **Window/Light scenes:**
-- "Standing by bright window, slowly turns head toward natural morning light"
-- "Near window with soft glow, gently looks outside with calm expression"
-- "By sunny window, naturally shifts gaze from down to light outside"
+- "Standing by bright window, subtle and smooth turn of head toward natural light" (13 words)
+- "Near window with soft glow, gentle and gradual look outside with calm expression" (13 words)
+- "By sunny window, natural and fluid shift of gaze from down to light outside" (15 words)
 
 **Sitting scenes:**
-- "Sitting relaxed on chair, casually shifts weight and looks up naturally"
-- "Seated on steps with coffee, brings cup to lips with calm motion"
-- "Sitting on bed cross-legged, gently adjusts position and looks to camera"
+- "Sitting relaxed on chair, subtle and casual weight shift with natural upward look" (13 words)
+- "Seated on steps with coffee, smooth and gentle lift of cup toward lips" (13 words)
+- "Sitting on bed cross-legged, gradual and natural position adjustment with camera look" (12 words)
 
 **Adjusting outfit/accessories:**
-- "Standing in full outfit, casually adjusts sunglasses on head with confidence"
-- "In stylish coat, smoothly slides hand into pocket with natural movement"
-- "Wearing statement necklace, gently touches jewelry with delicate hand gesture"
+- "Standing in full outfit, casual and smooth adjustment of sunglasses with confident motion" (12 words)
+- "In stylish coat, gentle and gradual slide of hand into pocket naturally" (12 words)
+- "Wearing statement necklace, delicate and soft touch of jewelry with natural hand gesture" (13 words)
 
 **Minimal/Breathing scenes:**
-- "Standing still in natural pose, subtle breathing and minimal head movement visible"
-- "Facing camera in calm stance, slight weight shift with gentle expression"
-- "Static position by wall, soft breathing and tiny natural body adjustments"
+- "Standing still in natural pose, subtle breathing visible with gentle minimal movement" (12 words)
+- "Facing camera in calm stance, slight and gradual weight shift with soft expression" (13 words)
+- "Static position by wall, soft breathing and delicate natural body adjustments visible" (12 words)
 
 **YOUR PROCESS:**
-1. Read the FLUX prompt and identify: setting, pose, objects, mood
-2. Pick ONE natural movement that fits the scene
-3. Add brief context (2-3 words about setting)
-4. Include a pacing word (slowly, gently, casually, naturally)
-5. Describe the action clearly (what moves and how)
-6. Optional: Add subtle finishing detail
-7. Count words: 10-15 is perfect, 8-17 acceptable
-8. Verify NO forbidden words (camera, she/he, dramatic terms)
+1. Read the FLUX prompt: identify setting, pose, objects, mood
+2. Choose ONE natural movement
+3. Add scene context (2-3 words)
+4. Pick amplitude descriptor (subtle/gentle/moderate/natural/smooth/fluid/gradual)
+5. Add speed modifier (slowly/gradually/smoothly/gently/casually/naturally)
+6. Describe the action clearly
+7. Optional: Add depth cue if scene has layered background
+8. Count words: 12-16 is IDEAL for Wan 2.2
+9. Verify NO forbidden words (camera, she/he, dramatic)
 
-Return ONLY the motion prompt. No explanation. No preamble. Just the 10-15 word prompt.`,
+Return ONLY the motion prompt. No explanation. Just the 12-16 word optimized prompt.`,
       prompt: `FLUX Prompt: "${fluxPrompt}"
 ${description ? `Description: "${description}"` : ""}
 ${category ? `Category: ${category}` : ""}
 
-Analyze and create ONE natural Instagram B-roll motion prompt (10-15 words ideal, focus on smooth authentic influencer movement).`,
+Create ONE natural Instagram B-roll motion prompt optimized for Wan 2.2 (12-16 words ideal, include amplitude + speed descriptors).`,
     })
 
     const trimmedPrompt = motionPrompt.trim()
@@ -206,21 +232,21 @@ Analyze and create ONE natural Instagram B-roll motion prompt (10-15 words ideal
 
     console.log("[v0] Generated motion prompt:", trimmedPrompt)
     console.log("[v0] Word count:", wordCount)
+    console.log("[v0] Wan 2.2 optimization:", wordCount >= 12 && wordCount <= 16 ? "✅ OPTIMAL" : "⚠️ Suboptimal")
 
-    // Validate prompt is in acceptable range
-    if (wordCount < 8) {
+    if (wordCount < 12) {
       console.warn("[v0] ⚠️ Motion prompt too short, expanding for natural flow")
-      const expandedPrompt = `Standing naturally in scene, ${trimmedPrompt} with smooth gentle motion`
+      const expandedPrompt = `Standing naturally in scene, gentle and smooth ${trimmedPrompt} with fluid motion`
       return NextResponse.json({
         motionPrompt: expandedPrompt,
         success: true,
       })
     }
 
-    if (wordCount > 17) {
+    if (wordCount > 16) {
       console.warn("[v0] ⚠️ Motion prompt too long, using fallback")
       return NextResponse.json({
-        motionPrompt: "Standing in natural pose, slowly turns head with gentle subtle movement",
+        motionPrompt: "Standing in natural pose, subtle and smooth head turn with gentle fluid movement",
         success: true,
       })
     }

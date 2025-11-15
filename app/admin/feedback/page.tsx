@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Loader2, Filter, CheckCircle, Clock, AlertCircle, Camera, Reply, Sparkles, AlertTriangle } from "lucide-react"
+import { Loader2, Filter, CheckCircle, Clock, AlertCircle, Camera, Reply, Sparkles, AlertTriangle } from 'lucide-react'
 import Link from "next/link"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
@@ -143,6 +143,31 @@ export default function AdminFeedbackPage() {
     setMayaPrompt("")
     setShowMayaChat(null)
     setIsRefining(false)
+  }
+
+  const generateAndShowResponse = async (feedbackId: string) => {
+    setIsGeneratingAI(true)
+    try {
+      const response = await fetch("/api/feedback/ai-response", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ feedbackId }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setReplyText(data.responseDraft)
+        setReplyingTo(feedbackId)
+
+        if (data.bugAnalysis) {
+          setBugAnalysis((prev) => ({ ...prev, [feedbackId]: data.bugAnalysis }))
+        }
+      }
+    } catch (error) {
+      console.error("Error generating AI response:", error)
+    } finally {
+      setIsGeneratingAI(false)
+    }
   }
 
   const getTypeColor = (type: string) => {
@@ -463,13 +488,32 @@ export default function AdminFeedbackPage() {
                   </div>
                   <div className="flex gap-2">
                     {!item.admin_reply && replyingTo !== item.id && (
-                      <button
-                        onClick={() => setReplyingTo(item.id)}
-                        className="px-4 py-2 bg-stone-100 text-stone-700 rounded-lg text-xs hover:bg-stone-200 transition-colors flex items-center gap-1.5 font-light"
-                      >
-                        <Reply className="w-3 h-3" strokeWidth={2} />
-                        Reply
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => generateAndShowResponse(item.id)}
+                          disabled={isGeneratingAI}
+                          className="px-4 py-2 bg-stone-950 text-white rounded-lg text-xs hover:bg-stone-800 transition-colors flex items-center gap-1.5 font-light"
+                        >
+                          {isGeneratingAI ? (
+                            <>
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                              Generating...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="w-3 h-3" />
+                              Generate AI Response
+                            </>
+                          )}
+                        </button>
+                        <button
+                          onClick={() => setReplyingTo(item.id)}
+                          className="px-4 py-2 bg-stone-100 text-stone-700 rounded-lg text-xs hover:bg-stone-200 transition-colors flex items-center gap-1.5 font-light"
+                        >
+                          <Reply className="w-3 h-3" strokeWidth={2} />
+                          Write Manual Reply
+                        </button>
+                      </div>
                     )}
                     {item.status === "new" && (
                       <button
