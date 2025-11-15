@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Check } from 'lucide-react'
+import { Check, MoreVertical } from 'lucide-react'
 import InstagramPhotoCard from "./instagram-photo-card"
 import InstagramReelCard from "./instagram-reel-card"
 import type { ConceptData } from "./types"
@@ -227,120 +227,126 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
   }
 
   return (
-    <div className="bg-white/50 backdrop-blur-2xl border border-white/70 rounded-2xl p-4 transition-all duration-300 hover:bg-white/70 hover:border-white/90 hover:scale-[1.01] shadow-lg shadow-stone-900/5">
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="px-3 py-1 bg-stone-100 backdrop-blur-xl rounded-full border border-stone-200">
-            <span className="text-[10px] tracking-wider uppercase font-semibold text-stone-950">
-              {concept.category}
-            </span>
+    <div className="bg-white border border-stone-200 rounded-lg overflow-hidden transition-all duration-300 hover:shadow-lg">
+      {/* Instagram-style header */}
+      <div className="flex items-center justify-between px-3 py-2.5 border-b border-stone-200">
+        <div className="flex items-center gap-2.5">
+          {/* Avatar with gradient ring */}
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-tr from-purple-600 via-pink-600 to-orange-500 rounded-full p-[2px]">
+              <div className="bg-white rounded-full w-full h-full"></div>
+            </div>
+            <div className="relative w-8 h-8 rounded-full bg-gradient-to-br from-stone-200 to-stone-300 flex items-center justify-center">
+              <span className="text-xs font-bold text-stone-700">S</span>
+            </div>
+          </div>
+          {/* Username and location/category */}
+          <div className="flex flex-col">
+            <span className="text-sm font-semibold text-stone-950">sselfie</span>
+            <span className="text-xs text-stone-500">{concept.category}</span>
           </div>
         </div>
-
-        <div className="space-y-1.5">
-          <h4 className="text-sm font-bold text-stone-950 leading-tight">{concept.title}</h4>
-          <p className="text-xs leading-relaxed text-stone-600 line-clamp-2">{concept.description}</p>
-        </div>
+        <button className="p-1 hover:bg-stone-100 rounded-full transition-colors">
+          <MoreVertical className="w-5 h-5 text-stone-700" />
+        </button>
       </div>
 
-      {error && (
-        <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-xl">
-          <p className="text-xs text-red-600">{error}</p>
-          <button
-            onClick={handleGenerate}
-            className="mt-2 text-xs font-semibold text-red-700 hover:text-red-900 min-h-[40px] px-3 py-2"
-          >
-            Try Again
-          </button>
-        </div>
-      )}
-
-      {!isGenerating && !isGenerated && !error && (
-        <div className="mt-3 space-y-2">
-          <p className="text-[10px] text-stone-500 text-center leading-relaxed">
-            AI-generated photos may vary in quality and accuracy
+      <div className="px-3 py-3 space-y-3">
+        {/* Concept title and description as Instagram caption */}
+        <div className="space-y-1">
+          <p className="text-sm leading-relaxed text-stone-950">
+            <span className="font-semibold">sselfie</span> {concept.title}
           </p>
-          <button
-            onClick={handleGenerate}
-            className="group relative w-full bg-stone-950 text-white px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-300 hover:shadow-xl hover:shadow-stone-900/30 hover:scale-[1.02] active:scale-[0.98] min-h-[44px] flex items-center justify-center"
-          >
-            <span>Create Photo</span>
-          </button>
+          <p className="text-sm leading-relaxed text-stone-600 line-clamp-2">{concept.description}</p>
         </div>
-      )}
 
-      {isGenerating && (
-        <div className="mt-3 flex flex-col items-center justify-center py-6 space-y-3">
-          <div className="flex gap-1.5">
-            <div className="w-2 h-2 rounded-full bg-stone-950 animate-bounce"></div>
-            <div className="w-2 h-2 rounded-full bg-stone-950 animate-bounce" style={{ animationDelay: "0.2s" }}></div>
-            <div className="w-2 h-2 rounded-full bg-stone-950 animate-bounce" style={{ animationDelay: "0.4s" }}></div>
+        {error && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-xs text-red-600">{error}</p>
+            <button
+              onClick={handleGenerate}
+              className="mt-2 text-xs font-semibold text-red-700 hover:text-red-900 min-h-[40px] px-3 py-2"
+            >
+              Try Again
+            </button>
           </div>
-          <span className="text-xs tracking-wider uppercase font-semibold text-stone-700">Creating your photo</span>
-        </div>
-      )}
+        )}
 
-      {isGenerated && generatedImageUrl && (
-        <div className="mt-3 space-y-3">
-          <div className="p-3 bg-stone-100 backdrop-blur-xl border border-stone-200 rounded-xl shadow-lg shadow-stone-900/5">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 bg-stone-950 rounded-lg flex items-center justify-center shadow-lg shadow-stone-900/30 flex-shrink-0">
-                <Check className="w-4 h-4 text-white" />
-              </div>
-              <div className="space-y-0.5 flex-1 min-w-0">
-                <h4 className="text-xs font-semibold text-stone-950">Photo Ready</h4>
-                <p className="text-[10px] font-medium text-stone-600">Looking stunning</p>
-              </div>
-            </div>
+        {!isGenerating && !isGenerated && !error && (
+          <div className="space-y-2">
+            <button
+              onClick={handleGenerate}
+              className="group relative w-full bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 text-white px-4 py-2.5 rounded-lg font-semibold text-sm transition-all duration-300 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] min-h-[40px] flex items-center justify-center"
+            >
+              <span>Create Photo</span>
+            </button>
+            <p className="text-[10px] text-stone-400 text-center leading-relaxed">
+              AI-generated photos may vary in quality and accuracy
+            </p>
           </div>
+        )}
 
-          <InstagramPhotoCard
-            concept={concept}
-            imageUrl={generatedImageUrl}
-            imageId={generationId || ""}
-            isFavorite={isFavorite}
-            onFavoriteToggle={handleFavoriteToggle}
-            onDelete={handleDelete}
-            onAnimate={!videoUrl && !isGeneratingVideo ? handleAnimate : undefined}
-            showAnimateOverlay={false}
-          />
+        {isGenerating && (
+          <div className="flex flex-col items-center justify-center py-6 space-y-3">
+            <div className="flex gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 animate-bounce"></div>
+              <div className="w-2 h-2 rounded-full bg-gradient-to-r from-pink-600 to-orange-500 animate-bounce" style={{ animationDelay: "0.2s" }}></div>
+              <div className="w-2 h-2 rounded-full bg-gradient-to-r from-orange-500 to-purple-600 animate-bounce" style={{ animationDelay: "0.4s" }}></div>
+            </div>
+            <span className="text-xs font-semibold text-stone-700">Creating your photo</span>
+          </div>
+        )}
 
-          {isGeneratingVideo && (
-            <div className="flex flex-col items-center justify-center py-6 space-y-3">
-              <div className="flex gap-1.5">
-                <div className="w-2 h-2 rounded-full bg-stone-950 animate-bounce"></div>
-                <div
-                  className="w-2 h-2 rounded-full bg-stone-950 animate-bounce"
-                  style={{ animationDelay: "0.2s" }}
-                ></div>
-                <div
-                  className="w-2 h-2 rounded-full bg-stone-950 animate-bounce"
-                  style={{ animationDelay: "0.4s" }}
-                ></div>
+        {isGenerated && generatedImageUrl && (
+          <div className="space-y-3">
+            <InstagramPhotoCard
+              concept={concept}
+              imageUrl={generatedImageUrl}
+              imageId={generationId || ""}
+              isFavorite={isFavorite}
+              onFavoriteToggle={handleFavoriteToggle}
+              onDelete={handleDelete}
+              onAnimate={!videoUrl && !isGeneratingVideo ? handleAnimate : undefined}
+              showAnimateOverlay={false}
+            />
+
+            {isGeneratingVideo && (
+              <div className="flex flex-col items-center justify-center py-6 space-y-3">
+                <div className="flex gap-1.5">
+                  <div className="w-2 h-2 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 animate-bounce"></div>
+                  <div
+                    className="w-2 h-2 rounded-full bg-gradient-to-r from-pink-600 to-orange-500 animate-bounce"
+                    style={{ animationDelay: "0.2s" }}
+                  ></div>
+                  <div
+                    className="w-2 h-2 rounded-full bg-gradient-to-r from-orange-500 to-purple-600 animate-bounce"
+                    style={{ animationDelay: "0.4s" }}
+                  ></div>
+                </div>
+                <div className="text-center space-y-1">
+                  <span className="text-xs font-semibold text-stone-700">Creating Reel</span>
+                  <p className="text-[10px] text-stone-600">1-3 minutes</p>
+                </div>
               </div>
-              <div className="text-center space-y-1">
-                <span className="text-xs tracking-wider uppercase font-semibold text-stone-700">Creating Reel</span>
-                <p className="text-[10px] text-stone-600">1-3 minutes</p>
+            )}
+
+            {videoError && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-xs text-red-600">{videoError}</p>
+                <button onClick={handleAnimate} className="mt-2 text-xs font-semibold text-red-700 hover:text-red-900">
+                  Try Again
+                </button>
               </div>
-            </div>
-          )}
+            )}
 
-          {videoError && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
-              <p className="text-xs text-red-600">{videoError}</p>
-              <button onClick={handleAnimate} className="mt-2 text-xs font-semibold text-red-700 hover:text-red-900">
-                Try Again
-              </button>
-            </div>
-          )}
-
-          {videoUrl && videoId && (
-            <div className="mt-3">
-              <InstagramReelCard videoUrl={videoUrl} motionPrompt={concept.description} />
-            </div>
-          )}
-        </div>
-      )}
+            {videoUrl && videoId && (
+              <div className="mt-3">
+                <InstagramReelCard videoUrl={videoUrl} motionPrompt={concept.description} />
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

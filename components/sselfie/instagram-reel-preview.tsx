@@ -1,18 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import {
-  X,
-  Heart,
-  MessageCircle,
-  MoreHorizontal,
-  Volume2,
-  VolumeX,
-  ChevronLeft,
-  ChevronRight,
-  Trash2,
-  Download,
-} from "lucide-react"
+import { X, Heart, MessageCircle, MoreHorizontal, Volume2, VolumeX, ChevronLeft, ChevronRight, Trash2, Download } from 'lucide-react'
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 
 interface GeneratedVideo {
@@ -73,7 +62,9 @@ export function InstagramReelPreview({
     setIsPlaying(true)
   }
 
-  const togglePlay = () => {
+  const handleVideoClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
     setIsPlaying(!isPlaying)
   }
 
@@ -134,7 +125,7 @@ export function InstagramReelPreview({
             muted={isMuted}
             playsInline
             autoPlay
-            onClick={togglePlay}
+            onClick={handleVideoClick}
           />
         </div>
 
