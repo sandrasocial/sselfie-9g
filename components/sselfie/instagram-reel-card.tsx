@@ -56,10 +56,37 @@ export default function InstagramReelCard({
     setShowMenu(false)
     
     try {
-      const response = await fetch(videoUrl)
-      const blob = await response.blob()
-      const url = window.URL.createObjectURL(blob)
+      console.log("[v0] Starting video download...")
       
+      // Fetch the video as a blob
+      const response = await fetch(videoUrl)
+      if (!response.ok) throw new Error("Failed to fetch video")
+      
+      const blob = await response.blob()
+      console.log("[v0] Video blob fetched, size:", blob.size)
+      
+      // Check if we're on mobile and can use the share API (saves to camera roll on iOS)
+      if (navigator.share && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+        console.log("[v0] Mobile device detected, using share API...")
+        try {
+          const file = new File([blob], `sselfie-reel-${Date.now()}.mp4`, { type: "video/mp4" })
+          await navigator.share({
+            files: [file],
+            title: "sselfie Video",
+            text: motionPrompt || "Check out this video from sselfie!",
+          })
+          console.log("[v0] ✅ Video shared successfully (will save to camera roll if user selects save)")
+          setIsDownloading(false)
+          return
+        } catch (shareError: any) {
+          // User cancelled or share failed - fall through to download
+          console.log("[v0] Share API failed or cancelled:", shareError?.message)
+        }
+      }
+      
+      // Fallback: create download link (saves to Downloads folder)
+      console.log("[v0] Using download link method...")
+      const url = window.URL.createObjectURL(blob)
       const a = document.createElement("a")
       a.href = url
       a.download = `sselfie-reel-${Date.now()}.mp4`
@@ -73,10 +100,13 @@ export default function InstagramReelCard({
         document.body.removeChild(a)
         setIsDownloading(false)
       }, 100)
+      
+      console.log("[v0] ✅ Video downloaded to files")
     } catch (error) {
       console.error("[v0] Error downloading video:", error)
       setIsDownloading(false)
       
+      // Last resort fallback - direct link
       const a = document.createElement("a")
       a.href = videoUrl
       a.download = `sselfie-reel-${Date.now()}.mp4`

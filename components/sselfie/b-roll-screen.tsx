@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import useSWR from "swr"
+import useSWRInfinite from "swr/infinite"
 import { Loader2, X, Home, Aperture, MessageCircle, ImageIcon, Grid, UserIcon, SettingsIcon, LogOut, Film } from 'lucide-react'
 import InstagramPhotoCard from "./instagram-photo-card"
 import InstagramReelCard from "./instagram-reel-card"
@@ -42,29 +43,40 @@ export default function BRollScreen({ user, userId }: BRollScreenProps) {
   const [videoPredictions, setVideoPredictions] = useState<Map<string, { predictionId: string; videoId: string }>>(
     new Map(),
   )
-  const [completedVideos, setCompletedVideos] = useState<Map<string, { videoUrl: string; motionPrompt: string | null }>>(
-    new Map(),
-  )
   const [previewVideo, setPreviewVideo] = useState<GeneratedVideo | null>(null)
   const [showNavMenu, setShowNavMenu] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [creditBalance, setCreditBalance] = useState(0)
   const router = useRouter()
 
-  const { data: imagesData, error: imagesError, isLoading: imagesLoading } = useSWR(
-    "/api/maya/b-roll-images",
-    fetcher,
-    {
-      refreshInterval: 0,
-      revalidateOnFocus: false,
-    },
-  )
+  const getKey = (pageIndex: number, previousPageData: any) => {
+    if (previousPageData && !previousPageData.hasMore) return null
+    const limit = 12
+    const offset = pageIndex * limit
+    return `/api/maya/b-roll-images?limit=${limit}&offset=${offset}`
+  }
+
+  const { 
+    data: imagePages, 
+    error: imagesError, 
+    isLoading: imagesLoading,
+    size,
+    setSize,
+    isValidating
+  } = useSWRInfinite(getKey, fetcher, {
+    refreshInterval: 0,
+    revalidateOnFocus: false,
+  })
+
+  const images: BRollImage[] = imagePages ? imagePages.flatMap((page) => page.images || []) : []
+  const hasMore = imagePages?.[imagePages.length - 1]?.hasMore ?? false
+  const isLoadingMore = isValidating && imagePages && imagePages.length > 0
 
   const { data: videosData, mutate: mutateVideos } = useSWR("/api/maya/videos", fetcher, {
     refreshInterval: 5000,
-    revalidateOnFocus: true, // Enable revalidation when tab regains focus
-    revalidateOnMount: true, // Always fetch fresh data on mount
-    dedupingInterval: 2000, // Dedupe requests within 2 seconds
+    revalidateOnFocus: true,
+    revalidateOnMount: true,
+    dedupingInterval: 2000,
   })
 
   const { data: userData } = useSWR("/api/user", fetcher, {
@@ -76,7 +88,6 @@ export default function BRollScreen({ user, userId }: BRollScreenProps) {
     }
   })
 
-  const images: BRollImage[] = imagesData?.images || []
   const allVideos: GeneratedVideo[] = videosData?.videos || []
 
   const handleNavigation = (tab: string) => {
@@ -213,21 +224,9 @@ export default function BRollScreen({ user, userId }: BRollScreenProps) {
           console.log("[v0] ========== VIDEO GENERATION SUCCEEDED ==========")
           console.log("[v0] Video URL received:", data.videoUrl ? 'YES' : 'NO')
           
-          if (data.videoUrl) {
-            setCompletedVideos((prev) => {
-              const newMap = new Map(prev)
-              newMap.set(imageId, {
-                videoUrl: data.videoUrl,
-                motionPrompt: data.motionPrompt || null
-              })
-              console.log("[v0] ✅ Stored video URL in completedVideos state for imageId:", imageId)
-              return newMap
-            })
-          }
-          
-          console.log("[v0] Calling mutateVideos() to refresh video list...")
+          console.log("[v0] Calling mutateVideos() to refresh video list from database...")
           await mutateVideos()
-          console.log("[v0] ✅ mutateVideos() completed")
+          console.log("[v0] ✅ mutateVideos() completed - video should now appear from DB")
           console.log("[v0] Clearing generating state for imageId:", imageId)
           console.log("[v0] ================================================")
           
@@ -518,146 +517,159 @@ export default function BRollScreen({ user, userId }: BRollScreenProps) {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {images.map((image) => {
-            const isGenerating = generatingVideos.has(image.id)
-            const isAnalyzing = analyzingMotion.has(image.id)
-            const error = videoErrors.get(image.id)
-            
-            const dbVideo = allVideos.find((v) => v.image_id?.toString() === image.id && v.video_url && v.status === 'completed')
-            const clientVideo = completedVideos.get(image.id)
-            
-            const video = dbVideo || (clientVideo && !dbVideo ? {
-              video_url: clientVideo.videoUrl,
-              motion_prompt: clientVideo.motionPrompt,
-              id: 0,
-              image_id: parseInt(image.id),
-              status: 'completed',
-              progress: 100,
-              created_at: new Date().toISOString()
-            } as GeneratedVideo : null)
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            {images.map((image) => {
+              const isGenerating = generatingVideos.has(image.id)
+              const isAnalyzing = analyzingMotion.has(image.id)
+              const error = videoErrors.get(image.id)
+              
+              const video = allVideos.find((v) => 
+                String(v.image_id) === String(image.id) && 
+                v.video_url && 
+                v.status === 'completed'
+              )
 
-            console.log("[v0] ========== RENDERING IMAGE ==========")
-            console.log("[v0] Image ID:", image.id)
-            console.log("[v0] Is Generating:", isGenerating)
-            console.log("[v0] Is Analyzing:", isAnalyzing)
-            console.log("[v0] Has Error:", !!error)
-            console.log("[v0] DB video found:", !!dbVideo)
-            console.log("[v0] Client video found:", !!clientVideo)
-            console.log("[v0] Final video:", !!video)
-            if (video) {
-              console.log("[v0] Video URL exists:", !!video.video_url)
-              console.log("[v0] Video URL:", video.video_url ? `${video.video_url.substring(0, 60)}...` : 'NULL')
-            }
-            console.log("[v0] All videos in DB:", allVideos.length)
-            console.log("[v0] ================================================")
+              console.log("[v0] ========== RENDERING IMAGE ==========")
+              console.log("[v0] Image ID:", image.id, "Type:", typeof image.id)
+              console.log("[v0] Is Generating:", isGenerating)
+              console.log("[v0] Is Analyzing:", isAnalyzing)
+              console.log("[v0] Has Error:", !!error)
+              console.log("[v0] Video found in DB:", !!video)
+              if (video) {
+                console.log("[v0] Video image_id:", video.image_id, "Type:", typeof video.image_id)
+                console.log("[v0] Video URL:", video.video_url ? `${video.video_url.substring(0, 60)}...` : 'NULL')
+              }
+              console.log("[v0] Total videos in DB:", allVideos.length)
+              console.log("[v0] ================================================")
 
-            return (
-              <div key={image.id} className="space-y-3">
-                <InstagramPhotoCard
-                  concept={{
-                    title: image.category || "B-Roll Content",
-                    description: image.description || image.prompt,
-                    prompt: image.prompt,
-                    category: image.category || "lifestyle",
-                  }}
-                  imageUrl={image.image_url}
-                  imageId={image.id}
-                  isFavorite={false}
-                  onFavoriteToggle={() => handleFavoriteToggle(image.id, false)}
-                  onDelete={() => handleDelete(image.id)}
-                  onAnimate={
-                    !video && !isGenerating && !isAnalyzing
-                      ? () => handleAnimate(
-                          image.id,
-                          image.image_url,
-                          image.description || image.prompt,
-                          image.prompt,
-                          image.category || "lifestyle"
-                        )
-                      : undefined
-                  }
-                  showAnimateOverlay={true}
-                />
+              return (
+                <div key={image.id} className="space-y-3">
+                  <InstagramPhotoCard
+                    concept={{
+                      title: image.category || "B-Roll Content",
+                      description: image.description || image.prompt,
+                      prompt: image.prompt,
+                      category: image.category || "lifestyle",
+                    }}
+                    imageUrl={image.image_url}
+                    imageId={image.id}
+                    isFavorite={false}
+                    onFavoriteToggle={() => handleFavoriteToggle(image.id, false)}
+                    onDelete={() => handleDelete(image.id)}
+                    onAnimate={
+                      !video && !isGenerating && !isAnalyzing
+                        ? () => handleAnimate(
+                            image.id,
+                            image.image_url,
+                            image.description || image.prompt,
+                            image.prompt,
+                            image.category || "lifestyle"
+                          )
+                        : undefined
+                    }
+                    showAnimateOverlay={true}
+                  />
 
-                {isAnalyzing && (
-                  <div className="flex flex-col items-center justify-center py-6 space-y-3 bg-white/50 backdrop-blur-2xl border border-white/70 rounded-2xl">
-                    <div className="flex gap-1.5">
-                      <div className="w-2 h-2 rounded-full bg-stone-950 animate-bounce"></div>
-                      <div
-                        className="w-2 h-2 rounded-full bg-stone-950 animate-bounce"
-                        style={{ animationDelay: "0.2s" }}
-                      ></div>
-                      <div
-                        className="w-2 h-2 rounded-full bg-stone-950 animate-bounce"
-                        style={{ animationDelay: "0.4s" }}
-                      ></div>
+                  {isAnalyzing && (
+                    <div className="flex flex-col items-center justify-center py-6 space-y-3 bg-white/50 backdrop-blur-2xl border border-white/70 rounded-2xl">
+                      <div className="flex gap-1.5">
+                        <div className="w-2 h-2 rounded-full bg-stone-950 animate-bounce"></div>
+                        <div
+                          className="w-2 h-2 rounded-full bg-stone-950 animate-bounce"
+                          style={{ animationDelay: "0.2s" }}
+                        ></div>
+                        <div
+                          className="w-2 h-2 rounded-full bg-stone-950 animate-bounce"
+                          style={{ animationDelay: "0.4s" }}
+                        ></div>
+                      </div>
+                      <div className="text-center space-y-1">
+                        <span className="text-xs tracking-wider uppercase font-semibold text-stone-700">
+                          Analyzing Scene
+                        </span>
+                        <p className="text-[10px] text-stone-600">Creating motion prompt</p>
+                      </div>
                     </div>
-                    <div className="text-center space-y-1">
-                      <span className="text-xs tracking-wider uppercase font-semibold text-stone-700">
-                        Analyzing Scene
-                      </span>
-                      <p className="text-[10px] text-stone-600">Creating motion prompt</p>
-                    </div>
-                  </div>
-                )}
+                  )}
 
-                {isGenerating && (
-                  <div className="flex flex-col items-center justify-center py-6 space-y-3 bg-white/50 backdrop-blur-2xl border border-white/70 rounded-2xl">
-                    <div className="flex gap-1.5">
-                      <div className="w-2 h-2 rounded-full bg-stone-950 animate-bounce"></div>
-                      <div
-                        className="w-2 h-2 rounded-full bg-stone-950 animate-bounce"
-                        style={{ animationDelay: "0.2s" }}
-                      ></div>
-                      <div
-                        className="w-2 h-2 rounded-full bg-stone-950 animate-bounce"
-                        style={{ animationDelay: "0.4s" }}
-                      ></div>
+                  {isGenerating && (
+                    <div className="flex flex-col items-center justify-center py-6 space-y-3 bg-white/50 backdrop-blur-2xl border border-white/70 rounded-2xl">
+                      <div className="flex gap-1.5">
+                        <div className="w-2 h-2 rounded-full bg-stone-950 animate-bounce"></div>
+                        <div
+                          className="w-2 h-2 rounded-full bg-stone-950 animate-bounce"
+                          style={{ animationDelay: "0.2s" }}
+                        ></div>
+                        <div
+                          className="w-2 h-2 rounded-full bg-stone-950 animate-bounce"
+                          style={{ animationDelay: "0.4s" }}
+                        ></div>
+                      </div>
+                      <div className="text-center space-y-1">
+                        <span className="text-xs tracking-wider uppercase font-semibold text-stone-700">
+                          Creating Reel
+                        </span>
+                        <p className="text-[10px] text-stone-600">1-3 minutes</p>
+                      </div>
                     </div>
-                    <div className="text-center space-y-1">
-                      <span className="text-xs tracking-wider uppercase font-semibold text-stone-700">
-                        Creating Reel
-                      </span>
-                      <p className="text-[10px] text-stone-600">1-3 minutes</p>
+                  )}
+
+                  {error && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
+                      <p className="text-xs text-red-600">{error}</p>
+                      <button
+                        onClick={() =>
+                          handleAnimate(
+                            image.id,
+                            image.image_url,
+                            image.description || image.prompt,
+                            image.prompt,
+                            image.category || "lifestyle"
+                          )
+                        }
+                        className="mt-2 text-xs font-semibold text-red-700 hover:text-red-900 min-h-[40px] px-3 py-2"
+                      >
+                        Try Again
+                      </button>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {error && (
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
-                    <p className="text-xs text-red-600">{error}</p>
-                    <button
-                      onClick={() =>
-                        handleAnimate(
-                          image.id,
-                          image.image_url,
-                          image.description || image.prompt,
-                          image.prompt,
-                          image.category || "lifestyle"
-                        )
-                      }
-                      className="mt-2 text-xs font-semibold text-red-700 hover:text-red-900 min-h-[40px] px-3 py-2"
-                    >
-                      Try Again
-                    </button>
-                  </div>
-                )}
+                  {video && video.video_url && (
+                    <div className="mt-3">
+                      {console.log("[v0] ✅ Rendering InstagramReelCard for video:", video.id)}
+                      <InstagramReelCard 
+                        videoUrl={video.video_url} 
+                        motionPrompt={video.motion_prompt || undefined}
+                        onDelete={video.id ? () => deleteVideo(video.id) : undefined}
+                      />
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
 
-                {video && video.video_url && (
-                  <div className="mt-3">
-                    {console.log("[v0] ✅ Rendering InstagramReelCard for video:", video.id || 'client-state')}
-                    <InstagramReelCard 
-                      videoUrl={video.video_url} 
-                      motionPrompt={video.motion_prompt || undefined}
-                      onDelete={video.id ? () => deleteVideo(video.id) : undefined}
-                    />
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
+          {hasMore && (
+            <div className="flex justify-center pt-8">
+              {isLoadingMore ? (
+                <div className="flex flex-col items-center gap-3">
+                  <Loader2 className="w-6 h-6 animate-spin text-stone-950" />
+                  <span className="text-xs tracking-wider uppercase font-light text-stone-600">
+                    Loading more...
+                  </span>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setSize(size + 1)}
+                  className="px-8 py-3 text-xs tracking-[0.15em] uppercase font-light bg-stone-950 text-white rounded-xl hover:bg-stone-800 transition-all duration-200 touch-manipulation active:scale-95"
+                >
+                  Load More Images
+                </button>
+              )}
+            </div>
+          )}
+        </>
       )}
     </div>
   )

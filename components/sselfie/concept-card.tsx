@@ -196,7 +196,28 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
 
     try {
       console.log("[v0] Starting video generation from image:", generatedImageUrl)
+      
+      console.log("[v0] 🎨 Generating AI motion prompt with vision analysis...")
+      const motionResponse = await fetch("/api/maya/generate-motion-prompt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fluxPrompt: concept.prompt,
+          description: concept.description,
+          category: concept.category,
+          imageUrl: generatedImageUrl, // Vision analysis for accurate motion
+        }),
+      })
 
+      const motionData = await motionResponse.json()
+      
+      if (!motionResponse.ok) {
+        console.warn("[v0] ⚠️ Motion prompt generation failed, using concept description")
+      }
+      
+      const aiGeneratedMotionPrompt = motionData.motionPrompt || concept.description
+      console.log("[v0] ✅ AI-generated motion prompt:", aiGeneratedMotionPrompt)
+      
       const response = await fetch("/api/maya/generate-video", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -204,8 +225,8 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
         body: JSON.stringify({
           imageUrl: generatedImageUrl,
           imageId: generationId,
-          motionPrompt: undefined, // Let the API generate a creative default
-          imageDescription: concept.description, // Pass concept description for context
+          motionPrompt: aiGeneratedMotionPrompt, // Use AI-generated prompt instead of undefined
+          imageDescription: concept.description,
         }),
       })
 

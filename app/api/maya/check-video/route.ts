@@ -28,8 +28,29 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    const replicate = getReplicateClient()
-    const prediction = await replicate.predictions.get(predictionId)
+    let prediction
+    try {
+      const replicate = getReplicateClient()
+      prediction = await replicate.predictions.get(predictionId)
+    } catch (replicateError) {
+      // Handle Replicate API errors (rate limits, network issues, etc.)
+      const errorMessage = replicateError instanceof Error ? replicateError.message : String(replicateError)
+      
+      // Check if it's a rate limit error
+      if (errorMessage.includes("Too Many Requests") || errorMessage.includes("429")) {
+        console.log("[v0] ⚠️ Replicate rate limit hit, will retry")
+        // Return processing status so client will poll again
+        return NextResponse.json({
+          status: "processing",
+          progress: 50,
+          message: "Rate limited, retrying...",
+        })
+      }
+      
+      // For other errors, log and rethrow
+      console.error("[v0] Replicate API error:", errorMessage)
+      throw replicateError
+    }
 
     console.log("[v0] ========== VIDEO POLLING CHECK ==========")
     console.log("[v0] Video ID:", videoId)

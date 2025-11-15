@@ -752,6 +752,17 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
                   Loading more...
                 </div>
               )}
+              {!isLoadingMore && (
+                <button
+                  onClick={() => {
+                    setIsLoadingMore(true)
+                    setSize((prev) => prev + 1)
+                  }}
+                  className="px-6 py-3 text-xs tracking-[0.15em] uppercase font-light bg-stone-100/50 border border-stone-200/40 rounded-xl hover:bg-stone-100/70 transition-all duration-200"
+                >
+                  Load More Images
+                </button>
+              )}
             </div>
           )}
         </>

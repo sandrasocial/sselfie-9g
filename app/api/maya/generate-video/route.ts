@@ -10,12 +10,12 @@ const sql = neon(process.env.DATABASE_URL || "")
 function enhanceMotionPrompt(userPrompt: string | undefined, imageDescription?: string): string {
   // If Maya (the AI agent) provided a prompt, trust it completely
   if (userPrompt && userPrompt.trim().length > 0) {
-    console.log("[v0] ✅ Using Maya's intelligent motion prompt:", userPrompt)
+    console.log("[v0] ✅ Using AI-generated motion prompt from Claude vision analysis:", userPrompt)
     return userPrompt
   }
   
-  // Only use fallback if Maya somehow didn't provide a prompt (shouldn't happen)
-  console.log("[v0] ⚠️ WARNING: No motion prompt from Maya, using minimal fallback")
+  console.log("[v0] ⚠️ WARNING: No AI motion prompt provided - this shouldn't happen!")
+  console.log("[v0] Using minimal fallback, but Claude should have generated this")
   return "Standing naturally, subtle breathing motion visible"
 }
 
@@ -101,20 +101,26 @@ export async function POST(request: NextRequest) {
 
     const replicate = getReplicateClient()
 
+    // WAN 2.2 architecture: HIGH-noise (creative) + LOW-noise (refinement) transformers
+    // User's FLUX LoRA only applies to HIGH-noise for character consistency
+    // LOW-noise transformer runs native for natural motion and refinement
     const predictionInput = {
       image: imageUrl,
       prompt: enhanceMotionPrompt(motionPrompt, imageDescription),
-      resolution: "720p", // 720p for better quality (1280x720), 480p for faster generation (832x480)
-      go_fast: true, // Enable fast generation mode
-      num_frames: 101, // 6.25 seconds (101 frames) - optimal for scroll-stopping engagement
-      frames_per_second: 16, // Standard frame rate (pricing based on this)
-      sample_shift: 12, // Sample shift factor for quality (default: 12, range: 1-20)
-      interpolate_output: true, // Interpolate to 30 FPS for smooth playback
-      disable_safety_checker: false, // Keep safety checker enabled
-      lora_weights_transformer: loraWeightsUrl, // HIGH transformer LoRA for character consistency
-      lora_weights_transformer_2: loraWeightsUrl, // LOW transformer_2 LoRA for character consistency
-      lora_scale_transformer: 1.3, // Increased LoRA strength from 1.0 to 1.3 for stronger character consistency in videos
-      lora_scale_transformer_2: 1.3,
+      resolution: "720p",
+      go_fast: true,
+      num_frames: 101,
+      frames_per_second: 16,
+      sample_shift: 12,
+      interpolate_output: true,
+      disable_safety_checker: false,
+      // HIGH-noise transformer: Apply user's trained FLUX LoRA for character consistency
+      lora_weights_transformer: loraWeightsUrl,
+      lora_scale_transformer: 1.0,
+      // LOW-noise transformer: No LoRA (native refinement for natural motion)
+      // Note: transformer_2 parameters are intentionally omitted
+      // WAN 2.2 expects separate high/low noise LoRAs, but FLUX training doesn't produce these
+      // Best practice: Apply LoRA only to creative stage (high-noise), let refinement run native
     }
 
     console.log("[v0] ========== WAN-2.2-I2V-FAST INPUT ==========")
@@ -123,22 +129,13 @@ export async function POST(request: NextRequest) {
     console.log("[v0] Enhanced motion prompt:", predictionInput.prompt)
     console.log("[v0] Resolution:", predictionInput.resolution)
     console.log("[v0] Go fast:", predictionInput.go_fast)
-    console.log("[v0] Num frames:", predictionInput.num_frames, "(6.25 seconds for scroll-stopping engagement)")
+    console.log("[v0] Num frames:", predictionInput.num_frames, "(6.25 seconds)")
     console.log("[v0] FPS:", predictionInput.frames_per_second)
     console.log("[v0] Sample shift:", predictionInput.sample_shift)
     console.log("[v0] Interpolate output:", predictionInput.interpolate_output)
-    console.log("[v0] ✅ LoRA weights (transformer):", predictionInput.lora_weights_transformer)
-    console.log("[v0] ✅ LoRA weights (transformer_2):", predictionInput.lora_weights_transformer_2)
-    console.log(
-      "[v0] ✅ LoRA scale (transformer):",
-      predictionInput.lora_scale_transformer,
-      "(1.3 for strong character consistency)",
-    )
-    console.log(
-      "[v0] ✅ LoRA scale (transformer_2):",
-      predictionInput.lora_scale_transformer_2,
-      "(1.3 for strong character consistency)",
-    )
+    console.log("[v0] ✅ LoRA (HIGH-noise transformer):", predictionInput.lora_weights_transformer)
+    console.log("[v0] ✅ LoRA scale (HIGH-noise):", predictionInput.lora_scale_transformer)
+    console.log("[v0] ℹ️  LOW-noise transformer: Native (no LoRA) for natural motion")
     console.log("[v0] Full prediction input:", JSON.stringify(predictionInput, null, 2))
     console.log("[v0] ================================================")
 

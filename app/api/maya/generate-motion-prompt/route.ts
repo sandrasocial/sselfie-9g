@@ -33,56 +33,56 @@ export async function POST(request: Request) {
     console.log("[v0] Image URL:", imageUrl)
 
     if (imageUrl) {
-      console.log("[v0] 🔍 Image provided - using vision analysis for accurate motion prompt")
+      console.log("[v0] 🔍 Image provided - using vision analysis for detailed motion prompt")
 
-      const visionPrompt = `Analyze this image and create a natural Instagram B-roll motion prompt optimized for Wan 2.2 video model.
+      const visionPrompt = `You are creating a detailed Instagram B-roll/Reel motion prompt for the Wan 2.2 video model.
 
-**CRITICAL: Only suggest movements that match what you SEE in the image.**
+**YOU HAVE ACCESS TO:**
+1. The actual image (analyze it carefully)
+2. The FLUX prompt that generated this image (maintain consistency with this styling)
 
-**WAN 2.2 OPTIMIZATION REQUIREMENTS:**
-Formula: Subject + Scene + Motion Description + Amplitude/Speed modifiers
-- **Ideal length: 12-16 words** (Wan 2.2's sweet spot for smooth motion)
-- Include amplitude descriptors: subtle, slight, gentle, moderate, natural, smooth
-- Include speed modifiers: slowly, gradually, smoothly, gently, casually, naturally
-- Add depth cues when relevant: "while background stays still", "with soft focus behind"
+**YOUR TASK:**
+Create a 50-70 word motion prompt following this EXACT structure:
 
-**ANALYZE THE IMAGE:**
-1. What is the person's exact pose and position?
-2. What direction are they facing?
-3. What objects are nearby or in hand?
-4. What movement would be NATURAL from this position?
-5. What's the depth/background context?
+**STRUCTURE:**
+[Shot type] of a [gender] in [specific outfit details from FLUX prompt], [location/position you see in image], [ONE primary slow action]. [Secondary static detail about hands/face/posture]. [Specific lighting description from image]. [Background/environment details with clean aesthetic]. The camera [gentle movement], capturing this [mood/aesthetic] moment.
 
-**ONLY suggest movements that are PHYSICALLY POSSIBLE:**
-- If facing forward → subtle head turn, weight shift, breathing
-- If holding coffee → brings cup to lips with smooth motion
-- If walking pose → takes gradual steps forward with natural stride
-- If static pose → minimal movement, gentle breathing, slight adjustment
-- If looking down → looks up naturally with fluid motion
-- NEVER suggest "looks over shoulder" unless already in that position!
+**REQUIREMENTS:**
+✅ 50-70 words (not 12-16!)
+✅ Start with shot type (Medium shot, Close-up, Wide shot, etc.)
+✅ Use specific clothing details FROM THE FLUX PROMPT (fabrics, colors, fit)
+✅ Describe ONLY what you see in the location (indoor kitchen, outdoor terrace, etc.)
+✅ ONE primary slow action (slowly bringing coffee to lips, gently tucking hair, casually adjusting sunglasses)
+✅ Secondary static details (hands relaxed, slight smile, natural posture)
+✅ Specific lighting (golden hour, soft morning light, overcast natural light, window light)
+✅ Clean aesthetic backgrounds (minimal Scandinavian interior, modern architectural setting, clean urban backdrop)
+✅ Camera movement (slowly pushes in, gentle drift, subtle zoom, steady hold)
+✅ Mood descriptor (quiet contemplative, confident casual, effortless chic)
 
-**WAN 2.2 OPTIMIZED PROMPT STRUCTURE (12-16 words):**
-[Scene context 2-3 words] + [amplitude word] + [speed modifier] + [ONE action] + [optional: depth cue]
+**EXAMPLE OF CORRECT FORMAT (62 words):**
+"Medium shot of a woman in an oversized cream cashmere sweater and high-waisted denim, standing at a modern kitchen counter by a large window, slowly bringing a ceramic coffee mug to her lips. Her other hand rests naturally on the marble counter. Soft morning light streams through the window, illuminating the minimal Scandinavian interior with white walls. The camera slowly pushes in, capturing this quiet contemplative morning moment."
 
-**PERFECT EXAMPLES (12-16 words):**
-- "Standing in bright kitchen, subtle and smooth head turn toward window with soft expression" (14 words)
-- "Walking casually on sidewalk, gradual glance back over shoulder with natural confident smile" (13 words)
-- "Sitting relaxed at table, gentle and slow lift of coffee cup toward lips" (13 words)
-- "By sunny window, slight natural turn to face light with smooth fluid motion" (13 words)
-- "Leaning on wall, subtle hand adjustment to sunglasses with gradual confident movement" (12 words)
+**WHAT YOU MUST DO:**
+1. LOOK at the image - is it indoors or outdoors? What's the actual setting?
+2. READ the FLUX prompt - extract exact clothing details, colors, fabrics
+3. IDENTIFY one natural slow action visible or appropriate from their pose
+4. DESCRIBE the lighting you see in the image
+5. WRITE 50-70 words following the structure exactly
 
-**AMPLITUDE DESCRIPTORS (choose ONE that fits):**
-- subtle, slight, gentle (for minimal movements)
-- moderate, natural, smooth (for medium movements)  
-- fluid, gradual, continuous (for flowing movements)
+**WHAT YOU MUST NEVER DO:**
+❌ Say "outdoor terrace" if the image shows indoors
+❌ Invent clothing details not in the FLUX prompt
+❌ Write less than 50 or more than 70 words
+❌ Skip any required elements (shot type, outfit details, lighting, camera, mood)
+❌ Use generic descriptions - be SPECIFIC
 
-**SPEED MODIFIERS (choose ONE):**
-- slowly, gradually, smoothly, gently, casually, naturally, fluidly
+**ORIGINAL FLUX PROMPT (maintain these style details):**
+"${fluxPrompt}"
 
-Return ONLY the motion prompt (12-16 words), no explanation.
+${description ? `Scene description: "${description}"` : ""}
 
-FLUX description for context: "${fluxPrompt}"
-${description ? `Scene description: "${description}"` : ""}`
+**YOUR OUTPUT:**
+Return ONLY the 50-70 word motion prompt. No explanation. Just the prompt.`
 
       const { text: motionPrompt } = await generateText({
         model: "anthropic/claude-sonnet-4",
@@ -106,26 +106,13 @@ ${description ? `Scene description: "${description}"` : ""}`
       const trimmedPrompt = motionPrompt.trim()
       const wordCount = trimmedPrompt.split(/\s+/).length
 
-      console.log("[v0] 🎨 Vision-generated motion prompt:", trimmedPrompt)
+      console.log("[v0] ========================================")
+      console.log("[v0] 🎨 VISION-GENERATED DETAILED MOTION PROMPT:")
+      console.log("[v0]", trimmedPrompt)
       console.log("[v0] Word count:", wordCount)
-      console.log("[v0] Wan 2.2 optimization:", wordCount >= 12 && wordCount <= 16 ? "✅ OPTIMAL" : "⚠️ Suboptimal")
-
-      if (wordCount < 12) {
-        console.warn("[v0] ⚠️ Motion prompt too short, expanding for natural flow")
-        const expandedPrompt = `Standing naturally in scene, gentle and smooth ${trimmedPrompt} with fluid motion`
-        return NextResponse.json({
-          motionPrompt: expandedPrompt,
-          success: true,
-        })
-      }
-
-      if (wordCount > 16) {
-        console.warn("[v0] ⚠️ Motion prompt too long, using fallback")
-        return NextResponse.json({
-          motionPrompt: "Standing in natural pose, subtle and smooth head turn with gentle fluid movement",
-          success: true,
-        })
-      }
+      console.log("[v0] Target range: 50-70 words")
+      console.log("[v0] Status:", wordCount >= 50 && wordCount <= 70 ? "✅ PERFECT" : "⚠️ Needs adjustment")
+      console.log("[v0] ========================================")
 
       return NextResponse.json({
         motionPrompt: trimmedPrompt,
@@ -133,123 +120,68 @@ ${description ? `Scene description: "${description}"` : ""}`
       })
     }
 
-    console.log("[v0] ⚠️ No image URL - generating motion prompt from FLUX text only")
+    console.log("[v0] ⚠️ No image URL - generating detailed motion prompt from FLUX text only")
 
     const { text: motionPrompt } = await generateText({
       model: "anthropic/claude-sonnet-4",
-      system: `You create natural, smooth motion prompts optimized for Instagram B-roll video generation using Wan 2.2 model.
+      system: `You create detailed Instagram B-roll motion prompts for Wan 2.2 video model.
 
-**WAN 2.2 OPTIMIZATION:**
-The Wan 2.2 video model performs best with prompts that include:
-1. Scene context (2-3 words about setting)
-2. Amplitude descriptor (subtle, slight, gentle, moderate, natural, smooth, fluid, gradual)
-3. Speed modifier (slowly, gradually, smoothly, gently, casually, naturally, fluidly, softly)
-4. Single clear action description
-5. Optional: depth/parallax cues
+**PROMPT STRUCTURE (50-70 words):**
+[Shot type] of a [gender] in [specific outfit details from FLUX prompt], [location/position], [ONE primary slow action]. [Secondary static detail about hands/face/posture]. [Specific lighting description]. [Background/environment details with clean aesthetic]. The camera [gentle movement], capturing this [mood/aesthetic] moment.
 
-**IDEAL PROMPT LENGTH: 12-16 words**
-- Wan 2.2 handles 12-16 words optimally (creates smooth, natural motion)
-- Not too short (causes abrupt motion)
-- Not too long (causes janky multi-action)
+**REQUIREMENTS:**
+- 50-70 words (this is critical!)
+- Start with shot type (Medium shot, Close-up, Wide shot, etc.)
+- Extract specific clothing from FLUX prompt (fabrics, colors, fit)
+- ONE primary slow action (slowly bringing, gently tucking, casually adjusting)
+- Static secondary details (hands relaxed, slight smile, natural posture)
+- Specific lighting (golden hour, soft morning light, window light, overcast)
+- Clean aesthetic backgrounds (minimal, modern, Scandinavian, architectural)
+- Camera movement (slowly pushes in, gentle drift, subtle zoom)
+- Mood descriptor (quiet contemplative, confident casual, effortless chic)
 
-**THE OPTIMIZED FORMULA:**
-[Scene context] + [amplitude] + [speed] + [one action] + [optional depth cue]
+**PERFECT EXAMPLES:**
 
-**PERFECT Examples (12-16 words, Wan 2.2 optimized):**
-- "Standing in cozy kitchen, gentle and slow lift of coffee mug toward lips" (13 words)
-- "Walking casually on city street, gradual glance back over shoulder with slight smile" (13 words)
-- "Sitting relaxed on cafe chair, subtle and smooth look up from phone toward window" (14 words)
-- "Leaning against brick wall, moderate and casual adjustment of sunglasses with confident motion" (13 words)
-- "Standing by window with morning light, gentle and gradual tuck of hair behind ear" (14 words)
-- "Strolling through urban sidewalk, smooth and natural two steps forward with slight smile" (13 words)
+Coffee scene (58 words):
+"Medium shot of a woman in an oversized cream cashmere sweater and high-waisted denim, standing at a modern kitchen counter by a large window, slowly bringing a ceramic coffee mug to her lips. Her other hand rests naturally on the marble counter. Soft morning light streams through the window, illuminating the minimal Scandinavian interior. The camera slowly pushes in, capturing this quiet contemplative moment."
 
-**AMPLITUDE DESCRIPTORS (essential for Wan 2.2):**
-- **Minimal motion:** subtle, slight, gentle, soft, delicate
-- **Medium motion:** moderate, natural, smooth, easy, casual
-- **Flowing motion:** fluid, gradual, continuous, seamless
+Walking scene (61 words):
+"Wide shot of a woman in a camel wool trench coat and white silk blouse, walking casually along a clean urban sidewalk with modern architecture in the background, taking two slow steps forward while glancing back over her shoulder with a slight confident smile. Her hands are tucked naturally into coat pockets. Golden hour light creates soft shadows. The camera tracks alongside smoothly, capturing this effortlessly chic stroll."
 
-**SPEED MODIFIERS (essential for Wan 2.2):**
-- slowly, gradually, smoothly, gently, casually, naturally, fluidly, softly
+Window light scene (57 words):
+"Close-up of a woman in a soft beige knit turtleneck, standing by a large bright window in a minimal white bedroom, gently tucking a strand of hair behind her ear while looking outside with a calm expression. Natural diffused light illuminates her face beautifully. The clean background features simple modern furniture. The camera holds steady, capturing this serene morning moment."
 
-**DEPTH/PARALLAX CUES (when relevant):**
-- "while background stays still"
-- "with soft focus behind"
-- "as foreground blurs slightly"
-
-**ACTION CATEGORIES WITH WAN 2.2 OPTIMIZATION:**
-
-**Coffee/Drink scenes:**
-- "Holding coffee in cozy cafe, gentle and slow lift of cup toward lips" (13 words)
-- "Standing in kitchen with mug, smooth and gradual raise of coffee while looking outside" (14 words)
-- "Sitting at table with latte, subtle and natural bring cup up with calm expression" (14 words)
-
-**Walking/Street scenes:**
-- "Walking casually down urban sidewalk, gradual glance back over shoulder with slight smile" (13 words)
-- "Strolling through city street, smooth and natural stride with confident look to side" (13 words)
-- "Taking slow steps on pavement, gentle and fluid head turn to look back" (14 words)
-
-**Window/Light scenes:**
-- "Standing by bright window, subtle and smooth turn of head toward natural light" (13 words)
-- "Near window with soft glow, gentle and gradual look outside with calm expression" (13 words)
-- "By sunny window, natural and fluid shift of gaze from down to light outside" (15 words)
-
-**Sitting scenes:**
-- "Sitting relaxed on chair, subtle and casual weight shift with natural upward look" (13 words)
-- "Seated on steps with coffee, smooth and gentle lift of cup toward lips" (13 words)
-- "Sitting on bed cross-legged, gradual and natural position adjustment with camera look" (12 words)
-
-**Adjusting outfit/accessories:**
-- "Standing in full outfit, casual and smooth adjustment of sunglasses with confident motion" (12 words)
-- "In stylish coat, gentle and gradual slide of hand into pocket naturally" (12 words)
-- "Wearing statement necklace, delicate and soft touch of jewelry with natural hand gesture" (13 words)
-
-**Minimal/Breathing scenes:**
-- "Standing still in natural pose, subtle breathing visible with gentle minimal movement" (12 words)
-- "Facing camera in calm stance, slight and gradual weight shift with soft expression" (13 words)
-- "Static position by wall, soft breathing and delicate natural body adjustments visible" (12 words)
+Sitting/cafe scene (64 words):
+"Medium shot of a woman in a vintage leather jacket over a white tee and black jeans, sitting relaxed on a wooden chair in a modern cafe with industrial design elements, slowly lifting a latte cup while maintaining eye contact with the camera with a subtle knowing smile. Her other hand rests on her crossed leg. Soft window light creates a warm atmosphere. The camera subtly zooms in, capturing this confident casual vibe."
 
 **YOUR PROCESS:**
-1. Read the FLUX prompt: identify setting, pose, objects, mood
-2. Choose ONE natural movement
-3. Add scene context (2-3 words)
-4. Pick amplitude descriptor (subtle/gentle/moderate/natural/smooth/fluid/gradual)
-5. Add speed modifier (slowly/gradually/smoothly/gently/casually/naturally)
-6. Describe the action clearly
-7. Optional: Add depth cue if scene has layered background
-8. Count words: 12-16 is IDEAL for Wan 2.2
-9. Verify NO forbidden words (camera, she/he, dramatic)
+1. Read FLUX prompt - identify ALL clothing details
+2. Choose appropriate setting matching the aesthetic
+3. Select ONE natural slow action
+4. Add secondary static details
+5. Describe specific lighting appropriate for the scene
+6. Mention clean aesthetic background
+7. Add camera movement
+8. Close with mood descriptor
+9. Count words - must be 50-70
 
-Return ONLY the motion prompt. No explanation. Just the 12-16 word optimized prompt.`,
+Return ONLY the motion prompt. No explanation.`,
       prompt: `FLUX Prompt: "${fluxPrompt}"
 ${description ? `Description: "${description}"` : ""}
 ${category ? `Category: ${category}` : ""}
 
-Create ONE natural Instagram B-roll motion prompt optimized for Wan 2.2 (12-16 words ideal, include amplitude + speed descriptors).`,
+Create a detailed Instagram B-roll motion prompt (50-70 words, following exact structure).`,
     })
 
     const trimmedPrompt = motionPrompt.trim()
     const wordCount = trimmedPrompt.split(/\s+/).length
 
-    console.log("[v0] Generated motion prompt:", trimmedPrompt)
+    console.log("[v0] ========================================")
+    console.log("[v0] Generated detailed motion prompt:", trimmedPrompt)
     console.log("[v0] Word count:", wordCount)
-    console.log("[v0] Wan 2.2 optimization:", wordCount >= 12 && wordCount <= 16 ? "✅ OPTIMAL" : "⚠️ Suboptimal")
-
-    if (wordCount < 12) {
-      console.warn("[v0] ⚠️ Motion prompt too short, expanding for natural flow")
-      const expandedPrompt = `Standing naturally in scene, gentle and smooth ${trimmedPrompt} with fluid motion`
-      return NextResponse.json({
-        motionPrompt: expandedPrompt,
-        success: true,
-      })
-    }
-
-    if (wordCount > 16) {
-      console.warn("[v0] ⚠️ Motion prompt too long, using fallback")
-      return NextResponse.json({
-        motionPrompt: "Standing in natural pose, subtle and smooth head turn with gentle fluid movement",
-        success: true,
-      })
-    }
+    console.log("[v0] Target: 50-70 words")
+    console.log("[v0] Status:", wordCount >= 50 && wordCount <= 70 ? "✅ PERFECT" : "⚠️ Needs adjustment")
+    console.log("[v0] ========================================")
 
     return NextResponse.json({
       motionPrompt: trimmedPrompt,
