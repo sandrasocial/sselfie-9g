@@ -276,7 +276,7 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
           <div className="space-y-2">
             <button
               onClick={handleGenerate}
-              className="group relative w-full bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 text-white px-4 py-2.5 rounded-lg font-semibold text-sm transition-all duration-300 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] min-h-[40px] flex items-center justify-center"
+              className="group relative w-full bg-gradient-to-br from-stone-600 via-stone-700 to-stone-800 text-white px-4 py-2.5 rounded-lg font-semibold text-sm transition-all duration-300 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] min-h-[40px] flex items-center justify-center hover:from-stone-700 hover:via-stone-800 hover:to-stone-900"
             >
               <span>Create Photo</span>
             </button>

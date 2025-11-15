@@ -62,7 +62,9 @@ export default function BRollScreen({ user, userId }: BRollScreenProps) {
 
   const { data: videosData, mutate: mutateVideos } = useSWR("/api/maya/videos", fetcher, {
     refreshInterval: 5000,
-    revalidateOnFocus: false,
+    revalidateOnFocus: true, // Enable revalidation when tab regains focus
+    revalidateOnMount: true, // Always fetch fresh data on mount
+    dedupingInterval: 2000, // Dedupe requests within 2 seconds
   })
 
   const { data: userData } = useSWR("/api/user", fetcher, {
@@ -525,8 +527,7 @@ export default function BRollScreen({ user, userId }: BRollScreenProps) {
             const dbVideo = allVideos.find((v) => v.image_id?.toString() === image.id && v.video_url && v.status === 'completed')
             const clientVideo = completedVideos.get(image.id)
             
-            // Use database video if available, otherwise use client state (for immediate display after generation)
-            const video = dbVideo || (clientVideo ? {
+            const video = dbVideo || (clientVideo && !dbVideo ? {
               video_url: clientVideo.videoUrl,
               motion_prompt: clientVideo.motionPrompt,
               id: 0,

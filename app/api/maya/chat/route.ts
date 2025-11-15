@@ -297,7 +297,7 @@ Generate ${count} diverse concepts that EXACTLY match the user's requested aesth
 
 const generateVideoTool = tool({
   description:
-    "Generate a 5-second animated video from a generated image using the user's trained LoRA model for character consistency. Videos work best with SHORT, SIMPLE motion prompts.",
+    "Generate a 5-second animated video from a generated image. IMPORTANT: Always analyze the image first with vision to create a motion prompt that matches what's actually IN the image.",
   inputSchema: z.object({
     imageUrl: z.string().describe("URL of the image to animate"),
     imageId: z.string().optional().describe("Database ID of the image (if available)"),
@@ -305,7 +305,7 @@ const generateVideoTool = tool({
       .string()
       .optional()
       .describe(
-        "SHORT motion prompt (MAXIMUM 15 words, ONE action only). Analyze image and create directive command. Examples: 'Brings coffee cup to lips' (5 words), 'Turns head to look out window' (6 words), 'Sitting on bed, shifts weight naturally' (6 words), 'Takes two steps, glances back' (5 words). NEVER use narrative voice, camera words, or atmosphere words. Use command verbs only."
+        "Motion prompt will be auto-generated based on image analysis. Only provide this if you've already analyzed the image with vision and created a context-aware prompt following Wan 2.1/2.2 best practices: Subject + Scene + Motion (with speed/amplitude modifiers like 'slowly', 'gently', 'naturally')."
       ),
   }),
   execute: async function* ({ imageUrl, imageId, motionPrompt }) {
@@ -313,10 +313,73 @@ const generateVideoTool = tool({
 
     yield {
       state: "loading" as const,
-      message: "Starting video generation with your trained model...",
+      message: "Analyzing image to create natural motion...",
     }
 
     try {
+      let finalMotionPrompt = motionPrompt
+
+      // If no motion prompt provided, analyze the image with vision first
+      if (!motionPrompt || motionPrompt.trim() === "") {
+        console.log("[v0] 🔍 No motion prompt provided, analyzing image with Claude vision...")
+
+        const visionAnalysisPrompt = `Analyze this image carefully and create a natural motion prompt for Instagram B-roll video generation (Wan 2.1/2.2 model).
+
+**YOUR TASK:**
+1. Look at the person's pose, position, body language, and what they're doing
+2. Identify natural movements that FIT this exact pose and setup
+3. Create ONE motion prompt that would look smooth and authentic
+
+**WAN 2.1/2.2 FORMULA: Subject + Scene + Motion Description**
+
+**CRITICAL RULES:**
+- Only suggest movements that are PHYSICALLY POSSIBLE given the person's position
+- If looking straight ahead → DON'T suggest "looks over shoulder"
+- If standing still → DON'T suggest walking
+- If no coffee/drink visible → DON'T mention bringing cup to lips
+- Match the motion to what's ACTUALLY in the frame
+
+**PROMPT STRUCTURE (10-15 words):**
+[Brief scene context] + [speed modifier] + [ONE natural action that matches the pose]
+
+**Speed Modifiers (REQUIRED):** slowly, gently, casually, naturally, softly
+
+**GOOD Examples (match reality):**
+- Image shows person looking forward: "Standing by window, slowly turns head toward natural light"
+- Image shows person with coffee: "Holding cup in cafe, gently brings coffee to lips"
+- Image shows person walking: "Walking casually on sidewalk, takes two slow steps forward"
+- Image shows static pose: "Standing in natural pose, subtle breathing and minimal head turn"
+
+**BAD Examples (don't match reality):**
+- ❌ Image shows forward gaze, prompt says: "glances back over shoulder" (WRONG - not looking back!)
+- ❌ Image shows standing, prompt says: "walking casually" (WRONG - not moving!)
+- ❌ No drink visible, prompt says: "brings coffee to lips" (WRONG - no coffee!)
+
+Analyze THIS image and create a 10-15 word motion prompt that matches what you actually see.`
+
+        const { text: visionMotionPrompt } = await generateText({
+          model: "anthropic/claude-sonnet-4",
+          messages: [
+            {
+              role: "user",
+              content: [
+                {
+                  type: "text",
+                  text: visionAnalysisPrompt,
+                },
+                {
+                  type: "image",
+                  image: imageUrl,
+                },
+              ],
+            },
+          ],
+        })
+
+        finalMotionPrompt = visionMotionPrompt.trim()
+        console.log("[v0] 🎨 Vision-analyzed motion prompt:", finalMotionPrompt)
+      }
+
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/maya/generate-video`,
         {
@@ -325,7 +388,7 @@ const generateVideoTool = tool({
           body: JSON.stringify({
             imageUrl,
             imageId: imageId || null,
-            motionPrompt: motionPrompt,
+            motionPrompt: finalMotionPrompt,
           }),
         },
       )
@@ -342,7 +405,7 @@ const generateVideoTool = tool({
         videoId,
         predictionId,
         estimatedTime,
-        message: `Video generation started! This will take about ${estimatedTime}. Your trained LoRA model is being used to ensure the video looks like you.`,
+        message: `Video generation started with motion: "${finalMotionPrompt}". This will take about ${estimatedTime}.`,
       }
     } catch (error) {
       console.error("[v0] Error generating video:", error)

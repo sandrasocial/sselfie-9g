@@ -20,7 +20,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    const { fluxPrompt, description, category } = await request.json()
+    const { fluxPrompt, description, category, imageUrl } = await request.json()
 
     if (!fluxPrompt) {
       return NextResponse.json({ error: "FLUX prompt is required" }, { status: 400 })
@@ -30,6 +30,75 @@ export async function POST(request: Request) {
     console.log("[v0] FLUX Prompt:", fluxPrompt)
     console.log("[v0] Description:", description)
     console.log("[v0] Category:", category)
+    console.log("[v0] Image URL:", imageUrl)
+
+    if (imageUrl) {
+      console.log("[v0] 🔍 Image provided - using vision analysis for accurate motion prompt")
+
+      const visionPrompt = `Analyze this image and create a natural Instagram B-roll motion prompt for video generation (Wan 2.1/2.2 model).
+
+**CRITICAL: Only suggest movements that match what you SEE in the image.**
+
+**WAN 2.1/2.2 BEST PRACTICES:**
+- Formula: Subject + Scene + Motion Description
+- Include speed/amplitude modifiers: slowly, gently, casually, naturally
+- Describe the action of elements IN the image
+- 10-15 words ideal (creates smooth, natural motion)
+
+**ANALYZE THE IMAGE:**
+1. What is the person's exact pose and position?
+2. What direction are they facing?
+3. What objects are nearby or in hand?
+4. What movement would be NATURAL from this position?
+
+**ONLY suggest movements that are PHYSICALLY POSSIBLE:**
+- If facing forward → subtle head turn, weight shift, breathing
+- If holding coffee → bring cup to lips
+- If walking pose → takes steps forward
+- If static pose → minimal movement, breathing, slight adjustment
+- If looking down → looks up naturally
+- NEVER suggest "looks over shoulder" unless already in that position!
+
+**PROMPT STRUCTURE (10-15 words):**
+[Scene context] + [speed modifier] + [ONE action matching the pose]
+
+Return ONLY the motion prompt, no explanation.
+
+FLUX description for context: "${fluxPrompt}"
+${description ? `Scene description: "${description}"` : ""}`
+
+      const { text: motionPrompt } = await generateText({
+        model: "anthropic/claude-sonnet-4",
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: visionPrompt,
+              },
+              {
+                type: "image",
+                image: imageUrl,
+              },
+            ],
+          },
+        ],
+      })
+
+      const trimmedPrompt = motionPrompt.trim()
+      const wordCount = trimmedPrompt.split(/\s+/).length
+
+      console.log("[v0] 🎨 Vision-generated motion prompt:", trimmedPrompt)
+      console.log("[v0] Word count:", wordCount)
+
+      return NextResponse.json({
+        motionPrompt: trimmedPrompt,
+        success: true,
+      })
+    }
+
+    console.log("[v0] ⚠️ No image URL - generating motion prompt from FLUX text only")
 
     const { text: motionPrompt } = await generateText({
       model: "anthropic/claude-sonnet-4",
