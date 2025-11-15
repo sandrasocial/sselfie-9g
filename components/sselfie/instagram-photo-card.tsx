@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Image from "next/image"
-import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal } from "lucide-react"
+import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Play } from 'lucide-react'
 import FullscreenImageModal from "./fullscreen-image-modal"
 import type { ConceptData } from "./types"
 
@@ -16,6 +16,7 @@ interface InstagramPhotoCardProps {
   onAnimate?: () => void
   isFavorite: boolean
   onCaptionUpdate?: (newCaption: string) => void
+  showAnimateOverlay?: boolean
 }
 
 export default function InstagramPhotoCard({
@@ -28,6 +29,7 @@ export default function InstagramPhotoCard({
   onAnimate,
   isFavorite,
   onCaptionUpdate,
+  showAnimateOverlay = false,
 }: InstagramPhotoCardProps) {
   const [isViewerOpen, setIsViewerOpen] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
@@ -120,7 +122,16 @@ export default function InstagramPhotoCard({
         </div>
 
         {/* Instagram Image */}
-        <div className="relative aspect-square bg-stone-100 cursor-pointer" onClick={() => setIsViewerOpen(true)}>
+        <div 
+          className="relative aspect-square bg-stone-100 cursor-pointer group" 
+          onClick={(e) => {
+            if (showAnimateOverlay && onAnimate && (e.target as HTMLElement).closest('.animate-overlay')) {
+              onAnimate()
+            } else {
+              setIsViewerOpen(true)
+            }
+          }}
+        >
           <Image
             src={imageUrl || "/placeholder.svg"}
             alt={concept.title}
@@ -128,6 +139,17 @@ export default function InstagramPhotoCard({
             className="object-cover"
             sizes="(max-width: 768px) 100vw, 470px"
           />
+          
+          {showAnimateOverlay && onAnimate && (
+            <div className="animate-overlay absolute inset-0 bg-stone-950/0 group-hover:bg-stone-950/30 transition-all duration-300 flex flex-col items-center justify-center">
+              <div className="w-16 h-16 bg-white/95 backdrop-blur-sm rounded-full flex items-center justify-center shadow-2xl transform scale-90 opacity-0 group-hover:scale-100 group-hover:opacity-100 transition-all duration-300">
+                <Play size={28} className="text-stone-950 ml-1" fill="currentColor" />
+              </div>
+              <p className="text-white font-serif text-sm tracking-wide opacity-0 group-hover:opacity-100 transition-opacity duration-300 mt-3">
+                Click to Create B-Roll
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Instagram Action Bar */}

@@ -8,39 +8,33 @@ import { getAuthenticatedUser } from "@/lib/auth-helper"
 const sql = neon(process.env.DATABASE_URL || "")
 
 function enhanceMotionPrompt(userPrompt: string | undefined, imageDescription?: string): string {
-  // If user provided a creative motion prompt, use it directly
-  if (userPrompt && userPrompt !== "natural movement, cinematic motion" && userPrompt.length > 20) {
-    return userPrompt
+  // If user provided a SHORT creative prompt (under 15 words), use it
+  if (userPrompt) {
+    const wordCount = userPrompt.split(' ').length
+    if (wordCount <= 15) {
+      return userPrompt
+    }
+    // If their prompt is too long, we'll create a simpler one instead
+    console.log("[v0] User prompt too long, creating simplified version")
   }
 
-  const storyDrivenPrompts = [
-    // CONFIDENT STREET STYLE
-    "She walks down the urban street with effortless confidence, mid-stride movement natural and fluid. One hand adjusts designer sunglasses as she glances back over her shoulder with a knowing look. Her coat flows behind her with each step, hair catching the breeze naturally. The energy is editorial street style - confident, intentional, magnetic. Overcast light creates that moody Instagram aesthetic. This is the kind of content that stops the scroll - real life luxury meets candid moment.",
-
-    // COFFEE CULTURE MOMENT
-    "Sitting casually on concrete steps with iced coffee in hand, she scrolls her phone then looks up with genuine warmth. A natural smile spreads across her face as she tilts her head slightly, hair falling over one shoulder. She takes a sip, the movement unhurried and authentic. The vibe is elevated casual - that perfect Instagram lifestyle moment captured in real time. Architectural shadows play across the scene, moody and minimal.",
-
-    // QUIET LUXURY ELEGANCE
-    "She stands against brutalist architecture, hand sliding into her oversized coat pocket as she shifts her weight naturally. Head turns slowly to reveal her profile in soft overcast light. Hair moves like silk with the motion, perfectly imperfect. Eyes connect with camera briefly - powerful, present, elevated. This is The Row energy, Toteme sophistication. Minimal, intentional, expensive-looking without trying. Pure high-end influencer aesthetic.",
-
-    // ATHLEISURE CHIC MOVEMENT
-    "Walking away from camera in chunky white sneakers and wide-leg pants, she looks back over her shoulder with a playful confidence. Baseball cap catches the light as she adjusts her crossbody bag naturally. Movement is casual but captivating - that effortless athleisure vibe mixing luxury and comfort. Urban concrete backdrop, moody lighting. This is how modern influencers move through cities.",
-
-    // EDITORIAL POWER STANCE
-    "She takes a slow, intentional breath, shoulders rolling back as she settles into her power pose against clean architecture. Gaze sweeps across then locks onto camera with striking intensity. Head tilts ever so slightly, expression shifting from contemplative to engaging. Every micro-movement screams editorial sophistication. This is high fashion meets authentic presence - aspirational yet genuinely human. Scroll-stopping luxury aesthetic.",
-
-    // WINDOW LIGHT CONTEMPLATION
-    "Standing by large windows with coffee cup in hand, soft natural light illuminating her profile. She turns slowly from the view to face camera, expression warm and inviting. Hair catches the morning light naturally. The moment feels intimate, like being let into a private morning ritual. Quiet luxury aesthetic with architectural interiors. That coveted golden hour content creators dream of.",
-
-    // CASUAL SEATED CONFIDENCE
-    "Sitting cross-legged on marble steps in oversized knitwear, she glances up from her phone with genuine engagement. One hand moves naturally through hair as she shifts position slightly. The movement is unhurried, authentic, magnetic. Sunglasses rest nearby, iced coffee on the step beside her. This is elevated casual lifestyle content - the kind that builds a following.",
-
-    // URBAN MINIMALIST STRIDE
-    "Mid-stride walking through concrete architecture, long coat flowing dramatically with purposeful movement. She adjusts something on her wrist - watch or bracelet - without breaking pace. Hair moves naturally with each confident step. The energy is unstoppable, ambitious, fashion-forward. Clean minimal backdrop, overcast moody lighting. GQ-level editorial content but for the Instagram age.",
+  // Fallback: Ultra simple minimal motion
+  const simpleMotions = [
+    "Brings coffee cup to lips for slow sip",
+    "Standing still, slowly turns head to look out window",
+    "Hand slides into coat pocket naturally",
+    "Leaning against wall, subtle shift of weight",
+    "Walking two steps, glances back over shoulder",
+    "Sitting on steps, natural shift of posture",
+    "Standing naturally, fingers adjust necklace briefly",
+    "Holding coffee, slight weight shift",
+    "Takes one step forward, looks back",
+    "Standing with arms at sides, subtle breathing visible",
   ]
 
-  const selectedPrompt = storyDrivenPrompts[Math.floor(Math.random() * storyDrivenPrompts.length)]
-
+  const selectedPrompt = simpleMotions[Math.floor(Math.random() * simpleMotions.length)]
+  
+  console.log("[v0] Using fallback simple motion:", selectedPrompt)
   return selectedPrompt
 }
 
@@ -215,7 +209,7 @@ export async function POST(request: NextRequest) {
       videoId,
       predictionId: prediction.id,
       status: "processing",
-      estimatedTime: "40-60 seconds",
+      estimatedTime: "1-3 minutes",
       creditsDeducted: CREDIT_COSTS.ANIMATION,
     })
   } catch (error) {

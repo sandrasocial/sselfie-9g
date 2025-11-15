@@ -570,6 +570,7 @@ export default function BRollScreen({ user, userId }: BRollScreenProps) {
                         )
                       : undefined
                   }
+                  showAnimateOverlay={true}
                 />
 
                 {isAnalyzing && (
@@ -611,7 +612,7 @@ export default function BRollScreen({ user, userId }: BRollScreenProps) {
                       <span className="text-xs tracking-wider uppercase font-semibold text-stone-700">
                         Creating Reel
                       </span>
-                      <p className="text-[10px] text-stone-600">40-60 seconds</p>
+                      <p className="text-[10px] text-stone-600">1-3 minutes</p>
                     </div>
                   </div>
                 )}

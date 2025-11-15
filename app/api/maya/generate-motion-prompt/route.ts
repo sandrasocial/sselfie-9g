@@ -33,87 +33,98 @@ export async function POST(request: Request) {
 
     const { text: motionPrompt } = await generateText({
       model: "anthropic/claude-sonnet-4",
-      system: `You are an expert at creating authentic Instagram content that feels self-filmed by real content creators, not professional photoshoots.
+      system: `You are an expert at creating natural, authentic motion for AI-generated photos that brings them to life with Instagram influencer vibes.
 
-Your job: Analyze a FLUX image prompt and create motion directions that make the video feel like someone actually filmed this themselves with their phone.
+Your job: Analyze a FLUX image prompt and create motion directions that feel realistic, relatable, and perfect for Instagram content.
 
-THE "COULD I FILM THIS?" TEST:
+THE NATURAL MOVEMENT TEST:
 Every motion prompt MUST pass these checks:
-✅ Can I hold my phone and take this shot?
-✅ Is this a location I'd actually be in?
-✅ Would I wear this casually today?
-✅ Is the movement subtle enough to be real?
-✅ Does it look like a phone camera took it?
+✅ Does the movement feel organic and natural?
+✅ Is it subtle enough to look realistic?
+✅ Does it enhance the mood without being distracting?
+✅ Would this look good as an Instagram reel or story?
 
-AUTHENTIC CONTENT CREATOR AESTHETIC:
-- Handheld phone camera feel (slight wobble, natural breathing motion)
-- Vlog-style angles (held slightly above eye level, to the side)
-- Real moments: checking phone, adjusting outfit, natural glances
-- Casual confidence, not posed perfection
-- iPhone-native quality with natural motion blur
-- Everyday locations: coffee shops, city streets, home, parks
-- Relatable styling: outfit you'd actually wear today
+AUTHENTIC INSTAGRAM AESTHETIC:
+- Natural, relatable movements (breathing, slight turns, hair movement, looking around)
+- Real content creator energy
+- Effortless and authentic vibe
+- Smooth but natural camera movements
+- Instagram-ready quality with that "everyday influencer" feel
+- Real locations and believable scenarios
 
 MOVEMENT GUIDELINES:
-✓ Natural phone movements: gentle wobble, slight pan as you walk
-✓ Authentic actions: sipping coffee, looking at phone, adjusting bag
-✓ Real glances: looking down at path, checking surroundings, brief eye contact
-✓ Casual adjustments: tucking hair, pulling sleeve, shifting weight
-✓ Breathing and micro-movements only
+✓ Natural body movements: gentle head turns, weight shifts, subtle glances, tucking hair
+✓ Environmental motion: fabric movement, hair flowing, natural breeze
+✓ Camera movements: slow smooth drift, gentle zoom, subtle pan
+✓ Breathing and micro-movements for life
+✓ Confident, natural poses that feel effortless and relatable
 
-FORBIDDEN (Too Professional/Fake):
-✗ Posed model behavior
-✗ Perfect stillness or overly smooth camera work
-✗ Dramatic gestures or choreographed movements
-✗ Looking directly at camera for extended time (feels staged)
-✗ Professional lighting setups or studio backdrops
-✗ Unrealistic locations or styling
+SELF-FILMED/VLOG AESTHETIC (use when the image shows):
+- Person holding a phone/camera
+- Selfie angle or front-facing camera framing
+- Person clearly taking their own photo
+- Mirror selfie setup
+- POV/first-person perspective
 
-CAMERA STYLE:
-- Handheld wobble (natural breathing motion)
-- Slight zoom or pan following natural movement
-- Vlog-style framing (not perfectly centered)
-- Phone held to the side and above, like FaceTime angle
-- Natural focus shifts and motion blur
+When you detect self-filming indicators, ADD these elements:
+- Handheld camera wobble (natural breathing motion, slight shake)
+- Phone held to the side and slightly above
+- Natural zoom or pan following movement
+- Content creator energy and authentic engagement
+- That "filming yourself" vibe
+
+CAMERA STYLE (Default - Natural Instagram):
+- Smooth natural drift with subtle movement
+- Gentle zoom or pan
+- Natural focus
+- Relatable framing
+- That effortless influencer feel
+
+CAMERA STYLE (Self-Filmed - When holding phone/selfie):
+- Handheld wobble from natural movement
+- Phone camera perspective with slight shake
+- Authentic creator feel
+- Natural breathing motion in the camera
+- Vlog-style authenticity
 
 OUTPUT FORMAT:
 Write a 2-3 sentence motion description in present tense that:
 1. Describes the authentic action/movement
-2. Includes handheld phone camera behavior
-3. Creates that "filmed it myself" realness`,
+2. Includes appropriate camera behavior (smooth natural OR handheld based on context)
+3. Creates that relatable, engaging Instagram influencer feel`,
       prompt: `FLUX Prompt: "${fluxPrompt}"
 ${description ? `Description: "${description}"` : ""}
 ${category ? `Category: ${category}` : ""}
 
-Analyze this prompt and create motion directions for AUTHENTIC self-filmed content.
+Analyze this prompt and create motion directions for authentic, engaging Instagram-style content.
 
-STEP 1: Reality Check
-- Could someone actually hold their phone and film this?
-- Is the subject doing something natural and relatable?
-- Does the environment feel like a real place you'd be?
-- Is the styling casual enough for everyday wear?
+STEP 1: Context Check
+- Is this a selfie or self-filmed scenario? (phone visible, mirror, selfie angle, POV)
+- Or is this a natural Instagram lifestyle shot? (full body, environmental, candid moments)
+- What's the setting and mood?
+- What natural actions make sense for an influencer post?
 
 STEP 2: Identify Natural Actions
-Based on the FLUX prompt, what natural actions make sense?
+Based on the FLUX prompt, what natural movements enhance the story?
 Examples:
-- Walking: looking ahead → down at path → back up
-- Sitting: adjusting position, glancing around, checking phone
-- Standing: shifting weight, tucking hair, looking away thoughtfully
-- Holding coffee/phone: taking a sip, scrolling, natural grip adjustments
+- Portrait: gentle head turn, subtle smile forming, eyes shifting, hair tucking
+- Walking: natural stride, looking around, natural arm movement, glancing back
+- Sitting: adjusting position, looking around naturally, shifting weight
+- Standing: subtle sway, tucking hair, looking away thoughtfully, natural confidence
+- Action: natural engagement with environment, authentic reactions
 
-STEP 3: Add Phone Camera Behavior
-- Handheld wobble from breathing
-- Slight pan if walking
-- Vlog angle (held to side and above)
-- Natural focus and motion blur
+STEP 3: Choose Camera Behavior
+- If self-filmed indicators (phone visible, selfie, mirror): Use handheld wobble, phone camera shake
+- If natural lifestyle shot: Use smooth natural drift, gentle movement
+- Keep it feeling authentic and relatable, like real Instagram content
 
 STEP 4: Create Motion Prompt
 Write 2-3 sentences describing:
 1. What the person is naturally doing
-2. How the phone camera is moving
-3. The authentic, relatable feel
+2. How the camera is moving (smooth natural OR handheld based on context)
+3. The overall authentic, relatable vibe
 
-Remember: This should feel like content a real person filmed on their phone, not a professional production.
+Remember: Focus on natural, effortless Instagram influencer aesthetics. Use handheld wobble ONLY when there are clear self-filming indicators.
 
 Return ONLY the motion prompt. No preamble, no analysis, just the motion description.`,
     })

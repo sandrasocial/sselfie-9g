@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Check } from "lucide-react"
+import { Check } from 'lucide-react'
 import InstagramPhotoCard from "./instagram-photo-card"
 import InstagramReelCard from "./instagram-reel-card"
 import type { ConceptData } from "./types"
@@ -302,6 +302,7 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
             onFavoriteToggle={handleFavoriteToggle}
             onDelete={handleDelete}
             onAnimate={!videoUrl && !isGeneratingVideo ? handleAnimate : undefined}
+            showAnimateOverlay={false}
           />
 
           {isGeneratingVideo && (
@@ -319,7 +320,7 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
               </div>
               <div className="text-center space-y-1">
                 <span className="text-xs tracking-wider uppercase font-semibold text-stone-700">Creating Reel</span>
-                <p className="text-[10px] text-stone-600">40-60 seconds</p>
+                <p className="text-[10px] text-stone-600">1-3 minutes</p>
               </div>
             </div>
           )}

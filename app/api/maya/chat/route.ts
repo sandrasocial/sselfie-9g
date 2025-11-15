@@ -27,30 +27,22 @@ interface MayaConcept {
 
 const generateConceptsTool = tool({
   description:
-    "Generate 3-5 photo concept ideas with detailed fashion and styling intelligence based on Maya's creative lookbook. If user uploaded a reference image, YOU MUST analyze it visually first. Can also modify concepts based on specific user requests including hair, skin, clothing, and styling preferences.",
+    "Generate 3-5 diverse photo concepts with detailed fashion and styling intelligence. Use your comprehensive knowledge of ALL Instagram aesthetics, fashion trends, and photography styles. Match concepts to user's requests, personal brand data, or trending aesthetics. Be dynamic - don't limit yourself to preset templates. If user uploaded a reference image, analyze it visually first.",
   inputSchema: z.object({
-    userRequest: z.string().describe("What the user is asking for"),
+    userRequest: z.string().describe("What the user is asking for - be specific about aesthetic, style, vibe, or trend they want"),
     aesthetic: z
       .string()
       .optional()
-      .describe("Which creative look to base concepts on (e.g., 'Scandinavian Minimalist', 'Urban Moody')"),
-    context: z.string().optional().describe("Additional context about the user or their needs"),
+      .describe("Specific aesthetic/trend to focus on (e.g., 'Old Money', 'Coastal Grandmother', 'Y2K', 'Quiet Luxury', 'Dark Academia', 'Clean Girl', etc.) - use ANY Instagram trend, not just preset options"),
+    context: z.string().optional().describe("Additional context about the user, occasion, or purpose"),
     userModifications: z
       .string()
       .optional()
       .describe(
-        "Specific user-requested modifications like 'make clothes more oversized', 'add more hair volume', 'warmer lighting', 'more realistic skin texture', etc. Apply ALL requests to prompts.",
+        "Specific user-requested modifications like 'make clothes more oversized', 'warmer lighting', 'more realistic skin', 'add specific brand', etc."
       ),
-    count: z.number().min(3).max(5).default(4).describe("Number of concepts to generate (default 4)"),
-    referenceImageUrl: z.string().optional().describe("URL of reference image uploaded by user"),
-    customSettings: z
-      .object({
-        styleStrength: z.number().optional(),
-        promptAccuracy: z.number().optional(),
-        aspectRatio: z.string().optional(),
-      })
-      .optional()
-      .describe("User's custom generation settings including aspect ratio"),
+    count: z.number().optional().default(3).describe("Number of concepts to generate (3-5)"),
+    referenceImageUrl: z.string().optional().describe("If user uploaded reference image for inspiration"),
   }),
   execute: async function* ({
     userRequest,
@@ -317,42 +309,9 @@ Generate ${count} diverse concepts now with urban luxury street style aesthetic.
     } catch (error) {
       console.error("[v0] Error generating concepts:", error)
 
-      const fallbackConcepts: MayaConcept[] = [
-        {
-          title: "Morning Coffee Ritual",
-          description: "Grabbing your usual latte before work. That perfect in-between moment.",
-          category: "Half Body Lifestyle" as const,
-          fashionIntelligence: "Comfortable elevated style in soft neutrals",
-          lighting: "Soft morning window light, warm golden glow",
-          location: "Modern minimalist space with large windows",
-          prompt:
-            "Woman in cream knit sweater sitting by large window while enjoying her morning coffee. Desaturated warm tones with soft morning light, shot on iPhone with natural amateur quality, raw street photography aesthetic.",
-        },
-        {
-          title: "Urban Commute",
-          description: "Walking through the city in your favorite coat. Just vibing.",
-          category: "Environmental Portrait" as const,
-          fashionIntelligence: "Contemporary urban styling with structured outerwear",
-          lighting: "Overcast natural light, soft even illumination",
-          location: "Modern city street with clean architecture",
-          prompt:
-            "Man in black tailored jacket walking mid-stride through the city while holding coffee. Desaturated tones with crushed shadows, shot on iPhone with natural amateur quality, raw street photography aesthetic.",
-        },
-        {
-          title: "Creative Focus",
-          description: "Chilling at home in comfy clothes. Nothing fancy, just you.",
-          category: "Close-Up Portrait" as const,
-          fashionIntelligence: "Relaxed creative attire in warm tones",
-          lighting: "Warm desk lamp mixing with natural window light",
-          location: "Home creative workspace with natural textures",
-          prompt:
-            "Person in casual attire sitting at workspace while scrolling phone. Warm muted tones with desk lamp light, authentic social media aesthetic, candid urban lifestyle moment with shallow focus.",
-        },
-      ]
-
       yield {
-        state: "ready" as const,
-        concepts: fallbackConcepts.slice(0, count),
+        state: "error" as const,
+        message: "I need a bit more direction! What aesthetic or vibe are you going for? (Examples: old money, Y2K, coastal vibes, dark academia, clean girl, mob wife, cottage core, quiet luxury, etc.)"
       }
     }
   },
@@ -360,7 +319,7 @@ Generate ${count} diverse concepts now with urban luxury street style aesthetic.
 
 const generateVideoTool = tool({
   description:
-    "Generate a 5-second animated video from a generated image using the user's trained LoRA model for character consistency. Suggest creative motion prompts that enhance the photo's story with modern Instagram influencer movements.",
+    "Generate a 5-second animated video from a generated image using the user's trained LoRA model for character consistency. Create SHORT, SIMPLE motion prompts with ONE action maximum for smooth, natural movement.",
   inputSchema: z.object({
     imageUrl: z.string().describe("URL of the image to animate"),
     imageId: z.string().optional().describe("Database ID of the image (if available)"),
@@ -368,7 +327,7 @@ const generateVideoTool = tool({
       .string()
       .optional()
       .describe(
-        "Description of desired motion/animation. Examples: 'walking mid-stride and looking back over shoulder with a confident smile', 'sitting on steps with coffee while naturally turning head to engage with camera', 'standing against architecture with hand sliding into coat pocket and subtle confident head tilt', 'adjusting oversized sunglasses while walking, hair flowing naturally in urban breeze'",
+        "SHORT motion description (max 15 words, ONE action only). Examples: 'Brings coffee cup to lips for slow sip', 'Standing still, slowly turns head to look out window', 'Hand slides into coat pocket naturally', 'Walking two steps, glances back over shoulder'. NEVER include camera instructions or multiple simultaneous actions."
       ),
   }),
   execute: async function* ({ imageUrl, imageId, motionPrompt }) {
@@ -388,7 +347,7 @@ const generateVideoTool = tool({
           body: JSON.stringify({
             imageUrl,
             imageId: imageId || null,
-            motionPrompt: motionPrompt || "subtle natural movement, gentle head turn, soft breathing motion",
+            motionPrompt: motionPrompt || "subtle natural movement",
           }),
         },
       )
@@ -580,6 +539,22 @@ export async function POST(req: Request) {
       userContext +
       `
 
+**IMPORTANT: USER-SPECIFIC GUIDANCE**
+
+You have access to this user's personal brand preferences above. Use them as PRIMARY guidance, but don't be limited by them. If the user requests something outside their stated preferences, absolutely honor that request.
+
+Examples of dynamic adaptation:
+- User's brand data says "Minimalist" but they request "Y2K vibes" → Give them Y2K
+- User's settings show "Urban" but they ask for "Cottage core" → Create pastoral concepts
+- User's fashion is "Casual" but they want "Old money aesthetic" → Style them in luxury preppy
+
+Always prioritize:
+1. User's explicit request in THIS conversation
+2. User's personal brand data (as a baseline)
+3. Your broad aesthetic knowledge (to enhance and elevate)
+
+Be dynamic. Be creative. Use your full knowledge of Instagram trends and fashion.
+
 ## Current Instagram Trends (2025)
 Maya stays current with platform trends and applies this knowledge to create concepts that feel native to Instagram:
 
@@ -627,22 +602,90 @@ IMPORTANT: Video generation requires a photo first. When users ask for videos, f
    - First, generate 1-2 photo concepts using generateConcepts tool
    - Explain: "I'll create a photo first, then animate it into a 5-second video"
    - After concepts are generated, suggest which one would animate beautifully
-   - Wait for user to generate the photo
-   - Then use generateVideo tool on the generated image
+   - Wait for user to pick a concept, then use generateVideo tool
 
-2. **If user has already generated a photo and asks to animate it:**
-   - Use the generateVideo tool directly
-   - Reference the image they want to animate
-   - Suggest creative motion prompts based on the photo's content
+2. **If user asks to animate an existing image:**
+   - Use the generateVideo tool directly with the image URL
+   - Create a SHORT, SIMPLE motion prompt based on the photo
 
-**MOTION PROMPTS FOR VIDEOS:**
-When suggesting or creating motion prompts, use modern Instagram influencer movements:
-- "walking mid-stride and naturally turning head to look back over shoulder with an authentic smile"
-- "sitting on urban steps while naturally engaging with camera, coffee in hand"
-- "standing against architecture with hand sliding into coat pocket and subtle confident head tilt"
-- "adjusting oversized sunglasses while walking, hair flowing naturally in urban breeze"
-- "leaning against wall and naturally turning towards camera with a genuine expression"
-- "looking down at phone then glancing up with a warm natural smile"
+3. **CRITICAL: Motion Prompt Creation Rules**
+
+   **THE GOLDEN RULE: ONE ACTION MAXIMUM**
+   
+   Video models (Wan 2.1/2.2) create realistic movement ONLY when prompts are SHORT and SIMPLE.
+   Complex multi-action prompts = janky unnatural movement.
+
+   **✅ CORRECT Examples (Copy this style):**
+   - "Brings coffee cup to lips for slow sip" (8 words, 1 action)
+   - "Standing still, slowly turns head to look out window" (9 words, 1 action)
+   - "Hand slides into coat pocket naturally" (6 words, 1 action)
+   - "Walking two steps, glances back over shoulder" (7 words, 2 sequential)
+   - "Leaning against wall, subtle shift of weight" (7 words, 1 action)
+   - "Sitting on steps, brings coffee to lips" (7 words, 1 action)
+   - "Standing with arms at sides, fingers fidget slightly" (8 words, 1 action)
+   - "Adjusts necklace with natural hand movement" (6 words, 1 action)
+
+   **❌ WRONG Examples (NEVER create prompts like this):**
+   - ❌ "She gracefully sips coffee while turning her head to gaze out the window as her hair flows naturally and she leans against the counter" (25 words, 5 actions = WRONG)
+   - ❌ "The camera drifts smoothly following her elegant movement through the space" (11 words, camera talk = WRONG)
+   - ❌ "Creating an authentic moment of morning contemplation with natural energy" (10 words, narrative = WRONG)
+   - ❌ "Walking with confidence, looking back with smile, hair catching light, adjusting sunglasses, coat flowing" (14 words, 5 actions = WRONG)
+
+   **MANDATORY PROMPT REQUIREMENTS:**
+   1. **Maximum 15 words total** - Brevity = smooth motion
+   2. **ONE primary action only** - Two actions max if sequential (sip THEN look), never simultaneous
+   3. **ZERO camera instructions** - Never mention: camera, pan, drift, arc, following, tracking
+   4. **ZERO atmosphere words** - Never use: gracefully, effortlessly, authentically, creating, capturing, showcasing
+   5. **Directive commands** - "Brings cup to lips" NOT "She gracefully sips her coffee"
+   6. **No hair descriptions** - Never mention hair flowing, catching light, or falling
+   7. **Subtle expressions only** - Use "slight smile" or "calm expression", never "massive smile" or "big grin"
+   8. **No talking/speaking** - This is b-roll footage, no dialogue
+
+   **SCENE ANALYSIS GUIDE:**
+
+   When you see these elements in a photo, use these prompt patterns:
+
+   **Coffee/Drink in photo:**
+   - "Brings coffee cup to lips for slow sip"
+   - "Holding coffee, slight shift of weight"
+   - "Standing with coffee, looks toward window"
+
+   **Window/Natural Light:**
+   - "Standing still, slowly turns head to look out window"
+   - "Looking down, lifts gaze to window"
+   - "Facing forward, turns head toward light"
+
+   **Walking/Street:**
+   - "Takes two steps forward with natural stride"
+   - "Mid-stride, glances back over shoulder"
+   - "Walking slowly, looks back once"
+
+   **Leaning Against Wall/Architecture:**
+   - "Leaning against wall, subtle weight shift"
+   - "Standing at wall, hand slides into pocket"
+   - "Leaning casually, slight turn of head"
+
+   **Sitting/Steps:**
+   - "Sitting on steps, brings coffee to lips"
+   - "Seated, natural shift of sitting posture"
+   - "Sitting still, slight adjustment of position"
+
+   **Adjusting Outfit/Accessories:**
+   - "Hand adjusts necklace briefly"
+   - "Fingers tuck hair behind ear"
+   - "Adjusts sunglasses on head"
+   - "Hand slides into coat pocket"
+
+   **Minimal/Breathing Only:**
+   - "Standing naturally, subtle breathing visible"
+   - "Standing still, minimal head movement"
+   - "Static pose, slight weight shift"
+
+4. **Technical Details:**
+   - Videos are 5-6 seconds long at 16fps (interpolated to 30fps)
+   - Generation takes 1-3 minutes
+   - User's trained LoRA model ensures character consistency
+   - Wan 2.1/2.2 model handles the video generation
 `
 
     console.log("[v0] Enhanced system prompt length:", enhancedSystemPrompt.length, "characters")
