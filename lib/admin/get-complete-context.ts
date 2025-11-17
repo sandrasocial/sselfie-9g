@@ -1,12 +1,18 @@
 import { neon } from "@neondatabase/serverless"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
+import { getPersonalStoryContext } from "./get-personal-context"
 
 const sql = neon(process.env.DATABASE_URL!)
 
 export async function getCompleteAdminContext(targetUserId?: string): Promise<string> {
   try {
     const contextParts: string[] = []
+
+    const personalContext = await getPersonalStoryContext()
+    if (personalContext) {
+      contextParts.push(personalContext)
+    }
 
     // Fetch admin knowledge base
     const adminKnowledge = await sql`

@@ -24,6 +24,8 @@ export async function POST(request: Request) {
 
     const { userId, mode, firstMessage } = await request.json()
 
+    const agentMode = mode || 'research'
+
     // Generate chat title from first message
     let chatTitle = "New Chat"
     if (firstMessage && firstMessage.length > 5) {
@@ -33,10 +35,9 @@ export async function POST(request: Request) {
       }
     }
 
-    // Create chat with admin_agent type
     const newChat = await sql`
-      INSERT INTO maya_chats (user_id, chat_title, chat_category, chat_type, last_activity)
-      VALUES (${userId}, ${chatTitle}, ${mode}, 'admin_agent', NOW())
+      INSERT INTO admin_agent_chats (admin_user_id, chat_title, agent_mode, last_activity)
+      VALUES (${userId}, ${chatTitle}, ${agentMode}, NOW())
       RETURNING *
     `
 
@@ -74,13 +75,13 @@ export async function GET(request: Request) {
 
     const chats = await sql`
       SELECT 
-        mc.*,
-        COUNT(mcm.id) as message_count
-      FROM maya_chats mc
-      LEFT JOIN maya_chat_messages mcm ON mcm.chat_id = mc.id
-      WHERE mc.user_id = ${userId} AND mc.chat_type = 'admin_agent'
-      GROUP BY mc.id
-      ORDER BY mc.last_activity DESC
+        aac.*,
+        COUNT(aam.id) as message_count
+      FROM admin_agent_chats aac
+      LEFT JOIN admin_agent_messages aam ON aam.chat_id = aac.id
+      WHERE aac.admin_user_id = ${userId}
+      GROUP BY aac.id
+      ORDER BY aac.last_activity DESC
       LIMIT 20
     `
 

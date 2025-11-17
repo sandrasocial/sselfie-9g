@@ -22,20 +22,54 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Query is required" }, { status: 400 })
     }
 
-    const vectorClient = getVectorClient()
+    console.log("[v0] Semantic search query:", { query, namespace, limit })
 
-    // Perform semantic search
-    const results = await vectorClient.query({
-      data: query,
-      topK: limit,
-      includeMetadata: true,
-      namespace: namespace || VectorNamespaces.competitorContent,
-    })
+    const url = process.env.UPSTASH_SEARCH_REST_URL
+    const token = process.env.UPSTASH_SEARCH_REST_TOKEN
 
-    return NextResponse.json({ results })
-  } catch (error) {
+    if (!url || !token) {
+      console.error("[v0] Upstash Vector not configured")
+      return NextResponse.json(
+        {
+          error: "Semantic search is not configured. Please set up Upstash Vector in your environment variables.",
+          results: [],
+        },
+        { status: 200 }
+      )
+    }
+
+    try {
+      const vectorClient = getVectorClient()
+
+      // Perform semantic search
+      const results = await vectorClient.query({
+        data: query,
+        topK: limit,
+        includeMetadata: true,
+        ...(namespace && { namespace: namespace }),
+      })
+
+      console.log("[v0] Semantic search results:", results.length)
+      return NextResponse.json({ results })
+    } catch (vectorError: any) {
+      if (
+        vectorError?.message?.includes("empty index") ||
+        vectorError?.message?.includes("index name")
+      ) {
+        console.log("[v0] Vector index is empty or not initialized, returning empty results")
+        return NextResponse.json({
+          results: [],
+          message: "No content has been indexed yet. Add content to enable semantic search.",
+        })
+      }
+      throw vectorError
+    }
+  } catch (error: any) {
     console.error("[v0] Semantic search error:", error)
-    return NextResponse.json({ error: "Failed to perform semantic search" }, { status: 500 })
+    return NextResponse.json(
+      { error: error?.message || "Failed to perform semantic search", results: [] },
+      { status: 500 }
+    )
   }
 }
 

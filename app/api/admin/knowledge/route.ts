@@ -26,28 +26,41 @@ export async function GET(request: Request) {
     const type = searchParams.get("type")
     const category = searchParams.get("category")
 
-    // Build query conditions
-    const conditions = ["is_active = true"]
-    const params: any[] = []
-
-    if (type && type !== "all") {
-      params.push(type)
-      conditions.push(`knowledge_type = $${params.length}`)
+    let knowledge
+    
+    if (type && type !== "all" && category && category !== "all") {
+      knowledge = await sql`
+        SELECT * FROM admin_knowledge_base
+        WHERE is_active = true 
+          AND knowledge_type = ${type}
+          AND category = ${category}
+        ORDER BY confidence_level DESC, updated_at DESC
+        LIMIT 50
+      `
+    } else if (type && type !== "all") {
+      knowledge = await sql`
+        SELECT * FROM admin_knowledge_base
+        WHERE is_active = true 
+          AND knowledge_type = ${type}
+        ORDER BY confidence_level DESC, updated_at DESC
+        LIMIT 50
+      `
+    } else if (category && category !== "all") {
+      knowledge = await sql`
+        SELECT * FROM admin_knowledge_base
+        WHERE is_active = true 
+          AND category = ${category}
+        ORDER BY confidence_level DESC, updated_at DESC
+        LIMIT 50
+      `
+    } else {
+      knowledge = await sql`
+        SELECT * FROM admin_knowledge_base
+        WHERE is_active = true
+        ORDER BY confidence_level DESC, updated_at DESC
+        LIMIT 50
+      `
     }
-
-    if (category && category !== "all") {
-      params.push(category)
-      conditions.push(`category = $${params.length}`)
-    }
-
-    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : ""
-
-    const knowledge = await sql`
-      SELECT * FROM admin_knowledge_base
-      ${sql.unsafe(whereClause)}
-      ORDER BY confidence_level DESC, updated_at DESC
-      LIMIT 50
-    `
 
     const guidelines = await sql`
       SELECT * FROM admin_context_guidelines
@@ -68,7 +81,15 @@ export async function GET(request: Request) {
     })
   } catch (error) {
     console.error("[v0] Error fetching admin knowledge:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json(
+      { 
+        error: "Failed to fetch knowledge base",
+        message: error instanceof Error ? error.message : "Unknown error",
+        knowledge: [],
+        guidelines: []
+      }, 
+      { status: 500 }
+    )
   }
 }
 

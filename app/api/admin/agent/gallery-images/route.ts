@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
+import { neon } from "@neondatabase/serverless"
 
 const ADMIN_EMAIL = "ssa@ssasocial.com"
 
@@ -17,23 +18,41 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const userId = searchParams.get("userId")
     const category = searchParams.get("category")
     const limit = Number.parseInt(searchParams.get("limit") || "50")
 
-    let query = supabase.from("generated_images").select("*").order("created_at", { ascending: false }).limit(limit)
-
-    if (userId) {
-      query = query.eq("user_id", Number.parseInt(userId))
+    const sql = neon(process.env.DATABASE_URL!)
+    
+    // Get admin user ID from email
+    const adminUserResult = await sql`
+      SELECT id FROM users WHERE email = ${ADMIN_EMAIL} LIMIT 1
+    `
+    
+    if (!adminUserResult || adminUserResult.length === 0) {
+      return NextResponse.json({ error: "Admin user not found" }, { status: 404 })
     }
 
-    if (category) {
-      query = query.eq("content_category", category)
+    const adminUserId = adminUserResult[0].id
+    console.log("[v0] Admin user ID:", adminUserId)
+
+    // Fetch admin user's generated images
+    let query = `
+      SELECT * FROM generated_images 
+      WHERE user_id = $1
+    `
+    const queryParams: any[] = [adminUserId]
+
+    if (category && category !== "all") {
+      query += ` AND content_category = $2`
+      queryParams.push(category)
     }
 
-    const { data: images, error } = await query
+    query += ` ORDER BY created_at DESC LIMIT $${queryParams.length + 1}`
+    queryParams.push(limit)
 
-    if (error) throw error
+    const images = await sql(query, queryParams)
+
+    console.log("[v0] Fetched admin images count:", images.length)
 
     return NextResponse.json({ images })
   } catch (error) {

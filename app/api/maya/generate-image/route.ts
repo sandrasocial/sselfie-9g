@@ -217,19 +217,17 @@ export async function POST(request: NextRequest) {
       output_quality: qualitySettings.output_quality,
       lora_scale: Number(qualitySettings.lora_scale),
       hf_lora: userLoraPath,
-      seed: qualitySettings.seed || Math.floor(Math.random() * 1000000),
+      seed: customSettings?.seed || qualitySettings.seed || Math.floor(Math.random() * 1000000), // Use custom seed from photoshoot session if provided
       disable_safety_checker: qualitySettings.disable_safety_checker ?? true,
       go_fast: qualitySettings.go_fast ?? false,
       num_outputs: qualitySettings.num_outputs ?? 1,
       model: qualitySettings.model ?? "dev",
     }
 
-    if (qualitySettings.extra_lora) {
-      predictionInput.extra_lora = qualitySettings.extra_lora
-      predictionInput.extra_lora_scale = qualitySettings.extra_lora_scale || 0.8
-      console.log("[v0] ✅ Extra LoRA (Instagram Aesthetic):", predictionInput.extra_lora)
-      console.log("[v0] ✅ Extra LoRA scale:", predictionInput.extra_lora_scale)
-    }
+    console.log("[v0] ========== SEED USAGE ==========")
+    console.log("[v0] Custom seed from photoshoot:", customSettings?.seed)
+    console.log("[v0] Final seed used:", predictionInput.seed)
+    console.log("[v0] ====================================")
 
     console.log("[v0] ========== FULL PREDICTION INPUT ==========")
     console.log("[v0] ✅ User LoRA path (hf_lora):", userLoraPath)

@@ -1,113 +1,90 @@
-# Scripts Cleanup Guide
+# Scripts Directory
 
-This directory contains 165+ scripts accumulated over development. Many are outdated or one-time migrations that have already been executed.
+This directory contains essential database schema and utility scripts for the SSelfie application.
 
-## ✅ Scripts to KEEP (Essential)
+## Active Scripts
 
-### Current Schema (Latest Only)
-- Latest numbered schema files (keep highest number only)
-- `create-stripe-beta-coupon.ts` - Active beta program setup
+### Database Schema (Core)
+- `00-create-all-tables.sql` - Master schema file with all tables
+- `01-create-users-tables.sql` - User authentication and profiles
+- `02-create-maya-tables.sql` - Maya AI chat and generated content
+- `03-create-training-tables.sql` - Model training data
+- `04-create-photo-tables.sql` - Photo generation and storage
+- `05-create-brand-tables.sql` - Personal brand and strategy
+- `06-seed-test-data.sql` - Test data for development
+- `07-add-rls-policies.sql` - Row-level security policies
+- `22-create-credit-system.sql` - Credit and subscription system
+- `22-create-sessions-tables.ts` - Session management
+- `30-create-personal-knowledge-system.sql` - Personal AI agent system (personal story, writing samples, learning feedback)
+- `31-seed-sandra-personal-story.sql` - Sandra's personal story and voice examples
+- `32-create-instagram-connections.sql` - Instagram API integration infrastructure
 
-### Seed Data
-- Any current seed data scripts for development/testing
+### Utilities
+- `create-stripe-beta-coupon.ts` - Create beta program discount codes
+- `sync-stripe-products.ts` - Sync products with Stripe
+- `27-fix-missing-lora-url.ts` - Fix missing LoRA URLs for users
 
-### Utility Scripts
-- Scripts for ongoing maintenance tasks
-- Development helper scripts still in use
+## Running Scripts
 
-## ❌ Scripts to DELETE (Already Executed / Obsolete)
+### SQL Scripts
+Execute directly in your database:
+\`\`\`bash
+psql $DATABASE_URL -f scripts/00-create-all-tables.sql
+\`\`\`
 
-### Completed Migrations
-All these migrations have been executed and are no longer needed:
-- `migrate-*.ts` - All migration scripts
-- `import-production-data.sql` - One-time data import
-- `fix-*` scripts - One-time fixes for specific issues
+### TypeScript Scripts
+Run with tsx:
+\`\`\`bash
+npx tsx scripts/sync-stripe-products.ts
+\`\`\`
 
-### Duplicate Table Creation
-Keep only the LATEST version of each table schema:
-- `20-create-sessions-tables.sql`
-- `21-create-sessions-tables.ts`
-- `22-create-sessions-tables.ts`
-- `21-create-feed-tables-fixed.sql` vs `22-update-feed-tables-schema.sql`
+## Instagram API Integration Setup
 
-### One-Off User Fixes
-These were for specific user issues and are no longer needed:
-- `fix-hafdisosk-lora*.sql`
-- `fix-sandra-users-lora.sql`
-- `check-shannon-*.ts`
-- `cleanup-test-users*.ts/sql/js`
-- `delete-test-users.js`
+**Script:** `32-create-instagram-connections.sql`
+**Status:** ⚠️ Not yet run
 
-### Analysis & Diagnostic Scripts
-These were for one-time debugging:
-- `analyze-*.ts`
-- `diagnose-*.sql`
-- `check-*.ts`
-- `test-*.ts` (except active test utilities)
+### Prerequisites:
+1. Add `INSTAGRAM_APP_SECRET` environment variable (from Meta Developer Console)
+2. Your Meta App ID: `1210263417166165` (Selfie AI)
+3. Redirect URI already configured: `{SITE_URL}/api/instagram/callback`
 
-### Temporary/Experimental
-- Scripts with "temp", "old", "backup" in the name
-- Scripts numbered multiple times (keep highest number only)
+### Features:
+- OAuth 2.0 authentication flow for Instagram Business accounts
+- Long-lived access tokens (60-day expiration)
+- Daily insights sync (impressions, reach, engagement, followers)
+- Post-level performance tracking
+- Platform-wide aggregated metrics for admin dashboard
 
-## 📋 Recommended Cleanup Process
+### Tables Created:
+- `instagram_connections` - User Instagram account connections
+- `instagram_insights` - Historical daily metrics
+- `instagram_posts` - Individual post performance
+- `instagram_platform_metrics` - Aggregated platform stats
 
-1. **Backup First**
-   \`\`\`bash
-   cp -r scripts scripts-backup-$(date +%Y%m%d)
-   \`\`\`
+### Usage:
+1. Run the SQL script: `psql $DATABASE_URL -f scripts/32-create-instagram-connections.sql`
+2. Add `INSTAGRAM_APP_SECRET` to Vercel environment variables
+3. Access Instagram integration via Admin Agent panel > Instagram button
+4. Schedule daily sync: `POST /api/instagram/sync` (via cron job)
 
-2. **Review Current Database**
-   - Check which migrations have already run
-   - Verify current schema matches latest scripts
+## Cleanup History
 
-3. **Create Archive Folder**
-   \`\`\`bash
-   mkdir scripts/archive
-   \`\`\`
+**Date:** 2025-01-16
+**Files Removed:** 50+ obsolete scripts
 
-4. **Move Obsolete Scripts**
-   \`\`\`bash
-   mv scripts/migrate-*.ts scripts/archive/
-   mv scripts/fix-*.sql scripts/archive/
-   mv scripts/cleanup-*.ts scripts/archive/
-   \`\`\`
+### Removed Categories:
+- Completed migrations (migrate-*.ts, repair-*, import-*)
+- User-specific one-time fixes (fix-*, check-*, link-*)
+- Test data cleanup (cleanup-test-*, delete-test-*)
+- Diagnostic scripts (analyze-*, diagnose-*, audit-*)
+- Duplicate schema files (old numbered versions)
+- Manual credit scripts (replaced by admin UI at /admin/credits)
 
-5. **Organize Remaining Scripts**
-   \`\`\`
-   scripts/
-   ├── schema/           # Current table schemas
-   ├── seed/             # Seed data for dev/test
-   ├── utils/            # Ongoing utility scripts
-   └── archive/          # Completed migrations & fixes
-   \`\`\`
+## Notes
 
-## 📊 Estimated Impact
-
-- **Current:** 165 files
-- **After cleanup:** ~20-30 essential files
-- **Space saved:** Minimal (but better organization)
-- **Risk:** Low (keep archive folder for reference)
-
-## ⚠️ Safety Notes
-
-- Never delete scripts until you've verified migrations have run
-- Keep at least one copy of production data imports
-- Archive rather than delete if unsure
-- Document what each remaining script does
-
-## 🔄 Maintenance Going Forward
-
-**New Script Naming Convention:**
-- Use timestamps: `YYYYMMDD-description.ts`
-- Mark one-time scripts: `one-time-fix-issue-123.ts`
-- Document purpose at top of file
-- Delete after execution (for one-time scripts)
-
-**Example:**
-\`\`\`typescript
-/**
- * ONE-TIME SCRIPT - Safe to delete after execution
- * Purpose: Fix duplicate user emails from migration bug
- * Date: 2025-01-15
- * Status: ✅ Executed on production
- */
+- All migrations have been executed and the database schema is current
+- Use the admin dashboard at `/admin/credits` to manage user credits
+- **New:** Run scripts 30-31 to enable personal AI agent system that understands Sandra's story and voice
+- **New:** Run script 32 to enable Instagram analytics integration with OAuth flow
+- Keep only essential scripts - delete one-time fixes after execution
+- Document the purpose and status of new scripts at the top of each file

@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Image from "next/image"
-import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Play } from 'lucide-react'
+import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Play, Camera } from 'lucide-react'
 import FullscreenImageModal from "./fullscreen-image-modal"
 import type { ConceptData } from "./types"
 
@@ -17,6 +17,7 @@ interface InstagramPhotoCardProps {
   isFavorite: boolean
   onCaptionUpdate?: (newCaption: string) => void
   showAnimateOverlay?: boolean
+  onCreatePhotoshoot?: () => void
 }
 
 export default function InstagramPhotoCard({
@@ -30,12 +31,14 @@ export default function InstagramPhotoCard({
   isFavorite,
   onCaptionUpdate,
   showAnimateOverlay = false,
+  onCreatePhotoshoot,
 }: InstagramPhotoCardProps) {
   const [isViewerOpen, setIsViewerOpen] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
   const [liked, setLiked] = useState(isFavorite)
   const [isEditingCaption, setIsEditingCaption] = useState(false)
   const [captionValue, setCaptionValue] = useState(concept.description)
+  const [isCreatingPhotoshoot, setIsCreatingPhotoshoot] = useState(false)
 
   const formatCaption = (text: string) => {
     return text.split("\n").map((line, index, array) => (
@@ -61,6 +64,17 @@ export default function InstagramPhotoCard({
   const handleCancelCaption = () => {
     setCaptionValue(concept.description)
     setIsEditingCaption(false)
+  }
+
+  const handleCreatePhotoshoot = async () => {
+    if (!onCreatePhotoshoot) return
+    setIsCreatingPhotoshoot(true)
+    setShowMenu(false)
+    try {
+      await onCreatePhotoshoot()
+    } finally {
+      setIsCreatingPhotoshoot(false)
+    }
   }
 
   return (
@@ -242,6 +256,27 @@ export default function InstagramPhotoCard({
             {isGenerating && <p className="text-[10px] text-stone-400 tracking-wide">AI-generated</p>}
             <p className="text-xs text-stone-400 uppercase tracking-wide">Just now</p>
           </div>
+
+          {/* Create Photoshoot Button */}
+          {onCreatePhotoshoot && (
+            <button
+              onClick={handleCreatePhotoshoot}
+              disabled={isCreatingPhotoshoot}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-stone-800 via-stone-900 to-stone-800 hover:from-stone-900 hover:via-stone-950 hover:to-stone-900 text-white rounded-lg font-medium text-sm transition-all duration-300 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isCreatingPhotoshoot ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>Creating Photoshoot...</span>
+                </>
+              ) : (
+                <>
+                  <Camera size={18} strokeWidth={2} />
+                  <span>Create Photoshoot in This Style</span>
+                </>
+              )}
+            </button>
+          )}
         </div>
       </div>
 

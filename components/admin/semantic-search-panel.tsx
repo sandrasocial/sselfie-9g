@@ -26,11 +26,15 @@ export function SemanticSearchPanel({ onInsertResult }: SemanticSearchPanelProps
   const [results, setResults] = useState<SearchResult[]>([])
   const [loading, setLoading] = useState(false)
   const [indexing, setIndexing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [message, setMessage] = useState<string | null>(null)
 
   const handleSearch = async () => {
     if (!query.trim()) return
 
     setLoading(true)
+    setError(null)
+    setMessage(null)
     try {
       const response = await fetch("/api/admin/agent/semantic-search", {
         method: "POST",
@@ -43,9 +47,21 @@ export function SemanticSearchPanel({ onInsertResult }: SemanticSearchPanelProps
       })
 
       const data = await response.json()
-      setResults(data.results || [])
+      
+      if (data.message) {
+        setMessage(data.message)
+      }
+      
+      if (data.error && !data.results) {
+        setError(data.error)
+        setResults([])
+      } else {
+        setResults(data.results || [])
+      }
     } catch (error) {
       console.error("[v0] Search error:", error)
+      setError("Failed to perform search. Please try again.")
+      setResults([])
     } finally {
       setLoading(false)
     }
@@ -129,6 +145,18 @@ export function SemanticSearchPanel({ onInsertResult }: SemanticSearchPanelProps
             {loading ? "SEARCHING..." : "SEARCH"}
           </Button>
         </div>
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 p-3 text-sm text-red-800">
+            {error}
+          </div>
+        )}
+        
+        {message && (
+          <div className="bg-blue-50 border border-blue-200 p-3 text-sm text-blue-800">
+            {message}
+          </div>
+        )}
 
         {results.length > 0 && (
           <div className="space-y-2 max-h-96 overflow-y-auto">

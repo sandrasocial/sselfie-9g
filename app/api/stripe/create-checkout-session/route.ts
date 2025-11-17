@@ -29,14 +29,7 @@ export async function POST(request: Request) {
       return Response.json({ error: "Invalid package" }, { status: 400 })
     }
 
-    const origin = request.headers.get("origin")
-    const isProduction = origin?.includes("sselfie.ai")
-    const baseUrl = isProduction
-      ? "https://sselfie.ai"
-      : process.env.NEXT_PUBLIC_APP_URL || origin || "https://sselfie.ai"
-
-    console.log("[v0] Creating checkout session with return_url:", `${baseUrl}/studio`)
-    console.log("[v0] Origin:", origin, "| Is Production:", isProduction)
+    console.log("[v0] Creating embedded checkout session for package:", creditPackage.name)
 
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
@@ -56,7 +49,7 @@ export async function POST(request: Request) {
         },
       ],
       mode: "payment",
-      return_url: `${baseUrl}/studio`,
+      // return_url removed - not needed for embedded checkout
       metadata: {
         user_id: neonUser.id,
         package_id: creditPackage.id,

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Check, MoreVertical } from 'lucide-react'
 import InstagramPhotoCard from "./instagram-photo-card"
 import InstagramReelCard from "./instagram-reel-card"
+import InstagramCarouselCard from "./instagram-carousel-card"
 import type { ConceptData } from "./types"
 
 interface ConceptCardProps {
@@ -26,6 +27,9 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
   const [videoId, setVideoId] = useState<string | null>(null)
   const [videoPredictionId, setVideoPredictionId] = useState<string | null>(null)
   const [videoError, setVideoError] = useState<string | null>(null)
+
+  const [isCreatingPhotoshoot, setIsCreatingPhotoshoot] = useState(false)
+  const [photoshootGenerations, setPhotoshootGenerations] = useState<any[]>([])
 
   useEffect(() => {
     if (!predictionId || !generationId || isGenerated) return
@@ -247,6 +251,134 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
     }
   }
 
+  const handleCreatePhotoshoot = async () => {
+    if (!generatedImageUrl || !generationId) return
+
+    setIsCreatingPhotoshoot(true)
+
+    try {
+      console.log("[v0] 📸 Creating photoshoot from hero image:", generatedImageUrl)
+      
+      const response = await fetch("/api/maya/create-photoshoot", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          heroImageUrl: generatedImageUrl,
+          heroPrompt: concept.prompt,
+          conceptTitle: concept.title,
+          conceptDescription: concept.description,
+          category: concept.category,
+          chatId,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to create photoshoot")
+      }
+
+      console.log("[v0] ✅ Photoshoot created with", data.totalImages, "images in", data.batches.length, "batches")
+      
+      const emptyGenerations = Array.from({ length: data.totalImages }, (_, i) => ({
+        generationId: `prediction_${i}`,
+        imageUrl: null,
+        url: null,
+        status: "processing",
+        index: i,
+        action: `Photo ${i + 1}`
+      }))
+      setPhotoshootGenerations(emptyGenerations)
+      
+      pollBatches(data.batches)
+    } catch (err) {
+      console.error("[v0] Error creating photoshoot:", err)
+      alert(err instanceof Error ? err.message : "Failed to create photoshoot")
+      setIsCreatingPhotoshoot(false)
+    }
+  }
+
+  const pollBatches = async (batches: any[]) => {
+    console.log(`[v0] 📊 Starting to poll ${batches.length} batches`)
+    
+    const pollSingleBatch = async (batch: any) => {
+      const maxAttempts = 60
+      let attempts = 0
+
+      while (attempts < maxAttempts) {
+        try {
+          const response = await fetch(`/api/maya/check-photoshoot-prediction?id=${batch.predictionId}`, {
+            method: "GET",
+          })
+          
+          if (!response.ok) {
+            const text = await response.text()
+            console.error(`[v0] ❌ Failed to check batch ${batch.batchIndex}:`, response.status, text.substring(0, 200))
+            await new Promise(resolve => setTimeout(resolve, 4000))
+            attempts++
+            continue
+          }
+          
+          const status = await response.json()
+          
+          console.log(`[v0] 📊 Batch ${batch.batchIndex} status:`, status.status)
+
+          if (status.status === "succeeded" && status.output) {
+            const imageUrls = Array.isArray(status.output) ? status.output : [status.output]
+            console.log(`[v0] ✅ Batch ${batch.batchIndex} complete with ${imageUrls.length} images`)
+            
+            imageUrls.forEach((imageUrl: string, idx: number) => {
+              const globalIndex = batch.batchIndex * 3 + idx
+              setPhotoshootGenerations(prev => {
+                const updated = [...prev]
+                if (updated[globalIndex]) {
+                  updated[globalIndex] = {
+                    ...updated[globalIndex],
+                    url: imageUrl,
+                    imageUrl: imageUrl,
+                    status: "ready",
+                    action: batch.actions?.[idx] || `Photo ${globalIndex + 1}`
+                  }
+                }
+                return updated
+              })
+            })
+            
+            return imageUrls
+          } else if (status.status === "failed") {
+            console.error(`[v0] ❌ Batch ${batch.batchIndex} failed:`, status.error)
+            return null
+          }
+
+          await new Promise(resolve => setTimeout(resolve, 4000))
+          attempts++
+        } catch (err) {
+          console.error(`[v0] Error polling batch ${batch.batchIndex}:`, err)
+          await new Promise(resolve => setTimeout(resolve, 4000))
+          attempts++
+        }
+      }
+
+      console.error(`[v0] ❌ Batch ${batch.batchIndex} timed out`)
+      return null
+    }
+
+    const pollWithDelay = async (batch: any, index: number) => {
+      await new Promise(resolve => setTimeout(resolve, index * 500))
+      return pollSingleBatch(batch)
+    }
+
+    const results = await Promise.allSettled(
+      batches.map((batch: any, index: number) => pollWithDelay(batch, index))
+    )
+
+    const successCount = results.filter(r => r.status === "fulfilled" && r.value).length
+    console.log(`[v0] 🎉 Photoshoot complete: ${successCount}/${batches.length} batches`)
+    
+    setIsCreatingPhotoshoot(false)
+  }
+
   return (
     <div className="bg-white border border-stone-200 rounded-lg overflow-hidden transition-all duration-300 hover:shadow-lg">
       {/* Instagram-style header */}
@@ -320,16 +452,58 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
 
         {isGenerated && generatedImageUrl && (
           <div className="space-y-3">
-            <InstagramPhotoCard
-              concept={concept}
-              imageUrl={generatedImageUrl}
-              imageId={generationId || ""}
-              isFavorite={isFavorite}
-              onFavoriteToggle={handleFavoriteToggle}
-              onDelete={handleDelete}
-              onAnimate={!videoUrl && !isGeneratingVideo ? handleAnimate : undefined}
-              showAnimateOverlay={false}
-            />
+            {photoshootGenerations.length > 0 && photoshootGenerations.every(p => p.url || p.imageUrl) ? (
+              <InstagramCarouselCard
+                images={photoshootGenerations.map((gen: any) => ({
+                  url: gen.url || gen.imageUrl,
+                  id: parseInt(gen.id || gen.generationId),
+                  action: gen.action || `Photo ${gen.index + 1}`
+                }))}
+                title={concept.title}
+                description={concept.description}
+                category={concept.category}
+                onFavoriteToggle={handleFavoriteToggle}
+                onDelete={handleDelete}
+                isFavorite={isFavorite}
+              />
+            ) : (
+              <InstagramPhotoCard
+                concept={concept}
+                imageUrl={generatedImageUrl}
+                imageId={generationId || ""}
+                isFavorite={isFavorite}
+                onFavoriteToggle={handleFavoriteToggle}
+                onDelete={handleDelete}
+                onAnimate={!videoUrl && !isGeneratingVideo ? handleAnimate : undefined}
+                showAnimateOverlay={false}
+                onCreatePhotoshoot={!isCreatingPhotoshoot && photoshootGenerations.length === 0 ? handleCreatePhotoshoot : undefined}
+              />
+            )}
+
+            {isCreatingPhotoshoot && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-1 h-1 rounded-full bg-stone-600"></div>
+                  <span className="text-xs tracking-[0.15em] uppercase font-light text-stone-600">
+                    Creating Photoshoot ({photoshootGenerations.filter(p => p.url || p.imageUrl).length}/
+                    {photoshootGenerations.length})
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {photoshootGenerations.map((gen, idx) => (
+                    <div key={idx} className="aspect-square bg-stone-100 rounded-lg overflow-hidden">
+                      {gen.url || gen.imageUrl ? (
+                        <img src={gen.url || gen.imageUrl || "/placeholder.svg"} alt={gen.action} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <div className="w-6 h-6 border-2 border-stone-300 border-t-stone-900 rounded-full animate-spin" />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {isGeneratingVideo && (
               <div className="flex flex-col items-center justify-center py-6 space-y-3">

@@ -23,6 +23,7 @@ export function AdminKnowledgeManager() {
   const [isLoading, setIsLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   const [formData, setFormData] = useState({
     knowledge_type: "best_practice",
@@ -40,11 +41,24 @@ export function AdminKnowledgeManager() {
 
   const fetchKnowledge = async () => {
     try {
+      setError(null)
       const response = await fetch("/api/admin/knowledge")
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
+      const contentType = response.headers.get("content-type")
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error("Server returned non-JSON response")
+      }
+      
       const data = await response.json()
       setKnowledge(data.knowledge || [])
     } catch (error) {
-      console.error("Error fetching knowledge:", error)
+      console.error("[v0] Error fetching knowledge:", error)
+      setError(error instanceof Error ? error.message : "Failed to load knowledge base")
+      setKnowledge([])
     } finally {
       setIsLoading(false)
     }
@@ -109,6 +123,23 @@ export function AdminKnowledgeManager() {
 
   if (isLoading) {
     return <div className="text-center py-8">Loading knowledge base...</div>
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-4">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-red-800 text-sm">Error: {error}</p>
+          <button
+            onClick={fetchKnowledge}
+            className="mt-2 text-sm text-red-600 hover:text-red-800 uppercase"
+            style={{ letterSpacing: "0.1em" }}
+          >
+            RETRY
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (

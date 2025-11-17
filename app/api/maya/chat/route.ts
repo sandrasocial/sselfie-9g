@@ -22,6 +22,7 @@ interface MayaConcept {
     styleStrength?: number
     promptAccuracy?: number
     aspectRatio?: string
+    seed?: number
   }
 }
 
@@ -43,6 +44,7 @@ const generateConceptsTool = tool({
       ),
     count: z.number().optional().default(3).describe("Number of concepts to generate (3-5)"),
     referenceImageUrl: z.string().optional().describe("If user uploaded reference image for inspiration"),
+    enablePhotoshootMode: z.boolean().optional().default(true).describe("Enable consistent styling across all concepts like a real photoshoot session"),
   }),
   execute: async function* ({
     userRequest,
@@ -52,6 +54,7 @@ const generateConceptsTool = tool({
     count,
     referenceImageUrl,
     customSettings,
+    enablePhotoshootMode = true,
   }) {
     console.log("[v0] Tool executing - generating concepts for:", {
       userRequest,
@@ -61,6 +64,7 @@ const generateConceptsTool = tool({
       count,
       referenceImageUrl,
       customSettings,
+      enablePhotoshootMode,
     })
 
     yield {
@@ -114,6 +118,7 @@ const generateConceptsTool = tool({
         userGender,
         triggerWord,
         rawGender: userDataResult[0]?.gender,
+        enablePhotoshootMode,
       })
 
       let imageAnalysis = ""
@@ -153,6 +158,25 @@ Be specific and detailed - this analysis will be used to create similar photo co
         console.log("[v0] 🎨 Vision analysis complete:", imageAnalysis.substring(0, 200))
       }
 
+      let photoshootSession = null
+      if (enablePhotoshootMode) {
+        const { createPhotoshootSession } = await import("@/lib/maya/photoshoot-session")
+        
+        console.log("[v0] 📸 Creating photoshoot session for consistent styling...")
+        photoshootSession = await createPhotoshootSession({
+          userGender,
+          aesthetic: aesthetic || userRequest,
+          context: imageAnalysis || context || "",
+        })
+        
+        console.log("[v0] ✅ Photoshoot session created:", {
+          outfit: photoshootSession.baseLook.outfit,
+          location: photoshootSession.baseLook.location,
+          hair: photoshootSession.baseLook.hair,
+          baseSeed: photoshootSession.baseSeed,
+        })
+      }
+
       const conceptPrompt = `You are Maya, an elite fashion expert with deep knowledge of current Instagram trends and Flux AI prompting.
 
 **CURRENT INSTAGRAM TRENDS (2025):**
@@ -160,6 +184,44 @@ ${JSON.stringify(FASHION_TRENDS_2025.instagram.aesthetics, null, 2)}
 
 **VIRAL CONTENT FORMATS:**
 ${JSON.stringify(FASHION_TRENDS_2025.viral, null, 2)}
+
+${enablePhotoshootMode && photoshootSession ? `
+**PHOTOSHOOT SESSION CONSISTENCY (CRITICAL):**
+
+You are creating a cohesive photoshoot with consistent styling across ALL ${count} concepts.
+
+**BASE LOOK (Use in EVERY concept):**
+- Outfit: ${photoshootSession.baseLook.outfit}
+- Location Type: ${photoshootSession.baseLook.location}
+- Hair & Styling: ${photoshootSession.baseLook.hair}
+- Accessories: ${photoshootSession.baseLook.accessories}
+
+**CONSISTENCY RULES:**
+1. ALL ${count} concepts must feature the SAME outfit: ${photoshootSession.baseLook.outfit}
+2. ALL concepts must be in the SAME location type: ${photoshootSession.baseLook.location}
+3. SAME hair and styling in every image: ${photoshootSession.baseLook.hair}
+4. SAME accessories across all shots: ${photoshootSession.baseLook.accessories}
+5. Only POSES and camera angles should vary between concepts
+
+**SEED INSTRUCTIONS:**
+- Base seed: ${photoshootSession.baseSeed}
+- Concept 1 seed: ${photoshootSession.baseSeed}
+- Concept 2 seed: ${photoshootSession.baseSeed + 1}
+- Concept 3 seed: ${photoshootSession.baseSeed + 2}
+- Concept 4 seed: ${photoshootSession.baseSeed + 3} (if applicable)
+- Concept 5 seed: ${photoshootSession.baseSeed + 4} (if applicable)
+
+This ensures facial consistency while allowing natural pose variation.
+
+**EXAMPLE CONCEPT STRUCTURE:**
+{
+  "title": "Coffee Moment",
+  "description": "Sitting at cafe table with coffee",
+  "prompt": "${triggerWord}, ${userGender} in ${photoshootSession.baseLook.outfit}, ${photoshootSession.baseLook.hair}, ${photoshootSession.baseLook.accessories}, sitting at cafe table with coffee, ${photoshootSession.baseLook.location}, natural window light, shot on iPhone 15, film grain, natural skin texture"
+}
+
+Think of this as ONE Instagram carousel post - all images should look like they were shot in the same photoshoot session.
+` : ""}
 
 **FLUX PROMPTING BEST PRACTICES (2025 Research):**
 - **Optimal length: 20-35 words** (research shows 40+ words dilutes model focus)
@@ -170,14 +232,6 @@ ${JSON.stringify(FASHION_TRENDS_2025.viral, null, 2)}
 - Use "film grain" or "subtle grain" for authenticity
 - Technical details enhance realism: "shallow depth of field", "f/1.8", "85mm lens"
 - For Instagram aesthetic: "amateur cellphone quality, visible sensor noise, subtle HDR glow"
-
-**FLUX PROMPT FORMULA:**
-[trigger_word], [subject + clothing], [location], [lighting], [camera details], [aesthetic keywords], [texture details]
-
-**GOOD PROMPT EXAMPLES (20-35 words):**
-- "user_trigger, woman in cream sweater, tennis court, golden hour light, shot on iPhone 15, natural skin texture, film grain, muted tones" (22 words - PERFECT)
-- "user_trigger, lifestyle photo with coffee, cozy kitchen, morning window light, candid composition, authentic feel, shallow depth of field" (21 words - PERFECT)
-- "user_trigger, man in tailored coat, urban street, overcast soft light, 85mm f/1.8, editorial quality, visible grain" (19 words - PERFECT)
 
 **USER CONTEXT:**
 - Gender: ${userGender}
@@ -254,6 +308,7 @@ Match the style, lighting, mood, and aesthetic from the reference analysis above
 
 Generate ${count} diverse concepts that EXACTLY match the user's requested aesthetic: "${userRequest}"${aesthetic ? ` with ${aesthetic} vibe` : ""}.`
 
+      console.log("[v0] Generating concepts with Claude...")
       const { text } = await generateText({
         model: "anthropic/claude-sonnet-4",
         prompt: conceptPrompt,
@@ -277,9 +332,22 @@ Generate ${count} diverse concepts that EXACTLY match the user's requested aesth
         })
       }
 
+      if (enablePhotoshootMode && photoshootSession) {
+        concepts.forEach((concept, index) => {
+          if (!concept.customSettings) {
+            concept.customSettings = {}
+          }
+          concept.customSettings.seed = photoshootSession.baseSeed + index
+          console.log(`[v0] 🎲 Concept ${index + 1} seed:`, concept.customSettings.seed)
+        })
+      }
+
       if (customSettings) {
         concepts.forEach((concept) => {
-          concept.customSettings = customSettings
+          concept.customSettings = {
+            ...concept.customSettings,
+            ...customSettings,
+          }
         })
       }
 
@@ -324,7 +392,6 @@ const generateVideoTool = tool({
     try {
       let finalMotionPrompt = motionPrompt
 
-      // If no motion prompt provided, analyze the image with vision first
       if (!motionPrompt || motionPrompt.trim() === "") {
         console.log("[v0] 🔍 No motion prompt provided, analyzing image with Claude vision...")
 

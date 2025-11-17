@@ -86,7 +86,7 @@ export async function POST(req: NextRequest, { params }: { params: { feedId: str
     }
 
     const [feedLayout] = await sql`
-      SELECT color_palette, brand_vibe FROM feed_layouts WHERE id = ${feedIdInt}
+      SELECT color_palette, brand_vibe, photoshoot_enabled, photoshoot_base_seed FROM feed_layouts WHERE id = ${feedIdInt}
     `
 
     const [model] = await sql`
@@ -218,17 +218,27 @@ export async function POST(req: NextRequest, { params }: { params: { feedId: str
       postId,
       postType: post.post_type,
       promptLength: finalPrompt.length,
+      photoshootMode: feedLayout?.photoshoot_enabled || false,
     })
 
     const replicate = getReplicateClient()
 
+    const generationInput: any = {
+      prompt: finalPrompt,
+      ...qualitySettings,
+      lora: model.lora_weights_url,
+    }
+
+    if (feedLayout?.photoshoot_enabled && feedLayout?.photoshoot_base_seed) {
+      // Add seed variation for diversity while maintaining consistency
+      const seedVariation = post.seed_variation || 0
+      generationInput.seed = feedLayout.photoshoot_base_seed + seedVariation
+      console.log("[v0] [GENERATE-SINGLE] Using photoshoot seed:", generationInput.seed, "variation:", seedVariation)
+    }
+
     const prediction = await replicate.predictions.create({
       version: model.replicate_version_id,
-      input: {
-        prompt: finalPrompt,
-        ...qualitySettings,
-        lora: model.lora_weights_url,
-      },
+      input: generationInput,
     })
 
     console.log("[v0] [GENERATE-SINGLE] Prediction created:", prediction.id)

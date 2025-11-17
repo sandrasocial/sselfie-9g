@@ -2,7 +2,49 @@
 
 import { useEffect, useState } from "react"
 
-interface AnalyticsData {
+interface PlatformAnalytics {
+  scope: "platform"
+  platformStats: {
+    totalUsers: number
+    activeUsers: number
+    newUsersThisWeek: number
+    paidUsers: number
+    totalGenerations: number
+    generationsThisMonth: number
+    generationsThisWeek: number
+    totalFavorites: number
+    usersGenerating: number
+    avgGenerationsPerUser: number
+    totalChats: number
+    totalMessages: number
+    mayaChats: number
+    feedDesignerChats: number
+    usersChatting: number
+    sselfieStudioMembers: number
+    proUsers: number
+    activeSubscriptions: number
+    totalModels: number
+    completedModels: number
+    modelsInTraining: number
+    totalFeeds: number
+    completedFeeds: number
+    usersWithFeeds: number
+  }
+  topCategories: Array<{
+    category: string
+    count: number
+    favorites: number
+    save_rate: number
+  }>
+  recentActivity: Array<{
+    date: string
+    count: number
+    type: string
+  }>
+}
+
+interface UserAnalytics {
+  scope: "user"
   userStats: {
     email: string
     display_name: string
@@ -49,8 +91,10 @@ interface AnalyticsData {
   } | null
 }
 
+type AnalyticsData = PlatformAnalytics | UserAnalytics
+
 interface AdminAnalyticsPanelProps {
-  userId: string
+  userId?: string // Now optional - defaults to platform view
 }
 
 export function AdminAnalyticsPanel({ userId }: AdminAnalyticsPanelProps) {
@@ -60,7 +104,11 @@ export function AdminAnalyticsPanel({ userId }: AdminAnalyticsPanelProps) {
   useEffect(() => {
     async function fetchAnalytics() {
       try {
-        const response = await fetch(`/api/admin/agent/analytics?userId=${userId}`)
+        const url = userId 
+          ? `/api/admin/agent/analytics?scope=user&userId=${userId}`
+          : `/api/admin/agent/analytics?scope=platform`
+        
+        const response = await fetch(url)
         if (response.ok) {
           const data = await response.json()
           setAnalytics(data)
@@ -87,7 +135,203 @@ export function AdminAnalyticsPanel({ userId }: AdminAnalyticsPanelProps) {
     return null
   }
 
-  const { userStats, topCategories, chatEngagement, personalBrand } = analytics
+  if (analytics.scope === "platform") {
+    const { platformStats, topCategories, recentActivity } = analytics
+
+    return (
+      <div className="space-y-4">
+        {/* Platform Overview */}
+        <div className="p-6 bg-stone-50 border border-stone-200 rounded-lg">
+          <h3
+            className="text-lg font-light uppercase mb-4 text-stone-900"
+            style={{ fontFamily: "'Times New Roman', serif", letterSpacing: "0.2em" }}
+          >
+            SSELFIE Studio Overview
+          </h3>
+          <div className="grid grid-cols-4 gap-4">
+            <div>
+              <p className="text-2xl font-light text-stone-900">{platformStats.totalUsers}</p>
+              <p className="text-xs uppercase text-stone-500" style={{ letterSpacing: "0.15em" }}>
+                Total Users
+              </p>
+            </div>
+            <div>
+              <p className="text-2xl font-light text-stone-900">{platformStats.activeUsers}</p>
+              <p className="text-xs uppercase text-stone-500" style={{ letterSpacing: "0.15em" }}>
+                Active Users
+              </p>
+            </div>
+            <div>
+              <p className="text-2xl font-light text-stone-900">{platformStats.newUsersThisWeek}</p>
+              <p className="text-xs uppercase text-stone-500" style={{ letterSpacing: "0.15em" }}>
+                New This Week
+              </p>
+            </div>
+            <div>
+              <p className="text-2xl font-light text-stone-900">{platformStats.paidUsers}</p>
+              <p className="text-xs uppercase text-stone-500" style={{ letterSpacing: "0.15em" }}>
+                Paid Users
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Generation Stats */}
+        <div className="p-6 bg-stone-50 border border-stone-200 rounded-lg">
+          <h3
+            className="text-lg font-light uppercase mb-4 text-stone-900"
+            style={{ fontFamily: "'Times New Roman', serif", letterSpacing: "0.2em" }}
+          >
+            Content Generation
+          </h3>
+          <div className="grid grid-cols-4 gap-4">
+            <div>
+              <p className="text-2xl font-light text-stone-900">{platformStats.totalGenerations}</p>
+              <p className="text-xs uppercase text-stone-500" style={{ letterSpacing: "0.15em" }}>
+                Total Generated
+              </p>
+            </div>
+            <div>
+              <p className="text-2xl font-light text-stone-900">{platformStats.generationsThisMonth}</p>
+              <p className="text-xs uppercase text-stone-500" style={{ letterSpacing: "0.15em" }}>
+                This Month
+              </p>
+            </div>
+            <div>
+              <p className="text-2xl font-light text-stone-900">{platformStats.avgGenerationsPerUser}</p>
+              <p className="text-xs uppercase text-stone-500" style={{ letterSpacing: "0.15em" }}>
+                Avg Per User
+              </p>
+            </div>
+            <div>
+              <p className="text-2xl font-light text-stone-900">{platformStats.usersGenerating}</p>
+              <p className="text-xs uppercase text-stone-500" style={{ letterSpacing: "0.15em" }}>
+                Active Creators
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Engagement Stats */}
+        <div className="p-6 bg-stone-50 border border-stone-200 rounded-lg">
+          <h3
+            className="text-lg font-light uppercase mb-4 text-stone-900"
+            style={{ fontFamily: "'Times New Roman', serif", letterSpacing: "0.2em" }}
+          >
+            Platform Engagement
+          </h3>
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <p className="text-2xl font-light text-stone-900">{platformStats.totalChats}</p>
+              <p className="text-xs uppercase text-stone-500" style={{ letterSpacing: "0.15em" }}>
+                Total Chats
+              </p>
+            </div>
+            <div>
+              <p className="text-2xl font-light text-stone-900">{platformStats.totalMessages}</p>
+              <p className="text-xs uppercase text-stone-500" style={{ letterSpacing: "0.15em" }}>
+                Messages Sent
+              </p>
+            </div>
+            <div>
+              <p className="text-2xl font-light text-stone-900">
+                {platformStats.totalChats > 0 
+                  ? Math.round(platformStats.totalMessages / platformStats.totalChats) 
+                  : 0}
+              </p>
+              <p className="text-xs uppercase text-stone-500" style={{ letterSpacing: "0.15em" }}>
+                Avg per Chat
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Revenue Stats */}
+        <div className="p-6 bg-stone-50 border border-stone-200 rounded-lg">
+          <h3
+            className="text-lg font-light uppercase mb-4 text-stone-900"
+            style={{ fontFamily: "'Times New Roman', serif", letterSpacing: "0.2em" }}
+          >
+            Revenue & Subscriptions
+          </h3>
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <p className="text-2xl font-light text-stone-900">{platformStats.sselfieStudioMembers}</p>
+              <p className="text-xs uppercase text-stone-500" style={{ letterSpacing: "0.15em" }}>
+                Studio Members
+              </p>
+            </div>
+            <div>
+              <p className="text-2xl font-light text-stone-900">{platformStats.proUsers}</p>
+              <p className="text-xs uppercase text-stone-500" style={{ letterSpacing: "0.15em" }}>
+                Pro Users
+              </p>
+            </div>
+            <div>
+              <p className="text-2xl font-light text-stone-900">{platformStats.activeSubscriptions}</p>
+              <p className="text-xs uppercase text-stone-500" style={{ letterSpacing: "0.15em" }}>
+                Active Subs
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Top Categories */}
+        {topCategories.length > 0 && (
+          <div className="p-6 bg-stone-50 border border-stone-200 rounded-lg">
+            <h3
+              className="text-lg font-light uppercase mb-4 text-stone-900"
+              style={{ fontFamily: "'Times New Roman', serif", letterSpacing: "0.2em" }}
+            >
+              Top Content Categories
+            </h3>
+            <div className="space-y-2">
+              {topCategories.map((category, index) => (
+                <div key={index} className="flex justify-between items-center py-2 border-t border-stone-200">
+                  <p className="text-sm text-stone-900">{category.category}</p>
+                  <div className="text-right">
+                    <p className="text-sm text-stone-900">
+                      {category.count} generated, {category.save_rate}% saved
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Feature Adoption */}
+        <div className="p-6 bg-stone-50 border border-stone-200 rounded-lg">
+          <h3
+            className="text-lg font-light uppercase mb-4 text-stone-900"
+            style={{ fontFamily: "'Times New Roman', serif", letterSpacing: "0.2em" }}
+          >
+            Feature Adoption
+          </h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-xs uppercase text-stone-500 mb-1" style={{ letterSpacing: "0.15em" }}>
+                Trained Models
+              </p>
+              <p className="text-sm text-stone-900">
+                {platformStats.completedModels} completed, {platformStats.modelsInTraining} training
+              </p>
+            </div>
+            <div>
+              <p className="text-xs uppercase text-stone-500 mb-1" style={{ letterSpacing: "0.15em" }}>
+                Feed Designer
+              </p>
+              <p className="text-sm text-stone-900">
+                {platformStats.usersWithFeeds} users, {platformStats.completedFeeds} feeds
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const { userStats, topCategories, chatEngagement, personalBrand } = analytics as UserAnalytics
 
   return (
     <div className="space-y-4">
