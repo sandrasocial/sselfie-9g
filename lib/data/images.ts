@@ -43,9 +43,64 @@ export interface GalleryImage {
 }
 
 /**
+ * Fetch paginated images for a user from ai_images table
+ */
+export async function getUserImages(
+  userId: string,
+  limit: number = 50,
+  offset: number = 0
+): Promise<{ images: GalleryImage[]; total: number }> {
+  try {
+    const countResult = await sql`
+      SELECT COUNT(*) as total
+      FROM ai_images
+      WHERE user_id = ${userId}
+    `
+    const total = Number(countResult[0]?.total || 0)
+
+    const aiImages = await sql`
+      SELECT 
+        id,
+        user_id,
+        image_url,
+        prompt,
+        generated_prompt,
+        style,
+        category,
+        is_favorite,
+        source,
+        created_at
+      FROM ai_images
+      WHERE user_id = ${userId}
+      ORDER BY created_at DESC
+      LIMIT ${limit}
+      OFFSET ${offset}
+    `
+
+    const images: GalleryImage[] = aiImages.map((img: any) => ({
+      id: `ai_${img.id}`,
+      user_id: img.user_id,
+      image_url: img.image_url,
+      prompt: img.prompt || "",
+      description: img.generated_prompt || img.prompt || "",
+      category: img.category,
+      style: img.style,
+      is_favorite: img.is_favorite || false,
+      created_at: img.created_at,
+      source: "ai_images" as const,
+    }))
+
+    return { images, total }
+  } catch (error) {
+    console.error("[v0] Error fetching user images:", error)
+    throw error
+  }
+}
+
+/**
  * Fetch all images for a user from both ai_images and generated_images tables
  */
-export async function getUserImages(userId: string): Promise<GalleryImage[]> {
+export async function getAllUserImages(userId: string): Promise<GalleryImage[]> {
   try {
     const aiImages = await sql`
       SELECT 
@@ -64,18 +119,47 @@ export async function getUserImages(userId: string): Promise<GalleryImage[]> {
       ORDER BY created_at DESC
     `
 
-    const allImages: GalleryImage[] = aiImages.map((img: any) => ({
-      id: `ai_${img.id}`,
-      user_id: img.user_id,
-      image_url: img.image_url,
-      prompt: img.prompt || "",
-      description: img.generated_prompt || img.prompt || "",
-      category: img.category,
-      style: img.style,
-      is_favorite: img.is_favorite || false,
-      created_at: img.created_at,
-      source: "ai_images" as const,
-    }))
+    const generatedImages = await sql`
+      SELECT 
+        id,
+        user_id,
+        selected_url as image_url,
+        prompt,
+        category,
+        subcategory,
+        saved,
+        created_at
+      FROM generated_images
+      WHERE user_id = ${userId}
+      ORDER BY created_at DESC
+    `
+
+    const allImages: GalleryImage[] = [
+      ...aiImages.map((img: any) => ({
+        id: `ai_${img.id}`,
+        user_id: img.user_id,
+        image_url: img.image_url,
+        prompt: img.prompt || "",
+        description: img.generated_prompt || img.prompt || "",
+        category: img.category,
+        style: img.style,
+        is_favorite: img.is_favorite || false,
+        created_at: img.created_at,
+        source: "ai_images" as const,
+      })),
+      ...generatedImages.map((img: any) => ({
+        id: `gen_${img.id}`,
+        user_id: img.user_id,
+        image_url: img.image_url,
+        prompt: img.prompt || "",
+        description: img.prompt || "",
+        category: img.category || img.subcategory,
+        style: undefined,
+        is_favorite: img.saved || false,
+        created_at: img.created_at,
+        source: "generated_images" as const,
+      })),
+    ]
 
     return allImages
   } catch (error) {
@@ -146,6 +230,7 @@ export async function getImageById(imageId: string): Promise<GalleryImage | null
           prompt: img.prompt || "",
           description: img.prompt || "",
           category: img.category || img.subcategory,
+          style: undefined,
           is_favorite: img.saved || false,
           created_at: img.created_at,
           source: "generated_images",
