@@ -5,73 +5,99 @@ import { getUserByAuthId } from "@/lib/user-mapping"
 import { checkCredits, deductCredits, getUserCredits, CREDIT_COSTS } from "@/lib/credits"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { rateLimit } from "@/lib/rate-limit-api"
+import { generateText } from "ai"
 
 const sql = getDbClient()
 
-const STORYTELLING_SEQUENCES = {
-  cafe: [
-    "sitting at outdoor cafe table with espresso cup, hand resting on cup naturally, looking away candidly",
-    "standing up from table, grabbing designer handbag from chair, mid-motion capture",
-    "walking on cobblestone street outside cafe, natural confident stride, candid street shot",
-    "sitting indoors at a cafe table with a laptop, looking focused and relaxed",
-  ],
-  street: [
-    "leaning casually against urban wall, one foot crossed naturally, relaxed influencer pose",
-    "walking down city street mid-stride, natural movement, authentic street style capture",
-    "pausing on sidewalk, adjusting sunglasses naturally, candid urban lifestyle moment",
-    "standing in front of a graffiti wall, looking contemplative and cool",
-  ],
-  indoor: [
-    "sitting elegantly on modern furniture, legs crossed naturally, soft window lighting",
-    "standing by large window looking outside, natural contemplative pose, editorial feel",
-    "walking through interior space, mid-motion capture, elegant lifestyle aesthetic",
-    "sitting on a couch with a book, looking calm and content",
-  ],
-  outdoor: [
-    "standing in natural outdoor setting, soft breeze in hair, looking away naturally",
-    "walking on outdoor path mid-stride, authentic movement capture, natural environment",
-    "sitting relaxed in natural setting, engaged with surroundings, peaceful lifestyle moment",
-    "laying on grass with a picnic blanket, looking happy and carefree",
-  ],
-}
+async function generatePhotoshootPoseVariations({
+  basePrompt,
+  baseSeed,
+  triggerWord,
+  numImages,
+}: {
+  basePrompt: string
+  baseSeed: number
+  triggerWord: string
+  numImages: number
+}) {
+  console.log("[v0] 📸 Generating authentic lifestyle variations from original prompt...")
+  console.log("[v0] Base prompt:", basePrompt)
+  console.log("[v0] Base seed:", baseSeed)
 
-function detectLocationStyle(prompt: string): keyof typeof STORYTELLING_SEQUENCES {
-  const promptLower = prompt.toLowerCase()
-  if (promptLower.includes("cafe") || promptLower.includes("coffee") || promptLower.includes("restaurant"))
-    return "cafe"
-  if (promptLower.includes("street") || promptLower.includes("urban") || promptLower.includes("city")) return "street"
-  if (promptLower.includes("indoor") || promptLower.includes("room") || promptLower.includes("interior"))
-    return "indoor"
-  return "outdoor"
-}
+  const mayaPrompt = `You are a professional photoshoot director creating an authentic "day in the life" Instagram carousel. Extract the exact outfit and styling from the original prompt, then create ${numImages} lifestyle variations with different poses, angles, AND scenery.
 
-function extractOutfitDetails(prompt: string): string {
-  const removePatterns = [
-    /\b(sitting|standing|walking|looking|holding|grabbing|adjusting|leaning|crossing|pausing|turning|checking|resting|preparing|mid-motion|capture)\b[^,.]*/gi,
-    /\bat\s+(outdoor\s+)?cafe\s+table[^,.]*/gi,
-    /\bon\s+(cobblestone\s+)?street[^,.]*/gi,
-    /\bwith\s+(espresso\s+)?cup[^,.]*/gi,
-    /\bfrom\s+table[^,.]*/gi,
-    /\bwhile\s+walking[^,.]*/gi,
-    /\bover\s+shoulder[^,.]*/gi,
+**ORIGINAL PROMPT:**
+"${basePrompt}"
+
+**TASK:**
+1. Extract EXACT outfit/styling details from original (keep IDENTICAL - same clothes, hair, accessories)
+2. Identify the original location THEME (e.g., "Paris cafe area", "beach club", "city streets")
+3. Create ${numImages} authentic influencer lifestyle moments with:
+   - Same outfit & styling (consistency anchor)
+   - Varied scenery within the same theme (different spots in the area)
+   - Different poses and camera angles
+   - Natural, candid actions and movements
+
+**SHOT VARIETY (use this mix):**
+- 2 full body shots (walking, standing, sitting)
+- 2 medium shots (waist up, three-quarter angle)
+- 2 close-up shots (shoulders up, face focus)
+
+**AUTHENTIC ACTIONS/MOMENTS:**
+- Walking across street, past storefront, between tables
+- Standing against wall, by window, adjusting outfit
+- Sitting at table with coffee/phone, on steps
+- Profile shots captured mid-stride or looking away
+- Playful candid moments (laughing, fixing hair, looking at phone)
+
+**OUTPUT FORMAT (JSON):**
+
+\`\`\`json
+{
+  "baseOutfit": "exact outfit description from original - include every detail",
+  "locationTheme": "the general area/theme",
+  "poses": [
+    {
+      "title": "Walking Past Storefront",
+      "shotType": "full body | medium | close-up",
+      "scenery": "specific location variation within theme",
+      "action": "specific pose/movement/gesture",
+      "cameraAngle": "straight on | profile | three-quarter | from above | etc",
+      "prompt": "${triggerWord}, [gender], wearing the exact same [COMPLETE outfit from original with ALL details], [scenery description], [specific action/pose], [camera angle], [same lighting style and camera from original]"
+    }
   ]
-  
-  let cleanedPrompt = prompt
-  removePatterns.forEach(pattern => {
-    cleanedPrompt = cleanedPrompt.replace(pattern, '')
+}
+\`\`\`
+
+**IMPORTANT:**
+- Keep prompts 50-70 words, similar to original style
+- Use EXACT same outfit details in every prompt
+- Vary ONLY: scenery location, pose/action, camera angle
+- Make it feel like authentic lifestyle content, not staged photoshoot
+- Include natural details like "hair flowing from movement", "bag swaying", "looking at phone"
+
+Generate ${numImages} variations now.`
+
+  const { text } = await generateText({
+    model: "anthropic/claude-sonnet-4",
+    prompt: mayaPrompt,
+    maxOutputTokens: 2000,
   })
+
+  const jsonMatch = text.match(/\{[\s\S]*\}/)
+  if (!jsonMatch) {
+    throw new Error("No JSON found in Maya response")
+  }
+
+  const photoshootPlan = JSON.parse(jsonMatch[0])
   
-  cleanedPrompt = cleanedPrompt
-    .replace(/,\s*,+/g, ',')
-    .replace(/\s+,/g, ',')
-    .replace(/,\s+/g, ', ')
-    .replace(/\s+/g, ' ')
-    .trim()
-  
-  if (cleanedPrompt.startsWith(',')) cleanedPrompt = cleanedPrompt.substring(1).trim()
-  if (cleanedPrompt.endsWith(',')) cleanedPrompt = cleanedPrompt.substring(0, cleanedPrompt.length - 1).trim()
-  
-  return cleanedPrompt || "stylish outfit, natural aesthetic"
+  console.log("[v0] 📸 Lifestyle variations created:", {
+    baseOutfit: photoshootPlan.baseOutfit.substring(0, 50) + "...",
+    locationTheme: photoshootPlan.locationTheme,
+    numPoses: photoshootPlan.poses.length,
+  })
+
+  return photoshootPlan
 }
 
 export async function POST(request: NextRequest) {
@@ -99,7 +125,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { heroImageUrl, heroPrompt, conceptTitle, conceptDescription, category, chatId } = body
+    const { heroImageUrl, heroPrompt, heroSeed, conceptTitle, conceptDescription, category, chatId } = body
 
     if (!heroImageUrl || !heroPrompt) {
       return NextResponse.json({ error: "Hero image and prompt are required" }, { status: 400 })
@@ -110,19 +136,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "User not found in database" }, { status: 404 })
     }
 
-    const IMAGES_PER_BATCH = 3
-    const NUM_BATCHES = 2
-    const TOTAL_IMAGES = IMAGES_PER_BATCH * NUM_BATCHES
-    const totalCreditsRequired = CREDIT_COSTS.IMAGE * TOTAL_IMAGES
+    const NUM_IMAGES = Math.floor(Math.random() * 4) + 6 // Random between 6-9
+    const totalCreditsRequired = CREDIT_COSTS.IMAGE * NUM_IMAGES
 
-    const locationType = detectLocationStyle(heroPrompt)
-    const storySequence = STORYTELLING_SEQUENCES[locationType]
-
-    console.log("[v0] 📸 Creating photoshoot with seed reuse strategy:", {
-      locationType,
-      imagesPerBatch: IMAGES_PER_BATCH,
-      numBatches: NUM_BATCHES,
-      totalImages: TOTAL_IMAGES
+    console.log("[v0] 📸 Creating photoshoot from original image:", {
+      numImages: NUM_IMAGES,
+      originalPrompt: heroPrompt.substring(0, 100) + "...",
+      originalSeed: heroSeed,
     })
 
     const hasEnoughCredits = await checkCredits(neonUser.id, totalCreditsRequired)
@@ -134,7 +154,7 @@ export async function POST(request: NextRequest) {
           error: "Insufficient credits",
           required: totalCreditsRequired,
           current: currentBalance,
-          message: `Photoshoot creation requires ${totalCreditsRequired} credits (${TOTAL_IMAGES} images). You have ${currentBalance} credits. Please purchase more credits.`,
+          message: `Photoshoot creation requires ${totalCreditsRequired} credits (${NUM_IMAGES} images). You have ${currentBalance} credits. Please purchase more credits.`,
         },
         { status: 402 },
       )
@@ -162,6 +182,18 @@ export async function POST(request: NextRequest) {
     }
 
     const userData = userDataResult[0]
+    
+    let userGender = "person"
+    if (userData.gender) {
+      const dbGender = userData.gender.toLowerCase().trim()
+      if (dbGender === "woman" || dbGender === "female") {
+        userGender = "woman"
+      } else if (dbGender === "man" || dbGender === "male") {
+        userGender = "man"
+      }
+    }
+
+    const triggerWord = userData.trigger_word || `user${neonUser.id}`
     const replicateVersionId = userData.replicate_version_id
     const replicateModelId = userData.replicate_model_id
     const userLoraScale = userData.lora_scale
@@ -181,92 +213,86 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log("[v0] 📸 Creating photoshoot with batch generation:", {
-      locationType,
-      imagesPerBatch: IMAGES_PER_BATCH,
-      totalImages: TOTAL_IMAGES
+    const consistencySeed = heroSeed || Math.floor(Math.random() * 1000000)
+    
+    console.log("[v0] 📸 Using seed for all images:", consistencySeed)
+
+    const photoshootPlan = await generatePhotoshootPoseVariations({
+      basePrompt: heroPrompt,
+      baseSeed: consistencySeed,
+      triggerWord,
+      numImages: NUM_IMAGES,
     })
 
-    const outfitDetails = extractOutfitDetails(heroPrompt)
-    console.log("[v0] 📸 Base outfit details:", outfitDetails)
-
-    const baseSeed = Math.floor(Math.random() * 1000000)
-    const seeds = [baseSeed, baseSeed + 1, baseSeed + 2] // Only 3 seeds for maximum consistency
-    
     const replicate = getReplicateClient()
     const { MAYA_QUALITY_PRESETS } = await import("@/lib/maya/quality-settings")
     const categoryKey = category as keyof typeof MAYA_QUALITY_PRESETS
     const presetSettings = MAYA_QUALITY_PRESETS[categoryKey] || MAYA_QUALITY_PRESETS.default
 
-    const negativePrompt = "different outfit, clothing change, different clothes, wardrobe change, different accessories, different jewelry, outfit variation, style inconsistency, multiple people, duplicate person, different hairstyle, hair color change"
+    console.log("[v0] 📸 Using ONLY user's trained LoRA (no extra_lora)")
 
-    const batch1Actions = storySequence.slice(0, IMAGES_PER_BATCH)
-    const batch2Actions = storySequence.slice(IMAGES_PER_BATCH, IMAGES_PER_BATCH * 2)
-    
-    const batch1Prompt = `${outfitDetails}, photoshoot sequence: ${batch1Actions[0]}; next shot: ${batch1Actions[1]}; next shot: ${batch1Actions[2]}, natural lighting, professional photography, shot on iPhone 15, 8K quality, natural skin texture, lifestyle aesthetic`
+    const predictions: Array<{
+      predictionId: string
+      title: string
+      description: string
+      pose: string
+      location: string
+      seed: number
+      index: number
+      shotDistance?: string
+      energyLevel?: string
+    }> = []
 
-    console.log(`[v0] 📸 Batch 1 (3 images):`, { seed: baseSeed, actions: batch1Actions })
+    console.log("[v0] 📸 Creating", NUM_IMAGES, "predictions with SAME seed:", consistencySeed)
 
-    const batch1Prediction = await replicate.predictions.create({
-      version: replicateVersionId,
-      input: {
-        prompt: batch1Prompt,
-        negative_prompt: negativePrompt,
-        guidance_scale: presetSettings.guidance_scale,
-        num_inference_steps: presetSettings.num_inference_steps,
-        aspect_ratio: presetSettings.aspect_ratio,
-        megapixels: presetSettings.megapixels,
-        output_format: presetSettings.output_format,
-        output_quality: presetSettings.output_quality,
-        lora_scale: Number(userLoraScale || presetSettings.lora_scale),
-        hf_lora: userLoraPath,
-        seed: baseSeed, // Replicate will auto-increment to baseSeed+1, baseSeed+2
-        disable_safety_checker: true,
-        go_fast: false,
-        num_outputs: 3, // Generate 3 images in one call
-        model: "dev",
-      },
-    })
+    for (let i = 0; i < NUM_IMAGES; i++) {
+      const pose = photoshootPlan.poses[i]
 
-    const batch2Prompt = `${outfitDetails}, photoshoot sequence: ${batch2Actions[0]}; next shot: ${batch2Actions[1]}; next shot: ${batch2Actions[2]}, natural lighting, professional photography, shot on iPhone 15, 8K quality, natural skin texture, lifestyle aesthetic`
+      console.log(`[v0] 📸 Creating Image ${i + 1}/${NUM_IMAGES}:`, {
+        title: pose.title,
+        seed: consistencySeed,
+        shotType: pose.shotType,
+        scenery: pose.scenery,
+        promptPreview: pose.prompt.substring(0, 100) + "...",
+      })
 
-    console.log(`[v0] 📸 Batch 2 (3 images, REUSING seeds):`, { seed: baseSeed, actions: batch2Actions })
+      const prediction = await replicate.predictions.create({
+        version: replicateVersionId,
+        input: {
+          prompt: pose.prompt,
+          guidance_scale: presetSettings.guidance_scale,
+          num_inference_steps: presetSettings.num_inference_steps,
+          aspect_ratio: "4:5",
+          megapixels: presetSettings.megapixels,
+          output_format: presetSettings.output_format,
+          output_quality: presetSettings.output_quality,
+          lora_scale: Number(userLoraScale || presetSettings.lora_scale),
+          hf_lora: userLoraPath,
+          seed: consistencySeed, // SAME seed for all images
+          disable_safety_checker: true,
+          go_fast: false,
+          num_outputs: 1,
+          model: "dev",
+        },
+      })
 
-    const batch2Prediction = await replicate.predictions.create({
-      version: replicateVersionId,
-      input: {
-        prompt: batch2Prompt,
-        negative_prompt: negativePrompt,
-        guidance_scale: presetSettings.guidance_scale,
-        num_inference_steps: presetSettings.num_inference_steps,
-        aspect_ratio: presetSettings.aspect_ratio,
-        megapixels: presetSettings.megapixels,
-        output_format: presetSettings.output_format,
-        output_quality: presetSettings.output_quality,
-        lora_scale: Number(userLoraScale || presetSettings.lora_scale),
-        hf_lora: userLoraPath,
-        seed: baseSeed, // REUSE same baseSeed for outfit consistency
-        disable_safety_checker: true,
-        go_fast: false,
-        num_outputs: 3, // Generate 3 images in one call
-        model: "dev",
-      },
-    })
+      predictions.push({
+        predictionId: prediction.id,
+        title: pose.title,
+        description: pose.action,
+        pose: pose.action,
+        location: pose.scenery,
+        seed: consistencySeed,
+        index: i,
+        shotDistance: pose.shotType,
+      })
 
-    const batches = [
-      {
-        predictionId: batch1Prediction.id,
-        actions: batch1Actions,
-        seeds: [baseSeed, baseSeed + 1, baseSeed + 2],
-        batchIndex: 0,
-      },
-      {
-        predictionId: batch2Prediction.id,
-        actions: batch2Actions,
-        seeds: [baseSeed, baseSeed + 1, baseSeed + 2], // Same seeds reused
-        batchIndex: 1,
-      },
-    ]
+      console.log(`[v0] ✅ Prediction ${i + 1} created:`, prediction.id)
+
+      if (i < NUM_IMAGES - 1) {
+        await new Promise(resolve => setTimeout(resolve, 100))
+      }
+    }
 
     const insertResult = await sql`
       INSERT INTO generated_images (
@@ -279,16 +305,18 @@ export async function POST(request: NextRequest) {
         created_at
       ) VALUES (
         ${neonUser.id},
-        ${`${outfitDetails}, photoshoot sequence`},
-        ${`Photoshoot: ${[...batch1Actions, ...batch2Actions].join(", ")}`},
+        ${heroPrompt},
+        ${`Photoshoot: ${predictions.map(p => p.title).join(", ")}`},
         ${category},
         ${conceptTitle},
         ${JSON.stringify({
-          batches: batches,
+          predictions: predictions,
+          baseOutfit: photoshootPlan.baseOutfit,
           status: "processing",
-          total_images: TOTAL_IMAGES,
-          seeds: seeds,
+          total_images: NUM_IMAGES,
+          consistency_seed: consistencySeed,
           hero_image: heroImageUrl,
+          generation_type: "photoshoot_single_predictions",
         })},
         NOW()
       )
@@ -299,27 +327,26 @@ export async function POST(request: NextRequest) {
       neonUser.id,
       totalCreditsRequired,
       "image",
-      `Photoshoot: ${conceptTitle} (${TOTAL_IMAGES} images)`,
-      batch1Prediction.id,
+      `Photoshoot: ${conceptTitle} (${NUM_IMAGES} images)`,
+      predictions[0].predictionId,
     )
 
-    console.log("[v0] ✅ Photoshoot created with batch generation and seed reuse:", {
-      totalImages: TOTAL_IMAGES,
-      numBatches: batches.length,
-      seeds: seeds,
-      batch1Actions: batch1Actions,
-      batch2Actions: batch2Actions,
+    console.log("[v0] ✅ Photoshoot created with consistency:", {
+      totalImages: NUM_IMAGES,
+      predictions: predictions.length,
+      consistencySeed: consistencySeed,
+      basePrompt: heroPrompt.substring(0, 80) + "...",
       creditsDeducted: totalCreditsRequired,
       newBalance: deductionResult.newBalance,
     })
 
     return NextResponse.json({
       success: true,
-      photoshootId: Date.now(),
-      batches: batches,
-      totalImages: TOTAL_IMAGES,
-      locationType: locationType,
-      seeds: seeds,
+      photoshootId: insertResult[0].id,
+      predictions: predictions,
+      totalImages: NUM_IMAGES,
+      baseOutfit: photoshootPlan.baseOutfit,
+      consistencySeed: consistencySeed,
       creditsDeducted: totalCreditsRequired,
       newBalance: deductionResult.success ? deductionResult.newBalance : undefined,
     })

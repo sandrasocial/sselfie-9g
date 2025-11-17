@@ -259,13 +259,22 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
     try {
       console.log("[v0] 📸 Creating photoshoot from hero image:", generatedImageUrl)
       
+      const generationResponse = await fetch(`/api/maya/check-generation?generationId=${generationId}`)
+      const generationData = await generationResponse.json()
+      
+      console.log("[v0] 📸 Original generation data:", {
+        seed: generationData.seed,
+        prompt: generationData.prompt?.substring(0, 100),
+      })
+      
       const response = await fetch("/api/maya/create-photoshoot", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
           heroImageUrl: generatedImageUrl,
-          heroPrompt: concept.prompt,
+          heroPrompt: generationData.prompt || concept.prompt, // Use exact original prompt
+          heroSeed: generationData.seed, // Pass original seed
           conceptTitle: concept.title,
           conceptDescription: concept.description,
           category: concept.category,
@@ -279,7 +288,10 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
         throw new Error(data.error || "Failed to create photoshoot")
       }
 
-      console.log("[v0] ✅ Photoshoot created with", data.totalImages, "images in", data.batches.length, "batches")
+      console.log("[v0] ✅ Photoshoot created with", data.totalImages, "images using original seed:", data.consistencySeed)
+      
+      console.log("[v0] 📊 Predictions received:", data.predictions?.length || 0)
+      console.log("[v0] 📊 Predictions data:", JSON.stringify(data.predictions?.slice(0, 2), null, 2))
       
       const emptyGenerations = Array.from({ length: data.totalImages }, (_, i) => ({
         generationId: `prediction_${i}`,
@@ -287,11 +299,14 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
         url: null,
         status: "processing",
         index: i,
-        action: `Photo ${i + 1}`
+        action: data.predictions?.[i]?.title || `Photo ${i + 1}`
       }))
+      
+      console.log("[v0] 📊 Empty generations array created:", emptyGenerations.length)
+      
       setPhotoshootGenerations(emptyGenerations)
       
-      pollBatches(data.batches)
+      pollPredictions(data.predictions || data.batches)
     } catch (err) {
       console.error("[v0] Error creating photoshoot:", err)
       alert(err instanceof Error ? err.message : "Failed to create photoshoot")
@@ -299,22 +314,27 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
     }
   }
 
-  const pollBatches = async (batches: any[]) => {
-    console.log(`[v0] 📊 Starting to poll ${batches.length} batches`)
+  const pollPredictions = async (predictions: any[]) => {
+    console.log(`[v0] 📊 Starting to poll ${predictions.length} predictions`)
+    console.log(`[v0] 📊 First prediction structure:`, JSON.stringify(predictions[0], null, 2))
     
-    const pollSingleBatch = async (batch: any) => {
+    const pollSinglePrediction = async (pred: any) => {
       const maxAttempts = 60
       let attempts = 0
 
+      // Handle both new format (predictionId) and old format (batch.predictionId)
+      const predId = pred.predictionId || (pred.batches?.[0]?.predictionId)
+      const predIndex = pred.index !== undefined ? pred.index : (pred.batchIndex !== undefined ? pred.batchIndex * 3 : 0)
+
       while (attempts < maxAttempts) {
         try {
-          const response = await fetch(`/api/maya/check-photoshoot-prediction?id=${batch.predictionId}`, {
+          const response = await fetch(`/api/maya/check-photoshoot-prediction?id=${predId}`, {
             method: "GET",
           })
           
           if (!response.ok) {
             const text = await response.text()
-            console.error(`[v0] ❌ Failed to check batch ${batch.batchIndex}:`, response.status, text.substring(0, 200))
+            console.error(`[v0] ❌ Failed to check prediction ${predIndex}:`, response.status, text.substring(0, 200))
             await new Promise(resolve => setTimeout(resolve, 4000))
             attempts++
             continue
@@ -322,14 +342,14 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
           
           const status = await response.json()
           
-          console.log(`[v0] 📊 Batch ${batch.batchIndex} status:`, status.status)
+          console.log(`[v0] 📊 Prediction ${predIndex} status:`, status.status)
 
           if (status.status === "succeeded" && status.output) {
             const imageUrls = Array.isArray(status.output) ? status.output : [status.output]
-            console.log(`[v0] ✅ Batch ${batch.batchIndex} complete with ${imageUrls.length} images`)
+            console.log(`[v0] ✅ Prediction ${predIndex} complete with ${imageUrls.length} image(s)`)
             
             imageUrls.forEach((imageUrl: string, idx: number) => {
-              const globalIndex = batch.batchIndex * 3 + idx
+              const globalIndex = pred.index !== undefined ? pred.index : (pred.batchIndex * 3 + idx)
               setPhotoshootGenerations(prev => {
                 const updated = [...prev]
                 if (updated[globalIndex]) {
@@ -338,7 +358,7 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
                     url: imageUrl,
                     imageUrl: imageUrl,
                     status: "ready",
-                    action: batch.actions?.[idx] || `Photo ${globalIndex + 1}`
+                    action: pred.title || pred.actions?.[idx] || `Photo ${globalIndex + 1}`
                   }
                 }
                 return updated
@@ -347,36 +367,41 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
             
             return imageUrls
           } else if (status.status === "failed") {
-            console.error(`[v0] ❌ Batch ${batch.batchIndex} failed:`, status.error)
+            console.error(`[v0] ❌ Prediction ${predIndex} failed:`, status.error)
             return null
           }
 
           await new Promise(resolve => setTimeout(resolve, 4000))
           attempts++
         } catch (err) {
-          console.error(`[v0] Error polling batch ${batch.batchIndex}:`, err)
+          console.error(`[v0] Error polling prediction ${predIndex}:`, err)
           await new Promise(resolve => setTimeout(resolve, 4000))
           attempts++
         }
       }
 
-      console.error(`[v0] ❌ Batch ${batch.batchIndex} timed out`)
+      console.error(`[v0] ❌ Prediction ${predIndex} timed out`)
       return null
     }
 
-    const pollWithDelay = async (batch: any, index: number) => {
+    const pollWithDelay = async (pred: any, index: number) => {
       await new Promise(resolve => setTimeout(resolve, index * 500))
-      return pollSingleBatch(batch)
+      return pollSinglePrediction(pred)
     }
 
     const results = await Promise.allSettled(
-      batches.map((batch: any, index: number) => pollWithDelay(batch, index))
+      predictions.map((pred: any, index: number) => pollWithDelay(pred, index))
     )
 
     const successCount = results.filter(r => r.status === "fulfilled" && r.value).length
-    console.log(`[v0] 🎉 Photoshoot complete: ${successCount}/${batches.length} batches`)
+    console.log(`[v0] 🎉 Photoshoot complete: ${successCount}/${predictions.length} images`)
     
     setIsCreatingPhotoshoot(false)
+  }
+
+  const pollBatches = async (batches: any[]) => {
+    console.log(`[v0] 📊 [Legacy] Redirecting to new pollPredictions system`)
+    await pollPredictions(batches)
   }
 
   return (
