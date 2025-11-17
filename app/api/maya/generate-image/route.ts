@@ -224,6 +224,13 @@ export async function POST(request: NextRequest) {
       model: qualitySettings.model ?? "dev",
     }
 
+    if (qualitySettings.extra_lora) {
+      predictionInput.extra_lora = qualitySettings.extra_lora
+      predictionInput.extra_lora_scale = qualitySettings.extra_lora_scale || 0.6
+      console.log("[v0] ✅ Adding extra Realism LoRA:", predictionInput.extra_lora)
+      console.log("[v0] ✅ Extra LoRA scale:", predictionInput.extra_lora_scale)
+    }
+
     console.log("[v0] ========== SEED USAGE ==========")
     console.log("[v0] Custom seed from photoshoot:", customSettings?.seed)
     console.log("[v0] Final seed used:", predictionInput.seed)

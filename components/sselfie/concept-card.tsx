@@ -30,6 +30,8 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
 
   const [isCreatingPhotoshoot, setIsCreatingPhotoshoot] = useState(false)
   const [photoshootGenerations, setPhotoshootGenerations] = useState<any[]>([])
+  const [showPhotoshootConfirm, setShowPhotoshootConfirm] = useState(false)
+  const [userId, setUserId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!predictionId || !generationId || isGenerated) return
@@ -142,6 +144,7 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
 
       setPredictionId(data.predictionId)
       setGenerationId(data.generationId.toString())
+      setUserId(data.userId) // Set user_id
     } catch (err) {
       console.error("[v0] Error generating image:", err)
       setError(err instanceof Error ? err.message : "Failed to generate image")
@@ -255,6 +258,7 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
     if (!generatedImageUrl || !generationId) return
 
     setIsCreatingPhotoshoot(true)
+    setShowPhotoshootConfirm(false)
 
     try {
       console.log("[v0] 📸 Creating photoshoot from hero image:", generatedImageUrl)
@@ -291,7 +295,7 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
       console.log("[v0] ✅ Photoshoot created with", data.totalImages, "images using original seed:", data.consistencySeed)
       
       console.log("[v0] 📊 Predictions received:", data.predictions?.length || 0)
-      console.log("[v0] 📊 Predictions data:", JSON.stringify(data.predictions?.slice(0, 2), null, 2))
+      console.log("[v0] 📊 User ID for gallery:", data.userId) // Log user_id
       
       const emptyGenerations = Array.from({ length: data.totalImages }, (_, i) => ({
         generationId: `prediction_${i}`,
@@ -306,7 +310,7 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
       
       setPhotoshootGenerations(emptyGenerations)
       
-      pollPredictions(data.predictions || data.batches)
+      pollPredictions(data.predictions || data.batches, data.userId)
     } catch (err) {
       console.error("[v0] Error creating photoshoot:", err)
       alert(err instanceof Error ? err.message : "Failed to create photoshoot")
@@ -314,21 +318,27 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
     }
   }
 
-  const pollPredictions = async (predictions: any[]) => {
+  const pollPredictions = async (predictions: any[], userId?: string) => { // Accept userId parameter
     console.log(`[v0] 📊 Starting to poll ${predictions.length} predictions`)
-    console.log(`[v0] 📊 First prediction structure:`, JSON.stringify(predictions[0], null, 2))
+    console.log(`[v0] 📊 User ID:`, userId)
     
     const pollSinglePrediction = async (pred: any) => {
       const maxAttempts = 60
       let attempts = 0
 
-      // Handle both new format (predictionId) and old format (batch.predictionId)
       const predId = pred.predictionId || (pred.batches?.[0]?.predictionId)
       const predIndex = pred.index !== undefined ? pred.index : (pred.batchIndex !== undefined ? pred.batchIndex * 3 : 0)
 
       while (attempts < maxAttempts) {
         try {
-          const response = await fetch(`/api/maya/check-photoshoot-prediction?id=${predId}`, {
+          const url = new URL(`/api/maya/check-photoshoot-prediction`, window.location.origin)
+          url.searchParams.set('id', predId)
+          url.searchParams.set('heroPrompt', encodeURIComponent(concept.prompt || concept.title))
+          if (userId) {
+            url.searchParams.set('userId', userId)
+          }
+
+          const response = await fetch(url.toString(), {
             method: "GET",
           })
           
@@ -368,6 +378,18 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
             return imageUrls
           } else if (status.status === "failed") {
             console.error(`[v0] ❌ Prediction ${predIndex} failed:`, status.error)
+            // Mark this slot as failed but don't break the whole photoshoot
+            setPhotoshootGenerations(prev => {
+              const updated = [...prev]
+              if (updated[predIndex]) {
+                updated[predIndex] = {
+                  ...updated[predIndex],
+                  status: "failed",
+                  error: status.error,
+                }
+              }
+              return updated
+            })
             return null
           }
 
@@ -401,7 +423,7 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
 
   const pollBatches = async (batches: any[]) => {
     console.log(`[v0] 📊 [Legacy] Redirecting to new pollPredictions system`)
-    await pollPredictions(batches)
+    await pollPredictions(batches, userId) // Pass user_id to pollPredictions
   }
 
   return (
@@ -501,8 +523,57 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
                 onDelete={handleDelete}
                 onAnimate={!videoUrl && !isGeneratingVideo ? handleAnimate : undefined}
                 showAnimateOverlay={false}
-                onCreatePhotoshoot={!isCreatingPhotoshoot && photoshootGenerations.length === 0 ? handleCreatePhotoshoot : undefined}
+                onCreatePhotoshoot={!isCreatingPhotoshoot && photoshootGenerations.length === 0 ? () => setShowPhotoshootConfirm(true) : undefined}
               />
+            )}
+
+            {showPhotoshootConfirm && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden animate-in zoom-in-95 duration-200">
+                  {/* Header */}
+                  <div className="px-6 pt-6 pb-4 border-b border-stone-100">
+                    <h3 className="text-lg font-semibold text-stone-950">Create Carousel?</h3>
+                  </div>
+
+                  {/* Content */}
+                  <div className="px-6 py-4 space-y-3">
+                    <p className="text-sm text-stone-700 leading-relaxed">
+                      We'll create <span className="font-semibold text-stone-950">6-9 photos</span> with the same outfit and vibe, perfect for a carousel post.
+                    </p>
+
+                    <div className="bg-stone-50 rounded-lg p-3 space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <div className="w-1 h-1 rounded-full bg-stone-500"></div>
+                        <span className="text-xs text-stone-600">Same outfit & style</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-1 h-1 rounded-full bg-stone-500"></div>
+                        <span className="text-xs text-stone-600">Different poses & angles</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-1 h-1 rounded-full bg-stone-500"></div>
+                        <span className="text-xs text-stone-600">Takes 2-3 minutes</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="px-6 pb-6 flex flex-col gap-2">
+                    <button
+                      onClick={handleCreatePhotoshoot}
+                      className="w-full bg-gradient-to-br from-stone-600 via-stone-700 to-stone-800 text-white px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-300 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] hover:from-stone-700 hover:via-stone-800 hover:to-stone-900"
+                    >
+                      Let's Go
+                    </button>
+                    <button
+                      onClick={() => setShowPhotoshootConfirm(false)}
+                      className="w-full bg-stone-100 text-stone-700 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 hover:bg-stone-200 active:scale-[0.98]"
+                    >
+                      Not Now
+                    </button>
+                  </div>
+                </div>
+              </div>
             )}
 
             {isCreatingPhotoshoot && (
@@ -510,7 +581,7 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
                 <div className="flex items-center gap-2">
                   <div className="w-1 h-1 rounded-full bg-stone-600"></div>
                   <span className="text-xs tracking-[0.15em] uppercase font-light text-stone-600">
-                    Creating Photoshoot ({photoshootGenerations.filter(p => p.url || p.imageUrl).length}/
+                    Creating Carousel ({photoshootGenerations.filter(p => p.url || p.imageUrl).length}/
                     {photoshootGenerations.length})
                   </span>
                 </div>

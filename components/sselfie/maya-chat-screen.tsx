@@ -41,7 +41,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
   const router = useRouter()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  const [styleStrength, setStyleStrength] = useState(1.05) // Updated default from 1.0 to 1.05
+  const [styleStrength, setStyleStrength] = useState(1.0) // Updated default from 1.05 to 1.0
   const [promptAccuracy, setPromptAccuracy] = useState(3.5) // Guidance scale: 2.5-5.0
   const [aspectRatio, setAspectRatio] = useState("4:5")
   const [showSettings, setShowSettings] = useState(false)
@@ -57,8 +57,8 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
       try {
         const settings = JSON.parse(settingsStr)
         console.log("[v0] 📊 Loaded saved settings from localStorage:", settings)
-        const loadedStyleStrength = settings.styleStrength ?? 1.05
-        setStyleStrength(loadedStyleStrength === 1.0 || loadedStyleStrength === 1.1 ? 1.05 : loadedStyleStrength)
+        const loadedStyleStrength = settings.styleStrength ?? 1.0 // Updated fallback default to 1.0
+        setStyleStrength(loadedStyleStrength === 1.1 ? 1.0 : loadedStyleStrength) // Removed 1.05 migration, only migrate 1.1 to 1.0
         setPromptAccuracy(settings.promptAccuracy || 3.5)
         setAspectRatio(settings.aspectRatio || "4:5") // Updated default from "1:1" to "4:5"
       } catch (error) {
