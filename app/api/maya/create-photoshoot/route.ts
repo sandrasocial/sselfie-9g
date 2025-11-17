@@ -24,150 +24,125 @@ async function generatePhotoshootPoseVariations({
   console.log("[v0] Base prompt:", basePrompt)
   console.log("[v0] Base seed:", baseSeed)
 
-  const mayaPrompt = `You are a professional photoshoot director creating an authentic "day in the life" Instagram carousel. Extract the exact outfit and styling from the original prompt, then create ${numImages} HIGHLY VARIED lifestyle variations with different poses, angles, AND scenery.
+  const mayaPrompt = `You are Maya, creating an authentic "day in the life" Instagram carousel for SSELFIE Studio. Extract the exact outfit and styling from the original prompt, then intelligently create ${numImages} natural lifestyle variations that match the scene, vibe, and context.
 
 **ORIGINAL PROMPT:**
 "${basePrompt}"
 
-**CRITICAL: MAINTAIN THESE IN EVERY PROMPT:**
-1. iPhone Photography: "shot on iPhone 15 Pro" (or specific iPhone model from original)
-2. Lens Specs: "85mm lens" or "35mm lens" (match original or use appropriate for shot type)
-3. Texture: "natural skin texture" (prevents over-smoothing)
-4. Film Quality: "film grain" or "subtle grain" (authentic amateur quality)
-5. Technical Details: "shallow depth of field, f/1.8" for portraits
+**YOUR TASK:**
+Analyze the original prompt deeply:
+- What's the location/setting? (cafe, beach, city street, boutique, park, etc.)
+- What's the vibe? (relaxed, confident, playful, sophisticated, etc.)
+- What activities naturally fit this scene?
+- What would a real influencer authentically do here?
 
-**INSTAGRAM AUTHENTICITY (ALWAYS INCLUDE):**
-- Shot on iPhone 15 Pro (or match original iPhone model)
-- Natural skin texture (no over-smoothing)
-- Film grain or subtle grain
-- 85mm lens for close-ups, 35mm for full body
-- Shallow depth of field, f/1.8-f/2.8
-- Natural lighting details (golden hour, window light, overcast, etc.)
+**CONSISTENCY ANCHOR - MAINTAIN THESE IN EVERY VARIATION:**
+1. **Exact outfit details** - Same clothes, fabric, fit, color, accessories from original
+2. **iPhone Photography** - "shot on iPhone 15 Pro, 85mm lens" (match original specs)
+3. **Texture Quality** - "natural skin texture, film grain" (prevents over-smoothing)
+4. **Location Theme** - Keep same general area but vary specific spots
+5. **Lighting Style** - Same time of day and lighting mood
 
-**TASK:**
-1. Extract EXACT outfit/styling details from original (keep IDENTICAL - same clothes, hair, accessories)
-2. Extract EXACT iPhone/camera specifications from original (keep these in EVERY prompt)
-3. Identify the original location THEME (e.g., "Paris cafe area", "beach club", "city streets")
-4. Identify the original lighting style (e.g., "soft window light", "golden hour", "overcast")
-5. Create ${numImages} MAXIMALLY DIFFERENT authentic influencer lifestyle moments
+**AUTHENTIC CANDID MOMENTS - DYNAMICALLY MATCH TO SCENE:**
 
-**MANDATORY: EACH IMAGE MUST BE DRAMATICALLY DIFFERENT**
-- DO NOT repeat similar actions (if one is "looking at phone", others can't be "checking phone")
-- DO NOT repeat similar poses (if one is "standing", vary the next ones significantly)
-- DO NOT repeat similar scenery (each must be a DIFFERENT location within the theme)
-- MUST use diverse camera angles (don't repeat angles)
-- MUST alternate between full body, medium, and close-up shots
+Think like a real influencer in this location. What would they naturally do?
 
-**SHOT VARIETY (STRICTLY FOLLOW THIS MIX):**
-- Image 1: Full body walking or moving → "35mm lens"
-- Image 2: Close-up face/expression → "85mm lens, f/1.8, shallow depth of field"
-- Image 3: Medium shot casual action → "50mm lens"
-- Image 4: Full body different scenery → "35mm lens"
-- Image 5: Close-up detail (hands, outfit) → "85mm lens, f/1.8"
-- Image 6: Medium shot different action → "50mm lens"
-- Image 7+: Alternate between full/medium/close
+**Examples for inspiration (but CREATE YOUR OWN based on context):**
+- Coffee shop scene → sipping coffee, looking at menu, texting at table, candid laugh with barista
+- City street → mid-stride walking, checking phone, adjusting outfit, hair blowing in wind, over-shoulder glance
+- Beach/pool → applying sunscreen, fixing bikini strap, looking at ocean, scrolling phone on lounger
+- Boutique → browsing racks, holding up item, checking mirror, adjusting outfit in reflection
+- Restaurant → looking at menu, taking photo of food, candid conversation, leaning on table
+- Park/outdoor → sitting on bench, applying lipstick using phone as mirror, fixing hair, relaxed pose
 
-**REQUIRED AUTHENTIC ACTIONS (USE EACH ONLY ONCE - NO REPEATS):**
-1. Looking at phone with neutral expression
-2. Adjusting shoes or fixing sock
-3. Walking with arms swinging naturally
-4. Looking over shoulder while walking
-5. Fixing hair or running hand through hair
-6. Holding coffee cup, gazing into distance
-7. Checking watch or time
-8. Adjusting bag strap or rearranging bag
-9. Standing against wall, looking away
-10. Sitting casually on ledge or bench
-11. Looking down at ground thoughtfully
-12. Profile shot looking to the side
-13. Brushing off clothing or adjusting jacket
-14. Reaching for door handle
-15. Mid-stride walking away from camera
+**CRITICAL RULES FOR AUTHENTIC MOMENTS:**
+- Match activities to the location naturally (don't put "ordering coffee" in a park scene)
+- Each image must use a DIFFERENT authentic action
+- Keep descriptions SIMPLE: just the natural action + angle + scenery detail
+- NO detailed body positioning (avoid "hand on hip, weight shifted to left leg...")
+- NO smiling, laughing, or direct eye contact with camera
+- NO static standing poses - capture moments of movement and activity
+- Vary camera angles: wide shot → medium → close-up → side angle → over shoulder
+- Vary specific locations within theme: different corners, spots, backgrounds
 
-**SCENERY VARIETY (EACH MUST BE DIFFERENT LOCATION):**
-Within the same theme area, use COMPLETELY DIFFERENT spots:
-- In front of storefront window
-- Walking past outdoor cafe tables
-- Against colorful door or wall
-- On cobblestone street corner
-- Near flower stand or market stall
-- By fountain or architectural feature
-- Under awning or archway
-- At intersection crossing
-- By park entrance or greenery
-- Near vintage lamppost or street sign
+**LUXURY INSTAGRAM AESTHETIC - INCLUDE IN EVERY PROMPT:**
+- Movement keywords: "effortless chic", "quiet luxury", "raw authentic style"
+- Natural moments: "confident", "relaxed", "natural", "candid"
+- Camera quality: "iPhone 15 Pro photo, amateur cellphone quality, visible sensor noise"
+- Lighting descriptors: match original lighting (golden hour / soft natural light / warm tones)
 
-**CAMERA ANGLE VARIETY (ROTATE THROUGH THESE):**
-- Straight on eye level
-- Profile from the side
-- Three-quarter angle
-- From slightly above
-- From below looking up
-- Over the shoulder perspective
-- Wide environmental shot
-- Tight intimate framing
+**OUTPUT - RETURN ONLY THIS JSON:**
 
-**AVOID AT ALL COSTS:**
-- Smiling or laughing (feels staged)
-- Direct eye contact (too posed)
-- Repeated actions (each must be unique)
-- Similar poses (maximize difference)
-- Same camera angles (vary constantly)
-- Peace signs or hand gestures
-
-**OUTPUT FORMAT (JSON):**
-
-\`\`\`json
 {
-  "baseOutfit": "exact outfit description from original - include every detail",
-  "locationTheme": "the general area/theme",
-  "lightingStyle": "exact lighting from original (soft window light, golden hour, etc.)",
-  "cameraSpecs": "iPhone model and lens details from original",
+  "baseOutfit": "exact outfit from original",
+  "locationTheme": "general area theme",
+  "lightingStyle": "lighting from original",
+  "cameraSpecs": "iPhone and lens details",
   "poses": [
     {
-      "title": "Adjusting Shoe by Storefront",
-      "shotType": "full body | medium | close-up",
-      "scenery": "SPECIFIC and UNIQUE location (different from all others)",
-      "action": "SPECIFIC and UNIQUE action (different from all others - NO smiling)",
-      "cameraAngle": "UNIQUE angle (different from previous poses)",
-      "lensChoice": "35mm | 50mm | 85mm (based on shot type)",
-      "prompt": "${triggerWord}, [gender], wearing the exact same [COMPLETE outfit], [UNIQUE scenery], [UNIQUE action - NO smiling], [UNIQUE camera angle], [lighting style], shot on iPhone 15 Pro, [lens choice], natural skin texture, film grain, shallow depth of field, f/1.8"
+      "title": "Brief Pose Name",
+      "shotType": "full body" or "medium shot" or "close-up",
+      "scenery": "specific unique spot within location theme",
+      "action": "simple authentic activity that fits scene naturally (15-25 words maximum)",
+      "cameraAngle": "straight on" or "side angle" or "over shoulder" or "slightly above",
+      "lensChoice": "35mm" or "85mm",
+      "prompt": "${triggerWord}, person, wearing exact outfit, specific scenery, simple natural action, effortless chic quiet luxury raw authentic style, camera angle, lighting, shot on iPhone 15 Pro, lens, natural skin texture, film grain, shallow depth of field"
     }
   ]
 }
-\`\`\`
 
-**CRITICAL REQUIREMENTS:**
-- EVERY image must have a COMPLETELY DIFFERENT action/pose
-- EVERY image must be in a DIFFERENT location/scenery
-- EVERY image must use a DIFFERENT camera angle
-- NO TWO IMAGES should look similar
-- Create MAXIMUM VARIETY while keeping outfit/styling identical
-- Make it feel like scrolling through an influencer's diverse lifestyle content
-- Think: "What would make someone swipe through the full carousel?"
-
-Generate ${numImages} MAXIMALLY DIFFERENT variations now with ALL technical photography details.`
+Generate ${numImages} varied poses using DIFFERENT activities that authentically match the scene. Keep action descriptions SIMPLE (15-25 words). NO staged poses - only natural candid moments. Return ONLY valid JSON.`
 
   const { text } = await generateText({
     model: "anthropic/claude-sonnet-4",
     prompt: mayaPrompt,
-    maxOutputTokens: 2000,
+    maxOutputTokens: 4000,
   })
 
-  const jsonMatch = text.match(/\{[\s\S]*\}/)
+  console.log("[v0] 📸 Claude response length:", text.length)
+  console.log("[v0] 📸 Claude response preview:", text.substring(0, 200))
+
+  let jsonText = text
+  
+  // Remove markdown code blocks if present
+  if (text.includes("\`\`\`json")) {
+    const jsonMatch = text.match(/\`\`\`json\s*([\s\S]*?)\s*\`\`\`/)
+    if (jsonMatch) {
+      jsonText = jsonMatch[1]
+    }
+  } else if (text.includes("\`\`\`")) {
+    const jsonMatch = text.match(/\`\`\`\s*([\s\S]*?)\s*\`\`\`/)
+    if (jsonMatch) {
+      jsonText = jsonMatch[1]
+    }
+  }
+  
+  // Find JSON object
+  const jsonMatch = jsonText.match(/\{[\s\S]*\}/)
   if (!jsonMatch) {
+    console.error("[v0] ❌ No JSON found in response:", text.substring(0, 500))
     throw new Error("No JSON found in Maya response")
   }
 
-  const photoshootPlan = JSON.parse(jsonMatch[0])
-  
-  console.log("[v0] 📸 Lifestyle variations created:", {
-    baseOutfit: photoshootPlan.baseOutfit.substring(0, 50) + "...",
-    locationTheme: photoshootPlan.locationTheme,
-    numPoses: photoshootPlan.poses.length,
-  })
+  try {
+    const photoshootPlan = JSON.parse(jsonMatch[0])
+    
+    console.log("[v0] 📸 Lifestyle variations created:", {
+      baseOutfit: photoshootPlan.baseOutfit?.substring(0, 50) + "...",
+      locationTheme: photoshootPlan.locationTheme,
+      numPoses: photoshootPlan.poses?.length,
+    })
 
-  return photoshootPlan
+    if (!photoshootPlan.poses || photoshootPlan.poses.length === 0) {
+      throw new Error("No poses generated in response")
+    }
+
+    return photoshootPlan
+  } catch (parseError) {
+    console.error("[v0] ❌ JSON parsing failed:", parseError)
+    console.error("[v0] ❌ Attempted to parse:", jsonMatch[0].substring(0, 500))
+    throw new Error(`Failed to parse JSON: ${parseError instanceof Error ? parseError.message : "Unknown error"}`)
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -328,27 +303,48 @@ export async function POST(request: NextRequest) {
         promptPreview: pose.prompt.substring(0, 100) + "...",
       })
 
-      const prediction = await replicate.predictions.create({
-        version: replicateVersionId,
-        input: {
-          prompt: pose.prompt,
-          guidance_scale: presetSettings.guidance_scale,
-          num_inference_steps: presetSettings.num_inference_steps,
-          aspect_ratio: "4:5",
-          megapixels: presetSettings.megapixels,
-          output_format: presetSettings.output_format,
-          output_quality: presetSettings.output_quality,
-          lora_scale: Number(userLoraScale || presetSettings.lora_scale),
-          hf_lora: userLoraPath,
-          extra_lora: REALISM_LORA_URL,
-          extra_lora_scale: REALISM_LORA_SCALE,
-          seed: consistencySeed, // SAME seed for all images
-          disable_safety_checker: true,
-          go_fast: false,
-          num_outputs: 1,
-          model: "dev",
-        },
-      })
+      let retries = 0
+      const maxRetries = 3
+      let prediction: any = null
+
+      while (retries < maxRetries) {
+        try {
+          prediction = await replicate.predictions.create({
+            version: replicateVersionId,
+            input: {
+              prompt: pose.prompt,
+              guidance_scale: presetSettings.guidance_scale,
+              num_inference_steps: presetSettings.num_inference_steps,
+              aspect_ratio: "4:5",
+              megapixels: presetSettings.megapixels,
+              output_format: presetSettings.output_format,
+              output_quality: presetSettings.output_quality,
+              lora_scale: Number(userLoraScale || presetSettings.lora_scale),
+              hf_lora: userLoraPath,
+              extra_lora: REALISM_LORA_URL,
+              extra_lora_scale: REALISM_LORA_SCALE,
+              seed: consistencySeed, // SAME seed for all images
+              disable_safety_checker: true,
+              go_fast: false,
+              num_outputs: 1,
+              model: "dev",
+            },
+          })
+          break // Success, exit retry loop
+        } catch (error: any) {
+          if (error.response?.status === 429 || error.message?.includes("throttled")) {
+            const retryAfter = error.response?.data?.retry_after || 10
+            retries++
+            if (retries >= maxRetries) {
+              throw new Error(`Rate limit exceeded after ${maxRetries} retries. Please try again in a few minutes.`)
+            }
+            console.log(`[v0] ⚠️ Rate limited, retrying in ${retryAfter + 2} seconds (attempt ${retries}/${maxRetries})...`)
+            await new Promise(resolve => setTimeout(resolve, (retryAfter + 2) * 1000))
+          } else {
+            throw error // Non-rate-limit error, throw immediately
+          }
+        }
+      }
 
       predictions.push({
         predictionId: prediction.id,
@@ -364,8 +360,8 @@ export async function POST(request: NextRequest) {
       console.log(`[v0] ✅ Prediction ${i + 1} created:`, prediction.id)
 
       if (i < NUM_IMAGES - 1) {
-        console.log(`[v0] ⏳ Waiting 5 seconds before creating next prediction...`)
-        await new Promise(resolve => setTimeout(resolve, 5000)) // 5 second delay between predictions
+        console.log(`[v0] ⏳ Waiting 11 seconds before creating next prediction...`)
+        await new Promise(resolve => setTimeout(resolve, 11000)) // 11 seconds between predictions
       }
     }
 

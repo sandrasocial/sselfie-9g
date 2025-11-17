@@ -58,19 +58,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "User not found in database" }, { status: 404 })
     }
 
-    console.log("[v0] Neon user ID:", neonUser.id)
-
-    console.log("[v0] [CREDITS] Checking if user has enough credits...")
     const hasEnoughCredits = await checkCredits(neonUser.id, CREDIT_COSTS.IMAGE)
-    console.log("[v0] [CREDITS] Has enough credits:", hasEnoughCredits)
 
     if (!hasEnoughCredits) {
       const currentBalance = await getUserCredits(neonUser.id)
-      console.log("[v0] [CREDITS] User has insufficient credits:", {
-        userId: neonUser.id,
-        currentBalance,
-        required: CREDIT_COSTS.IMAGE,
-      })
 
       return NextResponse.json(
         {
@@ -112,18 +103,8 @@ export async function POST(request: NextRequest) {
     const userLoraScale = userData.lora_scale
     const loraWeightsUrl = userData.lora_weights_url
 
-    console.log("[v0] User training data:", {
-      triggerWord,
-      gender,
-      replicateVersionId,
-      replicateModelId,
-      userLoraScale,
-      loraWeightsUrl,
-    })
-
     const genderTerm =
       gender === "woman" || gender === "female" ? "woman" : gender === "man" || gender === "male" ? "man" : "person"
-    console.log("[v0] Gender term for FLUX:", genderTerm)
 
     let versionHash = replicateVersionId
     if (replicateVersionId && replicateVersionId.includes(":")) {
@@ -133,14 +114,11 @@ export async function POST(request: NextRequest) {
     const userLoraPath = replicateModelId && versionHash ? `${replicateModelId}:${versionHash}` : loraWeightsUrl
 
     if (!userLoraPath || userLoraPath.trim() === "") {
-      console.log("[v0] ❌ LoRA path/URL is missing for user")
       return NextResponse.json(
         { error: "LoRA model not found. Please contact support to fix your model." },
         { status: 400 },
       )
     }
-
-    console.log("[v0] User LoRA path format:", userLoraPath)
 
     let finalPrompt = conceptPrompt
 
@@ -148,23 +126,16 @@ export async function POST(request: NextRequest) {
       finalPrompt = `${finalPrompt}, professional Instagram story highlight aesthetic, elegant and minimalistic design, soft lighting, high-end editorial quality, perfect for text overlay, circular crop friendly, trending Instagram aesthetic 2025`
     }
 
-    console.log("[v0] Final FLUX prompt (Maya's creative prompt):", finalPrompt)
-
     const promptLower = finalPrompt.toLowerCase().trim()
     const triggerLower = triggerWord.toLowerCase()
 
     if (!promptLower.startsWith(triggerLower)) {
       finalPrompt = `${triggerWord}, ${finalPrompt}`
-      console.log("[v0] Added trigger word to start of prompt")
-    } else {
-      console.log("[v0] Trigger word already present, not adding duplicate")
     }
 
     const { MAYA_QUALITY_PRESETS } = await import("@/lib/maya/quality-settings")
     const categoryKey = category as keyof typeof MAYA_QUALITY_PRESETS
     const presetSettings = MAYA_QUALITY_PRESETS[categoryKey] || MAYA_QUALITY_PRESETS.default
-
-    console.log("[v0] Using quality preset for category:", category)
 
     const qualitySettings = {
       ...presetSettings,
@@ -173,23 +144,12 @@ export async function POST(request: NextRequest) {
       guidance_scale: customSettings?.promptAccuracy ?? presetSettings.guidance_scale,
       extra_lora: customSettings?.extraLora || presetSettings.extra_lora,
       extra_lora_scale: customSettings?.extraLoraScale || presetSettings.extra_lora_scale,
-      // Always use preset default (50 steps), don't let slider affect steps
       num_inference_steps: presetSettings.num_inference_steps,
     }
 
-    console.log("[v0] Final quality settings:", {
-      category,
-      presetDefaults: presetSettings,
-      userOverrides: customSettings,
-      final: qualitySettings,
-      note: "num_inference_steps always uses preset default (50), guidance_scale adjustable via promptAccuracy slider",
-    })
-
-    console.log("[v0] Initializing Replicate client...")
     let replicate
     try {
       replicate = getReplicateClient()
-      console.log("[v0] Replicate client initialized successfully")
     } catch (error) {
       console.error("[v0] Failed to initialize Replicate client:", error)
       return NextResponse.json(
@@ -204,9 +164,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log("[v0] Creating prediction with version:", replicateVersionId)
-    console.log("[v0] Quality settings:", qualitySettings)
-
     const predictionInput: any = {
       prompt: finalPrompt,
       guidance_scale: qualitySettings.guidance_scale,
@@ -217,7 +174,7 @@ export async function POST(request: NextRequest) {
       output_quality: qualitySettings.output_quality,
       lora_scale: Number(qualitySettings.lora_scale),
       hf_lora: userLoraPath,
-      seed: customSettings?.seed || qualitySettings.seed || Math.floor(Math.random() * 1000000), // Use custom seed from photoshoot session if provided
+      seed: customSettings?.seed || qualitySettings.seed || Math.floor(Math.random() * 1000000),
       disable_safety_checker: qualitySettings.disable_safety_checker ?? true,
       go_fast: qualitySettings.go_fast ?? false,
       num_outputs: qualitySettings.num_outputs ?? 1,
@@ -227,38 +184,13 @@ export async function POST(request: NextRequest) {
     if (qualitySettings.extra_lora) {
       predictionInput.extra_lora = qualitySettings.extra_lora
       predictionInput.extra_lora_scale = qualitySettings.extra_lora_scale || 0.6
-      console.log("[v0] ✅ Adding extra Realism LoRA:", predictionInput.extra_lora)
-      console.log("[v0] ✅ Extra LoRA scale:", predictionInput.extra_lora_scale)
     }
 
-    console.log("[v0] ========== SEED USAGE ==========")
-    console.log("[v0] Custom seed from photoshoot:", customSettings?.seed)
-    console.log("[v0] Final seed used:", predictionInput.seed)
-    console.log("[v0] ====================================")
-
-    console.log("[v0] ========== FULL PREDICTION INPUT ==========")
-    console.log("[v0] ✅ User LoRA path (hf_lora):", userLoraPath)
-    console.log("[v0] ✅ LoRA scale:", predictionInput.lora_scale)
-    console.log("[v0] ✅ Model:", predictionInput.model)
-    console.log("[v0] ✅ Seed:", predictionInput.seed)
-    console.log("[v0] ✅ Num outputs:", predictionInput.num_outputs)
-    console.log("[v0] ✅ Go fast:", predictionInput.go_fast)
-    console.log("[v0] Prediction input:", JSON.stringify(predictionInput, null, 2))
-    console.log("[v0] ================================================")
-
-    console.log("[v0] [CREDITS] Creating Replicate prediction...")
     const prediction = await replicate.predictions.create({
       version: replicateVersionId,
       input: predictionInput,
     })
 
-    console.log("[v0] ========== REPLICATE RESPONSE ==========")
-    console.log("[v0] Prediction ID:", prediction.id)
-    console.log("[v0] Prediction status:", prediction.status)
-    console.log("[v0] Full prediction object:", JSON.stringify(prediction, null, 2))
-    console.log("[v0] ================================================")
-
-    console.log("[v0] [CREDITS] Deducting credits after successful prediction creation...")
     const deductionResult = await deductCredits(
       neonUser.id,
       CREDIT_COSTS.IMAGE,
@@ -269,8 +201,6 @@ export async function POST(request: NextRequest) {
 
     if (!deductionResult.success) {
       console.error("[v0] [CREDITS] Failed to deduct credits:", deductionResult.error)
-    } else {
-      console.log("[v0] [CREDITS] Deducted", CREDIT_COSTS.IMAGE, "credit. New balance:", deductionResult.newBalance)
     }
 
     const insertResult = await sql`

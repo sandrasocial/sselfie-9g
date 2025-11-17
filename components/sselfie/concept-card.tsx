@@ -101,32 +101,22 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
     setError(null)
 
     try {
-      console.log("[v0] ========== CONCEPT CARD GENERATION ==========")
-      console.log("[v0] Concept title:", concept.title)
-      console.log("[v0] Concept category:", concept.category)
-      console.log("[v0] Has reference image:", !!concept.referenceImageUrl)
-      if (concept.referenceImageUrl) {
-        console.log("[v0] Reference image URL:", concept.referenceImageUrl)
-        console.log("[v0] This image will be blended with your trained model")
-      }
-      console.log("[v0] Full concept object:", JSON.stringify(concept, null, 2))
-      console.log("[v0] ================================================")
-
       const settingsStr = localStorage.getItem("mayaGenerationSettings")
-      console.log("[v0] 📊 Raw settings from localStorage:", settingsStr)
       const customSettings = settingsStr ? JSON.parse(settingsStr) : null
-      console.log("[v0] 📊 Parsed custom settings (including aspect ratio):", customSettings)
 
-      const finalSettings = concept.customSettings || customSettings
+      const finalSettings = customSettings ? {
+        ...customSettings,
+        ...(concept.customSettings || {}),
+      } : concept.customSettings
 
       const response = await fetch("/api/maya/generate-image", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include", // Include cookies for Supabase auth
+        credentials: "include",
         body: JSON.stringify({
           conceptTitle: concept.title,
           conceptDescription: concept.description,
-          conceptPrompt: concept.prompt, // Maya's detailed FLUX prompt
+          conceptPrompt: concept.prompt,
           category: concept.category,
           chatId,
           referenceImageUrl: concept.referenceImageUrl,
@@ -140,11 +130,9 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
         throw new Error(data.error || "Failed to generate image")
       }
 
-      console.log("[v0] Generation started:", data)
-
       setPredictionId(data.predictionId)
       setGenerationId(data.generationId.toString())
-      setUserId(data.userId) // Set user_id
+      setUserId(data.userId)
     } catch (err) {
       console.error("[v0] Error generating image:", err)
       setError(err instanceof Error ? err.message : "Failed to generate image")
@@ -185,7 +173,6 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
 
       if (!response.ok) throw new Error("Failed to delete image")
 
-      // Reset state after deletion
       setGeneratedImageUrl(null)
       setIsGenerated(false)
       setGenerationId(null)
@@ -212,7 +199,7 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
           fluxPrompt: concept.prompt,
           description: concept.description,
           category: concept.category,
-          imageUrl: generatedImageUrl, // Vision analysis for accurate motion
+          imageUrl: generatedImageUrl,
         }),
       })
 
@@ -232,7 +219,7 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
         body: JSON.stringify({
           imageUrl: generatedImageUrl,
           imageId: generationId,
-          motionPrompt: aiGeneratedMotionPrompt, // Use AI-generated prompt instead of undefined
+          motionPrompt: aiGeneratedMotionPrompt,
           imageDescription: concept.description,
         }),
       })
@@ -277,8 +264,8 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
         credentials: "include",
         body: JSON.stringify({
           heroImageUrl: generatedImageUrl,
-          heroPrompt: generationData.prompt || concept.prompt, // Use exact original prompt
-          heroSeed: generationData.seed, // Pass original seed
+          heroPrompt: generationData.prompt || concept.prompt,
+          heroSeed: generationData.seed,
           conceptTitle: concept.title,
           conceptDescription: concept.description,
           category: concept.category,
@@ -295,7 +282,7 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
       console.log("[v0] ✅ Photoshoot created with", data.totalImages, "images using original seed:", data.consistencySeed)
       
       console.log("[v0] 📊 Predictions received:", data.predictions?.length || 0)
-      console.log("[v0] 📊 User ID for gallery:", data.userId) // Log user_id
+      console.log("[v0] 📊 User ID for gallery:", data.userId)
       
       const emptyGenerations = Array.from({ length: data.totalImages }, (_, i) => ({
         generationId: `prediction_${i}`,
@@ -318,7 +305,7 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
     }
   }
 
-  const pollPredictions = async (predictions: any[], userId?: string) => { // Accept userId parameter
+  const pollPredictions = async (predictions: any[], userId?: string) => {
     console.log(`[v0] 📊 Starting to poll ${predictions.length} predictions`)
     console.log(`[v0] 📊 User ID:`, userId)
     
@@ -378,7 +365,6 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
             return imageUrls
           } else if (status.status === "failed") {
             console.error(`[v0] ❌ Prediction ${predIndex} failed:`, status.error)
-            // Mark this slot as failed but don't break the whole photoshoot
             setPhotoshootGenerations(prev => {
               const updated = [...prev]
               if (updated[predIndex]) {
@@ -423,15 +409,13 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
 
   const pollBatches = async (batches: any[]) => {
     console.log(`[v0] 📊 [Legacy] Redirecting to new pollPredictions system`)
-    await pollPredictions(batches, userId) // Pass user_id to pollPredictions
+    await pollPredictions(batches, userId)
   }
 
   return (
     <div className="bg-white border border-stone-200 rounded-lg overflow-hidden transition-all duration-300 hover:shadow-lg">
-      {/* Instagram-style header */}
       <div className="flex items-center justify-between px-3 py-2.5 border-b border-stone-200">
         <div className="flex items-center gap-2.5">
-          {/* Avatar with gradient ring */}
           <div className="relative">
             <div className="absolute inset-0 bg-gradient-to-tr from-purple-600 via-pink-600 to-orange-500 rounded-full p-[2px]">
               <div className="bg-white rounded-full w-full h-full"></div>
@@ -440,7 +424,6 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
               <span className="text-xs font-bold text-stone-700">S</span>
             </div>
           </div>
-          {/* Username and location/category */}
           <div className="flex flex-col">
             <span className="text-sm font-semibold text-stone-950">sselfie</span>
             <span className="text-xs text-stone-500">{concept.category}</span>
@@ -452,7 +435,6 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
       </div>
 
       <div className="px-3 py-3 space-y-3">
-        {/* Concept title and description as Instagram caption */}
         <div className="space-y-1">
           <p className="text-sm leading-relaxed text-stone-950">
             <span className="font-semibold">sselfie</span> {concept.title}
@@ -530,12 +512,10 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
             {showPhotoshootConfirm && (
               <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
                 <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden animate-in zoom-in-95 duration-200">
-                  {/* Header */}
                   <div className="px-6 pt-6 pb-4 border-b border-stone-100">
                     <h3 className="text-lg font-semibold text-stone-950">Create Carousel?</h3>
                   </div>
 
-                  {/* Content */}
                   <div className="px-6 py-4 space-y-3">
                     <p className="text-sm text-stone-700 leading-relaxed">
                       We'll create <span className="font-semibold text-stone-950">6-9 photos</span> with the same outfit and vibe, perfect for a carousel post.
@@ -557,7 +537,6 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
                     </div>
                   </div>
 
-                  {/* Actions */}
                   <div className="px-6 pb-6 flex flex-col gap-2">
                     <button
                       onClick={handleCreatePhotoshoot}

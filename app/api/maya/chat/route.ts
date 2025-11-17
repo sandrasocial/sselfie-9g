@@ -44,6 +44,15 @@ const generateConceptsTool = tool({
       ),
     count: z.number().optional().default(3).describe("Number of concepts to generate (3-5)"),
     referenceImageUrl: z.string().optional().describe("If user uploaded reference image for inspiration"),
+    customSettings: z
+      .object({
+        styleStrength: z.number().optional(),
+        promptAccuracy: z.number().optional(),
+        aspectRatio: z.string().optional(),
+        seed: z.number().optional(),
+      })
+      .optional()
+      .describe("Optional custom generation settings for style strength, prompt accuracy, etc."),
     enablePhotoshootMode: z.boolean().optional().default(true).describe("Enable consistent styling across all concepts like a real photoshoot session"),
   }),
   execute: async function* ({
