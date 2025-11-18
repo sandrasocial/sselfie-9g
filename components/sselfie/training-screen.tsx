@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
-import { Camera, Aperture, ChevronRight, Loader2, X } from "lucide-react"
+import { Camera, Aperture, ChevronRight, Loader2, X } from 'lucide-react'
 import useSWR from "swr"
 import JSZip from "jszip"
 
@@ -17,11 +17,22 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 const compressImage = async (file: File, maxSize = 1600, quality = 0.85): Promise<File> => {
   return new Promise((resolve, reject) => {
-    const MAX_FILE_SIZE_MB = 10
+    const isHEIC = file.type === "image/heic" || file.type === "image/heif" || file.name.toLowerCase().endsWith(".heic") || file.name.toLowerCase().endsWith(".heif")
+    
+    if (isHEIC) {
+      reject(
+        new Error(
+          `${file.name} is in HEIC format which is not supported by web browsers. Please convert to JPG/PNG first:\n\n1. Open the photo in your gallery\n2. Share/Export as JPG or PNG\n3. Try uploading again`
+        )
+      )
+      return
+    }
+
+    const MAX_FILE_SIZE_MB = 15
     if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
       reject(
         new Error(
-          `${file.name} is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum is ${MAX_FILE_SIZE_MB} per image.`,
+          `${file.name} is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum is ${MAX_FILE_SIZE_MB}MB per image.`,
         ),
       )
       return
@@ -74,7 +85,7 @@ const compressImage = async (file: File, maxSize = 1600, quality = 0.85): Promis
           quality,
         )
       }
-      img.onerror = () => reject(new Error(`Failed to load ${file.name}. Please make sure it's a valid image file.`))
+      img.onerror = () => reject(new Error(`Failed to load ${file.name}. This might be an unsupported format (HEIC/HEIF). Please convert to JPG/PNG and try again.`))
     }
     reader.onerror = () => reject(new Error(`Failed to read ${file.name}`))
   })
@@ -153,8 +164,25 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
+    
+    console.log("[v0] Files selected:", files.length)
+    console.log("[v0] File types:", files.map(f => `${f.name}: ${f.type}`))
 
-    const MAX_FILE_SIZE_MB = 10
+    const heicFiles = files.filter(file => {
+      const isHEIC = file.type === "image/heic" || file.type === "image/heif" || file.name.toLowerCase().endsWith(".heic") || file.name.toLowerCase().endsWith(".heif")
+      return isHEIC
+    })
+
+    if (heicFiles.length > 0) {
+      const fileList = heicFiles.map(f => f.name).join("\n")
+      alert(
+        `These photos are in HEIC format and cannot be uploaded:\n\n${fileList}\n\nTo fix this:\n1. Open each photo in your gallery\n2. Share/Export as JPG or PNG\n3. Upload the converted files\n\nNote: You can usually change your camera settings to save as JPG instead of HEIC.`
+      )
+      e.target.value = ""
+      return
+    }
+
+    const MAX_FILE_SIZE_MB = 15
     const invalidFiles = files.filter((file) => file.size > MAX_FILE_SIZE_MB * 1024 * 1024)
 
     if (invalidFiles.length > 0) {
@@ -162,15 +190,18 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
       alert(
         `These images are too large:\n\n${fileList}\n\nMaximum size is ${MAX_FILE_SIZE_MB}MB per image. Please resize them and try again.`,
       )
+      e.target.value = ""
       return
     }
 
     if (uploadedImages.length + files.length > 20) {
       alert(`You can upload up to 20 images total. You currently have ${uploadedImages.length} uploaded.`)
+      e.target.value = ""
       return
     }
 
     setUploadedImages((prev) => [...prev, ...files])
+    e.target.value = ""
   }
 
   const handleRemoveUploadedImage = (index: number) => {
@@ -225,19 +256,20 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
           try {
             const compressedFile = await compressImage(file, level.maxSize, level.quality)
             compressedFiles.push(compressedFile)
-            await new Promise((resolve) => setTimeout(resolve, 10))
-          } catch (error) {
+            await new Promise((resolve) => setTimeout(resolve, 50))
+          } catch (error: any) {
             console.error(`[v0] Error processing image ${i + 1}:`, error)
+            if (error.message?.includes("HEIC") || error.message?.includes("HEIF")) {
+              throw new Error(`One or more photos are in HEIC format.\n\n${error.message}`)
+            }
             throw error
           }
         }
 
-        // Create ZIP and check size
         zipBlob = await createZipFromFiles(compressedFiles)
         const zipSizeMB = zipBlob.size / (1024 * 1024)
         console.log(`[v0] ZIP size with ${level.name}: ${zipSizeMB.toFixed(2)}MB`)
 
-        // If ZIP is under 4MB, we're good!
         if (zipSizeMB < 4.0) {
           successfulLevel = level
           console.log(`[v0] Success! ZIP fits under 4MB with ${level.name}`)
@@ -294,9 +326,13 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
 
       let errorMessage = "Something went wrong. Please try again."
 
-      if (error.name === "TimeoutError" || error.message?.includes("Timeout") || error.message?.includes("timed out")) {
+      if (error.message?.includes("HEIC") || error.message?.includes("HEIF")) {
+        errorMessage = error.message
+      } else if (error.name === "TimeoutError" || error.message?.includes("Timeout") || error.message?.includes("timed out")) {
         errorMessage =
           "Upload is taking too long. Please check your internet connection and try again with fewer or smaller images (10-12 photos)."
+      } else if (error.message?.includes("canvas") || error.message?.includes("memory")) {
+        errorMessage = "Your device ran out of memory processing the images. Please try with fewer photos (10-12) or restart your browser."
       } else if (error.message) {
         errorMessage = error.message
       }
@@ -340,10 +376,8 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
 
       console.log("[v0] Training canceled successfully")
 
-      // Refresh the training status
       await mutate()
 
-      // Reset to upload stage
       setTrainingStage("upload")
     } catch (error) {
       console.error("[v0] Error canceling training:", error)
@@ -652,7 +686,8 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
               <input
                 type="file"
                 multiple
-                accept="image/*"
+                accept="image/jpeg,image/jpg,image/png,image/webp,image/*"
+                capture="environment"
                 onChange={handleImageUpload}
                 className="hidden"
                 disabled={isUploading}
@@ -668,6 +703,9 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
                   {uploadedImages.length} / 10 minimum
                 </span>
               </div>
+              <p className="text-xs text-stone-500 mt-4">
+                Note: HEIC photos are not supported. Please convert to JPG/PNG first.
+              </p>
             </label>
 
             {isUploading && (

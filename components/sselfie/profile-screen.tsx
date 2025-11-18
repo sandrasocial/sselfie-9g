@@ -537,7 +537,7 @@ export default function ProfileScreen({ user, creditBalance }: ProfileScreenProp
       {showBestWorkSelector && (
         <BestWorkSelector
           images={allImages}
-          currentBestWork={bestWork.map((img) => img.id)}
+          currentBestWork={bestWork.map((img) => img.image_id)} // Fix: Pass image_id instead of id for proper selection matching
           onClose={() => setShowBestWorkSelector(false)}
           onSave={handleBestWorkImageSelect}
         />

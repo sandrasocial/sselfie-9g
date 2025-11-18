@@ -14,17 +14,13 @@ export async function GET(request: Request) {
     } = await supabase.auth.getUser()
 
     if (authError || !authUser) {
-      console.log("[v0] Best work GET: Not authenticated")
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const neonUser = await getUserByAuthId(authUser.id)
     if (!neonUser) {
-      console.log("[v0] Best work GET: Neon user not found")
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
-
-    console.log("[v0] Fetching best work for user:", neonUser.id)
 
     // Get best work selections with image data
     const bestWork = await sql`
@@ -37,14 +33,16 @@ export async function GET(request: Request) {
         COALESCE(ai.category, gi.category) as category,
         COALESCE(ai.created_at, gi.created_at) as created_at
       FROM user_best_work bw
-      LEFT JOIN ai_images ai ON bw.image_id = CAST(ai.id AS VARCHAR) AND bw.image_source = 'ai_images'
-      LEFT JOIN generated_images gi ON bw.image_id = CONCAT('gen_', gi.id) AND bw.image_source = 'generated_images'
+      LEFT JOIN ai_images ai ON 
+        bw.image_source = 'ai_images' AND 
+        CAST(ai.id AS VARCHAR) = REPLACE(bw.image_id, 'ai_', '')
+      LEFT JOIN generated_images gi ON 
+        bw.image_source = 'generated_images' AND 
+        CAST(gi.id AS VARCHAR) = REPLACE(bw.image_id, 'gen_', '')
       WHERE bw.user_id = ${neonUser.id}
       ORDER BY bw.display_order ASC
       LIMIT 9
     `
-
-    console.log("[v0] Best work fetched:", bestWork.length, "images")
 
     return NextResponse.json({ bestWork })
   } catch (error) {
