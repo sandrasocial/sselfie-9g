@@ -83,6 +83,8 @@ export default function AdminAgentChat({ userId, userName, userEmail }: AdminAge
   const [isLoadingChats, setIsLoadingChats] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
 
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
+
   const { messages, sendMessage, status, setMessages } = useChat({
     id: currentChatId ? String(currentChatId) : undefined, // This ensures chat continuity
     transport: new DefaultChatTransport({ api: "/api/admin/agent/chat" }),
@@ -176,7 +178,6 @@ export default function AdminAgentChat({ userId, userName, userEmail }: AdminAge
         description: error.message || "Please try again",
         variant: "destructive"
       })
-      setCurrentChatId(null)
     }
   }
 
@@ -232,22 +233,7 @@ export default function AdminAgentChat({ userId, userName, userEmail }: AdminAge
     
     await sendMessage({ role: "user", content: messageContent })
     
-    if (!currentChatId) {
-      console.log('[v0] Waiting for new chat to be created...')
-      setTimeout(async () => {
-        const response = await fetch(`/api/admin/agent/chats?userId=${userId}`)
-        if (response.ok) {
-          const data = await response.json()
-          if (data.chats && data.chats.length > 0) {
-            const newestChat = data.chats[0]
-            console.log('[v0] New chat created with ID:', newestChat.id)
-            setCurrentChatId(newestChat.id)
-            setCurrentMode(newestChat.agent_mode)
-          }
-        }
-        await loadChats()
-      }, 1500)
-    }
+    // The chatId is now properly maintained by the useChat hook with the `id` prop
   }
 
   const handleSaveToCalendar = async () => {
@@ -442,13 +428,25 @@ export default function AdminAgentChat({ userId, userName, userEmail }: AdminAge
     setUploadedImages(uploadedImages.filter((_, i) => i !== index))
   }
 
+  const toggleGroup = (groupKey: string) => {
+    setCollapsedGroups(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(groupKey)) {
+        newSet.delete(groupKey)
+      } else {
+        newSet.add(groupKey)
+      }
+      return newSet
+    })
+  }
+
   return (
     <div className="flex h-screen bg-stone-50">
       <div className={`${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       } md:translate-x-0 fixed md:relative z-40 w-80 h-full bg-white border-r border-stone-200 transition-transform duration-300 ease-in-out flex flex-col`}>
         {/* Sidebar header */}
-        <div className="p-4 border-b border-stone-200">
+        <div className="p-4 border-b border-stone-200 flex-shrink-0">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm uppercase font-semibold text-stone-950" style={{ letterSpacing: "0.1em" }}>
               Chat History
@@ -474,8 +472,8 @@ export default function AdminAgentChat({ userId, userName, userEmail }: AdminAge
           </div>
         </div>
 
-        {/* Chat list */}
-        <div className="flex-1 overflow-y-auto p-4">
+        {/* Chat list - made scrollable with flex-1 */}
+        <div className="flex-1 overflow-y-auto p-4 min-h-0">
           {isLoadingChats ? (
             <div className="flex justify-center py-8">
               <div className="flex gap-1">
@@ -492,38 +490,47 @@ export default function AdminAgentChat({ userId, userName, userEmail }: AdminAge
             <div className="space-y-4">
               {Object.entries(groupedChats).map(([group, groupChats]: [string, any]) => (
                 <div key={group}>
-                  <p className="text-xs uppercase text-stone-400 mb-2 px-2" style={{ letterSpacing: "0.1em" }}>
-                    {group}
-                  </p>
-                  <div className="space-y-1">
-                    {groupChats.map((chat: any) => (
-                      <button
-                        key={chat.id}
-                        onClick={() => loadChat(chat.id)}
-                        className={`w-full text-left p-3 rounded-lg transition-colors ${
-                          currentChatId === chat.id
-                            ? "bg-stone-950 text-white"
-                            : "bg-stone-50 text-stone-900 hover:bg-stone-100"
-                        }`}
-                      >
-                        <p className="font-medium text-sm mb-1 truncate">{chat.chat_title}</p>
-                        <div className="flex items-center justify-between text-xs opacity-70">
-                          <span>
-                            {new Date(chat.last_activity).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                          <span>{chat.message_count || 0} messages</span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
+                  <button
+                    onClick={() => toggleGroup(group)}
+                    className="w-full flex items-center justify-between px-2 py-1 mb-2 text-xs uppercase text-stone-400 hover:text-stone-600 transition-colors"
+                    style={{ letterSpacing: "0.1em" }}
+                  >
+                    <span>{group}</span>
+                    <ChevronRight 
+                      className={`w-3 h-3 transition-transform ${collapsedGroups.has(group) ? '' : 'rotate-90'}`}
+                    />
+                  </button>
+                  {!collapsedGroups.has(group) && (
+                    <div className="space-y-1">
+                      {groupChats.map((chat: any) => (
+                        <button
+                          key={chat.id}
+                          onClick={() => loadChat(chat.id)}
+                          className={`w-full text-left p-3 rounded-lg transition-colors ${
+                            currentChatId === chat.id
+                              ? "bg-stone-950 text-white"
+                              : "bg-stone-50 text-stone-900 hover:bg-stone-100"
+                          }`}
+                        >
+                          <p className="font-medium text-sm mb-1 truncate">{chat.chat_title}</p>
+                          <div className="flex items-center justify-between text-xs opacity-70">
+                            <span>
+                              {new Date(chat.last_activity).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                            <span>{chat.message_count || 0} messages</span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
           )}
         </div>
 
-        {/* New chat button */}
-        <div className="p-4 border-t border-stone-200">
+        {/* New chat button - fixed at bottom */}
+        <div className="p-4 border-t border-stone-200 flex-shrink-0">
           <button
             onClick={startNewChat}
             className="w-full px-4 py-3 bg-stone-950 text-white rounded-lg text-sm uppercase hover:bg-stone-800 transition-colors flex items-center justify-center gap-2"

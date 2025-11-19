@@ -779,7 +779,7 @@ export async function POST(req: Request) {
     let activeChatId = chatId
     let detectedMode: string | null = null
 
-    if (!activeChatId) {
+    if (!activeChatId && activeChatId !== 0) {
       // Creating new chat
       const firstMessage = messages?.[0]
       if (!firstMessage) {
@@ -793,10 +793,9 @@ export async function POST(req: Request) {
       if (typeof firstMessage.content === 'string') {
         firstMessageText = firstMessage.content
       } else if (Array.isArray(firstMessage.content)) {
+        // Extract text from multimodal content array
         const textPart = firstMessage.content.find((part: any) => part.type === 'text')
         firstMessageText = textPart?.text || 'Image Analysis'
-      } else if (firstMessage.parts?.[0]?.text) {
-        firstMessageText = firstMessage.parts[0].text
       }
 
       detectedMode = detectAgentMode(firstMessageText)
@@ -818,7 +817,7 @@ export async function POST(req: Request) {
         LIMIT 1
       `)
       detectedMode = chatInfo[0]?.agent_mode || null
-      console.log('[v0] 📂 Using chat ID:', activeChatId, 'Mode:', detectedMode || 'general')
+      console.log('[v0] 📂 Using existing chat ID:', activeChatId, 'Mode:', detectedMode || 'general')
     }
 
     const dbMessages = await queryWithRetry(() => sql`
@@ -934,9 +933,23 @@ export async function POST(req: Request) {
 
     if (newMessages.length > 0 && newMessages[0].role === 'user') {
       const userMessage = newMessages[0]
-      const contentToStore = typeof userMessage.content === 'string' 
-        ? userMessage.content 
-        : JSON.stringify(userMessage.content)
+      let contentToStore = ''
+      if (typeof userMessage.content === 'string') {
+        contentToStore = userMessage.content
+      } else if (Array.isArray(userMessage.content)) {
+        // Extract just the text parts for clean storage
+        contentToStore = userMessage.content
+          .filter((part: any) => part.type === 'text')
+          .map((part: any) => part.text)
+          .join('\n')
+          .trim()
+        
+        // If there's no text but there are images, use a placeholder
+        if (!contentToStore) {
+          const imageCount = userMessage.content.filter((part: any) => part.type === 'image').length
+          contentToStore = `[Image analysis request - ${imageCount} image(s)]`
+        }
+      }
         
       try {
         // Use retry logic for saving user messages
