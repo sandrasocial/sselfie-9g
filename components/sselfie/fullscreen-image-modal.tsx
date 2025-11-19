@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
-import { X, Heart, Download, Trash2, ZoomIn, ZoomOut, Info } from "lucide-react"
+import { X, Heart, Download, Trash2, ZoomIn, ZoomOut, Info } from 'lucide-react'
 import Image from "next/image"
 
 interface FullscreenImageModalProps {
   imageUrl: string
-  imageId: number
+  imageId: string // Changed from number to string to match GalleryImage.id format
   title: string
   isOpen: boolean
   onClose: () => void

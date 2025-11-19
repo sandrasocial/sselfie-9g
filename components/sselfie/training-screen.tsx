@@ -687,7 +687,6 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
                 type="file"
                 multiple
                 accept="image/jpeg,image/jpg,image/png,image/webp,image/*"
-                capture="environment"
                 onChange={handleImageUpload}
                 className="hidden"
                 disabled={isUploading}

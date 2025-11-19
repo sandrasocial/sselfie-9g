@@ -12,11 +12,6 @@ export async function createClient() {
     process.env.SUPABASE_ANON_KEY ||
     process.env.SUPABASE_VITE_PUBLIC_SUPABASE_ANON_KEY
 
-  console.log("[v0] Server Supabase env check:", {
-    url: supabaseUrl ? "✓ Set" : "✗ Missing",
-    key: supabaseAnonKey ? "✓ Set" : "✗ Missing",
-  })
-
   if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error(
       "Missing Supabase environment variables. Please check your Supabase integration in the Connect section.",

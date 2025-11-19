@@ -1004,7 +1004,7 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
       {lightboxImage && (
         <FullscreenImageModal
           imageUrl={lightboxImage.image_url}
-          imageId={Number(lightboxImage.id)}
+          imageId={lightboxImage.id} // Removed Number() conversion - pass string ID directly
           title={lightboxImage.prompt || `Gallery Image ${lightboxImage.id}`}
           isOpen={!!lightboxImage}
           onClose={() => setLightboxImage(null)}

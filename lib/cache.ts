@@ -18,6 +18,9 @@ function getRedis() {
 
 // Cache durations in seconds
 export const CACHE_TTL = {
+  SHORT: 60, // 1 minute
+  MEDIUM: 300, // 5 minutes
+  LONG: 900, // 15 minutes
   USER_DATA: 300, // 5 minutes
   CREDITS: 60, // 1 minute
   TRAINING_STATUS: 30, // 30 seconds

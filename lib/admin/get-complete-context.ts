@@ -2,11 +2,28 @@ import { neon } from "@neondatabase/serverless"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 import { getPersonalStoryContext } from "./get-personal-context"
+import { getCache, setCache, CACHE_TTL } from "@/lib/cache"
 
 const sql = neon(process.env.DATABASE_URL!)
 
 export async function getCompleteAdminContext(targetUserId?: string): Promise<string> {
   try {
+    const cacheKey = `admin_context:${targetUserId || 'general'}:v2`
+    
+    let cached: string | null = null
+    try {
+      cached = await getCache<string>(cacheKey)
+    } catch (error) {
+      console.log('[v0] Cache read failed, continuing without cache:', error)
+    }
+    
+    if (cached) {
+      console.log('[v0] 🎯 Admin context cache HIT - skipping database queries')
+      return cached
+    }
+    
+    console.log('[v0] 💾 Admin context cache MISS - loading from database')
+
     const contextParts: string[] = []
 
     const personalContext = await getPersonalStoryContext()
@@ -31,6 +48,88 @@ export async function getCompleteAdminContext(targetUserId?: string): Promise<st
         contextParts.push(`[${knowledge.category.toUpperCase()}] ${knowledge.title}`)
         contextParts.push(`${knowledge.content}`)
         contextParts.push(`Confidence: ${Math.round(knowledge.confidence_level * 100)}%\n`)
+      }
+    }
+
+    // Fetch customer testimonials
+    const testimonials = await sql`
+      SELECT 
+        customer_name,
+        testimonial_text,
+        testimonial_type,
+        platform,
+        rating,
+        product_mentioned,
+        key_benefits,
+        emotional_tone,
+        collected_at
+      FROM admin_testimonials
+      WHERE is_published = true OR is_featured = true
+      ORDER BY is_featured DESC, collected_at DESC
+      LIMIT 20
+    `
+
+    if (testimonials.length > 0) {
+      contextParts.push("\n=== CUSTOMER TESTIMONIALS & SOCIAL PROOF ===")
+      contextParts.push(
+        "Real customer voices showing what SSELFIE does for people. Use these to understand what customers value, extract winning messaging, and identify product strengths.\n",
+      )
+
+      for (const t of testimonials) {
+        contextParts.push(`\n[${t.platform?.toUpperCase() || 'UNKNOWN'}] ${t.customer_name || 'Customer'} - ${t.testimonial_type}`)
+        contextParts.push(`Rating: ${'⭐'.repeat(t.rating || 5)}`)
+        contextParts.push(`Product: ${t.product_mentioned || 'General'}`)
+        contextParts.push(`Tone: ${t.emotional_tone || 'positive'}`)
+        contextParts.push(`"${t.testimonial_text}"`)
+        
+        if (t.key_benefits && typeof t.key_benefits === 'object') {
+          const benefits = Object.keys(t.key_benefits).filter(key => t.key_benefits[key])
+          if (benefits.length > 0) {
+            contextParts.push(`Key Benefits: ${benefits.join(', ')}`)
+          }
+        }
+      }
+
+      const benefitsMap: Record<string, number> = {}
+      const emotionsMap: Record<string, number> = {}
+      const productsMap: Record<string, number> = {}
+
+      testimonials.forEach((t: any) => {
+        if (t.emotional_tone) {
+          emotionsMap[t.emotional_tone] = (emotionsMap[t.emotional_tone] || 0) + 1
+        }
+        if (t.product_mentioned) {
+          productsMap[t.product_mentioned] = (productsMap[t.product_mentioned] || 0) + 1
+        }
+        if (t.key_benefits && typeof t.key_benefits === 'object') {
+          Object.keys(t.key_benefits).forEach(benefit => {
+            if (t.key_benefits[benefit]) {
+              benefitsMap[benefit] = (benefitsMap[benefit] || 0) + 1
+            }
+          })
+        }
+      })
+
+      contextParts.push("\n=== TESTIMONIAL INSIGHTS ===")
+      contextParts.push(`Total Testimonials: ${testimonials.length}`)
+      
+      const topProduct = Object.entries(productsMap).sort(([, a], [, b]) => b - a)[0]
+      if (topProduct) {
+        contextParts.push(`Most Mentioned Feature: ${topProduct[0]} (${topProduct[1]} mentions)`)
+      }
+
+      const topEmotion = Object.entries(emotionsMap).sort(([, a], [, b]) => b - a)[0]
+      if (topEmotion) {
+        contextParts.push(`Dominant Emotion: ${topEmotion[0]}`)
+      }
+
+      const topBenefits = Object.entries(benefitsMap)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 5)
+        .map(([benefit, count]) => `${benefit.replace(/_/g, ' ')} (${count})`)
+      
+      if (topBenefits.length > 0) {
+        contextParts.push(`Top Benefits: ${topBenefits.join(', ')}`)
       }
     }
 
@@ -387,7 +486,16 @@ export async function getCompleteAdminContext(targetUserId?: string): Promise<st
       }
     }
 
-    return contextParts.join("\n")
+    const finalContext = contextParts.join("\n")
+    
+    try {
+      await setCache(cacheKey, finalContext, CACHE_TTL.MEDIUM)
+      console.log('[v0] ✅ Cached admin context for 5 minutes')
+    } catch (error) {
+      console.log('[v0] ⚠️ Failed to cache admin context (non-fatal):', error)
+    }
+
+    return finalContext
   } catch (error) {
     console.error("[v0] Error building complete admin context:", error)
     return ""
