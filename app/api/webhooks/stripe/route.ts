@@ -8,7 +8,7 @@ import { sendEmail } from "@/lib/email/send-email"
 import { generateWelcomeEmail } from "@/lib/email/templates/welcome-email"
 import { checkWebhookRateLimit } from "@/lib/rate-limit"
 import { logWebhookError, alertWebhookError, isCriticalError } from "@/lib/webhook-monitoring"
-import { addOrUpdateResendContact, updateContactTags as updateTags } from "@/lib/resend/manage-contact"
+import { addOrUpdateResendContact, updateContactTags as updateTags, addContactToSegment } from "@/lib/resend/manage-contact"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -105,6 +105,19 @@ export async function POST(request: NextRequest) {
 
             if (resendResult.success) {
               console.log(`[v0] Added paying customer ${customerEmail} to Resend audience with ID: ${resendResult.contactId}`)
+              
+              if (process.env.RESEND_BETA_SEGMENT_ID) {
+                const segmentResult = await addContactToSegment(
+                  customerEmail,
+                  process.env.RESEND_BETA_SEGMENT_ID
+                )
+                
+                if (segmentResult.success) {
+                  console.log(`[v0] Added ${customerEmail} to Beta Customers segment`)
+                } else {
+                  console.error(`[v0] Failed to add to Beta segment: ${segmentResult.error}`)
+                }
+              }
             } else {
               console.error(`[v0] Failed to add paying customer to Resend: ${resendResult.error}`)
             }

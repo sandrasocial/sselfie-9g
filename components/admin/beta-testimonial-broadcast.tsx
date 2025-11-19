@@ -84,6 +84,23 @@ export function BetaTestimonialBroadcast() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+            <h4 className="font-semibold text-amber-900 mb-2 text-sm">⚠️ Important: Resend Segment Configuration</h4>
+            <p className="text-xs text-amber-800 mb-3">
+              Your manually created Resend segment (<code className="bg-amber-100 px-1 rounded">8da5ee08-60cf-47a5-bdaa-9419c7eb5aa5</code>) 
+              must be configured with the correct filter to exclude freebie subscribers:
+            </p>
+            <div className="bg-white border border-amber-300 rounded p-3 mb-3">
+              <p className="text-xs font-medium text-amber-900 mb-2">Required Filter in Resend Dashboard:</p>
+              <div className="font-mono text-xs text-amber-800">
+                Tag: <strong>status</strong> equals <strong>customer</strong>
+              </div>
+            </div>
+            <p className="text-xs text-amber-700">
+              This ensures only paying customers (not the 28 freebie subscribers with "status:lead") receive the testimonial request.
+            </p>
+          </div>
+
           <Button
             onClick={handleCreateSegment}
             disabled={segmentLoading || !!segmentResult}
@@ -100,35 +117,29 @@ export function BetaTestimonialBroadcast() {
                 <div>
                   <h4 className="font-semibold text-green-900">Segment Created Successfully</h4>
                   <p className="text-sm text-green-700 mt-1">
-                    Tagged {segmentResult.totalTagged} customers as beta users
+                    {segmentResult.message}
                   </p>
-                  <div className="mt-3 p-3 bg-yellow-50 border border-yellow-300 rounded">
-                    <p className="text-sm font-semibold text-yellow-900 mb-2">
-                      🔑 Required: Add Segment ID to Environment Variables
-                    </p>
-                    <p className="text-xs text-yellow-800 mb-2">
-                      Before creating the broadcast, add your Beta Users segment ID:
-                    </p>
-                    <div className="bg-white p-2 rounded text-xs font-mono border border-yellow-200">
-                      <div className="text-yellow-700">Variable name:</div>
-                      <div className="text-yellow-900 font-semibold mb-1">RESEND_BETA_SEGMENT_ID</div>
-                      <div className="text-yellow-700">Value:</div>
-                      <div className="text-yellow-900 font-semibold">8da5ee08-60cf-47a5-bdaa-9419c7eb5aa5</div>
+                  {segmentResult.segmentId && (
+                    <div className="mt-3 p-3 bg-white border border-green-300 rounded">
+                      <p className="text-sm font-semibold text-green-900 mb-2">
+                        Segment Created in Resend
+                      </p>
+                      <div className="space-y-1 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-green-700">Name:</span>
+                          <span className="font-mono text-green-900">{segmentResult.segmentName}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-green-700">Segment ID:</span>
+                          <span className="font-mono text-green-900">{segmentResult.segmentId}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-green-700">Customers:</span>
+                          <span className="font-semibold text-green-900">{segmentResult.totalTagged}</span>
+                        </div>
+                      </div>
                     </div>
-                    <p className="text-xs text-yellow-700 mt-2">
-                      → Go to Vars section in sidebar → Add variable above → Proceed to Step 3
-                    </p>
-                  </div>
-                  <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded">
-                    <p className="text-sm font-medium text-blue-900 mb-2">
-                      Freebie Leads vs. Paying Customers:
-                    </p>
-                    <ul className="text-xs text-blue-800 space-y-1">
-                      <li>• <strong>Freebie subscribers</strong>: tagged with <code className="bg-blue-100 px-1 rounded">status:lead</code></li>
-                      <li>• <strong>Paying customers</strong>: tagged with <code className="bg-blue-100 px-1 rounded">status:customer</code></li>
-                      <li>• Your Beta Users segment filters by <code className="bg-blue-100 px-1 rounded">status = customer</code></li>
-                    </ul>
-                  </div>
+                  )}
                   <ul className="text-sm text-green-600 mt-2 space-y-1">
                     {segmentResult.customers?.slice(0, 5).map((customer: any, i: number) => (
                       <li key={i}>• {customer.email} ({customer.product})</li>

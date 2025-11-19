@@ -10,35 +10,53 @@ const audienceId = process.env.RESEND_AUDIENCE_ID!
 export async function POST() {
   try {
     console.log("[v0] Creating beta customer segment in Resend...")
-
-    const betaCustomers = await sql`
+    
+    console.log("[v0] Fetching ALL paying customers from database (memberships + one-time sessions)...")
+    
+    const dbCustomers = await sql`
       SELECT DISTINCT
         u.email,
         u.first_name,
         u.last_name,
         u.display_name,
-        u.created_at,
+        'membership' as purchase_type,
         s.product_type,
-        s.status,
         s.created_at as purchase_date
       FROM users u
       INNER JOIN subscriptions s ON u.id = s.user_id::varchar
-      WHERE s.is_test_mode = FALSE
-        AND u.email IS NOT NULL
-      ORDER BY s.created_at DESC
+      WHERE u.email IS NOT NULL
+        AND u.email != ''
+        AND s.is_test_mode = FALSE
+      
+      UNION
+      
+      SELECT DISTINCT
+        u.email,
+        u.first_name,
+        u.last_name,
+        u.display_name,
+        'credit_purchase' as purchase_type,
+        'one_time_session' as product_type,
+        ct.created_at as purchase_date
+      FROM users u
+      INNER JOIN credit_transactions ct ON u.id = ct.user_id::varchar
+      WHERE u.email IS NOT NULL
+        AND u.email != ''
+        AND ct.is_test_mode = FALSE
+        AND ct.transaction_type = 'purchase'
+        AND ct.amount > 0
+      
+      ORDER BY purchase_date DESC
     `
 
-    console.log(`[v0] Found ${betaCustomers.length} beta customers`)
+    console.log(`[v0] Found ${dbCustomers.length} paying customers`)
+    console.log("[v0] Breakdown by purchase type:")
+    const membershipCount = dbCustomers.filter((c: any) => c.purchase_type === 'membership').length
+    const creditCount = dbCustomers.filter((c: any) => c.purchase_type === 'credit_purchase').length
+    console.log(`[v0]  - Memberships: ${membershipCount}`)
+    console.log(`[v0]  - One-time sessions/credits: ${creditCount}`)
 
-    if (betaCustomers.length > 0) {
-      console.log("[v0] Sample customers:", betaCustomers.slice(0, 5).map(c => ({
-        email: c.email,
-        product_type: c.product_type,
-        status: c.status
-      })))
-    }
-
-    if (betaCustomers.length === 0) {
+    if (dbCustomers.length === 0) {
       return NextResponse.json({
         success: false,
         error: "No beta customers found",
@@ -46,16 +64,44 @@ export async function POST() {
       })
     }
 
+    console.log("[v0] Creating 'Beta Customers' segment via Resend API...")
+    let segmentId: string
+
+    try {
+      const { data: segment, error: segmentError } = await resend.segments.create({
+        name: 'Beta Customers',
+      })
+
+      if (segmentError || !segment) {
+        console.error("[v0] Failed to create segment:", segmentError)
+        return NextResponse.json({
+          success: false,
+          error: "Failed to create segment",
+          message: segmentError?.message || "Could not create segment in Resend",
+        }, { status: 500 })
+      }
+
+      segmentId = segment.id
+      console.log(`[v0] ✓ Segment created with ID: ${segmentId}`)
+    } catch (error) {
+      console.error("[v0] Exception creating segment:", error)
+      return NextResponse.json({
+        success: false,
+        error: "Failed to create segment",
+        message: error instanceof Error ? error.message : "Unknown error",
+      }, { status: 500 })
+    }
+
     let successCount = 0
     let errorCount = 0
     const errors: string[] = []
 
-    for (const customer of betaCustomers) {
+    for (const customer of dbCustomers) {
       try {
-        const firstName = customer.display_name || customer.first_name || customer.email.split("@")[0]
-        
+        const firstName = customer.display_name || customer.first_name || customer.email.split('@')[0]
+
         let productTag = "unknown"
-        if (customer.product_type === "one_time_session") {
+        if (customer.product_type === "one_time_session" || customer.purchase_type === "credit_purchase") {
           productTag = "one-time-session"
         } else if (customer.product_type === "sselfie_studio_membership") {
           productTag = "studio-membership"
@@ -63,26 +109,39 @@ export async function POST() {
           productTag = "credit-topup"
         }
 
+        console.log(`[v0] Adding/updating contact: ${customer.email} (${customer.purchase_type})`)
+
         const result = await addOrUpdateResendContact(customer.email, firstName, {
-          source: "stripe-purchase",
-          status: "customer", // This differentiates from "lead" (freebie subscribers)
+          source: 'stripe-purchase',
+          status: "customer",
           journey: "testimonial-request",
           product: productTag,
           "beta-customer": "true",
-          customer_since: customer.purchase_date.toISOString().split("T")[0],
         })
 
         if (result.success) {
           console.log(`[v0] ✓ Tagged as customer: ${customer.email}`)
-          successCount++
+
+          try {
+            await resend.contacts.segments.add({
+              email: customer.email,
+              segmentId: segmentId,
+            })
+
+            console.log(`[v0] ✓ Added to segment: ${customer.email}`)
+            successCount++
+          } catch (segError) {
+            console.error(`[v0] ✗ Failed to add to segment: ${customer.email}`, segError)
+            errorCount++
+            errors.push(`${customer.email}: Failed to add to segment`)
+          }
         } else {
           errorCount++
           errors.push(`${customer.email}: ${result.error}`)
           console.error(`[v0] ✗ Failed to tag ${customer.email}:`, result.error)
         }
 
-        // Rate limit: wait 100ms between requests
-        await new Promise((resolve) => setTimeout(resolve, 100))
+        await new Promise((resolve) => setTimeout(resolve, 600))
       } catch (error) {
         errorCount++
         const errorMsg = error instanceof Error ? error.message : "Unknown error"
@@ -95,31 +154,33 @@ export async function POST() {
 
     return NextResponse.json({
       success: true,
-      message: `Successfully tagged ${successCount} beta customers in Resend!`,
-      totalTagged: successCount,
+      message: `Successfully created segment and added ${successCount} beta customers!`,
+      totalAdded: successCount,
+      segmentId,
+      segmentName: "Beta Customers",
       summary: {
         audienceId,
-        totalCustomers: betaCustomers.length,
-        successfullyTagged: successCount,
+        segmentId,
+        totalCustomers: dbCustomers.length,
+        memberships: membershipCount,
+        oneTimeSessions: creditCount,
+        successfullyAdded: successCount,
         errors: errorCount,
       },
-      customers: betaCustomers.slice(0, 10).map(c => ({ email: c.email, product: c.product_type })),
+      customers: dbCustomers.slice(0, 10).map((c: any) => ({ 
+        email: c.email, 
+        purchaseType: c.purchase_type,
+        productType: c.product_type 
+      })),
       instructions: [
-        "✓ All beta customers have been tagged in your Resend audience!",
+        "✓ Beta Customers segment created in Resend!",
+        `✓ Segment ID: ${segmentId}`,
+        `✓ ${successCount} customers added to segment`,
+        `✓ ${membershipCount} studio memberships`,
+        `✓ ${creditCount} one-time session purchases`,
         "",
-        "Important: Freebie vs. Paying Customer Separation:",
-        "• Freebie subscribers have 'status:lead' tag",
-        "• Paying customers have 'status:customer' tag",
-        "• Beta customers also have 'beta-customer:true' tag",
-        "",
-        "Next steps to create the segment manually in Resend:",
-        "1. Go to https://resend.com/audiences/segments",
-        "2. Click 'Create Segment'",
-        "3. Name it 'Beta Customers'",
-        "4. Add filter: status = customer",
-        "5. Save and use this segment for the testimonial broadcast",
-        "",
-        `Total contacts tagged: ${successCount} of ${betaCustomers.length}`,
+        "The segment is ready to use for broadcasting.",
+        "All freebie subscribers are excluded (they have 'status:lead' tag).",
       ],
       errorDetails: errors.length > 0 ? errors.slice(0, 10) : undefined,
     })

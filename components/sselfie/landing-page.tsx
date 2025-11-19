@@ -9,6 +9,7 @@ import Image from "next/image"
 import InteractivePipelineShowcase from "./interactive-pipeline-showcase"
 import InteractiveFeaturesShowcase from "./interactive-features-showcase"
 import { createLandingCheckoutSession } from "@/app/actions/landing-checkout"
+import TestimonialGrid from "@/components/testimonials/testimonial-grid"
 
 interface LandingStats {
   waitlistCount: number
@@ -308,7 +309,9 @@ export default function LandingPage() {
           >
             "I never imagined an AI photo could make me see myself this way."
           </blockquote>
-          <p className="text-sm sm:text-base font-light tracking-wider uppercase text-stone-400">— SHANNON - MEMBER</p>
+          <p className="text-sm sm:text-sm md:text-base leading-relaxed mb-4 sm:mb-6 max-w-2xl mx-auto px-4 font-light tracking-wider uppercase text-stone-400">
+            — SHANNON - MEMBER
+          </p>
         </div>
       </section>
 
@@ -532,6 +535,26 @@ export default function LandingPage() {
               brand, and having the confidence to be visible—month after month.
             </p>
           </div>
+        </div>
+      </section>
+
+      <section className="py-24 sm:py-32 md:py-40 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-16 sm:mb-20">
+            <p className="text-xs sm:text-sm md:text-sm font-light tracking-[0.25em] sm:tracking-[0.3em] uppercase text-stone-500 mb-4 sm:mb-6">
+              CLIENT RESULTS
+            </p>
+            <h2
+              className="text-2xl sm:text-3xl md:text-4xl font-light tracking-[0.15em] sm:tracking-[0.2em] uppercase mb-8 sm:mb-10 text-stone-900"
+              style={{ fontFamily: "'Times New Roman', Times, serif" }}
+            >
+              Real Photos. Real Results.
+            </h2>
+            <p className="text-base sm:text-lg md:text-xl font-light leading-relaxed text-stone-700 max-w-3xl mx-auto px-4">
+              See how real members are using SSELFIE to build their brands and show up with confidence.
+            </p>
+          </div>
+          <TestimonialGrid />
         </div>
       </section>
 

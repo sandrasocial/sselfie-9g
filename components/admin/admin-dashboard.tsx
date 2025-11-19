@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Loader2, TrendingUp, Users, BookOpen, MessageSquare, AlertCircle, DollarSign, Calendar, BarChart3, Coins } from 'lucide-react'
+import { Loader2, TrendingUp, Users, BookOpen, MessageSquare, AlertCircle, DollarSign, Calendar, BarChart3, Coins, Mail, Star } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts"
 import { SystemHealthMonitor } from "./system-health-monitor"
@@ -70,6 +70,7 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
   const [revenue, setRevenue] = useState<RevenueData | null>(null)
   const [feedback, setFeedback] = useState<FeedbackData | null>(null)
   const [revenueHistory, setRevenueHistory] = useState<any[]>([])
+  const [pendingTestimonialsCount, setPendingTestimonialsCount] = useState<number>(0)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -77,6 +78,7 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
     fetchRevenueData()
     fetchFeedbackData()
     fetchRevenueHistory()
+    fetchPendingTestimonialsCount()
     
     const refreshInterval = setInterval(() => {
       console.log("[v0] Auto-refreshing dashboard data...")
@@ -84,6 +86,7 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
       fetchRevenueData()
       fetchFeedbackData()
       fetchRevenueHistory()
+      fetchPendingTestimonialsCount()
     }, 30000) // 30 seconds
     
     return () => clearInterval(refreshInterval)
@@ -138,6 +141,18 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
       }
     } catch (error) {
       console.error("[v0] Error fetching revenue history:", error)
+    }
+  }
+
+  const fetchPendingTestimonialsCount = async () => {
+    try {
+      const response = await fetch("/api/admin/dashboard/testimonials-count")
+      if (response.ok) {
+        const data = await response.json()
+        setPendingTestimonialsCount(data.pendingCount || 0)
+      }
+    } catch (error) {
+      console.error("[v0] Error fetching testimonials count:", error)
     }
   }
 
@@ -334,6 +349,25 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
                 </div>
               </Link>
 
+              <Link href="/admin/email-broadcast" className="group">
+                <div className="bg-white rounded-xl md:rounded-2xl overflow-hidden border border-stone-200 shadow-lg hover:shadow-xl transition-all h-full">
+                  <div className="relative h-40 overflow-hidden bg-gradient-to-br from-stone-50 to-stone-100 flex items-center justify-center">
+                    <Mail className="w-20 h-20 text-stone-300" strokeWidth={1.5} />
+                    <div className="absolute inset-0 bg-gradient-to-t from-stone-950/60 to-transparent" />
+                    <div className="absolute bottom-4 left-4">
+                      <h3 className="font-['Times_New_Roman'] text-2xl md:text-3xl font-extralight tracking-[0.3em] uppercase text-white">
+                        EMAILS
+                      </h3>
+                    </div>
+                  </div>
+                  <div className="p-4 md:p-6">
+                    <p className="text-sm md:text-base text-stone-600 leading-relaxed">
+                      Send email campaigns and testimonial requests
+                    </p>
+                  </div>
+                </div>
+              </Link>
+
               <Link href="/admin/credits" className="group">
                 <div className="bg-white rounded-xl md:rounded-2xl overflow-hidden border border-stone-200 shadow-lg hover:shadow-xl transition-all h-full">
                   <div className="relative h-40 overflow-hidden bg-gradient-to-br from-amber-50 to-orange-50 flex items-center justify-center">
@@ -371,6 +405,30 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
                   <div className="p-4 md:p-6">
                     <p className="text-sm md:text-base text-stone-600 leading-relaxed">
                       View user feedback and testimonials
+                    </p>
+                  </div>
+                </div>
+              </Link>
+
+              <Link href="/admin/testimonials" className="group relative">
+                <div className="bg-white rounded-xl md:rounded-2xl overflow-hidden border border-stone-200 shadow-lg hover:shadow-xl transition-all h-full">
+                  <div className="relative h-40 overflow-hidden bg-gradient-to-br from-stone-50 to-stone-100 flex items-center justify-center">
+                    <Star className="w-20 h-20 text-stone-300" strokeWidth={1.5} />
+                    <div className="absolute inset-0 bg-gradient-to-t from-stone-950/60 to-transparent" />
+                    <div className="absolute bottom-4 left-4">
+                      <h3 className="font-['Times_New_Roman'] text-2xl md:text-3xl font-extralight tracking-[0.3em] uppercase text-white">
+                        REVIEWS
+                      </h3>
+                    </div>
+                    {pendingTestimonialsCount > 0 && (
+                      <div className="absolute top-3 right-3 bg-stone-950 text-white rounded-full w-8 h-8 flex items-center justify-center text-xs font-medium shadow-lg">
+                        {pendingTestimonialsCount}
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-4 md:p-6">
+                    <p className="text-sm md:text-base text-stone-600 leading-relaxed">
+                      Approve and publish customer testimonials
                     </p>
                   </div>
                 </div>

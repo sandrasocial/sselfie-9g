@@ -6,168 +6,169 @@ import { handleUpload, type HandleUploadBody } from "@vercel/blob/client"
 
 export async function POST(request: Request): Promise<NextResponse> {
   try {
-    console.log("[v0] Upload endpoint called")
+    console.log("[v0] ========= UPLOAD ENDPOINT CALLED =========")
+    console.log("[v0] Request URL:", request.url)
+    console.log("[v0] Request method:", request.method)
+    console.log("[v0] Content-Type:", request.headers.get("content-type"))
+    
+    let authUser
+    let neonUser
+    
+    try {
+      console.log("[v0] Creating Supabase client...")
+      const supabase = await createServerClient()
+      console.log("[v0] Supabase client created")
+      
+      console.log("[v0] Getting auth user...")
+      const { data, error: authError } = await supabase.auth.getUser()
+      
+      if (authError) {
+        console.error("[v0] Supabase auth error:", authError)
+        return NextResponse.json({ error: `Authentication error: ${authError.message}` }, { status: 401 })
+      }
+      
+      authUser = data.user
+      
+      if (!authUser) {
+        console.error("[v0] No authenticated user")
+        return NextResponse.json({ error: "Unauthorized - no auth user" }, { status: 401 })
+      }
 
-    const supabase = await createServerClient()
-    const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser()
+      console.log("[v0] Auth user found:", authUser.email)
 
-    if (!authUser) {
-      console.error("[v0] Upload failed: Unauthorized")
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+      console.log("[v0] Looking up Neon user...")
+      neonUser = await getUserByAuthId(authUser.id)
+      
+      if (!neonUser) {
+        console.error("[v0] User not found in Neon database")
+        return NextResponse.json({ error: "User not found in database" }, { status: 404 })
+      }
 
-    const neonUser = await getUserByAuthId(authUser.id)
-    if (!neonUser) {
-      console.error("[v0] Upload failed: User not found")
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
+      console.log("[v0] Neon user found:", neonUser.id)
+    } catch (authErr) {
+      console.error("[v0] Authentication setup failed:", authErr)
+      console.error("[v0] Auth error details:", {
+        message: authErr instanceof Error ? authErr.message : String(authErr),
+        stack: authErr instanceof Error ? authErr.stack : undefined,
+      })
+      return NextResponse.json(
+        { 
+          error: "Authentication failed", 
+          details: authErr instanceof Error ? authErr.message : String(authErr) 
+        }, 
+        { status: 500 }
+      )
     }
 
     const contentType = request.headers.get("content-type")
-    console.log("[v0] Content-Type:", contentType)
+    console.log("[v0] Processing upload with content-type:", contentType)
 
-    if (contentType?.includes("application/json")) {
+    if (contentType?.includes("multipart/form-data") || contentType === null) {
+      console.log("[v0] Attempting to process as FormData (content-type: %s)...", contentType || "null")
+      
       try {
-        // Clone the request to peek at the body
-        const clonedRequest = request.clone()
-        const bodyText = await clonedRequest.text()
+        const formData = await request.formData()
+        console.log("[v0] FormData parsed successfully. Keys:", Array.from(formData.keys()))
+        
+        const file = formData.get("file") || formData.get("image")
+        
+        if (!file || !(file instanceof File || file instanceof Blob)) {
+          console.error("[v0] No valid file in FormData")
+          
+          // If content-type was null and no file, try JSON parsing as fallback
+          if (contentType === null) {
+            console.log("[v0] Falling back to JSON parsing...")
+            const clonedRequest = request.clone()
+            try {
+              const body = await clonedRequest.json()
+              const { image } = body
 
-        // Check if this looks like a client upload token request
-        if (
-          bodyText.includes('"type"') &&
-          (bodyText.includes('"blob-upload-token') || bodyText.includes("multipart"))
-        ) {
-          console.log("[v0] Detected client upload token request")
+              if (image && image.startsWith("data:image/")) {
+                const base64Data = image.split(",")[1]
+                const buffer = Buffer.from(base64Data, "base64")
+                const mimeType = image.split(";")[0].split(":")[1]
+                const extension = mimeType.split("/")[1]
 
-          const body = JSON.parse(bodyText) as HandleUploadBody
+                const blob = await put(`testimonials/${Date.now()}.${extension}`, buffer, {
+                  access: "public",
+                  contentType: mimeType,
+                })
 
-          const jsonResponse = await handleUpload({
-            body,
-            request,
-            onBeforeGenerateToken: async (pathname) => {
-              console.log("[v0] Generating upload token for:", pathname)
-
-              // Validate file path belongs to the user
-              if (!pathname.startsWith(`training/${neonUser.id}/`)) {
-                throw new Error("Invalid upload path")
+                console.log("[v0] ✓ Base64 upload successful:", blob.url)
+                return NextResponse.json({ url: blob.url })
               }
-
-              return {
-                allowedContentTypes: ["image/jpeg", "image/png", "image/jpg", "image/webp"],
-                maximumSizeInBytes: 10 * 1024 * 1024, // 10MB per image
-              }
-            },
-            onUploadCompleted: async ({ blob, tokenPayload }) => {
-              console.log("[v0] Upload completed:", blob.url)
-            },
-          })
-
-          console.log("[v0] Token generated successfully")
-          return NextResponse.json(jsonResponse)
+            } catch (jsonErr) {
+              console.error("[v0] JSON parsing also failed:", jsonErr)
+            }
+          }
+          
+          return NextResponse.json({ error: "No file provided in request" }, { status: 400 })
         }
-
-        // If not a token request, try base64 image upload
-        const jsonBody = JSON.parse(bodyText)
-        const { image } = jsonBody
-
-        console.log("[v0] JSON image:", image ? "present" : "missing", image?.substring(0, 50))
-
-        if (!image || !image.startsWith("data:image/")) {
-          console.error("[v0] Upload failed: Invalid image data")
-          return NextResponse.json({ error: "Invalid image data" }, { status: 400 })
-        }
-
-        // Extract base64 data and convert to buffer
-        const base64Data = image.split(",")[1]
-        const buffer = Buffer.from(base64Data, "base64")
-
-        // Determine file extension from mime type
-        const mimeType = image.split(";")[0].split(":")[1]
-        const extension = mimeType.split("/")[1]
-
-        const blob = await put(`uploads/${neonUser.id}/${Date.now()}.${extension}`, buffer, {
-          access: "public",
-          contentType: mimeType,
-        })
-
-        console.log("[v0] Base64 image uploaded to Blob:", blob.url)
-        return NextResponse.json({ url: blob.url })
-      } catch (jsonError) {
-        console.error("[v0] JSON processing failed:", jsonError)
-        return NextResponse.json(
-          {
-            error: "Failed to process request",
-            details: jsonError instanceof Error ? jsonError.message : String(jsonError),
-          },
-          { status: 500 },
-        )
-      }
-    }
-
-    // Try FormData upload
-    let formData: FormData | null = null
-    try {
-      formData = await request.formData()
-    } catch (formDataError) {
-      console.log("[v0] FormData parsing failed")
-    }
-
-    if (formData) {
-      const file = formData.get("file") || formData.get("image")
-
-      console.log(
-        "[v0] FormData file:",
-        file ? "present" : "missing",
-        file instanceof File ? "File" : file instanceof Blob ? "Blob" : typeof file,
-      )
-
-      if (file && (file instanceof File || file instanceof Blob)) {
+        
         const fileName = file instanceof File ? file.name : `upload-${Date.now()}.png`
-        const fileSize = file.size
-
-        console.log("[v0] Uploading file to Blob:", fileName, "Size:", fileSize, "bytes")
-
-        const maxSize = 500 * 1024 * 1024 // 500MB limit
-        if (fileSize > maxSize) {
-          console.error("[v0] File too large:", fileSize, "bytes")
-          return NextResponse.json(
-            {
-              error: `File too large (${Math.round(fileSize / 1024 / 1024)}MB). Maximum size is 500MB.`,
-            },
-            { status: 413 },
-          )
+        console.log("[v0] Uploading file:", fileName, "Size:", file.size, "bytes")
+        
+        // Upload to Blob storage
+        const blob = await put(`testimonials/${Date.now()}-${fileName}`, file, {
+          access: "public",
+        })
+        
+        console.log("[v0] ✓ Upload successful:", blob.url)
+        return NextResponse.json({ url: blob.url })
+      } catch (formDataErr) {
+        console.error("[v0] FormData parsing failed:", formDataErr)
+        
+        // If content-type was explicitly multipart, this is an error
+        if (contentType?.includes("multipart/form-data")) {
+          return NextResponse.json({ 
+            error: "Failed to parse FormData", 
+            details: formDataErr instanceof Error ? formDataErr.message : String(formDataErr) 
+          }, { status: 400 })
         }
-
-        try {
-          const blob = await put(`uploads/${neonUser.id}/${Date.now()}-${fileName}`, file, {
-            access: "public",
-          })
-
-          console.log("[v0] File uploaded to Blob successfully:", blob.url)
-          return NextResponse.json({ url: blob.url })
-        } catch (blobError) {
-          console.error("[v0] Blob upload failed:", blobError)
-          return NextResponse.json(
-            {
-              error: "Failed to upload file to storage",
-              details: blobError instanceof Error ? blobError.message : String(blobError),
-            },
-            { status: 500 },
-          )
-        }
+        // Otherwise fall through to JSON handling
       }
-
-      console.error("[v0] No valid file found in FormData")
-      return NextResponse.json({ error: "No valid file provided in FormData" }, { status: 400 })
     }
 
-    console.error("[v0] Upload failed: No valid request format")
-    return NextResponse.json({ error: "Invalid request format" }, { status: 400 })
+    // Handle base64 JSON uploads
+    if (contentType?.includes("application/json")) {
+      console.log("[v0] Processing JSON upload...")
+      const body = await request.json()
+      const { image } = body
+
+      if (!image || !image.startsWith("data:image/")) {
+        return NextResponse.json({ error: "Invalid image data" }, { status: 400 })
+      }
+
+      const base64Data = image.split(",")[1]
+      const buffer = Buffer.from(base64Data, "base64")
+      const mimeType = image.split(";")[0].split(":")[1]
+      const extension = mimeType.split("/")[1]
+
+      const blob = await put(`testimonials/${Date.now()}.${extension}`, buffer, {
+        access: "public",
+        contentType: mimeType,
+      })
+
+      console.log("[v0] ✓ Base64 upload successful:", blob.url)
+      return NextResponse.json({ url: blob.url })
+    }
+
+    console.error("[v0] Unsupported content type or no valid data:", contentType)
+    return NextResponse.json({ error: "Unsupported content type or no valid upload data" }, { status: 400 })
+    
   } catch (error) {
-    console.error("[v0] Unexpected error in upload endpoint:", error)
+    console.error("[v0] ========= UNEXPECTED ERROR IN UPLOAD =========")
+    console.error("[v0] Error type:", typeof error)
+    console.error("[v0] Error:", error)
+    console.error("[v0] Error message:", error instanceof Error ? error.message : String(error))
+    console.error("[v0] Error stack:", error instanceof Error ? error.stack : undefined)
+    console.error("[v0] =====================================")
+    
     return NextResponse.json(
-      { error: "Failed to upload", details: error instanceof Error ? error.message : String(error) },
+      { 
+        error: "Upload failed", 
+        details: error instanceof Error ? error.message : String(error) 
+      },
       { status: 500 },
     )
   }

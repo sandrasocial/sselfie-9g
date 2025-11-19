@@ -211,3 +211,53 @@ export async function removeResendContact(email: string): Promise<{ success: boo
     }
   }
 }
+
+/**
+ * Add a contact to a specific segment
+ */
+export async function addContactToSegment(
+  email: string,
+  segmentId: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    if (!process.env.RESEND_API_KEY) {
+      console.log("[v0] RESEND_API_KEY not configured, skipping segment addition")
+      return { success: false, error: "Resend not configured" }
+    }
+
+    if (!audienceId) {
+      console.log("[v0] RESEND_AUDIENCE_ID not configured, skipping segment addition")
+      return { success: false, error: "Audience not configured" }
+    }
+
+    console.log(`[v0] Adding contact ${email} to segment ${segmentId}`)
+
+    // Use the Resend API to add contact to segment
+    // @ts-ignore - Resend types may not include segments.add yet
+    const { error } = await resend.contacts.segments.add({
+      email,
+      segmentId,
+      audienceId,
+    })
+
+    if (error) {
+      // If contact is already in segment, consider it a success
+      if (error.message?.includes("already") || error.message?.includes("duplicate")) {
+        console.log(`[v0] Contact ${email} already in segment`)
+        return { success: true }
+      }
+
+      console.error(`[v0] Error adding contact to segment:`, error)
+      return { success: false, error: error.message }
+    }
+
+    console.log(`[v0] Successfully added ${email} to segment`)
+    return { success: true }
+  } catch (error) {
+    console.error(`[v0] Exception adding contact to segment:`, error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    }
+  }
+}
