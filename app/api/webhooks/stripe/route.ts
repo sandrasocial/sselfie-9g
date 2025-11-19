@@ -8,7 +8,7 @@ import { sendEmail } from "@/lib/email/send-email"
 import { generateWelcomeEmail } from "@/lib/email/templates/welcome-email"
 import { checkWebhookRateLimit } from "@/lib/rate-limit"
 import { logWebhookError, alertWebhookError, isCriticalError } from "@/lib/webhook-monitoring"
-import { updateContactTags } from "@/lib/resend/manage-contact"
+import { addOrUpdateResendContact, updateContactTags as updateTags } from "@/lib/resend/manage-contact"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -80,6 +80,36 @@ export async function POST(request: NextRequest) {
         const customerEmail = session.customer_details?.email || session.customer_email
         if (customerEmail) {
           try {
+            const customerName = session.customer_details?.name || customerEmail.split("@")[0]
+            const firstName = customerName.split(" ")[0] || customerName
+            
+            const productType = session.metadata.product_type
+            let productTag = "unknown"
+
+            if (productType === "one_time_session") {
+              productTag = "one-time-session"
+            } else if (productType === "sselfie_studio_membership") {
+              productTag = "studio-membership"
+            } else if (productType === "credit_topup") {
+              productTag = "credit-topup"
+            }
+
+            // Add customer to Resend audience as a paying customer
+            const resendResult = await addOrUpdateResendContact(customerEmail, firstName, {
+              source: "stripe-checkout",
+              status: "customer",
+              product: productTag,
+              journey: "onboarding",
+              converted: "true",
+              purchase_date: new Date().toISOString().split("T")[0],
+            })
+
+            if (resendResult.success) {
+              console.log(`[v0] Added paying customer ${customerEmail} to Resend audience with ID: ${resendResult.contactId}`)
+            } else {
+              console.error(`[v0] Failed to add paying customer to Resend: ${resendResult.error}`)
+            }
+
             // Tag the subscriber as having purchased
             await sql`
               UPDATE freebie_subscribers 
@@ -107,7 +137,7 @@ export async function POST(request: NextRequest) {
               productTag = "credit-topup"
             }
 
-            await updateContactTags(customerEmail, {
+            await updateTags(customerEmail, {
               status: "customer",
               journey: "onboarding",
               converted: "true",
@@ -770,7 +800,7 @@ export async function POST(request: NextRequest) {
             console.log("[v0] Subscription checkout completed for existing user")
 
             if (userId && productType === "sselfie_studio_membership") {
-              console.log(`[v0] Granting ${credits} monthly credits to existing user ${userId}`)
+              console.log(`[v0] Granting ${credits} credits for subscription creation`)
               await grantMonthlyCredits(userId, "sselfie_studio_membership", !event.livemode)
 
               if (session.subscription) {

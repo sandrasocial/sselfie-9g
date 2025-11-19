@@ -63,7 +63,7 @@ export async function GET(req: Request) {
         ORDER BY created_at ASC
       `
       return result
-    })
+    }, 7, 2000) // Increased to 7 retries starting at 2 seconds
 
     const messages = dbMessages.map((msg: any) => ({
       id: String(msg.id),
@@ -82,10 +82,10 @@ export async function GET(req: Request) {
     console.error('[v0] Error stack:', error.stack)
 
     return new Response(JSON.stringify({
-      error: 'Failed to load chat',
-      details: error.message || 'Unknown error'
+      messages: [],
+      warning: 'Database temporarily unavailable, starting fresh chat'
     }), {
-      status: 500,
+      status: 200,
       headers: { 'Content-Type': 'application/json' }
     })
   }

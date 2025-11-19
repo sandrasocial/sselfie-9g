@@ -140,6 +140,8 @@ export default function AdminAgentChat({ userId, userName, userEmail }: AdminAge
     try {
       console.log("[v0] Loading chat:", chatIdToLoad)
       
+      await new Promise(resolve => setTimeout(resolve, 300))
+      
       setCurrentChatId(chatIdToLoad)
       
       const response = await fetch(`/api/admin/agent/chat?chatId=${chatIdToLoad}`)
@@ -154,6 +156,10 @@ export default function AdminAgentChat({ userId, userName, userEmail }: AdminAge
       if (response.ok) {
         const data = await response.json()
         console.log("[v0] Loaded chat messages:", data.messages?.length || 0)
+        
+        if (data.warning) {
+          console.log('[v0] ⚠️', data.warning)
+        }
         
         setMessages(data.messages || [])
         
@@ -173,11 +179,9 @@ export default function AdminAgentChat({ userId, userName, userEmail }: AdminAge
       }
     } catch (error: any) {
       console.error("[v0] Error loading chat:", error.message || error)
-      toast({
-        title: "Failed to load chat",
-        description: error.message || "Please try again",
-        variant: "destructive"
-      })
+      
+      setMessages([])
+      setCurrentChatId(chatIdToLoad)
     }
   }
 

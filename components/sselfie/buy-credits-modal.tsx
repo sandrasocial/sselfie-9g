@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button"
 import { EmbeddedCheckout, EmbeddedCheckoutProvider } from "@stripe/react-stripe-js"
 import { loadStripe } from "@stripe/stripe-js"
 import { CREDIT_PACKAGES } from "@/lib/credit-packages"
-import { Check, Sparkles } from "lucide-react"
+import { Check, Sparkles } from 'lucide-react'
+import { startCreditCheckoutSession } from "@/app/actions/stripe"
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 
@@ -24,14 +25,7 @@ export default function BuyCreditsModal({ open, onOpenChange, onSuccess }: BuyCr
     if (!selectedPackage) return null
 
     try {
-      const response = await fetch("/api/stripe/create-checkout-session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ packageId: selectedPackage }),
-      })
-
-      const data = await response.json()
-      return data.clientSecret
+      return await startCreditCheckoutSession(selectedPackage)
     } catch (error) {
       console.error("[v0] Error starting checkout:", error)
       return null
