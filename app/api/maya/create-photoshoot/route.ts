@@ -94,9 +94,10 @@ Think like a real influencer in this location. What would they naturally do?
 Generate ${numImages} varied poses using DIFFERENT activities that authentically match the scene. Keep action descriptions SIMPLE (15-25 words). NO staged poses - only natural candid moments. Return ONLY valid JSON.`
 
   const { text } = await generateText({
-    model: "anthropic/claude-sonnet-4",
+    model: "anthropic/claude-sonnet-4.5",
     prompt: mayaPrompt,
     maxOutputTokens: 4000,
+    temperature: 0.85,
   })
 
   console.log("[v0] 📸 Claude response length:", text.length)
@@ -104,7 +105,6 @@ Generate ${numImages} varied poses using DIFFERENT activities that authentically
 
   let jsonText = text
   
-  // Remove markdown code blocks if present
   if (text.includes("\`\`\`json")) {
     const jsonMatch = text.match(/\`\`\`json\s*([\s\S]*?)\s*\`\`\`/)
     if (jsonMatch) {
@@ -117,7 +117,6 @@ Generate ${numImages} varied poses using DIFFERENT activities that authentically
     }
   }
   
-  // Find JSON object
   const jsonMatch = jsonText.match(/\{[\s\S]*\}/)
   if (!jsonMatch) {
     console.error("[v0] ❌ No JSON found in response:", text.substring(0, 500))

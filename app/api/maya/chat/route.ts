@@ -53,7 +53,6 @@ const generateConceptsTool = tool({
       })
       .optional()
       .describe("Optional custom generation settings for style strength, prompt accuracy, etc."),
-    enablePhotoshootMode: z.boolean().optional().default(true).describe("Enable consistent styling across all concepts like a real photoshoot session"),
   }),
   execute: async function* ({
     userRequest,
@@ -63,7 +62,6 @@ const generateConceptsTool = tool({
     count,
     referenceImageUrl,
     customSettings,
-    enablePhotoshootMode = true,
   }) {
     console.log("[v0] Tool executing - generating concepts for:", {
       userRequest,
@@ -73,7 +71,6 @@ const generateConceptsTool = tool({
       count,
       referenceImageUrl,
       customSettings,
-      enablePhotoshootMode,
     })
 
     yield {
@@ -127,7 +124,6 @@ const generateConceptsTool = tool({
         userGender,
         triggerWord,
         rawGender: userDataResult[0]?.gender,
-        enablePhotoshootMode,
       })
 
       let imageAnalysis = ""
@@ -145,7 +141,7 @@ const generateConceptsTool = tool({
 Be specific and detailed - this analysis will be used to create similar photo concepts.`
 
         const { text: visionText } = await generateText({
-          model: "anthropic/claude-sonnet-4",
+          model: "anthropic/claude-sonnet-4.5",
           messages: [
             {
               role: "user",
@@ -167,169 +163,103 @@ Be specific and detailed - this analysis will be used to create similar photo co
         console.log("[v0] 🎨 Vision analysis complete:", imageAnalysis.substring(0, 200))
       }
 
-      let photoshootSession = null
-      if (enablePhotoshootMode) {
-        const { createPhotoshootSession } = await import("@/lib/maya/photoshoot-session")
-        
-        console.log("[v0] 📸 Creating photoshoot session for consistent styling...")
-        photoshootSession = await createPhotoshootSession({
-          userGender,
-          aesthetic: aesthetic || userRequest,
-          context: imageAnalysis || context || "",
-        })
-        
-        console.log("[v0] ✅ Photoshoot session created:", {
-          outfit: photoshootSession.baseLook.outfit,
-          location: photoshootSession.baseLook.location,
-          hair: photoshootSession.baseLook.hair,
-          baseSeed: photoshootSession.baseSeed,
-        })
-      }
+      
+      const conceptPrompt = `You are Maya, an elite fashion and Instagram trends expert with deep knowledge of Flux AI prompting.
 
-      const conceptPrompt = `You are Maya, an elite fashion expert with deep knowledge of current Instagram trends and Flux AI prompting.
+**🎯 YOUR MISSION: CREATE DIVERSE, CREATIVE CONCEPTS**
 
-**🎯 CRITICAL: YOUR PRIMARY MISSION**
-
-When users upload a REFERENCE IMAGE, your job is to PRECISELY DESCRIBE what you see in specific detail:
-- Exact clothing items (not "blazer" but "black strapless corset top")
-- Specific fabrics and textures ("light-wash denim", "leather", "silk")
-- Exact colors with descriptors ("ice blue", "cream linen", "chocolate brown")
-- Specific accessories ("silver mini handbag", "gold hoop earrings")
-- Specific styling details ("slicked-back hair", "natural waves")
+When generating ${count} concepts, each one should be COMPLETELY DIFFERENT:
+- Different outfits and styling
+- Different settings and locations
+- Different lighting moods
+- Different vibes and aesthetics
+- Different poses and compositions
 
 ${imageAnalysis ? `
-**📸 REFERENCE IMAGE ANALYSIS (USE THESE EXACT DETAILS):**
+**📸 REFERENCE IMAGE ANALYSIS:**
 
 ${imageAnalysis}
 
-**MANDATORY:** Your prompts MUST match this analysis with SPECIFIC details. Do NOT create generic outfits.
-If the image shows "black strapless top + ice blue jeans", your prompts must say "black strapless corset top, ice blue oversized wide-leg jeans"
-If the image shows "cream linen shirt", do NOT write "white shirt" - use the EXACT description from the analysis.
+**IMPORTANT:** Use this as inspiration, but create ${count} VARIED concepts based on this aesthetic.
 ` : ""}
 
-**FLUX PROMPTING BEST PRACTICES:**
-- **Optimal length: 20-35 words** - Creates smooth, focused generation
-- Use specific descriptive language, not generic terms
-- Natural conversational flow, not keyword lists
+**YOUR EXPERTISE:**
 
-**MANDATORY TECHNICAL SPECIFICATIONS (EVERY PROMPT MUST HAVE):**
-1. **"shot on iPhone 15 Pro"** or **"shot on iPhone 15"** - REQUIRED
-2. **Lens specification** based on shot type:
-   - Full body: "35mm lens" or "50mm lens"  
-   - Medium/half body: "50mm lens" or "85mm lens"
-   - Close-up portraits: "85mm lens"
-3. **"natural skin texture"** - REQUIRED
-4. **"film grain"** - REQUIRED
-5. **Camera detail**: "shallow depth of field", "f/1.8", or "f/2.2"
+You know ALL Instagram aesthetics and fashion trends:
+- Old Money: Ralph Lauren tennis whites, cable knit sweaters, country club elegance
+- Coastal Grandmother: Nancy Meyers aesthetic, linen, seaside elegance, wicker baskets
+- Y2K Revival: Low-rise jeans, baby tees, McBling energy, bold colors, flash photography
+- Quiet Luxury: The Row aesthetic, cashmere, silk, minimal branding, expensive fabrics
+- Mob Wife: Maximalist fur coats, bold lips, oversized sunglasses, dramatic presence
+- Clean Girl: Dewy skin, slicked bun, minimal makeup, effortless beauty
+- Dark Academia: Library aesthetics, moody lighting, intellectual vibes, vintage books
+- Cottage Core: Pastoral settings, romantic fabrics, handmade textures, floral prints
+- Street Style Editorial: Urban architecture, oversized pieces, sneaker culture, city energy
+- Scandi Minimalism: Neutral tones, hygge vibes, natural textures, clean lines
+- Parisian Chic: Red lips, trench coats, cafe culture, effortless elegance
+- Bohemian Luxe: Flowing fabrics, earthy tones, artisanal details, free spirit
+- Soft Goth: Dark femininity, romantic grunge, moody elegance
+- Modern Western: Cowboy boots, denim, desert tones, ranch aesthetics
 
-**MANDATORY INSTAGRAM AESTHETIC (PICK 2-3 PER PROMPT):**
-- "amateur cellphone quality"
-- "visible sensor noise"  
-- "heavy HDR glow" or "HDR processing"
-- "blown-out highlights"
-- "crushed shadows"
-- "raw photography"
-- "skin texture visible" or "pores visible"
+**INSTAGRAM PROMPTING BEST PRACTICES:**
 
-**CURRENT INSTAGRAM TRENDS (2025) - USE FOR INSPIRATION:**
-${JSON.stringify(FASHION_TRENDS_2025.instagram.aesthetics, null, 2)}
+1. **Optimal Length: 25-40 words** - Natural, conversational flow
+2. **Specific Details:** Name exact items ("black strapless corset top" not just "top")
+3. **Natural Language:** Conversational sentences, not keyword lists
+4. **Lighting Specifics:** "golden hour glow", "soft overcast light", "moody window light"
+5. **Real Locations:** "Parisian cafe with outdoor seating" not just "cafe"
+6. **Natural Moments:** "adjusting sunglasses", "mid-laugh with coffee" not "standing stiffly"
 
-**GENDER-SPECIFIC STYLING KNOWLEDGE:**
+**MANDATORY TECHNICAL SPECS (EVERY PROMPT):**
+- "shot on iPhone 15 Pro" - REQUIRED for natural aesthetic
+- Lens choice based on framing: 35mm (full), 50mm (medium), 85mm (close-up)
+- "natural skin texture" - REQUIRED for realism
+- "film grain" - REQUIRED for organic feel
+- Instagram aesthetic keywords (pick 2-3): "amateur cellphone quality", "visible sensor noise", "heavy HDR glow", "blown-out highlights", "crushed shadows", "raw photography"
+
+**CURRENT TRENDS TO REFERENCE:**
+${JSON.stringify(FASHION_TRENDS_2025.instagram.aesthetics, null, 2).substring(0, 800)}...
+
+**GENDER-SPECIFIC STYLING:**
 ${JSON.stringify(GENDER_SPECIFIC_STYLING[userGender], null, 2)}
 
-${enablePhotoshootMode && photoshootSession ? `
-**PHOTOSHOOT SESSION CONSISTENCY (CRITICAL):**
+**USER REQUEST:** "${userRequest}"
+${aesthetic ? `**AESTHETIC FOCUS:** ${aesthetic}` : ""}
+${userModifications ? `**USER MODIFICATIONS:** ${userModifications}` : ""}
 
-You are creating a cohesive photoshoot with consistent styling across ALL ${count} concepts.
+**PROMPT STRUCTURE:**
+"${triggerWord}, ${userGender === "woman" ? "woman" : userGender === "man" ? "man" : "person"} in [SPECIFIC outfit with exact items and fabrics], [natural activity/pose], [specific detailed location], [lighting mood and quality], [2-3 Instagram aesthetic keywords], shot on iPhone 15 Pro, [35mm/50mm/85mm] lens, natural skin texture, film grain, [optional: shallow depth of field]"
 
-**BASE LOOK (Use in EVERY concept):**
-- Outfit: ${photoshootSession.baseLook.outfit}
-- Location Type: ${photoshootSession.baseLook.location}
-- Hair & Styling: ${photoshootSession.baseLook.hair}
-- Accessories: ${photoshootSession.baseLook.accessories}
+**CREATIVE FREEDOM:**
+- Mix aesthetics intelligently ("coastal grandmother meets quiet luxury")
+- Reference real brands when appropriate (Zara, H&M for accessible; The Row, Loro Piana for luxury)
+- Use current seasonal trends
+- Create unexpected but cohesive combinations
+- Think like an Instagram fashion influencer creating scroll-stopping content
 
-**CONSISTENCY RULES:**
-1. ALL ${count} concepts must feature the SAME outfit: ${photoshootSession.baseLook.outfit}
-2. ALL concepts must be in the SAME location type: ${photoshootSession.baseLook.location}
-3. SAME hair and styling in every image: ${photoshootSession.baseLook.hair}
-4. SAME accessories across all shots: ${photoshootSession.baseLook.accessories}
-5. Only POSES and camera angles should vary between concepts
+**OUTPUT FORMAT:**
+You MUST respond with ONLY valid JSON. NO markdown, NO text before/after.
 
-**SEED INSTRUCTIONS:**
-- Base seed: ${photoshootSession.baseSeed}
-- Concept 1 seed: ${photoshootSession.baseSeed}
-- Concept 2 seed: ${photoshootSession.baseSeed + 1}
-- Concept 3 seed: ${photoshootSession.baseSeed + 2}
-- Concept 4 seed: ${photoshootSession.baseSeed + 3} (if applicable)
-- Concept 5 seed: ${photoshootSession.baseSeed + 4} (if applicable)
-
-This ensures facial consistency while allowing natural pose variation.
-
-**EXAMPLE CONCEPT STRUCTURE:**
-{
-  "title": "Coffee Moment",
-  "description": "Sitting at cafe table with coffee",
-  "prompt": "${triggerWord}, ${userGender} in ${photoshootSession.baseLook.outfit}, ${photoshootSession.baseLook.hair}, ${photoshootSession.baseLook.accessories}, sitting at cafe table with coffee, ${photoshootSession.baseLook.location}, natural window light, shot on iPhone 15 Pro, 85mm lens, natural skin texture, film grain, shallow depth of field"
-}
-
-Think of this as ONE Instagram carousel post - all images should look like they were shot in the same photoshoot session.
-` : ""}
-
-**FLUX PROMPT STRUCTURE (FOLLOW EXACTLY):**
-"${triggerWord}, ${userGender === "woman" ? "woman" : userGender === "man" ? "man" : "person"} in [SPECIFIC outfit with fabrics and colors], [static pose], [specific location], [lighting mood], [pick 2-3 Instagram aesthetic keywords], shot on iPhone 15 Pro, [lens: 35mm/50mm/85mm], natural skin texture, film grain, [optional: f/1.8 or shallow depth of field]"
-
-**EXAMPLE WITH SPECIFIC DETAILS (NOT GENERIC):**
-❌ WRONG: "woman in blazer and jeans, standing by wall"
-✅ RIGHT: "woman in black strapless corset top, ice blue oversized wide-leg jeans, black-and-white sneakers, silver mini handbag, slicked-back hair"
-
-❌ WRONG: "woman in white shirt, brown pants"  
-✅ RIGHT: "woman in oversized cream linen shirt tucked into high-waisted chocolate brown wide-leg trousers, camel leather loafers, cognac tote bag"
-
-**YOUR TASK:**
-Generate ${count} photo concepts that match the user's request: "${userRequest}"
-${aesthetic ? `with ${aesthetic} aesthetic` : ""}
-
-${imageAnalysis ? "**USE THE REFERENCE IMAGE ANALYSIS ABOVE WITH EXACT SPECIFIC DETAILS - DO NOT CREATE GENERIC ALTERNATIVES**" : ""}
-
-Be SPECIFIC with every detail. Use rich descriptive language from fashion magazines, not generic terms.
-
-**CRITICAL OUTPUT FORMAT:**
-You MUST respond with ONLY a valid JSON array. NO markdown, NO explanations, NO text before or after.
-Start your response with [ and end with ]
-
-Return exactly this JSON structure:
 [
   {
-    "title": "Concept name",
-    "description": "Brief description",
+    "title": "Concept name (specific and evocative, not generic)",
+    "description": "2-3 sentence warm explanation referencing the aesthetic/trend",
     "category": "Close-Up Portrait" | "Half Body Lifestyle" | "Close-Up Action" | "Environmental Portrait",
-    "fashionIntelligence": "Specific outfit details with fabrics and colors",
-    "lighting": "Lighting description",
-    "location": "Location description",
+    "fashionIntelligence": "Specific styling details with fabrics, brands, silhouettes",
+    "lighting": "Exact lighting setup that enhances this specific style",
+    "location": "Precise detailed location (not just 'urban' or 'indoors')",
     "prompt": "Full Flux prompt following all rules above"
   }
 ]
 
-Example valid response:
-[
-  {
-    "title": "Coffee Counter Moment",
-    "description": "Standing at cafe counter with coffee",
-    "category": "Half Body Lifestyle",
-    "fashionIntelligence": "Black strapless corset top, ice blue oversized wide-leg jeans, slicked-back hair with face-framing pieces",
-    "lighting": "Natural window light with soft shadows",
-    "location": "Parisian cafe counter with espresso machine visible",
-    "prompt": "${triggerWord}, woman in black strapless corset top, ice blue oversized wide-leg jeans, black-and-white sneakers, silver mini handbag, slicked-back hair, standing at cafe counter with coffee, Parisian cafe interior, soft window light, amateur cellphone quality, visible sensor noise, shot on iPhone 15 Pro, 85mm lens, natural skin texture, film grain"
-  }
-]
+Generate ${count} completely DIFFERENT concepts. Make each one unique in outfit, setting, mood, and aesthetic.`
 
-DO NOT add any text before or after the JSON array. Start immediately with [`
-
-      console.log("[v0] Generating concepts with Claude...")
+      console.log("[v0] Generating concepts with Claude Sonnet 4.5...")
       const { text } = await generateText({
-        model: "anthropic/claude-sonnet-4",
+        model: "anthropic/claude-sonnet-4.5",
         prompt: conceptPrompt,
         maxOutputTokens: 3000,
+        temperature: 0.9, // Increased temperature for more creative variation
       })
 
       console.log("[v0] Generated concept text:", text.substring(0, 200))
@@ -349,15 +279,6 @@ DO NOT add any text before or after the JSON array. Start immediately with [`
         })
       }
 
-      if (enablePhotoshootMode && photoshootSession) {
-        concepts.forEach((concept, index) => {
-          if (!concept.customSettings) {
-            concept.customSettings = {}
-          }
-          concept.customSettings.seed = photoshootSession.baseSeed + index
-          console.log(`[v0] 🎲 Concept ${index + 1} seed:`, concept.customSettings.seed)
-        })
-      }
 
       if (customSettings) {
         concepts.forEach((concept) => {
@@ -368,7 +289,7 @@ DO NOT add any text before or after the JSON array. Start immediately with [`
         })
       }
 
-      console.log("[v0] Successfully parsed", concepts.length, "concepts")
+      console.log("[v0] Successfully parsed", concepts.length, "diverse concepts")
 
       yield {
         state: "ready" as const,
@@ -504,7 +425,7 @@ When you see these elements in a photo, use these prompt patterns:
 Analyze THIS image and create a 10-15 word motion prompt that matches what you actually see.`
 
         const { text: visionMotionPrompt } = await generateText({
-          model: "anthropic/claude-sonnet-4",
+          model: "anthropic/claude-sonnet-4.5",
           messages: [
             {
               role: "user",
@@ -879,7 +800,7 @@ IMPORTANT: Video generation requires a photo first. When users ask for videos, f
     console.log("[v0] Calling streamText with", allMessages.length, "messages")
 
     const result = streamText({
-      model: "anthropic/claude-sonnet-4",
+      model: "anthropic/claude-sonnet-4.5",
       system: enhancedSystemPrompt,
       messages: allMessages,
       tools: {
@@ -887,6 +808,7 @@ IMPORTANT: Video generation requires a photo first. When users ask for videos, f
         generateVideo: generateVideoTool,
       },
       maxSteps: 5,
+      temperature: 0.8, // Increased temperature for more creative responses
     })
 
     console.log("[v0] streamText initiated, returning response")

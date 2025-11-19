@@ -235,8 +235,8 @@ export class PhotoshootSessionBuilder {
 }
 
 /**
- * Simplified helper function for Maya chat to create photoshoot consistency
- * Used directly in generateConceptsTool
+ * Simplified helper function for carousel photoshoot creation ONLY
+ * NO LONGER USED for regular concept generation
  */
 export async function createPhotoshootSession(params: {
   userGender: string
@@ -253,52 +253,46 @@ export async function createPhotoshootSession(params: {
 }> {
   const { userGender, aesthetic, context } = params
 
-  console.log("[v0] [PHOTOSHOOT] Creating session for:", { userGender, aesthetic })
+  console.log("[v0] [PHOTOSHOOT] Creating carousel session for:", { userGender, aesthetic })
 
-  // Determine outfit based on aesthetic
+  // Regular concept cards bypass this entirely and use Maya's dynamic prompting
+  
+  const aestheticLower = aesthetic.toLowerCase()
+
   let outfit = ""
   let location = ""
 
-  const aestheticLower = aesthetic.toLowerCase()
-
-  // Smart outfit selection based on aesthetic
+  // Only basic fallbacks, not prescriptive templates
   if (aestheticLower.includes("paris") || aestheticLower.includes("european") || aestheticLower.includes("luxury")) {
-    outfit = "oversized black blazer, white t-shirt, black designer bag with gold hardware"
-    location = "European cafe district, Paris wine bar, cobblestone streets"
+    outfit = "tailored outfit with designer accessories"
+    location = "European cafe district or urban architecture"
   } else if (aestheticLower.includes("casual") || aestheticLower.includes("cozy")) {
-    outfit = "cream oversized sweater, high-waisted jeans, leather crossbody bag"
-    location = "cozy cafe interior, warm lighting, wooden tables"
+    outfit = "comfortable elevated basics with minimal accessories"
+    location = "cozy natural setting with warm lighting"
   } else if (aestheticLower.includes("street") || aestheticLower.includes("urban")) {
-    outfit = "oversized hoodie, wide-leg trousers, chunky sneakers, crossbody bag"
-    location = "urban city street, graffiti walls, modern architecture"
-  } else if (aestheticLower.includes("clean girl") || aestheticLower.includes("minimal")) {
-    outfit = "white linen shirt, tailored beige trousers, minimal gold jewelry"
-    location = "minimalist cafe, bright natural light, clean aesthetic"
+    outfit = "urban streetwear with statement pieces"
+    location = "city street with modern architecture"
   } else {
-    // Default sophisticated look
-    outfit = "tailored blazer, white tee, designer accessories"
-    location = "elegant cafe setting, natural light"
+    // Default fallback
+    outfit = "styled outfit matching the aesthetic"
+    location = "setting that complements the vibe"
   }
 
-  // Hair styling based on gender
-  const hair =
-    userGender === "woman" || userGender === "female"
-      ? "natural waves, effortless styling"
-      : userGender === "man" || userGender === "male"
-        ? "natural texture, clean styled"
-        : "natural styling"
+  const hair = userGender === "woman" || userGender === "female"
+    ? "natural styling"
+    : userGender === "man" || userGender === "male"
+    ? "natural grooming"
+    : "natural styling"
 
-  // Accessories based on gender and aesthetic
-  const accessories =
-    userGender === "woman" || userGender === "female"
-      ? "gold hoop earrings, designer handbag with gold hardware, minimal rings"
-      : userGender === "man" || userGender === "male"
-        ? "silver watch, leather accessories"
-        : "minimal elegant accessories"
+  const accessories = userGender === "woman" || userGender === "female"
+    ? "minimal elegant accessories"
+    : userGender === "man" || userGender === "male"
+    ? "subtle accessories"
+    : "minimal accessories"
 
   const baseSeed = Math.floor(Math.random() * 1000000)
 
-  console.log("[v0] [PHOTOSHOOT] Session created:", {
+  console.log("[v0] [PHOTOSHOOT] Carousel session created for consistency:", {
     outfit: outfit.substring(0, 40) + "...",
     location: location.substring(0, 40) + "...",
     baseSeed,
