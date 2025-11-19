@@ -1,7 +1,12 @@
 /**
- * Photoshoot Session Management
- * Creates consistent visual identity across all 9 concept cards in a feed
+ * Photoshoot Session Management - DEPRECATED
+ * 
+ * This file is being phased out in favor of intelligent, dynamic prompt generation.
+ * Maya now handles consistency through advanced prompting rather than hardcoded templates.
+ * 
+ * Kept for backward compatibility with existing photoshoot creation endpoint.
  */
+
 
 export interface PhotoshootSession {
   baseOutfit: string
@@ -19,14 +24,14 @@ export interface PhotoshootConcept {
   description: string
   category: string
   pose: string
-  seedVariation: number // +0, +1, +2, etc from baseSeed
+  seedVariation: number
 }
 
+/**
+ * @deprecated Use Maya's intelligent prompt generation in chat/route.ts instead
+ * This creates hardcoded templates which limit creativity
+ */
 export class PhotoshootSessionBuilder {
-  /**
-   * Generate a photoshoot session with consistent styling across all images
-   * This creates the "Instagram carousel" effect where all 9 images look cohesive
-   */
   static generatePhotoshootSession(
     brandProfile: any,
     userGender: string,
@@ -35,7 +40,8 @@ export class PhotoshootSessionBuilder {
     session: PhotoshootSession
     concepts: PhotoshootConcept[]
   } {
-    console.log("[v0] [PHOTOSHOOT] Generating consistent photoshoot session")
+    console.log("[v0] [PHOTOSHOOT] ⚠️ DEPRECATED: Using legacy template system")
+    console.log("[v0] [PHOTOSHOOT] Consider using Maya's intelligent generation instead")
 
     // Generate base styling that will persist across ALL images
     const session: PhotoshootSession = {
@@ -139,7 +145,6 @@ export class PhotoshootSessionBuilder {
       if (aesthetic.includes("bold") || aesthetic.includes("vibrant")) {
         return "statement blazer, fitted trousers, bold accessories, designer sunglasses"
       }
-      // Default elegant
       return "tailored black jacket, white tee, minimal gold jewelry, designer accessories"
     } else if (userGender === "man" || userGender === "male") {
       if (aesthetic.includes("luxury") || aesthetic.includes("editorial")) {
@@ -148,11 +153,9 @@ export class PhotoshootSessionBuilder {
       if (aesthetic.includes("casual") || aesthetic.includes("lifestyle")) {
         return "camel wool coat, white turtleneck, minimal accessories, leather bag"
       }
-      // Default masculine elegant
       return "structured blazer, crisp white shirt, minimal silver jewelry, leather accessories"
     }
 
-    // Gender-neutral default
     return "oversized blazer, white tee, minimal accessories, designer bag"
   }
 
@@ -169,7 +172,6 @@ export class PhotoshootSessionBuilder {
       return "outdoor cafe terrace, natural greenery, warm sunlight, organic textures"
     }
 
-    // Default luxury urban
     return "chic European cafe district, outdoor seating, wine bar ambiance, architectural backdrop"
   }
 
@@ -235,8 +237,9 @@ export class PhotoshootSessionBuilder {
 }
 
 /**
- * Simplified helper function for carousel photoshoot creation ONLY
- * NO LONGER USED for regular concept generation
+ * Simplified helper function for Maya chat to create photoshoot consistency
+ * Used directly in generateConceptsTool
+ * @deprecated Use Maya chat generation with mode="photoshoot" instead
  */
 export async function createPhotoshootSession(params: {
   userGender: string
@@ -253,46 +256,48 @@ export async function createPhotoshootSession(params: {
 }> {
   const { userGender, aesthetic, context } = params
 
-  console.log("[v0] [PHOTOSHOOT] Creating carousel session for:", { userGender, aesthetic })
+  console.log("[v0] [PHOTOSHOOT] ⚠️ DEPRECATED: Creating session with templates")
+  console.log("[v0] [PHOTOSHOOT] Recommendation: Use Maya's mode='photoshoot' for better results")
 
-  // Regular concept cards bypass this entirely and use Maya's dynamic prompting
-  
   const aestheticLower = aesthetic.toLowerCase()
 
   let outfit = ""
   let location = ""
 
-  // Only basic fallbacks, not prescriptive templates
   if (aestheticLower.includes("paris") || aestheticLower.includes("european") || aestheticLower.includes("luxury")) {
-    outfit = "tailored outfit with designer accessories"
-    location = "European cafe district or urban architecture"
+    outfit = "oversized black blazer, white t-shirt, black designer bag with gold hardware"
+    location = "European cafe district, Paris wine bar, cobblestone streets"
   } else if (aestheticLower.includes("casual") || aestheticLower.includes("cozy")) {
-    outfit = "comfortable elevated basics with minimal accessories"
-    location = "cozy natural setting with warm lighting"
+    outfit = "cream oversized sweater, high-waisted jeans, leather crossbody bag"
+    location = "cozy cafe interior, warm lighting, wooden tables"
   } else if (aestheticLower.includes("street") || aestheticLower.includes("urban")) {
-    outfit = "urban streetwear with statement pieces"
-    location = "city street with modern architecture"
+    outfit = "oversized hoodie, wide-leg trousers, chunky sneakers, crossbody bag"
+    location = "urban city street, graffiti walls, modern architecture"
+  } else if (aestheticLower.includes("clean girl") || aestheticLower.includes("minimal")) {
+    outfit = "white linen shirt, tailored beige trousers, minimal gold jewelry"
+    location = "minimalist cafe, bright natural light, clean aesthetic"
   } else {
-    // Default fallback
-    outfit = "styled outfit matching the aesthetic"
-    location = "setting that complements the vibe"
+    outfit = "tailored blazer, white tee, designer accessories"
+    location = "elegant cafe setting, natural light"
   }
 
-  const hair = userGender === "woman" || userGender === "female"
-    ? "natural styling"
-    : userGender === "man" || userGender === "male"
-    ? "natural grooming"
-    : "natural styling"
+  const hair =
+    userGender === "woman" || userGender === "female"
+      ? "natural waves, effortless styling"
+      : userGender === "man" || userGender === "male"
+        ? "natural texture, clean styled"
+        : "natural styling"
 
-  const accessories = userGender === "woman" || userGender === "female"
-    ? "minimal elegant accessories"
-    : userGender === "man" || userGender === "male"
-    ? "subtle accessories"
-    : "minimal accessories"
+  const accessories =
+    userGender === "woman" || userGender === "female"
+      ? "gold hoop earrings, designer handbag with gold hardware, minimal rings"
+      : userGender === "man" || userGender === "male"
+        ? "silver watch, leather accessories"
+        : "minimal elegant accessories"
 
   const baseSeed = Math.floor(Math.random() * 1000000)
 
-  console.log("[v0] [PHOTOSHOOT] Carousel session created for consistency:", {
+  console.log("[v0] [PHOTOSHOOT] Template session created:", {
     outfit: outfit.substring(0, 40) + "...",
     location: location.substring(0, 40) + "...",
     baseSeed,

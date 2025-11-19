@@ -147,7 +147,7 @@ Now generate the FLUX prompt for this feed post:`
             content: `Generate the FLUX prompt for this ${postType} post.`,
           },
         ],
-        temperature: 0.85, // Increased temperature for more creativity
+        temperature: 0.8,
         maxTokens: 500,
       })
       console.log("[v0] [FEED-PROMPT] AI SDK call successful")

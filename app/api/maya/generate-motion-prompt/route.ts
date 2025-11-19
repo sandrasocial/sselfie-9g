@@ -85,7 +85,7 @@ ${description ? `Scene description: "${description}"` : ""}
 Return ONLY the 50-70 word motion prompt. No explanation. Just the prompt.`
 
       const { text: motionPrompt } = await generateText({
-        model: "anthropic/claude-sonnet-4",
+        model: "anthropic/claude-sonnet-4.5",
         messages: [
           {
             role: "user",
@@ -123,7 +123,7 @@ Return ONLY the 50-70 word motion prompt. No explanation. Just the prompt.`
     console.log("[v0] ⚠️ No image URL - generating detailed motion prompt from FLUX text only")
 
     const { text: motionPrompt } = await generateText({
-      model: "anthropic/claude-sonnet-4",
+      model: "anthropic/claude-sonnet-4.5",
       system: `You create detailed Instagram B-roll motion prompts for Wan 2.2 video model.
 
 **PROMPT STRUCTURE (50-70 words):**

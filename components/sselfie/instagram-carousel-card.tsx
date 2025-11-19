@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import Image from "next/image"
 import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, ChevronLeft, ChevronRight } from 'lucide-react'
 import FullscreenImageModal from "./fullscreen-image-modal"
@@ -34,6 +34,36 @@ export default function InstagramCarouselCard({
   const [isViewerOpen, setIsViewerOpen] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
   const [liked, setLiked] = useState(isFavorite)
+
+  const touchStartX = useRef(0)
+  const touchEndX = useRef(0)
+  const imageContainerRef = useRef<HTMLDivElement>(null)
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.touches[0].clientX
+  }
+
+  const handleTouchEnd = () => {
+    const swipeDistance = touchStartX.current - touchEndX.current
+    const minSwipeDistance = 50
+
+    if (Math.abs(swipeDistance) > minSwipeDistance) {
+      if (swipeDistance > 0) {
+        // Swiped left - next image
+        handleNext()
+      } else {
+        // Swiped right - previous image
+        handlePrevious()
+      }
+    }
+
+    touchStartX.current = 0
+    touchEndX.current = 0
+  }
 
   const handlePrevious = () => {
     setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))
@@ -97,15 +127,20 @@ export default function InstagramCarouselCard({
 
         {/* Instagram Carousel with Navigation */}
         <div 
-          className="relative aspect-[4/5] bg-stone-100 group cursor-pointer"
+          ref={imageContainerRef}
+          className="relative aspect-[4/5] bg-stone-100 group cursor-pointer touch-pan-y"
           onClick={() => setIsViewerOpen(true)}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
         >
           <Image
             src={images[currentIndex]?.url || "/placeholder.svg"}
             alt={`${title} - Slide ${currentIndex + 1}`}
             fill
-            className="object-cover"
+            className="object-cover select-none"
             sizes="(max-width: 768px) 100vw, 470px"
+            draggable={false}
           />
 
           {/* Carousel Navigation Arrows */}
@@ -116,7 +151,7 @@ export default function InstagramCarouselCard({
                   e.stopPropagation()
                   handlePrevious()
                 }}
-                className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg hover:scale-110 active:scale-95"
+                className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg hover:scale-110 active:scale-95 sm:opacity-100"
                 aria-label="Previous image"
               >
                 <ChevronLeft size={20} className="text-stone-950" />
@@ -126,7 +161,7 @@ export default function InstagramCarouselCard({
                   e.stopPropagation()
                   handleNext()
                 }}
-                className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg hover:scale-110 active:scale-95"
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg hover:scale-110 active:scale-95 sm:opacity-100"
                 aria-label="Next image"
               >
                 <ChevronRight size={20} className="text-stone-950" />
@@ -159,6 +194,12 @@ export default function InstagramCarouselCard({
               {currentIndex + 1}/{images.length}
             </span>
           </div>
+
+          {images.length > 1 && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-stone-950/60 backdrop-blur-sm px-3 py-1 rounded-full text-xs text-white/70 sm:hidden pointer-events-none">
+              Swipe to navigate
+            </div>
+          )}
         </div>
 
         {/* Instagram Action Bar */}

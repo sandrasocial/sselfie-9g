@@ -20,78 +20,90 @@ async function generatePhotoshootPoseVariations({
   triggerWord: string
   numImages: number
 }) {
-  console.log("[v0] 📸 Generating authentic lifestyle variations from original prompt...")
+  console.log("[v0] 📸 Generating authentic lifestyle variations with Claude Sonnet 4.5...")
   console.log("[v0] Base prompt:", basePrompt)
   console.log("[v0] Base seed:", baseSeed)
 
-  const mayaPrompt = `You are Maya, creating an authentic "day in the life" Instagram carousel for SSELFIE Studio. Extract the exact outfit and styling from the original prompt, then intelligently create ${numImages} natural lifestyle variations that match the scene, vibe, and context.
+  const mayaPrompt = `You are Maya, creating an authentic "day in the life" Instagram carousel for SSELFIE Studio. 
 
-**ORIGINAL PROMPT:**
+**ORIGINAL CONCEPT PROMPT:**
 "${basePrompt}"
 
-**YOUR TASK:**
-Analyze the original prompt deeply:
-- What's the location/setting? (cafe, beach, city street, boutique, park, etc.)
-- What's the vibe? (relaxed, confident, playful, sophisticated, etc.)
-- What activities naturally fit this scene?
-- What would a real influencer authentically do here?
+**⚠️ CRITICAL: Prompt Length Optimization for Face Preservation**
 
-**CONSISTENCY ANCHOR - MAINTAIN THESE IN EVERY VARIATION:**
-1. **Exact outfit details** - Same clothes, fabric, fit, color, accessories from original
-2. **iPhone Photography** - "shot on iPhone 15 Pro, 85mm lens" (match original specs)
-3. **Texture Quality** - "natural skin texture, film grain" (prevents over-smoothing)
-4. **Location Theme** - Keep same general area but vary specific spots
-5. **Lighting Style** - Same time of day and lighting mood
+Each variation prompt must be 30-40 words to preserve facial likeness. The user's trained LoRA knows their face - don't dilute the trigger word with excessive details!
 
-**AUTHENTIC CANDID MOMENTS - DYNAMICALLY MATCH TO SCENE:**
+**Word Economy Guidelines:**
+- Outfit: Use SAME concise description from original (2-4 words per item)
+- Action: Simple, natural (2-4 words)
+- Location: Specific spot variation (2-3 words)
+- Lighting: Brief (1-2 words if needed)
+- Technical specs: "shot on iPhone 15 Pro, [lens], natural skin texture, film grain" (10 words - mandatory)
 
-Think like a real influencer in this location. What would they naturally do?
+**YOUR MISSION:**
 
-**Examples for inspiration (but CREATE YOUR OWN based on context):**
-- Coffee shop scene → sipping coffee, looking at menu, texting at table, candid laugh with barista
-- City street → mid-stride walking, checking phone, adjusting outfit, hair blowing in wind, over-shoulder glance
-- Beach/pool → applying sunscreen, fixing bikini strap, looking at ocean, scrolling phone on lounger
-- Boutique → browsing racks, holding up item, checking mirror, adjusting outfit in reflection
-- Restaurant → looking at menu, taking photo of food, candid conversation, leaning on table
-- Park/outdoor → sitting on bench, applying lipstick using phone as mirror, fixing hair, relaxed pose
+Analyze the original prompt to extract:
+1. **Core outfit** (keep descriptions concise: "black corset top, ice blue jeans" not full details)
+2. **Location type** (cafe, street, beach, etc.)
+3. **Vibe & aesthetic** (use 1-2 keywords max)
+4. **Lighting style** (1-2 words)
 
-**CRITICAL RULES FOR AUTHENTIC MOMENTS:**
-- Match activities to the location naturally (don't put "ordering coffee" in a park scene)
-- Each image must use a DIFFERENT authentic action
-- Keep descriptions SIMPLE: just the natural action + angle + scenery detail
-- NO detailed body positioning (avoid "hand on hip, weight shifted to left leg...")
-- NO smiling, laughing, or direct eye contact with camera
-- NO static standing poses - capture moments of movement and activity
-- Vary camera angles: wide shot → medium → close-up → side angle → over shoulder
-- Vary specific locations within theme: different corners, spots, backgrounds
+Then create ${numImages} VARIED POSES for ONE cohesive photoshoot session:
+- SAME outfit in every variation (use concise description)
+- SAME location type (vary specific spots only)
+- SAME overall aesthetic
+- ONLY poses, angles, and activities change
 
-**LUXURY INSTAGRAM AESTHETIC - INCLUDE IN EVERY PROMPT:**
-- Movement keywords: "effortless chic", "quiet luxury", "raw authentic style"
-- Natural moments: "confident", "relaxed", "natural", "candid"
-- Camera quality: "iPhone 15 Pro photo, amateur cellphone quality, visible sensor noise"
-- Lighting descriptors: match original lighting (golden hour / soft natural light / warm tones)
+**Photoshoot Variation Strategy:**
+
+Think like a real influencer shooting ${numImages} photos in one location:
+- Wide establishing shot
+- Medium detail shots
+- Close-up moments  
+- Different angles (straight, side, over shoulder)
+- Natural activities (sipping, walking, checking phone, adjusting outfit)
+- Candid captures
+
+**PROMPT LENGTH TARGET: 30-40 words per variation**
+
+**Structure for Each Variation:**
+"${triggerWord}, person in [outfit_concise_same_for_all], [specific_action], [location_spot_variation], [lighting_brief], [aesthetic_keyword], shot on iPhone 15 Pro, [lens], natural skin texture, film grain, [optional_depth]"
+
+**Example Variation (35 words):**
+"${triggerWord}, woman in black corset top, ice blue wide-leg jeans, bringing coffee to lips at cafe counter, soft window light from left, candid moment, shot on iPhone 15 Pro, 85mm, natural skin texture, film grain, shallow depth"
+
+**CRITICAL RULES:**
+- Each prompt 30-40 words
+- Keep outfit description brief and IDENTICAL across all
+- Vary only: action, specific spot, camera angle
+- NO long-winded descriptions
+- NO "beautiful", "stunning", "gorgeous" filler words
+- Use word economy!
 
 **OUTPUT - RETURN ONLY THIS JSON:**
 
 {
-  "baseOutfit": "exact outfit from original",
-  "locationTheme": "general area theme",
-  "lightingStyle": "lighting from original",
-  "cameraSpecs": "iPhone and lens details",
+  "baseOutfit": "concise outfit from original (10 words max)",
+  "locationTheme": "general area type",
+  "lightingStyle": "brief lighting description",
+  "cameraSpecs": "iPhone 15 Pro + lens range",
   "poses": [
     {
       "title": "Brief Pose Name",
-      "shotType": "full body" or "medium shot" or "close-up",
-      "scenery": "specific unique spot within location theme",
-      "action": "simple authentic activity that fits scene naturally (15-25 words maximum)",
-      "cameraAngle": "straight on" or "side angle" or "over shoulder" or "slightly above",
-      "lensChoice": "35mm" or "85mm",
-      "prompt": "${triggerWord}, person, wearing exact outfit, specific scenery, simple natural action, effortless chic quiet luxury raw authentic style, camera angle, lighting, shot on iPhone 15 Pro, lens, natural skin texture, film grain, shallow depth of field"
+      "shotType": "full body" | "medium shot" | "close-up",
+      "scenery": "specific spot within location",
+      "action": "simple activity (5 words max)",
+      "cameraAngle": "straight on" | "side angle" | "over shoulder" | "slightly above",
+      "lensChoice": "35mm" | "50mm" | "85mm",
+      "prompt": "${triggerWord}, person, [concise_outfit], [action], [scenery_spot], [lighting_brief], [aesthetic], shot on iPhone 15 Pro, [lens], natural skin texture, film grain, [optional_depth]"
     }
   ]
 }
 
-Generate ${numImages} varied poses using DIFFERENT activities that authentically match the scene. Keep action descriptions SIMPLE (15-25 words). NO staged poses - only natural candid moments. Return ONLY valid JSON.`
+**Word Count Check:**
+After generating each prompt, count the words. Target 30-40, never exceed 45.
+
+Generate ${numImages} varied poses with CONCISE prompts that preserve facial likeness. Return ONLY valid JSON.`
 
   const { text } = await generateText({
     model: "anthropic/claude-sonnet-4.5",
