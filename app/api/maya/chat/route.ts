@@ -6,8 +6,6 @@ import { createServerClient } from "@/lib/supabase/server"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 
-// import { FASHION_TRENDS_2025, GENDER_SPECIFIC_STYLING } from "@/lib/maya/fashion-knowledge-2025"
-
 export const maxDuration = 60
 
 interface MayaConcept {
@@ -133,65 +131,19 @@ const generateConceptsTool = tool({
 
       let imageAnalysis = ""
       if (referenceImageUrl) {
-        console.log("[v0] 🔍 Analyzing reference image with Claude Sonnet 4.5 vision:", referenceImageUrl)
+        console.log("[v0] 🔍 Analyzing reference image:", referenceImageUrl)
 
-        const visionAnalysisPrompt = `You are an elite fashion stylist analyzing this reference image for Instagram photo recreation. Provide DETAILED analysis in these areas:
+        const visionAnalysisPrompt = `Look at this image carefully and tell me everything I need to know to recreate this vibe.
 
-**1. OUTFIT & STYLING (Most Important):**
-- Exact clothing items with specific details (fabrics, fit, cut, style)
-- Colors with precision (not just "blue" but "ice blue", "navy", "cobalt")
-- Layering and how pieces work together
-- Specific brands or style references if identifiable
-- Fit descriptions (oversized, fitted, tailored, relaxed, etc.)
+Focus on:
+1. **The outfit** - What are they wearing? Be super specific (fabrics, fit, colors, style)
+2. **The pose** - How are they standing/sitting? What are their hands doing?
+3. **The setting** - Where is this? What's the vibe of the location?
+4. **The lighting** - What kind of light is this? (warm, cool, bright, moody, etc.)
+5. **The mood** - What feeling does this give off? (confident, relaxed, mysterious, playful, etc.)
+6. **Color palette** - What colors dominate the image?
 
-**2. ACCESSORIES & DETAILS:**
-- Jewelry (specific pieces, metals, styles)
-- Bags/purses (size, style, designer if recognizable)
-- Shoes (exact style, color, height)
-- Sunglasses, hats, scarves, belts
-- Any other accessories
-
-**3. HAIR & MAKEUP:**
-- Hairstyle specifics (sleek, waves, updo, natural, etc.)
-- Hair color and styling
-- Makeup style (natural, glam, minimal, etc.)
-- Key makeup features (red lip, smokey eye, etc.)
-
-**4. POSES & BODY LANGUAGE:**
-- Exact pose and positioning
-- What they're doing with their hands
-- Facial expression and mood
-- Camera angle (from above, straight on, from below)
-- Body orientation (facing camera, profile, over shoulder)
-
-**5. LIGHTING & ATMOSPHERE:**
-- Light source (natural, artificial, golden hour, etc.)
-- Quality (soft, harsh, diffused, dramatic)
-- Shadows and highlights
-- Color temperature (warm, cool, neutral)
-- Time of day feel
-
-**6. LOCATION & SETTING:**
-- Specific location type (cafe, street, beach, studio, etc.)
-- Background elements and details
-- Architectural features
-- Props or objects in frame
-- Urban vs natural setting
-
-**7. OVERALL AESTHETIC & VIBE:**
-- Instagram aesthetic category (Old Money, Y2K, Clean Girl, etc.)
-- Mood and energy (relaxed, confident, playful, elegant)
-- Whether it feels candid or posed
-- Production quality (professional, iPhone, editorial)
-
-**8. COLOR PALETTE:**
-- Dominant colors in the image
-- Color harmony and relationships
-- How colors work together
-
-Be EXTREMELY specific with clothing descriptions. Instead of "black top", say "black strapless corset-style bustier top with structured boning". Instead of "jeans", say "ice blue oversized wide-leg jeans with light distressing".
-
-Your analysis will be used to recreate this exact style and vibe with the user's face.`
+Keep it conversational and specific. I need to recreate this exact vibe for Instagram.`
 
         const { text: visionText } = await generateText({
           model: "anthropic/claude-sonnet-4.5",
@@ -210,155 +162,96 @@ Your analysis will be used to recreate this exact style and vibe with the user's
               ],
             },
           ],
-          temperature: 0.7, // Slightly lower for more accurate analysis
+          temperature: 0.7,
         })
 
         imageAnalysis = visionText
-        console.log("[v0] 🎨 Vision analysis complete:", imageAnalysis.substring(0, 300) + "...")
-        console.log("[v0] 🎨 Full analysis length:", imageAnalysis.length, "characters")
+        console.log("[v0] 🎨 Vision analysis complete")
       }
 
       let photoshootBaseSeed = null
       if (mode === "photoshoot") {
         photoshootBaseSeed = Math.floor(Math.random() * 1000000)
-        console.log("[v0] 📸 Photoshoot mode: Will use consistent seed:", photoshootBaseSeed)
+        console.log("[v0] 📸 Photoshoot mode: consistent seed:", photoshootBaseSeed)
       }
 
-      const conceptPrompt = `You are Maya, an elite fashion expert with DEEP knowledge of current Instagram trends, fashion aesthetics, and advanced Flux AI prompting techniques.
+      const conceptPrompt = `Alright, let's create some amazing Instagram concepts!
 
-**🎯 CRITICAL UNDERSTANDING:**
+**What you're working with:**
+
+User's trigger word: ${triggerWord}
+Gender: ${userGender}
+Request: "${userRequest}"
+${aesthetic ? `Aesthetic vibe: ${aesthetic}` : ""}
+${context ? `Context: ${context}` : ""}
 
 ${mode === "photoshoot" ? `
-**PHOTOSHOOT MODE (Instagram Carousel):**
-You are creating ${count} images for ONE cohesive Instagram carousel post. 
-- SAME outfit across ALL ${count} images (identical clothing, accessories, styling)
-- SAME location/setting across ALL images
-- ONLY poses and camera angles vary
-- Prompt length: 30-40 words (slightly longer OK since outfit repeats)
-- Think: "One photoshoot session" - like a professional influencer would post
+**PHOTOSHOOT MODE:**
+You're creating ${count} images for ONE Instagram carousel.
+- Same outfit across all ${count} shots
+- Same location/setting
+- Only poses and angles change
+- 30-40 words per prompt (slightly longer is OK here)
+- Think: One real photoshoot session
 ` : `
-**CONCEPT MODE (Diverse Standalone Images):**
-You are creating ${count} completely DIFFERENT standalone concept images.
-- DIFFERENT outfits for each image (vary styles, colors, aesthetics)
-- DIFFERENT locations for each image (cafe, street, beach, etc.)
-- DIFFERENT vibes and moods
-- Prompt length: 25-35 words (optimal for face preservation)
-- Maximum creative diversity - each image tells its own story
+**CONCEPT MODE:**
+You're creating ${count} completely different standalone concepts.
+- Different outfits for each
+- Different locations for each
+- Different vibes and stories
+- 25-35 words per prompt
+- Maximum diversity - each tells its own story
 `}
 
-**⚠️ PROMPT LENGTH OPTIMIZATION - CRITICAL FOR FACE PRESERVATION:**
-
-Your prompts MUST be concise to preserve the user's facial likeness. Longer prompts dilute trigger word importance!
-
-**Optimal Lengths by Shot Type:**
-- Close-Up Portrait: 20-30 words MAX
-- Half Body Lifestyle: 25-35 words (RECOMMENDED)
-- Environmental Portrait: 30-40 words
-- Close-Up Action: 25-35 words
-
-**Quality Scale:**
-- ✅ 15-25 words: EXCELLENT face preservation
-- ✅ 25-35 words: GOOD balance (USE THIS!)
-- ⚠️ 35-45 words: ACCEPTABLE but risky
-- ❌ 45+ words: TOO LONG - face will drift
-
-**Word Economy Rules:**
-1. **Concise outfit descriptions:**
-   - ❌ "oversized luxury designer black wool blazer with structured padded shoulders and relaxed tailored fit"
-   - ✅ "oversized black blazer"
-
-2. **Brief location descriptions:**
-   - ❌ "beautiful European-style Parisian cafe with vintage architectural details and warm cozy ambient lighting"
-   - ✅ "European cafe, warm light"
-
-3. **Simple actions:**
-   - ❌ "gracefully bringing ceramic coffee cup up to lips with gentle elegant movement"
-   - ✅ "bringing coffee to lips"
-
-4. **Essential specs only:**
-   - Always include: "shot on iPhone 15 Pro, [lens], natural skin texture, film grain"
-   - These 10 words are NON-NEGOTIABLE
-   - Build your creative description in the remaining 15-25 words
-
-**Prompt Structure (25-35 words total):**
-"${triggerWord}, ${userGender === "woman" ? "woman" : userGender === "man" ? "man" : "person"} in [outfit_2-4_words], [action_2-3_words], [location_2-3_words], [lighting_1-2_words], [aesthetic_keywords_2-3_words], shot on iPhone 15 Pro, [lens], natural skin texture, film grain, [optional_depth]"
-
-**Example Perfect Length (28 words):**
-"${triggerWord}, woman in black corset top, ice blue wide-leg jeans, bringing coffee to lips at cafe counter, soft morning light, candid moment, shot on iPhone 15 Pro, 85mm, natural skin texture, film grain"
-
-❌ **Example TOO LONG (52 words - AVOID):**
-"${triggerWord}, stunning woman with flowing hair wearing a beautiful black strapless corset-style bustier top with intricate structured boning details and ice blue oversized wide-leg high-waisted jeans with light distressing and vintage wash, standing elegantly at a gorgeous wooden cafe counter..."
-
 ${imageAnalysis ? `
-**📸 REFERENCE IMAGE ANALYSIS - FOLLOW THIS EXACTLY:**
+**REFERENCE IMAGE ANALYSIS:**
 
 ${imageAnalysis}
 
-**CRITICAL: Recreate with CONCISE language (under 35 words):**
-- Extract the essence: key outfit pieces, main pose, core mood
-- Use specific but brief descriptions
-- Don't over-describe - let the image-to-image guide the details
-- Trigger word + outfit basics + pose + setting + specs = complete prompt
-
-Example: Instead of describing every detail from analysis, capture it concisely:
-"${triggerWord}, woman in [key_outfit_pieces_3-4_words], [main_pose_action_2-3_words], [setting_2_words], [lighting_1-2_words], [vibe], shot on iPhone 15 Pro, [lens], natural skin texture, film grain"
+Use this as inspiration but keep your prompts concise (under 35 words). Capture the essence without over-describing.
 ` : ""}
 
-**YOUR EXPERTISE - LATEST 2025 INSTAGRAM TRENDS:**
+**Prompt Writing Guide:**
 
-You know ALL current Instagram aesthetics - Quiet Luxury, Mob Wife, Clean Girl, Old Money, Y2K, Dark Academia, Street Editorial, and ANY emerging trend!
+Remember: Shorter = better face match!
 
-**2025 Fashion Trends:**
-- Women: Oversized tailoring, quiet luxury, ballet flats, wide-leg trousers, minimal jewelry, silk, cashmere
-- Men: Relaxed suiting, quality basics, leather accessories, elevated casual
-- Universal: Natural fabrics, vintage finds, investment pieces, nude/neutral palettes
+Target: 25-35 words total
 
-**MANDATORY Technical Specs (EVERY prompt):**
-1. "shot on iPhone 15 Pro" (or iPhone 15)
-2. Lens: 35mm (full), 50mm (medium), 85mm (close)
-3. "natural skin texture"
-4. "film grain"
-5. Optional: "shallow depth of field" or "f/1.8"
+Structure:
+"${triggerWord}, ${userGender} in [outfit 2-4 words], [action 2-3 words], [location 2-3 words], [lighting 1-2 words], [vibe], shot on iPhone 15 Pro, [lens], natural skin texture, film grain"
 
-**Instagram Aesthetic Keywords (use 2-3 MAX):**
-"amateur cellphone quality", "visible sensor noise", "HDR glow", "blown-out highlights", "crushed shadows", "raw photography", "pores visible", "authentic moment"
+Quick tips:
+- "black blazer" not "luxurious black wool blazer with structure"
+- "cozy cafe" not "beautiful European cafe with warm lighting"
+- "sipping coffee" not "gracefully bringing cup to lips"
 
-**YOUR TASK:**
+Always include (non-negotiable):
+- "shot on iPhone 15 Pro"
+- Lens: 35mm (full body), 50mm (medium), 85mm (close-up)
+- "natural skin texture"
+- "film grain"
 
-Generate ${count} photo concepts ${mode === "photoshoot" ? "for ONE cohesive photoshoot" : "with MAXIMUM DIVERSITY"} that match: "${userRequest}"
-${aesthetic ? `with ${aesthetic} aesthetic` : ""}
+**Your Task:**
 
-${mode === "concept" ? `
-**CONCEPT MODE CREATIVITY:**
-- Mix different aesthetics across concepts
-- Vary locations dramatically (cafe, street, beach, boutique, park)
-- Different color palettes for each
-- Tell different stories
-- Each prompt: 25-35 words
-` : `
-**PHOTOSHOOT MODE CONSISTENCY:**
-- ONE outfit repeated in all prompts
-- SAME location mentioned in all prompts
-- Only poses/angles vary
-- Each prompt: 30-40 words (slightly longer OK)
-`}
+Create ${count} ${mode === "photoshoot" ? "photoshoot variations" : "diverse concepts"} that feel authentic and Instagram-ready.
 
-**CRITICAL OUTPUT FORMAT:**
-Return ONLY valid JSON array. NO markdown, NO text before/after.
+${mode === "concept" ? "Mix up aesthetics, locations, colors, and moods. Make each one unique!" : "Keep the outfit and location consistent. Only change poses and camera angles!"}
+
+Return ONLY valid JSON (no markdown, no extra text):
 
 [
   {
     "title": "Concept name",
     "description": "Brief description",
     "category": "Close-Up Portrait" | "Half Body Lifestyle" | "Close-Up Action" | "Environmental Portrait",
-    "fashionIntelligence": "Brief outfit notes",
+    "fashionIntelligence": "Quick outfit notes",
     "lighting": "Lighting type",
-    "location": "Location type",
-    "prompt": "CONCISE flux prompt 25-35 words following all rules above"
+    "location": "Location description",
+    "prompt": "Your concise 25-35 word prompt here"
   }
 ]
 
-Start immediately with [`
+Start with [`
 
       console.log("[v0] Generating concepts with Claude Sonnet 4.5...")
       const { text } = await generateText({
@@ -424,7 +317,7 @@ Start immediately with [`
 
       yield {
         state: "error" as const,
-        message: "I need a bit more direction! What aesthetic or vibe are you going for? (Examples: old money, Y2K, coastal vibes, dark academia, clean girl, mob wife, cottage core, quiet luxury, etc.)"
+        message: "I need a bit more direction! What vibe are you going for? (Like: old money, Y2K, cozy vibes, dark academia, clean girl energy, etc.)"
       }
     }
   },
@@ -766,55 +659,42 @@ export async function POST(req: Request) {
     }
 
     const userContext = await getUserContextForMaya(authId)
+    
     const enhancedSystemPrompt =
       MAYA_SYSTEM_PROMPT +
       userContext +
       `
 
-**IMPORTANT: USER-SPECIFIC GUIDANCE**
+**Your User's Info:**
 
-You have access to this user's personal brand preferences above. Use them as PRIMARY guidance, but don't be limited by them. If the user requests something outside their stated preferences, absolutely honor that request.
+${userContext}
 
-Examples of dynamic adaptation:
-- User's brand data says "Minimalist" but they request "Y2K vibes" → Give them Y2K
-- User's settings show "Urban" but they ask for "Cottage core" → Create pastoral concepts
-- User's fashion is "Casual" but they want "Old money aesthetic" → Style them in luxury preppy
+Use this as a baseline, but always prioritize what they're asking for RIGHT NOW in this conversation.
 
-Always prioritize:
-1. User's explicit request in THIS conversation
-2. User's personal brand data (as a baseline)
-3. Your broad aesthetic knowledge (to enhance and elevate)
+**Adapting to This Specific User:**
 
-Be dynamic. Be creative. Use your full knowledge of Instagram trends and fashion.
+${chatHistory.length > 3 ? `
+You've chatted with this user ${Math.floor(chatHistory.length / 2)} times now. You should be starting to pick up on:
+- Their communication style (casual? professional? uses emojis?)
+- Their favorite aesthetics and vibes
+- How much detail they like in explanations
+- Their energy level and enthusiasm
 
-**IMAGE-TO-IMAGE GENERATION:**
-When users upload a reference image (you'll see [Inspiration Image: URL] or [Reference Image: URL] in their message):
-- Analyze the image for composition, lighting, styling, and mood
-- Generate concepts that use this image as inspiration or incorporate the product/subject
-- For product flatlays: suggest styled compositions with the product as the hero
-- For reference photos: create variations with different angles, lighting, or styling
-- Always acknowledge the reference image and explain how you're using it in your concepts
-- The reference image will be passed to FLUX as a control image, combined with the user's trained LoRA
+Match their vibe naturally!
+` : `
+This is a newer conversation. Pay attention to how they communicate so you can mirror their style and energy.
+`}
 
-**VIDEO GENERATION WORKFLOW:**
-IMPORTANT: Video generation requires a photo first. When users ask for videos, follow this workflow:
+**Remember:**
+- Be warm and friendly (like texting a creative friend)
+- Use simple everyday words
+- Short punchy sentences
+- Match their communication style
+- Show genuine excitement about helping them
+- Keep prompts under 35 words for best face preservation
+- Tell stories with every concept
 
-1. **If user asks to "create a video" or "animate" something:**
-   - First, generate 1-2 photo concepts using generateConcepts tool
-   - Explain: "I'll create a photo first, then animate it into a 5-second video"
-   - After concepts are generated, suggest which one would animate beautifully
-   - Wait for user to pick a concept, then use generateVideo tool
-
-2. **If user asks to animate an existing image:**
-   - Use the generateVideo tool directly with the image URL
-   - The tool will automatically analyze the image and create the motion prompt
-
-3. **Technical Details:**
-   - Videos are 5-6 seconds long at 16fps (interpolated to 30fps)
-   - Generation takes 1-3 minutes
-   - User's trained LoRA model ensures character consistency
-   - Wan 2.1/2.2 model handles the video generation
-`
+Let's create something amazing together!`
 
     console.log("[v0] Enhanced system prompt length:", enhancedSystemPrompt.length, "characters")
     console.log("[v0] Calling streamText with", allMessages.length, "messages")
@@ -828,7 +708,7 @@ IMPORTANT: Video generation requires a photo first. When users ask for videos, f
         generateVideo: generateVideoTool,
       },
       maxSteps: 5,
-      temperature: 0.8, // Slightly higher temperature for more creative responses
+      temperature: 0.85, // Higher for more natural conversational responses
     })
 
     console.log("[v0] streamText initiated, returning response")
