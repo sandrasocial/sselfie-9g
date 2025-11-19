@@ -94,7 +94,6 @@ export async function POST(request: NextRequest) {
               productTag = "credit-topup"
             }
 
-            // Add customer to Resend audience as a paying customer
             const resendResult = await addOrUpdateResendContact(customerEmail, firstName, {
               source: "stripe-checkout",
               status: "customer",
@@ -110,7 +109,6 @@ export async function POST(request: NextRequest) {
               console.error(`[v0] Failed to add paying customer to Resend: ${resendResult.error}`)
             }
 
-            // Tag the subscriber as having purchased
             await sql`
               UPDATE freebie_subscribers 
               SET 
@@ -125,17 +123,6 @@ export async function POST(request: NextRequest) {
               WHERE email = ${customerEmail}
             `
             console.log(`[v0] Tagged ${customerEmail} as purchased in freebie_subscribers`)
-
-            const productType = session.metadata.product_type
-            let productTag = "unknown"
-
-            if (productType === "one_time_session") {
-              productTag = "one-time-session"
-            } else if (productType === "sselfie_studio_membership") {
-              productTag = "studio-membership"
-            } else if (productType === "credit_topup") {
-              productTag = "credit-topup"
-            }
 
             await updateTags(customerEmail, {
               status: "customer",
@@ -152,7 +139,6 @@ export async function POST(request: NextRequest) {
         }
 
         if (session.mode === "payment") {
-          // One-time purchase (credit top-up or one-time session)
           let userId = session.metadata.user_id
           const credits = Number.parseInt(session.metadata.credits || "0")
           const productType = session.metadata.product_type
@@ -289,7 +275,7 @@ export async function POST(request: NextRequest) {
 
                   const { data: createData, error: createError } = await supabaseAdmin.auth.admin.createUser({
                     email: customerEmail,
-                    email_confirm: true, // Auto-confirm email so they can log in
+                    email_confirm: true,
                     user_metadata: {
                       created_via: "stripe_one_time_purchase",
                       stripe_customer_id: session.customer,
@@ -342,7 +328,6 @@ export async function POST(request: NextRequest) {
 
                   let passwordSetupLink = resetData.properties.action_link
 
-                  // Replace Supabase URLs with production URL
                   if (passwordSetupLink.includes("localhost") || passwordSetupLink.includes("supabase.co")) {
                     const url = new URL(passwordSetupLink)
                     const token = url.searchParams.get("token")
@@ -467,7 +452,6 @@ export async function POST(request: NextRequest) {
             console.log(`[v0] One-time session purchase for user ${userId}`)
             await grantOneTimeSessionCredits(userId)
             console.log(`[v0] One-time session credits granted for user ${userId}`)
-            // No subscription record is created - one-time purchases are tracked via credit transactions only
           } else if (productType === "credit_topup") {
             console.log(`[v0] Credit top-up: ${credits} credits for user ${userId}`)
             await addCredits(userId, credits, "purchase", `Credit top-up purchase`, undefined, !event.livemode)
