@@ -1,11 +1,18 @@
 import { neon } from "@neondatabase/serverless"
 import { createServerClient } from "@/lib/supabase/server"
 
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL environment variable is not set")
-}
+let sql: ReturnType<typeof neon> | null = null
 
-const sql = neon(process.env.DATABASE_URL)
+function getSQL() {
+  if (!sql) {
+    const dbUrl = process.env.DATABASE_URL
+    if (!dbUrl) {
+      throw new Error("DATABASE_URL environment variable is not set")
+    }
+    sql = neon(dbUrl)
+  }
+  return sql
+}
 
 export interface NeonUser {
   id: string
@@ -63,11 +70,12 @@ async function retryWithBackoff<T>(fn: () => Promise<T>, maxRetries = 3, baseDel
 export async function getOrCreateNeonUser(
   supabaseAuthId: string,
   email: string,
-  name?: string | null, // Allow null to explicitly set no display_name
+  name?: string | null,
 ): Promise<NeonUser> {
   try {
+    const db = getSQL()
     const existingUsers = await retryWithBackoff(
-      () => sql`
+      () => db`
       SELECT * FROM users WHERE email = ${email} LIMIT 1
     `,
       5,
@@ -78,7 +86,7 @@ export async function getOrCreateNeonUser(
       const user = existingUsers[0] as NeonUser
       if (!user.supabase_user_id) {
         await retryWithBackoff(
-          () => sql`
+          () => db`
           UPDATE users 
           SET supabase_user_id = ${supabaseAuthId}, updated_at = NOW()
           WHERE id = ${user.id}
@@ -96,7 +104,7 @@ export async function getOrCreateNeonUser(
     const displayName = name === null || name === undefined ? null : name
 
     const newUsers = await retryWithBackoff(
-      () => sql`
+      () => db`
       INSERT INTO users (id, email, display_name, supabase_user_id, created_at, updated_at)
       VALUES (${userId}, ${email}, ${displayName}, ${supabaseAuthId}, NOW(), NOW())
       RETURNING *
@@ -116,8 +124,9 @@ export async function getOrCreateNeonUser(
  * Get Neon user by email
  */
 export async function getNeonUserByEmail(email: string): Promise<NeonUser | null> {
+  const db = getSQL()
   const users = await retryWithBackoff(
-    () => sql`
+    () => db`
     SELECT * FROM users WHERE email = ${email} LIMIT 1
   `,
     5,
@@ -131,8 +140,9 @@ export async function getNeonUserByEmail(email: string): Promise<NeonUser | null
  * Get Neon user by ID
  */
 export async function getNeonUserById(id: string): Promise<NeonUser | null> {
+  const db = getSQL()
   const users = await retryWithBackoff(
-    () => sql`
+    () => db`
     SELECT * FROM users WHERE id = ${id} LIMIT 1
   `,
     5,
@@ -148,14 +158,15 @@ export async function getNeonUserById(id: string): Promise<NeonUser | null> {
  */
 export async function getUserByAuthId(authId: string): Promise<NeonUser | null> {
   try {
+    const db = getSQL()
     const users = await retryWithBackoff(
-      () => sql`
+      () => db`
       SELECT * FROM users 
       WHERE stack_auth_id = ${authId} OR supabase_user_id = ${authId}
       LIMIT 1
     `,
-      5, // Increased max retries
-      2000, // Increased base delay
+      5,
+      2000,
     )
 
     return users.length > 0 ? (users[0] as NeonUser) : null

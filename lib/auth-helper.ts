@@ -132,3 +132,12 @@ export async function getAuthenticatedUserWithRetry(maxRetries = 3): Promise<{
     error: new Error("Rate limit exceeded. Please try again in a moment."),
   }
 }
+
+/**
+ * Helper to get authenticated user from Next.js request
+ * Returns the user object or null if not authenticated
+ */
+export async function getUser(request: Request): Promise<User | null> {
+  const { user } = await getAuthenticatedUser()
+  return user
+}

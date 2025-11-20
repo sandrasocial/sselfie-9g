@@ -1,27 +1,25 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
-import { createServerClient } from "@/lib/supabase/server"
+import { getUser } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createServerClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    const authUser = await getUser(request)
 
-    if (!user) {
+    if (!authUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const sql = neon(process.env.DATABASE_URL!)
-    const neonUser = await getUserByAuthId(user.id)
+    const user = await getUserByAuthId(authUser.id)
 
-    if (!neonUser) {
+    if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    // Get latest feed design
+    const sql = neon(process.env.DATABASE_URL!)
+
+    // Get latest feed strategy
     const [feedLayout] = await sql`
       SELECT 
         id,
@@ -37,21 +35,21 @@ export async function GET(request: NextRequest) {
         created_at,
         status
       FROM feed_layouts
-      WHERE user_id = ${neonUser.id}
+      WHERE user_id = ${user.id}
       ORDER BY created_at DESC
       LIMIT 1
     `
 
     if (!feedLayout) {
       return NextResponse.json({
-        hasDesign: false,
+        hasStrategy: false,
         previewImages: [],
         conceptCards: [],
         feedStrategy: null,
       })
     }
 
-    // Get feed posts with images
+    // Get feed posts
     const feedPosts = await sql`
       SELECT 
         id,
@@ -63,14 +61,13 @@ export async function GET(request: NextRequest) {
         generation_status
       FROM feed_posts
       WHERE feed_layout_id = ${feedLayout.id}
-      AND user_id = ${neonUser.id}
+      AND user_id = ${user.id}
       ORDER BY position ASC
     `
 
     const completedPosts = feedPosts.filter((post) => post.image_url && post.generation_status === "completed")
     const pendingConcepts = feedPosts.filter((post) => !post.image_url && post.generation_status === "pending")
 
-    // Get preview images (first 9 completed images)
     const previewImages = completedPosts.slice(0, 9).map((post) => ({
       url: post.image_url,
       position: post.position,
@@ -86,10 +83,26 @@ export async function GET(request: NextRequest) {
       position: post.position,
     }))
 
+    // Get bio
+    const [bio] = await sql`
+      SELECT bio_text FROM instagram_bios
+      WHERE feed_layout_id = ${feedLayout.id}
+      ORDER BY created_at DESC
+      LIMIT 1
+    `
+
+    // Get highlights
+    const highlights = await sql`
+      SELECT id, title, prompt, image_url
+      FROM instagram_highlights
+      WHERE feed_layout_id = ${feedLayout.id}
+      ORDER BY created_at ASC
+    `
+
     return NextResponse.json({
-      hasDesign: true,
+      hasStrategy: true,
       previewImages,
-      conceptCards, // Added concept cards to response
+      conceptCards,
       feedStrategy: {
         id: feedLayout.id,
         title: feedLayout.title,
@@ -103,12 +116,14 @@ export async function GET(request: NextRequest) {
         brandName: feedLayout.brand_name,
         totalPosts: feedPosts.length,
         completedPosts: previewImages.length,
-        pendingConcepts: conceptCards.length, // Added pending concepts count
+        pendingConcepts: conceptCards.length,
         status: feedLayout.status,
+        bio: bio?.bio_text || null,
+        highlights: highlights || [],
       },
     })
   } catch (error) {
-    console.error("[v0] Error fetching feed preview:", error)
-    return NextResponse.json({ error: "Failed to fetch feed preview" }, { status: 500 })
+    console.error("[v0] Error fetching feed status:", error)
+    return NextResponse.json({ error: "Failed to fetch feed status" }, { status: 500 })
   }
 }

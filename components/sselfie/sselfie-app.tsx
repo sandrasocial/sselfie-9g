@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Camera, User, Aperture, Grid, MessageCircle, ImageIcon, Settings, MoreVertical, LogOut, Film } from 'lucide-react'
+import { Camera, User, Aperture, Grid, MessageCircle, ImageIcon, Settings, MoreVertical, LogOut, Film, LayoutGrid } from 'lucide-react'
 import LoadingScreen from "./loading-screen"
 import StudioScreen from "./studio-screen"
 import TrainingScreen from "./training-screen"
@@ -11,6 +11,7 @@ import BRollScreen from "./b-roll-screen"
 import AcademyScreen from "./academy-screen"
 import ProfileScreen from "./profile-screen"
 import SettingsScreen from "./settings-screen"
+import FeedPlannerScreen from "../feed-planner/feed-planner-screen" // Fixed import path to correct location
 import { InstallPrompt } from "./install-prompt"
 import { InstallButton } from "./install-button"
 import { ServiceWorkerProvider } from "./service-worker-provider"
@@ -44,7 +45,7 @@ export default function SselfieApp({
   const getInitialTab = () => {
     if (typeof window !== "undefined") {
       const hash = window.location.hash.slice(1) // Remove the # symbol
-      const validTabs = ["studio", "training", "maya", "b-roll", "gallery", "academy", "profile", "settings"]
+      const validTabs = ["studio", "training", "maya", "b-roll", "gallery", "feed-planner", "academy", "profile", "settings"]
       return validTabs.includes(hash) ? hash : "studio"
     }
     return "studio"
@@ -67,7 +68,7 @@ export default function SselfieApp({
   useEffect(() => {
     const handlePopState = () => {
       const hash = window.location.hash.slice(1)
-      const validTabs = ["studio", "training", "maya", "b-roll", "gallery", "academy", "profile", "settings"]
+      const validTabs = ["studio", "training", "maya", "b-roll", "gallery", "feed-planner", "academy", "profile", "settings"]
       if (validTabs.includes(hash)) {
         setActiveTab(hash)
       } else {
@@ -175,6 +176,7 @@ export default function SselfieApp({
     { id: "maya", label: "Maya", icon: MessageCircle },
     { id: "b-roll", label: "B-Roll", icon: Film },
     { id: "gallery", label: "Gallery", icon: ImageIcon },
+    { id: "feed-planner", label: "Feed", icon: LayoutGrid },
     { id: "academy", label: "Academy", icon: Grid },
     { id: "profile", label: "Profile", icon: User },
     { id: "settings", label: "Settings", icon: Settings },
@@ -322,6 +324,7 @@ export default function SselfieApp({
             {activeTab === "maya" && <MayaChatScreen onImageGenerated={refreshCredits} />}
             {activeTab === "b-roll" && <BRollScreen />}
             {activeTab === "gallery" && <GalleryScreen user={user} userId={userId} />}
+            {activeTab === "feed-planner" && <FeedPlannerScreen userId={userId} userName={userName} />}
             {activeTab === "academy" && <AcademyScreen />}
             {activeTab === "profile" && <ProfileScreen user={user} creditBalance={creditBalance} />}
             {activeTab === "settings" && <SettingsScreen user={user} creditBalance={creditBalance} />}
