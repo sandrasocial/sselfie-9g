@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { anthropic } from "@ai-sdk/anthropic"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { generateText } from "ai"
@@ -93,7 +94,9 @@ Look at the image and create a 10-15 word motion prompt that fits what you actua
 Just give me the prompt - no explanation needed!`
 
       const { text: motionPrompt } = await generateText({
-        model: "anthropic/claude-sonnet-4.5",
+        model: anthropic("claude-sonnet-4.5", {
+          apiKey: process.env.ANTHROPIC_API_KEY,
+        }),
         messages: [
           {
             role: "user",
@@ -132,7 +135,9 @@ Just give me the prompt - no explanation needed!`
     console.log("[v0] ⚠️ No image URL - generating from FLUX prompt with Maya's intuition")
 
     const { text: motionPrompt } = await generateText({
-      model: "anthropic/claude-sonnet-4.5",
+      model: anthropic("claude-sonnet-4.5", {
+        apiKey: process.env.ANTHROPIC_API_KEY,
+      }),
       system: `You're Maya! You create natural Instagram B-roll motion prompts.
 
 **Your job:** Turn image descriptions into authentic movement (10-15 words).
@@ -201,7 +206,14 @@ Create a natural 10-15 word Instagram B-roll motion prompt.`,
     console.log("[v0] Generated motion prompt:", trimmedPrompt)
     console.log("[v0] Word count:", wordCount)
     console.log("[v0] Target: 10-15 words")
-    console.log("[v0] Status:", wordCount >= 10 && wordCount <= 15 ? "✅ Perfect" : wordCount >= 8 && wordCount <= 17 ? "✅ Acceptable" : "⚠️ Adjust")
+    console.log(
+      "[v0] Status:",
+      wordCount >= 10 && wordCount <= 15
+        ? "✅ Perfect"
+        : wordCount >= 8 && wordCount <= 17
+          ? "✅ Acceptable"
+          : "⚠️ Adjust",
+    )
     console.log("[v0] ========================================")
 
     return NextResponse.json({
@@ -210,9 +222,6 @@ Create a natural 10-15 word Instagram B-roll motion prompt.`,
     })
   } catch (error) {
     console.error("[v0] Error generating motion prompt:", error)
-    return NextResponse.json(
-      { error: "Failed to generate motion prompt" },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: "Failed to generate motion prompt" }, { status: 500 })
   }
 }

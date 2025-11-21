@@ -1,4 +1,5 @@
 import { streamText, tool, type CoreMessage, generateText } from "ai"
+import { anthropic } from "@ai-sdk/anthropic"
 import { z } from "zod"
 import { MAYA_SYSTEM_PROMPT } from "@/lib/maya/personality"
 import { getUserByAuthId } from "@/lib/user-mapping"
@@ -157,8 +158,10 @@ Focus on:
 
 Keep it conversational and specific. I need to recreate this exact vibe for Instagram.`
 
-        const { text: visionText } = await generateText({
-          model: "anthropic/claude-sonnet-4.5",
+        const { text } = await generateText({
+          model: anthropic("claude-sonnet-4.5", {
+            apiKey: process.env.ANTHROPIC_API_KEY,
+          }),
           messages: [
             {
               role: "user",
@@ -177,7 +180,7 @@ Keep it conversational and specific. I need to recreate this exact vibe for Inst
           temperature: 0.7,
         })
 
-        imageAnalysis = visionText
+        imageAnalysis = text
         console.log("[v0] 🎨 Vision analysis complete")
       }
 
@@ -243,7 +246,7 @@ Structure:
 Quick tips:
 - "black blazer" not "luxurious black wool blazer with structure"
 - "cozy cafe" not "beautiful European cafe with warm lighting"
-- "sipping coffee" not "gracefully bringing cup to lips"
+- "sipping coffee" not "gracefully bringing cup to lips to camera"
 
 Always include (non-negotiable):
 - "shot on iPhone 15 Pro"
@@ -275,9 +278,11 @@ Start with [`
 
       console.log("[v0] Generating concepts with Claude Sonnet 4.5...")
       const { text } = await generateText({
-        model: "anthropic/claude-sonnet-4.5",
+        model: anthropic("claude-sonnet-4.5", {
+          apiKey: process.env.ANTHROPIC_API_KEY,
+        }),
         prompt: conceptPrompt,
-        maxOutputTokens: 4000,
+        maxTokens: 4000,
         temperature: 0.85,
       })
 
@@ -463,7 +468,9 @@ When you see these elements in a photo, use these prompt patterns:
 Analyze THIS image and create a 10-15 word motion prompt that matches what you actually see.`
 
         const { text: visionMotionPrompt } = await generateText({
-          model: "anthropic/claude-sonnet-4.5",
+          model: anthropic("claude-sonnet-4.5", {
+            apiKey: process.env.ANTHROPIC_API_KEY,
+          }),
           messages: [
             {
               role: "user",
@@ -684,8 +691,31 @@ export async function POST(req: NextRequest) {
     console.log("[v0] Enhanced system prompt length:", enhancedSystemPrompt.length, "characters")
     console.log("[v0] Calling streamText with", allMessages.length, "messages")
 
+    const firstUserMessage = messages.find((msg) => msg.role === "user")?.content || ""
+
+    const conversationText = allMessages.map((msg) => `${msg.role}: ${msg.content}`).join("\n")
+
+    const summaryResult = await generateText({
+      model: anthropic("claude-sonnet-4.5", {
+        apiKey: process.env.ANTHROPIC_API_KEY,
+      }),
+      system: "You are a helpful assistant that summarizes conversations concisely.",
+      messages: [
+        {
+          role: "user",
+          content: `Summarize this conversation in 2-3 sentences:\n\n${conversationText}`,
+        },
+      ],
+      maxTokens: 150,
+    })
+
+    const summary = summaryResult.text.trim()
+    console.log("[v0] Generated summary:", summary)
+
     const result = streamText({
-      model: "anthropic/claude-sonnet-4.5",
+      model: anthropic("claude-sonnet-4.5", {
+        apiKey: process.env.ANTHROPIC_API_KEY,
+      }),
       system: enhancedSystemPrompt,
       messages: allMessages,
       tools: {
