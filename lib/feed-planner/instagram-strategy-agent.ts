@@ -172,7 +172,7 @@ Return your response as structured JSON matching the InstagramStrategy interface
 
   try {
     const { text } = await generateText({
-      model: "anthropic/claude-sonnet-4.5",
+      model: "anthropic/claude-haiku-4.5",
       system: `You are an Instagram Growth Strategist with deep expertise in:
 - Personal brand storytelling
 - Instagram algorithm (2025)

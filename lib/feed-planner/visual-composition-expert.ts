@@ -104,7 +104,7 @@ Return JSON with this structure:
 Return ONLY valid JSON. No markdown.`
 
   const { text } = await generateText({
-    model: "anthropic/claude-sonnet-4.5",
+    model: "anthropic/claude-haiku-4.5", // Using claude-haiku-4.5 to avoid AI Gateway contention with Maya
     system: systemPrompt,
     prompt,
     temperature: 0.8, // Back to 0.8 for Maya's creative diversity

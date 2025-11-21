@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server"
+import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { generateText } from "ai"
@@ -23,14 +23,11 @@ export async function POST(req: NextRequest) {
     const { goalText } = await req.json()
 
     if (!goalText || goalText.trim().length === 0) {
-      return NextResponse.json(
-        { error: "Goal text is required" },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: "Goal text is required" }, { status: 400 })
     }
 
     const { text: enhancedGoal } = await generateText({
-      model: "anthropic/claude-sonnet-4.5",
+      model: "anthropic/claude-haiku-4.5",
       prompt: `You're Maya, a warm and friendly personal branding expert who helps people express themselves authentically.
 
 Someone just wrote this quick note about their Instagram feed goal:
@@ -50,9 +47,6 @@ Just write the enhanced version, no explanations.`,
     return NextResponse.json({ enhancedGoal: enhancedGoal.trim() })
   } catch (error) {
     console.error("[v0] Enhance goal error:", error)
-    return NextResponse.json(
-      { error: "Failed to enhance goal" },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: "Failed to enhance goal" }, { status: 500 })
   }
 }

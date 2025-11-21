@@ -11,7 +11,6 @@ export async function middleware(request: NextRequest) {
 
   if (isUploadRoute) {
     console.log("[v0] Upload route detected - completely bypassing all middleware to preserve request body")
-    // Return immediately without any processing to avoid consuming the body
     return NextResponse.next()
   }
 
@@ -27,11 +26,23 @@ export async function middleware(request: NextRequest) {
 
   const response = await updateSession(request)
 
-  // Preserve the previous URL in a custom header for navigation context
   const referer = request.headers.get("referer")
   if (referer) {
     response.headers.set("x-previous-url", referer)
   }
+
+  const cspHeader = [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://va.vercel-scripts.com https://vercel.live",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' blob: data: https:",
+    "font-src 'self' data:",
+    "connect-src 'self' https://api.v0.app https://va.vercel-scripts.com https://vercel.live https://*.pusher.com wss://*.pusher.com https://blob.vercel-storage.com https://*.blob.vercel-storage.com https://ai-gateway.vercel.sh https://*.vercel.sh https://gateway.ai.cloudflare.com https://api.anthropic.com https://api.openai.com https://*.vercel-ai.com https://*.vercel.app https://replicate.com https://*.replicate.com https://replicate.delivery https://*.anthropic.com",
+    "frame-src 'self' https://vercel.live",
+    "media-src 'self' blob: data:",
+  ].join("; ")
+
+  response.headers.set("Content-Security-Policy", cspHeader)
 
   return response
 }

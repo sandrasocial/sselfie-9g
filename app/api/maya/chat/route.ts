@@ -5,6 +5,8 @@ import { getUserByAuthId } from "@/lib/user-mapping"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
+import { NextResponse } from "next/server"
+import type { NextRequest } from "next/server"
 
 export const maxDuration = 60
 
@@ -29,17 +31,21 @@ const generateConceptsTool = tool({
   description:
     "Generate 3-5 diverse photo concepts with detailed fashion and styling intelligence. Use your comprehensive knowledge of ALL Instagram aesthetics, fashion trends, and photography styles. Match concepts to user's requests, personal brand data, or trending aesthetics. Be dynamic - don't limit yourself to preset templates. If user uploaded a reference image, analyze it visually first.",
   inputSchema: z.object({
-    userRequest: z.string().describe("What the user is asking for - be specific about aesthetic, style, vibe, or trend they want"),
+    userRequest: z
+      .string()
+      .describe("What the user is asking for - be specific about aesthetic, style, vibe, or trend they want"),
     aesthetic: z
       .string()
       .optional()
-      .describe("Specific aesthetic/trend to focus on (e.g., 'Old Money', 'Coastal Grandmother', 'Y2K', 'Quiet Luxury', 'Dark Academia', 'Clean Girl', etc.) - use ANY Instagram trend, not just preset options"),
+      .describe(
+        "Specific aesthetic/trend to focus on (e.g., 'Old Money', 'Coastal Grandmother', 'Y2K', 'Quiet Luxury', 'Dark Academia', 'Clean Girl', etc.) - use ANY Instagram trend, not just preset options",
+      ),
     context: z.string().optional().describe("Additional context about the user, occasion, or purpose"),
     userModifications: z
       .string()
       .optional()
       .describe(
-        "Specific user-requested modifications like 'make clothes more oversized', 'warmer lighting', 'more realistic skin', 'add specific brand', etc."
+        "Specific user-requested modifications like 'make clothes more oversized', 'warmer lighting', 'more realistic skin', 'add specific brand', etc.",
       ),
     count: z.number().optional().default(3).describe("Number of concepts to generate (3-5)"),
     referenceImageUrl: z.string().optional().describe("If user uploaded reference image for inspiration"),
@@ -52,7 +58,13 @@ const generateConceptsTool = tool({
       })
       .optional()
       .describe("Optional custom generation settings for style strength, prompt accuracy, etc."),
-    mode: z.enum(["concept", "photoshoot"]).optional().default("concept").describe("'concept' for diverse standalone images (default), 'photoshoot' for consistent carousel with same outfit"),
+    mode: z
+      .enum(["concept", "photoshoot"])
+      .optional()
+      .default("concept")
+      .describe(
+        "'concept' for diverse standalone images (default), 'photoshoot' for consistent carousel with same outfit",
+      ),
   }),
   execute: async function* ({
     userRequest,
@@ -185,7 +197,9 @@ Request: "${userRequest}"
 ${aesthetic ? `Aesthetic vibe: ${aesthetic}` : ""}
 ${context ? `Context: ${context}` : ""}
 
-${mode === "photoshoot" ? `
+${
+  mode === "photoshoot"
+    ? `
 **PHOTOSHOOT MODE:**
 You're creating ${count} images for ONE Instagram carousel.
 - Same outfit across all ${count} shots
@@ -193,7 +207,8 @@ You're creating ${count} images for ONE Instagram carousel.
 - Only poses and angles change
 - 30-40 words per prompt (slightly longer is OK here)
 - Think: One real photoshoot session
-` : `
+`
+    : `
 **CONCEPT MODE:**
 You're creating ${count} completely different standalone concepts.
 - Different outfits for each
@@ -201,15 +216,20 @@ You're creating ${count} completely different standalone concepts.
 - Different vibes and stories
 - 25-35 words per prompt
 - Maximum diversity - each tells its own story
-`}
+`
+}
 
-${imageAnalysis ? `
+${
+  imageAnalysis
+    ? `
 **REFERENCE IMAGE ANALYSIS:**
 
 ${imageAnalysis}
 
 Use this as inspiration but keep your prompts concise (under 35 words). Capture the essence without over-describing.
-` : ""}
+`
+    : ""
+}
 
 **Prompt Writing Guide:**
 
@@ -317,7 +337,8 @@ Start with [`
 
       yield {
         state: "error" as const,
-        message: "I need a bit more direction! What vibe are you going for? (Like: old money, Y2K, cozy vibes, dark academia, clean girl energy, etc.)"
+        message:
+          "I need a bit more direction! What vibe are you going for? (Like: old money, Y2K, cozy vibes, dark academia, clean girl energy, etc.)",
       }
     }
   },
@@ -333,7 +354,7 @@ const generateVideoTool = tool({
       .string()
       .optional()
       .describe(
-        "Motion prompt will be auto-generated based on image analysis. Only provide this if you've already analyzed the image with vision and created a context-aware prompt following Wan 2.1/2.2 best practices: Subject + Scene + Motion (with speed/amplitude modifiers like 'slowly', 'gently', 'naturally')."
+        "Motion prompt will be auto-generated based on image analysis. Only provide this if you've already analyzed the image with vision and created a context-aware prompt following Wan 2.1/2.2 best practices: Subject + Scene + Motion (with speed/amplitude modifiers like 'slowly', 'gently', 'naturally').",
       ),
   }),
   execute: async function* ({ imageUrl, imageId, motionPrompt }) {
@@ -501,37 +522,31 @@ Analyze THIS image and create a 10-15 word motion prompt that matches what you a
   },
 })
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  console.log("[v0] Maya chat API called")
+
   try {
+    const { user: authUser, error: authError } = await getAuthenticatedUser()
+
+    if (authError || !authUser) {
+      console.error("[v0] Authentication failed:", authError?.message || "No user")
+      return NextResponse.json({ error: authError?.message || "Unauthorized" }, { status: 401 })
+    }
+
+    const userId = authUser.id
+    const user = await getUserByAuthId(userId)
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 })
+    }
+
+    const dbUserId = user.id
+
+    console.log("[v0] User authenticated:", { userId, dbUserId })
+
     const { messages, chatId } = await req.json()
 
     const supabase = await createServerClient()
-
-    const { user: authUser, error: authError } = await getAuthenticatedUser()
-
-    console.log("[v0] ========== MAYA API REQUEST START ==========")
-
-    console.log("[v0] Maya API Environment:", {
-      nodeEnv: process.env.NODE_ENV,
-      vercelEnv: process.env.VERCEL_ENV,
-      hasAIGateway: !!process.env.AI_GATEWAY_URL,
-      timestamp: new Date().toISOString(),
-      requestUrl: req.url,
-    })
-
-    if (!messages || !Array.isArray(messages)) {
-      console.error("[v0] Invalid messages array:", messages)
-      throw new Error("Invalid messages format")
-    }
-
-    if (authError || !authUser) {
-      throw new Error("Unauthorized")
-    }
-
-    const user = await getUserByAuthId(authUser.id)
-    if (!user) {
-      throw new Error("Unauthorized")
-    }
 
     console.log("[v0] Maya chat API called with", messages.length, "messages, chatId:", chatId)
     console.log("[v0] User:", user.email, "ID:", user.id)
@@ -659,42 +674,12 @@ export async function POST(req: Request) {
     }
 
     const userContext = await getUserContextForMaya(authId)
-    
+
     const enhancedSystemPrompt =
       MAYA_SYSTEM_PROMPT +
+      `\n\n` +
       userContext +
-      `
-
-**Your User's Info:**
-
-${userContext}
-
-Use this as a baseline, but always prioritize what they're asking for RIGHT NOW in this conversation.
-
-**Adapting to This Specific User:**
-
-${chatHistory.length > 3 ? `
-You've chatted with this user ${Math.floor(chatHistory.length / 2)} times now. You should be starting to pick up on:
-- Their communication style (casual? professional? uses emojis?)
-- Their favorite aesthetics and vibes
-- How much detail they like in explanations
-- Their energy level and enthusiasm
-
-Match their vibe naturally!
-` : `
-This is a newer conversation. Pay attention to how they communicate so you can mirror their style and energy.
-`}
-
-**Remember:**
-- Be warm and friendly (like texting a creative friend)
-- Use simple everyday words
-- Short punchy sentences
-- Match their communication style
-- Show genuine excitement about helping them
-- Keep prompts under 35 words for best face preservation
-- Tell stories with every concept
-
-Let's create something amazing together!`
+      `\n\nRemember: Match their communication style naturally and keep prompts concise for best results.`
 
     console.log("[v0] Enhanced system prompt length:", enhancedSystemPrompt.length, "characters")
     console.log("[v0] Calling streamText with", allMessages.length, "messages")
@@ -708,25 +693,28 @@ Let's create something amazing together!`
         generateVideo: generateVideoTool,
       },
       maxSteps: 5,
-      temperature: 0.85, // Higher for more natural conversational responses
+      temperature: 0.85,
+      onFinish: () => {
+        console.log("[v0] streamText completed successfully")
+      },
     })
 
     console.log("[v0] streamText initiated, returning response")
 
     return result.toUIMessageStreamResponse()
-  } catch (error) {
-    console.error("[v0] ========== MAYA API ERROR ==========")
-    console.error("[v0] Error in Maya chat:", error)
-    console.error("[v0] Error details:", {
-      name: error instanceof Error ? error.name : typeof error,
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
+  } catch (error: any) {
+    console.error("[v0] Maya chat error:", {
+      message: error?.message,
+      name: error?.name,
+      stack: error?.stack,
+      cause: error?.cause,
     })
-    console.error("[v0] ========== MAYA API ERROR END ==========")
-
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    })
+    return NextResponse.json(
+      {
+        error: "Failed to process chat request",
+        details: error?.message || "Unknown error",
+      },
+      { status: 500 },
+    )
   }
 }

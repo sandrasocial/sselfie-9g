@@ -110,7 +110,7 @@ export async function orchestrateFeedPlanning(params: FeedPlannerParams): Promis
   let mayaAnalysisText
   try {
     const mayaAnalysis = await generateText({
-      model: "anthropic/claude-sonnet-4.5",
+      model: "anthropic/claude-haiku-4.5",
       system: `${MAYA_PERSONALITY}
 
 You're helping design an Instagram feed. Analyze what the user wants and extract key details.
