@@ -159,7 +159,7 @@ Focus on:
 Keep it conversational and specific. I need to recreate this exact vibe for Instagram.`
 
         const { text } = await generateText({
-          model: anthropic("claude-sonnet-4.5", {
+          model: anthropic("claude-3-5-sonnet-20241022", {
             apiKey: process.env.ANTHROPIC_API_KEY,
           }),
           messages: [
@@ -278,7 +278,7 @@ Start with [`
 
       console.log("[v0] Generating concepts with Claude Sonnet 4.5...")
       const { text } = await generateText({
-        model: anthropic("claude-sonnet-4.5", {
+        model: anthropic("claude-3-5-sonnet-20241022", {
           apiKey: process.env.ANTHROPIC_API_KEY,
         }),
         prompt: conceptPrompt,
@@ -468,7 +468,7 @@ When you see these elements in a photo, use these prompt patterns:
 Analyze THIS image and create a 10-15 word motion prompt that matches what you actually see.`
 
         const { text: visionMotionPrompt } = await generateText({
-          model: anthropic("claude-sonnet-4.5", {
+          model: anthropic("claude-3-5-sonnet-20241022", {
             apiKey: process.env.ANTHROPIC_API_KEY,
           }),
           messages: [
@@ -696,7 +696,7 @@ export async function POST(req: NextRequest) {
     const conversationText = allMessages.map((msg) => `${msg.role}: ${msg.content}`).join("\n")
 
     const summaryResult = await generateText({
-      model: anthropic("claude-sonnet-4.5", {
+      model: anthropic("claude-3-5-sonnet-20241022", {
         apiKey: process.env.ANTHROPIC_API_KEY,
       }),
       system: "You are a helpful assistant that summarizes conversations concisely.",
@@ -713,7 +713,7 @@ export async function POST(req: NextRequest) {
     console.log("[v0] Generated summary:", summary)
 
     const result = streamText({
-      model: anthropic("claude-sonnet-4.5", {
+      model: anthropic("claude-3-5-sonnet-20241022", {
         apiKey: process.env.ANTHROPIC_API_KEY,
       }),
       system: enhancedSystemPrompt,
