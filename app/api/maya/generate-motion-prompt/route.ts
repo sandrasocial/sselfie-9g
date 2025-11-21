@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { generateText } from "ai"
+import { anthropic } from "@ai-sdk/anthropic"
 
 export async function POST(request: Request) {
   try {
@@ -93,8 +94,7 @@ Look at the image and create a 10-15 word motion prompt that fits what you actua
 Just give me the prompt - no explanation needed!`
 
       const { text: motionPrompt } = await generateText({
-        model: "anthropic/claude-sonnet-4.5",
-        apiKey: process.env.AI_GATEWAY_API_KEY,
+        model: anthropic("claude-3-5-sonnet-20241022"),
         messages: [
           {
             role: "user",
@@ -133,8 +133,7 @@ Just give me the prompt - no explanation needed!`
     console.log("[v0] ⚠️ No image URL - generating from FLUX prompt with Maya's intuition")
 
     const { text: motionPrompt } = await generateText({
-      model: "anthropic/claude-sonnet-4.5",
-      apiKey: process.env.AI_GATEWAY_API_KEY,
+      model: anthropic("claude-3-5-sonnet-20241022"),
       system: `You're Maya! You create natural Instagram B-roll motion prompts.
 
 **Your job:** Turn image descriptions into authentic movement (10-15 words).

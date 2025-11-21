@@ -6,6 +6,7 @@ import { checkCredits, deductCredits, getUserCredits, CREDIT_COSTS } from "@/lib
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { rateLimit } from "@/lib/rate-limit-api"
 import { generateText } from "ai"
+import { anthropic } from "@ai-sdk/anthropic"
 
 const sql = getDbClient()
 
@@ -106,8 +107,7 @@ After generating each prompt, count the words. Target 30-40, never exceed 45.
 Generate ${numImages} varied poses with CONCISE prompts that preserve facial likeness. Return ONLY valid JSON.`
 
   const { text } = await generateText({
-    model: "anthropic/claude-sonnet-4.5",
-    apiKey: process.env.AI_GATEWAY_API_KEY,
+    model: anthropic("claude-3-5-sonnet-20241022"),
     prompt: mayaPrompt,
     temperature: 0.85,
   })

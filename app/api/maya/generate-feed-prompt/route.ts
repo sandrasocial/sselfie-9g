@@ -3,6 +3,7 @@ import { neon } from "@neondatabase/serverless"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 import { streamText } from "ai"
+import { anthropic } from "@ai-sdk/anthropic"
 import { getMayaPersonality } from "@/lib/maya/personality-enhanced"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 
@@ -132,11 +133,11 @@ IMPORTANT INSTRUCTIONS:
 Now generate the FLUX prompt for this feed post:`
 
     // Call AI to generate the prompt
-    console.log("[v0] [FEED-PROMPT] Calling AI SDK with model: anthropic/claude-sonnet-4.5")
+    console.log("[v0] [FEED-PROMPT] Calling AI SDK with model: anthropic/claude-3-5-sonnet-20241022")
     let result
     try {
       result = streamText({
-        model: "anthropic/claude-sonnet-4.5",
+        model: anthropic("claude-3-5-sonnet-20241022"),
         apiKey: process.env.AI_GATEWAY_API_KEY,
         messages: [
           {

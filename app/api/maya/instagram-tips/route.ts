@@ -4,6 +4,7 @@ import { getUserByAuthId } from "@/lib/user-mapping"
 import { getUserPersonalBrand } from "@/lib/data/maya"
 import { generateText } from "ai"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
+import { anthropic } from "@ai-sdk/anthropic"
 
 export async function POST(req: NextRequest) {
   try {
@@ -29,8 +30,7 @@ export async function POST(req: NextRequest) {
     const { postType, caption, position } = await req.json()
 
     const { text: tips } = await generateText({
-      model: "anthropic/claude-sonnet-4.5",
-      apiKey: process.env.AI_GATEWAY_API_KEY,
+      model: anthropic("claude-3-5-sonnet-20241022"),
       system: `You are Maya, an Instagram strategy expert. Research and provide specific, actionable Instagram tips.
 
 Your tips should include:
