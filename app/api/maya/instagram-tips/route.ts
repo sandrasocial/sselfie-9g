@@ -1,5 +1,4 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { anthropic } from "@ai-sdk/anthropic"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getUserPersonalBrand } from "@/lib/data/maya"
@@ -30,9 +29,8 @@ export async function POST(req: NextRequest) {
     const { postType, caption, position } = await req.json()
 
     const { text: tips } = await generateText({
-      model: anthropic("claude-sonnet-4", {
-        apiKey: process.env.ANTHROPIC_API_KEY,
-      }),
+      model: "anthropic/claude-sonnet-4.5",
+      apiKey: process.env.AI_GATEWAY_API_KEY,
       system: `You are Maya, an Instagram strategy expert. Research and provide specific, actionable Instagram tips.
 
 Your tips should include:

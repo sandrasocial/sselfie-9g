@@ -1,5 +1,4 @@
 import { generateText } from "ai"
-import { anthropic } from "@ai-sdk/anthropic"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 
@@ -60,9 +59,8 @@ Return ONLY a valid JSON object with this structure:
 }`
 
     const { text } = await generateText({
-      model: anthropic("claude-sonnet-4", {
-        apiKey: process.env.ANTHROPIC_API_KEY,
-      }),
+      model: "anthropic/claude-sonnet-4.5",
+      apiKey: process.env.AI_GATEWAY_API_KEY,
       prompt,
       maxTokens: 2000,
     })

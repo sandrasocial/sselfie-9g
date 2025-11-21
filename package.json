@@ -9,7 +9,7 @@
     "start": "next start"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "latest",
+    "@ai-sdk/anthropic": "2.0.45",
     "@ai-sdk/openai": "latest",
     "@ai-sdk/react": "latest",
     "@clerk/nextjs": "6.34.5",

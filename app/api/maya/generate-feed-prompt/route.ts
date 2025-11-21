@@ -1,5 +1,4 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { anthropic } from "@ai-sdk/anthropic"
 import { neon } from "@neondatabase/serverless"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
@@ -137,9 +136,8 @@ Now generate the FLUX prompt for this feed post:`
     let result
     try {
       result = streamText({
-        model: anthropic("claude-sonnet-4.5", {
-          apiKey: process.env.ANTHROPIC_API_KEY,
-        }),
+        model: "anthropic/claude-sonnet-4.5",
+        apiKey: process.env.AI_GATEWAY_API_KEY,
         messages: [
           {
             role: "system",
