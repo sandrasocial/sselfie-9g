@@ -67,7 +67,7 @@ Do NOT include:
 Just the caption itself, ready to post.`
 
   const { text } = await generateText({
-    model: "anthropic/claude-sonnet-4.5", // Using simpler working model identifier
+    model: "anthropic/claude-haiku-4.5", // Using claude-haiku-4.5 to avoid AI Gateway contention with Maya
     system: `You are an elite Instagram Caption Writer.
 
 CRITICAL OUTPUT RULE:
@@ -140,7 +140,7 @@ Research the latest Instagram bio best practices and trending formats in the ${n
 Write a bio that makes someone instantly want to follow.`
 
   const { text: bio } = await generateText({
-    model: "anthropic/claude-sonnet-4.5", // Using simpler working model identifier
+    model: "anthropic/claude-haiku-4.5", // Using claude-haiku-4.5 to avoid AI Gateway contention with Maya
     system: `You are an expert Instagram Bio Writer specializing in profile optimization and follower attraction.
 
 Your expertise:

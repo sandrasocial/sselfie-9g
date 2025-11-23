@@ -5,6 +5,8 @@ import { hasStudioMembership } from "@/lib/subscription"
 import { redirect } from "next/navigation"
 import SselfieApp from "@/components/sselfie/sselfie-app"
 
+export const dynamic = "force-dynamic"
+
 export default async function StudioPage({
   searchParams,
 }: {

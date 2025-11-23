@@ -140,7 +140,7 @@ Create a grid where someone scrolling sees mostly the user's authentic face buil
 Return ONLY valid JSON. No markdown.`
 
   const { text } = await generateText({
-    model: "anthropic/claude-sonnet-4.5",
+    model: "anthropic/claude-haiku-4.5",
     system: FEED_LAYOUT_STRATEGIST_PROMPT,
     prompt,
     temperature: 0.75,

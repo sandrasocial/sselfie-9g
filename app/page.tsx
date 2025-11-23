@@ -4,7 +4,17 @@ import { redirect } from "next/navigation"
 import { headers } from "next/headers"
 import LandingPage from "@/components/sselfie/landing-page"
 
+export const dynamic = "force-dynamic"
+
 export default async function Home() {
+  const supabaseConfigured = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  // If Supabase isn't configured (V0 preview), just show landing page
+  if (!supabaseConfigured) {
+    console.log("[v0] Supabase not configured - showing landing page")
+    return <LandingPage />
+  }
+
   const supabase = await createServerClient()
   const {
     data: { user },
