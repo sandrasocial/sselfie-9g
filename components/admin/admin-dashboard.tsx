@@ -2,9 +2,22 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Loader2, TrendingUp, Users, BookOpen, MessageSquare, AlertCircle, DollarSign, Calendar, BarChart3, Coins, Mail, Star } from 'lucide-react'
+import {
+  Loader2,
+  TrendingUp,
+  Users,
+  BookOpen,
+  MessageSquare,
+  AlertCircle,
+  DollarSign,
+  Calendar,
+  BarChart3,
+  Coins,
+  Mail,
+  Star,
+} from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts"
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 import { SystemHealthMonitor } from "./system-health-monitor"
 import { AdminNotifications } from "./admin-notifications"
 
@@ -79,7 +92,7 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
     fetchFeedbackData()
     fetchRevenueHistory()
     fetchPendingTestimonialsCount()
-    
+
     const refreshInterval = setInterval(() => {
       console.log("[v0] Auto-refreshing dashboard data...")
       fetchDashboardStats()
@@ -88,7 +101,7 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
       fetchRevenueHistory()
       fetchPendingTestimonialsCount()
     }, 30000) // 30 seconds
-    
+
     return () => clearInterval(refreshInterval)
   }, [])
 
@@ -111,10 +124,20 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
   const fetchRevenueData = async () => {
     try {
       const response = await fetch("/api/admin/dashboard/revenue")
-      if (response.ok) {
-        const data = await response.json()
-        setRevenue(data)
+      if (!response.ok) {
+        console.error("[v0] Revenue API error:", response.status, response.statusText)
+        return
       }
+
+      // Check if response is JSON
+      const contentType = response.headers.get("content-type")
+      if (!contentType || !contentType.includes("application/json")) {
+        console.error("[v0] Revenue API returned non-JSON response")
+        return
+      }
+
+      const data = await response.json()
+      setRevenue(data)
     } catch (error) {
       console.error("[v0] Error fetching revenue data:", error)
     }
@@ -178,7 +201,7 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
       {/* Hero Section */}
       <div className="relative h-[15vh] md:h-[20vh] overflow-hidden">
         <img
-          src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/641-Yz6RWOHjtemWaGCwY5XQjtSCZX9LFH-E1PumsSpivkzYUKjuWvP4QaDz2DjyF.png"
+          src="/images/641-yz6rwohjtemwagcwy5xqjtsczx9lfh.png"
           alt="Admin workspace"
           className="w-full h-full object-cover"
         />
@@ -230,7 +253,9 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
               {stats?.totalUsers || 0}
             </p>
             <p className="text-[10px] md:text-xs tracking-[0.2em] uppercase text-stone-500">Total Users</p>
-            <p className="text-[10px] md:text-xs text-stone-400 mt-1">{stats?.activeUsers || stats?.totalUsers || 0} active</p>
+            <p className="text-[10px] md:text-xs text-stone-400 mt-1">
+              {stats?.activeUsers || stats?.totalUsers || 0} active
+            </p>
           </div>
 
           <div className="bg-white rounded-xl md:rounded-2xl p-4 md:p-6 border border-stone-200 shadow-xl">
@@ -242,19 +267,31 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
         <Tabs defaultValue="overview" className="w-full">
           <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
             <TabsList className="inline-flex w-auto md:grid md:w-full md:grid-cols-4 mb-6 md:mb-8 bg-white/80 backdrop-blur-xl rounded-2xl p-2 border border-stone-200 min-w-max md:min-w-0">
-              <TabsTrigger value="overview" className="data-[state=active]:bg-stone-950 data-[state=active]:text-white whitespace-nowrap text-xs md:text-sm">
+              <TabsTrigger
+                value="overview"
+                className="data-[state=active]:bg-stone-950 data-[state=active]:text-white whitespace-nowrap text-xs md:text-sm"
+              >
                 <BarChart3 className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
                 Overview
               </TabsTrigger>
-              <TabsTrigger value="revenue" className="data-[state=active]:bg-stone-950 data-[state=active]:text-white whitespace-nowrap text-xs md:text-sm">
+              <TabsTrigger
+                value="revenue"
+                className="data-[state=active]:bg-stone-950 data-[state=active]:text-white whitespace-nowrap text-xs md:text-sm"
+              >
                 <DollarSign className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
                 Revenue
               </TabsTrigger>
-              <TabsTrigger value="users" className="data-[state=active]:bg-stone-950 data-[state=active]:text-white whitespace-nowrap text-xs md:text-sm">
+              <TabsTrigger
+                value="users"
+                className="data-[state=active]:bg-stone-950 data-[state=active]:text-white whitespace-nowrap text-xs md:text-sm"
+              >
                 <Users className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
                 Users
               </TabsTrigger>
-              <TabsTrigger value="feedback" className="data-[state=active]:bg-stone-950 data-[state=active]:text-white whitespace-nowrap text-xs md:text-sm">
+              <TabsTrigger
+                value="feedback"
+                className="data-[state=active]:bg-stone-950 data-[state=active]:text-white whitespace-nowrap text-xs md:text-sm"
+              >
                 <MessageSquare className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
                 Feedback
               </TabsTrigger>
@@ -307,7 +344,7 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
                 <div className="bg-white rounded-xl md:rounded-2xl overflow-hidden border border-stone-200 shadow-lg hover:shadow-xl transition-all h-full">
                   <div className="relative h-40 overflow-hidden">
                     <img
-                      src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/618-TVCuZVG8V6R2Bput7pX8V06bCHRXGx-TD03ySws0dHTOBOHA3nEypKB2ryX8K.png"
+                      src="/images/618-tvcuzvg8v6r2bput7px8v06bchrxgx.png"
                       alt="Academy"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
@@ -330,7 +367,7 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
                 <div className="bg-white rounded-xl md:rounded-2xl overflow-hidden border border-stone-200 shadow-lg hover:shadow-xl transition-all h-full">
                   <div className="relative h-40 overflow-hidden">
                     <img
-                      src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/maya_68de145ae1rme0cs07ja9mcp90_0_1756673402614%20%281%29-v0JUZYIdnHyMNS5iYx5wGACaoJUT3R.png"
+                      src="/images/maya-68de145ae1rme0cs07ja9mcp90-0-1756673402614-20-281-29.png"
                       alt="AI Agent"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
@@ -380,9 +417,7 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
                     </div>
                   </div>
                   <div className="p-4 md:p-6">
-                    <p className="text-sm md:text-base text-stone-600 leading-relaxed">
-                      Add credits to user accounts
-                    </p>
+                    <p className="text-sm md:text-base text-stone-600 leading-relaxed">Add credits to user accounts</p>
                   </div>
                 </div>
               </Link>
@@ -391,7 +426,7 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
                 <div className="bg-white rounded-xl md:rounded-2xl overflow-hidden border border-stone-200 shadow-lg hover:shadow-xl transition-all h-full">
                   <div className="relative h-40 overflow-hidden">
                     <img
-                      src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/616-nnePryg0hS2y745w8ZNU8TWvFrgude-Q2S6CSY6Sa2K2cy4vxgEMi0zyBBBIE.png"
+                      src="/images/616-nnepryg0hs2y745w8znu8twvfrgude.png"
                       alt="Feedback"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
@@ -443,7 +478,10 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
               <div className="space-y-3">
                 {stats?.recentActivity && stats.recentActivity.length > 0 ? (
                   stats.recentActivity.map((activity, index) => (
-                    <div key={index} className="flex items-start gap-3 md:gap-4 pb-3 md:pb-4 border-b border-stone-100 last:border-0">
+                    <div
+                      key={index}
+                      className="flex items-start gap-3 md:gap-4 pb-3 md:pb-4 border-b border-stone-100 last:border-0"
+                    >
                       <div className="w-2 h-2 rounded-full bg-stone-950 mt-2 md:mt-3" />
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-1 md:mb-2">
@@ -451,7 +489,9 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
                             {activity.type}
                           </span>
                         </div>
-                        <p className="text-sm md:text-base text-stone-900 font-medium mb-1 md:mb-2">{activity.description}</p>
+                        <p className="text-sm md:text-base text-stone-900 font-medium mb-1 md:mb-2">
+                          {activity.description}
+                        </p>
                         <p className="text-xs md:text-sm text-stone-500">
                           {new Date(activity.timestamp).toLocaleDateString("en-US", {
                             month: "short",
@@ -488,16 +528,29 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" />
                     <XAxis dataKey="date" stroke="#78716c" style={{ fontSize: "12px" }} />
-                    <YAxis stroke="#78716c" style={{ fontSize: "12px" }} tickFormatter={(value) => `$${(value / 100).toFixed(0)}`} />
+                    <YAxis
+                      stroke="#78716c"
+                      style={{ fontSize: "12px" }}
+                      tickFormatter={(value) => `$${(value / 100).toFixed(0)}`}
+                    />
                     <Tooltip
                       formatter={(value: any) => formatCurrency(value)}
                       contentStyle={{ backgroundColor: "#fff", border: "1px solid #e7e5e4", borderRadius: "8px" }}
                     />
-                    <Area type="monotone" dataKey="revenue" stroke="#1c1917" fillOpacity={1} fill="url(#revenueGradient)" strokeWidth={2} />
+                    <Area
+                      type="monotone"
+                      dataKey="revenue"
+                      stroke="#1c1917"
+                      fillOpacity={1}
+                      fill="url(#revenueGradient)"
+                      strokeWidth={2}
+                    />
                   </AreaChart>
                 </ResponsiveContainer>
               ) : (
-                <p className="text-sm md:text-base text-stone-500 text-center py-8 md:py-12">No revenue history available</p>
+                <p className="text-sm md:text-base text-stone-500 text-center py-8 md:py-12">
+                  No revenue history available
+                </p>
               )}
             </div>
 
@@ -531,7 +584,9 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
             {/* Subscription Breakdown */}
             {revenue && revenue.subscriptionBreakdown.length > 0 && (
               <div className="bg-white rounded-xl md:rounded-2xl p-4 md:p-8 border border-stone-200 shadow-lg">
-                <p className="text-xs md:text-sm tracking-[0.2em] uppercase text-stone-500 mb-4 md:mb-6">Subscription Breakdown</p>
+                <p className="text-xs md:text-sm tracking-[0.2em] uppercase text-stone-500 mb-4 md:mb-6">
+                  Subscription Breakdown
+                </p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
                   {revenue.subscriptionBreakdown.map((sub) => (
                     <div key={sub.tier} className="flex items-center justify-between p-4 bg-stone-50 rounded-xl">
