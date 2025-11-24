@@ -26,12 +26,10 @@ export default function SignUpPage() {
     setError(null)
 
     try {
-      const isLocalDev = typeof window !== "undefined" && window.location.hostname === "localhost"
-      const redirectUrl = isLocalDev
-        ? process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${window.location.origin}/auth/callback`
-        : `${window.location.origin}/auth/callback`
-
-      console.log("[v0] Sign up redirect URL:", redirectUrl)
+      const isDevelopment = process.env.NODE_ENV === "development"
+      const redirectUrl = isDevelopment
+        ? process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${window.location.origin}/`
+        : process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || `${window.location.origin}/`
 
       const { error } = await supabase.auth.signUp({
         email,

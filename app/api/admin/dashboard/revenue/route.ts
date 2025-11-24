@@ -6,31 +6,6 @@ import { stripe } from "@/lib/stripe"
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "ssa@ssasocial.com"
 
-async function fetchStripeDataWithRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000): Promise<T | null> {
-  for (let i = 0; i < retries; i++) {
-    try {
-      return await fn()
-    } catch (error: any) {
-      console.error(`[v0] Stripe API error (attempt ${i + 1}/${retries}):`, error.message)
-
-      // Check if it's a rate limit error
-      if (error.type === "StripeRateLimitError" || error.statusCode === 429) {
-        if (i < retries - 1) {
-          console.log(`[v0] Rate limited, retrying in ${delay}ms...`)
-          await new Promise((resolve) => setTimeout(resolve, delay))
-          delay *= 2 // Exponential backoff
-          continue
-        }
-      }
-
-      // For other errors, don't retry
-      console.error("[v0] Stripe API error:", error)
-      return null
-    }
-  }
-  return null
-}
-
 export async function GET() {
   try {
     const supabase = await createServerClient()
@@ -49,71 +24,20 @@ export async function GET() {
 
     const sql = neon(process.env.DATABASE_URL || "")
 
-    const [subscriptionsResult, creditPurchasesResult, revenueTrend, recentTransactions, userStats] = await Promise.all(
-      [
-        sql`
-        SELECT 
-          product_type,
-          COUNT(*) as count,
-          CASE 
-            WHEN product_type = 'sselfie_studio_membership' THEN 9900
-            WHEN product_type = 'one_time_session' THEN 4900
-            ELSE 0
-          END as price_cents
-        FROM subscriptions
-        WHERE status = 'active'
-        AND is_test_mode = FALSE
-        GROUP BY product_type
-      `,
-        sql`
-        SELECT 
-          COUNT(*) as total_purchases,
-          SUM(amount) as total_credits_sold,
-          SUM(amount) FILTER (WHERE stripe_payment_id IS NOT NULL) as real_credit_revenue_cents
-        FROM credit_transactions
-        WHERE transaction_type = 'purchase'
-        AND stripe_payment_id IS NOT NULL
-        AND is_test_mode = FALSE
-      `,
-        sql`
-        SELECT 
-          DATE_TRUNC('month', created_at) as month,
-          COUNT(*) as purchases,
-          SUM(amount) as credits_sold
-        FROM credit_transactions
-        WHERE transaction_type = 'purchase'
-        AND created_at > NOW() - INTERVAL '6 months'
-        AND is_test_mode = FALSE
-        GROUP BY DATE_TRUNC('month', created_at)
-        ORDER BY month DESC
-      `,
-        sql`
-        SELECT 
-          ct.amount,
-          ct.transaction_type,
-          ct.description,
-          ct.created_at,
-          ct.stripe_payment_id,
-          ct.is_test_mode,
-          u.email as user_email
-        FROM credit_transactions ct
-        JOIN users u ON ct.user_id = u.id
-        WHERE ct.stripe_payment_id IS NOT NULL
-        AND ct.is_test_mode = FALSE
-        ORDER BY ct.created_at DESC
-        LIMIT 10
-      `,
-        sql`
-        SELECT 
-          COUNT(DISTINCT u.id) as total_users,
-          COUNT(DISTINCT um.id) FILTER (WHERE um.training_status = 'completed') as users_with_models,
-          COUNT(DISTINCT s.id) FILTER (WHERE s.status = 'active' AND s.is_test_mode = FALSE) as active_subscribers
-        FROM users u
-        LEFT JOIN user_models um ON um.user_id = u.id
-        LEFT JOIN subscriptions s ON s.user_id = u.id
-      `,
-      ],
-    )
+    const subscriptionsResult = await sql`
+      SELECT 
+        product_type,
+        COUNT(*) as count,
+        CASE 
+          WHEN product_type = 'sselfie_studio_membership' THEN 9900
+          WHEN product_type = 'one_time_session' THEN 4900
+          ELSE 0
+        END as price_cents
+      FROM subscriptions
+      WHERE status = 'active'
+      AND is_test_mode = FALSE
+      GROUP BY product_type
+    `
 
     // Calculate MRR (Monthly Recurring Revenue)
     let mrr = 0
@@ -129,34 +53,76 @@ export async function GET() {
       }
     })
 
+    const creditPurchasesResult = await sql`
+      SELECT 
+        COUNT(*) as total_purchases,
+        SUM(amount) as total_credits_sold,
+        SUM(amount) FILTER (WHERE stripe_payment_id IS NOT NULL) as real_credit_revenue_cents
+      FROM credit_transactions
+      WHERE transaction_type = 'purchase'
+      AND stripe_payment_id IS NOT NULL
+      AND is_test_mode = FALSE
+    `
+
     const thirtyDaysAgo = Math.floor(Date.now() / 1000) - 30 * 24 * 60 * 60
+    const charges = await stripe.charges.list({
+      limit: 100,
+      created: { gte: thirtyDaysAgo },
+    })
 
-    // Fetch recent charges (30 days) with retry
-    const charges = await fetchStripeDataWithRetry(() =>
-      stripe.charges.list({
-        limit: 100,
-        created: { gte: thirtyDaysAgo },
-      }),
-    )
+    const oneTimeRevenue =
+      charges.data
+        .filter((charge) => charge.paid && !charge.refunded && charge.livemode === true)
+        .reduce((sum, charge) => sum + charge.amount, 0) / 100
 
-    const oneTimeRevenue = charges
-      ? charges.data
-          .filter((charge) => charge.paid && !charge.refunded && charge.livemode === true)
-          .reduce((sum, charge) => sum + charge.amount, 0) / 100
-      : 0
+    const allCharges = await stripe.charges.list({
+      limit: 100,
+    })
 
-    // Fetch all charges with retry (but limit to reduce rate limiting)
-    const allCharges = await fetchStripeDataWithRetry(() =>
-      stripe.charges.list({
-        limit: 100, // Keep limit reasonable to avoid rate limits
-      }),
-    )
+    const totalRevenue =
+      allCharges.data
+        .filter((charge) => charge.paid && !charge.refunded && charge.livemode === true)
+        .reduce((sum, charge) => sum + charge.amount, 0) / 100
 
-    const totalRevenue = allCharges
-      ? allCharges.data
-          .filter((charge) => charge.paid && !charge.refunded && charge.livemode === true)
-          .reduce((sum, charge) => sum + charge.amount, 0) / 100
-      : 0
+    const revenueTrend = await sql`
+      SELECT 
+        DATE_TRUNC('month', created_at) as month,
+        COUNT(*) as purchases,
+        SUM(amount) as credits_sold
+      FROM credit_transactions
+      WHERE transaction_type = 'purchase'
+      AND created_at > NOW() - INTERVAL '6 months'
+      AND is_test_mode = FALSE
+      GROUP BY DATE_TRUNC('month', created_at)
+      ORDER BY month DESC
+    `
+
+    const recentTransactions = await sql`
+      SELECT 
+        ct.amount,
+        ct.transaction_type,
+        ct.description,
+        ct.created_at,
+        ct.stripe_payment_id,
+        ct.is_test_mode,
+        u.email as user_email
+      FROM credit_transactions ct
+      JOIN users u ON ct.user_id = u.id
+      WHERE ct.stripe_payment_id IS NOT NULL
+      AND ct.is_test_mode = FALSE
+      ORDER BY ct.created_at DESC
+      LIMIT 10
+    `
+
+    const userStats = await sql`
+      SELECT 
+        COUNT(DISTINCT u.id) as total_users,
+        COUNT(DISTINCT um.id) FILTER (WHERE um.training_status = 'completed') as users_with_models,
+        COUNT(DISTINCT s.id) FILTER (WHERE s.status = 'active' AND s.is_test_mode = FALSE) as active_subscribers
+      FROM users u
+      LEFT JOIN user_models um ON um.user_id = u.id
+      LEFT JOIN subscriptions s ON s.user_id = u.id
+    `
 
     const realCreditRevenue = Number(creditPurchasesResult[0]?.real_credit_revenue_cents || 0) / 100
 

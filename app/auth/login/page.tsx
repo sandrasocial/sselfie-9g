@@ -22,21 +22,51 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    const supabase = createClient()
     setIsLoading(true)
     setError(null)
 
+    console.log("[v0] ===== LOGIN ATTEMPT STARTED =====")
+    console.log("[v0] Email:", email)
+    console.log("[v0] Return to:", returnTo)
+    console.log("[v0] Current URL:", window.location.href)
+
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const supabase = createClient()
+      console.log("[v0] Supabase client created successfully")
+
+      const { data: sessionData } = await supabase.auth.getSession()
+      console.log("[v0] Current session before login:", sessionData.session ? "Exists" : "None")
+
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
-      if (error) throw error
+
+      console.log("[v0] signInWithPassword response:", {
+        hasData: !!data,
+        hasUser: !!data?.user,
+        hasSession: !!data?.session,
+        error: error?.message || null,
+      })
+
+      if (error) {
+        console.error("[v0] ❌ Login error:", error)
+        throw error
+      }
+
+      if (!data.user || !data.session) {
+        console.error("[v0] ❌ Login succeeded but no user or session returned")
+        throw new Error("Login failed: No user session created")
+      }
+
+      console.log("[v0] ✅ Login successful for:", data.user.email)
+      console.log("[v0] Session expires at:", data.session.expires_at)
+      console.log("[v0] Redirecting to:", returnTo)
 
       router.refresh()
       router.replace(returnTo)
     } catch (error: unknown) {
-      console.error("[v0] Login error:", error)
+      console.error("[v0] ❌ Login error caught:", error)
       setError(error instanceof Error ? error.message : "An error occurred")
       setIsLoading(false)
     }

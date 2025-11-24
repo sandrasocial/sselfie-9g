@@ -12,10 +12,12 @@ export function createClient() {
   console.log("[v0] Browser Supabase env check:", {
     url: supabaseUrl ? `✓ ${supabaseUrl.substring(0, 30)}...` : "✗ Missing",
     key: supabaseAnonKey ? "✓ Set" : "✗ Missing",
+    allEnvKeys: Object.keys(process.env).filter((k) => k.includes("SUPABASE")),
   })
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    console.error("[v0] Missing Supabase environment variables")
+    console.error("[v0] ❌ Missing Supabase environment variables")
+    console.error("[v0] Available env vars:", Object.keys(process.env))
     throw new Error("Missing Supabase environment variables. Please check your configuration.")
   }
 
