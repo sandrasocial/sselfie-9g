@@ -153,8 +153,22 @@ Focus on:
 Keep it conversational and specific. I need to recreate this exact vibe for Instagram.`
 
         const host = process.env.VERCEL_URL || ""
+        const referer = process.env.REFERER || ""
+        const origin = process.env.ORIGIN || ""
+
+        console.log("[v0] Host header:", host)
+        console.log("[v0] Referer header:", referer)
+        console.log("[v0] Origin header:", origin)
+
+        // Detect v0 preview environment
         const isV0Preview =
-          host.includes("vusercontent.net") || process.env.VERCEL_ENV === "preview" || typeof window !== "undefined"
+          host.includes("vusercontent.net") ||
+          referer.includes("v0.dev") ||
+          referer.includes("v0.app") ||
+          origin.includes("v0.dev") ||
+          origin.includes("v0.app") ||
+          process.env.VERCEL_ENV === "preview" ||
+          typeof window !== "undefined"
 
         let visionModel
         if (isV0Preview) {
@@ -272,17 +286,33 @@ Create ${count} concepts now. ENSURE EACH PROMPT IS 60-90 WORDS.`
       console.log("[v0] Generating concepts with Claude Sonnet 4.5...")
 
       const host = process.env.VERCEL_URL || ""
+      const referer = process.env.REFERER || ""
+      const origin = process.env.ORIGIN || ""
+
+      console.log("[v0] Host header:", host)
+      console.log("[v0] Referer header:", referer)
+      console.log("[v0] Origin header:", origin)
+
+      // Detect v0 preview environment
       const isV0Preview =
-        host.includes("vusercontent.net") || process.env.VERCEL_ENV === "preview" || typeof window !== "undefined"
+        host.includes("vusercontent.net") ||
+        referer.includes("v0.dev") ||
+        referer.includes("v0.app") ||
+        origin.includes("v0.dev") ||
+        origin.includes("v0.app") ||
+        process.env.VERCEL_ENV === "preview" ||
+        typeof window !== "undefined"
 
       let conceptModel
       if (isV0Preview) {
+        console.log("[v0] Environment: V0 Preview (using Anthropic OpenAI-compatible)")
         conceptModel = createOpenAICompatible({
           name: "anthropic",
-          apiKey: process.env.ANTHROPIC_API_KEY,
+          apiKey: process.env.ANTHROPIC_API_KEY!,
           baseURL: "https://api.anthropic.com/v1",
         })("claude-sonnet-4-20250514")
       } else {
+        console.log("[v0] Environment: Production (using AI Gateway)")
         conceptModel = "anthropic/claude-sonnet-4.5"
       }
 
@@ -531,11 +561,15 @@ export async function POST(req: NextRequest) {
     console.log("[v0] Referer header:", referer)
     console.log("[v0] Origin header:", origin)
 
+    // Detect v0 preview environment
     const isV0Preview =
       process.env.VERCEL_ENV === "preview" ||
       host?.includes("vusercontent.net") ||
-      referer?.includes("vusercontent.net") ||
-      origin?.includes("vusercontent.net")
+      referer?.includes("v0.dev") ||
+      referer?.includes("v0.app") ||
+      origin?.includes("v0.dev") ||
+      origin?.includes("v0.app") ||
+      typeof window !== "undefined"
 
     console.log(
       "[v0] Environment:",
@@ -545,7 +579,7 @@ export async function POST(req: NextRequest) {
     const model = isV0Preview
       ? createOpenAICompatible({
           name: "anthropic",
-          apiKey: process.env.ANTHROPIC_API_KEY,
+          apiKey: process.env.ANTHROPIC_API_KEY!,
           baseURL: "https://api.anthropic.com/v1",
         })("claude-sonnet-4-20250514")
       : "anthropic/claude-sonnet-4.5"

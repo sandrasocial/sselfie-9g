@@ -26,10 +26,11 @@ export default function SignUpPage() {
     setError(null)
 
     try {
-      const isDevelopment = process.env.NODE_ENV === "development"
-      const redirectUrl = isDevelopment
-        ? process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${window.location.origin}/`
-        : process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || `${window.location.origin}/`
+      // Check if we're on localhost for development, otherwise use current origin
+      const isLocalhost = typeof window !== "undefined" && window.location.hostname === "localhost"
+      const redirectUrl = isLocalhost
+        ? process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || "http://localhost:3000/auth/callback"
+        : `${window.location.origin}/auth/callback`
 
       const { error } = await supabase.auth.signUp({
         email,
