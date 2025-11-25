@@ -1,4 +1,4 @@
-import { streamText, tool, type CoreMessage, generateText } from "ai"
+import { streamText, tool, type CoreMessage } from "ai"
 import { z } from "zod"
 import { MAYA_SYSTEM_PROMPT } from "@/lib/maya/personality"
 import { getUserByAuthId } from "@/lib/user-mapping"
@@ -7,54 +7,16 @@ import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
-import { createAnthropic } from "@ai-sdk/anthropic"
 
 export const maxDuration = 60
 
-interface MayaConcept {
-  title: string
-  description: string
-  category: "Close-Up Portrait" | "Half Body Lifestyle" | "Close-Up Action" | "Environmental Portrait"
-  fashionIntelligence: string
-  lighting: string
-  location: string
-  prompt: string
-  referenceImageUrl?: string
-  customSettings?: {
-    styleStrength?: number
-    promptAccuracy?: number
-    aspectRatio?: string
-    seed?: number
-  }
-}
+let currentRequestHeaders: Headers | null = null
 
-function getAIModel() {
-  const aiGatewayApiKey = process.env.AI_GATEWAY_API_KEY
-  const anthropicApiKey = process.env.ANTHROPIC_API_KEY
-
-  if (anthropicApiKey) {
-    // Always prefer direct Anthropic for tool calls (more reliable in all environments)
-    const anthropic = createAnthropic({
-      apiKey: anthropicApiKey,
-    })
-    return anthropic("claude-sonnet-4-20250514")
-  } else if (aiGatewayApiKey) {
-    // Fallback to AI Gateway
-    const anthropic = createAnthropic({
-      apiKey: aiGatewayApiKey,
-      baseURL: "https://gateway.ai.cloudflare.com/v1/vercel/ai-gateway/anthropic",
-    })
-    return anthropic("claude-sonnet-4-20250514")
-  }
-
-  return null
-}
-
-function createGenerateConceptsTool(userId: string, userGender: string, triggerWord: string) {
+function createGenerateConceptsTool(baseUrl: string) {
   return tool({
     description:
       "Generate 3-5 diverse photo concepts with detailed fashion and styling intelligence. Use your comprehensive knowledge of ALL Instagram aesthetics, fashion trends, and photography styles. Match concepts to user's requests, personal brand data, or trending aesthetics. Be dynamic - don't limit yourself to preset templates. If user uploaded a reference image, analyze it visually first.",
-    inputSchema: z.object({
+    parameters: z.object({
       userRequest: z
         .string()
         .describe("What the user is asking for - be specific about aesthetic, style, vibe, or trend they want"),
@@ -91,191 +53,35 @@ function createGenerateConceptsTool(userId: string, userGender: string, triggerW
         ),
     }),
     execute: async (params) => {
-      console.log("[v0] Generating concepts inline")
-
-      const {
-        userRequest,
-        aesthetic,
-        context,
-        userModifications,
-        count = 3,
-        referenceImageUrl,
-        customSettings,
-        mode = "concept",
-      } = params
+      console.log("[v0] Calling /api/maya/generate-concepts endpoint")
 
       try {
-        const model = getAIModel()
+        // Get the cookie header from the stored request
+        const cookieHeader = currentRequestHeaders?.get("cookie") || ""
 
-        if (!model) {
-          console.error("[v0] No AI model available for concept generation")
-          return {
-            state: "error" as const,
-            message: "AI service not configured. Please try again later.",
-          }
-        }
-
-        // Generate photoshoot seed if needed
-        let photoshootBaseSeed = null
-        if (mode === "photoshoot") {
-          photoshootBaseSeed = Math.floor(Math.random() * 1000000)
-          console.log("[v0] Photoshoot mode: consistent seed:", photoshootBaseSeed)
-        }
-
-        // Analyze reference image if provided
-        let imageAnalysis = ""
-        if (referenceImageUrl) {
-          console.log("[v0] Analyzing reference image:", referenceImageUrl)
-
-          const visionAnalysisPrompt = `Look at this image carefully and tell me everything I need to know to recreate this vibe.
-
-Focus on:
-1. **The outfit** - What are they wearing? Be super specific (fabrics, fit, colors, style)
-2. **The pose** - How are they standing/sitting? What are their hands doing?
-3. **The setting** - Where is this? What's the vibe of the location?
-4. **The lighting** - What kind of light is this? (warm, cool, bright, moody, etc.)
-5. **The mood** - What feeling does this give off? (confident, relaxed, mysterious, playful, etc.)
-6. **Color palette** - What colors dominate the image?
-
-Keep it conversational and specific. I need to recreate this exact vibe for Instagram.`
-
-          try {
-            const { text: visionText } = await generateText({
-              model,
-              messages: [
-                {
-                  role: "user",
-                  content: [
-                    { type: "text", text: visionAnalysisPrompt },
-                    { type: "image", image: referenceImageUrl },
-                  ],
-                },
-              ],
-              temperature: 0.7,
-            })
-
-            imageAnalysis = visionText
-            console.log("[v0] Vision analysis complete")
-          } catch (visionError) {
-            console.error("[v0] Vision analysis failed:", visionError)
-          }
-        }
-
-        // Generate concepts
-        const conceptPrompt = `Create ${count} Instagram photo concepts for ${triggerWord} (${userGender}).
-
-USER REQUEST: "${userRequest}"
-${aesthetic ? `VIBE: ${aesthetic}` : ""}
-${context ? `CONTEXT: ${context}` : ""}
-${userModifications ? `MODIFICATIONS: ${userModifications}` : ""}
-
-${
-  mode === "photoshoot"
-    ? `MODE: PHOTOSHOOT - ${count} variations of ONE outfit/location (same outfit, location, just different poses/angles)`
-    : `MODE: CONCEPTS - ${count} completely different concepts (different outfits, locations, vibes)`
-}
-
-${
-  imageAnalysis
-    ? `REFERENCE IMAGE ANALYSIS:
-${imageAnalysis}
-
-Use this as inspiration for style, lighting, and composition.`
-    : ""
-}
-
-PROMPT LENGTH INTELLIGENCE:
-- Close-ups: 20-30 words (tight focus, face preservation priority)
-- Half body: 25-35 words (optimal sweet spot)
-- Full body: 30-40 words (more scene detail)
-- Environmental: 35-45 words (wider context)
-
-Keep prompts CONCISE for optimal facial accuracy. Trigger word prominence is critical.
-
-JSON FORMAT (return ONLY this, no markdown):
-[
-  {
-    "title": "Concept name (3-5 words)",
-    "description": "Brief user-facing description (1 sentence)",
-    "category": "Close-Up Portrait" | "Half Body Lifestyle" | "Close-Up Action" | "Environmental Portrait",
-    "fashionIntelligence": "Outfit styling notes",
-    "lighting": "Lighting description",
-    "location": "Location description",
-    "prompt": "YOUR INTELLIGENT-LENGTH PROMPT - optimized for category (see guidelines above)"
-  }
-]
-
-Create ${count} concepts now. Use intelligent prompt lengths based on category for best results.`
-
-        console.log("[v0] Generating concepts with model...")
-
-        const { text } = await generateText({
-          model,
-          messages: [
-            {
-              role: "user",
-              content: conceptPrompt,
-            },
-          ],
-          maxTokens: 4096,
-          temperature: 0.85,
+        const response = await fetch(`${baseUrl}/api/maya/generate-concepts`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Cookie: cookieHeader,
+          },
+          body: JSON.stringify(params),
         })
 
-        console.log("[v0] Generated concept text (first 200 chars):", text.substring(0, 200))
-
-        // Parse JSON response
-        const jsonMatch = text.match(/\[[\s\S]*\]/)
-        if (!jsonMatch) {
-          throw new Error("No JSON array found in response")
+        if (!response.ok) {
+          const errorText = await response.text()
+          console.error("[v0] Generate concepts API error:", response.status, errorText)
+          return {
+            state: "error" as const,
+            message: "I had trouble creating those concepts. What specific vibe are you going for?",
+          }
         }
 
-        const concepts = JSON.parse(jsonMatch[0])
-
-        // Add reference image URL if provided
-        if (referenceImageUrl) {
-          concepts.forEach((concept: any) => {
-            if (!concept.referenceImageUrl) {
-              concept.referenceImageUrl = referenceImageUrl
-            }
-          })
-          console.log("[v0] Reference image URL attached to all concepts")
-        }
-
-        // Add seeds
-        if (mode === "photoshoot" && photoshootBaseSeed) {
-          concepts.forEach((concept: any, index: number) => {
-            if (!concept.customSettings) {
-              concept.customSettings = {}
-            }
-            concept.customSettings.seed = photoshootBaseSeed + index
-          })
-        } else {
-          concepts.forEach((concept: any) => {
-            if (!concept.customSettings) {
-              concept.customSettings = {}
-            }
-            concept.customSettings.seed = Math.floor(Math.random() * 1000000)
-          })
-        }
-
-        // Apply custom settings
-        if (customSettings) {
-          concepts.forEach((concept: any) => {
-            concept.customSettings = {
-              ...concept.customSettings,
-              ...customSettings,
-            }
-          })
-        }
-
-        console.log("[v0] Successfully generated", concepts.length, "concepts")
-
-        return {
-          state: "ready" as const,
-          concepts: concepts.slice(0, count),
-        }
+        const result = await response.json()
+        console.log("[v0] Generate concepts API success:", result.state, result.concepts?.length, "concepts")
+        return result
       } catch (error) {
-        console.error("[v0] Error generating concepts:", error)
+        console.error("[v0] Error calling generate-concepts:", error)
         return {
           state: "error" as const,
           message:
@@ -288,6 +94,8 @@ Create ${count} concepts now. Use intelligent prompt lengths based on category f
 
 export async function POST(req: NextRequest) {
   console.log("[v0] Maya chat API called")
+
+  currentRequestHeaders = req.headers
 
   try {
     const { user: authUser, error: authError } = await getAuthenticatedUser()
@@ -315,41 +123,10 @@ export async function POST(req: NextRequest) {
     console.log("[v0] Maya chat API called with", messages.length, "messages, chatId:", chatId)
     console.log("[v0] User:", user.email, "ID:", user.id)
 
-    let userGender = "person"
-    let triggerWord = `user${user.id}`
-
-    try {
-      const { neon } = await import("@neondatabase/serverless")
-      if (process.env.DATABASE_URL) {
-        const sql = neon(process.env.DATABASE_URL)
-        const userDataResult = await sql`
-          SELECT u.gender, um.trigger_word 
-          FROM users u
-          LEFT JOIN user_models um ON u.id = um.user_id AND um.training_status = 'completed'
-          WHERE u.id = ${user.id} 
-          LIMIT 1
-        `
-
-        if (userDataResult.length > 0) {
-          if (userDataResult[0].gender) {
-            const dbGender = userDataResult[0].gender.toLowerCase().trim()
-            if (dbGender === "woman" || dbGender === "female") {
-              userGender = "woman"
-            } else if (dbGender === "man" || dbGender === "male") {
-              userGender = "man"
-            } else {
-              userGender = dbGender || "person"
-            }
-          }
-          if (userDataResult[0].trigger_word) {
-            triggerWord = userDataResult[0].trigger_word
-          }
-        }
-        console.log("[v0] User context for concepts:", { userGender, triggerWord })
-      }
-    } catch (dbError) {
-      console.warn("[v0] Could not fetch user context:", dbError)
-    }
+    const host = req.headers.get("host") || "localhost:3000"
+    const protocol = host.includes("localhost") ? "http" : "https"
+    const baseUrl = `${protocol}://${host}`
+    console.log("[v0] Base URL for API calls:", baseUrl)
 
     let chatHistory: CoreMessage[] = []
     if (chatId) {
@@ -415,7 +192,7 @@ export async function POST(req: NextRequest) {
         }
 
         if (inspirationImageUrl) {
-          console.log("[v0] 🎨 Creating vision message with image URL:", inspirationImageUrl)
+          console.log("[v0] Creating vision message with image URL:", inspirationImageUrl)
           return {
             role: msg.role,
             content: [
@@ -515,7 +292,7 @@ export async function POST(req: NextRequest) {
       system: enhancedSystemPrompt,
       messages: allMessages,
       tools: {
-        generate_concepts: createGenerateConceptsTool(user.id, userGender, triggerWord),
+        generate_concepts: createGenerateConceptsTool(baseUrl),
       },
       maxSteps: 5,
       experimental_continueSteps: true,
@@ -556,5 +333,7 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  } finally {
+    currentRequestHeaders = null
   }
 }
