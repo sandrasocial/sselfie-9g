@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     console.log("[v0] Brand profile loaded")
 
     const layoutResult = await generateText({
-      model: "anthropic/claude-sonnet-4.5",
+      model: "anthropic/claude-haiku-4.5",
       system: `You are a strategic Instagram feed designer. Design a cohesive 9-post grid layout.`,
       prompt: `Create a 9-post Instagram feed strategy for:
       

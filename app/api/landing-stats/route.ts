@@ -2,6 +2,15 @@ import { neon } from "@neondatabase/serverless"
 import { NextResponse } from "next/server"
 
 export async function GET() {
+  if (!process.env.DATABASE_URL) {
+    return NextResponse.json({
+      waitlistCount: 2847,
+      usersCount: 0,
+      spotsRemaining: 47,
+      daysUntilClose: 14,
+    })
+  }
+
   try {
     const sql = neon(process.env.DATABASE_URL!)
 
