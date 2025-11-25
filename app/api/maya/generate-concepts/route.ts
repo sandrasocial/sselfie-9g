@@ -182,6 +182,14 @@ Use this as inspiration for style, lighting, and composition.`
     : ""
 }
 
+PROMPT LENGTH INTELLIGENCE:
+- Close-ups: 20-30 words (tight focus, face preservation priority)
+- Half body: 25-35 words (optimal sweet spot)
+- Full body: 30-40 words (more scene detail)
+- Environmental: 35-45 words (wider context)
+
+Keep prompts CONCISE for optimal facial accuracy. Trigger word prominence is critical.
+
 JSON FORMAT (return ONLY this, no markdown):
 [
   {
@@ -191,11 +199,11 @@ JSON FORMAT (return ONLY this, no markdown):
     "fashionIntelligence": "Outfit styling notes",
     "lighting": "Lighting description",
     "location": "Location description",
-    "prompt": "YOUR 60-90 WORD DETAILED PROMPT HERE - THIS IS THE MOST IMPORTANT FIELD"
+    "prompt": "YOUR INTELLIGENT-LENGTH PROMPT - optimized for category (see guidelines above)"
   }
 ]
 
-Create ${count} concepts now. ENSURE EACH PROMPT IS 60-90 WORDS.`
+Create ${count} concepts now. Use intelligent prompt lengths based on category for best results.`
 
     console.log("[v0] Calling generateText with model:", conceptPrompt)
 

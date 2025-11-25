@@ -1,7 +1,28 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { Heart, Camera, Trash2, Video, Play, Search, X, CheckSquare, Square, ChevronLeft, ChevronRight, Download, Home, Aperture, MessageCircle, ImageIcon as ImageIconLucide, Grid, SettingsIcon, LogOut, Film } from 'lucide-react'
+import {
+  Heart,
+  Camera,
+  Trash2,
+  Video,
+  Play,
+  Search,
+  X,
+  CheckSquare,
+  Square,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  Home,
+  Aperture,
+  MessageCircle,
+  ImageIcon as ImageIconLucide,
+  Grid,
+  SettingsIcon,
+  LogOut,
+  Film,
+} from "lucide-react"
 import useSWR from "swr"
 import useSWRInfinite from "swr/infinite"
 import type { GalleryImage } from "@/lib/data/images"
@@ -10,7 +31,7 @@ import { ProfileImageSelector } from "@/components/profile-image-selector"
 import { GalleryInstagramSkeleton } from "./gallery-skeleton"
 import { triggerHaptic, triggerSuccessHaptic, triggerErrorHaptic } from "@/lib/utils/haptics"
 import { ProgressiveImage } from "./progressive-image"
-import { useRouter } from 'next/navigation'
+import { useRouter } from "next/navigation"
 import FullscreenImageModal from "./fullscreen-image-modal"
 
 interface GalleryScreenProps {

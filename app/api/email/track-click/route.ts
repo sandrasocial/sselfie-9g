@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server"
 import { neon } from "@neondatabase/serverless"
+import { sanitizeRedirect } from "@/lib/security/url-validator"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -12,6 +13,8 @@ export async function GET(request: NextRequest) {
   if (!trackingId || !clickType || !redirect) {
     return new Response("Missing parameters", { status: 400 })
   }
+
+  const safeRedirect = sanitizeRedirect(redirect, "/checkout")
 
   try {
     // Log the click
@@ -29,11 +32,11 @@ export async function GET(request: NextRequest) {
 
     // Redirect to checkout
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
-    return Response.redirect(`${siteUrl}${redirect}`, 302)
+    return Response.redirect(`${siteUrl}${safeRedirect}`, 302)
   } catch (error) {
     console.error("[v0] Error tracking click:", error)
     // Still redirect even if tracking fails
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
-    return Response.redirect(`${siteUrl}${redirect}`, 302)
+    return Response.redirect(`${siteUrl}${safeRedirect}`, 302)
   }
 }

@@ -1,6 +1,7 @@
 "use client"
 
 import { Download } from "lucide-react"
+import { sanitizeExternalUrl } from "@/lib/security/url-validator"
 
 interface ResourceCardProps {
   resource: {
@@ -53,12 +54,16 @@ export default function ResourceCard({ resource, onDownload }: ResourceCardProps
     })
 
     if (isExternalLink) {
-      // Open external links in new tab
-      window.open(resource.resource_url, "_blank", "noopener,noreferrer")
-      // Still track the "download" for analytics
-      onDownload(resource.id, resource.resource_url)
+      const safeUrl = sanitizeExternalUrl(resource.resource_url)
+
+      if (safeUrl) {
+        window.open(safeUrl, "_blank", "noopener,noreferrer")
+        onDownload(resource.id, resource.resource_url)
+      } else {
+        console.error("[Security] Blocked invalid resource URL:", resource.resource_url)
+        alert("This resource link is invalid or unsafe. Please contact support.")
+      }
     } else {
-      // Download actual files
       onDownload(resource.id, resource.resource_url)
     }
   }

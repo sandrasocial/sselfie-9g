@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
 import { type NextRequest, NextResponse } from "next/server"
 import type { EmailOtpType } from "@supabase/supabase-js"
+import { sanitizeRedirect } from "@/lib/security/url-validator"
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -9,10 +10,12 @@ export async function GET(request: NextRequest) {
   const type = searchParams.get("type") as EmailOtpType | null
   const next = searchParams.get("next") ?? "/studio"
 
+  const safeNext = sanitizeRedirect(next, "/studio")
+
   console.log("[v0] Auth confirm - Full URL:", request.url)
   console.log("[v0] Auth confirm - token_hash:", token_hash ? "present" : "missing")
   console.log("[v0] Auth confirm - type:", type)
-  console.log("[v0] Auth confirm - next:", next)
+  console.log("[v0] Auth confirm - validated next:", safeNext)
 
   if (token_hash && type) {
     const cookieStore = await cookies()
@@ -41,8 +44,8 @@ export async function GET(request: NextRequest) {
     })
 
     if (!error) {
-      console.log("[v0] Auth verification successful, redirecting to:", next)
-      return NextResponse.redirect(new URL(next, request.url))
+      console.log("[v0] Auth verification successful, redirecting to:", safeNext)
+      return NextResponse.redirect(new URL(safeNext, request.url))
     }
 
     console.error("[v0] Auth verification error:", error)

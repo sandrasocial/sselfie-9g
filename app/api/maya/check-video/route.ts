@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     } catch (replicateError) {
       // Handle Replicate API errors (rate limits, network issues, etc.)
       const errorMessage = replicateError instanceof Error ? replicateError.message : String(replicateError)
-      
+
       // Check if it's a rate limit error
       if (errorMessage.includes("Too Many Requests") || errorMessage.includes("429")) {
         console.log("[v0] ⚠️ Replicate rate limit hit, will retry")
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
           message: "Rate limited, retrying...",
         })
       }
-      
+
       // For other errors, log and rethrow
       console.error("[v0] Replicate API error:", errorMessage)
       throw replicateError
@@ -65,30 +65,56 @@ export async function GET(request: NextRequest) {
       console.log("[v0] ========== MIGRATING VIDEO TO BLOB STORAGE ==========")
       console.log("[v0] Temporary Replicate URL:", videoUrl)
 
-      // Download video from Replicate's temporary URL
-      const videoResponse = await fetch(videoUrl)
-      const videoBlob = await videoResponse.blob()
+      let blobUrl: string | null = null
+      try {
+        // Download video from Replicate's temporary URL
+        const videoResponse = await fetch(videoUrl)
+        if (!videoResponse.ok) {
+          throw new Error(`Failed to fetch video: ${videoResponse.statusText}`)
+        }
+        const videoBlob = await videoResponse.blob()
 
-      console.log("[v0] Downloaded video size:", videoBlob.size, "bytes")
+        console.log("[v0] Downloaded video size:", videoBlob.size, "bytes")
 
-      // Upload to Vercel Blob for permanent storage
-      const blob = await put(`maya-videos/${videoId}.mp4`, videoBlob, {
-        access: "public",
-        contentType: "video/mp4",
-        addRandomSuffix: true, // Ensures unique filename
-      })
+        // Upload to Vercel Blob for permanent storage
+        const blob = await put(`maya-videos/${videoId}.mp4`, videoBlob, {
+          access: "public",
+          contentType: "video/mp4",
+          addRandomSuffix: true,
+        })
 
-      console.log("[v0] ✅ Permanent Blob URL:", blob.url)
+        blobUrl = blob.url
+        console.log("[v0] ✅ Permanent Blob URL:", blobUrl)
+      } catch (blobError) {
+        console.error("[v0] ❌ Blob upload failed:", blobError)
+        await sql`
+          UPDATE generated_videos
+          SET 
+            status = 'failed',
+            error_message = 'Failed to save video to storage',
+            updated_at = NOW()
+          WHERE id = ${Number.parseInt(videoId)}
+          AND user_id = ${neonUser.id}
+        `
+        return NextResponse.json(
+          {
+            status: "failed",
+            error: "Failed to save video to storage",
+          },
+          { status: 500 },
+        )
+      }
+
       console.log("[v0] ================================================")
 
       console.log("[v0] ========== UPDATING DATABASE ==========")
       console.log("[v0] Setting status='completed' and video_url for videoId:", videoId)
-      
+
       await sql`
         UPDATE generated_videos
         SET 
           status = 'completed',
-          video_url = ${blob.url},
+          video_url = ${blobUrl},
           progress = 100,
           completed_at = NOW(),
           updated_at = NOW()
@@ -102,14 +128,14 @@ export async function GET(request: NextRequest) {
         WHERE id = ${Number.parseInt(videoId)}
         AND user_id = ${neonUser.id}
       `
-      
+
       console.log("[v0] ✅ Database update complete. Verification:")
       console.log("[v0] Record:", JSON.stringify(verifyResult[0], null, 2))
       console.log("[v0] ================================================")
 
       return NextResponse.json({
         status: "succeeded",
-        videoUrl: blob.url,
+        videoUrl: blobUrl,
         progress: 100,
       })
     } else if (prediction.status === "failed") {

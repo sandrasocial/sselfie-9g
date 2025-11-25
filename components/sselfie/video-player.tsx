@@ -35,7 +35,7 @@ export default function VideoPlayer({ videoUrl, videoId, title, onDelete }: Vide
 
     try {
       const response = await fetch("/api/maya/delete-video", {
-        method: "POST",
+        method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ videoId }),
       })

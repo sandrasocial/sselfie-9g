@@ -290,9 +290,14 @@ export async function POST(req: NextRequest) {
       maxSteps: 5,
       experimental_continueSteps: true,
       temperature: 0.85,
+      experimental_generateText: {
+        search: {
+          enabled: true,
+        },
+      },
     })
 
-    console.log("[v0] Stream response created successfully")
+    console.log("[v0] Stream response created successfully with web search enabled")
 
     return result.toUIMessageStreamResponse()
   } catch (error) {
