@@ -109,6 +109,16 @@ export const AUTHENTIC_PHOTOGRAPHY_KNOWLEDGE = {
       "unstaged authentic instant",
       "real life captured naturally",
     ],
+    LIFESTYLE_SCENARIOS: [
+      "morning coffee routine, natural light through window",
+      "getting ready moment, bathroom mirror reflection",
+      "street style candid, walking naturally",
+      "cafe setting, relaxed and casual",
+      "at home authentic moment, comfortable environment",
+      "traveling lifestyle, exploring naturally",
+      "sunset walk, golden hour glow",
+      "cozy indoor evening, warm ambient light",
+    ],
   },
 
   // Environment and atmosphere
@@ -142,34 +152,49 @@ export function getRandomElement<T>(arr: T[]): T {
 // Build authentic photography context for Claude
 export function getAuthenticPhotographyContext(): string {
   return `
-=== AUTHENTIC PHOTOGRAPHY CRAFT ===
+=== INSTAGRAM AUTHENTIC PHOTOGRAPHY PRINCIPLES ===
 
-You are a master photographer who understands that the best images feel REAL, not produced.
+Your images must look like LIFESTYLE INFLUENCER CONTENT - candid, authentic, realistic. NOT professional photoshoots.
 
-**MICRO-EXPRESSIONS (the soul of authenticity):**
-Instead of "smiling" or "looking confident", describe SPECIFIC authentic expressions:
+**DEFAULT AESTHETIC: Instagram Influencer Lifestyle**
+Unless the user specifically asks for something else (like "editorial", "high fashion", "professional"), your default is:
+- Candid, natural moments that look spontaneous
+- Lifestyle scenarios: coffee shops, city streets, home environments, travel moments
+- Amateur cellphone quality aesthetic (not polished professional photography)
+- Authentic expressions and body language (not posed or stiff)
+
+**MICRO-EXPRESSIONS (what makes it feel real):**
+Instead of "smiling" or "looking confident", use SPECIFIC authentic expressions:
 - "${getRandomElement(AUTHENTIC_PHOTOGRAPHY_KNOWLEDGE.EXPRESSIONS.NEUTRAL_AUTHENTIC)}"
 - "${getRandomElement(AUTHENTIC_PHOTOGRAPHY_KNOWLEDGE.EXPRESSIONS.SUBTLE_EMOTION)}"
 - "${getRandomElement(AUTHENTIC_PHOTOGRAPHY_KNOWLEDGE.EXPRESSIONS.CANDID_MOMENTS)}"
 
-**FILM & COLOR CRAFT (why images feel expensive):**
-- ${getRandomElement(AUTHENTIC_PHOTOGRAPHY_KNOWLEDGE.PHOTOGRAPHY_CRAFT.FILM_CHARACTERISTICS)}
-- ${getRandomElement(AUTHENTIC_PHOTOGRAPHY_KNOWLEDGE.PHOTOGRAPHY_CRAFT.COLOR_SCIENCE)}
-- Always specify lens: 50mm for natural, 85mm for portraits, 35mm for environmental
-
-**LIGHTING (the difference between amateur and pro):**
-- ${getRandomElement(AUTHENTIC_PHOTOGRAPHY_KNOWLEDGE.PHOTOGRAPHY_CRAFT.LIGHTING_CRAFT)}
-- Describe light SOURCE and QUALITY, not just "good lighting"
-
-**BODY LANGUAGE (what separates authentic from posed):**
+**AUTHENTIC BODY LANGUAGE (not model poses):**
 - Hands: ${getRandomElement(AUTHENTIC_PHOTOGRAPHY_KNOWLEDGE.BODY_LANGUAGE.HANDS_NATURAL)}
 - Posture: ${getRandomElement(AUTHENTIC_PHOTOGRAPHY_KNOWLEDGE.BODY_LANGUAGE.POSTURE_AUTHENTIC)}
 - Gaze: ${getRandomElement(AUTHENTIC_PHOTOGRAPHY_KNOWLEDGE.BODY_LANGUAGE.GAZE_DIRECTION)}
 
-**NEVER USE:**
-- Generic terms: "beautiful", "stunning", "perfect", "amazing"
-- Posed instructions: "hand on hip", "looking at camera and smiling"
-- Vague lighting: "good lighting", "nice light"
-- Template phrases that could apply to any image
+**LIFESTYLE SCENARIOS (where influencers create content):**
+- ${getRandomElement(AUTHENTIC_PHOTOGRAPHY_KNOWLEDGE.AUTHENTICITY_MARKERS.LIFESTYLE_SCENARIOS)}
+
+**NATURAL LIGHTING (never studio/professional):**
+- ${getRandomElement(AUTHENTIC_PHOTOGRAPHY_KNOWLEDGE.PHOTOGRAPHY_CRAFT.LIGHTING_CRAFT)}
+- Describe light SOURCE and QUALITY (window light, golden hour, overcast), not "good lighting"
+
+**QUALITY MARKERS (what makes it Instagram-authentic):**
+- ${getRandomElement(AUTHENTIC_PHOTOGRAPHY_KNOWLEDGE.AUTHENTICITY_MARKERS.QUALITY_CUES)}
+- ${getRandomElement(AUTHENTIC_PHOTOGRAPHY_KNOWLEDGE.AUTHENTICITY_MARKERS.MOMENT_DESCRIPTORS)}
+
+**FILM & COLOR (subtle realism):**
+- ${getRandomElement(AUTHENTIC_PHOTOGRAPHY_KNOWLEDGE.PHOTOGRAPHY_CRAFT.FILM_CHARACTERISTICS)}
+- ${getRandomElement(AUTHENTIC_PHOTOGRAPHY_KNOWLEDGE.PHOTOGRAPHY_CRAFT.COLOR_SCIENCE)}
+
+**BANNED (reads as professional/fake):**
+- "Professional photoshoot", "studio lighting", "editorial quality"
+- "Hand on hip", "model pose", "power stance"
+- "Gorgeous", "stunning", "beautiful", "perfect"
+- Generic lighting terms: "nice light", "good lighting"
+
+**REMEMBER:** Users want to look like successful influencers, not models in magazines. Authentic > Polished.
 `
 }

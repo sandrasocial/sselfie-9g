@@ -63,7 +63,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
   const [styleStrength, setStyleStrength] = useState(1.0) // Updated default from 1.05 to 1.0
   const [promptAccuracy, setPromptAccuracy] = useState(3.5) // Guidance scale: 2.5-5.0
   const [aspectRatio, setAspectRatio] = useState("4:5")
-  const [realismStrength, setRealismStrength] = useState(0.4) // Extra LoRA scale: 0.0-0.8
+  const [realismStrength, setRealismStrength] = useState(0.2) // Extra LoRA scale: 0.0-0.8
   const [showSettings, setShowSettings] = useState(false)
 
   const settingsSaveTimerRef = useRef<NodeJS.Timeout | null>(null)
@@ -90,7 +90,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
         setStyleStrength(loadedStyleStrength === 1.1 ? 1.0 : loadedStyleStrength) // Removed 1.05 migration, only migrate 1.1 to 1.0
         setPromptAccuracy(settings.promptAccuracy || 3.5)
         setAspectRatio(settings.aspectRatio || "4:5") // Updated default from "1:1" to "4:5"
-        setRealismStrength(settings.realismStrength ?? 0.4)
+        setRealismStrength(settings.realismStrength ?? 0.2)
       } catch (error) {
         console.error("[v0] ❌ Error loading settings:", error)
       }
@@ -593,132 +593,88 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
   const isTyping = status === "submitted" || status === "streaming"
 
   const promptPoolWoman = {
-    photoStories: [
-      {
-        label: "Golden Hour",
-        prompt: "Take my photo during golden hour with warm natural lighting",
-      },
-      {
-        label: "Editorial Style",
-        prompt: "Create an editorial photo with dramatic lighting",
-      },
-      {
-        label: "In Motion",
-        prompt: "Capture me in motion with natural energy",
-      },
-      {
-        label: "Cinematic",
-        prompt: "Make a cinematic photo with beautiful scenery",
-      },
-      {
-        label: "Soft & Dreamy",
-        prompt: "Create a soft dreamy photo with gentle lighting",
-      },
-      {
-        label: "Confident",
-        prompt: "Show me looking confident with elegant posing",
-      },
+    lifestyle: [
+      { label: "Coffee run", prompt: "Coffee run" },
+      { label: "Cosy home", prompt: "Cosy at home" },
+      { label: "City walk", prompt: "City walk" },
+      { label: "Golden hour", prompt: "Golden hour" },
+      { label: "Brunch", prompt: "Brunch vibes" },
+      { label: "Night out", prompt: "Night out" },
+      { label: "Getting ready", prompt: "Getting ready" },
+      { label: "Morning routine", prompt: "Morning routine" },
     ],
-    storytelling: [
-      {
-        label: "Tell My Story",
-        prompt: "Create photos that tell my story",
-      },
-      {
-        label: "Authentic",
-        prompt: "Show who I am, authentic and real",
-      },
-      {
-        label: "Moody",
-        prompt: "Create a moody photo with soft lighting",
-      },
-      {
-        label: "Natural Beauty",
-        prompt: "Highlight natural beauty with flowing composition",
-      },
+    aesthetic: [
+      { label: "Clean girl", prompt: "Clean girl" },
+      { label: "Dark & moody", prompt: "Dark and moody" },
+      { label: "Soft glam", prompt: "Soft glam" },
+      { label: "Scandinavian", prompt: "Scandinavian" },
+      { label: "Old money", prompt: "Old money" },
+      { label: "It girl", prompt: "It girl" },
+      { label: "That girl", prompt: "That girl" },
+      { label: "Coquette", prompt: "Coquette" },
     ],
-    artistic: [
-      {
-        label: "Bold & Powerful",
-        prompt: "Make me look bold and powerful",
-      },
-      {
-        label: "Timeless",
-        prompt: "Create something timeless and elegant",
-      },
-      {
-        label: "Modern",
-        prompt: "Capture modern style with clean lines",
-      },
-      {
-        label: "Romantic",
-        prompt: "Create a romantic atmosphere with soft lighting",
-      },
+    vibe: [
+      { label: "Luxury", prompt: "Luxury" },
+      { label: "Effortless", prompt: "Effortless chic" },
+      { label: "Bold", prompt: "Bold" },
+      { label: "Romantic", prompt: "Romantic" },
+      { label: "Exclusive", prompt: "Exclusive" },
+      { label: "Candid", prompt: "Candid moment" },
+      { label: "Main character", prompt: "Main character" },
+      { label: "Soft life", prompt: "Soft life" },
+    ],
+    location: [
+      { label: "Rooftop", prompt: "Rooftop" },
+      { label: "Café", prompt: "Café" },
+      { label: "Beach", prompt: "Beach" },
+      { label: "Hotel", prompt: "Hotel" },
+      { label: "Street style", prompt: "Street style" },
+      { label: "Lounge", prompt: "Lounge" },
+      { label: "Yacht", prompt: "Yacht" },
+      { label: "Private jet", prompt: "Private jet" },
     ],
   }
 
   const promptPoolMan = {
-    photoStories: [
-      {
-        label: "Golden Hour",
-        prompt: "Take my photo during golden hour with strong natural lighting",
-      },
-      {
-        label: "Editorial Style",
-        prompt: "Create an editorial photo with dramatic lighting",
-      },
-      {
-        label: "Action Shot",
-        prompt: "Capture me in motion with natural energy",
-      },
-      {
-        label: "Cinematic",
-        prompt: "Make a cinematic photo with striking scenery",
-      },
-      {
-        label: "Sharp & Modern",
-        prompt: "Create a sharp modern photo with clean lines",
-      },
-      {
-        label: "Confident",
-        prompt: "Show me looking confident with powerful posing",
-      },
+    lifestyle: [
+      { label: "Coffee run", prompt: "Coffee run" },
+      { label: "City", prompt: "City" },
+      { label: "Golden hour", prompt: "Golden hour" },
+      { label: "Night out", prompt: "Night out" },
+      { label: "Weekend", prompt: "Weekend" },
+      { label: "Travel day", prompt: "Travel day" },
+      { label: "Morning", prompt: "Morning" },
+      { label: "Gym", prompt: "Post gym" },
     ],
-    storytelling: [
-      {
-        label: "Tell My Story",
-        prompt: "Create photos that tell my story",
-      },
-      {
-        label: "Authentic",
-        prompt: "Show who I am, authentic and real",
-      },
-      {
-        label: "Moody",
-        prompt: "Create a moody photo with dramatic lighting",
-      },
-      {
-        label: "Natural Strength",
-        prompt: "Highlight natural strength with bold composition",
-      },
+    aesthetic: [
+      { label: "Minimal", prompt: "Minimal" },
+      { label: "Dark & moody", prompt: "Dark and moody" },
+      { label: "Streetwear", prompt: "Streetwear" },
+      { label: "Scandinavian", prompt: "Scandinavian" },
+      { label: "Old money", prompt: "Old money" },
+      { label: "Modern", prompt: "Modern" },
+      { label: "Rugged", prompt: "Rugged" },
+      { label: "Clean", prompt: "Clean" },
     ],
-    artistic: [
-      {
-        label: "Bold & Powerful",
-        prompt: "Make me look bold and powerful",
-      },
-      {
-        label: "Timeless",
-        prompt: "Create something timeless and classic",
-      },
-      {
-        label: "Urban",
-        prompt: "Capture urban energy with modern style",
-      },
-      {
-        label: "Rugged",
-        prompt: "Create a rugged natural look with outdoor energy",
-      },
+    vibe: [
+      { label: "Luxury", prompt: "Luxury" },
+      { label: "Effortless", prompt: "Effortless" },
+      { label: "Bold", prompt: "Bold" },
+      { label: "Editorial", prompt: "Editorial" },
+      { label: "Candid", prompt: "Candid" },
+      { label: "Exclusive", prompt: "Exclusive" },
+      { label: "Boss", prompt: "Boss vibes" },
+      { label: "Adventure", prompt: "Adventure" },
+    ],
+    location: [
+      { label: "Rooftop", prompt: "Rooftop" },
+      { label: "Café", prompt: "Café" },
+      { label: "Penthouse", prompt: "Penthouse" },
+      { label: "Hotel", prompt: "Hotel" },
+      { label: "Street", prompt: "Street" },
+      { label: "Luxury car", prompt: "Luxury car" },
+      { label: "Office", prompt: "Corner office" },
+      { label: "Yacht", prompt: "Yacht" },
     ],
   }
 

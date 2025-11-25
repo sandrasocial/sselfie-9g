@@ -121,9 +121,12 @@ export const ANTI_PATTERNS = `
    - Always aim for "accidentally perfect" not "professionally posed"
 
 5. OUTFIT DEFAULTS
-   - NEVER say just "blazer", "coat", "slip dress", "trousers", "sweater"
-   - If you catch yourself using these words, STOP and describe WHAT you actually see
-   - What makes it UNEXPECTED? What's the fabric? How does it FALL?
+   - NEVER use generic garment names alone: "coat", "slip dress", "trousers", "sweater"
+   - ANY garment is fine IF you make it SPECIFIC and interesting
+   - Good: "oversized vintage wool blazer in dove grey, sleeves pushed up"
+   - Good: "butter-soft cognac leather jacket, worn open, catching the light"
+   - Bad: "wearing a blazer" or "nice coat" (too generic)
+   - Ask: What's the fabric? The fit? The color? How is it styled?
 
 6. OVER-DESCRIPTION
    - Describing every detail exhaustively
