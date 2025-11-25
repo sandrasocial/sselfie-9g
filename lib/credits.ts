@@ -2,7 +2,15 @@
 
 import { neon } from "@neondatabase/serverless"
 
-const sql = neon(process.env.DATABASE_URL!)
+const getDatabase = () => {
+  if (!process.env.DATABASE_URL) {
+    console.log("[v0] [CREDITS] DATABASE_URL not available - database operations will be skipped")
+    return null
+  }
+  return neon(process.env.DATABASE_URL)
+}
+
+const sql = getDatabase()
 
 export const CREDIT_COSTS = {
   TRAINING: 25, // $5 / $0.20 per credit
@@ -28,6 +36,11 @@ export type TransactionType =
  * Check if user has enough credits for an action
  */
 export async function checkCredits(userId: string, requiredAmount: number): Promise<boolean> {
+  if (!sql) {
+    console.log("[v0] [CREDITS] Database not available - allowing action in preview mode")
+    return true
+  }
+
   console.log("[v0] [CREDITS] Checking credits for user:", userId)
   console.log("[v0] [CREDITS] Required amount:", requiredAmount)
 
@@ -51,6 +64,8 @@ export async function checkCredits(userId: string, requiredAmount: number): Prom
  * Check if user has unlimited credits (studio membership with high balance)
  */
 async function hasUnlimitedCredits(userId: string): Promise<boolean> {
+  if (!sql) return false
+
   try {
     const currentBalance = await getUserCredits(userId)
     if (currentBalance >= 999999) {
@@ -81,6 +96,11 @@ async function hasUnlimitedCredits(userId: string): Promise<boolean> {
  * Get user's current credit balance
  */
 export async function getUserCredits(userId: string): Promise<number> {
+  if (!sql) {
+    console.log("[v0] [CREDITS] Database not available - returning 0 credits")
+    return 0
+  }
+
   console.log("[v0] [CREDITS] Getting credits for user:", userId)
 
   const result = await sql`
@@ -115,6 +135,11 @@ export async function addCredits(
   stripePaymentId?: string,
   isTestMode = false,
 ): Promise<{ success: boolean; newBalance: number }> {
+  if (!sql) {
+    console.log("[v0] [CREDITS] Database not available - skipping add credits")
+    return { success: false, newBalance: 0 }
+  }
+
   try {
     console.log("[v0] [CREDITS] Adding credits:", {
       userId,
@@ -177,6 +202,11 @@ export async function deductCredits(
   description: string,
   referenceId?: string,
 ): Promise<{ success: boolean; newBalance: number; error?: string }> {
+  if (!sql) {
+    console.log("[v0] [CREDITS] Database not available - allowing action in preview mode")
+    return { success: true, newBalance: 0 }
+  }
+
   try {
     console.log("[v0] [CREDITS] Deducting credits:", {
       userId,
@@ -260,6 +290,11 @@ export async function deductCredits(
  * Get user's credit transaction history
  */
 export async function getCreditHistory(userId: string, limit = 50) {
+  if (!sql) {
+    console.log("[v0] [CREDITS] Database not available - returning empty history")
+    return []
+  }
+
   const transactions = await sql`
     SELECT 
       id, amount, transaction_type, description, 
