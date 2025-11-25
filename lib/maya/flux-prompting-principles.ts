@@ -114,6 +114,24 @@ MANDATORY in every prompt:
 - ONE texture marker: "visible sensor noise", "natural skin texture", "subtle grain"
 - Lens feel: 24mm wide, 50mm natural, 85mm portrait
 
+## 2025 PHOTOGRAPHY AESTHETIC TRENDS
+
+**WHAT'S HOT RIGHT NOW:**
+- "Trash" photos - slightly misfocused, imperfect compositions (intentional imperfection)
+- Intentional motion blur - adds energy and emotion
+- Film grain/vintage - grainy textures, faded colors, analog feel
+- Dark moody aesthetics - rising trend for 2025-2026
+- Long lens compression - 70-200mm creates intimate candid feel
+- True-to-color with a "twist" - blues more teal, subtle shadow color shifts
+
+**AUTHENTICITY MARKERS TO ADD:**
+- "slight motion blur in hair/movement"
+- "subtle film grain"
+- "imperfect focus, background soft"
+- "unretouched natural skin"
+- "muted earth tones, slightly desaturated"
+- "cinematic color grading"
+
 ## PUTTING IT ALL TOGETHER
 
 USER ASKS: "coffee run"
@@ -122,13 +140,14 @@ BAD PROMPT (stiff, posed):
 "user123, woman, cream wool blazer sleeves pushed up, confident expression looking at camera, weight shifted to right hip, urban cafe setting, natural lighting, shot on iPhone"
 
 GOOD PROMPT (candid, authentic):
-"user123, woman, oversized vintage levi's jacket worn open over white ribbed tank low-rise baggy jeans, stepping out of cafe iced oat latte in hand glancing at phone, eyes down slight smile starting, bustling morning sidewalk, soft overcast light filtering naturally, shot on iPhone 15 Pro visible sensor noise"
+"user123, woman, oversized vintage levi's jacket worn open over white ribbed tank low-rise baggy jeans, stepping out of cafe iced oat latte in hand glancing at phone, eyes down slight smile starting, bustling morning sidewalk, soft overcast light filtering naturally, shot on iPhone 15 Pro visible sensor noise subtle film grain"
 
 WHAT CHANGED:
 - Outfit: Generic "blazer" → Specific trendy pieces with styling details
 - Action: "weight shifted" → "stepping out of cafe...glancing at phone" (DOING something)
 - Expression: "confident expression" → "eyes down slight smile starting" (caught moment)
 - Location: "urban cafe setting" → "bustling morning sidewalk" (atmosphere)
+- Added: "subtle film grain" for 2025 aesthetic
 `
 
 export const ANTI_PATTERNS = `
@@ -160,6 +179,10 @@ export const ANTI_PATTERNS = `
    - EVERY prompt needs "shot on iPhone 15 Pro"
    - This is the #1 authenticity marker
 
+7. TOO POLISHED
+   - Add imperfections: "slight motion blur", "subtle grain", "imperfect focus"
+   - Real photos aren't perfect
+
 ## THE CANDID TEST
 
 Before finalizing, ask yourself:
@@ -167,6 +190,7 @@ Before finalizing, ask yourself:
 2. "Is the expression HELD, or CAUGHT?" → If held, make it a micro-moment
 3. "Would I screenshot this outfit?" → If no, make it more specific and trendy
 4. "Does this sound like a real Instagram post?" → If it sounds like a photoshoot, rewrite
+5. "Is it too perfect?" → Add slight imperfection (motion blur, grain, soft focus)
 `
 
 // This function returns the complete principles for Maya to use

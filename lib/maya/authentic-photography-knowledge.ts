@@ -201,6 +201,51 @@ export const AUTHENTIC_PHOTOGRAPHY_KNOWLEDGE = {
   },
 }
 
+// 2025 photography trends from research
+export const PHOTOGRAPHY_TRENDS_2025 = {
+  aesthetic_movements: {
+    trash_aesthetic: {
+      name: "Trash Photos",
+      description: "Slightly misfocused, imperfect compositions that outperform polished edits",
+      markers: ["imperfect focus", "slightly misfocused background", "casual composition", "unintentional framing"],
+    },
+    motion_blur_energy: {
+      name: "Intentional Motion Blur",
+      description: "Movement adds energy and emotion to photos",
+      markers: ["slight motion blur in hair", "movement blur in edges", "walking motion captured", "dynamic blur"],
+    },
+    film_revival: {
+      name: "Film Grain Aesthetic",
+      description: "Grainy textures, faded colors, analog warmth making a comeback",
+      markers: ["subtle film grain", "analog warmth", "faded color tones", "vintage grain texture"],
+    },
+    dark_moody: {
+      name: "Dark Moody",
+      description: "Rising trend for 2025-2026, cinematic shadows",
+      markers: ["moody shadows", "dark tones", "cinematic contrast", "rich shadows"],
+    },
+    unretouched_real: {
+      name: "Unretouched Reality",
+      description: "Natural skin texture, less retouching, authentic imperfections",
+      markers: ["natural skin texture visible", "unretouched", "real skin detail", "authentic imperfections"],
+    },
+  },
+  color_trends: {
+    signature_shifts: [
+      "blues with teal undertone",
+      "warm shadows, cool highlights",
+      "muted earth tones, desaturated but rich",
+      "cinematic color grading",
+      "film-like color palette",
+    ],
+    avoid: ["oversaturated colors", "heavy filters", "artificial color grading", "too-perfect skin smoothing"],
+  },
+  lens_trends: {
+    comeback: "70-200mm long lenses for intimate, candid compression",
+    popular: ["85mm for portraits", "35mm for environmental", "50mm for natural feel"],
+  },
+}
+
 // Helper to get random element from array
 export function getRandomElement<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)]
@@ -219,6 +264,39 @@ Unless the user specifically asks for something else (like "editorial", "high fa
 - Lifestyle scenarios: coffee shops, city streets, home environments, travel moments
 - Amateur cellphone quality aesthetic (not polished professional photography)
 - Authentic expressions and body language (not posed or stiff)
+
+## 2025 PHOTOGRAPHY TRENDS TO APPLY
+
+**TRASH AESTHETIC (Viral Right Now):**
+- Slightly imperfect is MORE engaging than perfect
+- Add: "imperfect focus", "casual composition", "unintentional framing"
+- The "accident" that turned out amazing
+
+**MOTION BLUR ENERGY:**
+- Movement = life and energy in photos
+- Add: "slight motion blur in hair", "walking motion captured", "dynamic movement"
+- Frozen perfection is OUT
+
+**FILM GRAIN REVIVAL:**
+- Analog warmth is back
+- Add: "subtle film grain", "analog color warmth", "vintage grain texture"
+- Too clean/digital looks fake
+
+**UNRETOUCHED AUTHENTICITY:**
+- Real skin > smoothed skin
+- Add: "natural skin texture visible", "unretouched", "authentic imperfections"
+- Pores are IN, plastic is OUT
+
+**DARK MOODY (Rising Trend):**
+- For evening/dramatic requests
+- Add: "moody shadows", "cinematic contrast", "rich dark tones"
+- Especially for nightlife, evening, dramatic aesthetics
+
+**COLOR GRADING 2025:**
+- Blues lean teal, shadows warm, highlights cool
+- Muted but rich earth tones
+- Film-like color palette
+- Avoid: oversaturated, heavy filters
 
 **MICRO-EXPRESSIONS (what makes it feel real):**
 Instead of "smiling" or "looking confident", use SPECIFIC authentic expressions:
@@ -242,17 +320,14 @@ Instead of "smiling" or "looking confident", use SPECIFIC authentic expressions:
 - ${getRandomElement(AUTHENTIC_PHOTOGRAPHY_KNOWLEDGE.AUTHENTICITY_MARKERS.QUALITY_CUES)}
 - ${getRandomElement(AUTHENTIC_PHOTOGRAPHY_KNOWLEDGE.AUTHENTICITY_MARKERS.MOMENT_DESCRIPTORS)}
 
-**FILM & COLOR (subtle realism):**
-- ${getRandomElement(AUTHENTIC_PHOTOGRAPHY_KNOWLEDGE.PHOTOGRAPHY_CRAFT.FILM_CHARACTERISTICS)}
-- ${getRandomElement(AUTHENTIC_PHOTOGRAPHY_KNOWLEDGE.PHOTOGRAPHY_CRAFT.COLOR_SCIENCE)}
-
 **BANNED (reads as professional/fake):**
 - "Professional photoshoot", "studio lighting", "editorial quality"
 - "Hand on hip", "model pose", "power stance"
 - "Gorgeous", "stunning", "beautiful", "perfect"
 - Generic lighting terms: "nice light", "good lighting"
+- Over-smoothed, over-filtered, too perfect
 
-**REMEMBER:** Users want to look like successful influencers, not models in magazines. Authentic > Polished.
+**REMEMBER:** Users want to look like successful influencers, not models in magazines. Authentic > Polished. Imperfect > Perfect.
 `
 }
 

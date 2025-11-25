@@ -132,8 +132,128 @@ export const FASHION_TRENDS_2025 = {
         ],
         vibe: "Playful nostalgia, bold and fun, unapologetically Y2K",
       },
+      soft_girl: {
+        name: "Soft Girl",
+        description: "Pastels, plaid skirts, delicate and feminine",
+        keywords: [
+          "pastel pink",
+          "plaid mini skirt",
+          "cardigan over shoulders",
+          "delicate jewelry",
+          "blush tones",
+          "hair clips",
+          "sweet feminine",
+        ],
+        vibe: "Sweet, gentle, romantic femininity",
+      },
+      indie_sleaze: {
+        name: "Indie Sleaze",
+        description: "Gritty party looks, messy hair, 2000s NYC party scene",
+        keywords: [
+          "messy hair",
+          "smudged eyeliner",
+          "vintage band tee",
+          "leather jacket thrown on",
+          "mini skirt",
+          "strappy heels",
+          "party aftermath aesthetic",
+        ],
+        vibe: "Cool, unbothered, last night's party energy",
+      },
+      coquette: {
+        name: "Coquette",
+        description: "Ultra-feminine, bows, ribbons, ballet-inspired",
+        keywords: [
+          "satin bows",
+          "ribbon details",
+          "ballet flats",
+          "lace trim",
+          "soft pink",
+          "delicate pearls",
+          "sheer layers",
+          "romantic feminine",
+        ],
+        vibe: "Flirty, romantic, doll-like femininity",
+      },
+      old_money: {
+        name: "Old Money",
+        description: "Inherited wealth aesthetic, prep school, country club",
+        keywords: [
+          "tennis skirt",
+          "cable knit sweater",
+          "pearl earrings",
+          "loafers",
+          "crisp button-down",
+          "navy blazer",
+          "Ralph Lauren vibes",
+          "yacht club aesthetic",
+        ],
+        vibe: "Effortless wealth, generational style",
+      },
     },
   },
+}
+
+export const NOVEMBER_2025_TRENDS = {
+  celebrity_outfits: {
+    hailey_bieber: {
+      current_uniform: [
+        "fitted black leather blazer over beige two-piece set (crop top + matching cardigan)",
+        "flared trousers with socks-with-loafers hack",
+        "structured blazers replacing oversized bombers",
+        "La Ligne matching sets in neutral tones",
+      ],
+      signature_moves: [
+        "socks peeking above loafers",
+        "structured over soft (blazer over knit)",
+        "monochromatic with one contrast piece",
+      ],
+    },
+    kendall_jenner: {
+      current_uniform: [
+        "dark wash straight-leg jeans (Prada, Khaite vibes)",
+        "black pea coat with wool bucket hat from The Row",
+        "patent leather ballet flats",
+        "extra-long cobalt blue scarf (Spring 2026 preview)",
+      ],
+      signature_moves: [
+        "90s minimalism updated",
+        "accessories as statement (the scarf, the hat)",
+        "dark neutrals with one pop color",
+      ],
+    },
+    bella_hadid: {
+      current_uniform: [
+        "vintage archive pieces mixed with contemporary",
+        "low-rise everything with belt visible",
+        "layered tank tops and sheer pieces",
+        "chunky platform boots",
+      ],
+      signature_moves: ["maximalist layering", "vintage mixed with designer", "unexpected color combinations"],
+    },
+  },
+  pinterest_outfit_formulas: [
+    "head-to-toe powder pink + white accessories",
+    "baggy extra-long jeans + statement leather top",
+    "shell track jacket worn open over white poplin dress",
+    "oversized plaid shirt + jumbo jeans + large handbag (90s grunge elevated)",
+    "double plaid looks (contrasting prints, brown/green/neutral cohesion)",
+    "mismatched animal prints with tangerine or bright accent",
+    "slouchy studded denim + oversized rugby top",
+    "leather trench coat + midi skirt + ankle boots",
+    "oversized knit sweater dress + tall boots",
+    "fitted blazer + wide-leg trousers + ballet flats (Kendall formula)",
+  ],
+  viral_pieces: [
+    "patent leather ballet flats (replacing sneakers for off-duty)",
+    "wool bucket hats (The Row made them essential)",
+    "extra-long scarves (the statement accessory)",
+    "fitted leather blazers (Hailey's signature)",
+    "straight-leg dark wash jeans (skinny is fully dead)",
+    "matching sets in neutral tones (coordinated but not matchy)",
+    "oversized vintage leather jackets (broken-in, not shiny)",
+    "low-rise baggy cargo pants (Y2K but updated)",
+  ],
 }
 
 export const SEASONAL_PALETTES_2025 = {
@@ -206,7 +326,7 @@ export const FLUX_PROMPTING_STRATEGIES = {
     "pores visible",
     "authentic lighting",
     "real skin detail",
-    "natural blemishes",
+    "natural amateur quality",
   ],
   for_instagram_aesthetic: [
     "amateur cellphone quality",
@@ -394,6 +514,28 @@ Vibe: ${val.vibe}`
     })
     .join("\n\n")
 
+  const celebrityOutfitFormulas = `
+## NOVEMBER 2025 - WHAT CELEBRITIES ARE ACTUALLY WEARING RIGHT NOW
+
+**HAILEY BIEBER'S CURRENT LOOKS:**
+${NOVEMBER_2025_TRENDS.celebrity_outfits.hailey_bieber.current_uniform.map((o) => `- ${o}`).join("\n")}
+Signature moves: ${NOVEMBER_2025_TRENDS.celebrity_outfits.hailey_bieber.signature_moves.join(", ")}
+
+**KENDALL JENNER'S CURRENT LOOKS:**
+${NOVEMBER_2025_TRENDS.celebrity_outfits.kendall_jenner.current_uniform.map((o) => `- ${o}`).join("\n")}
+Signature moves: ${NOVEMBER_2025_TRENDS.celebrity_outfits.kendall_jenner.signature_moves.join(", ")}
+
+**BELLA HADID'S CURRENT LOOKS:**
+${NOVEMBER_2025_TRENDS.celebrity_outfits.bella_hadid.current_uniform.map((o) => `- ${o}`).join("\n")}
+Signature moves: ${NOVEMBER_2025_TRENDS.celebrity_outfits.bella_hadid.signature_moves.join(", ")}
+
+## PINTEREST VIRAL OUTFIT FORMULAS (November 2025)
+${NOVEMBER_2025_TRENDS.pinterest_outfit_formulas.map((f) => `- ${f}`).join("\n")}
+
+## VIRAL PIECES RIGHT NOW (must-knows)
+${NOVEMBER_2025_TRENDS.viral_pieces.map((p) => `- ${p}`).join("\n")}
+`
+
   return `
 === MAYA'S 2025/2026 INSTAGRAM TREND INTELLIGENCE ===
 
@@ -409,6 +551,8 @@ ${seasonalPalette.fabrics.join(", ")}
 
 **SEASONAL VIBE:**
 ${seasonalPalette.vibe}
+
+${celebrityOutfitFormulas}
 
 ## INSTAGRAM AESTHETICS - USE THESE KEYWORDS IN YOUR STYLING
 
@@ -427,19 +571,10 @@ When user asks for... → Apply these aesthetic keywords:
 - "beach", "vacation", "resort" → COASTAL LUXURY keywords (linen sets, strappy sandals, oversized sun hat)
 - "dark", "moody", "mysterious" → DARK FEMME keywords (black lace, deep burgundy, velvet textures)
 - "y2k", "2000s", "playful" → Y2K REVIVAL keywords (low-rise everything, baby tees, butterfly accessories)
-
-## WHAT THEY'RE ACTUALLY WEARING IN 2025/2026:
-
-- Oversized everything (not fitted corporate vibes)
-- Low-rise is BACK - jeans, skirts, cargo pants
-- Sheer layers, visible bralettes, lingerie-as-outerwear
-- Vintage band tees tucked into designer pieces
-- Platform shoes, chunky loafers, ballet flats
-- Micro bags OR oversized totes (no medium)
-- Gold jewelry stacked, layered, excessive
-- Maxi skirts with crop tops, unexpected proportions
-- Linen everything for summer, butter-soft leather for fall
-- Cherry red, butter yellow, chocolate brown - the trending colors
+- "feminine", "romantic", "bows" → COQUETTE keywords (satin bows, ballet flats, lace trim, pearls)
+- "preppy", "classic", "old money" → OLD MONEY keywords (tennis skirt, cable knit, pearl earrings, loafers)
+- "party", "going out", "edgy" → INDIE SLEAZE keywords (messy hair, leather jacket, mini skirt, smudged makeup)
+- "soft", "cute", "girly" → SOFT GIRL keywords (pastels, plaid skirt, cardigan, hair clips)
 
 ## LOCATION-SPECIFIC STYLING
 
