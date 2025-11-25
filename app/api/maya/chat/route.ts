@@ -263,25 +263,28 @@ export async function POST(req: NextRequest) {
     console.log("[v0] Enhanced system prompt length:", enhancedSystemPrompt.length, "characters")
     console.log("[v0] Calling streamText with", allMessages.length, "messages")
 
-    const headers = req.headers
-    const host = headers.get("host") || ""
-    const referer = headers.get("referer") || ""
-    const origin = headers.get("origin") || ""
+    const aiGatewayApiKey = process.env.AI_GATEWAY_API_KEY
 
-    console.log("[v0] Request headers - Host:", host, "Referer:", referer, "Origin:", origin)
+    if (!aiGatewayApiKey) {
+      console.error("[v0] AI_GATEWAY_API_KEY environment variable is missing")
+      return NextResponse.json(
+        {
+          error: "AI service configuration error. Please contact support.",
+          details: "AI_GATEWAY_API_KEY is not configured",
+        },
+        { status: 500 },
+      )
+    }
 
-    const isProduction = host === "sselfie.ai" || host === "www.sselfie.ai"
-    const isPreview = host.includes("vercel.app") || host.includes("v0.dev") || host.includes("vusercontent.net")
+    console.log("[v0] AI Gateway API key present:", aiGatewayApiKey.substring(0, 10) + "...")
 
-    console.log("[v0] Environment detection - Host:", host, "Production:", isProduction, "Preview:", isPreview)
-
-    // This matches the pattern used in all other API routes (instagram-tips, enhance-goal, etc.)
     const model = "anthropic/claude-sonnet-4-20250514"
 
     console.log("[v0] Using AI SDK with model:", model)
 
     const result = streamText({
       model,
+      apiKey: aiGatewayApiKey, // Explicitly pass API key
       system: enhancedSystemPrompt,
       messages: allMessages,
       tools: {
