@@ -63,6 +63,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
   const [styleStrength, setStyleStrength] = useState(1.0) // Updated default from 1.05 to 1.0
   const [promptAccuracy, setPromptAccuracy] = useState(3.5) // Guidance scale: 2.5-5.0
   const [aspectRatio, setAspectRatio] = useState("4:5")
+  const [realismStrength, setRealismStrength] = useState(0.4) // Extra LoRA scale: 0.0-0.8
   const [showSettings, setShowSettings] = useState(false)
 
   const settingsSaveTimerRef = useRef<NodeJS.Timeout | null>(null)
@@ -89,6 +90,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
         setStyleStrength(loadedStyleStrength === 1.1 ? 1.0 : loadedStyleStrength) // Removed 1.05 migration, only migrate 1.1 to 1.0
         setPromptAccuracy(settings.promptAccuracy || 3.5)
         setAspectRatio(settings.aspectRatio || "4:5") // Updated default from "1:1" to "4:5"
+        setRealismStrength(settings.realismStrength ?? 0.4)
       } catch (error) {
         console.error("[v0] ❌ Error loading settings:", error)
       }
@@ -109,6 +111,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
         styleStrength,
         promptAccuracy,
         aspectRatio,
+        realismStrength,
       }
       console.log("[v0] 💾 Saving settings to localStorage:", settings)
       localStorage.setItem("mayaGenerationSettings", JSON.stringify(settings))
@@ -120,7 +123,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
         clearTimeout(settingsSaveTimerRef.current)
       }
     }
-  }, [styleStrength, promptAccuracy, aspectRatio]) // Removed enableRealismBoost from dependencies
+  }, [styleStrength, promptAccuracy, aspectRatio, realismStrength]) // Added realismStrength to dependencies
 
   const { messages, sendMessage, status, setMessages } = useChat({
     transport: new DefaultChatTransport({ api: "/api/maya/chat" }),
@@ -232,9 +235,16 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
       return
     }
 
+    // If we already have a chatId, don't reload
+    if (chatId) {
+      console.log("[v0] Already have chatId:", chatId, "skipping loadChat")
+      setIsLoadingChat(false)
+      return
+    }
+
     console.log("[v0] 🚀 Maya chat screen mounted, calling loadChat()")
     loadChat(chatIdToLoad || undefined)
-  }, [isAuthenticated, chatIdToLoad, loadChat])
+  }, [isAuthenticated, chatIdToLoad, loadChat, chatId])
 
   // Detect [GENERATE_CONCEPTS] trigger in messages
   useEffect(() => {
@@ -279,6 +289,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
     }
   }, [messages, status, isGeneratingConcepts, pendingConceptRequest])
 
+  // The problem was: message was saved BEFORE concepts were generated, so concepts were never persisted
   useEffect(() => {
     if (!pendingConceptRequest || isGeneratingConcepts) return
 
@@ -289,7 +300,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
       try {
         const conversationContext = messages
           .filter((m) => m.role === "user" || m.role === "assistant")
-          .slice(-10) // Last 10 messages for context
+          .slice(-10)
           .map((m) => {
             let content = ""
             if (typeof m.content === "string") {
@@ -300,7 +311,6 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
                 .map((p: any) => p.text)
                 .join(" ")
             }
-            // Strip [GENERATE_CONCEPTS] triggers from context
             const cleanContent = content.replace(/\[GENERATE_CONCEPTS\][^\n]*/g, "").trim()
             if (!cleanContent) return null
             return `${m.role === "user" ? "User" : "Maya"}: ${cleanContent.substring(0, 500)}`
@@ -326,6 +336,10 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
         console.log("[v0] Concept generation result:", result.state, result.concepts?.length)
 
         if (result.state === "ready" && result.concepts) {
+          // Find the current last assistant message ID before updating
+          const lastAssistantMessage = [...messages].reverse().find((m) => m.role === "assistant")
+          const messageId = lastAssistantMessage?.id?.toString()
+
           // Add concept cards to the last assistant message
           setMessages((prevMessages) => {
             const newMessages = [...prevMessages]
@@ -345,6 +359,50 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
             }
             return newMessages
           })
+
+          // This ensures new concept cards are persisted and show in chat history
+          if (chatId && result.concepts.length > 0) {
+            // Extract text content from the message
+            let textContent = ""
+            if (lastAssistantMessage?.parts && Array.isArray(lastAssistantMessage.parts)) {
+              const textParts = lastAssistantMessage.parts.filter((p: any) => p.type === "text")
+              textContent = textParts
+                .map((p: any) => p.text)
+                .join("\n")
+                .trim()
+            }
+
+            console.log("[v0] Saving concept cards to database:", result.concepts.length)
+
+            // Remove the message from savedMessageIds so the save effect won't skip it
+            // OR directly save/update the concepts
+            fetch("/api/maya/save-message", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chatId,
+                role: "assistant",
+                content: textContent || "",
+                conceptCards: result.concepts,
+                updateExisting: true, // Signal to update if message exists
+              }),
+            })
+              .then((res) => res.json())
+              .then((data) => {
+                if (data.success) {
+                  console.log("[v0] Concept cards saved successfully to database")
+                  // Mark the message as saved now (with concepts)
+                  if (messageId) {
+                    savedMessageIds.current.add(messageId)
+                  }
+                } else {
+                  console.error("[v0] Failed to save concept cards:", data.error)
+                }
+              })
+              .catch((error) => {
+                console.error("[v0] Error saving concept cards:", error)
+              })
+          }
         }
       } catch (error) {
         console.error("[v0] Error generating concepts:", error)
@@ -355,31 +413,77 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
     }
 
     generateConcepts()
-  }, [pendingConceptRequest, isGeneratingConcepts, setMessages, messages]) // Added 'messages' to dependency array
+  }, [pendingConceptRequest, isGeneratingConcepts, setMessages, messages, chatId]) // Added 'messages' to dependency array
 
   // It was causing race conditions by loading a different chat and overwriting messages
 
   useEffect(() => {
-    if (status !== "ready" || !chatId || messages.length === 0) return
+    // Don't save if we're currently generating concepts - wait for them to be added first
+    console.log(
+      "[v0] Save effect triggered - status:",
+      status,
+      "chatId:",
+      chatId,
+      "messagesLen:",
+      messages.length,
+      "isGeneratingConcepts:",
+      isGeneratingConcepts,
+      "pendingConceptRequest:",
+      !!pendingConceptRequest,
+    )
+
+    if (status !== "ready" || !chatId || messages.length === 0 || isGeneratingConcepts || pendingConceptRequest) {
+      console.log("[v0] Save effect early return - conditions not met")
+      return
+    }
 
     // Find the last assistant message
     const lastAssistantMessage = [...messages].reverse().find((m) => m.role === "assistant")
-    if (!lastAssistantMessage) return
+    if (!lastAssistantMessage) {
+      console.log("[v0] Save effect - no assistant message found")
+      return
+    }
 
     // Skip if already saved
-    if (savedMessageIds.current.has(lastAssistantMessage.id)) return
+    if (savedMessageIds.current.has(lastAssistantMessage.id)) {
+      console.log("[v0] Save effect - message already saved:", lastAssistantMessage.id)
+      return
+    }
 
-    // Extract text content from parts
-    let textContent = ""
+    // Check if this message has a [GENERATE_CONCEPTS] trigger but no concepts yet
+    // If so, don't save yet - wait for concept generation
+    const textContent =
+      typeof lastAssistantMessage.content === "string"
+        ? lastAssistantMessage.content
+        : lastAssistantMessage.parts
+            ?.filter((p): p is { type: "text"; text: string } => p.type === "text")
+            .map((p) => p.text)
+            .join("") || ""
+
+    const hasConceptTrigger = /\[GENERATE_CONCEPTS\]/i.test(textContent)
+    const hasConceptCards = lastAssistantMessage.parts?.some(
+      (p: any) => p.type === "tool-generateConcepts" && p.output?.concepts?.length > 0,
+    )
+
+    console.log("[v0] Save effect - hasConceptTrigger:", hasConceptTrigger, "hasConceptCards:", hasConceptCards)
+
+    // If there's a trigger but no concepts yet, wait for concept generation
+    if (hasConceptTrigger && !hasConceptCards) {
+      console.log("[v0] Message has concept trigger but no concepts yet, waiting for generation...")
+      return
+    }
+
+    // Extract text content from parts for saving
+    let saveTextContent = ""
     if (lastAssistantMessage.parts && Array.isArray(lastAssistantMessage.parts)) {
       const textParts = lastAssistantMessage.parts.filter((p: any) => p.type === "text")
-      textContent = textParts
+      saveTextContent = textParts
         .map((p: any) => p.text)
         .join("\n")
         .trim()
     }
 
-    // Extract concept cards from parts (matching the rendering logic)
+    // Extract concept cards from parts
     const conceptCards: any[] = []
     if (lastAssistantMessage.parts && Array.isArray(lastAssistantMessage.parts)) {
       for (const part of lastAssistantMessage.parts) {
@@ -393,18 +497,22 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
       }
     }
 
-    // Only save if we have content or concepts AND they're from streaming (not loaded from DB)
-    // Messages loaded from DB won't have the tool output structure
-    const hasStreamingData = lastAssistantMessage.parts?.some(
-      (p: any) => p.type === "tool-generateConcepts" && p.output?.state === "ready",
-    )
-
-    if (!hasStreamingData && !textContent) {
+    // Only save if we have something to save
+    if (!saveTextContent && conceptCards.length === 0) {
+      console.log("[v0] Save effect - nothing to save (no text, no concepts)")
       return
     }
 
     // Mark as saved immediately to prevent duplicate saves
     savedMessageIds.current.add(lastAssistantMessage.id)
+
+    console.log(
+      "[v0] 📝 Saving assistant message with",
+      conceptCards.length,
+      "concept cards, text length:",
+      saveTextContent.length,
+    )
+    // </CHANGE>
 
     // Save to database
     fetch("/api/maya/save-message", {
@@ -413,24 +521,24 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
       body: JSON.stringify({
         chatId,
         role: "assistant",
-        content: textContent || "",
+        content: saveTextContent || "",
         conceptCards: conceptCards.length > 0 ? conceptCards : null,
       }),
     })
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
-          console.log("[v0] ✅ Assistant message saved successfully")
+          console.log("[v0] Assistant message saved successfully with concepts:", conceptCards.length)
         } else {
-          console.error("[v0] ❌ Failed to save message:", data.error)
+          console.error("[v0] Failed to save message:", data.error)
           savedMessageIds.current.delete(lastAssistantMessage.id)
         }
       })
       .catch((error) => {
-        console.error("[v0] ❌ Save error:", error)
+        console.error("[v0] Save error:", error)
         savedMessageIds.current.delete(lastAssistantMessage.id)
       })
-  }, [status, chatId, messages]) // Updated dependency to messages
+  }, [status, chatId, messages, isGeneratingConcepts, pendingConceptRequest]) // Updated dependency to messages
 
   useEffect(() => {
     if (status !== "ready" || !chatId || messages.length === 0) return
@@ -877,7 +985,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
     }
   }
 
-  const handleSendMessage = (customPrompt?: string) => {
+  const handleSendMessage = async (customPrompt?: string) => {
     const messageText = customPrompt || inputValue.trim()
     if ((messageText || uploadedImage) && !isTyping) {
       const messageContent = uploadedImage ? `${messageText}\n\n[Inspiration Image: ${uploadedImage}]` : messageText
@@ -886,21 +994,45 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
         styleStrength,
         promptAccuracy,
         aspectRatio,
+        realismStrength, // Include realism strength in log
       })
 
       isAtBottomRef.current = true
 
-      if (chatId) {
+      // If no chatId exists, create a new chat first
+      let currentChatId = chatId
+      if (!currentChatId) {
+        console.log("[v0] No chatId exists, creating new chat before sending message...")
+        try {
+          const response = await fetch("/api/maya/load-chat?chatType=maya")
+          if (response.ok) {
+            const data = await response.json()
+            if (data.chatId) {
+              currentChatId = data.chatId
+              setChatId(data.chatId)
+              if (data.chatTitle) {
+                setChatTitle(data.chatTitle)
+              }
+              console.log("[v0] Created/loaded chat with ID:", data.chatId)
+            }
+          }
+        } catch (error) {
+          console.error("[v0] Error creating/loading chat:", error)
+        }
+      }
+
+      // Save user message with the current chatId
+      if (currentChatId) {
         fetch("/api/maya/save-message", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            chatId,
+            chatId: currentChatId,
             role: "user",
             content: messageContent,
           }),
         }).catch((error) => {
-          console.error("[v0] ❌ Error saving user message:", error)
+          console.error("[v0] Error saving user message:", error)
         })
       }
 
@@ -911,6 +1043,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
             styleStrength,
             promptAccuracy,
             aspectRatio,
+            realismStrength, // Include realism strength in customSettings
           },
         },
       })
@@ -1232,6 +1365,23 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
                   onChange={(e) => setPromptAccuracy(Number.parseFloat(e.target.value))}
                   className="w-full"
                 />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs tracking-wider uppercase text-stone-600">Realism Boost</label>
+                  <span className="text-sm font-medium text-stone-950">{realismStrength.toFixed(2)}</span>
+                </div>
+                <input
+                  type="range"
+                  min="0.0"
+                  max="0.8"
+                  step="0.1"
+                  value={realismStrength}
+                  onChange={(e) => setRealismStrength(Number.parseFloat(e.target.value))}
+                  className="w-full"
+                />
+                <p className="text-xs text-stone-500 mt-1">Higher = more photorealistic, lower = more stylized</p>
               </div>
 
               <div>

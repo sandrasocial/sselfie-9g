@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Check, MoreVertical } from 'lucide-react'
+import { MoreVertical } from "lucide-react"
 import InstagramPhotoCard from "./instagram-photo-card"
 import InstagramReelCard from "./instagram-reel-card"
 import InstagramCarouselCard from "./instagram-carousel-card"
@@ -102,12 +102,21 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
 
     try {
       const settingsStr = localStorage.getItem("mayaGenerationSettings")
-      const customSettings = settingsStr ? JSON.parse(settingsStr) : null
+      const parsedSettings = settingsStr ? JSON.parse(settingsStr) : null
 
-      const finalSettings = customSettings ? {
-        ...customSettings,
-        ...(concept.customSettings || {}),
-      } : concept.customSettings
+      const customSettings = parsedSettings
+        ? {
+            ...parsedSettings,
+            extraLoraScale: parsedSettings.realismStrength ?? 0.4,
+          }
+        : null
+
+      const finalSettings = customSettings
+        ? {
+            ...customSettings,
+            ...(concept.customSettings || {}),
+          }
+        : concept.customSettings
 
       const response = await fetch("/api/maya/generate-image", {
         method: "POST",
@@ -190,7 +199,7 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
 
     try {
       console.log("[v0] Starting video generation from image:", generatedImageUrl)
-      
+
       console.log("[v0] 🎨 Generating AI motion prompt with vision analysis...")
       const motionResponse = await fetch("/api/maya/generate-motion-prompt", {
         method: "POST",
@@ -204,14 +213,14 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
       })
 
       const motionData = await motionResponse.json()
-      
+
       if (!motionResponse.ok) {
         console.warn("[v0] ⚠️ Motion prompt generation failed, using concept description")
       }
-      
+
       const aiGeneratedMotionPrompt = motionData.motionPrompt || concept.description
       console.log("[v0] ✅ AI-generated motion prompt:", aiGeneratedMotionPrompt)
-      
+
       const response = await fetch("/api/maya/generate-video", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -249,15 +258,15 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
 
     try {
       console.log("[v0] 📸 Creating photoshoot from hero image:", generatedImageUrl)
-      
+
       const generationResponse = await fetch(`/api/maya/check-generation?generationId=${generationId}`)
       const generationData = await generationResponse.json()
-      
+
       console.log("[v0] 📸 Original generation data:", {
         seed: generationData.seed,
         prompt: generationData.prompt?.substring(0, 100),
       })
-      
+
       const response = await fetch("/api/maya/create-photoshoot", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -279,24 +288,29 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
         throw new Error(data.error || "Failed to create photoshoot")
       }
 
-      console.log("[v0] ✅ Photoshoot created with", data.totalImages, "images using original seed:", data.consistencySeed)
-      
+      console.log(
+        "[v0] ✅ Photoshoot created with",
+        data.totalImages,
+        "images using original seed:",
+        data.consistencySeed,
+      )
+
       console.log("[v0] 📊 Predictions received:", data.predictions?.length || 0)
       console.log("[v0] 📊 User ID for gallery:", data.userId)
-      
+
       const emptyGenerations = Array.from({ length: data.totalImages }, (_, i) => ({
         generationId: `prediction_${i}`,
         imageUrl: null,
         url: null,
         status: "processing",
         index: i,
-        action: data.predictions?.[i]?.title || `Photo ${i + 1}`
+        action: data.predictions?.[i]?.title || `Photo ${i + 1}`,
       }))
-      
+
       console.log("[v0] 📊 Empty generations array created:", emptyGenerations.length)
-      
+
       setPhotoshootGenerations(emptyGenerations)
-      
+
       pollPredictions(data.predictions || data.batches, data.userId)
     } catch (err) {
       console.error("[v0] Error creating photoshoot:", err)
@@ -308,46 +322,46 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
   const pollPredictions = async (predictions: any[], userId?: string) => {
     console.log(`[v0] 📊 Starting to poll ${predictions.length} predictions`)
     console.log(`[v0] 📊 User ID:`, userId)
-    
+
     const pollSinglePrediction = async (pred: any) => {
       const maxAttempts = 60
       let attempts = 0
 
-      const predId = pred.predictionId || (pred.batches?.[0]?.predictionId)
-      const predIndex = pred.index !== undefined ? pred.index : (pred.batchIndex !== undefined ? pred.batchIndex * 3 : 0)
+      const predId = pred.predictionId || pred.batches?.[0]?.predictionId
+      const predIndex = pred.index !== undefined ? pred.index : pred.batchIndex !== undefined ? pred.batchIndex * 3 : 0
 
       while (attempts < maxAttempts) {
         try {
           const url = new URL(`/api/maya/check-photoshoot-prediction`, window.location.origin)
-          url.searchParams.set('id', predId)
-          url.searchParams.set('heroPrompt', encodeURIComponent(concept.prompt || concept.title))
+          url.searchParams.set("id", predId)
+          url.searchParams.set("heroPrompt", encodeURIComponent(concept.prompt || concept.title))
           if (userId) {
-            url.searchParams.set('userId', userId)
+            url.searchParams.set("userId", userId)
           }
 
           const response = await fetch(url.toString(), {
             method: "GET",
           })
-          
+
           if (!response.ok) {
             const text = await response.text()
             console.error(`[v0] ❌ Failed to check prediction ${predIndex}:`, response.status, text.substring(0, 200))
-            await new Promise(resolve => setTimeout(resolve, 4000))
+            await new Promise((resolve) => setTimeout(resolve, 4000))
             attempts++
             continue
           }
-          
+
           const status = await response.json()
-          
+
           console.log(`[v0] 📊 Prediction ${predIndex} status:`, status.status)
 
           if (status.status === "succeeded" && status.output) {
             const imageUrls = Array.isArray(status.output) ? status.output : [status.output]
             console.log(`[v0] ✅ Prediction ${predIndex} complete with ${imageUrls.length} image(s)`)
-            
+
             imageUrls.forEach((imageUrl: string, idx: number) => {
-              const globalIndex = pred.index !== undefined ? pred.index : (pred.batchIndex * 3 + idx)
-              setPhotoshootGenerations(prev => {
+              const globalIndex = pred.index !== undefined ? pred.index : pred.batchIndex * 3 + idx
+              setPhotoshootGenerations((prev) => {
                 const updated = [...prev]
                 if (updated[globalIndex]) {
                   updated[globalIndex] = {
@@ -355,17 +369,17 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
                     url: imageUrl,
                     imageUrl: imageUrl,
                     status: "ready",
-                    action: pred.title || pred.actions?.[idx] || `Photo ${globalIndex + 1}`
+                    action: pred.title || pred.actions?.[idx] || `Photo ${globalIndex + 1}`,
                   }
                 }
                 return updated
               })
             })
-            
+
             return imageUrls
           } else if (status.status === "failed") {
             console.error(`[v0] ❌ Prediction ${predIndex} failed:`, status.error)
-            setPhotoshootGenerations(prev => {
+            setPhotoshootGenerations((prev) => {
               const updated = [...prev]
               if (updated[predIndex]) {
                 updated[predIndex] = {
@@ -379,11 +393,11 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
             return null
           }
 
-          await new Promise(resolve => setTimeout(resolve, 4000))
+          await new Promise((resolve) => setTimeout(resolve, 4000))
           attempts++
         } catch (err) {
           console.error(`[v0] Error polling prediction ${predIndex}:`, err)
-          await new Promise(resolve => setTimeout(resolve, 4000))
+          await new Promise((resolve) => setTimeout(resolve, 4000))
           attempts++
         }
       }
@@ -393,17 +407,15 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
     }
 
     const pollWithDelay = async (pred: any, index: number) => {
-      await new Promise(resolve => setTimeout(resolve, index * 500))
+      await new Promise((resolve) => setTimeout(resolve, index * 500))
       return pollSinglePrediction(pred)
     }
 
-    const results = await Promise.allSettled(
-      predictions.map((pred: any, index: number) => pollWithDelay(pred, index))
-    )
+    const results = await Promise.allSettled(predictions.map((pred: any, index: number) => pollWithDelay(pred, index)))
 
-    const successCount = results.filter(r => r.status === "fulfilled" && r.value).length
+    const successCount = results.filter((r) => r.status === "fulfilled" && r.value).length
     console.log(`[v0] 🎉 Photoshoot complete: ${successCount}/${predictions.length} images`)
-    
+
     setIsCreatingPhotoshoot(false)
   }
 
@@ -472,8 +484,14 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
           <div className="flex flex-col items-center justify-center py-6 space-y-3">
             <div className="flex gap-1.5">
               <div className="w-2 h-2 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 animate-bounce"></div>
-              <div className="w-2 h-2 rounded-full bg-gradient-to-r from-pink-600 to-orange-500 animate-bounce" style={{ animationDelay: "0.2s" }}></div>
-              <div className="w-2 h-2 rounded-full bg-gradient-to-r from-orange-500 to-purple-600 animate-bounce" style={{ animationDelay: "0.4s" }}></div>
+              <div
+                className="w-2 h-2 rounded-full bg-gradient-to-r from-pink-600 to-orange-500 animate-bounce"
+                style={{ animationDelay: "0.2s" }}
+              ></div>
+              <div
+                className="w-2 h-2 rounded-full bg-gradient-to-r from-orange-500 to-purple-600 animate-bounce"
+                style={{ animationDelay: "0.4s" }}
+              ></div>
             </div>
             <span className="text-xs font-semibold text-stone-700">Creating your photo</span>
           </div>
@@ -481,12 +499,12 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
 
         {isGenerated && generatedImageUrl && (
           <div className="space-y-3">
-            {photoshootGenerations.length > 0 && photoshootGenerations.every(p => p.url || p.imageUrl) ? (
+            {photoshootGenerations.length > 0 && photoshootGenerations.every((p) => p.url || p.imageUrl) ? (
               <InstagramCarouselCard
                 images={photoshootGenerations.map((gen: any) => ({
                   url: gen.url || gen.imageUrl,
-                  id: parseInt(gen.id || gen.generationId),
-                  action: gen.action || `Photo ${gen.index + 1}`
+                  id: Number.parseInt(gen.id || gen.generationId),
+                  action: gen.action || `Photo ${gen.index + 1}`,
                 }))}
                 title={concept.title}
                 description={concept.description}
@@ -505,7 +523,11 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
                 onDelete={handleDelete}
                 onAnimate={!videoUrl && !isGeneratingVideo ? handleAnimate : undefined}
                 showAnimateOverlay={false}
-                onCreatePhotoshoot={!isCreatingPhotoshoot && photoshootGenerations.length === 0 ? () => setShowPhotoshootConfirm(true) : undefined}
+                onCreatePhotoshoot={
+                  !isCreatingPhotoshoot && photoshootGenerations.length === 0
+                    ? () => setShowPhotoshootConfirm(true)
+                    : undefined
+                }
               />
             )}
 
@@ -518,7 +540,8 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
 
                   <div className="px-6 py-4 space-y-3">
                     <p className="text-sm text-stone-700 leading-relaxed">
-                      We'll create <span className="font-semibold text-stone-950">6-9 photos</span> with the same outfit and vibe, perfect for a carousel post.
+                      We'll create <span className="font-semibold text-stone-950">6-9 photos</span> with the same outfit
+                      and vibe, perfect for a carousel post.
                     </p>
 
                     <div className="bg-stone-50 rounded-lg p-3 space-y-1.5">
@@ -560,7 +583,7 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
                 <div className="flex items-center gap-2">
                   <div className="w-1 h-1 rounded-full bg-stone-600"></div>
                   <span className="text-xs tracking-[0.15em] uppercase font-light text-stone-600">
-                    Creating Carousel ({photoshootGenerations.filter(p => p.url || p.imageUrl).length}/
+                    Creating Carousel ({photoshootGenerations.filter((p) => p.url || p.imageUrl).length}/
                     {photoshootGenerations.length})
                   </span>
                 </div>
@@ -568,7 +591,11 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
                   {photoshootGenerations.map((gen, idx) => (
                     <div key={idx} className="aspect-square bg-stone-100 rounded-lg overflow-hidden">
                       {gen.url || gen.imageUrl ? (
-                        <img src={gen.url || gen.imageUrl || "/placeholder.svg"} alt={gen.action} className="w-full h-full object-cover" />
+                        <img
+                          src={gen.url || gen.imageUrl || "/placeholder.svg"}
+                          alt={gen.action}
+                          className="w-full h-full object-cover"
+                        />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
                           <div className="w-6 h-6 border-2 border-stone-300 border-t-stone-900 rounded-full animate-spin" />

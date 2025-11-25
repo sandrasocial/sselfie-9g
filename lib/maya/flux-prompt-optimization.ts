@@ -1,6 +1,6 @@
 /**
  * FLUX AI Prompt Length Optimization & Face Preservation Guide
- * 
+ *
  * Research-backed best practices for Flux models (Dev, Schnell, Pro, etc.)
  * to maximize facial likeness while maintaining creative quality
  */
@@ -10,10 +10,10 @@ export const FLUX_PROMPT_OPTIMIZATION = {
    * TECHNICAL LIMITS
    */
   TECHNICAL_MAXIMUM_TOKENS: 512, // Hard limit from Flux API
-  
+
   /**
    * OPTIMAL PROMPT LENGTHS FOR DIFFERENT CONTEXTS
-   * 
+   *
    * Based on research: shorter, focused prompts preserve facial likeness better
    * Longer prompts dilute trigger word importance and cause feature drift
    */
@@ -23,31 +23,34 @@ export const FLUX_PROMPT_OPTIMIZATION = {
       min: 15,
       optimal: 25,
       max: 35,
-      reasoning: "Close-ups need face emphasis. Keep prompts SHORT to prioritize trigger word and facial features over environmental details."
+      reasoning:
+        "Close-ups need face emphasis. Keep prompts SHORT to prioritize trigger word and facial features over environmental details.",
     },
-    
+
     // Half body - balance face + outfit
     HALF_BODY_LIFESTYLE: {
       min: 20,
       optimal: 30,
       max: 40,
-      reasoning: "Medium shots need facial detail AND outfit context. Moderate length allows both without overwhelming the trigger."
+      reasoning:
+        "Medium shots need facial detail AND outfit context. Moderate length allows both without overwhelming the trigger.",
     },
-    
+
     // Full body - more scene context
     ENVIRONMENTAL_PORTRAIT: {
       min: 25,
       optimal: 35,
       max: 45,
-      reasoning: "Wide shots can handle slightly longer prompts since face is smaller. Still prioritize subject over background."
+      reasoning:
+        "Wide shots can handle slightly longer prompts since face is smaller. Still prioritize subject over background.",
     },
-    
+
     // Action shots - movement focus
     CLOSE_UP_ACTION: {
       min: 20,
       optimal: 28,
       max: 38,
-      reasoning: "Action requires describing movement, but face must stay recognizable. Keep concise and specific."
+      reasoning: "Action requires describing movement, but face must stay recognizable. Keep concise and specific.",
     },
 
     // Product/object focus - less face prominence
@@ -55,19 +58,19 @@ export const FLUX_PROMPT_OPTIMIZATION = {
       min: 22,
       optimal: 32,
       max: 42,
-      reasoning: "Product shots allow more descriptive room, but trigger word still crucial for recognizability."
+      reasoning: "Product shots allow more descriptive room, but trigger word still crucial for recognizability.",
     },
   },
 
   /**
    * FACE PRESERVATION STRATEGIES
-   * 
+   *
    * Critical techniques to maintain user likeness with trained LoRA models
    */
   FACE_PRESERVATION: {
     // Trigger word must be EARLY in prompt (first 5-10 words)
     TRIGGER_PLACEMENT: "START",
-    
+
     // Use explicit face preservation phrases when needed
     PRESERVATION_PHRASES: [
       "maintaining exact facial features",
@@ -75,7 +78,7 @@ export const FLUX_PROMPT_OPTIMIZATION = {
       "same person throughout",
       "consistent facial identity",
     ],
-    
+
     // Avoid overloading with facial details (LoRA handles this)
     AVOID_FACE_MICROMANAGEMENT: [
       "blue eyes", // LoRA knows user's eye color
@@ -83,10 +86,10 @@ export const FLUX_PROMPT_OPTIMIZATION = {
       "high cheekbones", // Trust the trained model
       "defined nose", // Let LoRA handle features
     ],
-    
+
     // DO describe face-adjacent elements
     DESCRIBE_INSTEAD: [
-      "natural makeup", 
+      "natural makeup",
       "minimal makeup",
       "glowing skin",
       "relaxed expression",
@@ -98,10 +101,10 @@ export const FLUX_PROMPT_OPTIMIZATION = {
   /**
    * PROMPT STRUCTURE FOR MAXIMUM EFFECTIVENESS
    */
-  STRUCTURE: {
+  PROMPT_STRUCTURE: {
     ORDER: [
-      "1. TRIGGER WORD (mandatory first)",
-      "2. GENDER/PERSON (if needed for grammar)",
+      "1. TRIGGER WORD (required, first)",
+      "2. GENDER (woman/man/person)",
       "3. KEY OUTFIT DETAILS (specific and concise)",
       "4. POSE/ACTION (simple, natural)",
       "5. LOCATION (brief, atmospheric)",
@@ -109,42 +112,12 @@ export const FLUX_PROMPT_OPTIMIZATION = {
       "7. AESTHETIC KEYWORDS (2-3 max)",
       "8. TECHNICAL SPECS (camera + texture)",
     ],
-    
-    EXAMPLE_GOOD: "mya_user woman in black corset top, ice blue wide-leg jeans, standing at cafe counter with coffee, soft morning light, candid moment, shot on iPhone 15 Pro, 85mm, natural skin texture",
-    
-    EXAMPLE_TOO_LONG: "mya_user woman with long flowing hair and bright eyes wearing a stunning black strapless corset-style bustier top with intricate structured boning details and ice blue oversized wide-leg high-waisted jeans with subtle light distressing and vintage-inspired wash, paired with sleek modern black-and-white minimalist low-top sneakers with clean rubber soles...", // TOO MUCH - face gets lost
-  },
 
-  /**
-   * INSTAGRAM STORYTELLING - NATURAL & REALISTIC
-   * 
-   * Keys to authentic influencer-style content
-   */
-  INSTAGRAM_AUTHENTICITY: {
     PRINCIPLES: [
-      "Imperfect is better - grain, noise, and HDR glow add realism",
-      "Candid beats posed - 'caught in moment' feels authentic",
-      "Simple actions - one clear activity, not multiple",
-      "Natural expressions - no exaggerated emotions",
-      "iPhone aesthetic - amateur quality signals authenticity",
-    ],
-    
-    REALISTIC_ACTIONS: [
-      "sipping coffee",
-      "checking phone",
-      "adjusting sunglasses",
-      "looking over shoulder",
-      "mid-stride walking",
-      "sitting relaxed",
-      "touching hair naturally",
-    ],
-    
-    AVOID_STAGED: [
-      "perfectly posed professional model",
-      "studio lighting perfection",
-      "flawless retouched skin",
-      "catalog-style symmetry",
-      "overly directed actions",
+      "Keep prompts 25-45 words for optimal face preservation",
+      "Outfit descriptions: material + color + garment type (3-4 words max)",
+      "Location: atmosphere + setting (2-3 words)",
+      "Always end with camera/texture specs",
     ],
   },
 
@@ -153,18 +126,18 @@ export const FLUX_PROMPT_OPTIMIZATION = {
    */
   CONCISE_DESCRIPTIONS: {
     // Instead of long-winded descriptions, use precise language
-    VERBOSE_VS_CONCISE: {
-      "wearing an oversized luxury designer black wool blazer with structured shoulders and a relaxed fit": "oversized black blazer",
-      "standing in a beautiful European-style cafe with vintage architectural details and warm ambient lighting": "European cafe, warm light",
-      "captured in a natural candid moment with authentic genuine expression": "candid moment",
-      "shot on the latest iPhone 15 Pro Max with advanced computational photography": "shot on iPhone 15 Pro",
-    },
-    
     EFFICIENCY_RULES: [
       "One adjective per noun (max two if critical)",
-      "Combine related details: 'black corset top' not 'black strapless corset-style bustier top with boning'",
-      "Use atmosphere words: 'moody' instead of 'dramatic shadows and crushed blacks'",
-      "Trust the model: 'natural light' instead of describing every light beam",
+      "Combine related details into 3-4 word descriptions",
+      "Use atmosphere words instead of detailed descriptions",
+      "Trust the model with simple directional cues",
+    ],
+
+    PRINCIPLES: [
+      "Compress verbose descriptions to their essence",
+      "Material + color + garment (e.g., 'silk cream blouse')",
+      "Location + lighting in 3-4 words",
+      "Remove redundant qualifiers",
     ],
   },
 
@@ -172,18 +145,22 @@ export const FLUX_PROMPT_OPTIMIZATION = {
    * CATEGORY-SPECIFIC PROMPT TEMPLATES
    */
   TEMPLATES: {
-    CLOSE_UP: "{trigger}, {gender} in {outfit_2_words}, {simple_pose}, {location_2_words}, {lighting_1_word}, {aesthetic}, shot on iPhone 15 Pro, 85mm, natural skin texture, film grain",
-    
-    HALF_BODY: "{trigger}, {gender} in {outfit_3_words}, {action}, {location_3_words}, {lighting_2_words}, {aesthetic}, shot on iPhone 15 Pro, 50mm, natural skin texture, shallow depth of field",
-    
-    FULL_BODY: "{trigger}, {gender} in {outfit_4_words}, {movement}, {environment_3_words}, {lighting_2_words}, {vibe}, shot on iPhone 15 Pro, 35mm, natural skin texture, film grain",
-    
-    ACTION: "{trigger}, {gender} in {outfit_3_words}, {dynamic_action}, {setting_2_words}, {lighting_1_word}, {aesthetic}, shot on iPhone 15 Pro, 50mm, natural skin texture, film grain",
+    CLOSE_UP:
+      "{trigger}, {gender} in {outfit_2_words}, {simple_pose}, {location_2_words}, {lighting_1_word}, {aesthetic}, shot on iPhone 15 Pro, 85mm, natural skin texture, film grain",
+
+    HALF_BODY:
+      "{trigger}, {gender} in {outfit_3_words}, {action}, {location_3_words}, {lighting_2_words}, {aesthetic}, shot on iPhone 15 Pro, 50mm, natural skin texture, shallow depth of field",
+
+    FULL_BODY:
+      "{trigger}, {gender} in {outfit_4_words}, {movement}, {environment_3_words}, {lighting_2_words}, {vibe}, shot on iPhone 15 Pro, 35mm, natural skin texture, film grain",
+
+    ACTION:
+      "{trigger}, {gender} in {outfit_3_words}, {dynamic_action}, {setting_2_words}, {lighting_1_word}, {aesthetic}, shot on iPhone 15 Pro, 50mm, natural skin texture, film grain",
   },
 
   /**
    * QUALITY OVER QUANTITY
-   * 
+   *
    * The "Less is More" principle for Flux prompting
    */
   LESS_IS_MORE: {
@@ -194,7 +171,7 @@ export const FLUX_PROMPT_OPTIMIZATION = {
       "LoRA influence is stronger with concise prompts",
       "Natural results come from simple instructions",
     ],
-    
+
     WORD_COUNT_GUIDE: {
       "15-25 words": "Maximum face preservation, minimal scene",
       "25-35 words": "Balanced face + outfit + basic environment (RECOMMENDED)",
@@ -213,7 +190,7 @@ export const FLUX_PROMPT_OPTIMIZATION = {
       priority: "Variety in outfits, locations, vibes",
       face_preservation: "HIGH - trigger word prominent, simple descriptions",
     },
-    
+
     PHOTOSHOOT_MODE: {
       description: "Carousel - consistent outfit/location",
       target_length: "30-40 words (can be slightly longer since outfit repeats)",
@@ -229,10 +206,10 @@ export const FLUX_PROMPT_OPTIMIZATION = {
 export function analyzePromptQuality(prompt: string) {
   const words = prompt.trim().split(/\s+/)
   const wordCount = words.length
-  
+
   let quality: "excellent" | "good" | "acceptable" | "too_long" = "excellent"
   let recommendation = ""
-  
+
   if (wordCount <= 25) {
     quality = "excellent"
     recommendation = "Perfect length for maximum face preservation"
@@ -246,7 +223,7 @@ export function analyzePromptQuality(prompt: string) {
     quality = "too_long"
     recommendation = "TOO LONG - high risk of face drift. Remove unnecessary details."
   }
-  
+
   return {
     wordCount,
     quality,
@@ -260,7 +237,7 @@ export function analyzePromptQuality(prompt: string) {
  */
 export function condensePrompt(prompt: string): string {
   // Remove redundant descriptors
-  let condensed = prompt
+  const condensed = prompt
     .replace(/beautiful\s+/gi, "")
     .replace(/stunning\s+/gi, "")
     .replace(/gorgeous\s+/gi, "")
@@ -274,6 +251,6 @@ export function condensePrompt(prompt: string): string {
     .replace(/\s+and\s+/gi, ", ")
     .replace(/,\s*,/g, ",")
     .trim()
-  
+
   return condensed
 }

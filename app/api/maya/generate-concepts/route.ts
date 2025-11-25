@@ -3,7 +3,8 @@ import { createServerClient } from "@/lib/supabase/server"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { generateText } from "ai"
-import { FLUX_PROMPT_OPTIMIZATION } from "@/lib/maya/flux-prompt-optimization"
+import { getFluxPromptingPrinciples } from "@/lib/maya/flux-prompting-principles"
+import { getFashionIntelligencePrinciples } from "@/lib/maya/fashion-knowledge-2025"
 
 type MayaConcept = {
   title: string
@@ -97,35 +98,7 @@ export async function POST(req: NextRequest) {
 
     const triggerWord = userDataResult[0]?.trigger_word || `user${user.id}`
 
-    const genderStylingGuide =
-      userGender === "woman"
-        ? `
-=== STYLING FOR WOMEN ===
-- Feminine silhouettes: flowing fabrics, tailored blazers, elegant dresses
-- Accessories: delicate jewelry, designer handbags, statement earrings
-- Hair: styled naturally, flowing, or elegantly pinned
-- Makeup: natural glam, soft glowing skin, defined features
-- Poses: graceful, confident, elegant hand placement
-- Fashion references: Hailey Bieber, Zendaya, Sofia Richie, Kendall Jenner
-- Common outfit types: slip dresses, oversized blazers, tailored trousers, cashmere knits, leather pieces
-`
-        : userGender === "man"
-          ? `
-=== STYLING FOR MEN ===
-- Masculine silhouettes: structured blazers, well-fitted shirts, tailored pants
-- Accessories: luxury watches, minimal jewelry, leather belts
-- Grooming: clean or styled facial hair, natural hair texture
-- Poses: strong, confident, relaxed masculine energy
-- Fashion references: David Beckham, A$AP Rocky, Timothée Chalamet, Bad Bunny
-- Common outfit types: tailored suits, casual streetwear, leather jackets, quality knitwear, clean sneakers
-`
-          : `
-=== STYLING (GENDER NEUTRAL) ===
-- Modern silhouettes: relaxed fits, architectural pieces, minimalist design
-- Accessories: contemporary jewelry, quality leather goods
-- Poses: confident, natural, authentic expression
-- Fashion references: contemporary editorial, clean lines, sophisticated casual
-`
+    const fashionIntelligence = getFashionIntelligencePrinciples(userGender)
 
     // Analyze reference image if provided
     let imageAnalysis = ""
@@ -191,10 +164,10 @@ IMPORTANT:
 `
       : ""
 
-    const conceptPrompt = `You are Maya, an expert fashion photographer and Instagram content strategist. Create ${count} stunning iPhone-quality Instagram photo concepts for ${triggerWord} (${userGender}).
+    const conceptPrompt = `You are Maya, an elite fashion photographer with 15 years of experience shooting for Vogue, Elle, and creating viral Instagram content. You have an OBSESSIVE eye for authenticity - you know that the best images feel stolen from real life, not produced.
 
 ${conversationContextSection}
-${genderStylingGuide}
+${fashionIntelligence}
 
 USER REQUEST: "${userRequest}"
 ${aesthetic ? `AESTHETIC VIBE: ${aesthetic}` : ""}
@@ -215,84 +188,51 @@ Capture this exact vibe - the styling, mood, lighting, and composition.`
     : ""
 }
 
-=== CRITICAL: PROMPT STRUCTURE FOR FLUX AI ===
+=== YOUR FLUX PROMPTING MASTERY ===
 
-PROMPT TEMPLATES BY CATEGORY:
-- CLOSE-UP: "${FLUX_PROMPT_OPTIMIZATION.TEMPLATES.CLOSE_UP}"
-- HALF BODY: "${FLUX_PROMPT_OPTIMIZATION.TEMPLATES.HALF_BODY}"
-- FULL BODY: "${FLUX_PROMPT_OPTIMIZATION.TEMPLATES.FULL_BODY}"
-- ACTION: "${FLUX_PROMPT_OPTIMIZATION.TEMPLATES.ACTION}"
+${getFluxPromptingPrinciples()}
 
-OPTIMAL WORD COUNTS (for face preservation):
-- Close-ups: 15-25 words (tight focus, face preservation priority)
-- Half body: 25-35 words (RECOMMENDED sweet spot)
-- Full body/Environmental: 35-45 words (more scene detail allowed)
-- 45+ words = HIGH RISK of face drift
+=== CRITICAL RULES FOR THIS GENERATION ===
 
-GOLDEN EXAMPLE (follow this style):
-"${FLUX_PROMPT_OPTIMIZATION.STRUCTURE.EXAMPLE_GOOD}"
+TRIGGER WORD: "${triggerWord}"
+GENDER: "${userGender}"
 
-=== INSTAGRAM AUTHENTICITY (2025 VIRAL AESTHETIC) ===
+1. Every prompt MUST start with: "${triggerWord}, ${userGender}"
+2. Apply the OUTFIT PRINCIPLE with your FASHION INTELLIGENCE - no boring defaults
+3. Apply the EXPRESSION PRINCIPLE for authentic facial details
+4. Apply the POSE PRINCIPLE for natural body positioning
+5. Apply the LOCATION PRINCIPLE for evocative settings
+6. Apply the LIGHTING PRINCIPLE for cinematic craft
+7. Apply the TECHNICAL PRINCIPLE for camera realism
+8. Run the QUALITY FILTERS before outputting
+9. Hit the WORD BUDGET for the shot type
 
-MUST INCLUDE in every prompt:
-- "shot on iPhone 15 Pro" (amateur quality = authenticity)
-- Natural skin texture keywords: "natural skin texture", "skin texture visible", "pores visible"
-- Film grain or HDR glow for realism
-- Focal length: 85mm (close-up), 50mm (half body), 35mm (full body)
+=== YOUR CREATIVE MISSION ===
 
-INSTAGRAM POSES (natural, NOT staged):
-${FLUX_PROMPT_OPTIMIZATION.INSTAGRAM_AUTHENTICITY.REALISTIC_ACTIONS.map((a) => `- ${a}`).join("\n")}
+You are NOT filling templates. You are SYNTHESIZING unique photographic moments by applying your fashion intelligence and prompting principles to this specific user request.
 
-AVOID (looks fake):
-${FLUX_PROMPT_OPTIMIZATION.INSTAGRAM_AUTHENTICITY.AVOID_STAGED.map((a) => `- ${a}`).join("\n")}
-
-=== FASHION INTELLIGENCE ===
-
-LUXURY URBAN STYLE KEYWORDS:
-- European architecture, oversized designer pieces
-- Moody urban atmosphere, crushed blacks
-- Cool neutral temperature, muted desaturated tones
-- Overcast natural light, editorial mood
-
-COLOR GRADING BY CATEGORY:
-- Close-Up: soft muted tones, natural skin warmth, gentle shadows
-- Half Body: desaturated warm tones, editorial mood, balanced exposure
-- Environmental: crushed blacks, moody atmospheric, dramatic contrast
-- Action: high contrast, rich saturation, dynamic tones
-
-=== WORD ECONOMY (SAY MORE WITH LESS) ===
-
-Instead of: "wearing an oversized luxury designer black wool blazer with structured shoulders"
-Write: "oversized black blazer"
-
-Instead of: "standing in a beautiful European-style cafe with vintage architectural details"
-Write: "European cafe, warm light"
-
-Trust the AI - one adjective per noun maximum.
+For each concept:
+- What would this SPECIFIC person wear in this SPECIFIC moment? (Use your fashion intelligence, not defaults)
+- What micro-expression captures the EMOTION of this scene?
+- What lighting tells the STORY?
+- What makes this feel like a REAL stolen moment, not a posed photo?
 
 === JSON OUTPUT FORMAT ===
 
 Return ONLY valid JSON array, no markdown:
 [
   {
-    "title": "Concept name (3-5 words, evocative)",
-    "description": "Brief description for the user (1 sentence, exciting)",
+    "title": "Evocative title (3-5 words)",
+    "description": "Exciting description for user (1 sentence)",
     "category": "Close-Up Portrait" | "Half Body Lifestyle" | "Environmental Portrait" | "Close-Up Action",
-    "fashionIntelligence": "Specific outfit details (brands, fabrics, colors)",
-    "lighting": "Lighting description (mood + technical)",
-    "location": "Specific location setting",
-    "prompt": "FLUX-OPTIMIZED PROMPT following template above. START WITH TRIGGER WORD. Include: outfit, pose, location, lighting, 'shot on iPhone 15 Pro', focal length, 'natural skin texture', film grain. 25-35 words ideal."
+    "fashionIntelligence": "Your outfit reasoning - WHY this outfit for this moment",
+    "lighting": "Your lighting reasoning",
+    "location": "Your location reasoning",
+    "prompt": "YOUR CRAFTED FLUX PROMPT - synthesized from principles, MUST start with ${triggerWord}, ${userGender}"
   }
 ]
 
-Now create ${count} STUNNING, INSTAGRAM-VIRAL concepts. Each prompt MUST:
-1. Start with "${triggerWord}" 
-2. Include "shot on iPhone 15 Pro"
-3. Include "natural skin texture" or "skin texture visible"
-4. Stay within 25-40 words
-5. Use natural candid poses, NOT staged model poses
-6. Include focal length (85mm/50mm/35mm)
-7. Include film grain or subtle HDR`
+Now apply your fashion intelligence and prompting mastery. Create ${count} concepts where every outfit choice is INTENTIONAL and story-driven.`
 
     console.log("[v0] Calling generateText for concept generation")
 

@@ -1,4 +1,4 @@
-import { FASHION_TRENDS_2025 } from './fashion-knowledge-2025'
+import { FASHION_TRENDS_2025 } from "./fashion-knowledge-2025"
 
 export interface FluxPromptComponents {
   trigger: string
@@ -39,14 +39,20 @@ export class FluxPromptBuilder {
     options: FluxPromptOptions,
     referenceImageUrl?: string,
   ): GeneratedFluxPrompt {
-    const { userTriggerToken, userGender, includeQualityHints = true, includeHandGuidance = true, aestheticPreference } = options
+    const {
+      userTriggerToken,
+      userGender,
+      includeQualityHints = true,
+      includeHandGuidance = true,
+      aestheticPreference,
+    } = options
 
     console.log("[v0] Generating intelligent FLUX prompt with Instagram aesthetics")
 
     const aesthetic = this.getInstagramAesthetic(aestheticPreference)
-    
+
     const colorGrading = this.getColorGrading(category)
-    
+
     const realismKeywords = this.getRealismKeywords()
 
     const luxuryUrbanKeywords = this.getLuxuryUrbanKeywords()
@@ -100,12 +106,12 @@ export class FluxPromptBuilder {
 
   private static getInstagramAesthetic(preference?: string) {
     const aesthetics = FASHION_TRENDS_2025.instagram.aesthetics
-    
+
     // If user has preference, use it
     if (preference && aesthetics[preference as keyof typeof aesthetics]) {
       return aesthetics[preference as keyof typeof aesthetics]
     }
-    
+
     // Default to raw authentic (most viral in 2025)
     return aesthetics.raw_authentic
   }
@@ -119,14 +125,14 @@ export class FluxPromptBuilder {
       "Product Focus": "clean whites, accurate colors, soft commercial lighting",
       "Candid Moment": "natural color balance, authentic tones, real-world lighting",
     }
-    
+
     return grading[category] || "natural color balance, authentic lighting"
   }
 
   private static getRealismKeywords(): string {
     return [
       "amateur cellphone quality",
-      "visible sensor noise", 
+      "visible sensor noise",
       "heavy HDR glow",
       "blown-out highlights",
       "crushed shadows",
@@ -139,11 +145,7 @@ export class FluxPromptBuilder {
   }
 
   private static getIntelligentQualityHints(): string[] {
-    return [
-      "shot on iPhone 15 Pro",
-      "natural lighting",
-      "authentic moment captured",
-    ]
+    return ["shot on iPhone 15 Pro", "natural lighting", "authentic moment captured"]
   }
 
   private static getGenderToken(userGender?: string | null): string {
@@ -162,7 +164,8 @@ export class FluxPromptBuilder {
   }
 
   private static getLuxuryUrbanKeywords(): string {
-    return "European architecture, oversized designer pieces, luxury street style, moody urban atmosphere"
+    // Return minimal - Maya's fashion intelligence generates context-appropriate keywords
+    return "moody urban atmosphere"
   }
 
   private static getInstagramPose(category: string): string {
@@ -174,7 +177,7 @@ export class FluxPromptBuilder {
       "Product Focus": "holding product naturally while looking away",
       "Candid Moment": "caught mid-movement, looking away from camera naturally",
     }
-    
+
     return poses[category] || "natural candid pose, looking away from camera"
   }
 

@@ -13,7 +13,7 @@ function enhanceMotionPrompt(userPrompt: string | undefined, imageDescription?: 
     console.log("[v0] ✅ Using AI-generated motion prompt from Claude vision analysis:", userPrompt)
     return userPrompt
   }
-  
+
   console.log("[v0] ⚠️ WARNING: No AI motion prompt provided - this shouldn't happen!")
   console.log("[v0] Using minimal fallback, but Claude should have generated this")
   return "Standing naturally, subtle breathing motion visible"
@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
       disable_safety_checker: false,
       // HIGH-noise transformer: Apply user's trained FLUX LoRA for character consistency
       lora_weights_transformer: loraWeightsUrl,
-      lora_scale_transformer: 1.0,
+      lora_scale_transformer: 1.25,
       // LOW-noise transformer: No LoRA (native refinement for natural motion)
       // Note: transformer_2 parameters are intentionally omitted
       // WAN 2.2 expects separate high/low noise LoRAs, but FLUX training doesn't produce these
