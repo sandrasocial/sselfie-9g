@@ -306,15 +306,20 @@ Create ${count} concepts now. ENSURE EACH PROMPT IS 60-90 WORDS.`
       let conceptModel
       if (isV0Preview) {
         console.log("[v0] Environment: V0 Preview (using Anthropic OpenAI-compatible)")
+        if (!process.env.ANTHROPIC_API_KEY) {
+          throw new Error("ANTHROPIC_API_KEY not configured for preview environment")
+        }
         conceptModel = createOpenAICompatible({
           name: "anthropic",
-          apiKey: process.env.ANTHROPIC_API_KEY!,
+          apiKey: process.env.ANTHROPIC_API_KEY,
           baseURL: "https://api.anthropic.com/v1",
         })("claude-sonnet-4-20250514")
       } else {
         console.log("[v0] Environment: Production (using AI Gateway)")
         conceptModel = "anthropic/claude-sonnet-4.5"
       }
+
+      console.log("[v0] streamText initiated, returning response")
 
       const { text } = await generateText({
         model: conceptModel,
@@ -553,78 +558,63 @@ export async function POST(req: NextRequest) {
     console.log("[v0] Enhanced system prompt length:", enhancedSystemPrompt.length, "characters")
     console.log("[v0] Calling streamText with", allMessages.length, "messages")
 
-    const host = req.headers.get("host") || ""
-    const referer = req.headers.get("referer") || ""
-    const origin = req.headers.get("origin") || ""
+    const headers = req.headers
+    const host = headers.get("host") || ""
+    const referer = headers.get("referer") || ""
+    const origin = headers.get("origin") || ""
 
-    console.log("[v0] Host header:", host)
-    console.log("[v0] Referer header:", referer)
-    console.log("[v0] Origin header:", origin)
+    console.log("[v0] Request headers - Host:", host, "Referer:", referer, "Origin:", origin)
 
-    // Detect v0 preview environment
-    const isV0Preview =
-      process.env.VERCEL_ENV === "preview" ||
-      host?.includes("vusercontent.net") ||
-      referer?.includes("v0.dev") ||
-      referer?.includes("v0.app") ||
-      origin?.includes("v0.dev") ||
-      origin?.includes("v0.app") ||
-      typeof window !== "undefined"
+    // Check if this is a preview/non-production environment
+    const isPreview =
+      host.includes("vusercontent.net") ||
+      host.includes("v0-sselfie") ||
+      referer.includes("v0.dev") ||
+      referer.includes("v0.app") ||
+      origin.includes("v0.dev") ||
+      origin.includes("v0.app") ||
+      process.env.VERCEL_ENV === "preview"
 
-    console.log(
-      "[v0] Environment:",
-      isV0Preview ? "V0 Preview (using Anthropic OpenAI-compatible)" : "Production (using AI Gateway)",
-    )
+    let model
+    if (isPreview) {
+      console.log("[v0] Environment: Preview (using Anthropic API directly)")
+      if (!process.env.ANTHROPIC_API_KEY) {
+        throw new Error("ANTHROPIC_API_KEY not configured for preview environment")
+      }
+      model = createOpenAICompatible({
+        name: "anthropic",
+        apiKey: process.env.ANTHROPIC_API_KEY,
+        baseURL: "https://api.anthropic.com/v1",
+      })("claude-sonnet-4-20250514")
+    } else {
+      console.log("[v0] Environment: Production (using AI Gateway)")
+      model = "anthropic/claude-sonnet-4.5"
+    }
 
-    const model = isV0Preview
-      ? createOpenAICompatible({
-          name: "anthropic",
-          apiKey: process.env.ANTHROPIC_API_KEY!,
-          baseURL: "https://api.anthropic.com/v1",
-        })("claude-sonnet-4-20250514")
-      : "anthropic/claude-sonnet-4.5"
+    console.log("[v0] streamText initiated, returning response")
 
     const result = streamText({
       model: model,
       system: enhancedSystemPrompt,
       messages: allMessages,
+      maxSteps: 5,
       tools: {
         generateConcepts: generateConceptsTool,
       },
-      maxToolRoundtrips: 5,
+      temperature: 0.85,
       maxTokens: 4096,
-      temperature: 0.7,
-      onFinish: async ({ text, toolCalls, finishReason }) => {
+      onFinish: async ({ response, finishReason }) => {
         console.log("[v0] streamText completed successfully")
-        console.log("[v0] Response text length:", text?.length || 0)
-        console.log("[v0] Tool calls count:", toolCalls?.length || 0)
+        console.log("[v0] Response text length:", response?.length || 0)
         console.log("[v0] Finish reason:", finishReason)
       },
     })
 
-    console.log("[v0] streamText initiated, returning response")
+    console.log("[v0] Stream response created successfully")
 
-    try {
-      const response = result.toUIMessageStreamResponse()
-      console.log("[v0] Stream response created successfully")
-      return response
-    } catch (streamError: any) {
-      console.error("[v0] Error creating stream response:", streamError)
-      throw streamError
-    }
-  } catch (error: any) {
-    console.error("[v0] Maya chat error:", {
-      message: error?.message,
-      name: error?.name,
-      stack: error?.stack,
-      cause: error?.cause,
-    })
-    return NextResponse.json(
-      {
-        error: "Failed to process chat request",
-        details: error?.message || "Unknown error",
-      },
-      { status: 500 },
-    )
+    return result.toUIMessageStreamResponse()
+  } catch (error) {
+    console.error("[v0] Error in Maya chat API:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
