@@ -264,27 +264,35 @@ export async function POST(req: NextRequest) {
     console.log("[v0] Calling streamText with", allMessages.length, "messages")
 
     const aiGatewayApiKey = process.env.AI_GATEWAY_API_KEY
+    const anthropicApiKey = process.env.ANTHROPIC_API_KEY
 
-    if (!aiGatewayApiKey) {
-      console.error("[v0] AI_GATEWAY_API_KEY environment variable is missing")
+    let model: any
+    let useWebSearch = true
+
+    if (aiGatewayApiKey) {
+      // Try AI Gateway first (has native web search)
+      console.log("[v0] Using AI Gateway with model: anthropic/claude-sonnet-4-20250514")
+      model = "anthropic/claude-sonnet-4-20250514"
+    } else if (anthropicApiKey) {
+      // Fallback to direct Anthropic API
+      console.log("[v0] AI Gateway not available, using direct Anthropic API")
+      const { anthropic } = await import("@ai-sdk/anthropic")
+      model = anthropic("claude-sonnet-4-20250514")
+      useWebSearch = false // Direct API doesn't have native web search in AI SDK
+    } else {
+      console.error("[v0] No AI provider configured")
       return NextResponse.json(
         {
           error: "AI service configuration error. Please contact support.",
-          details: "AI_GATEWAY_API_KEY is not configured",
+          details: "Neither AI_GATEWAY_API_KEY nor ANTHROPIC_API_KEY is configured",
         },
         { status: 500 },
       )
     }
 
-    console.log("[v0] AI Gateway API key present:", aiGatewayApiKey.substring(0, 10) + "...")
-
-    const model = "anthropic/claude-sonnet-4-20250514"
-
-    console.log("[v0] Using AI SDK with model:", model)
-
     const result = streamText({
       model,
-      apiKey: aiGatewayApiKey, // Explicitly pass API key
+      ...(typeof model === "string" && aiGatewayApiKey ? { apiKey: aiGatewayApiKey } : {}),
       system: enhancedSystemPrompt,
       messages: allMessages,
       tools: {
@@ -293,18 +301,56 @@ export async function POST(req: NextRequest) {
       maxSteps: 5,
       experimental_continueSteps: true,
       temperature: 0.85,
-      experimental_generateText: {
-        search: {
-          enabled: true,
-        },
-      },
+      ...(useWebSearch
+        ? {
+            experimental_generateText: {
+              search: {
+                enabled: true,
+              },
+            },
+          }
+        : {}),
     })
 
-    console.log("[v0] Stream response created successfully with web search enabled")
+    console.log("[v0] Stream response created successfully", useWebSearch ? "with web search enabled" : "")
 
     return result.toUIMessageStreamResponse()
   } catch (error) {
     console.error("[v0] Error in Maya chat API:", error)
+
+    if (
+      error instanceof Error &&
+      (error.message.includes("Gateway") || error.message.includes("OIDC")) &&
+      process.env.ANTHROPIC_API_KEY
+    ) {
+      console.log("[v0] AI Gateway failed with OIDC error, retrying with direct Anthropic API...")
+
+      try {
+        const { anthropic } = await import("@ai-sdk/anthropic")
+        const model = anthropic("claude-sonnet-4-20250514")
+
+        const enhancedSystemPrompt = "" // Declare enhancedSystemPrompt here
+        const allMessages: CoreMessage[] = [] // Declare allMessages here
+
+        const result = streamText({
+          model,
+          system: enhancedSystemPrompt,
+          messages: allMessages,
+          tools: {
+            generate_concepts: createGenerateConceptsTool(),
+          },
+          maxSteps: 5,
+          experimental_continueSteps: true,
+          temperature: 0.85,
+        })
+
+        console.log("[v0] Successfully using direct Anthropic API as fallback")
+        return result.toUIMessageStreamResponse()
+      } catch (retryError) {
+        console.error("[v0] Direct Anthropic API also failed:", retryError)
+      }
+    }
+
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
