@@ -6,15 +6,11 @@ export async function updateSession(request: NextRequest) {
     request,
   })
 
-  const supabaseUrl =
-    process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || process.env.SUPABASE_VITE_PUBLIC_SUPABASE_URL
-
-  const supabaseAnonKey =
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-    process.env.SUPABASE_ANON_KEY ||
-    process.env.SUPABASE_VITE_PUBLIC_SUPABASE_ANON_KEY
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY
 
   if (!supabaseUrl || !supabaseAnonKey) {
+    console.log("[v0] [Middleware] Supabase not configured - skipping auth check")
     return supabaseResponse
   }
 
@@ -28,7 +24,16 @@ export async function updateSession(request: NextRequest) {
         supabaseResponse = NextResponse.next({
           request,
         })
-        cookiesToSet.forEach(({ name, value, options }) => supabaseResponse.cookies.set(name, value, options))
+        cookiesToSet.forEach(({ name, value, options }) => {
+          const enhancedOptions = {
+            ...options,
+            path: options?.path || "/",
+            sameSite: (options?.sameSite as "lax" | "strict" | "none" | undefined) || "lax",
+            secure: process.env.NODE_ENV === "production" || (options?.secure ?? false),
+            domain: options?.domain || undefined,
+          }
+          supabaseResponse.cookies.set(name, value, enhancedOptions)
+        })
       },
     },
   })
@@ -39,18 +44,19 @@ export async function updateSession(request: NextRequest) {
       error,
     } = await supabase.auth.getUser()
 
-    // If there's a refresh token error, clear the auth cookies
     if (error) {
       if (error.message?.includes("refresh_token_already_used") || error.code === "refresh_token_already_used") {
-        // Clear all auth cookies to force re-authentication
+        console.log("[v0] [Middleware] Refresh token error - clearing cookies")
         supabaseResponse.cookies.delete("sb-access-token")
         supabaseResponse.cookies.delete("sb-refresh-token")
-
-        // Log the error but don't crash
-        console.error("[v0] [Middleware] Refresh token error - clearing cookies:", error.message)
+      } else {
+        console.log("[v0] [Middleware] Auth error:", error.message || "Auth session missing!")
       }
-      // Don't throw - just continue with no user
       return supabaseResponse
+    }
+
+    if (user) {
+      console.log("[v0] [Middleware] Authenticated:", user.email)
     }
 
     // If user is authenticated and visiting the landing page, redirect to studio
@@ -59,8 +65,7 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(studioUrl)
     }
   } catch (error) {
-    // Catch any unexpected errors
-    console.error("[v0] [Middleware] Unexpected auth error:", error)
+    console.log("[v0] [Middleware] Auth check failed:", error)
   }
 
   return supabaseResponse

@@ -8,8 +8,11 @@ import type Stripe from "stripe" // Declare the Stripe variable
 const ENABLE_BETA_DISCOUNT = process.env.ENABLE_BETA_DISCOUNT !== "false"
 
 export async function createLandingCheckoutSession(productId: string) {
+  console.log("[v0] Creating checkout session for product:", productId)
+
   const product = getProductById(productId)
   if (!product) {
+    console.error("[v0] Product not found:", productId)
     throw new Error(`Product with id "${productId}" not found`)
   }
 
@@ -19,8 +22,10 @@ export async function createLandingCheckoutSession(productId: string) {
   const actualPrice =
     ORIGINAL_PRICING[product.type as keyof typeof ORIGINAL_PRICING]?.priceInCents || product.priceInCents
 
-  console.log("[v0] Checkout:", {
+  console.log("[v0] Checkout config:", {
     productId,
+    productType: product.type,
+    isSubscription,
     betaEnabled: ENABLE_BETA_DISCOUNT,
     price: actualPrice,
     originalPrice: product.priceInCents,
@@ -31,8 +36,15 @@ export async function createLandingCheckoutSession(productId: string) {
     : process.env.STRIPE_ONE_TIME_SESSION_PRICE_ID
 
   if (!stripePriceId) {
+    console.error("[v0] Missing Stripe Price ID for:", productId)
+    console.error(
+      "[v0] Environment variable needed:",
+      isSubscription ? "STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID" : "STRIPE_ONE_TIME_SESSION_PRICE_ID",
+    )
     throw new Error(`Stripe Price ID not configured for ${productId}`)
   }
+
+  console.log("[v0] Using Stripe Price ID:", stripePriceId)
 
   const sessionConfig: Stripe.Checkout.SessionCreateParams = {
     ui_mode: "embedded",
@@ -73,9 +85,20 @@ export async function createLandingCheckoutSession(productId: string) {
     },
   }
 
-  const session = await stripe.checkout.sessions.create(sessionConfig)
-
-  return session.client_secret
+  try {
+    const session = await stripe.checkout.sessions.create(sessionConfig)
+    console.log("[v0] Checkout session created successfully:", session.id)
+    console.log("[v0] Client secret generated:", !!session.client_secret)
+    return session.client_secret
+  } catch (error: any) {
+    console.error("[v0] Stripe API error creating checkout session:", {
+      message: error.message,
+      type: error.type,
+      code: error.code,
+      param: error.param,
+    })
+    throw error
+  }
 }
 
 export const createLandingCheckout = createLandingCheckoutSession

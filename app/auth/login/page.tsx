@@ -29,14 +29,19 @@ export default function LoginPage() {
     console.log("[v0] Email:", email)
     console.log("[v0] Return to:", returnTo)
     console.log("[v0] Current URL:", window.location.href)
+    console.log("[v0] Current domain:", window.location.hostname)
+    console.log("[v0] Protocol:", window.location.protocol)
+    console.log("[v0] Existing cookies:", document.cookie)
 
     try {
       const supabase = createClient()
       console.log("[v0] Supabase client created successfully")
 
+      // Check current session
       const { data: sessionData } = await supabase.auth.getSession()
       console.log("[v0] Current session before login:", sessionData.session ? "Exists" : "None")
 
+      // Attempt login
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -51,6 +56,14 @@ export default function LoginPage() {
 
       if (error) {
         console.error("[v0] ❌ Login error:", error)
+
+        if (error.message?.includes("Invalid login credentials")) {
+          throw new Error("Invalid email or password. Please try again.")
+        } else if (error.message?.includes("Email not confirmed")) {
+          throw new Error("Please confirm your email before logging in. Check your inbox.")
+        } else if (error.message?.includes("network")) {
+          throw new Error("Network error. Please check your internet connection and try again.")
+        }
         throw error
       }
 
@@ -61,13 +74,30 @@ export default function LoginPage() {
 
       console.log("[v0] ✅ Login successful for:", data.user.email)
       console.log("[v0] Session expires at:", data.session.expires_at)
+      console.log("[v0] Access token length:", data.session.access_token?.length || 0)
+      console.log("[v0] Refresh token length:", data.session.refresh_token?.length || 0)
+
+      console.log("[v0] Waiting for cookies to be persisted...")
+      await new Promise((resolve) => setTimeout(resolve, 500))
+
+      // Verify session was persisted
+      const { data: verifyData } = await supabase.auth.getSession()
+      console.log("[v0] Session after login:", verifyData.session ? "✅ Persisted" : "❌ Not persisted")
+      console.log("[v0] Cookies after login:", document.cookie)
+
+      if (!verifyData.session) {
+        console.error("[v0] ❌ CRITICAL: Session not persisted in cookies!")
+        throw new Error(
+          "Authentication succeeded but session could not be saved. This may be a cookie configuration issue. Please try again or contact support.",
+        )
+      }
+
       console.log("[v0] Redirecting to:", returnTo)
 
-      router.refresh()
-      router.replace(returnTo)
+      window.location.href = returnTo
     } catch (error: unknown) {
       console.error("[v0] ❌ Login error caught:", error)
-      setError(error instanceof Error ? error.message : "An error occurred")
+      setError(error instanceof Error ? error.message : "An error occurred during login")
       setIsLoading(false)
     }
   }
@@ -95,6 +125,7 @@ export default function LoginPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="bg-zinc-800 border-zinc-700 text-white"
+                    disabled={isLoading}
                   />
                 </div>
                 <div className="grid gap-2">
@@ -116,9 +147,14 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="bg-zinc-800 border-zinc-700 text-white"
+                    disabled={isLoading}
                   />
                 </div>
-                {error && <p className="text-sm text-red-400">{error}</p>}
+                {error && (
+                  <div className="p-3 rounded-md bg-red-500/10 border border-red-500/20">
+                    <p className="text-sm text-red-400">{error}</p>
+                  </div>
+                )}
                 <Button type="submit" className="w-full bg-white text-black hover:bg-zinc-200" disabled={isLoading}>
                   {isLoading ? "Signing in..." : "Sign In"}
                 </Button>
