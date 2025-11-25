@@ -323,10 +323,11 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             userRequest: pendingConceptRequest,
-            count: 3,
+            count: 5,
             conversationContext: conversationContext || undefined,
           }),
         })
+        // </CHANGE>
 
         if (!response.ok) {
           throw new Error(`API error: ${response.status}`)
@@ -594,87 +595,292 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
 
   const promptPoolWoman = {
     lifestyle: [
-      { label: "Coffee run", prompt: "Coffee run" },
-      { label: "Cosy home", prompt: "Cosy at home" },
-      { label: "City walk", prompt: "City walk" },
-      { label: "Golden hour", prompt: "Golden hour" },
-      { label: "Brunch", prompt: "Brunch vibes" },
-      { label: "Night out", prompt: "Night out" },
-      { label: "Getting ready", prompt: "Getting ready" },
-      { label: "Morning routine", prompt: "Morning routine" },
+      {
+        label: "Coffee run",
+        prompt:
+          "Coffee run - candid street style moment, iced coffee in hand, effortless cool energy, morning city light, walking between cafes",
+      },
+      {
+        label: "Cosy home",
+        prompt:
+          "Cosy at home - soft morning light through windows, relaxed loungewear moment, off-duty vibes, natural and intimate",
+      },
+      {
+        label: "City walk",
+        prompt:
+          "City walk - metropolitan street style, confident stride, NYC street energy, golden hour between buildings",
+      },
+      {
+        label: "Golden hour",
+        prompt:
+          "Golden hour - warm sunset glow on skin, magic hour lighting, dreamy and romantic, Instagram golden moment",
+      },
+      {
+        label: "Brunch",
+        prompt: "Brunch vibes - chic restaurant moment, natural daylight, weekend aesthetic, effortlessly put together",
+      },
+      {
+        label: "Night out",
+        prompt:
+          "Night out - evening city lights, glamorous but not overdone, elevated dinner energy, sophisticated nightlife",
+      },
+      {
+        label: "Getting ready",
+        prompt:
+          "Getting ready - mirror selfie energy, bedroom natural light, half-ready candid moment, relatable and aspirational",
+      },
+      {
+        label: "Morning routine",
+        prompt:
+          "Morning routine - soft bedroom light, fresh-faced natural beauty, that girl aesthetic, peaceful start to day",
+      },
     ],
     aesthetic: [
-      { label: "Clean girl", prompt: "Clean girl" },
-      { label: "Dark & moody", prompt: "Dark and moody" },
-      { label: "Soft glam", prompt: "Soft glam" },
-      { label: "Scandinavian", prompt: "Scandinavian" },
-      { label: "Old money", prompt: "Old money" },
-      { label: "It girl", prompt: "It girl" },
-      { label: "That girl", prompt: "That girl" },
-      { label: "Coquette", prompt: "Coquette" },
+      {
+        label: "Clean girl",
+        prompt:
+          "Clean girl aesthetic - minimal makeup, slicked back hair, neutral tones, model-off-duty, effortless and fresh",
+      },
+      {
+        label: "Dark & moody",
+        prompt: "Dark and moody - dramatic shadows, rich deep tones, mysterious and editorial, night energy",
+      },
+      {
+        label: "Soft glam",
+        prompt: "Soft glam - elevated everyday, subtle glow, polished look, luxe but approachable",
+      },
+      {
+        label: "Scandinavian",
+        prompt: "Scandinavian minimal - clean lines, neutral palette, Copenhagen street style, effortless Nordic cool",
+      },
+      {
+        label: "Old money",
+        prompt: "Old money aesthetic - quiet luxury, understated elegance, timeless and refined",
+      },
+      {
+        label: "It girl",
+        prompt:
+          "It girl energy - trendsetting confidence, off-duty model vibes, fashion-forward but effortless, main character",
+      },
+      {
+        label: "That girl",
+        prompt:
+          "That girl aesthetic - wellness and glow, morning routine energy, healthy lifestyle, aspirational but achievable",
+      },
+      {
+        label: "Coquette",
+        prompt:
+          "Coquette aesthetic - soft feminine, delicate details, romantic and flirty, bows and blush tones, dreamy",
+      },
     ],
     vibe: [
-      { label: "Luxury", prompt: "Luxury" },
-      { label: "Effortless", prompt: "Effortless chic" },
-      { label: "Bold", prompt: "Bold" },
-      { label: "Romantic", prompt: "Romantic" },
-      { label: "Exclusive", prompt: "Exclusive" },
-      { label: "Candid", prompt: "Candid moment" },
-      { label: "Main character", prompt: "Main character" },
-      { label: "Soft life", prompt: "Soft life" },
+      {
+        label: "Luxury",
+        prompt:
+          "Luxury lifestyle - high-end subtle details, five-star environment, quiet luxury aesthetic, understated wealth",
+      },
+      {
+        label: "Effortless",
+        prompt: "Effortless chic - looks like you didn't try but perfect, running errands style, cool girl energy",
+      },
+      {
+        label: "Bold",
+        prompt: "Bold and confident - statement energy, head-turning presence, fearless fashion, unapologetic",
+      },
+      {
+        label: "Romantic",
+        prompt: "Romantic mood - soft light, feminine details, dreamy atmosphere, date night or golden hour energy",
+      },
+      {
+        label: "Exclusive",
+        prompt: "Exclusive access - VIP energy, members-only vibes, private event aesthetic, aspirational lifestyle",
+      },
+      {
+        label: "Candid",
+        prompt:
+          "Candid moment - caught between poses, natural and unposed, authentic laughter or movement, real moment",
+      },
+      {
+        label: "Main character",
+        prompt: "Main character energy - the world is your backdrop, confident and present, all eyes on you moment",
+      },
+      {
+        label: "Soft life",
+        prompt: "Soft life aesthetic - ease and luxury, no stress energy, vacation state of mind, peaceful abundance",
+      },
     ],
     location: [
-      { label: "Rooftop", prompt: "Rooftop" },
-      { label: "Café", prompt: "Café" },
-      { label: "Beach", prompt: "Beach" },
-      { label: "Hotel", prompt: "Hotel" },
-      { label: "Street style", prompt: "Street style" },
-      { label: "Lounge", prompt: "Lounge" },
-      { label: "Yacht", prompt: "Yacht" },
-      { label: "Private jet", prompt: "Private jet" },
+      {
+        label: "Rooftop",
+        prompt:
+          "Rooftop setting - city skyline behind, golden hour or blue hour, cocktail optional, urban luxury moment",
+      },
+      {
+        label: "Café",
+        prompt:
+          "Cafe moment - European sidewalk energy, coffee and croissant vibes, Parisian or NYC cafe culture, people watching",
+      },
+      {
+        label: "Beach",
+        prompt: "Beach lifestyle - golden sand, ocean backdrop, effortless beach glamour not posed, coastal vibes",
+      },
+      {
+        label: "Hotel",
+        prompt: "Hotel luxury - marble lobby or suite, travel lifestyle, five-star details, vacation aesthetic",
+      },
+      {
+        label: "Street style",
+        prompt: "Street style - urban backdrop, walking with purpose, off-duty model energy, city as runway",
+      },
+      {
+        label: "Lounge",
+        prompt:
+          "Lounge setting - upscale bar or hotel lobby, evening lighting, cocktail culture, sophisticated nightlife",
+      },
+      {
+        label: "Yacht",
+        prompt: "Yacht life - deck or marina, nautical luxury, summer Mediterranean energy, effortless coastal glamour",
+      },
+      {
+        label: "Private jet",
+        prompt: "Private jet - cabin interior or tarmac, travel luxury, understated wealth, jet-set lifestyle candid",
+      },
     ],
   }
 
   const promptPoolMan = {
     lifestyle: [
-      { label: "Coffee run", prompt: "Coffee run" },
-      { label: "City", prompt: "City" },
-      { label: "Golden hour", prompt: "Golden hour" },
-      { label: "Night out", prompt: "Night out" },
-      { label: "Weekend", prompt: "Weekend" },
-      { label: "Travel day", prompt: "Travel day" },
-      { label: "Morning", prompt: "Morning" },
-      { label: "Gym", prompt: "Post gym" },
+      {
+        label: "Coffee run",
+        prompt: "Coffee run - casual street style, coffee in hand, off-duty cool, morning city energy, effortless",
+      },
+      {
+        label: "City",
+        prompt: "City lifestyle - urban explorer, metropolitan backdrop, NYC energy, street smart style",
+      },
+      {
+        label: "Golden hour",
+        prompt: "Golden hour - warm sunset light, relaxed moment, cinematic golden glow, natural and aspirational",
+      },
+      {
+        label: "Night out",
+        prompt:
+          "Night out - evening city lights, smart casual elevated, dinner or drinks energy, confident but relaxed",
+      },
+      {
+        label: "Weekend",
+        prompt: "Weekend vibes - relaxed but stylish, casual luxury, Saturday afternoon energy, laid-back and cool",
+      },
+      {
+        label: "Travel day",
+        prompt: "Travel day - airport or hotel, comfortable but put-together, jet-set lifestyle, effortless traveler",
+      },
+      {
+        label: "Morning",
+        prompt: "Morning routine - natural light, fresh and clean, starting the day energy, minimal and masculine",
+      },
+      {
+        label: "Gym",
+        prompt: "Post gym - athletic but styled, healthy lifestyle, workout glow, athleisure done right",
+      },
     ],
     aesthetic: [
-      { label: "Minimal", prompt: "Minimal" },
-      { label: "Dark & moody", prompt: "Dark and moody" },
-      { label: "Streetwear", prompt: "Streetwear" },
-      { label: "Scandinavian", prompt: "Scandinavian" },
-      { label: "Old money", prompt: "Old money" },
-      { label: "Modern", prompt: "Modern" },
-      { label: "Rugged", prompt: "Rugged" },
-      { label: "Clean", prompt: "Clean" },
+      {
+        label: "Minimal",
+        prompt:
+          "Minimal aesthetic - clean and intentional, quality over quantity, Scandinavian influence, refined simplicity",
+      },
+      {
+        label: "Dark & moody",
+        prompt: "Dark and moody - dramatic lighting, rich tones, mysterious edge, cinematic and artistic",
+      },
+      {
+        label: "Streetwear",
+        prompt:
+          "Streetwear style - urban fashion-forward, hype culture meets luxury, statement pieces, bold streetwear",
+      },
+      {
+        label: "Scandinavian",
+        prompt: "Scandinavian minimal - Nordic clean lines, neutral palette, Copenhagen street style, effortless cool",
+      },
+      {
+        label: "Old money",
+        prompt: "Old money aesthetic - quiet luxury, prep influence, timeless menswear, understated wealth and taste",
+      },
+      {
+        label: "Modern",
+        prompt: "Modern masculine - contemporary style, clean silhouettes, elevated everyday, refined casual",
+      },
+      {
+        label: "Rugged",
+        prompt: "Rugged refined - outdoor meets luxury, natural textures, adventurous spirit, masculine and polished",
+      },
+      {
+        label: "Clean",
+        prompt: "Clean aesthetic - fresh and precise, well-groomed, minimal details, put-together without trying",
+      },
     ],
     vibe: [
-      { label: "Luxury", prompt: "Luxury" },
-      { label: "Effortless", prompt: "Effortless" },
-      { label: "Bold", prompt: "Bold" },
-      { label: "Editorial", prompt: "Editorial" },
-      { label: "Candid", prompt: "Candid" },
-      { label: "Exclusive", prompt: "Exclusive" },
-      { label: "Boss", prompt: "Boss vibes" },
-      { label: "Adventure", prompt: "Adventure" },
+      {
+        label: "Luxury",
+        prompt: "Luxury lifestyle - subtle wealth indicators, high-end environment, quiet confidence, refined taste",
+      },
+      {
+        label: "Effortless",
+        prompt: "Effortless cool - looks easy but intentional, model-off-duty energy, natural charisma",
+      },
+      {
+        label: "Bold",
+        prompt: "Bold presence - confident and commanding, statement style, fearless energy, unapologetic",
+      },
+      {
+        label: "Editorial",
+        prompt: "Editorial mood - fashion-forward, artistic composition, magazine-worthy but still authentic, elevated",
+      },
+      {
+        label: "Candid",
+        prompt: "Candid moment - caught naturally, authentic movement or expression, real and relatable",
+      },
+      { label: "Exclusive", prompt: "Exclusive access - VIP environment, members-only energy, aspirational lifestyle" },
+      {
+        label: "Boss",
+        prompt: "Boss vibes - successful energy, corner office or business luxury, powerful but not corporate stiff",
+      },
+      {
+        label: "Adventure",
+        prompt: "Adventure lifestyle - explorer energy, travel and discovery, rugged luxury, worldly and curious",
+      },
     ],
     location: [
-      { label: "Rooftop", prompt: "Rooftop" },
-      { label: "Café", prompt: "Café" },
-      { label: "Penthouse", prompt: "Penthouse" },
-      { label: "Hotel", prompt: "Hotel" },
-      { label: "Street", prompt: "Street" },
-      { label: "Luxury car", prompt: "Luxury car" },
-      { label: "Office", prompt: "Corner office" },
-      { label: "Yacht", prompt: "Yacht" },
+      {
+        label: "Rooftop",
+        prompt: "Rooftop setting - city views, urban luxury, cocktail hour energy, skyline backdrop",
+      },
+      {
+        label: "Café",
+        prompt: "Cafe moment - coffee culture, newspaper or laptop optional, European sidewalk or NYC corner spot",
+      },
+      {
+        label: "Penthouse",
+        prompt: "Penthouse living - floor-to-ceiling windows, city views, luxury interior, aspirational lifestyle",
+      },
+      { label: "Hotel", prompt: "Hotel luxury - five-star details, travel lifestyle, lobby or suite, jet-set energy" },
+      {
+        label: "Street",
+        prompt: "Street style - urban backdrop, city as runway, walking with purpose, metropolitan cool",
+      },
+      {
+        label: "Luxury car",
+        prompt: "Luxury car - automotive detail or driving, leather interior, subtle wealth, car culture",
+      },
+      {
+        label: "Office",
+        prompt: "Corner office - successful professional, modern workspace, power position, boss energy",
+      },
+      {
+        label: "Yacht",
+        prompt: "Yacht life - nautical luxury, deck or marina, Mediterranean summer, coastal sophistication",
+      },
     ],
   }
 
@@ -941,16 +1147,23 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
     }
   }
 
-  const handleSendMessage = async (customPrompt?: string) => {
+  const handleSendMessage = async (customPrompt?: string, displayText?: string) => {
     const messageText = customPrompt || inputValue.trim()
+    // Use displayText if provided (for quick prompts), otherwise use messageText
+    const userVisibleText = displayText || messageText
+
     if ((messageText || uploadedImage) && !isTyping) {
-      const messageContent = uploadedImage ? `${messageText}\n\n[Inspiration Image: ${uploadedImage}]` : messageText
+      const messageContent = uploadedImage
+        ? `${userVisibleText}\n\n[Inspiration Image: ${uploadedImage}]`
+        : userVisibleText
+      // The actual prompt sent to Maya (may include richer context)
+      const mayaPrompt = uploadedImage ? `${messageText}\n\n[Inspiration Image: ${uploadedImage}]` : messageText
 
       console.log("[v0] 📤 Sending message with settings:", {
         styleStrength,
         promptAccuracy,
         aspectRatio,
-        realismStrength, // Include realism strength in log
+        realismStrength,
       })
 
       isAtBottomRef.current = true
@@ -977,7 +1190,6 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
         }
       }
 
-      // Save user message with the current chatId
       if (currentChatId) {
         fetch("/api/maya/save-message", {
           method: "POST",
@@ -985,7 +1197,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
           body: JSON.stringify({
             chatId: currentChatId,
             role: "user",
-            content: messageContent,
+            content: messageContent, // User-visible text saved
           }),
         }).catch((error) => {
           console.error("[v0] Error saving user message:", error)
@@ -993,13 +1205,13 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
       }
 
       sendMessage({
-        text: messageContent,
+        text: mayaPrompt,
         experimental_providerMetadata: {
           customSettings: {
             styleStrength,
             promptAccuracy,
             aspectRatio,
-            realismStrength, // Include realism strength in customSettings
+            realismStrength,
           },
         },
       })
@@ -1387,7 +1599,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
                 {currentPrompts.map((item, index) => (
                   <button
                     key={index}
-                    onClick={() => handleSendMessage(item.prompt)}
+                    onClick={() => handleSendMessage(item.prompt, item.label)}
                     className="flex-shrink-0 px-4 py-2.5 sm:py-3 bg-white/50 backdrop-blur-xl border border-white/70 rounded-xl hover:bg-stone-100 hover:border-stone-300 transition-all duration-300 touch-manipulation active:scale-95 min-h-[44px]"
                   >
                     <span className="text-xs tracking-wide font-medium text-stone-700 whitespace-nowrap">
@@ -1562,7 +1774,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
               {currentPrompts.map((item, index) => (
                 <button
                   key={index}
-                  onClick={() => handleSendMessage(item.prompt)}
+                  onClick={() => handleSendMessage(item.prompt, item.label)}
                   disabled={isTyping}
                   className="flex-shrink-0 px-3 py-2 bg-white/40 backdrop-blur-xl border border-white/60 rounded-lg hover:bg-white/60 transition-all duration-300 disabled:opacity-50 touch-manipulation active:scale-95 min-h-[44px]"
                 >

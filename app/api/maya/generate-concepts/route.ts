@@ -3,9 +3,13 @@ import { createServerClient } from "@/lib/supabase/server"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { generateText } from "ai"
+import { openai } from "@ai-sdk/openai"
 import { getFluxPromptingPrinciples } from "@/lib/maya/flux-prompting-principles"
 import { getFashionIntelligencePrinciples } from "@/lib/maya/fashion-knowledge-2025"
-import { getAuthenticPhotographyContext } from "@/lib/maya/authentic-photography-knowledge"
+import {
+  getAuthenticPhotographyContext,
+  getLifestyleDetailShotContext,
+} from "@/lib/maya/authentic-photography-knowledge"
 import { getLoraKnowledgeForMaya } from "@/lib/maya/instagram-loras"
 
 type MayaConcept = {
@@ -49,7 +53,7 @@ export async function POST(req: NextRequest) {
       aesthetic,
       context,
       userModifications,
-      count = 3,
+      count = 5,
       referenceImageUrl,
       customSettings,
       mode = "concept",
@@ -103,6 +107,41 @@ export async function POST(req: NextRequest) {
     const fashionIntelligence = getFashionIntelligencePrinciples(userGender)
     const authenticPhotography = getAuthenticPhotographyContext()
     const instagramLoraKnowledge = getLoraKnowledgeForMaya()
+    const lifestyleDetailContext = getLifestyleDetailShotContext()
+
+    console.log("[v0] Step 1: Researching current fashion trends with web search...")
+
+    const trendSearchQuery =
+      userGender === "woman"
+        ? `${userRequest} outfit inspiration 2025 celebrity street style Hailey Bieber Kendall Jenner Instagram influencer fashion`
+        : `${userRequest} outfit inspiration 2025 celebrity street style men fashion Instagram influencer`
+
+    let trendResearchResults = ""
+
+    try {
+      const { text: trendText } = await generateText({
+        model: "openai/gpt-4o-mini",
+        prompt: `You are a fashion research assistant. Search for the latest fashion trends and outfit inspiration for: "${userRequest}"
+        
+Focus on:
+1. What are celebrities and influencers wearing RIGHT NOW for this type of look?
+2. What specific outfit combinations are trending on Instagram/Pinterest?
+3. What are the key styling details (accessories, layering, color combinations)?
+4. What makes these outfits look expensive/high-end yet effortless?
+
+Be specific with garment names, fabrics, colors, and how items are styled together.`,
+        tools: {
+          web_search: openai.tools.webSearch({}),
+        },
+        maxSteps: 3,
+      })
+
+      trendResearchResults = trendText
+      console.log("[v0] Fashion trend research complete:", trendResearchResults.substring(0, 500))
+    } catch (searchError) {
+      console.log("[v0] Web search unavailable, using static fashion knowledge:", searchError)
+      trendResearchResults = "Web search unavailable - using built-in fashion intelligence."
+    }
 
     // Analyze reference image if provided
     let imageAnalysis = ""
@@ -168,12 +207,41 @@ IMPORTANT:
 `
       : ""
 
+    const trendResearchSection = trendResearchResults
+      ? `
+=== LIVE FASHION TREND RESEARCH (just searched the web for you) ===
+
+I just researched the latest trends for "${userRequest}". Here's what's HOT right now:
+
+${trendResearchResults}
+
+USE THIS RESEARCH! Apply these REAL current trends to create outfits that look like what celebrities and influencers are ACTUALLY wearing right now.
+===
+
+`
+      : ""
+
     const conceptPrompt = `You are Maya, an elite fashion photographer with 15 years of experience shooting for Vogue, Elle, and creating viral Instagram content. You have an OBSESSIVE eye for authenticity - you know that the best images feel stolen from real life, not produced.
 
+=== CRITICAL: THE USER'S REQUEST IS YOUR NORTH STAR ===
+
+USER REQUEST: "${userRequest}"
+${aesthetic ? `AESTHETIC VIBE: ${aesthetic}` : ""}
+${context ? `ADDITIONAL CONTEXT: ${context}` : ""}
+
+EVERY SINGLE CONCEPT YOU CREATE MUST DIRECTLY RELATE TO THIS REQUEST.
+- User asks for "coffee run" → ALL concepts involve coffee, cafes, or the coffee run aesthetic
+- User asks for "city street style" → ALL concepts are in city settings with urban vibes
+- User asks for "beach day" → ALL concepts are beach/coastal themed
+- DO NOT drift to random other themes. Stay focused on what the user asked for.
+
+${trendResearchSection}
 ${conversationContextSection}
 ${fashionIntelligence}
 
 ${authenticPhotography}
+
+${lifestyleDetailContext}
 
 === INSTAGRAM LORA KNOWLEDGE ===
 
@@ -192,23 +260,16 @@ CRITICAL: Your images should look like an influencer's best friend took them on 
 
 ===
 
-USER REQUEST: "${userRequest}"
-${aesthetic ? `AESTHETIC VIBE: ${aesthetic}` : ""}
-${context ? `ADDITIONAL CONTEXT: ${context}` : ""}
-
 ${
   mode === "photoshoot"
     ? `MODE: PHOTOSHOOT - Create ${count} variations of ONE cohesive look (same outfit and location, different poses/angles/moments)`
-    : `MODE: CONCEPTS - Create ${count} completely different concepts (varied outfits, locations, and vibes)`
-}
-
-${
-  imageAnalysis
-    ? `REFERENCE IMAGE ANALYSIS:
-${imageAnalysis}
-
-Capture this exact vibe - the styling, mood, lighting, and composition.`
-    : ""
+    : `MODE: CONCEPTS - Create ${count} concepts total that ALL relate to "${userRequest}":
+    - First ${count - 1} concepts: Person-focused lifestyle shots - EACH must match the user's theme
+    - LAST concept (concept ${count}): LIFESTYLE DETAIL SHOT that MATCHES THE USER'S REQUEST THEME
+      * NO face - focus on accessories, objects, or luxury moments
+      * MUST be thematically connected to the user's request
+      
+IMPORTANT: ALL ${count} concepts must feel like they belong to the SAME story/theme the user requested. Don't create one matching concept then drift to random other themes.`
 }
 
 === YOUR FLUX PROMPTING MASTERY ===
@@ -220,28 +281,40 @@ ${getFluxPromptingPrinciples()}
 TRIGGER WORD: "${triggerWord}"
 GENDER: "${userGender}"
 
-1. Every prompt MUST start with: "${triggerWord}, ${userGender}"
-2. AUTHENTIC INSTAGRAM FIRST: Every image must feel candid, lifestyle, influencer-authentic - NOT professional photoshoot
-3. Apply the OUTFIT PRINCIPLE with your FASHION INTELLIGENCE - no boring defaults
-4. Apply the AUTHENTIC EXPRESSION PRINCIPLE - use micro-expressions from authentic photography knowledge
-5. Apply the AUTHENTIC POSE PRINCIPLE - natural body language, not posed
-6. Apply the LOCATION PRINCIPLE for lifestyle settings (cafes, streets, homes - not studios)
-7. Apply the AUTHENTIC LIGHTING PRINCIPLE - natural, imperfect light only (NO studio/professional lighting)
-8. Apply the TECHNICAL PRINCIPLE - MUST include "shot on iPhone 15 Pro" for authenticity
-9. Run the QUALITY FILTERS before outputting
-10. Hit the WORD BUDGET for the shot type
+1. Every prompt MUST start with: "${triggerWord}, ${userGender}" (EXCEPT Lifestyle Detail shots which have no person)
+2. STAY ON THEME: Every concept must directly relate to "${userRequest}" - don't drift!
+3. USE THE TREND RESEARCH: Apply the real current trends I just researched to create celebrity-level outfits
+4. AUTHENTIC INSTAGRAM FIRST: Every image must feel candid, lifestyle, influencer-authentic - NOT professional photoshoot
+5. Apply the OUTFIT PRINCIPLE with your FASHION INTELLIGENCE - use SPECIFIC current trends from the research
+6. Apply the AUTHENTIC EXPRESSION PRINCIPLE - use micro-expressions from authentic photography knowledge
+7. Apply the AUTHENTIC POSE PRINCIPLE - natural body language, not posed
+8. Apply the LOCATION PRINCIPLE for lifestyle settings that MATCH THE USER'S REQUEST
+9. Apply the AUTHENTIC LIGHTING PRINCIPLE - natural, imperfect light only (NO studio/professional lighting)
+10. Apply the TECHNICAL PRINCIPLE - MUST include "shot on iPhone 15 Pro" for authenticity
+11. Run the QUALITY FILTERS before outputting
+12. Hit the WORD BUDGET for the shot type
 
-=== YOUR CREATIVE MISSION ===
+=== OUTFIT STYLING: USE THE TREND RESEARCH ===
 
-You are NOT filling templates. You are SYNTHESIZING unique Instagram-authentic moments by applying your fashion intelligence and authentic photography principles to this specific user request.
+You just received LIVE fashion research above. Use it!
 
-REMEMBER: The goal is LIFESTYLE CONTENT that looks authentic, candid, and realistic - like content a successful influencer would post. NOT professional editorial photoshoots.
+Create outfits that:
+- Match what celebrities/influencers are ACTUALLY wearing RIGHT NOW (from the research)
+- Include specific current trends (not generic "blazer" but "oversized vintage linen blazer worn open over ribbed tank")
+- Feel effortlessly cool and expensive
+- Have the styling details that make Instagram outfits go viral (layering, accessory stacking, unexpected combinations)
 
-For each concept:
-- What would this SPECIFIC person wear in this SPECIFIC moment? (Use your fashion intelligence, not defaults)
-- What authentic micro-expression captures the EMOTION? (Use authentic photography knowledge)
-- What natural lighting tells the STORY? (Avoid anything "professional" or "studio")
-- What makes this feel like a REAL influencer captured this on their iPhone, not a photographer with a DSLR?
+=== LIFESTYLE AUTHENTICITY MARKERS ===
+
+Add these to make images feel REAL and CANDID (use naturally, not forced):
+- "everyday moment" - the image captures a real life moment
+- "caught candidly" - natural, not posed
+- "between poses" - that relaxed moment when someone isn't trying
+- "natural pause" - authentic stillness
+- "unstaged moment" - feels discovered, not arranged
+- "genuine casual moment" - real life energy
+- "mid-thought" - authentic mental state
+- "organic movement" - natural body language
 
 === JSON OUTPUT FORMAT ===
 
@@ -250,11 +323,11 @@ Return ONLY valid JSON array, no markdown:
   {
     "title": "Simple catchy title - 2-4 words MAX, like an Instagram caption would say. Examples: 'Morning Coffee', 'City Walks', 'Golden Hour Glow', 'That Friday Feeling'. NO fancy editorial names.",
     "description": "One SHORT casual sentence - like texting a friend. Max 10 words. Examples: 'Giving main character energy today', 'Coffee and good vibes', 'This light though'. NO flowery language.",
-    "category": "Close-Up Portrait" | "Half Body Lifestyle" | "Environmental Portrait" | "Close-Up Action",
-    "fashionIntelligence": "Your outfit reasoning - WHY this outfit for this moment",
+    "category": "Close-Up Portrait" | "Half Body Lifestyle" | "Environmental Portrait" | "Close-Up Action" | "Lifestyle Detail",
+    "fashionIntelligence": "Your outfit reasoning - WHY this outfit for this moment, reference the trend research",
     "lighting": "Your lighting reasoning",
-    "location": "Your location reasoning",
-    "prompt": "YOUR CRAFTED FLUX PROMPT - synthesized from principles, MUST start with ${triggerWord}, ${userGender}"
+    "location": "Your location reasoning - MUST match user's request theme",
+    "prompt": "YOUR CRAFTED FLUX PROMPT - synthesized from principles and trend research, MUST start with ${triggerWord}, ${userGender} for person shots. For Lifestyle Detail shots: describe hands/accessories/objects with NO face, and MUST match the user's request theme"
   }
 ]
 
@@ -268,9 +341,36 @@ DESCRIPTIONS - Like a text to your bestie:
 ✓ "Giving off-duty model" | "This vibe hits different" | "Obsessed with this light" | "Weekend energy"
 ✗ "Luxurious burgundy velvet meets downtown edge - the kind of look that makes everyone wonder who you are"
 
-Now apply your fashion intelligence and prompting mastery. Create ${count} concepts where every outfit choice is INTENTIONAL and story-driven.`
+=== DETAIL SHOT RULES (for the LAST concept) ===
 
-    console.log("[v0] Calling generateText for concept generation")
+The LAST concept MUST be a Lifestyle Detail shot that MATCHES THE USER'S REQUEST:
+- Category: "Lifestyle Detail"
+- NO face in the prompt - focus on hands, objects, accessories, environment
+- MUST be thematically connected to what user asked for (city = city objects, beach = beach objects, etc.)
+- Show luxury lifestyle elements that belong to the SAME STORY as the other concepts
+- Think: "What would this person photograph between selfies in THIS specific location/aesthetic?"
+
+**Example - User asks for "coffee run":**
+- Good detail shot: "hands wrapped around paper coffee cup, gold rings catching morning light, busy city street in background, shot on iPhone 15 Pro"
+- Bad detail shot: "cozy home candles" (wrong theme - coffee run is OUTDOORS!)
+
+**Example - User asks for "luxury Miami":**
+- Good detail shot: "champagne flute on yacht deck railing, turquoise ocean background, afternoon sun sparkle, gold bracelet on wrist, shot on iPhone 15 Pro"
+- Bad detail shot: "coffee cup at cozy cabin" (wrong theme!)
+
+=== FINAL CHECK BEFORE OUTPUT ===
+
+Ask yourself for EACH concept:
+1. Does this directly relate to "${userRequest}"?
+2. Would this feel out of place in a series about "${userRequest}"?
+3. Does the outfit reflect CURRENT trends from the research (not generic basics)?
+4. Is the styling celebrity/influencer-level specific?
+
+If any answer is wrong, revise that concept before outputting.
+
+Now apply your fashion intelligence, trend research, and prompting mastery. Create ${count} concepts where EVERY concept matches the user's request, every outfit choice reflects CURRENT celebrity trends, and the detail shot COMPLETES the story the user asked for.`
+
+    console.log("[v0] Step 2: Calling generateText for concept generation with trend research")
 
     const { text } = await generateText({
       model: "anthropic/claude-sonnet-4-20250514",
@@ -331,7 +431,7 @@ Now apply your fashion intelligence and prompting mastery. Create ${count} conce
       })
     }
 
-    console.log("[v0] Successfully generated", concepts.length, "sophisticated concepts")
+    console.log("[v0] Successfully generated", concepts.length, "sophisticated concepts with live trend research")
 
     return NextResponse.json({
       state: "ready",

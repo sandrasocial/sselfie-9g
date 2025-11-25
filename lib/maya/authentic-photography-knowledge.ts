@@ -108,6 +108,13 @@ export const AUTHENTIC_PHOTOGRAPHY_KNOWLEDGE = {
       "genuine casual moment",
       "unstaged authentic instant",
       "real life captured naturally",
+      "everyday moment, nothing forced",
+      "caught candidly, between poses",
+      "natural pause in conversation",
+      "mid-thought, genuine expression",
+      "organic movement, not directed",
+      "that moment between moments",
+      "unstaged, discovered by camera",
     ],
     LIFESTYLE_SCENARIOS: [
       "morning coffee routine, natural light through window",
@@ -118,6 +125,14 @@ export const AUTHENTIC_PHOTOGRAPHY_KNOWLEDGE = {
       "traveling lifestyle, exploring naturally",
       "sunset walk, golden hour glow",
       "cozy indoor evening, warm ambient light",
+      "quick coffee grab, on the go energy",
+      "waiting for friend at cafe, scrolling phone naturally",
+      "walking and laughing, mid-conversation",
+      "sitting by window, lost in thought",
+      "leaning against wall, casual street moment",
+      "adjusting hair naturally, unaware of camera",
+      "checking phone while walking",
+      "genuine laugh fading, eyes still bright",
     ],
   },
 
@@ -140,6 +155,48 @@ export const AUTHENTIC_PHOTOGRAPHY_KNOWLEDGE = {
       "park environment, dappled shade",
       "beach at golden hour, warm natural light",
       "rooftop at dusk, city lights emerging",
+    ],
+  },
+
+  // Lifestyle detail shots - the objects and moments that complete an influencer's feed
+  LIFESTYLE_DETAIL_SHOTS: {
+    // What makes a great detail shot (principles, not templates)
+    PRINCIPLES: [
+      "The accessory or object should tell a story about the lifestyle moment",
+      "Natural light is essential - never studio lighting for detail shots",
+      "Composition should feel discovered, not arranged",
+      "Include environmental context - where is this moment happening?",
+      "Color harmony with the overall feed aesthetic",
+      "Texture and material quality must be visible and luxurious",
+    ],
+    // Types of lifestyle detail shots influencers capture
+    CATEGORIES: {
+      ACCESSORIES: "hands, jewelry, watches, bags, shoes - always in context of a moment",
+      FLATLAYS: "curated overhead shots of lifestyle items - coffee, tech, beauty products",
+      FOOD_DRINKS: "aesthetic beverages and meals - focus on styling and natural light",
+      INTERIORS: "cozy corners, styled spaces, architectural details",
+      TRAVEL: "passport details, hotel moments, destination hints",
+      AUTOMOTIVE: "luxury car details, steering wheels, gear shifters, leather interiors",
+    },
+    // What elevates a detail shot
+    QUALITY_MARKERS: [
+      "soft natural light revealing texture and depth",
+      "shallow depth of field drawing focus to the hero element",
+      "luxury materials catching light naturally - leather, silk, gold",
+      "environmental storytelling through partial background",
+      "color palette that reads as intentional and curated",
+      "casual arrangement that looks effortless, not forced",
+    ],
+    // Common Instagram detail shot contexts
+    MOMENT_CONTEXTS: [
+      "morning coffee table moment, steam visible, soft window light",
+      "getting ready detail, perfume bottles and accessories scattered naturally",
+      "travel carry-on styling, passport and leather goods on marble surface",
+      "driving moment, hands on steering wheel, luxury watch visible",
+      "afternoon tea setup, patisserie details, elegant table setting",
+      "sunset terrace, champagne glass with city view, golden hour glow",
+      "home office aesthetic, laptop and coffee, minimalist styled desk",
+      "poolside luxury, sunglasses and drink on marble ledge",
     ],
   },
 }
@@ -196,5 +253,52 @@ Instead of "smiling" or "looking confident", use SPECIFIC authentic expressions:
 - Generic lighting terms: "nice light", "good lighting"
 
 **REMEMBER:** Users want to look like successful influencers, not models in magazines. Authentic > Polished.
+`
+}
+
+export function getLifestyleDetailShotContext(): string {
+  return `
+=== LIFESTYLE DETAIL SHOTS - INSTAGRAM AESTHETIC ===
+
+**PURPOSE:** Detail shots complete an influencer's feed - they add variety, show lifestyle, and create that curated aesthetic without always showing faces.
+
+**WHAT MAKES A GREAT DETAIL SHOT:**
+- Objects/accessories in CONTEXT of a lifestyle moment (not product photography)
+- Natural light is ESSENTIAL - soft window light, golden hour, overcast day
+- Feels DISCOVERED, not arranged (casual styling, not catalog)
+- Tells a STORY about the lifestyle moment
+- Luxury materials catching light naturally (leather, silk, metal, marble)
+
+**TYPES OF DETAIL SHOTS:**
+- **Accessories in moment**: Hands holding coffee, watch visible while driving, jewelry while getting ready
+- **Lifestyle flatlays**: Coffee + book + flowers on marble, travel essentials arranged casually
+- **Food & drinks**: Aesthetic lattes, champagne glasses, restaurant plates (styled naturally)
+- **Interiors**: Cozy corners, hotel room details, architectural moments
+- **Automotive luxury**: Steering wheel grip, gear shifter, car interior textures
+- **Travel hints**: Passport corner, boarding pass edge, hotel key on marble
+
+**QUALITY MARKERS:**
+- Shallow depth of field (hero object sharp, background soft)
+- Texture and material quality VISIBLE (grain of leather, weave of fabric)
+- Environmental context partial but present (where is this happening?)
+- Color palette intentional and feed-cohesive
+- Natural imperfections (a real coffee ring, slightly rumpled fabric)
+
+**PROMPTING FOR DETAIL SHOTS:**
+- NO person's face - focus on hands, objects, environment
+- Start with the MOMENT, then describe the objects
+- Include specific materials and textures (Italian leather, brushed gold, raw silk)
+- Describe the LIGHT source and quality
+- Include "shot on iPhone 15 Pro" for authenticity
+- Mention depth of field: "shallow focus", "background softly blurred"
+
+**EXAMPLE DETAIL SHOT PROMPT STRUCTURE:**
+"[moment/action], [hero object with materials], [environmental context], [lighting], [technical - iPhone, shallow focus]"
+
+**BANNED FOR DETAIL SHOTS:**
+- Product photography styling (too arranged)
+- Studio lighting or artificial light
+- Generic "lifestyle" without specific moment
+- Objects floating on white backgrounds
 `
 }

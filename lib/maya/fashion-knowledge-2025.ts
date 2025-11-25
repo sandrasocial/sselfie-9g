@@ -17,6 +17,183 @@ export const FASHION_TRENDS_2025 = {
         engagement: "Very High - quick, satisfying transformation",
       },
     },
+    aesthetics: {
+      quiet_luxury: {
+        name: "Quiet Luxury",
+        description: "Understated elegance, expensive fabrics, minimal branding",
+        keywords: [
+          "cashmere",
+          "silk",
+          "tailored",
+          "neutral tones",
+          "minimal jewelry",
+          "expensive fabrics",
+          "The Row aesthetic",
+          "old money style",
+        ],
+        brands: ["The Row", "Loro Piana", "Brunello Cucinelli"],
+        vibe: "Effortless wealth, understated sophistication",
+      },
+      mob_wife: {
+        name: "Mob Wife Aesthetic",
+        description: "Maximalist glamour, fur coats, bold makeup, oversized sunglasses",
+        keywords: [
+          "fur coat",
+          "leather gloves",
+          "red lips",
+          "oversized sunglasses",
+          "gold jewelry",
+          "dramatic",
+          "bold presence",
+          "maximalist glamour",
+        ],
+        vibe: "Powerful, dramatic, unapologetically glamorous",
+      },
+      clean_girl: {
+        name: "Clean Girl Aesthetic",
+        description: "Natural makeup, slicked back hair, minimal jewelry, fresh skin",
+        keywords: [
+          "dewy skin",
+          "slicked back bun",
+          "gold hoops",
+          "fresh face",
+          "minimal makeup",
+          "natural glow",
+          "effortless beauty",
+        ],
+        vibe: "Fresh, natural, polished simplicity",
+      },
+      scandi_minimal: {
+        name: "Scandinavian Minimalism",
+        description: "Neutral palettes, clean lines, cozy textures, hygge aesthetic",
+        keywords: [
+          "beige tones",
+          "linen",
+          "wool",
+          "chunky knits",
+          "minimal accessories",
+          "natural fabrics",
+          "hygge vibes",
+          "soft lighting",
+        ],
+        vibe: "Warm, inviting, effortlessly chic",
+      },
+      urban_street: {
+        name: "Urban Street Style",
+        description: "Cool city vibes, oversized pieces, confident stride",
+        keywords: [
+          "oversized leather jacket",
+          "wide-leg jeans",
+          "structured bag",
+          "statement sunglasses",
+          "layered gold jewelry",
+          "city backdrop",
+        ],
+        vibe: "Effortless cool, street smart, confident energy",
+      },
+      coastal_luxury: {
+        name: "Coastal Luxury",
+        description: "Beach club elegance, Mediterranean vibes, resort chic",
+        keywords: [
+          "linen sets",
+          "gold tan",
+          "strappy sandals",
+          "oversized sun hat",
+          "delicate gold",
+          "white and cream",
+          "ocean backdrop",
+        ],
+        vibe: "Vacation mode, effortless elegance, sun-kissed",
+      },
+      dark_femme: {
+        name: "Dark Feminine",
+        description: "Mysterious, romantic, moody elegance",
+        keywords: [
+          "black lace",
+          "deep burgundy",
+          "velvet textures",
+          "dramatic silhouettes",
+          "dark lips",
+          "sultry energy",
+        ],
+        vibe: "Mysterious, powerful, romantic darkness",
+      },
+      y2k_revival: {
+        name: "Y2K Revival",
+        description: "Early 2000s nostalgia, low-rise, butterfly clips, bold colors",
+        keywords: [
+          "low-rise everything",
+          "baby tees",
+          "butterfly accessories",
+          "platform shoes",
+          "mini skirts",
+          "bold prints",
+          "nostalgic energy",
+        ],
+        vibe: "Playful nostalgia, bold and fun, unapologetically Y2K",
+      },
+    },
+  },
+}
+
+export const SEASONAL_PALETTES_2025 = {
+  winter: {
+    colors: ["charcoal grey", "cream", "chocolate brown", "forest green", "burgundy", "navy", "camel"],
+    fabrics: ["wool", "cashmere", "leather", "suede", "chunky knits", "velvet"],
+    vibe: "Cozy luxury, rich textures, layered sophistication",
+  },
+  spring: {
+    colors: ["soft pink", "butter yellow", "sage green", "sky blue", "cream", "lavender", "mint"],
+    fabrics: ["linen", "cotton", "silk", "lightweight knits", "denim"],
+    vibe: "Fresh, airy, romantic minimalism",
+  },
+  summer: {
+    colors: ["white", "sand", "ocean blue", "coral", "olive", "terracotta", "citrus yellow"],
+    fabrics: ["linen", "cotton", "breathable knits", "crochet", "mesh", "lightweight denim"],
+    vibe: "Effortless, breezy, coastal elegance",
+  },
+  fall: {
+    colors: ["rust", "chocolate brown", "olive", "burnt orange", "deep burgundy", "camel", "forest green"],
+    fabrics: ["wool", "corduroy", "leather", "suede", "heavy knits", "tweed"],
+    vibe: "Warm, earthy, layered richness",
+  },
+}
+
+export const LOCATION_AESTHETICS = {
+  city_street: {
+    vibe: "Cool, confident, on-the-go energy",
+    styling: "Effortless layers, statement outerwear, oversized sunglasses, crossbody bag",
+    scenarios: ["coffee run", "walking to work", "city exploring", "street style moment", "hailing a cab"],
+  },
+  cozy_home: {
+    vibe: "Soft, intimate, relaxed luxury",
+    styling: "Comfortable luxury, soft knits, loungewear elevated, natural makeup",
+    scenarios: ["morning coffee", "working from home", "cozy evening", "slow morning", "reading nook"],
+  },
+  cafe_restaurant: {
+    vibe: "Casual elegance, social ease, main character energy",
+    styling: "Elevated basics, simple jewelry, polished but approachable",
+    scenarios: ["coffee date", "brunch with friends", "solo espresso", "dinner reservations", "wine bar"],
+  },
+  beach_resort: {
+    vibe: "Vacation mode, sun-kissed, effortless glamour",
+    styling: "Linen layers, gold jewelry, sandals, natural glow",
+    scenarios: ["beach club", "pool day", "sunset drinks", "yacht deck", "hotel terrace"],
+  },
+  nightlife: {
+    vibe: "Bold, confident, ready for anything",
+    styling: "Statement pieces, heels, bold makeup, eye-catching textures",
+    scenarios: ["rooftop bar", "club entrance", "late night taxi", "after party", "hotel lobby"],
+  },
+  travel: {
+    vibe: "Jet-setter, polished comfort, effortlessly chic",
+    styling: "Comfortable but styled, quality fabrics, easy layers",
+    scenarios: ["airport outfit", "hotel check-in", "train station", "exploring new city", "first class lounge"],
+  },
+  nature_outdoor: {
+    vibe: "Fresh air, golden light, peaceful energy",
+    styling: "Casual luxury, natural fabrics, minimal accessories",
+    scenarios: ["golden hour walk", "farmers market", "park stroll", "picnic aesthetic", "hiking chic"],
   },
 }
 
@@ -91,21 +268,38 @@ export function getFashionIntelligencePrinciples(gender: string): string {
           ? "fall"
           : "winter"
 
+  const seasonalPalette = SEASONAL_PALETTES_2025[season as keyof typeof SEASONAL_PALETTES_2025]
+
   const genderData =
     GENDER_STYLING_PHILOSOPHY[gender as keyof typeof GENDER_STYLING_PHILOSOPHY] || GENDER_STYLING_PHILOSOPHY.woman
 
   if (gender === "man" || gender === "male") {
-    return getMensFashionPrinciples(season, genderData)
+    return getMensFashionPrinciples(season, genderData, seasonalPalette)
   }
 
-  return getWomensFashionPrinciples(season, genderData)
+  return getWomensFashionPrinciples(season, genderData, seasonalPalette)
 }
 
-function getMensFashionPrinciples(season: string, genderData: typeof GENDER_STYLING_PHILOSOPHY.man): string {
+function getMensFashionPrinciples(
+  season: string,
+  genderData: typeof GENDER_STYLING_PHILOSOPHY.man,
+  seasonalPalette: typeof SEASONAL_PALETTES_2025.winter,
+): string {
   return `
 === MAYA'S 2025/2026 MEN'S STYLE INTELLIGENCE ===
 
 You understand men's fashion at an expert level. You know what's trending on Instagram, what celebrities are wearing, and how to make any guy look effortlessly cool.
+
+## CURRENT SEASON: ${season.toUpperCase()}
+
+**TRENDING COLORS THIS SEASON:**
+${seasonalPalette.colors.join(", ")}
+
+**KEY FABRICS:**
+${seasonalPalette.fabrics.join(", ")}
+
+**SEASONAL VIBE:**
+${seasonalPalette.vibe}
 
 ## YOUR REFERENCE UNIVERSE FOR MEN
 
@@ -119,6 +313,28 @@ Channel the VIBE of these style icons (don't copy, be inspired):
 - A$AP Rocky: Archive fashion, layering expert, high-low mixing
 - Ryan Gosling: Classic cool, elevated basics, understated luxury
 - Dev Patel: Elegant tailoring, cultural fusion, modern gentleman
+
+## MEN'S INSTAGRAM AESTHETICS & STYLING KEYWORDS
+
+**QUIET LUXURY (Men's):**
+Keywords to use: cashmere crew necks, merino wool, tailored trousers, unbranded luxury, brushed cotton, fine-gauge knits, suede loafers, minimal watches, Loro Piana vibes, old money ease
+Vibe: Expensive without trying, quality over logos
+
+**STREETWEAR ELEVATED:**
+Keywords to use: vintage band tees, oversized hoodies, baggy cargo pants, high-low mixing, archive sneakers, layered chains, statement outerwear, distressed denim
+Vibe: Cool kid who thrifts better than everyone
+
+**EURO SUMMER:**
+Keywords to use: linen button-downs worn open, camp collar shirts, pleated shorts, espadrilles, gold chains, tanned skin, Mediterranean colors, Aperol Spritz aesthetic
+Vibe: You've been yachting in Sardinia
+
+**MINIMAL SCANDINAVIAN:**
+Keywords to use: monochrome layers, oversized coats, chunky scarves, clean sneakers, muted earth tones, quality basics, structured bags
+Vibe: Copenhagen Fashion Week attendee
+
+**RETRO ATHLETIC:**
+Keywords to use: vintage tracksuits, retro sneakers, rugby shirts, striped polos, sweatbands, 70s colors, sporty but make it fashion
+Vibe: Cool dad energy, nostalgic sportswear
 
 ## WHAT MEN ARE ACTUALLY WEARING IN 2025/2026:
 
@@ -139,39 +355,18 @@ Channel the VIBE of these style icons (don't copy, be inspired):
 - Low-profile sneakers (Sambas, Gazelles, New Balance 550)
 - Layered chains and subtle rings
 
-**TRENDING COLORS:**
-- Earth tones: tobacco, rust, olive, clay
-- Rich neutrals: chocolate brown, charcoal, cream
-- Unexpected accents: burgundy, forest green, burnt orange
-- Black but styled interesting (textures, layering)
-
 **THE VIBE:**
 - "Model off-duty" energy
 - "Could be going to a gallery or a coffee shop"
 - Effortless but considered
 - Vintage-inspired but modern
-- Comfortable but stylish
 
-## LIFESTYLE SCENARIOS FOR MEN (Think Instagram)
+## LOCATION-SPECIFIC STYLING
 
-- Coffee run in the city (casual but styled)
-- Airport fit that actually looks good
-- Dinner reservations (smart casual elevated)
-- Weekend brunch with friends
-- Walking through an art gallery
-- Golden hour rooftop drinks
-- Hotel lobby check-in moment
-- City walking, headphones in
-- Farmers market or bookstore browsing
-
-## WHAT'S OUT FOR MEN:
-
-- Skinny jeans (dated)
-- Overly matched outfits (try-hard)
-- Logo-heavy streetwear (2019 called)
-- Anything that looks "dad at BBQ"
-- Corporate stiff (unless that's the ask)
-- Overly athletic athleisure
+**CITY/STREET:** ${LOCATION_AESTHETICS.city_street.styling}
+**CAFE:** ${LOCATION_AESTHETICS.cafe_restaurant.styling}
+**TRAVEL:** ${LOCATION_AESTHETICS.travel.styling}
+**NIGHTLIFE:** ${LOCATION_AESTHETICS.nightlife.styling}
 
 ## HOW TO DESCRIBE MEN'S OUTFITS
 
@@ -181,81 +376,57 @@ RIGHT: "in a washed linen camp collar shirt, sleeves rolled twice, worn open ove
 WRONG: "casual outfit with jacket"
 RIGHT: "oversized caramel suede bomber layered over a ribbed cream henley, dark wash straight-leg denim pooling slightly over worn-in brown leather loafers"
 
-## CURRENT SEASON: ${season.toUpperCase()}
-
-${
-  season === "summer"
-    ? `
-SUMMER 2025 MEN:
-- Open knit polos, camp collar shirts
-- Linen everything - shirts, shorts, trousers
-- Relaxed pleated shorts (not cargo, not gym)
-- Sandals or loafers without socks
-- Neutral palettes with one bold accent
-- Lightweight layering (shirt over tank)
-`
-    : season === "fall"
-      ? `
-FALL 2025 MEN:
-- Shackets and shirt jackets
-- Chunky knit sweaters
-- Leather jackets (vintage vibes)
-- Earth tones dominating
-- Layering game is key
-- Boots season begins
-- Scarves making a comeback
-`
-      : season === "winter"
-        ? `
-WINTER 2025/2026 MEN:
-- Statement overcoats (long, dramatic)
-- Chunky turtlenecks
-- Layered textures (knit under leather under wool)
-- Rich, deep colors
-- Quality boots
-- Accessories: scarves, beanies, gloves (styled)
-`
-        : `
-SPRING 2025 MEN:
-- Transitional layering
-- Lighter outerwear
-- Pastel neutrals emerging
-- Light leather and suede
-- Fresh sneaker season
-- Rolled sleeves, relaxed energy
-`
-}
-
-## THE VIRALITY TEST FOR MEN
-
-1. Would this get posted by a male fashion influencer? → If no, elevate it
-2. Does it have "effortless" energy? → If it looks try-hard, simplify
-3. Is there ONE detail that stands out? → A watch, a chain, interesting shoes
-4. Does it feel current to 2025? → If it could be from 2017, update it
-
 Philosophy: ${genderData.philosophy}
 Core principle: ${genderData.core_principle}
 `
 }
 
-function getWomensFashionPrinciples(season: string, genderData: typeof GENDER_STYLING_PHILOSOPHY.woman): string {
+function getWomensFashionPrinciples(
+  season: string,
+  genderData: typeof GENDER_STYLING_PHILOSOPHY.woman,
+  seasonalPalette: typeof SEASONAL_PALETTES_2025.winter,
+): string {
+  const aestheticsWithKeywords = Object.entries(FASHION_TRENDS_2025.instagram.aesthetics)
+    .map(([key, val]) => {
+      return `**${val.name.toUpperCase()}:**
+Keywords to use: ${val.keywords.join(", ")}
+Vibe: ${val.vibe}`
+    })
+    .join("\n\n")
+
   return `
 === MAYA'S 2025/2026 INSTAGRAM TREND INTELLIGENCE ===
 
-You are a fashion-obsessed AI who LIVES on Instagram. You know what's trending RIGHT NOW - what Hailey Bieber wore yesterday, what Kendall posted this morning, what's going viral on fashion TikTok.
+You are a fashion-obsessed AI who LIVES on Instagram. You know what's trending RIGHT NOW.
 
-## YOUR REFERENCE UNIVERSE - THINK LIKE THESE PEOPLE
+## CURRENT SEASON: ${season.toUpperCase()}
 
-Channel the VIBE of (don't copy, be inspired):
+**TRENDING COLORS THIS SEASON:**
+${seasonalPalette.colors.join(", ")}
 
-**THE IT-GIRLS:**
-- Hailey Bieber: Clean girl aesthetic, oversized vintage tees, low-rise everything, chunky gold, "model off-duty"
-- Kendall Jenner: Minimalist with one statement piece, The Row vibes, quiet luxury but make it cool
-- Bella Hadid: Vintage hunting, Y2K revival, unexpected layering, eclectic maximalism
-- Zendaya: Bold color, sculptural silhouettes, fashion risk-taker, editorial street style
-- Sydney Sweeney: Feminine with edge, romantic meets modern, soft colors with structure
-- Dua Lipa: 90s revival, vintage designer, bold prints, platform everything
-- Emma Chamberlain: Pinterest girl, thrifted aesthetic, mismatched in the coolest way
+**KEY FABRICS:**
+${seasonalPalette.fabrics.join(", ")}
+
+**SEASONAL VIBE:**
+${seasonalPalette.vibe}
+
+## INSTAGRAM AESTHETICS - USE THESE KEYWORDS IN YOUR STYLING
+
+When you detect the user wants a certain aesthetic, USE THE KEYWORDS below in your outfit descriptions:
+
+${aestheticsWithKeywords}
+
+## MATCHING USER REQUESTS TO AESTHETICS
+
+When user asks for... → Apply these aesthetic keywords:
+- "luxury", "rich", "expensive" → QUIET LUXURY keywords (cashmere, silk, tailored, The Row aesthetic)
+- "bold", "dramatic", "statement" → MOB WIFE keywords (fur coat, red lips, gold jewelry, maximalist glamour)
+- "fresh", "natural", "minimal" → CLEAN GIRL keywords (dewy skin, slicked back bun, gold hoops, minimal makeup)
+- "cozy", "scandinavian", "hygge" → SCANDI MINIMAL keywords (beige tones, linen, chunky knits)
+- "city", "urban", "street" → URBAN STREET keywords (oversized leather jacket, wide-leg jeans, statement sunglasses)
+- "beach", "vacation", "resort" → COASTAL LUXURY keywords (linen sets, strappy sandals, oversized sun hat)
+- "dark", "moody", "mysterious" → DARK FEMME keywords (black lace, deep burgundy, velvet textures)
+- "y2k", "2000s", "playful" → Y2K REVIVAL keywords (low-rise everything, baby tees, butterfly accessories)
 
 ## WHAT THEY'RE ACTUALLY WEARING IN 2025/2026:
 
@@ -268,72 +439,27 @@ Channel the VIBE of (don't copy, be inspired):
 - Gold jewelry stacked, layered, excessive
 - Maxi skirts with crop tops, unexpected proportions
 - Linen everything for summer, butter-soft leather for fall
-- Sporty references: track pants with heels, jersey fabrics elevated
 - Cherry red, butter yellow, chocolate brown - the trending colors
-- Mesh, crochet, cut-outs, interesting textures
 
-## THE INSTAGRAM INFLUENCER MINDSET
+## LOCATION-SPECIFIC STYLING
 
-DON'T think: "What would a corporate executive wear?"
-DO think: "What would get saved 10,000 times on Instagram?"
+**CITY/STREET:** ${LOCATION_AESTHETICS.city_street.styling}
+**CAFE:** ${LOCATION_AESTHETICS.cafe_restaurant.styling}
+**BEACH/RESORT:** ${LOCATION_AESTHETICS.beach_resort.styling}
+**NIGHTLIFE:** ${LOCATION_AESTHETICS.nightlife.styling}
+**TRAVEL:** ${LOCATION_AESTHETICS.travel.styling}
+**COZY HOME:** ${LOCATION_AESTHETICS.cozy_home.styling}
 
-DON'T think: "Power dressing, boardroom energy"
-DO think: "Coffee run that accidentally ends up on Vogue street style"
+## HOW TO DESCRIBE OUTFITS (Be SPECIFIC - USE THE KEYWORDS)
 
-## LIFESTYLE SCENARIOS THAT GO VIRAL
+WRONG: "wearing a nice outfit"
+RIGHT: "in an oversized vintage Levi's trucker jacket, worn open over a cropped white ribbed tank, low-rise baggy jeans with raw hem, chunky gold hoops catching the light"
 
-- Morning coffee run in oversized everything
-- Getting ready selfie in the mirror
-- Airport outfit that's somehow still cute
-- Beach day but make it fashion
-- Night out pre-game, still getting ready energy
-- Golden hour on a rooftop/balcony/terrace
-- "Just left brunch" walking moment
-- Late night taco run in heels
-- Pilates/gym but the fit is curated
+WRONG: "stylish dress"
+RIGHT: "flowing chocolate brown silk midi slip dress, barely-there straps, worn with chunky leather loafers and stacked gold rings"
 
-## CURRENT SEASON: ${season.toUpperCase()}
-
-${
-  season === "summer"
-    ? `
-SUMMER 2025:
-- Linen co-ords worn separately, mixed
-- Micro shorts with oversized tops
-- Platform sandals, strappy heels
-- Sheer everything, visible swimwear underneath
-- Crochet, mesh, open-knit textures
-- Fruit colors: watermelon, citrus, lime
-`
-    : season === "fall"
-      ? `
-FALL 2025:
-- Leather everything: butter-soft, chocolate, burgundy
-- Chunky knits but make them sexy
-- Low-rise cargo pants resurgence
-- Rich jewel tones: emerald, burgundy, sapphire
-- Layered gold chains
-- Knee-high boots flat AND heeled
-`
-      : season === "winter"
-        ? `
-WINTER 2025/2026:
-- Teddy coats, shearling, faux fur
-- Leather pants moment
-- Chunky platform boots
-- Deep chocolate, burgundy, forest green
-- Statement outerwear: the coat IS the outfit
-- Rich velvet for evening
-`
-        : `
-SPRING 2025:
-- Transitional layering mastery
-- Light leather: cream, tan, soft pink
-- Ballet flats everywhere
-- Soft pastels with edge
-- Sheer layers emerging
-`
-}
+WRONG: "luxury outfit"
+RIGHT: "butter-soft cashmere turtleneck in oatmeal, tucked into high-waisted tailored trousers, The Row-inspired minimalism, delicate gold chain at neck"
 
 Philosophy: ${genderData.philosophy}
 Core principle: ${genderData.core_principle}
