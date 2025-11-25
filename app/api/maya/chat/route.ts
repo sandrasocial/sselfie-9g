@@ -8,6 +8,7 @@ import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible"
+import { createAnthropic } from "@ai-sdk/anthropic"
 
 export const maxDuration = 60
 
@@ -271,17 +272,29 @@ export async function POST(req: NextRequest) {
 
     console.log("[v0] Request headers - Host:", host, "Referer:", referer, "Origin:", origin)
 
-    const isPreview = host.includes("v0.dev") || host.includes("vercel.app")
+    const isProduction = host === "sselfie.ai" || host === "www.sselfie.ai"
+    const isPreview = host.includes("vercel.app") || host.includes("v0.dev") || host.includes("vusercontent.net")
 
-    console.log("[v0] Environment:", isPreview ? "Preview" : "Production")
+    console.log("[v0] Environment detection - Host:", host, "Production:", isProduction, "Preview:", isPreview)
 
-    const model = isPreview
-      ? createOpenAICompatible({
-          name: "anthropic",
-          apiKey: process.env.ANTHROPIC_API_KEY!,
-          baseURL: "https://api.anthropic.com/v1",
-        })("claude-sonnet-4-20250514")
-      : "anthropic/claude-sonnet-4.5"
+    let model
+
+    if (isProduction) {
+      console.log("[v0] Using Cloudflare AI Gateway (production)")
+      const anthropic = createAnthropic({
+        baseURL: "https://gateway.ai.cloudflare.com/v1/f03c72e6eee91a197fe58c550f29a084/sselfie/anthropic",
+        apiKey: process.env.AI_GATEWAY_API_KEY || process.env.ANTHROPIC_API_KEY!,
+      })
+      model = anthropic("claude-sonnet-4-20250514")
+    } else {
+      console.log("[v0] Using Anthropic API directly (preview/dev)")
+      const anthropic = createOpenAICompatible({
+        name: "anthropic",
+        apiKey: process.env.ANTHROPIC_API_KEY!,
+        baseURL: "https://api.anthropic.com/v1",
+      })
+      model = anthropic("claude-sonnet-4-20250514")
+    }
 
     console.log("[v0] Calling streamText")
 

@@ -4,6 +4,7 @@ import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { generateText } from "ai"
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible"
+import { createAnthropic } from "@ai-sdk/anthropic"
 
 type MayaConcept = {
   title: string
@@ -33,7 +34,11 @@ function getConceptGenerationModel(isPreview: boolean) {
       baseURL: "https://api.anthropic.com/v1",
     })("claude-sonnet-4-20250514")
   } else {
-    return "anthropic/claude-sonnet-4.5"
+    const anthropic = createAnthropic({
+      baseURL: "https://gateway.ai.cloudflare.com/v1/f03c72e6eee91a197fe58c550f29a084/sselfie/anthropic",
+      apiKey: process.env.AI_GATEWAY_API_KEY || process.env.ANTHROPIC_API_KEY!,
+    })
+    return anthropic("claude-sonnet-4-20250514")
   }
 }
 
@@ -71,9 +76,10 @@ export async function POST(req: NextRequest) {
 
     // Detect environment
     const host = req.headers.get("host") || ""
-    const isPreview = host.includes("v0.dev") || host.includes("vercel.app")
+    const isProduction = host === "sselfie.ai" || host === "www.sselfie.ai"
+    const isPreview = host.includes("vercel.app") || host.includes("v0.dev") || host.includes("vusercontent.net")
 
-    console.log("[v0] Environment:", isPreview ? "Preview" : "Production")
+    console.log("[v0] Environment:", isPreview ? "Preview" : isProduction ? "Production" : "Development")
 
     // Get user data
     let userGender = "person"
