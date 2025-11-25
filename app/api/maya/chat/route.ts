@@ -28,82 +28,98 @@ interface MayaConcept {
   }
 }
 
-const generateConceptsTool = tool({
-  description:
-    "Generate 3-5 diverse photo concepts with detailed fashion and styling intelligence. Use your comprehensive knowledge of ALL Instagram aesthetics, fashion trends, and photography styles. Match concepts to user's requests, personal brand data, or trending aesthetics. Be dynamic - don't limit yourself to preset templates. If user uploaded a reference image, analyze it visually first.",
-  inputSchema: z.object({
-    userRequest: z
-      .string()
-      .describe("What the user is asking for - be specific about aesthetic, style, vibe, or trend they want"),
-    aesthetic: z
-      .string()
-      .optional()
-      .describe(
-        "Specific aesthetic/trend to focus on (e.g., 'Old Money', 'Coastal Grandmother', 'Y2K', 'Quiet Luxury', 'Dark Academia', 'Clean Girl', etc.) - use ANY Instagram trend, not just preset options",
-      ),
-    context: z.string().optional().describe("Additional context about the user, occasion, or purpose"),
-    userModifications: z
-      .string()
-      .optional()
-      .describe(
-        "Specific user-requested modifications like 'make clothes more oversized', 'warmer lighting', 'more realistic skin', 'add specific brand', etc.",
-      ),
-    count: z.number().optional().default(3).describe("Number of concepts to generate (3-5)"),
-    referenceImageUrl: z.string().optional().describe("If user uploaded reference image for inspiration"),
-    customSettings: z
-      .object({
-        styleStrength: z.number().optional(),
-        promptAccuracy: z.number().optional(),
-        aspectRatio: z.string().optional(),
-        seed: z.number().optional(),
-      })
-      .optional()
-      .describe("Optional custom generation settings for style strength, prompt accuracy, etc."),
-    mode: z
-      .enum(["concept", "photoshoot"])
-      .optional()
-      .default("concept")
-      .describe(
-        "'concept' for diverse standalone images (default), 'photoshoot' for consistent carousel with same outfit",
-      ),
-  }),
-  execute: async ({
-    userRequest,
-    aesthetic,
-    context,
-    userModifications,
-    count,
-    referenceImageUrl,
-    customSettings,
-    mode = "concept",
-  }) => {
-    console.log("[v0] Tool executing - generating concepts for:", {
+function getConceptGenerationModel(isPreview: boolean) {
+  if (isPreview) {
+    if (!process.env.ANTHROPIC_API_KEY) {
+      throw new Error("ANTHROPIC_API_KEY not configured for preview environment")
+    }
+    return createOpenAICompatible({
+      name: "anthropic",
+      apiKey: process.env.ANTHROPIC_API_KEY,
+      baseURL: "https://api.anthropic.com/v1",
+    })("claude-sonnet-4-20250514")
+  } else {
+    return "anthropic/claude-sonnet-4.5"
+  }
+}
+
+function createGenerateConceptsTool(isPreview: boolean) {
+  return tool({
+    description:
+      "Generate 3-5 diverse photo concepts with detailed fashion and styling intelligence. Use your comprehensive knowledge of ALL Instagram aesthetics, fashion trends, and photography styles. Match concepts to user's requests, personal brand data, or trending aesthetics. Be dynamic - don't limit yourself to preset templates. If user uploaded a reference image, analyze it visually first.",
+    inputSchema: z.object({
+      userRequest: z
+        .string()
+        .describe("What the user is asking for - be specific about aesthetic, style, vibe, or trend they want"),
+      aesthetic: z
+        .string()
+        .optional()
+        .describe(
+          "Specific aesthetic/trend to focus on (e.g., 'Old Money', 'Coastal Grandmother', 'Y2K', 'Quiet Luxury', 'Dark Academia', 'Clean Girl', etc.) - use ANY Instagram trend, not just preset options",
+        ),
+      context: z.string().optional().describe("Additional context about the user, occasion, or purpose"),
+      userModifications: z
+        .string()
+        .optional()
+        .describe(
+          "Specific user-requested modifications like 'make clothes more oversized', 'warmer lighting', 'more realistic skin', 'add specific brand', etc.",
+        ),
+      count: z.number().optional().default(3).describe("Number of concepts to generate (3-5)"),
+      referenceImageUrl: z.string().optional().describe("If user uploaded reference image for inspiration"),
+      customSettings: z
+        .object({
+          styleStrength: z.number().optional(),
+          promptAccuracy: z.number().optional(),
+          aspectRatio: z.string().optional(),
+          seed: z.number().optional(),
+        })
+        .optional()
+        .describe("Optional custom generation settings for style strength, prompt accuracy, etc."),
+      mode: z
+        .enum(["concept", "photoshoot"])
+        .optional()
+        .default("concept")
+        .describe(
+          "'concept' for diverse standalone images (default), 'photoshoot' for consistent carousel with same outfit",
+        ),
+    }),
+    execute: async ({
       userRequest,
       aesthetic,
       context,
       userModifications,
       count,
-      mode,
-    })
+      referenceImageUrl,
+      customSettings,
+      mode = "concept",
+    }) => {
+      console.log("[v0] Tool executing - generating concepts for:", {
+        userRequest,
+        aesthetic,
+        context,
+        userModifications,
+        count,
+        mode,
+      })
 
-    try {
-      const supabase = await createServerClient()
-      const { user: authUser, error: authError } = await getAuthenticatedUser()
+      try {
+        const supabase = await createServerClient()
+        const { user: authUser, error: authError } = await getAuthenticatedUser()
 
-      if (authError || !authUser) {
-        throw new Error("Unauthorized")
-      }
+        if (authError || !authUser) {
+          throw new Error("Unauthorized")
+        }
 
-      const user = await getUserByAuthId(authUser.id)
-      if (!user) {
-        throw new Error("User not found")
-      }
+        const user = await getUserByAuthId(authUser.id)
+        if (!user) {
+          throw new Error("User not found")
+        }
 
-      let userGender = "person"
-      const { neon } = await import("@neondatabase/serverless")
-      const sql = neon(process.env.DATABASE_URL!)
+        let userGender = "person"
+        const { neon } = await import("@neondatabase/serverless")
+        const sql = neon(process.env.DATABASE_URL!)
 
-      const userDataResult = await sql`
+        const userDataResult = await sql`
         SELECT u.gender, um.trigger_word 
         FROM users u
         LEFT JOIN user_models um ON u.id = um.user_id AND um.training_status = 'completed'
@@ -111,36 +127,36 @@ const generateConceptsTool = tool({
         LIMIT 1
       `
 
-      console.log("[v0] User data from database:", userDataResult[0])
+        console.log("[v0] User data from database:", userDataResult[0])
 
-      if (userDataResult.length > 0 && userDataResult[0].gender) {
-        const dbGender = userDataResult[0].gender.toLowerCase().trim()
+        if (userDataResult.length > 0 && userDataResult[0].gender) {
+          const dbGender = userDataResult[0].gender.toLowerCase().trim()
 
-        if (dbGender === "woman" || dbGender === "female") {
-          userGender = "woman"
-        } else if (dbGender === "man" || dbGender === "male") {
-          userGender = "man"
-        } else if (dbGender === "non-binary" || dbGender === "nonbinary" || dbGender === "non binary") {
-          userGender = "person"
-        } else {
-          userGender = dbGender
+          if (dbGender === "woman" || dbGender === "female") {
+            userGender = "woman"
+          } else if (dbGender === "man" || dbGender === "male") {
+            userGender = "man"
+          } else if (dbGender === "non-binary" || dbGender === "nonbinary" || dbGender === "non binary") {
+            userGender = "person"
+          } else {
+            userGender = dbGender
+          }
         }
-      }
 
-      const triggerWord = userDataResult[0]?.trigger_word || `user${user.id}`
+        const triggerWord = userDataResult[0]?.trigger_word || `user${user.id}`
 
-      console.log("[v0] User data for concept generation:", {
-        userGender,
-        triggerWord,
-        rawGender: userDataResult[0]?.gender,
-        mode: mode, // concept = diverse, photoshoot = consistent
-      })
+        console.log("[v0] User data for concept generation:", {
+          userGender,
+          triggerWord,
+          rawGender: userDataResult[0]?.gender,
+          mode: mode,
+        })
 
-      let imageAnalysis = ""
-      if (referenceImageUrl) {
-        console.log("[v0] 🔍 Analyzing reference image:", referenceImageUrl)
+        let imageAnalysis = ""
+        if (referenceImageUrl) {
+          console.log("[v0] 🔍 Analyzing reference image:", referenceImageUrl)
 
-        const visionAnalysisPrompt = `Look at this image carefully and tell me everything I need to know to recreate this vibe.
+          const visionAnalysisPrompt = `Look at this image carefully and tell me everything I need to know to recreate this vibe.
 
 Focus on:
 1. **The outfit** - What are they wearing? Be super specific (fabrics, fit, colors, style)
@@ -152,66 +168,39 @@ Focus on:
 
 Keep it conversational and specific. I need to recreate this exact vibe for Instagram.`
 
-        const host = process.env.VERCEL_URL || ""
-        const referer = process.env.REFERER || ""
-        const origin = process.env.ORIGIN || ""
+          const visionModel = getConceptGenerationModel(isPreview)
 
-        console.log("[v0] Host header:", host)
-        console.log("[v0] Referer header:", referer)
-        console.log("[v0] Origin header:", origin)
+          const { text: visionText } = await generateText({
+            model: visionModel,
+            messages: [
+              {
+                role: "user",
+                content: [
+                  {
+                    type: "text",
+                    text: visionAnalysisPrompt,
+                  },
+                  {
+                    type: "image",
+                    image: referenceImageUrl,
+                  },
+                ],
+              },
+            ],
+            temperature: 0.7,
+          })
 
-        // Detect v0 preview environment
-        const isV0Preview =
-          host.includes("vusercontent.net") ||
-          referer.includes("v0.dev") ||
-          referer.includes("v0.app") ||
-          origin.includes("v0.dev") ||
-          origin.includes("v0.app") ||
-          process.env.VERCEL_ENV === "preview" ||
-          typeof window !== "undefined"
-
-        let visionModel
-        if (isV0Preview) {
-          visionModel = createOpenAICompatible({
-            name: "anthropic",
-            apiKey: process.env.ANTHROPIC_API_KEY,
-            baseURL: "https://api.anthropic.com/v1",
-          })("claude-sonnet-4-20250514")
-        } else {
-          visionModel = "anthropic/claude-sonnet-4.5"
+          imageAnalysis = visionText
+          console.log("[v0] 🎨 Vision analysis complete")
         }
 
-        const { text: visionText } = await generateText({
-          model: visionModel,
-          messages: [
-            {
-              role: "user",
-              content: [
-                {
-                  type: "text",
-                  text: visionAnalysisPrompt,
-                },
-                {
-                  type: "image",
-                  image: referenceImageUrl,
-                },
-              ],
-            },
-          ],
-          temperature: 0.7,
-        })
+        let photoshootBaseSeed = null
+        if (mode === "photoshoot") {
+          photoshootBaseSeed = Math.floor(Math.random() * 1000000)
+          console.log("[v0] 📸 Photoshoot mode: consistent seed:", photoshootBaseSeed)
+        }
 
-        imageAnalysis = visionText
-        console.log("[v0] 🎨 Vision analysis complete")
-      }
-
-      let photoshootBaseSeed = null
-      if (mode === "photoshoot") {
-        photoshootBaseSeed = Math.floor(Math.random() * 1000000)
-        console.log("[v0] 📸 Photoshoot mode: consistent seed:", photoshootBaseSeed)
-      }
-
-      const conceptPrompt = `Create ${count} Instagram photo concepts for ${triggerWord} (${userGender}).
+        const conceptPrompt = `Create ${count} Instagram photo concepts for ${triggerWord} (${userGender}).
 
 USER REQUEST: "${userRequest}"
 ${aesthetic ? `VIBE: ${aesthetic}` : ""}
@@ -283,118 +272,85 @@ JSON FORMAT (return ONLY this, no markdown):
 
 Create ${count} concepts now. ENSURE EACH PROMPT IS 60-90 WORDS.`
 
-      console.log("[v0] Generating concepts with Claude Sonnet 4.5...")
+        console.log("[v0] Generating concepts with model for environment:", isPreview ? "Preview" : "Production")
 
-      const host = process.env.VERCEL_URL || ""
-      const referer = process.env.REFERER || ""
-      const origin = process.env.ORIGIN || ""
+        const conceptModel = getConceptGenerationModel(isPreview)
 
-      console.log("[v0] Host header:", host)
-      console.log("[v0] Referer header:", referer)
-      console.log("[v0] Origin header:", origin)
+        const { text } = await generateText({
+          model: conceptModel,
+          messages: [
+            {
+              role: "user",
+              content: conceptPrompt,
+            },
+          ],
+          maxTokens: 4096,
+          temperature: 0.85,
+        })
 
-      // Detect v0 preview environment
-      const isV0Preview =
-        host.includes("vusercontent.net") ||
-        referer.includes("v0.dev") ||
-        referer.includes("v0.app") ||
-        origin.includes("v0.dev") ||
-        origin.includes("v0.app") ||
-        process.env.VERCEL_ENV === "preview" ||
-        typeof window !== "undefined"
+        console.log("[v0] Generated concept text:", text.substring(0, 200))
 
-      let conceptModel
-      if (isV0Preview) {
-        console.log("[v0] Environment: V0 Preview (using Anthropic OpenAI-compatible)")
-        if (!process.env.ANTHROPIC_API_KEY) {
-          throw new Error("ANTHROPIC_API_KEY not configured for preview environment")
+        const jsonMatch = text.match(/\[[\s\S]*\]/)
+        if (!jsonMatch) {
+          throw new Error("No JSON array found in response")
         }
-        conceptModel = createOpenAICompatible({
-          name: "anthropic",
-          apiKey: process.env.ANTHROPIC_API_KEY,
-          baseURL: "https://api.anthropic.com/v1",
-        })("claude-sonnet-4-20250514")
-      } else {
-        console.log("[v0] Environment: Production (using AI Gateway)")
-        conceptModel = "anthropic/claude-sonnet-4.5"
+
+        const concepts: MayaConcept[] = JSON.parse(jsonMatch[0])
+
+        if (referenceImageUrl) {
+          concepts.forEach((concept) => {
+            if (!concept.referenceImageUrl) {
+              concept.referenceImageUrl = referenceImageUrl
+            }
+          })
+          console.log("[v0] ✅ Reference image URL attached to all concepts for image-to-image generation")
+        }
+
+        if (mode === "photoshoot" && photoshootBaseSeed) {
+          concepts.forEach((concept, index) => {
+            if (!concept.customSettings) {
+              concept.customSettings = {}
+            }
+            concept.customSettings.seed = photoshootBaseSeed + index
+            console.log(`[v0] 🎲 Photoshoot Concept ${index + 1} seed:`, concept.customSettings.seed)
+          })
+        } else {
+          concepts.forEach((concept, index) => {
+            if (!concept.customSettings) {
+              concept.customSettings = {}
+            }
+            concept.customSettings.seed = Math.floor(Math.random() * 1000000)
+            console.log(`[v0] 🎨 Concept ${index + 1} seed (random):`, concept.customSettings.seed)
+          })
+        }
+
+        if (customSettings) {
+          concepts.forEach((concept) => {
+            concept.customSettings = {
+              ...concept.customSettings,
+              ...customSettings,
+            }
+          })
+        }
+
+        console.log("[v0] Successfully parsed", concepts.length, "concepts in", mode, "mode")
+
+        return {
+          state: "ready" as const,
+          concepts: concepts.slice(0, count),
+        }
+      } catch (error) {
+        console.error("[v0] Error generating concepts:", error)
+
+        return {
+          state: "error" as const,
+          message:
+            "I need a bit more direction! What vibe are you going for? (Like: old money, Y2K, cozy vibes, dark academia, clean girl energy, etc.)",
+        }
       }
-
-      console.log("[v0] streamText initiated, returning response")
-
-      const { text } = await generateText({
-        model: conceptModel,
-        messages: [
-          {
-            role: "user",
-            content: conceptPrompt,
-          },
-        ],
-        maxTokens: 4096,
-        temperature: 0.85,
-      })
-
-      console.log("[v0] Generated concept text:", text.substring(0, 200))
-
-      const jsonMatch = text.match(/\[[\s\S]*\]/)
-      if (!jsonMatch) {
-        throw new Error("No JSON array found in response")
-      }
-
-      const concepts: MayaConcept[] = JSON.parse(jsonMatch[0])
-
-      if (referenceImageUrl) {
-        concepts.forEach((concept) => {
-          if (!concept.referenceImageUrl) {
-            concept.referenceImageUrl = referenceImageUrl
-          }
-        })
-        console.log("[v0] ✅ Reference image URL attached to all concepts for image-to-image generation")
-      }
-
-      if (mode === "photoshoot" && photoshootBaseSeed) {
-        concepts.forEach((concept, index) => {
-          if (!concept.customSettings) {
-            concept.customSettings = {}
-          }
-          concept.customSettings.seed = photoshootBaseSeed + index
-          console.log(`[v0] 🎲 Photoshoot Concept ${index + 1} seed:`, concept.customSettings.seed)
-        })
-      } else {
-        concepts.forEach((concept, index) => {
-          if (!concept.customSettings) {
-            concept.customSettings = {}
-          }
-          concept.customSettings.seed = Math.floor(Math.random() * 1000000)
-          console.log(`[v0] 🎨 Concept ${index + 1} seed (random):`, concept.customSettings.seed)
-        })
-      }
-
-      if (customSettings) {
-        concepts.forEach((concept) => {
-          concept.customSettings = {
-            ...concept.customSettings,
-            ...customSettings,
-          }
-        })
-      }
-
-      console.log("[v0] Successfully parsed", concepts.length, "concepts in", mode, "mode")
-
-      return {
-        state: "ready" as const,
-        concepts: concepts.slice(0, count),
-      }
-    } catch (error) {
-      console.error("[v0] Error generating concepts:", error)
-
-      return {
-        state: "error" as const,
-        message:
-          "I need a bit more direction! What vibe are you going for? (Like: old money, Y2K, cozy vibes, dark academia, clean girl energy, etc.)",
-      }
-    }
-  },
-})
+    },
+  })
+}
 
 export async function POST(req: NextRequest) {
   console.log("[v0] Maya chat API called")
@@ -565,7 +521,6 @@ export async function POST(req: NextRequest) {
 
     console.log("[v0] Request headers - Host:", host, "Referer:", referer, "Origin:", origin)
 
-    // Check if this is a preview/non-production environment
     const isPreview =
       host.includes("vusercontent.net") ||
       host.includes("v0-sselfie") ||
@@ -599,7 +554,7 @@ export async function POST(req: NextRequest) {
       messages: allMessages,
       maxSteps: 5,
       tools: {
-        generateConcepts: generateConceptsTool,
+        generateConcepts: createGenerateConceptsTool(isPreview),
       },
       temperature: 0.85,
       maxTokens: 4096,
