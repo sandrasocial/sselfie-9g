@@ -32,6 +32,19 @@ export async function GET(request: NextRequest) {
 
     const messages = await getChatMessages(chat.id)
 
+    const messagesWithConcepts = messages.filter(
+      (msg) => msg.concept_cards && Array.isArray(msg.concept_cards) && msg.concept_cards.length > 0,
+    )
+    console.log("[v0] Messages with concept_cards in DB:", messagesWithConcepts.length)
+    if (messagesWithConcepts.length > 0) {
+      console.log(
+        "[v0] First message with concepts - ID:",
+        messagesWithConcepts[0].id,
+        "concepts count:",
+        messagesWithConcepts[0].concept_cards?.length,
+      )
+    }
+
     const formattedMessages = messages.map((msg) => {
       const baseMessage = {
         id: msg.id.toString(),
@@ -40,6 +53,7 @@ export async function GET(request: NextRequest) {
       }
 
       if (msg.concept_cards && Array.isArray(msg.concept_cards) && msg.concept_cards.length > 0) {
+        console.log("[v0] Formatting message", msg.id, "with", msg.concept_cards.length, "concept cards")
         return {
           ...baseMessage,
           parts: [
@@ -71,6 +85,11 @@ export async function GET(request: NextRequest) {
         ],
       }
     })
+
+    const formattedWithConcepts = formattedMessages.filter((msg: any) =>
+      msg.parts?.some((p: any) => p.type === "tool-generateConcepts"),
+    )
+    console.log("[v0] Formatted messages with tool-generateConcepts parts:", formattedWithConcepts.length)
 
     return NextResponse.json({
       chatId: chat.id,

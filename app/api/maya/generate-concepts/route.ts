@@ -50,9 +50,16 @@ export async function POST(req: NextRequest) {
       referenceImageUrl,
       customSettings,
       mode = "concept",
+      conversationContext,
     } = body
 
-    console.log("[v0] Generating concepts:", { userRequest, aesthetic, mode, count })
+    console.log("[v0] Generating concepts:", {
+      userRequest,
+      aesthetic,
+      mode,
+      count,
+      hasConversationContext: !!conversationContext,
+    })
 
     // Detect environment
     const host = req.headers.get("host") || ""
@@ -168,8 +175,25 @@ Keep it conversational and specific. I need to recreate this exact vibe for Inst
       console.log("[v0] Photoshoot mode: consistent seed:", photoshootBaseSeed)
     }
 
+    const conversationContextSection = conversationContext
+      ? `
+=== CONVERSATION CONTEXT ===
+Here's what we've been discussing. Use this to understand what the user wants MORE of or to continue the creative direction:
+
+${conversationContext}
+
+IMPORTANT: 
+- If the user says "more of this", "similar to before", "like the last ones" - create variations on the themes/styles discussed above
+- If previous concepts were about a specific aesthetic (G-Wagon, moody, editorial, etc.) - continue with that vibe
+- Reference what Maya described in her previous responses for styling continuity
+===
+
+`
+      : ""
+
     const conceptPrompt = `You are Maya, an expert fashion photographer and Instagram content strategist. Create ${count} stunning iPhone-quality Instagram photo concepts for ${triggerWord} (${userGender}).
 
+${conversationContextSection}
 ${genderStylingGuide}
 
 USER REQUEST: "${userRequest}"

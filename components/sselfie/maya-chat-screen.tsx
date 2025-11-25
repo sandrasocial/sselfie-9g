@@ -74,6 +74,11 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
   const [isGeneratingConcepts, setIsGeneratingConcepts] = useState(false)
   const processedConceptMessagesRef = useRef<Set<string>>(new Set())
 
+  // Extract user authentication status and the chat ID to load from props or context (if available)
+  // For this example, we'll assume they are available as `isAuthenticated` and `chatIdToLoad`
+  const isAuthenticated = !!user // Simple check for demonstration
+  const chatIdToLoad = user ? Number(user.chatId) : null // Replace with actual logic to get chatIdToLoad
+
   useEffect(() => {
     const settingsStr = localStorage.getItem("mayaGenerationSettings")
     if (settingsStr) {
@@ -132,6 +137,106 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
     },
   })
 
+  const loadChat = useCallback(
+    async (specificChatId?: number) => {
+      try {
+        setIsLoadingChat(true)
+
+        // Build URL - either load specific chat or default maya chat
+        const url = specificChatId
+          ? `/api/maya/load-chat?chatId=${specificChatId}`
+          : `/api/maya/load-chat?chatType=maya`
+
+        console.log("[v0] Loading chat from URL:", url)
+
+        const response = await fetch(url)
+        console.log("[v0] Load chat response status:", response.status)
+
+        if (!response.ok) {
+          throw new Error(`Failed to load chat: ${response.status}`)
+        }
+
+        const data = await response.json()
+        console.log("[v0] Loaded chat ID:", data.chatId, "Messages:", data.messages?.length, "Title:", data.chatTitle)
+
+        if (data.chatId) {
+          setChatId(data.chatId)
+        }
+
+        if (data.chatTitle) {
+          setChatTitle(data.chatTitle)
+        }
+
+        if (data.messages && Array.isArray(data.messages)) {
+          let conceptCardsFound = 0
+
+          // CRITICAL: Populate refs BEFORE setting messages to prevent trigger detection
+          data.messages.forEach((msg: any) => {
+            if (msg.id) {
+              savedMessageIds.current.add(msg.id.toString())
+            }
+
+            // Check if message already has concept cards and mark as processed
+            const hasConceptCards = msg.parts?.some(
+              (p: any) => p.type === "tool-generateConcepts" && p.output?.concepts?.length > 0,
+            )
+            if (hasConceptCards) {
+              conceptCardsFound++
+              processedConceptMessagesRef.current.add(msg.id.toString())
+              console.log("[v0] Marked message as processed for concepts:", msg.id)
+            }
+          })
+
+          console.log(
+            "[v0] Chat loaded with",
+            data.messages.length,
+            "messages, savedIds:",
+            savedMessageIds.current.size,
+            "processedConcepts:",
+            processedConceptMessagesRef.current.size,
+            "conceptCardsFound:",
+            conceptCardsFound,
+          )
+
+          const firstWithConcepts = data.messages.find((msg: any) =>
+            msg.parts?.some((p: any) => p.type === "tool-generateConcepts"),
+          )
+          if (firstWithConcepts) {
+            console.log(
+              "[v0] First message with concepts:",
+              JSON.stringify(firstWithConcepts, null, 2).substring(0, 500),
+            )
+          } else {
+            console.log("[v0] NO messages with tool-generateConcepts parts found in response!")
+          }
+
+          // Now set messages AFTER refs are populated
+          setMessages(data.messages)
+        } else {
+          setMessages([])
+        }
+
+        setShowHistory(false)
+      } catch (error) {
+        console.error("[v0] Error loading chat:", error)
+      } finally {
+        setIsLoadingChat(false)
+      }
+    },
+    [setMessages],
+  )
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setIsLoadingChat(false)
+      return
+    }
+
+    console.log("[v0] 🚀 Maya chat screen mounted, calling loadChat()")
+    loadChat(chatIdToLoad || undefined)
+  }, [isAuthenticated, chatIdToLoad, loadChat])
+
+  // Detect [GENERATE_CONCEPTS] trigger in messages
   useEffect(() => {
     if (status !== "ready" || messages.length === 0) return
 
@@ -139,8 +244,21 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
     const lastAssistantMessage = [...messages].reverse().find((m) => m.role === "assistant")
     if (!lastAssistantMessage) return
 
-    // Skip if we've already processed this message for concepts
-    if (processedConceptMessagesRef.current.has(lastAssistantMessage.id)) return
+    const messageId = lastAssistantMessage.id.toString()
+    if (processedConceptMessagesRef.current.has(messageId)) {
+      console.log("[v0] Skipping already processed message:", messageId)
+      return
+    }
+
+    const alreadyHasConceptCards = lastAssistantMessage.parts?.some(
+      (p: any) => p.type === "tool-generateConcepts" && p.output?.concepts?.length > 0,
+    )
+    if (alreadyHasConceptCards) {
+      // Mark as processed so we don't check again
+      processedConceptMessagesRef.current.add(messageId)
+      console.log("[v0] Message already has concepts, marking as processed:", messageId)
+      return
+    }
 
     const textContent =
       typeof lastAssistantMessage.content === "string"
@@ -156,7 +274,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
       const conceptRequest = conceptMatch[1].trim()
       console.log("[v0] Detected concept generation trigger:", conceptRequest)
       // Mark this message as processed BEFORE triggering generation
-      processedConceptMessagesRef.current.add(lastAssistantMessage.id)
+      processedConceptMessagesRef.current.add(messageId)
       setPendingConceptRequest(conceptRequest)
     }
   }, [messages, status, isGeneratingConcepts, pendingConceptRequest])
@@ -169,12 +287,34 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
       console.log("[v0] Calling generate-concepts API for:", pendingConceptRequest)
 
       try {
+        const conversationContext = messages
+          .filter((m) => m.role === "user" || m.role === "assistant")
+          .slice(-10) // Last 10 messages for context
+          .map((m) => {
+            let content = ""
+            if (typeof m.content === "string") {
+              content = m.content
+            } else if (m.parts) {
+              content = m.parts
+                .filter((p: any) => p.type === "text")
+                .map((p: any) => p.text)
+                .join(" ")
+            }
+            // Strip [GENERATE_CONCEPTS] triggers from context
+            const cleanContent = content.replace(/\[GENERATE_CONCEPTS\][^\n]*/g, "").trim()
+            if (!cleanContent) return null
+            return `${m.role === "user" ? "User" : "Maya"}: ${cleanContent.substring(0, 500)}`
+          })
+          .filter(Boolean)
+          .join("\n")
+
         const response = await fetch("/api/maya/generate-concepts", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             userRequest: pendingConceptRequest,
             count: 3,
+            conversationContext: conversationContext || undefined,
           }),
         })
 
@@ -215,58 +355,9 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
     }
 
     generateConcepts()
-  }, [pendingConceptRequest, isGeneratingConcepts, setMessages])
+  }, [pendingConceptRequest, isGeneratingConcepts, setMessages, messages]) // Added 'messages' to dependency array
 
-  // Load chat messages on mount
-  useEffect(() => {
-    const loadChat = async () => {
-      if (!user) return
-
-      try {
-        setIsLoadingChat(true)
-        console.log("[v0] Loading chat for user:", user.id)
-
-        const response = await fetch(`/api/maya/load-chat?chatType=maya`)
-        if (!response.ok) {
-          throw new Error("Failed to load chat")
-        }
-
-        const data = await response.json()
-        console.log("[v0] Loaded chat:", data.chatId, "with", data.messages?.length, "messages")
-
-        setChatId(data.chatId)
-        setChatTitle(data.chatTitle || "Chat with Maya")
-
-        if (data.messages && data.messages.length > 0) {
-          data.messages.forEach((msg: any) => {
-            if (msg.id) {
-              savedMessageIds.current.add(msg.id)
-            }
-          })
-
-          data.messages.forEach((msg: any) => {
-            if (msg.parts?.some((p: any) => p.type === "tool-generateConcepts")) {
-              processedConceptMessagesRef.current.add(msg.id)
-            }
-          })
-
-          setMessages(data.messages)
-          console.log(
-            "[v0] Chat loaded with",
-            data.messages.length,
-            "messages, savedIds:",
-            savedMessageIds.current.size,
-          )
-        }
-      } catch (error) {
-        console.error("[v0] Error loading chat:", error)
-      } finally {
-        setIsLoadingChat(false)
-      }
-    }
-
-    loadChat()
-  }, [user, setMessages])
+  // It was causing race conditions by loading a different chat and overwriting messages
 
   useEffect(() => {
     if (status !== "ready" || !chatId || messages.length === 0) return
@@ -650,88 +741,8 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
     }
   }, [messages.length, scrollToBottom]) // Changed from messages to messages.length to prevent infinite loop
 
-  const loadChat = async (specificChatId?: number) => {
-    try {
-      setIsLoadingChat(true)
-      const url = specificChatId ? `/api/maya/load-chat?chatId=${specificChatId}` : "/api/maya/load-chat"
-      console.log("[v0] Loading chat:", specificChatId || "active chat")
-      console.log("[v0] Fetching from URL:", url)
-      const response = await fetch(url)
-      console.log("[v0] Load chat response status:", response.status, response.statusText)
-
-      if (response.ok) {
-        const data = await response.json()
-        console.log(
-          "[v0] Loaded chat ID:",
-          data.chatId,
-          "Messages:",
-          data.messages?.length || 0,
-          "Title:",
-          data.chatTitle,
-        )
-
-        data.messages?.forEach((msg: any, index: number) => {
-          const conceptParts = msg.parts?.filter((p: any) => p.type === "tool-generateConcepts")
-          if (conceptParts && conceptParts.length > 0) {
-            console.log(`[v0] Message ${index + 1} has concept cards:`, {
-              messageId: msg.id,
-              conceptParts: conceptParts.length,
-              concepts: conceptParts[0]?.output?.concepts?.length || 0,
-              state: conceptParts[0]?.output?.state,
-            })
-          }
-        })
-
-        setChatId(data.chatId)
-        setChatTitle(data.chatTitle || "Chat with Maya") // Set chat title
-
-        if (data.messages && Array.isArray(data.messages) && data.messages.length > 0) {
-          data.messages.forEach((msg: any) => {
-            if (msg.id) {
-              savedMessageIds.current.add(msg.id)
-            }
-          })
-
-          data.messages.forEach((msg: any) => {
-            if (msg.parts?.some((p: any) => p.type === "tool-generateConcepts")) {
-              processedConceptMessagesRef.current.add(msg.id)
-            }
-          })
-          setMessages(data.messages)
-          console.log(
-            "[v0] Chat loaded with",
-            data.messages.length,
-            "messages, savedIds:",
-            savedMessageIds.current.size,
-          )
-        } else {
-          setMessages([])
-        }
-
-        setShowHistory(false)
-      } else {
-        console.error("[v0] ❌ Load chat failed with status:", response.status)
-        try {
-          const errorData = await response.json()
-          console.error("[v0] ❌ Error response:", errorData)
-        } catch (e) {
-          console.error("[v0] ❌ Could not parse error response")
-        }
-      }
-    } catch (error) {
-      console.error("[v0] Error loading chat:", error)
-      if (error instanceof Error) {
-        console.error("[v0] ❌ Error details:", {
-          message: error.message,
-          stack: error.stack,
-          name: error.name,
-        })
-      }
-    } finally {
-      setIsLoadingChat(false)
-    }
-  }
-
+  // The loadChat function has been consolidated and is now being called in the useEffect below.
+  // This useEffect is now responsible for the initial loadChat call.
   useEffect(() => {
     console.log("[v0] 🚀 Maya chat screen mounted, calling loadChat()")
     // Initial loadChat is now handled by the effect dependent on 'user'
@@ -1572,7 +1583,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
                 setShowChatMenu(false)
               }}
               disabled={isUploadingImage}
-              className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-stone-700 hover:bg-stone-50 transition-colors border-b border-stone-100 touch-manipulation disabled:opacity-50"
+              className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-stone-700 hover:bg-stone-50 transition-colors touch-manipulation disabled:opacity-50"
             >
               <Camera size={18} strokeWidth={2} />
               <span className="font-medium">{isUploadingImage ? "Uploading..." : "Upload Inspiration"}</span>
