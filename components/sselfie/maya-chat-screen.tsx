@@ -4,12 +4,28 @@ import type React from "react"
 import VideoCard from "./video-card"
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport } from "ai"
-import { Camera, Send, ArrowDown, X, Home, Aperture, MessageCircle, ImageIcon, Grid, User, SettingsIcon, LogOut, Sliders, Plus, Clock } from 'lucide-react'
+import {
+  Camera,
+  Send,
+  ArrowDown,
+  X,
+  Home,
+  Aperture,
+  MessageCircle,
+  ImageIcon,
+  Grid,
+  User,
+  SettingsIcon,
+  LogOut,
+  Sliders,
+  Plus,
+  Clock,
+} from "lucide-react"
 import { useState, useEffect, useRef, useCallback } from "react"
 import ConceptCard from "./concept-card"
 import MayaChatHistory from "./maya-chat-history"
 import UnifiedLoading from "./unified-loading"
-import { useRouter } from 'next/navigation'
+import { useRouter } from "next/navigation"
 
 interface MayaChatScreenProps {
   onImageGenerated?: () => void
@@ -50,6 +66,10 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
   const messageSaveTimerRef = useRef<NodeJS.Timeout | null>(null)
   const lastMessageCountRef = useRef(0)
   const isSavingMessageRef = useRef(false)
+
+  const [pendingConceptRequest, setPendingConceptRequest] = useState<string | null>(null)
+  const [isGeneratingConcepts, setIsGeneratingConcepts] = useState(false)
+  const processedConceptMessagesRef = useRef<Set<string>>(new Set())
 
   useEffect(() => {
     const settingsStr = localStorage.getItem("mayaGenerationSettings")
@@ -108,6 +128,91 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
       })
     },
   })
+
+  useEffect(() => {
+    if (status !== "ready" || messages.length === 0) return
+
+    // Find the last assistant message
+    const lastAssistantMessage = [...messages].reverse().find((m) => m.role === "assistant")
+    if (!lastAssistantMessage) return
+
+    // Skip if we've already processed this message for concepts
+    if (processedConceptMessagesRef.current.has(lastAssistantMessage.id)) return
+
+    const textContent =
+      typeof lastAssistantMessage.content === "string"
+        ? lastAssistantMessage.content
+        : lastAssistantMessage.parts
+            ?.filter((p): p is { type: "text"; text: string } => p.type === "text")
+            .map((p) => p.text)
+            .join("") || ""
+
+    // Check for [GENERATE_CONCEPTS] trigger
+    const conceptMatch = textContent.match(/\[GENERATE_CONCEPTS\]\s*(.+?)(?:\n|$)/i)
+    if (conceptMatch && !isGeneratingConcepts && !pendingConceptRequest) {
+      const conceptRequest = conceptMatch[1].trim()
+      console.log("[v0] Detected concept generation trigger:", conceptRequest)
+      // Mark this message as processed BEFORE triggering generation
+      processedConceptMessagesRef.current.add(lastAssistantMessage.id)
+      setPendingConceptRequest(conceptRequest)
+    }
+  }, [messages, status, isGeneratingConcepts, pendingConceptRequest])
+
+  useEffect(() => {
+    if (!pendingConceptRequest || isGeneratingConcepts) return
+
+    const generateConcepts = async () => {
+      setIsGeneratingConcepts(true)
+      console.log("[v0] Calling generate-concepts API for:", pendingConceptRequest)
+
+      try {
+        const response = await fetch("/api/maya/generate-concepts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userRequest: pendingConceptRequest,
+            count: 3,
+          }),
+        })
+
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`)
+        }
+
+        const result = await response.json()
+        console.log("[v0] Concept generation result:", result.state, result.concepts?.length)
+
+        if (result.state === "ready" && result.concepts) {
+          // Add concept cards to the last assistant message
+          setMessages((prevMessages) => {
+            const newMessages = [...prevMessages]
+            const lastIndex = newMessages.length - 1
+            if (lastIndex >= 0 && newMessages[lastIndex].role === "assistant") {
+              const existingParts = newMessages[lastIndex].parts || []
+              newMessages[lastIndex] = {
+                ...newMessages[lastIndex],
+                parts: [
+                  ...existingParts,
+                  {
+                    type: "tool-generateConcepts",
+                    output: result,
+                  } as any,
+                ],
+              }
+            }
+            return newMessages
+          })
+        }
+      } catch (error) {
+        console.error("[v0] Error generating concepts:", error)
+      } finally {
+        setIsGeneratingConcepts(false)
+        setPendingConceptRequest(null)
+      }
+    }
+
+    generateConcepts()
+  }, [pendingConceptRequest, isGeneratingConcepts, setMessages])
 
   useEffect(() => {
     if (status !== "ready" || !chatId || messages.length === 0) return
@@ -179,7 +284,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
         console.error("[v0] ❌ Save error:", error)
         savedMessageIds.current.delete(lastMessage.id)
       })
-  }, [status, chatId]) // Updated dependency to messages
+  }, [status, chatId, messages]) // Updated dependency to messages
 
   const isTyping = status === "submitted" || status === "streaming"
 
@@ -746,12 +851,14 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
   })
 
   const renderMessageContent = (text: string, isUser: boolean) => {
+    const cleanedText = text.replace(/\[GENERATE_CONCEPTS\]\s*[^\n]*/gi, "").trim()
+
     // Check if message contains an inspiration image
-    const inspirationImageMatch = text.match(/\[Inspiration Image: (https?:\/\/[^\]]+)\]/)
+    const inspirationImageMatch = cleanedText.match(/\[Inspiration Image: (https?:\/\/[^\]]+)\]/)
 
     if (inspirationImageMatch) {
       const imageUrl = inspirationImageMatch[1]
-      const textWithoutImage = text.replace(/\[Inspiration Image: https?:\/\/[^\]]+\]/g, "").trim()
+      const textWithoutImage = cleanedText.replace(/\[Inspiration Image: https?:\/\/[^\]]+\]/g, "").trim()
 
       return (
         <div className="space-y-3">
@@ -768,7 +875,9 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
       )
     }
 
-    return <p className="text-sm leading-relaxed font-medium whitespace-pre-wrap">{text}</p>
+    if (!cleanedText) return null
+
+    return <p className="text-sm leading-relaxed font-medium whitespace-pre-wrap">{cleanedText}</p>
   }
 
   if (isLoadingChat) {
@@ -1083,18 +1192,8 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
                               </div>
                             </div>
                           )
-                        } else if (output && output.state === "loading") {
-                          return (
-                            <div key={partIndex} className="mt-3">
-                              <div className="flex items-center gap-2 text-stone-600">
-                                <div className="w-1.5 h-1.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                <span className="text-xs tracking-[0.15em] uppercase font-light">
-                                  Creating photo concepts...
-                                </span>
-                              </div>
-                            </div>
-                          )
                         }
+                        // This part is now handled by the isGeneratingConcepts check before the message
                       }
 
                       if (part.type === "tool-generateVideo") {
@@ -1162,6 +1261,20 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
                     ></div>
                   </div>
                   <span className="text-xs font-light text-stone-600">Maya is thinking...</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Concept generation loading indicator */}
+          {isGeneratingConcepts && (
+            <div className="flex justify-start mt-4">
+              <div className="bg-white/50 backdrop-blur-xl border border-white/70 p-3 rounded-2xl max-w-[85%] shadow-lg shadow-stone-900/5">
+                <div className="flex items-center gap-3">
+                  <div className="w-4 h-4 border-2 border-stone-300 border-t-stone-700 rounded-full animate-spin" />
+                  <span className="text-xs tracking-[0.15em] uppercase font-light text-stone-600">
+                    Creating photo concepts...
+                  </span>
                 </div>
               </div>
             </div>

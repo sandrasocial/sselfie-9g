@@ -9,9 +9,9 @@
     "start": "next start"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "latest",
+    "@ai-sdk/anthropic": "2.0.47",
     "@ai-sdk/openai": "latest",
-    "@ai-sdk/openai-compatible": "latest",
+    "@ai-sdk/openai-compatible": "1.0.27",
     "@ai-sdk/react": "latest",
     "@emotion/is-prop-valid": "latest",
     "@hookform/resolvers": "^3.10.0",

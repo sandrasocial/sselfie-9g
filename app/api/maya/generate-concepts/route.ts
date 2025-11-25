@@ -3,8 +3,7 @@ import { createServerClient } from "@/lib/supabase/server"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { generateText } from "ai"
-import { createOpenAICompatible } from "@ai-sdk/openai-compatible"
-import { createAnthropic } from "@ai-sdk/anthropic"
+import { FLUX_PROMPT_OPTIMIZATION } from "@/lib/maya/flux-prompt-optimization"
 
 type MayaConcept = {
   title: string
@@ -21,25 +20,6 @@ type MayaConcept = {
     seed?: number
   }
   referenceImageUrl?: string
-}
-
-function getConceptGenerationModel(isPreview: boolean) {
-  if (isPreview) {
-    if (!process.env.ANTHROPIC_API_KEY) {
-      throw new Error("ANTHROPIC_API_KEY not configured for preview environment")
-    }
-    return createOpenAICompatible({
-      name: "anthropic",
-      apiKey: process.env.ANTHROPIC_API_KEY,
-      baseURL: "https://api.anthropic.com/v1",
-    })("claude-sonnet-4-20250514")
-  } else {
-    const anthropic = createAnthropic({
-      baseURL: "https://gateway.ai.cloudflare.com/v1/f03c72e6eee91a197fe58c550f29a084/sselfie/anthropic",
-      apiKey: process.env.AI_GATEWAY_API_KEY || process.env.ANTHROPIC_API_KEY!,
-    })
-    return anthropic("claude-sonnet-4-20250514")
-  }
 }
 
 export async function POST(req: NextRequest) {
@@ -113,7 +93,7 @@ export async function POST(req: NextRequest) {
     // Analyze reference image if provided
     let imageAnalysis = ""
     if (referenceImageUrl) {
-      console.log("[v0] 🔍 Analyzing reference image:", referenceImageUrl)
+      console.log("[v0] Analyzing reference image:", referenceImageUrl)
 
       const visionAnalysisPrompt = `Look at this image carefully and tell me everything I need to know to recreate this vibe.
 
@@ -127,10 +107,8 @@ Focus on:
 
 Keep it conversational and specific. I need to recreate this exact vibe for Instagram.`
 
-      const model = "anthropic/claude-sonnet-4-20250514"
-
       const { text: visionText } = await generateText({
-        model,
+        model: "anthropic/claude-sonnet-4-20250514",
         messages: [
           {
             role: "user",
@@ -150,27 +128,26 @@ Keep it conversational and specific. I need to recreate this exact vibe for Inst
       })
 
       imageAnalysis = visionText
-      console.log("[v0] 🎨 Vision analysis complete")
+      console.log("[v0] Vision analysis complete")
     }
 
     // Generate photoshoot seed if needed
     let photoshootBaseSeed = null
     if (mode === "photoshoot") {
       photoshootBaseSeed = Math.floor(Math.random() * 1000000)
-      console.log("[v0] 📸 Photoshoot mode: consistent seed:", photoshootBaseSeed)
+      console.log("[v0] Photoshoot mode: consistent seed:", photoshootBaseSeed)
     }
 
-    // Generate concepts
-    const conceptPrompt = `Create ${count} Instagram photo concepts for ${triggerWord} (${userGender}).
+    const conceptPrompt = `You are Maya, an expert fashion photographer and Instagram content strategist. Create ${count} stunning iPhone-quality Instagram photo concepts for ${triggerWord} (${userGender}).
 
 USER REQUEST: "${userRequest}"
-${aesthetic ? `VIBE: ${aesthetic}` : ""}
-${context ? `CONTEXT: ${context}` : ""}
+${aesthetic ? `AESTHETIC VIBE: ${aesthetic}` : ""}
+${context ? `ADDITIONAL CONTEXT: ${context}` : ""}
 
 ${
   mode === "photoshoot"
-    ? `MODE: PHOTOSHOOT - ${count} variations of ONE outfit/location (same outfit, location, just different poses/angles)`
-    : `MODE: CONCEPTS - ${count} completely different concepts (different outfits, locations, vibes)`
+    ? `MODE: PHOTOSHOOT - Create ${count} variations of ONE cohesive look (same outfit and location, different poses/angles/moments)`
+    : `MODE: CONCEPTS - Create ${count} completely different concepts (varied outfits, locations, and vibes)`
 }
 
 ${
@@ -178,37 +155,93 @@ ${
     ? `REFERENCE IMAGE ANALYSIS:
 ${imageAnalysis}
 
-Use this as inspiration for style, lighting, and composition.`
+Capture this exact vibe - the styling, mood, lighting, and composition.`
     : ""
 }
 
-PROMPT LENGTH INTELLIGENCE:
-- Close-ups: 20-30 words (tight focus, face preservation priority)
-- Half body: 25-35 words (optimal sweet spot)
-- Full body: 30-40 words (more scene detail)
-- Environmental: 35-45 words (wider context)
+=== CRITICAL: PROMPT STRUCTURE FOR FLUX AI ===
 
-Keep prompts CONCISE for optimal facial accuracy. Trigger word prominence is critical.
+PROMPT TEMPLATES BY CATEGORY:
+- CLOSE-UP: "${FLUX_PROMPT_OPTIMIZATION.TEMPLATES.CLOSE_UP}"
+- HALF BODY: "${FLUX_PROMPT_OPTIMIZATION.TEMPLATES.HALF_BODY}"
+- FULL BODY: "${FLUX_PROMPT_OPTIMIZATION.TEMPLATES.FULL_BODY}"
+- ACTION: "${FLUX_PROMPT_OPTIMIZATION.TEMPLATES.ACTION}"
 
-JSON FORMAT (return ONLY this, no markdown):
+OPTIMAL WORD COUNTS (for face preservation):
+- Close-ups: 15-25 words (tight focus, face preservation priority)
+- Half body: 25-35 words (RECOMMENDED sweet spot)
+- Full body/Environmental: 35-45 words (more scene detail allowed)
+- 45+ words = HIGH RISK of face drift
+
+GOLDEN EXAMPLE (follow this style):
+"${FLUX_PROMPT_OPTIMIZATION.STRUCTURE.EXAMPLE_GOOD}"
+
+=== INSTAGRAM AUTHENTICITY (2025 VIRAL AESTHETIC) ===
+
+MUST INCLUDE in every prompt:
+- "shot on iPhone 15 Pro" (amateur quality = authenticity)
+- Natural skin texture keywords: "natural skin texture", "skin texture visible", "pores visible"
+- Film grain or HDR glow for realism
+- Focal length: 85mm (close-up), 50mm (half body), 35mm (full body)
+
+INSTAGRAM POSES (natural, NOT staged):
+${FLUX_PROMPT_OPTIMIZATION.INSTAGRAM_AUTHENTICITY.REALISTIC_ACTIONS.map((a) => `- ${a}`).join("\n")}
+
+AVOID (looks fake):
+${FLUX_PROMPT_OPTIMIZATION.INSTAGRAM_AUTHENTICITY.AVOID_STAGED.map((a) => `- ${a}`).join("\n")}
+
+=== FASHION INTELLIGENCE ===
+
+LUXURY URBAN STYLE KEYWORDS:
+- European architecture, oversized designer pieces
+- Moody urban atmosphere, crushed blacks
+- Cool neutral temperature, muted desaturated tones
+- Overcast natural light, editorial mood
+
+COLOR GRADING BY CATEGORY:
+- Close-Up: soft muted tones, natural skin warmth, gentle shadows
+- Half Body: desaturated warm tones, editorial mood, balanced exposure
+- Environmental: crushed blacks, moody atmospheric, dramatic contrast
+- Action: high contrast, rich saturation, dynamic tones
+
+=== WORD ECONOMY (SAY MORE WITH LESS) ===
+
+Instead of: "wearing an oversized luxury designer black wool blazer with structured shoulders"
+Write: "oversized black blazer"
+
+Instead of: "standing in a beautiful European-style cafe with vintage architectural details"
+Write: "European cafe, warm light"
+
+Trust the AI - one adjective per noun maximum.
+
+=== JSON OUTPUT FORMAT ===
+
+Return ONLY valid JSON array, no markdown:
 [
   {
-    "title": "Concept name (3-5 words)",
-    "description": "Brief user-facing description (1 sentence)",
-    "category": "Close-Up Portrait" | "Half Body Lifestyle" | "Close-Up Action" | "Environmental Portrait",
-    "fashionIntelligence": "Outfit styling notes",
-    "lighting": "Lighting description",
-    "location": "Location description",
-    "prompt": "YOUR INTELLIGENT-LENGTH PROMPT - optimized for category (see guidelines above)"
+    "title": "Concept name (3-5 words, evocative)",
+    "description": "Brief description for the user (1 sentence, exciting)",
+    "category": "Close-Up Portrait" | "Half Body Lifestyle" | "Environmental Portrait" | "Close-Up Action",
+    "fashionIntelligence": "Specific outfit details (brands, fabrics, colors)",
+    "lighting": "Lighting description (mood + technical)",
+    "location": "Specific location setting",
+    "prompt": "FLUX-OPTIMIZED PROMPT following template above. START WITH TRIGGER WORD. Include: outfit, pose, location, lighting, 'shot on iPhone 15 Pro', focal length, 'natural skin texture', film grain. 25-35 words ideal."
   }
 ]
 
-Create ${count} concepts now. Use intelligent prompt lengths based on category for best results.`
+Now create ${count} STUNNING, INSTAGRAM-VIRAL concepts. Each prompt MUST:
+1. Start with "${triggerWord}" 
+2. Include "shot on iPhone 15 Pro"
+3. Include "natural skin texture" or "skin texture visible"
+4. Stay within 25-40 words
+5. Use natural candid poses, NOT staged model poses
+6. Include focal length (85mm/50mm/35mm)
+7. Include film grain or subtle HDR`
 
-    console.log("[v0] Calling generateText with model:", conceptPrompt)
+    console.log("[v0] Calling generateText for concept generation")
 
     const { text } = await generateText({
-      model: getConceptGenerationModel(isPreview),
+      model: "anthropic/claude-sonnet-4-20250514",
       messages: [
         {
           role: "user",
@@ -219,7 +252,7 @@ Create ${count} concepts now. Use intelligent prompt lengths based on category f
       temperature: 0.85,
     })
 
-    console.log("[v0] Generated concept text (first 200 chars):", text.substring(0, 200))
+    console.log("[v0] Generated concept text (first 300 chars):", text.substring(0, 300))
 
     // Parse JSON response
     const jsonMatch = text.match(/\[[\s\S]*\]/)
@@ -236,7 +269,7 @@ Create ${count} concepts now. Use intelligent prompt lengths based on category f
           concept.referenceImageUrl = referenceImageUrl
         }
       })
-      console.log("[v0] ✅ Reference image URL attached to all concepts")
+      console.log("[v0] Reference image URL attached to all concepts")
     }
 
     // Add seeds
@@ -246,7 +279,6 @@ Create ${count} concepts now. Use intelligent prompt lengths based on category f
           concept.customSettings = {}
         }
         concept.customSettings.seed = photoshootBaseSeed + index
-        console.log(`[v0] 🎲 Photoshoot Concept ${index + 1} seed:`, concept.customSettings.seed)
       })
     } else {
       concepts.forEach((concept, index) => {
@@ -254,7 +286,6 @@ Create ${count} concepts now. Use intelligent prompt lengths based on category f
           concept.customSettings = {}
         }
         concept.customSettings.seed = Math.floor(Math.random() * 1000000)
-        console.log(`[v0] 🎨 Concept ${index + 1} seed:`, concept.customSettings.seed)
       })
     }
 
@@ -268,7 +299,7 @@ Create ${count} concepts now. Use intelligent prompt lengths based on category f
       })
     }
 
-    console.log("[v0] ✅ Successfully generated", concepts.length, "concepts")
+    console.log("[v0] Successfully generated", concepts.length, "sophisticated concepts")
 
     return NextResponse.json({
       state: "ready",
