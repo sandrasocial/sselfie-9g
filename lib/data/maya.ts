@@ -611,3 +611,15 @@ export async function generateChatTitle(firstMessage: string): Promise<string> {
 
   return title
 }
+
+export async function invalidateChatCache(chatId: number): Promise<void> {
+  try {
+    const redis = await getRedisClient()
+    const cacheKey = CacheKeys.mayaChatMessages(chatId)
+    await redis.del(cacheKey)
+    console.log("[v0] Cache invalidated for chat:", chatId)
+  } catch (error) {
+    console.error("[v0] Error invalidating cache:", error)
+    // Don't throw - cache invalidation failure shouldn't break the flow
+  }
+}

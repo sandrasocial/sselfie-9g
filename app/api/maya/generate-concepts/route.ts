@@ -90,6 +90,36 @@ export async function POST(req: NextRequest) {
 
     const triggerWord = userDataResult[0]?.trigger_word || `user${user.id}`
 
+    const genderStylingGuide =
+      userGender === "woman"
+        ? `
+=== STYLING FOR WOMEN ===
+- Feminine silhouettes: flowing fabrics, tailored blazers, elegant dresses
+- Accessories: delicate jewelry, designer handbags, statement earrings
+- Hair: styled naturally, flowing, or elegantly pinned
+- Makeup: natural glam, soft glowing skin, defined features
+- Poses: graceful, confident, elegant hand placement
+- Fashion references: Hailey Bieber, Zendaya, Sofia Richie, Kendall Jenner
+- Common outfit types: slip dresses, oversized blazers, tailored trousers, cashmere knits, leather pieces
+`
+        : userGender === "man"
+          ? `
+=== STYLING FOR MEN ===
+- Masculine silhouettes: structured blazers, well-fitted shirts, tailored pants
+- Accessories: luxury watches, minimal jewelry, leather belts
+- Grooming: clean or styled facial hair, natural hair texture
+- Poses: strong, confident, relaxed masculine energy
+- Fashion references: David Beckham, A$AP Rocky, Timothée Chalamet, Bad Bunny
+- Common outfit types: tailored suits, casual streetwear, leather jackets, quality knitwear, clean sneakers
+`
+          : `
+=== STYLING (GENDER NEUTRAL) ===
+- Modern silhouettes: relaxed fits, architectural pieces, minimalist design
+- Accessories: contemporary jewelry, quality leather goods
+- Poses: confident, natural, authentic expression
+- Fashion references: contemporary editorial, clean lines, sophisticated casual
+`
+
     // Analyze reference image if provided
     let imageAnalysis = ""
     if (referenceImageUrl) {
@@ -139,6 +169,8 @@ Keep it conversational and specific. I need to recreate this exact vibe for Inst
     }
 
     const conceptPrompt = `You are Maya, an expert fashion photographer and Instagram content strategist. Create ${count} stunning iPhone-quality Instagram photo concepts for ${triggerWord} (${userGender}).
+
+${genderStylingGuide}
 
 USER REQUEST: "${userRequest}"
 ${aesthetic ? `AESTHETIC VIBE: ${aesthetic}` : ""}

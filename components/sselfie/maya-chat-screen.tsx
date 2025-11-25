@@ -26,14 +26,17 @@ import ConceptCard from "./concept-card"
 import MayaChatHistory from "./maya-chat-history"
 import UnifiedLoading from "./unified-loading"
 import { useRouter } from "next/navigation"
+import type { SessionUser } from "next-auth" // Assuming SessionUser type is available
 
 interface MayaChatScreenProps {
   onImageGenerated?: () => void
+  user: SessionUser | null // Assuming user object is passed down
 }
 
-export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps) {
+export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScreenProps) {
   const [inputValue, setInputValue] = useState("")
   const [chatId, setChatId] = useState<number | null>(null)
+  const [chatTitle, setChatTitle] = useState<string>("Chat with Maya") // Added for chat title
   const [isLoadingChat, setIsLoadingChat] = useState(true)
   const [showHistory, setShowHistory] = useState(false)
   const [showNavMenu, setShowNavMenu] = useState(false)
@@ -214,19 +217,71 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
     generateConcepts()
   }, [pendingConceptRequest, isGeneratingConcepts, setMessages])
 
+  // Load chat messages on mount
+  useEffect(() => {
+    const loadChat = async () => {
+      if (!user) return
+
+      try {
+        setIsLoadingChat(true)
+        console.log("[v0] Loading chat for user:", user.id)
+
+        const response = await fetch(`/api/maya/load-chat?chatType=maya`)
+        if (!response.ok) {
+          throw new Error("Failed to load chat")
+        }
+
+        const data = await response.json()
+        console.log("[v0] Loaded chat:", data.chatId, "with", data.messages?.length, "messages")
+
+        setChatId(data.chatId)
+        setChatTitle(data.chatTitle || "Chat with Maya")
+
+        if (data.messages && data.messages.length > 0) {
+          data.messages.forEach((msg: any) => {
+            if (msg.id) {
+              savedMessageIds.current.add(msg.id)
+            }
+          })
+
+          data.messages.forEach((msg: any) => {
+            if (msg.parts?.some((p: any) => p.type === "tool-generateConcepts")) {
+              processedConceptMessagesRef.current.add(msg.id)
+            }
+          })
+
+          setMessages(data.messages)
+          console.log(
+            "[v0] Chat loaded with",
+            data.messages.length,
+            "messages, savedIds:",
+            savedMessageIds.current.size,
+          )
+        }
+      } catch (error) {
+        console.error("[v0] Error loading chat:", error)
+      } finally {
+        setIsLoadingChat(false)
+      }
+    }
+
+    loadChat()
+  }, [user, setMessages])
+
   useEffect(() => {
     if (status !== "ready" || !chatId || messages.length === 0) return
 
-    const lastMessage = messages[messages.length - 1]
-    if (!lastMessage || lastMessage.role !== "assistant") return
+    // Find the last assistant message
+    const lastAssistantMessage = [...messages].reverse().find((m) => m.role === "assistant")
+    if (!lastAssistantMessage) return
 
     // Skip if already saved
-    if (savedMessageIds.current.has(lastMessage.id)) return
+    if (savedMessageIds.current.has(lastAssistantMessage.id)) return
 
     // Extract text content from parts
     let textContent = ""
-    if (lastMessage.parts && Array.isArray(lastMessage.parts)) {
-      const textParts = lastMessage.parts.filter((p: any) => p.type === "text")
+    if (lastAssistantMessage.parts && Array.isArray(lastAssistantMessage.parts)) {
+      const textParts = lastAssistantMessage.parts.filter((p: any) => p.type === "text")
       textContent = textParts
         .map((p: any) => p.text)
         .join("\n")
@@ -235,8 +290,8 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
 
     // Extract concept cards from parts (matching the rendering logic)
     const conceptCards: any[] = []
-    if (lastMessage.parts && Array.isArray(lastMessage.parts)) {
-      for (const part of lastMessage.parts) {
+    if (lastAssistantMessage.parts && Array.isArray(lastAssistantMessage.parts)) {
+      for (const part of lastAssistantMessage.parts) {
         if (part.type === "tool-generateConcepts") {
           const toolPart = part as any
           const output = toolPart.output
@@ -249,7 +304,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
 
     // Only save if we have content or concepts AND they're from streaming (not loaded from DB)
     // Messages loaded from DB won't have the tool output structure
-    const hasStreamingData = lastMessage.parts?.some(
+    const hasStreamingData = lastAssistantMessage.parts?.some(
       (p: any) => p.type === "tool-generateConcepts" && p.output?.state === "ready",
     )
 
@@ -258,7 +313,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
     }
 
     // Mark as saved immediately to prevent duplicate saves
-    savedMessageIds.current.add(lastMessage.id)
+    savedMessageIds.current.add(lastAssistantMessage.id)
 
     // Save to database
     fetch("/api/maya/save-message", {
@@ -277,14 +332,64 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
           console.log("[v0] ✅ Assistant message saved successfully")
         } else {
           console.error("[v0] ❌ Failed to save message:", data.error)
-          savedMessageIds.current.delete(lastMessage.id)
+          savedMessageIds.current.delete(lastAssistantMessage.id)
         }
       })
       .catch((error) => {
         console.error("[v0] ❌ Save error:", error)
-        savedMessageIds.current.delete(lastMessage.id)
+        savedMessageIds.current.delete(lastAssistantMessage.id)
       })
   }, [status, chatId, messages]) // Updated dependency to messages
+
+  useEffect(() => {
+    if (status !== "ready" || !chatId || messages.length === 0) return
+
+    // Find unsaved user messages
+    const unsavedUserMessages = messages.filter((msg) => msg.role === "user" && !savedMessageIds.current.has(msg.id))
+
+    for (const userMsg of unsavedUserMessages) {
+      // Extract text content
+      let textContent = ""
+      if (userMsg.parts && Array.isArray(userMsg.parts)) {
+        const textParts = userMsg.parts.filter((p: any) => p.type === "text")
+        textContent = textParts
+          .map((p: any) => p.text)
+          .join("\n")
+          .trim()
+      } else if (typeof userMsg.content === "string") {
+        textContent = userMsg.content
+      }
+
+      if (!textContent) continue
+
+      // Mark as saved immediately
+      savedMessageIds.current.add(userMsg.id)
+
+      // Save user message to database
+      fetch("/api/maya/save-message", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chatId,
+          role: "user",
+          content: textContent,
+        }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            console.log("[v0] ✅ User message saved")
+          } else {
+            console.error("[v0] ❌ Failed to save user message:", data.error)
+            savedMessageIds.current.delete(userMsg.id)
+          }
+        })
+        .catch((error) => {
+          console.error("[v0] ❌ User message save error:", error)
+          savedMessageIds.current.delete(userMsg.id)
+        })
+    }
+  }, [status, chatId, messages])
 
   const isTyping = status === "submitted" || status === "streaming"
 
@@ -578,9 +683,27 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
         })
 
         setChatId(data.chatId)
+        setChatTitle(data.chatTitle || "Chat with Maya") // Set chat title
 
         if (data.messages && Array.isArray(data.messages) && data.messages.length > 0) {
+          data.messages.forEach((msg: any) => {
+            if (msg.id) {
+              savedMessageIds.current.add(msg.id)
+            }
+          })
+
+          data.messages.forEach((msg: any) => {
+            if (msg.parts?.some((p: any) => p.type === "tool-generateConcepts")) {
+              processedConceptMessagesRef.current.add(msg.id)
+            }
+          })
           setMessages(data.messages)
+          console.log(
+            "[v0] Chat loaded with",
+            data.messages.length,
+            "messages, savedIds:",
+            savedMessageIds.current.size,
+          )
         } else {
           setMessages([])
         }
@@ -611,8 +734,17 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
 
   useEffect(() => {
     console.log("[v0] 🚀 Maya chat screen mounted, calling loadChat()")
-    loadChat()
-  }, [])
+    // Initial loadChat is now handled by the effect dependent on 'user'
+    if (user) {
+      loadChat()
+    } else {
+      // If no user, set loading to false and maybe clear messages or show an empty state
+      setIsLoadingChat(false)
+      setMessages([]) // Clear messages if no user
+      setChatId(null) // Reset chat ID
+      setChatTitle("Chat with Maya") // Reset title
+    }
+  }, [user]) // Depend on user to trigger load
 
   useEffect(() => {
     console.log("[v0] Maya chat status:", status, "isTyping:", isTyping)
@@ -785,6 +917,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
       if (response.ok) {
         const data = await response.json()
         setChatId(data.chatId)
+        setChatTitle("New Chat") // Reset title for new chat
         savedMessageIds.current.clear()
         setMessages([])
         isAtBottomRef.current = true
@@ -798,11 +931,14 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
     }
   }
 
-  const handleSelectChat = (selectedChatId: number) => {
+  const handleSelectChat = (selectedChatId: number, selectedChatTitle: string) => {
+    // Added selectedChatTitle
     if (selectedChatId !== chatId) {
       setChatId(selectedChatId)
+      setChatTitle(selectedChatTitle) // Set the title of the selected chat
       setMessages([])
       savedMessageIds.current.clear()
+      processedConceptMessagesRef.current.clear() // Clear processed concepts for the new chat
       isAtBottomRef.current = true
       loadChat(selectedChatId)
     }
@@ -913,7 +1049,7 @@ export default function MayaChatScreen({ onImageGenerated }: MayaChatScreenProps
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="text-sm sm:text-base font-serif font-extralight tracking-[0.2em] text-stone-950 uppercase">
-              Maya
+              {chatTitle}
             </h3>
           </div>
         </div>
