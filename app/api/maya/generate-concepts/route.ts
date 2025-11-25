@@ -127,10 +127,10 @@ Focus on:
 
 Keep it conversational and specific. I need to recreate this exact vibe for Instagram.`
 
-      const visionModel = getConceptGenerationModel(isPreview)
+      const model = "anthropic/claude-sonnet-4-20250514"
 
       const { text: visionText } = await generateText({
-        model: visionModel,
+        model,
         messages: [
           {
             role: "user",
@@ -182,20 +182,6 @@ Use this as inspiration for style, lighting, and composition.`
     : ""
 }
 
-PROMPT REQUIREMENTS (CRITICAL - DO NOT SHORTEN):
-
-Each "prompt" field MUST be 60-90 WORDS. This is NON-NEGOTIABLE.
-
-REQUIRED STRUCTURE FOR EVERY PROMPT:
-
-1. START: "${triggerWord}, ${userGender} in [specific outfit with fabric details]"
-2. ACTION: [natural movement or pose], [facial expression]
-3. LOCATION: [detailed environment with 3-4 specific elements]
-4. LIGHTING: [specific light source, direction, and quality with color temperature]
-5. ATMOSPHERE: [weather, time of day, environmental elements like wind/mist/steam]
-6. TECHNICAL: "shot on iPhone 15 Pro, [35mm/50mm/85mm] lens, natural skin texture, visible pores, film grain, f/1.8"
-7. DETAILS: [texture notes, imperfections, depth of field]
-
 JSON FORMAT (return ONLY this, no markdown):
 [
   {
@@ -211,12 +197,10 @@ JSON FORMAT (return ONLY this, no markdown):
 
 Create ${count} concepts now. ENSURE EACH PROMPT IS 60-90 WORDS.`
 
-    console.log("[v0] Calling generateText with model")
-
-    const conceptModel = getConceptGenerationModel(isPreview)
+    console.log("[v0] Calling generateText with model:", conceptPrompt)
 
     const { text } = await generateText({
-      model: conceptModel,
+      model: getConceptGenerationModel(isPreview),
       messages: [
         {
           role: "user",

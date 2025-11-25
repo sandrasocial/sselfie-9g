@@ -7,8 +7,6 @@ import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
-import { createOpenAICompatible } from "@ai-sdk/openai-compatible"
-import { createAnthropic } from "@ai-sdk/anthropic"
 
 export const maxDuration = 60
 
@@ -277,26 +275,10 @@ export async function POST(req: NextRequest) {
 
     console.log("[v0] Environment detection - Host:", host, "Production:", isProduction, "Preview:", isPreview)
 
-    let model
+    // This matches the pattern used in all other API routes (instagram-tips, enhance-goal, etc.)
+    const model = "anthropic/claude-sonnet-4-20250514"
 
-    if (isProduction) {
-      console.log("[v0] Using Cloudflare AI Gateway (production)")
-      const anthropic = createAnthropic({
-        baseURL: "https://gateway.ai.cloudflare.com/v1/f03c72e6eee91a197fe58c550f29a084/sselfie/anthropic",
-        apiKey: process.env.AI_GATEWAY_API_KEY || process.env.ANTHROPIC_API_KEY!,
-      })
-      model = anthropic("claude-sonnet-4-20250514")
-    } else {
-      console.log("[v0] Using Anthropic API directly (preview/dev)")
-      const anthropic = createOpenAICompatible({
-        name: "anthropic",
-        apiKey: process.env.ANTHROPIC_API_KEY!,
-        baseURL: "https://api.anthropic.com/v1",
-      })
-      model = anthropic("claude-sonnet-4-20250514")
-    }
-
-    console.log("[v0] Calling streamText")
+    console.log("[v0] Using AI SDK with model:", model)
 
     const result = streamText({
       model,
