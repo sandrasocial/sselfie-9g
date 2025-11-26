@@ -590,23 +590,44 @@ export async function generateChatTitle(firstMessage: string): Promise<string> {
   }
 
   // Extract key concepts from the message (simple approach)
-  // Take first 50 characters and clean it up
-  let title = firstMessage.trim().substring(0, 50)
+  let title = firstMessage.trim()
 
   // Remove common filler words from the start
-  const fillerWords = ["i want", "i need", "can you", "could you", "please", "help me", "i would like"]
+  const fillerWords = [
+    "i want",
+    "i need",
+    "can you",
+    "could you",
+    "please",
+    "help me",
+    "i would like",
+    "create",
+    "make me",
+    "generate",
+    "show me",
+    "give me",
+    "let's do",
+    "i'd like",
+  ]
   for (const filler of fillerWords) {
     if (title.toLowerCase().startsWith(filler)) {
       title = title.substring(filler.length).trim()
     }
   }
 
+  // Remove "a" or "an" from the start if present
+  if (title.toLowerCase().startsWith("a ")) {
+    title = title.substring(2).trim()
+  } else if (title.toLowerCase().startsWith("an ")) {
+    title = title.substring(3).trim()
+  }
+
   // Capitalize first letter
   title = title.charAt(0).toUpperCase() + title.slice(1)
 
-  // Add ellipsis if truncated
-  if (firstMessage.length > 50) {
-    title += "..."
+  // Limit to 50 characters for display
+  if (title.length > 50) {
+    title = title.substring(0, 47) + "..."
   }
 
   return title

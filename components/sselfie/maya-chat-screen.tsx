@@ -27,6 +27,7 @@ import MayaChatHistory from "./maya-chat-history"
 import UnifiedLoading from "./unified-loading"
 import { useRouter } from "next/navigation"
 import type { SessionUser } from "next-auth" // Assuming SessionUser type is available
+import { MayaMessageRenderer } from "./maya-message-renderer"
 
 interface MayaChatScreenProps {
   onImageGenerated?: () => void
@@ -230,21 +231,33 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
   )
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      setIsLoadingChat(false)
-      return
-    }
-
-    // If we already have a chatId, don't reload
-    if (chatId) {
-      console.log("[v0] Already have chatId:", chatId, "skipping loadChat")
-      setIsLoadingChat(false)
-      return
-    }
-
     console.log("[v0] 🚀 Maya chat screen mounted, calling loadChat()")
-    loadChat(chatIdToLoad || undefined)
-  }, [isAuthenticated, chatIdToLoad, loadChat, chatId])
+    if (user) {
+      // Check if there's a saved chatId in localStorage
+      const savedChatId = localStorage.getItem("mayaCurrentChatId")
+      if (savedChatId) {
+        console.log("[v0] Found saved chatId in localStorage:", savedChatId)
+        loadChat(Number(savedChatId))
+      } else {
+        console.log("[v0] No saved chatId, loading default chat")
+        loadChat()
+      }
+    } else {
+      // If no user, set loading to false and maybe clear messages or show an empty state
+      setIsLoadingChat(false)
+      setMessages([]) // Clear messages if no user
+      setChatId(null) // Reset chat ID
+      setChatTitle("Chat with Maya") // Reset title
+      localStorage.removeItem("mayaCurrentChatId")
+    }
+  }, [user]) // Depend on user to trigger load
+
+  useEffect(() => {
+    if (chatId) {
+      console.log("[v0] Saving chatId to localStorage:", chatId)
+      localStorage.setItem("mayaCurrentChatId", chatId.toString())
+    }
+  }, [chatId])
 
   // Detect [GENERATE_CONCEPTS] trigger in messages
   useEffect(() => {
@@ -835,19 +848,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
 
   // The loadChat function has been consolidated and is now being called in the useEffect below.
   // This useEffect is now responsible for the initial loadChat call.
-  useEffect(() => {
-    console.log("[v0] 🚀 Maya chat screen mounted, calling loadChat()")
-    // Initial loadChat is now handled by the effect dependent on 'user'
-    if (user) {
-      loadChat()
-    } else {
-      // If no user, set loading to false and maybe clear messages or show an empty state
-      setIsLoadingChat(false)
-      setMessages([]) // Clear messages if no user
-      setChatId(null) // Reset chat ID
-      setChatTitle("Chat with Maya") // Reset title
-    }
-  }, [user]) // Depend on user to trigger load
+  // NOTE: This useEffect is now redundant due to the new useEffect above that depends on 'user'
 
   useEffect(() => {
     console.log("[v0] Maya chat status:", status, "isTyping:", isTyping)
@@ -1042,18 +1043,18 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
         method: "POST",
       })
 
-      if (response.ok) {
-        const data = await response.json()
-        setChatId(data.chatId)
-        setChatTitle("New Chat") // Reset title for new chat
-        savedMessageIds.current.clear()
-        setMessages([])
-        isAtBottomRef.current = true
-        setShowHistory(false)
-        setShowChatMenu(false)
-        setCurrentPrompts(getRandomPrompts(userGender))
-        setTimeout(() => scrollToBottom("instant"), 100)
-      }
+      if (!response.ok) throw new Error("Failed to create new chat")
+
+      const data = await response.json()
+      setChatId(data.chatId)
+      setChatTitle("New Chat") // Reset title for new chat
+      setMessages([])
+      savedMessageIds.current.clear()
+      processedConceptMessagesRef.current.clear()
+
+      localStorage.setItem("mayaCurrentChatId", data.chatId.toString())
+
+      console.log("[v0] New chat created:", data.chatId)
     } catch (error) {
       console.error("[v0] Error creating new chat:", error)
     }
@@ -1061,15 +1062,12 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
 
   const handleSelectChat = (selectedChatId: number, selectedChatTitle: string) => {
     // Added selectedChatTitle
-    if (selectedChatId !== chatId) {
-      setChatId(selectedChatId)
-      setChatTitle(selectedChatTitle) // Set the title of the selected chat
-      setMessages([])
-      savedMessageIds.current.clear()
-      processedConceptMessagesRef.current.clear() // Clear processed concepts for the new chat
-      isAtBottomRef.current = true
-      loadChat(selectedChatId)
-    }
+    loadChat(selectedChatId)
+    setShowHistory(false)
+    setChatTitle(selectedChatTitle) // Set the title of the selected chat
+    processedConceptMessagesRef.current.clear() // Clear processed concepts for the new chat
+
+    localStorage.setItem("mayaCurrentChatId", selectedChatId.toString())
   }
 
   const handleLogout = async () => {
@@ -1126,9 +1124,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
 
       return (
         <div className="space-y-3">
-          {textWithoutImage && (
-            <p className="text-sm leading-relaxed font-medium whitespace-pre-wrap">{textWithoutImage}</p>
-          )}
+          {textWithoutImage && <MayaMessageRenderer content={textWithoutImage} isUser={isUser} />}
           <div className="mt-2">
             <div className="relative w-32 h-32 rounded-xl overflow-hidden border border-white/60 shadow-lg">
               <img src={imageUrl || "/placeholder.svg"} alt="Inspiration" className="w-full h-full object-cover" />
@@ -1141,7 +1137,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
 
     if (!cleanedText) return null
 
-    return <p className="text-sm leading-relaxed font-medium whitespace-pre-wrap">{cleanedText}</p>
+    return <MayaMessageRenderer content={cleanedText} isUser={isUser} />
   }
 
   if (isLoadingChat) {
