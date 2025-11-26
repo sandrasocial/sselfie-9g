@@ -152,6 +152,35 @@ Keep it conversational and specific. I need to recreate this exact vibe for Inst
 
     const lifestyleContext = getLifestyleContextIntelligence(userRequest || aesthetic || "")
 
+    let trendResearch = ""
+    if (!aesthetic || aesthetic.toLowerCase().includes("instagram") || aesthetic.toLowerCase().includes("trend")) {
+      console.log("[v0] Researching current Instagram trends for concept generation")
+
+      const { text: researchText } = await generateText({
+        model: "anthropic/claude-sonnet-4-20250514",
+        messages: [
+          {
+            role: "user",
+            content: `Research current Instagram fashion trends for personal brand content creators. Focus on:
+
+1. What aesthetics are performing well RIGHT NOW on Instagram (Jan 2025)
+2. Color palettes that are trending for fashion content
+3. Outfit styling that's getting high engagement
+4. Settings and locations that feel current
+
+Keep it brief (2-3 paragraphs) and actionable for a fashion photographer creating content.
+
+CRITICAL: Filter trends through a SCANDINAVIAN MINIMALISM lens - we want Nordic-appropriate trends only (natural tones, clean lines, quality fabrics).`,
+          },
+        ],
+        maxTokens: 500,
+        temperature: 0.7,
+      })
+
+      trendResearch = researchText
+      console.log("[v0] Trend research complete")
+    }
+
     const conversationContextSection = conversationContext
       ? `
 === CONVERSATION CONTEXT ===
@@ -169,6 +198,19 @@ IMPORTANT:
       : ""
 
     const conceptPrompt = `You are Maya, an elite fashion photographer with 15 years of experience shooting for Vogue, Elle, and creating viral Instagram content. You have an OBSESSIVE eye for authenticity - you know that the best images feel stolen from real life, not produced.
+
+${
+  trendResearch
+    ? `
+=== CURRENT INSTAGRAM TRENDS (Jan 2025) ===
+
+${trendResearch}
+
+Use these insights to inform your concept creation, but ALWAYS filter through Scandinavian minimalism (natural tones, clean lines, quality).
+===
+`
+    : ""
+}
 
 ${conversationContextSection}
 ${fashionIntelligence}
