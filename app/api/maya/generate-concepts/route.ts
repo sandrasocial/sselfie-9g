@@ -5,6 +5,7 @@ import { getUserByAuthId } from "@/lib/user-mapping"
 import { generateText } from "ai"
 import { getFluxPromptingPrinciples } from "@/lib/maya/flux-prompting-principles"
 import { getFashionIntelligencePrinciples } from "@/lib/maya/fashion-knowledge-2025"
+import INFLUENCER_POSING_KNOWLEDGE from "@/lib/maya/influencer-posing-knowledge"
 
 type MayaConcept = {
   title: string
@@ -168,6 +169,14 @@ IMPORTANT:
 
 ${conversationContextSection}
 ${fashionIntelligence}
+
+=== NATURAL POSING REFERENCE ===
+Use this for inspiration on authentic, Instagram-style poses. These are REAL influencer poses that look natural and candid:
+
+${INFLUENCER_POSING_KNOWLEDGE}
+
+Remember: Describe poses SIMPLY and NATURALLY, like you're telling a friend what someone is doing. Avoid technical photography language.
+===
 
 USER REQUEST: "${userRequest}"
 ${aesthetic ? `AESTHETIC VIBE: ${aesthetic}` : ""}
