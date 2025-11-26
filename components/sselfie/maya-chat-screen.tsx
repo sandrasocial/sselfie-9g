@@ -27,7 +27,6 @@ import MayaChatHistory from "./maya-chat-history"
 import UnifiedLoading from "./unified-loading"
 import { useRouter } from "next/navigation"
 import type { SessionUser } from "next-auth" // Assuming SessionUser type is available
-import { MayaMessageRenderer } from "./maya-message-renderer"
 
 interface MayaChatScreenProps {
   onImageGenerated?: () => void
@@ -1124,7 +1123,9 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
 
       return (
         <div className="space-y-3">
-          {textWithoutImage && <MayaMessageRenderer content={textWithoutImage} isUser={isUser} />}
+          {textWithoutImage && (
+            <p className="text-sm leading-relaxed font-medium whitespace-pre-wrap">{textWithoutImage}</p>
+          )}
           <div className="mt-2">
             <div className="relative w-32 h-32 rounded-xl overflow-hidden border border-white/60 shadow-lg">
               <img src={imageUrl || "/placeholder.svg"} alt="Inspiration" className="w-full h-full object-cover" />
@@ -1137,7 +1138,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
 
     if (!cleanedText) return null
 
-    return <MayaMessageRenderer content={cleanedText} isUser={isUser} />
+    return <p className="text-sm leading-relaxed font-medium whitespace-pre-wrap">{cleanedText}</p>
   }
 
   if (isLoadingChat) {
