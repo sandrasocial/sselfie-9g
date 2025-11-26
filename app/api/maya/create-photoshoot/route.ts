@@ -116,19 +116,19 @@ Generate ${numImages} varied poses with CONCISE prompts that preserve facial lik
   console.log("[v0] 📸 Claude response preview:", text.substring(0, 200))
 
   let jsonText = text
-
-  if (text.includes("```json")) {
-    const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/)
+  
+  if (text.includes("\`\`\`json")) {
+    const jsonMatch = text.match(/\`\`\`json\s*([\s\S]*?)\s*\`\`\`/)
     if (jsonMatch) {
       jsonText = jsonMatch[1]
     }
-  } else if (text.includes("```")) {
-    const jsonMatch = text.match(/```\s*([\s\S]*?)\s*```/)
+  } else if (text.includes("\`\`\`")) {
+    const jsonMatch = text.match(/\`\`\`\s*([\s\S]*?)\s*\`\`\`/)
     if (jsonMatch) {
       jsonText = jsonMatch[1]
     }
   }
-
+  
   const jsonMatch = jsonText.match(/\{[\s\S]*\}/)
   if (!jsonMatch) {
     console.error("[v0] ❌ No JSON found in response:", text.substring(0, 500))
@@ -137,7 +137,7 @@ Generate ${numImages} varied poses with CONCISE prompts that preserve facial lik
 
   try {
     const photoshootPlan = JSON.parse(jsonMatch[0])
-
+    
     console.log("[v0] 📸 Lifestyle variations created:", {
       baseOutfit: photoshootPlan.baseOutfit?.substring(0, 50) + "...",
       locationTheme: photoshootPlan.locationTheme,
@@ -238,7 +238,7 @@ export async function POST(request: NextRequest) {
     }
 
     const userData = userDataResult[0]
-
+    
     let userGender = "person"
     if (userData.gender) {
       const dbGender = userData.gender.toLowerCase().trim()
@@ -270,7 +270,7 @@ export async function POST(request: NextRequest) {
     }
 
     const consistencySeed = heroSeed || Math.floor(Math.random() * 1000000)
-
+    
     console.log("[v0] 📸 Using seed for all images:", consistencySeed)
 
     const photoshootPlan = await generatePhotoshootPoseVariations({
@@ -285,10 +285,9 @@ export async function POST(request: NextRequest) {
     const categoryKey = category as keyof typeof MAYA_QUALITY_PRESETS
     const presetSettings = MAYA_QUALITY_PRESETS[categoryKey] || MAYA_QUALITY_PRESETS.default
 
-    const REALISM_LORA_URL =
-      "https://huggingface.co/strangerzonehf/Flux-Super-Realism-LoRA/resolve/main/super-realism.safetensors"
-    const REALISM_LORA_SCALE = 0.2 // Lowered from 0.4 to 0.2 to improve face likeness - user's custom LoRA now has more influence
-    console.log("[v0] 📸 Using user's trained LoRA + Super Realism LoRA (0.2 scale)")
+    const REALISM_LORA_URL = "https://huggingface.co/strangerzonehf/Flux-Super-Realism-LoRA/resolve/main/super-realism.safetensors"
+    const REALISM_LORA_SCALE = 0.4 // Lowered from 0.6 to 0.4 to improve face likeness - user's custom LoRA now has more influence
+    console.log("[v0] 📸 Using user's trained LoRA + Super Realism LoRA (0.4 scale)")
 
     const predictions: Array<{
       predictionId: string
@@ -350,10 +349,8 @@ export async function POST(request: NextRequest) {
             if (retries >= maxRetries) {
               throw new Error(`Rate limit exceeded after ${maxRetries} retries. Please try again in a few minutes.`)
             }
-            console.log(
-              `[v0] ⚠️ Rate limited, retrying in ${retryAfter + 2} seconds (attempt ${retries}/${maxRetries})...`,
-            )
-            await new Promise((resolve) => setTimeout(resolve, (retryAfter + 2) * 1000))
+            console.log(`[v0] ⚠️ Rate limited, retrying in ${retryAfter + 2} seconds (attempt ${retries}/${maxRetries})...`)
+            await new Promise(resolve => setTimeout(resolve, (retryAfter + 2) * 1000))
           } else {
             throw error // Non-rate-limit error, throw immediately
           }
@@ -375,7 +372,7 @@ export async function POST(request: NextRequest) {
 
       if (i < NUM_IMAGES - 1) {
         console.log(`[v0] ⏳ Waiting 11 seconds before creating next prediction...`)
-        await new Promise((resolve) => setTimeout(resolve, 11000)) // 11 seconds between predictions
+        await new Promise(resolve => setTimeout(resolve, 11000)) // 11 seconds between predictions
       }
     }
 
@@ -391,7 +388,7 @@ export async function POST(request: NextRequest) {
       ) VALUES (
         ${String(neonUser.id)},
         ${heroPrompt},
-        ${`Photoshoot: ${predictions.map((p) => p.title).join(", ")}`},
+        ${`Photoshoot: ${predictions.map(p => p.title).join(", ")}`},
         ${category},
         ${conceptTitle},
         ${JSON.stringify({

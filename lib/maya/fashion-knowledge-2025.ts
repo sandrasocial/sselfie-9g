@@ -1,23 +1,21 @@
 export const FASHION_TRENDS_2025 = {
   instagram: {
-    viral_content_types: {
-      get_ready_with_me: {
-        format: "Process-driven, storytelling through styling",
-        hooks: ["getting ready for...", "outfit of the day", "styling this...", "how I style..."],
-        engagement: "High - viewers watch entire transformation",
-      },
-      day_in_life: {
-        format: "Candid moments, raw aesthetic, relatable activities",
-        hooks: ["coffee run", "morning routine", "work from home fit", "running errands", "casual weekend"],
-        engagement: "High - authenticity resonates",
-      },
-      outfit_transition: {
-        format: "Quick cut from casual to styled",
-        hooks: ["day to night", "casual to elevated", "work to weekend"],
-        engagement: "Very High - quick, satisfying transformation",
-      },
-    },
     aesthetics: {
+      raw_authentic: {
+        name: "Raw & Authentic",
+        description: "Amateur cellphone quality, visible grain, authentic moments",
+        keywords: [
+          "amateur photo",
+          "visible sensor noise",
+          "heavy HDR glow",
+          "blown-out highlights",
+          "crushed shadows",
+          "authentic moment",
+          "unfiltered",
+          "real life texture",
+        ],
+        targetAudience: "Gen Z, Millennials seeking authenticity",
+      },
       quiet_luxury: {
         name: "Quiet Luxury",
         description: "Understated elegance, expensive fabrics, minimal branding",
@@ -78,302 +76,209 @@ export const FASHION_TRENDS_2025 = {
         ],
         vibe: "Warm, inviting, effortlessly chic",
       },
-      urban_street: {
-        name: "Urban Street Style",
-        description: "Cool city vibes, oversized pieces, confident stride",
+      urban_luxury: {
+        name: "Urban Luxury Street Style",
+        description: "Oversized designer pieces, European architecture, moody lighting",
         keywords: [
-          "oversized leather jacket",
+          "oversized black leather blazer",
           "wide-leg jeans",
-          "structured bag",
-          "statement sunglasses",
-          "layered gold jewelry",
-          "city backdrop",
+          "structured designer bag",
+          "oversized rectangular sunglasses",
+          "minimal gold jewelry",
+          "belted leather coat",
+          "European urban architecture background",
         ],
-        vibe: "Effortless cool, street smart, confident energy",
+        poses: [
+          "looking away over shoulder",
+          "profile shot walking",
+          "leaning against stone wall",
+          "sitting on city steps",
+          "hand in pocket mid-stride",
+          "adjusting sunglasses naturally",
+        ],
+        lighting: "overcast natural light, muted tones, crushed blacks, cool temperature",
+        locations: [
+          "European stone architecture",
+          "modern city street minimal background",
+          "black architectural walls",
+          "outdoor cafe urban setting",
+        ],
+        vibe: "Effortless European street style, moody and editorial",
       },
-      coastal_luxury: {
-        name: "Coastal Luxury",
-        description: "Beach club elegance, Mediterranean vibes, resort chic",
+      quiet_luxury_street: {
+        name: "Quiet Luxury Meets Street",
+        description: "The Row aesthetic with urban edge",
         keywords: [
-          "linen sets",
-          "gold tan",
-          "strappy sandals",
-          "oversized sun hat",
-          "delicate gold",
-          "white and cream",
-          "ocean backdrop",
+          "oversized beige blazer",
+          "tailored neutrals",
+          "expensive fabrics",
+          "minimal branding",
+          "effortless elegance",
+          "architectural backdrop",
         ],
-        vibe: "Vacation mode, effortless elegance, sun-kissed",
-      },
-      dark_femme: {
-        name: "Dark Feminine",
-        description: "Mysterious, romantic, moody elegance",
-        keywords: [
-          "black lace",
-          "deep burgundy",
-          "velvet textures",
-          "dramatic silhouettes",
-          "dark lips",
-          "sultry energy",
-        ],
-        vibe: "Mysterious, powerful, romantic darkness",
-      },
-      y2k_revival: {
-        name: "Y2K Revival",
-        description: "Early 2000s nostalgia, low-rise, butterfly clips, bold colors",
-        keywords: [
-          "low-rise everything",
-          "baby tees",
-          "butterfly accessories",
-          "platform shoes",
-          "mini skirts",
-          "bold prints",
-          "nostalgic energy",
-        ],
-        vibe: "Playful nostalgia, bold and fun, unapologetically Y2K",
-      },
-      soft_girl: {
-        name: "Soft Girl",
-        description: "Pastels, plaid skirts, delicate and feminine",
-        keywords: [
-          "pastel pink",
-          "plaid mini skirt",
-          "cardigan over shoulders",
-          "delicate jewelry",
-          "blush tones",
-          "hair clips",
-          "sweet feminine",
-        ],
-        vibe: "Sweet, gentle, romantic femininity",
-      },
-      indie_sleaze: {
-        name: "Indie Sleaze",
-        description: "Gritty party looks, messy hair, 2000s NYC party scene",
-        keywords: [
-          "messy hair",
-          "smudged eyeliner",
-          "vintage band tee",
-          "leather jacket thrown on",
-          "mini skirt",
-          "strappy heels",
-          "party aftermath aesthetic",
-        ],
-        vibe: "Cool, unbothered, last night's party energy",
-      },
-      coquette: {
-        name: "Coquette",
-        description: "Ultra-feminine, bows, ribbons, ballet-inspired",
-        keywords: [
-          "satin bows",
-          "ribbon details",
-          "ballet flats",
-          "lace trim",
-          "soft pink",
-          "delicate pearls",
-          "sheer layers",
-          "romantic feminine",
-        ],
-        vibe: "Flirty, romantic, doll-like femininity",
-      },
-      old_money: {
-        name: "Old Money",
-        description: "Inherited wealth aesthetic, prep school, country club",
-        keywords: [
-          "tennis skirt",
-          "cable knit sweater",
-          "pearl earrings",
-          "loafers",
-          "crisp button-down",
-          "navy blazer",
-          "Ralph Lauren vibes",
-          "yacht club aesthetic",
-        ],
-        vibe: "Effortless wealth, generational style",
+        vibe: "Understated luxury in urban context, effortless sophistication",
       },
     },
+
+    viral_content_types: {
+      get_ready_with_me: {
+        format: "Process-driven, storytelling through styling",
+        hooks: ["getting ready for...", "outfit of the day", "styling this...", "how I style..."],
+        engagement: "High - viewers watch entire transformation",
+      },
+      day_in_life: {
+        format: "Candid moments, raw aesthetic, relatable activities",
+        hooks: ["coffee run", "morning routine", "work from home fit", "running errands", "casual weekend"],
+        engagement: "High - authenticity resonates",
+      },
+      outfit_transition: {
+        format: "Quick cut from casual to styled",
+        hooks: ["day to night", "casual to elevated", "work to weekend"],
+        engagement: "Very High - quick, satisfying transformation",
+      },
+    },
+  },
+
+  flux_prompting_strategies: {
+    for_realism: [
+      "raw photography",
+      "skin texture visible",
+      "film grain",
+      "natural imperfections",
+      "pores visible",
+      "authentic lighting",
+      "real skin detail",
+      "natural blemishes",
+    ],
+    for_instagram_aesthetic: [
+      "amateur cellphone quality",
+      "visible sensor noise",
+      "heavy HDR glow",
+      "blown-out highlights",
+      "crushed shadows",
+      "Instagram filter aesthetic",
+      "shot on iPhone",
+      "natural amateur quality",
+    ],
+    color_grading_options: [
+      "desaturated warm tones",
+      "crushed blacks moody",
+      "high contrast editorial",
+      "soft muted pastels",
+      "rich saturated colors",
+      "cool teal shadows",
+      "golden hour warmth",
+    ],
+    lighting_styles: [
+      "soft overcast lighting",
+      "harsh window light",
+      "golden hour glow",
+      "moody dim interior",
+      "bright natural daylight",
+      "cinematic rim lighting",
+    ],
   },
 }
 
-export const NOVEMBER_2025_TRENDS = {
-  celebrity_outfits: {
-    hailey_bieber: {
-      current_uniform: [
-        "fitted black leather blazer over beige two-piece set (crop top + matching cardigan)",
-        "flared trousers with socks-with-loafers hack",
-        "structured blazers replacing oversized bombers",
-        "La Ligne matching sets in neutral tones",
-      ],
-      signature_moves: [
-        "socks peeking above loafers",
-        "structured over soft (blazer over knit)",
-        "monochromatic with one contrast piece",
-      ],
-    },
-    kendall_jenner: {
-      current_uniform: [
-        "dark wash straight-leg jeans (Prada, Khaite vibes)",
-        "black pea coat with wool bucket hat from The Row",
-        "patent leather ballet flats",
-        "extra-long cobalt blue scarf (Spring 2026 preview)",
-      ],
-      signature_moves: [
-        "90s minimalism updated",
-        "accessories as statement (the scarf, the hat)",
-        "dark neutrals with one pop color",
-      ],
-    },
-    bella_hadid: {
-      current_uniform: [
-        "vintage archive pieces mixed with contemporary",
-        "low-rise everything with belt visible",
-        "layered tank tops and sheer pieces",
-        "chunky platform boots",
-      ],
-      signature_moves: ["maximalist layering", "vintage mixed with designer", "unexpected color combinations"],
-    },
+export const GENDER_SPECIFIC_STYLING = {
+  woman: {
+    silhouette_principles: [
+      "structured shoulders create power",
+      "oversized proportions need one fitted element",
+      "high waist elongates visually",
+      "monochrome creates editorial impact",
+      "texture contrast adds visual interest",
+    ],
+    fabric_instincts: [
+      "quality over quantity",
+      "natural fibers photograph better",
+      "texture catches light interestingly",
+    ],
+    styling_philosophy:
+      "Effortless elegance emerges from confidence, not specific garments. Natural hair movement, authentic expression, the ease of not trying too hard.",
+    what_to_avoid:
+      "Don't default to 'blazer' or 'slip dress' - ask what THIS person, in THIS moment, would actually reach for",
   },
-  pinterest_outfit_formulas: [
-    "head-to-toe powder pink + white accessories",
-    "baggy extra-long jeans + statement leather top",
-    "shell track jacket worn open over white poplin dress",
-    "oversized plaid shirt + jumbo jeans + large handbag (90s grunge elevated)",
-    "double plaid looks (contrasting prints, brown/green/neutral cohesion)",
-    "mismatched animal prints with tangerine or bright accent",
-    "slouchy studded denim + oversized rugby top",
-    "leather trench coat + midi skirt + ankle boots",
-    "oversized knit sweater dress + tall boots",
-    "fitted blazer + wide-leg trousers + ballet flats (Kendall formula)",
-  ],
-  viral_pieces: [
-    "patent leather ballet flats (replacing sneakers for off-duty)",
-    "wool bucket hats (The Row made them essential)",
-    "extra-long scarves (the statement accessory)",
-    "fitted leather blazers (Hailey's signature)",
-    "straight-leg dark wash jeans (skinny is fully dead)",
-    "matching sets in neutral tones (coordinated but not matchy)",
-    "oversized vintage leather jackets (broken-in, not shiny)",
-    "low-rise baggy cargo pants (Y2K but updated)",
-  ],
+  man: {
+    silhouette_principles: [
+      "relaxed fit reads modern",
+      "layering creates depth",
+      "one statement piece anchors the look",
+      "proportion play between oversized and fitted",
+      "texture adds sophistication to basics",
+    ],
+    fabric_instincts: [
+      "weight matters for drape",
+      "quality basics beat trendy pieces",
+      "leather and wool signal intention",
+    ],
+    styling_philosophy:
+      "Confident ease, natural posture, genuine presence. The best menswear looks unplanned but considered.",
+    what_to_avoid: "Don't default to 'blazer' or 'coat' - ask what makes this person's style THEIRS",
+  },
 }
 
 export const SEASONAL_PALETTES_2025 = {
   winter: {
-    colors: ["charcoal grey", "cream", "chocolate brown", "forest green", "burgundy", "navy", "camel"],
-    fabrics: ["wool", "cashmere", "leather", "suede", "chunky knits", "velvet"],
+    colors: ["charcoal grey", "cream", "camel", "forest green", "burgundy", "navy"],
+    fabrics: ["wool", "cashmere", "leather", "suede", "chunky knits"],
     vibe: "Cozy luxury, rich textures, layered sophistication",
   },
   spring: {
-    colors: ["soft pink", "butter yellow", "sage green", "sky blue", "cream", "lavender", "mint"],
-    fabrics: ["linen", "cotton", "silk", "lightweight knits", "denim"],
+    colors: ["soft pink", "butter yellow", "sage green", "sky blue", "cream", "lavender"],
+    fabrics: ["linen", "cotton", "silk", "lightweight knits"],
     vibe: "Fresh, airy, romantic minimalism",
   },
   summer: {
-    colors: ["white", "sand", "ocean blue", "coral", "olive", "terracotta", "citrus yellow"],
-    fabrics: ["linen", "cotton", "breathable knits", "crochet", "mesh", "lightweight denim"],
+    colors: ["white", "sand", "ocean blue", "coral", "olive", "natural tones"],
+    fabrics: ["linen", "cotton", "breathable knits", "lightweight denim"],
     vibe: "Effortless, breezy, coastal elegance",
   },
   fall: {
-    colors: ["rust", "chocolate brown", "olive", "burnt orange", "deep burgundy", "camel", "forest green"],
-    fabrics: ["wool", "corduroy", "leather", "suede", "heavy knits", "tweed"],
+    colors: ["rust", "chocolate brown", "olive", "burnt orange", "deep burgundy", "camel"],
+    fabrics: ["wool", "corduroy", "leather", "suede", "heavy knits"],
     vibe: "Warm, earthy, layered richness",
   },
 }
 
 export const LOCATION_AESTHETICS = {
-  city_street: {
+  urban_street: {
     vibe: "Cool, confident, on-the-go energy",
-    styling: "Effortless layers, statement outerwear, oversized sunglasses, crossbody bag",
-    scenarios: ["coffee run", "walking to work", "city exploring", "street style moment", "hailing a cab"],
+    styling: "Effortless layers, statement outerwear, minimal accessories",
+    scenarios: ["coffee run", "walking to work", "city exploring", "street style moment"],
   },
-  cozy_home: {
-    vibe: "Soft, intimate, relaxed luxury",
-    styling: "Comfortable luxury, soft knits, loungewear elevated, natural makeup",
-    scenarios: ["morning coffee", "working from home", "cozy evening", "slow morning", "reading nook"],
+  minimalist_interior: {
+    vibe: "Calm, intentional, sophisticated ease",
+    styling: "Comfortable luxury, soft knits, neutral tones",
+    scenarios: ["working from home", "morning routine", "cozy evening", "slow living"],
   },
-  cafe_restaurant: {
-    vibe: "Casual elegance, social ease, main character energy",
-    styling: "Elevated basics, simple jewelry, polished but approachable",
-    scenarios: ["coffee date", "brunch with friends", "solo espresso", "dinner reservations", "wine bar"],
+  cafe_lifestyle: {
+    vibe: "Casual elegance, social ease, approachable luxury",
+    styling: "Elevated basics, simple jewelry, natural makeup",
+    scenarios: ["coffee date", "laptop working", "friend catch-up", "solo moment"],
   },
-  beach_resort: {
-    vibe: "Vacation mode, sun-kissed, effortless glamour",
-    styling: "Linen layers, gold jewelry, sandals, natural glow",
-    scenarios: ["beach club", "pool day", "sunset drinks", "yacht deck", "hotel terrace"],
-  },
-  nightlife: {
-    vibe: "Bold, confident, ready for anything",
-    styling: "Statement pieces, heels, bold makeup, eye-catching textures",
-    scenarios: ["rooftop bar", "club entrance", "late night taxi", "after party", "hotel lobby"],
-  },
-  travel: {
-    vibe: "Jet-setter, polished comfort, effortlessly chic",
-    styling: "Comfortable but styled, quality fabrics, easy layers",
-    scenarios: ["airport outfit", "hotel check-in", "train station", "exploring new city", "first class lounge"],
-  },
-  nature_outdoor: {
-    vibe: "Fresh air, golden light, peaceful energy",
-    styling: "Casual luxury, natural fabrics, minimal accessories",
-    scenarios: ["golden hour walk", "farmers market", "park stroll", "picnic aesthetic", "hiking chic"],
+  editorial_outdoor: {
+    vibe: "Cinematic, intentional, fashion-forward",
+    styling: "Statement pieces, bold silhouettes, confident presence",
+    scenarios: ["photoshoot aesthetic", "golden hour walk", "architectural backdrop"],
   },
 }
 
-export const FLUX_PROMPTING_STRATEGIES = {
-  for_realism: [
-    "raw photography",
-    "skin texture visible",
-    "film grain",
-    "natural imperfections",
-    "pores visible",
-    "authentic lighting",
-    "real skin detail",
-    "natural amateur quality",
-  ],
-  for_instagram_aesthetic: [
-    "amateur cellphone quality",
-    "visible sensor noise",
-    "heavy HDR glow",
-    "blown-out highlights",
-    "crushed shadows",
-    "Instagram filter aesthetic",
-    "shot on iPhone",
-    "natural amateur quality",
-  ],
-  color_grading_options: [
-    "desaturated warm tones",
-    "crushed blacks moody",
-    "high contrast editorial",
-    "soft muted pastels",
-    "rich saturated colors",
-    "cool teal shadows",
-    "golden hour warmth",
-  ],
-  lighting_styles: [
-    "soft overcast lighting",
-    "harsh window light",
-    "golden hour glow",
-    "moody dim interior",
-    "bright natural daylight",
-    "cinematic rim lighting",
-  ],
-}
-
-export const GENDER_STYLING_PHILOSOPHY = {
-  woman: {
-    philosophy:
-      "Effortless elegance emerges from confidence, not specific garments. Natural hair movement, authentic expression, the ease of not trying too hard.",
-    core_principle:
-      "NEVER default to generic garments. Every outfit must feel INVENTED for this specific moment - describe fabric, texture, drape, and what makes it UNIQUE.",
-    style_icons: "Hailey Bieber, Kendall Jenner, Bella Hadid, Zendaya, Sydney Sweeney, Dua Lipa, Emma Chamberlain",
-    current_trends:
-      "Low-rise, oversized fits, sheer layers, vintage band tees, platform shoes, gold stacking, maxi skirts with crops",
+export const INSTAGRAM_BEST_PRACTICES = {
+  composition: {
+    rule_of_thirds: "Subject slightly off-center for dynamic composition",
+    negative_space: "Clean backgrounds, minimal distractions",
+    leading_lines: "Use architecture, streets, furniture to guide eye to subject",
   },
-  man: {
-    philosophy: "Confident ease, natural posture, genuine presence. The best menswear looks unplanned but considered.",
-    core_principle:
-      "NEVER default to generic garments. Every outfit must feel INVENTED for this specific moment - describe fabric, texture, drape, and what makes it UNIQUE.",
-    style_icons: "Jacob Elordi, Timothée Chalamet, Bad Bunny, Tyler the Creator, A$AP Rocky, Ryan Gosling, Dev Patel",
-    current_trends:
-      "Oversized tailoring, vintage leather, relaxed suiting, knit polos, wide-leg trousers, chunky loafers, layered jewelry, earth tones, statement outerwear",
+  storytelling: {
+    authenticity: "Real moments, natural expressions, genuine interactions",
+    relatability: "Everyday scenarios, accessible styling, real-life situations",
+    aspiration: "Elevated aesthetics, luxury touches, dream lifestyle elements",
+  },
+  engagement_drivers: {
+    scroll_stoppers: "Bold colors, unique angles, unexpected moments",
+    save_worthy: "Outfit inspiration, styling tips, trend education",
+    share_worthy: "Relatable moments, aspirational content, beautiful aesthetics",
   },
 }
 
@@ -388,215 +293,90 @@ export function getFashionIntelligencePrinciples(gender: string): string {
           ? "fall"
           : "winter"
 
-  const seasonalPalette = SEASONAL_PALETTES_2025[season as keyof typeof SEASONAL_PALETTES_2025]
-
+  const seasonData = SEASONAL_PALETTES_2025[season as keyof typeof SEASONAL_PALETTES_2025]
   const genderData =
-    GENDER_STYLING_PHILOSOPHY[gender as keyof typeof GENDER_STYLING_PHILOSOPHY] || GENDER_STYLING_PHILOSOPHY.woman
-
-  if (gender === "man" || gender === "male") {
-    return getMensFashionPrinciples(season, genderData, seasonalPalette)
-  }
-
-  return getWomensFashionPrinciples(season, genderData, seasonalPalette)
-}
-
-function getMensFashionPrinciples(
-  season: string,
-  genderData: typeof GENDER_STYLING_PHILOSOPHY.man,
-  seasonalPalette: typeof SEASONAL_PALETTES_2025.winter,
-): string {
-  return `
-=== MAYA'S 2025/2026 MEN'S STYLE INTELLIGENCE ===
-
-You understand men's fashion at an expert level. You know what's trending on Instagram, what celebrities are wearing, and how to make any guy look effortlessly cool.
-
-## CURRENT SEASON: ${season.toUpperCase()}
-
-**TRENDING COLORS THIS SEASON:**
-${seasonalPalette.colors.join(", ")}
-
-**KEY FABRICS:**
-${seasonalPalette.fabrics.join(", ")}
-
-**SEASONAL VIBE:**
-${seasonalPalette.vibe}
-
-## YOUR REFERENCE UNIVERSE FOR MEN
-
-Channel the VIBE of these style icons (don't copy, be inspired):
-
-**THE IT-GUYS (Study their aesthetic):**
-- Jacob Elordi: Classic with an edge, vintage references, tall and lean styling
-- Timothée Chalamet: Fashion risk-taker, gender-fluid styling, unexpected color
-- Bad Bunny: Bold, unapologetic, mixing streetwear with luxury
-- Tyler the Creator: Color master, preppy-meets-street, playful patterns
-- A$AP Rocky: Archive fashion, layering expert, high-low mixing
-- Ryan Gosling: Classic cool, elevated basics, understated luxury
-- Dev Patel: Elegant tailoring, cultural fusion, modern gentleman
-
-## MEN'S INSTAGRAM AESTHETICS & STYLING KEYWORDS
-
-**QUIET LUXURY (Men's):**
-Keywords to use: cashmere crew necks, merino wool, tailored trousers, unbranded luxury, brushed cotton, fine-gauge knits, suede loafers, minimal watches, Loro Piana vibes, old money ease
-Vibe: Expensive without trying, quality over logos
-
-**STREETWEAR ELEVATED:**
-Keywords to use: vintage band tees, oversized hoodies, baggy cargo pants, high-low mixing, archive sneakers, layered chains, statement outerwear, distressed denim
-Vibe: Cool kid who thrifts better than everyone
-
-**EURO SUMMER:**
-Keywords to use: linen button-downs worn open, camp collar shirts, pleated shorts, espadrilles, gold chains, tanned skin, Mediterranean colors, Aperol Spritz aesthetic
-Vibe: You've been yachting in Sardinia
-
-**MINIMAL SCANDINAVIAN:**
-Keywords to use: monochrome layers, oversized coats, chunky scarves, clean sneakers, muted earth tones, quality basics, structured bags
-Vibe: Copenhagen Fashion Week attendee
-
-**RETRO ATHLETIC:**
-Keywords to use: vintage tracksuits, retro sneakers, rugby shirts, striped polos, sweatbands, 70s colors, sporty but make it fashion
-Vibe: Cool dad energy, nostalgic sportswear
-
-## WHAT MEN ARE ACTUALLY WEARING IN 2025/2026:
-
-**SILHOUETTES:**
-- Oversized but intentional (not sloppy)
-- Wide-leg trousers replacing skinny fits
-- Relaxed suiting (unstructured, soft shoulders)
-- Cropped lengths making a statement
-- Layered proportions (short over long, fitted under loose)
-
-**KEY PIECES:**
-- Knit polos and camp collar shirts
-- Linen and cotton blends (texture is everything)
-- Vintage leather jackets (broken-in, not shiny)
-- Pleated trousers (the comeback)
-- Statement outerwear (the jacket IS the outfit)
-- Chunky loafers and Derby shoes
-- Low-profile sneakers (Sambas, Gazelles, New Balance 550)
-- Layered chains and subtle rings
-
-**THE VIBE:**
-- "Model off-duty" energy
-- "Could be going to a gallery or a coffee shop"
-- Effortless but considered
-- Vintage-inspired but modern
-
-## LOCATION-SPECIFIC STYLING
-
-**CITY/STREET:** ${LOCATION_AESTHETICS.city_street.styling}
-**CAFE:** ${LOCATION_AESTHETICS.cafe_restaurant.styling}
-**TRAVEL:** ${LOCATION_AESTHETICS.travel.styling}
-**NIGHTLIFE:** ${LOCATION_AESTHETICS.nightlife.styling}
-
-## HOW TO DESCRIBE MEN'S OUTFITS
-
-WRONG: "wearing a nice shirt and pants"
-RIGHT: "in a washed linen camp collar shirt, sleeves rolled twice, worn open over vintage-wash pleated trousers, leather belt catching the light"
-
-WRONG: "casual outfit with jacket"
-RIGHT: "oversized caramel suede bomber layered over a ribbed cream henley, dark wash straight-leg denim pooling slightly over worn-in brown leather loafers"
-
-Philosophy: ${genderData.philosophy}
-Core principle: ${genderData.core_principle}
-`
-}
-
-function getWomensFashionPrinciples(
-  season: string,
-  genderData: typeof GENDER_STYLING_PHILOSOPHY.woman,
-  seasonalPalette: typeof SEASONAL_PALETTES_2025.winter,
-): string {
-  const aestheticsWithKeywords = Object.entries(FASHION_TRENDS_2025.instagram.aesthetics)
-    .map(([key, val]) => {
-      return `**${val.name.toUpperCase()}:**
-Keywords to use: ${val.keywords.join(", ")}
-Vibe: ${val.vibe}`
-    })
-    .join("\n\n")
-
-  const celebrityOutfitFormulas = `
-## NOVEMBER 2025 - WHAT CELEBRITIES ARE ACTUALLY WEARING RIGHT NOW
-
-**HAILEY BIEBER'S CURRENT LOOKS:**
-${NOVEMBER_2025_TRENDS.celebrity_outfits.hailey_bieber.current_uniform.map((o) => `- ${o}`).join("\n")}
-Signature moves: ${NOVEMBER_2025_TRENDS.celebrity_outfits.hailey_bieber.signature_moves.join(", ")}
-
-**KENDALL JENNER'S CURRENT LOOKS:**
-${NOVEMBER_2025_TRENDS.celebrity_outfits.kendall_jenner.current_uniform.map((o) => `- ${o}`).join("\n")}
-Signature moves: ${NOVEMBER_2025_TRENDS.celebrity_outfits.kendall_jenner.signature_moves.join(", ")}
-
-**BELLA HADID'S CURRENT LOOKS:**
-${NOVEMBER_2025_TRENDS.celebrity_outfits.bella_hadid.current_uniform.map((o) => `- ${o}`).join("\n")}
-Signature moves: ${NOVEMBER_2025_TRENDS.celebrity_outfits.bella_hadid.signature_moves.join(", ")}
-
-## PINTEREST VIRAL OUTFIT FORMULAS (November 2025)
-${NOVEMBER_2025_TRENDS.pinterest_outfit_formulas.map((f) => `- ${f}`).join("\n")}
-
-## VIRAL PIECES RIGHT NOW (must-knows)
-${NOVEMBER_2025_TRENDS.viral_pieces.map((p) => `- ${p}`).join("\n")}
-`
+    GENDER_SPECIFIC_STYLING[gender as keyof typeof GENDER_SPECIFIC_STYLING] || GENDER_SPECIFIC_STYLING.woman
 
   return `
-=== MAYA'S 2025/2026 INSTAGRAM TREND INTELLIGENCE ===
+=== MAYA'S FASHION INTELLIGENCE ===
 
-You are a fashion-obsessed AI who LIVES on Instagram. You know what's trending RIGHT NOW.
+You INVENT unique, story-driven outfits. You NEVER use default garment names.
 
-## CURRENT SEASON: ${season.toUpperCase()}
+## THE OUTFIT INVENTION PROCESS
 
-**TRENDING COLORS THIS SEASON:**
-${seasonalPalette.colors.join(", ")}
+For EACH concept, you must GO THROUGH this mental process:
 
-**KEY FABRICS:**
-${seasonalPalette.fabrics.join(", ")}
+1. WHAT'S THE STORY?
+   - What is this person doing RIGHT NOW? 
+   - What emotion are they carrying?
+   - What's the energy of the moment?
 
-**SEASONAL VIBE:**
-${seasonalPalette.vibe}
+2. WHAT WOULD THEY ACTUALLY REACH FOR?
+   - Not "what's trendy" but what feels RIGHT for this specific moment
+   - Consider their body language - does the outfit match how they're holding themselves?
+   - Is this "getting coffee" energy or "night out" energy?
 
-${celebrityOutfitFormulas}
+3. DESCRIBE WHAT YOU SEE, NOT WHAT IT'S CALLED
+   - BAD: "wearing a blazer" (tells me nothing)
+   - GOOD: "soft unstructured linen in warm oatmeal, sleeves pushed to elbows" (I can SEE it)
+   - The outfit description should feel like poetry, not a shopping list
 
-## INSTAGRAM AESTHETICS - USE THESE KEYWORDS IN YOUR STYLING
+4. THE UNEXPECTED ELEMENT
+   - What makes this SAVE-WORTHY?
+   - The single detail that makes someone pause scrolling
 
-When you detect the user wants a certain aesthetic, USE THE KEYWORDS below in your outfit descriptions:
+## SEASONAL AWARENESS (Current: ${season.toUpperCase()})
 
-${aestheticsWithKeywords}
+You have an instinct for what feels RIGHT in this season:
+- Color mood: ${seasonData.colors.slice(0, 3).join(", ")} direction
+- Fabric feeling: ${seasonData.fabrics.slice(0, 2).join(" and ")} energy
+- Overall vibe: ${seasonData.vibe}
 
-## MATCHING USER REQUESTS TO AESTHETICS
+USE THIS AS INSTINCT, not as a list to copy.
 
-When user asks for... → Apply these aesthetic keywords:
-- "luxury", "rich", "expensive" → QUIET LUXURY keywords (cashmere, silk, tailored, The Row aesthetic)
-- "bold", "dramatic", "statement" → MOB WIFE keywords (fur coat, red lips, gold jewelry, maximalist glamour)
-- "fresh", "natural", "minimal" → CLEAN GIRL keywords (dewy skin, slicked back bun, gold hoops, minimal makeup)
-- "cozy", "scandinavian", "hygge" → SCANDI MINIMAL keywords (beige tones, linen, chunky knits)
-- "city", "urban", "street" → URBAN STREET keywords (oversized leather jacket, wide-leg jeans, statement sunglasses)
-- "beach", "vacation", "resort" → COASTAL LUXURY keywords (linen sets, strappy sandals, oversized sun hat)
-- "dark", "moody", "mysterious" → DARK FEMME keywords (black lace, deep burgundy, velvet textures)
-- "y2k", "2000s", "playful" → Y2K REVIVAL keywords (low-rise everything, baby tees, butterfly accessories)
-- "feminine", "romantic", "bows" → COQUETTE keywords (satin bows, ballet flats, lace trim, pearls)
-- "preppy", "classic", "old money" → OLD MONEY keywords (tennis skirt, cable knit, pearl earrings, loafers)
-- "party", "going out", "edgy" → INDIE SLEAZE keywords (messy hair, leather jacket, mini skirt, smudged makeup)
-- "soft", "cute", "girly" → SOFT GIRL keywords (pastels, plaid skirt, cardigan, hair clips)
+## GENDER-AWARE STYLING (${gender.toUpperCase()})
 
-## LOCATION-SPECIFIC STYLING
+Your styling philosophy: ${genderData.styling_philosophy}
 
-**CITY/STREET:** ${LOCATION_AESTHETICS.city_street.styling}
-**CAFE:** ${LOCATION_AESTHETICS.cafe_restaurant.styling}
-**BEACH/RESORT:** ${LOCATION_AESTHETICS.beach_resort.styling}
-**NIGHTLIFE:** ${LOCATION_AESTHETICS.nightlife.styling}
-**TRAVEL:** ${LOCATION_AESTHETICS.travel.styling}
-**COZY HOME:** ${LOCATION_AESTHETICS.cozy_home.styling}
+You understand silhouette:
+${genderData.silhouette_principles
+  .slice(0, 3)
+  .map((p: string) => `- ${p}`)
+  .join("\n")}
 
-## HOW TO DESCRIBE OUTFITS (Be SPECIFIC - USE THE KEYWORDS)
+## ABSOLUTE RULES
 
-WRONG: "wearing a nice outfit"
-RIGHT: "in an oversized vintage Levi's trucker jacket, worn open over a cropped white ribbed tank, low-rise baggy jeans with raw hem, chunky gold hoops catching the light"
+NEVER output these generic garment words without SUBSTANTIAL transformation:
+- "blazer" → BANNED. Describe the actual garment you see.
+- "coat" → BANNED. What IS it? How does it move?
+- "slip dress" → BANNED. Be specific about fabric, cut, how it's styled.
+- "trousers" → BANNED. What's the shape? The fabric? How do they fall?
+- "sweater" → BANNED. What texture? What weight? How does it fit?
+- "camel" as a color → BANNED. Use specific tones: honey, biscuit, warm sand, etc.
 
-WRONG: "stylish dress"
-RIGHT: "flowing chocolate brown silk midi slip dress, barely-there straps, worn with chunky leather loafers and stacked gold rings"
+If you catch yourself about to use one of these words, STOP and ask:
+"What am I ACTUALLY seeing? How would a fashion editor describe this SPECIFIC piece?"
 
-WRONG: "luxury outfit"
-RIGHT: "butter-soft cashmere turtleneck in oatmeal, tucked into high-waisted tailored trousers, The Row-inspired minimalism, delicate gold chain at neck"
+## THE OUTFIT TEST
 
-Philosophy: ${genderData.philosophy}
-Core principle: ${genderData.core_principle}
+Before including an outfit in a prompt, verify:
+1. Could this description apply to thousands of outfits? → TOO GENERIC, be more specific
+2. Can I visualize the EXACT piece? → If no, add texture/color/silhouette detail  
+3. Does this feel like THIS person's style? → If it could be anyone's, make it more personal
+4. Is there an unexpected element? → If not, add one surprising detail
+
+## YOUR CREATIVE PERMISSION
+
+You are FREED from:
+- Safe choices
+- "What photographs well" defaults
+- Trendy sameness
+- Generic "editorial" looks
+
+You are EMPOWERED to:
+- Invent completely unique outfit combinations
+- Describe fabric and texture poetically
+- Create outfits that tell the story of the moment
+- Surprise and delight with unexpected choices
 `
 }

@@ -107,7 +107,7 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
       const customSettings = parsedSettings
         ? {
             ...parsedSettings,
-            extraLoraScale: parsedSettings.realismStrength ?? 0.2, // Lowered fallback from 0.4 to 0.2
+            extraLoraScale: parsedSettings.realismStrength ?? 0.4,
           }
         : null
 
