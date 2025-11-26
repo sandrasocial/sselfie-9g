@@ -5,6 +5,7 @@ import { getUserByAuthId } from "@/lib/user-mapping"
 import { generateText } from "ai"
 import { getFluxPromptingPrinciples } from "@/lib/maya/flux-prompting-principles"
 import { getFashionIntelligencePrinciples } from "@/lib/maya/fashion-knowledge-2025"
+import { getLifestyleContextIntelligence } from "@/lib/maya/lifestyle-contexts"
 import INFLUENCER_POSING_KNOWLEDGE from "@/lib/maya/influencer-posing-knowledge"
 
 type MayaConcept = {
@@ -48,7 +49,7 @@ export async function POST(req: NextRequest) {
       aesthetic,
       context,
       userModifications,
-      count = 3,
+      count = 6, // Changed default from 3 to 6, Maya can override
       referenceImageUrl,
       customSettings,
       mode = "concept",
@@ -149,6 +150,8 @@ Keep it conversational and specific. I need to recreate this exact vibe for Inst
       console.log("[v0] Photoshoot mode: consistent seed:", photoshootBaseSeed)
     }
 
+    const lifestyleContext = getLifestyleContextIntelligence(userRequest || aesthetic || "")
+
     const conversationContextSection = conversationContext
       ? `
 === CONVERSATION CONTEXT ===
@@ -169,6 +172,21 @@ IMPORTANT:
 
 ${conversationContextSection}
 ${fashionIntelligence}
+
+${
+  lifestyleContext
+    ? `
+=== LIFESTYLE CONTEXT: WHAT THIS REALLY MEANS ===
+
+The user said "${userRequest}" - here's what they ACTUALLY want:
+
+${lifestyleContext}
+
+CRITICAL: This is the VIBE CHECK. Don't just read these - EMBODY them in your outfit choices, location selection, and mood. This is the difference between generic and Instagram-viral.
+===
+`
+    : ""
+}
 
 === NATURAL POSING REFERENCE ===
 Use this for inspiration on authentic, Instagram-style poses. These are REAL influencer poses that look natural and candid:
@@ -231,8 +249,8 @@ For each concept:
 Return ONLY valid JSON array, no markdown:
 [
   {
-    "title": "Evocative title (3-5 words)",
-    "description": "Exciting description for user (1 sentence)",
+    "title": "Simple, catchy title (2-4 words, everyday language)",
+    "description": "Quick, exciting one-liner that makes them want to see it",
     "category": "Close-Up Portrait" | "Half Body Lifestyle" | "Environmental Portrait" | "Close-Up Action",
     "fashionIntelligence": "Your outfit reasoning - WHY this outfit for this moment",
     "lighting": "Your lighting reasoning",
@@ -240,6 +258,20 @@ Return ONLY valid JSON array, no markdown:
     "prompt": "YOUR CRAFTED FLUX PROMPT - synthesized from principles, MUST start with ${triggerWord}, ${userGender}"
   }
 ]
+
+TITLE EXAMPLES (everyday language, not fashion jargon):
+✅ "Coffee Run Glow"
+✅ "Rooftop Sunset"
+✅ "Cozy Morning"
+✅ "City Adventure"
+❌ "Architectural Minimalist Elegance" (too fancy)
+❌ "Urban Editorial Moment" (too fashion-y)
+
+DESCRIPTION EXAMPLES (warm, brief, exciting):
+✅ "That perfect golden hour moment with your coffee"
+✅ "Relaxed and chic at your favorite rooftop spot"
+✅ "Cozy mornings that feel like a vibe"
+❌ "Capturing the interplay of architectural elements and sartorial sophistication" (way too much!)
 
 Now apply your fashion intelligence and prompting mastery. Create ${count} concepts where every outfit choice is INTENTIONAL and story-driven.`
 

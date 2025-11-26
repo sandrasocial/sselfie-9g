@@ -323,7 +323,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             userRequest: pendingConceptRequest,
-            count: 3,
+            count: 6, // Changed from hardcoded 3 to 6, allowing Maya to create more concepts
             conversationContext: conversationContext || undefined,
           }),
         })
@@ -593,131 +593,115 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
   const isTyping = status === "submitted" || status === "streaming"
 
   const promptPoolWoman = {
-    photoStories: [
+    lifestyle: [
+      {
+        label: "Coffee Run",
+        prompt: "Casual coffee run moment with cozy layered outfit",
+      },
+      {
+        label: "Brunch Vibes",
+        prompt: "Brunch date look with effortless chic styling",
+      },
+      {
+        label: "Night Out",
+        prompt: "Night out with elevated evening style",
+      },
+      {
+        label: "Street Fashion",
+        prompt: "Street style moment with trendy urban outfit",
+      },
+    ],
+    aesthetic: [
+      {
+        label: "Scandinavian",
+        prompt: "Scandinavian minimalism with neutral tones and clean lines",
+      },
+      {
+        label: "Dark & Moody",
+        prompt: "Dark moody aesthetic with rich tones",
+      },
+      {
+        label: "Cozy Home",
+        prompt: "Cozy home moment with comfortable relaxed style",
+      },
+      {
+        label: "Luxury",
+        prompt: "Luxury quiet elegance with sophisticated pieces",
+      },
+    ],
+    outdoors: [
+      {
+        label: "Cabin Cozy",
+        prompt: "Cabin cozy vibes with warm layered outfit",
+      },
+      {
+        label: "Outdoors",
+        prompt: "Outdoor moment with natural light and casual style",
+      },
+      {
+        label: "Hiking",
+        prompt: "Hiking adventure with functional sporty outfit",
+      },
       {
         label: "Golden Hour",
-        prompt: "Take my photo during golden hour with warm natural lighting",
-      },
-      {
-        label: "Editorial Style",
-        prompt: "Create an editorial photo with dramatic lighting",
-      },
-      {
-        label: "In Motion",
-        prompt: "Capture me in motion with natural energy",
-      },
-      {
-        label: "Cinematic",
-        prompt: "Make a cinematic photo with beautiful scenery",
-      },
-      {
-        label: "Soft & Dreamy",
-        prompt: "Create a soft dreamy photo with gentle lighting",
-      },
-      {
-        label: "Confident",
-        prompt: "Show me looking confident with elegant posing",
-      },
-    ],
-    storytelling: [
-      {
-        label: "Tell My Story",
-        prompt: "Create photos that tell my story",
-      },
-      {
-        label: "Authentic",
-        prompt: "Show who I am, authentic and real",
-      },
-      {
-        label: "Moody",
-        prompt: "Create a moody photo with soft lighting",
-      },
-      {
-        label: "Natural Beauty",
-        prompt: "Highlight natural beauty with flowing composition",
-      },
-    ],
-    artistic: [
-      {
-        label: "Bold & Powerful",
-        prompt: "Make me look bold and powerful",
-      },
-      {
-        label: "Timeless",
-        prompt: "Create something timeless and elegant",
-      },
-      {
-        label: "Modern",
-        prompt: "Capture modern style with clean lines",
-      },
-      {
-        label: "Romantic",
-        prompt: "Create a romantic atmosphere with soft lighting",
+        prompt: "Golden hour outdoor moment with soft natural light",
       },
     ],
   }
 
   const promptPoolMan = {
-    photoStories: [
+    lifestyle: [
       {
-        label: "Golden Hour",
-        prompt: "Take my photo during golden hour with strong natural lighting",
+        label: "Coffee Run",
+        prompt: "Casual coffee run with laid-back urban style",
       },
       {
-        label: "Editorial Style",
-        prompt: "Create an editorial photo with dramatic lighting",
+        label: "Brunch",
+        prompt: "Brunch spot with smart casual outfit",
       },
       {
-        label: "Action Shot",
-        prompt: "Capture me in motion with natural energy",
+        label: "Night Out",
+        prompt: "Night out with sharp evening style",
       },
       {
-        label: "Cinematic",
-        prompt: "Make a cinematic photo with striking scenery",
-      },
-      {
-        label: "Sharp & Modern",
-        prompt: "Create a sharp modern photo with clean lines",
-      },
-      {
-        label: "Confident",
-        prompt: "Show me looking confident with powerful posing",
+        label: "Street Fashion",
+        prompt: "Street style moment with contemporary urban look",
       },
     ],
-    storytelling: [
+    aesthetic: [
       {
-        label: "Tell My Story",
-        prompt: "Create photos that tell my story",
+        label: "Scandinavian",
+        prompt: "Scandinavian minimal with clean architectural style",
       },
       {
-        label: "Authentic",
-        prompt: "Show who I am, authentic and real",
+        label: "Dark & Moody",
+        prompt: "Dark moody aesthetic with strong contrast",
       },
       {
-        label: "Moody",
-        prompt: "Create a moody photo with dramatic lighting",
+        label: "Cozy Home",
+        prompt: "Cozy home moment with comfortable relaxed fit",
       },
       {
-        label: "Natural Strength",
-        prompt: "Highlight natural strength with bold composition",
+        label: "Luxury",
+        prompt: "Luxury refined elegance with tailored pieces",
       },
     ],
-    artistic: [
+    outdoors: [
       {
-        label: "Bold & Powerful",
-        prompt: "Make me look bold and powerful",
+        label: "Cabin Cozy",
+        prompt: "Cabin vibes with rugged layered style",
       },
       {
-        label: "Timeless",
-        prompt: "Create something timeless and classic",
+        label: "Outdoors",
+        prompt: "Outdoor moment with natural setting and casual fit",
       },
       {
-        label: "Urban",
-        prompt: "Capture urban energy with modern style",
+        label: "Sporty",
+        prompt: "Sporty active look with athletic style",
       },
       {
-        label: "Rugged",
-        prompt: "Create a rugged natural look with outdoor energy",
+        label: "Hiking",
+        prompt: "Hiking adventure with functional outdoor gear",
       },
     ],
   }
