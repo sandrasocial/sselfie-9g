@@ -15,6 +15,7 @@ export interface FluxPromptOptions {
   userTriggerToken: string
   userGender?: string | null
   userEthnicity?: string | null
+  physicalPreferences?: string | null
   includeQualityHints?: boolean
   includeHandGuidance?: boolean
   aestheticPreference?: string
@@ -44,6 +45,7 @@ export class FluxPromptBuilder {
       userTriggerToken,
       userGender,
       userEthnicity,
+      physicalPreferences,
       includeQualityHints = true,
       includeHandGuidance = true,
       aestheticPreference,
@@ -77,6 +79,7 @@ export class FluxPromptBuilder {
     const promptParts = [
       components.trigger,
       components.gender,
+      physicalPreferences || "", // Add physical preferences after gender
       components.styleDescription,
       instagramPose,
       luxuryUrbanKeywords,

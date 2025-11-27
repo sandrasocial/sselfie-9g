@@ -44,6 +44,7 @@ interface UserInfo {
   memberSince: string
   gender?: string
   ethnicity?: string
+  physical_preferences?: string
 }
 
 interface SubscriptionInfo {
@@ -69,6 +70,7 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
 
   const [gender, setGender] = useState<string>("")
   const [ethnicity, setEthnicity] = useState<string>("")
+  const [physicalPreferences, setPhysicalPreferences] = useState<string>("")
   const [isUpdatingDemographics, setIsUpdatingDemographics] = useState(false)
 
   useEffect(() => {
@@ -87,6 +89,7 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
         setUserInfo(data)
         setGender(data.gender || "")
         setEthnicity(data.ethnicity || "")
+        setPhysicalPreferences(data.physical_preferences || "")
       }
     } catch (error) {
       console.error("[v0] Error fetching user info:", error)
@@ -227,7 +230,6 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
 
   const handleUpdateDemographics = async () => {
     if (!gender) {
-      alert("Please select a gender")
       return
     }
 
@@ -235,28 +237,27 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
     try {
       const response = await fetch("/api/user/update-demographics", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         credentials: "include",
-        body: JSON.stringify({ gender, ethnicity: ethnicity || null }),
+        body: JSON.stringify({
+          gender,
+          ethnicity,
+          physical_preferences: physicalPreferences,
+        }),
       })
 
       if (response.ok) {
         const data = await response.json()
-        alert("Model information updated successfully!")
-        if (userInfo) {
-          setUserInfo({
-            ...userInfo,
-            gender: data.gender,
-            ethnicity: data.ethnicity,
-          })
-        }
+        setGender(data.gender || "")
+        setEthnicity(data.ethnicity || "")
+        setPhysicalPreferences(data.physical_preferences || "")
       } else {
-        const error = await response.json()
-        alert(error.error || "Failed to update model information")
+        console.error("[v0] Failed to update demographics")
       }
     } catch (error) {
       console.error("[v0] Error updating demographics:", error)
-      alert("Failed to update model information. Please try again.")
     } finally {
       setIsUpdatingDemographics(false)
     }
@@ -680,6 +681,23 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
               </select>
             </div>
 
+            <div>
+              <label className="block text-xs text-stone-500 uppercase tracking-wider mb-3">
+                Physical Preferences (Optional)
+              </label>
+              <textarea
+                value={physicalPreferences}
+                onChange={(e) => setPhysicalPreferences(e.target.value)}
+                placeholder="e.g., curvier body type, fuller bust, lighter blonde hair, athletic build"
+                rows={3}
+                className="w-full px-4 py-3 text-sm rounded-xl border border-stone-300/40 bg-white text-stone-950 focus:outline-none focus:border-stone-400 transition-all resize-none"
+              />
+              <p className="mt-2 text-xs text-stone-500">
+                Describe how you'd like to appear in your photos. These preferences will be applied to all future image
+                generations.
+              </p>
+            </div>
+
             <button
               onClick={handleUpdateDemographics}
               disabled={isUpdatingDemographics || !gender}
@@ -689,7 +707,8 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
             </button>
 
             <p className="text-xs text-stone-500 text-center">
-              This information helps Maya generate accurate AI images that represent you. No retraining required.
+              This information helps Maya generate accurate AI images that represent you. Physical preferences will be
+              applied to all future generations. No retraining required.
             </p>
           </div>
         </div>

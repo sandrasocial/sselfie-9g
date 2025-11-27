@@ -74,13 +74,15 @@ export async function POST(req: NextRequest) {
     // Get user data
     let userGender = "person"
     let userEthnicity = null
+    let physicalPreferences = null
     const { neon } = await import("@neondatabase/serverless")
     const sql = neon(process.env.DATABASE_URL!)
 
     const userDataResult = await sql`
-      SELECT u.gender, u.ethnicity, um.trigger_word 
+      SELECT u.gender, u.ethnicity, um.trigger_word, upb.physical_preferences
       FROM users u
       LEFT JOIN user_models um ON u.id = um.user_id AND um.training_status = 'completed'
+      LEFT JOIN user_personal_brand upb ON u.id = upb.user_id
       WHERE u.id = ${user.id} 
       LIMIT 1
     `
@@ -100,6 +102,7 @@ export async function POST(req: NextRequest) {
     }
 
     userEthnicity = userDataResult[0]?.ethnicity || null
+    physicalPreferences = userDataResult[0]?.physical_preferences || null
 
     const triggerWord = userDataResult[0]?.trigger_word || `user${user.id}`
 
@@ -247,8 +250,46 @@ ${context ? `ADDITIONAL CONTEXT: ${context}` : ""}
 ${
   mode === "photoshoot"
     ? `MODE: PHOTOSHOOT - Create ${count} variations of ONE cohesive look (same outfit and location, different poses/angles/moments)`
-    : `MODE: CONCEPTS - Create ${count} completely different concepts (varied outfits, locations, and vibes)`
+    : `MODE: CONCEPTS - Create ${count} THEMATICALLY CONSISTENT concepts that ALL relate to the user's request`
 }
+
+🎯 CRITICAL: THEMATIC CONSISTENCY RULE
+
+Your ${count} concepts MUST ALL stay within the theme/vibe of "${userRequest}".
+
+Examples of CORRECT thematic consistency:
+- User asks for "Brunch date look" → ALL ${count} concepts are brunch-related:
+  • Outdoor café brunch with pastries
+  • Rooftop brunch with champagne
+  • Cozy indoor brunch spot
+  • Garden brunch setting
+  • etc.
+
+- User asks for "Luxury lifestyle" → ALL ${count} concepts are luxury-focused:
+  • Designer hotel lobby
+  • Private rooftop terrace
+  • Luxury car setting
+  • High-end restaurant
+  • etc.
+
+- User asks for "Coffee run" → ALL ${count} concepts include coffee/café elements:
+  • Walking with coffee cup downtown
+  • Inside modern café
+  • Coffee shop window seat
+  • Outdoor café table
+  • etc.
+
+- User asks for "Street style" → ALL ${count} concepts are urban/street:
+  • City sidewalk moment
+  • Urban alleyway
+  • Street crossing
+  • City park bench
+  • etc.
+
+❌ WRONG: Creating random variety (1 brunch, 1 gym, 1 street, 1 luxury) when user asked for ONE theme
+✅ RIGHT: Creating ${count} variations WITHIN the requested theme
+
+The user wants to tell a COHESIVE STORY across all ${count} images, not a random collection.
 
 ${
   imageAnalysis
@@ -268,8 +309,23 @@ ${getFluxPromptingPrinciples()}
 TRIGGER WORD: "${triggerWord}"
 GENDER: "${userGender}"
 ${userEthnicity ? `ETHNICITY: "${userEthnicity}" (MUST include in prompt for accurate representation)` : ""}
+${
+  physicalPreferences
+    ? `
+🔴 PHYSICAL PREFERENCES (MANDATORY - APPLY TO EVERY PROMPT):
+"${physicalPreferences}"
 
-1. Every prompt MUST start with: "${triggerWord}, ${userEthnicity ? userEthnicity + " " : ""}${userGender}"
+CRITICAL INSTRUCTIONS:
+- These are USER-REQUESTED appearance modifications that MUST be in EVERY prompt
+- Include them RIGHT AFTER the gender/ethnicity descriptor
+- Format: "${triggerWord}, ${userEthnicity ? userEthnicity + " " : ""}${userGender}, ${physicalPreferences}, [rest of prompt]"
+- DO NOT skip this or the user will be disappointed
+- Examples: "long blonde hair", "curvier body type with fuller bust", "athletic build"
+`
+    : ""
+}
+
+1. Every prompt MUST start with: "${triggerWord}, ${userEthnicity ? userEthnicity + " " : ""}${userGender}${physicalPreferences ? `, ${physicalPreferences}` : ""}"
 2. Apply the OUTFIT PRINCIPLE with your FASHION INTELLIGENCE - no boring defaults
 3. Apply the EXPRESSION PRINCIPLE for authentic facial details
 4. Apply the POSE PRINCIPLE for natural body positioning
@@ -300,7 +356,7 @@ Return ONLY valid JSON array, no markdown:
     "fashionIntelligence": "Your outfit reasoning - WHY this outfit for this moment",
     "lighting": "Your lighting reasoning",
     "location": "Your location reasoning",
-    "prompt": "YOUR CRAFTED FLUX PROMPT - synthesized from principles, MUST start with ${triggerWord}, ${userEthnicity ? userEthnicity + " " : ""}${userGender}"
+    "prompt": "YOUR CRAFTED FLUX PROMPT - synthesized from principles, MUST start with ${triggerWord}, ${userEthnicity ? userEthnicity + " " : ""}${userGender}${physicalPreferences ? `, ${physicalPreferences}` : ""}"
   }
 ]
 

@@ -16,7 +16,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    const { gender, ethnicity } = await request.json()
+    const { gender, ethnicity, physical_preferences } = await request.json()
 
     // Validate gender
     const validGenders = ["woman", "man", "non-binary"]
@@ -42,51 +42,74 @@ export async function POST(request: Request) {
 
     const sql = neon(process.env.DATABASE_URL!)
 
-    // Update both fields if provided
-    if (gender !== undefined && ethnicity !== undefined) {
-      await sql`
-        UPDATE users
-        SET 
-          gender = ${gender},
-          ethnicity = ${ethnicity},
-          updated_at = NOW()
-        WHERE id = ${dbUser.id}
-      `
-    } else if (gender !== undefined) {
-      await sql`
-        UPDATE users
-        SET 
-          gender = ${gender},
-          updated_at = NOW()
-        WHERE id = ${dbUser.id}
-      `
-    } else if (ethnicity !== undefined) {
-      await sql`
-        UPDATE users
-        SET 
-          ethnicity = ${ethnicity},
-          updated_at = NOW()
-        WHERE id = ${dbUser.id}
-      `
-    } else {
-      return NextResponse.json({ error: "No fields to update" }, { status: 400 })
+    if (gender !== undefined || ethnicity !== undefined) {
+      if (gender !== undefined && ethnicity !== undefined) {
+        await sql`
+          UPDATE users
+          SET gender = ${gender}, ethnicity = ${ethnicity}, updated_at = NOW()
+          WHERE id = ${dbUser.id}
+        `
+      } else if (gender !== undefined) {
+        await sql`
+          UPDATE users
+          SET gender = ${gender}, updated_at = NOW()
+          WHERE id = ${dbUser.id}
+        `
+      } else if (ethnicity !== undefined) {
+        await sql`
+          UPDATE users
+          SET ethnicity = ${ethnicity}, updated_at = NOW()
+          WHERE id = ${dbUser.id}
+        `
+      }
     }
 
-    // Fetch updated values
-    const result = await sql`
+    if (physical_preferences !== undefined) {
+      // First check if personal brand exists
+      const brandCheck = await sql`
+        SELECT id FROM user_personal_brand
+        WHERE user_id = ${dbUser.id}
+      `
+
+      if (brandCheck.length > 0) {
+        // Update existing record
+        await sql`
+          UPDATE user_personal_brand
+          SET 
+            physical_preferences = ${physical_preferences},
+            updated_at = NOW()
+          WHERE user_id = ${dbUser.id}
+        `
+      } else {
+        // Create new record with physical preferences
+        await sql`
+          INSERT INTO user_personal_brand (user_id, physical_preferences, created_at, updated_at)
+          VALUES (${dbUser.id}, ${physical_preferences}, NOW(), NOW())
+        `
+      }
+    }
+
+    const userResult = await sql`
       SELECT gender, ethnicity 
       FROM users 
       WHERE id = ${dbUser.id}
     `
 
-    if (result.length === 0) {
+    const brandResult = await sql`
+      SELECT physical_preferences
+      FROM user_personal_brand
+      WHERE user_id = ${dbUser.id}
+    `
+
+    if (userResult.length === 0) {
       return NextResponse.json({ error: "Failed to update demographics" }, { status: 500 })
     }
 
     return NextResponse.json({
       success: true,
-      gender: result[0].gender,
-      ethnicity: result[0].ethnicity,
+      gender: userResult[0].gender,
+      ethnicity: userResult[0].ethnicity,
+      physical_preferences: brandResult.length > 0 ? brandResult[0].physical_preferences : null,
     })
   } catch (error) {
     console.error("[v0] Error updating demographics:", error)

@@ -222,6 +222,21 @@ export async function getUserContextForMaya(authUserId: string): Promise<string>
         }
       }
 
+      if (personalBrand.physical_preferences) {
+        contextParts.push(`\n**🎯 PHYSICAL APPEARANCE PREFERENCES (MANDATORY - APPLY TO ALL IMAGES):**`)
+        contextParts.push(`${personalBrand.physical_preferences}`)
+        contextParts.push(``)
+        contextParts.push(
+          `⚠️ CRITICAL: These are user-requested body/appearance modifications that MUST be applied to EVERY image generation.`,
+        )
+        contextParts.push(`- Include these modifications in EVERY FLUX prompt you create`)
+        contextParts.push(
+          `- Examples: "curvier body type", "blonde hair instead of brown", "fuller bust", "athletic build"`,
+        )
+        contextParts.push(`- DO NOT generate images without these modifications - they are NON-NEGOTIABLE`)
+        contextParts.push(`- If user requests changes to their appearance, update physical_preferences immediately`)
+      }
+
       if (personalBrand.visual_aesthetic) {
         try {
           const aesthetics =

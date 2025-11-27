@@ -51,6 +51,25 @@ export async function GET() {
 
     const user = userInfo[0]
 
+    let physicalPreferences = null
+    try {
+      const brandData = await sql`
+        SELECT physical_preferences
+        FROM user_personal_brand
+        WHERE user_id = ${neonUser.id}
+        LIMIT 1
+      `
+      physicalPreferences = brandData.length > 0 ? brandData[0].physical_preferences : null
+    } catch (error: any) {
+      // Column doesn't exist yet - gracefully handle by returning null
+      if (error?.code === "42703") {
+        console.log("[v0] Physical preferences column doesn't exist yet - needs migration")
+      } else {
+        // Re-throw other errors
+        throw error
+      }
+    }
+
     console.log("[v0] User info: Returning response")
 
     return NextResponse.json({
@@ -66,6 +85,7 @@ export async function GET() {
       memberSince: user.created_at,
       gender: user.gender,
       ethnicity: user.ethnicity,
+      physical_preferences: physicalPreferences,
       subscription: subscription
         ? {
             status: subscription.status,
