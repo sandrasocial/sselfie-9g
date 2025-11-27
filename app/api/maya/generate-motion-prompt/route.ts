@@ -29,78 +29,80 @@ export async function POST(request: Request) {
 
     const userContext = await getUserContextForMaya(authUser.id)
 
-    console.log("[v0] === GENERATING AUTHENTIC MOTION PROMPT ===")
+    console.log("[v0] === GENERATING MOTION PROMPT FOR WAN-2.5 I2V ===")
     console.log("[v0] FLUX Prompt:", fluxPrompt)
     console.log("[v0] Description:", description)
     console.log("[v0] Category:", category)
     console.log("[v0] Image URL:", imageUrl ? "provided" : "not provided")
 
     if (imageUrl) {
-      console.log("[v0] Using Maya's creative vision for authentic motion")
+      console.log("[v0] Using image analysis for pose-accurate motion")
 
-      const visionPrompt = `You're Maya - a creative director who understands that great Instagram B-roll is about capturing authentic micro-moments, not manufactured movement.
+      const visionPrompt = `You're Maya - a creative director specializing in authentic Instagram B-roll motion for WAN-2.5 I2V.
 
-**Study this image carefully.** Notice:
-- The exact body position and pose
-- What the hands are doing or touching
-- The environment and objects nearby
-- The lighting and mood
-- The person's apparent energy level
+**ANALYZE THE IMAGE CAREFULLY:**
+1. What is the exact body position? (sitting, standing, leaning, etc.)
+2. Where are the hands/arms positioned?
+3. What's the head position and gaze direction?
+4. What's the environment? (indoor, outdoor, objects nearby)
+5. What's the energy level? (relaxed, alert, contemplative)
 
-**Your Philosophy:**
-Real people don't move in predictable, templated ways. They have micro-fidgets, subtle weight shifts, unconscious gestures. The best B-roll captures that "caught in the moment" feeling - like someone happened to be filming when something real happened.
+**WAN-2.5 I2V MOTION FORMULA:**
+Motion Description + Camera Movement (split on purpose)
 
-**Movement Categories (pick what fits this specific image):**
+**5-SECOND STRUCTURE:**
+[0-2s] Initial subject motion + camera starts
+[2-4s] Motion develops + camera continues
+[4-5s] Settle + camera completes
 
-1. **Micro-adjustments** - The tiny movements we all do unconsciously:
-   - Slight weight shift from one foot to another
-   - Fingers grazing fabric, adjusting a strap
-   - Small head tilt responding to a thought
-   - Subtle shoulder roll or relaxation
+**PROMPT FORMAT:**
+"[Subject performs action]; camera [specific movement]"
 
-2. **Environmental reactions** - Responding to surroundings:
-   - Turning toward a sound or movement
-   - Closing eyes momentarily in warm light
-   - Looking up at something overhead
-   - Breath catching at a beautiful view
+**PERFECT EXAMPLES:**
 
-3. **Object interactions** - Natural engagement with items:
-   - Bringing cup to lips with genuine intention (not "for the camera")
-   - Fingers absentmindedly tracing an edge
-   - Adjusting glasses/jewelry with one hand while thinking
-   - Phone check that feels habitual, not staged
+Example 1 (Portrait with Breeze):
+"Hair lifts gently from breeze, fingers slowly tuck strands behind ear, eyes close briefly in peaceful moment, settles with soft smile; camera gentle push-in emphasizing intimate expression"
 
-4. **Emotional micro-expressions** - Subtle feeling shifts:
-   - A thought crossing the face that causes a slight smile
-   - Eyes softening as they focus on something meaningful
-   - The beginning of a laugh not fully released
-   - Peaceful exhale visible in shoulders dropping
+Example 2 (Coffee Morning):
+"Lifts coffee mug slowly to lips, takes deliberate sip, eyes gaze thoughtfully through window, lowers mug with satisfied exhale; camera subtle dolly-in capturing contemplative mood"
 
-**Rules for Authenticity:**
+Example 3 (Outdoor Moment):
+"Head turns gently toward distant sound, gaze softens in thought, slight smile forms naturally, shoulders relax settling into scene; camera fixed maintaining authentic caught-moment feel"
 
-✓ Match the exact pose in this image - don't suggest walking if they're sitting
-✓ One genuine movement - not a performance, a moment
-✓ Add a motivation - why would they move? (a sound, a thought, noticing something)
-✓ Natural pacing - most authentic movements are slow and unhurried
-✓ Keep it 10-15 words maximum
+**SUBJECT MOTION RULES:**
+- 30-50 words for subject motion
+- Micro-movements: blinks, breaths, subtle shifts, finger movements
+- Speed modifiers: slowly, gently, subtly, gradually
+- Natural triggers: breeze, light, sound, warmth
+- Motion MUST match exact pose (sitting stays sitting)
+- ONE continuous fluid sequence
 
-**What makes movement feel FAKE (avoid these):**
-✗ "Poses for camera" or "shows off outfit"
-✗ Multiple sequential actions like choreography
-✗ Exaggerated hair flips or model walks
-✗ Movements that require awareness of being filmed
-✗ Generic descriptions that could apply to any image
+**CAMERA MOVEMENT OPTIONS:**
+- "camera gentle push-in" (subtle intimacy)
+- "camera fixed" (authentic Instagram, no movement)
+- "camera slight tilt up" (reveal more context)
+- "camera slow pan right" (environmental reveal)
+- "camera subtle dolly-out" (breathing room)
 
-**Style reference from FLUX prompt:**
-"${fluxPrompt}"
+**KEY FOR REALISM:**
+- Split motion on purpose: subject performs; camera moves
+- Favor gentle camera moves to prevent jitter
+- Keep camera mostly static for Instagram authenticity
+- Avoid tiny flickering details
+- No conflicting movements with pose
 
-${description ? `Scene context: "${description}"` : ""}
+❌ AVOID:
+- Dramatic gestures or poses
+- Walking/running if person is still
+- Camera-aware movements
+- Multiple simultaneous complex actions
+- Fast camera movements that cause jitter
 
-${userContext ? `\n**About this creator:** ${userContext.substring(0, 500)}...` : ""}
+Scene: "${fluxPrompt}"
+${description ? `Mood: "${description}"` : ""}
 
-**Now look at the image and create ONE authentic movement that feels like a captured moment, not a directed action. What micro-moment would make this feel like real life caught on film?**
-
-Return only the motion prompt. 10-15 words. No quotes, no explanation.`
+Return ONLY: [Subject motion]; camera [movement]
+No headers, quotes, explanations, or bullet points.`
 
       const { text: motionPrompt } = await generateText({
         model: "anthropic/claude-sonnet-4-20250514",
@@ -119,16 +121,36 @@ Return only the motion prompt. 10-15 words. No quotes, no explanation.`
             ],
           },
         ],
-        temperature: 0.9, // Higher temperature for more creative, less templated output
+        temperature: 0.85,
       })
 
-      const trimmedPrompt = motionPrompt.trim().replace(/^["']|["']$/g, "") // Remove any quotes
-      const wordCount = trimmedPrompt.split(/\s+/).length
+      let trimmedPrompt = motionPrompt.trim()
+
+      // Remove markdown headers
+      trimmedPrompt = trimmedPrompt.replace(/\*\*[^*]+:\*\*/g, "")
+
+      // Remove bullet points
+      trimmedPrompt = trimmedPrompt.replace(/^[-*•]\s*/gm, "")
+
+      // Take only first line (ignore explanations)
+      trimmedPrompt = trimmedPrompt.split("\n")[0]
+
+      // Remove quotes
+      trimmedPrompt = trimmedPrompt.replace(/^["'`]|["'`]$/g, "")
+
+      // Remove asterisks
+      trimmedPrompt = trimmedPrompt.replace(/\*/g, "")
+
+      // Remove any prefixes like "Motion:" or "Prompt:"
+      trimmedPrompt = trimmedPrompt.replace(/^(motion|prompt|description):\s*/i, "")
+
+      // Final trim
+      trimmedPrompt = trimmedPrompt.trim()
 
       console.log("[v0] ========================================")
-      console.log("[v0] Maya's authentic motion prompt:")
+      console.log("[v0] Wan-2.5 I2V optimized motion prompt:")
       console.log("[v0]", trimmedPrompt)
-      console.log("[v0] Word count:", wordCount)
+      console.log("[v0] Word count:", trimmedPrompt.split(" ").length)
       console.log("[v0] ========================================")
 
       return NextResponse.json({
@@ -137,54 +159,77 @@ Return only the motion prompt. 10-15 words. No quotes, no explanation.`
       })
     }
 
-    console.log("[v0] No image - generating from FLUX prompt with Maya's intuition")
+    console.log("[v0] No image - generating from FLUX prompt with Wan-2.5 best practices")
 
     const { text: motionPrompt } = await generateText({
       model: "anthropic/claude-sonnet-4-20250514",
-      system: `You're Maya, a creative director who creates motion prompts that feel like stolen moments from real life.
+      system: `You're Maya, creating authentic motion prompts for WAN-2.5 I2V (image-to-video) 5-second clips.
 
-**Your Philosophy:**
-Templates kill authenticity. Every motion prompt should feel like it was created specifically for THIS image, THIS person, THIS moment. Never generate something that could work for "any" photo.
+**WAN-2.5 FORMULA:**
+Motion Description + Camera Movement (split on purpose)
 
-**Movement Psychology:**
+**FORMAT:**
+"[Subject performs action]; camera [specific movement]"
 
-People move for REASONS:
-- A sound catches attention → head turns naturally
-- Sunlight feels warm → eyes close briefly, face tilts
-- Coffee smells good → deep inhale, shoulders relax
-- A memory surfaces → slight smile spreads slowly
-- Hair tickles face → hand reaches to tuck it away
-- Cold breeze → arms cross, shoulders draw in slightly
+**5-SECOND STRUCTURE:**
+[0-2s] Initial subject motion + camera starts
+[2-4s] Motion develops + camera continues  
+[4-5s] Settle + camera completes
 
-**Authentic Motion Formula:**
-[setting context] + [motivation trigger] + [natural response]
+**PERFECT EXAMPLES:**
 
-Instead of: "slowly turns head to look at camera"
-Write: "hearing distant music, glances toward the sound with soft curiosity"
+Example 1 (Cozy Indoor):
+"Warm light shifts across face, eyes close slowly savoring warmth, fingers wrap around mug lifting to lips, takes deliberate sip, lowers with peaceful smile; camera gentle push-in capturing intimate moment"
 
-Instead of: "casually lifts coffee cup"  
-Write: "steam rising from cup, closes eyes for the first warm sip"
+Example 2 (Outdoor Breeze):
+"Breeze catches hair lifting gently, hand reaches up tucking strands behind ear naturally, eyes close briefly feeling air, head tilts into breeze, shoulders relax; camera fixed maintaining authentic feel"
 
-Instead of: "walks forward naturally"
-Write: "spotting something ahead, pace quickens with quiet excitement"
+Example 3 (Contemplative):
+"Distant sound catches attention, head turns gently, gaze softens in thought, fingers adjust necklace absently, slow blink as subtle smile forms; camera subtle dolly-in emphasizing emotion"
 
-**10-15 words. One moment. Make it SPECIFIC to the scene described.**
+Example 4 (Morning Energy):
+"Stretches arms overhead slowly, deep breath filling chest, releases tension with satisfied exhale, rolls shoulders back settling into posture; camera slight tilt up revealing confident presence"
 
-${userContext ? `\n**Creator context:** ${userContext.substring(0, 400)}` : ""}`,
+**SUBJECT MOTION (30-50 words):**
+- Use: slowly, gently, subtly, gradually, softly
+- Specify: eyes, head, fingers, shoulders, lips, hands
+- Natural triggers: breeze, light, sound, warmth
+- ONE continuous sequence
+- Micro-movements only
+
+**CAMERA MOVEMENT (5-10 words):**
+- "camera gentle push-in" (intimacy)
+- "camera fixed" (authentic Instagram)
+- "camera slight tilt up/down" (context)
+- "camera slow pan left/right" (reveal)
+- "camera subtle dolly-out" (space)
+
+**KEY PRINCIPLES:**
+- Split motion: subject performs; camera moves
+- Favor gentle camera moves (no jitter)
+- Keep mostly static for Instagram authenticity
+- Avoid tiny flickering details
+
+Return ONLY: [Subject motion]; camera [movement]`,
       prompt: `Scene: "${fluxPrompt}"
 ${description ? `Mood: "${description}"` : ""}
-${category ? `Shot type: ${category}` : ""}
 
-Create an authentic motion prompt that feels like a caught moment, not a directed action.`,
-      temperature: 0.9,
+Create the 5-second motion sequence:`,
+      temperature: 0.85,
     })
 
-    const trimmedPrompt = motionPrompt.trim().replace(/^["']|["']$/g, "")
-    const wordCount = trimmedPrompt.split(/\s+/).length
+    let trimmedPrompt = motionPrompt.trim()
+    trimmedPrompt = trimmedPrompt.replace(/\*\*[^*]+:\*\*/g, "")
+    trimmedPrompt = trimmedPrompt.replace(/^[-*•]\s*/gm, "")
+    trimmedPrompt = trimmedPrompt.split("\n")[0]
+    trimmedPrompt = trimmedPrompt.replace(/^["'`]|["'`]$/g, "")
+    trimmedPrompt = trimmedPrompt.replace(/\*/g, "")
+    trimmedPrompt = trimmedPrompt.replace(/^(motion|prompt|description):\s*/i, "")
+    trimmedPrompt = trimmedPrompt.trim()
 
     console.log("[v0] ========================================")
-    console.log("[v0] Generated authentic motion:", trimmedPrompt)
-    console.log("[v0] Word count:", wordCount)
+    console.log("[v0] Wan-2.5 optimized motion:", trimmedPrompt)
+    console.log("[v0] Word count:", trimmedPrompt.split(" ").length)
     console.log("[v0] ========================================")
 
     return NextResponse.json({

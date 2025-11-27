@@ -101,46 +101,32 @@ export async function POST(request: NextRequest) {
 
     const replicate = getReplicateClient()
 
-    // WAN 2.2 architecture: HIGH-noise (creative) + LOW-noise (refinement) transformers
-    // User's FLUX LoRA only applies to HIGH-noise for character consistency
-    // LOW-noise transformer runs native for natural motion and refinement
+    // WAN 2.5 architecture: Motion + Camera Movement structure
     const predictionInput = {
       image: imageUrl,
       prompt: enhanceMotionPrompt(motionPrompt, imageDescription),
-      resolution: "720p",
-      go_fast: true,
-      num_frames: 101,
-      frames_per_second: 16,
-      sample_shift: 12,
-      interpolate_output: true,
-      disable_safety_checker: false,
-      // HIGH-noise transformer: Apply user's trained FLUX LoRA for character consistency
-      lora_weights_transformer: loraWeightsUrl,
-      lora_scale_transformer: 1.25,
-      // LOW-noise transformer: No LoRA (native refinement for natural motion)
-      // Note: transformer_2 parameters are intentionally omitted
-      // WAN 2.2 expects separate high/low noise LoRAs, but FLUX training doesn't produce these
-      // Best practice: Apply LoRA only to creative stage (high-noise), let refinement run native
+      duration: 5, // wan-2.5 supports 5 or 10 seconds
+      resolution: "720p", // "720p" or "1080p"
+      negative_prompt:
+        "blurry, low quality, distorted face, warping, morphing, identity drift, unnatural motion, flickering, artifacts, extra limbs, duplicate person, no extra characters, jittery edges, camera shake",
+      enable_prompt_expansion: true, // Let wan-2.5 optimize the prompt
+      seed: undefined, // Random seed for variety (can be set for reproducibility)
     }
 
-    console.log("[v0] ========== WAN-2.2-I2V-FAST INPUT ==========")
-    console.log("[v0] Model: wan-video/wan-2.2-i2v-fast")
+    console.log("[v0] ========== WAN-2.5-I2V-FAST INPUT ==========")
+    console.log("[v0] Model: wan-video/wan-2.5-i2v-fast")
     console.log("[v0] Image URL:", predictionInput.image)
-    console.log("[v0] Enhanced motion prompt:", predictionInput.prompt)
+    console.log("[v0] Motion prompt:", predictionInput.prompt)
+    console.log("[v0] Duration:", predictionInput.duration, "seconds (5s for optimal quality)")
     console.log("[v0] Resolution:", predictionInput.resolution)
-    console.log("[v0] Go fast:", predictionInput.go_fast)
-    console.log("[v0] Num frames:", predictionInput.num_frames, "(6.25 seconds)")
-    console.log("[v0] FPS:", predictionInput.frames_per_second)
-    console.log("[v0] Sample shift:", predictionInput.sample_shift)
-    console.log("[v0] Interpolate output:", predictionInput.interpolate_output)
-    console.log("[v0] ✅ LoRA (HIGH-noise transformer):", predictionInput.lora_weights_transformer)
-    console.log("[v0] ✅ LoRA scale (HIGH-noise):", predictionInput.lora_scale_transformer)
-    console.log("[v0] ℹ️  LOW-noise transformer: Native (no LoRA) for natural motion")
+    console.log("[v0] Negative prompt:", predictionInput.negative_prompt)
+    console.log("[v0] Prompt expansion:", predictionInput.enable_prompt_expansion)
+    console.log("[v0] Seed:", predictionInput.seed || "random")
     console.log("[v0] Full prediction input:", JSON.stringify(predictionInput, null, 2))
     console.log("[v0] ================================================")
 
     const prediction = await replicate.predictions.create({
-      model: "wan-video/wan-2.2-i2v-fast",
+      model: "wan-video/wan-2.5-i2v-fast",
       input: predictionInput,
     })
 
