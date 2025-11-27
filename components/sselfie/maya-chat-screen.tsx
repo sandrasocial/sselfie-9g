@@ -80,6 +80,8 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
   const isAuthenticated = !!user // Simple check for demonstration
   const chatIdToLoad = user ? Number(user.chatId) : null // Replace with actual logic to get chatIdToLoad
 
+  const hasLoadedChatRef = useRef(false)
+
   useEffect(() => {
     const settingsStr = localStorage.getItem("mayaGenerationSettings")
     if (settingsStr) {
@@ -230,26 +232,31 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
   )
 
   useEffect(() => {
-    console.log("[v0] 🚀 Maya chat screen mounted, calling loadChat()")
-    if (user) {
-      // Check if there's a saved chatId in localStorage
+    console.log("[v0] 🚀 Maya chat screen mounted, user:", user?.email)
+
+    if (user && !hasLoadedChatRef.current) {
+      hasLoadedChatRef.current = true
+
+      // Check localStorage for saved chat
       const savedChatId = localStorage.getItem("mayaCurrentChatId")
       if (savedChatId) {
-        console.log("[v0] Found saved chatId in localStorage:", savedChatId)
+        console.log("[v0] Found saved chatId in localStorage, loading:", savedChatId)
         loadChat(Number(savedChatId))
       } else {
-        console.log("[v0] No saved chatId, loading default chat")
-        loadChat()
+        // No saved chat - load the most recent chat to show history
+        console.log("[v0] No saved chatId, loading most recent chat")
+        loadChat() // This calls API without chatId, which loads most recent
       }
-    } else {
-      // If no user, set loading to false and maybe clear messages or show an empty state
+    } else if (!user) {
+      // If no user, set loading to false and show empty state
+      hasLoadedChatRef.current = false
       setIsLoadingChat(false)
-      setMessages([]) // Clear messages if no user
-      setChatId(null) // Reset chat ID
-      setChatTitle("Chat with Maya") // Reset title
+      setMessages([])
+      setChatId(null)
+      setChatTitle("Chat with Maya")
       localStorage.removeItem("mayaCurrentChatId")
     }
-  }, [user]) // Depend on user to trigger load
+  }, [user]) // Removed loadChat from dependencies
 
   useEffect(() => {
     if (chatId) {
@@ -426,8 +433,6 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
 
     generateConcepts()
   }, [pendingConceptRequest, isGeneratingConcepts, setMessages, messages, chatId]) // Added 'messages' to dependency array
-
-  // It was causing race conditions by loading a different chat and overwriting messages
 
   useEffect(() => {
     // Don't save if we're currently generating concepts - wait for them to be added first
@@ -983,25 +988,24 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
 
       isAtBottomRef.current = true
 
-      // If no chatId exists, create a new chat first
       let currentChatId = chatId
       if (!currentChatId) {
         console.log("[v0] No chatId exists, creating new chat before sending message...")
         try {
-          const response = await fetch("/api/maya/load-chat?chatType=maya")
+          const response = await fetch("/api/maya/new-chat", {
+            method: "POST",
+          })
           if (response.ok) {
             const data = await response.json()
             if (data.chatId) {
               currentChatId = data.chatId
               setChatId(data.chatId)
-              if (data.chatTitle) {
-                setChatTitle(data.chatTitle)
-              }
-              console.log("[v0] Created/loaded chat with ID:", data.chatId)
+              setChatTitle("New Chat")
+              console.log("[v0] Created new chat with ID:", data.chatId)
             }
           }
         } catch (error) {
-          console.error("[v0] Error creating/loading chat:", error)
+          console.error("[v0] Error creating new chat:", error)
         }
       }
 

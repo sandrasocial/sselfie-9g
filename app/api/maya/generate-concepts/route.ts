@@ -73,11 +73,12 @@ export async function POST(req: NextRequest) {
 
     // Get user data
     let userGender = "person"
+    let userEthnicity = null
     const { neon } = await import("@neondatabase/serverless")
     const sql = neon(process.env.DATABASE_URL!)
 
     const userDataResult = await sql`
-      SELECT u.gender, um.trigger_word 
+      SELECT u.gender, u.ethnicity, um.trigger_word 
       FROM users u
       LEFT JOIN user_models um ON u.id = um.user_id AND um.training_status = 'completed'
       WHERE u.id = ${user.id} 
@@ -98,9 +99,11 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    userEthnicity = userDataResult[0]?.ethnicity || null
+
     const triggerWord = userDataResult[0]?.trigger_word || `user${user.id}`
 
-    const fashionIntelligence = getFashionIntelligencePrinciples(userGender)
+    const fashionIntelligence = getFashionIntelligencePrinciples(userGender, userEthnicity)
 
     // Analyze reference image if provided
     let imageAnalysis = ""
@@ -193,7 +196,6 @@ IMPORTANT:
 - If previous concepts were about a specific aesthetic (G-Wagon, moody, editorial, etc.) - continue with that vibe
 - Reference what Maya described in her previous responses for styling continuity
 ===
-
 `
       : ""
 
@@ -265,8 +267,9 @@ ${getFluxPromptingPrinciples()}
 
 TRIGGER WORD: "${triggerWord}"
 GENDER: "${userGender}"
+${userEthnicity ? `ETHNICITY: "${userEthnicity}" (MUST include in prompt for accurate representation)` : ""}
 
-1. Every prompt MUST start with: "${triggerWord}, ${userGender}"
+1. Every prompt MUST start with: "${triggerWord}, ${userEthnicity ? userEthnicity + " " : ""}${userGender}"
 2. Apply the OUTFIT PRINCIPLE with your FASHION INTELLIGENCE - no boring defaults
 3. Apply the EXPRESSION PRINCIPLE for authentic facial details
 4. Apply the POSE PRINCIPLE for natural body positioning
@@ -297,7 +300,7 @@ Return ONLY valid JSON array, no markdown:
     "fashionIntelligence": "Your outfit reasoning - WHY this outfit for this moment",
     "lighting": "Your lighting reasoning",
     "location": "Your location reasoning",
-    "prompt": "YOUR CRAFTED FLUX PROMPT - synthesized from principles, MUST start with ${triggerWord}, ${userGender}"
+    "prompt": "YOUR CRAFTED FLUX PROMPT - synthesized from principles, MUST start with ${triggerWord}, ${userEthnicity ? userEthnicity + " " : ""}${userGender}"
   }
 ]
 

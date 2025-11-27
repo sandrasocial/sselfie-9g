@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
-import { Camera, Aperture, ChevronRight, Loader2, X } from 'lucide-react'
+import { Camera, Aperture, ChevronRight, Loader2, X } from "lucide-react"
 import useSWR from "swr"
 import JSZip from "jszip"
 
@@ -17,13 +17,17 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 const compressImage = async (file: File, maxSize = 1600, quality = 0.85): Promise<File> => {
   return new Promise((resolve, reject) => {
-    const isHEIC = file.type === "image/heic" || file.type === "image/heif" || file.name.toLowerCase().endsWith(".heic") || file.name.toLowerCase().endsWith(".heif")
-    
+    const isHEIC =
+      file.type === "image/heic" ||
+      file.type === "image/heif" ||
+      file.name.toLowerCase().endsWith(".heic") ||
+      file.name.toLowerCase().endsWith(".heif")
+
     if (isHEIC) {
       reject(
         new Error(
-          `${file.name} is in HEIC format which is not supported by web browsers. Please convert to JPG/PNG first:\n\n1. Open the photo in your gallery\n2. Share/Export as JPG or PNG\n3. Try uploading again`
-        )
+          `${file.name} is in HEIC format which is not supported by web browsers. Please convert to JPG/PNG first:\n\n1. Open the photo in your gallery\n2. Share/Export as JPG or PNG\n3. Try uploading again`,
+        ),
       )
       return
     }
@@ -85,7 +89,12 @@ const compressImage = async (file: File, maxSize = 1600, quality = 0.85): Promis
           quality,
         )
       }
-      img.onerror = () => reject(new Error(`Failed to load ${file.name}. This might be an unsupported format (HEIC/HEIF). Please convert to JPG/PNG and try again.`))
+      img.onerror = () =>
+        reject(
+          new Error(
+            `Failed to load ${file.name}. This might be an unsupported format (HEIC/HEIF). Please convert to JPG/PNG and try again.`,
+          ),
+        )
     }
     reader.onerror = () => reject(new Error(`Failed to read ${file.name}`))
   })
@@ -112,6 +121,7 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
   const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 })
   const [deletingImageId, setDeletingImageId] = useState<number | null>(null)
   const [isCanceling, setIsCanceling] = useState(false)
+  const [selectedEthnicity, setSelectedEthnicity] = useState<string>("")
 
   const {
     data: trainingStatus,
@@ -164,19 +174,26 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
-    
-    console.log("[v0] Files selected:", files.length)
-    console.log("[v0] File types:", files.map(f => `${f.name}: ${f.type}`))
 
-    const heicFiles = files.filter(file => {
-      const isHEIC = file.type === "image/heic" || file.type === "image/heif" || file.name.toLowerCase().endsWith(".heic") || file.name.toLowerCase().endsWith(".heif")
+    console.log("[v0] Files selected:", files.length)
+    console.log(
+      "[v0] File types:",
+      files.map((f) => `${f.name}: ${f.type}`),
+    )
+
+    const heicFiles = files.filter((file) => {
+      const isHEIC =
+        file.type === "image/heic" ||
+        file.type === "image/heif" ||
+        file.name.toLowerCase().endsWith(".heic") ||
+        file.name.toLowerCase().endsWith(".heif")
       return isHEIC
     })
 
     if (heicFiles.length > 0) {
-      const fileList = heicFiles.map(f => f.name).join("\n")
+      const fileList = heicFiles.map((f) => f.name).join("\n")
       alert(
-        `These photos are in HEIC format and cannot be uploaded:\n\n${fileList}\n\nTo fix this:\n1. Open each photo in your gallery\n2. Share/Export as JPG or PNG\n3. Upload the converted files\n\nNote: You can usually change your camera settings to save as JPG instead of HEIC.`
+        `These photos are in HEIC format and cannot be uploaded:\n\n${fileList}\n\nTo fix this:\n1. Open each photo in your gallery\n2. Share/Export as JPG or PNG\n3. Upload the converted files\n\nNote: You can usually change your camera settings to save as JPG instead of HEIC.`,
       )
       e.target.value = ""
       return
@@ -220,11 +237,18 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
       return
     }
 
+    if (!selectedEthnicity) {
+      alert("Please select your ethnicity for accurate representation in generated images.")
+      return
+    }
+
     try {
       setIsUploading(true)
       setUploadProgress({ current: 0, total: uploadedImages.length })
 
-      console.log(`[v0] Starting adaptive compression - ${uploadedImages.length} images, gender: ${selectedGender}`)
+      console.log(
+        `[v0] Starting adaptive compression - ${uploadedImages.length} images, gender: ${selectedGender}, ethnicity: ${selectedEthnicity}`,
+      )
       console.log("[v0] Browser:", navigator.userAgent)
       console.log(
         "[v0] Total size before compression:",
@@ -292,6 +316,7 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
       const formData = new FormData()
       formData.append("zipFile", zipBlob, "training_images.zip")
       formData.append("gender", selectedGender)
+      formData.append("ethnicity", selectedEthnicity)
       formData.append("modelName", `${user.display_name || "User"}'s Model`)
 
       const uploadResponse = await fetch("/api/training/upload-zip", {
@@ -328,11 +353,16 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
 
       if (error.message?.includes("HEIC") || error.message?.includes("HEIF")) {
         errorMessage = error.message
-      } else if (error.name === "TimeoutError" || error.message?.includes("Timeout") || error.message?.includes("timed out")) {
+      } else if (
+        error.name === "TimeoutError" ||
+        error.message?.includes("Timeout") ||
+        error.message?.includes("timed out")
+      ) {
         errorMessage =
           "Upload is taking too long. Please check your internet connection and try again with fewer or smaller images (10-12 photos)."
       } else if (error.message?.includes("canvas") || error.message?.includes("memory")) {
-        errorMessage = "Your device ran out of memory processing the images. Please try with fewer photos (10-12) or restart your browser."
+        errorMessage =
+          "Your device ran out of memory processing the images. Please try with fewer photos (10-12) or restart your browser."
       } else if (error.message) {
         errorMessage = error.message
       }
@@ -348,6 +378,7 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
     setTrainingStage("upload")
     setUploadedImages([])
     setSelectedGender("")
+    setSelectedEthnicity("")
     setIsUploading(false)
     setUploadProgress({ current: 0, total: 0 })
   }
@@ -644,27 +675,27 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
               <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3 mb-6">
                 {[
                   {
-                    url: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/IMG_7713_jpg.JPG-h80bYhHcqQFMynxbYSxG31kftwJEmK.jpeg",
+                    url: "/images/img-7713-jpg.jpeg",
                     alt: "Full body professional shot",
                   },
                   {
-                    url: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/IMG_4785-5n2v1TKD1KMF7Pp3J1GUY3Clazvvzb.jpg",
+                    url: "/images/img-4785.jpg",
                     alt: "Close-up portrait",
                   },
                   {
-                    url: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/IMG_4128.JPG-67aA2l5A05bUIFkBBVS9tsDQU0JNOM.jpeg",
+                    url: "/images/img-4128.jpeg",
                     alt: "Outdoor full body",
                   },
                   {
-                    url: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/IMG_9591_jpg.JPG-cJXa8L93rd28wZ2py1JRFUrU3kYgqW.jpeg",
+                    url: "/images/img-9591-jpg.jpeg",
                     alt: "Casual half body",
                   },
                   {
-                    url: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/IMG_4801-psQSpPDdDMOpAJuxMsEMc2PCWMT5bl.jpg",
+                    url: "/images/img-4801.jpg",
                     alt: "Portrait close-up",
                   },
                   {
-                    url: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/IMG_6384_jpg-e6aZJTI3H31RvafSav3vAhZSqgzIRS.jpg",
+                    url: "/images/img-6384-jpg.jpg",
                     alt: "Upper body shot",
                   },
                 ].map((example, i) => (
@@ -796,9 +827,33 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
               ))}
             </div>
 
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-foreground">Select your ethnicity</label>
+              <p className="text-xs text-muted-foreground">
+                This ensures your AI-generated images accurately reflect your skin tone and features
+              </p>
+              <select
+                value={selectedEthnicity}
+                onChange={(e) => setSelectedEthnicity(e.target.value)}
+                className={`w-full py-3 px-4 rounded-lg border transition-all bg-background text-foreground ${
+                  selectedEthnicity ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"
+                }`}
+              >
+                <option value="">Select your ethnicity</option>
+                <option value="Black">Black</option>
+                <option value="White">White</option>
+                <option value="Asian">Asian</option>
+                <option value="Latina">Latina / Hispanic</option>
+                <option value="Middle Eastern">Middle Eastern</option>
+                <option value="Indigenous">Indigenous</option>
+                <option value="Mixed">Mixed / Multiracial</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
             <button
               onClick={startTraining}
-              disabled={uploadedImages.length < 10 || !selectedGender || isUploading}
+              disabled={uploadedImages.length < 10 || !selectedGender || !selectedEthnicity || isUploading}
               className="w-full bg-stone-950 text-stone-50 py-4 sm:py-5 rounded-2xl font-light tracking-[0.15em] uppercase text-sm transition-all duration-200 hover:bg-stone-800 min-h-[52px] disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation active:scale-95"
             >
               {isUploading ? "Uploading..." : "Start Training"}

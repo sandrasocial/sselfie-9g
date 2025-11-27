@@ -42,6 +42,8 @@ interface UserInfo {
   name: string
   product_type: string
   memberSince: string
+  gender?: string
+  ethnicity?: string
 }
 
 interface SubscriptionInfo {
@@ -65,6 +67,10 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
   const [saveToGallery, setSaveToGallery] = useState(true)
   const [dataForTraining, setDataForTraining] = useState(true)
 
+  const [gender, setGender] = useState<string>("")
+  const [ethnicity, setEthnicity] = useState<string>("")
+  const [isUpdatingDemographics, setIsUpdatingDemographics] = useState(false)
+
   useEffect(() => {
     fetchUserInfo()
     fetchSubscriptionInfo()
@@ -79,6 +85,8 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
       if (response.ok) {
         const data = await response.json()
         setUserInfo(data)
+        setGender(data.gender || "")
+        setEthnicity(data.ethnicity || "")
       }
     } catch (error) {
       console.error("[v0] Error fetching user info:", error)
@@ -217,8 +225,45 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
     window.location.reload()
   }
 
+  const handleUpdateDemographics = async () => {
+    if (!gender) {
+      alert("Please select a gender")
+      return
+    }
+
+    setIsUpdatingDemographics(true)
+    try {
+      const response = await fetch("/api/user/update-demographics", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ gender, ethnicity: ethnicity || null }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        alert("Model information updated successfully!")
+        if (userInfo) {
+          setUserInfo({
+            ...userInfo,
+            gender: data.gender,
+            ethnicity: data.ethnicity,
+          })
+        }
+      } else {
+        const error = await response.json()
+        alert(error.error || "Failed to update model information")
+      }
+    } catch (error) {
+      console.error("[v0] Error updating demographics:", error)
+      alert("Failed to update model information. Please try again.")
+    } finally {
+      setIsUpdatingDemographics(false)
+    }
+  }
+
   return (
-    <div className="space-y-8 pb-4">
+    <div className="flex flex-col h-screen bg-gradient-to-b from-stone-50 via-stone-100/50 to-white text-stone-950 relative overflow-hidden">
       <div className="flex items-center gap-4 pt-4">
         {onBack && (
           <button
@@ -317,7 +362,7 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
                   className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-stone-100/50 border-l-2 border-stone-950 text-left"
                   disabled
                 >
-                  <SettingsIcon size={20} className="text-stone-900" />
+                  <SettingsIcon size={20} className="text-stone-950" />
                   <span className="text-sm font-medium text-stone-900">Settings</span>
                 </button>
 
@@ -345,7 +390,7 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
         </>
       )}
 
-      <div className="space-y-6">
+      <div className="px-3 py-4 sm:p-8 md:p-12 overflow-y-auto flex-1 space-y-4 sm:space-y-6 md:space-y-8 pb-24 sm:pb-32">
         {console.log("[v0] Settings - userInfo:", userInfo)}
         {console.log("[v0] Settings - subscriptionInfo:", subscriptionInfo)}
         {console.log("[v0] Settings - hasActiveSubscription:", hasActiveSubscription)}
@@ -584,6 +629,68 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
             </button>
 
             <p className="text-xs text-stone-500 text-center">Access admin tools and content management</p>
+          </div>
+        </div>
+
+        <div className="bg-white/50 backdrop-blur-2xl rounded-xl sm:rounded-[1.75rem] p-4 sm:p-6 md:p-8 border border-white/60 shadow-xl shadow-stone-900/10">
+          <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
+            <div className="p-2.5 sm:p-3.5 bg-stone-950 rounded-lg sm:rounded-[1.125rem] shadow-lg">
+              <User size={18} className="text-white" strokeWidth={2.5} />
+            </div>
+            <h3 className="text-base sm:text-lg md:text-xl font-bold text-stone-950">Model Information</h3>
+          </div>
+
+          <div className="space-y-6">
+            <div>
+              <label className="block text-xs text-stone-500 uppercase tracking-wider mb-3">Gender</label>
+              <div className="grid grid-cols-3 gap-2">
+                {["woman", "man", "non-binary"].map((option) => (
+                  <button
+                    key={option}
+                    onClick={() => setGender(option)}
+                    className={`px-4 py-3 text-sm rounded-xl border transition-all ${
+                      gender === option
+                        ? "bg-stone-950 text-white border-stone-950"
+                        : "bg-white text-stone-600 border-stone-300/40 hover:border-stone-400"
+                    }`}
+                  >
+                    {option.charAt(0).toUpperCase() + option.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs text-stone-500 uppercase tracking-wider mb-3">Ethnicity (Optional)</label>
+              <select
+                value={ethnicity}
+                onChange={(e) => setEthnicity(e.target.value)}
+                className="w-full px-4 py-3 text-sm rounded-xl border border-stone-300/40 bg-white text-stone-950 focus:outline-none focus:border-stone-400 transition-all"
+              >
+                <option value="">Select ethnicity</option>
+                <option value="Black">Black</option>
+                <option value="White">White</option>
+                <option value="Asian">Asian</option>
+                <option value="Latina/Latino">Latina/Latino</option>
+                <option value="Middle Eastern">Middle Eastern</option>
+                <option value="South Asian">South Asian</option>
+                <option value="Mixed">Mixed</option>
+                <option value="Other">Other</option>
+                <option value="Prefer not to say">Prefer not to say</option>
+              </select>
+            </div>
+
+            <button
+              onClick={handleUpdateDemographics}
+              disabled={isUpdatingDemographics || !gender}
+              className="w-full flex items-center justify-center gap-2 text-sm tracking-[0.15em] uppercase font-light border rounded-2xl py-5 transition-colors hover:text-white hover:bg-stone-950 min-h-[56px] text-stone-950 border-stone-950 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isUpdatingDemographics ? "Updating..." : "Update Model Information"}
+            </button>
+
+            <p className="text-xs text-stone-500 text-center">
+              This information helps Maya generate accurate AI images that represent you. No retraining required.
+            </p>
           </div>
         </div>
       </div>

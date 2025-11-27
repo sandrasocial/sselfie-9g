@@ -77,6 +77,7 @@ export async function POST(request: NextRequest) {
     const userDataResult = await sql`
       SELECT 
         u.gender,
+        u.ethnicity,
         um.trigger_word,
         um.replicate_version_id,
         um.replicate_model_id,
@@ -98,26 +99,23 @@ export async function POST(request: NextRequest) {
     const userData = userDataResult[0]
     const triggerWord = userData.trigger_word || "person"
     const gender = userData.gender
+    const ethnicity = userData.ethnicity
     const replicateVersionId = userData.replicate_version_id
     const replicateModelId = userData.replicate_model_id
     const userLoraScale = userData.lora_scale
     const loraWeightsUrl = userData.lora_weights_url
 
+    let genderEthnicityTerm = "person"
+
+    // Build base gender term
     const genderTerm =
       gender === "woman" || gender === "female" ? "woman" : gender === "man" || gender === "male" ? "man" : "person"
 
-    let versionHash = replicateVersionId
-    if (replicateVersionId && replicateVersionId.includes(":")) {
-      versionHash = replicateVersionId.split(":").pop()
-    }
-
-    const userLoraPath = replicateModelId && versionHash ? `${replicateModelId}:${versionHash}` : loraWeightsUrl
-
-    if (!userLoraPath || userLoraPath.trim() === "") {
-      return NextResponse.json(
-        { error: "LoRA model not found. Please contact support to fix your model." },
-        { status: 400 },
-      )
+    // Add ethnicity if provided for accurate representation
+    if (ethnicity && ethnicity !== "Other") {
+      genderEthnicityTerm = `${ethnicity} ${genderTerm}`
+    } else {
+      genderEthnicityTerm = genderTerm
     }
 
     let finalPrompt = conceptPrompt
@@ -173,7 +171,7 @@ export async function POST(request: NextRequest) {
       output_format: qualitySettings.output_format,
       output_quality: qualitySettings.output_quality,
       lora_scale: Number(qualitySettings.lora_scale),
-      hf_lora: userLoraPath,
+      hf_lora: loraWeightsUrl,
       seed: customSettings?.seed || qualitySettings.seed || Math.floor(Math.random() * 1000000),
       disable_safety_checker: qualitySettings.disable_safety_checker ?? true,
       go_fast: qualitySettings.go_fast ?? false,

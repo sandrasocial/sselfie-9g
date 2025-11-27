@@ -282,7 +282,7 @@ export const INSTAGRAM_BEST_PRACTICES = {
   },
 }
 
-export function getFashionIntelligencePrinciples(gender: string): string {
+export function getFashionIntelligencePrinciples(gender: string, ethnicity?: string | null): string {
   const currentMonth = new Date().getMonth()
   const season =
     currentMonth >= 2 && currentMonth <= 4
@@ -297,8 +297,35 @@ export function getFashionIntelligencePrinciples(gender: string): string {
   const genderData =
     GENDER_SPECIFIC_STYLING[gender as keyof typeof GENDER_SPECIFIC_STYLING] || GENDER_SPECIFIC_STYLING.woman
 
+  const ethnicityGuidance =
+    ethnicity && ethnicity !== "Other"
+      ? `
+=== CRITICAL REPRESENTATION GUIDANCE ===
+
+**USER ETHNICITY: ${ethnicity}**
+
+EVERY SINGLE FLUX PROMPT YOU CREATE MUST:
+1. Start with the trigger word
+2. IMMEDIATELY follow with: "${ethnicity} ${gender}"
+3. This ensures accurate skin tone, facial features, and authentic representation
+
+**EXAMPLE FORMAT:**
+"[trigger_word], ${ethnicity} ${gender} in [rest of prompt]"
+
+**WHY THIS MATTERS:**
+Without explicit ethnicity descriptors, AI models default to what they've seen most in training data, which can lighten skin tones or misrepresent features. This is NON-NEGOTIABLE for accurate, respectful representation.
+
+**YOUR RESPONSIBILITY:**
+Every person deserves to see themselves authentically represented in generated images. Always include ethnicity after the trigger word.
+
+===
+`
+      : ""
+
   return `
 === MAYA'S FASHION INTELLIGENCE: SCANDINAVIAN/NORDIC AESTHETIC FOCUS ===
+
+${ethnicityGuidance}
 
 **YOUR DEFAULT AESTHETIC BASE: SCANDINAVIAN MINIMALISM**
 

@@ -1,7 +1,19 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Camera, User, Aperture, Grid, MessageCircle, ImageIcon, Settings, MoreVertical, LogOut, Film, LayoutGrid } from 'lucide-react'
+import {
+  Camera,
+  User,
+  Aperture,
+  Grid,
+  MessageCircle,
+  ImageIcon,
+  Settings,
+  MoreVertical,
+  LogOut,
+  Film,
+  LayoutGrid,
+} from "lucide-react"
 import LoadingScreen from "./loading-screen"
 import StudioScreen from "./studio-screen"
 import TrainingScreen from "./training-screen"
@@ -45,7 +57,17 @@ export default function SselfieApp({
   const getInitialTab = () => {
     if (typeof window !== "undefined") {
       const hash = window.location.hash.slice(1) // Remove the # symbol
-      const validTabs = ["studio", "training", "maya", "b-roll", "gallery", "feed-planner", "academy", "profile", "settings"]
+      const validTabs = [
+        "studio",
+        "training",
+        "maya",
+        "b-roll",
+        "gallery",
+        "feed-planner",
+        "academy",
+        "profile",
+        "settings",
+      ]
       return validTabs.includes(hash) ? hash : "studio"
     }
     return "studio"
@@ -68,7 +90,17 @@ export default function SselfieApp({
   useEffect(() => {
     const handlePopState = () => {
       const hash = window.location.hash.slice(1)
-      const validTabs = ["studio", "training", "maya", "b-roll", "gallery", "feed-planner", "academy", "profile", "settings"]
+      const validTabs = [
+        "studio",
+        "training",
+        "maya",
+        "b-roll",
+        "gallery",
+        "feed-planner",
+        "academy",
+        "profile",
+        "settings",
+      ]
       if (validTabs.includes(hash)) {
         setActiveTab(hash)
       } else {
@@ -321,7 +353,7 @@ export default function SselfieApp({
                 setActiveTab={handleTabChange}
               />
             )}
-            {activeTab === "maya" && <MayaChatScreen onImageGenerated={refreshCredits} />}
+            {activeTab === "maya" && <MayaChatScreen onImageGenerated={refreshCredits} user={user} />}
             {activeTab === "b-roll" && <BRollScreen />}
             {activeTab === "gallery" && <GalleryScreen user={user} userId={userId} />}
             {activeTab === "feed-planner" && <FeedPlannerScreen userId={userId} userName={userName} />}

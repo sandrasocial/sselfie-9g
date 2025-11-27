@@ -17,7 +17,7 @@ export async function getUserContextForMaya(authUserId: string): Promise<string>
     }
 
     console.log("[v0] getUserContextForMaya: Fetching memory, brand, and assets...")
-    const [memory, personalBrand, assets, userGender] = await Promise.all([
+    const [memory, personalBrand, assets, userGender, userEthnicity] = await Promise.all([
       getUserPersonalMemory(neonUser.id).catch((err) => {
         console.error("[v0] Error fetching memory:", err)
         return null
@@ -36,16 +36,32 @@ export async function getUserContextForMaya(authUserId: string): Promise<string>
           console.error("[v0] Error fetching gender:", err)
           return null
         }),
+      sql`SELECT ethnicity FROM users WHERE id = ${neonUser.id} LIMIT 1`
+        .then((result: any) => result[0]?.ethnicity || null)
+        .catch((err: any) => {
+          console.error("[v0] Error fetching ethnicity:", err)
+          return null
+        }),
     ])
     console.log("[v0] getUserContextForMaya: Data fetched successfully")
 
     const contextParts: string[] = []
 
-    if (userGender) {
+    if (userGender || userEthnicity) {
       contextParts.push("=== USER INFORMATION ===")
-      contextParts.push(`Gender: ${userGender}`)
+      if (userGender) contextParts.push(`Gender: ${userGender}`)
+      if (userEthnicity) contextParts.push(`Ethnicity: ${userEthnicity}`)
       contextParts.push(
-        `IMPORTANT: This user identifies as ${userGender === "woman" || userGender === "female" ? "a woman" : userGender === "man" || userGender === "male" ? "a man" : "non-binary"}. Use your fashion expertise to create ${userGender}-appropriate styling, clothing, and descriptions.`,
+        `IMPORTANT: This user identifies as ${userEthnicity ? `a ${userEthnicity}` : ""}${userGender ? ` ${userGender}` : "person"}. Use your fashion expertise to create ${userGender || "appropriate"} styling, clothing, and descriptions.`,
+      )
+      contextParts.push(
+        `🔴 CRITICAL FOR IMAGE GENERATION: When creating FLUX prompts, ALWAYS include ethnicity AND gender after the trigger word.`,
+      )
+      contextParts.push(
+        `Format: "trigger_word, ${userEthnicity ? `${userEthnicity} ` : ""}${userGender || "person"}, [rest of prompt]"`,
+      )
+      contextParts.push(
+        `This is NON-NEGOTIABLE for accurate skin tone and facial feature representation, especially for Black women and people of color.`,
       )
       contextParts.push("")
     }

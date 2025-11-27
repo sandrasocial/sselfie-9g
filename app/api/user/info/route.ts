@@ -28,7 +28,6 @@ export async function GET() {
 
     const subscription = await getUserSubscription(neonUser.id)
 
-    // Get additional user info
     const userInfo = await sql`
       SELECT 
         id,
@@ -36,7 +35,9 @@ export async function GET() {
         display_name as name,
         profile_image_url as avatar,
         profession as bio,
-        created_at
+        created_at,
+        gender,
+        ethnicity
       FROM users 
       WHERE id = ${neonUser.id}
       LIMIT 1
@@ -61,8 +62,10 @@ export async function GET() {
       instagram: null,
       location: null,
       product_type: subscription?.product_type || null,
-      plan: subscription?.product_type || "free", // Keep for backwards compatibility
+      plan: subscription?.product_type || "free",
       memberSince: user.created_at,
+      gender: user.gender,
+      ethnicity: user.ethnicity,
       subscription: subscription
         ? {
             status: subscription.status,

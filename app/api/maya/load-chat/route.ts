@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: "Chat not found" }, { status: 404 })
       }
     } else {
+      // This is used on initial page load to show conversation history
       chat = await getOrCreateActiveChat(neonUser.id, chatType)
     }
 

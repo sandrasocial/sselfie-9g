@@ -78,6 +78,7 @@ export async function POST(request: Request) {
 
   const zipFile = formData.get("zipFile") as File
   const gender = formData.get("gender") as string
+  const ethnicity = formData.get("ethnicity") as string
   const modelName = formData.get("modelName") as string
 
   if (!zipFile) {
@@ -136,16 +137,17 @@ export async function POST(request: Request) {
 
   console.log("[v0] Got or created training model:", { id: model.id })
 
-  // Save gender to users table
-  if (gender) {
+  // Save gender and ethnicity to users table
+  if (gender || ethnicity) {
     await sql`
       UPDATE users
       SET 
-        gender = ${gender},
+        gender = ${gender || null},
+        ethnicity = ${ethnicity || null},
         updated_at = NOW()
       WHERE id = ${neonUser.id}
     `
-    console.log("[v0] Gender saved to users table:", gender)
+    console.log("[v0] Gender and ethnicity saved to users table:", { gender, ethnicity })
   }
 
   try {

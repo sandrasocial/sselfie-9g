@@ -14,6 +14,7 @@ export interface FluxPromptComponents {
 export interface FluxPromptOptions {
   userTriggerToken: string
   userGender?: string | null
+  userEthnicity?: string | null
   includeQualityHints?: boolean
   includeHandGuidance?: boolean
   aestheticPreference?: string
@@ -42,6 +43,7 @@ export class FluxPromptBuilder {
     const {
       userTriggerToken,
       userGender,
+      userEthnicity,
       includeQualityHints = true,
       includeHandGuidance = true,
       aestheticPreference,
@@ -61,7 +63,7 @@ export class FluxPromptBuilder {
 
     const components: FluxPromptComponents = {
       trigger: userTriggerToken,
-      gender: this.getGenderToken(userGender),
+      gender: this.getGenderToken(userGender, userEthnicity),
       quality: includeQualityHints ? this.getIntelligentQualityHints() : [],
       styleDescription: conceptDescription,
       handGuidance: includeHandGuidance
@@ -148,19 +150,29 @@ export class FluxPromptBuilder {
     return ["shot on iPhone 15 Pro", "natural lighting", "authentic moment captured"]
   }
 
-  private static getGenderToken(userGender?: string | null): string {
+  private static getGenderToken(userGender?: string | null, userEthnicity?: string | null): string {
+    let genderTerm = "person"
+
     switch (userGender?.toLowerCase()) {
       case "woman":
       case "female":
-        return "woman"
+        genderTerm = "woman"
+        break
       case "man":
       case "male":
-        return "man"
+        genderTerm = "man"
+        break
       case "non-binary":
-        return "non-binary person"
-      default:
-        return "person"
+        genderTerm = "non-binary person"
+        break
     }
+
+    // Include ethnicity if provided for accurate representation
+    if (userEthnicity && userEthnicity !== "Other") {
+      return `${userEthnicity} ${genderTerm}`
+    }
+
+    return genderTerm
   }
 
   private static getLuxuryUrbanKeywords(): string {
