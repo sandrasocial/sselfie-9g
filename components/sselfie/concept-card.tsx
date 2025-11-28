@@ -10,9 +10,10 @@ import type { ConceptData } from "./types"
 interface ConceptCardProps {
   concept: ConceptData
   chatId?: number
+  onCreditsUpdate?: (newBalance: number) => void
 }
 
-export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
+export default function ConceptCard({ concept, chatId, onCreditsUpdate }: ConceptCardProps) {
   const [isGenerating, setIsGenerating] = useState(false)
   const [isGenerated, setIsGenerated] = useState(false)
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null)
@@ -32,6 +33,12 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
   const [photoshootGenerations, setPhotoshootGenerations] = useState<any[]>([])
   const [showPhotoshootConfirm, setShowPhotoshootConfirm] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
+  const [photoshootError, setPhotoshootError] = useState<string | null>(null)
+
+  const [styleStrength, setStyleStrength] = useState<number | null>(null)
+  const [promptAccuracy, setPromptAccuracy] = useState<number | null>(null)
+  const [extraLora, setExtraLora] = useState<string | null>(null)
+  const [realismStrength, setRealismStrength] = useState<number | null>(null)
 
   useEffect(() => {
     if (!predictionId || !generationId || isGenerated) return
@@ -279,6 +286,12 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
           conceptDescription: concept.description,
           category: concept.category,
           chatId,
+          customSettings: {
+            styleStrength: styleStrength,
+            promptAccuracy: promptAccuracy,
+            extraLora: extraLora,
+            realismStrength: realismStrength,
+          },
         }),
       })
 
@@ -288,35 +301,72 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
         throw new Error(data.error || "Failed to create photoshoot")
       }
 
-      console.log(
-        "[v0] ✅ Photoshoot created with",
-        data.totalImages,
-        "images using original seed:",
-        data.consistencySeed,
-      )
+      console.log("[v0] 📸 Photoshoot created:", {
+        photoshootId: data.photoshootId,
+        totalImages: data.totalImages,
+        creditsDeducted: data.creditsDeducted,
+      })
 
-      console.log("[v0] 📊 Predictions received:", data.predictions?.length || 0)
-      console.log("[v0] 📊 User ID for gallery:", data.userId)
+      if (data.predictions && data.predictions.length > 0) {
+        console.log("[v0] 📸 Starting prediction polling for", data.predictions.length, "images")
 
-      const emptyGenerations = Array.from({ length: data.totalImages }, (_, i) => ({
-        generationId: `prediction_${i}`,
-        imageUrl: null,
-        url: null,
-        status: "processing",
-        index: i,
-        action: data.predictions?.[i]?.title || `Photo ${i + 1}`,
-      }))
+        const pollPromises = data.predictions.map((pred: any) =>
+          pollPhotoshootPrediction(pred.predictionId, data.userId, concept.description),
+        )
 
-      console.log("[v0] 📊 Empty generations array created:", emptyGenerations.length)
+        await Promise.all(pollPromises)
 
-      setPhotoshootGenerations(emptyGenerations)
+        console.log("[v0] 📸 All photoshoot images completed!")
+        onCreditsUpdate?.(data.newBalance)
+      }
 
-      pollPredictions(data.predictions || data.batches, data.userId)
+      setIsCreatingPhotoshoot(false)
     } catch (err) {
       console.error("[v0] Error creating photoshoot:", err)
-      alert(err instanceof Error ? err.message : "Failed to create photoshoot")
+      setPhotoshootError(err instanceof Error ? err.message : "Failed to create photoshoot")
       setIsCreatingPhotoshoot(false)
     }
+  }
+
+  const pollPhotoshootPrediction = async (predictionId: string, userId: string, conceptDescription?: string) => {
+    const maxAttempts = 120
+    let attempts = 0
+
+    const poll = async () => {
+      try {
+        const queryParams = new URLSearchParams({
+          id: predictionId,
+          userId: userId,
+        })
+
+        if (conceptDescription) {
+          queryParams.append("conceptDescription", conceptDescription)
+        }
+
+        const response = await fetch(`/api/maya/check-photoshoot-prediction?${queryParams.toString()}`)
+        const data = await response.json()
+
+        if (data.status === "succeeded") {
+          console.log("[v0] ✅ Photoshoot prediction succeeded:", predictionId)
+          return
+        } else if (data.status === "failed") {
+          throw new Error(data.error || "Photoshoot generation failed")
+        }
+
+        attempts++
+        if (attempts < maxAttempts) {
+          await new Promise((resolve) => setTimeout(resolve, 5000))
+          await poll()
+        } else {
+          throw new Error("Photoshoot generation timed out")
+        }
+      } catch (err) {
+        console.error("[v0] Error polling photoshoot prediction:", err)
+        throw err
+      }
+    }
+
+    await poll()
   }
 
   const pollPredictions = async (predictions: any[], userId?: string) => {
@@ -639,6 +689,18 @@ export default function ConceptCard({ concept, chatId }: ConceptCardProps) {
             {videoUrl && videoId && (
               <div className="mt-3">
                 <InstagramReelCard videoUrl={videoUrl} motionPrompt={concept.description} />
+              </div>
+            )}
+
+            {photoshootError && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-xs text-red-600">{photoshootError}</p>
+                <button
+                  onClick={handleCreatePhotoshoot}
+                  className="mt-2 text-xs font-semibold text-red-700 hover:text-red-900"
+                >
+                  Try Again
+                </button>
               </div>
             )}
           </div>

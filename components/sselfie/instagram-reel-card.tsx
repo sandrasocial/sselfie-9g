@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useRef, useEffect } from "react"
-import { Heart, MessageCircle, Send, MoreVertical, Volume2, VolumeX, Play, Download } from 'lucide-react'
+import { Heart, MessageCircle, Send, MoreVertical, Volume2, VolumeX, Play, Download } from "lucide-react"
 
 interface InstagramReelCardProps {
   videoUrl: string
@@ -28,7 +28,8 @@ export default function InstagramReelCard({
   const [isDownloading, setIsDownloading] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
 
-  const handlePlayPause = () => {
+  const handlePlayPause = (e?: React.MouseEvent | React.TouchEvent) => {
+    e?.stopPropagation()
     if (videoRef.current) {
       if (isPlaying) {
         videoRef.current.pause()
@@ -54,17 +55,17 @@ export default function InstagramReelCard({
   const handleDownload = async () => {
     setIsDownloading(true)
     setShowMenu(false)
-    
+
     try {
       console.log("[v0] Starting video download...")
-      
+
       // Fetch the video as a blob
       const response = await fetch(videoUrl)
       if (!response.ok) throw new Error("Failed to fetch video")
-      
+
       const blob = await response.blob()
       console.log("[v0] Video blob fetched, size:", blob.size)
-      
+
       // Check if we're on mobile and can use the share API (saves to camera roll on iOS)
       if (navigator.share && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
         console.log("[v0] Mobile device detected, using share API...")
@@ -83,7 +84,7 @@ export default function InstagramReelCard({
           console.log("[v0] Share API failed or cancelled:", shareError?.message)
         }
       }
-      
+
       // Fallback: create download link (saves to Downloads folder)
       console.log("[v0] Using download link method...")
       const url = window.URL.createObjectURL(blob)
@@ -91,21 +92,21 @@ export default function InstagramReelCard({
       a.href = url
       a.download = `sselfie-reel-${Date.now()}.mp4`
       a.style.display = "none"
-      
+
       document.body.appendChild(a)
       a.click()
-      
+
       setTimeout(() => {
         window.URL.revokeObjectURL(url)
         document.body.removeChild(a)
         setIsDownloading(false)
       }, 100)
-      
+
       console.log("[v0] ✅ Video downloaded to files")
     } catch (error) {
       console.error("[v0] Error downloading video:", error)
       setIsDownloading(false)
-      
+
       // Last resort fallback - direct link
       const a = document.createElement("a")
       a.href = videoUrl
@@ -149,14 +150,23 @@ export default function InstagramReelCard({
         className="w-full h-full object-cover"
         loop
         playsInline
+        webkit-playsinline="true"
         muted={isMuted}
         onClick={handlePlayPause}
+        onTouchEnd={(e) => {
+          e.preventDefault()
+          handlePlayPause(e)
+        }}
       />
 
       {!isPlaying && (
         <div className="absolute inset-0 flex items-center justify-center bg-stone-950/20 z-10">
           <button
             onClick={handlePlayPause}
+            onTouchEnd={(e) => {
+              e.preventDefault()
+              handlePlayPause(e)
+            }}
             className="w-16 h-16 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-2xl hover:scale-110 transition-transform"
             aria-label="Play video"
           >
@@ -231,7 +241,7 @@ export default function InstagramReelCard({
             <div className="absolute right-full mr-2 bottom-0 bg-white rounded-xl shadow-2xl border border-stone-200 py-2 w-48">
               <button
                 onClick={() => {
-                  window.open(videoUrl, '_blank')
+                  window.open(videoUrl, "_blank")
                   setShowMenu(false)
                 }}
                 className="w-full px-4 py-2.5 text-left text-sm hover:bg-stone-50 transition-colors text-stone-950"

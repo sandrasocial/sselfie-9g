@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { Play, Download, Trash2, Loader2 } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 
@@ -17,7 +19,8 @@ export default function VideoCard({ videoUrl, imageSource, motionPrompt, status,
   const [isDeleting, setIsDeleting] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
 
-  const handlePlayPause = () => {
+  const handlePlayPause = (e?: React.MouseEvent | React.TouchEvent) => {
+    e?.stopPropagation()
     if (videoRef.current) {
       if (isPlaying) {
         videoRef.current.pause()
@@ -102,11 +105,17 @@ export default function VideoCard({ videoUrl, imageSource, motionPrompt, status,
           className="w-full h-full object-cover"
           loop
           playsInline
+          webkit-playsinline="true"
           preload="metadata"
+          onClick={handlePlayPause}
         />
         <button
           onClick={handlePlayPause}
-          className="absolute inset-0 flex items-center justify-center bg-stone-950/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+          onTouchEnd={(e) => {
+            e.preventDefault()
+            handlePlayPause(e)
+          }}
+          className="absolute inset-0 flex items-center justify-center bg-stone-950/20 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300"
           aria-label={isPlaying ? "Pause video" : "Play video"}
         >
           <div className="w-16 h-16 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-2xl">

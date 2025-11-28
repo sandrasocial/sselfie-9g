@@ -1,7 +1,20 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useRef, useEffect } from "react"
-import { X, Heart, MessageCircle, MoreHorizontal, Volume2, VolumeX, ChevronLeft, ChevronRight, Trash2, Download } from 'lucide-react'
+import {
+  X,
+  Heart,
+  MessageCircle,
+  MoreHorizontal,
+  Volume2,
+  VolumeX,
+  ChevronLeft,
+  ChevronRight,
+  Trash2,
+  Download,
+} from "lucide-react"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 
 interface GeneratedVideo {
@@ -68,6 +81,12 @@ export function InstagramReelPreview({
     setIsPlaying(!isPlaying)
   }
 
+  const handleVideoTouch = (e: React.TouchEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsPlaying(!isPlaying)
+  }
+
   const toggleMute = () => {
     setIsMuted(!isMuted)
     if (videoRef.current) {
@@ -114,21 +133,19 @@ export function InstagramReelPreview({
       )}
 
       {/* Instagram Reel Style */}
-      <div className="relative w-full max-w-md h-full max-h-[90vh] bg-stone-950 rounded-xl overflow-hidden flex flex-col">
+      <div className="relative w-full max-w-md aspect-[9/16] bg-stone-950 rounded-xl overflow-hidden flex flex-col">
         {/* Video */}
-        <div className="relative flex-1 overflow-y-auto">
+        <div className="relative flex-1 overflow-hidden">
           <video
             ref={videoRef}
             src={currentVideo.video_url}
-            className="w-full h-auto object-contain cursor-pointer"
+            className="w-full h-full object-cover cursor-pointer"
             loop
             muted={isMuted}
             playsInline
             autoPlay
             onClick={handleVideoClick}
-            onTouchStart={(e) => {
-              e.stopPropagation()
-            }}
+            onTouchEnd={handleVideoTouch}
           />
         </div>
 

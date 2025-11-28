@@ -3,15 +3,25 @@
 import { useState } from "react"
 import useSWR from "swr"
 import useSWRInfinite from "swr/infinite"
-import { Loader2, X, Home, Aperture, MessageCircle, ImageIcon, Grid, UserIcon, SettingsIcon, LogOut, Film } from 'lucide-react'
+import {
+  Loader2,
+  X,
+  Home,
+  Aperture,
+  MessageCircle,
+  ImageIcon,
+  Grid,
+  UserIcon,
+  SettingsIcon,
+  LogOut,
+  Film,
+} from "lucide-react"
 import InstagramPhotoCard from "./instagram-photo-card"
 import InstagramReelCard from "./instagram-reel-card"
-import { InstagramReelPreview } from "./instagram-reel-preview"
-import { useRouter } from 'next/navigation'
+import { useRouter } from "next/navigation"
 
 interface BRollScreenProps {
   user: any
-  userId: string
 }
 
 interface BRollImage {
@@ -36,7 +46,7 @@ interface GeneratedVideo {
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
-export default function BRollScreen({ user, userId }: BRollScreenProps) {
+export default function BRollScreen({ user }: BRollScreenProps) {
   const [generatingVideos, setGeneratingVideos] = useState<Set<string>>(new Set())
   const [analyzingMotion, setAnalyzingMotion] = useState<Set<string>>(new Set())
   const [videoErrors, setVideoErrors] = useState<Map<string, string>>(new Map())
@@ -56,13 +66,13 @@ export default function BRollScreen({ user, userId }: BRollScreenProps) {
     return `/api/maya/b-roll-images?limit=${limit}&offset=${offset}`
   }
 
-  const { 
-    data: imagePages, 
-    error: imagesError, 
+  const {
+    data: imagePages,
+    error: imagesError,
     isLoading: imagesLoading,
     size,
     setSize,
-    isValidating
+    isValidating,
   } = useSWRInfinite(getKey, fetcher, {
     refreshInterval: 0,
     revalidateOnFocus: false,
@@ -85,7 +95,7 @@ export default function BRollScreen({ user, userId }: BRollScreenProps) {
       if (data?.user?.credit_balance !== undefined) {
         setCreditBalance(data.user.credit_balance)
       }
-    }
+    },
   })
 
   const allVideos: GeneratedVideo[] = videosData?.videos || []
@@ -115,7 +125,13 @@ export default function BRollScreen({ user, userId }: BRollScreenProps) {
     }
   }
 
-  const handleAnimate = async (imageId: string, imageUrl: string, description: string, fluxPrompt: string, category: string) => {
+  const handleAnimate = async (
+    imageId: string,
+    imageUrl: string,
+    description: string,
+    fluxPrompt: string,
+    category: string,
+  ) => {
     setAnalyzingMotion((prev) => new Set(prev).add(imageId))
     setVideoErrors((prev) => {
       const newErrors = new Map(prev)
@@ -125,7 +141,7 @@ export default function BRollScreen({ user, userId }: BRollScreenProps) {
 
     try {
       console.log("[v0] Generating intelligent motion prompt for image:", imageId)
-      
+
       const motionResponse = await fetch("/api/maya/generate-motion-prompt", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -210,26 +226,26 @@ export default function BRollScreen({ user, userId }: BRollScreenProps) {
         console.log("[v0] Prediction ID:", predictionId)
         console.log("[v0] Video ID:", videoId)
         console.log("[v0] Attempt:", attempts + 1, "of", maxAttempts)
-        
+
         const response = await fetch(`/api/maya/check-video?predictionId=${predictionId}&videoId=${videoId}`)
         const data = await response.json()
 
         console.log("[v0] ✅ Polling response:", {
           status: data.status,
-          videoUrl: data.videoUrl ? `${data.videoUrl.substring(0, 50)}...` : 'null',
+          videoUrl: data.videoUrl ? `${data.videoUrl.substring(0, 50)}...` : "null",
           progress: data.progress,
         })
 
         if (data.status === "succeeded") {
           console.log("[v0] ========== VIDEO GENERATION SUCCEEDED ==========")
-          console.log("[v0] Video URL received:", data.videoUrl ? 'YES' : 'NO')
-          
+          console.log("[v0] Video URL received:", data.videoUrl ? "YES" : "NO")
+
           console.log("[v0] Calling mutateVideos() to refresh video list from database...")
           await mutateVideos()
           console.log("[v0] ✅ mutateVideos() completed - video should now appear from DB")
           console.log("[v0] Clearing generating state for imageId:", imageId)
           console.log("[v0] ================================================")
-          
+
           setGeneratingVideos((prev) => {
             const newSet = new Set(prev)
             newSet.delete(imageId)
@@ -252,7 +268,7 @@ export default function BRollScreen({ user, userId }: BRollScreenProps) {
         attempts++
         console.log("[v0] Still processing... Will poll again in 5 seconds")
         console.log("[v0] ================================================")
-        
+
         if (attempts < maxAttempts) {
           setTimeout(poll, 5000)
         } else {
@@ -518,27 +534,23 @@ export default function BRollScreen({ user, userId }: BRollScreenProps) {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
             {images.map((image) => {
-              const isGenerating = generatingVideos.has(image.id)
-              const isAnalyzing = analyzingMotion.has(image.id)
+              const isGenerating = generatingVideos.has(image.id) || analyzingMotion.has(image.id)
               const error = videoErrors.get(image.id)
-              
-              const video = allVideos.find((v) => 
-                String(v.image_id) === String(image.id) && 
-                v.video_url && 
-                v.status === 'completed'
+
+              const video = allVideos.find(
+                (v) => String(v.image_id) === String(image.id) && v.video_url && v.status === "completed",
               )
 
               console.log("[v0] ========== RENDERING IMAGE ==========")
               console.log("[v0] Image ID:", image.id, "Type:", typeof image.id)
               console.log("[v0] Is Generating:", isGenerating)
-              console.log("[v0] Is Analyzing:", isAnalyzing)
               console.log("[v0] Has Error:", !!error)
               console.log("[v0] Video found in DB:", !!video)
               if (video) {
                 console.log("[v0] Video image_id:", video.image_id, "Type:", typeof video.image_id)
-                console.log("[v0] Video URL:", video.video_url ? `${video.video_url.substring(0, 60)}...` : 'NULL')
+                console.log("[v0] Video URL:", video.video_url ? `${video.video_url.substring(0, 60)}...` : "NULL")
               }
               console.log("[v0] Total videos in DB:", allVideos.length)
               console.log("[v0] ================================================")
@@ -547,99 +559,28 @@ export default function BRollScreen({ user, userId }: BRollScreenProps) {
                 <div key={image.id} className="space-y-3">
                   <InstagramPhotoCard
                     concept={{
-                      title: image.category || "B-Roll Content",
-                      description: image.description || image.prompt,
-                      prompt: image.prompt,
+                      title: image.category || "Untitled",
+                      description: image.prompt || "Lifestyle photoshoot",
                       category: image.category || "lifestyle",
+                      prompt: image.prompt || "",
                     }}
                     imageUrl={image.image_url}
-                    imageId={image.id}
-                    isFavorite={false}
+                    imageId={String(image.id)}
+                    isGenerating={isGenerating}
                     onFavoriteToggle={() => handleFavoriteToggle(image.id, false)}
                     onDelete={() => handleDelete(image.id)}
-                    onAnimate={
-                      !video && !isGenerating && !isAnalyzing
-                        ? () => handleAnimate(
-                            image.id,
-                            image.image_url,
-                            image.description || image.prompt,
-                            image.prompt,
-                            image.category || "lifestyle"
-                          )
-                        : undefined
+                    onAnimate={() =>
+                      handleAnimate(image.id, image.image_url, image.prompt, image.prompt, image.category || "")
                     }
+                    isFavorite={false}
                     showAnimateOverlay={true}
                   />
-
-                  {isAnalyzing && (
-                    <div className="flex flex-col items-center justify-center py-6 space-y-3 bg-white/50 backdrop-blur-2xl border border-white/70 rounded-2xl">
-                      <div className="flex gap-1.5">
-                        <div className="w-2 h-2 rounded-full bg-stone-950 animate-bounce"></div>
-                        <div
-                          className="w-2 h-2 rounded-full bg-stone-950 animate-bounce"
-                          style={{ animationDelay: "0.2s" }}
-                        ></div>
-                        <div
-                          className="w-2 h-2 rounded-full bg-stone-950 animate-bounce"
-                          style={{ animationDelay: "0.4s" }}
-                        ></div>
-                      </div>
-                      <div className="text-center space-y-1">
-                        <span className="text-xs tracking-wider uppercase font-semibold text-stone-700">
-                          Analyzing Scene
-                        </span>
-                        <p className="text-[10px] text-stone-600">Creating motion prompt</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {isGenerating && (
-                    <div className="flex flex-col items-center justify-center py-6 space-y-3 bg-white/50 backdrop-blur-2xl border border-white/70 rounded-2xl">
-                      <div className="flex gap-1.5">
-                        <div className="w-2 h-2 rounded-full bg-stone-950 animate-bounce"></div>
-                        <div
-                          className="w-2 h-2 rounded-full bg-stone-950 animate-bounce"
-                          style={{ animationDelay: "0.2s" }}
-                        ></div>
-                        <div
-                          className="w-2 h-2 rounded-full bg-stone-950 animate-bounce"
-                          style={{ animationDelay: "0.4s" }}
-                        ></div>
-                      </div>
-                      <div className="text-center space-y-1">
-                        <span className="text-xs tracking-wider uppercase font-semibold text-stone-700">
-                          Creating Reel
-                        </span>
-                        <p className="text-[10px] text-stone-600">1-3 minutes</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {error && (
-                    <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
-                      <p className="text-xs text-red-600">{error}</p>
-                      <button
-                        onClick={() =>
-                          handleAnimate(
-                            image.id,
-                            image.image_url,
-                            image.description || image.prompt,
-                            image.prompt,
-                            image.category || "lifestyle"
-                          )
-                        }
-                        className="mt-2 text-xs font-semibold text-red-700 hover:text-red-900 min-h-[40px] px-3 py-2"
-                      >
-                        Try Again
-                      </button>
-                    </div>
-                  )}
 
                   {video && video.video_url && (
                     <div className="mt-3">
                       {console.log("[v0] ✅ Rendering InstagramReelCard for video:", video.id)}
-                      <InstagramReelCard 
-                        videoUrl={video.video_url} 
+                      <InstagramReelCard
+                        videoUrl={video.video_url}
                         motionPrompt={video.motion_prompt || undefined}
                         onDelete={video.id ? () => deleteVideo(video.id) : undefined}
                       />
@@ -655,9 +596,7 @@ export default function BRollScreen({ user, userId }: BRollScreenProps) {
               {isLoadingMore ? (
                 <div className="flex flex-col items-center gap-3">
                   <Loader2 className="w-6 h-6 animate-spin text-stone-950" />
-                  <span className="text-xs tracking-wider uppercase font-light text-stone-600">
-                    Loading more...
-                  </span>
+                  <span className="text-xs tracking-wider uppercase font-light text-stone-600">Loading more...</span>
                 </div>
               ) : (
                 <button

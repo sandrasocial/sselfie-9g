@@ -18,6 +18,7 @@ export async function GET(request: NextRequest) {
     const predictionId = searchParams.get("id")
     const heroPrompt = searchParams.get("heroPrompt")
     const userId = searchParams.get("userId") // Get user_id from query params
+    const conceptDescription = searchParams.get("conceptDescription") // Add conceptDescription from query params
 
     if (!predictionId) {
       return NextResponse.json({ error: "Missing prediction ID" }, { status: 400 })
@@ -52,38 +53,40 @@ export async function GET(request: NextRequest) {
 
     if (prediction.status === "succeeded" && prediction.output) {
       const temporaryImageUrls = Array.isArray(prediction.output) ? prediction.output : [prediction.output]
-      
+
       console.log("[v0] ✅ Prediction succeeded with", temporaryImageUrls.length, "images")
       console.log("[v0] 📦 Migrating images from temporary Replicate URLs to permanent Blob storage...")
-      
+
       const permanentUrls: string[] = []
-      
+      const photoshootPoses = prediction.input?.poses || []
+      const fluxPrompts = prediction.input?.fluxPrompts || []
+
       for (let i = 0; i < temporaryImageUrls.length; i++) {
         const tempUrl = temporaryImageUrls[i]
-        
+
         try {
           console.log(`[v0] 📥 Downloading image ${i + 1}/${temporaryImageUrls.length}`)
-          
+
           const imageResponse = await fetch(tempUrl)
           if (!imageResponse.ok) {
             throw new Error(`Failed to download image: ${imageResponse.statusText}`)
           }
           const imageBlob = await imageResponse.blob()
-          
+
           console.log(`[v0] ⬆️ Uploading to Blob storage (${Math.round(imageBlob.size / 1024)}KB)`)
-          
+
           const blob = await put(`photoshoots/${predictionId}-${i}.png`, imageBlob, {
             access: "public",
             contentType: "image/png",
             addRandomSuffix: true,
           })
-          
+
           console.log(`[v0] ✅ Permanent URL ${i + 1}:`, blob.url.substring(0, 60) + "...")
           permanentUrls.push(blob.url)
 
           try {
             console.log(`[v0] 💾 Saving image ${i + 1} to ai_images gallery...`)
-            
+
             // Check if already exists by URL only
             const [existing] = await sql`
               SELECT id FROM ai_images 
@@ -96,7 +99,12 @@ export async function GET(request: NextRequest) {
               console.log(`[v0]   → user_id: "${numericUserId}"`)
               console.log(`[v0]   → image_url: ${blob.url.substring(0, 60)}...`)
               console.log(`[v0]   → category: photoshoot`)
-              
+
+              const displayCaption =
+                conceptDescription || photoshootPoses[i]?.caption || photoshootPoses[i]?.title || "Lifestyle photoshoot"
+
+              console.log(`[v0]   → caption: ${displayCaption}`)
+
               const result = await sql`
                 INSERT INTO ai_images (
                   user_id,
@@ -111,11 +119,11 @@ export async function GET(request: NextRequest) {
                 ) VALUES (
                   ${numericUserId},
                   ${blob.url},
-                  ${heroPrompt || "Photoshoot carousel"},
-                  ${(prediction.input as any)?.prompt || ""},
+                  ${displayCaption},
+                  ${fluxPrompts[i]},
                   ${predictionId},
                   'completed',
-                  'maya_photoshoot',
+                  'carousel',
                   'photoshoot',
                   NOW()
                 )
@@ -133,7 +141,7 @@ export async function GET(request: NextRequest) {
           permanentUrls.push(tempUrl) // Fallback to temporary URL
         }
       }
-      
+
       console.log(`[v0] 🎉 Migration complete: ${permanentUrls.length}/${temporaryImageUrls.length} images`)
 
       return NextResponse.json({

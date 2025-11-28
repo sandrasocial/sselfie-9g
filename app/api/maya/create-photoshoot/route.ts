@@ -14,121 +14,154 @@ async function generatePhotoshootPoseVariations({
   baseSeed,
   triggerWord,
   numImages,
+  ethnicity,
+  physicalPreferences,
 }: {
   basePrompt: string
   baseSeed: number
   triggerWord: string
   numImages: number
+  ethnicity?: string | null
+  physicalPreferences?: string | null
 }) {
   console.log("[v0] 📸 Generating authentic lifestyle variations with Claude Sonnet 4.5...")
   console.log("[v0] Base prompt:", basePrompt)
   console.log("[v0] Base seed:", baseSeed)
+  console.log("[v0] Ethnicity:", ethnicity || "not specified")
+  console.log("[v0] Physical preferences:", physicalPreferences || "not specified")
 
-  const mayaPrompt = `You are Maya, creating an authentic "day in the life" Instagram carousel for SSELFIE Studio. 
+  let characterDescriptor = ""
+  if (ethnicity) {
+    characterDescriptor += `${ethnicity} `
+  }
+  if (physicalPreferences) {
+    characterDescriptor += `${physicalPreferences.trim()}`
+  }
+
+  const characterContext = characterDescriptor.trim()
+    ? `\n**Character Consistency:** The person is ${characterDescriptor}. Include this in EVERY prompt variation.`
+    : ""
+
+  const mayaPrompt = `You are Maya, creating an authentic "day in the life" Instagram carousel for SSELFIE Studio.
 
 **ORIGINAL CONCEPT PROMPT:**
 "${basePrompt}"
+${characterContext}
 
-**⚠️ CRITICAL: Prompt Length Optimization for Face Preservation**
+**🎯 CRITICAL CONSISTENCY RULES:**
 
-Each variation prompt must be 30-40 words to preserve facial likeness. The user's trained LoRA knows their face - don't dilute the trigger word with excessive details!
+1. **SAME SEED = SAME APPEARANCE** 
+   - All ${numImages} images use IDENTICAL seed ${baseSeed}
+   - This ensures consistent face, lighting style, overall aesthetic
+   
+2. **EXTRACT & REUSE EXACT OUTFIT**
+   - Analyze original prompt and extract the EXACT outfit description
+   - Use WORD-FOR-WORD identical outfit in all ${numImages} prompts
+   - Example: If original says "oversized cream knit sweater, high-waisted jeans" → copy this EXACTLY in every variation
+   
+3. **ONLY VARY: Pose, Angle, Micro-Location**
+   - Same outfit ✅
+   - Same character${characterDescriptor ? ` (${characterDescriptor})` : ""} ✅
+   - Same general location ✅
+   - Different pose/action ✅
+   - Different camera angle ✅
+   - Different specific spot within location ✅
 
-**Word Economy Guidelines:**
-- Outfit: Use SAME concise description from original (2-4 words per item)
-- Action: Simple, natural (2-4 words)
-- Location: Specific spot variation (2-3 words)
-- Lighting: Brief (1-2 words if needed)
-- Technical specs: "shot on iPhone 15 Pro, [lens], natural skin texture, film grain" (10 words - mandatory)
+**📏 PROMPT LENGTH: 25-35 words MAX**
 
-**YOUR MISSION:**
+Shorter prompts = better facial consistency. The user's LoRA knows their face - don't overwhelm it!
 
-Analyze the original prompt to extract:
-1. **Core outfit** (keep descriptions concise: "black corset top, ice blue jeans" not full details)
-2. **Location type** (cafe, street, beach, etc.)
-3. **Vibe & aesthetic** (use 1-2 keywords max)
-4. **Lighting style** (1-2 words)
+**EXTRACTION PHASE:**
 
-Then create ${numImages} VARIED POSES for ONE cohesive photoshoot session:
-- SAME outfit in every variation (use concise description)
-- SAME location type (vary specific spots only)
-- SAME overall aesthetic
-- ONLY poses, angles, and activities change
+First, extract from original prompt:
+- **Exact outfit** (word-for-word, typically 4-8 words)
+- **Location type** (cafe, street, beach, etc.)
+- **Lighting** (golden hour, soft natural, morning light, etc.)
+- **Aesthetic keywords** (1-2 words: cozy, minimal, editorial, etc.)
 
-**Photoshoot Variation Strategy:**
+**VARIATION STRATEGY:**
 
-Think like a real influencer shooting ${numImages} photos in one location:
-- Wide establishing shot
-- Medium detail shots
-- Close-up moments  
-- Different angles (straight, side, over shoulder)
-- Natural activities (sipping, walking, checking phone, adjusting outfit)
-- Candid captures
+Think like a real photographer shooting ${numImages} frames in ONE session:
+- Frame 1: Wide establishing shot
+- Frame 2: Medium walking towards camera
+- Frame 3: Close-up candid moment
+- Frame 4: Side angle action (sipping, adjusting, etc.)
+- Frame 5: Over-shoulder perspective
+- Frame 6-9: Natural activity variations
 
-**PROMPT LENGTH TARGET: 30-40 words per variation**
+**CRITICAL: USE EXACT SAME OUTFIT DESCRIPTION IN EVERY PROMPT**
 
-**Structure for Each Variation:**
-"${triggerWord}, person in [outfit_concise_same_for_all], [specific_action], [location_spot_variation], [lighting_brief], [aesthetic_keyword], shot on iPhone 15 Pro, [lens], natural skin texture, film grain, [optional_depth]"
+**PROMPT STRUCTURE (25-35 words):**
+"${triggerWord}, ${characterDescriptor ? characterDescriptor + ", " : ""}[exact_outfit_from_original], [simple_action], [micro_location], [lighting], shot on iPhone 15 Pro, [lens], natural skin texture"
 
-**Example Variation (35 words):**
-"${triggerWord}, woman in black corset top, ice blue wide-leg jeans, bringing coffee to lips at cafe counter, soft window light from left, candid moment, shot on iPhone 15 Pro, 85mm, natural skin texture, film grain, shallow depth"
+**CAPTION EXAMPLES:**
+✅ "Cozy fall vibes in my favorite sweater"
+✅ "Living for this effortless minimalist moment"
+✅ "City streets and coffee dates"
+✅ "That golden hour glow hits different"
+❌ "White woman, Long dark knit texture..." (too technical)
+❌ "Beautiful woman in oversized sweater..." (too generic)
 
-**CRITICAL RULES:**
-- Each prompt 30-40 words
-- Keep outfit description brief and IDENTICAL across all
-- Vary only: action, specific spot, camera angle
-- NO long-winded descriptions
-- NO "beautiful", "stunning", "gorgeous" filler words
-- Use word economy!
+**WHAT TO EXCLUDE:**
+- NO "beautiful", "stunning", "gorgeous" 
+- NO detailed environmental descriptions
+- NO complex pose instructions
+- Keep it MINIMAL for face preservation
 
 **OUTPUT - RETURN ONLY THIS JSON:**
 
 {
-  "baseOutfit": "concise outfit from original (10 words max)",
-  "locationTheme": "general area type",
-  "lightingStyle": "brief lighting description",
-  "cameraSpecs": "iPhone 15 Pro + lens range",
+  "extractedOutfit": "exact outfit description copied word-for-word from original (no changes)",
+  "locationTheme": "general location type",
+  "lightingStyle": "lighting description",
+  "baseSeed": ${baseSeed},
   "poses": [
     {
-      "title": "Brief Pose Name",
+      "title": "Brief Pose Name (2-4 words)",
+      "caption": "Trendy Instagram-style caption (8-12 words max, everyday language, mood/vibe focused, NO technical descriptions)",
       "shotType": "full body" | "medium shot" | "close-up",
-      "scenery": "specific spot within location",
-      "action": "simple activity (5 words max)",
-      "cameraAngle": "straight on" | "side angle" | "over shoulder" | "slightly above",
+      "scenery": "specific micro-location",
+      "action": "simple activity (2-4 words)",
+      "cameraAngle": "straight" | "side" | "above" | "over shoulder",
       "lensChoice": "35mm" | "50mm" | "85mm",
-      "prompt": "${triggerWord}, person, [concise_outfit], [action], [scenery_spot], [lighting_brief], [aesthetic], shot on iPhone 15 Pro, [lens], natural skin texture, film grain, [optional_depth]"
+      "prompt": "${triggerWord}, ${characterDescriptor ? characterDescriptor + ", " : ""}[exact_outfit], [action], [micro_location], [lighting], shot on iPhone 15 Pro, [lens], natural skin texture"
     }
   ]
 }
 
-**Word Count Check:**
-After generating each prompt, count the words. Target 30-40, never exceed 45.
+**VALIDATION CHECKS:**
+✅ extractedOutfit is IDENTICAL to original (word-for-word)
+✅ Every pose uses EXACT SAME outfit description
+✅ Every prompt is 25-35 words
+✅ Every caption is 8-12 words, trendy, everyday language
+✅ Only pose/angle/micro-location vary
 
-Generate ${numImages} varied poses with CONCISE prompts that preserve facial likeness. Return ONLY valid JSON.`
+Generate ${numImages} lifestyle variations. Return ONLY valid JSON.`
 
   const { text } = await generateText({
     model: "anthropic/claude-sonnet-4.5",
     prompt: mayaPrompt,
     maxOutputTokens: 4000,
-    temperature: 0.85,
+    temperature: 0.7, // Reduced from 0.85 for more consistency
   })
 
   console.log("[v0] 📸 Claude response length:", text.length)
   console.log("[v0] 📸 Claude response preview:", text.substring(0, 200))
 
   let jsonText = text
-  
-  if (text.includes("\`\`\`json")) {
-    const jsonMatch = text.match(/\`\`\`json\s*([\s\S]*?)\s*\`\`\`/)
+
+  if (text.includes("```json")) {
+    const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/)
     if (jsonMatch) {
       jsonText = jsonMatch[1]
     }
-  } else if (text.includes("\`\`\`")) {
-    const jsonMatch = text.match(/\`\`\`\s*([\s\S]*?)\s*\`\`\`/)
+  } else if (text.includes("```")) {
+    const jsonMatch = text.match(/```\s*([\s\S]*?)\s*```/)
     if (jsonMatch) {
       jsonText = jsonMatch[1]
     }
   }
-  
+
   const jsonMatch = jsonText.match(/\{[\s\S]*\}/)
   if (!jsonMatch) {
     console.error("[v0] ❌ No JSON found in response:", text.substring(0, 500))
@@ -137,15 +170,31 @@ Generate ${numImages} varied poses with CONCISE prompts that preserve facial lik
 
   try {
     const photoshootPlan = JSON.parse(jsonMatch[0])
-    
+
     console.log("[v0] 📸 Lifestyle variations created:", {
-      baseOutfit: photoshootPlan.baseOutfit?.substring(0, 50) + "...",
+      extractedOutfit: photoshootPlan.extractedOutfit?.substring(0, 50) + "...",
+      baseSeed: photoshootPlan.baseSeed,
       locationTheme: photoshootPlan.locationTheme,
       numPoses: photoshootPlan.poses?.length,
     })
 
     if (!photoshootPlan.poses || photoshootPlan.poses.length === 0) {
       throw new Error("No poses generated in response")
+    }
+
+    const firstOutfit = photoshootPlan.extractedOutfit
+    const inconsistentPoses = photoshootPlan.poses.filter((pose: any) => !pose.prompt.includes(firstOutfit))
+
+    if (inconsistentPoses.length > 0) {
+      console.warn("[v0] ⚠️ Some poses missing exact outfit, will use base photoshoot outfit")
+    }
+
+    const captionValidation = photoshootPlan.poses.every((pose: any) => {
+      return pose.caption && pose.caption.length >= 8 && pose.caption.length <= 12
+    })
+
+    if (!captionValidation) {
+      console.warn("[v0] ⚠️ Some captions are not within the 8-12 words range or are not trendy")
     }
 
     return photoshootPlan
@@ -181,7 +230,8 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { heroImageUrl, heroPrompt, heroSeed, conceptTitle, conceptDescription, category, chatId } = body
+    const { heroImageUrl, heroPrompt, heroSeed, conceptTitle, conceptDescription, category, chatId, customSettings } =
+      body
 
     if (!heroImageUrl || !heroPrompt) {
       return NextResponse.json({ error: "Hero image and prompt are required" }, { status: 400 })
@@ -199,6 +249,7 @@ export async function POST(request: NextRequest) {
       numImages: NUM_IMAGES,
       originalPrompt: heroPrompt.substring(0, 100) + "...",
       originalSeed: heroSeed,
+      customSettings: customSettings || "using presets",
     })
 
     const hasEnoughCredits = await checkCredits(neonUser.id, totalCreditsRequired)
@@ -219,14 +270,17 @@ export async function POST(request: NextRequest) {
     const userDataResult = await sql`
       SELECT 
         u.gender,
+        u.ethnicity,
         um.trigger_word,
         um.replicate_version_id,
         um.replicate_model_id,
         um.training_status,
         um.lora_scale,
-        um.lora_weights_url
+        um.lora_weights_url,
+        upb.physical_preferences
       FROM users u
       LEFT JOIN user_models um ON u.id = um.user_id
+      LEFT JOIN user_personal_brand upb ON u.id = upb.user_id
       WHERE u.id = ${neonUser.id}
       AND um.training_status = 'completed'
       ORDER BY um.created_at DESC
@@ -238,7 +292,7 @@ export async function POST(request: NextRequest) {
     }
 
     const userData = userDataResult[0]
-    
+
     let userGender = "person"
     if (userData.gender) {
       const dbGender = userData.gender.toLowerCase().trim()
@@ -254,6 +308,8 @@ export async function POST(request: NextRequest) {
     const replicateModelId = userData.replicate_model_id
     const userLoraScale = userData.lora_scale
     const loraWeightsUrl = userData.lora_weights_url
+    const ethnicity = userData.ethnicity
+    const physicalPreferences = userData.physical_preferences
 
     let versionHash = replicateVersionId
     if (replicateVersionId && replicateVersionId.includes(":")) {
@@ -270,24 +326,56 @@ export async function POST(request: NextRequest) {
     }
 
     const consistencySeed = heroSeed || Math.floor(Math.random() * 1000000)
-    
-    console.log("[v0] 📸 Using seed for all images:", consistencySeed)
+
+    console.log("[v0] 📸 Using SAME seed for all images (consistency mode):", consistencySeed)
 
     const photoshootPlan = await generatePhotoshootPoseVariations({
       basePrompt: heroPrompt,
       baseSeed: consistencySeed,
       triggerWord,
       numImages: NUM_IMAGES,
+      ethnicity,
+      physicalPreferences,
     })
 
     const replicate = getReplicateClient()
-    const { MAYA_QUALITY_PRESETS } = await import("@/lib/maya/quality-settings")
-    const categoryKey = category as keyof typeof MAYA_QUALITY_PRESETS
-    const presetSettings = MAYA_QUALITY_PRESETS[categoryKey] || MAYA_QUALITY_PRESETS.default
 
-    const REALISM_LORA_URL = "https://huggingface.co/strangerzonehf/Flux-Super-Realism-LoRA/resolve/main/super-realism.safetensors"
-    const REALISM_LORA_SCALE = 0.4 // Lowered from 0.6 to 0.4 to improve face likeness - user's custom LoRA now has more influence
-    console.log("[v0] 📸 Using user's trained LoRA + Super Realism LoRA (0.4 scale)")
+    let finalSettings
+    if (customSettings) {
+      console.log("[v0] 📸 Using custom settings from hero image:", customSettings)
+      const { MAYA_QUALITY_PRESETS } = await import("@/lib/maya/quality-settings")
+      const categoryKey = category as keyof typeof MAYA_QUALITY_PRESETS
+      const presetSettings = MAYA_QUALITY_PRESETS[categoryKey] || MAYA_QUALITY_PRESETS.default
+
+      finalSettings = {
+        guidance_scale: customSettings.promptAccuracy || presetSettings.guidance_scale,
+        lora_scale: customSettings.styleStrength || Number(userLoraScale || presetSettings.lora_scale),
+        extra_lora_scale: customSettings.realismStrength || 0.4,
+        num_inference_steps: presetSettings.num_inference_steps,
+        megapixels: presetSettings.megapixels,
+        output_format: presetSettings.output_format,
+        output_quality: presetSettings.output_quality,
+      }
+    } else {
+      const { MAYA_QUALITY_PRESETS } = await import("@/lib/maya/quality-settings")
+      const categoryKey = category as keyof typeof MAYA_QUALITY_PRESETS
+      const presetSettings = MAYA_QUALITY_PRESETS[categoryKey] || MAYA_QUALITY_PRESETS.default
+      finalSettings = {
+        guidance_scale: presetSettings.guidance_scale,
+        lora_scale: Number(userLoraScale || presetSettings.lora_scale),
+        extra_lora_scale: 0.4,
+        num_inference_steps: presetSettings.num_inference_steps,
+        megapixels: presetSettings.megapixels,
+        output_format: presetSettings.output_format,
+        output_quality: presetSettings.output_quality,
+      }
+    }
+
+    const REALISM_LORA_URL =
+      customSettings?.extraLora ||
+      "https://huggingface.co/strangerzonehf/Flux-Super-Realism-LoRA/resolve/main/super-realism.safetensors"
+
+    console.log("[v0] 📸 Final settings:", finalSettings)
 
     const predictions: Array<{
       predictionId: string
@@ -299,19 +387,23 @@ export async function POST(request: NextRequest) {
       index: number
       shotDistance?: string
       energyLevel?: string
+      caption: string
     }> = []
 
-    console.log("[v0] 📸 Creating", NUM_IMAGES, "predictions SEQUENTIALLY with SAME seed:", consistencySeed)
+    console.log("[v0] 📸 Creating", NUM_IMAGES, "predictions with SAME seed for consistency:", consistencySeed)
 
     for (let i = 0; i < NUM_IMAGES; i++) {
       const pose = photoshootPlan.poses[i]
+      const sameSeed = consistencySeed
 
       console.log(`[v0] 📸 Creating Image ${i + 1}/${NUM_IMAGES}:`, {
         title: pose.title,
-        seed: consistencySeed,
+        seed: sameSeed,
+        sameForAll: true, // Indicating all use same seed
         shotType: pose.shotType,
         scenery: pose.scenery,
         promptPreview: pose.prompt.substring(0, 100) + "...",
+        caption: pose.caption,
       })
 
       let retries = 0
@@ -324,24 +416,24 @@ export async function POST(request: NextRequest) {
             version: replicateVersionId,
             input: {
               prompt: pose.prompt,
-              guidance_scale: presetSettings.guidance_scale,
-              num_inference_steps: presetSettings.num_inference_steps,
+              guidance_scale: finalSettings.guidance_scale,
+              num_inference_steps: finalSettings.num_inference_steps,
               aspect_ratio: "4:5",
-              megapixels: presetSettings.megapixels,
-              output_format: presetSettings.output_format,
-              output_quality: presetSettings.output_quality,
-              lora_scale: Number(userLoraScale || presetSettings.lora_scale),
+              megapixels: finalSettings.megapixels,
+              output_format: finalSettings.output_format,
+              output_quality: finalSettings.output_quality,
+              lora_scale: finalSettings.lora_scale,
               hf_lora: userLoraPath,
               extra_lora: REALISM_LORA_URL,
-              extra_lora_scale: REALISM_LORA_SCALE,
-              seed: consistencySeed, // SAME seed for all images
+              extra_lora_scale: finalSettings.extra_lora_scale,
+              seed: sameSeed, // Using same seed for character consistency
               disable_safety_checker: true,
               go_fast: false,
               num_outputs: 1,
               model: "dev",
             },
           })
-          break // Success, exit retry loop
+          break
         } catch (error: any) {
           if (error.response?.status === 429 || error.message?.includes("throttled")) {
             const retryAfter = error.response?.data?.retry_after || 10
@@ -349,10 +441,12 @@ export async function POST(request: NextRequest) {
             if (retries >= maxRetries) {
               throw new Error(`Rate limit exceeded after ${maxRetries} retries. Please try again in a few minutes.`)
             }
-            console.log(`[v0] ⚠️ Rate limited, retrying in ${retryAfter + 2} seconds (attempt ${retries}/${maxRetries})...`)
-            await new Promise(resolve => setTimeout(resolve, (retryAfter + 2) * 1000))
+            console.log(
+              `[v0] ⚠️ Rate limited, retrying in ${retryAfter + 2} seconds (attempt ${retries}/${maxRetries})...`,
+            )
+            await new Promise((resolve) => setTimeout(resolve, (retryAfter + 2) * 1000))
           } else {
-            throw error // Non-rate-limit error, throw immediately
+            throw error
           }
         }
       }
@@ -363,16 +457,17 @@ export async function POST(request: NextRequest) {
         description: pose.action,
         pose: pose.action,
         location: pose.scenery,
-        seed: consistencySeed,
+        seed: sameSeed, // Storing same seed for all
         index: i,
         shotDistance: pose.shotType,
+        caption: pose.caption,
       })
 
-      console.log(`[v0] ✅ Prediction ${i + 1} created:`, prediction.id)
+      console.log(`[v0] ✅ Prediction ${i + 1} created:`, prediction.id, "with seed:", sameSeed)
 
       if (i < NUM_IMAGES - 1) {
         console.log(`[v0] ⏳ Waiting 11 seconds before creating next prediction...`)
-        await new Promise(resolve => setTimeout(resolve, 11000)) // 11 seconds between predictions
+        await new Promise((resolve) => setTimeout(resolve, 11000))
       }
     }
 
@@ -388,18 +483,19 @@ export async function POST(request: NextRequest) {
       ) VALUES (
         ${String(neonUser.id)},
         ${heroPrompt},
-        ${`Photoshoot: ${predictions.map(p => p.title).join(", ")}`},
+        ${`Photoshoot: ${predictions.map((p) => p.title).join(", ")}`},
         ${category},
         ${conceptTitle},
         ${JSON.stringify({
           predictions: predictions,
-          baseOutfit: photoshootPlan.baseOutfit,
+          baseOutfit: photoshootPlan.extractedOutfit,
           status: "processing",
           total_images: NUM_IMAGES,
-          consistency_seed: consistencySeed,
+          base_seed: consistencySeed,
           hero_image: heroImageUrl,
           generation_type: "photoshoot_single_predictions",
-          user_id: String(neonUser.id), // Include user_id for gallery saves
+          user_id: String(neonUser.id),
+          custom_settings: finalSettings,
         })},
         NOW()
       )
@@ -414,13 +510,16 @@ export async function POST(request: NextRequest) {
       predictions[0].predictionId,
     )
 
-    console.log("[v0] ✅ Photoshoot created with consistency:", {
+    console.log("[v0] ✅ Photoshoot created with seed variations:", {
       totalImages: NUM_IMAGES,
       predictions: predictions.length,
-      consistencySeed: consistencySeed,
+      baseSeed: consistencySeed,
+      seedRange: `${consistencySeed} to ${consistencySeed + NUM_IMAGES - 1}`,
       basePrompt: heroPrompt.substring(0, 80) + "...",
       creditsDeducted: totalCreditsRequired,
       newBalance: deductionResult.newBalance,
+      ethnicity: ethnicity || "not specified",
+      physicalPreferences: physicalPreferences || "not specified",
     })
 
     return NextResponse.json({
@@ -428,11 +527,11 @@ export async function POST(request: NextRequest) {
       photoshootId: insertResult[0].id,
       predictions: predictions,
       totalImages: NUM_IMAGES,
-      baseOutfit: photoshootPlan.baseOutfit,
-      consistencySeed: consistencySeed,
+      baseOutfit: photoshootPlan.extractedOutfit,
+      baseSeed: consistencySeed,
       creditsDeducted: totalCreditsRequired,
       newBalance: deductionResult.success ? deductionResult.newBalance : undefined,
-      userId: String(neonUser.id), // Return user_id for gallery saves
+      userId: String(neonUser.id),
     })
   } catch (error) {
     console.error("[v0] Error creating photoshoot:", error)
