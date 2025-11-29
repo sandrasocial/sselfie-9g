@@ -1,4 +1,4 @@
-import { BaseAgent } from "../core/baseAgent"
+import { BaseAgent } from "../core/base-agent"
 import { emailTools } from "../tools/emailTools"
 import { analyticsTools } from "../tools/analyticsTools"
 import { contentTools } from "../tools/contentTools"

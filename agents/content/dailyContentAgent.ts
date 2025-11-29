@@ -1,4 +1,4 @@
-import { BaseAgent } from "../core/baseAgent"
+import { BaseAgent } from "../core/base-agent"
 import { generateText } from "ai"
 
 /**

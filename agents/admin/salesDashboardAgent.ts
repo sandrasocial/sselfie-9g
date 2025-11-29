@@ -1,4 +1,4 @@
-import { BaseAgent } from "../core/baseAgent"
+import { BaseAgent } from "../core/base-agent"
 import { neon } from "@neondatabase/serverless"
 
 const sql = neon(process.env.DATABASE_URL!)
