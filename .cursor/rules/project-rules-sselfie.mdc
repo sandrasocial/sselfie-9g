@@ -1,0 +1,47 @@
+# sselfie-9g Project Architecture Rules
+
+## Authentication
+- Use Supabase Auth ONLY for login/session tokens.
+- Do NOT use Supabase SQL helpers.
+- Do NOT access Supabase system tables.
+- Do NOT enable Row Level Security.
+- NO migrations.
+- NO triggers.
+- The app must NOT rely on Supabase database features.
+
+## Database
+- All app data lives in Neon Postgres.
+- All SQL must be pure Postgres syntax.
+- Use the existing Neon database client (no new drivers unless approved).
+- The database NEVER determines the user’s identity; user_id must always be passed from the app layer.
+
+## File Structure Safety
+- NEVER rewrite or reinitialize the entire repository.
+- NEVER create new scaffolding unless explicitly asked.
+- Only modify files directly relevant to the task.
+- Maintain existing Next.js App Router structure.
+- Maintain existing conventions for:
+  - folders
+  - components
+  - server actions
+  - API routes
+  - styling patterns
+
+## Coding Standards
+- Follow existing TypeScript, component, and formatting patterns.
+- Keep changes minimal and surgical.
+- Avoid large refactors unless approved.
+- When unsure, ask the user.
+
+## External Services
+- Stripe integration must follow existing patterns.
+- Vercel AI Gateway must use existing env variables.
+- No adding new external providers unless the user confirms.
+
+## Safety
+- Before any major change, ASK the user.
+- Keep changes isolated.
+- Do not modify unrelated files.
+---
+alwaysApply: true
+---
