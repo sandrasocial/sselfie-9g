@@ -4,13 +4,36 @@ import { Resend } from "resend"
 import { addOrUpdateResendContact } from "@/lib/resend/manage-contact"
 import { generateFreebieGuideEmail } from "@/lib/email/templates/freebie-guide-email"
 
-const resend = new Resend(process.env.RESEND_API_KEY!)
-const sql = neon(process.env.DATABASE_URL!)
+let resendClient: Resend | null = null
+let sqlClient: ReturnType<typeof neon> | null = null
+
+function getResendClient() {
+  if (!process.env.RESEND_API_KEY) {
+    return null
+  }
+  if (!resendClient) {
+    resendClient = new Resend(process.env.RESEND_API_KEY)
+  }
+  return resendClient
+}
+
+function getSqlClient() {
+  if (!process.env.DATABASE_URL) {
+    throw new Error("DATABASE_URL environment variable is not set")
+  }
+  if (!sqlClient) {
+    sqlClient = neon(process.env.DATABASE_URL)
+  }
+  return sqlClient
+}
 
 export async function POST(request: NextRequest) {
   console.log("[v0] Freebie subscribe POST handler called")
 
   try {
+    const sql = getSqlClient()
+    const resend = getResendClient()
+
     const body = await request.json()
     console.log("[v0] Request body:", body)
 
@@ -43,7 +66,7 @@ export async function POST(request: NextRequest) {
         let emailError = null
 
         try {
-          if (process.env.RESEND_API_KEY) {
+          if (resend) {
             console.log("[v0] Sending guide access email via Resend")
 
             const productionUrl =
@@ -148,31 +171,33 @@ export async function POST(request: NextRequest) {
     console.log("[v0] Subscriber created with ID:", newSubscriber.id)
 
     const firstName = name.split(" ")[0] || name
-    const resendResult = await addOrUpdateResendContact(email, firstName, {
-      source: "freebie-subscriber",
-      status: "lead",
-      product: "sselfie-guide",
-      journey: "nurture",
-      signup_date: new Date().toISOString().split("T")[0],
-    })
+    if (resend) {
+      const resendResult = await addOrUpdateResendContact(email, firstName, {
+        source: "freebie-subscriber",
+        status: "lead",
+        product: "sselfie-guide",
+        journey: "nurture",
+        signup_date: new Date().toISOString().split("T")[0],
+      })
 
-    if (resendResult.success && resendResult.contactId) {
-      console.log(`[v0] Added to Resend audience with ID: ${resendResult.contactId}`)
+      if (resendResult.success && resendResult.contactId) {
+        console.log(`[v0] Added to Resend audience with ID: ${resendResult.contactId}`)
 
-      await sql`
-        UPDATE freebie_subscribers 
-        SET resend_contact_id = ${resendResult.contactId},
-            updated_at = NOW()
-        WHERE id = ${newSubscriber.id}
-      `
-    } else {
-      console.error(`[v0] Failed to add to Resend audience: ${resendResult.error}`)
+        await sql`
+          UPDATE freebie_subscribers 
+          SET resend_contact_id = ${resendResult.contactId},
+              updated_at = NOW()
+          WHERE id = ${newSubscriber.id}
+        `
+      } else {
+        console.error(`[v0] Failed to add to Resend audience: ${resendResult.error}`)
+      }
     }
 
     let emailSent = false
     let emailError = null
     try {
-      if (process.env.RESEND_API_KEY) {
+      if (resend) {
         console.log("[v0] Sending guide access email via Resend")
 
         const productionUrl =

@@ -10,8 +10,6 @@ export function getVectorClient() {
     throw new Error("UPSTASH_SEARCH_REST_URL and UPSTASH_SEARCH_REST_TOKEN must be set")
   }
 
-  console.log("[v0] Initializing Upstash Vector client with URL:", url.substring(0, 30) + "...")
-
   return new Index({
     url,
     token,
