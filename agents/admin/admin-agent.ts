@@ -3,14 +3,20 @@
  * Sandra's AI business assistant
  */
 
-import { BaseAgent } from "../core/base-agent"
-import type { AgentConfig, AgentContext, AgentResponse } from "../core/types"
+import { BaseAgent, type BaseAgentConfig } from "../core/baseAgent"
+import type { AgentContext, AgentResponse } from "../core/types"
 import { AgentFactory } from "../core/agent-factory"
 
 export class AdminAgent extends BaseAgent {
-  constructor(config?: Partial<AgentConfig>) {
+  constructor(config?: Partial<BaseAgentConfig>) {
     const baseConfig = AgentFactory.createConfig("admin_assistant")
-    super({ ...baseConfig, ...config })
+    super({
+      name: config?.name ?? baseConfig.name,
+      description: config?.description ?? "Sandra's AI business assistant",
+      systemPrompt: config?.systemPrompt ?? baseConfig.systemPrompt,
+      tools: config?.tools,
+      model: config?.model ?? baseConfig.model,
+    })
   }
 
   async process(message: string, context: AgentContext): Promise<AgentResponse> {

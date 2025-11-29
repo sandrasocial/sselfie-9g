@@ -3,14 +3,20 @@
  * Campaign creation and email generation
  */
 
-import { BaseAgent } from "../core/base-agent"
-import type { AgentConfig, AgentContext, AgentResponse } from "../core/types"
+import { BaseAgent, type BaseAgentConfig } from "../core/baseAgent"
+import type { AgentContext, AgentResponse } from "../core/types"
 import { AgentFactory } from "../core/agent-factory"
 
 export class EmailMarketer extends BaseAgent {
-  constructor(config?: Partial<AgentConfig>) {
+  constructor(config?: Partial<BaseAgentConfig>) {
     const baseConfig = AgentFactory.createConfig("email_marketer")
-    super({ ...baseConfig, ...config })
+    super({
+      name: config?.name ?? baseConfig.name,
+      description: config?.description ?? "Email marketing specialist",
+      systemPrompt: config?.systemPrompt ?? baseConfig.systemPrompt,
+      tools: config?.tools,
+      model: config?.model ?? baseConfig.model,
+    })
   }
 
   async process(message: string, context: AgentContext): Promise<AgentResponse> {

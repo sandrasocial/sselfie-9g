@@ -1,4 +1,5 @@
 import { Agent, type AgentState, type AgentAction } from "@vercel/ai-agent-kit"
+import { assertAIEnv } from "@/lib/env"
 
 /**
  * BaseAgent Configuration
@@ -30,6 +31,7 @@ export class BaseAgent {
     this.tools = config.tools || []
     this.model = config.model || "anthropic/claude-sonnet-4"
 
+    assertAIEnv()
     this.log("info", "Initialized", { tools: this.tools.length })
     this.initializeAgent()
   }
