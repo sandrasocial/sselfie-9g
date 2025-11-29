@@ -1,8 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server"
 import * as feedDesignerWorkflow from "../../../../../agents/workflows/feedDesignerWorkflow"
+import { requireAdmin } from "@/lib/security/require-admin"
 
 export async function POST(request: NextRequest) {
   try {
+    const guard = await requireAdmin(request)
+    if (guard instanceof NextResponse) return guard
+
     const body = await request.json()
     const { userId, feedId } = body
 

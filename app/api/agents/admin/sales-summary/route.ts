@@ -1,8 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server"
 import * as salesDashboardWorkflow from "@/agents/workflows/salesDashboardWorkflow"
+import { requireAdmin } from "@/lib/security/require-admin"
 
 export async function POST(req: NextRequest) {
   try {
+    const guard = await requireAdmin(req)
+    if (guard instanceof NextResponse) return guard
+
     const body = await req.json()
     const { adminEmail, sendEmail } = body
 
@@ -20,6 +24,9 @@ export async function POST(req: NextRequest) {
 
 export async function GET() {
   try {
+    const guard = await requireAdmin()
+    if (guard instanceof NextResponse) return guard
+
     const { salesDashboardAgent } = await import("@/agents/admin/salesDashboardAgent")
     const insights = await salesDashboardAgent.getLatestInsights()
 

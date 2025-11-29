@@ -66,8 +66,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No subscription found. Please contact support." }, { status: 404 })
     }
 
-    const origin = request.headers.get("origin")
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || origin || "https://sselfie.ai"
+    const baseUrl = new URL(request.url).origin
 
     // Create Stripe customer portal session
     const portalSession = await stripe.billingPortal.sessions.create({

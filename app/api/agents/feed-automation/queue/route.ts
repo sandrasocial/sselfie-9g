@@ -1,11 +1,15 @@
 import { type NextRequest, NextResponse } from "next/server"
 import * as autoPostingWorkflow from "../../../../../agents/workflows/autoPostingWorkflow"
+import { requireAdmin } from "@/lib/security/require-admin"
 
 /**
  * POST - Queue scheduled posts for publishing
  */
 export async function POST(request: NextRequest) {
   try {
+    const guard = await requireAdmin(request)
+    if (guard instanceof NextResponse) return guard
+
     const body = await request.json()
     const { userId, feedPostId } = body
 
@@ -32,6 +36,9 @@ export async function POST(request: NextRequest) {
  */
 export async function PATCH(request: NextRequest) {
   try {
+    const guard = await requireAdmin(request)
+    if (guard instanceof NextResponse) return guard
+
     const body = await request.json()
     const { queueId, userId } = body
 

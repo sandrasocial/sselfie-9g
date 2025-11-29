@@ -1,20 +1,12 @@
 import { NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
-import { createServerClient } from "@/lib/supabase/server"
-
-const sql = neon(process.env.DATABASE_URL!)
+import { requireAdmin } from "@/lib/security/require-admin"
 
 export async function GET() {
   try {
-    const supabase = await createServerClient()
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+    const sql = neon(process.env.DATABASE_URL!)
+    const guard = await requireAdmin()
+    if (guard instanceof NextResponse) return guard
 
     const workflows = await sql`
       SELECT 

@@ -37,6 +37,15 @@ export async function getCache<T>(key: string): Promise<T | null> {
 
   try {
     const data = await redis.get(key)
+    if (data === null || data === undefined) return null
+    if (typeof data === "string") {
+      try {
+        return JSON.parse(data) as T
+      } catch {
+        // Fallback if value wasn't JSON stringified
+        return data as unknown as T
+      }
+    }
     return data as T
   } catch (error) {
     console.error(`[v0] Cache get error for ${key}:`, error)

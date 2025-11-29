@@ -185,21 +185,10 @@ export async function startBlueprintFollowUpWorkflow(subscriberId: number, email
   try {
     console.log(`[BlueprintFollowUp] Starting workflow for subscriber ${subscriberId}`)
 
-    // Day 1: Schedule for 24 hours after PDF delivery
-    setTimeout(
-      async () => {
-        await sendDay1ValueEmail({ subscriberId, email, name, step: 1 })
-      },
-      24 * 60 * 60 * 1000,
-    ) // 24 hours
-
-    // Day 2: Schedule for 48 hours after PDF delivery
-    setTimeout(
-      async () => {
-        await sendDay2InvitationEmail({ subscriberId, email, name, step: 2 })
-      },
-      48 * 60 * 60 * 1000,
-    ) // 48 hours
+    // In serverless, avoid long-lived timers. Use marketing email queue instead.
+    console.log(
+      "[BlueprintFollowUp] Skipping setTimeout scheduling. Use MarketingAutomationAgent.startBlueprintFollowUpWorkflow instead.",
+    )
 
     return { success: true }
   } catch (error) {

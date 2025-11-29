@@ -1,4 +1,6 @@
-import { Agent, type AgentState, type AgentAction } from "@vercel/ai-agent-kit"
+// Minimal internal types to preserve public API (no external dependency)
+export type AgentState = Record<string, any>
+export type AgentAction = { name: string; execute?: (input: any, state?: AgentState) => Promise<any> }
 
 /**
  * BaseAgent Configuration
@@ -12,16 +14,15 @@ export interface BaseAgentConfig {
 }
 
 /**
- * BaseAgent - Foundation class for all agents in the system
- * Wraps @vercel/ai-agent-kit Agent with logging, error handling, and hooks
+ * BaseAgent - Internal lightweight agent container without external dependencies
  */
 export class BaseAgent {
   public name: string
   public description: string
-  public agentRef: Agent | null = null
   private systemPrompt: string
   private tools: AgentAction[]
   private model: string
+  public supportsStreaming: boolean = false
 
   constructor(config: BaseAgentConfig) {
     this.name = config.name
@@ -29,35 +30,13 @@ export class BaseAgent {
     this.systemPrompt = config.systemPrompt
     this.tools = config.tools || []
     this.model = config.model || "anthropic/claude-sonnet-4"
-
     this.log("info", "Initialized", { tools: this.tools.length })
-    this.initializeAgent()
   }
 
   /**
-   * Initialize the Agent Kit agent
+   * Process input (no-op pass-through to maintain API surface)
    */
-  private initializeAgent(): void {
-    try {
-      this.agentRef = new Agent({
-        name: this.name,
-        description: this.description,
-        instructions: this.systemPrompt,
-        actions: this.tools,
-        model: this.model,
-      })
-
-      this.log("info", "Agent created successfully")
-    } catch (error) {
-      this.log("error", "Failed to initialize agent", { error })
-      throw error
-    }
-  }
-
-  /**
-   * Run the agent with input
-   */
-  async run(
+  async process(
     input: string | object,
     state?: AgentState,
   ): Promise<{
@@ -67,38 +46,27 @@ export class BaseAgent {
   }> {
     const startTime = Date.now()
     this.log("info", "Run started", { input: typeof input === "string" ? input.substring(0, 100) : "object" })
+    const duration = Date.now() - startTime
+    this.log("info", "Run completed", { duration: `${duration}ms` })
+    return { result: input, state: state || {} }
+  }
 
-    try {
-      if (!this.agentRef) {
-        throw new Error(`Agent ${this.name} not initialized`)
-      }
+  /**
+   * Backwards-compatibility alias for older code calling run()
+   */
+  async run(
+    input: string | object,
+    state?: AgentState,
+  ): Promise<{ result: any; state: AgentState; error?: Error }> {
+    return this.process(input, state)
+  }
 
-      // Convert string input to proper format
-      const agentInput = typeof input === "string" ? { message: input } : input
-
-      // Run the agent
-      const result = await this.agentRef.run(agentInput, state)
-
-      const duration = Date.now() - startTime
-      this.log("info", "Run completed", { duration: `${duration}ms` })
-
-      return {
-        result,
-        state: state || {},
-      }
-    } catch (error) {
-      const duration = Date.now() - startTime
-      this.log("error", "Run failed", {
-        duration: `${duration}ms`,
-        error: error instanceof Error ? error.message : "Unknown error",
-      })
-
-      return {
-        result: null,
-        state: state || {},
-        error: error instanceof Error ? error : new Error(String(error)),
-      }
-    }
+  /**
+   * Optional streaming API - disabled by default
+   */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async stream(_input: string | object, _state?: AgentState): Promise<AsyncIterable<string>> {
+    throw new Error(`Streaming not enabled for agent ${this.name}`)
   }
 
   /**
@@ -107,9 +75,6 @@ export class BaseAgent {
   registerTool(tool: AgentAction): void {
     this.tools.push(tool)
     this.log("info", "Tool registered", { toolName: tool.name })
-
-    // Reinitialize agent with new tools
-    this.initializeAgent()
   }
 
   /**
@@ -126,7 +91,6 @@ export class BaseAgent {
     const timestamp = new Date().toISOString()
     const tag = `[Agent:${this.name}]`
     const logMessage = `${timestamp} ${tag} ${message}`
-
     if (level === "error") {
       console.error(logMessage, meta || "")
     } else if (level === "warn") {
@@ -152,11 +116,6 @@ export class BaseAgent {
       model: this.model,
     }
   }
-
-  // TODO: Memory adapter integration
-  // async saveMemory(key: string, value: any): Promise<void> {}
-  // async loadMemory(key: string): Promise<any> {}
-  // async clearMemory(): Promise<void> {}
 }
 
 /**

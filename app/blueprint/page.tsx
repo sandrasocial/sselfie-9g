@@ -10,7 +10,10 @@ import { EmbeddedCheckout, EmbeddedCheckoutProvider } from "@stripe/react-stripe
 import { loadStripe } from "@stripe/stripe-js"
 import { createLandingCheckoutSession } from "@/app/actions/landing-checkout"
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
+const stripePromise =
+  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+    ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
+    : Promise.resolve(null as any)
 
 export default function BrandBlueprintPage() {
   const [step, setStep] = useState(0)

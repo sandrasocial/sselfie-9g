@@ -70,7 +70,7 @@ Tone: Creative, strategic, encouraging. Use Instagram-specific terminology.`,
       strategy: feedData.strategy,
     }
 
-    const result = await this.run(
+    const result = await this.process(
       `Analyze this Instagram feed and provide design recommendations:\n\n${JSON.stringify(input, null, 2)}`,
     )
 

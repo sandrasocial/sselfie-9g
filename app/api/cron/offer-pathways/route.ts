@@ -1,11 +1,14 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
 import { computeOfferPathway } from "@/agents/admin/adminSupervisorAgent"
-
-const sql = neon(process.env.DATABASE_URL!)
+import { requireAdmin } from "@/lib/security/require-admin"
 
 export async function GET(request: NextRequest) {
   try {
+    const sql = neon(process.env.DATABASE_URL!)
+    const guard = await requireAdmin(request)
+    if (guard instanceof NextResponse) return guard
+
     console.log("[Cron] Starting nightly offer pathway recompute")
 
     // Select all subscribers whose:

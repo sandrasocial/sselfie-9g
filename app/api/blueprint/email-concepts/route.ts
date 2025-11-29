@@ -1,10 +1,14 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { Resend } from "resend"
+import { requireAdmin } from "@/lib/security/require-admin"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function POST(req: NextRequest) {
   try {
+    const guard = await requireAdmin(req)
+    if (guard instanceof NextResponse) return guard
+
     const { email, name, concepts, blueprint } = await req.json()
 
     if (!email || !concepts || concepts.length === 0) {

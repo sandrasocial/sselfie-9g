@@ -4,10 +4,9 @@ import { hasStudioMembership, getUserProductAccess } from "@/lib/subscription"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 
-const sql = neon(process.env.DATABASE_URL!)
-
 export async function GET(request: NextRequest) {
   try {
+    const sql = neon(process.env.DATABASE_URL!)
     const supabase = await createServerClient()
     const {
       data: { user: authUser },

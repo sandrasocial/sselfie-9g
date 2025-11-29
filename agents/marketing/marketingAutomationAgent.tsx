@@ -1,5 +1,5 @@
 import { neon } from "@neondatabase/serverless"
-import { sendEmail } from "../tools/emailTools"
+import { sendEmail } from "@/lib/email/resend"
 
 /**
  * Execute offer pathway for a subscriber
@@ -209,7 +209,6 @@ async function sendNudgeEmail(subscriber: any) {
     to: subscriber.email,
     subject,
     html,
-    from: "Sandra <sandra@sselfie.studio>",
   })
 }
 
@@ -255,6 +254,37 @@ async function sendContentTouchpoint(subscriber: any) {
     to: subscriber.email,
     subject,
     html,
-    from: "Sandra <sandra@sselfie.studio>",
   })
+}
+
+// Re-export core functions from the TS module to satisfy imports that resolve to this file
+export {
+  sendEmailNow,
+  scheduleEmail,
+  logEmailEvent,
+  getUserSegment,
+  checkEmailQueue,
+  sendUserJourneyEmail,
+  marketingAutomationAgent,
+  MarketingAutomationAgent,
+} from "./marketingAutomationAgent"
+
+// Provide minimal stubs for legacy imports not implemented here
+export async function generateAnalyticsInsights() {
+  return { status: "not_implemented" }
+}
+export async function generateUpsellSequence() {
+  return { status: "not_implemented" }
+}
+export async function runUpsellSequence() {
+  return { status: "not_implemented" }
+}
+export async function sendStudioOffer() {
+  return { status: "not_implemented" }
+}
+export async function sendStarterOffer() {
+  return { status: "not_implemented" }
+}
+export async function sendTrialInvite() {
+  return { status: "not_implemented" }
 }

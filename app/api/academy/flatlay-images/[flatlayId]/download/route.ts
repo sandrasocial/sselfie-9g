@@ -4,10 +4,9 @@ import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { hasStudioMembership } from "@/lib/subscription"
 
-const sql = neon(process.env.DATABASE_URL!)
-
 export async function POST(request: NextRequest, { params }: { params: { flatlayId: string } }) {
   try {
+    const sql = neon(process.env.DATABASE_URL!)
     // Authenticate user
     const supabase = await createServerClient()
     const {

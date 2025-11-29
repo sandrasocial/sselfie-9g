@@ -1,11 +1,14 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
 import { generateText } from "ai"
-
-const sql = neon(process.env.DATABASE_URL!)
+import { requireAdmin } from "@/lib/security/require-admin"
 
 export async function POST(request: NextRequest) {
   try {
+    const sql = neon(process.env.DATABASE_URL!)
+    const guard = await requireAdmin(request)
+    if (guard instanceof NextResponse) return guard
+
     const body = await request.json()
     const { subscriberId } = body
 

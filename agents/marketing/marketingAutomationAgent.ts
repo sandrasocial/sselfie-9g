@@ -64,6 +64,80 @@ Automate SSELFIE's marketing system at scale: email flows, retention, newsletter
       tools: allTools,
     })
   }
+
+  /**
+   * Execute an approved workflow from the queue
+   * Minimal implementation to avoid runtime errors and send an email if possible.
+   */
+  async runApprovedWorkflow(workflow: any): Promise<{ success: boolean; error?: string }> {
+    try {
+      const subject = `[${workflow.workflow_type}] Update for ${workflow.subscriber_email}`
+      const html =
+        `<p>Hello ${workflow.subscriber_name || ""},</p>` +
+        `<p>Your ${workflow.workflow_type.replace("_", " ")} workflow has been approved.</p>`
+
+      // Default to immediate send
+      const scheduledFor = new Date()
+      await scheduleEmail(workflow.subscriber_id, workflow.subscriber_email, subject, html, scheduledFor)
+      return { success: true }
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" }
+    }
+  }
+
+  /**
+   * Schedule the 3-step blueprint follow-up sequence using the queue
+   * Avoids long setTimeout timers in serverless.
+   */
+  async startBlueprintFollowUpWorkflow(
+    subscriberId: number,
+    email: string,
+    name: string,
+  ): Promise<{ success: boolean; scheduled: number; errors?: string[] }> {
+    const errors: string[] = []
+    let scheduled = 0
+
+    try {
+      const now = new Date()
+      const inOneDay = new Date(now.getTime() + 24 * 60 * 60 * 1000)
+      const inTwoDays = new Date(now.getTime() + 48 * 60 * 60 * 1000)
+
+      const sequences = [
+        {
+          subject: "Your Brand Blueprint is Ready",
+          html: `<p>Hi ${name},</p><p>Thanks for completing your Brand Blueprint.</p>`,
+          when: now,
+        },
+        {
+          subject: "Day 2: Strategic Tips for Your Blueprint",
+          html: `<p>Hi ${name},</p><p>Here are your next strategic tips.</p>`,
+          when: inOneDay,
+        },
+        {
+          subject: "Day 3: Ready to Take Action?",
+          html: `<p>Hi ${name},</p><p>Let's take it to the next step.</p>`,
+          when: inTwoDays,
+        },
+      ]
+
+      for (const step of sequences) {
+        const result = await scheduleEmail(String(subscriberId), email, step.subject, step.html, step.when)
+        if (result.success) {
+          scheduled++
+        } else {
+          errors.push(result.error || "Unknown scheduling error")
+        }
+      }
+
+      return { success: errors.length === 0, scheduled, errors: errors.length ? errors : undefined }
+    } catch (error) {
+      return {
+        success: false,
+        scheduled,
+        errors: [error instanceof Error ? error.message : "Unknown error"],
+      }
+    }
+  }
 }
 
 /**

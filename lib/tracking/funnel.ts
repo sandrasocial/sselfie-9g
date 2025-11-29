@@ -146,15 +146,11 @@ async function enqueueBehaviorLoopRecompute(session_id: string) {
 
     if (!subscriber) return
 
-    // Queue background job (simplified - in production use a queue system)
-    setTimeout(async () => {
-      try {
-        const { evaluateBehaviorLoopForSubscriber } = await import("@/agents/admin/adminSupervisorAgent")
-        await evaluateBehaviorLoopForSubscriber(subscriber.id)
-      } catch (error) {
-        console.error("[Funnel] Background behavior loop recompute failed:", error)
-      }
-    }, 5000) // 5 second delay
+    // In serverless, avoid long-lived timers. Use cron/queue to process this asynchronously.
+    console.log(
+      "[Funnel] Skipping immediate background recompute (serverless). Enqueue via cron/queue for subscriber:",
+      subscriber.id,
+    )
   } catch (error) {
     console.error("[Funnel] Failed to enqueue behavior loop recompute:", error)
   }

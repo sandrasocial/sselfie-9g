@@ -2,7 +2,7 @@ import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId, getOrCreateNeonUser } from "@/lib/user-mapping"
 import { redirect } from "next/navigation"
 import { headers } from "next/headers"
-import LandingPage from "@/components/sselfie/landing-page"
+import LuxuryLandingPage from "@/components/landing/LuxuryLandingPage"
 
 export const dynamic = "force-dynamic"
 
@@ -12,7 +12,7 @@ export default async function Home() {
   // If Supabase isn't configured (V0 preview), just show landing page
   if (!supabaseConfigured) {
     console.log("[v0] Supabase not configured - showing landing page")
-    return <LandingPage />
+    return <LuxuryLandingPage />
   }
 
   const supabase = await createServerClient()
@@ -56,5 +56,5 @@ export default async function Home() {
     }
   }
 
-  return <LandingPage />
+  return <LuxuryLandingPage />
 }

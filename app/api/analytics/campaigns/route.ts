@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
-
-const sql = neon(process.env.DATABASE_URL!)
+import { requireAdmin } from "@/lib/security/require-admin"
 
 export async function GET() {
   try {
+    const sql = neon(process.env.DATABASE_URL!)
+    const guard = await requireAdmin()
+    if (guard instanceof NextResponse) return guard
+
     const campaigns = await sql`
       SELECT 
         COALESCE(sequence_id::TEXT, campaign_id::TEXT, email_type) as campaign_identifier,

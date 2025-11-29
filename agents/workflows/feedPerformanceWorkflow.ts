@@ -69,7 +69,7 @@ export async function runWorkflow(input: FeedPerformanceInput): Promise<FeedPerf
       recentPosts: feedPosts.slice(0, 9),
     }
 
-    const result = await feedPerformanceAgent.run(
+    const result = await feedPerformanceAgent.process(
       `Analyze this feed performance data and generate actionable insights:\n\n${JSON.stringify(analysisInput, null, 2)}`,
     )
 

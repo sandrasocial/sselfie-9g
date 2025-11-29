@@ -1,10 +1,13 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
-
-const sql = neon(process.env.DATABASE_URL!)
+import { requireAdmin } from "@/lib/security/require-admin"
 
 export async function GET(request: NextRequest) {
   try {
+    const sql = neon(process.env.DATABASE_URL!)
+    const guard = await requireAdmin(request)
+    if (guard instanceof NextResponse) return guard
+
     const { searchParams } = new URL(request.url)
     const subscriberId = searchParams.get("id")
 

@@ -75,6 +75,37 @@ export function createAdminSupervisorAgent(): AdminSupervisorAgent {
  */
 export const adminSupervisorAgent = new AdminSupervisorAgent()
 
+// Minimal placeholders for legacy imports expected by various routes
+export async function getTopEngagedUsers() {
+  return { users: [], status: "not_implemented" }
+}
+export async function getDropoffSignals() {
+  return { signals: [], status: "not_implemented" }
+}
+export async function generateSystemRecommendations() {
+  return { recommendations: [], status: "not_implemented" }
+}
+export async function runEngagementScoring() {
+  return { status: "not_implemented" }
+}
+export async function evaluateAPAForSubscriber() {
+  return { status: "not_implemented" }
+}
+export async function runNightlyAPA() {
+  return { status: "not_implemented" }
+}
+export async function getSubscribersNeedingPrediction() {
+  return { subscribers: [], status: "not_implemented" }
+}
+export async function evaluateConversionLikelihood() {
+  return { status: "not_implemented" }
+}
+export async function computeOfferPathway() {
+  return { success: false, recommendation: null, rationale: "not_implemented", confidence: 0 }
+}
+export async function runABEvaluation() {
+  return { status: "not_implemented" }
+}
 /**
  * Triggers the onboarding workflow for a new user
  * @param userId - The user ID to trigger onboarding for

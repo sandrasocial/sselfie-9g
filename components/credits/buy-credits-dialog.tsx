@@ -7,7 +7,10 @@ import { EmbeddedCheckout, EmbeddedCheckoutProvider } from "@stripe/react-stripe
 import { CREDIT_PACKAGES } from "@/lib/credit-packages"
 import { startCreditCheckoutSession } from "@/app/actions/stripe"
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
+const stripePromise =
+  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+    ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
+    : Promise.resolve(null as any)
 
 export function BuyCreditsDialog({ onClose }: { onClose?: () => void }) {
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null)

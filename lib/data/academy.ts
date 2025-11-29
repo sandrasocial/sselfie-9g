@@ -1,7 +1,15 @@
 import { neon } from "@neondatabase/serverless"
 import { getRedisClient, CacheKeys, CacheTTL } from "@/lib/redis"
 
-const sql = neon(process.env.DATABASE_URL!)
+let _sql: ReturnType<typeof neon> | null = null
+function getSql() {
+  if (!_sql) {
+    _sql = neon(process.env.DATABASE_URL!)
+  }
+  return _sql
+}
+// Tag wrapper so existing `sql\`...\`` calls continue to work without module-scope init
+const sql = (...args: any[]) => (getSql() as any)(...args)
 
 // Type Definitions
 
@@ -97,13 +105,13 @@ export async function getCourses(filters?: {
 
     console.log("[v0] Cache miss for academy courses - fetching from Neon")
 
-    let query = sql`
+    let query = (getSql())`
       SELECT * FROM academy_courses
       WHERE status = ${filters?.status || "published"}
     `
 
     if (filters?.level) {
-      query = sql`
+      query = (getSql())`
         SELECT * FROM academy_courses
         WHERE status = ${filters?.status || "published"} AND level = ${filters.level}
       `
@@ -131,7 +139,7 @@ export async function getCoursesForMembership(): Promise<AcademyCourse[]> {
   try {
     console.log("[v0] Fetching all courses for Studio Membership")
 
-    const query = sql`
+    const query = (getSql())`
       SELECT 
         c.*,
         CAST(COUNT(l.id) AS INTEGER) as lesson_count,

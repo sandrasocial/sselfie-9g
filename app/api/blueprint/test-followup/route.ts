@@ -8,11 +8,25 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
 import { MarketingAutomationAgent } from "@/agents/marketing/marketingAutomationAgent"
-
-const sql = neon(process.env.DATABASE_URL!)
+import { createServerClient } from "@/lib/supabase/server"
+import { getUserByAuthId } from "@/lib/user-mapping"
 
 export async function GET(req: NextRequest) {
   try {
+    const sql = neon(process.env.DATABASE_URL!)
+    const supabase = await createServerClient()
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser()
+    if (!authUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+    const neonUser = await getUserByAuthId(authUser.id)
+    const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "ssa@ssasocial.com"
+    if (!neonUser || neonUser.email !== ADMIN_EMAIL) {
+      return NextResponse.json({ error: "Admin access required" }, { status: 403 })
+    }
+
     const searchParams = req.nextUrl.searchParams
     const subscriberId = searchParams.get("id")
 
