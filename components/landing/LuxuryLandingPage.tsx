@@ -4,6 +4,8 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { track } from "@/lib/analytics"
 import { createLandingCheckoutSession } from "@/app/actions/landing-checkout"
 import TestimonialGrid from "@/components/testimonials/testimonial-grid"
 
@@ -203,6 +205,17 @@ export default function LuxuryLandingPage() {
             >
               See how it works
             </button>
+            <Link href="/blueprint" prefetch>
+              <Button
+                variant="outline"
+                onClick={() => track("blueprint_cta_clicked")}
+                className="w-full bg-transparent border border-white/80 text-white py-3.5 md:py-4 text-[10px] md:text-xs tracking-[0.18em] hover:bg-white/10"
+                style={{ fontFamily: "'Times New Roman', Times, serif" }}
+                aria-label="Get your free Brand Blueprint"
+              >
+                GET YOUR FREE BRAND BLUEPRINT
+              </Button>
+            </Link>
           </div>
         </div>
       </section>
@@ -263,6 +276,33 @@ export default function LuxuryLandingPage() {
               </p>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* FREE BRAND BLUEPRINT PROMO SECTION */}
+      <section className="w-full bg-[#f5f5f5] px-4 py-16 md:px-6 md:py-24">
+        <div className="mx-auto max-w-4xl text-center">
+          <h2
+            className="mb-3 text-2xl md:text-4xl font-light tracking-[0.18em] uppercase text-black"
+            style={{ fontFamily: "'Times New Roman', Times, serif" }}
+          >
+            FREE BRAND BLUEPRINT
+          </h2>
+          <p className="mx-auto mb-6 md:mb-8 max-w-2xl text-[15px] md:text-base leading-relaxed text-stone-700 font-light">
+            A simple, powerful roadmap to define your brand identity, visuals, and content direction. Designed for women
+            building their future self.
+          </p>
+          <Link href="/blueprint" prefetch>
+            <Button
+              variant="outline"
+              onClick={() => track("blueprint_cta_clicked")}
+              className="inline-flex border border-[#0a0a0a] bg-transparent px-6 py-3 text-xs md:text-sm tracking-[0.18em] uppercase hover:bg-black hover:bg-opacity-[0.04] text-[#0a0a0a]"
+              style={{ fontFamily: "'Times New Roman', Times, serif" }}
+              aria-label="Download the Free Brand Blueprint"
+            >
+              Download Now →
+            </Button>
+          </Link>
         </div>
       </section>
 

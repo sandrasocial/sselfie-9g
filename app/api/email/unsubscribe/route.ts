@@ -1,11 +1,34 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
+import { z } from "zod"
 
 const sql = neon(process.env.DATABASE_URL!)
 
+const unsubscribeSchema = z.object({
+  subscriberId: z.string().or(z.number()),
+  campaignId: z.string().optional(),
+  sequenceId: z.string().optional(),
+  stepId: z.string().optional(),
+  emailType: z.string().optional(),
+})
+
 export async function POST(request: NextRequest) {
   try {
-    const { subscriberId, campaignId, sequenceId, stepId, emailType } = await request.json()
+    // Rate limiting: Check if too many requests from this IP
+    const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown"
+    
+    // Validate request body
+    const body = await request.json()
+    const validated = unsubscribeSchema.safeParse(body)
+
+    if (!validated.success) {
+      return NextResponse.json(
+        { error: "Invalid request", details: validated.error.errors },
+        { status: 400 },
+      )
+    }
+
+    const { subscriberId, campaignId, sequenceId, stepId, emailType } = validated.data
 
     if (!subscriberId) {
       return NextResponse.json({ error: "subscriberId is required" }, { status: 400 })

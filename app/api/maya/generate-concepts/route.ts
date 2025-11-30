@@ -439,6 +439,20 @@ Now apply your fashion intelligence and prompting mastery. Create ${count} conce
 
     console.log("[v0] Successfully generated", concepts.length, "sophisticated concepts")
 
+    // Trigger concept-ready email automation (non-blocking)
+    fetch(`${process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"}/api/automations/send-after-concept-ready`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: user.email,
+        userId: user.id,
+        conceptCount: concepts.length,
+        firstName: user.first_name,
+      }),
+    }).catch((err) => {
+      console.error("[Maya] Failed to trigger concept-ready email:", err)
+    })
+
     return NextResponse.json({
       state: "ready",
       concepts: concepts.slice(0, count),

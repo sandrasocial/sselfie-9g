@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
 import { getAudienceContactCount } from "@/lib/resend/get-audience-contacts"
+import { requireAdmin } from "@/lib/security/require-admin"
 
-export async function GET() {
+export async function GET(request: Request) {
   console.log("[v0] Subscriber count API called")
   try {
+    // Require admin authentication
+    const guard = await requireAdmin(request)
+    if (guard instanceof NextResponse) return guard
     const audienceId = process.env.RESEND_AUDIENCE_ID
 
     if (audienceId) {

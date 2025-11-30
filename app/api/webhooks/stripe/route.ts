@@ -503,6 +503,21 @@ export async function POST(request: NextRequest) {
                 if (productType === "sselfie_studio_membership") {
                   console.log(`[v0] Granting ${credits} monthly credits to existing user ${userId}`)
                   await grantMonthlyCredits(userId, "sselfie_studio_membership", !event.livemode)
+                  
+                  // Trigger studio purchase email automation (non-blocking)
+                  if (customerEmail) {
+                    fetch(`${process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"}/api/automations/send-after-studio-purchase`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        email: customerEmail,
+                        userId: userId.toString(),
+                        firstName: session.customer_details?.name?.split(" ")[0],
+                      }),
+                    }).catch((err) => {
+                      console.error("[Stripe] Failed to trigger studio purchase email:", err)
+                    })
+                  }
                 }
 
                 if (session.subscription) {

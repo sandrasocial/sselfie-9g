@@ -1,0 +1,21 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/process-email-queue",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/send-weekly-newsletter",
+      "schedule": "0 9 * * 1"
+    },
+    {
+      "path": "/api/automations/send-after-blueprint-abandoned",
+      "schedule": "0 */6 * * *"
+    },
+    {
+      "path": "/api/automations/send-weekly-nurture",
+      "schedule": "0 9 * * FRI"
+    }
+  ]
+}
+

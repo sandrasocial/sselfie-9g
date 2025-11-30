@@ -15,13 +15,31 @@ export async function POST(request: NextRequest) {
     // Update engagement tracking based on event type
     switch (eventType) {
       case "blueprint_completed":
-        await sql`
+        const subscriberResult = await sql`
           UPDATE blueprint_subscribers
           SET blueprint_completed = TRUE, 
               blueprint_completed_at = NOW(),
               blueprint_score = ${data.score || 0}
           WHERE access_token = ${accessToken}
+          RETURNING id, email, name
         `
+        
+        // Trigger after-blueprint email automation (non-blocking)
+        if (subscriberResult.length > 0) {
+          const subscriber = subscriberResult[0]
+          fetch(`${process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"}/api/automations/send-after-blueprint`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: subscriber.email,
+              subscriberId: subscriber.id,
+              firstName: subscriber.name?.split(" ")[0],
+              blueprintUrl: data.blueprintUrl,
+            }),
+          }).catch((err) => {
+            console.error("[Blueprint] Failed to trigger after-blueprint email:", err)
+          })
+        }
         break
 
       case "pdf_downloaded":
