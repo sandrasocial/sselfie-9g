@@ -1,10 +1,27 @@
 import { BaseAgent } from "../core/baseAgent"
+import type { IAgent } from "../core/agent-interface"
 
 /**
- * AutoPostingAgent
- * Handles automated Instagram post scheduling and queue management
+ * Agent: AutoPostingAgent
+ * 
+ * Responsibility:
+ *  - Monitors scheduled feed posts and queues them for publishing
+ *  - Validates post readiness (image URL, caption, scheduled time)
+ *  - Handles posting errors and retry logic
+ *  - Updates post status after successful publication
+ * 
+ * Implements:
+ *  - IAgent (process, getMetadata)
+ * 
+ * Usage:
+ *  - Called by workflows (autoPostingWorkflow)
+ *  - Called by Admin API (/api/admin/agents/run)
+ * 
+ * Notes:
+ *  - Currently a stub implementation
+ *  - Will integrate with Instagram API when implemented
  */
-export class AutoPostingAgent extends BaseAgent {
+export class AutoPostingAgent extends BaseAgent implements IAgent {
   constructor() {
     super({
       name: "AutoPosting",
@@ -36,6 +53,25 @@ Tone: Systematic, reliable, detail-oriented.`,
       tools: [],
       model: "anthropic/claude-sonnet-4",
     })
+  }
+
+  /**
+   * Run agent logic - internal method
+   */
+  async run(input: unknown): Promise<unknown> {
+    // Stub implementation - not yet fully implemented
+    return { status: "not_implemented", message: "AutoPostingAgent is a stub" }
+  }
+
+  /**
+   * Get agent metadata
+   */
+  getMetadata() {
+    return {
+      name: this.name,
+      version: "1.0.0",
+      description: this.description,
+    }
   }
 }
 

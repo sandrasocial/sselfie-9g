@@ -2,6 +2,10 @@
 export type AgentState = Record<string, any>
 export type AgentAction = { name: string; execute?: (input: any, state?: AgentState) => Promise<any> }
 
+// Import agent result types
+import type { AgentResult } from "./agent-result"
+import { success, failure } from "./agent-result"
+
 /**
  * BaseAgent Configuration
  */
@@ -34,31 +38,39 @@ export class BaseAgent {
   }
 
   /**
-   * Process input (no-op pass-through to maintain API surface)
+   * Internal run method - agents should override this
+   * Returns raw data (not wrapped in AgentResult)
    */
-  async process(
-    input: string | object,
-    state?: AgentState,
-  ): Promise<{
-    result: any
-    state: AgentState
-    error?: Error
-  }> {
-    const startTime = Date.now()
-    this.log("info", "Run started", { input: typeof input === "string" ? input.substring(0, 100) : "object" })
-    const duration = Date.now() - startTime
-    this.log("info", "Run completed", { duration: `${duration}ms` })
-    return { result: input, state: state || {} }
+  async run(input: unknown): Promise<unknown> {
+    // Default implementation - agents should override
+    return input
   }
 
   /**
-   * Backwards-compatibility alias for older code calling run()
+   * Process input - universal wrapper that returns AgentResult
+   * Automatically wraps success/failure and handles critical alerts
    */
-  async run(
-    input: string | object,
-    state?: AgentState,
-  ): Promise<{ result: any; state: AgentState; error?: Error }> {
-    return this.process(input, state)
+  async process(input: unknown): Promise<AgentResult> {
+    try {
+      const data = await this.run(input)
+      return success(this.name, data)
+    } catch (err: unknown) {
+      const error = err instanceof Error ? err : new Error(String(err))
+      const result = failure(this.name, error)
+
+      // Send critical alert if agent is marked as critical
+      const metadata = this.getMetadata() as any
+      if (metadata.critical === true) {
+        // Import dynamically to avoid circular dependencies
+        import("@/agents/monitoring/alerts")
+          .then(({ sendCriticalAlert }) => {
+            sendCriticalAlert(this.name, error.message).catch(console.error)
+          })
+          .catch(console.error)
+      }
+
+      return result
+    }
   }
 
   /**
@@ -108,6 +120,7 @@ export class BaseAgent {
     description: string
     toolsCount: number
     model: string
+    critical?: boolean
   } {
     return {
       name: this.name,

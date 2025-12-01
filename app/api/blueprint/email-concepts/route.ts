@@ -159,6 +159,30 @@ export async function POST(req: NextRequest) {
 
     console.log("[v0] Blueprint emailed successfully:", data)
 
+    // Trigger Blueprint Follow-Up Pipeline (non-blocking)
+    try {
+      const followUpResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/api/automations/blueprint-followup`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            subscriberId: email, // Use email as subscriber ID for now
+            email,
+            name,
+          }),
+        },
+      )
+      if (followUpResponse.ok) {
+        console.log("[v0] Blueprint follow-up pipeline triggered successfully")
+      } else {
+        console.error("[v0] Failed to trigger blueprint follow-up:", await followUpResponse.text())
+      }
+    } catch (followUpError) {
+      console.error("[v0] Error triggering blueprint follow-up (non-blocking):", followUpError)
+      // Don't fail the main request if follow-up fails
+    }
+
     return NextResponse.json({ success: true, messageId: data?.id })
   } catch (error) {
     console.error("[v0] Error emailing blueprint:", error)

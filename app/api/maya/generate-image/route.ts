@@ -184,21 +184,73 @@ export async function POST(request: NextRequest) {
       predictionInput.extra_lora_scale = qualitySettings.extra_lora_scale || 0.6
     }
 
-    const prediction = await replicate.predictions.create({
-      version: replicateVersionId,
-      input: predictionInput,
-    })
-
+    // Deduct credits BEFORE creating prediction to ensure transaction safety
+    // If prediction creation fails, we'll refund the credits
     const deductionResult = await deductCredits(
       neonUser.id,
       CREDIT_COSTS.IMAGE,
       "image",
       `Generated: ${conceptTitle}`,
-      prediction.id,
+      undefined, // No prediction ID yet
     )
 
     if (!deductionResult.success) {
       console.error("[v0] [CREDITS] Failed to deduct credits:", deductionResult.error)
+      return NextResponse.json(
+        {
+          error: "Failed to deduct credits",
+          details: deductionResult.error || "Credit deduction failed. Please try again.",
+        },
+        { status: 500 },
+      )
+    }
+
+    let prediction
+    try {
+      prediction = await replicate.predictions.create({
+        version: replicateVersionId,
+        input: predictionInput,
+      })
+    } catch (predictionError) {
+      // Prediction creation failed - refund the credits
+      console.error("[v0] Prediction creation failed, refunding credits:", predictionError)
+      const { addCredits } = await import("@/lib/credits")
+      await addCredits(
+        neonUser.id,
+        CREDIT_COSTS.IMAGE,
+        "refund",
+        `Refund for failed prediction: ${conceptTitle}`,
+      )
+      
+      return NextResponse.json(
+        {
+          error: "Failed to create prediction",
+          details:
+            predictionError instanceof Error
+              ? predictionError.message
+              : "Failed to start image generation. Credits have been refunded.",
+        },
+        { status: 500 },
+      )
+    }
+
+    // Update credit transaction with prediction ID now that we have it
+    if (prediction.id) {
+      try {
+        await sql`
+          UPDATE credit_transactions
+          SET reference_id = ${prediction.id}
+          WHERE user_id = ${neonUser.id}
+            AND amount = ${-CREDIT_COSTS.IMAGE}
+            AND transaction_type = 'image'
+            AND reference_id IS NULL
+          ORDER BY created_at DESC
+          LIMIT 1
+        `
+      } catch (updateError) {
+        // Non-critical - log but don't fail
+        console.error("[v0] Failed to update credit transaction with prediction ID:", updateError)
+      }
     }
 
     const insertResult = await sql`
@@ -236,7 +288,7 @@ export async function POST(request: NextRequest) {
       fluxPrompt: finalPrompt,
       textOverlay: addTextOverlay ? textOverlayConfig : null,
       creditsDeducted: CREDIT_COSTS.IMAGE,
-      newBalance: deductionResult.success ? deductionResult.newBalance : undefined,
+      newBalance: deductionResult.newBalance,
     })
   } catch (error) {
     console.error("[v0] Error generating image:", error)

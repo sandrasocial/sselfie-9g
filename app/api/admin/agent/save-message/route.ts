@@ -1,34 +1,42 @@
 import { NextResponse } from "next/server"
-import { createServerClient } from "@/lib/supabase/server"
-import { getUserByAuthId } from "@/lib/user-mapping"
+import type { NextRequest } from "next/server"
+import { requireAdmin } from "@/lib/security/require-admin"
+import { checkAdminRateLimit } from "@/lib/security/admin-rate-limit"
 import { neon } from "@neondatabase/serverless"
 
 const sql = neon(process.env.DATABASE_URL!)
-const ADMIN_EMAIL = "ssa@ssasocial.com"
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const supabase = await createServerClient()
-    const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser()
+    // Admin auth check
+    const admin = await requireAdmin(request)
+    if (admin instanceof NextResponse) return admin
 
-    if (!authUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+    // Rate limiting
+    const rateLimitCheck = await checkAdminRateLimit(request, `admin:${admin.neonUserId}`)
+    if (rateLimitCheck) return rateLimitCheck
 
-    const user = await getUserByAuthId(authUser.id)
-    if (!user || user.email !== ADMIN_EMAIL) {
-      return NextResponse.json({ error: "Admin access required" }, { status: 403 })
-    }
-
-    const { chatId, role, content } = await request.json()
+    // Input validation
+    const body = await request.json().catch(() => ({}))
+    const { chatId, role, content } = body
 
     if (!chatId || !role || !content) {
       return NextResponse.json(
         { error: "Missing required fields: chatId, role, content" },
         { status: 400 }
       )
+    }
+
+    if (typeof chatId !== "number" && typeof chatId !== "string") {
+      return NextResponse.json({ error: "Invalid chatId format" }, { status: 400 })
+    }
+
+    if (!["user", "assistant", "system"].includes(role)) {
+      return NextResponse.json({ error: "Invalid role" }, { status: 400 })
+    }
+
+    if (typeof content !== "string" || content.trim().length === 0) {
+      return NextResponse.json({ error: "Content must be a non-empty string" }, { status: 400 })
     }
 
     // Save message to database
@@ -49,6 +57,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error("[v0] Error saving admin agent message:", error)
-    return NextResponse.json({ error: "Failed to save message" }, { status: 500 })
+    const errorMessage = error instanceof Error ? error.message : "Unknown error"
+    return NextResponse.json(
+      { error: "Failed to save message", details: errorMessage },
+      { status: 500 }
+    )
   }
 }

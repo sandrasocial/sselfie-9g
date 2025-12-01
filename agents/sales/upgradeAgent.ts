@@ -1,19 +1,31 @@
 import { BaseAgent } from "../core/baseAgent"
+import type { IAgent } from "../core/agent-interface"
 import { generateText } from "ai"
 import { neon } from "@neondatabase/serverless"
 
 const sql = neon(process.env.DATABASE_URL!)
 
 /**
- * UpgradeAgent
- *
- * Automated agent responsible for:
- * - Detecting upgrade opportunities
- * - Generating personalized upgrade recommendations
- * - Timing upgrade messages based on user behavior
- * - Tracking upgrade conversion rates
+ * Agent: UpgradeAgent
+ * 
+ * Responsibility:
+ *  - Detects upgrade opportunities based on usage patterns
+ *  - Generates personalized upgrade recommendations
+ *  - Tracks upgrade conversion rates
+ * 
+ * Implements:
+ *  - IAgent (process, getMetadata)
+ * 
+ * Usage:
+ *  - Called by workflows (upgradeWorkflow)
+ *  - Called by Admin API (/api/admin/agents/run)
+ *  - Input: { action: "detectOpportunity" | "generateMessage", params: {...} }
+ * 
+ * Notes:
+ *  - Analyzes credit usage, feature usage, and behavioral signals
+ *  - Uses OpenAI GPT-4o for message generation
  */
-export class UpgradeAgent extends BaseAgent {
+export class UpgradeAgent extends BaseAgent implements IAgent {
   constructor() {
     super({
       name: "Upgrade",
@@ -139,6 +151,46 @@ Format as JSON:
         subject: "Ready to scale your content?",
         body: "You've been creating amazing content. Let's talk about taking it to the next level.",
       }
+    }
+  }
+
+  /**
+   * Run agent logic - internal method
+   * @param input - Agent input: { action: "detectOpportunity" | "generateMessage", params: {...} } or unknown
+   * @returns Promise resolving to upgrade analysis or message
+   */
+  async run(input: unknown): Promise<unknown> {
+    if (
+      typeof input === "object" &&
+      input !== null &&
+      "action" in input &&
+      "params" in input &&
+      input.params
+    ) {
+      if (input.action === "detectOpportunity") {
+        return await this.detectUpgradeOpportunity(input.params as { userId: string })
+      }
+      if (input.action === "generateMessage") {
+        return await this.generateUpgradeMessage(input.params as {
+          userId: string
+          reason: string
+          currentPlan: string
+          recommendedPlan: string
+        })
+      }
+    }
+    // Default: return input as-is
+    return input
+  }
+
+  /**
+   * Get agent metadata
+   */
+  getMetadata() {
+    return {
+      name: this.name,
+      version: "1.0.0",
+      description: this.description,
     }
   }
 }

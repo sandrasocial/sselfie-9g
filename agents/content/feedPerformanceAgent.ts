@@ -1,10 +1,27 @@
 import { BaseAgent } from "../core/baseAgent"
+import type { IAgent } from "../core/agent-interface"
 
 /**
- * FeedPerformanceAgent
- * Analyzes feed performance and generates actionable insights
+ * Agent: FeedPerformanceAgent
+ * 
+ * Responsibility:
+ *  - Analyzes content performance history across user feeds
+ *  - Identifies top-performing content pillars and themes
+ *  - Recommends optimal posting times based on engagement data
+ *  - Provides visual rhythm analysis and optimization recommendations
+ * 
+ * Implements:
+ *  - IAgent (process, getMetadata)
+ * 
+ * Usage:
+ *  - Called by workflows (feedPerformanceWorkflow)
+ *  - Called by Admin API (/api/admin/agents/run)
+ * 
+ * Notes:
+ *  - Currently a stub implementation
+ *  - Will analyze actual performance data when implemented
  */
-export class FeedPerformanceAgent extends BaseAgent {
+export class FeedPerformanceAgent extends BaseAgent implements IAgent {
   constructor() {
     super({
       name: "FeedPerformance",
@@ -40,6 +57,25 @@ Tone: Data-driven, strategic, empowering.`,
       tools: [],
       model: "anthropic/claude-sonnet-4",
     })
+  }
+
+  /**
+   * Run agent logic - internal method
+   */
+  async run(input: unknown): Promise<unknown> {
+    // Stub implementation - not yet fully implemented
+    return { status: "not_implemented", message: "FeedPerformanceAgent is a stub" }
+  }
+
+  /**
+   * Get agent metadata
+   */
+  getMetadata() {
+    return {
+      name: this.name,
+      version: "1.0.0",
+      description: this.description,
+    }
   }
 }
 

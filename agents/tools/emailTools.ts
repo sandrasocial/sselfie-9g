@@ -6,7 +6,22 @@
 
 import { Resend } from "resend"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Lazy initialization to avoid errors when API key is missing
+let resendInstance: Resend | null = null
+
+function getResend() {
+  if (!resendInstance) {
+    const apiKey = process.env.RESEND_API_KEY
+    if (!apiKey) {
+      console.warn("[emailTools] RESEND_API_KEY not set - email operations will fail")
+      // Create a dummy instance that will fail gracefully
+      resendInstance = new Resend("dummy-key-for-testing")
+    } else {
+      resendInstance = new Resend(apiKey)
+    }
+  }
+  return resendInstance
+}
 
 export const emailTools = {
   sendEmail: {
@@ -21,6 +36,10 @@ export const emailTools = {
       required: ["to", "subject", "html"],
     },
     execute: async ({ to, subject, html }: { to: string; subject: string; html: string }) => {
+      const resend = getResend()
+      if (!process.env.RESEND_API_KEY) {
+        return { error: "RESEND_API_KEY not configured", data: null }
+      }
       const response = await resend.emails.send({
         from: "Sandra @ SSELFIE <noreply@sselfie.app>",
         to,
@@ -58,6 +77,10 @@ export const emailTools = {
       required: ["email"],
     },
     execute: async ({ email, name }: { email: string; name?: string }) => {
+      const resend = getResend()
+      if (!process.env.RESEND_API_KEY) {
+        return { error: "RESEND_API_KEY not configured", data: null }
+      }
       const response = await resend.contacts.create({
         audienceId: process.env.RESEND_AUDIENCE_ID!,
         email,

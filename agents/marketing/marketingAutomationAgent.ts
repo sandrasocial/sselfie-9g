@@ -1,9 +1,27 @@
 import { BaseAgent } from "../core/baseAgent"
+import type { IAgent } from "../core/agent-interface"
 import { emailTools } from "../tools/emailTools"
 import { analyticsTools } from "../tools/analyticsTools"
 import { contentTools } from "../tools/contentTools"
 import { audienceTools } from "../tools/audienceTools"
 import { sendEmail } from "@/lib/email/resend"
+// Lazy import to avoid circular dependencies
+let emailQueueManager: any = null
+let emailSequenceAgent: any = null
+
+function getEmailQueueManager() {
+  if (!emailQueueManager) {
+    emailQueueManager = require("./emailQueueManager").emailQueueManager
+  }
+  return emailQueueManager
+}
+
+function getEmailSequenceAgent() {
+  if (!emailSequenceAgent) {
+    emailSequenceAgent = require("./emailSequenceAgent").emailSequenceAgent
+  }
+  return emailSequenceAgent
+}
 import { neon } from "@neondatabase/serverless"
 
 const sql = neon(process.env.DATABASE_URL!)
@@ -16,23 +34,32 @@ const allTools = {
 }
 
 /**
- * MarketingAutomationAgent
- *
- * Automated marketing agent responsible for:
- * - Email flows and campaigns
- * - Content generation for marketing
- * - Retention strategies
- * - Growth automation tasks
- *
- * This is a scaffolded agent structure.
- * Business logic and tools will be added later.
+ * Agent: MarketingAutomationAgent
+ * 
+ * Responsibility:
+ *  - High-level marketing orchestration
+ *  - Decides which campaigns or sequences to run
+ *  - Delegates queue operations to EmailQueueManager
+ *  - Delegates sequence operations to EmailSequenceAgent
+ * 
+ * Implements:
+ *  - IAgent (process, getMetadata)
+ * 
+ * Usage:
+ *  - Called by marketing workflows
+ *  - Called by Admin API (/api/admin/agents/run)
+ *  - Input: { action: "runApprovedWorkflow" | "startBlueprintFollowUp", ... }
+ * 
+ * Notes:
+ *  - Uses tools: emailTools, analyticsTools, contentTools, audienceTools
+ *  - Orchestrates but doesn't implement queue/sequence logic directly
  */
-export class MarketingAutomationAgent extends BaseAgent {
+export class MarketingAutomationAgent extends BaseAgent implements IAgent {
   constructor() {
     super({
       name: "MarketingAutomation",
       description:
-        "Automated marketing agent responsible for email flows, content generation, retention and growth tasks.",
+        "Automated marketing agent responsible for email flows, content generation, retention and growth tasks. Orchestrates campaigns and delegates to specialized agents.",
       systemPrompt: `You are the Marketing Automation Agent for the SSELFIE platform.
 Your job is to automate all marketing, communication, retention, and growth activities for Sandra.
 
@@ -43,6 +70,8 @@ Your capabilities:
 - Trigger onboarding, upsell, and winback sequences.
 - Write personalized emails and content using Sandra's brand voice.
 - Call the correct tools when needed (emailTools, contentTools, analyticsTools, audienceTools).
+- Delegate queue operations to EmailQueueManager
+- Delegate sequence operations to EmailSequenceAgent
 
 Brand Voice Guidelines:
 - Warm, direct, story-driven.
@@ -57,6 +86,8 @@ Critical rules:
 - NEVER fabricate data: always call the analytics or audience tools when you need user insights.
 - ALWAYS call sendEmail or createEmailDraft when generating email output.
 - ALWAYS format generated content clearly and cleanly.
+- Delegate queue management to EmailQueueManager
+- Delegate sequence management to EmailSequenceAgent
 - If missing data, request it from the AdminSupervisorAgent rather than guessing.
 
 Primary Mission:
@@ -66,8 +97,73 @@ Automate SSELFIE's marketing system at scale: email flows, retention, newsletter
   }
 
   /**
+   * Run agent logic - internal method with retry for recoverable errors
+   */
+  async run(input: unknown): Promise<unknown> {
+    const { retryWithBackoff, isRecoverable } = await import("@/agents/monitoring/alerts")
+
+    const execute = async () => {
+      if (
+        typeof input === "object" &&
+        input !== null &&
+        "action" in input &&
+        typeof input.action === "string"
+      ) {
+        if (input.action === "runApprovedWorkflow" && "workflow" in input) {
+          return await this.runApprovedWorkflow(input.workflow as any)
+        }
+        if (input.action === "startBlueprintFollowUp" && "params" in input) {
+          const params = input.params as any
+          return await this.startBlueprintFollowUpWorkflow(
+            params.subscriberId,
+            params.email,
+            params.name,
+          )
+        }
+      }
+      return input
+    }
+
+    try {
+      return await execute()
+    } catch (error) {
+      // Retry if recoverable
+      if (isRecoverable(error)) {
+        return await retryWithBackoff(execute, 3, 1000)
+      }
+      throw error
+    }
+  }
+
+  /**
+   * Get agent metadata
+   */
+  getMetadata() {
+    return {
+      name: this.name,
+      version: "1.0.0",
+      description: this.description,
+      critical: true, // Mark as critical for alerts
+    }
+  }
+
+  /**
+   * Access to EmailQueueManager for queue operations
+   */
+  get queueManager() {
+    return getEmailQueueManager()
+  }
+
+  /**
+   * Access to EmailSequenceAgent for sequence operations
+   */
+  get sequenceAgent() {
+    return getEmailSequenceAgent()
+  }
+
+  /**
    * Execute an approved workflow from the queue
-   * Minimal implementation to avoid runtime errors and send an email if possible.
+   * Delegates to EmailQueueManager for scheduling
    */
   async runApprovedWorkflow(workflow: any): Promise<{ success: boolean; error?: string }> {
     try {
@@ -76,10 +172,17 @@ Automate SSELFIE's marketing system at scale: email flows, retention, newsletter
         `<p>Hello ${workflow.subscriber_name || ""},</p>` +
         `<p>Your ${workflow.workflow_type.replace("_", " ")} workflow has been approved.</p>`
 
-      // Default to immediate send
+      // Schedule email using EmailQueueManager
       const scheduledFor = new Date()
-      await scheduleEmail(workflow.subscriber_id, workflow.subscriber_email, subject, html, scheduledFor)
-      return { success: true }
+      const queueManager = getEmailQueueManager()
+      const result = await queueManager.scheduleEmail(
+        workflow.subscriber_id,
+        workflow.subscriber_email,
+        subject,
+        html,
+        scheduledFor,
+      )
+      return result
     } catch (error) {
       return { success: false, error: error instanceof Error ? error.message : "Unknown error" }
     }
@@ -87,7 +190,7 @@ Automate SSELFIE's marketing system at scale: email flows, retention, newsletter
 
   /**
    * Schedule the 3-step blueprint follow-up sequence using the queue
-   * Avoids long setTimeout timers in serverless.
+   * Delegates to EmailQueueManager for scheduling
    */
   async startBlueprintFollowUpWorkflow(
     subscriberId: number,
@@ -120,8 +223,16 @@ Automate SSELFIE's marketing system at scale: email flows, retention, newsletter
         },
       ]
 
+      // Schedule each email using EmailQueueManager
       for (const step of sequences) {
-        const result = await scheduleEmail(String(subscriberId), email, step.subject, step.html, step.when)
+        const queueManager = getEmailQueueManager()
+      const result = await queueManager.scheduleEmail(
+          String(subscriberId),
+          email,
+          step.subject,
+          step.html,
+          step.when,
+        )
         if (result.success) {
           scheduled++
         } else {
@@ -150,8 +261,24 @@ export function createMarketingAutomationAgent(): MarketingAutomationAgent {
 /**
  * Singleton instance of MarketingAutomationAgent
  * Use this for consistent agent state across the application
+ * Created lazily to avoid circular dependency issues
  */
-export const marketingAutomationAgent = new MarketingAutomationAgent()
+let _marketingAutomationAgentInstance: MarketingAutomationAgent | null = null
+
+export function getMarketingAutomationAgent(): MarketingAutomationAgent {
+  if (!_marketingAutomationAgentInstance) {
+    _marketingAutomationAgentInstance = new MarketingAutomationAgent()
+  }
+  return _marketingAutomationAgentInstance
+}
+
+// Export the singleton - but make it lazy by using a function that returns the instance
+// This prevents circular dependency issues at module load time
+// The registry will access this property, which will trigger the getter
+export const marketingAutomationAgent = (() => {
+  // Don't create instance at module load - return a proxy that creates it on first access
+  return getMarketingAutomationAgent()
+})()
 
 /**
  * Sends an email immediately via Resend
@@ -164,32 +291,8 @@ export async function sendEmailNow(
   return await sendEmail({ to: email, subject, html })
 }
 
-/**
- * Schedules an email to be sent at a specific time
- * Inserts into marketing_email_queue for later processing
- */
-export async function scheduleEmail(
-  userId: string,
-  email: string,
-  subject: string,
-  html: string,
-  scheduledFor: Date,
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    await sql`
-      INSERT INTO marketing_email_queue (user_id, email, subject, html, scheduled_for, status)
-      VALUES (${userId}, ${email}, ${subject}, ${html}, ${scheduledFor.toISOString()}, 'pending')
-    `
-    console.log(`[MarketingAgent] Email scheduled for ${email} at ${scheduledFor.toISOString()}`)
-    return { success: true }
-  } catch (error) {
-    console.error("[MarketingAgent] Error scheduling email:", error)
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
-    }
-  }
-}
+// Re-export queue functions for backwards compatibility
+export { scheduleEmail, checkEmailQueue } from "./emailQueueManager"
 
 /**
  * Gets the user segment for a given user
@@ -311,89 +414,6 @@ export async function logEmailClick(event: {
       error: error instanceof Error ? error.message : "Unknown error",
     }
   }
-}
-
-/**
- * Checks the email queue and sends pending emails if scheduled_for <= now
- * Should be called periodically by a cron job or on agent invocation
- */
-export async function checkEmailQueue(): Promise<{
-  sent: number
-  failed: number
-  errors: string[]
-}> {
-  const results = {
-    sent: 0,
-    failed: 0,
-    errors: [] as string[],
-  }
-
-  try {
-    // Get all pending emails that are due
-    const pendingEmails = await sql`
-      SELECT id, user_id, email, subject, html
-      FROM marketing_email_queue
-      WHERE status = 'pending'
-        AND scheduled_for <= NOW()
-      ORDER BY scheduled_for ASC
-      LIMIT 50
-    `
-
-    console.log(`[MarketingAgent] Found ${pendingEmails.length} pending emails to send`)
-
-    for (const emailRecord of pendingEmails) {
-      try {
-        // Send the email
-        const result = await sendEmail({
-          to: emailRecord.email,
-          subject: emailRecord.subject,
-          html: emailRecord.html,
-        })
-
-        if (result.success) {
-          // Mark as sent
-          await sql`
-            UPDATE marketing_email_queue
-            SET status = 'sent', sent_at = NOW()
-            WHERE id = ${emailRecord.id}
-          `
-          results.sent++
-          console.log(`[MarketingAgent] Email sent to ${emailRecord.email}`)
-        } else {
-          // Mark as failed
-          await sql`
-            UPDATE marketing_email_queue
-            SET status = 'failed', error_message = ${result.error || "Unknown error"}
-            WHERE id = ${emailRecord.id}
-          `
-          results.failed++
-          results.errors.push(`${emailRecord.email}: ${result.error}`)
-          console.error(`[MarketingAgent] Failed to send email to ${emailRecord.email}:`, result.error)
-        }
-      } catch (error) {
-        // Mark as failed
-        const errorMsg = error instanceof Error ? error.message : "Unknown error"
-        await sql`
-          UPDATE marketing_email_queue
-          SET status = 'failed', error_message = ${errorMsg}
-          WHERE id = ${emailRecord.id}
-        `
-        results.failed++
-        results.errors.push(`${emailRecord.email}: ${errorMsg}`)
-        console.error(`[MarketingAgent] Error processing email ${emailRecord.id}:`, error)
-      }
-
-      // Rate limiting: wait 200ms between sends
-      await new Promise((resolve) => setTimeout(resolve, 200))
-    }
-
-    console.log(`[MarketingAgent] Email queue check complete: ${results.sent} sent, ${results.failed} failed`)
-  } catch (error) {
-    console.error("[MarketingAgent] Error checking email queue:", error)
-    results.errors.push(error instanceof Error ? error.message : "Unknown error")
-  }
-
-  return results
 }
 
 /**

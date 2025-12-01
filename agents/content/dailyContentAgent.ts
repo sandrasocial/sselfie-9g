@@ -1,12 +1,28 @@
 import { BaseAgent } from "../core/baseAgent"
+import type { IAgent } from "../core/agent-interface"
 import { generateText } from "ai"
 
 /**
- * DailyContentAgent
- * Automated content creation system for Sandra's daily social content
- * Generates reels, hooks, captions, carousels, stories using Sandra's brand voice
+ * Agent: DailyContentAgent
+ * 
+ * Responsibility:
+ *  - Generates daily social content (reels, carousels, stories, hooks, captions, CTAs)
+ *  - Uses Sandra's authentic brand voice and proven engagement frameworks
+ *  - Creates structured content with hooks, scripts, captions, and CTAs
+ * 
+ * Implements:
+ *  - IAgent (process, getMetadata)
+ * 
+ * Usage:
+ *  - Called by content workflows
+ *  - Called by Admin API (/api/admin/agents/run)
+ *  - Input: string (topic) or { type: "reel" | "carousel" | "story" | "hook" | "caption" | "cta", topic, context }
+ * 
+ * Notes:
+ *  - Uses OpenAI GPT-4o for content generation
+ *  - Returns structured JSON with title, script, hook, caption, cta, notes
  */
-export class DailyContentAgent extends BaseAgent {
+export class DailyContentAgent extends BaseAgent implements IAgent {
   constructor() {
     super({
       name: "DailyContentAgent",
@@ -321,6 +337,61 @@ Return JSON:
         cta: "",
         notes: error instanceof Error ? error.message : "Unknown error",
       }
+    }
+  }
+
+  /**
+   * Run agent logic - internal method
+   * @param input - Agent input: string (topic), or { type: "reel" | "carousel" | "story" | "hook" | "caption" | "cta", topic?, context? } or unknown
+   * @returns Promise resolving to generated content
+   */
+  async run(input: unknown): Promise<unknown> {
+    if (typeof input === "string") {
+      // If input is a topic string, generate a reel by default
+      return await this.generateDailyReel(input)
+    }
+    if (
+      typeof input === "object" &&
+      input !== null &&
+      "type" in input &&
+      typeof input.type === "string"
+    ) {
+      const typedInput = input as { type: string; topic?: string; context?: unknown; contentType?: string; framework?: string }
+      if (typedInput.type === "reel") {
+        return await this.generateDailyReel(typedInput.topic || "", typedInput.context)
+      }
+      if (typedInput.type === "carousel") {
+        return await this.generateDailyCarousel(typedInput.topic || "", typedInput.context)
+      }
+      if (typedInput.type === "story") {
+        return await this.generateDailyStory(typedInput.context)
+      }
+      if (typedInput.type === "hook") {
+        return await this.generateHook(typedInput.topic || "", typedInput.framework)
+      }
+      if (typedInput.type === "caption") {
+        return await this.generateCaption(
+          typedInput.topic || "",
+          typedInput.contentType || "",
+          typedInput.context,
+        )
+      }
+      if (typedInput.type === "cta") {
+        return await this.generateCTA(typedInput.context as string)
+      }
+    }
+    // Default: return input as-is
+    return input
+  }
+
+  /**
+   * Get agent metadata
+   */
+  getMetadata() {
+    return {
+      name: this.name,
+      version: "1.0.0",
+      description: this.description,
     }
   }
 }

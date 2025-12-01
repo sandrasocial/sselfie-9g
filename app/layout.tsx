@@ -2,6 +2,7 @@ import type React from "react"
 import type { Metadata, Viewport } from "next"
 // import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
+import { ErrorBoundary } from "@/components/error-boundary"
 
 // const _geist = Geist({ subsets: ["latin"] })
 // const _geistMono = Geist_Mono({ subsets: ["latin"] })
@@ -165,7 +166,9 @@ export default function RootLayout({
         {/* Removed unused font imports */}
       </head>
       <body className={`font-sans antialiased`}>
-        {children}
+        <ErrorBoundary>
+          {children}
+        </ErrorBoundary>
         {/* <Analytics /> */}
       </body>
     </html>

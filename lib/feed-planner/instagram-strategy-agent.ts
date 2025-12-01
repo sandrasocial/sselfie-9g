@@ -1,4 +1,6 @@
 import { generateText } from "ai"
+import { BaseAgent } from "@/agents/core/baseAgent"
+import type { IAgent } from "@/agents/core/agent-interface"
 
 interface InstagramStrategyParams {
   userId: string
@@ -294,3 +296,97 @@ You provide COMPREHENSIVE strategies with NO length limits - your advice is thor
     }
   }
 }
+
+/**
+ * Agent: InstagramStrategyAgent
+ * 
+ * Responsibility:
+ *  - Creates comprehensive Instagram growth strategies for feed layouts
+ *  - Wraps generateInstagramStrategy function for agent ecosystem consistency
+ * 
+ * Implements:
+ *  - IAgent (process, getMetadata)
+ * 
+ * Usage:
+ *  - Called by workflows and Admin API (/api/admin/agents/run)
+ *  - Input: { params: { userId, feedLayoutId, brandProfile, feedPosts, ... } } or params directly
+ * 
+ * Notes:
+ *  - Uses Claude Haiku 4.5 for strategy generation
+ *  - Returns comprehensive InstagramStrategy with posting, content, story, reel strategies
+ */
+export class InstagramStrategyAgent extends BaseAgent implements IAgent {
+  constructor() {
+    super({
+      name: "InstagramStrategyAgent",
+      description:
+        "Expert Instagram Growth Strategist specializing in personal brands and storytelling. Creates comprehensive Instagram strategies for feed layouts, posting schedules, content mix, and growth tactics.",
+      systemPrompt: `You are an Instagram Growth Strategist with deep expertise in:
+- Personal brand storytelling
+- Instagram algorithm (2025)
+- Viral content patterns
+- Engagement psychology
+- Creator economy trends
+- Story sequencing
+- Reels strategy
+- Carousel storytelling
+- Trending audio and formats
+
+You provide COMPREHENSIVE strategies with NO length limits - your advice is thorough, specific, and actionable.`,
+      tools: {},
+      model: "anthropic/claude-haiku-4.5",
+    })
+  }
+
+  /**
+   * Run agent logic - internal method
+   */
+  async run(input: unknown): Promise<unknown> {
+    if (
+      typeof input === "object" &&
+      input !== null &&
+      "params" in input &&
+      input.params
+    ) {
+      return await generateInstagramStrategy(input.params as InstagramStrategyParams)
+    }
+    // If input is the params directly
+    if (
+      typeof input === "object" &&
+      input !== null &&
+      "userId" in input &&
+      "feedLayoutId" in input &&
+      "brandProfile" in input &&
+      "feedPosts" in input
+    ) {
+      return await generateInstagramStrategy(input as InstagramStrategyParams)
+    }
+    return {
+      success: false,
+      error: "Missing required parameters: userId, feedLayoutId, brandProfile, feedPosts",
+    }
+  }
+
+  /**
+   * Get agent metadata
+   */
+  getMetadata() {
+    return {
+      name: this.name,
+      version: "1.0.0",
+      description: this.description,
+    }
+  }
+}
+
+/**
+ * Factory function to create InstagramStrategyAgent
+ */
+export function createInstagramStrategyAgent(): InstagramStrategyAgent {
+  return new InstagramStrategyAgent()
+}
+
+/**
+ * Singleton instance for use across the application
+ */
+export const instagramStrategyAgent = new InstagramStrategyAgent()

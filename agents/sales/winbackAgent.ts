@@ -1,19 +1,31 @@
 import { BaseAgent } from "../core/baseAgent"
+import type { IAgent } from "../core/agent-interface"
 import { generateText } from "ai"
 import { neon } from "@neondatabase/serverless"
 
 const sql = neon(process.env.DATABASE_URL!)
 
 /**
- * WinbackAgent
- *
- * Automated agent responsible for:
- * - Identifying inactive users (7-14 days)
- * - Generating personalized reactivation messages
- * - Triggering winback email campaigns
- * - Tracking winback success rates
+ * Agent: WinbackAgent
+ * 
+ * Responsibility:
+ *  - Generates personalized winback messages for inactive users (7-14 days)
+ *  - Identifies users who have gone inactive
+ *  - Tracks winback success rates
+ * 
+ * Implements:
+ *  - IAgent (process, getMetadata)
+ * 
+ * Usage:
+ *  - Called by workflows (winbackWorkflow)
+ *  - Called by Admin API (/api/admin/agents/run)
+ *  - Input: { action: "generateMessage", params: { userId, daysSinceLastActivity, lastActivity } }
+ * 
+ * Notes:
+ *  - Uses OpenAI GPT-4o for message generation
+ *  - Returns structured { subject, body } format
  */
-export class WinbackAgent extends BaseAgent {
+export class WinbackAgent extends BaseAgent implements IAgent {
   constructor() {
     super({
       name: "Winback",
@@ -92,6 +104,41 @@ Ready to jump back in? We're here when you are.
 
 - Sandra & the SSELFIE team`,
       }
+    }
+  }
+
+  /**
+   * Run agent logic - internal method
+   * @param input - Agent input: { action: "generateMessage", params: {...} } or unknown
+   * @returns Promise resolving to winback message or agent output
+   */
+  async run(input: unknown): Promise<unknown> {
+    if (
+      typeof input === "object" &&
+      input !== null &&
+      "action" in input &&
+      input.action === "generateMessage" &&
+      "params" in input &&
+      input.params
+    ) {
+      return await this.generateWinbackMessage(input.params as {
+        userId: string
+        daysSinceLastActivity: number
+        lastActivity: string
+      })
+    }
+    // Default: return input as-is
+    return input
+  }
+
+  /**
+   * Get agent metadata
+   */
+  getMetadata() {
+    return {
+      name: this.name,
+      version: "1.0.0",
+      description: this.description,
     }
   }
 }

@@ -197,6 +197,82 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-8 -mt-8 md:-mt-12 relative z-10">
+        {/* Admin Quick Actions */}
+        <div className="mb-6 md:mb-8">
+          <h2 className="font-['Times_New_Roman'] text-lg md:text-xl font-extralight tracking-[0.2em] uppercase text-stone-950 mb-4 md:mb-6">
+            ADMIN QUICK ACTIONS
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+            <Link href="/admin/ai/agents" className="rounded-xl bg-white border border-stone-200 shadow-lg p-6 hover:shadow-xl transition-all">
+              <p className="text-xs tracking-[0.2em] uppercase text-stone-500 mb-2">AI AGENTS</p>
+              <p className="text-stone-900 text-sm">Manage and execute AI agents</p>
+            </Link>
+            <Link href="/admin/ai/agents/list" className="rounded-xl bg-white border border-stone-200 shadow-lg p-6 hover:shadow-xl transition-all">
+              <p className="text-xs tracking-[0.2em] uppercase text-stone-500 mb-2">AGENTS LIST</p>
+              <p className="text-stone-900 text-sm">View all available agents</p>
+            </Link>
+            <Link href="/admin/ai/agents/pipelines" className="rounded-xl bg-white border border-stone-200 shadow-lg p-6 hover:shadow-xl transition-all">
+              <p className="text-xs tracking-[0.2em] uppercase text-stone-500 mb-2">PIPELINES</p>
+              <p className="text-stone-900 text-sm">Run and manage pipelines</p>
+            </Link>
+            <Link href="/admin/ai/daily-drops" className="rounded-xl bg-white border border-stone-200 shadow-lg p-6 hover:shadow-xl transition-all">
+              <p className="text-xs tracking-[0.2em] uppercase text-stone-500 mb-2">DAILY DROPS</p>
+              <p className="text-stone-900 text-sm">Today's generated content</p>
+            </Link>
+            <Link href="/admin/ai/hooks" className="rounded-xl bg-white border border-stone-200 shadow-lg p-6 hover:shadow-xl transition-all">
+              <p className="text-xs tracking-[0.2em] uppercase text-stone-500 mb-2">HOOKS LIBRARY</p>
+              <p className="text-stone-900 text-sm">Content hooks and frameworks</p>
+            </Link>
+            <Link href="/admin/email-broadcast" className="rounded-xl bg-white border border-stone-200 shadow-lg p-6 hover:shadow-xl transition-all">
+              <p className="text-xs tracking-[0.2em] uppercase text-stone-500 mb-2">EMAIL BROADCAST</p>
+              <p className="text-stone-900 text-sm">Send email campaigns</p>
+            </Link>
+            <Link href="/admin/credits" className="rounded-xl bg-white border border-stone-200 shadow-lg p-6 hover:shadow-xl transition-all">
+              <p className="text-xs tracking-[0.2em] uppercase text-stone-500 mb-2">CREDITS</p>
+              <p className="text-stone-900 text-sm">Manage user credits</p>
+            </Link>
+            <Link href="/admin/analytics" className="rounded-xl bg-white border border-stone-200 shadow-lg p-6 hover:shadow-xl transition-all">
+              <p className="text-xs tracking-[0.2em] uppercase text-stone-500 mb-2">ANALYTICS</p>
+              <p className="text-stone-900 text-sm">View platform analytics</p>
+            </Link>
+            <Link href="/admin/testimonials" className="rounded-xl bg-white border border-stone-200 shadow-lg p-6 hover:shadow-xl transition-all">
+              <p className="text-xs tracking-[0.2em] uppercase text-stone-500 mb-2">TESTIMONIALS</p>
+              <p className="text-stone-900 text-sm">Approve testimonials</p>
+            </Link>
+            <Link href="/admin/feedback" className="rounded-xl bg-white border border-stone-200 shadow-lg p-6 hover:shadow-xl transition-all">
+              <p className="text-xs tracking-[0.2em] uppercase text-stone-500 mb-2">FEEDBACK</p>
+              <p className="text-stone-900 text-sm">User feedback and requests</p>
+            </Link>
+            <Link href="/admin/academy" className="rounded-xl bg-white border border-stone-200 shadow-lg p-6 hover:shadow-xl transition-all">
+              <p className="text-xs tracking-[0.2em] uppercase text-stone-500 mb-2">ACADEMY</p>
+              <p className="text-stone-900 text-sm">Manage courses and content</p>
+            </Link>
+            <Link href="/admin/users" className="rounded-xl bg-white border border-stone-200 shadow-lg p-6 hover:shadow-xl transition-all">
+              <p className="text-xs tracking-[0.2em] uppercase text-stone-500 mb-2">USERS</p>
+              <p className="text-stone-900 text-sm">Manage user accounts</p>
+            </Link>
+            <Link href="/admin/revenue" className="rounded-xl bg-white border border-stone-200 shadow-lg p-6 hover:shadow-xl transition-all">
+              <p className="text-xs tracking-[0.2em] uppercase text-stone-500 mb-2">REVENUE</p>
+              <p className="text-stone-900 text-sm">Revenue and subscriptions</p>
+            </Link>
+            <Link href="/admin/ai/agents/metrics" className="rounded-xl bg-white border border-stone-200 shadow-lg p-6 hover:shadow-xl transition-all">
+              <p className="text-xs tracking-[0.2em] uppercase text-stone-500 mb-2">METRICS</p>
+              <p className="text-stone-900 text-sm">Agent performance metrics</p>
+            </Link>
+            <Link href="/admin/ai/agents/traces" className="rounded-xl bg-white border border-stone-200 shadow-lg p-6 hover:shadow-xl transition-all">
+              <p className="text-xs tracking-[0.2em] uppercase text-stone-500 mb-2">TRACES</p>
+              <p className="text-stone-900 text-sm">Agent execution traces</p>
+            </Link>
+            <Link href="/admin/ai/agents/pipelines/history" className="rounded-xl bg-white border border-stone-200 shadow-lg p-6 hover:shadow-xl transition-all">
+              <p className="text-xs tracking-[0.2em] uppercase text-stone-500 mb-2">PIPELINE RUNS</p>
+              <p className="text-stone-900 text-sm">View pipeline execution history</p>
+            </Link>
+            <Link href="/admin/ai/agents/run" className="rounded-xl bg-white border border-stone-200 shadow-lg p-6 hover:shadow-xl transition-all">
+              <p className="text-xs tracking-[0.2em] uppercase text-stone-500 mb-2">RUN AGENT</p>
+              <p className="text-stone-900 text-sm">Execute an agent manually</p>
+            </Link>
+          </div>
+        </div>
         {/* KPI cards in one row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6 md:mb-8">
           <div className="bg-gradient-to-br from-stone-950 to-stone-800 rounded-xl md:rounded-2xl p-4 md:p-6 border border-stone-700 shadow-xl">
@@ -433,6 +509,24 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
                   </div>
                 </div>
               </Link>
+
+              <Link href="/admin/ai/agents" className="group">
+                <div className="bg-white rounded-xl md:rounded-2xl overflow-hidden border border-stone-200 shadow-lg hover:shadow-xl transition-all h-full">
+                  <div className="relative h-40 overflow-hidden bg-gradient-to-br from-stone-950 to-stone-800 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-gradient-to-t from-stone-950/60 to-transparent" />
+                    <div className="absolute bottom-4 left-4">
+                      <h3 className="font-['Times_New_Roman'] text-2xl md:text-3xl font-extralight tracking-[0.3em] uppercase text-white">
+                        AI AGENTS
+                      </h3>
+                    </div>
+                  </div>
+                  <div className="p-4 md:p-6">
+                    <p className="text-sm md:text-base text-stone-600 leading-relaxed">
+                      Manage and execute AI agents, pipelines, metrics, and traces
+                    </p>
+                  </div>
+                </div>
+              </Link>
             </div>
 
             {/* Recent Activity */}
@@ -533,8 +627,8 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
               <div className="bg-white rounded-xl md:rounded-2xl p-4 md:p-8 border border-stone-200 shadow-lg">
                 <p className="text-xs md:text-sm tracking-[0.2em] uppercase text-stone-500 mb-4 md:mb-6">Subscription Breakdown</p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-                  {revenue.subscriptionBreakdown.map((sub) => (
-                    <div key={sub.tier} className="flex items-center justify-between p-4 bg-stone-50 rounded-xl">
+                  {revenue.subscriptionBreakdown.map((sub, index) => (
+                    <div key={sub.tier || sub.id || `sub-${index}`} className="flex items-center justify-between p-4 bg-stone-50 rounded-xl">
                       <div>
                         <p className="text-[10px] md:text-sm tracking-wider uppercase text-stone-400">{sub.tier}</p>
                         <p className="text-sm md:text-base text-stone-900">{sub.count} subscribers</p>

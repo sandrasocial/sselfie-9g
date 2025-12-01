@@ -1,19 +1,31 @@
 import { BaseAgent } from "../core/baseAgent"
+import type { IAgent } from "../core/agent-interface"
 import { generateText } from "ai"
 import { neon } from "@neondatabase/serverless"
 
 const sql = neon(process.env.DATABASE_URL!)
 
 /**
- * ChurnPreventionAgent
- *
- * Automated agent responsible for:
- * - Listening to subscription lifecycle events
- * - Preventing churn before it happens
- * - Handling payment failures gracefully
- * - Managing renewal reminders and cancellations
+ * Agent: ChurnPreventionAgent
+ * 
+ * Responsibility:
+ *  - Handles subscription lifecycle events (payment_failed, renewal_upcoming, cancellation, downgrade)
+ *  - Generates retention messages with empathy
+ *  - Logs subscription events for tracking
+ * 
+ * Implements:
+ *  - IAgent (process, getMetadata)
+ * 
+ * Usage:
+ *  - Called by workflows (churnPreventionWorkflow)
+ *  - Called by Admin API (/api/admin/agents/run)
+ *  - Input: { action: "logEvent" | "generateMessage", params: {...} }
+ * 
+ * Notes:
+ *  - Uses OpenAI GPT-4o for retention message generation
+ *  - Event types: payment_failed, renewal_upcoming, cancellation, downgrade
  */
-export class ChurnPreventionAgent extends BaseAgent {
+export class ChurnPreventionAgent extends BaseAgent implements IAgent {
   constructor() {
     super({
       name: "ChurnPrevention",
@@ -100,6 +112,39 @@ Format as JSON:
         subject: "Quick question about your SSELFIE account",
         body: "We noticed something with your subscription. Let's get it sorted quickly.",
       }
+    }
+  }
+
+  /**
+   * Run agent logic - internal method
+   */
+  async run(input: unknown): Promise<unknown> {
+    if (
+      typeof input === "object" &&
+      input !== null &&
+      "action" in input &&
+      typeof input.action === "string" &&
+      "params" in input &&
+      input.params
+    ) {
+      if (input.action === "logEvent") {
+        return await this.logSubscriptionEvent(input.params as any)
+      }
+      if (input.action === "generateMessage") {
+        return await this.generateRetentionMessage(input.params as any)
+      }
+    }
+    return input
+  }
+
+  /**
+   * Get agent metadata
+   */
+  getMetadata() {
+    return {
+      name: this.name,
+      version: "1.0.0",
+      description: this.description,
     }
   }
 }

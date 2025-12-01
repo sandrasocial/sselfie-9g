@@ -139,9 +139,11 @@ export async function executeActionForSubscriber(
         await sendContentTouchpoint(subscriber)
         break
       case "new_offer":
-        // Call executeOfferPathway from offer engine
-        const { executeOfferPathway } = await import("./marketingAutomationAgent")
-        await executeOfferPathway(subscriberId)
+        // Call executeOfferPathway from offer engine (avoid circular import)
+        const offerPathway = await import("@/lib/offerPathwayEngine")
+        if (offerPathway.executeOfferPathway) {
+          await offerPathway.executeOfferPathway(subscriberId)
+        }
         break
       case "pause":
         // Do nothing
@@ -265,8 +267,14 @@ export {
   getUserSegment,
   checkEmailQueue,
   sendUserJourneyEmail,
-  marketingAutomationAgent,
+} from "./marketingAutomationAgent"
+
+// Re-export the agent class and factory function for AgentRegistry
+// This is safe because AgentRegistry uses lazy loading
+export {
   MarketingAutomationAgent,
+  getMarketingAutomationAgent,
+  marketingAutomationAgent,
 } from "./marketingAutomationAgent"
 
 // Provide minimal stubs for legacy imports not implemented here

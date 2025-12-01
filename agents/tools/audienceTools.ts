@@ -1,7 +1,18 @@
-import { createClient } from "@supabase/supabase-js"
+import { neon } from "@neondatabase/serverless"
 
-// Initialize Supabase with service role key for admin access
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+// Lazy initialization to avoid errors when DATABASE_URL is missing
+let sqlInstance: ReturnType<typeof neon> | null = null
+
+function getSql() {
+  if (!sqlInstance) {
+    const dbUrl = process.env.DATABASE_URL
+    if (!dbUrl) {
+      throw new Error("DATABASE_URL environment variable is not set")
+    }
+    sqlInstance = neon(dbUrl, { disableWarningInBrowsers: true })
+  }
+  return sqlInstance
+}
 
 /**
  * Audience Tools
@@ -19,18 +30,17 @@ export const audienceTools = {
     },
     execute: async () => {
       try {
-        const { data, error } = await supabase
-          .from("users")
-          .select("id, email, display_name, first_name, last_name, created_at")
-          .eq("role", "beta")
-          .order("created_at", { ascending: false })
-
-        if (error) throw error
+        const result = await getSql()`
+          SELECT id, email, display_name, first_name, last_name, created_at
+          FROM users
+          WHERE role = 'beta'
+          ORDER BY created_at DESC
+        `
 
         return {
           success: true,
-          users: data,
-          count: data?.length || 0,
+          users: result,
+          count: result.length,
         }
       } catch (error: any) {
         return {
@@ -52,27 +62,27 @@ export const audienceTools = {
     },
     execute: async () => {
       try {
-        const { data, error } = await supabase
-          .from("subscriptions")
-          .select(
-            `
-            user_id,
-            status,
-            plan,
-            current_period_start,
-            current_period_end,
-            users!inner(email, display_name, first_name, last_name)
-          `,
-          )
-          .eq("status", "active")
-          .order("current_period_start", { ascending: false })
-
-        if (error) throw error
+        const result = await getSql()`
+          SELECT 
+            s.user_id,
+            s.status,
+            s.plan,
+            s.current_period_start,
+            s.current_period_end,
+            u.email,
+            u.display_name,
+            u.first_name,
+            u.last_name
+          FROM subscriptions s
+          INNER JOIN users u ON u.id = s.user_id
+          WHERE s.status = 'active'
+          ORDER BY s.current_period_start DESC
+        `
 
         return {
           success: true,
-          users: data,
-          count: data?.length || 0,
+          users: result,
+          count: result.length,
         }
       } catch (error: any) {
         return {
@@ -94,38 +104,43 @@ export const audienceTools = {
     },
     execute: async () => {
       try {
-        // Get users created in last 7 days
         const sevenDaysAgo = new Date()
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
 
-        const { data, error } = await supabase
-          .from("users")
-          .select(
-            `
-            id,
-            email,
-            display_name,
-            first_name,
-            last_name,
-            created_at,
-            subscriptions(status, plan)
-          `,
-          )
-          .gte("created_at", sevenDaysAgo.toISOString())
-          .order("created_at", { ascending: false })
+        // Get users created in last 7 days
+        const recentUsers = await getSql()`
+          SELECT 
+            u.id,
+            u.email,
+            u.display_name,
+            u.first_name,
+            u.last_name,
+            u.created_at
+          FROM users u
+          WHERE u.created_at >= ${sevenDaysAgo.toISOString()}
+          ORDER BY u.created_at DESC
+        `
 
-        if (error) throw error
+        // Get active subscriptions for these users
+        const userIds = recentUsers.map((u: any) => u.id)
+        const activeSubscriptions = userIds.length > 0
+          ? await getSql()`
+              SELECT user_id
+              FROM subscriptions
+              WHERE user_id IN ${sql(userIds)}
+                AND status = 'active'
+            `
+          : []
+
+        const activeSubUserIds = new Set(activeSubscriptions.map((s: any) => s.user_id))
 
         // Filter for users without active subscriptions
-        const trialUsers = data?.filter(
-          (user: any) =>
-            !user.subscriptions || user.subscriptions.length === 0 || user.subscriptions[0]?.status !== "active",
-        )
+        const trialUsers = recentUsers.filter((user: any) => !activeSubUserIds.has(user.id))
 
         return {
           success: true,
           users: trialUsers,
-          count: trialUsers?.length || 0,
+          count: trialUsers.length,
         }
       } catch (error: any) {
         return {
@@ -157,58 +172,62 @@ export const audienceTools = {
         const cutoffDate = new Date()
         cutoffDate.setDate(cutoffDate.getDate() - inactivityDays)
 
-        // Get users with subscriptions ending soon or inactive
-        const { data: subscriptions, error: subError } = await supabase
-          .from("subscriptions")
-          .select(
-            `
-            user_id,
-            status,
-            plan,
-            current_period_end,
-            users!inner(
-              id,
-              email,
-              display_name,
-              created_at
+        // Get users with active subscriptions
+        const subscriptions = await getSql()`
+          SELECT 
+            s.user_id,
+            s.status,
+            s.plan,
+            s.current_period_end,
+            u.id,
+            u.email,
+            u.display_name,
+            u.created_at
+          FROM subscriptions s
+          INNER JOIN users u ON u.id = s.user_id
+          WHERE s.status = 'active'
+        `
+
+        // Get recent activity
+        const activeUsers = await getSql()`
+          SELECT DISTINCT u.id
+          FROM users u
+          LEFT JOIN maya_chats mc ON mc.user_id = u.id
+          LEFT JOIN maya_chat_messages mcm ON mcm.chat_id = mc.id AND mcm.created_at >= ${cutoffDate.toISOString()}
+          LEFT JOIN ai_images ai ON ai.user_id = u.id AND ai.created_at >= ${cutoffDate.toISOString()}
+          WHERE mcm.id IS NOT NULL OR ai.id IS NOT NULL
+        `
+
+        const activeUserIds = new Set(activeUsers.map((u: any) => u.id))
+
+        // Find users who haven't been active recently or renewing soon
+        const churnRiskUsers = subscriptions
+          .map((sub: any) => {
+            const daysUntilRenewal = Math.floor(
+              (new Date(sub.current_period_end).getTime() - Date.now()) / (1000 * 60 * 60 * 24),
             )
-          `,
-          )
-          .eq("status", "active")
+            const isInactive = !activeUserIds.has(sub.user_id)
+            const renewingSoon = daysUntilRenewal <= 7
 
-        if (subError) throw subError
+            return {
+              ...sub,
+              isInactive,
+              renewingSoon,
+              daysUntilRenewal,
+            }
+          })
+          .filter((sub: any) => sub.isInactive || sub.renewingSoon)
 
-        // Get last activity for each user
-        const { data: lastActivity, error: actError } = await supabase
-          .from("maya_chat_messages")
-          .select("id, created_at")
-          .gte("created_at", cutoffDate.toISOString())
-
-        if (actError) throw actError
-
-        // Find users who haven't been active recently
-        const activeUserIds = new Set(lastActivity?.map((msg: any) => msg.user_id))
-
-        const churnRiskUsers = subscriptions?.filter((sub: any) => {
-          const daysUntilRenewal = Math.floor(
-            (new Date(sub.current_period_end).getTime() - Date.now()) / (1000 * 60 * 60 * 24),
-          )
-          const isInactive = !activeUserIds.has(sub.user_id)
-          const renewingSoon = daysUntilRenewal <= 7
-
-          return isInactive || renewingSoon
-        })
+        const inactiveCount = churnRiskUsers.filter((u: any) => u.isInactive).length
+        const renewingSoonCount = churnRiskUsers.filter((u: any) => u.renewingSoon).length
 
         return {
           success: true,
           users: churnRiskUsers,
-          count: churnRiskUsers?.length || 0,
+          count: churnRiskUsers.length,
           reasons: {
-            inactive: churnRiskUsers?.filter((u: any) => !activeUserIds.has(u.user_id)).length,
-            renewingSoon: churnRiskUsers?.filter((u: any) => {
-              const days = Math.floor((new Date(u.current_period_end).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-              return days <= 7
-            }).length,
+            inactive: inactiveCount,
+            renewingSoon: renewingSoonCount,
           },
         }
       } catch (error: any) {
@@ -242,49 +261,30 @@ export const audienceTools = {
         cutoffDate.setDate(cutoffDate.getDate() - minDays)
 
         // Get all users
-        const { data: allUsers, error: usersError } = await supabase
-          .from("users")
-          .select("id, email, display_name, first_name, last_name, created_at")
-
-        if (usersError) throw usersError
+        const allUsers = await getSql()`
+          SELECT id, email, display_name, first_name, last_name, created_at
+          FROM users
+        `
 
         // Get recent activity
-        const { data: recentMessages, error: msgError } = await supabase
-          .from("maya_chat_messages")
-          .select("id, chat_id")
-          .gte("created_at", cutoffDate.toISOString())
+        const activeUsers = await getSql()`
+          SELECT DISTINCT u.id
+          FROM users u
+          LEFT JOIN maya_chats mc ON mc.user_id = u.id
+          LEFT JOIN maya_chat_messages mcm ON mcm.chat_id = mc.id AND mcm.created_at >= ${cutoffDate.toISOString()}
+          LEFT JOIN ai_images ai ON ai.user_id = u.id AND ai.created_at >= ${cutoffDate.toISOString()}
+          WHERE mcm.id IS NOT NULL OR ai.id IS NOT NULL
+        `
 
-        if (msgError) throw msgError
-
-        const { data: recentImages, error: imgError } = await supabase
-          .from("ai_images")
-          .select("id, user_id")
-          .gte("created_at", cutoffDate.toISOString())
-
-        if (imgError) throw imgError
-
-        // Get chat user_ids from maya_chats
-        const chatIds = recentMessages?.map((m: any) => m.chat_id) || []
-        const { data: recentChats, error: chatError } = await supabase
-          .from("maya_chats")
-          .select("user_id")
-          .in("id", chatIds)
-
-        if (chatError) throw chatError
-
-        // Create set of active user IDs
-        const activeUserIds = new Set([
-          ...(recentChats?.map((c: any) => c.user_id) || []),
-          ...(recentImages?.map((i: any) => i.user_id) || []),
-        ])
+        const activeUserIds = new Set(activeUsers.map((u: any) => u.id))
 
         // Filter for inactive users
-        const inactiveUsers = allUsers?.filter((user: any) => !activeUserIds.has(user.id))
+        const inactiveUsers = allUsers.filter((user: any) => !activeUserIds.has(user.id))
 
         return {
           success: true,
           users: inactiveUsers,
-          count: inactiveUsers?.length || 0,
+          count: inactiveUsers.length,
           inactiveDays: minDays,
         }
       } catch (error: any) {
@@ -321,76 +321,42 @@ export const audienceTools = {
         const minImages = params.minImages || 50
         const minMessages = params.minMessages || 100
 
-        // Count images per user
-        const { data: imageCounts, error: imgError } = await supabase.rpc("get_image_counts_by_user")
+        // Count images and messages per user
+        const userActivity = await getSql()`
+          SELECT 
+            u.id,
+            u.email,
+            u.display_name,
+            u.first_name,
+            u.last_name,
+            u.created_at,
+            COUNT(DISTINCT ai.id) as image_count,
+            COUNT(DISTINCT mcm.id) as message_count
+          FROM users u
+          LEFT JOIN ai_images ai ON ai.user_id = u.id
+          LEFT JOIN maya_chats mc ON mc.user_id = u.id
+          LEFT JOIN maya_chat_messages mcm ON mcm.chat_id = mc.id
+          GROUP BY u.id, u.email, u.display_name, u.first_name, u.last_name, u.created_at
+          HAVING COUNT(DISTINCT ai.id) >= ${minImages} OR COUNT(DISTINCT mcm.id) >= ${minMessages}
+        `
 
-        // If RPC doesn't exist, use a direct query
-        const { data: images, error: imgError2 } = await supabase.from("ai_images").select("user_id")
-
-        if (imgError2) throw imgError2
-
-        // Count messages per user via chats
-        const { data: chats, error: chatError } = await supabase.from("maya_chats").select("id, user_id")
-
-        if (chatError) throw chatError
-
-        const { data: messages, error: msgError } = await supabase.from("maya_chat_messages").select("id, chat_id")
-
-        if (msgError) throw msgError
-
-        // Build user activity map
-        const userActivity = new Map()
-
-        images?.forEach((img: any) => {
-          const current = userActivity.get(img.user_id) || {
-            images: 0,
-            messages: 0,
-          }
-          current.images++
-          userActivity.set(img.user_id, current)
-        })
-
-        // Map chat_id to user_id
-        const chatToUser = new Map()
-        chats?.forEach((chat: any) => {
-          chatToUser.set(chat.id, chat.user_id)
-        })
-
-        messages?.forEach((msg: any) => {
-          const userId = chatToUser.get(msg.chat_id)
-          if (userId) {
-            const current = userActivity.get(userId) || {
-              images: 0,
-              messages: 0,
-            }
-            current.messages++
-            userActivity.set(userId, current)
-          }
-        })
-
-        // Filter for heavy users
-        const heavyUserIds = Array.from(userActivity.entries())
-          .filter(([_, activity]: any) => activity.images >= minImages || activity.messages >= minMessages)
-          .map(([userId]) => userId)
-
-        // Get user details
-        const { data: users, error: usersError } = await supabase
-          .from("users")
-          .select("id, email, display_name, first_name, last_name, created_at")
-          .in("id", heavyUserIds)
-
-        if (usersError) throw usersError
-
-        // Attach activity stats
-        const usersWithStats = users?.map((user: any) => ({
-          ...user,
-          activity: userActivity.get(user.id),
+        const usersWithStats = userActivity.map((user: any) => ({
+          id: user.id,
+          email: user.email,
+          display_name: user.display_name,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          created_at: user.created_at,
+          activity: {
+            images: Number(user.image_count) || 0,
+            messages: Number(user.message_count) || 0,
+          },
         }))
 
         return {
           success: true,
           users: usersWithStats,
-          count: usersWithStats?.length || 0,
+          count: usersWithStats.length,
           criteria: { minImages, minMessages },
         }
       } catch (error: any) {
@@ -416,18 +382,17 @@ export const audienceTools = {
         const hoursAgo = new Date()
         hoursAgo.setHours(hoursAgo.getHours() - 72)
 
-        const { data, error } = await supabase
-          .from("users")
-          .select("id, email, display_name, first_name, last_name, created_at")
-          .gte("created_at", hoursAgo.toISOString())
-          .order("created_at", { ascending: false })
-
-        if (error) throw error
+        const result = await getSql()`
+          SELECT id, email, display_name, first_name, last_name, created_at
+          FROM users
+          WHERE created_at >= ${hoursAgo.toISOString()}
+          ORDER BY created_at DESC
+        `
 
         return {
           success: true,
-          users: data,
-          count: data?.length || 0,
+          users: result,
+          count: result.length,
           timeWindow: "72 hours",
         }
       } catch (error: any) {
@@ -450,35 +415,29 @@ export const audienceTools = {
     },
     execute: async () => {
       try {
-        // Get all users with newsletter subscription
-        // For now, we'll fetch all users except those who explicitly opted out
-        const { data, error } = await supabase
-          .from("users")
-          .select("id, email, display_name, first_name, last_name, created_at")
-          .eq("email_notifications", true) // Assuming this field exists
-          .order("created_at", { ascending: false })
-
-        if (error) {
-          // Fallback: if email_notifications doesn't exist, get all users
-          const { data: allUsers, error: allError } = await supabase
-            .from("users")
-            .select("id, email, display_name, first_name, last_name, created_at")
-            .order("created_at", { ascending: false })
-
-          if (allError) throw allError
-
-          return {
-            success: true,
-            users: allUsers,
-            count: allUsers?.length || 0,
-            segment: "newsletter_subscribers",
-          }
+        // Get all users with email notifications enabled
+        // Fallback to all users if email_notifications column doesn't exist
+        let result
+        try {
+          result = await getSql()`
+            SELECT id, email, display_name, first_name, last_name, created_at
+            FROM users
+            WHERE email_notifications = true
+            ORDER BY created_at DESC
+          `
+        } catch (error: any) {
+          // If column doesn't exist, get all users
+          result = await getSql()`
+            SELECT id, email, display_name, first_name, last_name, created_at
+            FROM users
+            ORDER BY created_at DESC
+          `
         }
 
         return {
           success: true,
-          users: data,
-          count: data?.length || 0,
+          users: result,
+          count: result.length,
           segment: "newsletter_subscribers",
         }
       } catch (error: any) {
@@ -501,37 +460,31 @@ export const audienceTools = {
     },
     execute: async () => {
       try {
-        // Get all users who have logged in within the last 30 days
         const thirtyDaysAgo = new Date()
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
-        const { data, error } = await supabase
-          .from("users")
-          .select("id, email, display_name, first_name, last_name, created_at, last_login_at")
-          .gte("last_login_at", thirtyDaysAgo.toISOString())
-          .order("last_login_at", { ascending: false })
-
-        if (error) {
-          // Fallback: if last_login_at doesn't exist, get all users
-          const { data: allUsers, error: allError } = await supabase
-            .from("users")
-            .select("id, email, display_name, first_name, last_name, created_at")
-            .order("created_at", { ascending: false })
-
-          if (allError) throw allError
-
-          return {
-            success: true,
-            users: allUsers,
-            count: allUsers?.length || 0,
-            segment: "all_active_users",
-          }
+        // Try to get users with recent login, fallback to all users
+        let result
+        try {
+          result = await getSql()`
+            SELECT id, email, display_name, first_name, last_name, created_at, last_login_at
+            FROM users
+            WHERE last_login_at >= ${thirtyDaysAgo.toISOString()}
+            ORDER BY last_login_at DESC
+          `
+        } catch (error: any) {
+          // If last_login_at doesn't exist, get all users
+          result = await getSql()`
+            SELECT id, email, display_name, first_name, last_name, created_at
+            FROM users
+            ORDER BY created_at DESC
+          `
         }
 
         return {
           success: true,
-          users: data,
-          count: data?.length || 0,
+          users: result,
+          count: result.length,
           segment: "all_active_users",
         }
       } catch (error: any) {

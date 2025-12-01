@@ -1,28 +1,33 @@
 import { NextResponse } from "next/server"
-import { createServerClient } from "@/lib/supabase/server"
-import { getUserByAuthId } from "@/lib/user-mapping"
+import type { NextRequest } from "next/server"
+import { requireAdmin } from "@/lib/security/require-admin"
+import { checkAdminRateLimit } from "@/lib/security/admin-rate-limit"
 import { neon } from "@neondatabase/serverless"
 
 const sql = neon(process.env.DATABASE_URL!)
-const ADMIN_EMAIL = "ssa@ssasocial.com"
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const supabase = await createServerClient()
-    const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser()
+    // Admin auth check
+    const admin = await requireAdmin(request)
+    if (admin instanceof NextResponse) return admin
 
-    if (!authUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    // Rate limiting
+    const rateLimitCheck = await checkAdminRateLimit(request, `admin:${admin.neonUserId}`)
+    if (rateLimitCheck) return rateLimitCheck
+
+    // Input validation
+    const body = await request.json().catch(() => ({}))
+    const { userId, mode, firstMessage } = body
+
+    if (!userId) {
+      return NextResponse.json({ error: "userId required" }, { status: 400 })
     }
 
-    const user = await getUserByAuthId(authUser.id)
-    if (!user || user.email !== ADMIN_EMAIL) {
-      return NextResponse.json({ error: "Admin access required" }, { status: 403 })
+    const userIdNum = Number.parseInt(String(userId), 10)
+    if (Number.isNaN(userIdNum)) {
+      return NextResponse.json({ error: "Invalid userId format" }, { status: 400 })
     }
-
-    const { userId, mode, firstMessage } = await request.json()
 
     const agentMode = mode || 'research'
 
@@ -37,7 +42,7 @@ export async function POST(request: Request) {
 
     const newChat = await sql`
       INSERT INTO admin_agent_chats (admin_user_id, chat_title, agent_mode, last_activity)
-      VALUES (${userId}, ${chatTitle}, ${agentMode}, NOW())
+      VALUES (${userIdNum}, ${chatTitle}, ${agentMode}, NOW())
       RETURNING *
     `
 
@@ -50,27 +55,27 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    const supabase = await createServerClient()
-    const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser()
+    // Admin auth check
+    const admin = await requireAdmin(request)
+    if (admin instanceof NextResponse) return admin
 
-    if (!authUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+    // Rate limiting
+    const rateLimitCheck = await checkAdminRateLimit(request, `admin:${admin.neonUserId}`)
+    if (rateLimitCheck) return rateLimitCheck
 
-    const user = await getUserByAuthId(authUser.id)
-    if (!user || user.email !== ADMIN_EMAIL) {
-      return NextResponse.json({ error: "Admin access required" }, { status: 403 })
-    }
-
+    // Input validation
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get("userId")
 
     if (!userId) {
       return NextResponse.json({ error: "userId required" }, { status: 400 })
+    }
+
+    const userIdNum = Number.parseInt(userId, 10)
+    if (Number.isNaN(userIdNum)) {
+      return NextResponse.json({ error: "Invalid userId format" }, { status: 400 })
     }
 
     const chats = await sql`
@@ -79,7 +84,7 @@ export async function GET(request: Request) {
         COUNT(aam.id) as message_count
       FROM admin_agent_chats aac
       LEFT JOIN admin_agent_messages aam ON aam.chat_id = aac.id
-      WHERE aac.admin_user_id = ${userId}
+      WHERE aac.admin_user_id = ${userIdNum}
       GROUP BY aac.id
       ORDER BY aac.last_activity DESC
       LIMIT 20
@@ -87,7 +92,11 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ chats })
   } catch (error) {
-    console.error("[v0] Error fetching admin agent chats:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    console.error("[v0] Error in chats route:", error)
+    const errorMessage = error instanceof Error ? error.message : "Unknown error"
+    return NextResponse.json(
+      { error: "Internal server error", details: errorMessage },
+      { status: 500 }
+    )
   }
 }

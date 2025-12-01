@@ -57,15 +57,12 @@
     "@vercel/postgres": "0.10.0",
     "ai": "latest",
     "autoprefixer": "^10.4.20",
-    
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "1.0.4",
-    
     "date-fns": "4.1.0",
     "embla-carousel-react": "8.5.1",
     "framer-motion": "latest",
-    
     "input-otp": "1.4.1",
     "jszip": "latest",
     "lucide-react": "^0.454.0",
@@ -99,6 +96,7 @@
     "@types/react-dom": "^18",
     "postcss": "^8.5",
     "tailwindcss": "^4.1.9",
+    "tsx": "^4.20.6",
     "typescript": "^5"
   }
 }

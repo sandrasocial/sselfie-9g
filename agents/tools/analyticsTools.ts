@@ -1,6 +1,18 @@
-import { createClient } from "@supabase/supabase-js"
+import { neon } from "@neondatabase/serverless"
 
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+// Lazy initialization to avoid errors when DATABASE_URL is missing
+let sqlInstance: ReturnType<typeof neon> | null = null
+
+function getSql() {
+  if (!sqlInstance) {
+    const dbUrl = process.env.DATABASE_URL
+    if (!dbUrl) {
+      throw new Error("DATABASE_URL environment variable is not set")
+    }
+    sqlInstance = neon(dbUrl, { disableWarningInBrowsers: true })
+  }
+  return sqlInstance
+}
 
 /**
  * Analytics Tools
@@ -18,21 +30,21 @@ export const analyticsTools = {
     },
     execute: async () => {
       try {
+        const sql = getSql()
         const sevenDaysAgo = new Date()
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
 
-        const { data, error } = await supabase
-          .from("users")
-          .select("id, email, display_name, created_at, plan")
-          .gte("created_at", sevenDaysAgo.toISOString())
-          .order("created_at", { ascending: false })
-
-        if (error) throw error
+        const result = await sql`
+          SELECT id, email, display_name, created_at, plan
+          FROM users
+          WHERE created_at >= ${sevenDaysAgo.toISOString()}
+          ORDER BY created_at DESC
+        `
 
         return {
           success: true,
-          count: data?.length || 0,
-          users: data,
+          count: result.length,
+          users: result,
         }
       } catch (error: any) {
         return {
@@ -60,42 +72,35 @@ export const analyticsTools = {
         const cutoffDate = new Date()
         cutoffDate.setDate(cutoffDate.getDate() - days)
 
-        // Get users who have no recent maya_chat_messages or ai_images
-        const { data: mayaActivity, error: mayaError } = await supabase
-          .from("maya_chat_messages")
-          .select("chat_id")
-          .gte("created_at", cutoffDate.toISOString())
+        // Get users with recent activity
+        const activeUsers = await getSql()`
+          SELECT DISTINCT u.id
+          FROM users u
+          LEFT JOIN maya_chats mc ON mc.user_id = u.id
+          LEFT JOIN maya_chat_messages mcm ON mcm.chat_id = mc.id AND mcm.created_at >= ${cutoffDate.toISOString()}
+          LEFT JOIN ai_images ai ON ai.user_id = u.id AND ai.created_at >= ${cutoffDate.toISOString()}
+          WHERE mcm.id IS NOT NULL OR ai.id IS NOT NULL
+        `
 
-        if (mayaError) throw mayaError
+        const activeUserIds = activeUsers.map((u: any) => u.id)
 
-        const { data: imageActivity, error: imageError } = await supabase
-          .from("ai_images")
-          .select("user_id")
-          .gte("created_at", cutoffDate.toISOString())
-
-        if (imageError) throw imageError
-
-        // Get chat user_ids from maya_chats
-        const activeChatIds = mayaActivity?.map((m) => m.chat_id) || []
-        const { data: activeChats } = await supabase.from("maya_chats").select("user_id").in("id", activeChatIds)
-
-        const activeUserIds = new Set([
-          ...(activeChats?.map((c) => c.user_id) || []),
-          ...(imageActivity?.map((i) => i.user_id) || []),
-        ])
-
-        // Get all users except active ones
-        const { data: inactiveUsers, error: usersError } = await supabase
-          .from("users")
-          .select("id, email, display_name, created_at, last_login_at, plan")
-          .not("id", "in", `(${Array.from(activeUserIds).join(",") || "null"})`)
-          .order("last_login_at", { ascending: true })
-
-        if (usersError) throw usersError
+        // Get inactive users
+        const inactiveUsers = activeUserIds.length > 0
+          ? await sql`
+              SELECT id, email, display_name, created_at, last_login_at, plan
+              FROM users
+              WHERE id NOT IN ${sql(activeUserIds)}
+              ORDER BY last_login_at ASC NULLS LAST
+            `
+          : await sql`
+              SELECT id, email, display_name, created_at, last_login_at, plan
+              FROM users
+              ORDER BY last_login_at ASC NULLS LAST
+            `
 
         return {
           success: true,
-          count: inactiveUsers?.length || 0,
+          count: inactiveUsers.length,
           inactiveUsers,
         }
       } catch (error: any) {
@@ -116,62 +121,32 @@ export const analyticsTools = {
     },
     execute: async () => {
       try {
-        // Count images per user
-        const { data: imageCounts, error: imageError } = await supabase.from("ai_images").select("user_id")
+        // Count images and messages per user
+        const userActivity = await getSql()`
+          SELECT 
+            u.id,
+            u.email,
+            u.display_name,
+            u.plan,
+            COUNT(DISTINCT ai.id) as total_images,
+            COUNT(DISTINCT mcm.id) as total_messages
+          FROM users u
+          LEFT JOIN ai_images ai ON ai.user_id = u.id
+          LEFT JOIN maya_chats mc ON mc.user_id = u.id
+          LEFT JOIN maya_chat_messages mcm ON mcm.chat_id = mc.id
+          GROUP BY u.id, u.email, u.display_name, u.plan
+          ORDER BY (COUNT(DISTINCT ai.id) + COUNT(DISTINCT mcm.id)) DESC
+          LIMIT 20
+        `
 
-        if (imageError) throw imageError
-
-        // Count messages per user (via chats)
-        const { data: messages, error: messageError } = await supabase.from("maya_chat_messages").select("chat_id")
-
-        if (messageError) throw messageError
-
-        const { data: chats, error: chatError } = await supabase.from("maya_chats").select("id, user_id")
-
-        if (chatError) throw chatError
-
-        // Aggregate counts
-        const userActivity: Record<string, { images: number; messages: number }> = {}
-
-        imageCounts?.forEach((img) => {
-          if (!userActivity[img.user_id]) {
-            userActivity[img.user_id] = { images: 0, messages: 0 }
-          }
-          userActivity[img.user_id].images++
-        })
-
-        const chatUserMap = new Map(chats?.map((c) => [c.id, c.user_id]))
-        messages?.forEach((msg) => {
-          const userId = chatUserMap.get(msg.chat_id)
-          if (userId) {
-            if (!userActivity[userId]) {
-              userActivity[userId] = { images: 0, messages: 0 }
-            }
-            userActivity[userId].messages++
-          }
-        })
-
-        // Get top 20 users
-        const sortedUsers = Object.entries(userActivity)
-          .sort((a, b) => b[1].images + b[1].messages - (a[1].images + a[1].messages))
-          .slice(0, 20)
-
-        // Get user details
-        const userIds = sortedUsers.map(([id]) => id)
-        const { data: users, error: usersError } = await supabase
-          .from("users")
-          .select("id, email, display_name, plan")
-          .in("id", userIds)
-
-        if (usersError) throw usersError
-
-        const usersMap = new Map(users?.map((u) => [u.id, u]))
-
-        const heavyUsers = sortedUsers.map(([userId, activity]) => ({
-          ...usersMap.get(userId),
-          totalImages: activity.images,
-          totalMessages: activity.messages,
-          totalActivity: activity.images + activity.messages,
+        const heavyUsers = userActivity.map((u: any) => ({
+          id: u.id,
+          email: u.email,
+          display_name: u.display_name,
+          plan: u.plan,
+          totalImages: Number(u.total_images) || 0,
+          totalMessages: Number(u.total_messages) || 0,
+          totalActivity: (Number(u.total_images) || 0) + (Number(u.total_messages) || 0),
         }))
 
         return {
@@ -204,43 +179,30 @@ export const analyticsTools = {
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
 
         // Get users who signed up more than 10 days ago
-        const { data: oldUsers, error: usersError } = await supabase
-          .from("users")
-          .select("id, email, display_name, created_at, last_login_at, plan")
-          .lte("created_at", tenDaysAgo.toISOString())
+        const oldUsers = await getSql()`
+          SELECT id, email, display_name, created_at, last_login_at, plan
+          FROM users
+          WHERE created_at <= ${tenDaysAgo.toISOString()}
+        `
 
-        if (usersError) throw usersError
+        // Get users with recent activity (last 7 days)
+        const activeUsers = await getSql()`
+          SELECT DISTINCT u.id
+          FROM users u
+          LEFT JOIN maya_chats mc ON mc.user_id = u.id
+          LEFT JOIN maya_chat_messages mcm ON mcm.chat_id = mc.id AND mcm.created_at >= ${sevenDaysAgo.toISOString()}
+          LEFT JOIN ai_images ai ON ai.user_id = u.id AND ai.created_at >= ${sevenDaysAgo.toISOString()}
+          WHERE mcm.id IS NOT NULL OR ai.id IS NOT NULL
+        `
 
-        // Get recent activity (last 7 days)
-        const { data: recentMessages, error: msgError } = await supabase
-          .from("maya_chat_messages")
-          .select("chat_id")
-          .gte("created_at", sevenDaysAgo.toISOString())
-
-        if (msgError) throw msgError
-
-        const { data: recentImages, error: imgError } = await supabase
-          .from("ai_images")
-          .select("user_id")
-          .gte("created_at", sevenDaysAgo.toISOString())
-
-        if (imgError) throw imgError
-
-        // Get chat user_ids
-        const activeChatIds = recentMessages?.map((m) => m.chat_id) || []
-        const { data: activeChats } = await supabase.from("maya_chats").select("user_id").in("id", activeChatIds)
-
-        const activeUserIds = new Set([
-          ...(activeChats?.map((c) => c.user_id) || []),
-          ...(recentImages?.map((i) => i.user_id) || []),
-        ])
+        const activeUserIds = new Set(activeUsers.map((u: any) => u.id))
 
         // Filter for old users with no recent activity
-        const churnRiskUsers = oldUsers?.filter((user) => !activeUserIds.has(user.id))
+        const churnRiskUsers = oldUsers.filter((user: any) => !activeUserIds.has(user.id))
 
         return {
           success: true,
-          count: churnRiskUsers?.length || 0,
+          count: churnRiskUsers.length,
           churnRiskUsers,
         }
       } catch (error: any) {
@@ -262,57 +224,57 @@ export const analyticsTools = {
     execute: async () => {
       try {
         // Count Maya chats
-        const { count: mayaChatsCount, error: chatsError } = await supabase
-          .from("maya_chats")
-          .select("*", { count: "exact", head: true })
-
-        if (chatsError) throw chatsError
+        const [mayaChatsResult] = await getSql()`
+          SELECT COUNT(*) as count
+          FROM maya_chats
+        `
+        const mayaChatsCount = Number(mayaChatsResult?.count || 0)
 
         // Count Maya messages
-        const { count: mayaMessagesCount, error: messagesError } = await supabase
-          .from("maya_chat_messages")
-          .select("*", { count: "exact", head: true })
-
-        if (messagesError) throw messagesError
+        const [mayaMessagesResult] = await getSql()`
+          SELECT COUNT(*) as count
+          FROM maya_chat_messages
+        `
+        const mayaMessagesCount = Number(mayaMessagesResult?.count || 0)
 
         // Count photoshoot images (category='photoshoot')
-        const { count: photoshootsCount, error: photosError } = await supabase
-          .from("ai_images")
-          .select("*", { count: "exact", head: true })
-          .eq("category", "photoshoot")
-
-        if (photosError) throw photosError
+        const [photoshootsResult] = await getSql()`
+          SELECT COUNT(*) as count
+          FROM ai_images
+          WHERE category = 'photoshoot'
+        `
+        const photoshootsCount = Number(photoshootsResult?.count || 0)
 
         // Count videos
-        const { count: videosCount, error: videosError } = await supabase
-          .from("generated_videos")
-          .select("*", { count: "exact", head: true })
-
-        if (videosError) throw videosError
+        const [videosResult] = await sql`
+          SELECT COUNT(*) as count
+          FROM generated_videos
+        `
+        const videosCount = Number(videosResult?.count || 0)
 
         // Count concepts
-        const { count: conceptsCount, error: conceptsError } = await supabase
-          .from("maya_concepts")
-          .select("*", { count: "exact", head: true })
-
-        if (conceptsError) throw conceptsError
+        const [conceptsResult] = await sql`
+          SELECT COUNT(*) as count
+          FROM maya_concepts
+        `
+        const conceptsCount = Number(conceptsResult?.count || 0)
 
         // Count feed layouts
-        const { count: feedLayoutsCount, error: feedError } = await supabase
-          .from("feed_layouts")
-          .select("*", { count: "exact", head: true })
-
-        if (feedError) throw feedError
+        const [feedLayoutsResult] = await sql`
+          SELECT COUNT(*) as count
+          FROM feed_layouts
+        `
+        const feedLayoutsCount = Number(feedLayoutsResult?.count || 0)
 
         return {
           success: true,
           stats: {
-            mayaChats: mayaChatsCount || 0,
-            mayaMessages: mayaMessagesCount || 0,
-            photoshoots: photoshootsCount || 0,
-            videos: videosCount || 0,
-            concepts: conceptsCount || 0,
-            feedLayouts: feedLayoutsCount || 0,
+            mayaChats: mayaChatsCount,
+            mayaMessages: mayaMessagesCount,
+            photoshoots: photoshootsCount,
+            videos: videosCount,
+            concepts: conceptsCount,
+            feedLayouts: feedLayoutsCount,
           },
         }
       } catch (error: any) {

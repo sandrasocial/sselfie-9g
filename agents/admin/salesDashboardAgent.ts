@@ -1,18 +1,31 @@
 import { BaseAgent } from "../core/baseAgent"
+import type { IAgent } from "../core/agent-interface"
 import { neon } from "@neondatabase/serverless"
 
 const sql = neon(process.env.DATABASE_URL!)
 
 /**
- * SalesDashboardAgent
- *
- * Admin-only agent responsible for:
- * - Analyzing revenue, subscriptions, and usage
- * - Generating weekly sales insights
- * - Caching insights for quick dashboard loading
- * - Providing strategic recommendations
+ * Agent: SalesDashboardAgent
+ * 
+ * Responsibility:
+ *  - Analyzes revenue, subscriptions, and usage data
+ *  - Generates weekly sales insights
+ *  - Caches insights for quick dashboard loading
+ *  - Provides strategic recommendations
+ * 
+ * Implements:
+ *  - IAgent (process, getMetadata)
+ * 
+ * Usage:
+ *  - Called by workflows (salesDashboardWorkflow)
+ *  - Called by Admin API (/api/admin/agents/run)
+ *  - Input: { action: "generateInsights" | "getLatest" }
+ * 
+ * Notes:
+ *  - ADMIN ONLY - never expose to regular users
+ *  - Tracks MRR, churn rate, LTV, credit usage, feature adoption
  */
-export class SalesDashboardAgent extends BaseAgent {
+export class SalesDashboardAgent extends BaseAgent implements IAgent {
   constructor() {
     super({
       name: "SalesDashboard",
@@ -141,6 +154,39 @@ Tone: Analytical, strategic, actionable, executive-level.`,
     } catch (error) {
       console.error("[SalesDashboardAgent] Error fetching insights:", error)
       return null
+    }
+  }
+
+  /**
+   * Run agent logic - internal method
+   */
+  async run(input: unknown): Promise<unknown> {
+    if (
+      typeof input === "object" &&
+      input !== null &&
+      "action" in input &&
+      typeof input.action === "string"
+    ) {
+      if (input.action === "generateInsights") {
+        return await this.generateWeeklySalesInsights()
+      }
+      if (input.action === "getLatest") {
+        return await this.getLatestInsights()
+      }
+    }
+    // Default: generate insights
+    return await this.generateWeeklySalesInsights()
+  }
+
+  /**
+   * Get agent metadata
+   */
+  getMetadata() {
+    return {
+      name: this.name,
+      version: "1.0.0",
+      description: this.description,
+      critical: true, // Mark as critical for alerts
     }
   }
 }

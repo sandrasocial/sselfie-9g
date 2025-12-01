@@ -1,18 +1,29 @@
 import { BaseAgent } from "../core/baseAgent"
+import type { IAgent } from "../core/agent-interface"
 import { neon } from "@neondatabase/serverless"
 
 const sql = neon(process.env.DATABASE_URL!)
 
 /**
- * LeadMagnetAgent
- *
- * Automated agent responsible for:
- * - Delivering lead magnets to new users
- * - Tracking lead magnet engagement
- * - Converting leads into paid users
- * - Analyzing lead magnet performance
+ * Agent: LeadMagnetAgent
+ * 
+ * Responsibility:
+ *  - Delivers lead magnets to new users (PDF guides, templates, challenges)
+ *  - Tracks engagement (opens, clicks, conversions)
+ *  - Analyzes lead magnet performance
+ * 
+ * Implements:
+ *  - IAgent (process, getMetadata)
+ * 
+ * Usage:
+ *  - Called by workflows (leadMagnetWorkflow)
+ *  - Called by Admin API (/api/admin/agents/run)
+ *  - Input: { action: "deliver" | "trackOpen" | "trackClick" | "trackConversion", params: {...} }
+ * 
+ * Notes:
+ *  - Lead magnet types: Instagram Feed Blueprint, 7-Day Photo Challenge, Content Calendar Template
  */
-export class LeadMagnetAgent extends BaseAgent {
+export class LeadMagnetAgent extends BaseAgent implements IAgent {
   constructor() {
     super({
       name: "LeadMagnet",
@@ -123,6 +134,46 @@ Tone: Warm, helpful, value-driven, no hard selling.`,
     } catch (error) {
       console.error("[LeadMagnetAgent] Error tracking conversion:", error)
       return { success: false }
+    }
+  }
+
+  /**
+   * Run agent logic - internal method
+   */
+  async run(input: unknown): Promise<unknown> {
+    if (
+      typeof input === "object" &&
+      input !== null &&
+      "action" in input &&
+      typeof input.action === "string" &&
+      "params" in input &&
+      input.params
+    ) {
+      const params = input.params as any
+      if (input.action === "deliver") {
+        return await this.deliverLeadMagnet(params)
+      }
+      if (input.action === "trackOpen") {
+        return await this.trackOpen(params)
+      }
+      if (input.action === "trackClick") {
+        return await this.trackClick(params)
+      }
+      if (input.action === "trackConversion") {
+        return await this.trackConversion(params)
+      }
+    }
+    return input
+  }
+
+  /**
+   * Get agent metadata
+   */
+  getMetadata() {
+    return {
+      name: this.name,
+      version: "1.0.0",
+      description: this.description,
     }
   }
 }

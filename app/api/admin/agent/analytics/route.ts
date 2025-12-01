@@ -1,26 +1,20 @@
 import { NextResponse } from "next/server"
-import { createServerClient } from "@/lib/supabase/server"
-import { getUserByAuthId } from "@/lib/user-mapping"
+import type { NextRequest } from "next/server"
+import { requireAdmin } from "@/lib/security/require-admin"
+import { checkAdminRateLimit } from "@/lib/security/admin-rate-limit"
 import { neon } from "@neondatabase/serverless"
 
 const sql = neon(process.env.DATABASE_URL!)
-const ADMIN_EMAIL = "ssa@ssasocial.com"
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    const supabase = await createServerClient()
-    const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser()
+    // Admin auth check
+    const admin = await requireAdmin(request)
+    if (admin instanceof NextResponse) return admin
 
-    if (!authUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    const user = await getUserByAuthId(authUser.id)
-    if (!user || user.email !== ADMIN_EMAIL) {
-      return NextResponse.json({ error: "Admin access required" }, { status: 403 })
-    }
+    // Rate limiting
+    const rateLimitCheck = await checkAdminRateLimit(request, `admin:${admin.neonUserId}`)
+    if (rateLimitCheck) return rateLimitCheck
 
     const { searchParams } = new URL(request.url)
     const scope = searchParams.get("scope") || "platform" // Default to platform-wide view

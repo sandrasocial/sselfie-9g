@@ -1,10 +1,27 @@
 import { BaseAgent } from "../core/baseAgent"
+import type { IAgent } from "../core/agent-interface"
 
 /**
- * FeedDesignerAgent
- * Analyzes user feed layouts and provides strategic design recommendations
+ * Agent: FeedDesignerAgent
+ * 
+ * Responsibility:
+ *  - Analyzes Instagram feed layouts and visual rhythm
+ *  - Provides strategic design recommendations (color palette, posting sequence, content gaps)
+ *  - Suggests content pillar balance and visual cohesion improvements
+ * 
+ * Implements:
+ *  - IAgent (process, getMetadata)
+ * 
+ * Usage:
+ *  - Called by workflows (feedDesignerWorkflow)
+ *  - Called by Admin API (/api/admin/agents/run)
+ *  - Input: { feedData: { layout, posts, strategy } }
+ * 
+ * Notes:
+ *  - Currently a stub implementation
+ *  - Uses Claude Sonnet 4 for analysis
  */
-export class FeedDesignerAgent extends BaseAgent {
+export class FeedDesignerAgent extends BaseAgent implements IAgent {
   constructor() {
     super({
       name: "FeedDesigner",
@@ -84,6 +101,33 @@ Tone: Creative, strategic, encouraging. Use Instagram-specific terminology.`,
       pillarBalance: { education: 3, inspiration: 3, promotion: 3 },
       visualCohesion: 8,
       postingSequence: ["education", "inspiration", "promotion"],
+    }
+  }
+
+  /**
+   * Run agent logic - internal method
+   */
+  async run(input: unknown): Promise<unknown> {
+    if (
+      typeof input === "object" &&
+      input !== null &&
+      "feedData" in input &&
+      input.feedData
+    ) {
+      return await this.analyzeFeed(input.feedData as any)
+    }
+    // Stub implementation - not yet fully implemented
+    return { status: "not_implemented", message: "FeedDesignerAgent is a stub" }
+  }
+
+  /**
+   * Get agent metadata
+   */
+  getMetadata() {
+    return {
+      name: this.name,
+      version: "1.0.0",
+      description: this.description,
     }
   }
 }
