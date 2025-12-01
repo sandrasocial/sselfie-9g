@@ -2,15 +2,13 @@ import { Redis } from "@upstash/redis"
 
 // Initialize Upstash Redis client
 export function getRedisClient() {
-  const url = process.env.UPSTASH_KV_KV_REST_API_URL
-  const token = process.env.UPSTASH_KV_KV_REST_API_TOKEN
+  const url = process.env.UPSTASH_KV_REST_API_URL
+  const token = process.env.UPSTASH_KV_REST_API_TOKEN
 
   if (!url || !token) {
     console.error("[v0] Upstash Redis environment variables not set")
-    throw new Error("UPSTASH_KV_KV_REST_API_URL and UPSTASH_KV_KV_REST_API_TOKEN must be set")
+    throw new Error("UPSTASH_KV_REST_API_URL and UPSTASH_KV_REST_API_TOKEN must be set")
   }
-
-  console.log("[v0] Redis client initialized with URL:", url.substring(0, 30) + "...")
 
   return new Redis({
     url,

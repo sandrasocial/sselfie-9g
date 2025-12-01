@@ -1,20 +1,16 @@
-// Environment variable helper that supports both Next.js and Vite naming conventions
-export function getPublicEnvVar(name: string): string | undefined {
-  // Try Next.js convention first
-  const nextPublicVar = process.env[`NEXT_PUBLIC_${name}`]
-  if (nextPublicVar) return nextPublicVar
+let aiEnvValidated = false
 
-  // Try Vite convention
-  const vitePublicVar = process.env[`SUPABASE_VITE_PUBLIC_${name}`]
-  if (vitePublicVar) return vitePublicVar
+export function assertAIEnv() {
+  if (aiEnvValidated) return
 
-  // Try without prefix (server-side only)
-  return process.env[name]
-}
+  if (process.env.NODE_ENV === "production") {
+    if (!process.env.AI_GATEWAY_API_KEY) {
+      throw new Error("AI_GATEWAY_API_KEY must be configured in production environments.")
+    }
+    if (!process.env.ANTHROPIC_API_KEY && !process.env.OPENAI_API_KEY) {
+      throw new Error("Either ANTHROPIC_API_KEY or OPENAI_API_KEY must be configured.")
+    }
+  }
 
-export function getSupabaseEnvVars() {
-  const url = getPublicEnvVar("SUPABASE_URL")
-  const anonKey = getPublicEnvVar("SUPABASE_ANON_KEY")
-
-  return { url, anonKey }
+  aiEnvValidated = true
 }
