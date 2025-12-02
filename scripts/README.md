@@ -19,23 +19,6 @@ This directory contains essential database schema and utility scripts for the SS
 - `31-seed-sandra-personal-story.sql` - Sandra's personal story and voice examples
 - `32-create-instagram-connections.sql` - Instagram API integration infrastructure
 
-### Agent System Tables (Run After Core Schema)
-
-**Purpose:** Backend automation for marketing, sales, and content workflows
-
-**Run in this order:**
-1. `create-marketing-email-queue.sql` - Email queue + marketing_email_log tables
-2. `add-email-tracking-fields.sql` - Adds analytics tracking (open/click rates)
-3. `create-lead-magnet-activity.sql` - Lead magnet conversion tracking
-4. `create-subscription-events.sql` - Subscription lifecycle events
-5. `create-sales-insights-cache.sql` - Sales analytics cache
-6. `create-content-drafts.sql` - AI-generated content storage
-7. `create-user-journey-messages.sql` - Personalized user journey messages
-8. `create-instagram-post-queue.sql` - Instagram auto-posting queue
-9. `create-feed-performance-insights.sql` - Feed performance analytics
-
-**Note:** All agent system scripts are Neon-compatible (no RLS/auth.uid())
-
 ### Utilities
 - `create-stripe-beta-coupon.ts` - Create beta program discount codes
 - `sync-stripe-products.ts` - Sync products with Stripe

@@ -29,7 +29,7 @@ export async function POST(req: Request) {
 
     const dbUserId = user.id
 
-    console.log("[v0] User authenticated")
+    console.log("[v0] User authenticated:", { userId, dbUserId })
 
     const body = await req.json()
     const { messages, chatId } = body
@@ -75,7 +75,7 @@ export async function POST(req: Request) {
       .filter(Boolean)
       .join("\n")
 
-    // Redact verbose content logging for privacy
+    console.log("[v0] Conversation summary length:", conversationSummary.length)
 
     const modelMessages = messages
       .filter(
@@ -132,7 +132,15 @@ export async function POST(req: Request) {
 
     const supabase = await createServerClient()
 
-    console.log("[v0] Maya chat invoked", { messageCount: modelMessages.length, chatId: chatId ? "present" : "none" })
+    console.log(
+      "[v0] Maya chat API called with",
+      modelMessages.length,
+      "messages (filtered from",
+      messages.length,
+      "), chatId:",
+      chatId,
+    )
+    console.log("[v0] User:", user.email, "ID:", user.id)
 
     // Get user context for personalization
     const userContext = await getUserContextForMaya(userId)

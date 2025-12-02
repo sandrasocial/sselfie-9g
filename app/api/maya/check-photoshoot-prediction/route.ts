@@ -3,11 +3,11 @@ import { getReplicateClient } from "@/lib/replicate-client"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { put } from "@vercel/blob"
 import { neon } from "@neondatabase/serverless"
-import { getUserByAuthId } from "@/lib/user-mapping"
+
+const sql = neon(process.env.DATABASE_URL || "")
 
 export async function GET(request: NextRequest) {
   try {
-    const sql = neon(process.env.DATABASE_URL || "")
     const { user, error: authError } = await getAuthenticatedUser()
 
     if (authError || !user) {
@@ -42,15 +42,6 @@ export async function GET(request: NextRequest) {
       }
 
       numericUserId = String(dbUser.id)
-    }
-
-    // Enforce that provided userId (if any) matches the authenticated user
-    const neonUser = await getUserByAuthId(user.id)
-    if (!neonUser) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
-    }
-    if (numericUserId !== String(neonUser.id)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
     console.log("[v0] ✅ Using user_id:", numericUserId)

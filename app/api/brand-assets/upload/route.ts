@@ -5,9 +5,10 @@ import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 
+const sql = neon(process.env.DATABASE_URL!)
+
 export async function POST(request: NextRequest) {
   try {
-    const sql = neon(process.env.DATABASE_URL!)
     const supabase = await createServerClient()
 
     const { user: authUser, error: authError } = await getAuthenticatedUser()
@@ -27,17 +28,6 @@ export async function POST(request: NextRequest) {
 
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 })
-    }
-
-    // Validate MIME type and size (max 10MB)
-    const allowedTypes = new Set(["image/png", "image/jpeg", "image/webp", "image/svg+xml"])
-    const maxBytes = 10 * 1024 * 1024
-
-    if (!allowedTypes.has(file.type)) {
-      return NextResponse.json({ error: "Unsupported file type" }, { status: 415 })
-    }
-    if (file.size > maxBytes) {
-      return NextResponse.json({ error: "File too large (max 10MB)" }, { status: 413 })
     }
 
     const blob = await put(`brand-assets/${neonUser.id}/${file.name}`, file, {

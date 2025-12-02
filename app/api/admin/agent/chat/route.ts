@@ -3,15 +3,12 @@ import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 import { getCompleteAdminContext } from "@/lib/admin/get-complete-context"
-import { requireAdmin } from "@/lib/security/require-admin"
-import { checkAdminRateLimit } from "@/lib/security/admin-rate-limit"
 import { neon } from "@neondatabase/serverless"
 import { z } from "zod"
 import { Resend } from "resend"
-import { NextResponse } from "next/server"
-import type { NextRequest } from "next/server"
 
 const sql = neon(process.env.DATABASE_URL!)
+const ADMIN_EMAIL = "ssa@ssasocial.com"
 const resend = new Resend(process.env.RESEND_API_KEY!)
 const RESEND_AUDIENCE_ID = process.env.RESEND_AUDIENCE_ID!
 
@@ -761,23 +758,20 @@ const resendAudienceTool = tool({
 
 export async function POST(req: Request) {
   try {
-    // Admin auth check
-    const admin = await requireAdmin(req)
-    if (admin instanceof NextResponse) return admin
+    const { messages, chatId } = await req.json()
 
-    // Rate limiting
-    const rateLimitCheck = await checkAdminRateLimit(req as any, `admin:${admin.neonUserId}`)
-    if (rateLimitCheck) return rateLimitCheck
+    const supabase = await createServerClient()
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser()
 
-    // Input validation
-    const body = await req.json().catch(() => ({}))
-    const { messages, chatId } = body
+    if (!authUser) {
+      return new Response("Unauthorized", { status: 401 })
+    }
 
-    if (!messages || !Array.isArray(messages) || messages.length === 0) {
-      return new Response(JSON.stringify({ error: "Messages array is required and cannot be empty" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" }
-      })
+    const user = await getUserByAuthId(authUser.id)
+    if (!user || user.email !== ADMIN_EMAIL) {
+      return new Response("Admin access required", { status: 403 })
     }
 
     console.log("[v0] Chat request:", { chatId, messagesCount: messages?.length })
@@ -809,7 +803,7 @@ export async function POST(req: Request) {
 
       const newChatResult = await queryWithRetry(() => sql`
         INSERT INTO admin_agent_chats (admin_user_id, chat_title, agent_mode, created_at, updated_at, last_activity)
-        VALUES (${admin.neonUserId}, ${chatTitle}, ${detectedMode}, NOW(), NOW(), NOW())
+        VALUES (${user.id}, ${chatTitle}, ${detectedMode}, NOW(), NOW(), NOW())
         RETURNING id, agent_mode
       `)
       

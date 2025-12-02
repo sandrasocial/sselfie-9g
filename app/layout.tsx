@@ -2,7 +2,6 @@ import type React from "react"
 import type { Metadata, Viewport } from "next"
 // import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
-import { ErrorBoundary } from "@/components/error-boundary"
 
 // const _geist = Geist({ subsets: ["latin"] })
 // const _geistMono = Geist_Mono({ subsets: ["latin"] })
@@ -106,6 +105,16 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  if (typeof window === "undefined") {
+    console.log("[v0] Server-side env check:")
+    console.log("[v0] SUPABASE_URL:", process.env.SUPABASE_URL ? "✓ Set" : "✗ Missing")
+    console.log(
+      "[v0] SUPABASE_VITE_PUBLIC_SUPABASE_URL:",
+      process.env.SUPABASE_VITE_PUBLIC_SUPABASE_URL ? "✓ Set" : "✗ Missing",
+    )
+    console.log("[v0] NEXT_PUBLIC_SUPABASE_URL:", process.env.NEXT_PUBLIC_SUPABASE_URL ? "✓ Set" : "✗ Missing")
+  }
+
   return (
     <html lang="en">
       <head>
@@ -156,9 +165,7 @@ export default function RootLayout({
         {/* Removed unused font imports */}
       </head>
       <body className={`font-sans antialiased`}>
-        <ErrorBoundary>
-          {children}
-        </ErrorBoundary>
+        {children}
         {/* <Analytics /> */}
       </body>
     </html>

@@ -4,9 +4,10 @@ import { getUserByAuthId } from "@/lib/user-mapping"
 import { hasStudioMembership } from "@/lib/subscription"
 import { createServerClient } from "@/lib/supabase/server"
 
+const sql = neon(process.env.DATABASE_URL!)
+
 export async function GET() {
   try {
-    const sql = neon(process.env.DATABASE_URL!)
     console.log("[v0] GET /api/academy/flatlay-images called")
 
     const supabase = await createServerClient()

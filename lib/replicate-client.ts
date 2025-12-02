@@ -10,11 +10,16 @@ export function getReplicateClient() {
 
   const apiToken = process.env.REPLICATE_API_TOKEN
 
+  const tokenPreview = apiToken ? `${apiToken.substring(0, 8)}...${apiToken.substring(apiToken.length - 4)}` : "none"
+  console.log("[v0] Replicate API token preview:", tokenPreview)
+  console.log("[v0] Replicate API token length:", apiToken?.length || 0)
+
   if (!apiToken) {
     throw new Error("REPLICATE_API_TOKEN environment variable is not set")
   }
 
   if (!apiToken.startsWith("r8_")) {
+    console.error("[v0] Invalid Replicate token format. Token should start with 'r8_'")
     throw new Error("Invalid REPLICATE_API_TOKEN format. Please check your token in the Vars section.")
   }
 

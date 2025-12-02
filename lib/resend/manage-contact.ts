@@ -1,18 +1,8 @@
 // Resend Audience Management
 import { Resend } from "resend"
 
-let resendClient: Resend | null = null
-const audienceId = process.env.RESEND_AUDIENCE_ID
-
-function getResendClient() {
-  if (!process.env.RESEND_API_KEY) {
-    return null
-  }
-  if (!resendClient) {
-    resendClient = new Resend(process.env.RESEND_API_KEY)
-  }
-  return resendClient
-}
+const resend = new Resend(process.env.RESEND_API_KEY)
+const audienceId = process.env.RESEND_AUDIENCE_ID!
 
 export interface ContactTags {
   source?: string // 'freebie-subscriber', 'one-time-purchase', 'membership'
@@ -31,8 +21,7 @@ export async function addOrUpdateResendContact(
   tags: ContactTags,
 ): Promise<{ success: boolean; contactId?: string; error?: string }> {
   try {
-    const resend = getResendClient()
-    if (!resend) {
+    if (!process.env.RESEND_API_KEY) {
       console.log("[v0] RESEND_API_KEY not configured, skipping audience sync")
       return { success: false, error: "Resend not configured" }
     }
@@ -116,8 +105,7 @@ export async function updateContactTags(
   newTags: ContactTags,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const resend = getResendClient()
-    if (!resend || !audienceId) {
+    if (!process.env.RESEND_API_KEY || !audienceId) {
       return { success: false, error: "Resend not configured" }
     }
 
@@ -185,8 +173,7 @@ export async function updateContactTags(
  */
 export async function removeResendContact(email: string): Promise<{ success: boolean; error?: string }> {
   try {
-    const resend = getResendClient()
-    if (!resend || !audienceId) {
+    if (!process.env.RESEND_API_KEY || !audienceId) {
       return { success: false, error: "Resend not configured" }
     }
 
@@ -233,8 +220,7 @@ export async function addContactToSegment(
   segmentId: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const resend = getResendClient()
-    if (!resend) {
+    if (!process.env.RESEND_API_KEY) {
       console.log("[v0] RESEND_API_KEY not configured, skipping segment addition")
       return { success: false, error: "Resend not configured" }
     }

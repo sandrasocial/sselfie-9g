@@ -1,22 +1,27 @@
 import { NextResponse } from "next/server"
-import type { NextRequest } from "next/server"
-import { requireAdmin } from "@/lib/security/require-admin"
-import { checkAdminRateLimit } from "@/lib/security/admin-rate-limit"
+import { createServerClient } from "@/lib/supabase/server"
+import { getUserByAuthId } from "@/lib/user-mapping"
 import { neon } from "@neondatabase/serverless"
 
 const sql = neon(process.env.DATABASE_URL!)
+const ADMIN_EMAIL = "ssa@ssasocial.com"
 
-export async function GET(request: NextRequest) {
+export async function GET(request: Request) {
   try {
-    // Admin auth check
-    const admin = await requireAdmin(request)
-    if (admin instanceof NextResponse) return admin
+    const supabase = await createServerClient()
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser()
 
-    // Rate limiting
-    const rateLimitCheck = await checkAdminRateLimit(request, `admin:${admin.neonUserId}`)
-    if (rateLimitCheck) return rateLimitCheck
+    if (!authUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
 
-    // Input validation
+    const user = await getUserByAuthId(authUser.id)
+    if (!user || user.email !== ADMIN_EMAIL) {
+      return NextResponse.json({ error: "Admin access required" }, { status: 403 })
+    }
+
     const { searchParams } = new URL(request.url)
     const chatId = searchParams.get("chatId")
 
@@ -24,16 +29,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "chatId required" }, { status: 400 })
     }
 
-    const chatIdNum = Number.parseInt(chatId, 10)
-    if (Number.isNaN(chatIdNum)) {
-      return NextResponse.json({ error: "Invalid chatId format" }, { status: 400 })
-    }
-
     // Fetch chat details
     const chatResult = await sql`
       SELECT * FROM admin_agent_chats
-      WHERE id = ${chatIdNum}
-      AND admin_user_id = ${admin.neonUserId}
+      WHERE id = ${chatId}
+      AND admin_user_id = ${user.id}
       LIMIT 1
     `
 
@@ -46,11 +46,11 @@ export async function GET(request: NextRequest) {
     // Fetch messages for this chat
     const messages = await sql`
       SELECT * FROM admin_agent_messages
-      WHERE chat_id = ${chatIdNum}
+      WHERE chat_id = ${chatId}
       ORDER BY created_at ASC
     `
 
-    console.log("[v0] Loaded admin chat:", chatIdNum, "Messages:", messages.length)
+    console.log("[v0] Loaded admin chat:", chatId, "Messages:", messages.length)
 
     // Format messages with parts structure matching Maya's format
     const formattedMessages = messages.map((msg: any) => ({
@@ -67,10 +67,6 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error("[v0] Error loading admin chat:", error)
-    const errorMessage = error instanceof Error ? error.message : "Unknown error"
-    return NextResponse.json(
-      { error: "Internal server error", details: errorMessage },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

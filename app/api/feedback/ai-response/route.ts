@@ -301,9 +301,9 @@ Write the email now:`,
   return text.trim()
 }
 
-async function sendCriticalAlertEmail(feedback: any, bugAnalysis: BugAnalysis, baseUrl: string) {
+async function sendCriticalAlertEmail(feedback: any, bugAnalysis: BugAnalysis) {
   try {
-    const response = await fetch(`${baseUrl}/api/email/send`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/email/send`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -341,9 +341,10 @@ interface BugAnalysis {
   needsAlert: boolean
 }
 
+const sql = neon(process.env.DATABASE_URL!)
+
 export async function POST(request: NextRequest) {
   try {
-    const sql = neon(process.env.DATABASE_URL!)
     const supabase = await createServerClient()
     const {
       data: { user },
@@ -408,7 +409,7 @@ export async function POST(request: NextRequest) {
         console.error("[v0] Failed to store AI response:", insertError)
       }
 
-        if (bugAnalysis) {
+      if (bugAnalysis) {
         console.log("[v0] Storing bug analysis...")
         try {
           const pgArray = `{${bugAnalysis.suggestedFiles.map((f) => `"${f.replace(/"/g, '\\"')}"`).join(",")}}`
@@ -435,8 +436,7 @@ export async function POST(request: NextRequest) {
 
         if (bugAnalysis.needsAlert) {
           console.log("[v0] Sending critical alert email...")
-          const baseUrl = request.nextUrl.origin
-          await sendCriticalAlertEmail(feedback, bugAnalysis, baseUrl)
+          await sendCriticalAlertEmail(feedback, bugAnalysis)
         }
       }
     }

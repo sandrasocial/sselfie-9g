@@ -3,11 +3,11 @@ import { neon } from "@neondatabase/serverless"
 import { getReplicateClient } from "@/lib/replicate-client"
 import { put } from "@vercel/blob"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
-import { getUserByAuthId } from "@/lib/user-mapping"
+
+const sql = neon(process.env.DATABASE_URL || "")
 
 export async function GET(request: NextRequest) {
   try {
-    const sql = neon(process.env.DATABASE_URL || "")
     const { user, error: authError } = await getAuthenticatedUser()
 
     if (authError || !user) {
@@ -20,20 +20,6 @@ export async function GET(request: NextRequest) {
 
     if (!predictionId || !generationId) {
       return NextResponse.json({ error: "Missing parameters" }, { status: 400 })
-    }
-
-    // Enforce ownership: generation must belong to current user
-    const neonUser = await getUserByAuthId(user.id)
-    if (!neonUser) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
-    }
-    const [owned] = await sql`
-      SELECT id FROM generated_images 
-      WHERE id = ${Number.parseInt(generationId)} AND user_id = ${neonUser.id}
-      LIMIT 1
-    `
-    if (!owned) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
     const replicate = getReplicateClient()

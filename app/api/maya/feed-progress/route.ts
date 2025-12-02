@@ -1,21 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getFeedProgress } from "@/lib/feed-progress"
-import { getAuthenticatedUser } from "@/lib/auth-helper"
-import { getUserByAuthId } from "@/lib/user-mapping"
 
 export async function GET(request: NextRequest) {
   try {
-    const { user, error } = await getAuthenticatedUser()
-    if (error || !user) {
-      return NextResponse.json({ status: "idle", message: "Unauthorized", progress: 0 }, { status: 401 })
-    }
-
-    const neonUser = await getUserByAuthId(user.id)
-    if (!neonUser) {
-      return NextResponse.json({ status: "idle", message: "User not found", progress: 0 }, { status: 404 })
-    }
-
-    const userId = String(neonUser.id)
+    const userId = request.nextUrl.searchParams.get("userId")
 
     if (!userId) {
       return NextResponse.json({

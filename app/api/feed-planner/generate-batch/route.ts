@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from "next/server"
 import { getUser } from "@/lib/auth-helper"
 import { neon } from "@neondatabase/serverless"
 
+const sql = neon(process.env.DATABASE_URL!)
+
 export async function POST(request: NextRequest) {
   try {
-    const sql = neon(process.env.DATABASE_URL!)
     const user = await getUser(request)
     if (!user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -38,18 +39,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No posts to generate" }, { status: 400 })
     }
 
-    // Resolve base URL safely for internal API calls
-    const origin = request.nextUrl.origin
-
     // Trigger generation for each post
     const predictions = []
     for (const post of posts) {
       try {
-        const response = await fetch(`${origin}/api/feed/${feedLayoutId}/generate-single`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ postId: post.id }),
-        })
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_SITE_URL}/api/feed/${feedLayoutId}/generate-single`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ postId: post.id }),
+          },
+        )
 
         if (response.ok) {
           const data = await response.json()

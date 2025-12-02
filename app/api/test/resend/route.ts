@@ -1,12 +1,8 @@
 import { Resend } from "resend"
 import { NextResponse } from "next/server"
-import { requireAdmin } from "@/lib/security/require-admin"
 
 export async function GET() {
   try {
-    const guard = await requireAdmin()
-    if (guard instanceof NextResponse) return guard
-
     const resend = new Resend(process.env.RESEND_API_KEY)
 
     console.log("[v0] Testing Resend configuration...")

@@ -4,7 +4,6 @@ import type React from "react"
 import { useState } from "react"
 import { Input } from "@/components/ui/input"
 import Image from "next/image"
-import { track } from "@/lib/analytics"
 
 interface BlueprintEmailCaptureProps {
   onSuccess: (email: string, name: string, accessToken: string) => void
@@ -55,7 +54,6 @@ export function BlueprintEmailCapture({ onSuccess, formData, currentStep }: Blue
       }
 
       console.log("[v0] Successfully saved blueprint progress")
-      track("blueprint_submitted", { email })
       onSuccess(email, name, data.accessToken)
     } catch (err) {
       console.error("[v0] Blueprint subscribe error:", err)

@@ -1,13 +1,9 @@
 import { NextResponse } from "next/server"
 import { sendEmail } from "@/lib/email/send-email"
 import { generateWelcomeEmail } from "@/lib/email/templates/welcome-email"
-import { requireAdmin } from "@/lib/security/require-admin"
 
 export async function GET() {
   try {
-    const guard = await requireAdmin()
-    if (guard instanceof NextResponse) return guard
-
     console.log("[v0] Testing email sending...")
 
     // Check if RESEND_API_KEY is configured

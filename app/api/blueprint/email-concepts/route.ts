@@ -1,14 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { Resend } from "resend"
-import { requireAdmin } from "@/lib/security/require-admin"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function POST(req: NextRequest) {
   try {
-    const guard = await requireAdmin(req)
-    if (guard instanceof NextResponse) return guard
-
     const { email, name, concepts, blueprint } = await req.json()
 
     if (!email || !concepts || concepts.length === 0) {
@@ -158,30 +154,6 @@ export async function POST(req: NextRequest) {
     }
 
     console.log("[v0] Blueprint emailed successfully:", data)
-
-    // Trigger Blueprint Follow-Up Pipeline (non-blocking)
-    try {
-      const followUpResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/api/automations/blueprint-followup`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            subscriberId: email, // Use email as subscriber ID for now
-            email,
-            name,
-          }),
-        },
-      )
-      if (followUpResponse.ok) {
-        console.log("[v0] Blueprint follow-up pipeline triggered successfully")
-      } else {
-        console.error("[v0] Failed to trigger blueprint follow-up:", await followUpResponse.text())
-      }
-    } catch (followUpError) {
-      console.error("[v0] Error triggering blueprint follow-up (non-blocking):", followUpError)
-      // Don't fail the main request if follow-up fails
-    }
 
     return NextResponse.json({ success: true, messageId: data?.id })
   } catch (error) {

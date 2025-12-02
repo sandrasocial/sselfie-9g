@@ -5,9 +5,10 @@ import { getReplicateClient } from "@/lib/replicate-client"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { put } from "@vercel/blob"
 
+const sql = neon(process.env.DATABASE_URL!)
+
 export async function GET(request: Request, { params }: { params: { feedId: string } }) {
   try {
-    const sql = neon(process.env.DATABASE_URL!)
     const { user, error: authError } = await getAuthenticatedUser()
 
     if (authError || !user) {
@@ -92,9 +93,66 @@ export async function GET(request: Request, { params }: { params: { feedId: stri
 
 async function applyTextOverlay(imageUrl: string, text: string): Promise<string> {
   try {
-    // Canvas dependency removed; skip server-side overlay and return original image
-    // Frontend can apply overlay styling if needed
-    return imageUrl
+    // Fetch the image
+    const response = await fetch(imageUrl)
+    const imageBlob = await response.blob()
+    const imageBuffer = await imageBlob.arrayBuffer()
+
+    // Use canvas to apply text overlay
+    const { createCanvas, loadImage } = await import("canvas")
+    const image = await loadImage(Buffer.from(imageBuffer))
+
+    const canvas = createCanvas(image.width, image.height)
+    const ctx = canvas.getContext("2d")
+
+    // Draw original image
+    ctx.drawImage(image, 0, 0)
+
+    // Apply semi-transparent overlay for text readability
+    ctx.fillStyle = "rgba(0, 0, 0, 0.3)"
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+    // Configure text style
+    const fontSize = Math.floor(canvas.width / 15)
+    ctx.font = `bold ${fontSize}px "Playfair Display", serif`
+    ctx.fillStyle = "#FFFFFF"
+    ctx.textAlign = "center"
+    ctx.textBaseline = "middle"
+
+    // Word wrap text
+    const maxWidth = canvas.width * 0.8
+    const words = text.split(" ")
+    const lines: string[] = []
+    let currentLine = words[0]
+
+    for (let i = 1; i < words.length; i++) {
+      const testLine = currentLine + " " + words[i]
+      const metrics = ctx.measureText(testLine)
+      if (metrics.width > maxWidth) {
+        lines.push(currentLine)
+        currentLine = words[i]
+      } else {
+        currentLine = testLine
+      }
+    }
+    lines.push(currentLine)
+
+    // Draw text lines
+    const lineHeight = fontSize * 1.4
+    const startY = canvas.height / 2 - ((lines.length - 1) * lineHeight) / 2
+
+    lines.forEach((line, index) => {
+      ctx.fillText(line, canvas.width / 2, startY + index * lineHeight)
+    })
+
+    // Convert to buffer and upload to Blob storage
+    const buffer = canvas.toBuffer("image/jpeg", { quality: 0.9 })
+    const blob = await put(`feed-images/${Date.now()}-overlay.jpg`, buffer, {
+      access: "public",
+      contentType: "image/jpeg",
+    })
+
+    return blob.url
   } catch (error) {
     console.error("[v0] Error applying text overlay:", error)
     // Return original image if overlay fails

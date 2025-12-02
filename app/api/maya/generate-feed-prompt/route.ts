@@ -6,17 +6,10 @@ import { streamText } from "ai"
 import { getMayaPersonality } from "@/lib/maya/personality-enhanced"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 
-let sql: ReturnType<typeof neon> | null = null
+const sql = neon(process.env.DATABASE_URL || "")
 
 export async function POST(request: NextRequest) {
   try {
-    if (!process.env.DATABASE_URL) {
-      return NextResponse.json({ error: "Database not configured" }, { status: 500 })
-    }
-    if (!sql) {
-      sql = neon(process.env.DATABASE_URL)
-    }
-
     const { user, error: authError } = await getAuthenticatedUser()
 
     if (authError || !user) {
@@ -42,7 +35,7 @@ export async function POST(request: NextRequest) {
 
     console.log("[v0] [FEED-PROMPT] Found neon user:", neonUser.id)
 
-    const brandDataResult = await sql!`
+    const brandDataResult = await sql`
       SELECT 
         color_theme,
         custom_colors,
@@ -68,7 +61,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user's trigger word and gender
-    const userDataResult = await sql!`
+    const userDataResult = await sql`
       SELECT 
         u.gender,
         um.trigger_word

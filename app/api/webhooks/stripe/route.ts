@@ -67,41 +67,7 @@ export async function POST(request: NextRequest) {
 
   try {
     switch (event.type) {
-      case "checkout.session.created": {
-        // Track checkout session creation for abandoned checkout detection
-        const session = event.data.object
-        const customerEmail = session.customer_details?.email || session.customer_email
-        const userId = session.metadata?.user_id
-
-        if (customerEmail && userId) {
-          console.log(`[v0] Checkout session created for ${customerEmail} (user ${userId})`)
-          
-          // Store session creation timestamp for abandoned checkout detection
-          // This will be checked by a cron job or when session expires
-          try {
-            await sql`
-              INSERT INTO abandoned_checkouts (user_id, email, session_id, created_at)
-              VALUES (${userId}, ${customerEmail}, ${session.id}, NOW())
-              ON CONFLICT (session_id) DO NOTHING
-            `
-            console.log(`[v0] Tracked checkout session ${session.id} for abandoned checkout detection`)
-          } catch (trackError) {
-            console.error(`[v0] Failed to track checkout session:`, trackError)
-            // Non-critical, continue
-          }
-        }
-        break
-      }
-
       case "checkout.session.completed": {
-        // Remove from abandoned checkouts if completed
-        const session = event.data.object
-        try {
-          await sql`DELETE FROM abandoned_checkouts WHERE session_id = ${session.id}`
-        } catch (cleanupError) {
-          // Non-critical
-          console.error(`[v0] Failed to cleanup abandoned checkout tracking:`, cleanupError)
-        }
         const session = event.data.object
 
         console.log("[v0] 🎉 Checkout session completed!")
@@ -537,21 +503,6 @@ export async function POST(request: NextRequest) {
                 if (productType === "sselfie_studio_membership") {
                   console.log(`[v0] Granting ${credits} monthly credits to existing user ${userId}`)
                   await grantMonthlyCredits(userId, "sselfie_studio_membership", !event.livemode)
-                  
-                  // Trigger studio purchase email automation (non-blocking)
-                  if (customerEmail) {
-                    fetch(`${process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"}/api/automations/send-after-studio-purchase`, {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({
-                        email: customerEmail,
-                        userId: userId.toString(),
-                        firstName: session.customer_details?.name?.split(" ")[0],
-                      }),
-                    }).catch((err) => {
-                      console.error("[Stripe] Failed to trigger studio purchase email:", err)
-                    })
-                  }
                 }
 
                 if (session.subscription) {

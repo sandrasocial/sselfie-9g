@@ -37,13 +37,10 @@ export async function POST(request: NextRequest) {
 
     console.log(`[v0] Generating images for ${posts.length} posts`)
 
-    // Resolve base URL safely for internal API calls
-    const origin = request.nextUrl.origin
-
     // Trigger image generation for each post
     const imagePromises = posts.map(async (post: any) => {
       try {
-        const response = await fetch(`${origin}/api/feed/${feedLayoutId}/generate-single`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/feed/${feedLayoutId}/generate-single`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

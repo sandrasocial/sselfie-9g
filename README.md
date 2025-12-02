@@ -108,8 +108,6 @@ We help women imagine themselves in outfits, settings, and lifestyles they never
 - **Vercel AI SDK** - AI chat and streaming
 - **Replicate** - AI image generation (Flux models)
 - **OpenAI** - GPT models for Maya's intelligence
-- **Leonardo AI** - Not currently used in this codebase. Replicate handles all generation so no Leonardo credentials are required.
-- **PDFMonkey** - Legacy PDF automation replaced by internal blueprint flows. No PDFMonkey API calls run in this repository.
 
 ### Storage & Caching
 - **Vercel Blob** - Image and file storage
