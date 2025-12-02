@@ -134,10 +134,10 @@ export async function addCredits(
   description: string,
   stripePaymentId?: string,
   isTestMode = false,
-): Promise<{ success: boolean; newBalance: number }> {
+): Promise<{ success: boolean; newBalance: number; error?: string }> {
   if (!sql) {
     console.log("[v0] [CREDITS] Database not available - skipping add credits")
-    return { success: false, newBalance: 0 }
+    return { success: false, newBalance: 0, error: "Database not available" }
   }
 
   try {
@@ -150,20 +150,26 @@ export async function addCredits(
       isTestMode,
     })
 
-    // Get current balance
-    const currentBalance = await getUserCredits(userId)
-    console.log("[v0] [CREDITS] Current balance before adding:", currentBalance)
+    let currentBalance = 0
+    try {
+      currentBalance = await getUserCredits(userId)
+      console.log("[v0] [CREDITS] Current balance before adding:", currentBalance)
+    } catch (balanceError) {
+      console.error("[v0] [CREDITS] Error getting current balance, will initialize:", balanceError)
+      // If user doesn't exist, we'll create them with the new balance
+      currentBalance = 0
+    }
 
     const newBalance = currentBalance + amount
 
-    // Update balance
     await sql`
-      UPDATE user_credits
-      SET 
+      INSERT INTO user_credits (user_id, balance, total_purchased, total_used, created_at, updated_at)
+      VALUES (${userId}, ${newBalance}, ${amount}, 0, NOW(), NOW())
+      ON CONFLICT (user_id) 
+      DO UPDATE SET 
         balance = ${newBalance},
-        total_purchased = total_purchased + ${amount},
+        total_purchased = user_credits.total_purchased + ${amount},
         updated_at = NOW()
-      WHERE user_id = ${userId}
     `
 
     console.log("[v0] [CREDITS] Updated balance in database")
@@ -171,24 +177,38 @@ export async function addCredits(
     await sql`
       INSERT INTO credit_transactions (
         user_id, amount, transaction_type, description, 
-        stripe_payment_id, balance_after, is_test_mode
+        stripe_payment_id, balance_after, is_test_mode, created_at
       )
       VALUES (
         ${userId}, ${amount}, ${type}, ${description},
-        ${stripePaymentId || null}, ${newBalance}, ${isTestMode}
+        ${stripePaymentId || null}, ${newBalance}, ${isTestMode}, NOW()
       )
     `
 
     console.log("[v0] [CREDITS] Recorded transaction in database (test mode:", isTestMode, ")")
     console.log("[v0] [CREDITS] Successfully added credits. New balance:", newBalance)
 
-    const { invalidateCreditCache } = await import("./credits-cached")
-    await invalidateCreditCache(userId)
+    try {
+      const { invalidateCreditCache } = await import("./credits-cached")
+      await invalidateCreditCache(userId)
+    } catch (cacheError) {
+      console.warn("[v0] [CREDITS] Failed to invalidate cache, but credits were added:", cacheError)
+    }
 
     return { success: true, newBalance }
   } catch (error) {
     console.error("[v0] [CREDITS] Error adding credits:", error)
-    return { success: false, newBalance: 0 }
+
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    if (errorMessage.includes("Too Many") || errorMessage.includes("rate limit")) {
+      return {
+        success: false,
+        newBalance: 0,
+        error: "Database rate limit reached. Please wait a moment and try again.",
+      }
+    }
+
+    return { success: false, newBalance: 0, error: "Failed to add credits. Please try again." }
   }
 }
 

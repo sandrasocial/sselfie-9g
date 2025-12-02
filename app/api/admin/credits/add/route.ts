@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server"
+import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { addCredits } from "@/lib/credits"
@@ -35,7 +35,12 @@ export async function POST(request: NextRequest) {
     const result = await addCredits(userId, amount, "bonus", description)
 
     if (!result.success) {
-      return NextResponse.json({ error: "Failed to add credits" }, { status: 500 })
+      return NextResponse.json(
+        {
+          error: result.error || "Failed to add credits",
+        },
+        { status: 500 },
+      )
     }
 
     console.log("[v0] Admin added credits:", {
@@ -53,6 +58,14 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error("[v0] Error adding credits:", error)
-    return NextResponse.json({ error: "Failed to add credits" }, { status: 500 })
+    const errorMessage = error instanceof Error ? error.message : "Unknown error"
+    return NextResponse.json(
+      {
+        error: errorMessage.includes("Too Many")
+          ? "Rate limit reached. Please wait a moment and try again."
+          : "Failed to add credits. Please try again.",
+      },
+      { status: 500 },
+    )
   }
 }

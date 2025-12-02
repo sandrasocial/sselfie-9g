@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Search, Plus, Loader2, CheckCircle2, XCircle, ArrowLeft } from 'lucide-react'
+import { Search, Plus, Loader2, CheckCircle2, XCircle, ArrowLeft } from "lucide-react"
 import Link from "next/link"
 
 interface User {
@@ -51,7 +51,7 @@ export function CreditManager() {
       return
     }
 
-    const amount = parseInt(creditAmount)
+    const amount = Number.parseInt(creditAmount)
     if (isNaN(amount) || amount <= 0) {
       setMessage({ type: "error", text: "Please enter a valid credit amount" })
       return
@@ -71,7 +71,21 @@ export function CreditManager() {
         }),
       })
 
-      const data = await response.json()
+      const contentType = response.headers.get("content-type")
+      let data
+
+      if (contentType && contentType.includes("application/json")) {
+        data = await response.json()
+      } else {
+        // Handle non-JSON responses (rate limits, server errors, etc.)
+        const text = await response.text()
+        console.error("[v0] [CREDITS] Non-JSON response:", text)
+        data = {
+          error: text.includes("Too Many")
+            ? "Rate limit exceeded. Please try again in a moment."
+            : "Server error occurred",
+        }
+      }
 
       if (response.ok) {
         setMessage({
@@ -83,15 +97,13 @@ export function CreditManager() {
         // Update the selected user's credits
         setSelectedUser({ ...selectedUser, credits: data.newBalance })
         // Update in search results
-        setSearchResults(
-          searchResults.map((u) => (u.id === selectedUser.id ? { ...u, credits: data.newBalance } : u)),
-        )
+        setSearchResults(searchResults.map((u) => (u.id === selectedUser.id ? { ...u, credits: data.newBalance } : u)))
       } else {
         setMessage({ type: "error", text: data.error || "Failed to add credits" })
       }
     } catch (error) {
-      console.error("[v0] Error adding credits:", error)
-      setMessage({ type: "error", text: "Error adding credits" })
+      console.error("[v0] [CREDITS] Error adding credits:", error)
+      setMessage({ type: "error", text: "Error adding credits. Please try again." })
     } finally {
       setLoading(false)
     }
@@ -101,11 +113,7 @@ export function CreditManager() {
     <div className="min-h-screen bg-stone-50">
       {/* Header */}
       <div className="relative h-[20vh] overflow-hidden">
-        <img
-          src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/641-Yz6RWOHjtemWaGCwY5XQjtSCZX9LFH-E1PumsSpivkzYUKjuWvP4QaDz2DjyF.png"
-          alt="Admin"
-          className="w-full h-full object-cover"
-        />
+        <img src="/images/641-yz6rwohjtemwagcwy5xqjtsczx9lfh.png" alt="Admin" className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-stone-50/50 to-stone-50" />
         <div className="absolute top-6 left-6">
           <Link
@@ -167,9 +175,7 @@ export function CreditManager() {
                     <div>
                       <p className="font-medium text-base mb-1">{user.email}</p>
                       {user.display_name && (
-                        <p
-                          className={`text-sm ${selectedUser?.id === user.id ? "text-stone-300" : "text-stone-500"}`}
-                        >
+                        <p className={`text-sm ${selectedUser?.id === user.id ? "text-stone-300" : "text-stone-500"}`}>
                           {user.display_name}
                         </p>
                       )}
@@ -204,9 +210,7 @@ export function CreditManager() {
               </div>
 
               <div>
-                <label className="block text-sm tracking-[0.1em] uppercase text-stone-600 mb-3">
-                  Credit Amount
-                </label>
+                <label className="block text-sm tracking-[0.1em] uppercase text-stone-600 mb-3">Credit Amount</label>
                 <div className="relative">
                   <Plus className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={20} />
                   <input
