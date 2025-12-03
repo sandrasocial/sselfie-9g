@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Image from "next/image"
-import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Play, Camera } from 'lucide-react'
+import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Play, Camera } from "lucide-react"
 import FullscreenImageModal from "./fullscreen-image-modal"
 import type { ConceptData } from "./types"
 
@@ -77,6 +77,16 @@ export default function InstagramPhotoCard({
     }
   }
 
+  const handleAnimate = async () => {
+    if (!onAnimate) return
+    setIsCreatingPhotoshoot(true)
+    try {
+      await onAnimate()
+    } finally {
+      setIsCreatingPhotoshoot(false)
+    }
+  }
+
   return (
     <>
       <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-lg max-w-[470px] mx-auto">
@@ -104,7 +114,7 @@ export default function InstagramPhotoCard({
                 {onAnimate && (
                   <button
                     onClick={() => {
-                      onAnimate()
+                      handleAnimate()
                       setShowMenu(false)
                     }}
                     className="w-full px-4 py-2.5 text-left text-sm hover:bg-stone-50 transition-colors"
@@ -136,11 +146,11 @@ export default function InstagramPhotoCard({
         </div>
 
         {/* Instagram Image */}
-        <div 
-          className="relative aspect-square bg-stone-100 cursor-pointer group" 
+        <div
+          className="relative aspect-square bg-stone-100 cursor-pointer group"
           onClick={(e) => {
-            if (showAnimateOverlay && onAnimate && (e.target as HTMLElement).closest('.animate-overlay')) {
-              onAnimate()
+            if (showAnimateOverlay && onAnimate && (e.target as HTMLElement).closest(".animate-overlay")) {
+              handleAnimate()
             } else {
               setIsViewerOpen(true)
             }
@@ -153,15 +163,26 @@ export default function InstagramPhotoCard({
             className="object-cover"
             sizes="(max-width: 768px) 100vw, 470px"
           />
-          
+
           {showAnimateOverlay && onAnimate && (
             <div className="animate-overlay absolute inset-0 bg-stone-950/30 md:bg-stone-950/0 md:group-hover:bg-stone-950/30 transition-all duration-300 flex flex-col items-center justify-center">
-              <div className="w-16 h-16 bg-white/95 backdrop-blur-sm rounded-full flex items-center justify-center shadow-2xl transform scale-100 opacity-100 md:scale-90 md:opacity-0 md:group-hover:scale-100 md:group-hover:opacity-100 transition-all duration-300">
-                <Play size={28} className="text-stone-950 ml-1" fill="currentColor" />
-              </div>
-              <p className="text-white font-serif text-sm tracking-wide opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300 mt-3">
-                Click to Create B-Roll
-              </p>
+              {isCreatingPhotoshoot ? (
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-16 h-16 bg-white/95 backdrop-blur-sm rounded-full flex items-center justify-center shadow-2xl">
+                    <div className="w-8 h-8 border-3 border-stone-950 border-t-transparent rounded-full animate-spin" />
+                  </div>
+                  <p className="text-white font-serif text-sm tracking-wide">Analyzing Motion...</p>
+                </div>
+              ) : (
+                <>
+                  <div className="w-16 h-16 bg-white/95 backdrop-blur-sm rounded-full flex items-center justify-center shadow-2xl transform scale-100 opacity-100 md:scale-90 md:opacity-0 md:group-hover:scale-100 md:group-hover:opacity-100 transition-all duration-300">
+                    <Play size={28} className="text-stone-950 ml-1" fill="currentColor" />
+                  </div>
+                  <p className="text-white font-serif text-sm tracking-wide opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300 mt-3">
+                    Click to Create B-Roll
+                  </p>
+                </>
+              )}
             </div>
           )}
         </div>
