@@ -5,7 +5,7 @@ import { getProductById, ORIGINAL_PRICING } from "@/lib/products"
 import { neon } from "@neondatabase/serverless"
 import type Stripe from "stripe" // Declare the Stripe variable
 
-const ENABLE_BETA_DISCOUNT = process.env.ENABLE_BETA_DISCOUNT !== "false"
+const ENABLE_BETA_DISCOUNT = false
 
 export async function createLandingCheckoutSession(productId: string) {
   console.log("[v0] Creating checkout session for product:", productId)
@@ -56,15 +56,7 @@ export async function createLandingCheckoutSession(productId: string) {
         quantity: 1,
       },
     ],
-    ...(!ENABLE_BETA_DISCOUNT && { allow_promotion_codes: true }),
-    // Auto-apply the beta coupon if enabled
-    ...(ENABLE_BETA_DISCOUNT && {
-      discounts: [
-        {
-          coupon: process.env.STRIPE_BETA_COUPON_ID || "BETA50",
-        },
-      ],
-    }),
+    allow_promotion_codes: true,
     ...(isSubscription && {
       subscription_data: {
         metadata: {
@@ -72,7 +64,6 @@ export async function createLandingCheckoutSession(productId: string) {
           product_type: product.type,
           credits: product.credits?.toString() || "0",
           source: "landing_page",
-          ...(ENABLE_BETA_DISCOUNT && { beta_discount: "50_percent" }),
         },
       },
     }),
@@ -81,7 +72,6 @@ export async function createLandingCheckoutSession(productId: string) {
       product_type: product.type,
       credits: product.credits?.toString() || "0",
       source: "landing_page",
-      ...(ENABLE_BETA_DISCOUNT && { beta_discount: "50_percent" }),
     },
   }
 

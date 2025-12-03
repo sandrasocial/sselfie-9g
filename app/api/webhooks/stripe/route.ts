@@ -8,7 +8,11 @@ import { sendEmail } from "@/lib/email/send-email"
 import { generateWelcomeEmail } from "@/lib/email/templates/welcome-email"
 import { checkWebhookRateLimit } from "@/lib/rate-limit"
 import { logWebhookError, alertWebhookError, isCriticalError } from "@/lib/webhook-monitoring"
-import { addOrUpdateResendContact, updateContactTags as updateTags, addContactToSegment } from "@/lib/resend/manage-contact"
+import {
+  addOrUpdateResendContact,
+  updateContactTags as updateTags,
+  addContactToSegment,
+} from "@/lib/resend/manage-contact"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -52,6 +56,38 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 })
   }
 
+  try {
+    // Ensure webhook_events table exists
+    await sql`
+      CREATE TABLE IF NOT EXISTS webhook_events (
+        id SERIAL PRIMARY KEY,
+        stripe_event_id TEXT UNIQUE,
+        processed_at TIMESTAMP DEFAULT NOW()
+      )
+    `
+
+    // Check if event has already been processed
+    const eventId = event.id
+    const existing = await sql`
+      SELECT id FROM webhook_events WHERE stripe_event_id = ${eventId}
+    `
+
+    if (existing.length > 0) {
+      console.log(`[v0] ⚠️ Duplicate event detected: ${eventId} - skipping processing`)
+      return NextResponse.json({ received: true, duplicate: true })
+    }
+
+    // Record event as processed
+    await sql`
+      INSERT INTO webhook_events (stripe_event_id, processed_at)
+      VALUES (${eventId}, NOW())
+    `
+    console.log(`[v0] Event ${eventId} recorded in idempotency table`)
+  } catch (idempotencyError: any) {
+    console.error("[v0] Idempotency check error:", idempotencyError.message)
+    // Continue processing if idempotency check fails (better to risk duplicate than miss event)
+  }
+
   const customerId = event.data.object.customer || event.data.object.id
   const rateLimit = await checkWebhookRateLimit(customerId)
 
@@ -82,7 +118,7 @@ export async function POST(request: NextRequest) {
           try {
             const customerName = session.customer_details?.name || customerEmail.split("@")[0]
             const firstName = customerName.split(" ")[0] || customerName
-            
+
             const productType = session.metadata.product_type
             let productTag = "unknown"
 
@@ -104,14 +140,13 @@ export async function POST(request: NextRequest) {
             })
 
             if (resendResult.success) {
-              console.log(`[v0] Added paying customer ${customerEmail} to Resend audience with ID: ${resendResult.contactId}`)
-              
+              console.log(
+                `[v0] Added paying customer ${customerEmail} to Resend audience with ID: ${resendResult.contactId}`,
+              )
+
               if (process.env.RESEND_BETA_SEGMENT_ID) {
-                const segmentResult = await addContactToSegment(
-                  customerEmail,
-                  process.env.RESEND_BETA_SEGMENT_ID
-                )
-                
+                const segmentResult = await addContactToSegment(customerEmail, process.env.RESEND_BETA_SEGMENT_ID)
+
                 if (segmentResult.success) {
                   console.log(`[v0] Added ${customerEmail} to Beta Customers segment`)
                 } else {
@@ -953,41 +988,93 @@ export async function POST(request: NextRequest) {
       case "invoice.payment_succeeded": {
         const invoice = event.data.object
 
-        if (invoice.subscription) {
-          const subscription = await stripe.subscriptions.retrieve(invoice.subscription)
-          const userId = subscription.metadata.user_id
-          const productType = subscription.metadata.product_type || "sselfie_studio_membership"
-          const credits = Number.parseInt(subscription.metadata.credits || "250")
-
-          console.log(`[v0] Subscription renewed: ${productType} for user ${userId}`)
-
-          await sql`
-            UPDATE subscriptions
-            SET 
-              status = ${subscription.status},
-              current_period_start = to_timestamp(${subscription.current_period_start}),
-              current_period_end = to_timestamp(${subscription.current_period_end}),
-              is_test_mode = ${!event.livemode},
-              updated_at = NOW()
-            WHERE user_id = ${userId}
-          `
+        if (!invoice.subscription) {
+          console.log("[v0] Invoice payment succeeded but no subscription - skipping")
+          break
         }
+
+        const subscriptionId = invoice.subscription
+
+        const [sub] = await sql`
+          SELECT user_id, product_type
+          FROM subscriptions
+          WHERE stripe_subscription_id = ${subscriptionId}
+        `
+
+        if (!sub) {
+          console.log(`[v0] No subscription found in database for ${subscriptionId}`)
+          break
+        }
+
+        console.log(`[v0] Monthly renewal for user ${sub.user_id}, product: ${sub.product_type}`)
+
+        await grantMonthlyCredits(sub.user_id, sub.product_type)
+        console.log(`[v0] ✅ Monthly credits granted to user ${sub.user_id}`)
+
+        // Update subscription period
+        const subscription = await stripe.subscriptions.retrieve(invoice.subscription)
+        await sql`
+          UPDATE subscriptions
+          SET 
+            status = ${subscription.status},
+            current_period_start = to_timestamp(${subscription.current_period_start}),
+            current_period_end = to_timestamp(${subscription.current_period_end}),
+            is_test_mode = ${!event.livemode},
+            updated_at = NOW()
+          WHERE stripe_subscription_id = ${subscriptionId}
+        `
+        console.log(`[v0] Subscription period updated for ${subscriptionId}`)
+
         break
       }
 
       case "customer.subscription.deleted": {
         const subscription = event.data.object
-        const userId = subscription.metadata.user_id
 
-        console.log(`[v0] Subscription cancelled for user ${userId}`)
+        console.log(`[v0] Subscription cancelled: ${subscription.id}`)
+
+        await sql`
+          UPDATE subscriptions
+          SET status = 'cancelled', updated_at = NOW()
+          WHERE stripe_subscription_id = ${subscription.id}
+        `
+
+        console.log(`[v0] ✅ Subscription ${subscription.id} marked as cancelled`)
+        break
+      }
+
+      case "invoice.payment_failed": {
+        const invoice = event.data.object
+
+        if (!invoice.subscription) break
+
+        const subscriptionId = invoice.subscription
+
+        await sql`
+          UPDATE subscriptions
+          SET status = 'past_due'
+          WHERE stripe_subscription_id = ${subscriptionId}
+        `
+
+        console.log(`[v0] ⚠️ Payment failed for subscription ${subscriptionId} - marked as past_due`)
+        break
+      }
+
+      case "customer.subscription.updated": {
+        const sub = event.data.object
+
+        const stripeStatus = sub.status // active, trialing, past_due, unpaid, canceled
+        const currentPeriodEnd = sub.current_period_end ? new Date(sub.current_period_end * 1000) : null
 
         await sql`
           UPDATE subscriptions
           SET 
-            status = 'cancelled',
-            updated_at = NOW()
-          WHERE user_id = ${userId}
+            status = ${stripeStatus},
+            current_period_end = ${currentPeriodEnd}
+          WHERE stripe_subscription_id = ${sub.id}
         `
+
+        console.log(`[v0] 📝 Subscription ${sub.id} updated to status: ${stripeStatus}`)
         break
       }
 

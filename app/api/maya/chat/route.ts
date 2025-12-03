@@ -4,6 +4,7 @@ import { getUserByAuthId } from "@/lib/user-mapping"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
+import { checkCredits, deductCredits } from "@/lib/credits"
 import { NextResponse } from "next/server"
 import type { Request } from "next/server"
 
@@ -30,6 +31,12 @@ export async function POST(req: Request) {
     const dbUserId = user.id
 
     console.log("[v0] User authenticated:", { userId, dbUserId })
+
+    const hasCredits = await checkCredits(dbUserId, 1)
+    if (!hasCredits) {
+      console.log("[v0] User has insufficient credits for Maya chat")
+      return NextResponse.json({ error: "Insufficient credits" }, { status: 402 })
+    }
 
     const body = await req.json()
     const { messages, chatId } = body
@@ -274,6 +281,19 @@ ${genderSpecificExamples}
       } catch (dbError) {
         console.error("[v0] Error saving chat:", dbError)
       }
+    }
+
+    // Wrapped in try/catch to avoid breaking the stream if deduction fails
+    try {
+      await deductCredits(
+        dbUserId,
+        1,
+        "image", // Using "image" type as "maya_chat" is not in the enum
+        "Maya conversation",
+      )
+      console.log("[v0] Successfully deducted 1 credit for Maya chat")
+    } catch (deductError) {
+      console.error("[v0] Failed to deduct credits for Maya chat (non-fatal):", deductError)
     }
 
     return result.toUIMessageStreamResponse()

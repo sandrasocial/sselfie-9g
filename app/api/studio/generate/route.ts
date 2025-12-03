@@ -4,6 +4,7 @@ import { rateLimit } from "@/lib/rate-limit-api"
 import { getUserTrainedModel } from "@/lib/data/studio"
 import { createServerClient } from "@/lib/supabase/server"
 import { getReplicateClient } from "@/lib/replicate-client"
+import { checkCredits, deductCredits } from "@/lib/credits"
 
 const sql = getDbClient()
 
@@ -46,6 +47,13 @@ export async function POST(request: NextRequest) {
 
     if (!prompt) {
       return NextResponse.json({ error: "Prompt is required" }, { status: 400 })
+    }
+
+    const creditsNeeded = 4 // 4 images = 4 credits
+    const hasCredits = await checkCredits(neonUser.id, creditsNeeded)
+    if (!hasCredits) {
+      console.log("[v0] User has insufficient credits for image generation")
+      return NextResponse.json({ error: "Insufficient credits" }, { status: 402 })
     }
 
     // Get user's trained model
@@ -124,6 +132,14 @@ export async function POST(request: NextRequest) {
       )
       RETURNING id
     `
+
+    // Wrapped in try/catch to avoid breaking the response if deduction fails
+    try {
+      await deductCredits(neonUser.id, creditsNeeded, "image", prompt)
+      console.log("[v0] Successfully deducted", creditsNeeded, "credits for image generation")
+    } catch (deductError) {
+      console.error("[v0] Failed to deduct credits for image generation (non-fatal):", deductError)
+    }
 
     return NextResponse.json({
       generationId: generation.id,

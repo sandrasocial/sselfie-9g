@@ -25,16 +25,16 @@ export default function LandingPage() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null)
 
+  const [waitlistEmail, setWaitlistEmail] = useState("")
+  const [waitlistLoading, setWaitlistLoading] = useState(false)
+  const [waitlistMessage, setWaitlistMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
+
   const [stats, setStats] = useState<LandingStats>({
     waitlistCount: 2847,
     usersCount: 0,
     spotsRemaining: 47,
     daysUntilClose: 14,
   })
-
-  const [waitlistEmail, setWaitlistEmail] = useState("")
-  const [waitlistLoading, setWaitlistLoading] = useState(false)
-  const [waitlistMessage, setWaitlistMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
 
   const heroContainer = useRef(null)
   const { scrollYProgress } = useScroll({
@@ -156,13 +156,13 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-stone-50 overflow-x-hidden">
       <nav className="absolute top-0 left-0 right-0 z-50">
-        <div className="bg-stone-900/50 backdrop-blur-sm border-b border-white/10">
+        {/* <div className="bg-stone-900/50 backdrop-blur-sm border-b border-white/10">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2">
             <p className="text-center text-[10px] sm:text-xs font-light tracking-[0.2em] sm:tracking-[0.25em] uppercase text-white/90">
               BETA CLOSES IN {stats.daysUntilClose} DAYS • {stats.spotsRemaining} SPOTS LEFT • 50% OFF
             </p>
           </div>
-        </div>
+        </div> */}
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6 flex items-center justify-between">
           <Link
@@ -197,7 +197,7 @@ export default function LandingPage() {
               onClick={scrollToPricing}
               className="bg-white text-black px-6 py-2.5 text-xs uppercase tracking-wider transition-all duration-300 hover:bg-black hover:text-white border border-white"
             >
-              START BETA
+              GET STARTED
             </a>
           </div>
 
@@ -255,7 +255,7 @@ export default function LandingPage() {
               onClick={scrollToPricing}
               className="bg-white text-black px-8 py-3 text-sm uppercase tracking-wider transition-all duration-300 hover:bg-black hover:text-white border border-white min-h-[44px] flex items-center justify-center"
             >
-              START BETA
+              GET STARTED
             </a>
           </div>
         </div>
@@ -264,7 +264,7 @@ export default function LandingPage() {
       <section ref={heroContainer} className="h-screen overflow-hidden bg-white">
         <motion.div style={{ y }} className="relative h-full">
           <Image
-            src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/out-0%20%2847%29-PPDI5iYgrRw2D9z20NwUUKuPpAC2n0.png"
+            src="/images/out-0-20-2847-29.png"
             fill
             alt="Professional brand photography"
             style={{ objectFit: "cover", objectPosition: "center 20%" }}
@@ -321,7 +321,7 @@ export default function LandingPage() {
             <motion.div style={{ y: aboutY }} className="relative hidden md:block">
               <div className="relative aspect-[3/4] rounded-2xl overflow-hidden max-w-md mx-auto">
                 <Image
-                  src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/100-W8HXvEhCIG14XjVDUygpuBKAhlwZCj-WJvAoPmd0GqXTjJE1mvy77jVzJGvyA.png"
+                  src="/images/100-w8hxvehcig14xjvduygpubkahlwzcj.png"
                   fill
                   alt="Sandra - Founder of SSELFIE"
                   className="object-cover"
@@ -350,7 +350,7 @@ export default function LandingPage() {
               <div className="relative md:hidden my-6 sm:my-8">
                 <div className="relative aspect-[3/4] rounded-2xl overflow-hidden max-w-[240px] sm:max-w-[280px] mx-auto">
                   <Image
-                    src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/100-W8HXvEhCIG14XjVDUygpuBKAhlwZCj-WJvAoPmd0GqXTjJE1mvy77jVzJGvyA.png"
+                    src="/images/100-w8hxvehcig14xjvduygpubkahlwzcj.png"
                     fill
                     alt="Sandra - Founder of SSELFIE"
                     className="object-cover"
@@ -420,7 +420,7 @@ export default function LandingPage() {
               </p>
               <p className="text-base sm:text-lg font-light text-stone-600 leading-relaxed">
                 Your clients expect to see you showing up consistently. You need new photos every month, not the same
-                three headshots from 2022.
+                headshots from 2022.
               </p>
             </div>
 
@@ -470,7 +470,7 @@ export default function LandingPage() {
             <div className="space-y-4 sm:space-y-6">
               <div className="relative aspect-[3/4] overflow-hidden">
                 <Image
-                  src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/nano-banana-2025-09-07T16-04-25%202.PNG-0s4I1jvBnbIX8h3rcErnaGVYlubSnM.png"
+                  src="/images/nano-banana-2025-09-07t16-04-25-202.png"
                   fill
                   alt="Generic AI headshot example"
                   className="object-cover"
@@ -500,12 +500,7 @@ export default function LandingPage() {
             {/* SSELFIE Studio */}
             <div className="space-y-4 sm:space-y-6">
               <div className="relative aspect-[3/4] overflow-hidden border-2 border-stone-950">
-                <Image
-                  src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/IMG_8033.PNG-traeG5sQknTbuYctI1xadVW2QWPXds.png"
-                  fill
-                  alt="SSELFIE Studio example"
-                  className="object-cover"
-                />
+                <Image src="/images/img-8033.png" fill alt="SSELFIE Studio example" className="object-cover" />
                 <div className="absolute top-4 left-4 bg-stone-950/90 backdrop-blur-sm px-3 py-1.5">
                   <p className="text-[10px] sm:text-xs font-light tracking-[0.2em] uppercase text-stone-50">
                     SSELFIE Studio
@@ -584,19 +579,16 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-16 sm:mb-20">
             <p className="text-xs sm:text-sm md:text-sm font-light tracking-[0.25em] sm:tracking-[0.3em] uppercase text-stone-500 mb-4 sm:mb-6">
-              BETA PRICING
+              PRICING
             </p>
             <h2
               className="text-2xl sm:text-3xl md:text-4xl font-light tracking-[0.15em] sm:tracking-[0.2em] uppercase mb-4 sm:mb-6 text-stone-900"
               style={{ fontFamily: "'Times New Roman', Times, serif" }}
             >
-              {stats.spotsRemaining} Spots Left
+              Choose Your Plan
             </h2>
-            <p className="text-lg sm:text-xl font-light text-stone-700 px-4 mb-3">
-              Lock in beta pricing forever. Limited spots available.
-            </p>
-            <p className="text-base font-light text-stone-600 px-4">
-              Join {stats.waitlistCount.toLocaleString()} people on the waitlist
+            <p className="text-lg sm:text-xl font-light text-stone-700 px-4">
+              Professional brand photos every month. Cancel anytime.
             </p>
           </div>
 
@@ -611,9 +603,8 @@ export default function LandingPage() {
                     className="text-5xl sm:text-6xl font-light"
                     style={{ fontFamily: "'Times New Roman', Times, serif" }}
                   >
-                    $24.50
+                    $49
                   </span>
-                  <span className="text-base sm:text-lg text-stone-500 line-through">$49</span>
                 </div>
                 <p className="text-sm sm:text-base font-light text-stone-600 mt-2">one-time • 70 credits</p>
               </div>
@@ -648,9 +639,8 @@ export default function LandingPage() {
                     className="text-5xl sm:text-6xl font-light"
                     style={{ fontFamily: "'Times New Roman', Times, serif" }}
                   >
-                    $49.50
+                    $99
                   </span>
-                  <span className="text-base sm:text-lg text-stone-400 line-through">$99</span>
                 </div>
                 <p className="text-sm sm:text-base font-light text-stone-300 mt-2">per month • 150 credits/month</p>
               </div>
@@ -677,9 +667,7 @@ export default function LandingPage() {
             <p className="text-base sm:text-lg font-light text-stone-900">
               <strong className="font-medium">30-Day Money-Back Guarantee</strong>
             </p>
-            <p className="text-sm sm:text-base font-light text-stone-600 px-4">
-              Beta pricing locked in forever • Cancel anytime • Add credits anytime
-            </p>
+            <p className="text-sm sm:text-base font-light text-stone-600 px-4">Cancel anytime • Add credits anytime</p>
           </div>
         </div>
       </section>
@@ -776,11 +764,9 @@ export default function LandingPage() {
                 className="text-lg sm:text-xl font-light tracking-[0.15em] sm:tracking-[0.2em] uppercase"
                 style={{ fontFamily: "'Times New Roman', Times, serif" }}
               >
-                Join The Beta
+                Join SSELFIE
               </p>
-              <p className="text-xs sm:text-sm font-light text-stone-400">
-                {stats.spotsRemaining} spots left • Beta closes in {stats.daysUntilClose} days
-              </p>
+              <p className="text-xs sm:text-sm font-light text-stone-400">Professional brand photos every month</p>
             </div>
             <a
               href="#pricing"

@@ -6,17 +6,13 @@ import SselfieApp from "@/components/sselfie/sselfie-app"
 
 export const dynamic = "force-dynamic"
 
-export default async function StudioPage({
-  searchParams,
-}: {
-  searchParams: { welcome?: string; showCheckout?: string; checkout?: string }
-}) {
+export default async function MayaPage() {
   let supabase
   try {
     supabase = await createServerClient()
   } catch (error) {
     console.error("[v0] Error creating Supabase client:", error)
-    redirect("/auth/login?error=supabase_config&returnTo=/studio")
+    redirect("/auth/login?error=supabase_config&returnTo=/maya")
   }
 
   const {
@@ -24,7 +20,7 @@ export default async function StudioPage({
   } = await supabase.auth.getUser()
 
   if (!user) {
-    redirect("/auth/login?returnTo=/studio")
+    redirect("/auth/login?returnTo=/maya")
   }
 
   let neonUser = null
@@ -48,24 +44,21 @@ export default async function StudioPage({
 
   if (!neonUser || userError) {
     console.error("[v0] User authenticated but could not be synced with database")
-    redirect("/auth/login?returnTo=/studio")
+    redirect("/auth/login?returnTo=/maya")
   }
 
   const subscription = await getUserSubscription(neonUser.id)
 
-  console.log("[v0] [STUDIO PAGE] User:", neonUser.email)
-  console.log("[v0] [STUDIO PAGE] Subscription status:", subscription?.status ?? "none")
-
-  const isWelcome = searchParams.welcome === "true"
-  const shouldShowCheckout = searchParams.showCheckout === "true" || searchParams.checkout === "one_time"
+  console.log("[v0] [MAYA PAGE] User:", neonUser.email)
+  console.log("[v0] [MAYA PAGE] Subscription status:", subscription?.status ?? "none")
 
   return (
     <SselfieApp
       userId={neonUser.id}
       userName={neonUser.display_name}
       userEmail={neonUser.email}
-      isWelcome={isWelcome}
-      shouldShowCheckout={shouldShowCheckout}
+      isWelcome={false}
+      shouldShowCheckout={false}
       subscriptionStatus={subscription?.status ?? null}
     />
   )

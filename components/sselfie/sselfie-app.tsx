@@ -30,7 +30,9 @@ import { ServiceWorkerProvider } from "./service-worker-provider"
 import BuyCreditsModal from "./buy-credits-modal"
 import { LowCreditModal } from "@/components/credits/low-credit-modal"
 import { FeedbackButton } from "@/components/feedback/feedback-button"
+import { UpgradeOrCredits } from "@/components/UpgradeOrCredits"
 import type { User as UserType } from "./types"
+import { getAccessState } from "./access"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,6 +47,7 @@ interface SselfieAppProps {
   userEmail: string | null
   isWelcome?: boolean
   shouldShowCheckout?: boolean
+  subscriptionStatus?: string | null
 }
 
 export default function SselfieApp({
@@ -53,6 +56,7 @@ export default function SselfieApp({
   userEmail,
   isWelcome = false,
   shouldShowCheckout = false,
+  subscriptionStatus = null,
 }: SselfieAppProps) {
   const getInitialTab = () => {
     if (typeof window !== "undefined") {
@@ -86,6 +90,7 @@ export default function SselfieApp({
   const [isNavVisible, setIsNavVisible] = useState(true)
   const lastScrollY = useRef(0)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const [creditsFetchFailed, setCreditsFetchFailed] = useState(false)
 
   useEffect(() => {
     const handlePopState = () => {
@@ -122,12 +127,20 @@ export default function SselfieApp({
     const fetchCredits = async () => {
       try {
         const response = await fetch("/api/user/credits")
+        if (!response.ok) {
+          console.error("[v0] Credit fetch failed with status:", response.status)
+          setCreditBalance(0)
+          setCreditsFetchFailed(true)
+          return
+        }
         const data = await response.json()
         console.log("[v0] Credit balance:", data)
         setCreditBalance(data.balance || 0)
+        setCreditsFetchFailed(false)
       } catch (error) {
         console.error("[v0] Error fetching credits:", error)
         setCreditBalance(0)
+        setCreditsFetchFailed(true)
       } finally {
         setIsLoadingCredits(false)
       }
@@ -246,6 +259,11 @@ export default function SselfieApp({
     }
   }
 
+  const access = getAccessState({
+    credits: creditBalance,
+    subscriptionStatus,
+  })
+
   if (isLoading || isLoadingTrainingStatus || isLoadingCredits) {
     return <LoadingScreen />
   }
@@ -337,29 +355,38 @@ export default function SselfieApp({
             ref={scrollContainerRef}
             className="h-full px-4 sm:px-6 md:px-8 pb-32 sm:pb-36 md:pb-40 pt-4 sm:pt-6 md:pt-8 overflow-y-auto"
           >
-            {activeTab === "studio" && (
-              <StudioScreen
-                user={user}
-                hasTrainedModel={hasTrainedModel}
-                setActiveTab={handleTabChange}
-                onImageGenerated={refreshCredits}
+            {(activeTab === "studio" || activeTab === "maya" || activeTab === "training") &&
+            !access.canUseGenerators ? (
+              <UpgradeOrCredits
+                feature={activeTab === "studio" ? "Studio" : activeTab === "maya" ? "Maya" : "Training"}
               />
+            ) : (
+              <>
+                {activeTab === "studio" && (
+                  <StudioScreen
+                    user={user}
+                    hasTrainedModel={hasTrainedModel}
+                    setActiveTab={handleTabChange}
+                    onImageGenerated={refreshCredits}
+                  />
+                )}
+                {activeTab === "training" && (
+                  <TrainingScreen
+                    user={user}
+                    userId={userId}
+                    setHasTrainedModel={setHasTrainedModel}
+                    setActiveTab={handleTabChange}
+                  />
+                )}
+                {activeTab === "maya" && <MayaChatScreen onImageGenerated={refreshCredits} user={user} />}
+                {activeTab === "b-roll" && <BRollScreen />}
+                {activeTab === "gallery" && <GalleryScreen user={user} userId={userId} />}
+                {activeTab === "feed-planner" && <FeedPlannerScreen userId={userId} userName={userName} />}
+                {activeTab === "academy" && <AcademyScreen />}
+                {activeTab === "profile" && <ProfileScreen user={user} creditBalance={creditBalance} />}
+                {activeTab === "settings" && <SettingsScreen user={user} creditBalance={creditBalance} />}
+              </>
             )}
-            {activeTab === "training" && (
-              <TrainingScreen
-                user={user}
-                userId={userId}
-                setHasTrainedModel={setHasTrainedModel}
-                setActiveTab={handleTabChange}
-              />
-            )}
-            {activeTab === "maya" && <MayaChatScreen onImageGenerated={refreshCredits} user={user} />}
-            {activeTab === "b-roll" && <BRollScreen />}
-            {activeTab === "gallery" && <GalleryScreen user={user} userId={userId} />}
-            {activeTab === "feed-planner" && <FeedPlannerScreen userId={userId} userName={userName} />}
-            {activeTab === "academy" && <AcademyScreen />}
-            {activeTab === "profile" && <ProfileScreen user={user} creditBalance={creditBalance} />}
-            {activeTab === "settings" && <SettingsScreen user={user} creditBalance={creditBalance} />}
           </div>
         </div>
       </main>
