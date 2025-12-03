@@ -264,34 +264,36 @@ export default function LandingPage() {
       <section ref={heroContainer} className="h-screen overflow-hidden bg-white">
         <motion.div style={{ y }} className="relative h-full">
           <Image
-            src="/images/out-0-20-2847-29.png"
+            src="/images/luxury-portrait.png"
             fill
             alt="Professional brand photography"
-            style={{ objectFit: "cover", objectPosition: "center 20%" }}
+            style={{ objectFit: "cover", objectPosition: "center" }}
             priority
           />
 
-          <div className="absolute inset-0 bg-black/50" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
 
-          <div className="absolute inset-0 flex items-end justify-start z-10 pb-8 sm:pb-12 md:pb-16 lg:pb-24 px-4 sm:px-6 md:px-12 lg:px-16">
+          <div className="absolute inset-0 flex items-end z-10 pb-12 sm:pb-16 md:pb-24 lg:pb-32 px-6 sm:px-8 md:px-12 lg:px-16">
             <div className="text-left text-white max-w-4xl">
               <h1
-                className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-light mb-3 sm:mb-4 md:mb-6 leading-tight tracking-tight"
+                className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-light mb-4 sm:mb-6 leading-[1.1] tracking-tight"
                 style={{ fontFamily: "'Times New Roman', Times, serif" }}
               >
                 YOUR BRAND PHOTO STUDIO
               </h1>
-              <p className="text-sm sm:text-base md:text-lg leading-relaxed mb-2 sm:mb-3 md:mb-4 max-w-2xl font-light">
-                100 professional brand photos every month. No photographer, no photoshoot. Just upload selfies and get
-                photos that actually look like you.
+              <p className="text-base sm:text-lg md:text-xl leading-relaxed mb-2 sm:mb-3 max-w-xl font-light">
+                100 professional brand photos every month.
               </p>
-              <p className="text-xs sm:text-sm md:text-base leading-relaxed mb-4 sm:mb-6 md:mb-8 max-w-2xl font-light text-white/80">
-                Replace $2,000+ photoshoots. Ready for your website, social media, and everywhere else.
+              <p className="text-base sm:text-lg md:text-xl leading-relaxed mb-2 sm:mb-3 max-w-xl font-light">
+                No photographer, no photoshoot.
+              </p>
+              <p className="text-sm sm:text-base md:text-lg leading-relaxed mb-6 sm:mb-8 max-w-xl font-light text-white/90">
+                Just upload selfies and get photos that actually look like you.
               </p>
               <a
                 href="#pricing"
                 onClick={scrollToPricing}
-                className="inline-block px-6 sm:px-8 md:px-10 py-2.5 sm:py-3 md:py-3.5 bg-white text-black text-xs sm:text-sm uppercase tracking-wider transition-all duration-300 hover:bg-black hover:text-white border border-white min-h-[44px] flex items-center justify-center"
+                className="inline-block px-8 sm:px-10 py-3.5 sm:py-4 bg-white text-black text-sm sm:text-base uppercase tracking-wider transition-all duration-300 hover:bg-black hover:text-white border border-white min-h-[48px] flex items-center justify-center font-light"
               >
                 GET STARTED
               </a>
