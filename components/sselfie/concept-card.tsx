@@ -262,6 +262,7 @@ export default function ConceptCard({ concept, chatId, onCreditsUpdate }: Concep
 
     setIsCreatingPhotoshoot(true)
     setShowPhotoshootConfirm(false)
+    setPhotoshootError(null)
 
     try {
       console.log("[v0] 📸 Creating photoshoot from hero image:", generatedImageUrl)
@@ -273,6 +274,8 @@ export default function ConceptCard({ concept, chatId, onCreditsUpdate }: Concep
         seed: generationData.seed,
         prompt: generationData.prompt?.substring(0, 100),
       })
+
+      setPhotoshootGenerations([])
 
       const response = await fetch("/api/maya/create-photoshoot", {
         method: "POST",
@@ -339,6 +342,7 @@ export default function ConceptCard({ concept, chatId, onCreditsUpdate }: Concep
       console.error("[v0] Error creating photoshoot:", err)
       setPhotoshootError(err instanceof Error ? err.message : "Failed to create photoshoot")
       setIsCreatingPhotoshoot(false)
+      setPhotoshootGenerations([])
     }
   }
 
@@ -679,51 +683,57 @@ export default function ConceptCard({ concept, chatId, onCreditsUpdate }: Concep
             )}
 
             {isCreatingPhotoshoot && (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <div className="w-1 h-1 rounded-full bg-stone-600"></div>
+                  <div className="flex gap-1">
+                    <div className="w-1 h-1 rounded-full bg-stone-600 animate-pulse"></div>
+                    <div
+                      className="w-1 h-1 rounded-full bg-stone-600 animate-pulse"
+                      style={{ animationDelay: "0.2s" }}
+                    ></div>
+                    <div
+                      className="w-1 h-1 rounded-full bg-stone-600 animate-pulse"
+                      style={{ animationDelay: "0.4s" }}
+                    ></div>
+                  </div>
                   <span className="text-xs tracking-[0.15em] uppercase font-light text-stone-600">
-                    Creating Carousel ({photoshootGenerations.filter((p) => p.url || p.imageUrl).length}/
-                    {photoshootGenerations.length})
+                    {photoshootGenerations.length === 0
+                      ? "Starting photoshoot creation..."
+                      : `Creating Carousel (${photoshootGenerations.filter((p) => p.url || p.imageUrl).length}/${photoshootGenerations.length})`}
                   </span>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {photoshootGenerations.map((gen, idx) => (
-                    <div key={idx} className="aspect-square bg-stone-100 rounded-lg overflow-hidden">
-                      {gen.url || gen.imageUrl ? (
-                        <img
-                          src={gen.url || gen.imageUrl || "/placeholder.svg"}
-                          alt={gen.action}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <div className="w-6 h-6 border-2 border-stone-300 border-t-stone-900 rounded-full animate-spin" />
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
-            {isGeneratingVideo && (
-              <div className="flex flex-col items-center justify-center py-6 space-y-3">
-                <div className="flex gap-1.5">
-                  <div className="w-2 h-2 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 animate-bounce"></div>
-                  <div
-                    className="w-2 h-2 rounded-full bg-gradient-to-r from-pink-600 to-orange-500 animate-bounce"
-                    style={{ animationDelay: "0.2s" }}
-                  ></div>
-                  <div
-                    className="w-2 h-2 rounded-full bg-gradient-to-r from-orange-500 to-purple-600 animate-bounce"
-                    style={{ animationDelay: "0.4s" }}
-                  ></div>
-                </div>
-                <div className="text-center space-y-1">
-                  <span className="text-xs font-semibold text-stone-700">Creating Reel</span>
-                  <p className="text-[10px] text-stone-600">1-3 minutes</p>
-                </div>
+                {photoshootGenerations.length > 0 && (
+                  <div className="grid grid-cols-2 gap-2">
+                    {photoshootGenerations.map((gen, idx) => (
+                      <div key={idx} className="aspect-square bg-stone-100 rounded-lg overflow-hidden relative">
+                        {gen.url || gen.imageUrl ? (
+                          <img
+                            src={gen.url || gen.imageUrl || "/placeholder.svg"}
+                            alt={gen.action}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center gap-2">
+                            <div className="w-6 h-6 border-2 border-stone-300 border-t-stone-900 rounded-full animate-spin" />
+                            <span className="text-[10px] text-stone-400 font-medium">Generating...</span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {photoshootGenerations.length > 0 && (
+                  <div className="w-full bg-stone-200 rounded-full h-1.5 overflow-hidden">
+                    <div
+                      className="bg-gradient-to-r from-stone-600 to-stone-900 h-full transition-all duration-500 ease-out"
+                      style={{
+                        width: `${(photoshootGenerations.filter((p) => p.url || p.imageUrl).length / photoshootGenerations.length) * 100}%`,
+                      }}
+                    />
+                  </div>
+                )}
               </div>
             )}
 
