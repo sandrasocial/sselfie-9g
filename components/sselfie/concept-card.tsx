@@ -310,8 +310,22 @@ export default function ConceptCard({ concept, chatId, onCreditsUpdate }: Concep
       if (data.predictions && data.predictions.length > 0) {
         console.log("[v0] 📸 Starting prediction polling for", data.predictions.length, "images")
 
+        console.log("[v0] 📸 Initializing photoshootGenerations array with", data.predictions.length, "placeholders")
+        setPhotoshootGenerations(
+          data.predictions.map((pred: any) => ({
+            id: pred.index,
+            generationId: pred.predictionId,
+            index: pred.index,
+            url: null,
+            imageUrl: null,
+            action: pred.title,
+            status: "processing",
+            error: null,
+          })),
+        )
+
         const pollPromises = data.predictions.map((pred: any) =>
-          pollPhotoshootPrediction(pred.predictionId, data.userId, concept.description),
+          pollPhotoshootPrediction(pred.predictionId, pred.index, data.userId, concept.description),
         )
 
         await Promise.all(pollPromises)
@@ -328,7 +342,12 @@ export default function ConceptCard({ concept, chatId, onCreditsUpdate }: Concep
     }
   }
 
-  const pollPhotoshootPrediction = async (predictionId: string, userId: string, conceptDescription?: string) => {
+  const pollPhotoshootPrediction = async (
+    predictionId: string,
+    index: number,
+    userId: string,
+    conceptDescription?: string,
+  ) => {
     const maxAttempts = 120
     let attempts = 0
 
@@ -348,8 +367,39 @@ export default function ConceptCard({ concept, chatId, onCreditsUpdate }: Concep
 
         if (data.status === "succeeded") {
           console.log("[v0] ✅ Photoshoot prediction succeeded:", predictionId)
+
+          if (data.output && Array.isArray(data.output) && data.output.length > 0) {
+            const imageUrl = data.output[0] // First image from output array
+            console.log("[v0] 📸 Updating image at index", index, "with URL:", imageUrl)
+
+            setPhotoshootGenerations((prev) => {
+              const updated = [...prev]
+              if (updated[index]) {
+                updated[index] = {
+                  ...updated[index],
+                  url: imageUrl,
+                  imageUrl: imageUrl,
+                  status: "ready",
+                }
+              }
+              console.log("[v0] 📸 State updated for index", index, "- url present:", !!updated[index]?.url)
+              return updated
+            })
+          }
+
           return
         } else if (data.status === "failed") {
+          setPhotoshootGenerations((prev) => {
+            const updated = [...prev]
+            if (updated[index]) {
+              updated[index] = {
+                ...updated[index],
+                status: "failed",
+                error: data.error || "Generation failed",
+              }
+            }
+            return updated
+          })
           throw new Error(data.error || "Photoshoot generation failed")
         }
 
