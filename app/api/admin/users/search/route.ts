@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server"
-import { createServerClient } from "@/lib/supabase/server"
+import { type NextRequest, NextResponse } from "next/server"
+import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { neon } from "@neondatabase/serverless"
 
@@ -8,12 +8,10 @@ const ADMIN_EMAIL = "ssa@ssasocial.com"
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createServerClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    const { user, error: authError } = await getAuthenticatedUser()
 
-    if (!user) {
+    if (authError || !user) {
+      console.error("[v0] [ADMIN] Auth error in user search:", authError?.message)
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
@@ -47,7 +45,15 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ users })
   } catch (error) {
-    console.error("[v0] Error searching users:", error)
-    return NextResponse.json({ error: "Failed to search users" }, { status: 500 })
+    console.error("[v0] [ADMIN] Error searching users:", error)
+    const errorMessage = error instanceof Error ? error.message : "Unknown error"
+    return NextResponse.json(
+      {
+        error: errorMessage.includes("Too Many")
+          ? "Rate limit reached. Please wait a moment."
+          : "Failed to search users",
+      },
+      { status: 500 },
+    )
   }
 }

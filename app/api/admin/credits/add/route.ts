@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createServerClient } from "@/lib/supabase/server"
+import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { addCredits } from "@/lib/credits"
 
@@ -7,12 +7,10 @@ const ADMIN_EMAIL = "ssa@ssasocial.com"
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createServerClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    const { user, error: authError } = await getAuthenticatedUser()
 
-    if (!user) {
+    if (authError || !user) {
+      console.error("[v0] [ADMIN] Auth error in credit add:", authError?.message)
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
@@ -43,7 +41,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log("[v0] Admin added credits:", {
+    console.log("[v0] [ADMIN] Added credits:", {
       admin: neonUser.email,
       userId,
       amount,
@@ -57,7 +55,7 @@ export async function POST(request: NextRequest) {
       message: `Added ${amount} credits successfully`,
     })
   } catch (error) {
-    console.error("[v0] Error adding credits:", error)
+    console.error("[v0] [ADMIN] Error adding credits:", error)
     const errorMessage = error instanceof Error ? error.message : "Unknown error"
     return NextResponse.json(
       {

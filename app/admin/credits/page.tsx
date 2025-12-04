@@ -1,19 +1,16 @@
-import { createServerClient } from "@/lib/supabase/server"
+import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserByAuthId, getOrCreateNeonUser } from "@/lib/user-mapping"
-import { redirect } from 'next/navigation'
+import { redirect } from "next/navigation"
 import { CreditManager } from "@/components/admin/credit-manager"
-import { Lock, ArrowLeft } from 'lucide-react'
+import { Lock, ArrowLeft } from "lucide-react"
 import Link from "next/link"
 
 const ADMIN_EMAIL = "ssa@ssasocial.com"
 
 export default async function AdminCreditsPage() {
-  const supabase = await createServerClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { user, error: authError } = await getAuthenticatedUser()
 
-  if (!user) {
+  if (authError || !user) {
     redirect("/auth/login")
   }
 
@@ -21,14 +18,14 @@ export default async function AdminCreditsPage() {
   try {
     neonUser = await getUserByAuthId(user.id)
   } catch (error) {
-    console.error("[v0] Error fetching user:", error)
+    console.error("[v0] [ADMIN] Error fetching user:", error)
   }
 
   if (!neonUser && user.email) {
     try {
       neonUser = await getOrCreateNeonUser(user.id, user.email, user.user_metadata?.display_name)
     } catch (error) {
-      console.error("[v0] Error syncing user:", error)
+      console.error("[v0] [ADMIN] Error syncing user:", error)
     }
   }
 
