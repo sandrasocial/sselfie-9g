@@ -62,25 +62,52 @@ export async function POST(request: Request) {
     }
 
     if (!stripeCustomerId) {
-      console.log("[v0] Create portal session: No Stripe customer ID found")
-      return NextResponse.json({ error: "No subscription found. Please contact support." }, { status: 404 })
+      console.log("[v0] Create portal session: No Stripe customer ID found for user:", neonUser.id)
+      return NextResponse.json(
+        {
+          error: "No subscription found",
+          message: "You don't have an active subscription. Please purchase a membership to manage your subscription.",
+        },
+        { status: 404 },
+      )
     }
 
     const origin = request.headers.get("origin")
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || origin || "https://sselfie.ai"
 
+    console.log("[v0] Create portal session: Creating Stripe session for customer:", stripeCustomerId)
+
+    try {
+      await stripe.customers.retrieve(stripeCustomerId)
+    } catch (stripeError: any) {
+      console.error("[v0] Create portal session: Invalid Stripe customer:", stripeError.message)
+      return NextResponse.json(
+        {
+          error: "Invalid customer",
+          message: "Your subscription data is invalid. Please contact support.",
+        },
+        { status: 400 },
+      )
+    }
+
     // Create Stripe customer portal session
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: stripeCustomerId,
       return_url: `${baseUrl}/studio?tab=settings`,
-      configuration: process.env.STRIPE_PORTAL_CONFIGURATION_ID || "bpc_1SRX2wEVJvME7vkwu0rlIgfW",
+      configuration: process.env.STRIPE_PORTAL_CONFIGURATION_ID,
     })
 
     console.log("[v0] Create portal session: Session created successfully")
 
     return NextResponse.json({ url: portalSession.url })
-  } catch (error) {
+  } catch (error: any) {
     console.error("[v0] Error creating portal session:", error)
-    return NextResponse.json({ error: "Failed to create portal session" }, { status: 500 })
+    return NextResponse.json(
+      {
+        error: "Failed to create portal session",
+        message: error.message || "An unexpected error occurred. Please try again or contact support.",
+      },
+      { status: 500 },
+    )
   }
 }

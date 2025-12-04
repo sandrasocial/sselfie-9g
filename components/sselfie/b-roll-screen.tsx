@@ -241,15 +241,17 @@ export default function BRollScreen({ user }: BRollScreenProps) {
           console.log("[v0] Video URL received:", data.videoUrl ? "YES" : "NO")
 
           console.log("[v0] Calling mutateVideos() to refresh video list from database...")
-          await mutateVideos()
+          await mutateVideos(undefined, { revalidate: true })
           console.log("[v0] ✅ mutateVideos() completed - video should now appear from DB")
+
+          await new Promise((resolve) => setTimeout(resolve, 500))
+
           console.log("[v0] Clearing generating state for imageId:", imageId)
           console.log("[v0] ================================================")
 
           setGeneratingVideos((prev) => {
             const newSet = new Set(prev)
             newSet.delete(imageId)
-            console.log("[v0] Cleared generating state. Remaining generating:", Array.from(newSet))
             return newSet
           })
           setVideoPredictions((prev) => {
@@ -539,9 +541,17 @@ export default function BRollScreen({ user }: BRollScreenProps) {
               const isGenerating = generatingVideos.has(image.id) || analyzingMotion.has(image.id)
               const error = videoErrors.get(image.id)
 
-              const video = allVideos.find(
-                (v) => String(v.image_id) === String(image.id) && v.video_url && v.status === "completed",
-              )
+              const video = allVideos.find((v) => {
+                const imageIdMatch = String(v.image_id) === String(image.id)
+                const hasUrl = !!v.video_url && v.video_url.length > 0
+                const isCompleted = v.status === "completed"
+
+                console.log("[v0] Checking video match for image:", image.id)
+                console.log("[v0]   - Video image_id:", v.image_id, "Match:", imageIdMatch)
+                console.log("[v0]   - Has URL:", hasUrl, "Status:", v.status, "Is completed:", isCompleted)
+
+                return imageIdMatch && hasUrl && isCompleted
+              })
 
               console.log("[v0] ========== RENDERING IMAGE ==========")
               console.log("[v0] Image ID:", image.id, "Type:", typeof image.id)
@@ -549,10 +559,18 @@ export default function BRollScreen({ user }: BRollScreenProps) {
               console.log("[v0] Has Error:", !!error)
               console.log("[v0] Video found in DB:", !!video)
               if (video) {
-                console.log("[v0] Video image_id:", video.image_id, "Type:", typeof video.image_id)
-                console.log("[v0] Video URL:", video.video_url ? `${video.video_url.substring(0, 60)}...` : "NULL")
+                console.log("[v0] ✅ MATCHED VIDEO:")
+                console.log("[v0]   - Video ID:", video.id)
+                console.log("[v0]   - Video image_id:", video.image_id, "Type:", typeof video.image_id)
+                console.log("[v0]   - Video URL:", video.video_url ? `${video.video_url.substring(0, 60)}...` : "NULL")
+                console.log("[v0]   - Status:", video.status)
+              } else {
+                console.log("[v0] ❌ NO VIDEO FOUND for image:", image.id)
+                console.log("[v0]   - Total videos in DB:", allVideos.length)
+                if (allVideos.length > 0) {
+                  console.log("[v0]   - Available video image_ids:", allVideos.map((v) => v.image_id).join(", "))
+                }
               }
-              console.log("[v0] Total videos in DB:", allVideos.length)
               console.log("[v0] ================================================")
 
               return (
@@ -576,9 +594,10 @@ export default function BRollScreen({ user }: BRollScreenProps) {
                     showAnimateOverlay={true}
                   />
 
-                  {video && video.video_url && (
+                  {video && video.video_url && video.video_url.length > 0 && (
                     <div className="mt-3">
                       {console.log("[v0] ✅ Rendering InstagramReelCard for video:", video.id)}
+                      {console.log("[v0]   - Video URL:", video.video_url)}
                       <InstagramReelCard
                         videoUrl={video.video_url}
                         motionPrompt={video.motion_prompt || undefined}

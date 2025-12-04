@@ -160,17 +160,21 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
   const handleManageSubscription = async () => {
     setIsLoadingPortal(true)
     try {
+      console.log("[v0] Opening subscription management portal...")
+
       const response = await fetch("/api/stripe/create-portal-session", {
         method: "POST",
         credentials: "include",
       })
 
+      const data = await response.json()
+
       if (response.ok) {
-        const data = await response.json()
+        console.log("[v0] Portal session created, redirecting to:", data.url)
         window.location.href = data.url
       } else {
-        console.error("[v0] Failed to create portal session")
-        alert("Unable to open subscription management. Please try again.")
+        console.error("[v0] Failed to create portal session:", response.status, data)
+        alert(data.message || "Unable to open subscription management. Please try again.")
       }
     } catch (error) {
       console.error("[v0] Error opening portal:", error)
@@ -372,7 +376,7 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
                   className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-stone-100/50 transition-colors text-left"
                 >
                   <Lock size={20} className="text-stone-600" />
-                  <span className="text-sm font-medium text-stone-900">Admin Dashboard</span>
+                  <span className="text-sm font-medium text-stone-950">Admin Dashboard</span>
                 </button>
               </nav>
             </div>
