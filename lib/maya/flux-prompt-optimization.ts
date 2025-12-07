@@ -68,10 +68,11 @@ export const FLUX_PROMPT_OPTIMIZATION = {
    * Critical techniques to maintain user likeness with trained LoRA models
    */
   FACE_PRESERVATION: {
-    // Trigger word must be EARLY in prompt (first 5-10 words)
-    TRIGGER_PLACEMENT: "START",
+    // Trigger word must be FIRST in prompt (first 3-5 words) - CRITICAL for LoRA activation
+    TRIGGER_PLACEMENT: "FIRST",
+    TRIGGER_POSITION: "1-3", // First 1-3 words for optimal character likeness
 
-    // Use explicit face preservation phrases when needed
+    // Use explicit face preservation phrases when needed (but avoid overusing)
     PRESERVATION_PHRASES: [
       "maintaining exact facial features",
       "preserving recognizable face",
@@ -79,23 +80,39 @@ export const FLUX_PROMPT_OPTIMIZATION = {
       "consistent facial identity",
     ],
 
-    // Avoid overloading with facial details (LoRA handles this)
+    // CRITICAL: Avoid overloading with facial details (LoRA handles this)
+    // The LoRA was trained on these features - it already knows them
+    // Mentioning them can confuse the model or cause conflicts with character likeness
     AVOID_FACE_MICROMANAGEMENT: [
       "blue eyes", // LoRA knows user's eye color
+      "brown eyes", // LoRA knows user's eye color
+      "green eyes", // LoRA knows user's eye color
       "sharp jawline", // LoRA knows face structure
       "high cheekbones", // Trust the trained model
       "defined nose", // Let LoRA handle features
+      "long hair", // LoRA knows hair length/style
+      "short hair", // LoRA knows hair length/style
+      "dark hair", // LoRA knows hair color
+      "blonde hair", // LoRA knows hair color
+      "round face", // LoRA knows face shape
+      "oval face", // LoRA knows face shape
     ],
 
-    // DO describe face-adjacent elements
+    // DO describe face-adjacent elements (these are changeable, not fixed features)
     DESCRIBE_INSTEAD: [
-      "natural makeup",
-      "minimal makeup",
-      "glowing skin",
-      "relaxed expression",
-      "confident look",
-      "soft smile", // Expression, not features
+      "natural makeup", // Makeup is changeable
+      "minimal makeup", // Makeup is changeable
+      "glowing skin", // Skin quality is changeable
+      "relaxed expression", // Expression is changeable
+      "confident look", // Mood is changeable
+      "soft smile", // Expression is changeable
+      "looking away naturally", // Expression/pose is changeable
+      "eyes resting down", // Expression is changeable
     ],
+
+    // Trust the trained LoRA model to preserve facial features
+    // Focus on styling, pose, lighting, and environment instead
+    TRUST_LORA: true,
   },
 
   /**
@@ -114,10 +131,13 @@ export const FLUX_PROMPT_OPTIMIZATION = {
     ],
 
     PRINCIPLES: [
-      "Keep prompts 25-45 words for optimal face preservation",
+      "Keep prompts 25-45 words for optimal face preservation (shorter = better character likeness)",
       "Outfit descriptions: material + color + garment type (3-4 words max)",
       "Location: atmosphere + setting (2-3 words)",
       "Always end with camera/texture specs",
+      "Hard limit: 45 words maximum - exceeding degrades character likeness",
+      "Shorter prompts (25-35 words) = better facial consistency",
+      "Longer prompts (50+ words) = model may lose focus on character features",
     ],
   },
 

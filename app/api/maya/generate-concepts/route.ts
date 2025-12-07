@@ -336,6 +336,21 @@ CRITICAL INSTRUCTIONS:
 
 1. **Start with:** "${triggerWord}, ${userEthnicity ? userEthnicity + " " : ""}${userGender}${physicalPreferences ? `, [converted physical preferences - descriptive only, no instructions]` : ""}"
 
+   **CRITICAL - TRIGGER WORD PLACEMENT:**
+   - Trigger word MUST be the FIRST word in every prompt
+   - This is non-negotiable for character likeness preservation
+   - Format: "${triggerWord}, [rest of prompt]"
+
+   **CRITICAL - AVOID FACIAL FEATURE MICROMANAGEMENT:**
+   - DO NOT describe fixed facial features that the LoRA already knows (eye color, jawline, cheekbones, nose shape, **hair color/style/length**)
+   - The LoRA was trained on these features - it already knows them
+   - Mentioning them can confuse the model or cause conflicts
+   - ❌ AVOID: "blue eyes", "sharp jawline", "high cheekbones", "defined nose", **"long dark brown hair"**, **"blonde hair"**, **"short hair"**, **"curly hair"** (UNLESS user specified these in their physical preferences/settings)
+   - ✅ INSTEAD: Describe changeable elements like "natural makeup", "relaxed expression", "confident look", "soft smile"
+   - **IMPORTANT:** If user has specified hair descriptions in their physical preferences/settings, those ARE mandatory and must be included - they are intentional user modifications
+   - **ONLY avoid hair descriptions** if they're NOT in user's physical preferences - the LoRA already knows hair from training, but user preferences override this
+   - Trust the trained LoRA model to preserve facial features - focus on styling, pose, lighting, and environment
+
    **CRITICAL:** If physical preferences contain instruction language ("Always keep my", "dont change", "keep my"), you MUST:
    - Remove the instruction phrases
    - Convert to descriptive appearance features only
@@ -357,15 +372,31 @@ CRITICAL INSTRUCTIONS:
 
 8. **Casual Moment Language (RECOMMENDED):** Include "candid moment", "looks like a real phone camera photo", or "amateur cellphone quality"
 
-9. **Prompt Length:** 30-45 words (shorter = more authentic, better facial consistency, less AI-looking)
+9. **Prompt Length:** 25-45 words (shorter = more authentic, better facial consistency, less AI-looking)
+   - **CRITICAL:** Shorter prompts (25-35 words) = better face preservation
+   - Longer prompts (50+ words) = model may lose focus on character features
+   - FLUX T5 encoder optimal at ~256 tokens (~30-40 words)
+   - Hard limit: 45 words maximum - do not exceed this
 
 10. **NO BANNED WORDS:** Never use "stunning", "perfect", "beautiful", "high quality", "8K", "professional photography", "DSLR", "cinematic", "studio lighting", "even lighting", "perfect lighting", "smooth skin", "flawless skin", "airbrushed" - these create AI-looking/plastic results.
 
 9. Apply the OUTFIT PRINCIPLE with your FASHION INTELLIGENCE - no boring defaults
-10. Apply the EXPRESSION PRINCIPLE for authentic facial details
+10. Apply the EXPRESSION PRINCIPLE for authentic facial details (expressions, not fixed features)
 11. Apply the POSE PRINCIPLE for natural body positioning
 12. Apply the LOCATION PRINCIPLE for evocative settings
 13. Apply the LIGHTING PRINCIPLE for cinematic craft
+
+**🔴 PROMPT STRUCTURE ARCHITECTURE (FOLLOW THIS ORDER):**
+1. **TRIGGER WORD** (first position - MANDATORY)
+2. **GENDER/ETHNICITY** (2-3 words)
+3. **OUTFIT** (material + color + garment type - 6-10 words)
+4. **POSE + EXPRESSION** (simple, natural - 4-6 words)
+5. **LOCATION** (brief, atmospheric - 3-6 words)
+6. **LIGHTING** (with imperfections - 5-8 words)
+7. **TECHNICAL SPECS** (iPhone + imperfections + skin texture + grain + muted colors - 8-12 words)
+8. **CASUAL MOMENT** (optional - 2-4 words)
+
+**Total target: 30-45 words for optimal face preservation**
 
 **IF ANY MANDATORY REQUIREMENT IS MISSING, THE PROMPT WILL PRODUCE AI-LOOKING RESULTS.**
 
@@ -513,12 +544,78 @@ Now apply your fashion intelligence and prompting mastery. Create ${count} conce
         prompt = prompt.replace(softDiffusedRegex, "")
       }
 
+      // CRITICAL FIX: Remove hair descriptions that LoRA already knows
+      // BUT: Keep hair descriptions if they're in user's physical preferences (user intentionally added them)
+      // Only remove hair descriptions that the model generated on its own (not from user settings)
+      
+      // Check if physical preferences contain hair descriptions
+      const hasHairInPreferences = physicalPreferences && /hair|blonde|brown|black|long|short|curly|straight|wavy/i.test(physicalPreferences)
+      
+      // Only remove hair descriptions if they're NOT in user's physical preferences
+      if (!hasHairInPreferences) {
+        const hairDescriptions = [
+          /\b(long|short|medium)\s+(dark|light|brown|black|blonde|blond|red|auburn|gray|grey)\s+(hair|brown hair|black hair|blonde hair|blond hair|red hair)\b/gi,
+          /\b(dark|light|brown|black|blonde|blond|red|auburn|gray|grey)\s+(long|short|medium)\s+(hair|brown hair|black hair|blonde hair|blond hair|red hair)\b/gi,
+          /\b(long|short|medium)\s+hair\b/gi,
+          /\b(dark|light|brown|black|blonde|blond|red|auburn|gray|grey)\s+hair\b/gi,
+          /\bcurly\s+hair\b/gi,
+          /\bstraight\s+hair\b/gi,
+          /\bwavy\s+hair\b/gi,
+        ]
+        
+        hairDescriptions.forEach((regex) => {
+          prompt = prompt.replace(regex, "")
+        })
+      }
+
       // Clean up after removals
       prompt = prompt.replace(/,\s*,/g, ",").replace(/\s+/g, " ").trim()
 
       // Get current word count - we want to stay under 45 words
       let currentWordCount = wordCount(prompt)
       const MAX_WORDS = 45 // Hard limit - don't add if we're already at or over this
+
+      // CRITICAL FIX: If prompt is over 45 words, trim intelligently
+      if (currentWordCount > MAX_WORDS) {
+        // Remove less critical elements first (in order of priority to keep)
+        // 1. Keep: trigger word, gender, outfit, pose, iPhone, skin texture, imperfections
+        // 2. Remove: overly detailed location descriptions
+        // 3. Remove: redundant technical terms
+        // 4. Remove: casual moment language (lowest priority)
+        
+        // Remove casual moment language first (lowest priority)
+        prompt = prompt.replace(/,\s*(candid moment|looks like a real phone camera photo|amateur cellphone quality|looks like real phone camera photo|authentic iPhone|iPhone photo|Instagram-native)/gi, "")
+        currentWordCount = wordCount(prompt)
+        
+        // If still over, remove overly detailed location descriptions
+        if (currentWordCount > MAX_WORDS) {
+          // Simplify location descriptions (keep first part, remove details)
+          prompt = prompt.replace(/,\s*(modern architectural space with clean lines|architectural space with|with clean lines)/gi, ", modern space")
+          currentWordCount = wordCount(prompt)
+        }
+        
+        // If still over, remove redundant technical terms
+        if (currentWordCount > MAX_WORDS) {
+          // Simplify "fine film grain texture" to "film grain"
+          prompt = prompt.replace(/fine\s+film\s+grain\s+texture/gi, "film grain")
+          prompt = prompt.replace(/visible\s+film\s+grain/gi, "film grain")
+          prompt = prompt.replace(/soft\s+muted\s+tones/gi, "muted tones")
+          prompt = prompt.replace(/muted\s+color\s+palette/gi, "muted tones")
+          currentWordCount = wordCount(prompt)
+        }
+        
+        // If still over, remove overly detailed outfit descriptions
+        if (currentWordCount > MAX_WORDS) {
+          // Simplify "with soft drape" type phrases
+          prompt = prompt.replace(/,\s*with\s+soft\s+drape/gi, "")
+          prompt = prompt.replace(/,\s*weight\s+shifted\s+to\s+one\s+leg/gi, ", weight on one leg")
+          currentWordCount = wordCount(prompt)
+        }
+        
+        // Final cleanup
+        prompt = prompt.replace(/,\s*,/g, ",").replace(/\s+/g, " ").trim()
+        currentWordCount = wordCount(prompt)
+      }
 
       // CRITICAL FIX #1: Only ensure iPhone if missing (most important element)
       const hasIPhone = /iPhone\s*15\s*Pro|amateur\s*cellphone\s*photo/i.test(prompt)

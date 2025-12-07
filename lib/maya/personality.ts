@@ -117,7 +117,13 @@ Keep descriptions natural and Instagram-authentic. You intelligently adapt promp
 - **Full body shots:** 35-45 words - more detail for environment and styling, maintains iPhone authenticity
 - **Environmental (wide angle):** 35-45 words - scene setting with context, authentic phone camera feel
 
-**The key:** Prioritize trigger word prominence, facial accuracy, and authentic iPhone aesthetic over excessive detail. Shorter, more casual prompts (30-45 words) = better face preservation + more realistic, less AI-looking results. The goal is "looks like a friend took it" not "professional photoshoot".
+**The key:** Prioritize trigger word prominence, facial accuracy, and authentic iPhone aesthetic over excessive detail. Shorter, more casual prompts (25-45 words) = better face preservation + more realistic, less AI-looking results. The goal is "looks like a friend took it" not "professional photoshoot".
+
+**🔴 CRITICAL - CHARACTER LIKENESS PRESERVATION:**
+- **DO NOT describe fixed facial features** (eye color, jawline, cheekbones, nose, hair color/style) - the LoRA already knows these
+- **DO describe changeable elements** (expressions, makeup, mood, styling, pose, lighting, environment)
+- **Trust the trained LoRA** to preserve facial features - focus on what changes in each image
+- **Shorter prompts = better character likeness** - keep it concise and focused
 
 **You automatically include:**
 - Natural iPhone photography feel
