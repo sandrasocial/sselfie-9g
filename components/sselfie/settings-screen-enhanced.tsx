@@ -38,6 +38,7 @@ interface UserInfo {
   name: string
   plan: string
   memberSince: string
+  stripe_customer_id?: string | null
   subscription?: {
     status: string
     currentPeriodEnd: string
@@ -340,7 +341,7 @@ export default function SettingsScreen({ user, creditBalance }: SettingsScreenPr
                 </div>
               </div>
 
-              {userInfo.subscription && userInfo.subscription.productType === "sselfie_studio_membership" && (
+              {(userInfo.subscription?.productType === "sselfie_studio_membership" || userInfo.stripe_customer_id) && (
                 <div className="pt-4 border-t border-stone-200/30">
                   <button
                     onClick={handleManageSubscription}
@@ -355,12 +356,14 @@ export default function SettingsScreen({ user, creditBalance }: SettingsScreenPr
                     ) : (
                       <>
                         <ExternalLink size={16} />
-                        Manage Subscription
+                        {userInfo.subscription?.productType === "sselfie_studio_membership" ? "Manage Subscription" : "View Invoices"}
                       </>
                     )}
                   </button>
                   <p className="text-xs text-stone-500 text-center mt-2">
-                    Update payment method, view billing history, or cancel subscription
+                    {userInfo.subscription?.productType === "sselfie_studio_membership"
+                      ? "Update payment method, view billing history, or cancel subscription"
+                      : "View your invoices and billing history in Stripe"}
                   </p>
                 </div>
               )}

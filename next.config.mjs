@@ -1,8 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -15,12 +12,7 @@ const nextConfig = {
     },
     proxyClientMaxBodySize: '100mb',
   },
-  api: {
-    bodyParser: {
-      sizeLimit: '100mb',
-    },
-    responseLimit: '100mb',
-  },
+  serverExternalPackages: ['prettier', 'prettier/plugins/html', 'prettier/standalone'],
   async headers() {
     return [
       {

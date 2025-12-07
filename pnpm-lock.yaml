@@ -212,6 +212,9 @@ importers:
       path:
         specifier: 0.12.7
         version: 0.12.7
+      prettier:
+        specifier: ^3.7.3
+        version: 3.7.3
       react:
         specifier: 19.2.0
         version: 19.2.0

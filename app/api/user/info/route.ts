@@ -28,6 +28,26 @@ export async function GET() {
 
     const subscription = await getUserSubscription(neonUser.id)
 
+    // Check for stripe_customer_id in both subscriptions and users table
+    let stripeCustomerId: string | null = null
+    
+    // First check subscriptions table
+    if (subscription?.stripe_customer_id) {
+      stripeCustomerId = subscription.stripe_customer_id
+    } else {
+      // Fall back to users table
+      const userStripeCheck = await sql`
+        SELECT stripe_customer_id 
+        FROM users 
+        WHERE id = ${neonUser.id} 
+        AND stripe_customer_id IS NOT NULL
+        LIMIT 1
+      `
+      if (userStripeCheck.length > 0 && userStripeCheck[0].stripe_customer_id) {
+        stripeCustomerId = userStripeCheck[0].stripe_customer_id
+      }
+    }
+
     const userInfo = await sql`
       SELECT 
         id,
@@ -86,6 +106,7 @@ export async function GET() {
       gender: user.gender,
       ethnicity: user.ethnicity,
       physical_preferences: physicalPreferences,
+      stripe_customer_id: stripeCustomerId,
       subscription: subscription
         ? {
             status: subscription.status,
