@@ -76,10 +76,43 @@ export class FluxPromptBuilder {
       realismKeywords,
     }
 
+    // Clean physical preferences - remove instruction phrases
+    let cleanedPhysicalPreferences = ""
+    if (physicalPreferences) {
+      cleanedPhysicalPreferences = physicalPreferences
+      const instructionPhrases = [
+        /\bAlways keep my\b/gi,
+        /\bdont change\b/gi,
+        /\bdon't change\b/gi,
+        /\bkeep my\b/gi,
+        /\bpreserve my\b/gi,
+        /\bmaintain my\b/gi,
+        /\bkeep\s+my\s+natural\s+features\b/gi,
+        /\bdont\s+change\s+the\s+face\b/gi,
+        /\bdon't\s+change\s+the\s+face\b/gi,
+        /\bkeep\s+my\s+natural\s+hair\s+color\b/gi,
+        /\bkeep\s+my\s+natural\s+eye\s+color\b/gi,
+        /\bkeep\s+my\s+natural\s+hair\b/gi,
+        /\bkeep\s+my\s+natural\s+eyes\b/gi,
+      ]
+      
+      instructionPhrases.forEach((regex) => {
+        cleanedPhysicalPreferences = cleanedPhysicalPreferences.replace(regex, "")
+      })
+      
+      cleanedPhysicalPreferences = cleanedPhysicalPreferences
+        .replace(/,\s*,/g, ",") // Remove double commas
+        .replace(/,\s*,/g, ",") // Remove double commas again (in case of triple)
+        .replace(/^,\s*/, "") // Remove leading comma
+        .replace(/\s*,\s*$/, "") // Remove trailing comma
+        .replace(/\s+/g, " ") // Normalize multiple spaces
+        .trim() // Final trim
+    }
+
     const promptParts = [
       components.trigger,
       components.gender,
-      physicalPreferences || "", // Add physical preferences after gender
+      cleanedPhysicalPreferences || "", // Add cleaned physical preferences after gender
       components.styleDescription,
       instagramPose,
       luxuryUrbanKeywords,

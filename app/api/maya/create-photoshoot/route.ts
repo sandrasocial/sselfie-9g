@@ -35,7 +35,44 @@ async function generatePhotoshootPoseVariations({
     characterDescriptor += `${ethnicity} `
   }
   if (physicalPreferences) {
-    characterDescriptor += `${physicalPreferences.trim()}`
+    // Remove instruction phrases - these are for Maya, not FLUX prompts
+    let cleanedPreferences = physicalPreferences.trim()
+    const instructionPhrases = [
+      /\bAlways keep my\b/gi,
+      /\bAlways\s+keep\s+my\s+natural\s+features\b/gi,
+      /\bdont change\b/gi,
+      /\bdon't change\b/gi,
+      /\bdont\s+change\s+the\s+face\b/gi,
+      /\bdon't\s+change\s+the\s+face\b/gi,
+      /\bkeep my\b/gi,
+      /\bkeep\s+my\s+natural\s+features\b/gi,
+      /\bkeep\s+my\s+natural\s+hair\s+color\b/gi,
+      /\bkeep\s+my\s+natural\s+eye\s+color\b/gi,
+      /\bkeep\s+my\s+natural\s+hair\b/gi,
+      /\bkeep\s+my\s+natural\s+eyes\b/gi,
+      /\bpreserve my\b/gi,
+      /\bmaintain my\b/gi,
+      /\bdo not change\b/gi,
+      /\bdo\s+not\s+change\s+the\s+face\b/gi,
+    ]
+    
+    instructionPhrases.forEach((regex) => {
+      cleanedPreferences = cleanedPreferences.replace(regex, "")
+    })
+    
+    // Clean up commas and spaces
+    cleanedPreferences = cleanedPreferences
+      .replace(/,\s*,/g, ",") // Remove double commas
+      .replace(/,\s*,/g, ",") // Remove double commas again (in case of triple)
+      .replace(/^,\s*/, "") // Remove leading comma
+      .replace(/\s*,\s*$/, "") // Remove trailing comma
+      .replace(/\s+/g, " ") // Normalize multiple spaces
+      .trim() // Final trim
+    
+    // Only add if there's actual descriptive content left (not just instructions)
+    if (cleanedPreferences && cleanedPreferences.length > 0) {
+      characterDescriptor += cleanedPreferences
+    }
   }
 
   const characterContext = characterDescriptor.trim()

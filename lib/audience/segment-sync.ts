@@ -55,6 +55,69 @@ export async function getAllResendContacts(): Promise<Array<{ email: string; id:
 }
 
 /**
+ * Identify beta users from Resend tags
+ * Checks for tags like: beta-customer: 'true', product: 'studio-membership'
+ */
+export function identifyBetaUsersFromResendTags(contacts: Array<{ email: string; tags?: any[] }>): Set<string> {
+  const betaEmails = new Set<string>()
+  
+  for (const contact of contacts) {
+    const tags = contact.tags || []
+    const tagMap: { [key: string]: string } = {}
+    
+    // Convert tags array to map for easier lookup
+    for (const tag of tags) {
+      if (typeof tag === 'object' && tag.name && tag.value) {
+        tagMap[tag.name] = tag.value
+      }
+    }
+    
+    // Check for beta indicators in tags
+    if (
+      tagMap['beta-customer'] === 'true' ||
+      tagMap['beta'] === 'true' ||
+      (tagMap['product'] === 'studio-membership' && tagMap['status'] === 'customer')
+    ) {
+      betaEmails.add(contact.email)
+    }
+  }
+  
+  return betaEmails
+}
+
+/**
+ * Identify paid users from Resend tags
+ * Checks for tags like: status: 'customer', product: 'studio-membership' or 'one-time-session'
+ */
+export function identifyPaidUsersFromResendTags(contacts: Array<{ email: string; tags?: any[] }>): Set<string> {
+  const paidEmails = new Set<string>()
+  
+  for (const contact of contacts) {
+    const tags = contact.tags || []
+    const tagMap: { [key: string]: string } = {}
+    
+    // Convert tags array to map for easier lookup
+    for (const tag of tags) {
+      if (typeof tag === 'object' && tag.name && tag.value) {
+        tagMap[tag.name] = tag.value
+      }
+    }
+    
+    // Check for paid user indicators in tags
+    if (
+      tagMap['status'] === 'customer' ||
+      tagMap['product'] === 'studio-membership' ||
+      tagMap['product'] === 'one-time-session' ||
+      tagMap['product'] === 'credit-topup'
+    ) {
+      paidEmails.add(contact.email)
+    }
+  }
+  
+  return paidEmails
+}
+
+/**
  * Identify beta users from Neon database
  * Beta users: subscriptions with product_type = 'sselfie_studio_membership' AND is_test_mode = FALSE
  */
@@ -251,30 +314,48 @@ export async function updateContactTags(email: string, segments: {
 }
 
 /**
- * Run segmentation for a list of emails
+ * Run segmentation for a list of contacts
+ * Uses Resend tags first, then falls back to Neon database
  * Returns detailed results for each email
  */
-export async function runSegmentationForEmails(emails: string[]): Promise<SegmentResult[]> {
-  if (emails.length === 0) {
+export async function runSegmentationForEmails(
+  contacts: Array<{ email: string; id: string; tags?: any[] }>
+): Promise<SegmentResult[]> {
+  if (contacts.length === 0) {
     return []
   }
 
+  const emails = contacts.map(c => c.email).filter(Boolean)
+
   // Only log emails for small batches (debugging)
-  if (emails.length <= 5) {
-    console.log(`[v0] Running segmentation for ${emails.length} email(s):`, emails)
+  if (contacts.length <= 5) {
+    console.log(`[v0] Running segmentation for ${contacts.length} contact(s):`, emails)
   } else {
-    console.log(`[v0] Running segmentation for ${emails.length} email(s)`)
+    console.log(`[v0] Running segmentation for ${contacts.length} contact(s)`)
   }
 
-  // Identify segments from database
-  const [betaUsers, paidUsers, coldUsers] = await Promise.all([
+  // FIRST: Identify segments from Resend tags (for contacts not in database)
+  const betaUsersFromTags = identifyBetaUsersFromResendTags(contacts)
+  const paidUsersFromTags = identifyPaidUsersFromResendTags(contacts)
+  
+  console.log(`[v0] Identified from Resend tags: ${betaUsersFromTags.size} beta, ${paidUsersFromTags.size} paid`)
+
+  // SECOND: Also check Neon database (for contacts that ARE in database)
+  // This ensures we catch any contacts that might be in both places
+  const [betaUsersFromDB, paidUsersFromDB, coldUsers] = await Promise.all([
     identifyBetaUsers(emails),
     identifyPaidUsers(emails),
     identifyColdUsers(emails),
   ])
+  
+  console.log(`[v0] Identified from database: ${betaUsersFromDB.size} beta, ${paidUsersFromDB.size} paid, ${coldUsers.size} cold`)
+
+  // Combine Resend tags and database results (union of both sets)
+  const betaUsers = new Set([...betaUsersFromTags, ...betaUsersFromDB])
+  const paidUsers = new Set([...paidUsersFromTags, ...paidUsersFromDB])
 
   // Only log detailed results for small batches
-  if (emails.length <= 5) {
+  if (contacts.length <= 5) {
     console.log(`[v0] [runSegmentationForEmails] Segment results:`)
     console.log(`[v0]   Beta users:`, Array.from(betaUsers))
     console.log(`[v0]   Paid users:`, Array.from(paidUsers))
@@ -283,12 +364,14 @@ export async function runSegmentationForEmails(emails: string[]): Promise<Segmen
     console.log(`[v0] [runSegmentationForEmails] Identified: ${betaUsers.size} beta, ${paidUsers.size} paid, ${coldUsers.size} cold`)
   }
 
-  // Process each email
+  // Process each contact
   const results: SegmentResult[] = []
 
-  for (const email of emails) {
+  for (const contact of contacts) {
+    const email = contact.email
+    if (!email) continue
     const segments = {
-      all_subscribers: true, // All contacts are subscribers
+      all_subscribers: true, // ALL contacts in Resend are subscribers
       beta_users: betaUsers.has(email),
       paid_users: paidUsers.has(email),
       cold_users: coldUsers.has(email),
@@ -296,16 +379,25 @@ export async function runSegmentationForEmails(emails: string[]): Promise<Segmen
 
     const reasoning: SegmentResult["reasoning"] = {}
     
-    if (!segments.beta_users) {
-      reasoning.beta_users = "Not found in beta users query (no active sselfie_studio_membership subscription)"
+    // Determine reasoning based on where the segment was identified
+    if (segments.beta_users) {
+      if (betaUsersFromTags.has(email)) {
+        reasoning.beta_users = "Identified from Resend tags (beta-customer or studio-membership)"
+      } else {
+        reasoning.beta_users = "Found active sselfie_studio_membership subscription in database"
+      }
     } else {
-      reasoning.beta_users = "Found active sselfie_studio_membership subscription"
+      reasoning.beta_users = "Not identified as beta user (no tags or database match)"
     }
 
-    if (!segments.paid_users) {
-      reasoning.paid_users = "No active subscription or purchase found"
+    if (segments.paid_users) {
+      if (paidUsersFromTags.has(email)) {
+        reasoning.paid_users = "Identified from Resend tags (customer status or product)"
+      } else {
+        reasoning.paid_users = "Found active subscription or purchase in database"
+      }
     } else {
-      reasoning.paid_users = "Found active subscription or purchase"
+      reasoning.paid_users = "Not identified as paid user (no tags or database match)"
     }
 
     if (!segments.cold_users) {
@@ -326,7 +418,7 @@ export async function runSegmentationForEmails(emails: string[]): Promise<Segmen
     })
 
     // Small delay to avoid rate limiting
-    if (emails.length > 1) {
+    if (contacts.length > 1) {
       await new Promise((resolve) => setTimeout(resolve, 200))
     }
   }

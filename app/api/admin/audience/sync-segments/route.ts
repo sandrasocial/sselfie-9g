@@ -52,18 +52,17 @@ export async function POST(request: Request) {
 
     // Apply limit if specified (for testing)
     const contactsToProcess = limit ? allContacts.slice(0, limit) : allContacts
-    const emails = contactsToProcess.map((c) => c.email).filter(Boolean)
 
-    console.log(`[v0] Processing ${emails.length} contact(s)`)
+    console.log(`[v0] Processing ${contactsToProcess.length} contact(s)`)
 
     // Process in batches to avoid rate limits and memory issues
     // Resend rate limit: 2 requests/second
     // With up to 4 segments per contact, we need at least 2 seconds per contact
     // Use smaller batches to respect rate limits better
     const effectiveBatchSize = Math.min(batchSize, 10) // Max 10 contacts per batch to respect rate limits
-    const batches: string[][] = []
-    for (let i = 0; i < emails.length; i += effectiveBatchSize) {
-      batches.push(emails.slice(i, i + effectiveBatchSize))
+    const batches: Array<Array<{ email: string; id: string; tags?: any[] }>> = []
+    for (let i = 0; i < contactsToProcess.length; i += effectiveBatchSize) {
+      batches.push(contactsToProcess.slice(i, i + effectiveBatchSize))
     }
 
     console.log(`[v0] Split into ${batches.length} batch(es) of up to ${effectiveBatchSize} contacts each (respecting 2 req/sec rate limit)`)
@@ -88,7 +87,7 @@ export async function POST(request: Request) {
       console.log(`[v0] Processing batch ${batchIndex + 1}/${batches.length} (${batch.length} contacts)`)
 
       if (!dryRun) {
-        // Run segmentation for this batch
+        // Run segmentation for this batch (pass full contact objects with tags)
         const batchResults = await runSegmentationForEmails(batch)
 
         // Process results

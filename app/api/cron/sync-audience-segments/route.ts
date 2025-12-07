@@ -38,7 +38,6 @@ export async function GET(request: Request) {
     // Fetch all contacts from Resend
     const allContacts = await getAllResendContacts()
     const totalContacts = allContacts.length
-    const emails = allContacts.map((c) => c.email).filter(Boolean)
 
     console.log(`[v0] [CRON] Found ${totalContacts} total contacts in Resend`)
 
@@ -46,11 +45,11 @@ export async function GET(request: Request) {
     // Resend allows 2 requests/second
     // With up to 4 segments per contact, we need at least 2 seconds per contact (4 requests / 2 req/sec)
     // But we have 500ms delays built into updateContactTags, so we can process more per batch
-    // Use batch size of 10 contacts per batch (with built-in delays, this is safe)
-    const batchSize = 10
-    const batches: string[][] = []
-    for (let i = 0; i < emails.length; i += batchSize) {
-      batches.push(emails.slice(i, i + batchSize))
+    // Use batch size of 5 contacts per batch (with built-in delays, this is safe)
+    const batchSize = 5
+    const batches: Array<Array<{ email: string; id: string; tags?: any[] }>> = []
+    for (let i = 0; i < allContacts.length; i += batchSize) {
+      batches.push(allContacts.slice(i, i + batchSize))
     }
 
     console.log(`[v0] [CRON] Split into ${batches.length} batch(es) of up to ${batchSize} contacts each`)
@@ -74,7 +73,7 @@ export async function GET(request: Request) {
       const batch = batches[batchIndex]
       console.log(`[v0] [CRON] Processing batch ${batchIndex + 1}/${batches.length} (${batch.length} contacts)`)
 
-      // Run segmentation for this batch
+      // Run segmentation for this batch (pass full contact objects with tags)
       const batchResults = await runSegmentationForEmails(batch)
 
       // Process results

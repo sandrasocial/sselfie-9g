@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { runSegmentationForEmails } from "@/lib/audience/segment-sync"
+import { runSegmentationForEmails, getAllResendContacts } from "@/lib/audience/segment-sync"
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "ssa@ssasocial.com"
 
@@ -37,8 +37,19 @@ export async function POST(request: Request) {
 
     console.log(`[v0] Test sync requested for admin email: ${ADMIN_EMAIL}`)
 
-    // Run segmentation for admin email only
-    const results = await runSegmentationForEmails([ADMIN_EMAIL])
+    // Fetch the contact from Resend to get tags
+    const allContacts = await getAllResendContacts()
+    const adminContact = allContacts.find(c => c.email === ADMIN_EMAIL)
+    
+    if (!adminContact) {
+      return NextResponse.json({
+        success: false,
+        error: `Contact ${ADMIN_EMAIL} not found in Resend audience`,
+      }, { status: 404 })
+    }
+
+    // Run segmentation for admin contact (with tags)
+    const results = await runSegmentationForEmails([adminContact])
 
     if (results.length === 0) {
       return NextResponse.json({

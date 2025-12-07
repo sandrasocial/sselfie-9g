@@ -317,17 +317,31 @@ ${
 
 CRITICAL INSTRUCTIONS:
 - These are USER-REQUESTED appearance modifications that MUST be in EVERY prompt
-- Include them RIGHT AFTER the gender/ethnicity descriptor
-- Format: "${triggerWord}, ${userEthnicity ? userEthnicity + " " : ""}${userGender}, ${physicalPreferences}, [rest of prompt]"
-- DO NOT skip this or the user will be disappointed
-- Examples: "long blonde hair", "curvier body type with fuller bust", "athletic build"
+- **IMPORTANT:** Convert instruction language to descriptive language for FLUX
+- **REMOVE:** "Always keep my", "dont change", "keep my", "don't change my", "preserve my", "maintain my" - these are instructions, not prompt text
+- **CONVERT TO:** Descriptive appearance features (e.g., "natural features" → describe what they are, "natural hair color" → actual hair color description)
+- Include them RIGHT AFTER the gender/ethnicity descriptor as DESCRIPTIVE features, not instructions
+- Format: "${triggerWord}, ${userEthnicity ? userEthnicity + " " : ""}${userGender}, [descriptive appearance features], [rest of prompt]"
+- Examples of CORRECT conversion:
+  - "Always keep my natural features, dont change the face" → Omit (face is preserved by trigger word)
+  - "keep my natural hair color" → Omit (hair color is preserved by trigger word) OR convert to actual color if specified
+  - "curvier body type" → "curvier body type" (descriptive, keep)
+  - "long blonde hair" → "long blonde hair" (descriptive, keep)
+- DO NOT include instruction phrases like "dont change", "keep my", "always keep" in the final prompt
 `
     : ""
 }
 
 **🔴 MANDATORY REQUIREMENTS (EVERY PROMPT MUST HAVE):**
 
-1. **Start with:** "${triggerWord}, ${userEthnicity ? userEthnicity + " " : ""}${userGender}${physicalPreferences ? `, ${physicalPreferences}` : ""}"
+1. **Start with:** "${triggerWord}, ${userEthnicity ? userEthnicity + " " : ""}${userGender}${physicalPreferences ? `, [converted physical preferences - descriptive only, no instructions]` : ""}"
+
+   **CRITICAL:** If physical preferences contain instruction language ("Always keep my", "dont change", "keep my"), you MUST:
+   - Remove the instruction phrases
+   - Convert to descriptive appearance features only
+   - If it says "keep my natural features" or "dont change the face" → OMIT (face is preserved by trigger word)
+   - If it says "keep my natural hair color" → OMIT (hair color is preserved by trigger word) OR convert to actual color if specified
+   - Only include actual descriptive modifications like "curvier body type", "long blonde hair", "athletic build"
 
 2. **iPhone 15 Pro (MANDATORY - 95% of prompts):** MUST include "shot on iPhone 15 Pro" OR "amateur cellphone photo" - this creates authentic phone camera aesthetic. Only use focal length alternatives for specific editorial requests.
 
@@ -376,7 +390,7 @@ Return ONLY valid JSON array, no markdown:
     "fashionIntelligence": "Your outfit reasoning - WHY this outfit for this moment",
     "lighting": "Your lighting reasoning",
     "location": "Your location reasoning",
-    "prompt": "YOUR CRAFTED FLUX PROMPT - synthesized from principles, MUST start with ${triggerWord}, ${userEthnicity ? userEthnicity + " " : ""}${userGender}${physicalPreferences ? `, ${physicalPreferences}` : ""}"
+    "prompt": "YOUR CRAFTED FLUX PROMPT - synthesized from principles, MUST start with ${triggerWord}, ${userEthnicity ? userEthnicity + " " : ""}${userGender}${physicalPreferences ? `, [converted physical preferences - descriptive only, NO instruction phrases like 'dont change' or 'keep my']` : ""}"
   }
 ]
 
@@ -448,6 +462,42 @@ Now apply your fashion intelligence and prompting mastery. Create ${count} conce
     concepts.forEach((concept) => {
       let prompt = concept.prompt
 
+      // Helper function to count words
+      const wordCount = (text: string) => text.trim().split(/\s+/).length
+
+      // Remove instruction phrases that shouldn't be in FLUX prompts
+      // These are instructions FOR Maya, not part of the image generation prompt
+      const instructionPhrases = [
+        /\bAlways keep my\b/gi,
+        /\bAlways\s+keep\s+my\s+natural\s+features\b/gi,
+        /\bdont change\b/gi,
+        /\bdon't change\b/gi,
+        /\bdont\s+change\s+the\s+face\b/gi,
+        /\bdon't\s+change\s+the\s+face\b/gi,
+        /\bkeep my\b/gi,
+        /\bkeep\s+my\s+natural\s+features\b/gi,
+        /\bkeep\s+my\s+natural\s+hair\s+color\b/gi,
+        /\bkeep\s+my\s+natural\s+eye\s+color\b/gi,
+        /\bkeep\s+my\s+natural\s+hair\b/gi,
+        /\bkeep\s+my\s+natural\s+eyes\b/gi,
+        /\bpreserve my\b/gi,
+        /\bmaintain my\b/gi,
+        /\bdo not change\b/gi,
+        /\bdo\s+not\s+change\s+the\s+face\b/gi,
+      ]
+      
+      instructionPhrases.forEach((regex) => {
+        prompt = prompt.replace(regex, "")
+      })
+      
+      // Remove standalone instruction phrases that might be left as fragments
+      prompt = prompt.replace(/,\s*,/g, ",") // Remove double commas
+      prompt = prompt.replace(/,\s*,/g, ",") // Remove double commas again (in case of triple)
+      prompt = prompt.replace(/^,\s*/, "") // Remove leading comma
+      prompt = prompt.replace(/\s*,\s*$/, "") // Remove trailing comma
+      prompt = prompt.replace(/\s+/g, " ") // Normalize multiple spaces
+      prompt = prompt.trim() // Final trim
+
       // Check for imperfection language BEFORE removing lighting phrases
       const hasImperfectionLanguage = /uneven\s*lighting|mixed\s*color\s*temperatures|slight\s*uneven\s*illumination|visible\s*sensor\s*noise/i.test(prompt)
 
@@ -463,107 +513,131 @@ Now apply your fashion intelligence and prompting mastery. Create ${count} conce
         prompt = prompt.replace(softDiffusedRegex, "")
       }
 
-      // Ensure iPhone 15 Pro or amateur cellphone photo is present (if not, add it at the start)
+      // Clean up after removals
+      prompt = prompt.replace(/,\s*,/g, ",").replace(/\s+/g, " ").trim()
+
+      // Get current word count - we want to stay under 45 words
+      let currentWordCount = wordCount(prompt)
+      const MAX_WORDS = 45 // Hard limit - don't add if we're already at or over this
+
+      // CRITICAL FIX #1: Only ensure iPhone if missing (most important element)
       const hasIPhone = /iPhone\s*15\s*Pro|amateur\s*cellphone\s*photo/i.test(prompt)
       const hasFocalLength = /\d+mm\s*(lens|focal)/i.test(prompt)
 
-      if (!hasIPhone && !hasFocalLength) {
+      if (!hasIPhone && !hasFocalLength && currentWordCount < MAX_WORDS) {
         // Add iPhone 15 Pro after trigger word if missing
         const triggerMatch = prompt.match(/^([^,]+),/)
         if (triggerMatch) {
           prompt = prompt.replace(/^([^,]+),/, `$1, shot on iPhone 15 Pro,`)
+          currentWordCount = wordCount(prompt)
         } else {
           prompt = `shot on iPhone 15 Pro, ${prompt}`
+          currentWordCount = wordCount(prompt)
         }
-      } else if (hasFocalLength && !hasIPhone) {
+      } else if (hasFocalLength && !hasIPhone && currentWordCount < MAX_WORDS) {
         // If focal length but no iPhone, prefer iPhone for authenticity
         prompt = prompt.replace(/\d+mm\s*(lens|focal)/i, "shot on iPhone 15 Pro")
+        currentWordCount = wordCount(prompt)
       }
 
-      // Ensure natural imperfections are present (sensor noise, motion blur, uneven lighting)
-      // Need AT LEAST 2 of these to avoid plastic look
-      const hasSensorNoise = /visible\s*sensor\s*noise/i.test(prompt)
+      // CRITICAL FIX #2: Only add imperfections if we have space AND they're truly missing
+      // Check what we already have
+      const hasSensorNoise = /visible\s*sensor\s*noise|sensor\s*noise/i.test(prompt)
       const hasMotionBlur = /slight\s*motion\s*blur|motion\s*blur/i.test(prompt)
       const hasUnevenLighting = /uneven\s*lighting|mixed\s*color\s*temperatures/i.test(prompt)
       const hasHandheld = /handheld\s*feel/i.test(prompt)
       
       const imperfectionCount = [hasSensorNoise, hasMotionBlur, hasUnevenLighting, hasHandheld].filter(Boolean).length
       
-      if (imperfectionCount < 2) {
-        // Add missing imperfections after camera specs
+      // Only add if we have less than 2 AND we have space (don't push over 45 words)
+      if (imperfectionCount < 2 && currentWordCount < MAX_WORDS - 3) {
         const cameraMatch = prompt.match(/(shot on iPhone 15 Pro|amateur cellphone photo[^,]*)/i)
         const additions: string[] = []
         
-        if (!hasMotionBlur) additions.push("slight motion blur")
-        if (!hasSensorNoise && imperfectionCount < 2) additions.push("visible sensor noise")
-        if (!hasUnevenLighting && imperfectionCount < 2) additions.push("uneven lighting")
+        // Add only ONE more imperfection to get to 2 total (not all of them)
+        if (!hasMotionBlur && currentWordCount < MAX_WORDS - 2) {
+          additions.push("motion blur") // Shorter version
+        } else if (!hasUnevenLighting && currentWordCount < MAX_WORDS - 2) {
+          additions.push("uneven lighting")
+        } else if (!hasSensorNoise && currentWordCount < MAX_WORDS - 2) {
+          additions.push("sensor noise") // Shorter version
+        }
         
         if (additions.length > 0) {
-          const toAdd = additions.join(", ")
-          if (cameraMatch) {
+          const toAdd = additions[0] // Only add one, not all
+          if (cameraMatch && currentWordCount + wordCount(toAdd) < MAX_WORDS) {
             prompt = prompt.replace(/(shot on iPhone 15 Pro|amateur cellphone photo[^,]*)/i, `$1, ${toAdd}`)
-          } else {
-            // Add before film grain if present
-            const grainMatch = prompt.match(/(film\s*grain|grainy|grain)/i)
-            if (grainMatch) {
-              prompt = prompt.replace(/(film\s*grain|grainy|grain)/i, `${toAdd}, $1`)
-            } else {
-              // Add at end if no better place
-              prompt = `${prompt}, ${toAdd}`
-            }
+            currentWordCount = wordCount(prompt)
           }
         }
       }
       
-      // Also check lighting description - if it says "diffused natural lighting", "soft diffused natural lighting", or "even lighting" without imperfection, add it
-      // This check happens AFTER the conditional removal above, so if "soft diffused natural lighting" was kept (because imperfection exists), we can still enhance it
-      if (/(diffused\s*natural\s*lighting|soft\s+diffused\s+natural\s+lighting|even\s*lighting|soft\s*morning\s*daylight)/i.test(prompt) && !hasUnevenLighting) {
-        // Add uneven lighting near the lighting description
+      // CRITICAL FIX #3: Only enhance lighting if we have space
+      if (/(diffused\s*natural\s*lighting|soft\s+diffused\s+natural\s+lighting|even\s*lighting|soft\s*morning\s*daylight)/i.test(prompt) && !hasUnevenLighting && currentWordCount < MAX_WORDS - 2) {
         prompt = prompt.replace(/(diffused\s*natural\s*lighting|soft\s+diffused\s+natural\s+lighting|even\s*lighting|soft\s*morning\s*daylight)/i, (match) => `${match}, uneven lighting`)
+        currentWordCount = wordCount(prompt)
       }
 
-      // Ensure natural skin texture is present with anti-plastic language
+      // CRITICAL FIX #4: Natural skin texture - use shorter phrases, only if missing
       const hasSkinTexture = /natural\s*skin\s*texture|pores\s*visible|realistic\s*skin|skin\s*imperfections/i.test(prompt)
       const hasAntiPlastic = /not\s*smooth|not\s*airbrushed|not\s*plastic|realistic\s*texture/i.test(prompt)
       
-      if (!hasSkinTexture) {
-        // Add after camera specs
+      if (!hasSkinTexture && currentWordCount < MAX_WORDS - 4) {
         const cameraMatch = prompt.match(/(shot on iPhone 15 Pro|amateur cellphone photo[^,]*)/i)
-        const skinText = hasAntiPlastic ? "natural skin texture with pores visible" : "natural skin texture with pores visible, not smooth or airbrushed"
+        // Use shorter phrase - prioritize natural language
+        const skinText = hasAntiPlastic ? "natural skin texture" : "natural skin texture, not airbrushed"
         
-        if (cameraMatch) {
+        if (cameraMatch && currentWordCount + wordCount(skinText) < MAX_WORDS) {
           prompt = prompt.replace(/(shot on iPhone 15 Pro|amateur cellphone photo[^,]*)/i, `$1, ${skinText}`)
-        } else {
-          // Add before film grain if present
-          const grainMatch = prompt.match(/(film\s*grain|grainy|grain)/i)
-          if (grainMatch) {
-            prompt = prompt.replace(/(film\s*grain|grainy|grain)/i, `${skinText}, $1`)
-          } else {
-            // Add at end if no better place
-            prompt = `${prompt}, ${skinText}`
-          }
+          currentWordCount = wordCount(prompt)
         }
-      } else if (!hasAntiPlastic) {
-        // Add anti-plastic language if skin texture exists but anti-plastic doesn't
-        prompt = prompt.replace(/(natural\s*skin\s*texture[^,]*|pores\s*visible)/i, (match) => `${match}, not smooth or airbrushed`)
+      } else if (!hasAntiPlastic && hasSkinTexture && currentWordCount < MAX_WORDS - 3) {
+        // Add shorter anti-plastic phrase if we have space
+        prompt = prompt.replace(/(natural\s*skin\s*texture[^,]*|pores\s*visible)/i, (match) => `${match}, not airbrushed`)
+        currentWordCount = wordCount(prompt)
       }
 
-      // Ensure film grain is present
-      if (!/(film\s*grain|grainy|grain|grain\s*texture)/i.test(prompt)) {
-        prompt = `${prompt}, visible film grain`
+      // CRITICAL FIX #5: Film grain - only add if missing AND we have space (use shorter phrase)
+      if (!/(film\s*grain|grainy|grain|grain\s*texture)/i.test(prompt) && currentWordCount < MAX_WORDS - 2) {
+        // Try to integrate near camera specs, not at the end
+        const cameraMatch = prompt.match(/(shot on iPhone 15 Pro|amateur cellphone photo[^,]*)/i)
+        if (cameraMatch && currentWordCount + 2 < MAX_WORDS) {
+          prompt = prompt.replace(/(shot on iPhone 15 Pro|amateur cellphone photo[^,]*)/i, `$1, film grain`)
+          currentWordCount = wordCount(prompt)
+        } else if (currentWordCount + 2 < MAX_WORDS) {
+          prompt = `${prompt}, film grain`
+          currentWordCount = wordCount(prompt)
+        }
       }
 
-      // Ensure muted colors are present
-      if (!/(muted\s*color|muted\s*tones|desaturated|vintage\s*color)/i.test(prompt)) {
-        prompt = `${prompt}, muted color palette`
+      // CRITICAL FIX #6: Muted colors - only add if missing AND we have space (use shorter phrase)
+      if (!/(muted\s*color|muted\s*tones|desaturated|vintage\s*color)/i.test(prompt) && currentWordCount < MAX_WORDS - 2) {
+        // Try to integrate near camera specs, not at the end
+        const cameraMatch = prompt.match(/(shot on iPhone 15 Pro|amateur cellphone photo[^,]*)/i)
+        if (cameraMatch && currentWordCount + 2 < MAX_WORDS) {
+          prompt = prompt.replace(/(shot on iPhone 15 Pro|amateur cellphone photo[^,]*)/i, `$1, muted tones`)
+          currentWordCount = wordCount(prompt)
+        } else if (currentWordCount + 2 < MAX_WORDS) {
+          prompt = `${prompt}, muted tones`
+          currentWordCount = wordCount(prompt)
+        }
       }
 
-      // Ensure casual moment language is present (candid moment, looks like real phone camera photo, etc.)
-      if (!/(candid\s*moment|looks\s*like\s*a\s*real\s*phone\s*camera\s*photo|amateur\s*cellphone\s*quality|looks\s*like\s*real\s*phone\s*camera\s*photo|authentic\s*iPhone|iPhone\s*photo|Instagram-native)/i.test(prompt)) {
-        prompt = `${prompt}, looks like a real phone camera photo`
+      // CRITICAL FIX #7: Casual moment language - ONLY add if we have significant space (it's nice but not critical)
+      // Skip this if prompt is already long - it's the least critical element
+      if (!/(candid\s*moment|looks\s*like\s*a\s*real\s*phone\s*camera\s*photo|amateur\s*cellphone\s*quality|looks\s*like\s*real\s*phone\s*camera\s*photo|authentic\s*iPhone|iPhone\s*photo|Instagram-native)/i.test(prompt) && currentWordCount < MAX_WORDS - 5) {
+        // Use shorter phrase
+        const cameraMatch = prompt.match(/(shot on iPhone 15 Pro|amateur cellphone photo[^,]*)/i)
+        if (cameraMatch && currentWordCount + 3 < MAX_WORDS) {
+          prompt = prompt.replace(/(shot on iPhone 15 Pro|amateur cellphone photo[^,]*)/i, `$1, candid moment`)
+          currentWordCount = wordCount(prompt)
+        } else if (currentWordCount + 3 < MAX_WORDS) {
+          prompt = `${prompt}, candid moment`
+          currentWordCount = wordCount(prompt)
+        }
       }
 
-      // Clean up multiple commas and spaces
+      // Final cleanup
       prompt = prompt.replace(/,\s*,/g, ",").replace(/\s+/g, " ").trim()
 
       concept.prompt = prompt
