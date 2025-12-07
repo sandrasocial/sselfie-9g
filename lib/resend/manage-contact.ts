@@ -144,20 +144,31 @@ export async function updateContactTags(
         value: value as string,
       }))
 
-    // Update the contact
-    const { error } = await resend.contacts.update({
-      id: existingContact.id,
-      audienceId,
-      // @ts-ignore
-      tags: formattedTags,
-    })
+    // Update the contact using direct API call (more reliable than SDK)
+    const updateResponse = await fetch(
+      `https://api.resend.com/audiences/${audienceId}/contacts/${existingContact.id}`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          tags: formattedTags,
+        }),
+      },
+    )
 
-    if (error) {
-      console.error(`[v0] Error updating contact tags:`, error)
-      return { success: false, error: error.message }
+    if (!updateResponse.ok) {
+      const errorText = await updateResponse.text()
+      console.error(`[v0] Error updating contact tags:`, updateResponse.status, errorText)
+      return { success: false, error: `Resend API error: ${updateResponse.status} ${errorText}` }
     }
 
+    const updateData = await updateResponse.json()
     console.log(`[v0] Successfully updated tags for: ${email}`)
+    console.log(`[v0] Resend API response:`, JSON.stringify(updateData, null, 2))
+    console.log(`[v0] Tags sent to Resend:`, JSON.stringify(formattedTags, null, 2))
     return { success: true }
   } catch (error) {
     console.error(`[v0] Exception updating contact tags:`, error)

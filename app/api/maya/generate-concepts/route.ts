@@ -304,7 +304,7 @@ Capture this exact vibe - the styling, mood, lighting, and composition.`
 
 ${getFluxPromptingPrinciples()}
 
-=== CRITICAL RULES FOR THIS GENERATION ===
+=== 🔴 CRITICAL RULES FOR THIS GENERATION (NON-NEGOTIABLE) ===
 
 TRIGGER WORD: "${triggerWord}"
 GENDER: "${userGender}"
@@ -325,15 +325,31 @@ CRITICAL INSTRUCTIONS:
     : ""
 }
 
-1. Every prompt MUST start with: "${triggerWord}, ${userEthnicity ? userEthnicity + " " : ""}${userGender}${physicalPreferences ? `, ${physicalPreferences}` : ""}"
-2. Apply the OUTFIT PRINCIPLE with your FASHION INTELLIGENCE - no boring defaults
-3. Apply the EXPRESSION PRINCIPLE for authentic facial details
-4. Apply the POSE PRINCIPLE for natural body positioning
-5. Apply the LOCATION PRINCIPLE for evocative settings
-6. Apply the LIGHTING PRINCIPLE for cinematic craft
-7. Apply the TECHNICAL PRINCIPLE for camera realism
-8. Run the QUALITY FILTERS before outputting
-9. Hit the WORD BUDGET for the shot type
+**🔴 MANDATORY REQUIREMENTS (EVERY PROMPT MUST HAVE):**
+
+1. **Start with:** "${triggerWord}, ${userEthnicity ? userEthnicity + " " : ""}${userGender}${physicalPreferences ? `, ${physicalPreferences}` : ""}"
+
+2. **iPhone 15 Pro (MANDATORY - 95% of prompts):** MUST include "shot on iPhone 15 Pro, portrait mode" - this creates authentic phone camera aesthetic. Only use focal length alternatives for specific editorial requests.
+
+3. **Natural Skin Texture (MANDATORY):** MUST include "natural skin texture, pores visible" or "realistic skin imperfections" - prevents AI-looking smooth skin.
+
+4. **Film Grain (MANDATORY):** MUST include one: "visible film grain", "fine film grain texture", "grainy texture", or "subtle grain visible"
+
+5. **Muted Colors (MANDATORY):** MUST include one: "muted color palette", "soft muted tones", "desaturated realistic colors", or "vintage color temperature"
+
+6. **Authentic Language (RECOMMENDED):** Include "authentic iPhone photo aesthetic" or "Instagram-native aesthetic" or "looks like real phone camera photo"
+
+7. **Prompt Length:** 40-60 words (shorter = more authentic, better facial consistency)
+
+8. **NO BANNED WORDS:** Never use "stunning", "perfect", "beautiful", "high quality", "8K", "professional photography", "DSLR", "cinematic", "studio lighting" - these create AI-looking results.
+
+9. Apply the OUTFIT PRINCIPLE with your FASHION INTELLIGENCE - no boring defaults
+10. Apply the EXPRESSION PRINCIPLE for authentic facial details
+11. Apply the POSE PRINCIPLE for natural body positioning
+12. Apply the LOCATION PRINCIPLE for evocative settings
+13. Apply the LIGHTING PRINCIPLE for cinematic craft
+
+**IF ANY MANDATORY REQUIREMENT IS MISSING, THE PROMPT WILL PRODUCE AI-LOOKING RESULTS.**
 
 === YOUR CREATIVE MISSION ===
 
@@ -387,7 +403,7 @@ Now apply your fashion intelligence and prompting mastery. Create ${count} conce
         },
       ],
       maxTokens: 4096,
-      temperature: 0.85,
+      temperature: 0.75, // Reduced from 0.85 for more consistent, structured outputs that include all mandatory elements
     })
 
     console.log("[v0] Generated concept text (first 300 chars):", text.substring(0, 300))
@@ -399,6 +415,89 @@ Now apply your fashion intelligence and prompting mastery. Create ${count} conce
     }
 
     const concepts: MayaConcept[] = JSON.parse(jsonMatch[0])
+
+    // Post-process prompts to ensure authenticity requirements
+    const bannedWords = [
+      "stunning",
+      "perfect",
+      "beautiful",
+      "high quality",
+      "8K",
+      "ultra realistic",
+      "professional photography",
+      "DSLR",
+      "cinematic",
+      "studio lighting",
+      "professional lighting",
+      "perfect lighting",
+    ]
+
+    concepts.forEach((concept) => {
+      let prompt = concept.prompt
+
+      // Remove banned words (case-insensitive)
+      bannedWords.forEach((word) => {
+        const regex = new RegExp(`\\b${word}\\b`, "gi")
+        prompt = prompt.replace(regex, "")
+      })
+
+      // Ensure iPhone 15 Pro is present (if not, add it at the start)
+      const hasIPhone = /iPhone\s*15\s*Pro/i.test(prompt)
+      const hasFocalLength = /\d+mm\s*(lens|focal)/i.test(prompt)
+
+      if (!hasIPhone && !hasFocalLength) {
+        // Add iPhone 15 Pro after trigger word if missing
+        const triggerMatch = prompt.match(/^([^,]+),/)
+        if (triggerMatch) {
+          prompt = prompt.replace(/^([^,]+),/, `$1, shot on iPhone 15 Pro,`)
+        } else {
+          prompt = `shot on iPhone 15 Pro, ${prompt}`
+        }
+      } else if (hasFocalLength && !hasIPhone) {
+        // If focal length but no iPhone, prefer iPhone for authenticity
+        prompt = prompt.replace(/\d+mm\s*(lens|focal)/i, "shot on iPhone 15 Pro")
+      }
+
+      // Ensure natural skin texture is present
+      if (!/natural\s*skin\s*texture|pores\s*visible|realistic\s*skin|skin\s*imperfections/i.test(prompt)) {
+        // Add after camera specs
+        const cameraMatch = prompt.match(/(shot on iPhone 15 Pro[^,]*)/i)
+        if (cameraMatch) {
+          prompt = prompt.replace(/(shot on iPhone 15 Pro[^,]*)/i, `$1, natural skin texture with pores visible`)
+        } else {
+          // Add before film grain if present
+          const grainMatch = prompt.match(/(film\s*grain|grainy|grain)/i)
+          if (grainMatch) {
+            prompt = prompt.replace(/(film\s*grain|grainy|grain)/i, "natural skin texture with pores visible, $1")
+          } else {
+            // Add at end if no better place
+            prompt = `${prompt}, natural skin texture with pores visible`
+          }
+        }
+      }
+
+      // Ensure film grain is present
+      if (!/(film\s*grain|grainy|grain|grain\s*texture)/i.test(prompt)) {
+        prompt = `${prompt}, visible film grain`
+      }
+
+      // Ensure muted colors are present
+      if (!/(muted\s*color|muted\s*tones|desaturated|vintage\s*color)/i.test(prompt)) {
+        prompt = `${prompt}, muted color palette`
+      }
+
+      // Ensure authentic iPhone language is present
+      if (!/(authentic\s*iPhone|iPhone\s*photo|Instagram-native|phone\s*camera\s*photo)/i.test(prompt)) {
+        prompt = `${prompt}, authentic iPhone photo aesthetic`
+      }
+
+      // Clean up multiple commas and spaces
+      prompt = prompt.replace(/,\s*,/g, ",").replace(/\s+/g, " ").trim()
+
+      concept.prompt = prompt
+    })
+
+    console.log("[v0] Post-processed prompts to ensure authenticity requirements")
 
     // Add reference image URL if provided
     if (referenceImageUrl) {

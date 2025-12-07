@@ -39,10 +39,18 @@ export async function updateSession(request: NextRequest) {
   })
 
   try {
+    // Add timeout to prevent hanging on slow/unreachable Supabase
+    const authPromise = supabase.auth.getUser()
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Auth check timeout")), 5000)
+    )
+
+    const result = await Promise.race([authPromise, timeoutPromise])
+
     const {
       data: { user },
       error,
-    } = await supabase.auth.getUser()
+    } = result
 
     if (error) {
       if (error.message?.includes("refresh_token_already_used") || error.code === "refresh_token_already_used") {
@@ -59,13 +67,12 @@ export async function updateSession(request: NextRequest) {
       console.log("[v0] [Middleware] Authenticated:", user.email)
     }
 
-    // If user is authenticated and visiting the landing page, redirect to studio
-    if (user && request.nextUrl.pathname === "/") {
-      const studioUrl = new URL("/studio", request.url)
-      return NextResponse.redirect(studioUrl)
-    }
+    // Note: Redirect logic is handled in app/page.tsx to avoid conflicts
+    // and allow for more sophisticated referer-based navigation handling
   } catch (error) {
-    console.log("[v0] [Middleware] Auth check failed:", error)
+    console.log("[v0] [Middleware] Auth check failed or timed out:", error)
+    // Return response to allow page to load even if auth check fails
+    return supabaseResponse
   }
 
   return supabaseResponse

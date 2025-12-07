@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo, useEffect, useRef } from "react"
 import useSWR from "swr"
 import useSWRInfinite from "swr/infinite"
 import {
@@ -53,11 +53,15 @@ export default function BRollScreen({ user }: BRollScreenProps) {
   const [videoPredictions, setVideoPredictions] = useState<Map<string, { predictionId: string; videoId: string }>>(
     new Map(),
   )
+  const [videoProgress, setVideoProgress] = useState<Map<string, number>>(new Map())
   const [previewVideo, setPreviewVideo] = useState<GeneratedVideo | null>(null)
   const [showNavMenu, setShowNavMenu] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [creditBalance, setCreditBalance] = useState(0)
   const router = useRouter()
+  
+  // Use ref to track polling intervals so they persist across re-renders
+  const pollIntervalsRef = useRef<Map<string, NodeJS.Timeout>>(new Map())
 
   const getKey = (pageIndex: number, previousPageData: any) => {
     if (previousPageData && !previousPageData.hasMore) return null
@@ -99,6 +103,25 @@ export default function BRollScreen({ user }: BRollScreenProps) {
   })
 
   const allVideos: GeneratedVideo[] = videosData?.videos || []
+
+  // Create a map of videos by image_id for efficient lookup
+  // This ensures React properly detects changes and re-renders when videos update
+  const videosByImageId = useMemo(() => {
+    const map = new Map<string, GeneratedVideo>()
+    allVideos.forEach((video) => {
+      if (video.image_id != null && video.status === "completed" && video.video_url) {
+        // Use string key for consistent matching
+        const key = String(video.image_id)
+        map.set(key, video)
+      }
+    })
+    console.log("[v0] Videos map created:", {
+      totalVideos: allVideos.length,
+      mappedVideos: map.size,
+      imageIds: Array.from(map.keys()),
+    })
+    return map
+  }, [allVideos])
 
   const handleNavigation = (tab: string) => {
     window.location.hash = tab
@@ -142,6 +165,7 @@ export default function BRollScreen({ user }: BRollScreenProps) {
     try {
       console.log("[v0] Generating intelligent motion prompt for image:", imageId)
 
+      console.log("[v0] 🎨 Generating AI motion prompt with vision analysis for image:", imageUrl)
       const motionResponse = await fetch("/api/maya/generate-motion-prompt", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -150,6 +174,7 @@ export default function BRollScreen({ user }: BRollScreenProps) {
           fluxPrompt,
           description,
           category,
+          imageUrl, // ✅ CRITICAL: Pass imageUrl so Claude can analyze the actual image
         }),
       })
 
@@ -194,7 +219,7 @@ export default function BRollScreen({ user }: BRollScreenProps) {
         return newPredictions
       })
 
-      pollVideoStatus(imageId, data.predictionId, data.videoId.toString())
+      // Polling will start automatically via useEffect when videoPredictions changes
     } catch (err) {
       console.error("[v0] Error generating video:", err)
       setVideoErrors((prev) => {
@@ -215,86 +240,133 @@ export default function BRollScreen({ user }: BRollScreenProps) {
     }
   }
 
-  const pollVideoStatus = async (imageId: string, predictionId: string, videoId: string) => {
-    const maxAttempts = 60 // 5 minutes max
-    let attempts = 0
+  // Poll for video status using useEffect with refs to persist intervals
+  useEffect(() => {
+    // Clean up intervals for predictions that no longer exist
+    const currentImageIds = new Set(videoPredictions.keys())
+    pollIntervalsRef.current.forEach((interval, imageId) => {
+      if (!currentImageIds.has(imageId)) {
+        console.log("[v0] Cleaning up polling for removed image:", imageId)
+        clearInterval(interval)
+        pollIntervalsRef.current.delete(imageId)
+      }
+    })
 
-    const poll = async () => {
-      try {
-        console.log("[v0] ========== POLLING VIDEO STATUS ==========")
-        console.log("[v0] Image ID:", imageId)
-        console.log("[v0] Prediction ID:", predictionId)
-        console.log("[v0] Video ID:", videoId)
-        console.log("[v0] Attempt:", attempts + 1, "of", maxAttempts)
+    // Start polling for new predictions
+    videoPredictions.forEach((prediction, imageId) => {
+      // Skip if already polling
+      if (pollIntervalsRef.current.has(imageId)) {
+        return
+      }
 
-        const response = await fetch(`/api/maya/check-video?predictionId=${predictionId}&videoId=${videoId}`)
-        const data = await response.json()
+      const { predictionId, videoId } = prediction
 
-        console.log("[v0] ✅ Polling response:", {
-          status: data.status,
-          videoUrl: data.videoUrl ? `${data.videoUrl.substring(0, 50)}...` : "null",
-          progress: data.progress,
-        })
+      console.log("[v0] Starting polling for image:", imageId, "videoId:", videoId, "predictionId:", predictionId)
 
-        if (data.status === "succeeded") {
-          console.log("[v0] ========== VIDEO GENERATION SUCCEEDED ==========")
-          console.log("[v0] Video URL received:", data.videoUrl ? "YES" : "NO")
+      const pollInterval = setInterval(async () => {
+        try {
+          const response = await fetch(`/api/maya/check-video?predictionId=${predictionId}&videoId=${videoId}`)
+          const data = await response.json()
 
-          console.log("[v0] Calling mutateVideos() to refresh video list from database...")
-          await mutateVideos(undefined, { revalidate: true })
-          console.log("[v0] ✅ mutateVideos() completed - video should now appear from DB")
-
-          await new Promise((resolve) => setTimeout(resolve, 500))
-
-          console.log("[v0] Clearing generating state for imageId:", imageId)
-          console.log("[v0] ================================================")
-
-          setGeneratingVideos((prev) => {
-            const newSet = new Set(prev)
-            newSet.delete(imageId)
-            return newSet
+          console.log("[v0] Polling response for image", imageId, ":", {
+            status: data.status,
+            progress: data.progress,
+            videoUrl: data.videoUrl ? "YES" : "NO",
           })
-          setVideoPredictions((prev) => {
-            const newPredictions = new Map(prev)
-            newPredictions.delete(imageId)
-            return newPredictions
-          })
-          return
-        } else if (data.status === "failed") {
-          console.log("[v0] ========== VIDEO GENERATION FAILED ==========")
-          console.log("[v0] Error:", data.error)
-          console.log("[v0] ================================================")
-          throw new Error(data.error || "Video generation failed")
-        }
 
-        attempts++
-        console.log("[v0] Still processing... Will poll again in 5 seconds")
-        console.log("[v0] ================================================")
+          // Update progress
+          if (data.progress !== undefined) {
+            setVideoProgress((prev) => {
+              const newProgress = new Map(prev)
+              newProgress.set(imageId, data.progress)
+              return newProgress
+            })
+          }
 
-        if (attempts < maxAttempts) {
-          setTimeout(poll, 5000)
-        } else {
-          throw new Error("Video generation timed out")
+          if (data.status === "succeeded") {
+            console.log("[v0] ✅ Video generation succeeded for image:", imageId)
+
+            // Clear interval first to prevent duplicate calls
+            if (pollIntervalsRef.current.has(imageId)) {
+              clearInterval(pollIntervalsRef.current.get(imageId)!)
+              pollIntervalsRef.current.delete(imageId)
+            }
+
+            // Refresh video list from database
+            await mutateVideos(undefined, { revalidate: true })
+
+            // Wait a bit for database to update
+            await new Promise((resolve) => setTimeout(resolve, 1000))
+
+            // Clear generating state
+            setGeneratingVideos((prev) => {
+              const newSet = new Set(prev)
+              newSet.delete(imageId)
+              return newSet
+            })
+            setVideoPredictions((prev) => {
+              const newPredictions = new Map(prev)
+              newPredictions.delete(imageId)
+              return newPredictions
+            })
+            setVideoProgress((prev) => {
+              const newProgress = new Map(prev)
+              newProgress.delete(imageId)
+              return newProgress
+            })
+          } else if (data.status === "failed") {
+            console.log("[v0] ❌ Video generation failed for image:", imageId, "Error:", data.error)
+            
+            // Clear interval
+            if (pollIntervalsRef.current.has(imageId)) {
+              clearInterval(pollIntervalsRef.current.get(imageId)!)
+              pollIntervalsRef.current.delete(imageId)
+            }
+
+            setVideoErrors((prev) => {
+              const newErrors = new Map(prev)
+              newErrors.set(imageId, data.error || "Video generation failed")
+              return newErrors
+            })
+            setGeneratingVideos((prev) => {
+              const newSet = new Set(prev)
+              newSet.delete(imageId)
+              return newSet
+            })
+            setVideoPredictions((prev) => {
+              const newPredictions = new Map(prev)
+              newPredictions.delete(imageId)
+              return newPredictions
+            })
+            setVideoProgress((prev) => {
+              const newProgress = new Map(prev)
+              newProgress.delete(imageId)
+              return newProgress
+            })
+          } else {
+            // Still processing - continue polling
+            console.log("[v0] Video still processing for image", imageId, "- progress:", data.progress || 0, "%")
+          }
+        } catch (err) {
+          console.error("[v0] Error polling video status for image", imageId, ":", err)
+          // Don't stop polling on error, just log it
+          // The interval will continue and retry
         }
-      } catch (err) {
-        console.error("[v0] ========== VIDEO POLLING ERROR ==========")
-        console.error("[v0] ❌ Error:", err)
-        console.error("[v0] ================================================")
-        setVideoErrors((prev) => {
-          const newErrors = new Map(prev)
-          newErrors.set(imageId, err instanceof Error ? err.message : "Failed to check video status")
-          return newErrors
-        })
-        setGeneratingVideos((prev) => {
-          const newSet = new Set(prev)
-          newSet.delete(imageId)
-          return newSet
-        })
+      }, 5000) // Poll every 5 seconds
+
+      pollIntervalsRef.current.set(imageId, pollInterval)
+    })
+
+    // Cleanup function - only clear on unmount
+    return () => {
+      // Only clear if component is unmounting (videoPredictions is empty)
+      // Otherwise, let intervals persist
+      if (videoPredictions.size === 0) {
+        pollIntervalsRef.current.forEach((interval) => clearInterval(interval))
+        pollIntervalsRef.current.clear()
       }
     }
-
-    poll()
-  }
+  }, [videoPredictions, mutateVideos])
 
   const handleFavoriteToggle = async (imageId: string, isFavorite: boolean) => {
     try {
@@ -413,7 +485,7 @@ export default function BRollScreen({ user }: BRollScreenProps) {
           />
 
           <div className="fixed top-0 right-0 bottom-0 w-80 bg-white/95 backdrop-blur-3xl border-l border-stone-200 shadow-2xl z-50 animate-in slide-in-from-right duration-300 flex flex-col">
-            <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-stone-200/50">
+            <div className="shrink-0 flex items-center justify-between px-6 py-4 border-b border-stone-200/50">
               <h3 className="text-sm font-serif font-extralight tracking-[0.2em] uppercase text-stone-950">Menu</h3>
               <button
                 onClick={() => setShowNavMenu(false)}
@@ -424,7 +496,7 @@ export default function BRollScreen({ user }: BRollScreenProps) {
               </button>
             </div>
 
-            <div className="flex-shrink-0 px-6 py-6 border-b border-stone-200/50">
+            <div className="shrink-0 px-6 py-6 border-b border-stone-200/50">
               <div className="text-[10px] tracking-[0.15em] uppercase font-light text-stone-500 mb-2">Your Credits</div>
               <div className="text-3xl font-serif font-extralight text-stone-950 tabular-nums">
                 {creditBalance.toFixed(1)}
@@ -490,7 +562,7 @@ export default function BRollScreen({ user }: BRollScreenProps) {
               </button>
             </div>
 
-            <div className="flex-shrink-0 px-6 py-4 border-t border-stone-200/50 bg-white/95">
+            <div className="shrink-0 px-6 py-4 border-t border-stone-200/50 bg-white/95">
               <button
                 onClick={handleLogout}
                 disabled={isLoggingOut}
@@ -540,38 +612,17 @@ export default function BRollScreen({ user }: BRollScreenProps) {
             {images.map((image) => {
               const isGenerating = generatingVideos.has(image.id) || analyzingMotion.has(image.id)
               const error = videoErrors.get(image.id)
+              const progress = videoProgress.get(image.id)
+              const prediction = videoPredictions.get(image.id)
 
-              const video = allVideos.find((v) => {
-                const imageIdMatch = String(v.image_id) === String(image.id)
-                const hasUrl = !!v.video_url && v.video_url.length > 0
-                const isCompleted = v.status === "completed"
+              // Use the memoized map for efficient lookup
+              const imageIdKey = String(image.id)
+              const video = videosByImageId.get(imageIdKey)
 
-                console.log("[v0] Checking video match for image:", image.id)
-                console.log("[v0]   - Video image_id:", v.image_id, "Match:", imageIdMatch)
-                console.log("[v0]   - Has URL:", hasUrl, "Status:", v.status, "Is completed:", isCompleted)
-
-                return imageIdMatch && hasUrl && isCompleted
-              })
-
-              console.log("[v0] ========== RENDERING IMAGE ==========")
-              console.log("[v0] Image ID:", image.id, "Type:", typeof image.id)
-              console.log("[v0] Is Generating:", isGenerating)
-              console.log("[v0] Has Error:", !!error)
-              console.log("[v0] Video found in DB:", !!video)
-              if (video) {
-                console.log("[v0] ✅ MATCHED VIDEO:")
-                console.log("[v0]   - Video ID:", video.id)
-                console.log("[v0]   - Video image_id:", video.image_id, "Type:", typeof video.image_id)
-                console.log("[v0]   - Video URL:", video.video_url ? `${video.video_url.substring(0, 60)}...` : "NULL")
-                console.log("[v0]   - Status:", video.status)
-              } else {
-                console.log("[v0] ❌ NO VIDEO FOUND for image:", image.id)
-                console.log("[v0]   - Total videos in DB:", allVideos.length)
-                if (allVideos.length > 0) {
-                  console.log("[v0]   - Available video image_ids:", allVideos.map((v) => v.image_id).join(", "))
-                }
+              // Only log when video state changes or for debugging
+              if (process.env.NODE_ENV === "development" && video) {
+                console.log("[v0] ✅ Video found for image:", image.id, "Video ID:", video.id)
               }
-              console.log("[v0] ================================================")
 
               return (
                 <div key={image.id} className="space-y-3">
@@ -592,12 +643,26 @@ export default function BRollScreen({ user }: BRollScreenProps) {
                     }
                     isFavorite={false}
                     showAnimateOverlay={true}
+                    generationStatus={
+                      isGenerating
+                        ? analyzingMotion.has(image.id)
+                          ? "Analyzing motion..."
+                          : "Generating Video..."
+                        : undefined
+                    }
+                    generationProgress={progress}
                   />
 
-                  {video && video.video_url && video.video_url.length > 0 && (
-                    <div className="mt-3">
-                      {console.log("[v0] ✅ Rendering InstagramReelCard for video:", video.id)}
-                      {console.log("[v0]   - Video URL:", video.video_url)}
+                  {/* Show error if generation failed */}
+                  {error && (
+                    <div className="mt-3 bg-red-50 border border-red-200 rounded-2xl p-4">
+                      <p className="text-sm text-red-600">{error}</p>
+                    </div>
+                  )}
+
+                  {/* Show video when ready */}
+                  {video && video.video_url && !isGenerating && (
+                    <div key={`video-${video.id}`} className="mt-3">
                       <InstagramReelCard
                         videoUrl={video.video_url}
                         motionPrompt={video.motion_prompt || undefined}

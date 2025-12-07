@@ -9,8 +9,11 @@ export const dynamic = "force-dynamic"
 export default async function StudioPage({
   searchParams,
 }: {
-  searchParams: { welcome?: string; showCheckout?: string; checkout?: string }
+  searchParams: Promise<{ welcome?: string; showCheckout?: string; checkout?: string }>
 }) {
+  // Await searchParams in Next.js 15+
+  const params = await searchParams
+
   let supabase
   try {
     supabase = await createServerClient()
@@ -56,8 +59,8 @@ export default async function StudioPage({
   console.log("[v0] [STUDIO PAGE] User:", neonUser.email)
   console.log("[v0] [STUDIO PAGE] Subscription status:", subscription?.status ?? "none")
 
-  const isWelcome = searchParams.welcome === "true"
-  const shouldShowCheckout = searchParams.showCheckout === "true" || searchParams.checkout === "one_time"
+  const isWelcome = params.welcome === "true"
+  const shouldShowCheckout = params.showCheckout === "true" || params.checkout === "one_time"
 
   return (
     <SselfieApp

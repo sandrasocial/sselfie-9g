@@ -26,16 +26,35 @@ export default function InstagramReelCard({
   const [showMenu, setShowMenu] = useState(false)
   const [progress, setProgress] = useState(0)
   const [isDownloading, setIsDownloading] = useState(false)
+  const [isVideoReady, setIsVideoReady] = useState(false)
+  const [videoError, setVideoError] = useState<string | null>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
 
-  const handlePlayPause = (e?: React.MouseEvent | React.TouchEvent) => {
+  const handlePlayPause = async (e?: React.MouseEvent | React.TouchEvent) => {
     e?.stopPropagation()
-    if (videoRef.current) {
+    e?.preventDefault()
+    
+    const video = videoRef.current
+    if (!video) return
+
+    try {
       if (isPlaying) {
-        videoRef.current.pause()
+        video.pause()
       } else {
-        videoRef.current.play()
+        // On mobile, play() returns a Promise that must be handled
+        // This is required for user-initiated playback
+        const playPromise = video.play()
+        
+        if (playPromise !== undefined) {
+          await playPromise
+          // Video started playing successfully
+          setIsPlaying(true)
+          setVideoError(null)
+        }
       }
+    } catch (error: any) {
+      console.error("[v0] Error playing video:", error)
+      setVideoError(error?.message || "Failed to play video")
     }
   }
 
@@ -116,30 +135,106 @@ export default function InstagramReelCard({
     }
   }
 
+  // Reset state when video URL changes and validate URL
+  useEffect(() => {
+    setIsVideoReady(false)
+    setVideoError(null)
+    setIsPlaying(false)
+    
+    // Validate video URL
+    if (!videoUrl || (!videoUrl.startsWith('http://') && !videoUrl.startsWith('https://'))) {
+      console.error("[v0] Invalid video URL:", videoUrl)
+      setVideoError("Invalid video URL")
+      return
+    }
+    
+    // Ensure video element has the source set correctly
+    const video = videoRef.current
+    if (video && videoUrl) {
+      // Only update if the src has changed
+      if (video.src !== videoUrl) {
+        video.src = videoUrl
+        // Load the video to start fetching metadata
+        video.load()
+      }
+    }
+  }, [videoUrl])
+
   useEffect(() => {
     const video = videoRef.current
     if (!video) return
 
-    const handlePlay = () => setIsPlaying(true)
+    const handlePlay = () => {
+      setIsPlaying(true)
+      setVideoError(null)
+    }
     const handlePause = () => setIsPlaying(false)
     const handleTimeUpdate = () => {
-      const progress = (video.currentTime / video.duration) * 100
-      setProgress(progress)
+      if (video.duration) {
+        const progress = (video.currentTime / video.duration) * 100
+        setProgress(progress)
+      }
+    }
+    const handleLoadedMetadata = () => {
+      console.log("[v0] Video metadata loaded, readyState:", video.readyState, "src:", video.src?.substring(0, 50))
+      setIsVideoReady(true)
+      setVideoError(null)
+    }
+    const handleLoadedData = () => {
+      console.log("[v0] Video data loaded, readyState:", video.readyState)
+      setIsVideoReady(video.readyState >= 2)
+    }
+    const handleCanPlay = () => {
+      console.log("[v0] Video can play, readyState:", video.readyState)
+      setIsVideoReady(true)
+      setVideoError(null)
+    }
+    const handleError = (e: Event) => {
+      const videoError = (e.target as HTMLVideoElement).error
+      console.error("[v0] Video error:", videoError, "src:", (e.target as HTMLVideoElement).src)
+      
+      if (videoError) {
+        let errorMessage = "Video failed to load"
+        switch (videoError.code) {
+          case videoError.MEDIA_ERR_ABORTED:
+            errorMessage = "Video loading was aborted"
+            break
+          case videoError.MEDIA_ERR_NETWORK:
+            errorMessage = "Network error while loading video"
+            break
+          case videoError.MEDIA_ERR_DECODE:
+            errorMessage = "Video decoding error"
+            break
+          case videoError.MEDIA_ERR_SRC_NOT_SUPPORTED:
+            errorMessage = "Video format not supported"
+            break
+        }
+        setVideoError(errorMessage)
+        setIsVideoReady(false)
+      }
     }
 
     video.addEventListener("play", handlePlay)
     video.addEventListener("pause", handlePause)
     video.addEventListener("timeupdate", handleTimeUpdate)
+    video.addEventListener("loadedmetadata", handleLoadedMetadata)
+    video.addEventListener("loadeddata", handleLoadedData)
+    video.addEventListener("canplay", handleCanPlay)
+    video.addEventListener("error", handleError)
 
     return () => {
       video.removeEventListener("play", handlePlay)
       video.removeEventListener("pause", handlePause)
       video.removeEventListener("timeupdate", handleTimeUpdate)
+      video.removeEventListener("loadedmetadata", handleLoadedMetadata)
+      video.removeEventListener("loadeddata", handleLoadedData)
+      video.removeEventListener("canplay", handleCanPlay)
+      video.removeEventListener("error", handleError)
     }
   }, [])
 
   return (
-    <div className="relative aspect-[9/16] bg-stone-950 rounded-2xl overflow-hidden shadow-2xl max-w-[400px] mx-auto group">
+    <div className="relative aspect-9/16 bg-stone-950 rounded-2xl overflow-hidden shadow-2xl max-w-[400px] mx-auto group">
       <div className="absolute top-0 left-0 right-0 h-0.5 bg-white/20 z-20">
         <div className="h-full bg-white transition-all duration-100" style={{ width: `${progress}%` }} />
       </div>
@@ -147,28 +242,92 @@ export default function InstagramReelCard({
       <video
         ref={videoRef}
         src={videoUrl}
-        className="w-full h-full object-cover"
+        className="w-full h-full object-cover touch-none"
         loop
         playsInline
         webkit-playsinline="true"
         muted={isMuted}
+        preload="metadata"
         onClick={handlePlayPause}
-        onTouchEnd={(e) => {
-          e.preventDefault()
+        onTouchStart={(e) => {
+          // Use onTouchStart for better mobile responsiveness
+          e.stopPropagation()
           handlePlayPause(e)
         }}
+        onError={(e) => {
+          const video = e.currentTarget
+          const error = video.error
+          console.error("[v0] Video element error:", {
+            code: error?.code,
+            message: error?.message,
+            src: video.src,
+            currentSrc: video.currentSrc,
+            networkState: video.networkState,
+            readyState: video.readyState,
+            videoUrl: videoUrl,
+          })
+          if (error) {
+            let errorMessage = "Video failed to load"
+            switch (error.code) {
+              case error.MEDIA_ERR_ABORTED:
+                errorMessage = "Video loading was aborted"
+                break
+              case error.MEDIA_ERR_NETWORK:
+                errorMessage = "Network error while loading video"
+                break
+              case error.MEDIA_ERR_DECODE:
+                errorMessage = "Video decoding error"
+                break
+              case error.MEDIA_ERR_SRC_NOT_SUPPORTED:
+                errorMessage = "Video format not supported or URL invalid"
+                break
+            }
+            setVideoError(errorMessage)
+          } else {
+            // Error object might not be accessible, try to infer from networkState
+            if (video.networkState === 3) {
+              setVideoError("Network error while loading video")
+            } else if (video.networkState === 4) {
+              setVideoError("Video format not supported or URL invalid")
+            } else {
+              setVideoError("Video failed to load. Please check the URL.")
+            }
+          }
+        }}
       />
+      
+      {videoError && (
+        <div className="absolute inset-0 flex items-center justify-center bg-stone-950/80 z-30 p-4">
+          <div className="text-center space-y-2">
+            <p className="text-sm text-white font-light">{videoError}</p>
+            <button
+              onClick={() => {
+                setVideoError(null)
+                if (videoRef.current) {
+                  videoRef.current.load()
+                }
+              }}
+              className="px-4 py-2 text-xs tracking-[0.15em] uppercase font-light bg-white text-stone-950 rounded-xl hover:bg-stone-100 transition-all"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      )}
 
       {!isPlaying && (
-        <div className="absolute inset-0 flex items-center justify-center bg-stone-950/20 z-10">
+        <div className="absolute inset-0 flex items-center justify-center bg-stone-950/20 z-10 touch-none">
           <button
             onClick={handlePlayPause}
-            onTouchEnd={(e) => {
+            onTouchStart={(e) => {
+              // Use onTouchStart for better mobile responsiveness
+              e.stopPropagation()
               e.preventDefault()
               handlePlayPause(e)
             }}
-            className="w-16 h-16 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-2xl hover:scale-110 transition-transform"
+            className="w-16 h-16 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-transform touch-manipulation"
             aria-label="Play video"
+            type="button"
           >
             <Play size={28} className="text-stone-950 ml-1" fill="currentColor" />
           </button>

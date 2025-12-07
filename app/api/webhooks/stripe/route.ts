@@ -149,6 +149,25 @@ export async function POST(request: NextRequest) {
 
                 if (segmentResult.success) {
                   console.log(`[v0] Added ${customerEmail} to Beta Customers segment`)
+                  
+                  // Create scheduled beta testimonial campaign (10 days after purchase)
+                  try {
+                    const { createBetaTestimonialCampaign } = await import("@/lib/email/create-beta-testimonial-campaign")
+                    const campaignResult = await createBetaTestimonialCampaign({
+                      userEmail: customerEmail,
+                      firstName: firstName,
+                      purchaseDate: new Date(),
+                    })
+                    
+                    if (campaignResult.success) {
+                      console.log(`[v0] Created beta testimonial campaign ${campaignResult.campaignId} for ${customerEmail}`)
+                    } else {
+                      console.warn(`[v0] Failed to create beta testimonial campaign: ${campaignResult.error}`)
+                    }
+                  } catch (campaignError) {
+                    console.error(`[v0] Error creating beta testimonial campaign:`, campaignError)
+                    // Don't fail the webhook if campaign creation fails
+                  }
                 } else {
                   console.error(`[v0] Failed to add to Beta segment: ${segmentResult.error}`)
                 }
@@ -725,6 +744,25 @@ export async function POST(request: NextRequest) {
                       NOW()
                     )
                   `
+                  
+                  // Create scheduled beta testimonial campaign if user is in beta segment
+                  if (process.env.RESEND_BETA_SEGMENT_ID) {
+                    try {
+                      const { createBetaTestimonialCampaign } = await import("@/lib/email/create-beta-testimonial-campaign")
+                      const campaignResult = await createBetaTestimonialCampaign({
+                        userEmail: customerEmail,
+                        firstName: customerEmail.split("@")[0],
+                        userId: userId,
+                        purchaseDate: new Date(),
+                      })
+                      
+                      if (campaignResult.success) {
+                        console.log(`[v0] Created beta testimonial campaign ${campaignResult.campaignId} for ${customerEmail}`)
+                      }
+                    } catch (campaignError) {
+                      console.error(`[v0] Error creating beta testimonial campaign:`, campaignError)
+                    }
+                  }
                 } else {
                   console.error(`[v0] Failed to send welcome email: ${emailResult.error}`)
 

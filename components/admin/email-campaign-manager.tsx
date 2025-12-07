@@ -65,17 +65,19 @@ export function EmailCampaignManager() {
 
   const handleSendTest = async (campaignId: number, testEmail?: string) => {
     try {
-      const response = await fetch("/api/admin/agent/send-test-email", {
+      // Use the scheduled campaigns executor for test emails (supports all campaign types)
+      const response = await fetch("/api/admin/email/run-scheduled-campaigns", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ campaignId, testEmail }),
+        body: JSON.stringify({ mode: "test", campaignId }),
       })
 
       const result = await response.json()
       if (result.success) {
         loadCampaigns()
+        return result
       } else {
-        throw new Error(result.error)
+        throw new Error(result.error || "Failed to send test email")
       }
     } catch (error) {
       throw error

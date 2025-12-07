@@ -132,24 +132,56 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json()
-    const { campaignId, approval_status } = body
+    const { campaignId, approval_status, scheduled_for, target_audience } = body
 
-    if (!campaignId || !approval_status) {
-      return NextResponse.json({ error: "Campaign ID and approval status required" }, { status: 400 })
+    if (!campaignId) {
+      return NextResponse.json({ error: "Campaign ID required" }, { status: 400 })
     }
 
-    const result = await sql`
-      UPDATE admin_email_campaigns
-      SET 
-        approval_status = ${approval_status},
-        approved_by = ${ADMIN_EMAIL},
-        approved_at = NOW(),
-        updated_at = NOW()
-      WHERE id = ${campaignId}
-      RETURNING *
-    `
+    // Update approval status
+    if (approval_status) {
+      const result = await sql`
+        UPDATE admin_email_campaigns
+        SET 
+          approval_status = ${approval_status},
+          approved_by = ${ADMIN_EMAIL},
+          approved_at = NOW(),
+          updated_at = NOW()
+        WHERE id = ${campaignId}
+        RETURNING *
+      `
+      return NextResponse.json(result[0])
+    }
 
-    return NextResponse.json(result[0])
+    // Update scheduling
+    if (scheduled_for !== undefined) {
+      const status = scheduled_for ? "scheduled" : "draft"
+      const result = await sql`
+        UPDATE admin_email_campaigns
+        SET 
+          scheduled_for = ${scheduled_for || null},
+          status = ${status},
+          updated_at = NOW()
+        WHERE id = ${campaignId}
+        RETURNING *
+      `
+      return NextResponse.json(result[0])
+    }
+
+    // Update target audience
+    if (target_audience) {
+      const result = await sql`
+        UPDATE admin_email_campaigns
+        SET 
+          target_audience = ${JSON.stringify(target_audience)},
+          updated_at = NOW()
+        WHERE id = ${campaignId}
+        RETURNING *
+      `
+      return NextResponse.json(result[0])
+    }
+
+    return NextResponse.json({ error: "No update fields provided" }, { status: 400 })
   } catch (error) {
     console.error("[v0] Error updating campaign:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })

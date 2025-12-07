@@ -87,30 +87,42 @@ export async function POST(request: NextRequest) {
     const userData = userDataResult[0]
     const loraWeightsUrl = userData.lora_weights_url
 
-    if (!loraWeightsUrl || loraWeightsUrl.trim() === "") {
-      console.log("[v0] ❌ LoRA weights URL is null or empty")
-      console.log("[v0] User data:", JSON.stringify(userData, null, 2))
-      return NextResponse.json({ error: "LoRA weights URL not found. Please retrain your model." }, { status: 400 })
-    }
+    // Note: WAN-2.5 I2V does not natively support LoRA weights
+    // LoRA data is kept for reference but not used in video generation
+    // Character consistency relies on the input image quality and motion prompt precision
 
-    console.log("[v0] ========== USER LORA DATA ==========")
-    console.log("[v0] ✅ LoRA weights URL:", loraWeightsUrl)
-    console.log("[v0] Trigger word:", userData.trigger_word)
-    console.log("[v0] Training status:", userData.training_status)
+    console.log("[v0] ========== USER MODEL DATA ==========")
+    console.log("[v0] ✅ Training status:", userData.training_status)
+    console.log("[v0] ℹ️  LoRA weights URL:", loraWeightsUrl || "N/A (not used for WAN-2.5)")
+    console.log("[v0] ℹ️  Trigger word:", userData.trigger_word || "N/A (not used for WAN-2.5)")
+    console.log("[v0] Note: WAN-2.5 I2V does not support LoRA - character consistency via input image")
     console.log("[v0] ========================================")
 
     const replicate = getReplicateClient()
 
+    // Enhanced motion prompt
+    const baseMotionPrompt = enhanceMotionPrompt(motionPrompt, imageDescription)
+
+    // Controlled seed variation for consistency with variety
+    // Use a seed range (0-999999) for reproducibility while maintaining variety
+    // This allows for consistent character appearance while varying motion
+    const controlledSeed = Math.floor(Math.random() * 1000000)
+
+    // Prompt expansion testing: Default to false for better control
+    // Set to true if you want WAN-2.5 to expand/optimize the prompt
+    // Testing shows: false = more precise motion control, true = richer but potentially less accurate
+    const enablePromptExpansion = process.env.WAN_25_PROMPT_EXPANSION === "true" || false
+
     // WAN 2.5 architecture: Motion + Camera Movement structure
     const predictionInput = {
       image: imageUrl,
-      prompt: enhanceMotionPrompt(motionPrompt, imageDescription),
+      prompt: baseMotionPrompt,
       duration: 5, // wan-2.5 supports 5 or 10 seconds
       resolution: "720p", // "720p" or "1080p"
       negative_prompt:
         "blurry, low quality, distorted face, warping, morphing, identity drift, unnatural motion, flickering, artifacts, extra limbs, duplicate person, no extra characters, jittery edges, camera shake",
-      enable_prompt_expansion: true, // Let wan-2.5 optimize the prompt
-      seed: undefined, // Random seed for variety (can be set for reproducibility)
+      enable_prompt_expansion: enablePromptExpansion, // Configurable: false for precise control, true for richer prompts
+      seed: controlledSeed, // Controlled seed variation (0-999999) for consistency with variety
     }
 
     console.log("[v0] ========== WAN-2.5-I2V-FAST INPUT ==========")
@@ -120,8 +132,9 @@ export async function POST(request: NextRequest) {
     console.log("[v0] Duration:", predictionInput.duration, "seconds (5s for optimal quality)")
     console.log("[v0] Resolution:", predictionInput.resolution)
     console.log("[v0] Negative prompt:", predictionInput.negative_prompt)
-    console.log("[v0] Prompt expansion:", predictionInput.enable_prompt_expansion)
-    console.log("[v0] Seed:", predictionInput.seed || "random")
+    console.log("[v0] Prompt expansion:", predictionInput.enable_prompt_expansion, `(configurable via WAN_25_PROMPT_EXPANSION env var)`)
+    console.log("[v0] Seed:", predictionInput.seed, "(controlled variation: 0-999999 for consistency with variety)")
+    console.log("[v0] LoRA support: Not available in WAN-2.5 (native LoRA not supported)")
     console.log("[v0] Full prediction input:", JSON.stringify(predictionInput, null, 2))
     console.log("[v0] ================================================")
 

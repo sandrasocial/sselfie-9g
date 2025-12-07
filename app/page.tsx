@@ -15,10 +15,30 @@ export default async function Home() {
     return <LandingPage />
   }
 
-  const supabase = await createServerClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  let supabase
+  try {
+    supabase = await createServerClient()
+  } catch (error) {
+    console.error("[v0] Error creating Supabase client:", error)
+    // If Supabase client creation fails, just show landing page
+    return <LandingPage />
+  }
+
+  let user = null
+  try {
+    // Add timeout to prevent hanging on slow/unreachable Supabase
+    const authPromise = supabase.auth.getUser()
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Auth check timeout")), 5000)
+    )
+
+    const result = await Promise.race([authPromise, timeoutPromise])
+    user = result.data?.user || null
+  } catch (error) {
+    console.error("[v0] Auth check failed or timed out:", error)
+    // If auth check fails, just show landing page
+    return <LandingPage />
+  }
 
   if (user) {
     const headersList = await headers()

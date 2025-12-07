@@ -18,6 +18,8 @@ interface InstagramPhotoCardProps {
   onCaptionUpdate?: (newCaption: string) => void
   showAnimateOverlay?: boolean
   onCreatePhotoshoot?: () => void
+  generationStatus?: string // e.g., "Analyzing motion..." or "Generating Video..."
+  generationProgress?: number // 0-100
 }
 
 export default function InstagramPhotoCard({
@@ -32,6 +34,8 @@ export default function InstagramPhotoCard({
   onCaptionUpdate,
   showAnimateOverlay = false,
   onCreatePhotoshoot,
+  generationStatus,
+  generationProgress,
 }: InstagramPhotoCardProps) {
   const [isViewerOpen, setIsViewerOpen] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
@@ -166,12 +170,25 @@ export default function InstagramPhotoCard({
 
           {showAnimateOverlay && onAnimate && (
             <div className="animate-overlay absolute inset-0 bg-stone-950/30 md:bg-stone-950/0 md:group-hover:bg-stone-950/30 transition-all duration-300 flex flex-col items-center justify-center">
-              {isCreatingPhotoshoot ? (
-                <div className="flex flex-col items-center gap-3">
+              {isGenerating || isCreatingPhotoshoot ? (
+                <div className="flex flex-col items-center gap-3 px-4">
                   <div className="w-16 h-16 bg-white/95 backdrop-blur-sm rounded-full flex items-center justify-center shadow-2xl">
                     <div className="w-8 h-8 border-3 border-stone-950 border-t-transparent rounded-full animate-spin" />
                   </div>
-                  <p className="text-white font-serif text-sm tracking-wide">Analyzing Motion...</p>
+                  <p className="text-white font-serif text-sm tracking-wide text-center">
+                    {generationStatus || (isCreatingPhotoshoot ? "Analyzing Motion..." : "Generating Video...")}
+                  </p>
+                  {generationProgress !== undefined && (
+                    <>
+                      <p className="text-white/80 font-serif text-xs tracking-wide">{generationProgress}% complete</p>
+                      <div className="w-32 bg-white/20 rounded-full h-1.5 overflow-hidden mt-1">
+                        <div
+                          className="bg-white h-full transition-all duration-300"
+                          style={{ width: `${generationProgress}%` }}
+                        />
+                      </div>
+                    </>
+                  )}
                 </div>
               ) : (
                 <>
