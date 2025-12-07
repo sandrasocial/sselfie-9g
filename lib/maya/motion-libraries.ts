@@ -247,3 +247,4 @@ export function getIntensityDistribution(): "subtle" | "moderate" | "dynamic" {
   return "dynamic"
 }
 
+

@@ -108,3 +108,4 @@ Character consistency is achieved through:
 - Ensure input images are high resolution
 - Check negative prompt settings
 
+

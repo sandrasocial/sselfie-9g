@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server"
+import { createServerClient } from "@/lib/supabase/server"
 import type { User } from "@supabase/supabase-js"
 
 interface CachedAuth {
@@ -19,7 +19,7 @@ export async function getAuthenticatedUser(): Promise<{
   error: Error | null
 }> {
   try {
-    const supabase = await createClient()
+    const supabase = await createServerClient()
 
     const {
       data: { session },

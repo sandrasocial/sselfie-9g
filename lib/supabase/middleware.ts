@@ -58,7 +58,11 @@ export async function updateSession(request: NextRequest) {
         supabaseResponse.cookies.delete("sb-access-token")
         supabaseResponse.cookies.delete("sb-refresh-token")
       } else {
-        console.log("[v0] [Middleware] Auth error:", error.message || "Auth session missing!")
+        // Only log for API routes that require auth, not public routes
+        if (!request.nextUrl.pathname.includes("/api/landing-stats") && 
+            !request.nextUrl.pathname.includes("/api/freebie")) {
+          console.log("[v0] [Middleware] Auth error:", error.message || "Auth session missing!")
+        }
       }
       return supabaseResponse
     }

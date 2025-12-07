@@ -94,3 +94,4 @@ To verify the fix is working:
 3. Check server logs for: `"✅ Claude vision analysis complete"`
 4. Verify motion prompts are more accurate and match the image poses
 
+

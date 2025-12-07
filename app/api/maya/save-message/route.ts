@@ -19,7 +19,11 @@ export async function POST(request: NextRequest) {
     const { user, error: authError } = await getAuthenticatedUser()
 
     if (authError || !user) {
-      console.log("[v0] ❌ Unauthorized - no user")
+      console.log("[v0] ❌ Unauthorized - no user", {
+        hasError: !!authError,
+        errorMessage: authError?.message,
+        hasUser: !!user,
+      })
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 

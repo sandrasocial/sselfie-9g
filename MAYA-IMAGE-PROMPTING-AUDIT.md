@@ -236,3 +236,4 @@
 
 **The Fix:** Strengthen the "authentic iPhone photo" requirements and make them non-negotiable, not optional suggestions.
 
+

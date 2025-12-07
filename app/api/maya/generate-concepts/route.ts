@@ -329,19 +329,23 @@ CRITICAL INSTRUCTIONS:
 
 1. **Start with:** "${triggerWord}, ${userEthnicity ? userEthnicity + " " : ""}${userGender}${physicalPreferences ? `, ${physicalPreferences}` : ""}"
 
-2. **iPhone 15 Pro (MANDATORY - 95% of prompts):** MUST include "shot on iPhone 15 Pro, portrait mode" - this creates authentic phone camera aesthetic. Only use focal length alternatives for specific editorial requests.
+2. **iPhone 15 Pro (MANDATORY - 95% of prompts):** MUST include "shot on iPhone 15 Pro" OR "amateur cellphone photo" - this creates authentic phone camera aesthetic. Only use focal length alternatives for specific editorial requests.
 
-3. **Natural Skin Texture (MANDATORY):** MUST include "natural skin texture, pores visible" or "realistic skin imperfections" - prevents AI-looking smooth skin.
+3. **Natural Imperfections (MANDATORY - AT LEAST 2):** MUST include AT LEAST 2 of: "visible sensor noise", "slight motion blur", "uneven lighting", "mixed color temperatures", "handheld feel" - these prevent plastic-looking images.
 
-4. **Film Grain (MANDATORY):** MUST include one: "visible film grain", "fine film grain texture", "grainy texture", or "subtle grain visible"
+4. **Natural Skin Texture (MANDATORY):** MUST include "natural skin texture with pores visible" AND anti-plastic language like "not smooth or airbrushed" or "not plastic-looking" - prevents AI-looking smooth/plastic skin.
 
-5. **Muted Colors (MANDATORY):** MUST include one: "muted color palette", "soft muted tones", "desaturated realistic colors", or "vintage color temperature"
+5. **Film Grain (MANDATORY):** MUST include one: "visible film grain", "fine film grain texture", "grainy texture", or "subtle grain visible"
 
-6. **Authentic Language (RECOMMENDED):** Include "authentic iPhone photo aesthetic" or "Instagram-native aesthetic" or "looks like real phone camera photo"
+6. **Muted Colors (MANDATORY):** MUST include one: "muted color palette", "soft muted tones", "desaturated realistic colors", or "vintage color temperature"
 
-7. **Prompt Length:** 40-60 words (shorter = more authentic, better facial consistency)
+7. **Lighting with Imperfections (MANDATORY):** NEVER use "soft morning daylight, diffused natural lighting" or "even lighting" without adding imperfection language. MUST include "uneven lighting", "mixed color temperatures", or "slight uneven illumination" in lighting description.
 
-8. **NO BANNED WORDS:** Never use "stunning", "perfect", "beautiful", "high quality", "8K", "professional photography", "DSLR", "cinematic", "studio lighting" - these create AI-looking results.
+8. **Casual Moment Language (RECOMMENDED):** Include "candid moment", "looks like a real phone camera photo", or "amateur cellphone quality"
+
+9. **Prompt Length:** 30-45 words (shorter = more authentic, better facial consistency, less AI-looking)
+
+10. **NO BANNED WORDS:** Never use "stunning", "perfect", "beautiful", "high quality", "8K", "professional photography", "DSLR", "cinematic", "studio lighting", "even lighting", "perfect lighting", "smooth skin", "flawless skin", "airbrushed" - these create AI-looking/plastic results.
 
 9. Apply the OUTFIT PRINCIPLE with your FASHION INTELLIGENCE - no boring defaults
 10. Apply the EXPRESSION PRINCIPLE for authentic facial details
@@ -430,10 +434,22 @@ Now apply your fashion intelligence and prompting mastery. Create ${count} conce
       "studio lighting",
       "professional lighting",
       "perfect lighting",
+      "even lighting",
+      "ideal lighting",
+      "beautiful lighting",
+      "smooth skin",
+      "flawless skin",
+      "airbrushed",
+      "perfect skin",
+      "silk-like skin",
+      // Note: "soft diffused natural lighting" is handled separately below - only removed if no imperfection language
     ]
 
     concepts.forEach((concept) => {
       let prompt = concept.prompt
+
+      // Check for imperfection language BEFORE removing lighting phrases
+      const hasImperfectionLanguage = /uneven\s*lighting|mixed\s*color\s*temperatures|slight\s*uneven\s*illumination|visible\s*sensor\s*noise/i.test(prompt)
 
       // Remove banned words (case-insensitive)
       bannedWords.forEach((word) => {
@@ -441,8 +457,14 @@ Now apply your fashion intelligence and prompting mastery. Create ${count} conce
         prompt = prompt.replace(regex, "")
       })
 
-      // Ensure iPhone 15 Pro is present (if not, add it at the start)
-      const hasIPhone = /iPhone\s*15\s*Pro/i.test(prompt)
+      // Conditionally remove "soft diffused natural lighting" only if no imperfection language exists
+      if (!hasImperfectionLanguage) {
+        const softDiffusedRegex = /\bsoft\s+diffused\s+natural\s+lighting\b/gi
+        prompt = prompt.replace(softDiffusedRegex, "")
+      }
+
+      // Ensure iPhone 15 Pro or amateur cellphone photo is present (if not, add it at the start)
+      const hasIPhone = /iPhone\s*15\s*Pro|amateur\s*cellphone\s*photo/i.test(prompt)
       const hasFocalLength = /\d+mm\s*(lens|focal)/i.test(prompt)
 
       if (!hasIPhone && !hasFocalLength) {
@@ -458,22 +480,72 @@ Now apply your fashion intelligence and prompting mastery. Create ${count} conce
         prompt = prompt.replace(/\d+mm\s*(lens|focal)/i, "shot on iPhone 15 Pro")
       }
 
-      // Ensure natural skin texture is present
-      if (!/natural\s*skin\s*texture|pores\s*visible|realistic\s*skin|skin\s*imperfections/i.test(prompt)) {
+      // Ensure natural imperfections are present (sensor noise, motion blur, uneven lighting)
+      // Need AT LEAST 2 of these to avoid plastic look
+      const hasSensorNoise = /visible\s*sensor\s*noise/i.test(prompt)
+      const hasMotionBlur = /slight\s*motion\s*blur|motion\s*blur/i.test(prompt)
+      const hasUnevenLighting = /uneven\s*lighting|mixed\s*color\s*temperatures/i.test(prompt)
+      const hasHandheld = /handheld\s*feel/i.test(prompt)
+      
+      const imperfectionCount = [hasSensorNoise, hasMotionBlur, hasUnevenLighting, hasHandheld].filter(Boolean).length
+      
+      if (imperfectionCount < 2) {
+        // Add missing imperfections after camera specs
+        const cameraMatch = prompt.match(/(shot on iPhone 15 Pro|amateur cellphone photo[^,]*)/i)
+        const additions: string[] = []
+        
+        if (!hasMotionBlur) additions.push("slight motion blur")
+        if (!hasSensorNoise && imperfectionCount < 2) additions.push("visible sensor noise")
+        if (!hasUnevenLighting && imperfectionCount < 2) additions.push("uneven lighting")
+        
+        if (additions.length > 0) {
+          const toAdd = additions.join(", ")
+          if (cameraMatch) {
+            prompt = prompt.replace(/(shot on iPhone 15 Pro|amateur cellphone photo[^,]*)/i, `$1, ${toAdd}`)
+          } else {
+            // Add before film grain if present
+            const grainMatch = prompt.match(/(film\s*grain|grainy|grain)/i)
+            if (grainMatch) {
+              prompt = prompt.replace(/(film\s*grain|grainy|grain)/i, `${toAdd}, $1`)
+            } else {
+              // Add at end if no better place
+              prompt = `${prompt}, ${toAdd}`
+            }
+          }
+        }
+      }
+      
+      // Also check lighting description - if it says "diffused natural lighting", "soft diffused natural lighting", or "even lighting" without imperfection, add it
+      // This check happens AFTER the conditional removal above, so if "soft diffused natural lighting" was kept (because imperfection exists), we can still enhance it
+      if (/(diffused\s*natural\s*lighting|soft\s+diffused\s+natural\s+lighting|even\s*lighting|soft\s*morning\s*daylight)/i.test(prompt) && !hasUnevenLighting) {
+        // Add uneven lighting near the lighting description
+        prompt = prompt.replace(/(diffused\s*natural\s*lighting|soft\s+diffused\s+natural\s+lighting|even\s*lighting|soft\s*morning\s*daylight)/i, (match) => `${match}, uneven lighting`)
+      }
+
+      // Ensure natural skin texture is present with anti-plastic language
+      const hasSkinTexture = /natural\s*skin\s*texture|pores\s*visible|realistic\s*skin|skin\s*imperfections/i.test(prompt)
+      const hasAntiPlastic = /not\s*smooth|not\s*airbrushed|not\s*plastic|realistic\s*texture/i.test(prompt)
+      
+      if (!hasSkinTexture) {
         // Add after camera specs
-        const cameraMatch = prompt.match(/(shot on iPhone 15 Pro[^,]*)/i)
+        const cameraMatch = prompt.match(/(shot on iPhone 15 Pro|amateur cellphone photo[^,]*)/i)
+        const skinText = hasAntiPlastic ? "natural skin texture with pores visible" : "natural skin texture with pores visible, not smooth or airbrushed"
+        
         if (cameraMatch) {
-          prompt = prompt.replace(/(shot on iPhone 15 Pro[^,]*)/i, `$1, natural skin texture with pores visible`)
+          prompt = prompt.replace(/(shot on iPhone 15 Pro|amateur cellphone photo[^,]*)/i, `$1, ${skinText}`)
         } else {
           // Add before film grain if present
           const grainMatch = prompt.match(/(film\s*grain|grainy|grain)/i)
           if (grainMatch) {
-            prompt = prompt.replace(/(film\s*grain|grainy|grain)/i, "natural skin texture with pores visible, $1")
+            prompt = prompt.replace(/(film\s*grain|grainy|grain)/i, `${skinText}, $1`)
           } else {
             // Add at end if no better place
-            prompt = `${prompt}, natural skin texture with pores visible`
+            prompt = `${prompt}, ${skinText}`
           }
         }
+      } else if (!hasAntiPlastic) {
+        // Add anti-plastic language if skin texture exists but anti-plastic doesn't
+        prompt = prompt.replace(/(natural\s*skin\s*texture[^,]*|pores\s*visible)/i, (match) => `${match}, not smooth or airbrushed`)
       }
 
       // Ensure film grain is present
@@ -486,9 +558,9 @@ Now apply your fashion intelligence and prompting mastery. Create ${count} conce
         prompt = `${prompt}, muted color palette`
       }
 
-      // Ensure authentic iPhone language is present
-      if (!/(authentic\s*iPhone|iPhone\s*photo|Instagram-native|phone\s*camera\s*photo)/i.test(prompt)) {
-        prompt = `${prompt}, authentic iPhone photo aesthetic`
+      // Ensure casual moment language is present (candid moment, looks like real phone camera photo, etc.)
+      if (!/(candid\s*moment|looks\s*like\s*a\s*real\s*phone\s*camera\s*photo|amateur\s*cellphone\s*quality|looks\s*like\s*real\s*phone\s*camera\s*photo|authentic\s*iPhone|iPhone\s*photo|Instagram-native)/i.test(prompt)) {
+        prompt = `${prompt}, looks like a real phone camera photo`
       }
 
       // Clean up multiple commas and spaces

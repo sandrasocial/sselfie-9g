@@ -398,6 +398,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
             fetch("/api/maya/save-message", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
+              credentials: "include",
               body: JSON.stringify({
                 chatId,
                 role: "assistant",
@@ -585,6 +586,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
       fetch("/api/maya/save-message", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           chatId,
           role: "user",
@@ -795,6 +797,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
         const response = await fetch("/api/maya/save-message", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
           body: JSON.stringify(item.payload),
         })
 
@@ -1014,6 +1017,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
         fetch("/api/maya/save-message", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
           body: JSON.stringify({
             chatId: currentChatId,
             role: "user",
