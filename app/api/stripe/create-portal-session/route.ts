@@ -62,6 +62,32 @@ export async function POST(request: Request) {
     }
 
     if (!stripeCustomerId) {
+      // Try to find customer ID from Stripe by email (for existing users who haven't been backfilled)
+      console.log("[v0] Create portal session: No customer ID in database, searching Stripe by email:", neonUser.email)
+      try {
+        const customers = await stripe.customers.list({
+          email: neonUser.email,
+          limit: 1,
+        })
+
+        if (customers.data.length > 0) {
+          stripeCustomerId = customers.data[0].id
+          console.log("[v0] Create portal session: Found customer ID from Stripe:", stripeCustomerId)
+
+          // Save it to the database for future use
+          await sql`
+            UPDATE users 
+            SET stripe_customer_id = ${stripeCustomerId}
+            WHERE id = ${neonUser.id}
+          `
+          console.log("[v0] Create portal session: Saved customer ID to database")
+        }
+      } catch (stripeSearchError: any) {
+        console.error("[v0] Create portal session: Error searching Stripe:", stripeSearchError.message)
+      }
+    }
+
+    if (!stripeCustomerId) {
       console.log("[v0] Create portal session: No Stripe customer ID found for user:", neonUser.id)
       return NextResponse.json(
         {

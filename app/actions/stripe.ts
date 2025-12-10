@@ -102,10 +102,13 @@ export async function startProductCheckoutSession(productId: string) {
     throw new Error("User not found")
   }
 
+  const isSubscription = product.type === "sselfie_studio_membership"
   let customerId: string | undefined
 
   const { neon } = await import("@/lib/db")
   const sql = neon(process.env.DATABASE_URL!)
+  
+  // Check subscriptions table first (for existing subscriptions)
   const existingSubscription = await sql`
     SELECT stripe_customer_id FROM subscriptions WHERE user_id = ${user.id} LIMIT 1
   `
@@ -113,16 +116,39 @@ export async function startProductCheckoutSession(productId: string) {
   if (existingSubscription[0]?.stripe_customer_id) {
     customerId = existingSubscription[0].stripe_customer_id
   } else {
-    const customer = await stripe.customers.create({
-      email: user.email,
-      metadata: {
-        user_id: user.id,
-      },
-    })
-    customerId = customer.id
+    // Check users table for existing customer ID (for one-time purchases)
+    const existingUser = await sql`
+      SELECT stripe_customer_id FROM users WHERE id = ${user.id} AND stripe_customer_id IS NOT NULL LIMIT 1
+    `
+    
+    if (existingUser[0]?.stripe_customer_id) {
+      customerId = existingUser[0].stripe_customer_id
+    } else {
+      // Create new Stripe customer
+      const customer = await stripe.customers.create({
+        email: user.email,
+        metadata: {
+          user_id: user.id,
+        },
+      })
+      customerId = customer.id
+      
+      // Save to users table immediately for one-time purchases
+      // (Subscriptions will save it via webhook to subscriptions table)
+      if (!isSubscription) {
+        try {
+          await sql`
+            UPDATE users 
+            SET stripe_customer_id = ${customerId}
+            WHERE id = ${user.id}
+          `
+        } catch (error) {
+          console.error("[v0] Error saving customer ID to users table:", error)
+          // Non-critical - webhook will save it
+        }
+      }
+    }
   }
-
-  const isSubscription = product.type === "sselfie_studio_membership"
 
   const session = await stripe.checkout.sessions.create({
     ui_mode: "embedded",

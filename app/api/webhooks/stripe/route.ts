@@ -515,6 +515,34 @@ export async function POST(request: NextRequest) {
             )
           }
 
+          // Save Stripe customer ID to users table for one-time purchases
+          // This allows users to access the Stripe customer portal to view invoices
+          if (session.customer && typeof session.customer === "string") {
+            console.log(`[v0] Saving Stripe customer ID ${session.customer} to users table for user ${userId}`)
+            try {
+              // Check if user already has a customer ID
+              const existingCustomer = await sql`
+                SELECT stripe_customer_id FROM users WHERE id = ${userId} LIMIT 1
+              `
+              
+              if (existingCustomer.length > 0 && existingCustomer[0].stripe_customer_id) {
+                console.log(`[v0] User ${userId} already has customer ID ${existingCustomer[0].stripe_customer_id}, updating to ${session.customer}`)
+              }
+              
+              await sql`
+                UPDATE users 
+                SET stripe_customer_id = ${session.customer}
+                WHERE id = ${userId}
+              `
+              console.log(`[v0] Successfully saved Stripe customer ID ${session.customer} for user ${userId}`)
+            } catch (error: any) {
+              console.error(`[v0] Error saving Stripe customer ID to users table:`, error.message)
+              // Don't fail the webhook if this fails - non-critical
+            }
+          } else {
+            console.log(`[v0] No customer ID in session for payment mode - session.customer:`, session.customer)
+          }
+
           if (productType === "one_time_session") {
             console.log(`[v0] One-time session purchase for user ${userId}`)
             await grantOneTimeSessionCredits(userId)
