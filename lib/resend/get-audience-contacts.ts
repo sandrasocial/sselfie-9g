@@ -147,7 +147,6 @@ export async function getAudienceContacts(audienceId: string) {
     console.log(`[v0] Active (subscribed) contacts: ${activeContacts.length}`)
     
     return activeContacts
-  }
 }
 
 export async function getAudienceContactCount(audienceId: string): Promise<number> {
