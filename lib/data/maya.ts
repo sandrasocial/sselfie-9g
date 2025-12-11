@@ -575,6 +575,33 @@ export async function updateChatTitle(chatId: number, title: string): Promise<vo
   `
 }
 
+// Delete a chat and all its messages (cascade delete)
+export async function deleteChat(chatId: number, userId: string): Promise<boolean> {
+  try {
+    // Verify chat belongs to user before deleting
+    const chat = await sql`
+      SELECT id FROM maya_chats
+      WHERE id = ${chatId} AND user_id = ${userId}
+      LIMIT 1
+    `
+
+    if (chat.length === 0) {
+      return false // Chat doesn't exist or doesn't belong to user
+    }
+
+    // Delete chat (messages will be cascade deleted due to ON DELETE CASCADE)
+    await sql`
+      DELETE FROM maya_chats
+      WHERE id = ${chatId} AND user_id = ${userId}
+    `
+
+    return true
+  } catch (error) {
+    console.error("[v0] Error deleting chat:", error)
+    throw error
+  }
+}
+
 // Generate chat title from first message
 export async function generateChatTitle(firstMessage: string): Promise<string> {
   // Handle edge cases

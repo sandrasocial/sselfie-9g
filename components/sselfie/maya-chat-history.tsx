@@ -1,7 +1,8 @@
 "use client"
 
-import { MessageSquare, Clock, ChevronRight, Aperture } from "lucide-react"
+import { MessageSquare, Clock, ChevronRight, Aperture, Trash2, MoreVertical, X } from "lucide-react"
 import useSWR from "swr"
+import { useState, useEffect, useRef } from "react"
 import UnifiedLoading from "./unified-loading"
 
 interface MayaChat {
@@ -16,21 +17,59 @@ interface MayaChat {
 
 interface MayaChatHistoryProps {
   currentChatId: number | null
-  onSelectChat: (chatId: number) => void
+  onSelectChat: (chatId: number, title?: string) => void
   onNewChat: () => void
+  onDeleteChat?: (chatId: number) => void
   chatType?: string
 }
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
-export default function MayaChatHistory({ currentChatId, onSelectChat, onNewChat, chatType }: MayaChatHistoryProps) {
+export default function MayaChatHistory({
+  currentChatId,
+  onSelectChat,
+  onNewChat,
+  onDeleteChat,
+  chatType,
+}: MayaChatHistoryProps) {
   const apiUrl = chatType ? `/api/maya/chats?chatType=${chatType}` : "/api/maya/chats?chatType=maya"
 
-  const { data, error, isLoading } = useSWR<{ chats: MayaChat[] }>(apiUrl, fetcher, {
+  const { data, error, isLoading, mutate } = useSWR<{ chats: MayaChat[] }>(apiUrl, fetcher, {
     refreshInterval: 30000,
   })
 
   const chats = data?.chats || []
+  const [showMenuForChat, setShowMenuForChat] = useState<number | null>(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  // Debug: Log if onDeleteChat is available
+  useEffect(() => {
+    console.log("[MayaChatHistory] Component mounted", { onDeleteChat: !!onDeleteChat, chatsCount: chats.length })
+    if (onDeleteChat) {
+      console.log("[MayaChatHistory] ✅ Delete functionality ENABLED - button should be visible")
+    } else {
+      console.warn("[MayaChatHistory] ❌ Delete functionality NOT available - onDeleteChat prop missing")
+    }
+  }, [onDeleteChat, chats.length])
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenuForChat(null)
+      }
+    }
+
+    if (showMenuForChat !== null) {
+      document.addEventListener("mousedown", handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [showMenuForChat])
 
   const formatTimeAgo = (dateString: string) => {
     const now = new Date()
@@ -64,6 +103,44 @@ export default function MayaChatHistory({ currentChatId, onSelectChat, onNewChat
       return chat.first_message.slice(0, 80) + "..."
     }
     return null
+  }
+
+  const handleDeleteClick = (e: React.MouseEvent, chatId: number) => {
+    e.stopPropagation()
+    setShowMenuForChat(null)
+    setShowDeleteConfirm(chatId)
+  }
+
+  const handleDeleteConfirm = async (chatId: number) => {
+    setIsDeleting(true)
+    try {
+      const response = await fetch(`/api/maya/delete-chat?chatId=${chatId}`, {
+        method: "DELETE",
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to delete chat")
+      }
+
+      // Optimistic UI update - remove from list immediately
+      await mutate()
+      setShowDeleteConfirm(null)
+
+      // Call parent handler if provided
+      if (onDeleteChat) {
+        onDeleteChat(chatId)
+      }
+    } catch (error) {
+      console.error("[v0] Error deleting chat:", error)
+      alert("Failed to delete chat. Please try again.")
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const handleMenuClick = (e: React.MouseEvent, chatId: number) => {
+    e.stopPropagation()
+    setShowMenuForChat(showMenuForChat === chatId ? null : chatId)
   }
 
   const getCategoryBadge = (category: string | null) => {
@@ -145,74 +222,167 @@ export default function MayaChatHistory({ currentChatId, onSelectChat, onNewChat
             const previewText = getPreviewText(chat)
 
             return (
-              <button
-                key={chat.id}
-                onClick={() => onSelectChat(chat.id)}
-                className={`group w-full text-left p-4 rounded-xl transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] ${
-                  isActive
-                    ? "bg-stone-900 text-white shadow-xl shadow-stone-900/30 ring-2 ring-stone-900 ring-offset-2"
-                    : "bg-white/40 backdrop-blur-2xl border border-white/60 hover:bg-white/60 hover:border-white/80 hover:shadow-lg shadow-stone-900/5"
-                }`}
-                aria-label={`Load chat: ${displayTitle}`}
-                aria-current={isActive ? "true" : undefined}
-              >
-                {chat.chat_category && (
-                  <div className="mb-2">
-                    {isActive ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] tracking-wider uppercase font-light border bg-white/20 text-white border-white/30">
-                        <Aperture size={10} strokeWidth={1.5} />
-                        {chat.chat_category}
+              <div key={chat.id} className="relative group">
+                <div
+                  onClick={() => onSelectChat(chat.id, displayTitle)}
+                  className={`group w-full text-left p-4 rounded-xl transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] cursor-pointer ${
+                    isActive
+                      ? "bg-stone-900 text-white shadow-xl shadow-stone-900/30 ring-2 ring-stone-900 ring-offset-2"
+                      : "bg-white/40 backdrop-blur-2xl border border-white/60 hover:bg-white/60 hover:border-white/80 hover:shadow-lg shadow-stone-900/5"
+                  }`}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault()
+                      onSelectChat(chat.id, displayTitle)
+                    }
+                  }}
+                  aria-label={`Load chat: ${displayTitle}`}
+                  aria-current={isActive ? "true" : undefined}
+                >
+                  {chat.chat_category && (
+                    <div className="mb-2">
+                      {isActive ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] tracking-wider uppercase font-light border bg-white/20 text-white border-white/30">
+                          <Aperture size={10} strokeWidth={1.5} />
+                          {chat.chat_category}
+                        </span>
+                      ) : (
+                        getCategoryBadge(chat.chat_category)
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <h4
+                      className={`text-sm font-normal leading-snug flex-1 min-w-0 ${
+                        isActive ? "text-white" : "text-stone-900"
+                      }`}
+                    >
+                      {displayTitle}
+                    </h4>
+                    <div className="flex items-center gap-2 flex-shrink-0" style={{ minWidth: "60px" }}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          e.preventDefault()
+                          console.log("[MayaChatHistory] Menu button clicked for chat:", chat.id, "onDeleteChat:", !!onDeleteChat)
+                          if (onDeleteChat) {
+                            handleMenuClick(e, chat.id)
+                          } else {
+                            console.warn("[MayaChatHistory] Delete handler not available!")
+                          }
+                        }}
+                        className={`p-2 rounded-lg transition-all relative z-10 ${
+                          isActive
+                            ? "hover:bg-white/20 text-white hover:text-white bg-white/10"
+                            : "text-stone-700 hover:bg-stone-200 hover:text-stone-900 bg-stone-100"
+                        }`}
+                        aria-label="Chat options"
+                        title={onDeleteChat ? "Delete chat" : "Chat options (delete not available)"}
+                        type="button"
+                        style={{ display: "flex", alignItems: "center", justifyContent: "center" }}
+                      >
+                        <MoreVertical size={18} strokeWidth={2.5} />
+                      </button>
+                      <ChevronRight
+                        size={16}
+                        className={`flex-shrink-0 transition-transform duration-300 ${
+                          isActive ? "text-white translate-x-0.5" : "text-stone-400 group-hover:translate-x-0.5"
+                        }`}
+                        strokeWidth={1.5}
+                      />
+                    </div>
+                  </div>
+
+                  {previewText && (
+                    <p
+                      className={`text-xs font-light leading-relaxed mb-3 line-clamp-2 ${
+                        isActive ? "text-white/80" : "text-stone-600"
+                      }`}
+                    >
+                      {previewText}
+                    </p>
+                  )}
+
+                  <div className="flex items-center gap-4 text-xs font-light">
+                    <div className="flex items-center gap-1.5">
+                      <Clock size={12} className={isActive ? "text-white/70" : "text-stone-400"} strokeWidth={1.5} />
+                      <span className={isActive ? "text-white/70" : "text-stone-500"}>
+                        {formatTimeAgo(chat.last_activity)}
                       </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <MessageSquare
+                        size={12}
+                        className={isActive ? "text-white/70" : "text-stone-400"}
+                        strokeWidth={1.5}
+                      />
+                      <span className={isActive ? "text-white/70" : "text-stone-500"}>{chat.message_count || 0}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Menu Dropdown */}
+                {showMenuForChat === chat.id && (
+                  <div
+                    ref={menuRef}
+                    className="absolute right-2 top-12 bg-white rounded-xl shadow-2xl border border-stone-200 py-2 w-48 z-20"
+                  >
+                    {onDeleteChat ? (
+                      <button
+                        onClick={(e) => handleDeleteClick(e, chat.id)}
+                        className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
+                      >
+                        <Trash2 size={14} strokeWidth={1.5} />
+                        Delete Chat
+                      </button>
                     ) : (
-                      getCategoryBadge(chat.chat_category)
+                      <div className="px-4 py-2.5 text-sm text-stone-500">
+                        Delete not available
+                      </div>
                     )}
                   </div>
                 )}
 
-                <div className="flex items-start justify-between gap-3 mb-2">
-                  <h4
-                    className={`text-sm font-normal leading-snug flex-1 min-w-0 ${
-                      isActive ? "text-white" : "text-stone-900"
-                    }`}
-                  >
-                    {displayTitle}
-                  </h4>
-                  <ChevronRight
-                    size={16}
-                    className={`flex-shrink-0 transition-transform duration-300 ${
-                      isActive ? "text-white translate-x-0.5" : "text-stone-400 group-hover:translate-x-0.5"
-                    }`}
-                    strokeWidth={1.5}
-                  />
-                </div>
-
-                {previewText && (
-                  <p
-                    className={`text-xs font-light leading-relaxed mb-3 line-clamp-2 ${
-                      isActive ? "text-white/80" : "text-stone-600"
-                    }`}
-                  >
-                    {previewText}
-                  </p>
+                {/* Delete Confirmation Modal */}
+                {showDeleteConfirm === chat.id && (
+                  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl border border-stone-200 p-6 max-w-md w-full">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-semibold text-stone-950">Delete Conversation?</h3>
+                        <button
+                          onClick={() => setShowDeleteConfirm(null)}
+                          className="p-1 hover:bg-stone-100 rounded-lg transition-colors"
+                          aria-label="Close"
+                        >
+                          <X size={20} className="text-stone-600" strokeWidth={1.5} />
+                        </button>
+                      </div>
+                      <p className="text-sm text-stone-600 mb-6">
+                        Are you sure you want to delete this conversation? This action cannot be undone.
+                      </p>
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => setShowDeleteConfirm(null)}
+                          className="flex-1 px-4 py-2.5 border border-stone-300 text-stone-700 rounded-lg hover:bg-stone-50 transition-colors text-sm font-medium"
+                          disabled={isDeleting}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => handleDeleteConfirm(chat.id)}
+                          disabled={isDeleting}
+                          className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isDeleting ? "Deleting..." : "Delete"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 )}
-
-                <div className="flex items-center gap-4 text-xs font-light">
-                  <div className="flex items-center gap-1.5">
-                    <Clock size={12} className={isActive ? "text-white/70" : "text-stone-400"} strokeWidth={1.5} />
-                    <span className={isActive ? "text-white/70" : "text-stone-500"}>
-                      {formatTimeAgo(chat.last_activity)}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <MessageSquare
-                      size={12}
-                      className={isActive ? "text-white/70" : "text-stone-400"}
-                      strokeWidth={1.5}
-                    />
-                    <span className={isActive ? "text-white/70" : "text-stone-500"}>{chat.message_count || 0}</span>
-                  </div>
-                </div>
-              </button>
+              </div>
             )
           })}
         </div>

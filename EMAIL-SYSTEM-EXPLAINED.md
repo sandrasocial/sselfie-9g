@@ -265,3 +265,4 @@ Based on your setup:
 The system is **hybrid**: Uses Resend segments for targeting, but also queries your database for recipient lists when needed (for scheduled campaigns).
 
 
+

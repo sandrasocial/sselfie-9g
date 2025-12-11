@@ -1067,7 +1067,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
     }
   }
 
-  const handleSelectChat = (selectedChatId: number, selectedChatTitle: string) => {
+  const handleSelectChat = (selectedChatId: number, selectedChatTitle?: string) => {
     // Added selectedChatTitle
     loadChat(selectedChatId)
     setShowHistory(false)
@@ -1075,6 +1075,18 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
     processedConceptMessagesRef.current.clear() // Clear processed concepts for the new chat
 
     localStorage.setItem("mayaCurrentChatId", selectedChatId.toString())
+  }
+
+  const handleDeleteChat = (deletedChatId: number) => {
+    // If the deleted chat was the current one, switch to new chat
+    if (chatId === deletedChatId) {
+      handleNewChat()
+    }
+    // Clear localStorage if it was the current chat
+    const storedChatId = localStorage.getItem("mayaCurrentChatId")
+    if (storedChatId === deletedChatId.toString()) {
+      localStorage.removeItem("mayaCurrentChatId")
+    }
   }
 
   const handleLogout = async () => {
@@ -1297,7 +1309,12 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
 
       {showHistory && (
         <div className="flex-shrink-0 mx-4 mt-2 mb-2 bg-white/50 backdrop-blur-3xl border border-white/60 rounded-2xl p-4 shadow-xl shadow-stone-950/5 animate-in slide-in-from-top-2 duration-300">
-          <MayaChatHistory currentChatId={chatId} onSelectChat={handleSelectChat} onNewChat={handleNewChat} />
+          <MayaChatHistory
+            currentChatId={chatId}
+            onSelectChat={handleSelectChat}
+            onNewChat={handleNewChat}
+            onDeleteChat={handleDeleteChat}
+          />
         </div>
       )}
 
