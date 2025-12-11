@@ -14,7 +14,7 @@ export const MAYA_DEFAULT_QUALITY_SETTINGS: QualitySettings = {
   go_fast: false,
   num_outputs: 1,
   model: "dev",
-  extra_lora: "https://huggingface.co/strangerzonehf/Flux-Super-Realism-LoRA/resolve/main/super-realism.safetensors",
+  extra_lora: "https://huggingface.co/Raspberry-ai/aidmaRealisticSkin-FLUX-v0.1/resolve/main/aidmaRealisticSkin-FLUX-v0.1.safetensors",
   extra_lora_scale: 0.4,
 }
 
@@ -25,7 +25,7 @@ export const MAYA_QUALITY_PRESETS = {
     guidance_scale: 3.5,
     lora_scale: 1.0,
     num_inference_steps: 50,
-    extra_lora: "https://huggingface.co/strangerzonehf/Flux-Super-Realism-LoRA/resolve/main/super-realism.safetensors",
+    extra_lora: "https://huggingface.co/Raspberry-ai/aidmaRealisticSkin-FLUX-v0.1/resolve/main/aidmaRealisticSkin-FLUX-v0.1.safetensors",
     extra_lora_scale: 0.4,
   },
   headshot: {
@@ -34,7 +34,7 @@ export const MAYA_QUALITY_PRESETS = {
     guidance_scale: 3.5,
     lora_scale: 1.0,
     num_inference_steps: 50,
-    extra_lora: "https://huggingface.co/strangerzonehf/Flux-Super-Realism-LoRA/resolve/main/super-realism.safetensors",
+    extra_lora: "https://huggingface.co/Raspberry-ai/aidmaRealisticSkin-FLUX-v0.1/resolve/main/aidmaRealisticSkin-FLUX-v0.1.safetensors",
     extra_lora_scale: 0.4,
   },
   "Close-Up": {
@@ -43,7 +43,7 @@ export const MAYA_QUALITY_PRESETS = {
     guidance_scale: 3.5,
     lora_scale: 1.0,
     num_inference_steps: 50,
-    extra_lora: "https://huggingface.co/strangerzonehf/Flux-Super-Realism-LoRA/resolve/main/super-realism.safetensors",
+    extra_lora: "https://huggingface.co/Raspberry-ai/aidmaRealisticSkin-FLUX-v0.1/resolve/main/aidmaRealisticSkin-FLUX-v0.1.safetensors",
     extra_lora_scale: 0.4,
   },
   "Half Body": {
@@ -52,7 +52,7 @@ export const MAYA_QUALITY_PRESETS = {
     guidance_scale: 3.5,
     lora_scale: 1.0,
     num_inference_steps: 50,
-    extra_lora: "https://huggingface.co/strangerzonehf/Flux-Super-Realism-LoRA/resolve/main/super-realism.safetensors",
+    extra_lora: "https://huggingface.co/Raspberry-ai/aidmaRealisticSkin-FLUX-v0.1/resolve/main/aidmaRealisticSkin-FLUX-v0.1.safetensors",
     extra_lora_scale: 0.4,
   },
   lifestyle: {
@@ -61,7 +61,7 @@ export const MAYA_QUALITY_PRESETS = {
     guidance_scale: 3.5,
     lora_scale: 1.0,
     num_inference_steps: 50,
-    extra_lora: "https://huggingface.co/strangerzonehf/Flux-Super-Realism-LoRA/resolve/main/super-realism.safetensors",
+    extra_lora: "https://huggingface.co/Raspberry-ai/aidmaRealisticSkin-FLUX-v0.1/resolve/main/aidmaRealisticSkin-FLUX-v0.1.safetensors",
     extra_lora_scale: 0.4,
   },
   Lifestyle: {
@@ -70,7 +70,7 @@ export const MAYA_QUALITY_PRESETS = {
     guidance_scale: 3.5,
     lora_scale: 1.0,
     num_inference_steps: 50,
-    extra_lora: "https://huggingface.co/strangerzonehf/Flux-Super-Realism-LoRA/resolve/main/super-realism.safetensors",
+    extra_lora: "https://huggingface.co/Raspberry-ai/aidmaRealisticSkin-FLUX-v0.1/resolve/main/aidmaRealisticSkin-FLUX-v0.1.safetensors",
     extra_lora_scale: 0.4,
   },
   Action: {
@@ -79,7 +79,7 @@ export const MAYA_QUALITY_PRESETS = {
     guidance_scale: 3.5,
     lora_scale: 1.0,
     num_inference_steps: 50,
-    extra_lora: "https://huggingface.co/strangerzonehf/Flux-Super-Realism-LoRA/resolve/main/super-realism.safetensors",
+    extra_lora: "https://huggingface.co/Raspberry-ai/aidmaRealisticSkin-FLUX-v0.1/resolve/main/aidmaRealisticSkin-FLUX-v0.1.safetensors",
     extra_lora_scale: 0.4,
   },
   Environmental: {
@@ -88,7 +88,7 @@ export const MAYA_QUALITY_PRESETS = {
     guidance_scale: 3.5,
     lora_scale: 1.0,
     num_inference_steps: 50,
-    extra_lora: "https://huggingface.co/strangerzonehf/Flux-Super-Realism-LoRA/resolve/main/super-realism.safetensors",
+    extra_lora: "https://huggingface.co/Raspberry-ai/aidmaRealisticSkin-FLUX-v0.1/resolve/main/aidmaRealisticSkin-FLUX-v0.1.safetensors",
     extra_lora_scale: 0.4,
   },
   editorial: {
@@ -97,7 +97,7 @@ export const MAYA_QUALITY_PRESETS = {
     guidance_scale: 3.5,
     lora_scale: 1.0,
     num_inference_steps: 50,
-    extra_lora: "https://huggingface.co/strangerzonehf/Flux-Super-Realism-LoRA/resolve/main/super-realism.safetensors",
+    extra_lora: "https://huggingface.co/Raspberry-ai/aidmaRealisticSkin-FLUX-v0.1/resolve/main/aidmaRealisticSkin-FLUX-v0.1.safetensors",
     extra_lora_scale: 0.4,
   },
   default: MAYA_DEFAULT_QUALITY_SETTINGS,

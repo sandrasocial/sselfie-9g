@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
         lora_scale: 1.0,
         megapixels: "1",
         model: "dev",
-        extra_lora: "https://huggingface.co/XLabs-AI/flux-RealismLora/resolve/main/lora.safetensors",
+        extra_lora: "https://huggingface.co/Raspberry-ai/aidmaRealisticSkin-FLUX-v0.1/resolve/main/aidmaRealisticSkin-FLUX-v0.1.safetensors",
         extra_lora_scale: 0.6,
       },
     })
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
     console.log("[v0] Prediction created:", prediction.id)
     console.log("[v0] ✅ LoRA weights sent to Replicate:", model.lora_weights_url)
     console.log("[v0] ✅ LoRA scale:", 1.0)
-    console.log("[v0] ✅ Extra LoRA (Realism) scale:", 0.6)
+    console.log("[v0] ✅ Extra LoRA (Photorealistic Skin - No Plastic) scale:", 0.6)
 
     // Save generation record to database
     const [generation] = await sql`
