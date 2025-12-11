@@ -22,6 +22,7 @@ import {
   SettingsIcon,
   LogOut,
   Film,
+  Save,
 } from "lucide-react"
 import useSWR from "swr"
 import useSWRInfinite from "swr/infinite"
@@ -108,6 +109,11 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
   const [showLeftArrow, setShowLeftArrow] = useState(false)
   const [showRightArrow, setShowRightArrow] = useState(true)
   const [pullDistance, setPullDistance] = useState(0) // Declare pullDistance variable
+  
+  // Long-press detection for selection mode
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null)
+  const longPressImageId = useRef<string | null>(null)
+  const wasLongPress = useRef(false) // Track if a long-press occurred to prevent click
 
   // New state for pagination
   const [isLoadingMore, setIsLoadingMore] = useState(false)
@@ -447,6 +453,33 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
     }
   }
 
+  const bulkSave = async () => {
+    if (selectedImages.size === 0) return
+
+    triggerHaptic("medium")
+
+    try {
+      const response = await fetch("/api/images/bulk-save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageIds: Array.from(selectedImages) }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to save images")
+      }
+
+      triggerSuccessHaptic()
+      mutate()
+      setSelectedImages(new Set())
+      setSelectionMode(false)
+    } catch (error) {
+      console.error("[v0] Error bulk saving:", error)
+      triggerErrorHaptic()
+      alert("Failed to save some images. Please try again.")
+    }
+  }
+
   const bulkDownload = async () => {
     if (selectedImages.size === 0) return
 
@@ -710,8 +743,78 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
               <button
                 key={`img-${image.id}`}
                 onClick={() => {
+                  // If this was a long-press, don't handle click (long-press already handled it)
+                  if (wasLongPress.current) {
+                    wasLongPress.current = false
+                    return
+                  }
+                  
+                  // Clear long-press timer if it exists
+                  if (longPressTimer.current) {
+                    clearTimeout(longPressTimer.current)
+                    longPressTimer.current = null
+                  }
+                  
                   triggerHaptic("light")
                   selectionMode ? toggleImageSelection(image.id) : setLightboxImage(image)
+                }}
+                onTouchStart={(e) => {
+                  if (!selectionMode) {
+                    wasLongPress.current = false
+                    longPressImageId.current = image.id
+                    longPressTimer.current = setTimeout(() => {
+                      // Enter selection mode on long-press
+                      wasLongPress.current = true
+                      setSelectionMode(true)
+                      toggleImageSelection(image.id)
+                      triggerHaptic("medium")
+                      longPressTimer.current = null
+                    }, 500) // 500ms long-press
+                  }
+                }}
+                onTouchEnd={() => {
+                  // Clear timer if touch ends before long-press completes
+                  if (longPressTimer.current) {
+                    clearTimeout(longPressTimer.current)
+                    longPressTimer.current = null
+                    wasLongPress.current = false
+                  }
+                }}
+                onTouchCancel={() => {
+                  // Clear timer on touch cancel
+                  if (longPressTimer.current) {
+                    clearTimeout(longPressTimer.current)
+                    longPressTimer.current = null
+                    wasLongPress.current = false
+                  }
+                }}
+                onMouseDown={(e) => {
+                  // Also support long-press on desktop (hold mouse button for 500ms)
+                  if (!selectionMode && e.button === 0) {
+                    wasLongPress.current = false
+                    longPressImageId.current = image.id
+                    longPressTimer.current = setTimeout(() => {
+                      wasLongPress.current = true
+                      setSelectionMode(true)
+                      toggleImageSelection(image.id)
+                      triggerHaptic("medium")
+                      longPressTimer.current = null
+                    }, 500)
+                  }
+                }}
+                onMouseUp={() => {
+                  if (longPressTimer.current) {
+                    clearTimeout(longPressTimer.current)
+                    longPressTimer.current = null
+                    wasLongPress.current = false
+                  }
+                }}
+                onMouseLeave={() => {
+                  if (longPressTimer.current) {
+                    clearTimeout(longPressTimer.current)
+                    longPressTimer.current = null
+                    wasLongPress.current = false
+                  }
                 }}
                 className="aspect-square relative group overflow-hidden bg-stone-200/30"
               >
@@ -852,7 +955,7 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
       )}
 
       {selectionMode && (
-        <div className="fixed bottom-20 sm:bottom-24 left-0 right-0 bg-stone-950 text-white p-3 sm:p-4 shadow-2xl z-50 border-t border-stone-800">
+        <div className="fixed bottom-0 left-0 right-0 bg-stone-950 text-white p-3 sm:p-4 shadow-2xl z-50 border-t border-stone-800 safe-area-inset-bottom">
           <div className="max-w-screen-xl mx-auto">
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
               <div className="flex items-center justify-between sm:justify-start gap-3">
@@ -860,8 +963,13 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
                   onClick={() => {
                     setSelectionMode(false)
                     setSelectedImages(new Set())
+                    // Clear any pending long-press timers
+                    if (longPressTimer.current) {
+                      clearTimeout(longPressTimer.current)
+                      longPressTimer.current = null
+                    }
                   }}
-                  className="text-sm font-light tracking-wide hover:text-stone-300 transition-colors min-h-[44px] px-2"
+                  className="text-sm font-light tracking-wide hover:text-stone-300 transition-colors min-h-[44px] px-2 touch-manipulation"
                 >
                   Cancel
                 </button>
@@ -871,36 +979,45 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
                 {selectedImages.size < displayImages.length && (
                   <button
                     onClick={selectAll}
-                    className="px-3 sm:px-4 py-2 text-xs tracking-[0.15em] uppercase font-light bg-stone-800 rounded-lg hover:bg-stone-700 transition-all min-h-[44px]"
+                    className="px-3 sm:px-4 py-2 text-xs tracking-[0.15em] uppercase font-light bg-stone-800 rounded-lg hover:bg-stone-700 transition-all min-h-[44px] touch-manipulation"
                   >
                     Select All
                   </button>
                 )}
                 {selectedImages.size > 0 && (
                   <>
+                    {selectedImages.size === displayImages.length && (
+                      <button
+                        onClick={deselectAll}
+                        className="px-3 sm:px-4 py-2 text-xs tracking-[0.15em] uppercase font-light bg-stone-800 rounded-lg hover:bg-stone-700 transition-all min-h-[44px] touch-manipulation"
+                      >
+                        Deselect
+                      </button>
+                    )}
                     <button
-                      onClick={deselectAll}
-                      className="px-3 sm:px-4 py-2 text-xs tracking-[0.15em] uppercase font-light bg-stone-800 rounded-lg hover:bg-stone-700 transition-all min-h-[44px]"
+                      onClick={bulkSave}
+                      className="px-3 sm:px-4 py-2 text-xs tracking-[0.15em] uppercase font-light bg-stone-900 rounded-lg hover:bg-stone-800 transition-all flex items-center justify-center gap-2 min-h-[44px] touch-manipulation"
                     >
-                      Deselect
+                      <Save size={14} />
+                      <span className="hidden sm:inline">Save</span>
                     </button>
                     <button
                       onClick={bulkDownload}
-                      className="px-3 sm:px-4 py-2 text-xs tracking-[0.15em] uppercase font-light bg-stone-800 rounded-lg hover:bg-stone-700 transition-all flex items-center justify-center gap-2 min-h-[44px]"
+                      className="px-3 sm:px-4 py-2 text-xs tracking-[0.15em] uppercase font-light bg-stone-800 rounded-lg hover:bg-stone-700 transition-all flex items-center justify-center gap-2 min-h-[44px] touch-manipulation"
                     >
                       <Download size={14} />
                       <span className="hidden sm:inline">Download</span>
                     </button>
                     <button
                       onClick={bulkFavorite}
-                      className="px-3 sm:px-4 py-2 text-xs tracking-[0.15em] uppercase font-light bg-stone-800 rounded-lg hover:bg-stone-700 transition-all flex items-center justify-center gap-2 min-h-[44px]"
+                      className="px-3 sm:px-4 py-2 text-xs tracking-[0.15em] uppercase font-light bg-stone-800 rounded-lg hover:bg-stone-700 transition-all flex items-center justify-center gap-2 min-h-[44px] touch-manipulation"
                     >
                       <Heart size={14} />
                       <span className="hidden sm:inline">Favorite</span>
                     </button>
                     <button
                       onClick={bulkDelete}
-                      className="px-3 sm:px-4 py-2 text-xs tracking-[0.15em] uppercase font-light bg-red-600 rounded-lg hover:bg-red-700 transition-all flex items-center justify-center gap-2 min-h-[44px] col-span-2 sm:col-span-1"
+                      className="px-3 sm:px-4 py-2 text-xs tracking-[0.15em] uppercase font-light bg-red-600 rounded-lg hover:bg-red-700 transition-all flex items-center justify-center gap-2 min-h-[44px] col-span-2 sm:col-span-1 touch-manipulation"
                     >
                       <Trash2 size={14} />
                       Delete
