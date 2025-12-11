@@ -367,28 +367,27 @@ CRITICAL INSTRUCTIONS:
    - **PRESERVE USER INTENT:** Always include actual descriptive modifications like "curvier body type", "long blonde hair", "athletic build", "darker hair", etc.
    - **DO NOT REMOVE:** User's physical preferences should be in the prompt as descriptive features, not instructions
 
-2. **iPhone 15 Pro (MANDATORY - 95% of prompts):** MUST include "shot on iPhone 15 Pro" OR "amateur cellphone photo" - this creates authentic phone camera aesthetic. Only use focal length alternatives for specific editorial requests.
+2. **iPhone 15 Pro (MANDATORY - 95% of prompts):** MUST include "shot on iPhone 15 Pro" OR "amateur cellphone photo". Only use focal length alternatives for specific editorial requests.
 
-3. **Natural Imperfections (MANDATORY - AT LEAST 3):** MUST include AT LEAST 3 of: "visible sensor noise", "slight motion blur", "uneven lighting", "mixed color temperatures", "handheld feel", "natural camera imperfections" - these prevent plastic-looking images.
+3. **Camera detail (OPTIONAL, pick 0-2):** You MAY include lens/aperture and ISO for realism, e.g., "26mm f/1.8", "ISO 640", "handheld".
 
-4. **Natural Skin Texture (MANDATORY - CRITICAL FOR AUTHENTICITY):** MUST include "natural skin texture with pores visible" AND AT LEAST 2 anti-plastic phrases like "not smooth or airbrushed", "not plastic-looking", "realistic texture", "authentic skin", "not artificially perfect" - prevents AI-looking smooth/plastic skin.
+4. **Natural Imperfections (MANDATORY - AT LEAST 3):** MUST include AT LEAST 3 of: "visible sensor noise", "slight motion blur from handheld", "uneven lighting", "mixed color temperatures", "handheld feel", "natural camera imperfections".
 
-5. **Film Grain (MANDATORY):** MUST include one: "visible film grain", "fine film grain texture", "grainy texture", or "subtle grain visible"
+5. **Natural Skin Texture (MANDATORY - CRITICAL FOR AUTHENTICITY):** MUST include "natural skin texture with pores visible" AND 1–2 of: "not plastic-looking", "organic skin texture", "visible peach fuzz", "slight shine on forehead", "natural blemishes", "subtle facial asymmetry".
 
-6. **Muted Colors (MANDATORY):** MUST include one: "muted color palette", "soft muted tones", "desaturated realistic colors", or "vintage color temperature"
+6. **Film Grain (MANDATORY):** MUST include one: "visible film grain", "fine film grain texture", "grainy texture", or "subtle grain visible"
 
-7. **Lighting with Imperfections (MANDATORY):** NEVER use "soft morning daylight, diffused natural lighting" or "even lighting" without adding imperfection language. MUST include "uneven lighting", "mixed color temperatures", or "slight uneven illumination" in lighting description.
+7. **Muted Colors (MANDATORY):** MUST include one: "muted color palette", "soft muted tones", "desaturated realistic colors", or "vintage color temperature"
 
-8. **Casual Moment Language (RECOMMENDED):** Include "candid moment", "looks like a real phone camera photo", or "amateur cellphone quality"
+8. **Lighting with Imperfections (MANDATORY):** NEVER use "soft morning daylight, diffused natural lighting" or "even lighting" without imperfection language. MUST include "uneven lighting", "mixed color temperatures", or "slight uneven illumination". You MAY add "natural light falloff", "realistic shadow gradient", "slightly overexposed highlights", "warm/cool white balance mix".
 
-9. **Prompt Length:** 30-45 words (optimal range for feature reinforcement + consistency)
-   - **CRITICAL:** Optimal prompts (30-40 words) = best balance of feature reinforcement and facial consistency
-   - Shorter prompts (20-25 words) = May miss important details, risking wrong hair/body/age
-   - Longer prompts (50+ words) = model may lose focus on character features
-   - FLUX T5 encoder optimal at ~256 tokens (~30-40 words)
-   - Hard limit: 45 words maximum - do not exceed this
+9. **iPhone realism traits (OPTIONAL, pick 0-2 to avoid bloat):** "computational photography look", "Smart HDR processing", "RAW processing look", "slight lens distortion", "soft edge vignetting", "subtle chromatic aberration", "slight overexposed highlights", "warm/cool color imbalance".
 
-10. **NO BANNED WORDS:** Never use "stunning", "perfect", "beautiful", "high quality", "8K", "professional photography", "DSLR", "cinematic", "studio lighting", "even lighting", "perfect lighting", "smooth skin", "flawless skin", "airbrushed" - these create AI-looking/plastic results.
+10. **Casual Moment Language (RECOMMENDED):** Include "candid moment", "looks like a real phone camera photo", or "amateur cellphone quality"
+
+11. **Prompt Length:** 50-80 words (optimal range for detailed, high-quality results)
+
+12. **NO BANNED WORDS:** Never use "stunning", "perfect", "beautiful", "high quality", "8K", "professional photography", "DSLR", "cinematic", "studio lighting", "even lighting", "perfect lighting", "smooth skin", "flawless skin", "airbrushed" - these create AI-looking/plastic results.
 
 9. Apply the OUTFIT PRINCIPLE with your FASHION INTELLIGENCE - no boring defaults
 10. Apply the EXPRESSION PRINCIPLE for authentic facial details (expressions, not fixed features)
@@ -406,7 +405,7 @@ CRITICAL INSTRUCTIONS:
 7. **TECHNICAL SPECS** (iPhone + imperfections + skin texture + grain + muted colors - 8-12 words)
 8. **CASUAL MOMENT** (optional - 2-4 words)
 
-**Total target: 30-45 words for optimal face preservation**
+**Total target: 50-80 words for optimal quality and detail**
 
 **IF ANY MANDATORY REQUIREMENT IS MISSING, THE PROMPT WILL PRODUCE AI-LOOKING RESULTS.**
 
@@ -462,7 +461,7 @@ Now apply your fashion intelligence and prompting mastery. Create ${count} conce
         },
       ],
       maxTokens: 4096,
-      temperature: 0.75, // Reduced from 0.85 for more consistent, structured outputs that include all mandatory elements
+      temperature: 0.85, // Restored from 0.75 for more creative, varied concept generation
     })
 
     console.log("[v0] Generated concept text (first 300 chars):", text.substring(0, 300))
@@ -581,11 +580,11 @@ Now apply your fashion intelligence and prompting mastery. Create ${count} conce
       // Clean up after removals
       prompt = prompt.replace(/,\s*,/g, ",").replace(/\s+/g, " ").trim()
 
-      // Get current word count - we want to stay under 45 words
+      // Get current word count - we want to stay under 80 words
       let currentWordCount = wordCount(prompt)
-      const MAX_WORDS = 45 // Hard limit - don't add if we're already at or over this
+      const MAX_WORDS = 80 // Hard limit - don't add if we're already at or over this
 
-      // CRITICAL FIX: If prompt is over 45 words, trim intelligently
+      // CRITICAL FIX: If prompt is over 80 words, trim intelligently
       if (currentWordCount > MAX_WORDS) {
         // Remove less critical elements first (in order of priority to keep)
         // 1. Keep: trigger word, gender, outfit, pose, iPhone, skin texture, imperfections
@@ -656,7 +655,7 @@ Now apply your fashion intelligence and prompting mastery. Create ${count} conce
       
       const imperfectionCount = [hasSensorNoise, hasMotionBlur, hasUnevenLighting, hasHandheld].filter(Boolean).length
       
-      // Only add if we have less than 2 AND we have space (don't push over 45 words)
+      // Only add if we have less than 2 AND we have space (don't push over 80 words)
       if (imperfectionCount < 2 && currentWordCount < MAX_WORDS - 3) {
         const cameraMatch = prompt.match(/(shot on iPhone 15 Pro|amateur cellphone photo[^,]*)/i)
         const additions: string[] = []

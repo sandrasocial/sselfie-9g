@@ -114,7 +114,7 @@ export default function ConceptCard({ concept, chatId, onCreditsUpdate }: Concep
       const customSettings = parsedSettings
         ? {
             ...parsedSettings,
-            extraLoraScale: parsedSettings.realismStrength ?? 0.4,
+            extraLoraScale: parsedSettings.realismStrength ?? 0.1,
           }
         : null
 

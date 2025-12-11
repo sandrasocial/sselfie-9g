@@ -107,12 +107,14 @@ export default function InstagramPhotoCard({
               <p className="text-xs text-stone-500">{concept.category}</p>
             </div>
           </div>
-          <button
-            onClick={() => setShowMenu(!showMenu)}
-            className="p-2 hover:bg-stone-50 rounded-full transition-colors relative"
-            aria-label="More options"
-          >
-            <MoreHorizontal size={20} className="text-stone-950" />
+          <div className="relative">
+            <button
+              onClick={() => setShowMenu(!showMenu)}
+              className="p-2 hover:bg-stone-50 rounded-full transition-colors"
+              aria-label="More options"
+            >
+              <MoreHorizontal size={20} className="text-stone-950" />
+            </button>
             {showMenu && (
               <div className="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-2xl border border-stone-200 py-2 w-48 z-10">
                 {onAnimate && (
@@ -146,7 +148,7 @@ export default function InstagramPhotoCard({
                 </button>
               </div>
             )}
-          </button>
+          </div>
         </div>
 
         {/* Instagram Image */}

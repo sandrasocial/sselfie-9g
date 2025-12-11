@@ -182,7 +182,7 @@ export async function POST(request: NextRequest) {
 
     if (qualitySettings.extra_lora) {
       predictionInput.extra_lora = qualitySettings.extra_lora
-      predictionInput.extra_lora_scale = qualitySettings.extra_lora_scale || 0.6
+      predictionInput.extra_lora_scale = qualitySettings.extra_lora_scale || 0.1
     }
 
     const prediction = await replicate.predictions.create({
