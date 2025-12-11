@@ -1221,11 +1221,12 @@ export async function POST(request: NextRequest) {
                 `
                 
                 // Re-fetch subscription
-                [sub] = await sql`
+                const result = await sql`
                   SELECT user_id, product_type, current_period_start
                   FROM subscriptions
                   WHERE stripe_subscription_id = ${subscriptionId}
                 `
+                sub = result[0] || null
                 console.log(`[v0] ✅ Created subscription record from Stripe data for user ${userId}`)
               }
             }
