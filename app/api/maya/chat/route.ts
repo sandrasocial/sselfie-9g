@@ -1,6 +1,6 @@
 import { streamText } from "ai"
 import { MAYA_SYSTEM_PROMPT } from "@/lib/maya/personality"
-import { getUserByAuthId } from "@/lib/user-mapping"
+import { getEffectiveNeonUser } from "@/lib/simple-impersonation"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
@@ -22,7 +22,7 @@ export async function POST(req: Request) {
     }
 
     const userId = authUser.id
-    const user = await getUserByAuthId(userId)
+    const user = await getEffectiveNeonUser(userId)
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
@@ -149,7 +149,7 @@ export async function POST(req: Request) {
     )
     console.log("[v0] User:", user.email, "ID:", user.id)
 
-    // Get user context for personalization
+    // Get user context for personalization (uses effective user ID for impersonation support)
     const userContext = await getUserContextForMaya(userId)
 
     let userGender = "person"

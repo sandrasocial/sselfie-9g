@@ -39,7 +39,8 @@ export async function POST(request: NextRequest) {
     console.log("[v0] Image description:", imageDescription)
     console.log("[v0] ================================================")
 
-    const neonUser = await getUserByAuthId(user.id)
+    const { getEffectiveNeonUser } = await import("@/lib/simple-impersonation")
+    const neonUser = await getEffectiveNeonUser(user.id)
     if (!neonUser) {
       console.log("[v0] ❌ User not found in Neon database")
       return NextResponse.json({ error: "User not found in database" }, { status: 404 })

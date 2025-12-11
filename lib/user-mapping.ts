@@ -178,7 +178,7 @@ export async function getUserByAuthId(authId: string): Promise<NeonUser | null> 
 
 /**
  * Get current user's Neon database ID from Supabase auth session
- * Returns the Neon user ID (string) or null if not authenticated
+ * Returns null if not authenticated
  */
 export async function getUserId(): Promise<string | null> {
   try {

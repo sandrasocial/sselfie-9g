@@ -27,7 +27,8 @@ export async function POST(request: NextRequest) {
       brandVibe,
     })
 
-    const neonUser = await getUserByAuthId(user.id)
+    const { getEffectiveNeonUser } = await import("@/lib/simple-impersonation")
+    const neonUser = await getEffectiveNeonUser(user.id)
     if (!neonUser) {
       console.error("[v0] [FEED-PROMPT] User not found in database")
       return NextResponse.json({ error: "User not found in database" }, { status: 404 })

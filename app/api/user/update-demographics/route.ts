@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
-import { getUserByAuthId } from "@/lib/user-mapping"
+import { getEffectiveNeonUser } from "@/lib/simple-impersonation"
 
 export async function POST(request: Request) {
   try {
@@ -11,7 +11,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const dbUser = await getUserByAuthId(user.id)
+    const dbUser = await getEffectiveNeonUser(user.id)
     if (!dbUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }

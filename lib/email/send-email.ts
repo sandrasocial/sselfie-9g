@@ -1,6 +1,7 @@
 // Email sending utilities using Resend
 import { Resend } from "resend"
 import { checkEmailRateLimit } from "@/lib/rate-limit"
+import { neon } from "@neondatabase/serverless"
 
 export interface EmailOptions {
   to: string | string[]
@@ -10,9 +11,22 @@ export interface EmailOptions {
   from?: string
   replyTo?: string
   tags?: string[]
+  emailType?: string // Optional: type of email for logging (e.g., 'welcome', 'campaign', 'feedback')
 }
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+const sql = neon(process.env.DATABASE_URL!)
+
+// Initialize Resend client - will be null if API key is missing
+let resend: Resend | null = null
+try {
+  if (process.env.RESEND_API_KEY) {
+    resend = new Resend(process.env.RESEND_API_KEY)
+  } else {
+    console.error("[v0] ⚠️ RESEND_API_KEY environment variable is not set!")
+  }
+} catch (error) {
+  console.error("[v0] ⚠️ Failed to initialize Resend client:", error)
+}
 
 async function sendEmailWithRetry(
   options: EmailOptions,
@@ -31,6 +45,21 @@ async function sendEmailWithRetry(
         textLength: options.text?.length || 0,
       })
 
+      // Validate Resend API key and client
+      if (!process.env.RESEND_API_KEY) {
+        lastError = "RESEND_API_KEY environment variable is not set"
+        console.error(`[v0] ❌ Resend API key missing - cannot send email`)
+        break
+      }
+
+      if (!resend) {
+        lastError = "Resend client not initialized"
+        console.error(`[v0] ❌ Resend client not initialized - cannot send email`)
+        break
+      }
+
+      console.log(`[v0] 📧 Attempting to send email via Resend...`)
+
       const { data, error } = await resend.emails.send({
         from: options.from || "SSelfie <hello@sselfie.ai>",
         to: Array.isArray(options.to) ? options.to : [options.to],
@@ -43,7 +72,7 @@ async function sendEmailWithRetry(
 
       if (error) {
         lastError = error.message || "Failed to send email"
-        console.error(`[v0] Resend error (attempt ${attempt}):`, error)
+        console.error(`[v0] Resend error (attempt ${attempt}):`, JSON.stringify(error, null, 2))
 
         // Don't retry on certain errors
         if (error.message?.includes("Invalid") || error.message?.includes("not found")) {
@@ -59,7 +88,11 @@ async function sendEmailWithRetry(
         continue
       }
 
-      console.log("[v0] Email sent successfully:", data?.id)
+      console.log("[v0] ✅ Email sent successfully via Resend:", {
+        messageId: data?.id,
+        to: options.to,
+        subject: options.subject,
+      })
       return {
         success: true,
         messageId: data?.id,
@@ -81,21 +114,69 @@ async function sendEmailWithRetry(
   }
 }
 
+/**
+ * Log email send attempt to email_logs table
+ * This is non-blocking - errors are logged but don't affect email sending
+ */
+async function logEmailSend(
+  userEmail: string,
+  emailType: string,
+  status: "sent" | "delivered" | "failed" | "error",
+  resendMessageId?: string,
+  errorMessage?: string,
+): Promise<void> {
+  try {
+    await sql`
+      INSERT INTO email_logs (
+        user_email,
+        email_type,
+        resend_message_id,
+        status,
+        error_message,
+        sent_at
+      )
+      VALUES (
+        ${userEmail},
+        ${emailType},
+        ${resendMessageId || null},
+        ${status},
+        ${errorMessage || null},
+        NOW()
+      )
+    `
+  } catch (error) {
+    // Log error but don't throw - email logging should never break email sending
+    console.error("[v0] Failed to log email to database:", error)
+  }
+}
+
 export async function sendEmail(
   options: EmailOptions,
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   const recipient = Array.isArray(options.to) ? options.to[0] : options.to
+  const emailType = options.emailType || "general"
   const rateLimit = await checkEmailRateLimit(recipient)
 
   if (!rateLimit.success) {
     console.log(`[v0] Email rate limit exceeded for ${recipient}, skipping send`)
+    // Log rate limit as failed
+    await logEmailSend(recipient, emailType, "failed", undefined, "Rate limit exceeded")
     return {
       success: false,
       error: `Rate limit exceeded. Please try again in ${Math.ceil((rateLimit.reset - Date.now()) / 1000 / 60)} minutes.`,
     }
   }
 
-  return sendEmailWithRetry(options, 3)
+  const result = await sendEmailWithRetry(options, 3)
+
+  // Log the email send result (non-blocking)
+  if (result.success) {
+    await logEmailSend(recipient, emailType, "sent", result.messageId)
+  } else {
+    await logEmailSend(recipient, emailType, "failed", undefined, result.error)
+  }
+
+  return result
 }
 
 export async function sendBulkEmails(

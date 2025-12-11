@@ -46,19 +46,28 @@ async function generatePhotoshootPoseVariations({
       /\bdon't\s+change\s+the\s+face\b/gi,
       /\bkeep my\b/gi,
       /\bkeep\s+my\s+natural\s+features\b/gi,
-      /\bkeep\s+my\s+natural\s+hair\s+color\b/gi,
       /\bkeep\s+my\s+natural\s+eye\s+color\b/gi,
-      /\bkeep\s+my\s+natural\s+hair\b/gi,
       /\bkeep\s+my\s+natural\s+eyes\b/gi,
       /\bpreserve my\b/gi,
       /\bmaintain my\b/gi,
       /\bdo not change\b/gi,
       /\bdo\s+not\s+change\s+the\s+face\b/gi,
+      // Special handling for hair color - preserve intent
+      /\bkeep\s+my\s+natural\s+hair\s+color\b/gi,  // Will preserve intent below
+      /\bkeep\s+my\s+natural\s+hair\b/gi,  // Will preserve intent below
     ]
+    
+    // Check if user wants to preserve natural hair color
+    const hasNaturalHairColor = /\b(?:keep\s+my\s+natural\s+hair\s+color|keep\s+my\s+natural\s+hair)\b/gi.test(cleanedPreferences)
     
     instructionPhrases.forEach((regex) => {
       cleanedPreferences = cleanedPreferences.replace(regex, "")
     })
+    
+    // If user specified "keep natural hair color" and no color is mentioned, preserve the intent
+    if (hasNaturalHairColor && !/\b(blonde|brown|black|red|gray|grey|auburn|brunette|hair\s+color)\b/gi.test(cleanedPreferences)) {
+      cleanedPreferences = "natural hair color, " + cleanedPreferences
+    }
     
     // Clean up commas and spaces
     cleanedPreferences = cleanedPreferences
@@ -274,7 +283,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Hero image and prompt are required" }, { status: 400 })
     }
 
-    const neonUser = await getUserByAuthId(user.id)
+    const { getEffectiveNeonUser } = await import("@/lib/simple-impersonation")
+    const neonUser = await getEffectiveNeonUser(user.id)
     if (!neonUser) {
       return NextResponse.json({ error: "User not found in database" }, { status: 404 })
     }

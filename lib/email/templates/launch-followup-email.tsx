@@ -108,7 +108,7 @@ export function generateLaunchFollowupEmail(params: LaunchFollowupEmailParams): 
                 S S E L F I E
               </h1>
               <p style="margin: 0 0 12px; color: #57534e; font-size: 13px; font-weight: 300; line-height: 1.6; text-align: center;">
-                Questions? Just reply—I read every message.
+                Questions? Just reply-I read every message.
               </p>
               <p style="margin: 0; color: #57534e; font-size: 13px; font-weight: 300; text-align: center;">
                 XoXo Sandra 💋

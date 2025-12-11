@@ -16,7 +16,8 @@ export async function GET(request: NextRequest) {
 
     console.log("[v0] Supabase user ID:", user.id)
 
-    const neonUser = await getUserByAuthId(user.id)
+    const { getEffectiveNeonUser } = await import("@/lib/simple-impersonation")
+    const neonUser = await getEffectiveNeonUser(user.id)
 
     if (!neonUser) {
       console.log("[v0] No Neon user found for auth user:", user.id)

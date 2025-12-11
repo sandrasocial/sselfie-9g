@@ -109,9 +109,21 @@ export async function POST(request: NextRequest) {
         console.log("[v0] 🎉 Checkout session completed!")
         console.log("[v0] Session ID:", session.id)
         console.log("[v0] Mode:", session.mode)
+        console.log("[v0] Payment status:", session.payment_status)
         console.log("[v0] Customer email:", session.customer_details?.email || session.customer_email)
         console.log("[v0] Metadata:", session.metadata)
         console.log("[v0] Test mode:", !event.livemode ? "YES (TEST)" : "NO (PRODUCTION)")
+
+        // ⚠️ IMPORTANT: Only grant credits if payment was successful
+        // For subscriptions, credits should be granted via invoice.payment_succeeded instead
+        // to ensure payment is confirmed before granting credits
+        const isPaymentPaid = session.payment_status === "paid"
+        
+        if (!isPaymentPaid && session.mode === "subscription") {
+          console.log(`[v0] ⚠️ Subscription checkout completed but payment status is '${session.payment_status}'. Credits will be granted when invoice.payment_succeeded fires.`)
+        } else if (!isPaymentPaid) {
+          console.log(`[v0] ⚠️ Payment not confirmed (status: '${session.payment_status}'). Skipping credit grant.`)
+        }
 
         const customerEmail = session.customer_details?.email || session.customer_email
         if (customerEmail) {
@@ -128,6 +140,38 @@ export async function POST(request: NextRequest) {
               productTag = "studio-membership"
             } else if (productType === "credit_topup") {
               productTag = "credit-topup"
+            }
+
+            // Track conversion attribution if campaign_id is present
+            const campaignId = session.metadata.campaign_id
+            if (campaignId) {
+              try {
+                const campaignIdNum = parseInt(campaignId, 10)
+                if (!isNaN(campaignIdNum)) {
+                  // Update campaign conversion metrics
+                  await sql`
+                    UPDATE admin_email_campaigns
+                    SET 
+                      total_converted = COALESCE(total_converted, 0) + 1,
+                      updated_at = NOW()
+                    WHERE id = ${campaignIdNum}
+                  `
+                  
+                  // Log conversion in email_logs
+                  await sql`
+                    INSERT INTO email_logs (
+                      user_email, email_type, resend_message_id, status, sent_at
+                    ) VALUES (
+                      ${customerEmail}, 'campaign_conversion', NULL, 'converted', NOW()
+                    )
+                  `
+                  
+                  console.log(`[v0] ✅ Attributed conversion to campaign ${campaignIdNum} for ${customerEmail}`)
+                }
+              } catch (convError) {
+                console.error(`[v0] Error tracking conversion attribution:`, convError)
+                // Don't fail the webhook if attribution fails
+              }
             }
 
             const resendResult = await addOrUpdateResendContact(customerEmail, firstName, {
@@ -543,7 +587,22 @@ export async function POST(request: NextRequest) {
             console.log(`[v0] No customer ID in session for payment mode - session.customer:`, session.customer)
           }
 
-          if (productType === "one_time_session") {
+          // ⚠️ IMPORTANT: For subscriptions, do NOT grant credits here!
+          // Subscription credits should ONLY be granted via invoice.payment_succeeded
+          // to ensure payment is confirmed before granting credits
+          if (productType === "sselfie_studio_membership" && session.mode === "subscription") {
+            console.log(
+              `[v0] ⚠️ Subscription checkout completed. Credits will be granted when invoice.payment_succeeded fires (after payment confirmation).`,
+            )
+          } else if (!event.livemode) {
+            console.log(
+              `[v0] ⚠️ Skipping credit grant - this is a TEST MODE payment. Credits are only granted for real (production) payments.`,
+            )
+          } else if (!isPaymentPaid) {
+            console.log(
+              `[v0] ⚠️ Skipping credit grant - payment not confirmed (status: '${session.payment_status}').`,
+            )
+          } else if (productType === "one_time_session") {
             console.log(`[v0] One-time session purchase for user ${userId}`)
             await grantOneTimeSessionCredits(userId)
             console.log(`[v0] One-time session credits granted for user ${userId}`)
@@ -582,9 +641,21 @@ export async function POST(request: NextRequest) {
                 userId = neonUser.id
                 console.log(`[v0] Linked existing Supabase user to Neon user ${userId}`)
 
+                // ⚠️ IMPORTANT: Do NOT grant subscription credits here!
+                // Subscription credits should ONLY be granted via invoice.payment_succeeded
+                // to ensure payment is confirmed before granting credits
                 if (productType === "sselfie_studio_membership") {
-                  console.log(`[v0] Granting ${credits} monthly credits to existing user ${userId}`)
-                  await grantMonthlyCredits(userId, "sselfie_studio_membership", !event.livemode)
+                  console.log(
+                    `[v0] Subscription checkout completed. Credits will be granted when invoice.payment_succeeded fires (after payment confirmation).`,
+                  )
+                } else if (!event.livemode) {
+                  console.log(
+                    `[v0] ⚠️ Skipping credit grant - this is a TEST MODE payment. Credits are only granted for real (production) payments.`,
+                  )
+                } else if (!isPaymentPaid) {
+                  console.log(
+                    `[v0] ⚠️ Skipping credit grant - payment not confirmed (status: '${session.payment_status}').`,
+                  )
                 }
 
                 if (session.subscription) {
@@ -696,10 +767,21 @@ export async function POST(request: NextRequest) {
                 `
                 console.log(`[v0] Set password_setup_complete to FALSE for new user ${userId}`)
 
+                // ⚠️ IMPORTANT: Do NOT grant subscription credits here!
+                // Subscription credits should ONLY be granted via invoice.payment_succeeded
+                // to ensure payment is confirmed before granting credits
                 if (productType === "sselfie_studio_membership") {
-                  console.log(`[v0] Step 6.5: Granting ${credits} monthly credits to new user ${userId}`)
-                  await grantMonthlyCredits(userId, "sselfie_studio_membership", !event.livemode)
-                  console.log(`[v0] Successfully granted ${credits} credits to user ${userId}`)
+                  console.log(
+                    `[v0] Subscription checkout completed for new user. Credits will be granted when invoice.payment_succeeded fires (after payment confirmation).`,
+                  )
+                } else if (!event.livemode) {
+                  console.log(
+                    `[v0] ⚠️ Skipping credit grant - this is a TEST MODE payment. Credits are only granted for real (production) payments.`,
+                  )
+                } else if (!isPaymentPaid) {
+                  console.log(
+                    `[v0] ⚠️ Skipping credit grant - payment not confirmed (status: '${session.payment_status}').`,
+                  )
                 }
 
                 let passwordSetupLink = resetData.properties.action_link
@@ -897,9 +979,21 @@ export async function POST(request: NextRequest) {
           } else {
             console.log("[v0] Subscription checkout completed for existing user")
 
+            // ⚠️ IMPORTANT: Do NOT grant subscription credits here!
+            // Subscription credits should ONLY be granted via invoice.payment_succeeded
+            // to ensure payment is confirmed before granting credits
             if (userId && productType === "sselfie_studio_membership") {
-              console.log(`[v0] Granting ${credits} credits for subscription creation`)
-              await grantMonthlyCredits(userId, "sselfie_studio_membership", !event.livemode)
+              console.log(
+                `[v0] Subscription checkout completed. Credits will be granted when invoice.payment_succeeded fires (after payment confirmation).`,
+              )
+            } else if (!event.livemode) {
+              console.log(
+                `[v0] ⚠️ Skipping credit grant - this is a TEST MODE payment. Credits are only granted for real (production) payments.`,
+              )
+            } else if (!isPaymentPaid) {
+              console.log(
+                `[v0] ⚠️ Skipping credit grant - payment not confirmed (status: '${session.payment_status}').`,
+              )
 
               if (session.subscription) {
                 const subscriptionData = await stripe.subscriptions.retrieve(session.subscription as string)
@@ -995,6 +1089,14 @@ export async function POST(request: NextRequest) {
         }
 
         console.log(`[v0] Subscription created: ${productType} for user ${userId}`)
+        console.log(`[v0] Event livemode: ${event.livemode ? "PRODUCTION" : "TEST MODE"}`)
+        
+        // ⚠️ IMPORTANT: Do NOT grant credits here!
+        // subscription.created fires BEFORE payment is confirmed.
+        // Credits should ONLY be granted when:
+        // 1. invoice.payment_succeeded (for monthly renewals and first payment)
+        // 2. checkout.session.completed with payment_status === 'paid' (for initial subscription)
+        console.log(`[v0] Subscription record created. Credits will be granted when payment is confirmed via invoice.payment_succeeded`)
 
         const existingSubscription = await sql`
           SELECT id FROM subscriptions WHERE user_id = ${userId} LIMIT 1
@@ -1043,11 +1145,7 @@ export async function POST(request: NextRequest) {
           `
         }
 
-        if (productType === "sselfie_studio_membership") {
-          console.log(`[v0] Granting ${credits} credits for subscription creation`)
-          await grantMonthlyCredits(userId, "sselfie_studio_membership", !event.livemode)
-        }
-
+        // Credits for subscription creation are handled above (already checked livemode)
         break
       }
 
@@ -1059,23 +1157,197 @@ export async function POST(request: NextRequest) {
           break
         }
 
-        const subscriptionId = invoice.subscription
+        const subscriptionId =
+          typeof invoice.subscription === "string" ? invoice.subscription : invoice.subscription?.id
 
-        const [sub] = await sql`
-          SELECT user_id, product_type
+        if (!subscriptionId) {
+          console.log("[v0] Invoice has no subscription ID - skipping")
+          break
+        }
+
+        console.log(`[v0] Processing invoice payment for subscription: ${subscriptionId}`)
+        console.log(`[v0] Invoice billing_reason: ${invoice.billing_reason || "N/A"}`)
+
+        // Try to find subscription in database
+        let [sub] = await sql`
+          SELECT user_id, product_type, current_period_start
           FROM subscriptions
           WHERE stripe_subscription_id = ${subscriptionId}
         `
 
+        // If subscription not found, try to create it from Stripe data
+        if (!sub && invoice.subscription) {
+          console.log(`[v0] ⚠️ Subscription not found in database, retrieving from Stripe...`)
+          try {
+            const subscription = typeof invoice.subscription === "string" 
+              ? await stripe.subscriptions.retrieve(invoice.subscription)
+              : invoice.subscription
+
+            // Look up user by customer email or ID
+            const customerId = typeof subscription.customer === "string" 
+              ? subscription.customer 
+              : subscription.customer?.id
+            const customer = await stripe.customers.retrieve(customerId)
+            
+            if (customer && !customer.deleted && customer.email) {
+              const users = await sql`
+                SELECT id FROM users WHERE email = ${customer.email} LIMIT 1
+              `
+              
+              if (users.length > 0) {
+                const userId = users[0].id
+                const productType = subscription.metadata.product_type || "sselfie_studio_membership"
+                
+                // Create subscription record
+                await sql`
+                  INSERT INTO subscriptions (
+                    user_id, product_type, plan, status, 
+                    stripe_subscription_id, stripe_customer_id,
+                    current_period_start, current_period_end,
+                    is_test_mode
+                  )
+                  VALUES (
+                    ${userId}, ${productType}, ${productType}, ${subscription.status},
+                    ${subscription.id}, ${customerId},
+                    to_timestamp(${subscription.current_period_start}),
+                    to_timestamp(${subscription.current_period_end}),
+                    ${!event.livemode}
+                  )
+                  ON CONFLICT (stripe_subscription_id) DO UPDATE SET
+                    status = ${subscription.status},
+                    current_period_start = to_timestamp(${subscription.current_period_start}),
+                    current_period_end = to_timestamp(${subscription.current_period_end}),
+                    updated_at = NOW()
+                `
+                
+                // Re-fetch subscription
+                [sub] = await sql`
+                  SELECT user_id, product_type, current_period_start
+                  FROM subscriptions
+                  WHERE stripe_subscription_id = ${subscriptionId}
+                `
+                console.log(`[v0] ✅ Created subscription record from Stripe data for user ${userId}`)
+              }
+            }
+          } catch (error: any) {
+            console.error(`[v0] ❌ Error creating subscription from Stripe:`, error.message)
+          }
+        }
+
         if (!sub) {
-          console.log(`[v0] No subscription found in database for ${subscriptionId}`)
+          console.log(`[v0] ⚠️ No subscription found in database for ${subscriptionId} and could not create it. Skipping credit grant.`)
           break
         }
 
-        console.log(`[v0] Monthly renewal for user ${sub.user_id}, product: ${sub.product_type}`)
+        console.log(`[v0] Invoice payment succeeded for user ${sub.user_id}, product: ${sub.product_type}`)
+        console.log(`[v0] Invoice ID: ${invoice.id}`)
+        console.log(`[v0] Invoice amount: ${invoice.amount_paid / 100} ${invoice.currency?.toUpperCase()}`)
+        console.log(`[v0] Payment status: ${invoice.status}`)
+        console.log(`[v0] Event livemode: ${event.livemode ? "PRODUCTION" : "TEST MODE"}`)
+        
+        // ⚠️ CRITICAL: Only grant credits if invoice payment was actually successful
+        if (invoice.status !== "paid") {
+          console.log(
+            `[v0] ⚠️ Invoice status is '${invoice.status}', not 'paid'. Skipping credit grant.`,
+          )
+          break
+        }
+        
+        // Verify payment was actually received (not just invoiced)
+        if (!invoice.status_transitions?.paid_at) {
+          console.log(`[v0] ⚠️ Invoice has no paid_at timestamp. Skipping credit grant.`)
+          break
+        }
+        
+        const paidAt = new Date(invoice.status_transitions.paid_at * 1000)
+        console.log(`[v0] Payment confirmed at: ${paidAt.toISOString()}`)
 
-        await grantMonthlyCredits(sub.user_id, sub.product_type)
-        console.log(`[v0] ✅ Monthly credits granted to user ${sub.user_id}`)
+        // Skip granting credits for test mode payments
+        if (!event.livemode) {
+          console.log(
+            `[v0] ⚠️ Skipping credit grant - this is a TEST MODE payment. Credits are only granted for real (production) payments.`,
+          )
+        } else {
+          // Check if we've already granted credits for this billing period (idempotency)
+          const invoicePeriodStart = invoice.period_start
+            ? new Date(invoice.period_start * 1000)
+            : null
+
+          if (invoicePeriodStart && sub.current_period_start) {
+            const dbPeriodStart = new Date(sub.current_period_start)
+            // Check if we've already granted credits for this period
+            const recentGrants = await sql`
+              SELECT COUNT(*) as count
+              FROM credit_transactions
+              WHERE user_id = ${sub.user_id}
+              AND transaction_type = 'subscription_grant'
+              AND created_at >= ${dbPeriodStart}
+              AND created_at <= NOW()
+            `
+
+            if (recentGrants[0]?.count > 0) {
+              console.log(
+                `[v0] ⚠️ Credits already granted for this billing period (${recentGrants[0].count} grant(s) found). Skipping to prevent duplicates.`,
+              )
+            } else {
+              // Only grant credits for studio membership subscriptions
+              if (sub.product_type === "sselfie_studio_membership") {
+                try {
+                  console.log(`[v0] Granting monthly credits for ${sub.product_type} to user ${sub.user_id}`)
+                  const result = await grantMonthlyCredits(
+                    sub.user_id,
+                    "sselfie_studio_membership",
+                    false, // Always false for production payments
+                  )
+                  if (result.success) {
+                    console.log(
+                      `[v0] ✅ Monthly credits granted to user ${sub.user_id}. New balance: ${result.newBalance}`,
+                    )
+                  } else {
+                    console.error(
+                      `[v0] ❌ Failed to grant monthly credits to user ${sub.user_id}: ${result.error}`,
+                    )
+                  }
+                } catch (creditError: any) {
+                  console.error(
+                    `[v0] ❌ Error granting monthly credits to user ${sub.user_id}:`,
+                    creditError.message,
+                  )
+                  console.error(`[v0] Error stack:`, creditError.stack)
+                  // Don't break the webhook - continue to update subscription period
+                }
+              } else {
+                console.log(`[v0] Skipping credit grant - product type is ${sub.product_type}, not studio membership`)
+              }
+            }
+          } else {
+            // If we can't determine the period, grant anyway (might be first invoice)
+            if (sub.product_type === "sselfie_studio_membership") {
+              try {
+                console.log(`[v0] Granting monthly credits (no period check) for ${sub.product_type} to user ${sub.user_id}`)
+                const result = await grantMonthlyCredits(
+                  sub.user_id,
+                  "sselfie_studio_membership",
+                  false, // Always false for production payments
+                )
+                if (result.success) {
+                  console.log(
+                    `[v0] ✅ Monthly credits granted to user ${sub.user_id}. New balance: ${result.newBalance}`,
+                  )
+                } else {
+                  console.error(
+                    `[v0] ❌ Failed to grant monthly credits to user ${sub.user_id}: ${result.error}`,
+                  )
+                }
+              } catch (creditError: any) {
+                console.error(
+                  `[v0] ❌ Error granting monthly credits to user ${sub.user_id}:`,
+                  creditError.message,
+                )
+              }
+            }
+          }
+        }
 
         // Update subscription period
         const subscription = await stripe.subscriptions.retrieve(invoice.subscription)

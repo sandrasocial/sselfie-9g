@@ -86,31 +86,33 @@ export default function AdminAgentChat({ userId, userName, userEmail }: AdminAge
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
 
   const { messages, sendMessage, status, setMessages } = useChat({
-    id: currentChatId ? String(currentChatId) : undefined, // This ensures chat continuity
+    id: currentChatId ? String(currentChatId) : undefined,
     transport: new DefaultChatTransport({ api: "/api/admin/agent/chat" }),
-    initialMessages: [],
     body: {
-      chatId: currentChatId, // Keep this for backend compatibility
+      chatId: currentChatId,
       userId,
     },
-    experimental_onToolCall: async (toolCall) => {
-      if (toolCall.toolName === 'web_search') {
-        setResearchStatus('Searching web and social media...')
-      } else if (toolCall.toolName === 'instagram_research') {
-        setResearchStatus('Analyzing Instagram content and trends...')
+    onResponse: async (response) => {
+      const chatIdHeader = response.headers.get('X-Chat-Id')
+      if (chatIdHeader) {
+        const newChatId = parseInt(chatIdHeader)
+        if (!currentChatId || currentChatId !== newChatId) {
+          console.log('[v0] 🔄 Setting chat ID to:', newChatId)
+          setCurrentChatId(newChatId)
+          await loadChats()
+        }
       }
-      return undefined
     },
-    onFinish: async (message) => {
+    onError: (error) => {
+      console.error("[v0] Chat error:", error)
+      toast({
+        title: "Chat Error",
+        description: error.message || "An error occurred",
+        variant: "destructive"
+      })
+    },
+    onFinish: async () => {
       setResearchStatus(null)
-      
-      const content = getMessageContent(message)
-      if (content.includes('Caption:') || content.includes('Post Type:')) {
-        setLatestGeneration({ type: 'content', data: parseContentCalendar(content) })
-      } else if (content.includes('Subject:') && content.includes('xo Sandra')) {
-        setLatestGeneration({ type: 'email', data: content })
-      }
-
       await loadChats()
     },
   })
@@ -140,9 +142,11 @@ export default function AdminAgentChat({ userId, userName, userEmail }: AdminAge
     try {
       console.log("[v0] Loading chat:", chatIdToLoad)
       
-      await new Promise(resolve => setTimeout(resolve, 300))
-      
+      // Set chat ID first so useChat knows which chat we're working with
       setCurrentChatId(chatIdToLoad)
+      
+      // Small delay to ensure state updates
+      await new Promise(resolve => setTimeout(resolve, 100))
       
       const response = await fetch(`/api/admin/agent/chat?chatId=${chatIdToLoad}`)
       
@@ -155,13 +159,22 @@ export default function AdminAgentChat({ userId, userName, userEmail }: AdminAge
       
       if (response.ok) {
         const data = await response.json()
-        console.log("[v0] Loaded chat messages:", data.messages?.length || 0)
+        const loadedMessages = data.messages || []
+        console.log("[v0] Loaded chat messages:", loadedMessages.length)
         
         if (data.warning) {
           console.log('[v0] ⚠️', data.warning)
         }
         
-        setMessages(data.messages || [])
+        // Ensure messages are properly formatted and ordered
+        const formattedMessages = loadedMessages.map((msg: any) => ({
+          id: msg.id || String(Date.now() + Math.random()),
+          role: msg.role,
+          content: msg.content || '',
+        }))
+        
+        // Set messages in useChat - this will sync with the hook's state
+        setMessages(formattedMessages)
         
         const chatInfo = chats.find(c => c.id === chatIdToLoad)
         setCurrentMode(chatInfo?.agent_mode || null)
@@ -170,7 +183,7 @@ export default function AdminAgentChat({ userId, userName, userEmail }: AdminAge
         
         toast({
           title: "Chat Loaded",
-          description: `Loaded ${data.messages?.length || 0} messages`,
+          description: `Loaded ${formattedMessages.length} messages`,
         })
       } else {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
@@ -180,8 +193,15 @@ export default function AdminAgentChat({ userId, userName, userEmail }: AdminAge
     } catch (error: any) {
       console.error("[v0] Error loading chat:", error.message || error)
       
+      // Reset on error
       setMessages([])
       setCurrentChatId(chatIdToLoad)
+      
+      toast({
+        title: "Error Loading Chat",
+        description: error.message || "Failed to load chat",
+        variant: "destructive"
+      })
     }
   }
 
@@ -231,13 +251,23 @@ export default function AdminAgentChat({ userId, userName, userEmail }: AdminAge
       }
       
       messageContent = contentParts
-      
-      console.log('[v0] Sending multimodal message:', contentParts.length, 'parts')
     }
     
-    await sendMessage({ role: "user", content: messageContent })
+    console.log('[v0] 📤 Sending message to chat:', currentChatId || 'NEW CHAT')
     
-    // The chatId is now properly maintained by the useChat hook with the `id` prop
+    try {
+      await sendMessage({ 
+        role: "user", 
+        content: messageContent 
+      })
+    } catch (error: any) {
+      console.error('[v0] ❌ Error sending message:', error)
+      toast({
+        title: "Error Sending Message",
+        description: error.message || "Failed to send message",
+        variant: "destructive"
+      })
+    }
   }
 
   const handleSaveToCalendar = async () => {

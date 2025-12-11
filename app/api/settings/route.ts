@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
-import { getUserByAuthId } from "@/lib/user-mapping"
+import { getEffectiveNeonUser } from "@/lib/simple-impersonation"
 import { sql } from "@/lib/neon"
 
 export async function GET() {
@@ -20,7 +20,7 @@ export async function GET() {
 
     console.log("[v0] Settings API: Auth user ID:", user.id)
 
-    const neonUser = await getUserByAuthId(user.id)
+    const neonUser = await getEffectiveNeonUser(user.id)
     if (!neonUser) {
       console.log("[v0] Settings API: User not found in Neon")
       return NextResponse.json({ error: "User not found" }, { status: 404 })
@@ -74,7 +74,7 @@ export async function POST(request: Request) {
 
     console.log("[v0] Settings API: Auth user ID:", user.id)
 
-    const neonUser = await getUserByAuthId(user.id)
+    const neonUser = await getEffectiveNeonUser(user.id)
     if (!neonUser) {
       console.log("[v0] Settings API: User not found in Neon")
       return NextResponse.json({ error: "User not found" }, { status: 404 })

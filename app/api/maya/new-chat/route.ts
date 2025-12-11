@@ -11,7 +11,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const dbUser = await getUserByAuthId(user.id)
+    const { getEffectiveNeonUser } = await import("@/lib/simple-impersonation")
+    const dbUser = await getEffectiveNeonUser(user.id)
     if (!dbUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }

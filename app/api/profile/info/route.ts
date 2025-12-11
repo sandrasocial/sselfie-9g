@@ -21,7 +21,8 @@ export async function GET() {
 
     console.log("[v0] Profile info: Auth user ID:", authUser.id)
 
-    const neonUser = await getUserByAuthId(authUser.id)
+    const { getEffectiveNeonUser } = await import("@/lib/simple-impersonation")
+    const neonUser = await getEffectiveNeonUser(authUser.id)
     if (!neonUser) {
       console.log("[v0] Profile info: Neon user not found")
       return NextResponse.json({ error: "User not found" }, { status: 404 })

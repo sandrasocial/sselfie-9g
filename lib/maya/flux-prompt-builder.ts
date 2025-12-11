@@ -76,10 +76,12 @@ export class FluxPromptBuilder {
       realismKeywords,
     }
 
-    // Clean physical preferences - remove instruction phrases
+    // Clean physical preferences - remove instruction phrases but preserve user intent
     let cleanedPhysicalPreferences = ""
     if (physicalPreferences) {
       cleanedPhysicalPreferences = physicalPreferences
+      
+      // Remove instruction phrases but preserve descriptive content
       const instructionPhrases = [
         /\bAlways keep my\b/gi,
         /\bdont change\b/gi,
@@ -90,15 +92,24 @@ export class FluxPromptBuilder {
         /\bkeep\s+my\s+natural\s+features\b/gi,
         /\bdont\s+change\s+the\s+face\b/gi,
         /\bdon't\s+change\s+the\s+face\b/gi,
-        /\bkeep\s+my\s+natural\s+hair\s+color\b/gi,
+        // Special handling: "keep my natural hair color" → convert to descriptive, don't just remove
+        /\bkeep\s+my\s+natural\s+hair\s+color\b/gi,  // Will be handled specially below
         /\bkeep\s+my\s+natural\s+eye\s+color\b/gi,
-        /\bkeep\s+my\s+natural\s+hair\b/gi,
+        /\bkeep\s+my\s+natural\s+hair\b/gi,  // Will be handled specially below
         /\bkeep\s+my\s+natural\s+eyes\b/gi,
       ]
+      
+      // Check if user wants to preserve natural hair color
+      const hasNaturalHairColor = /\b(?:keep\s+my\s+natural\s+hair\s+color|keep\s+my\s+natural\s+hair)\b/gi.test(cleanedPhysicalPreferences)
       
       instructionPhrases.forEach((regex) => {
         cleanedPhysicalPreferences = cleanedPhysicalPreferences.replace(regex, "")
       })
+      
+      // If user specified "keep natural hair color" and no color is mentioned, preserve the intent
+      if (hasNaturalHairColor && !/\b(blonde|brown|black|red|gray|grey|auburn|brunette|hair\s+color)\b/gi.test(cleanedPhysicalPreferences)) {
+        cleanedPhysicalPreferences = "natural hair color, " + cleanedPhysicalPreferences
+      }
       
       cleanedPhysicalPreferences = cleanedPhysicalPreferences
         .replace(/,\s*,/g, ",") // Remove double commas

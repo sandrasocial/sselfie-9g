@@ -1,7 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { Resend } from "resend"
-
-const resend = new Resend(process.env.RESEND_API_KEY)
+import { sendEmail } from "@/lib/email/send-email"
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,11 +12,7 @@ export async function POST(req: NextRequest) {
 
     console.log("[v0] Emailing full blueprint:", { email, name, conceptCount: concepts.length })
 
-    const { data, error } = await resend.emails.send({
-      from: "SSELFIE <hello@sselfie.ai>",
-      to: email,
-      subject: `${name ? name + ", y" : "Y"}our Brand Blueprint is Ready! 📸`,
-      html: `
+    const emailHtml = `
         <!DOCTYPE html>
         <html>
           <head>
@@ -144,18 +138,30 @@ export async function POST(req: NextRequest) {
             </div>
           </body>
         </html>
-      `,
-    })
-    // </CHANGE>
+      `
 
-    if (error) {
-      console.error("[v0] Resend API error:", error)
-      throw error
+    const emailText = `Hi ${name || "there"}! 👋\n\nYour personalized brand blueprint is ready! Everything you need to build a magnetic personal brand is right here.\n\nView your blueprint online to see all your concept cards, caption templates, and 30-day content calendar.`
+
+    const result = await sendEmail({
+      from: "SSELFIE <hello@sselfie.ai>",
+      to: email,
+      subject: `${name ? name + ", y" : "Y"}our Brand Blueprint is Ready! 📸`,
+      html: emailHtml,
+      text: emailText,
+      emailType: "blueprint",
+    })
+
+    if (!result.success) {
+      console.error("[v0] Failed to send blueprint email:", result.error)
+      return NextResponse.json(
+        { error: result.error || "Failed to email blueprint" },
+        { status: 500 },
+      )
     }
 
-    console.log("[v0] Blueprint emailed successfully:", data)
+    console.log("[v0] Blueprint emailed successfully:", result.messageId)
 
-    return NextResponse.json({ success: true, messageId: data?.id })
+    return NextResponse.json({ success: true, messageId: result.messageId })
   } catch (error) {
     console.error("[v0] Error emailing blueprint:", error)
     return NextResponse.json(

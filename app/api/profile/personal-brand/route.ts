@@ -16,7 +16,8 @@ export async function GET(request: NextRequest) {
 
     const sql = neon(process.env.DATABASE_URL!)
 
-    const neonUser = await getUserByAuthId(user.id)
+    const { getEffectiveNeonUser } = await import("@/lib/simple-impersonation")
+    const neonUser = await getEffectiveNeonUser(user.id)
 
     if (!neonUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
@@ -120,7 +121,8 @@ export async function POST(request: NextRequest) {
 
     const sql = neon(process.env.DATABASE_URL!)
 
-    const neonUser = await getUserByAuthId(user.id)
+    const { getEffectiveNeonUser } = await import("@/lib/simple-impersonation")
+    const neonUser = await getEffectiveNeonUser(user.id)
 
     if (!neonUser) {
       console.error("[v0] User not found for auth ID:", user.id)

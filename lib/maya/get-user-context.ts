@@ -8,7 +8,9 @@ export async function getUserContextForMaya(authUserId: string): Promise<string>
   try {
     console.log("[v0] getUserContextForMaya: Starting for authUserId:", authUserId)
 
-    const neonUser = await getUserByAuthId(authUserId)
+    // Use effective user to support impersonation
+    const { getEffectiveNeonUser } = await import("@/lib/simple-impersonation")
+    const neonUser = await getEffectiveNeonUser(authUserId)
     console.log("[v0] getUserContextForMaya: Got neon user:", neonUser ? `ID ${neonUser.id}` : "NO USER")
 
     if (!neonUser) {

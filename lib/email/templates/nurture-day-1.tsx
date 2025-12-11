@@ -75,7 +75,7 @@ export function generateNurtureDay1Email(params: NurtureDay1Params): {
           <tr>
             <td style="padding: 30px; background-color: #fafaf9; border-top: 1px solid #e7e5e4; text-align: center;">
               <p style="margin: 0 0 12px; color: #57534e; font-size: 13px; font-weight: 300; line-height: 1.6;">
-                Questions? Just reply to this email—I read every message.
+                Questions? Just reply to this email-I read every message.
               </p>
               <p style="margin: 0; color: #57534e; font-size: 13px; font-weight: 300;">
                 XoXo Sandra 💋
@@ -111,7 +111,7 @@ Go to Studio: ${siteUrl}/studio
 
 I'll be checking in with you over the next few days to make sure you're getting the most out of SSELFIE.
 
-Questions? Just reply to this email—I read every message.
+Questions? Just reply to this email-I read every message.
 
 XoXo Sandra 💋
 

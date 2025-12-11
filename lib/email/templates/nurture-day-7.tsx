@@ -1,15 +1,30 @@
+import { generateTrackedLink } from "@/lib/email/generate-tracked-link"
+
 export interface NurtureDay7Params {
   firstName?: string
   recipientEmail: string
+  campaignId?: number
+  campaignName?: string
 }
 
 export function generateNurtureDay7Email(params: NurtureDay7Params): {
   html: string
   text: string
 } {
-  const { firstName, recipientEmail } = params
+  const { firstName, recipientEmail, campaignId, campaignName } = params
   const displayName = firstName || recipientEmail.split("@")[0]
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
+  
+  // Use tracked link to landing page (educational, not direct checkout)
+  const studioLink = campaignId && campaignName
+    ? generateTrackedLink({
+        baseUrl: `${siteUrl}/why-studio`,
+        campaignId,
+        campaignName,
+        campaignType: "nurture_day_7",
+        linkType: "cta",
+      })
+    : `${siteUrl}/why-studio`
 
   const html = `
 <!DOCTYPE html>
@@ -46,7 +61,7 @@ export function generateNurtureDay7Email(params: NurtureDay7Params): {
               </p>
               
               <p style="margin: 0 0 16px; color: #292524; font-size: 15px; font-weight: 300; line-height: 1.7;">
-                By now, you should have a good sense of what's possible. Whether you've created 10 photos or 100, you're building something real—a personal brand that actually represents YOU.
+                By now, you should have a good sense of what's possible. Whether you've created 10 photos or 100, you're building something real-a personal brand that actually represents YOU.
               </p>
               
               <p style="margin: 0 0 16px; color: #292524; font-size: 15px; font-weight: 300; line-height: 1.7;">
@@ -63,9 +78,18 @@ export function generateNurtureDay7Email(params: NurtureDay7Params): {
                 </a>
               </div>
               
-              <p style="margin: 24px 0 0; color: #57534e; font-size: 14px; font-weight: 300; line-height: 1.6;">
+              <p style="margin: 24px 0 16px; color: #57534e; font-size: 14px; font-weight: 300; line-height: 1.6;">
                 I'd love to hear how it's going. What's working? What questions do you have? Just reply and let me know.
               </p>
+              
+              <div style="background-color: #fafaf9; border-left: 3px solid #292524; padding: 20px; margin: 24px 0; border-radius: 4px;">
+                <p style="margin: 0 0 12px; color: #292524; font-size: 14px; font-weight: 400; line-height: 1.6;">
+                  P.S. If you're loving what you're creating and want unlimited access to fresh photos every month, Studio membership gives you 150+ new images, the full Academy, and direct support from me. Just something to think about when you're ready.
+                </p>
+                <p style="margin: 0; color: #57534e; font-size: 13px; font-weight: 300;">
+                  <a href="${studioLink}" style="color: #1c1917; text-decoration: underline;">Learn more about Studio →</a>
+                </p>
+              </div>
             </td>
           </tr>
           
@@ -73,7 +97,7 @@ export function generateNurtureDay7Email(params: NurtureDay7Params): {
           <tr>
             <td style="padding: 30px; background-color: #fafaf9; border-top: 1px solid #e7e5e4; text-align: center;">
               <p style="margin: 0 0 12px; color: #57534e; font-size: 13px; font-weight: 300; line-height: 1.6;">
-                Questions? Just reply to this email—I read every message.
+                Questions? Just reply to this email-I read every message.
               </p>
               <p style="margin: 0; color: #57534e; font-size: 13px; font-weight: 300;">
                 XoXo Sandra 💋
@@ -98,7 +122,7 @@ Hey ${displayName},
 
 You've been with SSELFIE for a week now. How are you feeling about your content?
 
-By now, you should have a good sense of what's possible. Whether you've created 10 photos or 100, you're building something real—a personal brand that actually represents YOU.
+By now, you should have a good sense of what's possible. Whether you've created 10 photos or 100, you're building something real-a personal brand that actually represents YOU.
 
 Here's what I want you to know: you don't need to be perfect. You just need to keep going. Every photo you create is progress. Every post you plan is momentum.
 
@@ -108,7 +132,7 @@ Keep Creating: ${siteUrl}/studio
 
 I'd love to hear how it's going. What's working? What questions do you have? Just reply and let me know.
 
-Questions? Just reply to this email—I read every message.
+Questions? Just reply to this email-I read every message.
 
 XoXo Sandra 💋
 

@@ -78,12 +78,19 @@ export async function POST(req: NextRequest) {
     const { neon } = await import("@neondatabase/serverless")
     const sql = neon(process.env.DATABASE_URL!)
 
+    // Get effective user (impersonated if admin is impersonating)
+    const { getEffectiveNeonUser } = await import("@/lib/simple-impersonation")
+    const effectiveUser = await getEffectiveNeonUser(user.id)
+    if (!effectiveUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 })
+    }
+
     const userDataResult = await sql`
       SELECT u.gender, u.ethnicity, um.trigger_word, upb.physical_preferences
       FROM users u
       LEFT JOIN user_models um ON u.id = um.user_id AND um.training_status = 'completed'
       LEFT JOIN user_personal_brand upb ON u.id = upb.user_id
-      WHERE u.id = ${user.id} 
+      WHERE u.id = ${effectiveUser.id} 
       LIMIT 1
     `
 
@@ -104,7 +111,7 @@ export async function POST(req: NextRequest) {
     userEthnicity = userDataResult[0]?.ethnicity || null
     physicalPreferences = userDataResult[0]?.physical_preferences || null
 
-    const triggerWord = userDataResult[0]?.trigger_word || `user${user.id}`
+    const triggerWord = userDataResult[0]?.trigger_word || `user${effectiveUser.id}`
 
     const fashionIntelligence = getFashionIntelligencePrinciples(userGender, userEthnicity)
 
@@ -317,17 +324,21 @@ ${
 
 CRITICAL INSTRUCTIONS:
 - These are USER-REQUESTED appearance modifications that MUST be in EVERY prompt
-- **IMPORTANT:** Convert instruction language to descriptive language for FLUX
-- **REMOVE:** "Always keep my", "dont change", "keep my", "don't change my", "preserve my", "maintain my" - these are instructions, not prompt text
-- **CONVERT TO:** Descriptive appearance features (e.g., "natural features" → describe what they are, "natural hair color" → actual hair color description)
+- **IMPORTANT:** Convert instruction language to descriptive language for FLUX, but PRESERVE USER INTENT
+- **REMOVE INSTRUCTION PHRASES:** "Always keep my", "dont change", "keep my", "don't change my", "preserve my", "maintain my" - these are instructions, not prompt text
+- **CONVERT TO DESCRIPTIVE:** Convert to descriptive appearance features while preserving intent:
+  - "natural features" → describe what they are
+  - "natural hair color" → actual hair color description if known, OR keep as "natural hair color" to preserve intent
+  - "keep my natural hair color" → Convert to actual color (e.g., "brown hair") OR "natural hair color" (preserves intent)
 - Include them RIGHT AFTER the gender/ethnicity descriptor as DESCRIPTIVE features, not instructions
-- Format: "${triggerWord}, ${userEthnicity ? userEthnicity + " " : ""}${userGender}, [descriptive appearance features], [rest of prompt]"
+- Format: "${triggerWord}, ${userEthnicity ? userEthnicity + " " : ""}${userGender}, [descriptive appearance features from user preferences], [rest of prompt]"
 - Examples of CORRECT conversion:
-  - "Always keep my natural features, dont change the face" → Omit (face is preserved by trigger word)
-  - "keep my natural hair color" → Omit (hair color is preserved by trigger word) OR convert to actual color if specified
-  - "curvier body type" → "curvier body type" (descriptive, keep)
-  - "long blonde hair" → "long blonde hair" (descriptive, keep)
-- DO NOT include instruction phrases like "dont change", "keep my", "always keep" in the final prompt
+  - "Always keep my natural features, dont change the face" → Omit instruction (face is preserved by trigger word), but keep any specific feature descriptions
+  - "keep my natural hair color" → "natural hair color" OR actual color if specified (preserves intent, don't just omit)
+  - "curvier body type" → "curvier body type" (descriptive, keep as-is)
+  - "long blonde hair" → "long blonde hair" (descriptive, keep as-is)
+  - "dont change my body" → "natural body type" OR preserve any body descriptions mentioned
+- **PRESERVE USER INTENT:** Don't just remove everything - convert instructions to descriptive language that preserves what the user wants
 `
     : ""
 }
@@ -341,28 +352,32 @@ CRITICAL INSTRUCTIONS:
    - This is non-negotiable for character likeness preservation
    - Format: "${triggerWord}, [rest of prompt]"
 
-   **CRITICAL - AVOID FACIAL FEATURE MICROMANAGEMENT:**
-   - DO NOT describe fixed facial features that the LoRA already knows (eye color, jawline, cheekbones, nose shape, **hair color/style/length**)
-   - The LoRA was trained on these features - it already knows them
-   - Mentioning them can confuse the model or cause conflicts
-   - ❌ AVOID: "blue eyes", "sharp jawline", "high cheekbones", "defined nose", **"long dark brown hair"**, **"blonde hair"**, **"short hair"**, **"curly hair"** (UNLESS user specified these in their physical preferences/settings)
-   - ✅ INSTEAD: Describe changeable elements like "natural makeup", "relaxed expression", "confident look", "soft smile"
-   - **IMPORTANT:** If user has specified hair descriptions in their physical preferences/settings, those ARE mandatory and must be included - they are intentional user modifications
-   - **ONLY avoid hair descriptions** if they're NOT in user's physical preferences - the LoRA already knows hair from training, but user preferences override this
-   - Trust the trained LoRA model to preserve facial features - focus on styling, pose, lighting, and environment
+   **CRITICAL - CHARACTER FEATURE GUIDANCE (BALANCED APPROACH):**
+   - **USER PREFERENCES ARE MANDATORY:** If user specified hair/body/age in their physical preferences, these MUST be included in EVERY prompt - they are intentional user modifications
+   - **SAFETY NET APPROACH:** It's better to include subtle feature descriptions than to omit them and get wrong results
+   - **INCLUDE WHEN NEEDED:** 
+     - If user preferences mention hair color/style → ALWAYS include it
+     - If user preferences mention body type/age → ALWAYS include it
+     - If unsure about LoRA quality → Include subtle descriptions as safety net
+   - **FOCUS ON CHANGEABLE ELEMENTS:** Prioritize describing styling, pose, lighting, environment, makeup, expressions:
+     - "natural makeup" (makeup is changeable)
+     - "relaxed expression" (expression is changeable)
+     - "confident look" (mood is changeable)
+   - **BALANCE:** Trust the LoRA but reinforce critical features (especially from user preferences) to ensure consistency
 
    **CRITICAL:** If physical preferences contain instruction language ("Always keep my", "dont change", "keep my"), you MUST:
-   - Remove the instruction phrases
-   - Convert to descriptive appearance features only
-   - If it says "keep my natural features" or "dont change the face" → OMIT (face is preserved by trigger word)
-   - If it says "keep my natural hair color" → OMIT (hair color is preserved by trigger word) OR convert to actual color if specified
-   - Only include actual descriptive modifications like "curvier body type", "long blonde hair", "athletic build"
+   - Remove the instruction phrases but PRESERVE THE INTENT
+   - Convert to descriptive appearance features
+   - If it says "keep my natural features" or "dont change the face" → OMIT instruction phrase (face is preserved by trigger word)
+   - If it says "keep my natural hair color" → Convert to actual hair color description if known, OR keep as "natural hair color" to preserve intent
+   - **PRESERVE USER INTENT:** Always include actual descriptive modifications like "curvier body type", "long blonde hair", "athletic build", "darker hair", etc.
+   - **DO NOT REMOVE:** User's physical preferences should be in the prompt as descriptive features, not instructions
 
 2. **iPhone 15 Pro (MANDATORY - 95% of prompts):** MUST include "shot on iPhone 15 Pro" OR "amateur cellphone photo" - this creates authentic phone camera aesthetic. Only use focal length alternatives for specific editorial requests.
 
-3. **Natural Imperfections (MANDATORY - AT LEAST 2):** MUST include AT LEAST 2 of: "visible sensor noise", "slight motion blur", "uneven lighting", "mixed color temperatures", "handheld feel" - these prevent plastic-looking images.
+3. **Natural Imperfections (MANDATORY - AT LEAST 3):** MUST include AT LEAST 3 of: "visible sensor noise", "slight motion blur", "uneven lighting", "mixed color temperatures", "handheld feel", "natural camera imperfections" - these prevent plastic-looking images.
 
-4. **Natural Skin Texture (MANDATORY):** MUST include "natural skin texture with pores visible" AND anti-plastic language like "not smooth or airbrushed" or "not plastic-looking" - prevents AI-looking smooth/plastic skin.
+4. **Natural Skin Texture (MANDATORY - CRITICAL FOR AUTHENTICITY):** MUST include "natural skin texture with pores visible" AND AT LEAST 2 anti-plastic phrases like "not smooth or airbrushed", "not plastic-looking", "realistic texture", "authentic skin", "not artificially perfect" - prevents AI-looking smooth/plastic skin.
 
 5. **Film Grain (MANDATORY):** MUST include one: "visible film grain", "fine film grain texture", "grainy texture", or "subtle grain visible"
 
@@ -372,8 +387,9 @@ CRITICAL INSTRUCTIONS:
 
 8. **Casual Moment Language (RECOMMENDED):** Include "candid moment", "looks like a real phone camera photo", or "amateur cellphone quality"
 
-9. **Prompt Length:** 25-45 words (shorter = more authentic, better facial consistency, less AI-looking)
-   - **CRITICAL:** Shorter prompts (25-35 words) = better face preservation
+9. **Prompt Length:** 30-45 words (optimal range for feature reinforcement + consistency)
+   - **CRITICAL:** Optimal prompts (30-40 words) = best balance of feature reinforcement and facial consistency
+   - Shorter prompts (20-25 words) = May miss important details, risking wrong hair/body/age
    - Longer prompts (50+ words) = model may lose focus on character features
    - FLUX T5 encoder optimal at ~256 tokens (~30-40 words)
    - Hard limit: 45 words maximum - do not exceed this

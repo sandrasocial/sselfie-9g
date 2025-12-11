@@ -29,6 +29,7 @@ import { InstallButton } from "./install-button"
 import { ServiceWorkerProvider } from "./service-worker-provider"
 import BuyCreditsModal from "./buy-credits-modal"
 import { LowCreditModal } from "@/components/credits/low-credit-modal"
+import { ZeroCreditsUpgradeModal } from "@/components/credits/zero-credits-upgrade-modal"
 import { FeedbackButton } from "@/components/feedback/feedback-button"
 import { UpgradeOrCredits } from "@/components/UpgradeOrCredits"
 import type { User as UserType } from "./types"
@@ -270,14 +271,14 @@ export default function SselfieApp({
 
   return (
     <div
-      className="h-screen bg-gradient-to-br from-stone-50 via-stone-100/50 to-stone-50 relative overflow-hidden prevent-horizontal-scroll"
-      style={{
-        fontFamily:
-          '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-        paddingTop: "env(safe-area-inset-top)",
-      }}
-    >
-      <ServiceWorkerProvider />
+        className="h-screen bg-gradient-to-br from-stone-50 via-stone-100/50 to-stone-50 relative overflow-hidden prevent-horizontal-scroll"
+        style={{
+          fontFamily:
+            '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+          paddingTop: "env(safe-area-inset-top)",
+        }}
+      >
+        <ServiceWorkerProvider />
 
       <div className="absolute inset-0">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-stone-200/20 rounded-full blur-3xl"></div>
@@ -379,9 +380,9 @@ export default function SselfieApp({
                   />
                 )}
                 {activeTab === "maya" && <MayaChatScreen onImageGenerated={refreshCredits} user={user} />}
-                {activeTab === "b-roll" && <BRollScreen />}
+                {activeTab === "b-roll" && <BRollScreen user={user} />}
                 {activeTab === "gallery" && <GalleryScreen user={user} userId={userId} />}
-                {activeTab === "feed-planner" && <FeedPlannerScreen userId={userId} userName={userName} />}
+                {activeTab === "feed-planner" && <FeedPlannerScreen />}
                 {activeTab === "academy" && <AcademyScreen />}
                 {activeTab === "profile" && <ProfileScreen user={user} creditBalance={creditBalance} />}
                 {activeTab === "settings" && <SettingsScreen user={user} creditBalance={creditBalance} />}
@@ -459,8 +460,9 @@ export default function SselfieApp({
       />
 
       <LowCreditModal credits={creditBalance} threshold={30} />
+      <ZeroCreditsUpgradeModal credits={creditBalance} />
 
       <FeedbackButton userId={userId} userEmail={userEmail} userName={userName} />
-    </div>
+      </div>
   )
 }

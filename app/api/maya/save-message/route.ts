@@ -27,7 +27,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const neonUser = await getUserByAuthId(user.id)
+    const { getEffectiveNeonUser } = await import("@/lib/simple-impersonation")
+    const neonUser = await getEffectiveNeonUser(user.id)
     if (!neonUser) {
       console.log("[v0] ❌ User not found in Neon")
       return NextResponse.json({ error: "User not found" }, { status: 404 })

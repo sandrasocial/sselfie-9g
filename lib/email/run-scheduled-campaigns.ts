@@ -33,6 +33,14 @@ import { sendEmail } from "./send-email"
 import { checkEmailRateLimit } from "@/lib/rate-limit"
 import { generateLaunchFollowupEmail } from "./templates/launch-followup-email"
 import { generateBetaTestimonialEmail } from "./templates/beta-testimonial-request"
+import { generateNurtureDay1Email } from "./templates/nurture-day-1"
+import { generateNurtureDay3Email } from "./templates/nurture-day-3"
+import { generateNurtureDay7Email } from "./templates/nurture-day-7"
+import { generateUpsellFreebieMembershipEmail } from "./templates/upsell-freebie-membership"
+import { generateWelcomeBackReengagementEmail } from "./templates/welcome-back-reengagement"
+import { generateNewsletterEmail } from "./templates/newsletter-template"
+import { generateUpsellDay10Email } from "./templates/upsell-day-10"
+import { generateWinBackOfferEmail } from "./templates/win-back-offer"
 
 const sql = neon(process.env.DATABASE_URL!)
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "ssa@ssasocial.com"
@@ -141,8 +149,9 @@ async function resolveRecipients(targetAudience: any): Promise<string[]> {
 /**
  * Get email content for a campaign
  * Maps campaign_type to appropriate templates or uses stored body_html/body_text
+ * EXPORTED for use in preview endpoints
  */
-function getEmailContent(
+export function getEmailContent(
   campaign: any,
   recipientEmail: string,
   recipientName?: string,
@@ -166,12 +175,94 @@ function getEmailContent(
     return { html: content.html, text: content.text, templateUsed: "beta-testimonial-request" }
   }
 
-  // For other types (newsletter, promotional, announcement, etc.), use stored content
-  // TODO: Add dedicated templates for:
-  // - newsletter campaigns
-  // - promotional campaigns
-  // - announcement campaigns
-  // For now, using stored body_html/body_text from the campaign record
+  if (campaign_type === "nurture_day_1") {
+    const content = generateNurtureDay1Email({
+      firstName: recipientName,
+      recipientEmail,
+      campaignId: campaign.id,
+      campaignName: campaign.campaign_name,
+    })
+    return { html: content.html, text: content.text, templateUsed: "nurture-day-1" }
+  }
+
+  if (campaign_type === "nurture_day_3") {
+    const content = generateNurtureDay3Email({
+      firstName: recipientName,
+      recipientEmail,
+      campaignId: campaign.id,
+      campaignName: campaign.campaign_name,
+    })
+    return { html: content.html, text: content.text, templateUsed: "nurture-day-3" }
+  }
+
+  if (campaign_type === "nurture_day_7") {
+    const content = generateNurtureDay7Email({
+      firstName: recipientName,
+      recipientEmail,
+      campaignId: campaign.id,
+      campaignName: campaign.campaign_name,
+    })
+    return { html: content.html, text: content.text, templateUsed: "nurture-day-7" }
+  }
+
+  if (campaign_type === "upsell_freebie_to_membership") {
+    const content = generateUpsellFreebieMembershipEmail({
+      firstName: recipientName,
+      recipientEmail,
+      campaignId: campaign.id,
+      campaignName: campaign.campaign_name,
+    })
+    return { html: content.html, text: content.text, templateUsed: "upsell-freebie-membership" }
+  }
+
+  if (campaign_type === "upsell_day_10") {
+    const content = generateUpsellDay10Email({
+      firstName: recipientName,
+      recipientEmail,
+      campaignId: campaign.id,
+      campaignName: campaign.campaign_name,
+    })
+    return { html: content.html, text: content.text, templateUsed: "upsell-day-10" }
+  }
+
+  if (campaign_type === "welcome_back_reengagement") {
+    const content = generateWelcomeBackReengagementEmail({
+      firstName: recipientName,
+      recipientEmail,
+      campaignId: campaign.id,
+      campaignName: campaign.campaign_name,
+    })
+    return { html: content.html, text: content.text, templateUsed: "welcome-back-reengagement" }
+  }
+
+  if (campaign_type === "win_back_offer") {
+    // Extract offer details from campaign metadata if available
+    const offerData = campaign.metrics || {}
+    const content = generateWinBackOfferEmail({
+      firstName: recipientName,
+      recipientEmail,
+      offerDiscount: offerData.discount,
+      offerCode: offerData.code,
+      offerExpiry: offerData.expiry,
+      campaignId: campaign.id,
+      campaignName: campaign.campaign_name,
+    })
+    return { html: content.html, text: content.text, templateUsed: "win-back-offer" }
+  }
+
+  if (campaign_type === "newsletter") {
+    // Newsletter template requires specific content - use stored content but with template structure
+    // For now, use stored content. In future, can parse structured data from campaign.metrics
+    // TODO: Parse newsletter content from campaign.metrics (tipTitle, tipContent, memberStory, etc.)
+    // For now, using stored body_html/body_text
+    return {
+      html: body_html || "",
+      text: body_text || "",
+      templateUsed: "newsletter-template",
+    }
+  }
+
+  // For other types (promotional, announcement, etc.), use stored content
   return {
     html: body_html || "",
     text: body_text || "",
@@ -287,6 +378,32 @@ async function executeCampaign(
         result.templateUsed = emailContent.templateUsed
       }
 
+      // Validate email content before sending
+      if (!emailContent.html || emailContent.html.trim().length === 0) {
+        const errorMsg = "Email HTML content is empty"
+        result.errors.push(`${recipientEmail}: ${errorMsg}`)
+        result.recipients.failed++
+        await logEmailSend(recipientEmail, `campaign-${campaign.id}`, "failed", undefined, errorMsg)
+        console.error(`[v0] ✗ Campaign ${campaign.id} has empty HTML content`)
+        continue
+      }
+
+      if (!emailContent.text || emailContent.text.trim().length === 0) {
+        const errorMsg = "Email text content is empty"
+        result.errors.push(`${recipientEmail}: ${errorMsg}`)
+        result.recipients.failed++
+        await logEmailSend(recipientEmail, `campaign-${campaign.id}`, "failed", undefined, errorMsg)
+        console.error(`[v0] ✗ Campaign ${campaign.id} has empty text content`)
+        continue
+      }
+
+      console.log(`[v0] Sending email to ${recipientEmail}:`, {
+        subject: campaign.subject_line,
+        htmlLength: emailContent.html.length,
+        textLength: emailContent.text.length,
+        hasSubject: !!campaign.subject_line,
+      })
+
       // Send email
       const emailResult = await sendEmail({
         to: recipientEmail,
@@ -364,30 +481,56 @@ export async function runScheduledCampaigns(
   // Find campaigns to process
   let campaigns: any[] = []
 
-  if (campaignId) {
-    // Specific campaign requested
-    campaigns = await sql`
-      SELECT * FROM admin_email_campaigns
-      WHERE id = ${campaignId}
-      AND status = 'scheduled'
-    `
+  if (mode === "test") {
+    // In test mode, allow testing any campaign regardless of status
+    if (campaignId) {
+      // Specific campaign requested for testing
+      campaigns = await sql`
+        SELECT * FROM admin_email_campaigns
+        WHERE id = ${campaignId}
+      `
+      console.log(`[v0] Test mode: Looking for campaign ${campaignId} (any status)`)
+    } else {
+      // In test mode without campaignId, return empty (user should specify which campaign to test)
+      console.log(`[v0] Test mode: No campaignId specified. Please specify a campaign ID to test.`)
+      return []
+    }
   } else {
-    // All due campaigns
-    campaigns = await sql`
-      SELECT * FROM admin_email_campaigns
-      WHERE status = 'scheduled'
-      AND scheduled_for IS NOT NULL
-      AND scheduled_for <= NOW()
-      ORDER BY scheduled_for ASC
-    `
+    // Live mode: only process scheduled campaigns
+    if (campaignId) {
+      // Specific campaign requested
+      campaigns = await sql`
+        SELECT * FROM admin_email_campaigns
+        WHERE id = ${campaignId}
+        AND status = 'scheduled'
+      `
+    } else {
+      // All due campaigns
+      campaigns = await sql`
+        SELECT * FROM admin_email_campaigns
+        WHERE status = 'scheduled'
+        AND scheduled_for IS NOT NULL
+        AND scheduled_for <= NOW()
+        ORDER BY scheduled_for ASC
+      `
+    }
   }
 
   if (campaigns.length === 0) {
-    console.log(`[v0] No scheduled campaigns found to process`)
+    if (mode === "test") {
+      console.log(`[v0] No campaign found with ID ${campaignId}. Check that the campaign exists.`)
+    } else {
+      console.log(`[v0] No scheduled campaigns found to process`)
+    }
     return []
   }
 
   console.log(`[v0] Found ${campaigns.length} campaign(s) to process`)
+  if (mode === "test") {
+    campaigns.forEach((c) => {
+      console.log(`[v0] Test campaign: ID=${c.id}, Name="${c.campaign_name}", Status="${c.status}"`)
+    })
+  }
 
   // Execute each campaign
   const results: CampaignExecutionResult[] = []

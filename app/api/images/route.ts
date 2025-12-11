@@ -15,7 +15,8 @@ export async function GET(request: Request) {
     const limit = Number.parseInt(searchParams.get("limit") || "50")
     const offset = Number.parseInt(searchParams.get("offset") || "0")
 
-    const neonUser = await getUserByAuthId(authUser.id)
+    const { getEffectiveNeonUser } = await import("@/lib/simple-impersonation")
+    const neonUser = await getEffectiveNeonUser(authUser.id)
 
     if (!neonUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })

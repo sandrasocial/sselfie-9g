@@ -57,42 +57,80 @@ export async function POST(request: Request) {
     const {
       campaign_name,
       subject_line,
-      email_body,
+      email_body = "",
       campaign_type = "newsletter",
+      target_audience,
+      scheduled_for,
     } = body
 
-    const audienceId = process.env.RESEND_AUDIENCE_ID
-
-    if (!audienceId) {
-      return NextResponse.json(
-        {
-          error: "RESEND_AUDIENCE_ID not configured",
-        },
-        { status: 400 },
-      )
+    // Determine status based on scheduled_for
+    let status = "draft"
+    if (scheduled_for) {
+      const scheduledDate = new Date(scheduled_for)
+      if (scheduledDate > new Date()) {
+        status = "scheduled"
+      }
     }
 
-    console.log("[v0] Creating Resend broadcast for:", campaign_name)
+    // For template-based campaigns, we don't need to create a Resend broadcast immediately
+    // The executor will handle sending when scheduled
+    const isTemplateCampaign = [
+      "welcome_back_reengagement",
+      "nurture_day_1",
+      "nurture_day_3",
+      "nurture_day_7",
+      "upsell_freebie_to_membership",
+      "upsell_day_10",
+      "win_back_offer",
+      "beta_testimonial",
+    ].includes(campaign_type)
 
-    const broadcast = await resend.broadcasts.create({
-      audienceId: audienceId,
-      from: "Sandra from SSELFIE <hello@sselfie.ai>",
-      subject: subject_line,
-      html: email_body,
-    })
+    let broadcastId = null
 
-    console.log("[v0] Broadcast created successfully:", broadcast.data?.id)
+    // Only create Resend broadcast for non-template campaigns (newsletter, promotional, etc.)
+    if (!isTemplateCampaign && email_body) {
+      const audienceId = process.env.RESEND_AUDIENCE_ID
+
+      if (!audienceId) {
+        return NextResponse.json(
+          {
+            error: "RESEND_AUDIENCE_ID not configured",
+          },
+          { status: 400 },
+        )
+      }
+
+      console.log("[v0] Creating Resend broadcast for:", campaign_name)
+
+      try {
+        const broadcast = await resend.broadcasts.create({
+          audienceId: audienceId,
+          from: "Sandra from SSELFIE <hello@sselfie.ai>",
+          subject: subject_line,
+          html: email_body,
+        })
+
+        broadcastId = broadcast.data?.id || null
+        console.log("[v0] Broadcast created successfully:", broadcastId)
+      } catch (error: any) {
+        console.error("[v0] Error creating broadcast:", error)
+        // Continue without broadcast ID for template campaigns
+      }
+    }
 
     // Save to database for tracking
     const result = await sql`
       INSERT INTO admin_email_campaigns (
         campaign_name, campaign_type, subject_line,
-        body_html, status, approval_status, 
+        body_html, body_text, status, approval_status,
+        target_audience, scheduled_for,
         resend_broadcast_id, created_by, created_at, updated_at
       ) VALUES (
         ${campaign_name}, ${campaign_type}, ${subject_line},
-        ${email_body}, 'draft', 'draft',
-        ${broadcast.data?.id || null}, ${ADMIN_EMAIL}, NOW(), NOW()
+        ${email_body}, ${email_body}, ${status}, 'draft',
+        ${target_audience ? JSON.stringify(target_audience) : null},
+        ${scheduled_for || null},
+        ${broadcastId}, ${ADMIN_EMAIL}, NOW(), NOW()
       )
       RETURNING *
     `
@@ -100,8 +138,10 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       campaign: result[0],
-      broadcastId: broadcast.data?.id,
-      message: "Email created in Resend! Visit https://resend.com/broadcasts to review and send.",
+      broadcastId: broadcastId,
+      message: isTemplateCampaign
+        ? "Template-based campaign created! Use the test button to preview, then schedule it."
+        : "Email created in Resend! Visit https://resend.com/broadcasts to review and send.",
     })
   } catch (error: any) {
     console.error("[v0] Error creating email campaign:", error)

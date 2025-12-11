@@ -53,7 +53,8 @@ export async function POST(request: NextRequest) {
       addTextOverlay: !!addTextOverlay,
     })
 
-    const neonUser = await getUserByAuthId(user.id)
+    const { getEffectiveNeonUser } = await import("@/lib/simple-impersonation")
+    const neonUser = await getEffectiveNeonUser(user.id)
     if (!neonUser) {
       return NextResponse.json({ error: "User not found in database" }, { status: 404 })
     }

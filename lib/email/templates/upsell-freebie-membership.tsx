@@ -1,16 +1,24 @@
+import { generateTrackedCheckoutLink } from "@/lib/email/generate-tracked-link"
+
 export interface UpsellFreebieMembershipParams {
   firstName?: string
   recipientEmail: string
+  campaignId?: number
+  campaignName?: string
 }
 
 export function generateUpsellFreebieMembershipEmail(params: UpsellFreebieMembershipParams): {
   html: string
   text: string
 } {
-  const { firstName, recipientEmail } = params
+  const { firstName, recipientEmail, campaignId, campaignName } = params
   const displayName = firstName || recipientEmail.split("@")[0]
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
-  const checkoutUrl = `${siteUrl}/studio?checkout=studio_membership`
+  
+  // Use tracked link if campaignId is available, otherwise fall back to regular link
+  const checkoutUrl = campaignId && campaignName
+    ? generateTrackedCheckoutLink(campaignId, campaignName, "upsell_freebie_to_membership", "studio_membership")
+    : `${siteUrl}/studio?checkout=studio_membership`
 
   const html = `
 <!DOCTYPE html>
@@ -43,7 +51,7 @@ export function generateUpsellFreebieMembershipEmail(params: UpsellFreebieMember
               </p>
               
               <p style="margin: 0 0 16px; color: #292524; font-size: 15px; font-weight: 300; line-height: 1.7;">
-                You grabbed the free guide—that's a great first step. Now, are you ready to take it to the next level?
+                You grabbed the free guide-that's a great first step. Now, are you ready to take it to the next level?
               </p>
               
               <p style="margin: 0 0 16px; color: #292524; font-size: 15px; font-weight: 300; line-height: 1.7;">
@@ -69,7 +77,7 @@ export function generateUpsellFreebieMembershipEmail(params: UpsellFreebieMember
               </div>
               
               <p style="margin: 24px 0 0; color: #57534e; font-size: 14px; font-weight: 300; line-height: 1.6;">
-                No pressure—just wanted to make sure you know what's available when you're ready.
+                No pressure-just wanted to make sure you know what's available when you're ready.
               </p>
             </td>
           </tr>
@@ -78,7 +86,7 @@ export function generateUpsellFreebieMembershipEmail(params: UpsellFreebieMember
           <tr>
             <td style="padding: 30px; background-color: #fafaf9; border-top: 1px solid #e7e5e4; text-align: center;">
               <p style="margin: 0 0 12px; color: #57534e; font-size: 13px; font-weight: 300; line-height: 1.6;">
-                Questions? Just reply to this email—I read every message.
+                Questions? Just reply to this email-I read every message.
               </p>
               <p style="margin: 0; color: #57534e; font-size: 13px; font-weight: 300;">
                 XoXo Sandra 💋
@@ -101,7 +109,7 @@ S S E L F I E
 
 Hey ${displayName},
 
-You grabbed the free guide—that's a great first step. Now, are you ready to take it to the next level?
+You grabbed the free guide-that's a great first step. Now, are you ready to take it to the next level?
 
 The free guide gives you the basics. But SSELFIE Studio gives you:
 - 150+ professional photos every month
@@ -114,9 +122,9 @@ This is your photography studio. Your creative team. Your content library. All p
 
 Join SSELFIE Studio: ${checkoutUrl}
 
-No pressure—just wanted to make sure you know what's available when you're ready.
+No pressure-just wanted to make sure you know what's available when you're ready.
 
-Questions? Just reply to this email—I read every message.
+Questions? Just reply to this email-I read every message.
 
 XoXo Sandra 💋
 

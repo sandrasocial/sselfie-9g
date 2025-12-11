@@ -1,7 +1,7 @@
 "use client"
 
 import { X, Send, CheckCircle2, XCircle } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 interface EmailPreviewModalProps {
   campaign: any
@@ -23,6 +23,51 @@ export function EmailPreviewModal({
   const [testEmail, setTestEmail] = useState("")
   const [activeTab, setActiveTab] = useState<"preview" | "html">("preview")
   const [isLoading, setIsLoading] = useState(false)
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null)
+  const [loadingPreview, setLoadingPreview] = useState(false)
+
+  // Load preview content for template-based campaigns
+  useEffect(() => {
+    const loadPreview = async () => {
+      // If campaign has body_html, use it
+      if (campaign.body_html) {
+        setPreviewHtml(campaign.body_html)
+        return
+      }
+
+      // For template-based campaigns, fetch generated preview
+      const templateCampaigns = [
+        'welcome_back_reengagement',
+        'nurture_day_1',
+        'nurture_day_3',
+        'nurture_day_7',
+        'upsell_freebie_to_membership',
+        'upsell_day_10',
+        'win_back_offer',
+        'beta_testimonial'
+      ]
+
+      if (templateCampaigns.includes(campaign.campaign_type)) {
+        setLoadingPreview(true)
+        try {
+          const response = await fetch(`/api/admin/email/preview-campaign?campaignId=${campaign.id}`)
+          const data = await response.json()
+          if (data.success && data.email?.html) {
+            setPreviewHtml(data.email.html)
+          } else {
+            setPreviewHtml('<p>Unable to generate preview. Please test send to see the email.</p>')
+          }
+        } catch (error) {
+          console.error('Error loading preview:', error)
+          setPreviewHtml('<p>Error loading preview. Please test send to see the email.</p>')
+        } finally {
+          setLoadingPreview(false)
+        }
+      }
+    }
+
+    loadPreview()
+  }, [campaign])
 
   const handleSendTest = async () => {
     setIsLoading(true)
@@ -141,17 +186,23 @@ export function EmailPreviewModal({
           {/* Preview or HTML */}
           {activeTab === "preview" ? (
             <div className="bg-white border border-stone-200 rounded-xl p-6 min-h-[400px]">
-              <iframe
-                srcDoc={campaign.body_html}
-                className="w-full min-h-[400px] border-0"
-                title="Email Preview"
-                sandbox="allow-same-origin"
-              />
+              {loadingPreview ? (
+                <div className="flex items-center justify-center min-h-[400px]">
+                  <p className="text-stone-500">Generating preview...</p>
+                </div>
+              ) : (
+                <iframe
+                  srcDoc={previewHtml || campaign.body_html || '<p>No preview available. Please test send to see the email.</p>'}
+                  className="w-full min-h-[400px] border-0"
+                  title="Email Preview"
+                  sandbox="allow-same-origin"
+                />
+              )}
             </div>
           ) : (
             <div className="bg-stone-950 rounded-xl p-4">
               <pre className="text-xs text-stone-100 overflow-x-auto whitespace-pre-wrap break-words">
-                {campaign.body_html}
+                {previewHtml || campaign.body_html || 'No HTML content available'}
               </pre>
             </div>
           )}

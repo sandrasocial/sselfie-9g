@@ -110,7 +110,7 @@ export function generateFreebieGuideEmail(params: FreebieGuideEmailParams): {
                   "Your selfies are the foundation of your personal brand. Make them count."
                 </p>
                 <p style="margin: 0; color: #57534e; font-size: 13px; font-weight: 300;">
-                  — Sandra
+                  - Sandra
                 </p>
               </div>
             </td>
@@ -132,7 +132,7 @@ export function generateFreebieGuideEmail(params: FreebieGuideEmailParams): {
           <tr>
             <td style="padding: 30px; background-color: #fafaf9; border-top: 1px solid #e7e5e4;">
               <p style="margin: 0 0 12px; color: #57534e; font-size: 13px; font-weight: 300; line-height: 1.6; text-align: center;">
-                Questions? Just reply to this email—I read every message.
+                Questions? Just reply to this email-I read every message.
               </p>
               <p style="margin: 0; color: #57534e; font-size: 13px; font-weight: 300; text-align: center;">
                 XoXo Sandra 💋
@@ -168,7 +168,7 @@ WHAT'S INSIDE
 • How to build a content library in one afternoon
 
 "Your selfies are the foundation of your personal brand. Make them count."
-— Sandra
+- Sandra
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -176,7 +176,7 @@ READ YOUR GUIDE: ${guideAccessLink}
 
 This link gives you lifetime access to your guide.
 
-Questions? Just reply to this email—I read every message.
+Questions? Just reply to this email-I read every message.
 
 XoXo Sandra 💋
 

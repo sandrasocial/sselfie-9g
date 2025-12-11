@@ -1,12 +1,11 @@
-import { NextResponse } from "next/server"
+import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { neon } from "@neondatabase/serverless"
+import { getOrCreateActiveChat, getChatMessages, loadChatById } from "@/lib/data/admin-agent"
 
-const sql = neon(process.env.DATABASE_URL!)
 const ADMIN_EMAIL = "ssa@ssasocial.com"
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
     const supabase = await createServerClient()
     const {
@@ -23,41 +22,31 @@ export async function GET(request: Request) {
     }
 
     const { searchParams } = new URL(request.url)
-    const chatId = searchParams.get("chatId")
+    const requestedChatId = searchParams.get("chatId")
 
-    if (!chatId) {
-      return NextResponse.json({ error: "chatId required" }, { status: 400 })
+    let chat
+    if (requestedChatId) {
+      chat = await loadChatById(Number.parseInt(requestedChatId), user.id)
+      if (!chat) {
+        return NextResponse.json({ error: "Chat not found" }, { status: 404 })
+      }
+    } else {
+      // Get or create active chat
+      chat = await getOrCreateActiveChat(user.id)
     }
 
-    // Fetch chat details
-    const chatResult = await sql`
-      SELECT * FROM admin_agent_chats
-      WHERE id = ${chatId}
-      AND admin_user_id = ${user.id}
-      LIMIT 1
-    `
+    const messages = await getChatMessages(chat.id)
 
-    if (chatResult.length === 0) {
-      return NextResponse.json({ error: "Chat not found" }, { status: 404 })
-    }
-
-    const chat = chatResult[0]
-
-    // Fetch messages for this chat
-    const messages = await sql`
-      SELECT * FROM admin_agent_messages
-      WHERE chat_id = ${chatId}
-      ORDER BY created_at ASC
-    `
-
-    console.log("[v0] Loaded admin chat:", chatId, "Messages:", messages.length)
-
-    // Format messages with parts structure matching Maya's format
-    const formattedMessages = messages.map((msg: any) => ({
+    const formattedMessages = messages.map((msg) => ({
       id: msg.id.toString(),
       role: msg.role,
       createdAt: msg.created_at,
-      content: msg.content,
+      parts: [
+        {
+          type: "text",
+          text: msg.content || "",
+        },
+      ],
     }))
 
     return NextResponse.json({
@@ -67,6 +56,6 @@ export async function GET(request: Request) {
     })
   } catch (error) {
     console.error("[v0] Error loading admin chat:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json({ error: "Failed to load chat" }, { status: 500 })
   }
 }

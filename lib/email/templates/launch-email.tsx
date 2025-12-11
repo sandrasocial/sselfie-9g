@@ -179,7 +179,7 @@ export function generateLaunchEmail(params: LaunchEmailParams = {}): {
                 S S E L F I E
               </h1>
               <p style="margin: 0 0 12px; color: #57534e; font-size: 13px; font-weight: 300; line-height: 1.6; text-align: center;">
-                Questions? Just reply to this email—I read every message.
+                Questions? Just reply to this email-I read every message.
               </p>
               <p style="margin: 0; color: #57534e; font-size: 13px; font-weight: 300; text-align: center;">
                 XoXo Sandra 💋
@@ -246,7 +246,7 @@ P.S. We already had 30 founding members join in the first 2 hours. Only 10 days 
 
 S S E L F I E
 
-Questions? Just reply to this email—I read every message.
+Questions? Just reply to this email-I read every message.
 
 XoXo Sandra 💋
 

@@ -50,7 +50,7 @@ export function generateNurtureDay3Email(params: NurtureDay3Params): {
               </p>
               
               <p style="margin: 0 0 16px; color: #292524; font-size: 15px; font-weight: 300; line-height: 1.7;">
-                Here's a quick tip: try creating photos in different styles—some professional, some casual, some with different backgrounds. This gives you variety for your feed.
+                Here's a quick tip: try creating photos in different styles-some professional, some casual, some with different backgrounds. This gives you variety for your feed.
               </p>
               
               <div style="background-color: #fafaf9; border-left: 3px solid #292524; padding: 20px; margin: 24px 0; border-radius: 4px;">
@@ -75,7 +75,7 @@ export function generateNurtureDay3Email(params: NurtureDay3Params): {
           <tr>
             <td style="padding: 30px; background-color: #fafaf9; border-top: 1px solid #e7e5e4; text-align: center;">
               <p style="margin: 0 0 12px; color: #57534e; font-size: 13px; font-weight: 300; line-height: 1.6;">
-                Questions? Just reply to this email—I read every message.
+                Questions? Just reply to this email-I read every message.
               </p>
               <p style="margin: 0; color: #57534e; font-size: 13px; font-weight: 300;">
                 XoXo Sandra 💋
@@ -102,7 +102,7 @@ It's been a few days since you joined. How's it going?
 
 I wanted to share something that might help: the best results come from consistency. Even if you just create 5-10 photos this week, that's enough to start building your content library.
 
-Here's a quick tip: try creating photos in different styles—some professional, some casual, some with different backgrounds. This gives you variety for your feed.
+Here's a quick tip: try creating photos in different styles-some professional, some casual, some with different backgrounds. This gives you variety for your feed.
 
 "The magic happens when you stop waiting for perfect and start creating consistently."
 
@@ -110,7 +110,7 @@ Create More Photos: ${siteUrl}/studio
 
 If you're stuck or have questions, just hit reply. I'm here to help.
 
-Questions? Just reply to this email—I read every message.
+Questions? Just reply to this email-I read every message.
 
 XoXo Sandra 💋
 

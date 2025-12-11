@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Loader2, TrendingUp, Users, BookOpen, MessageSquare, AlertCircle, DollarSign, Calendar, BarChart3, Coins, Mail, Star } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts"
@@ -66,6 +67,7 @@ interface AdminDashboardProps {
 }
 
 export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
+  const router = useRouter()
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [revenue, setRevenue] = useState<RevenueData | null>(null)
   const [feedback, setFeedback] = useState<FeedbackData | null>(null)
@@ -165,6 +167,7 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
     }).format(cents)
   }
 
+
   if (loading) {
     return (
       <div className="min-h-screen bg-stone-50 flex items-center justify-center">
@@ -197,6 +200,23 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-8 -mt-8 md:-mt-12 relative z-10">
+        {/* Simple Login as User Button */}
+        <div className="bg-white rounded-xl md:rounded-2xl p-4 md:p-6 border border-stone-200 shadow-xl mb-6 md:mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-stone-950 mb-1">Login as User</h2>
+              <p className="text-sm text-stone-600">Access any user's account with admin password</p>
+            </div>
+            <a
+              href="/admin/login-as-user"
+              className="px-6 py-3 bg-stone-950 text-white rounded-lg hover:bg-stone-800 transition-colors text-sm font-medium"
+            >
+              Login as User
+            </a>
+          </div>
+        </div>
+
+
         {/* KPI cards in one row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6 md:mb-8">
           <div className="bg-gradient-to-br from-stone-950 to-stone-800 rounded-xl md:rounded-2xl p-4 md:p-6 border border-stone-700 shadow-xl">

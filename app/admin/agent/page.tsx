@@ -1,7 +1,7 @@
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId, getOrCreateNeonUser } from "@/lib/user-mapping"
 import { redirect } from "next/navigation"
-import AdminAgentChat from "@/components/admin/admin-agent-chat"
+import AdminAgentChat from "@/components/admin/admin-agent-chat-new"
 
 const ADMIN_EMAIL = "ssa@ssasocial.com"
 

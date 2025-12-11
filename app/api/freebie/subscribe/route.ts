@@ -3,6 +3,7 @@ import { neon } from "@neondatabase/serverless"
 import { Resend } from "resend"
 import { addOrUpdateResendContact } from "@/lib/resend/manage-contact"
 import { generateFreebieGuideEmail } from "@/lib/email/templates/freebie-guide-email"
+import { sendEmail } from "@/lib/email/send-email"
 
 const resend = new Resend(process.env.RESEND_API_KEY!)
 const sql = neon(process.env.DATABASE_URL!)
@@ -185,18 +186,23 @@ export async function POST(request: NextRequest) {
           guideAccessLink: guideUrl,
         })
 
-        await resend.emails.send({
+        const emailResult = await sendEmail({
           from: "SSELFIE <hello@sselfie.ai>",
           to: email,
           replyTo: "hello@sselfie.ai",
           subject: "Your Free Selfie Guide is Ready 📸",
           html: emailContent.html,
           text: emailContent.text,
-          tags: [{ name: "freebie-guide", value: "signup" }],
+          tags: ["freebie-guide"],
+          emailType: "freebie_guide",
         })
 
-        emailSent = true
-        console.log("[v0] Guide access email sent successfully")
+        if (emailResult.success) {
+          emailSent = true
+          console.log("[v0] Guide access email sent successfully")
+        } else {
+          throw new Error(emailResult.error || "Failed to send email")
+        }
 
         await sql`
           UPDATE freebie_subscribers

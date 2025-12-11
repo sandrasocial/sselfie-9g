@@ -149,11 +149,11 @@ XoXo Sandra 💋
 
   const welcomeMessage = isMembership
     ? "You just joined the Studio. Welcome to the inner circle."
-    : "You just took the first step toward building your brand empire, and trust me—this is where the magic happens."
+    : "You just took the first step toward building your brand empire, and trust me-this is where the magic happens."
 
   const secondMessage = isMembership
     ? "This is where we create the content that builds empires. Every month, you get fresh tools, new styles, and exclusive drops that keep your brand ahead of the curve."
-    : "No more waiting for the \"perfect\" photoshoot. No more feeling invisible online. You're about to create professional photos that actually look like you—and they're going to be stunning."
+    : "No more waiting for the \"perfect\" photoshoot. No more feeling invisible online. You're about to create professional photos that actually look like you-and they're going to be stunning."
 
   const ctaUrl = passwordSetupUrl || `${process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"}/studio`
   const ctaText = passwordSetupUrl ? "Set Up Your Password" : "Go to Studio"
@@ -316,7 +316,7 @@ XoXo Sandra 💋
                   "I built my business from nothing but selfies and a story. Now it's your turn."
                 </p>
                 <p style="margin: 0; color: #57534e; font-size: 13px; font-weight: 300;">
-                  — Sandra
+                  - Sandra
                 </p>
               </div>
             </td>
@@ -335,7 +335,7 @@ XoXo Sandra 💋
           <tr>
             <td style="padding: 30px; background-color: #fafaf9; border-top: 1px solid #e7e5e4;">
               <p style="margin: 0 0 12px; color: #57534e; font-size: 13px; font-weight: 300; line-height: 1.6; text-align: center;">
-                Need help? Just reply to this email—I read every message.
+                Need help? Just reply to this email-I read every message.
               </p>
               <p style="margin: 0; color: #57534e; font-size: 13px; font-weight: 300; text-align: center;">
                 XoXo Sandra 💋
@@ -384,11 +384,11 @@ ${ctaText}: ${ctaUrl}`
 }
 
 "I built my business from nothing but selfies and a story. Now it's your turn."
-— Sandra
+- Sandra
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Need help? Just reply to this email—I read every message.
+Need help? Just reply to this email-I read every message.
 
 XoXo Sandra 💋
 
