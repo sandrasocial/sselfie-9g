@@ -63,7 +63,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
   const [styleStrength, setStyleStrength] = useState(1.0) // Updated default from 1.05 to 1.0
   const [promptAccuracy, setPromptAccuracy] = useState(3.5) // Guidance scale: 2.5-5.0
   const [aspectRatio, setAspectRatio] = useState("4:5")
-  const [realismStrength, setRealismStrength] = useState(0.4) // Extra LoRA scale: 0.0-0.8
+  const [realismStrength, setRealismStrength] = useState(0.2) // Extra LoRA scale: 0.0-0.8
   const [showSettings, setShowSettings] = useState(false)
 
   const settingsSaveTimerRef = useRef<NodeJS.Timeout | null>(null)
@@ -92,7 +92,9 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
         setStyleStrength(loadedStyleStrength === 1.1 ? 1.0 : loadedStyleStrength) // Removed 1.05 migration, only migrate 1.1 to 1.0
         setPromptAccuracy(settings.promptAccuracy || 3.5)
         setAspectRatio(settings.aspectRatio || "4:5") // Updated default from "1:1" to "4:5"
-        setRealismStrength(settings.realismStrength ?? 0.4)
+        // Migrate old default (0.4) to new default (0.2), but preserve custom values
+        const loadedRealismStrength = settings.realismStrength ?? 0.2
+        setRealismStrength(loadedRealismStrength === 0.4 ? 0.2 : loadedRealismStrength)
       } catch (error) {
         console.error("[v0] ❌ Error loading settings:", error)
       }

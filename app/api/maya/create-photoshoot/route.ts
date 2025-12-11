@@ -397,7 +397,7 @@ export async function POST(request: NextRequest) {
       finalSettings = {
         guidance_scale: customSettings.promptAccuracy || presetSettings.guidance_scale,
         lora_scale: customSettings.styleStrength || Number(userLoraScale || presetSettings.lora_scale),
-        extra_lora_scale: customSettings.realismStrength || 0.4,
+        extra_lora_scale: customSettings.realismStrength || 0.2,
         num_inference_steps: presetSettings.num_inference_steps,
         megapixels: presetSettings.megapixels,
         output_format: presetSettings.output_format,
@@ -410,7 +410,7 @@ export async function POST(request: NextRequest) {
       finalSettings = {
         guidance_scale: presetSettings.guidance_scale,
         lora_scale: Number(userLoraScale || presetSettings.lora_scale),
-        extra_lora_scale: 0.4,
+        extra_lora_scale: 0.2,
         num_inference_steps: presetSettings.num_inference_steps,
         megapixels: presetSettings.megapixels,
         output_format: presetSettings.output_format,

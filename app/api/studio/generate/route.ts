@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
         megapixels: "1",
         model: "dev",
         extra_lora: "https://huggingface.co/Raspberry-ai/aidmaRealisticSkin-FLUX-v0.1/resolve/main/aidmaRealisticSkin-FLUX-v0.1.safetensors",
-        extra_lora_scale: 0.6,
+        extra_lora_scale: 0.2,
       },
     })
 

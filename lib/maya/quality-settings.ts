@@ -15,7 +15,7 @@ export const MAYA_DEFAULT_QUALITY_SETTINGS: QualitySettings = {
   num_outputs: 1,
   model: "dev",
   extra_lora: "https://huggingface.co/Raspberry-ai/aidmaRealisticSkin-FLUX-v0.1/resolve/main/aidmaRealisticSkin-FLUX-v0.1.safetensors",
-  extra_lora_scale: 0.4,
+  extra_lora_scale: 0.2,
 }
 
 export const MAYA_QUALITY_PRESETS = {
@@ -26,7 +26,7 @@ export const MAYA_QUALITY_PRESETS = {
     lora_scale: 1.0,
     num_inference_steps: 50,
     extra_lora: "https://huggingface.co/Raspberry-ai/aidmaRealisticSkin-FLUX-v0.1/resolve/main/aidmaRealisticSkin-FLUX-v0.1.safetensors",
-    extra_lora_scale: 0.4,
+    extra_lora_scale: 0.2,
   },
   headshot: {
     ...MAYA_DEFAULT_QUALITY_SETTINGS,
@@ -35,7 +35,7 @@ export const MAYA_QUALITY_PRESETS = {
     lora_scale: 1.0,
     num_inference_steps: 50,
     extra_lora: "https://huggingface.co/Raspberry-ai/aidmaRealisticSkin-FLUX-v0.1/resolve/main/aidmaRealisticSkin-FLUX-v0.1.safetensors",
-    extra_lora_scale: 0.4,
+    extra_lora_scale: 0.2,
   },
   "Close-Up": {
     ...MAYA_DEFAULT_QUALITY_SETTINGS,
@@ -44,7 +44,7 @@ export const MAYA_QUALITY_PRESETS = {
     lora_scale: 1.0,
     num_inference_steps: 50,
     extra_lora: "https://huggingface.co/Raspberry-ai/aidmaRealisticSkin-FLUX-v0.1/resolve/main/aidmaRealisticSkin-FLUX-v0.1.safetensors",
-    extra_lora_scale: 0.4,
+    extra_lora_scale: 0.2,
   },
   "Half Body": {
     ...MAYA_DEFAULT_QUALITY_SETTINGS,
@@ -53,7 +53,7 @@ export const MAYA_QUALITY_PRESETS = {
     lora_scale: 1.0,
     num_inference_steps: 50,
     extra_lora: "https://huggingface.co/Raspberry-ai/aidmaRealisticSkin-FLUX-v0.1/resolve/main/aidmaRealisticSkin-FLUX-v0.1.safetensors",
-    extra_lora_scale: 0.4,
+    extra_lora_scale: 0.2,
   },
   lifestyle: {
     ...MAYA_DEFAULT_QUALITY_SETTINGS,
@@ -62,7 +62,7 @@ export const MAYA_QUALITY_PRESETS = {
     lora_scale: 1.0,
     num_inference_steps: 50,
     extra_lora: "https://huggingface.co/Raspberry-ai/aidmaRealisticSkin-FLUX-v0.1/resolve/main/aidmaRealisticSkin-FLUX-v0.1.safetensors",
-    extra_lora_scale: 0.4,
+    extra_lora_scale: 0.2,
   },
   Lifestyle: {
     ...MAYA_DEFAULT_QUALITY_SETTINGS,
@@ -71,7 +71,7 @@ export const MAYA_QUALITY_PRESETS = {
     lora_scale: 1.0,
     num_inference_steps: 50,
     extra_lora: "https://huggingface.co/Raspberry-ai/aidmaRealisticSkin-FLUX-v0.1/resolve/main/aidmaRealisticSkin-FLUX-v0.1.safetensors",
-    extra_lora_scale: 0.4,
+    extra_lora_scale: 0.2,
   },
   Action: {
     ...MAYA_DEFAULT_QUALITY_SETTINGS,
@@ -80,7 +80,7 @@ export const MAYA_QUALITY_PRESETS = {
     lora_scale: 1.0,
     num_inference_steps: 50,
     extra_lora: "https://huggingface.co/Raspberry-ai/aidmaRealisticSkin-FLUX-v0.1/resolve/main/aidmaRealisticSkin-FLUX-v0.1.safetensors",
-    extra_lora_scale: 0.4,
+    extra_lora_scale: 0.2,
   },
   Environmental: {
     ...MAYA_DEFAULT_QUALITY_SETTINGS,
@@ -89,7 +89,7 @@ export const MAYA_QUALITY_PRESETS = {
     lora_scale: 1.0,
     num_inference_steps: 50,
     extra_lora: "https://huggingface.co/Raspberry-ai/aidmaRealisticSkin-FLUX-v0.1/resolve/main/aidmaRealisticSkin-FLUX-v0.1.safetensors",
-    extra_lora_scale: 0.4,
+    extra_lora_scale: 0.2,
   },
   editorial: {
     ...MAYA_DEFAULT_QUALITY_SETTINGS,
@@ -98,7 +98,7 @@ export const MAYA_QUALITY_PRESETS = {
     lora_scale: 1.0,
     num_inference_steps: 50,
     extra_lora: "https://huggingface.co/Raspberry-ai/aidmaRealisticSkin-FLUX-v0.1/resolve/main/aidmaRealisticSkin-FLUX-v0.1.safetensors",
-    extra_lora_scale: 0.4,
+    extra_lora_scale: 0.2,
   },
   default: MAYA_DEFAULT_QUALITY_SETTINGS,
 }
