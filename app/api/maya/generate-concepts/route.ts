@@ -1,7 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
-import { getUserByAuthId } from "@/lib/user-mapping"
 import { generateText } from "ai"
 import { getFluxPromptingPrinciples } from "@/lib/maya/flux-prompting-principles"
 import { getFashionIntelligencePrinciples } from "@/lib/maya/fashion-knowledge-2025"
@@ -37,8 +36,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const user = await getUserByAuthId(authUser.id)
-    if (!user) {
+    // Get effective user (impersonated if admin is impersonating)
+    const { getEffectiveNeonUser } = await import("@/lib/simple-impersonation")
+    const effectiveUser = await getEffectiveNeonUser(authUser.id)
+    if (!effectiveUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
@@ -77,13 +78,6 @@ export async function POST(req: NextRequest) {
     let physicalPreferences = null
     const { neon } = await import("@neondatabase/serverless")
     const sql = neon(process.env.DATABASE_URL!)
-
-    // Get effective user (impersonated if admin is impersonating)
-    const { getEffectiveNeonUser } = await import("@/lib/simple-impersonation")
-    const effectiveUser = await getEffectiveNeonUser(user.id)
-    if (!effectiveUser) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
-    }
 
     const userDataResult = await sql`
       SELECT u.gender, u.ethnicity, um.trigger_word, upb.physical_preferences
