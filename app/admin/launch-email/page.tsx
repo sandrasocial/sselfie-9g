@@ -4,6 +4,8 @@ import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { LaunchEmailSender } from "@/components/admin/launch-email-sender"
 
+export const dynamic = "force-dynamic"
+
 const ADMIN_EMAIL = "ssa@ssasocial.com"
 
 export default async function LaunchEmailPage() {

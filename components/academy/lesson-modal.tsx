@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Dialog, DialogContent } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { X, ChevronLeft, ChevronRight, Loader2, CheckCircle2 } from "lucide-react"
 import VideoPlayer from "./video-player"
 
@@ -104,6 +104,11 @@ export default function LessonModal({
         className="max-w-[95vw] sm:max-w-6xl lg:max-w-7xl max-h-[95vh] overflow-y-auto p-0 bg-stone-50 border-stone-200"
         showCloseButton={false}
       >
+        {/* DialogTitle must be a direct child of DialogContent for accessibility */}
+        <DialogTitle className="sr-only">
+          {loading ? "Loading lesson" : error || !lesson ? "Error" : lesson?.title || "Lesson"}
+        </DialogTitle>
+        
         {loading ? (
           <div className="flex items-center justify-center min-h-[400px]">
             <Loader2 className="w-8 h-8 text-stone-600 animate-spin" />

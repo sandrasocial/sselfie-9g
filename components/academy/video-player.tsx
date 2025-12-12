@@ -29,6 +29,26 @@ function getVimeoVideoId(url: string): string | null {
   return null
 }
 
+function getYouTubeVideoId(url: string): string | null {
+  // Match patterns like:
+  // https://www.youtube.com/watch?v=VIDEO_ID
+  // https://youtu.be/VIDEO_ID
+  // https://www.youtube.com/embed/VIDEO_ID
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+    /youtube\.com\/watch\?.*v=([^&\n?#]+)/,
+  ]
+
+  for (const pattern of patterns) {
+    const match = url.match(pattern)
+    if (match && match[1]) {
+      return match[1]
+    }
+  }
+
+  return null
+}
+
 export default function VideoPlayer({
   videoUrl,
   lessonId,
@@ -44,39 +64,60 @@ export default function VideoPlayer({
   const [playbackSpeed, setPlaybackSpeed] = useState(1)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [hasMarkedComplete, setHasMarkedComplete] = useState(false)
+  const [videoError, setVideoError] = useState<string | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const lastSaveTimeRef = useRef(0)
 
+  // Validate video URL
+  if (!videoUrl || videoUrl.trim() === "" || videoUrl === "PLACEHOLDER_VIDEO_URL") {
+    return (
+      <div className="bg-stone-950 p-8 text-center">
+        <p className="text-stone-50 font-light mb-4">Video URL is not available</p>
+        <p className="text-stone-400 text-sm">Please contact support if this issue persists.</p>
+      </div>
+    )
+  }
+
   const vimeoVideoId = getVimeoVideoId(videoUrl)
+  const youtubeVideoId = getYouTubeVideoId(videoUrl)
   const isVimeo = vimeoVideoId !== null
+  const isYouTube = youtubeVideoId !== null
+  const isEmbedded = isVimeo || isYouTube
+  
   const vimeoEmbedUrl = isVimeo
-    ? `https://player.vimeo.com/video/${vimeoVideoId}?autoplay=0&title=0&byline=0&portrait=0`
+    ? `https://player.vimeo.com/video/${vimeoVideoId}?autoplay=0&title=0&byline=0&portrait=0&responsive=1&dnt=1`
+    : null
+  
+  const youtubeEmbedUrl = isYouTube
+    ? `https://www.youtube.com/embed/${youtubeVideoId}?autoplay=0&rel=0&modestbranding=1`
     : null
 
   useEffect(() => {
-    if (isVimeo && durationMinutes) {
+    if ((isVimeo || isYouTube) && durationMinutes) {
       setDuration(durationMinutes * 60)
     }
-  }, [isVimeo, durationMinutes])
+  }, [isVimeo, isYouTube, durationMinutes])
 
   useEffect(() => {
     if (!isVimeo || !iframeRef.current) return
 
     const handleVimeoMessage = (event: MessageEvent) => {
       // Only accept messages from Vimeo
-      if (!event.origin.includes("vimeo.com")) return
+      if (!event.origin.includes("vimeo.com") && !event.origin.includes("player.vimeo.com")) return
 
       try {
-        const data = JSON.parse(event.data)
+        const data = typeof event.data === "string" ? JSON.parse(event.data) : event.data
 
         switch (data.event) {
           case "ready":
             // Player is ready, set initial time if needed
             if (initialWatchTime > 0 && iframeRef.current) {
-              iframeRef.current.contentWindow?.postMessage(
-                JSON.stringify({ method: "setCurrentTime", value: initialWatchTime }),
-                "*",
-              )
+              setTimeout(() => {
+                iframeRef.current?.contentWindow?.postMessage(
+                  JSON.stringify({ method: "setCurrentTime", value: initialWatchTime }),
+                  "https://player.vimeo.com",
+                )
+              }, 500)
             }
             break
           case "play":
@@ -86,7 +127,7 @@ export default function VideoPlayer({
             setIsPlaying(false)
             break
           case "timeupdate":
-            if (data.data?.seconds) {
+            if (data.data?.seconds !== undefined) {
               setCurrentTime(data.data.seconds)
             }
             break
@@ -95,24 +136,62 @@ export default function VideoPlayer({
               setDuration(data.data.duration)
             }
             break
+          case "ended":
+            setIsPlaying(false)
+            break
         }
       } catch (e) {
-        // Ignore parsing errors
+        // Ignore parsing errors for non-JSON messages
       }
     }
 
     window.addEventListener("message", handleVimeoMessage)
 
-    // Subscribe to events
-    if (iframeRef.current) {
-      const iframe = iframeRef.current
-      iframe.contentWindow?.postMessage(JSON.stringify({ method: "addEventListener", value: "play" }), "*")
-      iframe.contentWindow?.postMessage(JSON.stringify({ method: "addEventListener", value: "pause" }), "*")
-      iframe.contentWindow?.postMessage(JSON.stringify({ method: "addEventListener", value: "timeupdate" }), "*")
-      iframe.contentWindow?.postMessage(JSON.stringify({ method: "addEventListener", value: "loaded" }), "*")
+    // Subscribe to Vimeo events after iframe loads
+    const iframe = iframeRef.current
+    const subscribeToEvents = () => {
+      if (iframe.contentWindow) {
+        // Request Vimeo player to send events
+        iframe.contentWindow.postMessage(
+          JSON.stringify({
+            method: "addEventListener",
+            value: "play",
+          }),
+          "https://player.vimeo.com",
+        )
+        iframe.contentWindow.postMessage(
+          JSON.stringify({
+            method: "addEventListener",
+            value: "pause",
+          }),
+          "https://player.vimeo.com",
+        )
+        iframe.contentWindow.postMessage(
+          JSON.stringify({
+            method: "addEventListener",
+            value: "timeupdate",
+          }),
+          "https://player.vimeo.com",
+        )
+        iframe.contentWindow.postMessage(
+          JSON.stringify({
+            method: "addEventListener",
+            value: "loaded",
+          }),
+          "https://player.vimeo.com",
+        )
+      }
     }
 
-    return () => window.removeEventListener("message", handleVimeoMessage)
+    // Wait for iframe to load before subscribing
+    iframe.addEventListener("load", subscribeToEvents)
+    // Also try immediately in case iframe is already loaded
+    setTimeout(subscribeToEvents, 1000)
+
+    return () => {
+      window.removeEventListener("message", handleVimeoMessage)
+      iframe.removeEventListener("load", subscribeToEvents)
+    }
   }, [isVimeo, initialWatchTime])
 
   // Auto-save watch time every 10 seconds
@@ -174,7 +253,13 @@ export default function VideoPlayer({
   const handlePlayPause = () => {
     if (isVimeo && iframeRef.current) {
       const method = isPlaying ? "pause" : "play"
-      iframeRef.current.contentWindow?.postMessage(JSON.stringify({ method }), "*")
+      iframeRef.current.contentWindow?.postMessage(
+        JSON.stringify({ method }),
+        "https://player.vimeo.com",
+      )
+    } else if (isYouTube && iframeRef.current) {
+      // YouTube iframe API would require additional setup, for now just toggle state
+      setIsPlaying(!isPlaying)
     } else if (videoRef.current) {
       if (isPlaying) {
         videoRef.current.pause()
@@ -208,7 +293,13 @@ export default function VideoPlayer({
     const newTime = percentage * duration
 
     if (isVimeo && iframeRef.current) {
-      iframeRef.current.contentWindow?.postMessage(JSON.stringify({ method: "setCurrentTime", value: newTime }), "*")
+      iframeRef.current.contentWindow?.postMessage(
+        JSON.stringify({ method: "setCurrentTime", value: newTime }),
+        "https://player.vimeo.com",
+      )
+    } else if (isYouTube) {
+      // YouTube seek would require iframe API, skip for now
+      console.log("[v0] YouTube seek not yet implemented")
     } else if (videoRef.current) {
       videoRef.current.currentTime = newTime
     }
@@ -218,8 +309,14 @@ export default function VideoPlayer({
 
   const changeSpeed = (speed: number) => {
     if (isVimeo && iframeRef.current) {
-      iframeRef.current.contentWindow?.postMessage(JSON.stringify({ method: "setPlaybackRate", value: speed }), "*")
+      iframeRef.current.contentWindow?.postMessage(
+        JSON.stringify({ method: "setPlaybackRate", value: speed }),
+        "https://player.vimeo.com",
+      )
       setPlaybackSpeed(speed)
+    } else if (isYouTube) {
+      // YouTube playback speed would require iframe API
+      console.log("[v0] YouTube playback speed not yet implemented")
     } else if (videoRef.current) {
       videoRef.current.playbackRate = speed
       setPlaybackSpeed(speed)
@@ -338,6 +435,16 @@ export default function VideoPlayer({
             src={vimeoEmbedUrl}
             className="w-full h-full"
             frameBorder="0"
+            allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+            allowFullScreen
+            title="Vimeo video player"
+          />
+        ) : isYouTube && youtubeEmbedUrl ? (
+          <iframe
+            ref={iframeRef}
+            src={youtubeEmbedUrl}
+            className="w-full h-full"
+            frameBorder="0"
             allow="autoplay; fullscreen; picture-in-picture"
             allowFullScreen
           />
@@ -350,12 +457,70 @@ export default function VideoPlayer({
             onPause={() => setIsPlaying(false)}
             onTimeUpdate={handleTimeUpdate}
             onLoadedMetadata={handleLoadedMetadata}
+            onError={(e) => {
+              console.error("[v0] Video playback error:", e)
+              const video = e.currentTarget
+              if (video.error) {
+                let errorMessage = "Failed to load video"
+                switch (video.error.code) {
+                  case 1:
+                    errorMessage = "Video loading aborted"
+                    break
+                  case 2:
+                    errorMessage = "Network error while loading video"
+                    break
+                  case 3:
+                    errorMessage = "Video decoding error"
+                    break
+                  case 4:
+                    errorMessage = "Video format not supported"
+                    break
+                }
+                setVideoError(errorMessage)
+                console.error("[v0] Video error code:", video.error.code, errorMessage)
+              }
+            }}
+            onCanPlay={() => {
+              setVideoError(null)
+              if (process.env.NODE_ENV === "development") {
+                console.log("[v0] Video can play")
+              }
+            }}
+            onLoadStart={() => {
+              setVideoError(null)
+              if (process.env.NODE_ENV === "development") {
+                console.log("[v0] Video load started")
+              }
+            }}
             playsInline
+            preload="metadata"
+            crossOrigin="anonymous"
           />
         )}
 
+        {/* Error Message */}
+        {videoError && (
+          <div className="absolute inset-0 flex items-center justify-center bg-stone-950/90 z-20">
+            <div className="text-center p-6 max-w-md">
+              <p className="text-stone-50 font-light mb-2">{videoError}</p>
+              <p className="text-stone-400 text-sm mb-4">Video URL: {videoUrl.substring(0, 50)}...</p>
+              <button
+                onClick={() => {
+                  setVideoError(null)
+                  if (videoRef.current) {
+                    videoRef.current.load()
+                  }
+                }}
+                className="px-4 py-2 bg-stone-50 text-stone-950 rounded-lg text-sm hover:bg-stone-200 transition-colors"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Play/Pause Overlay - Only show for native video when not playing */}
-        {!isVimeo && !isPlaying && (
+        {!isEmbedded && !isPlaying && !videoError && (
           <div className="absolute inset-0 flex items-center justify-center bg-stone-950/40">
             <button
               onClick={handlePlayPause}
@@ -368,7 +533,7 @@ export default function VideoPlayer({
         )}
 
         {/* Click to pause when playing - Only for native video */}
-        {!isVimeo && isPlaying && (
+        {!isEmbedded && isPlaying && (
           <button onClick={handlePlayPause} className="absolute inset-0 cursor-pointer" aria-label="Pause video" />
         )}
       </div>

@@ -5,6 +5,8 @@ import { AdminDashboard } from "@/components/admin/admin-dashboard"
 import { Lock, ArrowLeft } from "lucide-react"
 import Link from "next/link"
 
+export const dynamic = "force-dynamic"
+
 const ADMIN_EMAIL = "ssa@ssasocial.com"
 
 export default async function AdminPage() {

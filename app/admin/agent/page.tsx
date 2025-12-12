@@ -3,6 +3,8 @@ import { getUserByAuthId, getOrCreateNeonUser } from "@/lib/user-mapping"
 import { redirect } from "next/navigation"
 import AdminAgentChat from "@/components/admin/admin-agent-chat-new"
 
+export const dynamic = "force-dynamic"
+
 const ADMIN_EMAIL = "ssa@ssasocial.com"
 
 export default async function AdminAgentPage() {

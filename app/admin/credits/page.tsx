@@ -5,6 +5,8 @@ import { CreditManager } from "@/components/admin/credit-manager"
 import { Lock, ArrowLeft } from "lucide-react"
 import Link from "next/link"
 
+export const dynamic = "force-dynamic"
+
 const ADMIN_EMAIL = "ssa@ssasocial.com"
 
 export default async function AdminCreditsPage() {

@@ -3,6 +3,8 @@ import { getUserByAuthId, getOrCreateNeonUser } from "@/lib/user-mapping"
 import { redirect } from 'next/navigation'
 import { BetaProgramManager } from "@/components/admin/beta-program-manager"
 
+export const dynamic = "force-dynamic"
+
 export default async function BetaProgramPage() {
   const supabase = await createServerClient()
   const {

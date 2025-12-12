@@ -2,6 +2,8 @@ import type { ReactNode } from "react"
 import { redirect } from "next/navigation"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 
+export const dynamic = "force-dynamic"
+
 const ADMIN_EMAIL = "ssa@ssasocial.com"
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {

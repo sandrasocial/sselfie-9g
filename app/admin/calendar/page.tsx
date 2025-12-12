@@ -3,6 +3,8 @@ import { getUserByAuthId, getOrCreateNeonUser } from "@/lib/user-mapping"
 import { redirect } from "next/navigation"
 import ContentCalendarScreen from "@/components/sselfie/content-calendar-screen"
 
+export const dynamic = "force-dynamic"
+
 const ADMIN_EMAIL = "ssa@ssasocial.com"
 
 export default async function AdminCalendarPage() {

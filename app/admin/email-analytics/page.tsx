@@ -1,8 +1,6 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { createServerClient } from "@/lib/supabase/server"
-import { redirect } from "next/navigation"
 import { 
   Mail, 
   TrendingUp, 
