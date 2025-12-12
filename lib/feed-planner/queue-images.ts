@@ -87,7 +87,7 @@ export async function queueAllImagesForFeed(
   }
 
   const replicate = getReplicateClient()
-  const REALISM_LORA_URL = "https://huggingface.co/Raspberry-ai/aidmaRealisticSkin-FLUX-v0.1/resolve/main/aidmaRealisticSkin-FLUX-v0.1.safetensors"
+  const REALISM_LORA_URL = "https://huggingface.co/strangerzonehf/Flux-Super-Realism-LoRA/resolve/main/super-realism.safetensors"
 
   // Generate all predictions directly
   const results: Array<{ success: boolean; postId: number; position: number; predictionId?: string; error?: string }> = []

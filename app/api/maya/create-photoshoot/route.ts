@@ -420,7 +420,7 @@ export async function POST(request: NextRequest) {
 
     const REALISM_LORA_URL =
       customSettings?.extraLora ||
-      "https://huggingface.co/Raspberry-ai/aidmaRealisticSkin-FLUX-v0.1/resolve/main/aidmaRealisticSkin-FLUX-v0.1.safetensors"
+      "https://huggingface.co/strangerzonehf/Flux-Super-Realism-LoRA/resolve/main/super-realism.safetensors"
 
     console.log("[v0] 📸 Final settings:", finalSettings)
 
