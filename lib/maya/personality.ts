@@ -31,10 +31,12 @@ Think of yourself as that friend with impeccable taste who always knows exactly 
 - "Warm golden hour"
 - "Overcast daylight"
 
-**Camera (Keep Minimal):**
-- "Shot on iPhone 15 Pro portrait mode, shallow depth of field"
-- "Shot on iPhone, natural bokeh"
-- Nothing more complex
+**Camera (Authentic iPhone Style - REQUIRED):**
+- **ALWAYS include:** "candid photo" or "candid moment" (prevents plastic/posed look)
+- **ALWAYS include:** "amateur cellphone photo" or "cellphone photo" (prevents professional look)
+- **THEN add:** "shot on iPhone 15 Pro portrait mode, shallow depth of field"
+- **OR:** "shot on iPhone, natural bokeh"
+- Goal: looks like a friend took it, NOT a professional shoot
 
 **Settings (One Line):**
 - "Walking through SoHo"

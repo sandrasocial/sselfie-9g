@@ -242,8 +242,10 @@ Create a Flux prompt for this ${shotType} shot that achieves: ${purpose}
    - ✅ Example: "Warm golden hour lighting"
    - ✅ Example: "Overcast daylight"
 
-4. **TECHNICAL SPECS (MANDATORY - KEEP BASIC):**
-   - ✅ "shot on iPhone 15 Pro portrait mode, shallow depth of field" OR "shot on iPhone, natural bokeh" (MANDATORY)
+4. **TECHNICAL SPECS (MANDATORY - AUTHENTIC IPHONE STYLE):**
+   - ✅ **ALWAYS include:** "candid photo" or "candid moment" (prevents plastic/posed look)
+   - ✅ **ALWAYS include:** "amateur cellphone photo" or "cellphone photo" (prevents professional look)
+   - ✅ **THEN add:** "shot on iPhone 15 Pro portrait mode, shallow depth of field" OR "shot on iPhone, natural bokeh"
    - ❌ NO complex technical details (no f-stops, ISO, focal lengths)
    - ❌ NO natural imperfections lists
    - ❌ NO skin texture descriptions beyond "natural"
@@ -277,7 +279,7 @@ Remember:
 3. ✅ Simple setting (one-line location, keep brief)
 4. ✅ Simple natural lighting (NO dramatic/cinematic terms)
 5. ✅ Natural pose/action (NO "striking poses", NO "legs tucked under" - causes extra limbs)
-6. ✅ Basic iPhone specs only ("shot on iPhone 15 Pro portrait mode, shallow depth of field" OR "shot on iPhone, natural bokeh")
+6. ✅ Authentic iPhone specs: Includes "candid photo" or "candid moment"? Includes "amateur cellphone photo" or "cellphone photo"? "shot on iPhone 15 Pro portrait mode, shallow depth of field" OR "shot on iPhone, natural bokeh"?
 7. ✅ Total length: 50-80 words (optimal for LoRA activation)
 
 **🔴 AVOID THESE POSES (They cause extra limbs/body parts):**
@@ -287,7 +289,7 @@ Remember:
 - ✅ USE INSTEAD: "sitting with legs crossed", "sitting with one knee up", "lounging on sofa"
 
 **🔴 EXAMPLE OF PERFECT PROMPT (FOLLOW THIS FORMAT):**
-"${actualTriggerWord}, ${userEthnicity ? userEthnicity + ", " : ""}${userGender}, in sage green silk blouse with relaxed fit tucked into high-waisted cream linen trousers, standing with hand on marble bar counter, looking over shoulder naturally, upscale restaurant with marble surfaces, soft afternoon sunlight, shot on iPhone 15 Pro portrait mode, shallow depth of field"
+"${actualTriggerWord}, ${userEthnicity ? userEthnicity + ", " : ""}${userGender}, in sage green silk blouse with relaxed fit tucked into high-waisted cream linen trousers, standing with hand on marble bar counter, looking over shoulder naturally, upscale restaurant with marble surfaces, soft afternoon sunlight, candid photo, amateur cellphone photo, shot on iPhone 15 Pro portrait mode, shallow depth of field"
 
 **🔴 EXAMPLE OF BAD PROMPT (DO NOT CREATE LIKE THIS):**
 "${actualTriggerWord}, ${userEthnicity ? userEthnicity + ", " : ""}${userGender}, confident expression, wearing stylish business casual outfit, urban background with clean lines, edgy-minimalist aesthetic with perfect lighting"

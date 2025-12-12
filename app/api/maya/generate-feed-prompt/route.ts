@@ -222,19 +222,14 @@ CRITICAL INSTRUCTIONS:
    - DO NOT use username, email, or any other identifier - ONLY use the trigger word "${triggerWord}"
    `}
 
-2. **iPhone 15 Pro (MANDATORY):** MUST include "shot on iPhone 15 Pro" OR "amateur cellphone photo"
-
-3. **Natural Imperfections (MANDATORY - AT LEAST 3):** MUST include AT LEAST 3 of: "visible sensor noise", "slight motion blur from handheld", "uneven lighting", "mixed color temperatures", "handheld feel", "natural camera imperfections"
-
-4. **Natural Skin Texture (MANDATORY):** MUST include "natural skin texture with pores visible"
-
-5. **Film Grain (MANDATORY):** MUST include one: "visible film grain", "fine film grain texture", "grainy texture", or "subtle grain visible"
-
-6. **Muted Colors (MANDATORY):** MUST include one: "muted color palette", "soft muted tones", "desaturated realistic colors", or "vintage color temperature"
-
-7. **Lighting with Imperfections (MANDATORY):** MUST include "uneven lighting", "mixed color temperatures", or "slight uneven illumination"
-
-8. **Casual Moment Language (RECOMMENDED):** Include "candid moment", "looks like a real phone camera photo", or "amateur cellphone quality"
+2. **Authentic iPhone Style (MANDATORY):**
+   - ✅ **ALWAYS include:** "candid photo" or "candid moment" (prevents plastic/posed look)
+   - ✅ **ALWAYS include:** "amateur cellphone photo" or "cellphone photo" (prevents professional look)
+   - ✅ **THEN add:** "shot on iPhone 15 Pro portrait mode, shallow depth of field" OR "shot on iPhone, natural bokeh"
+   - ❌ NO natural imperfections lists (removed - too complex)
+   - ❌ NO film grain requirements (removed - too complex)
+   - ❌ NO muted color requirements (removed - too complex)
+   - ❌ NO skin texture descriptions beyond "natural" (removed - too complex)
 
 **🔴 PROMPT STRUCTURE ARCHITECTURE (FOLLOW THIS ORDER):**
 
@@ -281,7 +276,7 @@ ${brandColors ? `**CRITICAL**: Incorporate the user's brand colors (${brandColor
 3. ✅ Simple setting (one-line location, keep brief)
 4. ✅ Simple natural lighting (NO dramatic/cinematic terms)
 5. ✅ Natural pose/action (NO "striking poses")
-6. ✅ Basic iPhone specs only ("shot on iPhone 15 Pro portrait mode, shallow depth of field" OR "shot on iPhone, natural bokeh")
+6. ✅ Authentic iPhone specs: Includes "candid photo" or "candid moment"? Includes "amateur cellphone photo" or "cellphone photo"? "shot on iPhone 15 Pro portrait mode, shallow depth of field" OR "shot on iPhone, natural bokeh"?
 7. ✅ Total length: 50-80 words (optimal for LoRA activation)
 
 **Total target: 50-80 words for optimal LoRA activation and accurate character representation**

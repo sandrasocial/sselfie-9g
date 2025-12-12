@@ -637,9 +637,14 @@ Now apply your fashion intelligence and prompting mastery. Create ${count} conce
         // 3. Remove: redundant technical terms
         // 4. Remove: casual moment language (lowest priority)
         
-        // Remove casual moment language first (lowest priority)
-        prompt = prompt.replace(/,\s*(candid moment|looks like a real phone camera photo|amateur cellphone quality|looks like real phone camera photo|authentic iPhone|iPhone photo|Instagram-native)/gi, "")
-        currentWordCount = wordCount(prompt)
+        // DO NOT remove authenticity keywords - they prevent plastic look
+        // These are now REQUIRED: "candid moment", "candid photo", "amateur cellphone photo", "cellphone photo"
+        // Only remove truly unnecessary phrases if over word limit
+        if (currentWordCount > MAX_WORDS) {
+          // Remove overly verbose phrases but keep authenticity keywords
+          prompt = prompt.replace(/,\s*(looks like a real phone camera photo|looks like real phone camera photo|Instagram-native)/gi, "")
+          currentWordCount = wordCount(prompt)
+        }
         
         // If still over, remove overly detailed location descriptions
         if (currentWordCount > MAX_WORDS) {
@@ -648,10 +653,11 @@ Now apply your fashion intelligence and prompting mastery. Create ${count} conce
           currentWordCount = wordCount(prompt)
         }
         
-        // If still over, remove any old requirements that might have been added
+        // If still over, remove old requirements that are no longer needed
+        // BUT: Keep "candid moment" and "candid photo" - these are REQUIRED for authenticity
         if (currentWordCount > MAX_WORDS) {
-          // Remove old requirements that are no longer needed
-          prompt = prompt.replace(/,\s*(film\s+grain|muted\s+tones|natural\s+skin\s+texture|not\s+airbrushed|motion\s+blur|candid\s+moment)/gi, "")
+          // Remove old requirements but NOT candid/amateur keywords
+          prompt = prompt.replace(/,\s*(film\s+grain|muted\s+tones|natural\s+skin\s+texture|not\s+airbrushed|motion\s+blur)/gi, "")
           currentWordCount = wordCount(prompt)
         }
         
@@ -713,8 +719,32 @@ Now apply your fashion intelligence and prompting mastery. Create ${count} conce
         currentWordCount = wordCount(prompt)
       }
 
-      // REMOVED: All post-processing that adds old requirements (film grain, muted tones, skin texture, motion blur, candid moment)
-      // These are NO LONGER needed. Detailed prompts (50-80 words) work better for LoRA activation.
+      // CRITICAL FIX #2: Ensure authenticity keywords are present (research-backed)
+      // These keywords prevent plastic look: "candid photo", "candid moment", "amateur cellphone photo", "cellphone photo"
+      const hasCandid = /candid\s+(photo|moment)/i.test(prompt)
+      const hasAmateur = /(amateur\s+cellphone\s+photo|cellphone\s+photo|amateur\s+photography)/i.test(prompt)
+      
+      if (!hasCandid && currentWordCount < MAX_WORDS) {
+        // Add "candid photo" or "candid moment" before iPhone specs
+        const iphoneIndex = prompt.search(/shot\s+on\s+iPhone/i)
+        if (iphoneIndex > 0) {
+          prompt = prompt.slice(0, iphoneIndex).trim() + ", candid photo, " + prompt.slice(iphoneIndex)
+        } else {
+          prompt = prompt + ", candid photo"
+        }
+        currentWordCount = wordCount(prompt)
+      }
+      
+      if (!hasAmateur && currentWordCount < MAX_WORDS) {
+        // Add "amateur cellphone photo" or "cellphone photo" before iPhone specs
+        const iphoneIndex = prompt.search(/shot\s+on\s+iPhone/i)
+        if (iphoneIndex > 0) {
+          prompt = prompt.slice(0, iphoneIndex).trim() + ", amateur cellphone photo, " + prompt.slice(iphoneIndex)
+        } else {
+          prompt = prompt + ", amateur cellphone photo"
+        }
+        currentWordCount = wordCount(prompt)
+      }
 
       // Final cleanup
       prompt = prompt.replace(/,\s*,/g, ",").replace(/\s+/g, " ").trim()

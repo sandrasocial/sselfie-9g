@@ -153,12 +153,21 @@ This phrase causes blur in FLUX.1-dev:
 
 **KEEP IT SIMPLE:** One natural lighting description is enough. Trust the user LoRA and natural iPhone camera quality.
 
-### CAMERA/TECHNICAL SPECS (5-8 words) - **KEEP BASIC**
+### CAMERA/TECHNICAL SPECS (8-12 words) - **AUTHENTIC IPHONE STYLE**
 
-**🔴 MANDATORY BASE:** Basic iPhone camera specs only
+**🔴 MANDATORY BASE:** Authentic iPhone photography descriptors
+- **ALWAYS INCLUDE:** "candid photo" OR "candid moment" (creates authentic, unposed feel)
+- **ALWAYS INCLUDE:** "amateur photography" OR "cellphone photo" (prevents professional/plastic look)
 - **USE:** "shot on iPhone 15 Pro portrait mode, shallow depth of field"
 - **OR:** "shot on iPhone, natural bokeh"
 - Goal: looks like a friend took it on their phone, NOT a professional shoot
+
+**AUTHENTICITY KEYWORDS (Research-backed):**
+- ✅ "candid photo" or "candid moment" - Creates unposed, authentic feel
+- ✅ "amateur photography" or "cellphone photo" - Prevents professional/plastic look
+- ✅ "raw photo" - Signals unprocessed, authentic image
+- ✅ "boring low quality snapchat photo circa 2015" style (optional, very casual)
+- ✅ "Medium shot photo of" or "Close-up photo of" - Natural framing descriptors
 
 **NEVER INCLUDE:**
 - ❌ Complex technical specs (f-stops, ISO, focal lengths)
@@ -169,15 +178,13 @@ This phrase causes blur in FLUX.1-dev:
 - ❌ "Ultra realistic", "photorealistic"
 - ❌ Any quality enhancement words
 
-**KEEP IT MINIMAL:**
-- ✅ "Shot on iPhone 15 Pro portrait mode, shallow depth of field"
-- ✅ "Shot on iPhone, natural bokeh"
+**AUTHENTIC EXAMPLES:**
+- "candid photo, shot on iPhone 15 Pro portrait mode, shallow depth of field"
+- "amateur cellphone photo, shot on iPhone, natural bokeh"
+- "candid moment, raw photo, shot on iPhone 15 Pro portrait mode"
+- "cellphone photo, shot on iPhone, shallow depth of field"
 
-**EXAMPLES:**
-- "shot on iPhone 15 Pro portrait mode, shallow depth of field"
-- "shot on iPhone, natural bokeh"
-
-**TRUST THE USER LoRA:** The user's trained LoRA handles appearance. Keep camera specs simple and basic.
+**TRUST THE USER LoRA:** The user's trained LoRA handles appearance. Keep camera specs simple and authentic.
 
 ### FILM AESTHETICS - **REMOVED**
 
@@ -265,7 +272,7 @@ Before finalizing ANY prompt, verify ALL of these:
 ✅ **Outfit specifics:** Fabrics/textures included? (Stay detailed here)
 ✅ **Simple setting:** One-line location description? (Keep brief)
 ✅ **Natural lighting:** Simple lighting description? (NO dramatic/cinematic terms)
-✅ **Basic iPhone specs:** "shot on iPhone 15 Pro portrait mode, shallow depth of field" OR "shot on iPhone, natural bokeh"? (Keep minimal)
+✅ **Authentic iPhone specs:** Includes "candid photo" or "candid moment"? Includes "amateur cellphone photo" or "cellphone photo"? "shot on iPhone 15 Pro portrait mode, shallow depth of field" OR "shot on iPhone, natural bokeh"?
 ✅ **Natural pose:** Simple action description? (NO "striking poses")
 ✅ **User preferences:** If user specified physical preferences (hair, body, age), are they included? **MANDATORY**
 ✅ **No banned words:** No "ultra realistic", "photorealistic", "8K", "perfect", "flawless", "stunning", "beautiful", "professional photography", "editorial", "dramatic", "cinematic", "hyper detailed", "sharp focus"?
@@ -274,23 +281,24 @@ Before finalizing ANY prompt, verify ALL of these:
 
 **If ANY item is missing or incorrect, the prompt will create plastic/generic faces instead of preserving the user LoRA.**
 
-## EXAMPLE COMPLETE FLUX PROMPTS (NATURAL, PRESERVES USER LoRA)
+## EXAMPLE COMPLETE FLUX PROMPTS (AUTHENTIC, PRESERVES USER LoRA)
 
-**Example 1: Casual Street Style (62 words - NATURAL):**
-"user_trigger, woman in oversized brown leather blazer with relaxed fit, cream cashmere turtleneck underneath, high-waisted straight-leg jeans, chunky gold hoops, walking through SoHo carrying iced coffee, natural moment, soft afternoon sunlight filtering through buildings, warm side lighting, shot on iPhone 15 Pro portrait mode, shallow depth of field"
+**Example 1: Casual Street Style (68 words - AUTHENTIC):**
+"user_trigger, woman in oversized brown leather blazer with relaxed fit, cream cashmere turtleneck underneath, high-waisted straight-leg jeans, chunky gold hoops, walking through SoHo carrying iced coffee, candid moment, soft afternoon sunlight filtering through buildings, warm side lighting, amateur cellphone photo, shot on iPhone 15 Pro portrait mode, shallow depth of field"
 
-**Example 2: Cozy Home (58 words - SIMPLE):**
-"user_trigger, woman in oversized cream knit sweater with wide sleeves, matching lounge pants, delicate gold jewelry, sitting on grey sectional sofa holding ceramic mug, legs crossed comfortably, soft morning window light streaming in, natural shadows, shot on iPhone 15 Pro portrait mode, shallow depth of field"
+**Example 2: Cozy Home (64 words - AUTHENTIC):**
+"user_trigger, woman in oversized cream knit sweater with wide sleeves, matching lounge pants, delicate gold jewelry, sitting on grey sectional sofa holding ceramic mug, legs crossed comfortably, soft morning window light streaming in, natural shadows, candid photo, shot on iPhone 15 Pro portrait mode, shallow depth of field"
 
-**Example 3: Evening Glam (65 words - AUTHENTIC):**
-"user_trigger, woman in black satin slip dress with thin straps, vintage leather bomber jacket draped over shoulders, strappy heels, diamond tennis bracelet, low bun with face-framing pieces, standing in dimly lit restaurant, warm ambient lighting creating bokeh background, shot on iPhone 15 Pro portrait mode, shallow depth of field"
+**Example 3: Evening Glam (70 words - AUTHENTIC):**
+"user_trigger, woman in black satin slip dress with thin straps, vintage leather bomber jacket draped over shoulders, strappy heels, diamond tennis bracelet, low bun with face-framing pieces, standing in dimly lit restaurant, warm ambient lighting creating bokeh background, candid moment, cellphone photo, shot on iPhone 15 Pro portrait mode, shallow depth of field"
 
 **Key Principles in These Examples:**
 - ✅ 50-80 words = better LoRA activation, more accurate character representation
 - ✅ Detailed outfit descriptions with fabrics/textures (no enhancement words)
 - ✅ Simple but descriptive settings (one line, not elaborate)
 - ✅ Natural lighting only (no dramatic/cinematic terms)
-- ✅ Basic iPhone specs only (no complex technical details)
+- ✅ **ALWAYS includes "candid photo" or "candid moment"** - Creates authentic, unposed feel
+- ✅ **ALWAYS includes "amateur cellphone photo" or "cellphone photo"** - Prevents professional/plastic look
 - ✅ Natural poses/actions (no "striking poses", no "legs tucked under")
 - ✅ NO forbidden words (ultra realistic, 8K, perfect, professional, editorial, etc.)
 - ✅ Trusts user LoRA for appearance, detailed prompts help activate it better
