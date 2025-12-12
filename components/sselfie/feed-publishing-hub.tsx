@@ -451,9 +451,9 @@ export default function FeedPublishingHub({
               {/* Caption */}
               <div>
                 <div className="flex items-start justify-between gap-3 mb-2">
-                  <p className="text-sm text-stone-950 leading-relaxed flex-1">
+                  <p className="text-sm text-stone-950 leading-relaxed flex-1 whitespace-pre-wrap">
                     <span className="font-semibold mr-2">@{username}</span>
-                    {selectedPost.caption}
+                    {selectedPost.caption?.replace(/\\n/g, '\n')}
                   </p>
                   <Button
                     size="sm"

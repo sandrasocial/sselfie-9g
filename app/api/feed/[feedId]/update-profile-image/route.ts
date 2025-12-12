@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server"
+import type { NextRequest } from "next/server"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { neon } from "@neondatabase/serverless"
 
 const sql = neon(process.env.DATABASE_URL!)
 
-export async function POST(request: Request, { params }: { params: { feedId: string } }) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ feedId: string }> | { feedId: string } }
+) {
   try {
     const { user: authUser, error: authError } = await getAuthenticatedUser()
 
@@ -17,6 +21,14 @@ export async function POST(request: Request, { params }: { params: { feedId: str
     const neonUser = await getUserByAuthId(authUser.id)
     if (!neonUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
+    }
+
+    // Resolve params (Next.js 16 pattern)
+    const resolvedParams = await Promise.resolve(params)
+    const feedId = resolvedParams.feedId
+
+    if (!feedId || feedId === "null" || feedId === "undefined") {
+      return NextResponse.json({ error: "Invalid feed ID" }, { status: 400 })
     }
 
     // Parse request body
@@ -32,7 +44,7 @@ export async function POST(request: Request, { params }: { params: { feedId: str
       SET 
         profile_image_url = ${imageUrl},
         updated_at = NOW()
-      WHERE id = ${params.feedId}
+      WHERE id = ${Number.parseInt(feedId, 10)}
         AND user_id = ${neonUser.id}
       RETURNING *
     `
@@ -42,7 +54,7 @@ export async function POST(request: Request, { params }: { params: { feedId: str
     }
 
     console.log("[v0] Profile image updated successfully:", {
-      feedId: params.feedId,
+      feedId,
       imageUrl,
     })
 

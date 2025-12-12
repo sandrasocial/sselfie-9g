@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Image from "next/image"
-import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Loader2, ImageIcon } from 'lucide-react'
+import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Loader2, ImageIcon, Copy, Check, Sparkles } from 'lucide-react'
 import { toast } from "@/hooks/use-toast"
 
 interface FeedPostCardProps {
@@ -56,6 +56,64 @@ export default function FeedPostCard({ post, feedId, onGenerate }: FeedPostCardP
   const truncatedCaption = post.caption.length > 100 
     ? post.caption.substring(0, 100) + "..." 
     : post.caption
+
+  const copyCaptionToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(post.caption)
+      setCopiedCaption(true)
+      setTimeout(() => setCopiedCaption(false), 2000)
+      toast({
+        title: "Copied!",
+        description: "Caption copied to clipboard",
+      })
+    } catch (error) {
+      console.error("[v0] Failed to copy caption:", error)
+      toast({
+        title: "Copy failed",
+        description: "Please try again",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleEnhanceCaption = async () => {
+    setIsEnhancing(true)
+    try {
+      const response = await fetch(`/api/feed/${feedId}/enhance-caption`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ postId: post.id, currentCaption: post.caption }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || "Failed to enhance caption")
+      }
+
+      const data = await response.json()
+      
+      if (data.enhancedCaption) {
+        // Refresh the component by calling onGenerate to trigger a re-fetch
+        onGenerate()
+        toast({
+          title: "Caption enhanced!",
+          description: "Maya has improved your caption. Refresh to see the update.",
+        })
+      } else {
+        throw new Error("No enhanced caption returned")
+      }
+    } catch (error) {
+      console.error("[v0] Enhance caption error:", error)
+      toast({
+        title: "Enhancement failed",
+        description: error instanceof Error ? error.message : "Please try again",
+        variant: "destructive",
+      })
+    } finally {
+      setIsEnhancing(false)
+    }
+  }
 
   return (
     <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-lg max-w-[470px] mx-auto">
@@ -130,20 +188,47 @@ export default function FeedPostCard({ post, feedId, onGenerate }: FeedPostCardP
         </div>
 
         {/* Caption */}
-        <div className="space-y-1">
-          <div className="text-sm">
-            <span className="font-semibold text-stone-950">sselfie</span>{" "}
-            <span className="text-stone-950 whitespace-pre-wrap">
-              {showFullCaption ? post.caption : truncatedCaption}
-            </span>
-            {post.caption.length > 100 && (
+        <div className="space-y-2">
+          <div className="flex items-start justify-between gap-3">
+            <div className="text-sm flex-1 min-w-0">
+              <span className="font-semibold text-stone-950">sselfie</span>{" "}
+              <span className="text-stone-950 whitespace-pre-wrap break-words">
+                {showFullCaption ? post.caption : truncatedCaption}
+              </span>
+              {post.caption.length > 100 && (
+                <button
+                  onClick={() => setShowFullCaption(!showFullCaption)}
+                  className="text-stone-500 ml-1 hover:text-stone-700 transition-colors"
+                >
+                  {showFullCaption ? "less" : "more"}
+                </button>
+              )}
+            </div>
+            <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
               <button
-                onClick={() => setShowFullCaption(!showFullCaption)}
-                className="text-stone-500 ml-1 hover:text-stone-700"
+                onClick={copyCaptionToClipboard}
+                className="p-2 hover:bg-stone-100 rounded-lg transition-colors border border-stone-200 hover:border-stone-300"
+                title="Copy caption"
               >
-                {showFullCaption ? "less" : "more"}
+                {copiedCaption ? (
+                  <Check size={18} className="text-green-600" />
+                ) : (
+                  <Copy size={18} className="text-stone-600" />
+                )}
               </button>
-            )}
+              <button
+                onClick={handleEnhanceCaption}
+                disabled={isEnhancing}
+                className="p-2 hover:bg-stone-100 rounded-lg transition-colors border border-stone-200 hover:border-stone-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Enhance with Maya"
+              >
+                {isEnhancing ? (
+                  <Loader2 size={18} className="text-stone-600 animate-spin" />
+                ) : (
+                  <Sparkles size={18} className="text-stone-600" />
+                )}
+              </button>
+            </div>
           </div>
           <p className="text-xs text-stone-400 uppercase tracking-wide">Just now</p>
         </div>

@@ -4,10 +4,31 @@ import { createServerClient } from "@/lib/supabase/server"
 import { getAuthenticatedUserWithRetry } from "@/lib/auth-helper"
 import { getDb } from "@/lib/db"
 
-export async function GET(req: NextRequest, { params }: { params: { feedId: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ feedId: string }> | { feedId: string } }) {
   try {
-    const { feedId } = params
+    // Authenticate user first
+    const supabase = await createServerClient()
+    const {
+      data: { user: authUser },
+      error: authError,
+    } = await supabase.auth.getUser()
+
+    if (authError || !authUser) {
+      console.error("[v0] [FEED API] Authentication failed")
+      return Response.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const user = await getUserByAuthId(authUser.id)
+    if (!user) {
+      console.error("[v0] [FEED API] User not found")
+      return Response.json({ error: "User not found" }, { status: 404 })
+    }
+
+    const resolvedParams = await Promise.resolve(params)
+    const { feedId } = resolvedParams
     const sql = getDb()
+
+    console.log("[v0] [FEED API] Fetching feed with ID:", feedId, "for user:", user.id)
 
     if (feedId === "latest") {
       const supabase = await createServerClient()
@@ -66,44 +87,72 @@ export async function GET(req: NextRequest, { params }: { params: { feedId: stri
       })
     }
 
-    // Get feed layout
+    // Parse feedId as integer
+    const feedIdInt = Number.parseInt(feedId, 10)
+    if (isNaN(feedIdInt)) {
+      console.error("[v0] [FEED API] Invalid feedId format:", feedId)
+      return Response.json({ error: "Invalid feed ID format" }, { status: 400 })
+    }
+
+    console.log("[v0] [FEED API] Parsed feedId:", feedIdInt)
+
+    // Get feed layout (with user check for security)
     const feedLayouts = await sql`
       SELECT * FROM feed_layouts
-      WHERE id = ${feedId}
+      WHERE id = ${feedIdInt}
+      AND user_id = ${user.id}
       LIMIT 1
     `
 
+    console.log("[v0] [FEED API] Feed layouts found:", feedLayouts.length)
+
     if (feedLayouts.length === 0) {
+      console.error("[v0] [FEED API] Feed not found for ID:", feedIdInt, "user:", user.id)
       return Response.json({ error: "Feed not found" }, { status: 404 })
     }
 
     const feedLayout = feedLayouts[0]
+    console.log("[v0] [FEED API] Feed layout found:", feedLayout.id, "user_id:", feedLayout.user_id)
 
     // Get feed posts
     const feedPosts = await sql`
       SELECT * FROM feed_posts
-      WHERE feed_layout_id = ${feedId}
+      WHERE feed_layout_id = ${feedIdInt}
       ORDER BY position ASC
     `
 
+    console.log("[v0] [FEED API] Feed posts found:", feedPosts.length)
+
     const bios = await sql`
       SELECT * FROM instagram_bios
-      WHERE feed_layout_id = ${feedId}
+      WHERE feed_layout_id = ${feedIdInt}
       LIMIT 1
     `
 
     const highlights = await sql`
       SELECT * FROM instagram_highlights
-      WHERE feed_layout_id = ${feedId}
+      WHERE feed_layout_id = ${feedIdInt}
       ORDER BY created_at ASC
     `
 
-    return Response.json({
-      feed: feedLayout,
-      posts: feedPosts,
+    const response = {
+      feed: {
+        ...feedLayout,
+        id: feedLayout.id, // Ensure id is explicitly included
+      },
+      posts: feedPosts || [],
       bio: bios[0] || null,
       highlights: highlights || [],
+    }
+
+    console.log("[v0] [FEED API] Returning feed data:", {
+      feedId: response.feed.id,
+      postsCount: response.posts.length,
+      hasBio: !!response.bio,
+      highlightsCount: response.highlights.length,
     })
+
+    return Response.json(response)
   } catch (error: any) {
     console.error("[v0] Error fetching feed:", error?.message || error)
     const errorMessage = error instanceof Error ? error.message : String(error)

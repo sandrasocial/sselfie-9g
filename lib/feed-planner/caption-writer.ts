@@ -1,4 +1,5 @@
 import { generateText } from "ai"
+import { INSTAGRAM_STRATEGIST_SYSTEM_PROMPT } from "@/lib/instagram-strategist/personality"
 
 interface CaptionWriterParams {
   postPosition: number
@@ -9,6 +10,16 @@ interface CaptionWriterParams {
   targetAudience: string
   brandVoice: string
   contentPillar?: string
+  // Strategy concepts from the feed strategy
+  hookConcept?: string
+  storyConcept?: string
+  valueConcept?: string
+  ctaConcept?: string
+  hashtags?: string[]
+  // Context for uniqueness
+  previousCaptions?: Array<{ position: number; hook?: string; caption?: string }>
+  researchData?: any
+  narrativeRole?: string
 }
 
 interface BioCaptionWriterParams {
@@ -22,18 +33,88 @@ interface BioCaptionWriterParams {
 }
 
 export async function generateInstagramCaption(params: CaptionWriterParams): Promise<{ caption: string }> {
-  const { postPosition, shotType, purpose, emotionalTone, brandProfile, targetAudience, brandVoice, contentPillar } =
-    params
+  const { 
+    postPosition, 
+    shotType, 
+    purpose, 
+    emotionalTone, 
+    brandProfile, 
+    targetAudience, 
+    brandVoice, 
+    contentPillar,
+    hookConcept,
+    storyConcept,
+    valueConcept,
+    ctaConcept,
+    hashtags: strategyHashtags,
+    previousCaptions = [],
+    researchData,
+    narrativeRole
+  } = params
 
   console.log(`[v0] Caption Writer: Creating caption for post ${postPosition}`)
 
-  const captionPrompt = `Create an Instagram caption for post position ${postPosition}.
+  // Extract hooks from previous captions to ensure variety
+  const previousHooks = previousCaptions
+    .map(pc => {
+      if (pc.hook) return pc.hook
+      // Extract first line as hook if caption exists
+      if (pc.caption) {
+        const firstLine = pc.caption.split('\n\n')[0]?.trim() || ''
+        return firstLine.substring(0, 100) // Limit length
+      }
+      return null
+    })
+    .filter(Boolean)
+    .slice(-3) // Only last 3 to avoid token bloat
+
+  const researchContext = researchData
+    ? `
+## Research Insights (Use These!):
+${researchData.research_summary ? `\n**Market Research:**\n${researchData.research_summary}\n` : ""}
+${researchData.best_hooks && Array.isArray(researchData.best_hooks) && researchData.best_hooks.length > 0 ? `\n**Trending Hooks to Inspire You (make YOUR OWN version):**\n${researchData.best_hooks.slice(0, 5).join("\n")}\n` : ""}
+${researchData.trending_hashtags && Array.isArray(researchData.trending_hashtags) && researchData.trending_hashtags.length > 0 ? `\n**Trending Hashtags:**\n${researchData.trending_hashtags.slice(0, 15).join(", ")}\n` : ""}
+`
+    : ""
+
+  const strategyConcepts = (hookConcept || storyConcept || valueConcept || ctaConcept)
+    ? `
+## Strategy Concepts (Use as inspiration, but make it YOUR unique voice):
+${hookConcept ? `Hook idea: ${hookConcept}` : ""}
+${storyConcept ? `Story idea: ${storyConcept}` : ""}
+${valueConcept ? `Value idea: ${valueConcept}` : ""}
+${ctaConcept ? `CTA idea: ${ctaConcept}` : ""}
+
+IMPORTANT: Don't copy these word-for-word. Use them as direction and make it sound natural and unique.
+`
+    : ""
+
+  const previousContext = previousHooks.length > 0
+    ? `
+## Previous Caption Hooks (MUST BE DIFFERENT):
+${previousHooks.map((hook, idx) => `Post ${previousCaptions.length - previousHooks.length + idx + 1}: ${hook}`).join("\n")}
+
+CRITICAL: Your hook MUST be completely different. Rotate hook styles:
+- Bold statement (not used yet if previous were questions)
+- Question (not used yet if previous were statements)
+- Confession/revelation
+- Observation/insight
+- Numbered list hook
+- "Plot twist:" style
+`
+    : ""
+
+  const captionPrompt = `Create an Instagram caption for post position ${postPosition} of a 9-post feed.
 
 POST CONTEXT:
 - Shot Type: ${shotType}
 - Purpose: ${purpose}
 - Emotional Tone: ${emotionalTone}
 - Content Pillar: ${contentPillar || purpose}
+- Narrative Role: ${narrativeRole || "general"}
+${narrativeRole === "origin" ? "- This is part of the origin/introduction phase (posts 1-3)" : ""}
+${narrativeRole === "conflict" ? "- This is part of the journey/challenge phase (posts 4-6)" : ""}
+${narrativeRole === "outcome" ? "- This is part of the outcome/invitation phase (posts 7-9)" : ""}
 
 BRAND PROFILE:
 ${JSON.stringify(brandProfile, null, 2)}
@@ -41,58 +122,54 @@ ${JSON.stringify(brandProfile, null, 2)}
 TARGET AUDIENCE: ${targetAudience}
 BRAND VOICE: ${brandVoice}
 
-CRITICAL INSTRUCTIONS:
-1. Research current Instagram caption best practices using your native web search
-2. Determine optimal caption length for this post position and content type
-3. Write ONLY the final caption - NO research notes, NO strategy explanation, NO metadata
-4. Output the ready-to-post caption text ONLY
+${previousContext}
 
-CAPTION REQUIREMENTS:
-- Hook-Story-Value-CTA structure
-- Simple, everyday conversational language
-- Strategic line breaks (every 1-2 sentences)
-- 3-5 emojis naturally placed
-- 5-8 relevant hashtags at the end
-- Optimal length based on research (no artificial limits)
+${strategyConcepts}
 
-OUTPUT FORMAT:
-Return ONLY the caption text that would be pasted directly into Instagram.
-Do NOT include:
-- Research findings
-- Strategy explanations  
-- Caption length specs
-- Metadata or analysis
-- Formatting instructions
+${researchContext}
 
-Just the caption itself, ready to post.`
+## CRITICAL REQUIREMENTS:
+
+1. **UNIQUE HOOK**: Must be COMPLETELY different from previous hooks. Rotate styles:
+   - Post 1-3: Bold statements, questions, origin story hooks
+   - Post 4-6: Vulnerability, challenges, "nobody talks about" hooks
+   - Post 7-9: Transformation, invitations, community hooks
+
+2. **Hook-Story-Value-CTA structure (MANDATORY)**
+   - Hook: 1 line that stops the scroll
+   - Story: 2-4 sentences, personal and specific
+   - Value: 1-3 sentences with actionable insight
+   - CTA: 1 engaging question or action
+
+3. **Authentic Voice**:
+   - Write like texting a friend
+   - Simple, conversational language
+   - NO corporate buzzwords
+   - NO "Let's dive in" or "Drop a comment"
+   - Sound like a REAL person, not AI
+
+4. **Formatting**:
+   - Double line breaks (\\n\\n) between sections
+   - 2-4 emojis TOTAL, naturally placed
+   - 5-10 strategic hashtags at the end
+
+5. **Length**: 80-150 words (optimal for engagement)
+
+OUTPUT: Only the caption text, ready to post. NO explanations, NO research notes.`
 
   const { text } = await generateText({
-    model: "anthropic/claude-haiku-4.5", // Using claude-haiku-4.5 to avoid AI Gateway contention with Maya
-    system: `You are an elite Instagram Caption Writer.
-
-CRITICAL OUTPUT RULE:
-You output ONLY the final caption text - nothing else.
-NO research explanations, NO strategy notes, NO metadata.
-Just the caption exactly as it should appear on Instagram.
-
-Your expertise:
-- Research-backed caption length optimization
-- Storytelling frameworks and engagement psychology
-- Strategic formatting with line breaks
-- Balanced emoji usage (3-5 per caption)
-- Current trends and viral patterns
-- Hashtag research for visibility
-
-You have native web search to research current best practices.
-
-OUTPUT: Only the caption text, ready to post.`,
+    model: "anthropic/claude-sonnet-4", // Upgraded to Sonnet 4 for better quality and uniqueness
+    system: INSTAGRAM_STRATEGIST_SYSTEM_PROMPT,
     prompt: captionPrompt,
-    maxOutputTokens: 2000, // Added maxOutputTokens like working examples
-    temperature: 0.8,
+    maxOutputTokens: 2000,
+    temperature: 0.9, // Higher temperature for more creativity and uniqueness
   })
 
   let caption = text.trim()
 
+  // Fix escaped newlines - convert literal \n\n to actual newlines
+  caption = caption.replace(/\\n/g, '\n')
+  
   // Remove any research headers or strategy sections
   if (caption.includes("RESEARCH PHASE") || caption.includes("CAPTION SPECS") || caption.includes("WHY THIS LENGTH")) {
     // Extract the actual caption between research and specs
@@ -102,8 +179,32 @@ OUTPUT: Only the caption text, ready to post.`,
       caption = caption.substring(captionStart, specsStart).trim()
     }
   }
+  
+  // Ensure proper double line breaks between sections (normalize to \n\n)
+  caption = caption.replace(/\n{3,}/g, '\n\n') // Replace 3+ newlines with double
+  caption = caption.replace(/\n\n\n/g, '\n\n') // Replace triple with double
+
+  // Integrate hashtags if provided and not already in caption
+  if (strategyHashtags && strategyHashtags.length > 0) {
+    const captionHashtags = caption.match(/#\w+/g) || []
+    const newHashtags = strategyHashtags
+      .map(h => h.replace("#", ""))
+      .filter(h => !captionHashtags.some(ch => ch.toLowerCase() === `#${h.toLowerCase()}`))
+    
+    if (newHashtags.length > 0) {
+      // If caption doesn't have hashtags, add them
+      if (captionHashtags.length === 0) {
+        caption = `${caption}\n\n${newHashtags.map(h => `#${h}`).join(" ")}`
+      } else {
+        // Append new hashtags
+        caption = `${caption} ${newHashtags.map(h => `#${h}`).join(" ")}`
+      }
+    }
+  }
 
   console.log(`[v0] Caption Writer: Caption created for post ${postPosition} (${caption.length} characters)`)
+  const hook = caption.split('\n\n')[0]?.trim() || ''
+  console.log(`[v0] Caption Writer: Hook: ${hook.substring(0, 80)}...`)
 
   return { caption }
 }

@@ -11,6 +11,17 @@ const authCache = new Map<string, CachedAuth>()
 const CACHE_TTL = 30000 // 30 seconds
 
 /**
+ * Clear auth cache for a specific session or all sessions
+ */
+export function clearAuthCache(sessionToken?: string) {
+  if (sessionToken) {
+    authCache.delete(sessionToken)
+  } else {
+    authCache.clear()
+  }
+}
+
+/**
  * Get authenticated user with caching to reduce rate limit errors
  * This caches the result for 30 seconds to avoid repeated database queries
  */

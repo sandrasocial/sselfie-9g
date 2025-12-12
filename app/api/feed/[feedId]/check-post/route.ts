@@ -103,52 +103,78 @@ export async function GET(request: Request) {
     }
 
     console.log("[v0] Replicate prediction status:", prediction.status)
+    console.log("[v0] Prediction output type:", Array.isArray(prediction.output) ? "array" : typeof prediction.output)
+    console.log("[v0] Prediction output exists:", !!prediction.output)
 
     if (prediction.status === "succeeded" && prediction.output) {
       const imageUrl = Array.isArray(prediction.output) ? prediction.output[0] : prediction.output
+      console.log("[v0] Image URL from Replicate:", imageUrl)
 
       console.log("[v0] Prediction succeeded, uploading to Blob storage...")
 
-      const imageResponse = await fetch(imageUrl)
-      const imageBlob = await imageResponse.blob()
+      let blobUrl: string
+      try {
+        const imageResponse = await fetch(imageUrl)
+        if (!imageResponse.ok) {
+          throw new Error(`Failed to fetch image: ${imageResponse.status} ${imageResponse.statusText}`)
+        }
+        const imageBlob = await imageResponse.blob()
+        console.log("[v0] Image blob size:", imageBlob.size, "bytes")
 
-      const blob = await put(`feed-posts/${postId}.png`, imageBlob, {
-        access: "public",
-        contentType: "image/png",
-        addRandomSuffix: true,
-      })
+        const blob = await put(`feed-posts/${postId}.png`, imageBlob, {
+          access: "public",
+          contentType: "image/png",
+          addRandomSuffix: true,
+        })
 
-      console.log("[v0] Image uploaded to Blob:", blob.url)
+        if (!blob || !blob.url) {
+          throw new Error("Blob upload failed - no URL returned")
+        }
+
+        blobUrl = blob.url
+        console.log("[v0] ✅ Image uploaded to Blob:", blobUrl)
+      } catch (blobError: any) {
+        console.error("[v0] ❌ Error uploading to Blob:", blobError)
+        throw blobError
+      }
 
       await sql`
         UPDATE feed_posts
         SET 
-          image_url = ${blob.url},
+          image_url = ${blobUrl},
           generation_status = 'completed',
           updated_at = NOW()
         WHERE id = ${Number.parseInt(postId)}
       `
 
-      console.log("[v0] Feed post updated with image URL")
+      console.log("[v0] Feed post updated with image URL:", blobUrl)
 
       try {
         const [post] = await sql`
-          SELECT prompt, post_type, user_id FROM feed_posts WHERE id = ${Number.parseInt(postId)}
+          SELECT prompt, caption, post_type, user_id, position, feed_layout_id FROM feed_posts WHERE id = ${Number.parseInt(postId)}
         `
 
         if (post) {
-          // Check if this image already exists in the gallery by prediction_id
+          // Check if this image already exists in the gallery by prediction_id OR image_url
           const [existing] = await sql`
-            SELECT id FROM ai_images WHERE prediction_id = ${predictionId}
+            SELECT id FROM ai_images 
+            WHERE prediction_id = ${predictionId} 
+            OR image_url = ${blobUrl}
+            LIMIT 1
           `
 
           if (!existing) {
-            // Only insert if it doesn't already exist
+            // Use caption as the prompt (description) and the actual flux prompt as generated_prompt
+            // This matches how concept cards and photoshoots save to the gallery
+            const displayCaption = post.caption || `Feed post ${post.position}`
+            const fluxPrompt = post.prompt || ""
+            
             await sql`
               INSERT INTO ai_images (
                 user_id,
                 image_url,
                 prompt,
+                generated_prompt,
                 prediction_id,
                 generation_status,
                 source,
@@ -156,29 +182,39 @@ export async function GET(request: Request) {
                 created_at
               ) VALUES (
                 ${post.user_id},
-                ${blob.url},
-                ${post.prompt || ""},
+                ${blobUrl},
+                ${displayCaption},
+                ${fluxPrompt},
                 ${predictionId},
                 'completed',
-                'feed_designer',
+                'feed_planner',
                 ${post.post_type || "feed_post"},
                 NOW()
               )
             `
-            console.log("[v0] Image saved to ai_images gallery (new entry)")
+            console.log("[v0] ✅ Image saved to ai_images gallery (feed_planner)")
+            console.log("[v0]   → user_id:", post.user_id)
+            console.log("[v0]   → image_url:", blobUrl.substring(0, 60) + "...")
+            console.log("[v0]   → category:", post.post_type || "feed_post")
+            console.log("[v0]   → source: feed_planner")
           } else {
-            console.log("[v0] Image already exists in gallery, skipping duplicate save")
+            console.log(`[v0] Image already exists in gallery (ID: ${existing.id}), skipping duplicate save`)
           }
         }
       } catch (galleryError: any) {
         const errorMessage = galleryError?.message || String(galleryError)
-        console.error("[v0] Failed to save to ai_images gallery:", errorMessage)
+        console.error("[v0] ❌ Failed to save to ai_images gallery:", errorMessage)
+        console.error("[v0] Error details:", {
+          code: galleryError?.code,
+          constraint: galleryError?.constraint,
+          detail: galleryError?.detail,
+        })
         // Don't fail the request if gallery save fails - the main post is still successful
       }
 
       return NextResponse.json({
         status: "succeeded",
-        imageUrl: blob.url,
+        imageUrl: blobUrl,
       })
     } else if (prediction.status === "failed") {
       await sql`

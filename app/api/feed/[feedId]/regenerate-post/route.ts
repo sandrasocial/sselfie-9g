@@ -26,21 +26,26 @@ export async function POST(request: Request, { params }: { params: { feedId: str
       return NextResponse.json({ error: "Insufficient credits" }, { status: 402 })
     }
 
-    // Get post data
+    // Get post data and feed layout
     const [post] = await sql`
-      SELECT prompt, user_id FROM feed_posts WHERE id = ${postId}
+      SELECT prompt, user_id, post_type, caption, position, feed_layout_id FROM feed_posts WHERE id = ${postId}
     `
 
     if (!post) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 })
     }
 
+    // Get feed layout for context
+    const [feedLayout] = await sql`
+      SELECT color_palette, brand_vibe FROM feed_layouts WHERE id = ${post.feed_layout_id}
+    `
+
     // Get user's trained model
     const [model] = await sql`
-      SELECT replicate_model_url, trigger_word 
-      FROM trained_models 
+      SELECT replicate_model_url, trigger_word, replicate_version_id, lora_weights_url, lora_scale
+      FROM user_models 
       WHERE user_id = ${neonUser.id} 
-      AND status = 'ready' 
+      AND training_status = 'completed' 
       ORDER BY created_at DESC 
       LIMIT 1
     `
@@ -49,16 +54,50 @@ export async function POST(request: Request, { params }: { params: { feedId: str
       return NextResponse.json({ error: "No trained model found" }, { status: 400 })
     }
 
-    // Create Replicate prediction
+    // Always enhance prompt using Maya's expertise (same as generate-single route)
+    let finalPrompt = post.prompt || ""
+    try {
+      const origin = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+      const mayaResponse = await fetch(`${origin}/api/maya/generate-feed-prompt`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          postType: post.post_type || "portrait",
+          caption: post.caption,
+          feedPosition: post.position,
+          colorTheme: feedLayout?.color_palette,
+          brandVibe: feedLayout?.brand_vibe,
+          referencePrompt: post.prompt, // Use stored prompt as reference
+        }),
+      })
+
+      if (mayaResponse.ok) {
+        const mayaData = await mayaResponse.json()
+        finalPrompt = mayaData.prompt || finalPrompt
+        console.log("[v0] [REGENERATE] ✅ Enhanced prompt from Maya:", finalPrompt?.substring(0, 100))
+      } else {
+        console.warn("[v0] [REGENERATE] ⚠️ Maya enhancement failed, using stored prompt")
+      }
+    } catch (mayaError) {
+      console.error("[v0] [REGENERATE] ⚠️ Maya enhancement error:", mayaError)
+      // Continue with stored prompt but log warning
+    }
+
+    // Create Replicate prediction with enhanced prompt
     const replicate = getReplicateClient()
+    const { MAYA_QUALITY_PRESETS } = await import("@/lib/maya/quality-settings")
+    const qualitySettings = MAYA_QUALITY_PRESETS[post.post_type as keyof typeof MAYA_QUALITY_PRESETS] || MAYA_QUALITY_PRESETS.default
+    
+    if (model.lora_scale !== null && model.lora_scale !== undefined) {
+      qualitySettings.lora_scale = Number(model.lora_scale)
+    }
+
     const prediction = await replicate.predictions.create({
-      model: model.replicate_model_url,
+      version: model.replicate_version_id,
       input: {
-        prompt: post.prompt,
-        num_outputs: 1,
-        aspect_ratio: "1:1",
-        output_format: "png",
-        output_quality: 100,
+        prompt: finalPrompt,
+        ...qualitySettings,
+        lora: model.lora_weights_url,
       },
     })
 

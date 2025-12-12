@@ -1,5 +1,6 @@
-import type { NextRequest } from "next/server"
-import { getAuthenticatedUser } from "@/lib/auth-helper"
+import { NextRequest } from "next/server"
+import { type NextRequest } from "next/server"
+import { getAuthenticatedUserWithRetry, clearAuthCache } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { neon } from "@neondatabase/serverless"
 import { getReplicateClient } from "@/lib/replicate-client"
@@ -7,22 +8,78 @@ import { MAYA_QUALITY_PRESETS } from "@/lib/maya/quality-settings"
 import { checkGenerationRateLimit } from "@/lib/rate-limit"
 import { checkCredits, deductCredits, CREDIT_COSTS } from "@/lib/credits"
 
-export async function POST(req: NextRequest, { params }: { params: { feedId: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ feedId: string }> | { feedId: string } }) {
   try {
-    const { user: authUser, error: authError } = await getAuthenticatedUser()
+    console.log("[v0] [GENERATE-SINGLE] ==================== GENERATE SINGLE API CALLED ====================")
+    
+    // Resolve params first (Next.js 16 pattern)
+    let feedId: string
+    try {
+      const resolvedParams = await Promise.resolve(params)
+      feedId = resolvedParams.feedId
+      console.log("[v0] [GENERATE-SINGLE] Resolved feedId from params:", feedId)
+    } catch (paramsError) {
+      console.error("[v0] [GENERATE-SINGLE] Error resolving params:", paramsError)
+      return Response.json({ 
+        error: "Invalid request parameters",
+        details: "Failed to parse feed ID from request"
+      }, { status: 400 })
+    }
+    
+    if (!feedId || feedId === "null" || feedId === "undefined") {
+      console.error("[v0] [GENERATE-SINGLE] Invalid feedId:", feedId)
+      return Response.json({ 
+        error: "Invalid feed ID",
+        details: "Feed ID is required. Please refresh the page and try again."
+      }, { status: 400 })
+    }
+    
+    // Try to get authenticated user
+    let authUser
+    let authError
+    
+    try {
+      const result = await getAuthenticatedUserWithRetry(3)
+      authUser = result.user
+      authError = result.error
+    } catch (error) {
+      console.error("[v0] [GENERATE-SINGLE] Auth helper threw error:", error)
+      authError = error instanceof Error ? error : new Error(String(error))
+    }
 
     if (authError || !authUser) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 })
+      console.error("[v0] [GENERATE-SINGLE] Authentication failed:", {
+        hasError: !!authError,
+        errorMessage: authError?.message,
+        hasUser: !!authUser,
+        userId: authUser?.id
+      })
+      
+      // Clear auth cache to force fresh check on next attempt
+      clearAuthCache()
+      
+      return Response.json({ 
+        error: "Unauthorized", 
+        details: authError?.message || "Your session may have expired. Please refresh the page and try again.",
+        shouldRetry: true,
+        requiresRefresh: true
+      }, { status: 401 })
     }
+    
+    console.log("[v0] [GENERATE-SINGLE] ✅ User authenticated:", authUser.id)
 
     const user = await getUserByAuthId(authUser.id)
     if (!user) {
+      console.error("[v0] [GENERATE-SINGLE] User not found in database")
       return Response.json({ error: "User not found in database" }, { status: 404 })
     }
+
+    console.log("[v0] [GENERATE-SINGLE] ✅ Neon user found:", user.id)
 
     const rateLimit = await checkGenerationRateLimit(user.id.toString())
     if (!rateLimit.success) {
       const resetDate = new Date(rateLimit.reset)
+      console.error("[v0] [GENERATE-SINGLE] Rate limit exceeded")
       return Response.json(
         {
           error: "Rate limit exceeded",
@@ -36,6 +93,7 @@ export async function POST(req: NextRequest, { params }: { params: { feedId: str
 
     const hasCredits = await checkCredits(user.id.toString(), CREDIT_COSTS.IMAGE)
     if (!hasCredits) {
+      console.error("[v0] [GENERATE-SINGLE] Insufficient credits")
       return Response.json(
         {
           error: "Insufficient credits",
@@ -47,15 +105,15 @@ export async function POST(req: NextRequest, { params }: { params: { feedId: str
     }
 
     const { postId } = await req.json()
-    const { feedId } = params
+    
+    console.log("[v0] [GENERATE-SINGLE] Request params:", { feedId, postId })
 
-    if (!feedId || feedId === "null" || feedId === "undefined") {
-      console.error("[v0] [GENERATE-SINGLE] Invalid feedId:", feedId)
+    if (!postId) {
+      console.error("[v0] [GENERATE-SINGLE] Missing postId in request body")
       return Response.json(
         {
-          error: "Invalid feed ID",
-          details: "Feed ID is required to generate a post. Please refresh the page and try again.",
-          shouldRetry: false,
+          error: "Missing post ID",
+          details: "Post ID is required to generate a post.",
         },
         { status: 400 },
       )
@@ -98,113 +156,151 @@ export async function POST(req: NextRequest, { params }: { params: { feedId: str
       LIMIT 1
     `
 
+    console.log("[v0] [GENERATE-SINGLE] User model lookup:", {
+      found: !!model,
+      hasLoraUrl: !!model?.lora_weights_url,
+      hasVersionId: !!model?.replicate_version_id,
+    })
+
     if (!model) {
+      console.error("[v0] [GENERATE-SINGLE] No trained model found for user:", user.id)
       return Response.json({ error: "No trained model found" }, { status: 400 })
     }
 
     if (!model.lora_weights_url) {
+      console.error("[v0] [GENERATE-SINGLE] LoRA weights URL not found for model")
       return Response.json({ error: "LoRA weights URL not found" }, { status: 400 })
     }
 
-    let finalPrompt = post.prompt
+    if (!model.replicate_version_id) {
+      console.error("[v0] [GENERATE-SINGLE] Replicate version ID not found for model")
+      return Response.json({ error: "Replicate version ID not found" }, { status: 400 })
+    }
 
-    // Only call Maya if prompt is missing (fallback)
-    if (!finalPrompt || finalPrompt.trim().length === 0) {
-      console.log("[v0] [GENERATE-SINGLE] No prompt found, calling Maya to generate one...")
-      console.log("[v0] [GENERATE-SINGLE] Request data:", {
-        postType: post.post_type,
-        caption: post.caption?.substring(0, 50),
-        feedPosition: post.position,
-        colorTheme: feedLayout?.color_palette,
-        brandVibe: feedLayout?.brand_vibe,
+    // Always use Maya's expertise to generate/enhance prompts
+    // This ensures trigger word, personal brand styling, and user context are always included
+    console.log("[v0] [GENERATE-SINGLE] Calling Maya to generate enhanced prompt with expertise...")
+    console.log("[v0] [GENERATE-SINGLE] Request data:", {
+      postType: post.post_type,
+      caption: post.caption?.substring(0, 50),
+      feedPosition: post.position,
+      colorTheme: feedLayout?.color_palette,
+      brandVibe: feedLayout?.brand_vibe,
+      hasStoredPrompt: !!post.prompt,
+      storedPromptPreview: post.prompt?.substring(0, 100),
+    })
+
+    let mayaResponse
+    try {
+      // Create a new request with all cookies from the original request
+      // We need to create a proper NextRequest that includes cookies
+      const url = new URL(`${req.nextUrl.origin}/api/maya/generate-feed-prompt`)
+      const cookieHeader = req.headers.get("cookie") || ""
+      
+      // Create a new request with cookies
+      const mayaRequest = new NextRequest(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Cookie": cookieHeader,
+        },
+        body: JSON.stringify({
+          postType: post.post_type,
+          caption: post.caption,
+          feedPosition: post.position,
+          colorTheme: feedLayout?.color_palette,
+          brandVibe: feedLayout?.brand_vibe,
+          referencePrompt: post.prompt, // Pass stored prompt as reference for Maya to enhance
+          isRegeneration: true, // Flag to indicate this is a regeneration
+          category: post.category, // Preserve the same category
+        }),
       })
+      
+      // Import and call the route handler directly to avoid authentication issues
+      const { POST: generateFeedPromptHandler } = await import("@/app/api/maya/generate-feed-prompt/route")
+      mayaResponse = await generateFeedPromptHandler(mayaRequest)
+      
+      console.log("[v0] [GENERATE-SINGLE] Maya response status:", mayaResponse.status)
+    } catch (fetchError: any) {
+      console.error("[v0] [GENERATE-SINGLE] Fetch error:", {
+        message: fetchError.message,
+        stack: fetchError.stack,
+        cause: fetchError.cause,
+      })
+      return Response.json(
+        {
+          error: "Failed to generate intelligent prompt",
+          details: "Maya's prompt generation service is unavailable. Please try again.",
+          shouldRetry: true,
+        },
+        { status: 503 },
+      )
+    }
 
-      let mayaResponse
-      try {
-        mayaResponse = await fetch(`${req.nextUrl.origin}/api/maya/generate-feed-prompt`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            postType: post.post_type,
-            caption: post.caption,
-            feedPosition: post.position,
-            colorTheme: feedLayout?.color_palette,
-            brandVibe: feedLayout?.brand_vibe,
-          }),
-        })
-        console.log("[v0] [GENERATE-SINGLE] Maya response status:", mayaResponse.status)
-      } catch (fetchError: any) {
-        console.error("[v0] [GENERATE-SINGLE] Fetch error:", {
-          message: fetchError.message,
-          stack: fetchError.stack,
-          cause: fetchError.cause,
-        })
-        return Response.json(
-          {
-            error: "Failed to generate intelligent prompt",
-            details: "Maya's prompt generation service is unavailable. Please try again.",
-            shouldRetry: true,
-          },
-          { status: 503 },
-        )
-      }
+    if (!mayaResponse.ok) {
+      console.error("[v0] [GENERATE-SINGLE] Maya prompt generation failed with status:", mayaResponse.status)
 
-      if (!mayaResponse.ok) {
-        console.error("[v0] [GENERATE-SINGLE] Maya prompt generation failed with status:", mayaResponse.status)
-
-        let errorMessage = "Maya's prompt generation failed. Please try again."
-        const shouldRetry = true
-
-        try {
-          const errorData = await mayaResponse.json()
-          console.error("[v0] [GENERATE-SINGLE] Error response:", errorData)
-
-          if (mayaResponse.status === 429) {
-            errorMessage = "Rate limit exceeded. Please wait a moment and try again."
-          } else if (errorData.error) {
-            errorMessage = errorData.error
-          }
-        } catch (e) {
-          console.error("[v0] [GENERATE-SINGLE] Could not parse error response")
-        }
-
-        return Response.json(
-          {
-            error: errorMessage,
-            details: "Maya's intelligent prompt generation is required for your designed feed.",
-            shouldRetry,
-          },
-          { status: mayaResponse.status },
-        )
-      }
+      let errorMessage = "Maya's prompt generation failed. Please try again."
+      const shouldRetry = true
 
       try {
-        const mayaData = await mayaResponse.json()
-        finalPrompt = mayaData.prompt
-        console.log("[v0] [GENERATE-SINGLE] Maya generated prompt:", finalPrompt?.substring(0, 100))
+        const errorData = await mayaResponse.json()
+        console.error("[v0] [GENERATE-SINGLE] Error response:", errorData)
 
-        if (!finalPrompt || finalPrompt.trim().length === 0) {
-          console.error("[v0] [GENERATE-SINGLE] Maya returned empty prompt")
-          return Response.json(
-            {
-              error: "Maya generated an empty prompt. Please try again.",
-              shouldRetry: true,
-            },
-            { status: 500 },
-          )
+        if (mayaResponse.status === 429) {
+          errorMessage = "Rate limit exceeded. Please wait a moment and try again."
+        } else if (errorData.error) {
+          errorMessage = errorData.error
         }
-      } catch (jsonError) {
-        console.error("[v0] [GENERATE-SINGLE] Failed to parse Maya response as JSON:", jsonError)
+      } catch (e) {
+        console.error("[v0] [GENERATE-SINGLE] Could not parse error response")
+      }
+
+      return Response.json(
+        {
+          error: errorMessage,
+          details: "Maya's intelligent prompt generation is required for your designed feed.",
+          shouldRetry,
+        },
+        { status: mayaResponse.status },
+      )
+    }
+
+    let finalPrompt
+    try {
+      const mayaData = await mayaResponse.json()
+      finalPrompt = mayaData.prompt || mayaData.enhancedPrompt
+      console.log("[v0] [GENERATE-SINGLE] ✅ Maya generated enhanced prompt:", finalPrompt?.substring(0, 150))
+
+      if (!finalPrompt || finalPrompt.trim().length === 0) {
+        console.error("[v0] [GENERATE-SINGLE] Maya returned empty prompt")
         return Response.json(
           {
-            error: "Failed to parse Maya's response. Please try again.",
+            error: "Maya generated an empty prompt. Please try again.",
             shouldRetry: true,
           },
           { status: 500 },
         )
       }
-    } else {
-      console.log("[v0] [GENERATE-SINGLE] Using existing prompt from database:", finalPrompt.substring(0, 100))
+
+      // Double-check trigger word is present (backup validation)
+      const promptLower = finalPrompt.toLowerCase().trim()
+      const triggerLower = model.trigger_word.toLowerCase()
+      if (!promptLower.startsWith(triggerLower)) {
+        console.log("[v0] [GENERATE-SINGLE] ⚠️ Trigger word not at start, prepending:", model.trigger_word)
+        finalPrompt = `${model.trigger_word}, ${finalPrompt}`
+      } else {
+        console.log("[v0] [GENERATE-SINGLE] ✅ Trigger word confirmed at start of prompt")
+      }
+    } catch (jsonError) {
+      console.error("[v0] [GENERATE-SINGLE] Failed to parse Maya response as JSON:", jsonError)
+      return Response.json(
+        {
+          error: "Failed to parse Maya's response. Please try again.",
+          shouldRetry: true,
+        },
+        { status: 500 },
+      )
     }
 
     const qualitySettings =
@@ -236,12 +332,19 @@ export async function POST(req: NextRequest, { params }: { params: { feedId: str
       console.log("[v0] [GENERATE-SINGLE] Using photoshoot seed:", generationInput.seed, "variation:", seedVariation)
     }
 
+    console.log("[v0] [GENERATE-SINGLE] Creating Replicate prediction with:", {
+      version: model.replicate_version_id,
+      hasLora: !!generationInput.lora,
+      promptLength: generationInput.prompt?.length,
+      seed: generationInput.seed,
+    })
+
     const prediction = await replicate.predictions.create({
       version: model.replicate_version_id,
       input: generationInput,
     })
 
-    console.log("[v0] [GENERATE-SINGLE] Prediction created:", prediction.id)
+    console.log("[v0] [GENERATE-SINGLE] ✅ Prediction created successfully:", prediction.id)
 
     const deduction = await deductCredits(
       user.id.toString(),
@@ -258,13 +361,19 @@ export async function POST(req: NextRequest, { params }: { params: { feedId: str
       console.log("[v0] [GENERATE-SINGLE] Credits deducted. New balance:", deduction.newBalance)
     }
 
-    await sql`
+    const updateResult = await sql`
       UPDATE feed_posts
-      SET generation_status = 'generating', prediction_id = ${prediction.id}, prompt = ${finalPrompt}
+      SET generation_status = 'generating', prediction_id = ${prediction.id}, prompt = ${finalPrompt}, updated_at = NOW()
       WHERE id = ${postId}
     `
 
-    return Response.json({ predictionId: prediction.id })
+    console.log("[v0] [GENERATE-SINGLE] ✅ Database updated with prediction_id:", prediction.id, "for post:", postId)
+
+    return Response.json({ 
+      predictionId: prediction.id,
+      success: true,
+      message: "Image generation started",
+    })
   } catch (error: any) {
     console.error("[v0] [GENERATE-SINGLE] Error generating single post:", error)
     return Response.json(

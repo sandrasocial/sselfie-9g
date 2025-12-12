@@ -1,11 +1,13 @@
 import { generateText } from "ai"
 import { neon } from "@neondatabase/serverless"
 import { generateFeedLayout, type FeedLayoutStrategy } from "./layout-strategist"
-import { generateVisualComposition, type VisualComposition } from "./visual-composition-expert"
 import { conductContentResearch } from "../content-research-strategist/research-logic"
 import { generateInstagramBio } from "../instagram-bio-strategist/bio-logic"
 import { generateInstagramCaption } from "./caption-writer"
 import { MAYA_PERSONALITY } from "../maya/personality"
+import { getFluxPromptingPrinciples } from "../maya/flux-prompting-principles"
+import { getFashionIntelligencePrinciples } from "../maya/fashion-knowledge-2025"
+import INFLUENCER_POSING_KNOWLEDGE from "../maya/influencer-posing-knowledge"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -56,10 +58,13 @@ export async function orchestrateFeedPlanning(params: FeedPlannerParams): Promis
     LIMIT 1
   `
 
-  const [userModel] = await sql`
-    SELECT trigger_word FROM user_models
+  // Get user model with trigger word - use same query format as concept cards
+  const userModelResult = await sql`
+    SELECT trigger_word, training_status 
+    FROM user_models
     WHERE user_id = ${userId}
-    AND training_status = 'succeeded'
+    AND training_status = 'completed'
+    ORDER BY created_at DESC
     LIMIT 1
   `
 
@@ -74,9 +79,11 @@ export async function orchestrateFeedPlanning(params: FeedPlannerParams): Promis
   const targetAudience = brandProfile.target_audience || "general audience"
   const niche = brandProfile.business_type || "lifestyle"
   const colorPalette = brandProfile.color_palette || null
-  const triggerWord = userModel?.trigger_word || ""
+  
+  // Use same fallback as concept cards: user${userId} if no trigger word
+  const triggerWord = userModelResult[0]?.trigger_word || `user${userId}`
 
-  console.log("[v0] Feed Planner: Using trigger word:", triggerWord || "none")
+  console.log("[v0] Feed Planner: Using trigger word:", triggerWord)
 
   // Step 2: Conduct content research (parallel with Maya consultation)
   console.log("[v0] Feed Planner: Conducting content research...")
@@ -187,40 +194,163 @@ What Instagram feed should we create?`,
   const feedLayoutId = feedLayout.id
   console.log("[v0] Feed Planner: Feed layout saved with ID:", feedLayoutId)
 
-  // Step 7: Generate visual compositions and prompts for each post
-  console.log("[v0] Feed Planner: Generating compositions for 9 posts...")
+  // Step 7: Generate concept cards for each post using Maya's proven concept generation
+  console.log("[v0] Feed Planner: Generating concept cards for 9 posts using Maya's logic...")
+  
+  // Get user data for concept generation (same as concept cards)
+  const userDataResult = await sql`
+    SELECT u.gender, u.ethnicity, um.trigger_word, upb.physical_preferences
+    FROM users u
+    LEFT JOIN user_models um ON u.id = um.user_id AND um.training_status = 'completed'
+    LEFT JOIN user_personal_brand upb ON u.id = upb.user_id
+    WHERE u.id = ${userId} 
+    LIMIT 1
+  `
+
+  let userGender = "person"
+  if (userDataResult[0]?.gender) {
+    const dbGender = userDataResult[0].gender.toLowerCase().trim()
+    if (dbGender === "woman" || dbGender === "female") {
+      userGender = "woman"
+    } else if (dbGender === "man" || dbGender === "male") {
+      userGender = "man"
+    } else {
+      userGender = dbGender
+    }
+  }
+
+  const userEthnicity = userDataResult[0]?.ethnicity || null
+  const physicalPreferences = userDataResult[0]?.physical_preferences || null
+  const actualTriggerWord = userDataResult[0]?.trigger_word || triggerWord
+
+  const fashionIntelligence = getFashionIntelligencePrinciples(userGender, userEthnicity)
+  const fluxPrinciples = getFluxPromptingPrinciples()
+
   const posts = await Promise.all(
     layoutStrategy.posts.map(async (postLayout, index) => {
-      console.log(`[v0] Feed Planner: Generating post ${index + 1}/9...`)
+      console.log(`[v0] Feed Planner: Generating concept card for post ${index + 1}/9...`)
 
       try {
-        const composition = await generateVisualComposition({
-          postPosition: postLayout.position,
-          shotType: postLayout.shotType,
-          purpose: postLayout.purpose,
-          visualDirection: postLayout.visualDirection,
-          brandVibe,
-          authUserId,
-          triggerWord,
+        // Build user request from feed post context
+        const userRequest = `${postLayout.visualDirection}. ${postLayout.purpose}. Position ${postLayout.position} in a 9-post Instagram feed with ${brandVibe} aesthetic. Shot type: ${postLayout.shotType}`
+        
+        // Generate concept using Maya's concept generation logic
+        const conceptPrompt = `You are Maya, an elite fashion photographer with 15 years of experience shooting for Vogue, Elle, and creating viral Instagram content. You have an OBSESSIVE eye for authenticity - you know that the best images feel stolen from real life, not produced.
+
+${fashionIntelligence}
+
+=== NATURAL POSING REFERENCE ===
+Use this for inspiration on authentic, Instagram-style poses. These are REAL influencer poses that look natural and candid:
+
+${INFLUENCER_POSING_KNOWLEDGE}
+
+Remember: Describe poses SIMPLY and NATURALLY, like you're telling a friend what someone is doing. Avoid technical photography language.
+===
+
+FEED POST CONTEXT:
+- Position: ${postLayout.position} of 9
+- Purpose: ${postLayout.purpose}
+- Visual Direction: ${postLayout.visualDirection}
+- Brand Vibe: ${brandVibe}
+- Shot Type: ${postLayout.shotType}
+${colorPalette ? `- Color Palette: ${typeof colorPalette === 'string' ? colorPalette : JSON.stringify(colorPalette)}` : ''}
+
+USER REQUEST: "${userRequest}"
+
+MODE: FEED POST - Create 1 concept that fits this specific position in the Instagram feed grid. This is part of a cohesive 9-post story.
+
+${fluxPrinciples}
+
+**🔴 PROMPT STRUCTURE ARCHITECTURE (FOLLOW THIS ORDER):**
+1. **TRIGGER WORD** (first position - MANDATORY): ${actualTriggerWord}
+2. **GENDER/ETHNICITY** (2-3 words)${userEthnicity ? `: ${userEthnicity}` : ''} ${userGender}
+3. **OUTFIT** (material + color + garment type - 6-10 words)
+4. **POSE + EXPRESSION** (simple, natural - 4-6 words)
+5. **LOCATION** (brief, atmospheric - 3-6 words)
+6. **LIGHTING** (with imperfections - 5-8 words)
+7. **TECHNICAL SPECS** (iPhone + imperfections + skin texture + grain + muted colors - 8-12 words)
+8. **CASUAL MOMENT** (optional - 2-4 words)
+
+**Total target: 50-80 words for optimal quality and detail**
+
+Return ONLY valid JSON, no markdown:
+{
+  "title": "Simple, catchy title (2-4 words)",
+  "description": "Quick, exciting one-liner",
+  "category": "Close-Up Portrait" | "Half Body Lifestyle" | "Environmental Portrait" | "Full Body" | "Object" | "Flatlay" | "Scenery",
+  "prompt": "YOUR CRAFTED FLUX PROMPT - MUST start with ${actualTriggerWord}, ${userEthnicity ? userEthnicity + " " : ""}${userGender}${physicalPreferences ? `, [converted physical preferences - descriptive only]` : ""}"
+}`
+
+        const { text } = await generateText({
+          model: "anthropic/claude-sonnet-4-20250514",
+          messages: [
+            {
+              role: "user",
+              content: conceptPrompt,
+            },
+          ],
+          maxTokens: 2000,
+          temperature: 0.85,
         })
 
-        const fluxPrompt =
-          triggerWord && !composition.fluxPrompt.startsWith(triggerWord)
-            ? `${triggerWord} ${composition.fluxPrompt}`
-            : composition.fluxPrompt
+        // Parse JSON response - try to find JSON object
+        let concept: any = null
+        const jsonMatch = text.match(/\{[\s\S]*\}/)
+        if (jsonMatch) {
+          try {
+            concept = JSON.parse(jsonMatch[0])
+          } catch (parseError) {
+            console.error(`[v0] Feed Planner: Failed to parse concept JSON:`, parseError)
+            throw new Error("Failed to parse concept JSON response")
+          }
+        } else {
+          throw new Error("No JSON object found in concept response")
+        }
+
+        const fluxPrompt = concept?.prompt || ""
+        
+        if (!fluxPrompt) {
+          throw new Error("Concept generated but no prompt found in response")
+        }
+        
+        console.log(`[v0] Feed Planner: Post ${index + 1} concept generated (${fluxPrompt.split(/\s+/).length} words): ${fluxPrompt.substring(0, 100)}...`)
+
+        // Collect previous captions for uniqueness
+        const previousCaptions = posts
+          .slice(0, index)
+          .map((prevPost: any) => ({
+            position: prevPost.position,
+            caption: prevPost.caption || "",
+          }))
 
         const { caption } = await generateInstagramCaption({
           postPosition: postLayout.position,
           shotType: postLayout.shotType,
           purpose: postLayout.purpose,
-          emotionalTone: composition.emotionalTone,
+          emotionalTone: concept.category || "authentic",
           brandProfile,
           targetAudience,
           brandVoice: brandProfile.brand_voice || "authentic",
           contentPillar: postLayout.purpose,
+          hookConcept: postLayout.hookConcept,
+          storyConcept: postLayout.storyConcept,
+          valueConcept: postLayout.valueConcept,
+          ctaConcept: postLayout.ctaConcept,
+          hashtags: postLayout.hashtags,
+          previousCaptions,
+          narrativeRole: postLayout.narrativeRole,
         })
 
-        console.log(`[v0] Feed Planner: Post ${index + 1} composition and caption complete`)
+        console.log(`[v0] Feed Planner: Post ${index + 1} concept card and caption complete`)
+
+        // Save actual shotType as post_type (not just "photo") so queue-all-images can use it
+        // Map shotType to post_type: selfie/half body/full body = "portrait", object/flatlay/scenery = shotType
+        let postType = postLayout.shotType
+        if (postLayout.shotType === "selfie" || postLayout.shotType === "half body" || postLayout.shotType === "full body") {
+          postType = "portrait"
+        } else if (postLayout.shotType === "object" || postLayout.shotType === "flatlay" || postLayout.shotType === "scenery" || postLayout.shotType === "place") {
+          postType = postLayout.shotType // Keep as-is for non-user posts
+        }
 
         await sql`
           INSERT INTO feed_posts (
@@ -237,7 +367,7 @@ What Instagram feed should we create?`,
             ${feedLayoutId},
             ${userId},
             ${postLayout.position},
-            ${"photo"},
+            ${postType},
             ${truncateString(fluxPrompt, 2000)},
             ${truncateString(caption, 5000)},
             ${postLayout.purpose},
@@ -250,7 +380,10 @@ What Instagram feed should we create?`,
           position: postLayout.position,
           prompt: fluxPrompt,
           caption,
-          visualComposition: composition,
+          visualComposition: {
+            emotionalTone: concept.category || "authentic",
+            fluxPrompt: fluxPrompt,
+          },
           contentPillar: postLayout.purpose,
         }
       } catch (error) {
@@ -296,11 +429,14 @@ What Instagram feed should we create?`,
     )
   `
 
-  // Step 9: Generate profile image prompt
-  console.log("[v0] Feed Planner: Creating profile image prompt...")
+  // Step 9: Generate profile image prompt using Maya's expertise
+  console.log("[v0] Feed Planner: Creating profile image prompt with Maya...")
+  // Profile image should use the same quality standards as feed posts
+  // For now, create a basic prompt that will be enhanced by generate-feed-prompt route when actually generating
+  // This ensures consistency with feed post prompts
   const profileImagePrompt = triggerWord
-    ? `${triggerWord} professional headshot, clean background, confident smile, natural lighting, high quality portrait photography`
-    : "professional headshot, clean background, confident smile, natural lighting, high quality portrait photography"
+    ? `${triggerWord} professional headshot portrait, clean neutral background, confident natural expression, shot on iPhone 15 Pro, natural skin texture with pores visible, visible film grain, muted color palette, uneven lighting, mixed color temperatures`
+    : "professional headshot portrait, clean neutral background, confident natural expression, shot on iPhone 15 Pro, natural skin texture with pores visible, visible film grain, muted color palette, uneven lighting, mixed color temperatures"
 
   const hashtagsArray = research.trendingHashtags.slice(0, 30)
 

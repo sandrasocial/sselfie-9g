@@ -13,10 +13,16 @@ import {
   Send,
   MoreHorizontal,
   X,
+  Copy,
+  Check,
+  Sparkles,
 } from "lucide-react"
 import Image from "next/image"
 import { mutate } from "swr"
 import { toast } from "@/hooks/use-toast"
+import { FeedPostGallerySelector } from "./feed-post-gallery-selector"
+import { FeedProfileGallerySelector } from "./feed-profile-gallery-selector"
+import ReactMarkdown from "react-markdown"
 
 interface InstagramFeedViewProps {
   feedData: any
@@ -26,8 +32,11 @@ interface InstagramFeedViewProps {
 export default function InstagramFeedView({ feedData, onBack }: InstagramFeedViewProps) {
   console.log("[v0] ==================== INSTAGRAM FEED VIEW RENDERED ====================")
   console.log("[v0] feedData:", feedData ? "exists" : "null")
+  console.log("[v0] feedData structure:", feedData ? Object.keys(feedData) : "null")
   console.log("[v0] feedData.posts count:", feedData?.posts?.length || 0)
+  console.log("[v0] feedData.feed:", feedData?.feed ? "exists" : "undefined")
   console.log("[v0] feedData.feed.id:", feedData?.feed?.id)
+  console.log("[v0] feedData.error:", feedData?.error)
 
   const [activeTab, setActiveTab] = useState<"grid" | "posts" | "strategy">("grid")
   const [selectedPost, setSelectedPost] = useState<any | null>(null)
@@ -39,9 +48,87 @@ export default function InstagramFeedView({ feedData, onBack }: InstagramFeedVie
   const [pollBackoff, setPollBackoff] = useState(10000) // Start at 10 seconds instead of 5
   const [regeneratingPost, setRegeneratingPost] = useState<number | null>(null)
   const [showGallery, setShowGallery] = useState<number | null>(null)
+  const [showProfileGallery, setShowProfileGallery] = useState(false)
 
   const [isFeedComplete, setIsFeedComplete] = useState(false)
   const [showConfetti, setShowConfetti] = useState(false)
+  const [generatingRemaining, setGeneratingRemaining] = useState(false)
+  const [copiedCaptions, setCopiedCaptions] = useState<Set<number>>(new Set())
+  const [enhancingCaptions, setEnhancingCaptions] = useState<Set<number>>(new Set())
+  const [isGeneratingBio, setIsGeneratingBio] = useState(false)
+
+  // Handle error responses
+  if (feedData?.error) {
+    return (
+      <div className="w-full max-w-none md:max-w-[935px] mx-auto bg-white min-h-screen flex items-center justify-center p-4">
+        <div className="text-center space-y-4">
+          <h2 className="text-xl font-light text-stone-900">Feed Not Found</h2>
+          <p className="text-sm text-stone-600">{feedData.error}</p>
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="text-sm text-stone-500 hover:text-stone-900 underline"
+            >
+              Go back
+            </button>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // Handle missing feed data
+  if (!feedData) {
+    return (
+      <div className="w-full max-w-none md:max-w-[935px] mx-auto bg-white min-h-screen flex items-center justify-center p-4">
+        <div className="text-center space-y-4">
+          <Loader2 className="w-8 h-8 animate-spin text-stone-400 mx-auto" />
+          <p className="text-sm text-stone-600">Loading feed data...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Handle error responses
+  if (feedData.error) {
+    return (
+      <div className="w-full max-w-none md:max-w-[935px] mx-auto bg-white min-h-screen flex items-center justify-center p-4">
+        <div className="text-center space-y-4 max-w-md">
+          <h2 className="text-xl font-light text-stone-900">Feed Not Found</h2>
+          <p className="text-sm text-stone-600">{feedData.error}</p>
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="text-sm text-stone-500 hover:text-stone-900 underline mt-4"
+            >
+              Go back and create a new feed
+            </button>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // Handle missing feed object
+  if (!feedData.feed) {
+    console.error("[v0] Feed data exists but feed object is missing:", feedData)
+    return (
+      <div className="w-full max-w-none md:max-w-[935px] mx-auto bg-white min-h-screen flex items-center justify-center p-4">
+        <div className="text-center space-y-4 max-w-md">
+          <h2 className="text-xl font-light text-stone-900">Invalid Feed Data</h2>
+          <p className="text-sm text-stone-600">The feed data structure is invalid. Please try creating a new feed.</p>
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="text-sm text-stone-500 hover:text-stone-900 underline mt-4"
+            >
+              Go back
+            </button>
+          )}
+        </div>
+      </div>
+    )
+  }
 
   const posts = feedData?.posts ? [...feedData.posts].sort((a: any, b: any) => a.position - b.position) : []
   const feedId = feedData?.feed?.id
@@ -208,8 +295,44 @@ export default function InstagramFeedView({ feedData, onBack }: InstagramFeedVie
       return
     }
 
+    // Log detailed post status for debugging
+    console.log("[v0] ==================== POST STATUS CHECK ====================")
+    console.log("[v0] Total posts:", feedData.posts.length)
+    feedData.posts.forEach((p: any) => {
+      console.log(`[v0] Post ${p.position} (ID: ${p.id}):`, {
+        status: p.generation_status,
+        hasPredictionId: !!p.prediction_id,
+        predictionId: p.prediction_id,
+        hasImage: !!p.image_url,
+        imageUrl: p.image_url ? "exists" : "missing",
+      })
+    })
+
+    // More lenient filter - include posts with prediction_id even if status isn't exactly "generating"
+    // Also include posts that are in the generatingPosts set (for regenerated posts)
     const postsInProgress = feedData.posts.filter(
-      (p: any) => p.prediction_id && p.generation_status === "generating" && !p.image_url && !completedPosts.has(p.id),
+      (p: any) => {
+        const hasPrediction = !!p.prediction_id
+        const isNotCompleted = p.generation_status !== "completed"
+        const hasNoImage = !p.image_url
+        const notInCompleted = !completedPosts.has(p.id)
+        const isInGeneratingSet = generatingPosts.has(p.id)
+        
+        // Include if it has a prediction_id and is not completed, OR if it's in the generatingPosts set
+        return (hasPrediction && isNotCompleted && hasNoImage && notInCompleted) || isInGeneratingSet
+      }
+    )
+
+    console.log("[v0] Posts in progress details:", postsInProgress.map((p: any) => ({
+      id: p.id,
+      position: p.position,
+      predictionId: p.prediction_id,
+      status: p.generation_status,
+      hasImage: !!p.image_url,
+    })))
+
+    const postsWithoutPrediction = feedData.posts.filter(
+      (p: any) => !p.prediction_id && p.generation_status !== "completed" && !p.image_url,
     )
 
     console.log("[v0] Polling check:")
@@ -220,10 +343,29 @@ export default function InstagramFeedView({ feedData, onBack }: InstagramFeedVie
       feedData.posts.filter((p: any) => p.generation_status === "generating").length,
     )
     console.log("[v0]  - Posts in progress (needs polling):", postsInProgress.length)
+    console.log("[v0]  - Posts without prediction_id (may need manual generation):", postsWithoutPrediction.length)
+    if (postsWithoutPrediction.length > 0) {
+      console.warn("[v0] ⚠️ Posts without prediction_id:", postsWithoutPrediction.map((p: any) => ({ id: p.id, position: p.position, status: p.generation_status })))
+    }
     console.log(
       "[v0]  - Posts in progress IDs:",
       postsInProgress.map((p: any) => p.id),
     )
+
+    // Auto-generate posts that don't have prediction_id (fallback if queue-all-images failed)
+    // queue-all-images is called automatically by create-strategy API
+    // We just need to wait and poll for updates - no need to generate individually
+    if (postsWithoutPrediction.length > 0) {
+      const feedCreatedRecently = feedData.feed?.created_at 
+        ? (Date.now() - new Date(feedData.feed.created_at).getTime()) < 120000 // 2 minutes
+        : false
+      
+      if (feedCreatedRecently) {
+        console.log(`[v0] ⏳ Feed was just created - queue-all-images is processing ${postsWithoutPrediction.length} posts in background. Polling for updates...`)
+      } else {
+        console.log(`[v0] ⚠️ Found ${postsWithoutPrediction.length} posts without prediction_id. If this persists, use the "Generate All" button.`)
+      }
+    }
 
     if (postsInProgress.length === 0) {
       if (pollIntervalRef.current) {
@@ -238,11 +380,14 @@ export default function InstagramFeedView({ feedData, onBack }: InstagramFeedVie
 
     if (isPollingActiveRef.current) {
       console.log("[v0] Polling already active, skipping new interval setup.")
+      console.log("[v0] Current poll interval:", pollIntervalRef.current ? "exists" : "null")
       return
     }
 
     isPollingActiveRef.current = true
-    console.log("[v0] Setting up polling interval...")
+    console.log("[v0] ==================== SETTING UP POLLING ====================")
+    console.log("[v0] Posts to poll:", postsInProgress.length)
+    console.log("[v0] Poll backoff delay:", pollBackoff, "ms")
 
     const poll = async () => {
       console.log("[v0] === POLLING TICK === Checking posts...")
@@ -255,8 +400,16 @@ export default function InstagramFeedView({ feedData, onBack }: InstagramFeedVie
 
       const latestFeed = await latestFeedRes.json()
       const stillGenerating = latestFeed.posts.filter(
-        (p: any) =>
-          p.prediction_id && p.generation_status === "generating" && !p.image_url && !completedPosts.has(p.id),
+        (p: any) => {
+          const hasPrediction = !!p.prediction_id
+          const isNotCompleted = p.generation_status !== "completed"
+          const hasNoImage = !p.image_url
+          const notInCompleted = !completedPosts.has(p.id)
+          const isInGeneratingSet = generatingPosts.has(p.id)
+          
+          // Include if it has a prediction_id and is not completed, OR if it's in the generatingPosts set
+          return (hasPrediction && isNotCompleted && hasNoImage && notInCompleted) || isInGeneratingSet
+        }
       )
 
       if (stillGenerating.length === 0) {
@@ -275,6 +428,9 @@ export default function InstagramFeedView({ feedData, onBack }: InstagramFeedVie
         stillGenerating.map((p: any) => p.id),
       )
 
+      console.log("[v0] Still generating posts count:", stillGenerating.length)
+      console.log("[v0] Still generating post IDs:", stillGenerating.map((p: any) => p.id))
+
       for (const post of stillGenerating) {
         if (!post.prediction_id) {
           console.log("[v0] Post", post.id, "- No prediction_id, skipping check.")
@@ -283,7 +439,7 @@ export default function InstagramFeedView({ feedData, onBack }: InstagramFeedVie
 
         try {
           const checkUrl = `/api/feed/${feedId}/check-post?predictionId=${post.prediction_id}&postId=${post.id}`
-          console.log("[v0] Post", post.id, "- Calling:", checkUrl)
+          console.log("[v0] Post", post.id, `(position ${post.position})`, "- Checking prediction:", post.prediction_id)
           const response = await fetch(checkUrl)
 
           console.log("[v0] Post", post.id, "- Response status:", response.status)
@@ -314,8 +470,17 @@ export default function InstagramFeedView({ feedData, onBack }: InstagramFeedVie
               console.log("[v0] Updated completed posts count:", updated.size)
               return updated
             })
+            // Remove from generatingPosts set since it's now complete
+            setGeneratingPosts((prev) => {
+              const updated = new Set(prev)
+              updated.delete(post.id)
+              return updated
+            })
             await mutate(`/api/feed/${feedId}`)
             setPollBackoff(10000) // Reset to 10 seconds
+          } else if (data.status === "processing" || data.status === "starting") {
+            // Keep polling if still processing
+            console.log("[v0] Post", post.id, "- Still processing, status:", data.status)
           }
         } catch (error) {
           console.error("[v0] Post", post.id, "- Error during polling:", error)
@@ -336,7 +501,7 @@ export default function InstagramFeedView({ feedData, onBack }: InstagramFeedVie
         isPollingActiveRef.current = false
       }
     }
-  }, [feedId, completedPosts, pollBackoff])
+  }, [feedId, feedData, completedPosts, pollBackoff])
 
   const toggleCaption = (postId: number) => {
     const newExpanded = new Set(expandedCaptions)
@@ -348,6 +513,172 @@ export default function InstagramFeedView({ feedData, onBack }: InstagramFeedVie
     setExpandedCaptions(newExpanded)
   }
 
+  const copyCaptionToClipboard = async (caption: string, postId: number) => {
+    try {
+      await navigator.clipboard.writeText(caption)
+      const newCopied = new Set(copiedCaptions)
+      newCopied.add(postId)
+      setCopiedCaptions(newCopied)
+      setTimeout(() => {
+        const updated = new Set(copiedCaptions)
+        updated.delete(postId)
+        setCopiedCaptions(updated)
+      }, 2000)
+      toast({
+        title: "Copied!",
+        description: "Caption copied to clipboard",
+      })
+    } catch (error) {
+      console.error("[v0] Failed to copy caption:", error)
+      toast({
+        title: "Copy failed",
+        description: "Please try again",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleGenerateBio = async () => {
+    if (!feedData?.feed?.id) {
+      toast({
+        title: "Error",
+        description: "Feed ID is missing. Please refresh the page.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsGeneratingBio(true)
+
+    try {
+      const response = await fetch(`/api/feed/${feedData.feed.id}/generate-bio`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      })
+
+      if (!response.ok) {
+        let errorData: any = {}
+        let errorMessage = "Failed to generate bio"
+        
+        try {
+          const contentType = response.headers.get("content-type")
+          if (contentType && contentType.includes("application/json")) {
+            errorData = await response.json()
+            errorMessage = errorData.error || errorMessage
+          } else {
+            const errorText = await response.text()
+            if (errorText && errorText.trim().length > 0) {
+              try {
+                errorData = JSON.parse(errorText)
+                errorMessage = errorData.error || errorMessage
+              } catch {
+                errorMessage = errorText.substring(0, 200) || errorMessage
+              }
+            }
+          }
+        } catch (parseError) {
+          console.error(`[v0] Error parsing response:`, parseError)
+          errorMessage = `HTTP ${response.status}: ${response.statusText || "Unknown error"}`
+        }
+        
+        console.error(`[v0] ❌ Failed to generate bio:`, {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData,
+          feedId: feedData?.feed?.id
+        })
+        
+        throw new Error(errorMessage)
+      }
+
+      let data
+      try {
+        const responseText = await response.text()
+        if (!responseText || responseText.trim().length === 0) {
+          throw new Error("Empty response from server")
+        }
+        data = JSON.parse(responseText)
+      } catch (parseError) {
+        console.error(`[v0] Failed to parse response:`, parseError)
+        throw new Error("Invalid response from server. Please try again.")
+      }
+
+      if (data.bio) {
+        // Refresh feed data to show updated bio
+        await mutate(`/api/feed/${feedData.feed.id}`)
+        toast({
+          title: feedData.bio?.bio_text ? "Bio regenerated!" : "Bio generated!",
+          description: "Your Instagram bio has been created based on your brand profile.",
+        })
+      } else {
+        throw new Error("No bio returned")
+      }
+    } catch (error) {
+      console.error("[v0] Generate bio error:", error)
+      toast({
+        title: "Generation failed",
+        description: error instanceof Error ? error.message : "Please try again",
+        variant: "destructive",
+      })
+    } finally {
+      setIsGeneratingBio(false)
+    }
+  }
+
+  const handleEnhanceCaption = async (postId: number, currentCaption: string) => {
+    if (!feedData?.feed?.id) {
+      toast({
+        title: "Error",
+        description: "Feed ID is missing. Please refresh the page.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    const newEnhancing = new Set(enhancingCaptions)
+    newEnhancing.add(postId)
+    setEnhancingCaptions(newEnhancing)
+
+    try {
+      const response = await fetch(`/api/feed/${feedData.feed.id}/enhance-caption`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ postId, currentCaption }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || "Failed to enhance caption")
+      }
+
+      const data = await response.json()
+      
+      if (data.enhancedCaption) {
+        // Refresh feed data to show updated caption
+        await mutate(`/api/feed/${feedData.feed.id}`)
+        toast({
+          title: "Caption enhanced!",
+          description: "Maya has improved your caption. You can edit it further if needed.",
+        })
+      } else {
+        throw new Error("No enhanced caption returned")
+      }
+    } catch (error) {
+      console.error("[v0] Enhance caption error:", error)
+      toast({
+        title: "Enhancement failed",
+        description: error instanceof Error ? error.message : "Please try again",
+        variant: "destructive",
+      })
+    } finally {
+      const updated = new Set(enhancingCaptions)
+      updated.delete(postId)
+      setEnhancingCaptions(updated)
+    }
+  }
+
   const handleGenerateSingle = async (postId: number) => {
     try {
       setGeneratingPosts((prev) => new Set(prev).add(postId))
@@ -355,12 +686,41 @@ export default function InstagramFeedView({ feedData, onBack }: InstagramFeedVie
       const response = await fetch(`/api/feed/${feedId}/generate-single`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ postId }),
       })
 
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || "Failed to generate")
+        let errorData = {}
+        let errorMessage = "Failed to generate"
+        try {
+          const errorText = await response.text()
+          if (errorText) {
+            errorData = JSON.parse(errorText)
+            errorMessage = errorData.error || errorData.details || errorMessage
+          }
+        } catch (parseError) {
+          errorData = { 
+            error: `HTTP ${response.status}: ${response.statusText}`,
+            message: "Failed to parse error response"
+          }
+        }
+        console.error(`[v0] ❌ Failed to generate post ${postId}:`, {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData,
+          feedId: feedId
+        })
+        throw new Error(errorMessage)
+      }
+
+      let data
+      try {
+        data = await response.json()
+        console.log("[v0] ✅ Generated post:", postId, "prediction ID:", data.predictionId)
+      } catch (parseError) {
+        console.error(`[v0] ⚠️ Success response but failed to parse JSON for post ${postId}:`, parseError)
+        throw new Error("Failed to parse response")
       }
 
       toast({
@@ -368,7 +728,8 @@ export default function InstagramFeedView({ feedData, onBack }: InstagramFeedVie
         description: "This takes about 30 seconds",
       })
 
-      await mutate(`/api/feed/${feedId}`)
+      // Refresh feed data after a short delay
+      setTimeout(() => mutate(`/api/feed/${feedId}`), 1000)
     } catch (error: any) {
       setGeneratingPosts((prev) => {
         const next = new Set(prev)
@@ -384,7 +745,84 @@ export default function InstagramFeedView({ feedData, onBack }: InstagramFeedVie
     }
   }
 
+  const handleGenerateRemaining = async () => {
+    const postsWithoutPrediction = posts.filter(
+      (p: any) => !p.prediction_id && p.generation_status !== "completed" && !p.image_url,
+    )
+
+    if (postsWithoutPrediction.length === 0) {
+      toast({
+        title: "All posts are generating",
+        description: "No remaining posts to generate",
+      })
+      return
+    }
+
+    setGeneratingRemaining(true)
+    toast({
+      title: `Generating ${postsWithoutPrediction.length} remaining images`,
+      description: "This may take a few minutes",
+    })
+
+    try {
+      // Use queue-all-images API (same as create-strategy does)
+      console.log(`[v0] Queueing ${postsWithoutPrediction.length} remaining images via queue-all-images API`)
+      const response = await fetch(`/api/feed-planner/queue-all-images`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ feedLayoutId: feedId }),
+      })
+
+      if (!response.ok) {
+        let errorData = {}
+        try {
+          const errorText = await response.text()
+          if (errorText) {
+            errorData = JSON.parse(errorText)
+          }
+        } catch (parseError) {
+          errorData = { 
+            error: `HTTP ${response.status}: ${response.statusText}`,
+            message: "Failed to parse error response"
+          }
+        }
+        throw new Error(errorData.error || `HTTP ${response.status}: Failed to queue images`)
+      }
+
+      const data = await response.json()
+      console.log(`[v0] ✅ Successfully queued ${data.queuedCount || postsWithoutPrediction.length} images`)
+
+      // Refresh feed data after a short delay
+      setTimeout(() => {
+        mutate(`/api/feed/${feedId}`)
+        setGeneratingRemaining(false)
+        toast({
+          title: "Generation started",
+          description: `Started generating ${data.queuedCount || postsWithoutPrediction.length} images`,
+        })
+      }, 2000)
+    } catch (error: any) {
+      setGeneratingRemaining(false)
+      console.error(`[v0] ❌ Error queueing images:`, error)
+      toast({
+        title: "Generation failed",
+        description: error.message || "Please try again",
+        variant: "destructive",
+      })
+    }
+  }
+
   const handleRegeneratePost = async (postId: number) => {
+    if (!feedId) {
+      toast({
+        title: "Error",
+        description: "Feed ID not found. Please refresh the page.",
+        variant: "destructive",
+      })
+      return
+    }
+
     if (!confirm("Regenerate this photo? This will use 1 credit.")) {
       return
     }
@@ -392,26 +830,138 @@ export default function InstagramFeedView({ feedData, onBack }: InstagramFeedVie
     setRegeneratingPost(postId)
 
     try {
-      const response = await fetch(`/api/feed/${feedId}/generate-single`, {
+      if (!feedId) {
+        throw new Error("Feed ID is missing. Please refresh the page.")
+      }
+      
+      console.log(`[v0] Regenerating post ${postId} in feed ${feedId}`)
+      const url = `/api/feed/${feedId}/generate-single`
+      console.log(`[v0] Making request to:`, url)
+      
+      const response = await fetch(url, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
         body: JSON.stringify({ postId }),
       })
 
+      console.log(`[v0] Regenerate response:`, {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+        headers: Object.fromEntries(response.headers.entries())
+      })
+
       if (!response.ok) {
-        throw new Error("Failed to regenerate")
+        let errorData: any = {}
+        let errorMessage = `Failed to regenerate (HTTP ${response.status})`
+        
+        // Try to get error details from response
+        try {
+          const contentType = response.headers.get("content-type")
+          if (contentType && contentType.includes("application/json")) {
+            errorData = await response.json()
+            errorMessage = errorData.error || errorData.details || errorMessage
+          } else {
+            const errorText = await response.text()
+            if (errorText && errorText.trim().length > 0) {
+              try {
+                errorData = JSON.parse(errorText)
+                errorMessage = errorData.error || errorData.details || errorMessage
+              } catch {
+                errorMessage = errorText.substring(0, 200) || errorMessage
+              }
+            }
+          }
+        } catch (parseError) {
+          console.error(`[v0] Error parsing response:`, parseError)
+          errorMessage = `HTTP ${response.status}: ${response.statusText || "Unknown error"}`
+        }
+        
+        console.error(`[v0] ❌ Failed to regenerate post ${postId}:`, {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData,
+          feedId: feedId,
+          hasErrorData: Object.keys(errorData).length > 0
+        })
+        
+        // Provide user-friendly error messages based on status code
+        if (response.status === 401) {
+          // Check if the error response suggests a refresh is needed
+          if (errorData?.requiresRefresh || errorData?.shouldRetry) {
+            errorMessage = "Your session has expired. Please refresh the page and try again."
+          } else {
+            errorMessage = errorData?.details || "Authentication failed. Please refresh the page and try again."
+          }
+        } else if (response.status === 402) {
+          errorMessage = "Insufficient credits. Please purchase more credits to regenerate."
+        } else if (response.status === 429) {
+          errorMessage = "Rate limit exceeded. Please wait a moment and try again."
+        } else if (response.status === 404) {
+          errorMessage = "Post or feed not found. Please refresh the page."
+        } else if (response.status === 400) {
+          errorMessage = errorData?.details || "Invalid request. Please check your input and try again."
+        }
+        
+        // Show toast with error
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive",
+        })
+        
+        throw new Error(errorMessage)
       }
+
+      let data
+      try {
+        const responseText = await response.text()
+        if (!responseText || responseText.trim().length === 0) {
+          throw new Error("Empty response from server")
+        }
+        data = JSON.parse(responseText)
+      } catch (parseError) {
+        console.error(`[v0] Failed to parse response:`, parseError)
+        throw new Error("Invalid response from server. Please try again.")
+      }
+      
+      console.log(`[v0] ✅ Successfully queued regeneration for post ${postId}, prediction ID:`, data.predictionId)
+
+      if (!data.predictionId) {
+        throw new Error("No prediction ID returned. Please try again.")
+      }
+
+      // Add to generating posts set so polling picks it up
+      setGeneratingPosts((prev) => new Set(prev).add(postId))
+      
+      // Remove from completed posts so polling will check it again
+      setCompletedPosts((prev) => {
+        const updated = new Set(prev)
+        updated.delete(postId)
+        return updated
+      })
 
       toast({
         title: "Regenerating photo",
-        description: "This takes about 30 seconds",
+        description: "Creating a new variation in the same category. This takes about 30 seconds.",
       })
 
+      // Refresh feed data to show generating status
       await mutate(`/api/feed/${feedId}`)
+      
+      // Force polling to restart if it's not active
+      if (!isPollingActiveRef.current && pollIntervalRef.current === null) {
+        console.log("[v0] Restarting polling for regenerated post:", postId)
+        // The useEffect will pick this up and restart polling
+      }
     } catch (error) {
+      console.error(`[v0] Error regenerating post ${postId}:`, error)
       toast({
         title: "Regeneration failed",
-        description: "Please try again",
+        description: error instanceof Error ? error.message : "Please try again",
         variant: "destructive",
       })
     } finally {
@@ -491,33 +1041,41 @@ export default function InstagramFeedView({ feedData, onBack }: InstagramFeedVie
 
               {feedId && (
                 <>
-                  <div className="flex items-center gap-3 justify-center">
-                    <div className="flex gap-1">
-                      <div className="w-1.5 h-1.5 rounded-full animate-bounce bg-stone-700"></div>
-                      <div
-                        className="w-1.5 h-1.5 rounded-full animate-bounce bg-stone-700"
-                        style={{ animationDelay: "0.2s" }}
-                      ></div>
-                      <div
-                        className="w-1.5 h-1.5 rounded-full animate-bounce bg-stone-700"
-                        style={{ animationDelay: "0.4s" }}
-                      ></div>
+                  <div className="space-y-4 w-full max-w-sm mx-auto">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-light text-stone-600">Progress</span>
+                      <span className="text-sm font-medium text-stone-900">
+                        {readyPosts} of {totalPosts} complete
+                      </span>
                     </div>
-                    <span className="text-sm font-light text-stone-600">
-                      {readyPosts}/{totalPosts} photos ready
-                    </span>
-                  </div>
 
-                  <div className="w-full bg-stone-200 rounded-full h-2 overflow-hidden">
-                    <div
-                      className="bg-stone-900 h-2 rounded-full transition-all duration-1000 ease-out"
-                      style={{ width: `${progress}%` }}
-                    />
-                  </div>
+                    <div className="w-full bg-stone-200 rounded-full h-2.5 overflow-hidden">
+                      <div
+                        className="bg-stone-900 h-2.5 rounded-full transition-all duration-500 ease-out"
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
 
-                  <p className="text-xs font-light text-stone-500 leading-relaxed">
-                    Your feed will be revealed when all images are complete
-                  </p>
+          <div className="flex items-center gap-2 justify-center">
+            <Loader2 size={14} className="animate-spin text-stone-600" />
+            <p className="text-xs font-light text-stone-500">
+              {readyPosts === 0
+                ? "Starting image generation..."
+                : readyPosts < totalPosts
+                  ? `Generating remaining ${totalPosts - readyPosts} images...`
+                  : "Finalizing your feed..."}
+            </p>
+          </div>
+          {readyPosts < totalPosts && (
+            <button
+              onClick={handleGenerateRemaining}
+              disabled={generatingRemaining}
+              className="mt-4 px-4 py-2 bg-stone-900 text-white text-xs font-light rounded-lg hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {generatingRemaining ? "Generating..." : `Generate Remaining ${totalPosts - readyPosts} Images`}
+            </button>
+          )}
+        </div>
                 </>
               )}
             </div>
@@ -549,11 +1107,32 @@ export default function InstagramFeedView({ feedData, onBack }: InstagramFeedVie
 
         <div className="px-4 md:px-8 pb-4">
           <div className="flex flex-col md:flex-row md:items-start md:gap-12 mb-4">
-            <div className="w-20 h-20 md:w-32 md:h-32 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 p-[3px] mb-4 md:mb-0">
-              <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
-                <span className="text-2xl md:text-4xl font-bold text-stone-900">S</span>
+            <button
+              onClick={() => feedData?.feed?.id && setShowProfileGallery(true)}
+              className="relative group w-20 h-20 md:w-32 md:h-32 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 p-[3px] mb-4 md:mb-0 flex-shrink-0 transition-opacity hover:opacity-90"
+            >
+              <div className="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden relative">
+                {feedData?.feed?.profile_image_url ? (
+                  <>
+                    <Image
+                      src={feedData.feed.profile_image_url}
+                      alt="Profile"
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 80px, 128px"
+                      style={{ borderRadius: '50%' }}
+                    />
+                  </>
+                ) : (
+                  <span className="text-2xl md:text-4xl font-bold text-stone-900 relative z-10">S</span>
+                )}
               </div>
-            </div>
+              <div className="absolute inset-0 bg-stone-950/0 group-hover:bg-stone-950/40 rounded-full transition-all flex items-center justify-center pointer-events-none">
+                <span className="text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity font-medium">
+                  Change
+                </span>
+              </div>
+            </button>
 
             <div className="flex-1 space-y-4">
               <div className="flex items-center gap-8">
@@ -571,10 +1150,24 @@ export default function InstagramFeedView({ feedData, onBack }: InstagramFeedVie
                 </div>
               </div>
 
-              <div className="space-y-1">
+              <div className="space-y-2">
                 <div className="text-sm font-semibold text-stone-900">SSELFIE Studio</div>
-                <div className="text-sm text-stone-900 whitespace-pre-wrap">
-                  {feedData.bio?.bio_text || "Your Instagram feed strategy created by Maya"}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="text-sm text-stone-900 whitespace-pre-wrap flex-1">
+                    {feedData.bio?.bio_text || "Your Instagram feed strategy created by Maya"}
+                  </div>
+                  <button
+                    onClick={handleGenerateBio}
+                    disabled={isGeneratingBio || !feedData?.feed?.id}
+                    className="p-2 hover:bg-stone-100 rounded-lg transition-colors border border-stone-200 hover:border-stone-300 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                    title={feedData.bio?.bio_text ? "Regenerate bio" : "Generate bio"}
+                  >
+                    {isGeneratingBio ? (
+                      <Loader2 size={18} className="text-stone-600 animate-spin" />
+                    ) : (
+                      <Sparkles size={18} className="text-stone-600" />
+                    )}
+                  </button>
                 </div>
               </div>
 
@@ -621,16 +1214,34 @@ export default function InstagramFeedView({ feedData, onBack }: InstagramFeedVie
         </div>
       </div>
 
+      {/* Success Banner when feed is complete */}
+      {isFeedComplete && readyPosts === totalPosts && (
+        <div className="mx-4 mt-4 mb-4 bg-stone-50 border border-stone-200 rounded-xl p-4 space-y-3">
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-full bg-stone-900 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <span className="text-white text-sm">✓</span>
+            </div>
+            <div className="flex-1 space-y-2">
+              <h3 className="text-sm font-medium text-stone-900">Your feed is complete! 🎉</h3>
+              <p className="text-xs text-stone-600 leading-relaxed">
+                All 9 images have been generated. You can now download them, edit captions, or regenerate individual posts if needed.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="pb-20">
         {activeTab === "grid" && (
           <div className="grid grid-cols-3 gap-[2px] md:gap-1">
             {posts.map((post: any) => {
               const isGenerating = post.generation_status === "generating" || generatingPosts.has(post.id)
+              const isRegenerating = regeneratingPost === post.id
               const shotTypeLabel = post.content_pillar?.toLowerCase() || `post ${post.position}`
 
               return (
                 <div key={post.id} className="aspect-square bg-stone-100 relative group">
-                  {post.image_url ? (
+                  {post.image_url && !isRegenerating ? (
                     <>
                       <Image
                         src={post.image_url || "/placeholder.svg"}
@@ -646,10 +1257,10 @@ export default function InstagramFeedView({ feedData, onBack }: InstagramFeedVie
                             e.stopPropagation()
                             handleRegeneratePost(post.id)
                           }}
-                          disabled={regeneratingPost === post.id}
+                          disabled={isRegenerating}
                           className="text-[10px] font-semibold text-white bg-stone-900 hover:bg-stone-800 px-3 py-1.5 rounded transition-colors disabled:opacity-50"
                         >
-                          {regeneratingPost === post.id ? "Regenerating..." : "Regenerate"}
+                          Regenerate
                         </button>
                         <button
                           onClick={(e) => {
@@ -662,10 +1273,12 @@ export default function InstagramFeedView({ feedData, onBack }: InstagramFeedVie
                         </button>
                       </div>
                     </>
-                  ) : isGenerating ? (
+                  ) : isRegenerating || isGenerating ? (
                     <div className="absolute inset-0 bg-stone-50 flex flex-col items-center justify-center p-3">
                       <Loader2 className="w-6 h-6 text-stone-400 animate-spin mb-2" strokeWidth={1.5} />
-                      <div className="text-[10px] font-light text-stone-500 text-center">Creating</div>
+                      <div className="text-[10px] font-light text-stone-500 text-center">
+                        {isRegenerating ? "Regenerating..." : "Creating"}
+                      </div>
                     </div>
                   ) : (
                     <div
@@ -771,19 +1384,48 @@ export default function InstagramFeedView({ feedData, onBack }: InstagramFeedVie
                       </button>
                     </div>
 
-                    <div className="text-sm">
-                      <span className="font-semibold text-stone-900">sselfie</span>{" "}
-                      <span className="text-stone-900 whitespace-pre-wrap">{displayCaption}</span>
-                      {shouldTruncate && (
-                        <button
-                          onClick={() => toggleCaption(post.id)}
-                          className="text-stone-500 ml-1 hover:text-stone-700 transition-colors"
-                        >
-                          {isExpanded ? "less" : "more"}
-                        </button>
-                      )}
+                    <div className="space-y-2">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="text-sm flex-1 min-w-0">
+                          <span className="font-semibold text-stone-900">sselfie</span>{" "}
+                          <span className="text-stone-900 whitespace-pre-wrap break-words">{displayCaption}</span>
+                          {shouldTruncate && (
+                            <button
+                              onClick={() => toggleCaption(post.id)}
+                              className="text-stone-500 ml-1 hover:text-stone-700 transition-colors"
+                            >
+                              {isExpanded ? "less" : "more"}
+                            </button>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
+                          <button
+                            onClick={() => copyCaptionToClipboard(post.caption, post.id)}
+                            className="p-2 hover:bg-stone-100 rounded-lg transition-colors border border-stone-200 hover:border-stone-300"
+                            title="Copy caption"
+                          >
+                            {copiedCaptions.has(post.id) ? (
+                              <Check size={18} className="text-green-600" />
+                            ) : (
+                              <Copy size={18} className="text-stone-600" />
+                            )}
+                          </button>
+                          <button
+                            onClick={() => handleEnhanceCaption(post.id, post.caption)}
+                            disabled={enhancingCaptions.has(post.id)}
+                            className="p-2 hover:bg-stone-100 rounded-lg transition-colors border border-stone-200 hover:border-stone-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Enhance with Maya"
+                          >
+                            {enhancingCaptions.has(post.id) ? (
+                              <Loader2 size={18} className="text-stone-600 animate-spin" />
+                            ) : (
+                              <Sparkles size={18} className="text-stone-600" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                      <p className="text-xs text-stone-400 uppercase tracking-wide">Just now</p>
                     </div>
-                    <p className="text-xs text-stone-400 uppercase tracking-wide">Just now</p>
                   </div>
                 </div>
               )
@@ -792,17 +1434,53 @@ export default function InstagramFeedView({ feedData, onBack }: InstagramFeedVie
         )}
 
         {activeTab === "strategy" && (
-          <div className="p-4 md:p-8 space-y-8">
-            {/* Overall Strategy */}
-            <div className="bg-stone-50 rounded-xl p-6 space-y-4">
-              <div className="text-xs tracking-[0.2em] uppercase font-medium text-stone-500">
-                Your Instagram Strategy
-              </div>
-              <div className="text-sm font-light text-stone-700 leading-relaxed whitespace-pre-wrap">
-                {feedData.strategy?.brand_positioning ||
-                  feedData.feed.feed_story ||
-                  "Your Instagram feed strategy created by Maya"}
-              </div>
+          <div className="p-4 md:p-8">
+            {/* Full Strategy Document */}
+            <div className="bg-white/50 backdrop-blur-3xl border border-white/60 rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-xl shadow-stone-900/5">
+              {feedData.feed?.description ? (
+                <div className="prose prose-sm max-w-none prose-headings:font-serif prose-headings:font-light prose-headings:text-stone-900 prose-headings:tracking-wide prose-h1:text-2xl prose-h1:mb-4 prose-h2:text-xl prose-h2:mt-8 prose-h2:mb-4 prose-h3:text-lg prose-h3:mt-6 prose-h3:mb-3 prose-p:text-stone-700 prose-p:leading-relaxed prose-p:mb-4 prose-strong:text-stone-900 prose-strong:font-medium prose-ul:text-stone-700 prose-ol:text-stone-700 prose-li:text-stone-700 prose-li:leading-relaxed prose-li:mb-2 prose-code:text-stone-600 prose-code:bg-stone-100 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-xs prose-blockquote:border-l-4 prose-blockquote:border-stone-300 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-stone-600">
+                  <ReactMarkdown
+                    components={{
+                      h1: ({ node, ...props }) => (
+                        <h1 className="text-2xl font-serif font-light text-stone-900 mb-4 mt-8 first:mt-0 tracking-wide" {...props} />
+                      ),
+                      h2: ({ node, ...props }) => (
+                        <h2 className="text-xl font-serif font-light text-stone-900 mb-4 mt-8 tracking-wide" {...props} />
+                      ),
+                      h3: ({ node, ...props }) => (
+                        <h3 className="text-lg font-serif font-light text-stone-900 mb-3 mt-6 tracking-wide" {...props} />
+                      ),
+                      p: ({ node, ...props }) => (
+                        <p className="text-sm font-light text-stone-700 leading-relaxed mb-4" {...props} />
+                      ),
+                      strong: ({ node, ...props }) => (
+                        <strong className="font-medium text-stone-900" {...props} />
+                      ),
+                      ul: ({ node, ...props }) => (
+                        <ul className="list-disc list-inside space-y-2 ml-4 mb-4 text-stone-700" {...props} />
+                      ),
+                      ol: ({ node, ...props }) => (
+                        <ol className="list-decimal list-inside space-y-2 ml-4 mb-4 text-stone-700" {...props} />
+                      ),
+                      li: ({ node, ...props }) => (
+                        <li className="text-sm font-light text-stone-700 leading-relaxed" {...props} />
+                      ),
+                      code: ({ node, ...props }) => (
+                        <code className="text-xs bg-stone-100 text-stone-600 px-1 py-0.5 rounded" {...props} />
+                      ),
+                      blockquote: ({ node, ...props }) => (
+                        <blockquote className="border-l-4 border-stone-300 pl-4 italic text-stone-600 my-4" {...props} />
+                      ),
+                    }}
+                  >
+                    {feedData.feed.description}
+                  </ReactMarkdown>
+                </div>
+              ) : (
+                <div className="text-sm font-light text-stone-600 leading-relaxed">
+                  Strategy document is being generated...
+                </div>
+              )}
             </div>
 
             {/* Posting Strategy */}
@@ -1063,7 +1741,34 @@ export default function InstagramFeedView({ feedData, onBack }: InstagramFeedVie
               <div className="flex-1 overflow-y-auto px-4 py-4">
                 <div className="text-sm">
                   <span className="font-semibold text-stone-900">sselfie</span>{" "}
-                  <span className="text-stone-900 whitespace-pre-wrap">{selectedPost.caption}</span>
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="text-stone-900 whitespace-pre-wrap flex-1">{selectedPost.caption}</span>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <button
+                        onClick={() => copyCaptionToClipboard(selectedPost.caption, selectedPost.id)}
+                        className="p-1.5 hover:bg-stone-100 rounded transition-colors"
+                        title="Copy caption"
+                      >
+                        {copiedCaptions.has(selectedPost.id) ? (
+                          <Check size={16} className="text-green-600" />
+                        ) : (
+                          <Copy size={16} className="text-stone-600" />
+                        )}
+                      </button>
+                      <button
+                        onClick={() => handleEnhanceCaption(selectedPost.id, selectedPost.caption)}
+                        disabled={enhancingCaptions.has(selectedPost.id)}
+                        className="p-1.5 hover:bg-stone-100 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Enhance with Maya"
+                      >
+                        {enhancingCaptions.has(selectedPost.id) ? (
+                          <Loader2 size={16} className="text-stone-600 animate-spin" />
+                        ) : (
+                          <Sparkles size={16} className="text-stone-600" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
                 </div>
                 <p className="text-xs text-stone-400 uppercase tracking-wide mt-3">Just now</p>
               </div>
@@ -1091,32 +1796,38 @@ export default function InstagramFeedView({ feedData, onBack }: InstagramFeedVie
         </div>
       )}
 
-      {showGallery && (
-        <div
-          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
-          onClick={() => setShowGallery(null)}
-        >
-          <div className="bg-white rounded-2xl p-6 max-w-2xl w-full" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-stone-900">Choose from Gallery</h3>
-              <button
-                onClick={() => setShowGallery(null)}
-                className="p-2 hover:bg-stone-100 rounded-full transition-colors"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <p className="text-sm text-stone-500 mb-4">
-              Gallery integration coming soon. You can select from your previously generated photos.
-            </p>
-            <button
-              onClick={() => setShowGallery(null)}
-              className="w-full bg-stone-900 text-white py-3 rounded-xl font-medium hover:bg-stone-800 transition-colors"
-            >
-              Close
-            </button>
-          </div>
-        </div>
+      {showGallery && feedData?.feed?.id && (
+        <FeedPostGallerySelector
+          postId={showGallery}
+          feedId={feedData.feed.id}
+          onClose={() => {
+            setShowGallery(null)
+            // Refresh feed data to show updated image
+            mutate(`/api/feed/${feedData.feed.id}`)
+          }}
+          onImageSelected={() => {
+            // Refresh feed data to show updated image
+            mutate(`/api/feed/${feedData.feed.id}`)
+            toast({
+              title: "Image updated",
+              description: "The post image has been updated from your gallery.",
+            })
+          }}
+        />
+      )}
+
+      {showProfileGallery && feedData?.feed?.id && (
+        <FeedProfileGallerySelector
+          feedId={feedData.feed.id}
+          onClose={() => setShowProfileGallery(false)}
+          onImageSelected={async () => {
+            await mutate(`/api/feed/${feedData.feed.id}`)
+            toast({
+              title: "Profile image updated",
+              description: "Your profile image has been updated successfully.",
+            })
+          }}
+        />
       )}
     </div>
   )
