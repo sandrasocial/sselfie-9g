@@ -10,6 +10,7 @@ import InteractivePipelineShowcase from "./interactive-pipeline-showcase"
 import InteractiveFeaturesShowcase from "./interactive-features-showcase"
 import { createLandingCheckoutSession } from "@/app/actions/landing-checkout"
 import TestimonialGrid from "@/components/testimonials/testimonial-grid"
+import { trackCTAClick, trackPricingView, trackCheckoutStart, trackEmailSignup, trackSocialClick } from "@/lib/analytics"
 
 interface LandingStats {
   waitlistCount: number
@@ -78,6 +79,27 @@ export default function LandingPage() {
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
+  // Track pricing section view
+  useEffect(() => {
+    const pricingSection = document.getElementById("pricing")
+    if (!pricingSection) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            trackPricingView()
+            observer.disconnect() // Only track once
+          }
+        })
+      },
+      { threshold: 0.3 } // Trigger when 30% of section is visible
+    )
+
+    observer.observe(pricingSection)
+    return () => observer.disconnect()
+  }, [])
+
   useEffect(() => {
     const messages = [
       "Hi! I'm Maya, your AI photo strategist ✨",
@@ -105,6 +127,17 @@ export default function LandingPage() {
   const handleStartCheckout = async (tierId: string) => {
     try {
       setCheckoutLoading(tierId)
+      
+      // Track checkout start
+      const productNames: Record<string, string> = {
+        one_time_session: "Instagram Photoshoot",
+        sselfie_studio_membership: "Content Creator Studio",
+        brand_studio_membership: "Brand Studio",
+      }
+      const productName = productNames[tierId] || tierId
+      trackCheckoutStart(tierId, undefined)
+      trackCTAClick("pricing", productName, "/checkout")
+      
       const clientSecret = await createLandingCheckoutSession(tierId)
       if (clientSecret) {
         window.location.href = `/checkout?client_secret=${clientSecret}`
@@ -138,6 +171,9 @@ export default function LandingPage() {
     e.preventDefault()
     setWaitlistLoading(true)
     setWaitlistMessage(null)
+
+    // Track email signup
+    trackEmailSignup("landing_page", "waitlist")
 
     try {
       const response = await fetch("/api/waitlist", {
@@ -203,7 +239,10 @@ export default function LandingPage() {
             </Link>
             <a
               href="#pricing"
-              onClick={scrollToPricing}
+              onClick={(e) => {
+                trackCTAClick("nav", "GET STARTED", "#pricing")
+                scrollToPricing(e)
+              }}
               className="bg-white text-black px-6 py-2.5 text-xs uppercase tracking-wider transition-all duration-300 hover:bg-black hover:text-white border border-white"
             >
               GET STARTED
@@ -261,7 +300,10 @@ export default function LandingPage() {
             </Link>
             <a
               href="#pricing"
-              onClick={scrollToPricing}
+              onClick={(e) => {
+                trackCTAClick("mobile_nav", "GET STARTED", "#pricing")
+                scrollToPricing(e)
+              }}
               className="bg-white text-black px-8 py-3 text-sm uppercase tracking-wider transition-all duration-300 hover:bg-black hover:text-white border border-white min-h-[44px] flex items-center justify-center"
             >
               GET STARTED
@@ -295,7 +337,10 @@ export default function LandingPage() {
               </p>
               <a
                 href="#features"
-                onClick={scrollToFeatures}
+                onClick={(e) => {
+                  trackCTAClick("hero", "SEE HOW IT WORKS", "#features")
+                  scrollToFeatures(e)
+                }}
                 className="inline-block px-8 sm:px-10 py-3.5 sm:py-4 bg-white text-black text-sm sm:text-base uppercase tracking-wider transition-all duration-300 hover:bg-black hover:text-white border border-white min-h-[48px] flex items-center justify-center font-light"
               >
                 SEE HOW IT WORKS
@@ -1019,6 +1064,7 @@ export default function LandingPage() {
                   href="https://instagram.com/sandra.social"
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() => trackSocialClick("instagram", "https://instagram.com/sandra.social")}
                   className="text-sm sm:text-base font-light text-stone-600 hover:text-stone-950 transition-colors flex items-center gap-2"
                 >
                   <span>Instagram</span>
@@ -1028,6 +1074,7 @@ export default function LandingPage() {
                   href="https://tiktok.com/@sandra.social"
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() => trackSocialClick("tiktok", "https://tiktok.com/@sandra.social")}
                   className="text-sm sm:text-base font-light text-stone-600 hover:text-stone-950 transition-colors flex items-center gap-2"
                 >
                   <span>TikTok</span>

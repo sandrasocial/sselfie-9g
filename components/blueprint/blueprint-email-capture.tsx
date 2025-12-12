@@ -4,6 +4,7 @@ import type React from "react"
 import { useState } from "react"
 import { Input } from "@/components/ui/input"
 import Image from "next/image"
+import { trackEmailSignup } from "@/lib/analytics"
 
 interface BlueprintEmailCaptureProps {
   onSuccess: (email: string, name: string, accessToken: string) => void
@@ -21,6 +22,9 @@ export function BlueprintEmailCapture({ onSuccess, formData, currentStep }: Blue
     e.preventDefault()
     setError("")
     setIsSubmitting(true)
+
+    // Track email signup
+    trackEmailSignup("brand_blueprint", currentStep === 2 ? "blueprint_results" : "blueprint_progress")
 
     console.log("[v0] Starting blueprint subscribe request")
 

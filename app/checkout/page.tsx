@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation"
 import { loadStripe } from "@stripe/stripe-js"
 import { EmbeddedCheckoutProvider, EmbeddedCheckout } from "@stripe/react-stripe-js"
 import Image from "next/image"
+import { trackCheckoutStart } from "@/lib/analytics"
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 
@@ -25,6 +26,10 @@ function CheckoutContent() {
       setError("No checkout session found")
       return
     }
+
+    // Track checkout page view (checkout started)
+    const productType = searchParams.get("product_type") || "unknown"
+    trackCheckoutStart(productType)
 
     console.log("[v0] Checkout page - Setting client secret")
     setClientSecret(secret)

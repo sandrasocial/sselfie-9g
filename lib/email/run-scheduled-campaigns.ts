@@ -81,6 +81,19 @@ async function resolveRecipients(targetAudience: any): Promise<string[]> {
 
   let recipientEmails: string[] = []
 
+  // Internal segment-based targeting (new advanced segmentation)
+  if (targetAudience.segment_id) {
+    try {
+      const { getSegmentMembers } = await import("./segmentation")
+      const members = await getSegmentMembers(targetAudience.segment_id)
+      console.log(`[v0] Campaign targets internal segment ${targetAudience.segment_id}, found ${members.length} members`)
+      return members
+    } catch (error) {
+      console.error(`[v0] Error fetching segment members:`, error)
+      return []
+    }
+  }
+
   // Resend segment-based targeting (for newsletters and beta testimonials)
   if (targetAudience.resend_segment_id) {
     try {

@@ -94,13 +94,29 @@ export async function POST(request: NextRequest) {
         if (messageId) {
           const openedAt = eventData?.timestamp ? new Date(eventData.timestamp) : new Date()
           
-          await sql`
+          // Update email_logs
+          const emailLog = await sql`
             UPDATE email_logs
             SET opened = true, opened_at = ${openedAt}
             WHERE resend_message_id = ${messageId}
             AND opened = false
+            RETURNING user_email, email_type
           `
+          
           console.log(`[v0] [Resend Webhook] ✅ Marked as opened: ${messageId}`)
+          
+          // Update A/B test results if this is an A/B test email
+          if (emailLog && emailLog.length > 0) {
+            const log = emailLog[0]
+            const emailType = log.email_type as string
+            const abTestMatch = emailType.match(/ab_test_(\d+)_variant_([AB])/)
+            if (abTestMatch) {
+              const testId = parseInt(abTestMatch[1])
+              const { updateABTestResults } = await import("@/lib/email/ab-testing")
+              await updateABTestResults(testId, log.user_email, "opened")
+              console.log(`[v0] [Resend Webhook] ✅ Updated A/B test ${testId} for opened`)
+            }
+          }
         }
         break
 
@@ -110,13 +126,29 @@ export async function POST(request: NextRequest) {
           const clickedAt = eventData?.timestamp ? new Date(eventData.timestamp) : new Date()
           const clickedUrl = eventData?.link || eventData?.url || null
           
-          await sql`
+          // Update email_logs
+          const emailLog = await sql`
             UPDATE email_logs
             SET clicked = true, clicked_at = ${clickedAt}
             WHERE resend_message_id = ${messageId}
             AND clicked = false
+            RETURNING user_email, email_type
           `
+          
           console.log(`[v0] [Resend Webhook] ✅ Marked as clicked: ${messageId} (URL: ${clickedUrl})`)
+          
+          // Update A/B test results if this is an A/B test email
+          if (emailLog && emailLog.length > 0) {
+            const log = emailLog[0]
+            const emailType = log.email_type as string
+            const abTestMatch = emailType.match(/ab_test_(\d+)_variant_([AB])/)
+            if (abTestMatch) {
+              const testId = parseInt(abTestMatch[1])
+              const { updateABTestResults } = await import("@/lib/email/ab-testing")
+              await updateABTestResults(testId, log.user_email, "clicked")
+              console.log(`[v0] [Resend Webhook] ✅ Updated A/B test ${testId} for clicked`)
+            }
+          }
         }
         break
 
