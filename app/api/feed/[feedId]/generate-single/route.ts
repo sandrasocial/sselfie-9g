@@ -270,7 +270,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
     try {
       const mayaData = await mayaResponse.json()
       finalPrompt = mayaData.prompt || mayaData.enhancedPrompt
-      console.log("[v0] [GENERATE-SINGLE] ✅ Maya generated enhanced prompt:", finalPrompt?.substring(0, 150))
+      console.log("[v0] [GENERATE-SINGLE] ✅ Maya generated enhanced prompt (raw):", finalPrompt?.substring(0, 150))
 
       if (!finalPrompt || finalPrompt.trim().length === 0) {
         console.error("[v0] [GENERATE-SINGLE] Maya returned empty prompt")
@@ -282,6 +282,25 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
           { status: 500 },
         )
       }
+
+      // CRITICAL: Strip any markdown formatting, prefixes, or metadata that might have slipped through
+      finalPrompt = finalPrompt
+        // Remove markdown bold/italic formatting
+        .replace(/\*\*/g, '')
+        .replace(/\*/g, '')
+        .replace(/__/g, '')
+        .replace(/_/g, '')
+        // Remove common prefix patterns like "FLUX PROMPT (Type - X words):" or "PROMPT:" etc.
+        .replace(/^.*?FLUX\s+PROMPT\s*\([^)]*\)\s*:?\s*/i, '')
+        .replace(/^.*?PROMPT\s*:?\s*/i, '')
+        .replace(/^.*?FLUX\s*:?\s*/i, '')
+        // Remove word count patterns like "(62 words)" or "(X words)"
+        .replace(/\([^)]*\d+\s+words?[^)]*\)\s*/gi, '')
+        // Remove any leading colons, dashes, or other separators
+        .replace(/^[:;\-\s]+/, '')
+        .trim()
+
+      console.log("[v0] [GENERATE-SINGLE] ✅ Maya generated enhanced prompt (cleaned):", finalPrompt?.substring(0, 150))
 
       // Double-check trigger word is present (backup validation)
       const promptLower = finalPrompt.toLowerCase().trim()
@@ -363,7 +382,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
 
     const updateResult = await sql`
       UPDATE feed_posts
-      SET generation_status = 'generating', prediction_id = ${prediction.id}, prompt = ${finalPrompt}, updated_at = NOW()
+      SET 
+        generation_status = 'generating', 
+        prediction_id = ${prediction.id}, 
+        prompt = ${finalPrompt}, 
+        image_url = NULL,
+        updated_at = NOW()
       WHERE id = ${postId}
     `
 

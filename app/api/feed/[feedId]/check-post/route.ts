@@ -61,15 +61,23 @@ export async function GET(request: Request) {
     }
 
     const [existingPost] = await sql`
-      SELECT image_url, generation_status FROM feed_posts WHERE id = ${Number.parseInt(postId)}
+      SELECT image_url, generation_status, prediction_id FROM feed_posts WHERE id = ${Number.parseInt(postId)}
     `
 
+    // If post is already completed with an image, return it
     if (existingPost?.generation_status === "completed" && existingPost?.image_url) {
       console.log("[v0] Post already completed, returning cached result")
       return NextResponse.json({
         status: "succeeded",
         imageUrl: existingPost.image_url,
       })
+    }
+
+    // If the prediction_id in the database doesn't match the one we're checking, 
+    // this might be an old regeneration attempt - still check it but log a warning
+    if (existingPost?.prediction_id && existingPost.prediction_id !== predictionId) {
+      console.warn("[v0] ⚠️ Prediction ID mismatch! Database has:", existingPost.prediction_id, "but checking:", predictionId)
+      console.warn("[v0] This might be an old regeneration. The post may need to be regenerated again.")
     }
 
     let prediction
@@ -227,8 +235,21 @@ export async function GET(request: Request) {
         status: "failed",
         error: prediction.error || "Generation failed",
       })
+    } else if (prediction.status === "canceled") {
+      // Handle canceled predictions
+      await sql`
+        UPDATE feed_posts
+        SET generation_status = 'failed'
+        WHERE id = ${Number.parseInt(postId)}
+      `
+
+      return NextResponse.json({
+        status: "failed",
+        error: "Generation was canceled",
+      })
     }
 
+    // Return the current status (processing, starting, etc.)
     return NextResponse.json({
       status: prediction.status,
     })

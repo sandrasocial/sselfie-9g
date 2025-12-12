@@ -2,12 +2,13 @@
  * MAYA'S FLUX PROMPTING PRINCIPLES (FLUX-OPTIMIZED)
  *
  * Based on FLUX AI best practices:
- * - 50-80 word optimal length (richer detail, still authentic)
+ * - 40-60 word optimal length (preserves user LoRA, natural look)
  * - Natural language (not keyword stuffing)
  * - Amateur cellphone photo aesthetic (not professional)
- * - Order matters (subject → outfit → environment → lighting → technical → film grain)
+ * - Order matters (subject → outfit → environment → lighting → technical)
  * - No prompt weights
  * - Avoid "white background"
+ * - NO aesthetic enhancement words (prevents plastic look)
  */
 
 export const FLUX_PROMPTING_PRINCIPLES = `
@@ -17,30 +18,29 @@ You craft prompts using NATURAL LANGUAGE as if describing to a human photographe
 
 ## OPTIMAL PROMPT STRUCTURE FOR FLUX
 
-**FORMAT:** [Subject Description] + [Outfit Details with Fabrics/Textures] + [Setting/Environment] + [Lighting] + [Camera/Technical Specs with Natural Imperfections + Film Aesthetics - MANDATORY] + [Casual Moment Language]
+**FORMAT:** [Outfit with fabrics/textures] + [Simple setting] + [Natural lighting] + [iPhone camera specs] + [Natural pose/action]
 
-**OPTIMAL LENGTH:** 50-80 words (FLUX handles natural language well, T5 encoder optimal ~256 tokens. Longer prompts allow for more detail and higher quality results)
+**OPTIMAL LENGTH:** 40-60 words (shorter prompts preserve user LoRA better, prevent plastic/generic faces)
 
 **🔴 CRITICAL FOR CHARACTER LIKENESS:**
-- **Optimal prompts (50-80 words)** = Enough detail for realism + likeness
-- **Too short (<40 words)** = Misses critical detail, risks wrong hair/body/age
-- **Too long (>85 words)** = Model may lose focus on character features
-- **Hard limit: 80 words** (aim for 60-75 sweet spot)
-- LoRA models work best when prompts reinforce the trigger word AND include essential feature descriptions
+- **Optimal prompts (40-60 words)** = Preserves user LoRA, natural look, prevents plastic faces
+- **Too short (<35 words)** = May miss essential outfit/location detail
+- **Too long (>65 words)** = Overpowers user LoRA, creates generic/plastic faces
+- **Hard limit: 60 words** (aim for 40-50 sweet spot)
+- Trust the user LoRA for face/appearance - focus on what changes (outfit, pose, location, lighting)
 
 **WORD ORDER CRITICAL:** Place most important elements FIRST (subject → outfit → environment → lighting → technical → film grain)
 
 ## STRUCTURAL ORDER (MANDATORY FOR FLUX)
 
 1. **TRIGGER + GENDER** (2-3 words) - Always first
-2. **OUTFIT WITH FABRICS/TEXTURES** (6-10 words) - Specific materials, fit, how worn (keep concise)
-3. **EXPRESSION + POSE** (4-6 words) - Natural, conversational language (keep simple)
-4. **SETTING/ENVIRONMENT** (3-6 words) - Describe background in detail or omit (keep brief)
-5. **LIGHTING** (5-8 words) - Direction, quality, natural imperfections (keep natural, not perfect)
-6. **CAMERA/TECHNICAL SPECS** (8-14 words) - iPhone/cellphone, lens/aperture, ISO (optional), natural imperfections, skin texture, film grain, muted colors
-7. **CASUAL MOMENT LANGUAGE** (2-4 words) - "candid moment", "looks like real phone camera photo" (RECOMMENDED)
+2. **OUTFIT WITH FABRICS/TEXTURES** (8-12 words) - Specific materials, fit, how worn (stay detailed here)
+3. **SETTING/ENVIRONMENT** (3-5 words) - Simple, one-line description (keep brief)
+4. **LIGHTING** (3-5 words) - Simple natural lighting only (no dramatic/cinematic terms)
+5. **POSE/ACTION** (3-5 words) - Natural actions only (no "striking poses")
+6. **CAMERA/TECHNICAL SPECS** (5-8 words) - Basic iPhone specs only (no complex technical details)
 
-**TOTAL TARGET:** 50-80 words for optimal FLUX performance and high-quality results
+**TOTAL TARGET:** 40-60 words for optimal user LoRA preservation and natural look
 
 **🔴 CHARACTER LIKENESS PRESERVATION:**
 - Keep prompts concise to maintain focus on trigger word and character
@@ -121,178 +121,165 @@ This phrase causes blur in FLUX.1-dev:
 - ✅ GOOD: "sunlit minimalist kitchen, marble countertops, soft morning glow"
 - ❌ BAD: "in a cafe", "white background", "outdoor setting"
 
-### LIGHTING (5-8 words, natural imperfection focus)
-**🔴 CRITICAL: FLUX defaults to "studio lighting" which looks FAKE and PLASTIC. You MUST specify NATURAL, IMPERFECT light with visible imperfections.**
+### LIGHTING (3-5 words, keep simple and natural)
+**🔴 CRITICAL: Keep lighting descriptions SIMPLE. No dramatic, cinematic, or professional terms.**
 
-**NEVER USE THESE (they create plastic-looking images):**
-- ❌ "soft morning daylight, diffused natural lighting" (too perfect)
-- ❌ "even diffused lighting" (sounds professional)
-- ❌ "perfect lighting", "beautiful lighting", "ideal lighting"
-- ❌ Any lighting description without imperfection language
+**ALWAYS USE (Simple Natural Lighting):**
+- ✅ "Soft afternoon sunlight"
+- ✅ "Natural window light"
+- ✅ "Warm golden hour lighting"
+- ✅ "Overcast daylight"
 
-**ALWAYS INCLUDE IMPERFECTION LANGUAGE:**
-- ✅ "uneven lighting", "mixed color temperatures", "slight uneven illumination"
-- ✅ "visible sensor noise in shadows", "slight motion blur from handheld"
-- ✅ "warm and cool tones mixing", "uneven ambient light"
+**NEVER USE (These cause plastic look):**
+- ❌ "Dramatic rim lighting"
+- ❌ "Cinematic quality"
+- ❌ "Professional studio lighting"
+- ❌ "Editorial photography lighting"
+- ❌ "Perfect lighting", "beautiful lighting", "ideal lighting"
+- ❌ Any complex lighting descriptions
 
-**SPECIFY:**
-- Direction: "from left", "backlit", "side lighting from window"
-- Quality: "warm golden", "uneven ambient", "mixed color temperatures"
-- **MANDATORY Natural imperfection:** "uneven lighting", "mixed color temperatures", "slight uneven illumination", "visible sensor noise"
-- Natural sources: "golden hour sunlight", "overcast daylight", "window light"
+**EXAMPLES:**
+- "Soft afternoon sunlight"
+- "Natural window light"
+- "Warm golden hour lighting"
+- "Overcast daylight"
 
-**EXAMPLES (with imperfections):**
-- "Golden hour sunlight from left, warm side lighting, soft shadows, uneven ambient light, mixed color temperatures"
-- "Overcast daylight, diffused but uneven lighting, mixed warm and cool tones, visible sensor noise"
-- "Window light from left, warm morning glow, slight uneven illumination, mixed color temperatures"
+**KEEP IT SIMPLE:** One natural lighting description is enough. Trust the user LoRA and natural iPhone camera quality.
 
-**AVOID:** "studio lighting", "professional lighting", "perfect lighting", "even lighting", "diffused natural lighting" (without imperfection), anything that sounds "perfect" or "studio"
+### CAMERA/TECHNICAL SPECS (5-8 words) - **KEEP BASIC**
 
-### CAMERA/TECHNICAL SPECS (8-14 words) - **CRITICAL FOR AUTHENTICITY**
+**🔴 MANDATORY BASE:** Basic iPhone camera specs only
+- **USE:** "shot on iPhone 15 Pro portrait mode, shallow depth of field"
+- **OR:** "shot on iPhone, natural bokeh"
+- Goal: looks like a friend took it on their phone, NOT a professional shoot
 
-**🔴 MANDATORY BASE:** iPhone 15 Pro or Amateur Cellphone Photo (DEFAULT - use this 95% of the time)
-- **START WITH:** "shot on iPhone 15 Pro" OR "amateur cellphone photo"
-- Goal: looks like an aesthetic friend took it on their phone, NOT a professional shoot
+**NEVER INCLUDE:**
+- ❌ Complex technical specs (f-stops, ISO, focal lengths)
+- ❌ "Professional photography"
+- ❌ "8K", "4K", "high resolution"
+- ❌ "Ultra sharp", "crystal clear", "sharp focus"
+- ❌ Skin quality descriptions beyond "natural"
+- ❌ "Ultra realistic", "photorealistic"
+- ❌ Any quality enhancement words
 
-**OPTIONAL LENS/APERTURE/ISO (pick 0-2 max to avoid bloat):**
-- Lens/aperture: "26mm f/1.8", "24mm f/1.8", "50mm f/1.8" (editorial only)
-- ISO (for grain): "ISO 400", "ISO 640", "ISO 800"
+**KEEP IT MINIMAL:**
+- ✅ "Shot on iPhone 15 Pro portrait mode, shallow depth of field"
+- ✅ "Shot on iPhone, natural bokeh"
 
-**ALWAYS INCLUDE (CRITICAL - PREVENTS PLASTIC/AI LOOK):**
-- **Natural imperfections (pick ≥3):** "visible sensor noise", "slight motion blur from handheld", "uneven lighting", "mixed color temperatures", "handheld feel", "natural camera imperfections"
-- **Depth of field:** "natural bokeh", "shallow phone-lens depth of field", "slight edge softness"
-- **Skin texture (MANDATORY):** "natural skin texture with pores visible" + 1–2 of: "not plastic-looking", "organic skin texture", "visible peach fuzz", "slight shine on forehead", "natural blemishes", "subtle facial asymmetry"
-- **Film characteristics:** "visible film grain" OR "fine film grain texture" OR "grainy texture" (one is enough)
-- **Muted color language:** "muted color palette" OR "soft muted tones" OR "desaturated realistic colors"
-- **iPhone traits (pick 0-2):** "Smart HDR processing", "computational photography look", "RAW processing look", "slight lens distortion", "soft edge vignetting", "subtle chromatic aberration", "slight overexposed highlights", "warm/cool white balance mix"
+**EXAMPLES:**
+- "shot on iPhone 15 Pro portrait mode, shallow depth of field"
+- "shot on iPhone, natural bokeh"
 
-**EXAMPLES (compact, iPhone-first):**
-- "shot on iPhone 15 Pro 26mm f/1.8, ISO 640, natural bokeh, slight motion blur from handheld, visible sensor noise, natural skin texture with visible pores, not plastic-looking, visible film grain, muted color palette, subtle lens distortion, candid moment"
-- "amateur cellphone photo, shallow phone-lens depth of field, slight edge softness, uneven lighting, mixed color temperatures, natural skin texture with peach fuzz, fine film grain texture, soft muted tones, subtle chromatic aberration, authentic iPhone look"
+**TRUST THE USER LoRA:** The user's trained LoRA handles appearance. Keep camera specs simple and basic.
 
-**WHEN TO USE FOCAL LENGTH (rare – only if explicitly requested):**
-- "35mm focal length, natural bokeh, handheld feel, natural skin texture, subtle film grain"
+### FILM AESTHETICS - **REMOVED**
 
-### FILM AESTHETICS (5-8 words) - **MANDATORY - INTEGRATE INTO CAMERA SECTION**
+**🔴 CRITICAL CHANGE:** Film grain and muted color descriptions are NO LONGER mandatory. These were adding complexity and competing with the user LoRA.
 
-**🔴 CRITICAL: These MUST be included in EVERY prompt, integrated into the camera/technical section**
+**NEW APPROACH:**
+- Trust the user LoRA for natural appearance
+- Keep prompts simple (40-60 words)
+- Basic iPhone camera specs are enough
+- Natural lighting descriptions are enough
 
-**EVERY PROMPT MUST INCLUDE BOTH:**
-
-1. **Film Grain** (choose one):
-   - "visible film grain"
-   - "fine film grain texture"
-   - "grainy texture"
-   - "subtle grain visible"
-
-2. **Muted Color Language** (choose one):
-   - "muted color palette"
-   - "soft muted tones"
-   - "desaturated realistic colors"
-   - "vintage color temperature"
-
-**INTEGRATION:** Include these RIGHT AFTER camera specs, not at the end:
-- ✅ GOOD: "shot on iPhone 15 Pro, natural bokeh, natural skin texture, visible film grain, muted color palette, looks like a real phone camera photo"
-- ❌ BAD: "shot on iPhone 15 Pro, natural bokeh... [other stuff]... visible film grain, muted color palette" (too late)
-
-**EXAMPLES (Integrated format, simplified):**
-- "shot on iPhone 15 Pro, natural bokeh, natural skin texture with pores visible, visible film grain, muted color palette, looks like a real phone camera photo"
-- "amateur cellphone photo, natural bokeh, natural skin imperfections, fine film grain texture, soft muted tones, candid moment"
-- "shot on iPhone 15 Pro, natural bokeh, realistic skin texture, subtle grain visible, desaturated realistic colors, looks like real phone camera photo"
-
-**WHY THIS MATTERS:**
-Without film grain and muted colors, FLUX creates overly-contrasted, plastic-looking images that don't feel authentic. Film characteristics are CRITICAL for Instagram-worthy realism. Integrating them into the camera section ensures they're not skipped.
+**WHY THIS CHANGE:**
+Shorter, simpler prompts (40-60 words) preserve the user LoRA better. Adding film grain/muted color descriptions was making prompts too long and creating generic/plastic faces.
 
 ## 🔴 CRITICAL FLUX-SPECIFIC AVOIDANCES (HARD REQUIREMENTS)
 
-**NEVER INCLUDE - These will be automatically removed if detected:**
-- Generic quality terms: "stunning", "perfect", "beautiful", "high quality", "8K", "ultra realistic", "professional photography", "DSLR", "cinematic"
-- **Plastic/smooth skin terms:** "smooth skin", "flawless skin", "airbrushed", "perfect skin", "silk-like skin" (these create plastic-looking images)
-- **Perfect lighting terms:** "perfect lighting", "even lighting", "ideal lighting", "beautiful lighting", "soft diffused natural lighting" (without imperfection language)
-- Artistic vagueness: "ethereal", "dreamlike", "magical" (unless specific fantasy request)
-- Prompt weight syntax: (word)++, [word], {word}, (word:1.5)
-- "White background" phrase (causes blur in FLUX)
-- Multiple contradictory actions: "first she walks, then she sits"
-- Overly complex multi-element scenes
-- Time-based sequences
-- Studio lighting terms: "studio lighting", "professional lighting", "perfect lighting"
+**NEVER INCLUDE - These cause plastic/generic faces:**
+- ❌ "ultra realistic", "photorealistic"
+- ❌ "8K", "4K", "high resolution", "high quality"
+- ❌ "perfect", "flawless", "stunning", "beautiful", "gorgeous"
+- ❌ "professional photography", "editorial", "magazine quality"
+- ❌ "dramatic" (for lighting)
+- ❌ "hyper detailed", "sharp focus", "ultra sharp", "crystal clear"
+- ❌ Any skin quality descriptions beyond "natural"
+- ❌ "cinematic quality", "cinematic"
+- ❌ "studio lighting", "professional lighting", "perfect lighting"
+- ❌ Prompt weight syntax: (word)++, [word], {word}, (word:1.5)
+- ❌ "White background" phrase (causes blur in FLUX)
+- ❌ Multiple contradictory actions: "first she walks, then she sits"
+- ❌ Overly complex multi-element scenes
+- ❌ Time-based sequences
 
 **INSTEAD USE:**
-- Specific but simple: "shot on iPhone 15 Pro, natural bokeh, natural skin texture"
-- Precise descriptors: "butter-soft chocolate leather" not "luxury leather"
-- Clear spatial relationships: "standing in front of marble wall" not "near wall"
-- Natural positioning: "walking toward camera" not "dynamic pose"
-- **Casual moment language:** "candid moment", "caught mid-action", "natural, unposed", "looks like a real Instagram photo", "amateur cellphone quality", "looks like real phone camera photo"
+- Simple, direct descriptions: "shot on iPhone 15 Pro portrait mode, shallow depth of field"
+- Precise outfit descriptors: "oversized brown leather blazer" not "stunning luxury blazer"
+- Simple settings: "walking through SoHo" not "walking through the vibrant streets of SoHo with bustling energy"
+- Natural lighting: "soft afternoon sunlight" not "dramatic rim lighting"
+- Natural poses: "walking toward camera" not "striking a confident pose with perfect posture"
 
-## LIGHTING FOR FLUX (Technical Accuracy Focus)
+## LIGHTING FOR FLUX (Keep Simple and Natural)
 
 **OUTDOOR NATURAL:**
-- "Golden hour sunlight, warm side lighting, soft shadows, f/2.8"
-- "Soft overcast daylight, even diffused lighting, no harsh shadows"
-- "Late afternoon sun, warm backlight, slight lens flare visible"
+- "Soft afternoon sunlight"
+- "Warm golden hour lighting"
+- "Overcast daylight"
 
 **INDOOR NATURAL:**
-- "Diffused window light from left, soft directional shadows, warm morning glow"
-- "Natural light through floor-to-ceiling windows, bright indirect illumination"
-- "Soft ambient daylight, minimal shadows, clean natural lighting"
+- "Natural window light"
+- "Soft morning window light"
 
 **INDOOR ARTIFICIAL:**
-- "Warm ambient restaurant lighting, soft face illumination, bokeh background lights"
-- "Soft chandelier glow, warm uplighting, marble surfaces reflecting light"
-- "Dim intimate bar lighting, warm amber tones, subtle highlights"
+- "Warm ambient lighting"
+- "Soft restaurant lighting"
 
 **KEY LIGHTING PRINCIPLES:**
-- Specify direction when relevant (from left, from above, backlit)
-- Mention quality (soft, diffused, warm, dramatic)
-- Note shadows (soft shadows, minimal shadows, dramatic shadows)
-- Include environment light interaction (marble reflecting, glass filtering)
+- Keep it simple (3-5 words max)
+- Use natural, simple descriptions
+- NO dramatic, cinematic, or professional terms
+- Trust the user LoRA and natural iPhone camera quality
 
-## WORD BUDGET BY CATEGORY (OPTIMIZED FOR AUTHENTICITY)
+## WORD BUDGET BY CATEGORY (OPTIMIZED FOR USER LoRA PRESERVATION)
 
 | Shot Type | Target Words | Priority Elements |
 |-----------|--------------|-------------------|
-| Close-Up Portrait | 50-60 | Outfit fabrics, simple expression, lighting, camera (iPhone + imperfections), film grain |
-| Half Body Lifestyle | 60-75 | Outfit details, natural pose, setting, lighting, camera (iPhone + imperfections), film grain |
-| Environmental Portrait | 70-80 | Context, outfit, location detail, lighting quality, camera (iPhone + imperfections), film grain |
-| Action/Movement | 60-70 | Natural motion, outfit movement, lighting, camera (iPhone + imperfections), film grain |
+| Close-Up Portrait | 35-45 | Outfit fabrics, simple expression, natural lighting, basic iPhone specs |
+| Half Body Lifestyle | 40-50 | Outfit details, natural pose, simple setting, natural lighting, basic iPhone specs |
+| Environmental Portrait | 45-55 | Context, outfit, simple location, natural lighting, basic iPhone specs |
+| Action/Movement | 40-50 | Natural motion, outfit movement, natural lighting, basic iPhone specs |
 
-**Note:** Optimal prompts (50-80 words) = richer detail and better realism. Must include strong anti-plastic language to prevent AI/plastic look. The goal is "looks like a friend took it" not "professional photoshoot"
+**Note:** Optimal prompts (40-60 words) = preserves user LoRA, prevents plastic/generic faces. Shorter prompts let the user LoRA shine through. The goal is "looks like a friend took it" not "professional photoshoot"
 
 ## THE FLUX QUALITY CHECKLIST (MANDATORY VERIFICATION)
 
 Before finalizing ANY prompt, verify ALL of these:
 
-✅ **Length:** 50-80 words?
+✅ **Length:** 40-60 words? (NOT 70-80)
 ✅ **Natural language:** Reads like describing to a photographer, not keywords?
-✅ **Outfit specifics:** Fabrics/textures included?
-✅ **iPhone/Cellphone:** Does it start with "shot on iPhone 15 Pro" OR "amateur cellphone photo"? **MANDATORY (95% of prompts)**
-✅ **Natural imperfections:** Does it include AT LEAST 3 of: "visible sensor noise", "slight motion blur", "uneven lighting", "mixed color temperatures", "handheld feel", "natural camera imperfections"? **MANDATORY (need multiple to avoid plastic look)**
-✅ **Natural skin texture:** Does it include "natural skin texture with pores visible" AND AT LEAST 2 anti-plastic phrases like "not smooth", "not airbrushed", "not plastic-looking", "realistic texture", "authentic skin"? **MANDATORY (critical for preventing AI/plastic look)**
-✅ **Film grain:** One film grain descriptor included? **MANDATORY**
-✅ **Muted colors:** One muted color descriptor included? **MANDATORY**
-✅ **Casual moment language:** Does it include "candid moment", "looks like a real phone camera photo", or "amateur cellphone quality"? **RECOMMENDED**
+✅ **Outfit specifics:** Fabrics/textures included? (Stay detailed here)
+✅ **Simple setting:** One-line location description? (Keep brief)
+✅ **Natural lighting:** Simple lighting description? (NO dramatic/cinematic terms)
+✅ **Basic iPhone specs:** "shot on iPhone 15 Pro portrait mode, shallow depth of field" OR "shot on iPhone, natural bokeh"? (Keep minimal)
+✅ **Natural pose:** Simple action description? (NO "striking poses")
 ✅ **User preferences:** If user specified physical preferences (hair, body, age), are they included? **MANDATORY**
-✅ **No banned words:** No "stunning", "perfect", "beautiful", "high quality", "8K", "professional photography", "white background", "studio lighting", "smooth skin"?
+✅ **No banned words:** No "ultra realistic", "photorealistic", "8K", "perfect", "flawless", "stunning", "beautiful", "professional photography", "editorial", "dramatic", "cinematic", "hyper detailed", "sharp focus"?
 ✅ **No prompt weights:** No (word)++, [word], {word}?
+✅ **No skin quality descriptions:** Beyond "natural" only?
 
-**If ANY item is missing, the prompt is INCOMPLETE and will produce AI-looking results.**
+**If ANY item is missing or incorrect, the prompt will create plastic/generic faces instead of preserving the user LoRA.**
 
-## EXAMPLE COMPLETE FLUX PROMPTS (AUTHENTIC IPHONE QUALITY)
+## EXAMPLE COMPLETE FLUX PROMPTS (NATURAL, PRESERVES USER LoRA)
 
-**Close-Up Portrait (35 words - OPTIMIZED with anti-plastic):**
-"mya_user, woman in butter-soft black leather blazer with oversized boyfriend cut, white ribbed tank underneath, looking away naturally, standing in rain-slicked city pavement, overcast daylight with uneven lighting, mixed color temperatures, shot on iPhone 15 Pro, natural bokeh, slight motion blur, visible sensor noise, natural skin texture with pores visible, not smooth or airbrushed, visible film grain, muted color palette, looks like a real phone camera photo"
+**Example 1: Casual Street Style (45 words - NATURAL):**
+"user_trigger, woman in oversized brown leather blazer, cream turtleneck, high-waisted jeans, gold hoops, walking through SoHo with iced coffee, soft afternoon sunlight, natural moment, shot on iPhone 15 Pro portrait mode, shallow depth of field"
 
-**Half Body Lifestyle (40 words - OPTIMIZED with anti-plastic):**
-"user_trigger, man in chunky cable-knit charcoal cashmere sweater with relaxed fit, sleeves pushed to elbows, black straight-leg jeans, leaning against weathered brick wall with hand in pocket, weight on one leg, late afternoon sunlight, warm side lighting, uneven ambient light, shot on iPhone 15 Pro, natural bokeh, natural skin texture with visible pores, not plastic-looking, visible sensor noise, fine film grain texture, soft muted tones, candid moment"
+**Example 2: Cozy Home (42 words - SIMPLE):**
+"user_trigger, woman in oversized cream knit sweater, matching lounge pants, gold jewelry, sitting on grey sofa holding mug, soft morning window light, shot on iPhone 15 Pro portrait mode, natural bokeh"
 
-**Key Differences from Previous Examples:**
-- ✅ Much shorter (32-38 words vs 48-52 words) = better facial consistency, more authentic
-- ✅ Always starts with "shot on iPhone 15 Pro" or "amateur cellphone photo"
-- ✅ Includes natural imperfections (sensor noise, motion blur, uneven lighting)
-- ✅ Includes "natural skin texture with pores visible" (mandatory)
-- ✅ Film grain + muted colors integrated into camera section
-- ✅ Ends with casual language: "looks like a real phone camera photo" or "candid moment"
-- ✅ Simplified technical specs (no f-stops, just natural bokeh)
+**Example 3: Evening Glam (48 words - AUTHENTIC):**
+"user_trigger, woman in black satin slip dress, leather bomber jacket, strappy heels, diamond bracelet, low bun, standing in dim restaurant, warm ambient lighting, bokeh background, shot on iPhone 15 Pro portrait mode, shallow depth of field"
+
+**Key Principles in These Examples:**
+- ✅ 40-60 words (not 70-80) = preserves user LoRA
+- ✅ Simple, direct outfit descriptions (no enhancement words)
+- ✅ Simple settings (one line, not elaborate)
+- ✅ Natural lighting only (no dramatic/cinematic terms)
+- ✅ Basic iPhone specs only (no complex technical details)
+- ✅ Natural poses/actions (no "striking poses")
+- ✅ NO forbidden words (ultra realistic, 8K, perfect, professional, editorial, etc.)
+- ✅ Trusts user LoRA for appearance
 `
 
 export const ANTI_PATTERNS = `

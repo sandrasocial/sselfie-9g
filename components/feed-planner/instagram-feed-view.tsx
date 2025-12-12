@@ -49,6 +49,7 @@ export default function InstagramFeedView({ feedData, onBack }: InstagramFeedVie
   const [regeneratingPost, setRegeneratingPost] = useState<number | null>(null)
   const [showGallery, setShowGallery] = useState<number | null>(null)
   const [showProfileGallery, setShowProfileGallery] = useState(false)
+  const [postStartTimes, setPostStartTimes] = useState<Map<number, number>>(new Map())
 
   const [isFeedComplete, setIsFeedComplete] = useState(false)
   const [showConfetti, setShowConfetti] = useState(false)
@@ -310,6 +311,7 @@ export default function InstagramFeedView({ feedData, onBack }: InstagramFeedVie
 
     // More lenient filter - include posts with prediction_id even if status isn't exactly "generating"
     // Also include posts that are in the generatingPosts set (for regenerated posts)
+    // For regenerated posts, include them even if they have an old image_url
     const postsInProgress = feedData.posts.filter(
       (p: any) => {
         const hasPrediction = !!p.prediction_id
@@ -318,7 +320,9 @@ export default function InstagramFeedView({ feedData, onBack }: InstagramFeedVie
         const notInCompleted = !completedPosts.has(p.id)
         const isInGeneratingSet = generatingPosts.has(p.id)
         
-        // Include if it has a prediction_id and is not completed, OR if it's in the generatingPosts set
+        // Include if:
+        // 1. It has a prediction_id and is not completed and has no image (new generation)
+        // 2. OR it's in the generatingPosts set (regenerated post - may have old image_url)
         return (hasPrediction && isNotCompleted && hasNoImage && notInCompleted) || isInGeneratingSet
       }
     )
@@ -407,7 +411,9 @@ export default function InstagramFeedView({ feedData, onBack }: InstagramFeedVie
           const notInCompleted = !completedPosts.has(p.id)
           const isInGeneratingSet = generatingPosts.has(p.id)
           
-          // Include if it has a prediction_id and is not completed, OR if it's in the generatingPosts set
+          // Include if:
+          // 1. It has a prediction_id and is not completed and has no image (new generation)
+          // 2. OR it's in the generatingPosts set (regenerated post - may have old image_url)
           return (hasPrediction && isNotCompleted && hasNoImage && notInCompleted) || isInGeneratingSet
         }
       )
@@ -461,7 +467,7 @@ export default function InstagramFeedView({ feedData, onBack }: InstagramFeedVie
           }
 
           const data = await response.json()
-          console.log("[v0] Post", post.id, "- Status:", data.status)
+          console.log("[v0] Post", post.id, "- Status:", data.status, "Response:", JSON.stringify(data).substring(0, 200))
 
           if (data.status === "succeeded" && data.imageUrl) {
             console.log("[v0] Post", post.id, "- ✓ COMPLETED! Image URL:", data.imageUrl)
@@ -476,11 +482,43 @@ export default function InstagramFeedView({ feedData, onBack }: InstagramFeedVie
               updated.delete(post.id)
               return updated
             })
+            // Clear regeneratingPost state if this was a regenerated post
+            setRegeneratingPost((prev) => prev === post.id ? null : prev)
+            // Clear start time tracking
+            setPostStartTimes((prev) => {
+              const updated = new Map(prev)
+              updated.delete(post.id)
+              return updated
+            })
             await mutate(`/api/feed/${feedId}`)
             setPollBackoff(10000) // Reset to 10 seconds
+          } else if (data.status === "failed") {
+            console.error("[v0] Post", post.id, "- ❌ Generation failed:", data.error)
+            // Remove from generating sets and mark as failed
+            setGeneratingPosts((prev) => {
+              const updated = new Set(prev)
+              updated.delete(post.id)
+              return updated
+            })
+            setRegeneratingPost((prev) => prev === post.id ? null : prev)
+            // Clear start time tracking
+            setPostStartTimes((prev) => {
+              const updated = new Map(prev)
+              updated.delete(post.id)
+              return updated
+            })
+            await mutate(`/api/feed/${feedId}`)
+            toast({
+              title: "Generation failed",
+              description: data.error || "The image generation failed. Please try regenerating.",
+              variant: "destructive",
+            })
           } else if (data.status === "processing" || data.status === "starting") {
             // Keep polling if still processing
             console.log("[v0] Post", post.id, "- Still processing, status:", data.status)
+          } else {
+            // Unknown status - log it but keep polling
+            console.warn("[v0] Post", post.id, "- Unknown status:", data.status)
           }
         } catch (error) {
           console.error("[v0] Post", post.id, "- Error during polling:", error)
@@ -937,6 +975,13 @@ export default function InstagramFeedView({ feedData, onBack }: InstagramFeedVie
       // Add to generating posts set so polling picks it up
       setGeneratingPosts((prev) => new Set(prev).add(postId))
       
+      // Track when this regeneration started (for timeout detection)
+      setPostStartTimes((prev) => {
+        const updated = new Map(prev)
+        updated.set(postId, Date.now())
+        return updated
+      })
+      
       // Remove from completed posts so polling will check it again
       setCompletedPosts((prev) => {
         const updated = new Set(prev)
@@ -1241,7 +1286,7 @@ export default function InstagramFeedView({ feedData, onBack }: InstagramFeedVie
 
               return (
                 <div key={post.id} className="aspect-square bg-stone-100 relative group">
-                  {post.image_url && !isRegenerating ? (
+                  {post.image_url && !isRegenerating && !isGenerating ? (
                     <>
                       <Image
                         src={post.image_url || "/placeholder.svg"}
@@ -1257,7 +1302,7 @@ export default function InstagramFeedView({ feedData, onBack }: InstagramFeedVie
                             e.stopPropagation()
                             handleRegeneratePost(post.id)
                           }}
-                          disabled={isRegenerating}
+                          disabled={isRegenerating || isGenerating}
                           className="text-[10px] font-semibold text-white bg-stone-900 hover:bg-stone-800 px-3 py-1.5 rounded transition-colors disabled:opacity-50"
                         >
                           Regenerate

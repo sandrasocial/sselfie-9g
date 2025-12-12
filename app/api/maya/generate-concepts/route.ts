@@ -367,45 +367,41 @@ CRITICAL INSTRUCTIONS:
    - **PRESERVE USER INTENT:** Always include actual descriptive modifications like "curvier body type", "long blonde hair", "athletic build", "darker hair", etc.
    - **DO NOT REMOVE:** User's physical preferences should be in the prompt as descriptive features, not instructions
 
-2. **iPhone 15 Pro (MANDATORY - 95% of prompts):** MUST include "shot on iPhone 15 Pro" OR "amateur cellphone photo". Only use focal length alternatives for specific editorial requests.
+2. **Basic iPhone Specs (MANDATORY):** MUST include "shot on iPhone 15 Pro portrait mode, shallow depth of field" OR "shot on iPhone, natural bokeh". Keep it simple - NO complex technical details (no f-stops, ISO, focal lengths).
 
-3. **Camera detail (OPTIONAL, pick 0-2):** You MAY include lens/aperture and ISO for realism, e.g., "26mm f/1.8", "ISO 640", "handheld".
+3. **Simple Natural Lighting (MANDATORY):** MUST use simple, natural lighting descriptions only:
+   - ✅ "Soft afternoon sunlight"
+   - ✅ "Natural window light"
+   - ✅ "Warm golden hour lighting"
+   - ✅ "Overcast daylight"
+   - ❌ NEVER use: "dramatic rim lighting", "cinematic quality", "professional studio lighting", "editorial photography lighting", "perfect lighting"
 
-4. **Natural Imperfections (MANDATORY - AT LEAST 3):** MUST include AT LEAST 3 of: "visible sensor noise", "slight motion blur from handheld", "uneven lighting", "mixed color temperatures", "handheld feel", "natural camera imperfections".
+4. **NO Skin Quality Descriptions:** Do NOT describe skin quality beyond "natural". The user LoRA handles appearance. NO "natural skin texture with pores visible", "not plastic-looking", etc.
 
-5. **Natural Skin Texture (MANDATORY - CRITICAL FOR AUTHENTICITY):** MUST include "natural skin texture with pores visible" AND 1–2 of: "not plastic-looking", "organic skin texture", "visible peach fuzz", "slight shine on forehead", "natural blemishes", "subtle facial asymmetry".
+5. **NO Film Grain or Muted Colors:** These are NO LONGER mandatory. Keep prompts simple (40-60 words) to preserve user LoRA.
 
-6. **Film Grain (MANDATORY):** MUST include one: "visible film grain", "fine film grain texture", "grainy texture", or "subtle grain visible"
+6. **NO Natural Imperfections Lists:** Do NOT include lists of imperfections like "visible sensor noise", "slight motion blur", etc. Keep camera specs basic.
 
-7. **Muted Colors (MANDATORY):** MUST include one: "muted color palette", "soft muted tones", "desaturated realistic colors", or "vintage color temperature"
+11. **Prompt Length:** 40-60 words (optimal range for user LoRA preservation, prevents plastic/generic faces)
 
-8. **Lighting with Imperfections (MANDATORY):** NEVER use "soft morning daylight, diffused natural lighting" or "even lighting" without imperfection language. MUST include "uneven lighting", "mixed color temperatures", or "slight uneven illumination". You MAY add "natural light falloff", "realistic shadow gradient", "slightly overexposed highlights", "warm/cool white balance mix".
-
-9. **iPhone realism traits (OPTIONAL, pick 0-2 to avoid bloat):** "computational photography look", "Smart HDR processing", "RAW processing look", "slight lens distortion", "soft edge vignetting", "subtle chromatic aberration", "slight overexposed highlights", "warm/cool color imbalance".
-
-10. **Casual Moment Language (RECOMMENDED):** Include "candid moment", "looks like a real phone camera photo", or "amateur cellphone quality"
-
-11. **Prompt Length:** 50-80 words (optimal range for detailed, high-quality results)
-
-12. **NO BANNED WORDS:** Never use "stunning", "perfect", "beautiful", "high quality", "8K", "professional photography", "DSLR", "cinematic", "studio lighting", "even lighting", "perfect lighting", "smooth skin", "flawless skin", "airbrushed" - these create AI-looking/plastic results.
+12. **NO BANNED WORDS:** Never use "ultra realistic", "photorealistic", "8K", "4K", "high quality", "perfect", "flawless", "stunning", "beautiful", "gorgeous", "professional photography", "editorial", "magazine quality", "dramatic" (for lighting), "cinematic", "hyper detailed", "sharp focus", "ultra sharp", "crystal clear", "studio lighting", "perfect lighting", "smooth skin", "flawless skin", "airbrushed" - these cause plastic/generic faces and override the user LoRA.
 
 9. Apply the OUTFIT PRINCIPLE with your FASHION INTELLIGENCE - no boring defaults
 10. Apply the EXPRESSION PRINCIPLE for authentic facial details (expressions, not fixed features)
 11. Apply the POSE PRINCIPLE for natural body positioning
 12. Apply the LOCATION PRINCIPLE for evocative settings
-13. Apply the LIGHTING PRINCIPLE for cinematic craft
+13. Apply the LIGHTING PRINCIPLE for simple, natural lighting (NO dramatic/cinematic terms)
 
 **🔴 PROMPT STRUCTURE ARCHITECTURE (FOLLOW THIS ORDER):**
 1. **TRIGGER WORD** (first position - MANDATORY)
 2. **GENDER/ETHNICITY** (2-3 words)
-3. **OUTFIT** (material + color + garment type - 6-10 words)
-4. **POSE + EXPRESSION** (simple, natural - 4-6 words)
-5. **LOCATION** (brief, atmospheric - 3-6 words)
-6. **LIGHTING** (with imperfections - 5-8 words)
-7. **TECHNICAL SPECS** (iPhone + imperfections + skin texture + grain + muted colors - 8-12 words)
-8. **CASUAL MOMENT** (optional - 2-4 words)
+3. **OUTFIT** (material + color + garment type - 8-12 words, stay detailed here)
+4. **LOCATION** (simple, one-line - 3-5 words, keep brief)
+5. **LIGHTING** (simple, natural only - 3-5 words, NO dramatic/cinematic terms)
+6. **POSE + EXPRESSION** (simple, natural action - 3-5 words, NO "striking poses")
+7. **TECHNICAL SPECS** (basic iPhone only - 5-8 words, keep minimal)
 
-**Total target: 50-80 words for optimal quality and detail**
+**Total target: 40-60 words for optimal user LoRA preservation (NOT 70-80)**
 
 **IF ANY MANDATORY REQUIREMENT IS MISSING, THE PROMPT WILL PRODUCE AI-LOOKING RESULTS.**
 
@@ -476,15 +472,28 @@ Now apply your fashion intelligence and prompting mastery. Create ${count} conce
 
     // Post-process prompts to ensure authenticity requirements
     const bannedWords = [
-      "stunning",
-      "perfect",
-      "beautiful",
-      "high quality",
-      "8K",
       "ultra realistic",
+      "photorealistic",
+      "8K",
+      "4K",
+      "high quality",
+      "high resolution",
+      "perfect",
+      "flawless",
+      "stunning",
+      "beautiful",
+      "gorgeous",
       "professional photography",
-      "DSLR",
+      "editorial",
+      "magazine quality",
+      "dramatic",
       "cinematic",
+      "cinematic quality",
+      "hyper detailed",
+      "sharp focus",
+      "ultra sharp",
+      "crystal clear",
+      "DSLR",
       "studio lighting",
       "professional lighting",
       "perfect lighting",
@@ -496,7 +505,6 @@ Now apply your fashion intelligence and prompting mastery. Create ${count} conce
       "airbrushed",
       "perfect skin",
       "silk-like skin",
-      // Note: "soft diffused natural lighting" is handled separately below - only removed if no imperfection language
     ]
 
     concepts.forEach((concept) => {

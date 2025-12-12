@@ -115,7 +115,7 @@ ${isNonUserPost ? `
 
 ⚠️ CRITICAL: This is an ${shotType} post - DO NOT include user, trigger word, or person. Focus only on objects/products/scenery.
 
-Follow the same mandatory requirements as user posts (iPhone, imperfections, film grain, muted colors) but describe specific items, composition, and surface instead of person/outfit.
+Follow the same mandatory requirements as user posts (basic iPhone specs, simple natural lighting) but describe specific items, composition, and surface instead of person/outfit.
 ` : ""}
 
 ${
@@ -150,35 +150,37 @@ CRITICAL INSTRUCTIONS:
    - This is non-negotiable for character likeness preservation
    - Format: "${actualTriggerWord}, [rest of prompt]"
 
-2. **iPhone 15 Pro (MANDATORY - 95% of prompts):** MUST include "shot on iPhone 15 Pro" OR "amateur cellphone photo". Only use focal length alternatives for specific editorial requests.
+2. **Basic iPhone Specs (MANDATORY):** MUST include "shot on iPhone 15 Pro portrait mode, shallow depth of field" OR "shot on iPhone, natural bokeh". Keep it simple - NO complex technical details (no f-stops, ISO, focal lengths).
 
-3. **Natural Imperfections (MANDATORY - AT LEAST 3):** MUST include AT LEAST 3 of: "visible sensor noise", "slight motion blur from handheld", "uneven lighting", "mixed color temperatures", "handheld feel", "natural camera imperfections".
+3. **Simple Natural Lighting (MANDATORY):** MUST use simple, natural lighting descriptions only:
+   - ✅ "Soft afternoon sunlight"
+   - ✅ "Natural window light"
+   - ✅ "Warm golden hour lighting"
+   - ✅ "Overcast daylight"
+   - ❌ NEVER use: "dramatic rim lighting", "cinematic quality", "professional studio lighting", "editorial photography lighting", "perfect lighting"
 
-4. **Natural Skin Texture (MANDATORY - CRITICAL FOR AUTHENTICITY):** MUST include "natural skin texture with pores visible" AND 1–2 of: "not plastic-looking", "organic skin texture", "visible peach fuzz", "slight shine on forehead", "natural blemishes", "subtle facial asymmetry".
+4. **NO Skin Quality Descriptions:** Do NOT describe skin quality beyond "natural". The user LoRA handles appearance. NO "natural skin texture with pores visible", "not plastic-looking", etc.
 
-5. **Film Grain (MANDATORY):** MUST include one: "visible film grain", "fine film grain texture", "grainy texture", or "subtle grain visible"
+5. **NO Film Grain or Muted Colors:** These are NO LONGER mandatory. Keep prompts simple (40-60 words) to preserve user LoRA.
 
-6. **Muted Colors (MANDATORY):** MUST include one: "muted color palette", "soft muted tones", "desaturated realistic colors", or "vintage color temperature"
+6. **NO Natural Imperfections Lists:** Do NOT include lists of imperfections like "visible sensor noise", "slight motion blur", etc. Keep camera specs basic.
 
-7. **Lighting with Imperfections (MANDATORY):** NEVER use "soft morning daylight, diffused natural lighting" or "even lighting" without imperfection language. MUST include "uneven lighting", "mixed color temperatures", or "slight uneven illumination". You MAY add "natural light falloff", "realistic shadow gradient", "slightly overexposed highlights", "warm/cool white balance mix".
+7. **Specific Outfit (MANDATORY for user posts):** Material + color + garment type (8-12 words), NOT generic "trendy outfit" or "professional outfit". Use YOUR fashion intelligence to create specific, brand-aligned styling. Stay detailed here.
 
-8. **Specific Outfit (MANDATORY for user posts):** Material + color + garment type (6-10 words), NOT generic "trendy outfit" or "professional outfit". Use YOUR fashion intelligence to create specific, brand-aligned styling.
+8. **Prompt Length:** 40-60 words (optimal range for user LoRA preservation, prevents plastic/generic faces) - SAME AS CONCEPT CARDS
 
-9. **Prompt Length:** 50-80 words (optimal range for detailed, high-quality results) - SAME AS CONCEPT CARDS
-
-10. **NO BANNED WORDS:** Never use "stunning", "perfect", "beautiful", "high quality", "8K", "professional photography", "DSLR", "cinematic", "studio lighting", "even lighting", "perfect lighting", "smooth skin", "flawless skin", "airbrushed", "triumphant", "empowering", "confident smile", "trendy outfit", "professional outfit" - these create AI-looking/plastic results.
+9. **NO BANNED WORDS:** Never use "ultra realistic", "photorealistic", "8K", "4K", "high quality", "perfect", "flawless", "stunning", "beautiful", "gorgeous", "professional photography", "editorial", "magazine quality", "dramatic" (for lighting), "cinematic", "hyper detailed", "sharp focus", "ultra sharp", "crystal clear", "studio lighting", "perfect lighting", "smooth skin", "flawless skin", "airbrushed", "triumphant", "empowering", "confident smile", "trendy outfit", "professional outfit" - these cause plastic/generic faces and override the user LoRA.
 
 **🔴 PROMPT STRUCTURE ARCHITECTURE (FOLLOW THIS ORDER - SAME AS CONCEPT CARDS):**
 1. **TRIGGER WORD** (first position - MANDATORY)
 2. **GENDER/ETHNICITY** (2-3 words)
-3. **OUTFIT** (material + color + garment type - 6-10 words)
-4. **POSE + EXPRESSION** (simple, natural - 4-6 words)
-5. **LOCATION** (brief, atmospheric - 3-6 words)
-6. **LIGHTING** (with imperfections - 5-8 words)
-7. **TECHNICAL SPECS** (iPhone + imperfections + skin texture + grain + muted colors - 8-12 words)
-8. **CASUAL MOMENT** (optional - 2-4 words)
+3. **OUTFIT** (material + color + garment type - 8-12 words, stay detailed here)
+4. **LOCATION** (simple, one-line - 3-5 words, keep brief)
+5. **LIGHTING** (simple, natural only - 3-5 words, NO dramatic/cinematic terms)
+6. **POSE + EXPRESSION** (simple, natural action - 3-5 words, NO "striking poses")
+7. **TECHNICAL SPECS** (basic iPhone only - 5-8 words, keep minimal)
 
-**Total target: 50-80 words for optimal quality and detail**
+**Total target: 40-60 words for optimal user LoRA preservation (NOT 70-80)**
 
 **IF ANY MANDATORY REQUIREMENT IS MISSING, THE PROMPT WILL PRODUCE AI-LOOKING RESULTS.**
 `
@@ -198,8 +200,8 @@ ${isNonUserPost ? `
 - Follow the OBJECT/FLATLAY/SCENERY POST REQUIREMENTS listed above
 - Include SPECIFIC items with materials/colors (not generic "styled objects")
 - Describe the composition, surface, lighting with imperfections
-- Include all mandatory requirements: iPhone, imperfections, film grain, muted colors
-- Target: 50-80 words with detailed, specific descriptions
+- Include all mandatory requirements: Basic iPhone specs, simple natural lighting
+- Target: 40-60 words with detailed, specific descriptions
 ` : `
 **CRITICAL PROMPT FORMAT:**
 - MUST start with: "${actualTriggerWord}, ${userEthnicity ? userEthnicity + ", " : ""}${userGender}"
@@ -210,7 +212,7 @@ ${isNonUserPost ? `
 **Your Task:**
 Create a Flux prompt for this ${shotType} shot that achieves: ${purpose}
 
-🔴 **CRITICAL - YOUR FLUX PROMPT MUST BE 50-80 WORDS AND INCLUDE ALL OF THESE:**
+🔴 **CRITICAL - YOUR FLUX PROMPT MUST BE 40-60 WORDS AND INCLUDE ALL OF THESE:**
 
 1. **OUTFIT (MANDATORY - NO EXCEPTIONS):**
    - ❌ NEVER use: "stylish outfit", "business casual outfit", "trendy outfit", "professional outfit", "wearing stylish business casual outfit"
@@ -233,64 +235,62 @@ Create a Flux prompt for this ${shotType} shot that achieves: ${purpose}
    - 🔴 CRITICAL: You MUST create a REAL, SPECIFIC location description. Do NOT use generic terms or placeholders.
 
 3. **LIGHTING (MANDATORY - NO EXCEPTIONS):**
-   - ❌ NEVER use: "perfect lighting", "clean lighting", "professional lighting", "even lighting"
-   - ✅ ALWAYS use: Lighting with imperfections
-   - ✅ Example: "bright natural light with clean illumination, subtle directional shadows, uneven ambient light"
-   - ✅ Example: "golden hour sunlight from left, warm side lighting, soft shadows, uneven ambient light, mixed color temperatures"
-   - ✅ Example: "overcast daylight, diffused but uneven lighting, mixed warm and cool tones, visible sensor noise"
+   - ❌ NEVER use: "perfect lighting", "clean lighting", "professional lighting", "even lighting", "dramatic rim lighting", "cinematic quality"
+   - ✅ ALWAYS use: Simple, natural lighting descriptions only
+   - ✅ Example: "Soft afternoon sunlight"
+   - ✅ Example: "Natural window light"
+   - ✅ Example: "Warm golden hour lighting"
+   - ✅ Example: "Overcast daylight"
 
-4. **TECHNICAL SPECS (MANDATORY - ALL MUST BE INCLUDED):**
-   - ✅ "shot on iPhone 15 Pro" (MANDATORY)
-   - ✅ At least 3 natural imperfections: "visible sensor noise", "slight motion blur from handheld", "uneven lighting", "mixed color temperatures"
-   - ✅ "natural skin texture with pores visible" (MANDATORY)
-   - ✅ "visible film grain" or "fine film grain texture" (MANDATORY)
-   - ✅ "muted color palette" or "soft muted tones" (MANDATORY)
+4. **TECHNICAL SPECS (MANDATORY - KEEP BASIC):**
+   - ✅ "shot on iPhone 15 Pro portrait mode, shallow depth of field" OR "shot on iPhone, natural bokeh" (MANDATORY)
+   - ❌ NO complex technical details (no f-stops, ISO, focal lengths)
+   - ❌ NO natural imperfections lists
+   - ❌ NO skin texture descriptions beyond "natural"
+   - ❌ NO film grain or muted color requirements
 
 5. **WORD COUNT:**
-   - ✅ MUST be 50-80 words (count carefully!)
-   - ❌ Too short (<50 words) = missing detail
-   - ❌ Too long (>80 words) = loses focus
+   - ✅ MUST be 40-60 words (count carefully!)
+   - ❌ Too short (<35 words) = may miss essential detail
+   - ❌ Too long (>65 words) = overpowers user LoRA, creates generic/plastic faces
 
 **🔴 PROMPT STRUCTURE ARCHITECTURE (FOLLOW THIS EXACT ORDER - SAME AS CONCEPT CARDS):**
 1. **TRIGGER WORD** (first position - MANDATORY): "${actualTriggerWord}, ${userEthnicity ? userEthnicity + ", " : ""}${userGender}"
-2. **OUTFIT** (6-10 words - MANDATORY): Specific material + color + garment type (e.g., "sage green silk blouse with relaxed fit tucked into high-waisted cream linen trousers")
-3. **POSE + EXPRESSION** (4-6 words): Simple, natural (e.g., "standing with hand on marble bar counter, looking over shoulder naturally")
-4. **LOCATION** (3-6 words - MANDATORY): Specific location with details (e.g., "upscale restaurant with marble surfaces and floor-to-ceiling windows")
-5. **LIGHTING** (5-8 words - MANDATORY): With imperfections (e.g., "bright natural light with clean illumination, subtle directional shadows, uneven ambient light")
-6. **TECHNICAL SPECS** (8-12 words - MANDATORY): "shot on iPhone 15 Pro, visible sensor noise, natural skin texture with pores visible, visible film grain, muted color palette"
-7. **CASUAL MOMENT** (optional - 2-4 words): "looks like real phone camera photo"
+2. **OUTFIT** (8-12 words - MANDATORY): Specific material + color + garment type (e.g., "sage green silk blouse with relaxed fit tucked into high-waisted cream linen trousers")
+3. **LOCATION** (3-5 words - MANDATORY): Simple, one-line location (e.g., "upscale restaurant with marble surfaces")
+4. **LIGHTING** (3-5 words - MANDATORY): Simple, natural lighting only (e.g., "soft afternoon sunlight")
+5. **POSE + EXPRESSION** (3-5 words): Simple, natural action (e.g., "standing with hand on counter, looking over shoulder naturally")
+6. **TECHNICAL SPECS** (5-8 words - MANDATORY): "shot on iPhone 15 Pro portrait mode, shallow depth of field"
 
-**Total target: 50-80 words for optimal quality and detail**
+**Total target: 40-60 words for optimal user LoRA preservation (NOT 70-80)**
 
 Remember:
 - Use YOUR fashion expertise and brand knowledge (from user context above)
 - Apply user's brand colors naturally (you already know them from their profile)
 - Create visual harmony with the other 8 posts in the feed
 - Make it feel authentic and Instagram-worthy
-- **EVERY element above is MANDATORY - do not skip any**
+- **Keep prompts simple (40-60 words) to preserve user LoRA - trust the user LoRA for appearance**
 
 **🔴 CRITICAL: PROMPT QUALITY CHECKLIST - EVERY PROMPT MUST HAVE:**
 1. ✅ Trigger word + ethnicity + gender (no duplicates, format: "${actualTriggerWord}, ${userEthnicity ? userEthnicity + ", " : ""}${userGender}")
-2. ✅ Specific outfit description (material + color + garment type - NOT "trendy outfit")
-3. ✅ iPhone 15 Pro specification
-4. ✅ At least 3 natural imperfections
-5. ✅ Natural skin texture with pores
-6. ✅ Film grain
-7. ✅ Muted/desaturated colors
-8. ✅ Uneven/mixed lighting (NOT "dramatic" or "even")
-9. ✅ Total length: 50-80 words
+2. ✅ Specific outfit description (material + color + garment type - NOT "trendy outfit", stay detailed here)
+3. ✅ Simple setting (one-line location, keep brief)
+4. ✅ Simple natural lighting (NO dramatic/cinematic terms)
+5. ✅ Natural pose/action (NO "striking poses")
+6. ✅ Basic iPhone specs only ("shot on iPhone 15 Pro portrait mode, shallow depth of field" OR "shot on iPhone, natural bokeh")
+7. ✅ Total length: 40-60 words (NOT 70-80)
 
 **🔴 EXAMPLE OF PERFECT PROMPT (FOLLOW THIS FORMAT):**
-"${actualTriggerWord}, ${userEthnicity ? userEthnicity + ", " : ""}${userGender}, in sage green silk blouse with relaxed fit tucked into high-waisted cream linen trousers, standing with hand on marble bar counter, looking over shoulder naturally, upscale restaurant with marble surfaces and floor-to-ceiling windows, bright natural light with clean illumination, subtle directional shadows, uneven ambient light, shot on iPhone 15 Pro, natural bokeh, slight lens distortion, visible sensor noise, natural skin texture with visible peach fuzz, organic skin texture, film grain, muted tones"
+"${actualTriggerWord}, ${userEthnicity ? userEthnicity + ", " : ""}${userGender}, in sage green silk blouse with relaxed fit tucked into high-waisted cream linen trousers, standing with hand on marble bar counter, looking over shoulder naturally, upscale restaurant with marble surfaces, soft afternoon sunlight, shot on iPhone 15 Pro portrait mode, shallow depth of field"
 
 **🔴 EXAMPLE OF BAD PROMPT (DO NOT CREATE LIKE THIS):**
 "${actualTriggerWord}, ${userEthnicity ? userEthnicity + ", " : ""}${userGender}, confident expression, wearing stylish business casual outfit, urban background with clean lines, edgy-minimalist aesthetic with perfect lighting"
 
 **Why the bad example is wrong:**
 - ❌ "stylish business casual outfit" = generic (should be specific material + color + garment)
-- ❌ "urban background" = generic (should be specific location with details)
-- ❌ "perfect lighting" = banned word (should be uneven lighting with imperfections)
-- ❌ Missing: iPhone 15 Pro, imperfections, skin texture, film grain, muted colors
+- ❌ "urban background" = generic (should be specific but simple location)
+- ❌ "perfect lighting" = banned word (should be simple natural lighting like "soft afternoon sunlight")
+- ❌ Missing: Basic iPhone specs
 - ❌ Too short: ~20 words (needs 50-80)
 
 Return JSON with this structure:
@@ -300,18 +300,19 @@ Return JSON with this structure:
   "settingMood": { "location": "", "lighting": "", "props": [], "colors": [] },
   "styling": { "outfit": "", "hair": "", "accessories": [], "aesthetic": "" },
   "emotionalTone": "",
-  "fluxPrompt": "${isNonUserPost ? "50-80 word object/flatlay/scenery prompt WITHOUT user or trigger word, including SPECIFIC items with materials/colors, composition details, surface description, lighting with imperfections, iPhone 15 Pro, natural imperfections, film grain, muted colors - follow OBJECT/FLATLAY/SCENERY POST REQUIREMENTS above" : `YOUR CRAFTED FLUX PROMPT - synthesized from principles, MUST start with ${actualTriggerWord}, ${userEthnicity ? userEthnicity + ", " : ""}${userGender}, MUST be 50-80 words (count carefully!), MUST include ALL of these in this exact order: (1) "${actualTriggerWord}, ${userEthnicity ? userEthnicity + ", " : ""}${userGender}" at the start, (2) specific outfit with material + color + garment type (6-10 words, e.g., "sage green silk blouse with relaxed fit tucked into high-waisted cream linen trousers"), (3) pose + expression (4-6 words), (4) specific location with details (3-6 words, e.g., "upscale restaurant with marble surfaces and floor-to-ceiling windows"), (5) lighting with imperfections (5-8 words, e.g., "bright natural light with clean illumination, subtle directional shadows, uneven ambient light"), (6) technical specs: "shot on iPhone 15 Pro, visible sensor noise, natural skin texture with pores visible, visible film grain, muted color palette" (8-12 words). Total must be 50-80 words.`}"
+  "fluxPrompt": "${isNonUserPost ? "40-60 word object/flatlay/scenery prompt WITHOUT user or trigger word, including SPECIFIC items with materials/colors, composition details, surface description, simple natural lighting, basic iPhone specs - follow OBJECT/FLATLAY/SCENERY POST REQUIREMENTS above" : `YOUR CRAFTED FLUX PROMPT - synthesized from principles, MUST start with ${actualTriggerWord}, ${userEthnicity ? userEthnicity + ", " : ""}${userGender}, MUST be 40-60 words (count carefully!), MUST include ALL of these in this exact order: (1) "${actualTriggerWord}, ${userEthnicity ? userEthnicity + ", " : ""}${userGender}" at the start, (2) specific outfit with material + color + garment type (8-12 words, e.g., "sage green silk blouse with relaxed fit tucked into high-waisted cream linen trousers"), (3) simple location (3-5 words, e.g., "upscale restaurant with marble surfaces"), (4) simple natural lighting (3-5 words, e.g., "soft afternoon sunlight"), (5) natural pose/action (3-5 words, e.g., "standing with hand on counter, looking over shoulder naturally"), (6) basic iPhone specs: "shot on iPhone 15 Pro portrait mode, shallow depth of field" (5-8 words). Total must be 40-60 words.`}"
 }
 
 🔴 **CRITICAL - YOUR FLUX PROMPT MUST:**
 - Start with: "${actualTriggerWord}, ${userEthnicity ? userEthnicity + ", " : ""}${userGender}"
-- Be 50-80 words total
-- Include ALL 8 mandatory requirements listed above
-- Follow the PROMPT STRUCTURE ARCHITECTURE order (trigger → outfit → pose → location → lighting → technical specs)
+- Be 40-60 words total (NOT 70-80)
+- Include ALL mandatory requirements listed above
+- Follow the PROMPT STRUCTURE ARCHITECTURE order (trigger → outfit → location → lighting → pose → technical specs)
 - Use specific details, NOT generic terms
+- Keep it simple to preserve user LoRA
 
 **EXAMPLE OF WHAT YOUR FLUX PROMPT SHOULD LOOK LIKE:**
-"${actualTriggerWord}, ${userEthnicity ? userEthnicity + ", " : ""}${userGender}, in sage green silk blouse with relaxed fit tucked into high-waisted cream linen trousers, standing with hand on marble bar counter, looking over shoulder naturally, upscale restaurant with marble surfaces and floor-to-ceiling windows, bright natural light with clean illumination, subtle directional shadows, uneven ambient light, shot on iPhone 15 Pro, natural bokeh, slight lens distortion, visible sensor noise, natural skin texture with visible peach fuzz, organic skin texture, film grain, muted tones"
+"${actualTriggerWord}, ${userEthnicity ? userEthnicity + ", " : ""}${userGender}, in sage green silk blouse with relaxed fit tucked into high-waisted cream linen trousers, standing with hand on marble bar counter, looking over shoulder naturally, upscale restaurant with marble surfaces, soft afternoon sunlight, shot on iPhone 15 Pro portrait mode, shallow depth of field"
 
 Return ONLY valid JSON. No markdown.`
 
@@ -386,37 +387,21 @@ Return ONLY valid JSON. No markdown.`
         missingRequirements.push('iPhone 15 Pro')
       }
       
-      // Check for natural imperfections (at least 3)
-      const imperfectionCount = [
-        'sensor noise',
-        'motion blur',
-        'uneven lighting',
-        'mixed color temperatures',
-        'handheld',
-        'natural camera imperfections'
-      ].filter(term => promptLower.includes(term)).length
-      
-      if (imperfectionCount < 3) {
-        missingRequirements.push(`${3 - imperfectionCount} more natural imperfections`)
-      }
-      
-      // Check for film grain
-      if (!promptLower.includes('film grain') && !promptLower.includes('grainy')) {
-        missingRequirements.push('film grain')
-      }
-      
-      // Check for muted colors
-      if (!promptLower.includes('muted') && !promptLower.includes('desaturated')) {
-        missingRequirements.push('muted/desaturated colors')
-      }
-      
-      // Check for uneven lighting (not dramatic/even)
-      if (promptLower.includes('dramatic lighting') || promptLower.includes('even lighting') || promptLower.includes('perfect lighting')) {
-        composition.fluxPrompt = composition.fluxPrompt.replace(/\b(dramatic|even|perfect)\s+lighting\b/gi, 'uneven lighting')
+      // Check for simple natural lighting (not dramatic/cinematic)
+      if (promptLower.includes('dramatic lighting') || promptLower.includes('cinematic') || promptLower.includes('perfect lighting') || promptLower.includes('professional lighting') || promptLower.includes('editorial lighting')) {
+        composition.fluxPrompt = composition.fluxPrompt.replace(/\b(dramatic|cinematic|perfect|professional|editorial)\s+lighting\b/gi, 'soft afternoon sunlight')
         promptLower = composition.fluxPrompt.toLowerCase()
       }
-      if (!promptLower.includes('uneven lighting') && !promptLower.includes('mixed color temperatures')) {
-        missingRequirements.push('uneven/mixed lighting')
+      
+      // Check for simple natural lighting description
+      const hasSimpleLighting = promptLower.match(/\b(soft|natural|warm|overcast)\s+(afternoon|morning|window|golden hour|daylight)\s*(light|lighting)?/i) ||
+                                 promptLower.includes('natural window light') ||
+                                 promptLower.includes('soft afternoon sunlight') ||
+                                 promptLower.includes('warm golden hour lighting') ||
+                                 promptLower.includes('overcast daylight')
+      
+      if (!hasSimpleLighting) {
+        missingRequirements.push('simple natural lighting')
       }
       
       // Check for specific items (not generic)
@@ -445,46 +430,20 @@ Return ONLY valid JSON. No markdown.`
       const additions: string[] = []
       promptLower = composition.fluxPrompt.toLowerCase()
       
-      // Add iPhone 15 Pro if missing (most critical)
-      if (!promptLower.includes('iphone 15 pro') && !promptLower.includes('amateur cellphone')) {
-        additions.push('shot on iPhone 15 Pro')
+      // Add basic iPhone specs if missing (most critical)
+      if (!promptLower.includes('iphone 15 pro') && !promptLower.includes('iphone') && !promptLower.includes('amateur cellphone')) {
+        additions.push('shot on iPhone 15 Pro portrait mode, shallow depth of field')
+      } else if (promptLower.includes('iphone') && !promptLower.includes('portrait mode') && !promptLower.includes('bokeh')) {
+        // Ensure basic iPhone spec is complete
+        if (!promptLower.includes('portrait mode')) {
+          additions.push('portrait mode, shallow depth of field')
+        }
       }
       
-      // Add natural imperfections if missing (need at least 3)
-      const currentImperfections = [
-        'sensor noise',
-        'motion blur',
-        'uneven lighting',
-        'mixed color temperatures',
-        'handheld',
-        'natural camera imperfections'
-      ].filter(term => promptLower.includes(term)).length
-      
-      if (currentImperfections < 3) {
-        if (!promptLower.includes('sensor noise')) additions.push('visible sensor noise')
-        if (!promptLower.includes('motion blur') && currentImperfections < 2) additions.push('slight motion blur from handheld')
-        if (!promptLower.includes('handheld') && currentImperfections < 2) additions.push('handheld feel')
+      // Add simple natural lighting if missing
+      if (!hasSimpleLighting) {
+        additions.push('soft afternoon sunlight')
       }
-      
-      // Add film grain if missing
-      if (!promptLower.includes('film grain') && !promptLower.includes('grainy')) {
-        additions.push('visible film grain')
-      }
-      
-      // Add muted colors if missing
-      if (!promptLower.includes('muted') && !promptLower.includes('desaturated')) {
-        additions.push('muted color palette')
-      }
-      
-      // Fix lighting if it's "dramatic" or "even"
-      if (promptLower.includes('dramatic lighting') || promptLower.includes('even lighting') || promptLower.includes('perfect lighting')) {
-        composition.fluxPrompt = composition.fluxPrompt.replace(/\b(dramatic|even|perfect)\s+lighting\b/gi, 'uneven lighting with mixed color temperatures')
-        promptLower = composition.fluxPrompt.toLowerCase()
-      } else if (!promptLower.includes('uneven lighting') && !promptLower.includes('mixed color temperatures')) {
-        // Try to add near existing lighting mention
-        const lightingMatch = composition.fluxPrompt.match(/\b(lighting|illumination|lit)\b/i)
-        if (lightingMatch) {
-          const idx = lightingMatch.index || 0
           composition.fluxPrompt = composition.fluxPrompt.substring(0, idx) + 'uneven lighting, ' + composition.fluxPrompt.substring(idx)
         } else {
           additions.push('uneven lighting with mixed color temperatures')
@@ -510,7 +469,7 @@ Return ONLY valid JSON. No markdown.`
       const finalWordCount = composition.fluxPrompt.split(/\s+/).length
       
       console.log(`[v0] Maya: Non-user post (${shotType}) - prompt: ${composition.fluxPrompt.substring(0, 100)}...`)
-      console.log(`[v0] Maya: Word count: ${finalWordCount} ${finalWordCount >= 50 && finalWordCount <= 80 ? "✅" : "⚠️"}`)
+      console.log(`[v0] Maya: Word count: ${finalWordCount} ${finalWordCount >= 40 && finalWordCount <= 60 ? "✅" : "⚠️"}`)
     } else {
       // For user posts, enforce correct format: triggerWord, ethnicity, userGender
       const expectedStart = `${actualTriggerWord}, ${userEthnicity ? userEthnicity + ", " : ""}${userGender}`
@@ -622,10 +581,10 @@ Return ONLY valid JSON. No markdown.`
       
       // Check word count
       const wordCount = composition.fluxPrompt.split(/\s+/).length
-      if (wordCount < 50) {
-        missingRequirements.push(`length (currently ${wordCount} words, need 50-80)`)
-      } else if (wordCount > 80) {
-        console.log(`[v0] Maya: ⚠️ Prompt is ${wordCount} words (target: 50-80)`)
+      if (wordCount < 35) {
+        missingRequirements.push(`length (currently ${wordCount} words, need 40-60)`)
+      } else if (wordCount > 65) {
+        console.log(`[v0] Maya: ⚠️ Prompt is ${wordCount} words (target: 40-60) - too long may overpower user LoRA`)
       }
       
       if (missingRequirements.length > 0) {
@@ -636,54 +595,30 @@ Return ONLY valid JSON. No markdown.`
       const additions: string[] = []
       promptLower = composition.fluxPrompt.toLowerCase()
       
-      // Add iPhone 15 Pro if missing (most critical)
-      if (!promptLower.includes('iphone 15 pro') && !promptLower.includes('amateur cellphone')) {
-        additions.push('shot on iPhone 15 Pro')
+      // Add basic iPhone specs if missing (most critical)
+      if (!promptLower.includes('iphone 15 pro') && !promptLower.includes('iphone') && !promptLower.includes('amateur cellphone')) {
+        additions.push('shot on iPhone 15 Pro portrait mode, shallow depth of field')
+      } else if (promptLower.includes('iphone') && !promptLower.includes('portrait mode') && !promptLower.includes('bokeh')) {
+        // Ensure basic iPhone spec is complete
+        if (!promptLower.includes('portrait mode')) {
+          additions.push('portrait mode, shallow depth of field')
+        }
       }
       
-      // Add natural imperfections if missing (need at least 3)
-      const currentImperfections = [
-        'sensor noise',
-        'motion blur',
-        'uneven lighting',
-        'mixed color temperatures',
-        'handheld',
-        'natural camera imperfections'
-      ].filter(term => promptLower.includes(term)).length
+      // Add simple natural lighting if missing
+      const hasSimpleLighting = promptLower.match(/\b(soft|natural|warm|overcast)\s+(afternoon|morning|window|golden hour|daylight)\s*(light|lighting)?/i) ||
+                                 promptLower.includes('natural window light') ||
+                                 promptLower.includes('soft afternoon sunlight') ||
+                                 promptLower.includes('warm golden hour lighting') ||
+                                 promptLower.includes('overcast daylight')
       
-      if (currentImperfections < 3) {
-        if (!promptLower.includes('sensor noise')) additions.push('visible sensor noise')
-        if (!promptLower.includes('motion blur') && currentImperfections < 2) additions.push('slight motion blur from handheld')
-        if (!promptLower.includes('handheld') && currentImperfections < 2) additions.push('handheld feel')
-      }
-      
-      // Add skin texture if missing
-      if (!promptLower.includes('natural skin texture') && !promptLower.includes('pores visible')) {
-        additions.push('natural skin texture with pores visible')
-      }
-      
-      // Add film grain if missing
-      if (!promptLower.includes('film grain') && !promptLower.includes('grainy')) {
-        additions.push('visible film grain')
-      }
-      
-      // Add muted colors if missing
-      if (!promptLower.includes('muted') && !promptLower.includes('desaturated')) {
-        additions.push('muted color palette')
-      }
-      
-      // Fix lighting if it's "dramatic" or "even"
-      if (promptLower.includes('dramatic lighting') || promptLower.includes('even lighting') || promptLower.includes('perfect lighting')) {
-        composition.fluxPrompt = composition.fluxPrompt.replace(/\b(dramatic|even|perfect)\s+lighting\b/gi, 'uneven lighting with mixed color temperatures')
-        promptLower = composition.fluxPrompt.toLowerCase()
-      } else if (!promptLower.includes('uneven lighting') && !promptLower.includes('mixed color temperatures')) {
-        // Try to add near existing lighting mention
-        const lightingMatch = composition.fluxPrompt.match(/\b(lighting|illumination|lit)\b/i)
-        if (lightingMatch) {
-          const idx = lightingMatch.index || 0
-          composition.fluxPrompt = composition.fluxPrompt.substring(0, idx) + 'uneven lighting, ' + composition.fluxPrompt.substring(idx)
+      if (!hasSimpleLighting) {
+        // Fix lighting if it's "dramatic" or "cinematic"
+        if (promptLower.includes('dramatic lighting') || promptLower.includes('cinematic') || promptLower.includes('perfect lighting') || promptLower.includes('professional lighting') || promptLower.includes('editorial lighting')) {
+          composition.fluxPrompt = composition.fluxPrompt.replace(/\b(dramatic|cinematic|perfect|professional|editorial)\s+lighting\b/gi, 'soft afternoon sunlight')
+          promptLower = composition.fluxPrompt.toLowerCase()
         } else {
-          additions.push('uneven lighting with mixed color temperatures')
+          additions.push('soft afternoon sunlight')
         }
       }
       
@@ -797,8 +732,8 @@ async function createFallbackComposition(shotType: string, purpose: string, auth
   // For non-user posts: specific items, composition, surface, lighting, technical specs
   // For user posts: trigger word, outfit, location, lighting, technical specs
   const basePrompt = isNonUserPost 
-    ? `carefully arranged ${shotType} with specific items, materials and colors visible, overhead view on marble surface, natural light from window creating soft shadows, uneven ambient light, shot on iPhone 15 Pro, visible sensor noise, fine film grain texture, muted color palette, authentic iPhone aesthetic`
-    : `${actualTriggerWord}, ${userEthnicity ? userEthnicity + ", " : ""}${userGender}, in specific outfit with material and color details, natural pose, specific location with atmospheric details, natural lighting with uneven illumination, mixed color temperatures, shot on iPhone 15 Pro, natural bokeh, visible sensor noise, natural skin texture with pores visible, visible film grain, muted color palette, looks like real phone camera photo`
+    ? `carefully arranged ${shotType} with specific items, materials and colors visible, overhead view on marble surface, soft afternoon sunlight, shot on iPhone 15 Pro portrait mode, shallow depth of field`
+    : `${actualTriggerWord}, ${userEthnicity ? userEthnicity + ", " : ""}${userGender}, in specific outfit with material and color details, natural pose, specific location, soft afternoon sunlight, shot on iPhone 15 Pro portrait mode, shallow depth of field`
 
   const fluxPrompt = basePrompt
 
