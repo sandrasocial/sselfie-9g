@@ -237,6 +237,33 @@ export async function POST(request: NextRequest) {
             `
             console.log(`[v0] Tagged ${customerEmail} as purchased in freebie_subscribers`)
 
+            // Mark conversions in email automation sequences
+            // Mark in blueprint_subscribers
+            await sql`
+              UPDATE blueprint_subscribers
+              SET converted_to_user = true, converted_at = NOW(), updated_at = NOW()
+              WHERE email = ${customerEmail}
+              AND converted_to_user = false
+            `
+
+            // Mark in welcome_back_sequence
+            await sql`
+              UPDATE welcome_back_sequence
+              SET converted = true, converted_at = NOW(), updated_at = NOW()
+              WHERE user_email = ${customerEmail}
+              AND converted = false
+            `
+
+            // Mark in email_logs for tracking
+            await sql`
+              UPDATE email_logs
+              SET converted = true, converted_at = NOW()
+              WHERE user_email = ${customerEmail}
+              AND converted = false
+            `
+
+            console.log(`[v0] Marked ${customerEmail} as converted in all email sequences`)
+
             await updateTags(customerEmail, {
               status: "customer",
               journey: "onboarding",
@@ -1371,6 +1398,48 @@ export async function POST(request: NextRequest) {
           WHERE stripe_subscription_id = ${subscriptionId}
         `
         console.log(`[v0] Subscription period updated for ${subscriptionId}`)
+
+        // Mark conversions in email automation sequences (for subscription renewals too)
+        if (sub && sub.user_id) {
+          try {
+            const user = await sql`
+              SELECT email FROM users WHERE id = ${sub.user_id} LIMIT 1
+            `
+            
+            if (user && user.length > 0 && user[0].email) {
+              const customerEmail = user[0].email
+              
+              // Mark in blueprint_subscribers
+              await sql`
+                UPDATE blueprint_subscribers
+                SET converted_to_user = true, converted_at = NOW(), updated_at = NOW()
+                WHERE email = ${customerEmail}
+                AND converted_to_user = false
+              `
+
+              // Mark in welcome_back_sequence
+              await sql`
+                UPDATE welcome_back_sequence
+                SET converted = true, converted_at = NOW(), updated_at = NOW()
+                WHERE user_email = ${customerEmail}
+                AND converted = false
+              `
+
+              // Mark in email_logs for tracking
+              await sql`
+                UPDATE email_logs
+                SET converted = true, converted_at = NOW()
+                WHERE user_email = ${customerEmail}
+                AND converted = false
+              `
+
+              console.log(`[v0] Marked ${customerEmail} as converted in all email sequences (subscription renewal)`)
+            }
+          } catch (convError) {
+            console.error(`[v0] Error marking conversion in sequences:`, convError)
+            // Don't fail the webhook if conversion tracking fails
+          }
+        }
 
         break
       }

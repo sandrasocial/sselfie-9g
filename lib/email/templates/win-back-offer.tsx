@@ -3,7 +3,8 @@ import { generateTrackedCheckoutLink } from "@/lib/email/generate-tracked-link"
 export interface WinBackOfferParams {
   firstName?: string
   recipientEmail: string
-  offerDiscount?: number
+  offerDiscount?: number // Percentage discount (e.g., 20 for 20% off)
+  offerAmount?: number // Dollar amount discount (e.g., 10 for $10 off)
   offerCode?: string
   offerExpiry?: string
   campaignId?: number
@@ -14,9 +15,18 @@ export function generateWinBackOfferEmail(params: WinBackOfferParams): {
   html: string
   text: string
 } {
-  const { firstName, recipientEmail, offerDiscount = 20, offerCode, offerExpiry, campaignId, campaignName } = params
+  const { firstName, recipientEmail, offerDiscount, offerAmount, offerCode, offerExpiry, campaignId, campaignName } = params
   const displayName = firstName || recipientEmail.split("@")[0]
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
+  
+  // Determine if we're showing a dollar amount or percentage discount
+  const hasOffer = offerAmount !== undefined || offerDiscount !== undefined
+  const isDollarAmount = offerAmount !== undefined
+  const discountDisplay = isDollarAmount 
+    ? `$${offerAmount} OFF`
+    : offerDiscount 
+      ? `${offerDiscount}% OFF`
+      : ""
   
   // Use tracked link if campaignId is available, otherwise fall back to regular link
   let checkoutUrl: string
@@ -73,17 +83,17 @@ export function generateWinBackOfferEmail(params: WinBackOfferParams): {
                 Whatever it was, I want you to know: I get it. And I want to make it easy for you to come back.
               </p>
               
-              ${offerDiscount ? `
+              ${hasOffer ? `
               <!-- Offer Box -->
               <div style="background-color: #1c1917; border-radius: 12px; padding: 32px; margin: 24px 0; text-align: center;">
                 <p style="margin: 0 0 12px; color: #fafaf9; font-size: 13px; font-weight: 300; letter-spacing: 0.15em; text-transform: uppercase;">
                   SPECIAL OFFER JUST FOR YOU
                 </p>
                 <h2 style="margin: 0 0 16px; color: #fafaf9; font-size: 36px; font-weight: 300; line-height: 1.2;">
-                  ${offerDiscount}% OFF
+                  ${discountDisplay}
                 </h2>
                 <p style="margin: 0 0 20px; color: #d6d3d1; font-size: 15px; font-weight: 300; line-height: 1.6;">
-                  Your first month of SSELFIE Studio
+                  ${isDollarAmount ? "Your first photoshoot" : "Your first month of SSELFIE Studio"}
                 </p>
                 ${offerCode ? `
                 <p style="margin: 0 0 20px; color: #fafaf9; font-size: 14px; font-weight: 400;">
@@ -168,12 +178,12 @@ It's been a while since we connected, and I've been thinking about what might ha
 
 Whatever it was, I want you to know: I get it. And I want to make it easy for you to come back.
 
-${offerDiscount ? `
+${hasOffer ? `
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 SPECIAL OFFER JUST FOR YOU
 
-${offerDiscount}% OFF
-Your first month of SSELFIE Studio
+${discountDisplay}
+${isDollarAmount ? "Your first photoshoot" : "Your first month of SSELFIE Studio"}
 ${offerCode ? `Use code: ${offerCode}` : ''}
 ${offerExpiry ? `Valid until ${offerExpiry}` : ''}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

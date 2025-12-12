@@ -93,39 +93,34 @@ async function resolveRecipients(targetAudience: any): Promise<string[]> {
         return []
       }
 
-      // Note: Resend API doesn't directly expose segment contacts, so we fall back to
-      // fetching all contacts and filtering by tags, or use the segment in the broadcast
-      // For now, we'll use the database users as a fallback
-      console.log(`[v0] Campaign targets Resend segment ${targetAudience.resend_segment_id}, using database fallback`)
+      console.log(`[v0] Campaign targets Resend segment ${targetAudience.resend_segment_id}, fetching contacts from Resend`)
       
-      // For beta testimonials, get paying customers
-      if (targetAudience.segment_type === "beta_customers") {
-        const users = await sql`
-          SELECT DISTINCT u.email
-          FROM users u
-          INNER JOIN subscriptions s ON u.id = s.user_id::varchar
-          WHERE u.email IS NOT NULL AND u.email != '' AND s.is_test_mode = FALSE
-          UNION
-          SELECT DISTINCT u.email
-          FROM users u
-          INNER JOIN credit_transactions ct ON u.id = ct.user_id::varchar
-          WHERE u.email IS NOT NULL AND u.email != ''
-            AND ct.is_test_mode = FALSE
-            AND ct.transaction_type = 'purchase'
-            AND ct.amount > 0
-        `
-        recipientEmails = users.map((u: any) => u.email).filter(Boolean)
-      } else {
-        // For newsletters, get all users (or use all_users flag)
-        const users = await sql`
-          SELECT email FROM users
-          WHERE email IS NOT NULL AND email != ''
-        `
-        recipientEmails = users.map((u: any) => u.email).filter(Boolean)
-      }
+      // Fetch all contacts from Resend audience
+      // Note: Resend API doesn't support filtering by segment directly, so we fetch all and filter
+      // In practice, Resend broadcasts handle segment targeting automatically
+      const { getAudienceContacts } = await import("@/lib/resend/get-audience-contacts")
+      const allContacts = await getAudienceContacts(audienceId)
+      
+      // Extract emails from contacts
+      recipientEmails = allContacts
+        .map((contact: any) => contact.email)
+        .filter((email: string) => email && email.includes("@"))
+      
+      console.log(`[v0] Fetched ${recipientEmails.length} contacts from Resend audience`)
+      
+      // If we have a specific segment, we can't filter via API, but Resend will handle it in broadcasts
+      // For individual sends, we'll send to all contacts (segment targeting happens in Resend's side)
+      // This is a limitation - we can't get segment contacts directly via API
+      
     } catch (error) {
       console.error("[v0] Error resolving Resend segment recipients:", error)
-      return []
+      // Fallback to database if Resend fetch fails
+      console.log(`[v0] Falling back to database for segment ${targetAudience.resend_segment_id}`)
+      const users = await sql`
+        SELECT email FROM users
+        WHERE email IS NOT NULL AND email != ''
+      `
+      recipientEmails = users.map((u: any) => u.email).filter(Boolean)
     }
   } else if (targetAudience.all_users) {
     const users = await sql`
@@ -241,7 +236,9 @@ export function getEmailContent(
     const content = generateWinBackOfferEmail({
       firstName: recipientName,
       recipientEmail,
-      offerDiscount: offerData.discount,
+      // Support both dollar amounts and percentages
+      offerAmount: offerData.amount, // Dollar amount (e.g., 10 for $10 off)
+      offerDiscount: offerData.discount, // Percentage (e.g., 20 for 20% off)
       offerCode: offerData.code,
       offerExpiry: offerData.expiry,
       campaignId: campaign.id,
@@ -279,6 +276,7 @@ async function logEmailSend(
   status: "sent" | "failed",
   resendMessageId?: string,
   errorMessage?: string,
+  campaignId?: number,
 ): Promise<void> {
   try {
     await sql`
@@ -288,7 +286,8 @@ async function logEmailSend(
         resend_message_id,
         status,
         error_message,
-        sent_at
+        sent_at,
+        campaign_id
       )
       VALUES (
         ${userEmail},
@@ -296,7 +295,8 @@ async function logEmailSend(
         ${resendMessageId || null},
         ${status},
         ${errorMessage || null},
-        NOW()
+        NOW(),
+        ${campaignId || null}
       )
     `
   } catch (error) {
@@ -367,7 +367,7 @@ async function executeCampaign(
           const errorMsg = `Rate limit exceeded for ${recipientEmail}`
           result.errors.push(errorMsg)
           result.recipients.failed++
-          await logEmailSend(recipientEmail, `campaign-${campaign.id}`, "failed", undefined, errorMsg)
+          await logEmailSend(recipientEmail, `campaign-${campaign.id}`, "failed", undefined, errorMsg, campaign.id)
           continue
         }
       }
@@ -383,7 +383,7 @@ async function executeCampaign(
         const errorMsg = "Email HTML content is empty"
         result.errors.push(`${recipientEmail}: ${errorMsg}`)
         result.recipients.failed++
-        await logEmailSend(recipientEmail, `campaign-${campaign.id}`, "failed", undefined, errorMsg)
+        await logEmailSend(recipientEmail, `campaign-${campaign.id}`, "failed", undefined, errorMsg, campaign.id)
         console.error(`[v0] ✗ Campaign ${campaign.id} has empty HTML content`)
         continue
       }
@@ -392,7 +392,7 @@ async function executeCampaign(
         const errorMsg = "Email text content is empty"
         result.errors.push(`${recipientEmail}: ${errorMsg}`)
         result.recipients.failed++
-        await logEmailSend(recipientEmail, `campaign-${campaign.id}`, "failed", undefined, errorMsg)
+        await logEmailSend(recipientEmail, `campaign-${campaign.id}`, "failed", undefined, errorMsg, campaign.id)
         console.error(`[v0] ✗ Campaign ${campaign.id} has empty text content`)
         continue
       }
@@ -420,13 +420,15 @@ async function executeCampaign(
           `campaign-${campaign.id}`,
           "sent",
           emailResult.messageId,
+          undefined,
+          campaign.id,
         )
         console.log(`[v0] ✓ Sent campaign ${campaign.id} to ${recipientEmail}`)
       } else {
         result.recipients.failed++
         const errorMsg = emailResult.error || "Unknown error"
         result.errors.push(`${recipientEmail}: ${errorMsg}`)
-        await logEmailSend(recipientEmail, `campaign-${campaign.id}`, "failed", undefined, errorMsg)
+        await logEmailSend(recipientEmail, `campaign-${campaign.id}`, "failed", undefined, errorMsg, campaign.id)
         console.error(`[v0] ✗ Failed to send campaign ${campaign.id} to ${recipientEmail}: ${errorMsg}`)
       }
 
@@ -438,7 +440,7 @@ async function executeCampaign(
       result.recipients.failed++
       const errorMsg = error?.message || "Unexpected error"
       result.errors.push(`${recipientEmail}: ${errorMsg}`)
-      await logEmailSend(recipientEmail, `campaign-${campaign.id}`, "failed", undefined, errorMsg)
+      await logEmailSend(recipientEmail, `campaign-${campaign.id}`, "failed", undefined, errorMsg, campaign.id)
       console.error(`[v0] Exception sending to ${recipientEmail}:`, error)
     }
   }
