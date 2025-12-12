@@ -12,6 +12,7 @@ export interface EmailOptions {
   replyTo?: string
   tags?: string[]
   emailType?: string // Optional: type of email for logging (e.g., 'welcome', 'campaign', 'feedback')
+  campaignId?: number // Optional: campaign ID for tracking
 }
 
 const sql = neon(process.env.DATABASE_URL!)
@@ -160,7 +161,7 @@ export async function sendEmail(
   if (!rateLimit.success) {
     console.log(`[v0] Email rate limit exceeded for ${recipient}, skipping send`)
     // Log rate limit as failed
-    await logEmailSend(recipient, emailType, "failed", undefined, "Rate limit exceeded")
+    await logEmailSend(recipient, emailType, "failed", undefined, "Rate limit exceeded", options.campaignId)
     return {
       success: false,
       error: `Rate limit exceeded. Please try again in ${Math.ceil((rateLimit.reset - Date.now()) / 1000 / 60)} minutes.`,
@@ -171,9 +172,9 @@ export async function sendEmail(
 
   // Log the email send result (non-blocking)
   if (result.success) {
-    await logEmailSend(recipient, emailType, "sent", result.messageId)
+    await logEmailSend(recipient, emailType, "sent", result.messageId, undefined, options.campaignId)
   } else {
-    await logEmailSend(recipient, emailType, "failed", undefined, result.error)
+    await logEmailSend(recipient, emailType, "failed", undefined, result.error, options.campaignId)
   }
 
   return result
