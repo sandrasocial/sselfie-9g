@@ -3,6 +3,7 @@ import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { neon } from "@neondatabase/serverless"
 import { stripe } from "@/lib/stripe"
+import type Stripe from "stripe"
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "ssa@ssasocial.com"
 
@@ -24,32 +25,46 @@ export async function GET() {
 
     const sql = neon(process.env.DATABASE_URL || "")
 
+    // Get actual subscription prices from products config
+    const { PRICING_PRODUCTS } = await import("@/lib/products")
+    
     const subscriptionsResult = await sql`
       SELECT 
         product_type,
-        COUNT(*) as count,
-        CASE 
-          WHEN product_type = 'sselfie_studio_membership' THEN 9900
-          WHEN product_type = 'one_time_session' THEN 4900
-          ELSE 0
-        END as price_cents
+        COUNT(*) as count
       FROM subscriptions
       WHERE status = 'active'
       AND is_test_mode = FALSE
       GROUP BY product_type
     `
 
-    // Calculate MRR (Monthly Recurring Revenue)
+    // Calculate MRR (Monthly Recurring Revenue) using correct prices
     let mrr = 0
     const subscriptionBreakdown = subscriptionsResult.map((sub) => {
-      const revenue = (Number(sub.count) * Number(sub.price_cents)) / 100
-      if (sub.product_type === "sselfie_studio_membership") {
+      // Get actual price from products config
+      const product = PRICING_PRODUCTS.find((p) => p.type === sub.product_type)
+      const priceCents = product?.priceInCents || 0
+      const revenue = (Number(sub.count) * priceCents) / 100
+      
+      // MRR only includes recurring subscriptions (not one-time sessions)
+      if (sub.product_type === "sselfie_studio_membership" || sub.product_type === "brand_studio_membership") {
         mrr += revenue
       }
+      
+      // Map product type to display tier name
+      const tierMap: Record<string, string> = {
+        sselfie_studio_membership: "Content Creator Studio",
+        brand_studio_membership: "Brand Studio",
+        one_time_session: "One-Time Session",
+      }
+      const tier = tierMap[sub.product_type] || sub.product_type
+      
       return {
         productType: sub.product_type,
+        tier: tier, // Add tier for frontend compatibility
         count: Number(sub.count),
         revenue: revenue,
+        priceCents: priceCents,
       }
     })
 
@@ -64,25 +79,52 @@ export async function GET() {
       AND is_test_mode = FALSE
     `
 
+    // Get ALL successful payments from Stripe (with pagination)
+    // IMPORTANT: Stripe's list() only returns 100 items by default
+    // We need to paginate to get ALL charges for accurate revenue
+    const getAllCharges = async () => {
+      let allCharges: Stripe.Charge[] = []
+      let hasMore = true
+      let startingAfter: string | undefined = undefined
+
+      while (hasMore) {
+        const charges = await stripe.charges.list({
+          limit: 100,
+          ...(startingAfter && { starting_after: startingAfter }),
+        })
+
+        allCharges = allCharges.concat(charges.data)
+        hasMore = charges.has_more
+        if (hasMore && charges.data.length > 0) {
+          startingAfter = charges.data[charges.data.length - 1].id
+        }
+      }
+
+      return allCharges
+    }
+
+    // Get all charges (paginated)
+    const allCharges = await getAllCharges()
+
+    // Filter for successful, non-refunded, production charges
+    const successfulCharges = allCharges.filter(
+      (charge) => charge.paid && !charge.refunded && charge.livemode === true,
+    )
+
+    // Total Revenue = Sum of all successful Stripe payments
+    // NOTE: This already includes:
+    // - Subscription payments (monthly recurring)
+    // - One-time session payments
+    // - Credit top-up purchases
+    // DO NOT add MRR separately - that would double count subscription revenue!
+    const totalRevenue = successfulCharges.reduce((sum, charge) => sum + charge.amount, 0) / 100
+
+    // One-time revenue (last 30 days) - excludes subscription payments
     const thirtyDaysAgo = Math.floor(Date.now() / 1000) - 30 * 24 * 60 * 60
-    const charges = await stripe.charges.list({
-      limit: 100,
-      created: { gte: thirtyDaysAgo },
-    })
-
-    const oneTimeRevenue =
-      charges.data
-        .filter((charge) => charge.paid && !charge.refunded && charge.livemode === true)
-        .reduce((sum, charge) => sum + charge.amount, 0) / 100
-
-    const allCharges = await stripe.charges.list({
-      limit: 100,
-    })
-
-    const totalRevenue =
-      allCharges.data
-        .filter((charge) => charge.paid && !charge.refunded && charge.livemode === true)
-        .reduce((sum, charge) => sum + charge.amount, 0) / 100
+    const oneTimeCharges = successfulCharges.filter(
+      (charge) => charge.created >= thirtyDaysAgo && !charge.invoice, // Invoices are subscriptions
+    )
+    const oneTimeRevenue = oneTimeCharges.reduce((sum, charge) => sum + charge.amount, 0) / 100
 
     const revenueTrend = await sql`
       SELECT 
@@ -127,10 +169,10 @@ export async function GET() {
     const realCreditRevenue = Number(creditPurchasesResult[0]?.real_credit_revenue_cents || 0) / 100
 
     return NextResponse.json({
-      mrr: Math.round(mrr),
-      totalRevenue: Math.round(totalRevenue + mrr),
-      oneTimeRevenue: Math.round(oneTimeRevenue),
-      realCreditRevenue: Math.round(realCreditRevenue),
+      mrr: Math.round(mrr * 100) / 100, // Keep 2 decimal places for MRR
+      totalRevenue: Math.round(totalRevenue * 100) / 100, // Total from Stripe (already includes everything)
+      oneTimeRevenue: Math.round(oneTimeRevenue * 100) / 100,
+      realCreditRevenue: Math.round(realCreditRevenue * 100) / 100,
       subscriptionBreakdown,
       totalPurchases: Number(creditPurchasesResult[0]?.total_purchases || 0),
       totalCreditsSold: Number(creditPurchasesResult[0]?.total_credits_sold || 0),

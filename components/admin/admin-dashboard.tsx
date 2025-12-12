@@ -261,7 +261,7 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
         {/* Tabs */}
         <Tabs defaultValue="overview" className="w-full">
           <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
-            <TabsList className="inline-flex w-auto md:grid md:w-full md:grid-cols-4 mb-6 md:mb-8 bg-white/80 backdrop-blur-xl rounded-2xl p-2 border border-stone-200 min-w-max md:min-w-0">
+            <TabsList className="inline-flex w-auto md:grid md:w-full md:grid-cols-5 mb-6 md:mb-8 bg-white/80 backdrop-blur-xl rounded-2xl p-2 border border-stone-200 min-w-max md:min-w-0">
               <TabsTrigger value="overview" className="data-[state=active]:bg-stone-950 data-[state=active]:text-white whitespace-nowrap text-xs md:text-sm">
                 <BarChart3 className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
                 Overview
@@ -277,6 +277,10 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
               <TabsTrigger value="feedback" className="data-[state=active]:bg-stone-950 data-[state=active]:text-white whitespace-nowrap text-xs md:text-sm">
                 <MessageSquare className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
                 Feedback
+              </TabsTrigger>
+              <TabsTrigger value="conversions" className="data-[state=active]:bg-stone-950 data-[state=active]:text-white whitespace-nowrap text-xs md:text-sm">
+                <TrendingUp className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
+                Conversions
               </TabsTrigger>
             </TabsList>
           </div>
@@ -621,6 +625,41 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
                       {stats?.totalLessons || 0}
                     </span>
                   </div>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Conversions Tab */}
+          <TabsContent value="conversions" className="space-y-6 md:space-y-8">
+            <div className="bg-white rounded-xl md:rounded-2xl p-6 md:p-8 border border-stone-200 shadow-xl">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl md:text-2xl font-['Times_New_Roman'] font-light text-stone-950">
+                  Conversion Dashboard
+                </h2>
+                <Link
+                  href="/admin/conversions"
+                  className="px-4 py-2 bg-stone-950 text-white rounded-lg hover:bg-stone-800 transition-colors text-sm font-medium flex items-center gap-2"
+                >
+                  <BarChart3 className="w-4 h-4" />
+                  View Full Dashboard
+                </Link>
+              </div>
+              <p className="text-stone-600 mb-6">
+                Comprehensive conversion funnel metrics, campaign performance, and revenue analytics.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-4 bg-stone-50 rounded-lg">
+                  <div className="text-sm text-stone-600 mb-1">Email → Purchase</div>
+                  <div className="text-2xl font-serif font-light text-stone-950">Funnel Metrics</div>
+                </div>
+                <div className="p-4 bg-stone-50 rounded-lg">
+                  <div className="text-sm text-stone-600 mb-1">Top Campaigns</div>
+                  <div className="text-2xl font-serif font-light text-stone-950">Performance</div>
+                </div>
+                <div className="p-4 bg-stone-50 rounded-lg">
+                  <div className="text-sm text-stone-600 mb-1">Weekly Stats</div>
+                  <div className="text-2xl font-serif font-light text-stone-950">Revenue & Growth</div>
                 </div>
               </div>
             </div>
