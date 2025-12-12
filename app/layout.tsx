@@ -163,7 +163,19 @@ export default function RootLayout({
         />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="icon" type="image/png" href="/favicon.png" />
-        {/* Removed unused font imports */}
+        {/* Font optimization: Times New Roman is a system font, ensure fast rendering */}
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+              @font-face {
+                font-family: 'Times New Roman';
+                font-display: swap;
+                font-style: normal;
+                font-weight: 400;
+              }
+            `,
+          }}
+        />
       </head>
       <body className={`font-sans antialiased`}>
         {/* Google Analytics 4 */}

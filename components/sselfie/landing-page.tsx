@@ -2,15 +2,17 @@
 
 import type React from "react"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, lazy, Suspense } from "react"
 import Link from "next/link"
 import { useScroll, useTransform, motion } from "framer-motion"
 import Image from "next/image"
-import InteractivePipelineShowcase from "./interactive-pipeline-showcase"
-import InteractiveFeaturesShowcase from "./interactive-features-showcase"
 import { createLandingCheckoutSession } from "@/app/actions/landing-checkout"
-import TestimonialGrid from "@/components/testimonials/testimonial-grid"
 import { trackCTAClick, trackPricingView, trackCheckoutStart, trackEmailSignup, trackSocialClick } from "@/lib/analytics"
+
+// Dynamic imports for heavy components (code splitting)
+const InteractivePipelineShowcase = lazy(() => import("./interactive-pipeline-showcase"))
+const InteractiveFeaturesShowcase = lazy(() => import("./interactive-features-showcase"))
+const TestimonialGrid = lazy(() => import("@/components/testimonials/testimonial-grid"))
 
 interface LandingStats {
   waitlistCount: number
@@ -60,7 +62,9 @@ export default function LandingPage() {
           setStats(data)
         }
       } catch (error) {
-        console.error("[v0] Error fetching landing stats:", error)
+        if (process.env.NODE_ENV === "development") {
+          console.error("[v0] Error fetching landing stats:", error)
+        }
       }
     }
 
@@ -143,7 +147,9 @@ export default function LandingPage() {
         window.location.href = `/checkout?client_secret=${clientSecret}`
       }
     } catch (error) {
-      console.error("Checkout error:", error)
+      if (process.env.NODE_ENV === "development") {
+        console.error("Checkout error:", error)
+      }
       alert("Failed to start checkout. Please try again.")
       setCheckoutLoading(null)
     }
@@ -191,7 +197,9 @@ export default function LandingPage() {
         setWaitlistMessage({ type: "error", text: data.error || "Something went wrong. Please try again." })
       }
     } catch (error) {
-      console.error("[v0] Waitlist submission error:", error)
+      if (process.env.NODE_ENV === "development") {
+        console.error("[v0] Waitlist submission error:", error)
+      }
       setWaitlistMessage({ type: "error", text: "Network error. Please try again." })
     } finally {
       setWaitlistLoading(false)
@@ -320,6 +328,10 @@ export default function LandingPage() {
             alt="Professional brand photography"
             style={{ objectFit: "cover", objectPosition: "center" }}
             priority
+            quality={85}
+            sizes="100vw"
+            placeholder="blur"
+            blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
           />
 
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
@@ -518,6 +530,9 @@ export default function LandingPage() {
                   fill
                   alt="Sandra - Founder of SSELFIE"
                   className="object-cover"
+                  loading="lazy"
+                  quality={80}
+                  sizes="(max-width: 768px) 100vw, 50vw"
                 />
               </div>
               <p className="text-xs md:text-sm font-light tracking-wider uppercase text-stone-500 mt-4 text-center">
@@ -580,7 +595,9 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <InteractivePipelineShowcase />
+      <Suspense fallback={<div className="min-h-[400px] bg-stone-50" />}>
+        <InteractivePipelineShowcase />
+      </Suspense>
 
       <section className="py-24 sm:py-32 md:py-40 bg-stone-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
@@ -667,6 +684,9 @@ export default function LandingPage() {
                   fill
                   alt="Generic AI headshot example"
                   className="object-cover"
+                  loading="lazy"
+                  quality={80}
+                  sizes="(max-width: 768px) 100vw, 50vw"
                 />
                 <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1.5">
                   <p className="text-[10px] sm:text-xs font-light tracking-[0.2em] uppercase text-stone-900">
@@ -693,7 +713,15 @@ export default function LandingPage() {
             {/* SSELFIE Studio */}
             <div className="space-y-4 sm:space-y-6">
               <div className="relative aspect-[3/4] overflow-hidden border-2 border-stone-950">
-                <Image src="/images/img-8033.png" fill alt="SSELFIE Studio example" className="object-cover" />
+                <Image
+                  src="/images/img-8033.png"
+                  fill
+                  alt="SSELFIE Studio example"
+                  className="object-cover"
+                  loading="lazy"
+                  quality={80}
+                  sizes="(max-width: 768px) 100vw, 33vw"
+                />
                 <div className="absolute top-4 left-4 bg-stone-950/90 backdrop-blur-sm px-3 py-1.5">
                   <p className="text-[10px] sm:text-xs font-light tracking-[0.2em] uppercase text-stone-50">
                     SSELFIE Studio
@@ -742,7 +770,9 @@ export default function LandingPage() {
               See how real members are using SSELFIE to build their brands and show up with confidence.
             </p>
           </div>
-          <TestimonialGrid />
+          <Suspense fallback={<div className="min-h-[300px] bg-stone-50" />}>
+            <TestimonialGrid />
+          </Suspense>
         </div>
       </section>
 
@@ -764,7 +794,9 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <InteractiveFeaturesShowcase />
+          <Suspense fallback={<div className="min-h-[400px] bg-stone-50" />}>
+            <InteractiveFeaturesShowcase />
+          </Suspense>
         </div>
       </section>
 
