@@ -128,30 +128,38 @@ This phrase causes blur in FLUX.1-dev:
 - ✅ GOOD: "sunlit minimalist kitchen, marble countertops, soft morning glow"
 - ❌ BAD: "in a cafe", "white background", "outdoor setting"
 
-### LIGHTING (3-5 words, keep simple and natural)
-**🔴 CRITICAL: Keep lighting descriptions SIMPLE. No dramatic, cinematic, or professional terms.**
+### LIGHTING (3-6 words, authentic and realistic)
+**🔴 CRITICAL: Use REALISTIC lighting descriptions that look like real phone photos. Avoid idealized or "perfect" lighting terms.**
 
-**ALWAYS USE (Simple Natural Lighting):**
-- ✅ "Soft afternoon sunlight"
-- ✅ "Natural window light"
-- ✅ "Warm golden hour lighting"
-- ✅ "Overcast daylight"
+**ALWAYS USE (Authentic Realistic Lighting):**
+- ✅ "Uneven natural lighting"
+- ✅ "Mixed color temperatures"
+- ✅ "Natural window light with shadows"
+- ✅ "Overcast daylight, soft shadows"
+- ✅ "Ambient lighting, mixed sources"
+- ✅ "Natural light, slight unevenness"
+- ✅ "Window light, cool and warm mix"
+- ✅ "Daylight with natural shadows"
 
-**NEVER USE (These cause plastic look):**
+**NEVER USE (These cause plastic/artificial look):**
+- ❌ "Soft afternoon sunlight" (too idealized)
+- ❌ "Warm golden hour lighting" (too perfect)
+- ❌ "Perfect lighting", "beautiful lighting", "ideal lighting"
 - ❌ "Dramatic rim lighting"
 - ❌ "Cinematic quality"
 - ❌ "Professional studio lighting"
 - ❌ "Editorial photography lighting"
-- ❌ "Perfect lighting", "beautiful lighting", "ideal lighting"
-- ❌ Any complex lighting descriptions
+- ❌ "Soft diffused natural lighting" (too perfect)
+- ❌ Any lighting descriptions that sound too polished or professional
 
 **EXAMPLES:**
-- "Soft afternoon sunlight"
-- "Natural window light"
-- "Warm golden hour lighting"
-- "Overcast daylight"
+- "Uneven natural lighting"
+- "Mixed color temperatures"
+- "Natural window light with shadows"
+- "Overcast daylight, soft shadows"
+- "Ambient lighting, mixed sources"
 
-**KEEP IT SIMPLE:** One natural lighting description is enough. Trust the user LoRA and natural iPhone camera quality.
+**KEEP IT REALISTIC:** Real phone photos have uneven lighting, mixed color temperatures, and natural shadows. Avoid descriptions that sound too perfect or polished.
 
 ### CAMERA/TECHNICAL SPECS (8-12 words) - **AUTHENTIC IPHONE STYLE**
 
@@ -228,29 +236,35 @@ Flux's dual-encoder system (T5 + CLIP) handles complex descriptions well. More c
 - Simple, direct descriptions: "shot on iPhone 15 Pro portrait mode, shallow depth of field"
 - Precise outfit descriptors: "oversized brown leather blazer" not "stunning luxury blazer"
 - Simple settings: "walking through SoHo" not "walking through the vibrant streets of SoHo with bustling energy"
-- Natural lighting: "soft afternoon sunlight" not "dramatic rim lighting"
+- Realistic lighting: "uneven natural lighting" not "soft afternoon sunlight" or "dramatic rim lighting"
 - Natural poses: "walking toward camera" not "striking a confident pose with perfect posture"
 
-## LIGHTING FOR FLUX (Keep Simple and Natural)
+## LIGHTING FOR FLUX (Authentic and Realistic)
 
 **OUTDOOR NATURAL:**
-- "Soft afternoon sunlight"
-- "Warm golden hour lighting"
-- "Overcast daylight"
+- "Overcast daylight, natural shadows"
+- "Daylight with uneven illumination"
+- "Natural outdoor light, mixed temperatures"
+- "Ambient daylight, soft shadows"
 
 **INDOOR NATURAL:**
-- "Natural window light"
-- "Soft morning window light"
+- "Natural window light with shadows"
+- "Window light, cool and warm mix"
+- "Uneven window lighting"
+- "Natural light, slight unevenness"
 
 **INDOOR ARTIFICIAL:**
-- "Warm ambient lighting"
-- "Soft restaurant lighting"
+- "Ambient lighting, mixed sources"
+- "Mixed color temperatures"
+- "Uneven ambient lighting"
+- "Natural room lighting with shadows"
 
 **KEY LIGHTING PRINCIPLES:**
-- Keep it simple (3-5 words max)
-- Use natural, simple descriptions
-- NO dramatic, cinematic, or professional terms
-- Trust the user LoRA and natural iPhone camera quality
+- Keep it realistic (3-6 words max)
+- Use authentic descriptions that sound like real phone photos
+- Include natural imperfections: unevenness, mixed temperatures, shadows
+- NO idealized terms like "soft", "warm golden hour", "perfect"
+- Real phone photos have natural lighting flaws - embrace them
 
 ## WORD BUDGET BY CATEGORY (OPTIMIZED FOR USER LoRA PRESERVATION)
 
@@ -271,7 +285,7 @@ Before finalizing ANY prompt, verify ALL of these:
 ✅ **Natural language:** Reads like describing to a photographer, not keywords?
 ✅ **Outfit specifics:** Fabrics/textures included? (Stay detailed here)
 ✅ **Simple setting:** One-line location description? (Keep brief)
-✅ **Natural lighting:** Simple lighting description? (NO dramatic/cinematic terms)
+✅ **Realistic lighting:** Authentic lighting description with natural imperfections? (NO idealized terms like "soft afternoon sunlight" or "warm golden hour")
 ✅ **Authentic iPhone specs:** Includes "candid photo" or "candid moment"? Includes "amateur cellphone photo" or "cellphone photo"? "shot on iPhone 15 Pro portrait mode, shallow depth of field" OR "shot on iPhone, natural bokeh"?
 ✅ **Natural pose:** Simple action description? (NO "striking poses")
 ✅ **User preferences:** If user specified physical preferences (hair, body, age), are they included? **MANDATORY**
@@ -284,19 +298,19 @@ Before finalizing ANY prompt, verify ALL of these:
 ## EXAMPLE COMPLETE FLUX PROMPTS (AUTHENTIC, PRESERVES USER LoRA)
 
 **Example 1: Casual Street Style (68 words - AUTHENTIC):**
-"user_trigger, woman in oversized brown leather blazer with relaxed fit, cream cashmere turtleneck underneath, high-waisted straight-leg jeans, chunky gold hoops, walking through SoHo carrying iced coffee, candid moment, soft afternoon sunlight filtering through buildings, warm side lighting, amateur cellphone photo, shot on iPhone 15 Pro portrait mode, shallow depth of field"
+"user_trigger, woman in oversized brown leather blazer with relaxed fit, cream cashmere turtleneck underneath, high-waisted straight-leg jeans, chunky gold hoops, walking through SoHo carrying iced coffee, candid moment, uneven natural lighting with mixed color temperatures, natural shadows, amateur cellphone photo, shot on iPhone 15 Pro portrait mode, shallow depth of field"
 
 **Example 2: Cozy Home (64 words - AUTHENTIC):**
-"user_trigger, woman in oversized cream knit sweater with wide sleeves, matching lounge pants, delicate gold jewelry, sitting on grey sectional sofa holding ceramic mug, legs crossed comfortably, soft morning window light streaming in, natural shadows, candid photo, shot on iPhone 15 Pro portrait mode, shallow depth of field"
+"user_trigger, woman in oversized cream knit sweater with wide sleeves, matching lounge pants, delicate gold jewelry, sitting on grey sectional sofa holding ceramic mug, legs crossed comfortably, natural window light with shadows, slight unevenness, candid photo, shot on iPhone 15 Pro portrait mode, shallow depth of field"
 
 **Example 3: Evening Glam (70 words - AUTHENTIC):**
-"user_trigger, woman in black satin slip dress with thin straps, vintage leather bomber jacket draped over shoulders, strappy heels, diamond tennis bracelet, low bun with face-framing pieces, standing in dimly lit restaurant, warm ambient lighting creating bokeh background, candid moment, cellphone photo, shot on iPhone 15 Pro portrait mode, shallow depth of field"
+"user_trigger, woman in black satin slip dress with thin straps, vintage leather bomber jacket draped over shoulders, strappy heels, diamond tennis bracelet, low bun with face-framing pieces, standing in dimly lit restaurant, ambient lighting with mixed sources, natural shadows, candid moment, cellphone photo, shot on iPhone 15 Pro portrait mode, shallow depth of field"
 
 **Key Principles in These Examples:**
 - ✅ 50-80 words = better LoRA activation, more accurate character representation
 - ✅ Detailed outfit descriptions with fabrics/textures (no enhancement words)
 - ✅ Simple but descriptive settings (one line, not elaborate)
-- ✅ Natural lighting only (no dramatic/cinematic terms)
+- ✅ Realistic lighting with natural imperfections (no idealized terms)
 - ✅ **ALWAYS includes "candid photo" or "candid moment"** - Creates authentic, unposed feel
 - ✅ **ALWAYS includes "amateur cellphone photo" or "cellphone photo"** - Prevents professional/plastic look
 - ✅ Natural poses/actions (no "striking poses", no "legs tucked under")

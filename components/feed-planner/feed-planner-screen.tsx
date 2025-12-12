@@ -466,7 +466,7 @@ export default function FeedPlannerScreen() {
           {showOnboarding && (
             <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowOnboarding(false)}>
               <div
-                className="bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full space-y-4 shadow-xl"
+                className="bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full max-h-[90vh] overflow-y-auto space-y-4 shadow-xl"
                 onClick={(e) => e.stopPropagation()}
               >
                 <h2 className="text-xl font-serif font-light tracking-wide text-stone-900 mb-4">What is Feed Planner?</h2>

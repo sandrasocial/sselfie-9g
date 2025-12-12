@@ -297,7 +297,7 @@ ${postType?.toLowerCase().includes('object') || postType?.toLowerCase().includes
 - Make it feel like a real iPhone photo, not a professional shoot
 
 **🔴 EXAMPLE OF WHAT YOU MUST CREATE:**
-"${triggerWord}, ${ethnicity ? ethnicity + ", " : ""}${userGender}, in sage green silk blouse with relaxed fit tucked into high-waisted cream linen trousers, standing with hand on marble bar counter, looking over shoulder naturally, upscale restaurant with marble surfaces, soft afternoon sunlight, shot on iPhone 15 Pro portrait mode, shallow depth of field"
+"${triggerWord}, ${ethnicity ? ethnicity + ", " : ""}${userGender}, in sage green silk blouse with relaxed fit tucked into high-waisted cream linen trousers, standing with hand on marble bar counter, looking over shoulder naturally, upscale restaurant with marble surfaces, uneven natural lighting, shot on iPhone 15 Pro portrait mode, shallow depth of field"
 
 **🔴 EXAMPLE OF WHAT YOU MUST NEVER CREATE:**
 "${triggerWord}, ${ethnicity ? ethnicity + ", " : ""}${userGender}, confident expression, wearing stylish business casual outfit, urban background with clean lines, edgy-minimalist aesthetic with perfect lighting"
@@ -685,15 +685,15 @@ Reference (IGNORE FORMAT - GENERIC AND INCOMPLETE): ${cleanedReferencePrompt.sub
       
       // Check for simple natural lighting (not dramatic/cinematic)
       if (promptLower.includes('dramatic lighting') || promptLower.includes('cinematic') || promptLower.includes('perfect lighting') || promptLower.includes('professional lighting') || promptLower.includes('editorial lighting')) {
-        generatedPrompt = generatedPrompt.replace(/\b(dramatic|cinematic|perfect|professional|editorial)\s+lighting\b/gi, 'soft afternoon sunlight')
+        generatedPrompt = generatedPrompt.replace(/\b(dramatic|cinematic|perfect|professional|editorial)\s+lighting\b/gi, 'uneven natural lighting')
         promptLower = generatedPrompt.toLowerCase() // Recalculate after lighting fix
       }
       
       // Check for simple natural lighting description
       const hasSimpleLighting = promptLower.match(/\b(soft|natural|warm|overcast)\s+(afternoon|morning|window|golden hour|daylight)\s*(light|lighting)?/i) ||
                                  promptLower.includes('natural window light') ||
-                                 promptLower.includes('soft afternoon sunlight') ||
-                                 promptLower.includes('warm golden hour lighting') ||
+                                 promptLower.includes('uneven natural lighting') ||
+                                 promptLower.includes('mixed color temperatures') ||
                                  promptLower.includes('overcast daylight')
       
       if (!hasSimpleLighting) {
@@ -814,7 +814,7 @@ Reference (IGNORE FORMAT - GENERIC AND INCOMPLETE): ${cleanedReferencePrompt.sub
       
       // Add simple natural lighting if missing
       if (!hasSimpleLighting) {
-        additions.push('soft afternoon sunlight')
+        additions.push('uneven natural lighting')
       }
       
       // Add missing requirements naturally into the prompt

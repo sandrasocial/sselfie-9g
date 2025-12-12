@@ -152,12 +152,13 @@ CRITICAL INSTRUCTIONS:
 
 2. **Basic iPhone Specs (MANDATORY):** MUST include "shot on iPhone 15 Pro portrait mode, shallow depth of field" OR "shot on iPhone, natural bokeh". Keep it simple - NO complex technical details (no f-stops, ISO, focal lengths).
 
-3. **Simple Natural Lighting (MANDATORY):** MUST use simple, natural lighting descriptions only:
-   - ✅ "Soft afternoon sunlight"
-   - ✅ "Natural window light"
-   - ✅ "Warm golden hour lighting"
-   - ✅ "Overcast daylight"
-   - ❌ NEVER use: "dramatic rim lighting", "cinematic quality", "professional studio lighting", "editorial photography lighting", "perfect lighting"
+3. **Realistic Authentic Lighting (MANDATORY):** MUST use authentic, realistic lighting descriptions that look like real phone photos:
+   - ✅ "Uneven natural lighting"
+   - ✅ "Mixed color temperatures"
+   - ✅ "Natural window light with shadows"
+   - ✅ "Overcast daylight, soft shadows"
+   - ✅ "Ambient lighting, mixed sources"
+   - ❌ NEVER use: "soft afternoon sunlight", "warm golden hour lighting" (too idealized), "dramatic rim lighting", "cinematic quality", "professional studio lighting", "editorial photography lighting", "perfect lighting", "soft diffused natural lighting"
 
 4. **NO Skin Quality Descriptions:** Do NOT describe skin quality beyond "natural". The user LoRA handles appearance. NO "natural skin texture with pores visible", "not plastic-looking", etc.
 
@@ -176,7 +177,7 @@ CRITICAL INSTRUCTIONS:
 2. **GENDER/ETHNICITY** (2-3 words)
 3. **OUTFIT** (material + color + garment type - 8-12 words, stay detailed here)
 4. **LOCATION** (simple, one-line - 3-5 words, keep brief)
-5. **LIGHTING** (simple, natural only - 3-5 words, NO dramatic/cinematic terms)
+5. **LIGHTING** (realistic, authentic - 3-6 words, NO idealized terms like "soft afternoon sunlight" or "warm golden hour")
 6. **POSE + EXPRESSION** (simple, natural action - 3-5 words, NO "striking poses")
 7. **TECHNICAL SPECS** (basic iPhone only - 5-8 words, keep minimal)
 
@@ -235,12 +236,12 @@ Create a Flux prompt for this ${shotType} shot that achieves: ${purpose}
    - 🔴 CRITICAL: You MUST create a REAL, SPECIFIC location description. Do NOT use generic terms or placeholders.
 
 3. **LIGHTING (MANDATORY - NO EXCEPTIONS):**
-   - ❌ NEVER use: "perfect lighting", "clean lighting", "professional lighting", "even lighting", "dramatic rim lighting", "cinematic quality"
-   - ✅ ALWAYS use: Simple, natural lighting descriptions only
-   - ✅ Example: "Soft afternoon sunlight"
-   - ✅ Example: "Natural window light"
-   - ✅ Example: "Warm golden hour lighting"
-   - ✅ Example: "Overcast daylight"
+   - ❌ NEVER use: "perfect lighting", "clean lighting", "professional lighting", "even lighting", "dramatic rim lighting", "cinematic quality", "soft afternoon sunlight", "warm golden hour lighting" (too idealized)
+   - ✅ ALWAYS use: Realistic, authentic lighting descriptions that look like real phone photos
+   - ✅ Example: "Uneven natural lighting"
+   - ✅ Example: "Mixed color temperatures"
+   - ✅ Example: "Natural window light with shadows"
+   - ✅ Example: "Overcast daylight, soft shadows"
 
 4. **TECHNICAL SPECS (MANDATORY - AUTHENTIC IPHONE STYLE):**
    - ✅ **ALWAYS include:** "candid photo" or "candid moment" (prevents plastic/posed look)
@@ -260,7 +261,7 @@ Create a Flux prompt for this ${shotType} shot that achieves: ${purpose}
 1. **TRIGGER WORD** (first position - MANDATORY): "${actualTriggerWord}, ${userEthnicity ? userEthnicity + ", " : ""}${userGender}"
 2. **OUTFIT** (8-15 words - MANDATORY): Specific material + color + garment type (e.g., "sage green silk blouse with relaxed fit tucked into high-waisted cream linen trousers")
 3. **LOCATION** (3-6 words - MANDATORY): Simple, one-line location (e.g., "upscale restaurant with marble surfaces")
-4. **LIGHTING** (3-5 words - MANDATORY): Simple, natural lighting only (e.g., "soft afternoon sunlight")
+4. **LIGHTING** (3-6 words - MANDATORY): Realistic, authentic lighting with natural imperfections (e.g., "uneven natural lighting")
 5. **POSE + EXPRESSION** (3-6 words): Simple, natural action (e.g., "standing with hand on counter, looking over shoulder naturally")
 6. **TECHNICAL SPECS** (5-8 words - MANDATORY): "shot on iPhone 15 Pro portrait mode, shallow depth of field"
 
@@ -289,7 +290,7 @@ Remember:
 - ✅ USE INSTEAD: "sitting with legs crossed", "sitting with one knee up", "lounging on sofa"
 
 **🔴 EXAMPLE OF PERFECT PROMPT (FOLLOW THIS FORMAT):**
-"${actualTriggerWord}, ${userEthnicity ? userEthnicity + ", " : ""}${userGender}, in sage green silk blouse with relaxed fit tucked into high-waisted cream linen trousers, standing with hand on marble bar counter, looking over shoulder naturally, upscale restaurant with marble surfaces, soft afternoon sunlight, candid photo, amateur cellphone photo, shot on iPhone 15 Pro portrait mode, shallow depth of field"
+"${actualTriggerWord}, ${userEthnicity ? userEthnicity + ", " : ""}${userGender}, in sage green silk blouse with relaxed fit tucked into high-waisted cream linen trousers, standing with hand on marble bar counter, looking over shoulder naturally, upscale restaurant with marble surfaces, uneven natural lighting, candid photo, amateur cellphone photo, shot on iPhone 15 Pro portrait mode, shallow depth of field"
 
 **🔴 EXAMPLE OF BAD PROMPT (DO NOT CREATE LIKE THIS):**
 "${actualTriggerWord}, ${userEthnicity ? userEthnicity + ", " : ""}${userGender}, confident expression, wearing stylish business casual outfit, urban background with clean lines, edgy-minimalist aesthetic with perfect lighting"
@@ -297,7 +298,7 @@ Remember:
 **Why the bad example is wrong:**
 - ❌ "stylish business casual outfit" = generic (should be specific material + color + garment)
 - ❌ "urban background" = generic (should be specific but simple location)
-- ❌ "perfect lighting" = banned word (should be simple natural lighting like "soft afternoon sunlight")
+- ❌ "perfect lighting" = banned word (should be realistic lighting like "uneven natural lighting")
 - ❌ Missing: Basic iPhone specs
 - ❌ Too short: ~20 words (needs 50-80)
 
@@ -308,7 +309,7 @@ Return JSON with this structure:
   "settingMood": { "location": "", "lighting": "", "props": [], "colors": [] },
   "styling": { "outfit": "", "hair": "", "accessories": [], "aesthetic": "" },
   "emotionalTone": "",
-  "fluxPrompt": "${isNonUserPost ? "50-80 word object/flatlay/scenery prompt WITHOUT user or trigger word, including SPECIFIC items with materials/colors, composition details, surface description, simple natural lighting, basic iPhone specs - follow OBJECT/FLATLAY/SCENERY POST REQUIREMENTS above" : `YOUR CRAFTED FLUX PROMPT - synthesized from principles, MUST start with ${actualTriggerWord}, ${userEthnicity ? userEthnicity + ", " : ""}${userGender}, MUST be 50-80 words (count carefully!), MUST include ALL of these in this exact order: (1) "${actualTriggerWord}, ${userEthnicity ? userEthnicity + ", " : ""}${userGender}" at the start, (2) specific outfit with material + color + garment type (8-15 words, e.g., "sage green silk blouse with relaxed fit tucked into high-waisted cream linen trousers"), (3) simple location (3-6 words, e.g., "upscale restaurant with marble surfaces"), (4) simple natural lighting (3-5 words, e.g., "soft afternoon sunlight"), (5) natural pose/action (3-6 words, e.g., "standing with hand on counter, looking over shoulder naturally"), (6) basic iPhone specs: "shot on iPhone 15 Pro portrait mode, shallow depth of field" (5-8 words). Total must be 50-80 words.`}"
+  "fluxPrompt": "${isNonUserPost ? "50-80 word object/flatlay/scenery prompt WITHOUT user or trigger word, including SPECIFIC items with materials/colors, composition details, surface description, simple natural lighting, basic iPhone specs - follow OBJECT/FLATLAY/SCENERY POST REQUIREMENTS above" : `YOUR CRAFTED FLUX PROMPT - synthesized from principles, MUST start with ${actualTriggerWord}, ${userEthnicity ? userEthnicity + ", " : ""}${userGender}, MUST be 50-80 words (count carefully!), MUST include ALL of these in this exact order: (1) "${actualTriggerWord}, ${userEthnicity ? userEthnicity + ", " : ""}${userGender}" at the start, (2) specific outfit with material + color + garment type (8-15 words, e.g., "sage green silk blouse with relaxed fit tucked into high-waisted cream linen trousers"), (3) simple location (3-6 words, e.g., "upscale restaurant with marble surfaces"), (4) realistic authentic lighting (3-6 words, e.g., "uneven natural lighting"), (5) natural pose/action (3-6 words, e.g., "standing with hand on counter, looking over shoulder naturally"), (6) basic iPhone specs: "shot on iPhone 15 Pro portrait mode, shallow depth of field" (5-8 words). Total must be 50-80 words.`}"
 }
 
 🔴 **CRITICAL - YOUR FLUX PROMPT MUST:**
@@ -320,7 +321,7 @@ Return JSON with this structure:
 - Keep it simple to preserve user LoRA
 
 **EXAMPLE OF WHAT YOUR FLUX PROMPT SHOULD LOOK LIKE:**
-"${actualTriggerWord}, ${userEthnicity ? userEthnicity + ", " : ""}${userGender}, in sage green silk blouse with relaxed fit tucked into high-waisted cream linen trousers, standing with hand on marble bar counter, looking over shoulder naturally, upscale restaurant with marble surfaces, soft afternoon sunlight, shot on iPhone 15 Pro portrait mode, shallow depth of field"
+"${actualTriggerWord}, ${userEthnicity ? userEthnicity + ", " : ""}${userGender}, in sage green silk blouse with relaxed fit tucked into high-waisted cream linen trousers, standing with hand on marble bar counter, looking over shoulder naturally, upscale restaurant with marble surfaces, uneven natural lighting, shot on iPhone 15 Pro portrait mode, shallow depth of field"
 
 Return ONLY valid JSON. No markdown.`
 
@@ -397,15 +398,15 @@ Return ONLY valid JSON. No markdown.`
       
       // Check for simple natural lighting (not dramatic/cinematic)
       if (promptLower.includes('dramatic lighting') || promptLower.includes('cinematic') || promptLower.includes('perfect lighting') || promptLower.includes('professional lighting') || promptLower.includes('editorial lighting')) {
-        composition.fluxPrompt = composition.fluxPrompt.replace(/\b(dramatic|cinematic|perfect|professional|editorial)\s+lighting\b/gi, 'soft afternoon sunlight')
+          composition.fluxPrompt = composition.fluxPrompt.replace(/\b(dramatic|cinematic|perfect|professional|editorial)\s+lighting\b/gi, 'uneven natural lighting')
         promptLower = composition.fluxPrompt.toLowerCase()
       }
       
       // Check for simple natural lighting description
       const hasSimpleLighting = promptLower.match(/\b(soft|natural|warm|overcast)\s+(afternoon|morning|window|golden hour|daylight)\s*(light|lighting)?/i) ||
                                  promptLower.includes('natural window light') ||
-                                 promptLower.includes('soft afternoon sunlight') ||
-                                 promptLower.includes('warm golden hour lighting') ||
+                                 promptLower.includes('uneven natural lighting') ||
+                                 promptLower.includes('mixed color temperatures') ||
                                  promptLower.includes('overcast daylight')
       
       if (!hasSimpleLighting) {
@@ -450,7 +451,7 @@ Return ONLY valid JSON. No markdown.`
       
       // Add simple natural lighting if missing
       if (!hasSimpleLighting) {
-        additions.push('soft afternoon sunlight')
+        additions.push('uneven natural lighting')
       }
           composition.fluxPrompt = composition.fluxPrompt.substring(0, idx) + 'uneven lighting, ' + composition.fluxPrompt.substring(idx)
         } else {
@@ -630,17 +631,17 @@ Return ONLY valid JSON. No markdown.`
       // Add simple natural lighting if missing
       const hasSimpleLighting = promptLower.match(/\b(soft|natural|warm|overcast)\s+(afternoon|morning|window|golden hour|daylight)\s*(light|lighting)?/i) ||
                                  promptLower.includes('natural window light') ||
-                                 promptLower.includes('soft afternoon sunlight') ||
-                                 promptLower.includes('warm golden hour lighting') ||
+                                 promptLower.includes('uneven natural lighting') ||
+                                 promptLower.includes('mixed color temperatures') ||
                                  promptLower.includes('overcast daylight')
       
       if (!hasSimpleLighting) {
         // Fix lighting if it's "dramatic" or "cinematic"
         if (promptLower.includes('dramatic lighting') || promptLower.includes('cinematic') || promptLower.includes('perfect lighting') || promptLower.includes('professional lighting') || promptLower.includes('editorial lighting')) {
-          composition.fluxPrompt = composition.fluxPrompt.replace(/\b(dramatic|cinematic|perfect|professional|editorial)\s+lighting\b/gi, 'soft afternoon sunlight')
+          composition.fluxPrompt = composition.fluxPrompt.replace(/\b(dramatic|cinematic|perfect|professional|editorial)\s+lighting\b/gi, 'uneven natural lighting')
           promptLower = composition.fluxPrompt.toLowerCase()
         } else {
-          additions.push('soft afternoon sunlight')
+          additions.push('uneven natural lighting')
         }
       }
       
@@ -768,8 +769,8 @@ async function createFallbackComposition(shotType: string, purpose: string, auth
   // For non-user posts: specific items, composition, surface, lighting, technical specs
   // For user posts: trigger word, outfit, location, lighting, technical specs
   const basePrompt = isNonUserPost 
-    ? `carefully arranged ${shotType} with specific items, materials and colors visible, overhead view on marble surface, soft afternoon sunlight, shot on iPhone 15 Pro portrait mode, shallow depth of field`
-    : `${actualTriggerWord}, ${userEthnicity ? userEthnicity + ", " : ""}${userGender}, in specific outfit with material and color details, natural pose, specific location, soft afternoon sunlight, shot on iPhone 15 Pro portrait mode, shallow depth of field`
+    ? `carefully arranged ${shotType} with specific items, materials and colors visible, overhead view on marble surface, uneven natural lighting, shot on iPhone 15 Pro portrait mode, shallow depth of field`
+    : `${actualTriggerWord}, ${userEthnicity ? userEthnicity + ", " : ""}${userGender}, in specific outfit with material and color details, natural pose, specific location, uneven natural lighting, shot on iPhone 15 Pro portrait mode, shallow depth of field`
 
   const fluxPrompt = basePrompt
 

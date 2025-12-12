@@ -369,12 +369,13 @@ CRITICAL INSTRUCTIONS:
 
 2. **Basic iPhone Specs (MANDATORY):** MUST include "shot on iPhone 15 Pro portrait mode, shallow depth of field" OR "shot on iPhone, natural bokeh". Keep it simple - NO complex technical details (no f-stops, ISO, focal lengths).
 
-3. **Simple Natural Lighting (MANDATORY):** MUST use simple, natural lighting descriptions only:
-   - ✅ "Soft afternoon sunlight"
-   - ✅ "Natural window light"
-   - ✅ "Warm golden hour lighting"
-   - ✅ "Overcast daylight"
-   - ❌ NEVER use: "dramatic rim lighting", "cinematic quality", "professional studio lighting", "editorial photography lighting", "perfect lighting"
+3. **Realistic Authentic Lighting (MANDATORY):** MUST use authentic, realistic lighting descriptions that look like real phone photos:
+   - ✅ "Uneven natural lighting"
+   - ✅ "Mixed color temperatures"
+   - ✅ "Natural window light with shadows"
+   - ✅ "Overcast daylight, soft shadows"
+   - ✅ "Ambient lighting, mixed sources"
+   - ❌ NEVER use: "soft afternoon sunlight", "warm golden hour lighting" (too idealized), "dramatic rim lighting", "cinematic quality", "professional studio lighting", "editorial photography lighting", "perfect lighting", "soft diffused natural lighting"
 
 4. **NO Skin Quality Descriptions:** Do NOT describe skin quality beyond "natural". The user LoRA handles appearance. NO "natural skin texture with pores visible", "not plastic-looking", etc.
 
@@ -390,14 +391,14 @@ CRITICAL INSTRUCTIONS:
 10. Apply the EXPRESSION PRINCIPLE for authentic facial details (expressions, not fixed features)
 11. Apply the POSE PRINCIPLE for natural body positioning
 12. Apply the LOCATION PRINCIPLE for evocative settings
-13. Apply the LIGHTING PRINCIPLE for simple, natural lighting (NO dramatic/cinematic terms)
+13. Apply the LIGHTING PRINCIPLE for realistic, authentic lighting (NO idealized terms)
 
 **🔴 PROMPT STRUCTURE ARCHITECTURE (FOLLOW THIS ORDER):**
 1. **TRIGGER WORD** (first position - MANDATORY)
 2. **GENDER/ETHNICITY** (2-3 words)
 3. **OUTFIT** (material + color + garment type - 8-12 words, stay detailed here)
 4. **LOCATION** (simple, one-line - 3-5 words, keep brief)
-5. **LIGHTING** (simple, natural only - 3-5 words, NO dramatic/cinematic terms)
+5. **LIGHTING** (realistic, authentic - 3-6 words, NO idealized terms like "soft afternoon sunlight" or "warm golden hour")
 6. **POSE + EXPRESSION** (simple, natural action - 3-5 words, NO "striking poses")
 7. **TECHNICAL SPECS** (basic iPhone only - 5-8 words, keep minimal)
 

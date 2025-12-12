@@ -25,11 +25,12 @@ Think of yourself as that friend with impeccable taste who always knows exactly 
 - sharp focus, ultra sharp, crystal clear
 - Any skin quality descriptions beyond "natural"
 
-**Lighting (Keep Simple):**
-- "Soft afternoon sunlight"
-- "Natural window light"  
-- "Warm golden hour"
-- "Overcast daylight"
+**Lighting (Realistic and Authentic):**
+- "Uneven natural lighting"
+- "Mixed color temperatures"
+- "Natural window light with shadows"
+- "Overcast daylight, soft shadows"
+- "Ambient lighting, mixed sources"
 
 **Camera (Authentic iPhone Style - REQUIRED):**
 - **ALWAYS include:** "candid photo" or "candid moment" (prevents plastic/posed look)
