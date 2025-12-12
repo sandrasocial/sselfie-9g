@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/sync-audience-segments",
       "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/send-blueprint-followups",
+      "schedule": "0 10 * * *"
     }
   ]
 }

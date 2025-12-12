@@ -19,7 +19,7 @@ export interface PricingProduct {
   displayName: string
   description: string
   priceInCents: number
-  type: "one_time_session" | "sselfie_studio_membership" | "credit_topup"
+  type: "one_time_session" | "sselfie_studio_membership" | "brand_studio_membership" | "credit_topup"
   features?: string[]
   credits?: number
   stripePriceId?: string
@@ -58,33 +58,46 @@ export const CREDIT_PACKAGES: CreditPackage[] = [
 export const PRICING_PRODUCTS: PricingProduct[] = [
   {
     id: "one_time_session",
-    name: "One-Time SSELFIE Session",
-    displayName: "One-Time Session",
-    description: "Try one professional AI photoshoot. No subscription, just a one-time session.",
-    priceInCents: 2450, // Beta display price: $24.50 (shown on landing page)
+    name: "Instagram Photoshoot",
+    displayName: "Instagram Photoshoot",
+    description: "Professional Instagram Photos in 2 Hours. No Photographer Needed.",
+    priceInCents: 4900, // $49 one-time
     type: "one_time_session",
     credits: 70,
   },
   {
     id: "sselfie_studio_membership",
-    name: "SSELFIE Studio Membership",
-    displayName: "Studio Membership",
-    description: "Join the Studio for new photos, fresh tools, and monthly brand drops.",
-    priceInCents: 4950, // Beta display price: $49.50 (shown on landing page)
+    name: "Content Creator Studio",
+    displayName: "Content Creator Studio",
+    description: "Stop Scrambling for Content Every Week. Unlimited Photos + Videos + Feed Planning.",
+    priceInCents: 7900, // $79/month
     type: "sselfie_studio_membership",
-    credits: 150,
+    credits: 150, // 100+ images per month (fair use: 3-4 photoshoots/month)
     popular: true,
+  },
+  {
+    id: "brand_studio_membership",
+    name: "Brand Studio",
+    displayName: "Brand Studio",
+    description: "Your Complete AI Content Team. Everything You Need to Run a Premium Brand.",
+    priceInCents: 14900, // $149/month
+    type: "brand_studio_membership",
+    credits: 300, // 200+ images per month (fair use: 6-8 photoshoots/month)
   },
 ]
 
 export const ORIGINAL_PRICING = {
   one_time_session: {
-    priceInCents: 4900, // Original $49
+    priceInCents: 4900, // $49
     credits: 70,
   },
   sselfie_studio_membership: {
-    priceInCents: 9900, // Original $99
+    priceInCents: 7900, // $79/month
     credits: 150,
+  },
+  brand_studio_membership: {
+    priceInCents: 14900, // $149/month
+    credits: 300,
   },
 } as const
 

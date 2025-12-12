@@ -125,6 +125,15 @@ export default function LandingPage() {
     setIsMobileMenuOpen(false)
   }
 
+  const scrollToFeatures = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault()
+    const featuresSection = document.getElementById("features")
+    if (featuresSection) {
+      featuresSection.scrollIntoView({ behavior: "smooth", block: "start" })
+    }
+    setIsMobileMenuOpen(false)
+  }
+
   const handleWaitlistSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setWaitlistLoading(true)
@@ -279,27 +288,164 @@ export default function LandingPage() {
                 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-light mb-4 sm:mb-6 leading-[1.1] tracking-tight"
                 style={{ fontFamily: "'Times New Roman', Times, serif" }}
               >
-                YOUR BRAND PHOTO STUDIO
+                Built from Selfies. Built from Nothing.
               </h1>
-              <p className="text-base sm:text-lg md:text-xl leading-relaxed mb-2 sm:mb-3 max-w-xl font-light">
-                100 professional brand photos every month.
-              </p>
-              <p className="text-base sm:text-lg md:text-xl leading-relaxed mb-2 sm:mb-3 max-w-xl font-light">
-                No photographer, no photoshoot.
-              </p>
-              <p className="text-sm sm:text-base md:text-lg leading-relaxed mb-6 sm:mb-8 max-w-xl font-light text-white/90">
-                Just upload selfies and get photos that actually look like you.
+              <p className="text-base sm:text-lg md:text-xl leading-relaxed mb-6 sm:mb-8 max-w-xl font-light">
+                Now I help you do the same.
               </p>
               <a
-                href="#pricing"
-                onClick={scrollToPricing}
+                href="#features"
+                onClick={scrollToFeatures}
                 className="inline-block px-8 sm:px-10 py-3.5 sm:py-4 bg-white text-black text-sm sm:text-base uppercase tracking-wider transition-all duration-300 hover:bg-black hover:text-white border border-white min-h-[48px] flex items-center justify-center font-light"
               >
-                GET STARTED
+                SEE HOW IT WORKS
               </a>
             </div>
           </div>
         </motion.div>
+      </section>
+
+      {/* What You Actually Get Section */}
+      <section className="py-24 sm:py-32 md:py-40 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-16 sm:mb-20">
+            <h2
+              className="text-3xl sm:text-4xl md:text-5xl font-light mb-4 sm:mb-6 text-stone-900"
+              style={{ fontFamily: "'Times New Roman', Times, serif" }}
+            >
+              What You Actually Get
+            </h2>
+            <p className="text-lg sm:text-xl md:text-2xl font-light text-stone-600 max-w-2xl mx-auto">
+              Not just photos. Your complete content system.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-10 md:gap-12 max-w-6xl mx-auto">
+            {/* Card 1: Never Run Out of Content */}
+            <div className="bg-stone-50 rounded-2xl p-6 sm:p-8 border border-stone-200 hover:border-stone-300 transition-all duration-300 hover:shadow-lg">
+              <div className="mb-4 sm:mb-6">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-stone-200 flex items-center justify-center mb-4">
+                  <svg
+                    className="w-6 h-6 sm:w-7 sm:h-7 text-stone-700"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-xl sm:text-2xl font-light text-stone-900 mb-3 sm:mb-4">
+                  Never Run Out of Content Again
+                </h3>
+                <p className="text-base sm:text-lg font-light text-stone-600 leading-relaxed mb-4">
+                  Get unlimited photoshoots and video b-roll - so you always have fresh content ready to post. No more
+                  stressing about what to post next.
+                </p>
+                <div className="inline-block bg-stone-200/50 text-stone-700 px-3 py-1.5 rounded-full text-sm font-light">
+                  Saves 10+ hours per week
+                </div>
+              </div>
+            </div>
+
+            {/* Card 2: Look Professional Without the Price Tag */}
+            <div className="bg-stone-50 rounded-2xl p-6 sm:p-8 border border-stone-200 hover:border-stone-300 transition-all duration-300 hover:shadow-lg">
+              <div className="mb-4 sm:mb-6">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-stone-200 flex items-center justify-center mb-4">
+                  <svg
+                    className="w-6 h-6 sm:w-7 sm:h-7 text-stone-700"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-xl sm:text-2xl font-light text-stone-900 mb-3 sm:mb-4">
+                  Look Professional Without the Price Tag
+                </h3>
+                <p className="text-base sm:text-lg font-light text-stone-600 leading-relaxed mb-4">
+                  Professional-quality photos that actually look like you - without spending $500-2,000 on photoshoots.
+                  AI that understands your brand.
+                </p>
+                <div className="inline-block bg-stone-200/50 text-stone-700 px-3 py-1.5 rounded-full text-sm font-light">
+                  Replaces $3,000/month in services
+                </div>
+              </div>
+            </div>
+
+            {/* Card 3: Know Exactly What to Post */}
+            <div className="bg-stone-50 rounded-2xl p-6 sm:p-8 border border-stone-200 hover:border-stone-300 transition-all duration-300 hover:shadow-lg">
+              <div className="mb-4 sm:mb-6">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-stone-200 flex items-center justify-center mb-4">
+                  <svg
+                    className="w-6 h-6 sm:w-7 sm:h-7 text-stone-700"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-xl sm:text-2xl font-light text-stone-900 mb-3 sm:mb-4">
+                  Know Exactly What to Post
+                </h3>
+                <p className="text-base sm:text-lg font-light text-stone-600 leading-relaxed mb-4">
+                  Feed Designer plans your entire 9-post Instagram grid with captions and strategy. No more guessing
+                  what content to create.
+                </p>
+                <div className="inline-block bg-stone-200/50 text-stone-700 px-3 py-1.5 rounded-full text-sm font-light">
+                  Proven Instagram strategy
+                </div>
+              </div>
+            </div>
+
+            {/* Card 4: Learn While You Create */}
+            <div className="bg-stone-50 rounded-2xl p-6 sm:p-8 border border-stone-200 hover:border-stone-300 transition-all duration-300 hover:shadow-lg">
+              <div className="mb-4 sm:mb-6">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-stone-200 flex items-center justify-center mb-4">
+                  <svg
+                    className="w-6 h-6 sm:w-7 sm:h-7 text-stone-700"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-xl sm:text-2xl font-light text-stone-900 mb-3 sm:mb-4">
+                  Learn While You Create
+                </h3>
+                <p className="text-base sm:text-lg font-light text-stone-600 leading-relaxed mb-4">
+                  Full access to the Academy with courses on personal branding, content strategy, and growing your
+                  influence.
+                </p>
+                <div className="inline-block bg-stone-200/50 text-stone-700 px-3 py-1.5 rounded-full text-sm font-light">
+                  Worth $997 in courses
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* CHANGE: Add transformational quote section for emotional connection */}
@@ -594,73 +740,214 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 max-w-6xl mx-auto">
+            {/* Tier 1: Instagram Photoshoot */}
             <div className="bg-stone-50 rounded-2xl p-6 sm:p-8 border border-stone-200">
-              <p className="text-xs sm:text-sm font-light tracking-[0.25em] sm:tracking-[0.3em] uppercase text-stone-500 mb-2">
-                ONE-TIME SESSION
+              <p className="text-xs sm:text-sm font-light tracking-[0.25em] sm:tracking-[0.3em] uppercase text-stone-500 mb-3">
+                INSTAGRAM PHOTOSHOOT
               </p>
+              <h3
+                className="text-2xl sm:text-3xl font-light mb-2 text-stone-900"
+                style={{ fontFamily: "'Times New Roman', Times, serif" }}
+              >
+                Professional Instagram Photos in 2 Hours
+              </h3>
+              <p className="text-sm sm:text-base font-light text-stone-600 mb-4">No Photographer Needed</p>
               <div className="mb-6 sm:mb-8">
                 <div className="flex items-baseline gap-2">
                   <span
-                    className="text-5xl sm:text-6xl font-light"
+                    className="text-5xl sm:text-6xl font-light text-stone-900"
                     style={{ fontFamily: "'Times New Roman', Times, serif" }}
                   >
                     $49
                   </span>
                 </div>
-                <p className="text-sm sm:text-base font-light text-stone-600 mt-2">one-time • 70 credits</p>
+                <p className="text-sm sm:text-base font-light text-stone-600 mt-2">one-time</p>
               </div>
+              <p className="text-base sm:text-lg font-light text-stone-700 mb-6 sm:mb-8 leading-relaxed">
+                Get 50 magazine-quality images that actually look like you - for less than dinner out.
+              </p>
               <div className="space-y-3 sm:space-y-4 mb-8 sm:mb-10">
-                <p className="text-base sm:text-lg font-light text-stone-700">
-                  Trained model that looks exactly like you
+                <p className="text-sm sm:text-base font-light text-stone-700 flex items-start gap-2">
+                  <span className="text-stone-900 mt-0.5">✓</span>
+                  <span>Your AI model trained on your photos</span>
                 </p>
-                <p className="text-base sm:text-lg font-light text-stone-700">Basic Maya AI assistant</p>
-                <p className="text-base sm:text-lg font-light text-stone-700">Perfect for testing</p>
+                <p className="text-sm sm:text-base font-light text-stone-700 flex items-start gap-2">
+                  <span className="text-stone-900 mt-0.5">✓</span>
+                  <span>One complete photoshoot session</span>
+                </p>
+                <p className="text-sm sm:text-base font-light text-stone-700 flex items-start gap-2">
+                  <span className="text-stone-900 mt-0.5">✓</span>
+                  <span>30-50 images in multiple styles</span>
+                </p>
+                <p className="text-sm sm:text-base font-light text-stone-700 flex items-start gap-2">
+                  <span className="text-stone-900 mt-0.5">✓</span>
+                  <span>Ready to post in 2 hours</span>
+                </p>
+                <p className="text-sm sm:text-base font-light text-stone-700 flex items-start gap-2">
+                  <span className="text-stone-900 mt-0.5">✓</span>
+                  <span>Download all in HD</span>
+                </p>
               </div>
               <button
                 onClick={() => handleStartCheckout("one_time_session")}
                 disabled={checkoutLoading === "one_time_session"}
                 className="w-full bg-stone-950 text-stone-50 px-6 py-3 rounded-lg text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
               >
-                {checkoutLoading === "one_time_session" ? "LOADING..." : "TRY ONCE"}
+                {checkoutLoading === "one_time_session" ? "LOADING..." : "Get My Photoshoot Now"}
               </button>
             </div>
 
+            {/* Tier 2: Content Creator Studio - MOST POPULAR */}
             <div className="bg-stone-950 text-stone-50 rounded-2xl p-6 sm:p-8 border-2 border-stone-950 relative">
-              <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-stone-50 text-stone-950 px-3 py-1 rounded-sm">
+              <div className="absolute -top-3 right-4 bg-stone-950 text-stone-50 px-3 py-1.5 rounded-sm border border-stone-50/20">
                 <p className="text-[9px] sm:text-[10px] font-light tracking-[0.2em] uppercase whitespace-nowrap">
-                  Best for building a brand
+                  MOST POPULAR
                 </p>
               </div>
-              <p className="text-xs sm:text-sm font-light tracking-[0.25em] sm:tracking-[0.3em] uppercase text-stone-400 mb-2 mt-2">
-                STUDIO MEMBERSHIP
+              <p className="text-xs sm:text-sm font-light tracking-[0.25em] sm:tracking-[0.3em] uppercase text-stone-400 mb-3">
+                CONTENT CREATOR STUDIO
+              </p>
+              <h3
+                className="text-2xl sm:text-3xl font-light mb-2 text-stone-50"
+                style={{ fontFamily: "'Times New Roman', Times, serif" }}
+              >
+                Stop Scrambling for Content Every Week
+              </h3>
+              <p className="text-sm sm:text-base font-light text-stone-300 mb-4">
+                Unlimited Photos + Videos + Feed Planning
               </p>
               <div className="mb-6 sm:mb-8">
                 <div className="flex items-baseline gap-2">
                   <span
-                    className="text-5xl sm:text-6xl font-light"
+                    className="text-5xl sm:text-6xl font-light text-stone-50"
                     style={{ fontFamily: "'Times New Roman', Times, serif" }}
                   >
-                    $99
+                    $79
                   </span>
                 </div>
-                <p className="text-sm sm:text-base font-light text-stone-300 mt-2">per month • 150 credits/month</p>
+                <p className="text-sm sm:text-base font-light text-stone-300 mt-2">per month</p>
+                <div className="mt-2">
+                  <span className="inline-block bg-stone-800/50 text-stone-200 px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-light tracking-wide">
+                    Worth $1,500/month
+                  </span>
+                </div>
               </div>
+              <p className="text-base sm:text-lg font-light text-stone-100 mb-6 sm:mb-8 leading-relaxed">
+                Get unlimited photoshoots, video b-roll, and feed planning - for less than one photoshoot.
+              </p>
               <div className="space-y-3 sm:space-y-4 mb-8 sm:mb-10">
-                <p className="text-base sm:text-lg font-light text-stone-100">
-                  Trained model that looks exactly like you
+                <p className="text-sm sm:text-base font-light text-stone-100 flex items-start gap-2">
+                  <span className="text-stone-50 mt-0.5">✓</span>
+                  <span>Unlimited professional photoshoots (fair use: 3-4/month)</span>
                 </p>
-                <p className="text-base sm:text-lg font-light text-stone-100">Full Maya AI assistant access</p>
-                <p className="text-base sm:text-lg font-light text-stone-100">Complete Brand Academy</p>
-                <p className="text-base sm:text-lg font-light text-stone-100">Instagram feed designer</p>
-                <p className="text-base sm:text-lg font-light text-stone-100">Monthly content strategy</p>
+                <p className="text-sm sm:text-base font-light text-stone-100 flex items-start gap-2">
+                  <span className="text-stone-50 mt-0.5">✓</span>
+                  <span>100+ images per month</span>
+                </p>
+                <p className="text-sm sm:text-base font-light text-stone-100 flex items-start gap-2">
+                  <span className="text-stone-50 mt-0.5">✓</span>
+                  <span>20 video clips per month</span>
+                </p>
+                <p className="text-sm sm:text-base font-light text-stone-100 flex items-start gap-2">
+                  <span className="text-stone-50 mt-0.5">✓</span>
+                  <span>9-post feed planner (saves 10 hours/month)</span>
+                </p>
+                <p className="text-sm sm:text-base font-light text-stone-100 flex items-start gap-2">
+                  <span className="text-stone-50 mt-0.5">✓</span>
+                  <span>Priority generation queue</span>
+                </p>
+                <p className="text-sm sm:text-base font-light text-stone-100 flex items-start gap-2">
+                  <span className="text-stone-50 mt-0.5">✓</span>
+                  <span>Cancel anytime</span>
+                </p>
               </div>
               <button
                 onClick={() => handleStartCheckout("sselfie_studio_membership")}
                 disabled={checkoutLoading === "sselfie_studio_membership"}
                 className="w-full bg-stone-50 text-stone-950 px-6 py-3 rounded-lg text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-100 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
               >
-                {checkoutLoading === "sselfie_studio_membership" ? "LOADING..." : "JOIN STUDIO"}
+                {checkoutLoading === "sselfie_studio_membership" ? "LOADING..." : "Start My Studio Membership"}
+              </button>
+            </div>
+
+            {/* Tier 3: Brand Studio */}
+            <div className="bg-stone-50 rounded-2xl p-6 sm:p-8 border border-stone-200">
+              <p className="text-xs sm:text-sm font-light tracking-[0.25em] sm:tracking-[0.3em] uppercase text-stone-500 mb-3">
+                BRAND STUDIO
+              </p>
+              <h3
+                className="text-2xl sm:text-3xl font-light mb-2 text-stone-900"
+                style={{ fontFamily: "'Times New Roman', Times, serif" }}
+              >
+                Your Complete AI Content Team
+              </h3>
+              <p className="text-sm sm:text-base font-light text-stone-600 mb-4">
+                Everything You Need to Run a Premium Brand
+              </p>
+              <div className="mb-6 sm:mb-8">
+                <div className="flex items-baseline gap-2">
+                  <span
+                    className="text-5xl sm:text-6xl font-light text-stone-900"
+                    style={{ fontFamily: "'Times New Roman', Times, serif" }}
+                  >
+                    $149
+                  </span>
+                </div>
+                <p className="text-sm sm:text-base font-light text-stone-600 mt-2">per month</p>
+                <div className="mt-2">
+                  <span className="inline-block bg-stone-200/50 text-stone-700 px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-light tracking-wide">
+                    Worth $3,000+/month
+                  </span>
+                </div>
+              </div>
+              <p className="text-base sm:text-lg font-light text-stone-700 mb-6 sm:mb-8 leading-relaxed">
+                Photos, videos, strategy, templates, and an AI strategist who knows your brand inside out.
+              </p>
+              <div className="space-y-3 sm:space-y-4 mb-8 sm:mb-10">
+                <p className="text-sm sm:text-base font-light text-stone-700 flex items-start gap-2">
+                  <span className="text-stone-900 mt-0.5">✓</span>
+                  <span>Everything in Creator Studio</span>
+                </p>
+                <p className="text-sm sm:text-base font-light text-stone-700 flex items-start gap-2">
+                  <span className="text-stone-900 mt-0.5">✓</span>
+                  <span>200+ images per month</span>
+                </p>
+                <p className="text-sm sm:text-base font-light text-stone-700 flex items-start gap-2">
+                  <span className="text-stone-900 mt-0.5">✓</span>
+                  <span>40+ video clips per month</span>
+                </p>
+                <p className="text-sm sm:text-base font-light text-stone-700 flex items-start gap-2">
+                  <span className="text-stone-900 mt-0.5">✓</span>
+                  <span>Maya AI strategist (unlimited consulting)</span>
+                </p>
+                <p className="text-sm sm:text-base font-light text-stone-700 flex items-start gap-2">
+                  <span className="text-stone-900 mt-0.5">✓</span>
+                  <span>Personal brand academy (2 full courses)</span>
+                </p>
+                <p className="text-sm sm:text-base font-light text-stone-700 flex items-start gap-2">
+                  <span className="text-stone-900 mt-0.5">✓</span>
+                  <span>100+ Canva templates</span>
+                </p>
+                <p className="text-sm sm:text-base font-light text-stone-700 flex items-start gap-2">
+                  <span className="text-stone-900 mt-0.5">✓</span>
+                  <span>Monthly brand strategy drops</span>
+                </p>
+                <p className="text-sm sm:text-base font-light text-stone-700 flex items-start gap-2">
+                  <span className="text-stone-900 mt-0.5">✓</span>
+                  <span>Direct access to Sandra</span>
+                </p>
+                <p className="text-sm sm:text-base font-light text-stone-700 flex items-start gap-2">
+                  <span className="text-stone-900 mt-0.5">✓</span>
+                  <span>Priority support</span>
+                </p>
+              </div>
+              <button
+                onClick={() => handleStartCheckout("brand_studio_membership")}
+                disabled={checkoutLoading === "brand_studio_membership"}
+                className="w-full bg-stone-950 text-stone-50 px-6 py-3 rounded-lg text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
+              >
+                {checkoutLoading === "brand_studio_membership" ? "LOADING..." : "Join Brand Studio"}
               </button>
             </div>
           </div>
@@ -669,7 +956,7 @@ export default function LandingPage() {
             <p className="text-base sm:text-lg font-light text-stone-900">
               <strong className="font-medium">30-Day Money-Back Guarantee</strong>
             </p>
-            <p className="text-sm sm:text-base font-light text-stone-600 px-4">Cancel anytime • Add credits anytime</p>
+            <p className="text-sm sm:text-base font-light text-stone-600 px-4">Cancel anytime</p>
           </div>
         </div>
       </section>

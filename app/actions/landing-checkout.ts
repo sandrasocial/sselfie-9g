@@ -17,7 +17,8 @@ export async function createLandingCheckoutSession(productId: string) {
   }
 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://sselfie.ai"
-  const isSubscription = product.type === "sselfie_studio_membership"
+  const isSubscription =
+    product.type === "sselfie_studio_membership" || product.type === "brand_studio_membership"
 
   const actualPrice =
     ORIGINAL_PRICING[product.type as keyof typeof ORIGINAL_PRICING]?.priceInCents || product.priceInCents
@@ -31,16 +32,25 @@ export async function createLandingCheckoutSession(productId: string) {
     originalPrice: product.priceInCents,
   })
 
-  const stripePriceId = isSubscription
-    ? process.env.STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID
-    : process.env.STRIPE_ONE_TIME_SESSION_PRICE_ID
+  // Determine which Stripe Price ID to use based on product type
+  let stripePriceId: string | undefined
+  if (product.type === "one_time_session") {
+    stripePriceId = process.env.STRIPE_ONE_TIME_SESSION_PRICE_ID
+  } else if (product.type === "sselfie_studio_membership") {
+    stripePriceId = process.env.STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID
+  } else if (product.type === "brand_studio_membership") {
+    stripePriceId = process.env.STRIPE_BRAND_STUDIO_MEMBERSHIP_PRICE_ID
+  }
 
   if (!stripePriceId) {
     console.error("[v0] Missing Stripe Price ID for:", productId)
-    console.error(
-      "[v0] Environment variable needed:",
-      isSubscription ? "STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID" : "STRIPE_ONE_TIME_SESSION_PRICE_ID",
-    )
+    const envVarName =
+      product.type === "one_time_session"
+        ? "STRIPE_ONE_TIME_SESSION_PRICE_ID"
+        : product.type === "sselfie_studio_membership"
+          ? "STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID"
+          : "STRIPE_BRAND_STUDIO_MEMBERSHIP_PRICE_ID"
+    console.error("[v0] Environment variable needed:", envVarName)
     throw new Error(`Stripe Price ID not configured for ${productId}`)
   }
 

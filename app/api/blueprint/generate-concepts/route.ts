@@ -233,10 +233,29 @@ export async function POST(req: NextRequest) {
 
     const { text } = await generateText({
       model: "openai/gpt-4o",
-      prompt: `You are the Instagram Aesthetic Lifestyle Agent with a specialty in Scandinavian Luxury editorial photography.
+      prompt: `You are the Instagram Aesthetic Lifestyle Agent specializing in authentic, Instagram-native photography that looks like real phone photos.
 
 PROMPT STRUCTURE (ALWAYS FOLLOW THIS EXACT ORDER):
-[SHOT TYPE] of [MAIN SUBJECT(S)], [ARRANGEMENT/COMPOSITION], [SURFACE/SETTING], [LIGHTING DESCRIPTION], [AESTHETIC STYLE], [COLOR PALETTE], [PHOTOGRAPHY STYLE], [TECHNICAL QUALITY]
+[SHOT TYPE] of [MAIN SUBJECT(S)], [ARRANGEMENT/COMPOSITION], [SURFACE/SETTING], [LIGHTING DESCRIPTION], [AESTHETIC STYLE], [COLOR PALETTE], [INSTAGRAM AUTHENTICITY], [CAMERA SPECS]
+
+INSTAGRAM AUTHENTICITY REQUIREMENTS (MANDATORY):
+Every concept prompt MUST include these elements to create Instagram-native images:
+
+Camera: "shot on iPhone 15 Pro" or "amateur cellphone photo"
+Imperfections: At least 2 of: "visible sensor noise", "subtle film grain", "handheld feel", "slight motion blur"
+Lighting: "uneven lighting", "mixed color temperatures", or "organic shadows and highlights"
+Colors: "muted desaturated color palette", "soft muted tones", or "vintage color temperature"
+Authenticity: "authentic amateur cellphone quality" or "real phone camera aesthetic"
+
+WHY: Instagram users prefer authentic-looking images over overly perfect professional shots.
+These elements make images feel genuine, relatable, and Instagram-native rather than AI-generated.
+
+REPLACE these terms:
+❌ "8K quality" → ✅ "high resolution with natural grain"
+❌ "professionally styled" → ✅ "authentically styled"
+❌ "editorial magazine photography" → ✅ "editorial Instagram aesthetic"
+❌ "perfect lighting" → ✅ "uneven natural lighting"
+❌ "vibrant colors" → ✅ "muted desaturated palette"
 
 USER'S BRAND CONTEXT:
 • Business: "${formData.business}"
@@ -257,11 +276,12 @@ SURFACES (choose from):
 • "white marble countertop with soft grey veining"
 • "natural wood tray with visible grain"
 
-LIGHTING (required):
-• "soft natural window light filtering through sheer curtains creating gentle shadows"
-• "diffused morning daylight from above"
-• "bright natural light with dreamy soft atmosphere"
-• "gentle window glow creating warm highlights"
+LIGHTING (required - use realistic, authentic descriptions):
+• "uneven natural window light with shadows"
+• "natural window light with mixed color temperatures"
+• "overcast daylight with natural shadows"
+• "natural light with slight unevenness"
+• "window light with cool and warm mix"
 
 KEY ELEMENTS (include 2-3):
 • Chunky knit throw blanket (cream, beige, warm grey)
@@ -276,10 +296,10 @@ COLOR PALETTE:
 Warm neutral with cream, soft beige, warm grey, soft taupe tones
 
 MOOD:
-Hygge-inspired, cozy luxury, Scandinavian editorial, fashion magazine aesthetic, layered natural textures
+Hygge-inspired, cozy luxury, Scandinavian Instagram aesthetic, authentic lifestyle photography, layered natural textures
 
 EXAMPLE PROMPT:
-"Lifestyle photograph of artisanal ceramic coffee cup with saucer on round wooden tray, draped over textured cream linen bedding and chunky knit throw blanket in warm beige, delicate dried baby's breath stems in soft focus background, soft natural window light creating gentle shadows, Scandinavian hygge aesthetic with layered natural textures, warm neutral color palette with cream, beige, and soft taupe tones, luxury lifestyle editorial photography, shallow depth of field, 8K quality, magazine-worthy composition"`
+"Lifestyle photograph of artisanal ceramic coffee cup with saucer on round wooden tray, draped over textured cream linen bedding and chunky knit throw blanket in warm beige, delicate dried baby's breath stems in soft focus background, uneven natural window light with mixed color temperatures creating natural shadows, Scandinavian hygge aesthetic with layered natural textures, warm neutral color palette with cream, beige, and soft taupe tones, muted color palette, visible sensor noise, film grain, natural camera imperfections, handheld feel, shot on iPhone 15 Pro portrait mode, shallow depth of field, amateur cellphone quality"`
     : aestheticStyle === "dark-moody"
       ? `═══ DARK & MOODY LUXURY ═══
 
@@ -290,11 +310,11 @@ SURFACES (choose from):
 • "matte black marble countertop"
 • "slate grey stone surface"
 
-LIGHTING (required):
-• "warm ambient lamp creating pool of golden light and dramatic shadows"
-• "soft candlelight casting warm glow with deep shadows"
-• "golden hour sunlight streaming through creating dramatic contrast"
-• "moody evening lighting with rich shadows"
+LIGHTING (required - use realistic, authentic descriptions):
+• "ambient lighting with mixed sources and natural shadows"
+• "uneven natural window light with shadows"
+• "natural light with mixed color temperatures"
+• "overcast daylight with soft shadows"
 
 KEY ELEMENTS (include 2-3):
 • Silver MacBook or black tech devices
@@ -308,10 +328,10 @@ COLOR PALETTE:
 Deep blacks, rich charcoals, warm amber accents, muted golds
 
 MOOD:
-Sophisticated, cinematic, editorial luxury, urban chic, intimate
+Sophisticated, cinematic, Instagram luxury aesthetic, urban chic, intimate
 
 EXAMPLE PROMPT:
-"Overhead flatlay photograph of silver MacBook partially open, Vogue magazine with bold typography visible, white AirPods Pro, artisanal espresso in handmade ceramic cup, elegant simple gold rings, arranged with intentional negative space on soft grey linen fabric, gentle diffused natural light from above, sophisticated Scandinavian minimalist aesthetic, stone color palette with warm greys and soft whites, high-end fashion editorial photography style, sharp focus on details, professional quality, 8K resolution"`
+"Overhead flatlay photograph of silver MacBook partially open, Vogue magazine with bold typography visible, white AirPods Pro, artisanal espresso in handmade ceramic cup, elegant simple gold rings, arranged with intentional negative space on soft grey linen fabric, natural window light with shadows and slight unevenness, sophisticated Scandinavian minimalist aesthetic, stone color palette with warm greys and soft whites, muted color palette, visible sensor noise, film grain, natural camera imperfections, shot on iPhone 15 Pro portrait mode, shallow depth of field, amateur cellphone quality"`
       : aestheticStyle === "beige-aesthetic"
         ? `═══ BEIGE AESTHETIC (SOFT GREIGE) ═══
 
@@ -322,11 +342,11 @@ SURFACES (choose from):
 • "smooth concrete with warm beige undertones"
 • "natural raw linen in soft greige tones"
 
-LIGHTING (required):
-• "diffused natural daylight with soft cool undertones"
-• "gentle overcast light creating soft even shadows"
-• "soft morning light with cool beige color cast"
-• "muted natural window light with refined atmosphere"
+LIGHTING (required - use realistic, authentic descriptions):
+• "natural daylight with soft cool undertones and shadows"
+• "overcast light with natural shadows"
+• "natural window light with cool beige color cast"
+• "natural window light with slight unevenness"
 
 KEY ELEMENTS (include 2-3):
 • Artisanal ceramic pieces in greige/cold beige tones
@@ -344,7 +364,7 @@ MOOD:
 Refined minimalism, understated elegance, European chic, sophisticated neutrals, quiet luxury
 
 EXAMPLE PROMPT:
-"Overhead flatlay photograph of silver MacBook on soft greige linen fabric, artisanal ceramic cup in cold beige tone with Earl Grey tea, dried pampas grass stem, minimal brass pen, natural linen napkin in warm taupe, arranged with refined spacing and sophisticated balance, diffused natural daylight with soft cool undertones creating gentle shadows, beige aesthetic with sophisticated greige color palette, soft greige, warm taupe, and muted stone tones, European minimalist editorial photography, understated luxury mood, shallow depth of field, 8K quality, refined composition"`
+"Overhead flatlay photograph of silver MacBook on soft greige linen fabric, artisanal ceramic cup in cold beige tone with Earl Grey tea, dried pampas grass stem, minimal brass pen, natural linen napkin in warm taupe, arranged with refined spacing and sophisticated balance, natural daylight with soft cool undertones and natural shadows, beige aesthetic with sophisticated greige color palette, soft greige, warm taupe, and muted stone tones, muted color palette, visible sensor noise, film grain, natural camera imperfections, handheld feel, shot on iPhone 15 Pro portrait mode, shallow depth of field, amateur cellphone quality"`
         : `═══ BOLD & COLORFUL ═══
 
 SURFACES (choose from):
@@ -352,10 +372,10 @@ SURFACES (choose from):
 • "neutral linen with bold color-blocked items"
 • "natural wood with saturated color elements"
 
-LIGHTING (required):
-• "bright natural daylight creating crisp shadows"
-• "direct sunlight enhancing color vibrancy"  
-• "even bright lighting showcasing coordinated colors"
+LIGHTING (required - use realistic, authentic descriptions):
+• "natural daylight with shadows and slight unevenness"
+• "natural light with mixed color temperatures"
+• "overcast daylight with natural shadows"
 
 KEY ELEMENTS (include 2-3):
 • Vibrant colored notebooks or planners (coral, sage, terracotta)
@@ -371,7 +391,7 @@ MOOD:
 Energetic, contemporary, playful sophistication, vibrant
 
 EXAMPLE PROMPT:
-"Overhead flatlay photograph of coral pink notebook with gold foil, vibrant turquoise ceramic coffee mug, sage green linen napkin, brass pen, arranged on white marble with color blocking, bright natural daylight creating crisp shadows and enhanced saturation, bold colorful aesthetic with sophisticated coordination, high contrast vibrant palette, contemporary editorial photography, energetic modern mood, shallow depth of field, 8K quality"`
+"Overhead flatlay photograph of coral pink notebook with gold foil, muted turquoise ceramic coffee mug, sage green linen napkin, brass pen, arranged on white marble with color blocking, natural daylight with shadows and slight unevenness, bold colorful aesthetic with sophisticated coordination, muted desaturated color palette with soft tones, visible sensor noise, film grain, natural camera imperfections, handheld feel, shot on iPhone 15 Pro portrait mode, shallow depth of field, authentic amateur cellphone quality"`
 }
 
 PERSONALIZED PROPS FOR "${formData.business}":
@@ -395,11 +415,17 @@ ${
 REQUIREMENTS:
 ✓ Generate ONE flatlay + ONE detail/lifestyle shot  
 ✓ Each prompt 100-150 words
-✓ Use EXACT structure: [SHOT TYPE] of [SUBJECTS], [ARRANGEMENT], [SURFACE], [LIGHTING], [AESTHETIC], [PALETTE], [STYLE], [QUALITY]
+✓ Use EXACT structure: [SHOT TYPE] of [SUBJECTS], [ARRANGEMENT], [SURFACE], [LIGHTING], [AESTHETIC], [PALETTE], [INSTAGRAM AUTHENTICITY], [CAMERA SPECS]
 ✓ Be specific: "silver MacBook Pro 16-inch" not "laptop"
 ✓ Name items: "artisanal ceramic cup" not "coffee mug"
 ✓ Include surface texture + lighting source/direction
-✓ Add: shallow depth of field, 8K quality, editorial/magazine-worthy
+✓ Add: shallow depth of field, shot on iPhone 15 Pro with natural camera imperfections
+✓ Include: visible sensor noise, subtle film grain texture, handheld feel
+✓ Lighting: uneven lighting with organic shadows (not perfect studio lighting)
+✓ Colors: muted desaturated color palette (not vibrant/oversaturated)
+✓ Quality: high resolution with natural grain, authentic amateur cellphone aesthetic
+✓ Feel: real phone photo, not professional magazine shoot
+✓ NEVER use: "8K quality", "professional quality", "editorial magazine photography", "magazine-worthy", "perfect lighting", "vibrant colors"
 ✓ USE THE PERSONALIZED PROPS listed above - they are specific to "${formData.business}"
 ✓ Combine business tools + vibe + dream client + aesthetic style
 

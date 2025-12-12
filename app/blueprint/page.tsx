@@ -368,10 +368,10 @@ export default function BrandBlueprintPage() {
     }
   }
 
-  const handleStartCheckout = async () => {
+  const handleStartCheckout = async (productId: string = "one_time_session") => {
     try {
       setShowCheckout(true)
-      const clientSecret = await createLandingCheckoutSession("one_time_session")
+      const clientSecret = await createLandingCheckoutSession(productId)
       setCheckoutClientSecret(clientSecret)
     } catch (error) {
       console.error("[v0] Checkout error:", error)
@@ -431,14 +431,40 @@ export default function BrandBlueprintPage() {
             <div className="max-w-4xl mx-auto text-center">
               <h1
                 style={{ fontFamily: "'Times New Roman', serif" }}
-                className="text-3xl sm:text-5xl md:text-7xl font-extralight tracking-[0.15em] sm:tracking-[0.3em] uppercase mb-4 sm:mb-6 text-stone-950 text-balance leading-tight"
+                className="text-2xl sm:text-4xl md:text-6xl font-extralight tracking-[0.1em] sm:tracking-[0.2em] uppercase mb-2 sm:mb-3 text-stone-950 text-balance leading-tight"
               >
-                SSELFIE BRAND BLUEPRINT
+                The AI Photo System That Got 2,700+ Creators Their Best Content Ever
               </h1>
-              <p className="text-sm sm:text-base md:text-lg font-light leading-relaxed text-stone-700 mb-6 sm:mb-8 max-w-2xl mx-auto text-pretty px-4">
-                Build your personal brand strategy in 10 minutes. Get a custom 30-day content calendar, caption
-                templates, and your brand style guide.
+              <h2
+                style={{ fontFamily: "'Times New Roman', serif" }}
+                className="text-xl sm:text-3xl md:text-5xl font-extralight tracking-[0.1em] sm:tracking-[0.2em] uppercase mb-4 sm:mb-6 text-stone-950 text-balance leading-tight"
+              >
+                Get Your Free Custom Blueprint
+              </h2>
+              <p className="text-sm sm:text-base md:text-lg font-light leading-relaxed text-stone-700 mb-4 sm:mb-6 max-w-2xl mx-auto text-pretty px-4">
+                Answer 3 quick questions and get your personalized 30-day content calendar, selfie strategy guide, and 30
+                caption templates - all tailored to YOUR brand.
               </p>
+              <div className="mb-6 sm:mb-8 max-w-xl mx-auto px-4">
+                <ul className="text-left space-y-2 sm:space-y-3 text-sm sm:text-base font-light text-stone-700">
+                  <li className="flex items-start gap-2 sm:gap-3">
+                    <span className="text-stone-950 mt-0.5 flex-shrink-0">✓</span>
+                    <span>Discover your unique content vibe</span>
+                  </li>
+                  <li className="flex items-start gap-2 sm:gap-3">
+                    <span className="text-stone-950 mt-0.5 flex-shrink-0">✓</span>
+                    <span>Get 30 days of post ideas (done for you)</span>
+                  </li>
+                  <li className="flex items-start gap-2 sm:gap-3">
+                    <span className="text-stone-950 mt-0.5 flex-shrink-0">✓</span>
+                    <span>Learn which photos work best for YOUR audience</span>
+                  </li>
+                  <li className="flex items-start gap-2 sm:gap-3">
+                    <span className="text-stone-950 mt-0.5 flex-shrink-0">✓</span>
+                    <span>100% free • No credit card • Takes 10 minutes</span>
+                  </li>
+                </ul>
+              </div>
               <button
                 onClick={() => setStep(1)}
                 className="bg-stone-950 text-stone-50 px-6 sm:px-8 md:px-12 py-3 sm:py-4 text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200"
@@ -446,7 +472,7 @@ export default function BrandBlueprintPage() {
                 START YOUR BLUEPRINT
               </button>
               <p className="mt-3 sm:mt-4 text-[10px] sm:text-xs font-light tracking-wider uppercase text-stone-500">
-                FREE • NO CREDIT CARD • 10 MINUTES
+                Join 2,700+ creators who've done this
               </p>
             </div>
           </div>
@@ -481,33 +507,20 @@ export default function BrandBlueprintPage() {
 
                 <div>
                   <label className="block text-[10px] sm:text-xs font-medium tracking-wider uppercase text-stone-700 mb-2 sm:mb-3">
-                    Who is your dream client?
+                    Who do you help?
                   </label>
                   <input
                     type="text"
                     value={formData.dreamClient}
                     onChange={(e) => setFormData({ ...formData, dreamClient: e.target.value })}
-                    placeholder="e.g., Women entrepreneurs in their 30s..."
+                    placeholder="e.g., Women entrepreneurs, New moms, Career changers..."
                     className="w-full border-b border-stone-300 py-3 sm:py-4 text-sm sm:text-base focus:outline-none focus:border-stone-950 transition-colors font-light bg-transparent"
                   />
                 </div>
 
                 <div>
                   <label className="block text-[10px] sm:text-xs font-medium tracking-wider uppercase text-stone-700 mb-2 sm:mb-3">
-                    What's their biggest struggle?
-                  </label>
-                  <textarea
-                    value={formData.struggle}
-                    onChange={(e) => setFormData({ ...formData, struggle: e.target.value })}
-                    placeholder="What problem do you solve for them?"
-                    rows={3}
-                    className="w-full border-b border-stone-300 py-3 sm:py-4 text-sm sm:text-base focus:outline-none focus:border-stone-950 transition-colors font-light bg-transparent resize-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] sm:text-xs font-medium tracking-wider uppercase text-stone-700 mb-2 sm:mb-3">
-                    What vibe do you want your brand to have?
+                    What's your vibe?
                   </label>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
                     {["Luxury", "Minimal", "Beige", "Warm", "Edgy", "Professional"].map((vibe) => (
@@ -525,27 +538,6 @@ export default function BrandBlueprintPage() {
                     ))}
                   </div>
                 </div>
-
-                <div>
-                  <label className="block text-[10px] sm:text-xs font-medium tracking-wider uppercase text-stone-700 mb-2 sm:mb-3">
-                    How often do you want to post?
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
-                    {["Daily", "3-5x/week", "2-3x/week"].map((freq) => (
-                      <button
-                        key={freq}
-                        onClick={() => setFormData({ ...formData, postFrequency: freq.toLowerCase() })}
-                        className={`py-3 px-4 text-xs tracking-wider uppercase border transition-all duration-200 ${
-                          formData.postFrequency === freq.toLowerCase()
-                            ? "border-stone-950 bg-stone-950 text-stone-50"
-                            : "border-stone-300 text-stone-700 hover:border-stone-950"
-                        }`}
-                      >
-                        {freq}
-                      </button>
-                    ))}
-                  </div>
-                </div>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-8 sm:mt-12">
@@ -557,7 +549,7 @@ export default function BrandBlueprintPage() {
                 </button>
                 <button
                   onClick={() => setStep(2)}
-                  disabled={!formData.business || !formData.dreamClient}
+                  disabled={!formData.business || !formData.dreamClient || !formData.vibe}
                   className="w-full sm:flex-1 py-3 sm:py-4 bg-stone-950 text-stone-50 text-xs tracking-[0.2em] sm:tracking-[0.3em] uppercase font-light hover:bg-stone-800 transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed"
                 >
                   CONTINUE
@@ -1226,34 +1218,151 @@ export default function BrandBlueprintPage() {
                 ))}
               </div>
 
-              <div className="mt-8 sm:mt-12 text-center">
-                <div className="bg-stone-950 text-stone-50 p-6 sm:p-8 rounded-lg max-w-3xl mx-auto">
+              {/* Upsell Section */}
+              <div className="mt-8 sm:mt-12">
+                <div className="text-center mb-8 sm:mb-12">
                   <h3
                     style={{ fontFamily: "'Times New Roman', serif" }}
-                    className="text-xl sm:text-2xl md:text-3xl font-extralight tracking-[0.15em] sm:tracking-[0.2em] uppercase mb-3 sm:mb-4"
+                    className="text-2xl sm:text-3xl md:text-4xl font-extralight tracking-[0.15em] sm:tracking-[0.2em] uppercase mb-3 sm:mb-4 text-stone-950"
                   >
-                    READY TO LEVEL UP?
+                    Love Your Blueprint? Take It Further
                   </h3>
-                  <p className="text-xs sm:text-sm font-light leading-relaxed mb-4 sm:mb-6 px-4">
-                    SSELFIE Studio takes all this strategy and makes it easy. Get AI-powered selfies that look like you,
-                    content planning that actually works, and Maya's help whenever you need it. It's like having a brand
-                    strategist in your pocket!
+                  <p className="text-sm sm:text-base font-light text-stone-600 max-w-2xl mx-auto">
+                    See your content strategy come to life
                   </p>
-                  <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
-                    <button
-                      onClick={emailConcepts}
-                      disabled={isEmailingConcepts || Object.keys(generatedConceptImages).length === 0}
-                      className="bg-stone-50 text-stone-950 px-6 sm:px-8 py-2 sm:py-3 text-xs tracking-[0.2em] sm:tracking-[0.3em] uppercase font-light hover:bg-stone-100 transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed"
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 max-w-5xl mx-auto mb-8 sm:mb-12">
+                  {/* Card 1: One-Time Photoshoot */}
+                  <div className="bg-stone-50 rounded-2xl p-6 sm:p-8 border border-stone-200 hover:border-stone-300 transition-all duration-300 hover:shadow-lg">
+                    <h4
+                      style={{ fontFamily: "'Times New Roman', serif" }}
+                      className="text-xl sm:text-2xl font-light mb-2 text-stone-900"
                     >
-                      {isEmailingConcepts ? "SENDING..." : "EMAIL MY BLUEPRINT"}
-                    </button>
+                      Try One AI Photoshoot
+                    </h4>
+                    <div className="mb-4">
+                      <div className="flex items-baseline gap-2">
+                        <span
+                          className="text-4xl sm:text-5xl font-light text-stone-900"
+                          style={{ fontFamily: "'Times New Roman', serif" }}
+                        >
+                          $49
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-sm sm:text-base font-light text-stone-600 mb-6 leading-relaxed">
+                      See your blueprint in action with 50 professional photos
+                    </p>
+                    <ul className="space-y-3 mb-6 sm:mb-8">
+                      <li className="flex items-start gap-2 text-sm font-light text-stone-700">
+                        <span className="text-stone-900 mt-0.5 shrink-0">✓</span>
+                        <span>Your AI model trained on your photos</span>
+                      </li>
+                      <li className="flex items-start gap-2 text-sm font-light text-stone-700">
+                        <span className="text-stone-900 mt-0.5 shrink-0">✓</span>
+                        <span>
+                          50 images in your {formData.vibe ? formData.vibe.charAt(0).toUpperCase() + formData.vibe.slice(1) : "chosen"}{" "}
+                          aesthetic
+                        </span>
+                      </li>
+                      <li className="flex items-start gap-2 text-sm font-light text-stone-700">
+                        <span className="text-stone-900 mt-0.5 shrink-0">✓</span>
+                        <span>Ready to post in 2 hours</span>
+                      </li>
+                      <li className="flex items-start gap-2 text-sm font-light text-stone-700">
+                        <span className="text-stone-900 mt-0.5 shrink-0">✓</span>
+                        <span>Download all in HD</span>
+                      </li>
+                    </ul>
                     <button
-                      onClick={handleStartCheckout}
-                      className="bg-transparent border border-stone-50 text-stone-50 px-6 sm:px-8 py-2 sm:py-3 text-xs tracking-[0.2em] sm:tracking-[0.3em] uppercase font-light hover:bg-stone-50 hover:text-stone-950 transition-all duration-300"
+                      onClick={() => handleStartCheckout("one_time_session")}
+                      className="w-full bg-stone-950 text-stone-50 px-6 py-3 rounded-lg text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 min-h-[44px]"
                     >
-                      GET STARTED - $24.50
+                      Create My First Photoshoot
                     </button>
                   </div>
+
+                  {/* Card 2: Studio Membership - MOST POPULAR */}
+                  <div className="bg-stone-950 text-stone-50 rounded-2xl p-6 sm:p-8 border-2 border-stone-950 relative hover:shadow-lg transition-all duration-300">
+                    <div className="absolute -top-3 right-4 bg-stone-950 text-stone-50 px-3 py-1.5 rounded-sm border border-stone-50/20">
+                      <p className="text-[9px] sm:text-[10px] font-light tracking-[0.2em] uppercase whitespace-nowrap">
+                        MOST POPULAR
+                      </p>
+                    </div>
+                    <h4
+                      style={{ fontFamily: "'Times New Roman', serif" }}
+                      className="text-xl sm:text-2xl font-light mb-2 text-stone-50 mt-2"
+                    >
+                      Join Studio Membership
+                    </h4>
+                    <div className="mb-4">
+                      <div className="flex items-baseline gap-2">
+                        <span
+                          className="text-4xl sm:text-5xl font-light text-stone-50"
+                          style={{ fontFamily: "'Times New Roman', serif" }}
+                        >
+                          $79
+                        </span>
+                        <span className="text-sm sm:text-base font-light text-stone-300">/month</span>
+                      </div>
+                      <div className="mt-2">
+                        <span className="inline-block bg-stone-800/50 text-stone-200 px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-light tracking-wide">
+                          Worth $1,500/month
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-sm sm:text-base font-light text-stone-100 mb-6 leading-relaxed">
+                      Never run out of content again - everything automated monthly
+                    </p>
+                    <ul className="space-y-3 mb-6 sm:mb-8">
+                      <li className="flex items-start gap-2 text-sm font-light text-stone-100">
+                        <span className="text-stone-50 mt-0.5 shrink-0">✓</span>
+                        <span>Unlimited professional photoshoots</span>
+                      </li>
+                      <li className="flex items-start gap-2 text-sm font-light text-stone-100">
+                        <span className="text-stone-50 mt-0.5 shrink-0">✓</span>
+                        <span>100+ images per month</span>
+                      </li>
+                      <li className="flex items-start gap-2 text-sm font-light text-stone-100">
+                        <span className="text-stone-50 mt-0.5 shrink-0">✓</span>
+                        <span>Feed planning & strategy</span>
+                      </li>
+                      <li className="flex items-start gap-2 text-sm font-light text-stone-100">
+                        <span className="text-stone-50 mt-0.5 shrink-0">✓</span>
+                        <span>New caption templates monthly</span>
+                      </li>
+                      <li className="flex items-start gap-2 text-sm font-light text-stone-100">
+                        <span className="text-stone-50 mt-0.5 shrink-0">✓</span>
+                        <span>Cancel anytime</span>
+                      </li>
+                    </ul>
+                    <button
+                      onClick={() => handleStartCheckout("sselfie_studio_membership")}
+                      className="w-full bg-stone-50 text-stone-950 px-6 py-3 rounded-lg text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-100 transition-all duration-200 min-h-[44px]"
+                    >
+                      Start Studio Membership
+                    </button>
+                  </div>
+                </div>
+
+                {/* Soft Close */}
+                <div className="text-center mb-6 sm:mb-8">
+                  <p className="text-sm sm:text-base font-light text-stone-600 max-w-2xl mx-auto leading-relaxed px-4">
+                    Not ready yet? That's totally okay! You'll get your full blueprint + 30-day calendar via email in 2
+                    minutes. We're here when you're ready. 💕
+                  </p>
+                </div>
+
+                {/* Email Blueprint Button */}
+                <div className="text-center">
+                  <button
+                    onClick={emailConcepts}
+                    disabled={isEmailingConcepts || Object.keys(generatedConceptImages).length === 0}
+                    className="bg-stone-950 text-stone-50 px-6 sm:px-8 py-3 sm:py-4 text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    {isEmailingConcepts ? "SENDING..." : "EMAIL MY BLUEPRINT"}
+                  </button>
                 </div>
               </div>
 

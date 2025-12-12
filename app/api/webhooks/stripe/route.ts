@@ -137,7 +137,9 @@ export async function POST(request: NextRequest) {
             if (productType === "one_time_session") {
               productTag = "one-time-session"
             } else if (productType === "sselfie_studio_membership") {
-              productTag = "studio-membership"
+              productTag = "content-creator-studio"
+            } else if (productType === "brand_studio_membership") {
+              productTag = "brand-studio"
             } else if (productType === "credit_topup") {
               productTag = "credit-topup"
             }
@@ -1291,13 +1293,16 @@ export async function POST(request: NextRequest) {
                 `[v0] ⚠️ Credits already granted for this billing period (${recentGrants[0].count} grant(s) found). Skipping to prevent duplicates.`,
               )
             } else {
-              // Only grant credits for studio membership subscriptions
-              if (sub.product_type === "sselfie_studio_membership") {
+              // Grant credits for studio membership subscriptions (Content Creator Studio or Brand Studio)
+              if (
+                sub.product_type === "sselfie_studio_membership" ||
+                sub.product_type === "brand_studio_membership"
+              ) {
                 try {
                   console.log(`[v0] Granting monthly credits for ${sub.product_type} to user ${sub.user_id}`)
                   const result = await grantMonthlyCredits(
                     sub.user_id,
-                    "sselfie_studio_membership",
+                    sub.product_type as "sselfie_studio_membership" | "brand_studio_membership",
                     false, // Always false for production payments
                   )
                   if (result.success) {
@@ -1323,12 +1328,15 @@ export async function POST(request: NextRequest) {
             }
           } else {
             // If we can't determine the period, grant anyway (might be first invoice)
-            if (sub.product_type === "sselfie_studio_membership") {
+            if (
+              sub.product_type === "sselfie_studio_membership" ||
+              sub.product_type === "brand_studio_membership"
+            ) {
               try {
                 console.log(`[v0] Granting monthly credits (no period check) for ${sub.product_type} to user ${sub.user_id}`)
                 const result = await grantMonthlyCredits(
                   sub.user_id,
-                  "sselfie_studio_membership",
+                  sub.product_type as "sselfie_studio_membership" | "brand_studio_membership",
                   false, // Always false for production payments
                 )
                 if (result.success) {

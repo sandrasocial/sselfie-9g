@@ -19,8 +19,9 @@ export const CREDIT_COSTS = {
 } as const
 
 export const SUBSCRIPTION_CREDITS = {
-  sselfie_studio_membership: 150, // Studio membership gets 150 credits/month
-  one_time_session: 70, // One-time session gets 70 credits (one-time grant)
+  sselfie_studio_membership: 150, // Content Creator Studio: 150 credits/month (100+ images, fair use: 3-4 photoshoots/month)
+  brand_studio_membership: 300, // Brand Studio: 300 credits/month (200+ images, fair use: 6-8 photoshoots/month)
+  one_time_session: 70, // Instagram Photoshoot: 70 credits (one-time grant, 30-50 images)
 } as const
 
 export type TransactionType =
@@ -334,16 +335,23 @@ export async function getCreditHistory(userId: string, limit = 50) {
  */
 export async function grantMonthlyCredits(
   userId: string,
-  productType: "sselfie_studio_membership",
+  productType: "sselfie_studio_membership" | "brand_studio_membership",
   isTestMode = false,
 ) {
   const credits = SUBSCRIPTION_CREDITS[productType]
+
+  const productName =
+    productType === "sselfie_studio_membership"
+      ? "Content Creator Studio"
+      : productType === "brand_studio_membership"
+        ? "Brand Studio"
+        : "subscription"
 
   return await addCredits(
     userId,
     credits,
     "subscription_grant",
-    `Monthly ${productType === "sselfie_studio_membership" ? "Studio Membership" : "subscription"} grant`,
+    `Monthly ${productName} grant`,
     undefined,
     isTestMode,
   )
