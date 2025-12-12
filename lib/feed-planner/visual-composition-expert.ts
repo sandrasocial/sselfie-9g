@@ -161,13 +161,13 @@ CRITICAL INSTRUCTIONS:
 
 4. **NO Skin Quality Descriptions:** Do NOT describe skin quality beyond "natural". The user LoRA handles appearance. NO "natural skin texture with pores visible", "not plastic-looking", etc.
 
-5. **NO Film Grain or Muted Colors:** These are NO LONGER mandatory. Keep prompts simple (40-60 words) to preserve user LoRA.
+5. **NO Film Grain or Muted Colors:** These are NO LONGER mandatory. Keep prompts detailed (50-80 words) for better LoRA activation.
 
 6. **NO Natural Imperfections Lists:** Do NOT include lists of imperfections like "visible sensor noise", "slight motion blur", etc. Keep camera specs basic.
 
 7. **Specific Outfit (MANDATORY for user posts):** Material + color + garment type (8-12 words), NOT generic "trendy outfit" or "professional outfit". Use YOUR fashion intelligence to create specific, brand-aligned styling. Stay detailed here.
 
-8. **Prompt Length:** 40-60 words (optimal range for user LoRA preservation, prevents plastic/generic faces) - SAME AS CONCEPT CARDS
+8. **Prompt Length:** 50-80 words (optimal range for LoRA activation and accurate character representation) - SAME AS CONCEPT CARDS
 
 9. **NO BANNED WORDS:** Never use "ultra realistic", "photorealistic", "8K", "4K", "high quality", "perfect", "flawless", "stunning", "beautiful", "gorgeous", "professional photography", "editorial", "magazine quality", "dramatic" (for lighting), "cinematic", "hyper detailed", "sharp focus", "ultra sharp", "crystal clear", "studio lighting", "perfect lighting", "smooth skin", "flawless skin", "airbrushed", "triumphant", "empowering", "confident smile", "trendy outfit", "professional outfit" - these cause plastic/generic faces and override the user LoRA.
 
@@ -180,7 +180,7 @@ CRITICAL INSTRUCTIONS:
 6. **POSE + EXPRESSION** (simple, natural action - 3-5 words, NO "striking poses")
 7. **TECHNICAL SPECS** (basic iPhone only - 5-8 words, keep minimal)
 
-**Total target: 40-60 words for optimal user LoRA preservation (NOT 70-80)**
+**Total target: 50-80 words for optimal LoRA activation and accurate character representation**
 
 **IF ANY MANDATORY REQUIREMENT IS MISSING, THE PROMPT WILL PRODUCE AI-LOOKING RESULTS.**
 `
@@ -201,7 +201,7 @@ ${isNonUserPost ? `
 - Include SPECIFIC items with materials/colors (not generic "styled objects")
 - Describe the composition, surface, lighting with imperfections
 - Include all mandatory requirements: Basic iPhone specs, simple natural lighting
-- Target: 40-60 words with detailed, specific descriptions
+- Target: 50-80 words with detailed, specific descriptions
 ` : `
 **CRITICAL PROMPT FORMAT:**
 - MUST start with: "${actualTriggerWord}, ${userEthnicity ? userEthnicity + ", " : ""}${userGender}"
@@ -212,7 +212,7 @@ ${isNonUserPost ? `
 **Your Task:**
 Create a Flux prompt for this ${shotType} shot that achieves: ${purpose}
 
-🔴 **CRITICAL - YOUR FLUX PROMPT MUST BE 40-60 WORDS AND INCLUDE ALL OF THESE:**
+🔴 **CRITICAL - YOUR FLUX PROMPT MUST BE 50-80 WORDS AND INCLUDE ALL OF THESE:**
 
 1. **OUTFIT (MANDATORY - NO EXCEPTIONS):**
    - ❌ NEVER use: "stylish outfit", "business casual outfit", "trendy outfit", "professional outfit", "wearing stylish business casual outfit"
@@ -250,26 +250,26 @@ Create a Flux prompt for this ${shotType} shot that achieves: ${purpose}
    - ❌ NO film grain or muted color requirements
 
 5. **WORD COUNT:**
-   - ✅ MUST be 40-60 words (count carefully!)
-   - ❌ Too short (<35 words) = may miss essential detail
-   - ❌ Too long (>65 words) = overpowers user LoRA, creates generic/plastic faces
+   - ✅ MUST be 50-80 words (count carefully!)
+   - ❌ Too short (<45 words) = may miss essential detail, risks wrong hair/body/age
+   - ❌ Too long (>85 words) = model may lose focus on character features
 
 **🔴 PROMPT STRUCTURE ARCHITECTURE (FOLLOW THIS EXACT ORDER - SAME AS CONCEPT CARDS):**
 1. **TRIGGER WORD** (first position - MANDATORY): "${actualTriggerWord}, ${userEthnicity ? userEthnicity + ", " : ""}${userGender}"
-2. **OUTFIT** (8-12 words - MANDATORY): Specific material + color + garment type (e.g., "sage green silk blouse with relaxed fit tucked into high-waisted cream linen trousers")
-3. **LOCATION** (3-5 words - MANDATORY): Simple, one-line location (e.g., "upscale restaurant with marble surfaces")
+2. **OUTFIT** (8-15 words - MANDATORY): Specific material + color + garment type (e.g., "sage green silk blouse with relaxed fit tucked into high-waisted cream linen trousers")
+3. **LOCATION** (3-6 words - MANDATORY): Simple, one-line location (e.g., "upscale restaurant with marble surfaces")
 4. **LIGHTING** (3-5 words - MANDATORY): Simple, natural lighting only (e.g., "soft afternoon sunlight")
-5. **POSE + EXPRESSION** (3-5 words): Simple, natural action (e.g., "standing with hand on counter, looking over shoulder naturally")
+5. **POSE + EXPRESSION** (3-6 words): Simple, natural action (e.g., "standing with hand on counter, looking over shoulder naturally")
 6. **TECHNICAL SPECS** (5-8 words - MANDATORY): "shot on iPhone 15 Pro portrait mode, shallow depth of field"
 
-**Total target: 40-60 words for optimal user LoRA preservation (NOT 70-80)**
+**Total target: 50-80 words for optimal LoRA activation and accurate character representation**
 
 Remember:
 - Use YOUR fashion expertise and brand knowledge (from user context above)
 - Apply user's brand colors naturally (you already know them from their profile)
 - Create visual harmony with the other 8 posts in the feed
 - Make it feel authentic and Instagram-worthy
-- **Keep prompts simple (40-60 words) to preserve user LoRA - trust the user LoRA for appearance**
+- **Keep prompts detailed (50-80 words) for better LoRA activation - Flux's dual-encoder system handles complex descriptions well**
 
 **🔴 CRITICAL: PROMPT QUALITY CHECKLIST - EVERY PROMPT MUST HAVE:**
 1. ✅ Trigger word + ethnicity + gender (no duplicates, format: "${actualTriggerWord}, ${userEthnicity ? userEthnicity + ", " : ""}${userGender}")
@@ -278,7 +278,7 @@ Remember:
 4. ✅ Simple natural lighting (NO dramatic/cinematic terms)
 5. ✅ Natural pose/action (NO "striking poses", NO "legs tucked under" - causes extra limbs)
 6. ✅ Basic iPhone specs only ("shot on iPhone 15 Pro portrait mode, shallow depth of field" OR "shot on iPhone, natural bokeh")
-7. ✅ Total length: 40-60 words (NOT 70-80)
+7. ✅ Total length: 50-80 words (optimal for LoRA activation)
 
 **🔴 AVOID THESE POSES (They cause extra limbs/body parts):**
 - ❌ "legs tucked under" - causes 3+ feet/legs
@@ -306,12 +306,12 @@ Return JSON with this structure:
   "settingMood": { "location": "", "lighting": "", "props": [], "colors": [] },
   "styling": { "outfit": "", "hair": "", "accessories": [], "aesthetic": "" },
   "emotionalTone": "",
-  "fluxPrompt": "${isNonUserPost ? "40-60 word object/flatlay/scenery prompt WITHOUT user or trigger word, including SPECIFIC items with materials/colors, composition details, surface description, simple natural lighting, basic iPhone specs - follow OBJECT/FLATLAY/SCENERY POST REQUIREMENTS above" : `YOUR CRAFTED FLUX PROMPT - synthesized from principles, MUST start with ${actualTriggerWord}, ${userEthnicity ? userEthnicity + ", " : ""}${userGender}, MUST be 40-60 words (count carefully!), MUST include ALL of these in this exact order: (1) "${actualTriggerWord}, ${userEthnicity ? userEthnicity + ", " : ""}${userGender}" at the start, (2) specific outfit with material + color + garment type (8-12 words, e.g., "sage green silk blouse with relaxed fit tucked into high-waisted cream linen trousers"), (3) simple location (3-5 words, e.g., "upscale restaurant with marble surfaces"), (4) simple natural lighting (3-5 words, e.g., "soft afternoon sunlight"), (5) natural pose/action (3-5 words, e.g., "standing with hand on counter, looking over shoulder naturally"), (6) basic iPhone specs: "shot on iPhone 15 Pro portrait mode, shallow depth of field" (5-8 words). Total must be 40-60 words.`}"
+  "fluxPrompt": "${isNonUserPost ? "50-80 word object/flatlay/scenery prompt WITHOUT user or trigger word, including SPECIFIC items with materials/colors, composition details, surface description, simple natural lighting, basic iPhone specs - follow OBJECT/FLATLAY/SCENERY POST REQUIREMENTS above" : `YOUR CRAFTED FLUX PROMPT - synthesized from principles, MUST start with ${actualTriggerWord}, ${userEthnicity ? userEthnicity + ", " : ""}${userGender}, MUST be 50-80 words (count carefully!), MUST include ALL of these in this exact order: (1) "${actualTriggerWord}, ${userEthnicity ? userEthnicity + ", " : ""}${userGender}" at the start, (2) specific outfit with material + color + garment type (8-15 words, e.g., "sage green silk blouse with relaxed fit tucked into high-waisted cream linen trousers"), (3) simple location (3-6 words, e.g., "upscale restaurant with marble surfaces"), (4) simple natural lighting (3-5 words, e.g., "soft afternoon sunlight"), (5) natural pose/action (3-6 words, e.g., "standing with hand on counter, looking over shoulder naturally"), (6) basic iPhone specs: "shot on iPhone 15 Pro portrait mode, shallow depth of field" (5-8 words). Total must be 50-80 words.`}"
 }
 
 🔴 **CRITICAL - YOUR FLUX PROMPT MUST:**
 - Start with: "${actualTriggerWord}, ${userEthnicity ? userEthnicity + ", " : ""}${userGender}"
-- Be 40-60 words total (NOT 70-80)
+- Be 50-80 words total (optimal for LoRA activation)
 - Include ALL mandatory requirements listed above
 - Follow the PROMPT STRUCTURE ARCHITECTURE order (trigger → outfit → location → lighting → pose → technical specs)
 - Use specific details, NOT generic terms
@@ -489,7 +489,7 @@ Return ONLY valid JSON. No markdown.`
       const finalWordCount = composition.fluxPrompt.split(/\s+/).length
       
       console.log(`[v0] Maya: Non-user post (${shotType}) - prompt: ${composition.fluxPrompt.substring(0, 100)}...`)
-      console.log(`[v0] Maya: Word count: ${finalWordCount} ${finalWordCount >= 40 && finalWordCount <= 60 ? "✅" : "⚠️"}`)
+      console.log(`[v0] Maya: Word count: ${finalWordCount} ${finalWordCount >= 50 && finalWordCount <= 80 ? "✅" : "⚠️"}`)
     } else {
       // For user posts, enforce correct format: triggerWord, ethnicity, userGender
       const expectedStart = `${actualTriggerWord}, ${userEthnicity ? userEthnicity + ", " : ""}${userGender}`
@@ -601,10 +601,10 @@ Return ONLY valid JSON. No markdown.`
       
       // Check word count
       const wordCount = composition.fluxPrompt.split(/\s+/).length
-      if (wordCount < 35) {
-        missingRequirements.push(`length (currently ${wordCount} words, need 40-60)`)
-      } else if (wordCount > 65) {
-        console.log(`[v0] Maya: ⚠️ Prompt is ${wordCount} words (target: 40-60) - too long may overpower user LoRA`)
+      if (wordCount < 45) {
+        missingRequirements.push(`length (currently ${wordCount} words, need 50-80)`)
+      } else if (wordCount > 85) {
+        console.log(`[v0] Maya: ⚠️ Prompt is ${wordCount} words (target: 50-80) - may lose focus on character features`)
       }
       
       if (missingRequirements.length > 0) {

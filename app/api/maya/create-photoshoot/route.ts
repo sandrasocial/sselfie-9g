@@ -395,26 +395,20 @@ export async function POST(request: NextRequest) {
       const presetSettings = MAYA_QUALITY_PRESETS[categoryKey] || MAYA_QUALITY_PRESETS.default
 
       finalSettings = {
+        ...presetSettings,
         guidance_scale: customSettings.promptAccuracy || presetSettings.guidance_scale,
         lora_scale: customSettings.styleStrength || Number(userLoraScale || presetSettings.lora_scale),
-        extra_lora_scale: customSettings.realismStrength || 0.2,
-        num_inference_steps: presetSettings.num_inference_steps,
-        megapixels: presetSettings.megapixels,
-        output_format: presetSettings.output_format,
-        output_quality: presetSettings.output_quality,
+        extra_lora_scale: customSettings.realismStrength || presetSettings.extra_lora_scale,
+        // Keep aspect_ratio from preset (can be overridden if needed)
+        aspect_ratio: presetSettings.aspect_ratio,
       }
     } else {
       const { MAYA_QUALITY_PRESETS } = await import("@/lib/maya/quality-settings")
       const categoryKey = category as keyof typeof MAYA_QUALITY_PRESETS
       const presetSettings = MAYA_QUALITY_PRESETS[categoryKey] || MAYA_QUALITY_PRESETS.default
       finalSettings = {
-        guidance_scale: presetSettings.guidance_scale,
+        ...presetSettings,
         lora_scale: Number(userLoraScale || presetSettings.lora_scale),
-        extra_lora_scale: 0.2,
-        num_inference_steps: presetSettings.num_inference_steps,
-        megapixels: presetSettings.megapixels,
-        output_format: presetSettings.output_format,
-        output_quality: presetSettings.output_quality,
       }
     }
 
@@ -465,7 +459,7 @@ export async function POST(request: NextRequest) {
               prompt: pose.prompt,
               guidance_scale: finalSettings.guidance_scale,
               num_inference_steps: finalSettings.num_inference_steps,
-              aspect_ratio: "4:5",
+              aspect_ratio: finalSettings.aspect_ratio, // Use preset value instead of hardcoded
               megapixels: finalSettings.megapixels,
               output_format: finalSettings.output_format,
               output_quality: finalSettings.output_quality,
@@ -474,10 +468,10 @@ export async function POST(request: NextRequest) {
               extra_lora: REALISM_LORA_URL,
               extra_lora_scale: finalSettings.extra_lora_scale,
               seed: sameSeed, // Using same seed for character consistency
-              disable_safety_checker: true,
-              go_fast: false,
-              num_outputs: 1,
-              model: "dev",
+              disable_safety_checker: finalSettings.disable_safety_checker ?? true, // Use preset value
+              go_fast: finalSettings.go_fast ?? false, // Use preset value
+              num_outputs: finalSettings.num_outputs ?? 1, // Use preset value
+              model: finalSettings.model ?? "dev", // Use preset value
             },
           })
           break

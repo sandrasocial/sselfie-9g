@@ -282,9 +282,9 @@ ${brandColors ? `**CRITICAL**: Incorporate the user's brand colors (${brandColor
 4. ✅ Simple natural lighting (NO dramatic/cinematic terms)
 5. ✅ Natural pose/action (NO "striking poses")
 6. ✅ Basic iPhone specs only ("shot on iPhone 15 Pro portrait mode, shallow depth of field" OR "shot on iPhone, natural bokeh")
-7. ✅ Total length: 40-60 words (NOT 70-80)
+7. ✅ Total length: 50-80 words (optimal for LoRA activation)
 
-**Total target: 40-60 words for optimal user LoRA preservation (prevents plastic/generic faces)**
+**Total target: 50-80 words for optimal LoRA activation and accurate character representation**
 
 Now generate the FLUX prompt for this ${postType} feed post.
 
@@ -292,7 +292,7 @@ ${postType?.toLowerCase().includes('object') || postType?.toLowerCase().includes
 ⚠️ **CRITICAL REMINDER:** This is a ${postType} post - DO NOT include the user, trigger word, or any person in the prompt. Focus only on objects, products, flatlays, or scenery.
 ` : `
 **CRITICAL: Use YOUR fashion expertise to create detailed, specific styling.**
-- Generate a 40-60 word prompt that includes ALL requirements above
+- Generate a 50-80 word prompt that includes ALL requirements above
 - Start with: "${triggerWord}, ${ethnicity ? ethnicity + ", " : ""}${userGender}" (do NOT duplicate like "White, woman, White woman")
 - Include SPECIFIC outfit details (material + color + garment), NOT generic "trendy outfit" or "stylish business casual outfit"
 - Include SPECIFIC but simple location details, NOT generic "urban background" or "urban setting"
@@ -791,10 +791,10 @@ Reference (IGNORE FORMAT - GENERIC AND INCOMPLETE): ${cleanedReferencePrompt.sub
       
       // Check word count
       const wordCount = generatedPrompt.split(/\s+/).length
-      if (wordCount < 35) {
-        missingRequirements.push(`length (currently ${wordCount} words, need 40-60)`)
-      } else if (wordCount > 65) {
-        console.log(`[v0] [FEED-PROMPT] ⚠️ Prompt is ${wordCount} words (target: 40-60) - too long may overpower user LoRA`)
+      if (wordCount < 45) {
+        missingRequirements.push(`length (currently ${wordCount} words, need 50-80)`)
+      } else if (wordCount > 85) {
+        console.log(`[v0] [FEED-PROMPT] ⚠️ Prompt is ${wordCount} words (target: 50-80) - may lose focus on character features`)
       }
       
       if (missingRequirements.length > 0) {
@@ -860,7 +860,7 @@ Reference (IGNORE FORMAT - GENERIC AND INCOMPLETE): ${cleanedReferencePrompt.sub
       
       console.log("[v0] [FEED-PROMPT] Final prompt (with trigger word):", generatedPrompt.substring(0, 150) + "...")
       console.log("[v0] [FEED-PROMPT] Trigger word verification:", generatedPrompt.toLowerCase().startsWith(triggerLower) ? "✅ CORRECT" : "❌ MISSING")
-      console.log("[v0] [FEED-PROMPT] Word count:", finalWordCount, finalWordCount >= 40 && finalWordCount <= 60 ? "✅" : "⚠️")
+      console.log("[v0] [FEED-PROMPT] Word count:", finalWordCount, finalWordCount >= 50 && finalWordCount <= 80 ? "✅" : "⚠️")
       console.log("[v0] [FEED-PROMPT] Expected start:", expectedStart)
       console.log("[v0] [FEED-PROMPT] Actual start:", generatedPrompt.substring(0, Math.min(expectedStart.length + 20, generatedPrompt.length)))
     }

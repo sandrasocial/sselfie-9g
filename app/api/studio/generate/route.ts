@@ -84,30 +84,46 @@ export async function POST(request: NextRequest) {
 
     console.log("[v0] Full prompt:", fullPrompt)
 
-    // Start generation using the trained model with improved settings
+    // Use Maya's quality presets (same as other routes)
+    const { MAYA_QUALITY_PRESETS } = await import("@/lib/maya/quality-settings")
+    const categoryKey = (category || "portrait") as keyof typeof MAYA_QUALITY_PRESETS
+    const presetSettings = MAYA_QUALITY_PRESETS[categoryKey] || MAYA_QUALITY_PRESETS.default
+
+    // Studio generates 4 variations, so override num_outputs
+    const qualitySettings = {
+      ...presetSettings,
+      num_outputs: 4, // Studio generates 4 variations
+      aspect_ratio: "1:1", // Studio uses square format
+      lora_scale: Number(model.lora_scale || presetSettings.lora_scale),
+    }
+
+    // Start generation using the trained model with quality presets
     const prediction = await replicate.predictions.create({
       version: model.replicate_version_id,
       input: {
         prompt: fullPrompt,
-        num_outputs: 4,
-        aspect_ratio: "1:1",
-        output_format: "png",
-        output_quality: 95,
-        num_inference_steps: 50,
-        guidance_scale: 3.5,
-        lora: model.lora_weights_url,
-        lora_scale: 1.0,
-        megapixels: "1",
-        model: "dev",
-        extra_lora: "https://huggingface.co/strangerzonehf/Flux-Super-Realism-LoRA/resolve/main/super-realism.safetensors",
-        extra_lora_scale: 0.2,
+        guidance_scale: qualitySettings.guidance_scale,
+        num_inference_steps: qualitySettings.num_inference_steps,
+        aspect_ratio: qualitySettings.aspect_ratio,
+        megapixels: qualitySettings.megapixels,
+        output_format: qualitySettings.output_format,
+        output_quality: qualitySettings.output_quality,
+        lora_scale: qualitySettings.lora_scale,
+        hf_lora: model.lora_weights_url,
+        extra_lora: qualitySettings.extra_lora,
+        extra_lora_scale: qualitySettings.extra_lora_scale,
+        disable_safety_checker: qualitySettings.disable_safety_checker ?? true,
+        go_fast: qualitySettings.go_fast ?? false,
+        num_outputs: qualitySettings.num_outputs,
+        model: qualitySettings.model ?? "dev",
       },
     })
 
     console.log("[v0] Prediction created:", prediction.id)
     console.log("[v0] ✅ LoRA weights sent to Replicate:", model.lora_weights_url)
-    console.log("[v0] ✅ LoRA scale:", 1.0)
-    console.log("[v0] ✅ Extra LoRA (Photorealistic Skin - No Plastic) scale:", 0.6)
+    console.log("[v0] ✅ LoRA scale:", qualitySettings.lora_scale)
+    console.log("[v0] ✅ Extra LoRA (Realism) scale:", qualitySettings.extra_lora_scale)
+    console.log("[v0] ✅ Using quality preset:", categoryKey)
 
     // Save generation record to database
     const [generation] = await sql`

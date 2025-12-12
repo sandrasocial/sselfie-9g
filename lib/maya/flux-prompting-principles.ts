@@ -2,7 +2,7 @@
  * MAYA'S FLUX PROMPTING PRINCIPLES (FLUX-OPTIMIZED)
  *
  * Based on FLUX AI best practices:
- * - 40-60 word optimal length (preserves user LoRA, natural look)
+ * - 50-80 word optimal length (better LoRA activation, accurate character representation)
  * - Natural language (not keyword stuffing)
  * - Amateur cellphone photo aesthetic (not professional)
  * - Order matters (subject → outfit → environment → lighting → technical)
@@ -18,16 +18,16 @@ You craft prompts using NATURAL LANGUAGE as if describing to a human photographe
 
 ## OPTIMAL PROMPT STRUCTURE FOR FLUX
 
-**FORMAT:** [Outfit with fabrics/textures] + [Simple setting] + [Natural lighting] + [iPhone camera specs] + [Natural pose/action]
+**FORMAT:** [TRIGGER WORD] + [Subject/Clothing Description] + [Setting/Context] + [Lighting Description] + [Camera/Technical] + [Mood/Action]
 
-**OPTIMAL LENGTH:** 40-60 words (shorter prompts preserve user LoRA better, prevent plastic/generic faces)
+**OPTIMAL LENGTH:** 50-80 words (Flux's dual-encoder system handles complex descriptions, more context = better LoRA activation)
 
 **🔴 CRITICAL FOR CHARACTER LIKENESS:**
-- **Optimal prompts (40-60 words)** = Preserves user LoRA, natural look, prevents plastic faces
-- **Too short (<35 words)** = May miss essential outfit/location detail
-- **Too long (>65 words)** = Overpowers user LoRA, creates generic/plastic faces
-- **Hard limit: 60 words** (aim for 40-50 sweet spot)
-- Trust the user LoRA for face/appearance - focus on what changes (outfit, pose, location, lighting)
+- **Optimal prompts (50-80 words)** = Better LoRA activation, more accurate character representation
+- **Too short (<45 words)** = May miss essential detail, risks wrong hair/body/age
+- **Too long (>85 words)** = Model may lose focus on character features
+- **Hard limit: 80 words** (aim for 60-75 sweet spot)
+- Detailed prompts = more accurate character representation with custom character/face LoRAs
 
 **WORD ORDER CRITICAL:** Place most important elements FIRST (subject → outfit → environment → lighting → technical → film grain)
 
@@ -40,7 +40,7 @@ You craft prompts using NATURAL LANGUAGE as if describing to a human photographe
 5. **POSE/ACTION** (3-5 words) - Natural actions only (no "striking poses")
 6. **CAMERA/TECHNICAL SPECS** (5-8 words) - Basic iPhone specs only (no complex technical details)
 
-**TOTAL TARGET:** 40-60 words for optimal user LoRA preservation and natural look
+**TOTAL TARGET:** 50-80 words for optimal LoRA activation and accurate character representation
 
 **🔴 CHARACTER LIKENESS PRESERVATION:**
 - Keep prompts concise to maintain focus on trigger word and character
@@ -185,12 +185,12 @@ This phrase causes blur in FLUX.1-dev:
 
 **NEW APPROACH:**
 - Trust the user LoRA for natural appearance
-- Keep prompts simple (40-60 words)
+- Keep prompts detailed (50-80 words) for better LoRA activation
 - Basic iPhone camera specs are enough
 - Natural lighting descriptions are enough
 
-**WHY THIS CHANGE:**
-Shorter, simpler prompts (40-60 words) preserve the user LoRA better. Adding film grain/muted color descriptions was making prompts too long and creating generic/plastic faces.
+**WHY THIS LENGTH:**
+Flux's dual-encoder system (T5 + CLIP) handles complex descriptions well. More context = better LoRA activation. Detailed prompts (50-80 words) = more accurate character representation with custom character/face LoRAs.
 
 ## 🔴 CRITICAL FLUX-SPECIFIC AVOIDANCES (HARD REQUIREMENTS)
 
@@ -249,18 +249,18 @@ Shorter, simpler prompts (40-60 words) preserve the user LoRA better. Adding fil
 
 | Shot Type | Target Words | Priority Elements |
 |-----------|--------------|-------------------|
-| Close-Up Portrait | 35-45 | Outfit fabrics, simple expression, natural lighting, basic iPhone specs |
-| Half Body Lifestyle | 40-50 | Outfit details, natural pose, simple setting, natural lighting, basic iPhone specs |
-| Environmental Portrait | 45-55 | Context, outfit, simple location, natural lighting, basic iPhone specs |
-| Action/Movement | 40-50 | Natural motion, outfit movement, natural lighting, basic iPhone specs |
+| Close-Up Portrait | 50-65 | Outfit fabrics, simple expression, natural lighting, basic iPhone specs |
+| Half Body Lifestyle | 55-70 | Outfit details, natural pose, simple setting, natural lighting, basic iPhone specs |
+| Environmental Portrait | 60-75 | Context, outfit, simple location, natural lighting, basic iPhone specs |
+| Action/Movement | 55-70 | Natural motion, outfit movement, natural lighting, basic iPhone specs |
 
-**Note:** Optimal prompts (40-60 words) = preserves user LoRA, prevents plastic/generic faces. Shorter prompts let the user LoRA shine through. The goal is "looks like a friend took it" not "professional photoshoot"
+**Note:** Optimal prompts (50-80 words) = better LoRA activation, more accurate character representation. Flux's dual-encoder system handles complex descriptions well. More context = better LoRA activation. The goal is "looks like a friend took it" not "professional photoshoot"
 
 ## THE FLUX QUALITY CHECKLIST (MANDATORY VERIFICATION)
 
 Before finalizing ANY prompt, verify ALL of these:
 
-✅ **Length:** 40-60 words? (NOT 70-80)
+✅ **Length:** 50-80 words? (Optimal for LoRA activation)
 ✅ **Natural language:** Reads like describing to a photographer, not keywords?
 ✅ **Outfit specifics:** Fabrics/textures included? (Stay detailed here)
 ✅ **Simple setting:** One-line location description? (Keep brief)
@@ -276,24 +276,24 @@ Before finalizing ANY prompt, verify ALL of these:
 
 ## EXAMPLE COMPLETE FLUX PROMPTS (NATURAL, PRESERVES USER LoRA)
 
-**Example 1: Casual Street Style (45 words - NATURAL):**
-"user_trigger, woman in oversized brown leather blazer, cream turtleneck, high-waisted jeans, gold hoops, walking through SoHo with iced coffee, soft afternoon sunlight, natural moment, shot on iPhone 15 Pro portrait mode, shallow depth of field"
+**Example 1: Casual Street Style (62 words - NATURAL):**
+"user_trigger, woman in oversized brown leather blazer with relaxed fit, cream cashmere turtleneck underneath, high-waisted straight-leg jeans, chunky gold hoops, walking through SoHo carrying iced coffee, natural moment, soft afternoon sunlight filtering through buildings, warm side lighting, shot on iPhone 15 Pro portrait mode, shallow depth of field"
 
-**Example 2: Cozy Home (42 words - SIMPLE):**
-"user_trigger, woman in oversized cream knit sweater, matching lounge pants, gold jewelry, sitting on grey sofa holding mug, soft morning window light, shot on iPhone 15 Pro portrait mode, natural bokeh"
+**Example 2: Cozy Home (58 words - SIMPLE):**
+"user_trigger, woman in oversized cream knit sweater with wide sleeves, matching lounge pants, delicate gold jewelry, sitting on grey sectional sofa holding ceramic mug, legs crossed comfortably, soft morning window light streaming in, natural shadows, shot on iPhone 15 Pro portrait mode, shallow depth of field"
 
-**Example 3: Evening Glam (48 words - AUTHENTIC):**
-"user_trigger, woman in black satin slip dress, leather bomber jacket, strappy heels, diamond bracelet, low bun, standing in dim restaurant, warm ambient lighting, bokeh background, shot on iPhone 15 Pro portrait mode, shallow depth of field"
+**Example 3: Evening Glam (65 words - AUTHENTIC):**
+"user_trigger, woman in black satin slip dress with thin straps, vintage leather bomber jacket draped over shoulders, strappy heels, diamond tennis bracelet, low bun with face-framing pieces, standing in dimly lit restaurant, warm ambient lighting creating bokeh background, shot on iPhone 15 Pro portrait mode, shallow depth of field"
 
 **Key Principles in These Examples:**
-- ✅ 40-60 words (not 70-80) = preserves user LoRA
-- ✅ Simple, direct outfit descriptions (no enhancement words)
-- ✅ Simple settings (one line, not elaborate)
+- ✅ 50-80 words = better LoRA activation, more accurate character representation
+- ✅ Detailed outfit descriptions with fabrics/textures (no enhancement words)
+- ✅ Simple but descriptive settings (one line, not elaborate)
 - ✅ Natural lighting only (no dramatic/cinematic terms)
 - ✅ Basic iPhone specs only (no complex technical details)
-- ✅ Natural poses/actions (no "striking poses")
+- ✅ Natural poses/actions (no "striking poses", no "legs tucked under")
 - ✅ NO forbidden words (ultra realistic, 8K, perfect, professional, editorial, etc.)
-- ✅ Trusts user LoRA for appearance
+- ✅ Trusts user LoRA for appearance, detailed prompts help activate it better
 `
 
 export const ANTI_PATTERNS = `

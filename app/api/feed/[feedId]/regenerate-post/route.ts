@@ -96,8 +96,20 @@ export async function POST(request: Request, { params }: { params: { feedId: str
       version: model.replicate_version_id,
       input: {
         prompt: finalPrompt,
-        ...qualitySettings,
-        lora: model.lora_weights_url,
+        guidance_scale: qualitySettings.guidance_scale,
+        num_inference_steps: qualitySettings.num_inference_steps,
+        aspect_ratio: qualitySettings.aspect_ratio,
+        megapixels: qualitySettings.megapixels,
+        output_format: qualitySettings.output_format,
+        output_quality: qualitySettings.output_quality,
+        lora_scale: Number(qualitySettings.lora_scale),
+        hf_lora: model.lora_weights_url, // Use hf_lora instead of lora for consistency
+        extra_lora: qualitySettings.extra_lora,
+        extra_lora_scale: qualitySettings.extra_lora_scale,
+        disable_safety_checker: qualitySettings.disable_safety_checker ?? true,
+        go_fast: qualitySettings.go_fast ?? false,
+        num_outputs: qualitySettings.num_outputs ?? 1,
+        model: qualitySettings.model ?? "dev",
       },
     })
 

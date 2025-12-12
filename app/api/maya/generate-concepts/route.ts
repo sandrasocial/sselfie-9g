@@ -378,11 +378,11 @@ CRITICAL INSTRUCTIONS:
 
 4. **NO Skin Quality Descriptions:** Do NOT describe skin quality beyond "natural". The user LoRA handles appearance. NO "natural skin texture with pores visible", "not plastic-looking", etc.
 
-5. **NO Film Grain or Muted Colors:** These are NO LONGER mandatory. Keep prompts simple (40-60 words) to preserve user LoRA.
+5. **NO Film Grain or Muted Colors:** These are NO LONGER mandatory. Keep prompts detailed (50-80 words) for better LoRA activation.
 
 6. **NO Natural Imperfections Lists:** Do NOT include lists of imperfections like "visible sensor noise", "slight motion blur", etc. Keep camera specs basic.
 
-11. **Prompt Length:** 40-60 words (optimal range for user LoRA preservation, prevents plastic/generic faces)
+11. **Prompt Length:** 50-80 words (optimal range for LoRA activation and accurate character representation)
 
 12. **NO BANNED WORDS:** Never use "ultra realistic", "photorealistic", "8K", "4K", "high quality", "perfect", "flawless", "stunning", "beautiful", "gorgeous", "professional photography", "editorial", "magazine quality", "dramatic" (for lighting), "cinematic", "hyper detailed", "sharp focus", "ultra sharp", "crystal clear", "studio lighting", "perfect lighting", "smooth skin", "flawless skin", "airbrushed" - these cause plastic/generic faces and override the user LoRA.
 
@@ -401,7 +401,7 @@ CRITICAL INSTRUCTIONS:
 6. **POSE + EXPRESSION** (simple, natural action - 3-5 words, NO "striking poses")
 7. **TECHNICAL SPECS** (basic iPhone only - 5-8 words, keep minimal)
 
-**Total target: 40-60 words for optimal user LoRA preservation (NOT 70-80)**
+**Total target: 50-80 words for optimal LoRA activation and accurate character representation**
 
 **IF ANY MANDATORY REQUIREMENT IS MISSING, THE PROMPT WILL PRODUCE AI-LOOKING RESULTS.**
 
@@ -625,9 +625,9 @@ Now apply your fashion intelligence and prompting mastery. Create ${count} conce
       // Clean up after removals
       prompt = prompt.replace(/,\s*,/g, ",").replace(/\s+/g, " ").trim()
 
-      // Get current word count - we want to stay under 60 words (new simplified format)
+      // Get current word count - we want to stay under 80 words (optimal for LoRA activation)
       let currentWordCount = wordCount(prompt)
-      const MAX_WORDS = 60 // Hard limit - new simplified format (40-60 words) preserves user LoRA better
+      const MAX_WORDS = 80 // Hard limit - optimal length (50-80 words) for better LoRA activation and accurate character representation
 
       // CRITICAL FIX: If prompt is over 80 words, trim intelligently
       if (currentWordCount > MAX_WORDS) {
@@ -652,6 +652,14 @@ Now apply your fashion intelligence and prompting mastery. Create ${count} conce
         if (currentWordCount > MAX_WORDS) {
           // Remove old requirements that are no longer needed
           prompt = prompt.replace(/,\s*(film\s+grain|muted\s+tones|natural\s+skin\s+texture|not\s+airbrushed|motion\s+blur|candid\s+moment)/gi, "")
+          currentWordCount = wordCount(prompt)
+        }
+        
+        // If still over 80 words, trim less critical elements
+        if (currentWordCount > MAX_WORDS) {
+          // Simplify overly detailed descriptions
+          prompt = prompt.replace(/,\s*with\s+soft\s+drape/gi, "")
+          prompt = prompt.replace(/,\s*weight\s+shifted\s+to\s+one\s+leg/gi, ", weight on one leg")
           currentWordCount = wordCount(prompt)
         }
         
@@ -706,7 +714,7 @@ Now apply your fashion intelligence and prompting mastery. Create ${count} conce
       }
 
       // REMOVED: All post-processing that adds old requirements (film grain, muted tones, skin texture, motion blur, candid moment)
-      // These are NO LONGER needed with the new simplified 40-60 word prompts that preserve user LoRA
+      // These are NO LONGER needed. Detailed prompts (50-80 words) work better for LoRA activation.
 
       // Final cleanup
       prompt = prompt.replace(/,\s*,/g, ",").replace(/\s+/g, " ").trim()
