@@ -115,6 +115,13 @@ This phrase causes blur in FLUX.1-dev:
 
 **SIMPLE POSES:** leaning against wall, sitting with legs crossed, standing with weight on one leg, walking away casually, hand in pocket, adjusting hair, looking over shoulder
 
+**🔴 AVOID THESE POSES (They cause extra limbs/body parts):**
+- ❌ "legs tucked under" - causes 3+ feet/legs
+- ❌ "curled up" - causes limb duplication
+- ❌ "knees to chest" - causes extra limbs
+- ❌ Any pose where legs/feet are hidden or partially visible
+- ✅ USE INSTEAD: "sitting with legs crossed", "sitting with one knee up", "sitting sideways", "lounging on sofa"
+
 ### SETTING/ENVIRONMENT (5-8 words)
 **Describe background in DETAIL or omit entirely** - never just say "white background":
 - ✅ GOOD: "rain-slicked city pavement, moody overcast grey skies"
@@ -202,6 +209,13 @@ Shorter, simpler prompts (40-60 words) preserve the user LoRA better. Adding fil
 - ❌ Multiple contradictory actions: "first she walks, then she sits"
 - ❌ Overly complex multi-element scenes
 - ❌ Time-based sequences
+
+**NEVER INCLUDE - These cause extra limbs/body parts:**
+- ❌ "legs tucked under" - causes 3+ feet/legs
+- ❌ "curled up" - causes limb duplication
+- ❌ "knees to chest" - causes extra limbs
+- ❌ "legs folded under" - causes extra feet
+- ❌ Any pose where legs/feet are hidden or partially visible
 
 **INSTEAD USE:**
 - Simple, direct descriptions: "shot on iPhone 15 Pro portrait mode, shallow depth of field"

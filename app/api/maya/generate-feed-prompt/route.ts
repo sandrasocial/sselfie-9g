@@ -834,6 +834,24 @@ Reference (IGNORE FORMAT - GENERIC AND INCOMPLETE): ${cleanedReferencePrompt.sub
         console.log(`[v0] [FEED-PROMPT] ✅ Added missing requirements: ${additions.join(', ')}`)
       }
       
+      // Fix problematic poses that cause extra limbs
+      if (/\blegs\s+tucked\s+under\b/i.test(generatedPrompt)) {
+        generatedPrompt = generatedPrompt.replace(/\blegs\s+tucked\s+under\b/gi, "sitting with legs crossed")
+        console.log(`[v0] [FEED-PROMPT] ⚠️ Replaced "legs tucked under" with "sitting with legs crossed" to prevent extra limbs`)
+      }
+      if (/\bcurled\s+up\b/i.test(generatedPrompt)) {
+        generatedPrompt = generatedPrompt.replace(/\bcurled\s+up\b/gi, "lounging comfortably")
+        console.log(`[v0] [FEED-PROMPT] ⚠️ Replaced "curled up" with "lounging comfortably" to prevent extra limbs`)
+      }
+      if (/\bknees\s+to\s+chest\b/i.test(generatedPrompt)) {
+        generatedPrompt = generatedPrompt.replace(/\bknees\s+to\s+chest\b/gi, "sitting with one knee up")
+        console.log(`[v0] [FEED-PROMPT] ⚠️ Replaced "knees to chest" with "sitting with one knee up" to prevent extra limbs`)
+      }
+      if (/\blegs\s+folded\s+under\b/i.test(generatedPrompt)) {
+        generatedPrompt = generatedPrompt.replace(/\blegs\s+folded\s+under\b/gi, "sitting with legs crossed")
+        console.log(`[v0] [FEED-PROMPT] ⚠️ Replaced "legs folded under" with "sitting with legs crossed" to prevent extra limbs`)
+      }
+      
       // Final cleanup
       generatedPrompt = generatedPrompt.replace(/,\s*,/g, ',').replace(/\s+/g, ' ').trim()
       
@@ -842,7 +860,7 @@ Reference (IGNORE FORMAT - GENERIC AND INCOMPLETE): ${cleanedReferencePrompt.sub
       
       console.log("[v0] [FEED-PROMPT] Final prompt (with trigger word):", generatedPrompt.substring(0, 150) + "...")
       console.log("[v0] [FEED-PROMPT] Trigger word verification:", generatedPrompt.toLowerCase().startsWith(triggerLower) ? "✅ CORRECT" : "❌ MISSING")
-      console.log("[v0] [FEED-PROMPT] Word count:", finalWordCount, finalWordCount >= 50 && finalWordCount <= 80 ? "✅" : "⚠️")
+      console.log("[v0] [FEED-PROMPT] Word count:", finalWordCount, finalWordCount >= 40 && finalWordCount <= 60 ? "✅" : "⚠️")
       console.log("[v0] [FEED-PROMPT] Expected start:", expectedStart)
       console.log("[v0] [FEED-PROMPT] Actual start:", generatedPrompt.substring(0, Math.min(expectedStart.length + 20, generatedPrompt.length)))
     }

@@ -478,6 +478,21 @@ Now apply your fashion intelligence and prompting mastery. Create ${count} conce
       // Remove old requirements that are no longer needed
       prompt = prompt.replace(/,\s*(film\s+grain|muted\s+tones|muted\s+color\s+palette|candid\s+moment|natural\s+skin\s+texture\s+with\s+pores\s+visible|not\s+airbrushed|not\s+plastic-looking|motion\s+blur|visible\s+sensor\s+noise|slight\s+motion\s+blur)/gi, "")
       
+      // Fix problematic poses that cause extra limbs
+      // Replace "legs tucked under" with safer alternatives
+      if (/\blegs\s+tucked\s+under\b/i.test(prompt)) {
+        prompt = prompt.replace(/\blegs\s+tucked\s+under\b/gi, "sitting with legs crossed")
+      }
+      if (/\bcurled\s+up\b/i.test(prompt)) {
+        prompt = prompt.replace(/\bcurled\s+up\b/gi, "lounging comfortably")
+      }
+      if (/\bknees\s+to\s+chest\b/i.test(prompt)) {
+        prompt = prompt.replace(/\bknees\s+to\s+chest\b/gi, "sitting with one knee up")
+      }
+      if (/\blegs\s+folded\s+under\b/i.test(prompt)) {
+        prompt = prompt.replace(/\blegs\s+folded\s+under\b/gi, "sitting with legs crossed")
+      }
+      
       // Remove duplicate "shot on iPhone" mentions (keep only one at the end)
       const iphoneMatches = prompt.match(/(shot\s+on\s+iPhone[^,]*)/gi)
       if (iphoneMatches && iphoneMatches.length > 1) {

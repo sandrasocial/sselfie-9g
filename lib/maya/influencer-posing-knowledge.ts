@@ -33,6 +33,21 @@ Real influencers don't "pose" - they create authentic moments. The best Instagra
 20. **The Edge Perch**: Sitting on edge of surface (step, bench, counter), feet dangling or one bent
 21. **The Pretzel**: Cross-legged on ground, leaning to one side, relaxed shoulders
 
+**🔴 CRITICAL: AVOID THESE POSE DESCRIPTIONS (They cause extra limbs/body parts in AI generation):**
+- ❌ "legs tucked under" - causes 3+ feet/legs to appear
+- ❌ "curled up" - causes limb duplication
+- ❌ "knees to chest" - causes extra limbs
+- ❌ "legs folded under" - causes extra feet
+- ❌ Any description where legs/feet are hidden or partially obscured
+
+**✅ SAFE ALTERNATIVES for lounging/sitting:**
+- "sitting with legs crossed" (both legs visible)
+- "sitting with one knee up" (one leg visible, one bent)
+- "sitting sideways" (legs to one side, visible)
+- "lounging on sofa" (simple, doesn't specify leg position)
+- "sitting comfortably" (generic, safe)
+- "relaxed seated position" (safe alternative)
+
 ### Standing / Stationary Moments
 22. **The Weight Shift**: Standing with weight on one leg, opposite hip popped slightly
 23. **The Hand-In-Pocket**: One or both hands in pockets (front or back), relaxed shoulders

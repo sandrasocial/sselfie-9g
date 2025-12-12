@@ -276,9 +276,15 @@ Remember:
 2. ✅ Specific outfit description (material + color + garment type - NOT "trendy outfit", stay detailed here)
 3. ✅ Simple setting (one-line location, keep brief)
 4. ✅ Simple natural lighting (NO dramatic/cinematic terms)
-5. ✅ Natural pose/action (NO "striking poses")
+5. ✅ Natural pose/action (NO "striking poses", NO "legs tucked under" - causes extra limbs)
 6. ✅ Basic iPhone specs only ("shot on iPhone 15 Pro portrait mode, shallow depth of field" OR "shot on iPhone, natural bokeh")
 7. ✅ Total length: 40-60 words (NOT 70-80)
+
+**🔴 AVOID THESE POSES (They cause extra limbs/body parts):**
+- ❌ "legs tucked under" - causes 3+ feet/legs
+- ❌ "curled up" - causes limb duplication
+- ❌ "knees to chest" - causes extra limbs
+- ✅ USE INSTEAD: "sitting with legs crossed", "sitting with one knee up", "lounging on sofa"
 
 **🔴 EXAMPLE OF PERFECT PROMPT (FOLLOW THIS FORMAT):**
 "${actualTriggerWord}, ${userEthnicity ? userEthnicity + ", " : ""}${userGender}, in sage green silk blouse with relaxed fit tucked into high-waisted cream linen trousers, standing with hand on marble bar counter, looking over shoulder naturally, upscale restaurant with marble surfaces, soft afternoon sunlight, shot on iPhone 15 Pro portrait mode, shallow depth of field"
@@ -462,6 +468,20 @@ Return ONLY valid JSON. No markdown.`
         console.log(`[v0] Maya: ✅ Added missing requirements: ${additions.join(', ')}`)
       }
       
+      // Fix problematic poses that cause extra limbs
+      if (/\blegs\s+tucked\s+under\b/i.test(composition.fluxPrompt)) {
+        composition.fluxPrompt = composition.fluxPrompt.replace(/\blegs\s+tucked\s+under\b/gi, "sitting with legs crossed")
+      }
+      if (/\bcurled\s+up\b/i.test(composition.fluxPrompt)) {
+        composition.fluxPrompt = composition.fluxPrompt.replace(/\bcurled\s+up\b/gi, "lounging comfortably")
+      }
+      if (/\bknees\s+to\s+chest\b/i.test(composition.fluxPrompt)) {
+        composition.fluxPrompt = composition.fluxPrompt.replace(/\bknees\s+to\s+chest\b/gi, "sitting with one knee up")
+      }
+      if (/\blegs\s+folded\s+under\b/i.test(composition.fluxPrompt)) {
+        composition.fluxPrompt = composition.fluxPrompt.replace(/\blegs\s+folded\s+under\b/gi, "sitting with legs crossed")
+      }
+      
       // Final cleanup
       composition.fluxPrompt = composition.fluxPrompt.replace(/,\s*,/g, ',').replace(/\s+/g, ' ').trim()
       
@@ -632,6 +652,20 @@ Return ONLY valid JSON. No markdown.`
           composition.fluxPrompt = composition.fluxPrompt + ', ' + additions.join(', ')
         }
         console.log(`[v0] Maya: ✅ Added missing requirements: ${additions.join(', ')}`)
+      }
+      
+      // Fix problematic poses that cause extra limbs
+      if (/\blegs\s+tucked\s+under\b/i.test(composition.fluxPrompt)) {
+        composition.fluxPrompt = composition.fluxPrompt.replace(/\blegs\s+tucked\s+under\b/gi, "sitting with legs crossed")
+      }
+      if (/\bcurled\s+up\b/i.test(composition.fluxPrompt)) {
+        composition.fluxPrompt = composition.fluxPrompt.replace(/\bcurled\s+up\b/gi, "lounging comfortably")
+      }
+      if (/\bknees\s+to\s+chest\b/i.test(composition.fluxPrompt)) {
+        composition.fluxPrompt = composition.fluxPrompt.replace(/\bknees\s+to\s+chest\b/gi, "sitting with one knee up")
+      }
+      if (/\blegs\s+folded\s+under\b/i.test(composition.fluxPrompt)) {
+        composition.fluxPrompt = composition.fluxPrompt.replace(/\blegs\s+folded\s+under\b/gi, "sitting with legs crossed")
       }
       
       // Final cleanup
