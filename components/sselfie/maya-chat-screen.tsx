@@ -136,11 +136,33 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
       chatId: chatId,
     },
     onError: (error) => {
+      // Handle different error types safely
+      let errorMessage = "Unknown error"
+      let errorStack: string | undefined
+      
+      if (error instanceof Error) {
+        errorMessage = error.message
+        errorStack = error.stack
+      } else if (error && typeof error === "object") {
+        // Try to extract message from error object
+        errorMessage = (error as any).message || (error as any).error || JSON.stringify(error)
+        errorStack = (error as any).stack
+      } else if (typeof error === "string") {
+        errorMessage = error
+      } else {
+        errorMessage = String(error)
+      }
+      
       console.error("[v0] Maya chat error:", {
-        error: error.message,
-        stack: error.stack,
+        error: errorMessage,
+        stack: errorStack,
+        rawError: error,
         timestamp: new Date().toISOString(),
       })
+      
+      // TODO: Add toast import if you want user-facing error notifications
+      // import { toast } from "sonner"
+      // toast.error(errorMessage || "An error occurred while chatting with Maya. Please try again.")
     },
   })
 
@@ -319,6 +341,76 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
       console.log("[v0] Calling generate-concepts API for:", pendingConceptRequest)
 
       try {
+        // Extract reference image from user messages (check all user messages, most recent first)
+        let referenceImageUrl: string | undefined = undefined
+        const userMessages = messages.filter((m) => m.role === "user").reverse() // Most recent first
+        
+        console.log("[v0] 🔍 Searching for reference image in", userMessages.length, "user messages")
+        console.log("[v0] 📋 Message structure sample:", JSON.stringify(userMessages[0]?.parts?.slice(0, 2) || userMessages[0]?.content?.substring(0, 100), null, 2))
+        
+        for (const userMessage of userMessages) {
+          // Check if message has image in parts
+          if (userMessage.parts && Array.isArray(userMessage.parts)) {
+            console.log("[v0] 🔍 Checking message with", userMessage.parts.length, "parts")
+            
+            const imagePart = userMessage.parts.find((p: any) => {
+              if (!p) return false
+              console.log("[v0]   - Part type:", p.type, "keys:", Object.keys(p))
+              
+              // Check for image type
+              if (p.type === "image") {
+                console.log("[v0]   ✅ Found image part!")
+                return true
+              }
+              // Check for file type with image mediaType
+              if (p.type === "file" && p.mediaType && p.mediaType.startsWith("image/")) {
+                console.log("[v0]   ✅ Found file image part!")
+                return true
+              }
+              return false
+            })
+            
+            if (imagePart) {
+              // Try multiple possible property names
+              referenceImageUrl = imagePart.image || imagePart.url || imagePart.src || imagePart.data
+              if (referenceImageUrl) {
+                console.log("[v0] ✅ Extracted reference image from message parts:", referenceImageUrl.substring(0, 100) + "...")
+                break // Found it, stop searching
+              } else {
+                console.log("[v0] ⚠️ Image part found but no URL property:", Object.keys(imagePart))
+              }
+            }
+          }
+          
+          // Also check for text marker (backward compatibility)
+          if (!referenceImageUrl) {
+            let textContent = ""
+            if (typeof userMessage.content === "string") {
+              textContent = userMessage.content
+            } else if (userMessage.parts && Array.isArray(userMessage.parts)) {
+              const textParts = userMessage.parts.filter((p: any) => p && p.type === "text")
+              textContent = textParts.map((p: any) => p.text || "").join("\n")
+            }
+            
+            const inspirationImageMatch = textContent.match(/\[Inspiration Image: (https?:\/\/[^\]]+)\]/)
+            if (inspirationImageMatch) {
+              referenceImageUrl = inspirationImageMatch[1]
+              console.log("[v0] ✅ Extracted reference image from text marker:", referenceImageUrl.substring(0, 100) + "...")
+              break // Found it, stop searching
+            }
+          }
+        }
+        
+        if (!referenceImageUrl) {
+          console.log("[v0] ⚠️ No reference image found in any user messages")
+          console.log("[v0] 📋 All user messages:", userMessages.map(m => ({
+            hasParts: !!m.parts,
+            partsCount: m.parts?.length || 0,
+            hasContent: !!m.content,
+            contentType: typeof m.content
+          })))
+        }
+
         const conversationContext = messages
           .filter((m) => m.role === "user" || m.role === "assistant")
           .slice(-10)
@@ -339,6 +431,12 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
           .filter(Boolean)
           .join("\n")
 
+        console.log("[v0] 📤 Sending generate-concepts request with:", {
+          userRequest: pendingConceptRequest,
+          hasReferenceImage: !!referenceImageUrl,
+          referenceImageUrl: referenceImageUrl ? referenceImageUrl.substring(0, 100) + "..." : undefined,
+        })
+
         const response = await fetch("/api/maya/generate-concepts", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -346,6 +444,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
             userRequest: pendingConceptRequest,
             count: 6, // Changed from hardcoded 3 to 6, allowing Maya to create more concepts
             conversationContext: conversationContext || undefined,
+            referenceImageUrl: referenceImageUrl, // Pass reference image if found
           }),
         })
 
@@ -1511,94 +1610,127 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
                 <div className={`max-w-[90%] sm:max-w-[85%] ${msg.role === "user" ? "order-2" : "order-1"}`}>
                   {msg.parts &&
                     Array.isArray(msg.parts) &&
-                    msg.parts.map((part, partIndex) => {
-                      if (part.type === "text") {
-                        return (
-                          <div
-                            key={partIndex}
-                            className={`p-4 rounded-2xl transition-all duration-300 ${
-                              msg.role === "user"
-                                ? "bg-stone-950 text-white shadow-lg shadow-stone-950/20"
-                                : "bg-white/50 backdrop-blur-xl border border-white/70 shadow-lg shadow-stone-950/5 text-stone-950"
-                            }`}
-                            role={msg.role === "assistant" ? "article" : undefined}
-                          >
-                            {renderMessageContent(part.text, msg.role === "user")}
-                          </div>
-                        )
-                      }
+                    (() => {
+                      // Group parts by type to handle text + image together
+                      const textParts = msg.parts.filter((p) => p.type === "text")
+                      const imageParts = msg.parts.filter((p) => p.type === "image")
+                      const otherParts = msg.parts.filter((p) => p.type !== "text" && p.type !== "image")
 
-                      if (part.type === "tool-generateConcepts") {
-                        const toolPart = part as any
-                        const output = toolPart.output
-
-                        if (output && output.state === "ready" && Array.isArray(output.concepts)) {
-                          const concepts = output.concepts
-
-                          return (
-                            <div key={partIndex} className="mt-3 space-y-2">
-                              <div className="flex items-center gap-2">
-                                <div className="w-1 h-1 rounded-full bg-stone-600"></div>
-                                <span className="text-xs tracking-[0.15em] uppercase font-light text-stone-600">
-                                  Photo Ideas
-                                </span>
-                              </div>
-                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
-                                {concepts.map((concept: any, conceptIndex: number) => (
-                                  <ConceptCard key={conceptIndex} concept={concept} />
-                                ))}
-                              </div>
+                      return (
+                        <>
+                          {/* Render text + image together if both exist */}
+                          {(textParts.length > 0 || imageParts.length > 0) && (
+                            <div
+                              className={`p-4 rounded-2xl transition-all duration-300 ${
+                                msg.role === "user"
+                                  ? "bg-stone-950 text-white shadow-lg shadow-stone-950/20"
+                                  : "bg-white/50 backdrop-blur-xl border border-white/70 shadow-lg shadow-stone-950/5 text-stone-950"
+                              }`}
+                              role={msg.role === "assistant" ? "article" : undefined}
+                            >
+                              {textParts.map((part, idx) => (
+                                <div key={idx}>
+                                  {renderMessageContent(part.text, msg.role === "user")}
+                                </div>
+                              ))}
+                              {imageParts.map((part, idx) => {
+                                const imageUrl = (part as any).image || (part as any).url || (part as any).src
+                                if (imageUrl) {
+                                  return (
+                                    <div key={idx} className="mt-3">
+                                      <div className="relative w-48 h-48 sm:w-40 sm:h-40 rounded-xl overflow-hidden border border-white/60 shadow-lg">
+                                        <img 
+                                          src={imageUrl} 
+                                          alt="Inspiration" 
+                                          className="w-full h-full object-cover" 
+                                        />
+                                      </div>
+                                      <p className="text-xs text-stone-500 mt-1.5 tracking-wide">Inspiration Image</p>
+                                    </div>
+                                  )
+                                }
+                                return null
+                              })}
                             </div>
-                          )
-                        }
-                        // This part is now handled by the isGeneratingConcepts check before the message
-                      }
+                          )}
+                          {/* Render other parts (tools, etc.) */}
+                          {otherParts.map((part, partIndex) => {
+                            if (part.type === "tool-generateConcepts") {
+                              const toolPart = part as any
+                              const output = toolPart.output
 
-                      if (part.type === "tool-generateVideo") {
-                        const toolPart = part as any
-                        const output = toolPart.output
+                              if (output && output.state === "ready" && Array.isArray(output.concepts)) {
+                                const concepts = output.concepts
 
-                        if (output && output.state === "processing") {
-                          return (
-                            <div key={partIndex} className="mt-3">
-                              <VideoCard
-                                videoUrl=""
-                                status="processing"
-                                progress={output.progress}
-                                motionPrompt={toolPart.args?.motionPrompt}
-                              />
-                            </div>
-                          )
-                        }
+                                return (
+                                  <div key={partIndex} className="mt-3 space-y-2">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-1 h-1 rounded-full bg-stone-600"></div>
+                                      <span className="text-xs tracking-[0.15em] uppercase font-light text-stone-600">
+                                        Photo Ideas
+                                      </span>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
+                                      {concepts.map((concept: any, conceptIndex: number) => (
+                                        <ConceptCard key={conceptIndex} concept={concept} chatId={chatId || undefined} onCreditsUpdate={setCreditBalance} />
+                                      ))}
+                                    </div>
+                                  </div>
+                                )
+                              }
+                              // This part is now handled by the isGeneratingConcepts check before the message
+                              return null
+                            }
 
-                        if (output && output.state === "ready" && output.videoUrl) {
-                          return (
-                            <div key={partIndex} className="mt-3">
-                              <VideoCard
-                                videoUrl={output.videoUrl}
-                                motionPrompt={toolPart.args?.motionPrompt}
-                                imageSource={toolPart.args?.imageUrl}
-                              />
-                            </div>
-                          )
-                        }
+                            if (part.type === "tool-generateVideo") {
+                              const toolPart = part as any
+                              const output = toolPart.output
 
-                        if (output && output.state === "loading") {
-                          return (
-                            <div key={partIndex} className="mt-3">
-                              <div className="flex items-center gap-2 text-stone-600">
-                                <div className="w-1.5 h-1.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                <span className="text-xs tracking-[0.15em] uppercase font-light">
-                                  Starting video generation...
-                                </span>
-                              </div>
-                            </div>
-                          )
-                        }
-                      }
+                              if (output && output.state === "processing") {
+                                return (
+                                  <div key={partIndex} className="mt-3">
+                                    <VideoCard
+                                      videoUrl=""
+                                      status="processing"
+                                      progress={output.progress}
+                                      motionPrompt={toolPart.args?.motionPrompt}
+                                    />
+                                  </div>
+                                )
+                              }
 
-                      return null
-                    })}
+                              if (output && output.state === "ready" && output.videoUrl) {
+                                return (
+                                  <div key={partIndex} className="mt-3">
+                                    <VideoCard
+                                      videoUrl={output.videoUrl}
+                                      motionPrompt={toolPart.args?.motionPrompt}
+                                      imageSource={toolPart.args?.imageUrl}
+                                    />
+                                  </div>
+                                )
+                              }
+
+                              if (output && output.state === "loading") {
+                                return (
+                                  <div key={partIndex} className="mt-3">
+                                    <div className="flex items-center gap-2 text-stone-600">
+                                      <div className="w-1.5 h-1.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                      <span className="text-xs tracking-[0.15em] uppercase font-light">
+                                        Starting video generation...
+                                      </span>
+                                    </div>
+                                  </div>
+                                )
+                              }
+                              return null
+                            }
+
+                            return null
+                          })}
+                        </>
+                      )
+                    })()}
                 </div>
               </div>
             ))}

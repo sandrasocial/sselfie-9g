@@ -56,8 +56,78 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Messages cannot be empty" }, { status: 400 })
     }
 
+    // CRITICAL: Filter and validate messages before processing
+    // Remove any messages with invalid structure (tool calls, malformed content, etc.)
+    const validUIMessages = uiMessages.filter((m: any) => {
+      if (!m || !m.role) {
+        console.log("[v0] ⚠️ Filtering out message with missing role")
+        return false
+      }
+      
+      // Only allow user and assistant messages (no system messages from UI)
+      if (m.role !== "user" && m.role !== "assistant") {
+        console.log("[v0] ⚠️ Filtering out message with invalid role:", m.role)
+        return false
+      }
+      
+      // Check for invalid content structures
+      if (m.content && Array.isArray(m.content)) {
+        // Check for tool-result or tool-call types (not supported in chat)
+        const hasInvalidTypes = m.content.some((c: any) => {
+          if (!c || !c.type) return false
+          // Filter out tool types that aren't properly formatted
+          if (c.type === "tool-result" || c.type === "tool-call") {
+            // Check if required fields are missing
+            if (c.type === "tool-result" && (!c.toolCallId || !c.toolName || !c.output)) {
+              return true // Invalid tool-result
+            }
+            if (c.type === "tool-call" && (!c.toolCallId || !c.toolName)) {
+              return true // Invalid tool-call
+            }
+          }
+          return false
+        })
+        if (hasInvalidTypes) {
+          console.log("[v0] ⚠️ Filtering out message with invalid tool types in content:", m.id || "unknown")
+          return false
+        }
+      }
+      
+      // Check for invalid parts structure
+      if (m.parts && Array.isArray(m.parts)) {
+        const hasInvalidTypes = m.parts.some((p: any) => {
+          if (!p || !p.type) return false
+          // Filter out tool types that aren't properly formatted
+          if (p.type === "tool-result" || p.type === "tool-call") {
+            // Check if required fields are missing
+            if (p.type === "tool-result" && (!p.toolCallId || !p.toolName || !p.output)) {
+              return true // Invalid tool-result
+            }
+            if (p.type === "tool-call" && (!p.toolCallId || !p.toolName)) {
+              return true // Invalid tool-call
+            }
+          }
+          // Filter out custom tool types that aren't supported by AI SDK
+          if (p.type && p.type.startsWith("tool-") && p.type !== "tool-result" && p.type !== "tool-call") {
+            // Custom tool types like "tool-generateConcepts" should be filtered out before sending to AI SDK
+            return true
+          }
+          return false
+        })
+        if (hasInvalidTypes) {
+          console.log("[v0] ⚠️ Filtering out message with invalid parts:", m.id || "unknown")
+          return false
+        }
+      }
+      
+      return true
+    })
+    
+    console.log("[v0] Filtered", uiMessages.length, "UI messages to", validUIMessages.length, "valid messages")
+
     // Process UI messages to extract inspiration images from text markers (backward compatibility)
-    const messages: UIMessage[] = uiMessages.map((m: any) => {
+    // AND ensure image parts are properly formatted for AI SDK
+    const messages: UIMessage[] = validUIMessages.map((m: any) => {
       // Check if message has text content with inspiration image marker
       let textContent = ""
       if (m.parts && Array.isArray(m.parts)) {
@@ -87,6 +157,52 @@ export async function POST(req: Request) {
           
           console.log("[v0] ✅ Extracted inspiration image from text marker:", imageUrl.substring(0, 100) + "...")
           return { ...m, parts: newParts }
+        }
+      }
+      
+      // CRITICAL FIX: Ensure image parts have the correct format for AI SDK
+      // Sometimes image parts might have different property names
+      if (m.parts && Array.isArray(m.parts) && m.role === "user") {
+        const normalizedParts = m.parts
+          .filter((p: any) => {
+            // Filter out invalid part types
+            if (!p || !p.type) return false
+            // Filter out tool types (not supported in chat messages sent to AI SDK)
+            if (p.type === "tool-result" || p.type === "tool-call" || (p.type && p.type.startsWith("tool-"))) {
+              console.log("[v0] ⚠️ Filtering out tool part type:", p.type)
+              return false
+            }
+            // Only allow text and image parts
+            if (p.type !== "text" && p.type !== "image" && p.type !== "file") {
+              console.log("[v0] ⚠️ Filtering out unsupported part type:", p.type)
+              return false
+            }
+            return true
+          })
+          .map((p: any) => {
+            if (p && p.type === "image") {
+              // Ensure image URL is in the 'image' property
+              const imageUrl = p.image || p.url || p.src || p.data
+              if (imageUrl) {
+                console.log("[v0] ✅ Normalizing image part with URL:", imageUrl.substring(0, 100) + "...")
+                return { type: "image", image: imageUrl }
+              }
+            }
+            // Ensure text parts have required properties
+            if (p && p.type === "text") {
+              return { type: "text", text: p.text || "" }
+            }
+            return p
+          })
+        
+        // Only return modified message if parts were actually changed
+        const partsChanged = normalizedParts.some((np: any, idx: number) => {
+          const original = m.parts[idx]
+          return np !== original && np.type === "image"
+        })
+        
+        if (partsChanged) {
+          return { ...m, parts: normalizedParts }
         }
       }
       
@@ -131,17 +247,138 @@ export async function POST(req: Request) {
 
     // Convert UI messages to model messages using AI SDK's convertToModelMessages
     // This properly handles images, text, and other content types
-    const modelMessages = convertToModelMessages(messages)
+    let modelMessages = convertToModelMessages(messages)
     
     console.log("[v0] Converted", messages.length, "UI messages to", modelMessages.length, "model messages")
     
-    // Log if any messages contain images
+    // CRITICAL: Validate and filter model messages to ensure they're in correct format
+    modelMessages = modelMessages.filter((m: any) => {
+      if (!m || !m.role) {
+        console.log("[v0] ⚠️ Filtering out model message with missing role")
+        return false
+      }
+      
+      // Validate content structure
+      if (m.content) {
+        if (Array.isArray(m.content)) {
+          // Check for invalid content types
+          const hasInvalidTypes = m.content.some((c: any) => {
+            if (!c || !c.type) return true
+            // Only allow text, image, file types
+            if (c.type !== "text" && c.type !== "image" && c.type !== "file") {
+              console.log("[v0] ⚠️ Filtering out model message with invalid content type:", c.type)
+              return true
+            }
+            // Validate text parts have text property
+            if (c.type === "text" && typeof c.text !== "string") {
+              console.log("[v0] ⚠️ Filtering out model message with invalid text part")
+              return true
+            }
+            return false
+          })
+          if (hasInvalidTypes) return false
+        } else if (typeof m.content !== "string") {
+          console.log("[v0] ⚠️ Filtering out model message with invalid content type:", typeof m.content)
+          return false
+        }
+      }
+      
+      return true
+    })
+    
+    console.log("[v0] Validated", modelMessages.length, "valid model messages")
+    
+    // Log if any messages contain images (BEFORE conversion)
     messages.forEach((m, idx) => {
       if (m.parts && Array.isArray(m.parts)) {
         const imageParts = m.parts.filter((p: any) => p && (p.type === "image" || (p.type === "file" && p.mediaType?.startsWith("image/"))))
         if (imageParts.length > 0) {
-          console.log("[v0] ✅ Message", idx, "contains", imageParts.length, "image(s)")
+          console.log("[v0] ✅ UI Message", idx, "contains", imageParts.length, "image(s)")
+          imageParts.forEach((imgPart: any, imgIdx: number) => {
+            const imgUrl = imgPart.image || imgPart.url || imgPart.src
+            console.log("[v0]   - Image", imgIdx, "URL:", imgUrl?.substring(0, 100) + "...")
+          })
         }
+      }
+    })
+    
+    // CRITICAL FIX: Manually ensure images are included in model messages
+    // Sometimes convertToModelMessages might not properly handle image parts
+    modelMessages = modelMessages.map((modelMsg: any, msgIdx: number) => {
+      const originalUIMessage = messages[msgIdx]
+      
+      // Check if original UI message has image parts
+      if (originalUIMessage && originalUIMessage.parts && Array.isArray(originalUIMessage.parts)) {
+        const imageParts = originalUIMessage.parts.filter((p: any) => p && p.type === "image")
+        
+        if (imageParts.length > 0) {
+          // Check if model message already has these images
+          const hasImagesInModel = modelMsg.content && Array.isArray(modelMsg.content) && 
+            modelMsg.content.some((c: any) => c && c.type === "image")
+          
+          if (!hasImagesInModel) {
+            console.log("[v0] ⚠️ Model message missing images - manually adding them")
+            
+            // Build content array with text + images
+            const contentParts: any[] = []
+            
+            // Add text content if it exists
+            if (modelMsg.content) {
+              if (typeof modelMsg.content === "string") {
+                contentParts.push({ type: "text", text: modelMsg.content })
+              } else if (Array.isArray(modelMsg.content)) {
+                // Add existing content parts (text, etc.) - filter out invalid types
+                modelMsg.content.forEach((c: any) => {
+                  if (c && c.type && c.type !== "image" && c.type !== "tool-result" && c.type !== "tool-call") {
+                    // Ensure text parts have required properties
+                    if (c.type === "text" && c.text) {
+                      contentParts.push({ type: "text", text: c.text })
+                    } else if (c.type !== "text") {
+                      contentParts.push(c)
+                    }
+                  }
+                })
+              }
+            }
+            
+            // Add image parts
+            imageParts.forEach((imgPart: any) => {
+              const imageUrl = imgPart.image || imgPart.url || imgPart.src
+              if (imageUrl) {
+                contentParts.push({ type: "image", image: imageUrl })
+                console.log("[v0] ✅ Manually added image to model message:", imageUrl.substring(0, 100) + "...")
+              }
+            })
+            
+            return {
+              ...modelMsg,
+              content: contentParts.length > 0 ? contentParts : modelMsg.content,
+            }
+          }
+        }
+      }
+      
+      return modelMsg
+    })
+    
+    // Log if any MODEL messages contain images (AFTER manual fix)
+    modelMessages.forEach((m: any, idx: number) => {
+      if (m.content && Array.isArray(m.content)) {
+        const imageContent = m.content.filter((c: any) => c && c.type === "image")
+        if (imageContent.length > 0) {
+          console.log("[v0] ✅ Model Message", idx, "contains", imageContent.length, "image(s) - WILL BE SENT TO CLAUDE")
+          imageContent.forEach((imgContent: any, imgIdx: number) => {
+            const imgUrl = imgContent.image || imgContent.url || imgContent.src
+            console.log("[v0]   - Image", imgIdx, "URL:", imgUrl?.substring(0, 100) + "...")
+          })
+        } else {
+          // Check if it's a string content (no images)
+          if (typeof m.content === "string") {
+            console.log("[v0] ⚠️ Model Message", idx, "has string content (no images)")
+          }
+        }
+      } else if (typeof m.content === "string") {
+        console.log("[v0] ⚠️ Model Message", idx, "has string content only (no images)")
       }
     })
 
@@ -270,11 +507,17 @@ ${genderSpecificExamples}
 - ALWAYS use web search for Instagram strategy, captions, and best practices
 - Sound like their excited friend AND their smart strategist`
 
-    const result = streamText({
-      model: "anthropic/claude-sonnet-4-20250514",
-      system: systemPrompt,
-      messages: modelMessages,
-    })
+    let result
+    try {
+      result = streamText({
+        model: "anthropic/claude-sonnet-4-20250514",
+        system: systemPrompt,
+        messages: modelMessages,
+      })
+    } catch (streamError) {
+      console.error("[v0] Error in streamText call:", streamError)
+      throw streamError // Re-throw to be caught by outer catch block
+    }
 
     // Save chat to database if we have a chatId
     if (chatId && supabase) {
@@ -322,7 +565,37 @@ ${genderSpecificExamples}
 
     return result.toUIMessageStreamResponse()
   } catch (error) {
-    console.error("[v0] Maya chat error:", error)
-    return NextResponse.json({ error: "Failed to process chat" }, { status: 500 })
+    // Log detailed error information
+    let errorMessage = "Failed to process chat"
+    let errorDetails: any = {}
+    
+    if (error instanceof Error) {
+      errorMessage = error.message
+      errorDetails = {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+      }
+    } else if (error && typeof error === "object") {
+      errorDetails = error
+      errorMessage = (error as any).message || (error as any).error || errorMessage
+    } else {
+      errorMessage = String(error)
+      errorDetails = { raw: error }
+    }
+    
+    console.error("[v0] Maya chat error:", {
+      error: errorMessage,
+      details: errorDetails,
+      timestamp: new Date().toISOString(),
+    })
+    
+    return NextResponse.json(
+      { 
+        error: errorMessage,
+        details: process.env.NODE_ENV === "development" ? errorDetails : undefined,
+      }, 
+      { status: 500 }
+    )
   }
 }

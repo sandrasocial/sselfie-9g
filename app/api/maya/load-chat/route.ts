@@ -54,37 +54,70 @@ export async function GET(request: NextRequest) {
         createdAt: msg.created_at,
       }
 
+      // Extract inspiration image from content if present (backward compatibility)
+      const inspirationImageMatch = msg.content?.match(/\[Inspiration Image: (https?:\/\/[^\]]+)\]/)
+      const imageUrl = inspirationImageMatch ? inspirationImageMatch[1] : null
+      const textContent = imageUrl 
+        ? msg.content?.replace(/\[Inspiration Image: https?:\/\/[^\]]+\]/g, "").trim() || ""
+        : msg.content || ""
+
       if (msg.concept_cards && Array.isArray(msg.concept_cards) && msg.concept_cards.length > 0) {
         console.log("[v0] Formatting message", msg.id, "with", msg.concept_cards.length, "concept cards")
+        const parts: any[] = []
+        
+        if (textContent) {
+          parts.push({
+            type: "text",
+            text: textContent,
+          })
+        }
+        
+        if (imageUrl) {
+          parts.push({
+            type: "image",
+            image: imageUrl,
+          })
+          console.log("[v0] ✅ Restored inspiration image for message", msg.id)
+        }
+        
+        parts.push({
+          type: "tool-generateConcepts",
+          toolCallId: `tool_${msg.id}`,
+          state: "ready",
+          input: {},
+          output: {
+            state: "ready",
+            concepts: msg.concept_cards,
+          },
+        })
+        
         return {
           ...baseMessage,
-          parts: [
-            {
-              type: "text",
-              text: msg.content || "",
-            },
-            {
-              type: "tool-generateConcepts",
-              toolCallId: `tool_${msg.id}`,
-              state: "ready",
-              input: {},
-              output: {
-                state: "ready",
-                concepts: msg.concept_cards,
-              },
-            },
-          ],
+          parts,
         }
+      }
+
+      // Regular message - include image if present
+      const parts: any[] = []
+      
+      if (textContent) {
+        parts.push({
+          type: "text",
+          text: textContent,
+        })
+      }
+      
+      if (imageUrl) {
+        parts.push({
+          type: "image",
+          image: imageUrl,
+        })
+        console.log("[v0] ✅ Restored inspiration image for message", msg.id)
       }
 
       return {
         ...baseMessage,
-        parts: [
-          {
-            type: "text",
-            text: msg.content || "",
-          },
-        ],
+        parts: parts.length > 0 ? parts : [{ type: "text", text: "" }],
       }
     })
 

@@ -63,6 +63,8 @@ export async function POST(req: NextRequest) {
       mode,
       count,
       hasConversationContext: !!conversationContext,
+      hasReferenceImage: !!referenceImageUrl,
+      referenceImageUrl: referenceImageUrl ? referenceImageUrl.substring(0, 100) + "..." : undefined,
     })
 
     // Detect environment
@@ -114,17 +116,25 @@ export async function POST(req: NextRequest) {
     if (referenceImageUrl) {
       console.log("[v0] Analyzing reference image:", referenceImageUrl)
 
-      const visionAnalysisPrompt = `Look at this image carefully and tell me everything I need to know to recreate this vibe.
+      const visionAnalysisPrompt = `Look at this image carefully and tell me everything I need to know to recreate this EXACT vibe.
 
-Focus on:
-1. **The outfit** - What are they wearing? Be super specific (fabrics, fit, colors, style)
-2. **The pose** - How are they standing/sitting? What are their hands doing?
-3. **The setting** - Where is this? What's the vibe of the location?
-4. **The lighting** - What kind of light is this? (warm, cool, bright, moody, etc.)
-5. **The mood** - What feeling does this give off? (confident, relaxed, mysterious, playful, etc.)
-6. **Color palette** - What colors dominate the image?
+CRITICAL - DETECT THESE FIRST:
+1. **Is this BLACK & WHITE or MONOCHROME?** - If yes, this MUST be in the prompt as "black and white" or "monochrome"
+2. **Is this a STUDIO shot?** - Look for: studio lighting, professional setup, clean backgrounds, controlled environment
+3. **Is this EDITORIAL/HIGH-FASHION?** - Look for: magazine-style, high-end fashion, dramatic, professional photography
+4. **Camera type** - Is this clearly shot on a professional camera (not phone)? Look for: sharp focus, professional quality, studio equipment
 
-Keep it conversational and specific. I need to recreate this exact vibe for Instagram.`
+Then focus on:
+5. **The outfit** - What are they wearing? Be super specific (fabrics, fit, colors, style)
+6. **The pose** - How are they standing/sitting? What are their hands doing?
+7. **The setting** - Where is this? What's the vibe of the location?
+8. **The lighting** - What kind of light is this? (studio lighting, natural window light, dramatic side lighting, soft diffused, etc.)
+9. **The mood** - What feeling does this give off? (confident, relaxed, mysterious, playful, etc.)
+10. **Color palette** - What colors dominate? (If B&W, explicitly say "black and white" or "monochrome")
+
+IMPORTANT: If you detect B&W, studio, or editorial - these are MANDATORY requirements that MUST be in every prompt. Don't suggest "natural iPhone photos" if this is clearly a professional studio shot.
+
+Keep it conversational and specific. I need to recreate this EXACT vibe.`
 
       const { text: visionText } = await generateText({
         model: "anthropic/claude-sonnet-4-20250514",
@@ -159,25 +169,43 @@ Keep it conversational and specific. I need to recreate this exact vibe for Inst
 
     const lifestyleContext = getLifestyleContextIntelligence(userRequest || aesthetic || "")
 
+    // PRIORITY 1 FIX #3: Make Scandinavian filter conditional - default but allow override
+    // Check if user specified a different aesthetic (before trend research)
+    const userAestheticLower = (aesthetic || "").toLowerCase()
+    const userRequestLower = (userRequest || "").toLowerCase()
+    const combinedStyle = userAestheticLower + " " + userRequestLower
+    const wantsScandinavian = /scandi|scandinavian|minimal|minimalist|nordic|hygge/i.test(combinedStyle)
+    const wantsNonScandi = /vintage|y2k|dark.?academia|maximalist|mob.?wife|bold|colorful|vibrant|editorial|high.?fashion/i.test(combinedStyle) && !wantsScandinavian
+
     let trendResearch = ""
     if (!aesthetic || aesthetic.toLowerCase().includes("instagram") || aesthetic.toLowerCase().includes("trend")) {
       console.log("[v0] Researching current Instagram trends for concept generation")
 
-      const { text: researchText } = await generateText({
-        model: "anthropic/claude-sonnet-4-20250514",
-        messages: [
-          {
-            role: "user",
-            content: `Research current Instagram fashion trends for personal brand content creators. Focus on:
+      // Build trend research prompt with conditional Scandinavian filter
+      let trendResearchPrompt = `Research current Instagram fashion trends for personal brand content creators. Focus on:
 
 1. What aesthetics are performing well RIGHT NOW on Instagram (Jan 2025)
 2. Color palettes that are trending for fashion content
 3. Outfit styling that's getting high engagement
 4. Settings and locations that feel current
 
-Keep it brief (2-3 paragraphs) and actionable for a fashion photographer creating content.
+Keep it brief (2-3 paragraphs) and actionable for a fashion photographer creating content.`
 
-CRITICAL: Filter trends through a SCANDINAVIAN MINIMALISM lens - we want Nordic-appropriate trends only (natural tones, clean lines, quality fabrics).`,
+      // Add conditional filter instruction
+      if (wantsNonScandi) {
+        const aestheticName = userAestheticLower || "the requested"
+        trendResearchPrompt += `\n\nCRITICAL: Filter trends through ${aestheticName} aesthetic lens.`
+      } else {
+        // Default: Scandinavian minimalism (beautiful default aesthetic)
+        trendResearchPrompt += `\n\nCRITICAL: Filter trends through a SCANDINAVIAN MINIMALISM lens - we want Nordic-appropriate trends only (natural tones, clean lines, quality fabrics).`
+      }
+
+      const { text: researchText } = await generateText({
+        model: "anthropic/claude-sonnet-4-20250514",
+        messages: [
+          {
+            role: "user",
+            content: trendResearchPrompt,
           },
         ],
         maxTokens: 500,
@@ -186,6 +214,21 @@ CRITICAL: Filter trends through a SCANDINAVIAN MINIMALISM lens - we want Nordic-
 
       trendResearch = researchText
       console.log("[v0] Trend research complete")
+    }
+
+    let trendFilterInstruction = ""
+    if (trendResearch) {
+      if (wantsNonScandi) {
+        // User explicitly wants non-Scandinavian aesthetic - respect their choice
+        const aestheticName = userAestheticLower || "the requested"
+        trendFilterInstruction = `Use these insights to inform your concept creation, filtered through ${aestheticName} aesthetic.`
+      } else if (wantsScandinavian) {
+        // User explicitly wants Scandinavian - apply filter
+        trendFilterInstruction = `Use these insights to inform your concept creation, filtered through Scandinavian minimalism (natural tones, clean lines, quality).`
+      } else {
+        // Default: Scandinavian minimalism (beautiful default aesthetic)
+        trendFilterInstruction = `Use these insights to inform your concept creation, but ALWAYS filter through Scandinavian minimalism (natural tones, clean lines, quality) as the default aesthetic.`
+      }
     }
 
     const conversationContextSection = conversationContext
@@ -212,7 +255,7 @@ ${
 
 ${trendResearch}
 
-Use these insights to inform your concept creation, but ALWAYS filter through Scandinavian minimalism (natural tones, clean lines, quality).
+${trendFilterInstruction}
 ===
 `
     : ""
@@ -294,10 +337,21 @@ The user wants to tell a COHESIVE STORY across all ${count} images, not a random
 
 ${
   imageAnalysis
-    ? `REFERENCE IMAGE ANALYSIS:
+    ? `🔴 REFERENCE IMAGE ANALYSIS (MANDATORY - RECREATE THIS EXACT VIBE):
 ${imageAnalysis}
 
-Capture this exact vibe - the styling, mood, lighting, and composition.`
+CRITICAL INSTRUCTIONS FOR REFERENCE IMAGES:
+- If the reference image is BLACK & WHITE or MONOCHROME → EVERY prompt MUST include "black and white" or "monochrome" - this is MANDATORY
+- If the reference image is a STUDIO shot → Use "studio lighting" or "professional studio lighting" - NOT "uneven natural lighting" or "iPhone"
+- If the reference image is EDITORIAL/HIGH-FASHION → Use professional camera specs, dramatic lighting, NOT "shot on iPhone" or "amateur cellphone photo"
+- If the reference image shows professional photography → Use "shot on professional camera" or "DSLR" - NOT "shot on iPhone 15 Pro"
+- The reference image's aesthetic (B&W, studio, editorial) OVERRIDES default requirements
+- Match the EXACT lighting style, color treatment, and camera quality shown in the reference image
+- If reference is B&W → DO NOT add "muted colors" - use "black and white" or "monochrome" instead
+- If reference is studio → DO NOT add "uneven natural lighting" - use the studio lighting style shown
+- If reference is editorial → DO NOT add "candid photo" or "amateur cellphone photo" - use professional photography terms
+
+Capture this EXACT vibe - the styling, mood, lighting, color treatment, and composition must match the reference image.`
     : ""
 }
 
@@ -374,15 +428,21 @@ CRITICAL INSTRUCTIONS:
    - **PRESERVE USER INTENT:** Always include actual descriptive modifications like "curvier body type", "long blonde hair", "athletic build", "darker hair", etc.
    - **DO NOT REMOVE:** User's physical preferences should be in the prompt as descriptive features, not instructions. User's physical preferences from settings are MANDATORY - never remove them.
 
-2. **Basic iPhone Specs (MANDATORY):** MUST include "shot on iPhone 15 Pro portrait mode, shallow depth of field" OR "shot on iPhone, natural bokeh". Keep it simple - NO complex technical details (no f-stops, ISO, focal lengths).
+2. **Camera Specs (CONDITIONAL - Based on Reference Image/User Request):**
+   - **IF reference image shows professional/studio/editorial OR user requests studio/magazine/editorial:** Use "shot on professional camera" or "DSLR" or "professional photography" - NOT iPhone
+   - **IF no professional request AND no reference image:** Use "shot on iPhone 15 Pro portrait mode, shallow depth of field" OR "shot on iPhone, natural bokeh"
+   - Keep it simple - NO complex technical details (no f-stops, ISO, focal lengths)
 
-3. **Realistic Authentic Lighting (MANDATORY):** MUST use authentic, realistic lighting descriptions that look like real phone photos:
-   - ✅ "Uneven natural lighting"
-   - ✅ "Mixed color temperatures"
-   - ✅ "Natural window light with shadows"
-   - ✅ "Overcast daylight, soft shadows"
-   - ✅ "Ambient lighting, mixed sources"
-   - ❌ NEVER use: "soft afternoon sunlight", "warm golden hour lighting" (too idealized), "dramatic rim lighting", "cinematic quality", "professional studio lighting", "editorial photography lighting", "perfect lighting", "soft diffused natural lighting"
+3. **Lighting (CONDITIONAL - Based on Reference Image/User Request):**
+   - **IF reference image shows studio lighting OR user requests studio/editorial:** Use "studio lighting" or "professional studio lighting" or "dramatic studio lighting" - NOT "uneven natural lighting"
+   - **IF reference image shows specific lighting style:** Match that EXACT lighting style from the reference
+   - **IF no specific request AND no reference image:** Use authentic, realistic lighting descriptions that look like real phone photos:
+     - ✅ "Uneven natural lighting"
+     - ✅ "Mixed color temperatures"
+     - ✅ "Natural window light with shadows"
+     - ✅ "Overcast daylight, soft shadows"
+     - ✅ "Ambient lighting, mixed sources"
+   - ❌ NEVER use (unless reference image shows it): "soft afternoon sunlight", "warm golden hour lighting" (too idealized), "dramatic rim lighting", "cinematic quality", "perfect lighting", "soft diffused natural lighting"
 
 4. **Natural Skin Texture (MANDATORY - ANTI-PLASTIC REQUIREMENTS):** 
    - **REQUIRED:** MUST include "natural skin texture with pores visible, not smooth or airbrushed, not plastic-looking, realistic texture"
@@ -390,7 +450,11 @@ CRITICAL INSTRUCTIONS:
    - **REQUIRED:** MUST include at least 2+ anti-plastic phrases from: "not smooth", "not airbrushed", "not plastic-looking", "realistic texture", "natural imperfections"
    - This is CRITICAL to prevent AI-looking, plastic images. Natural, authentic skin texture is required - avoid anything that sounds plastic/smooth/airbrushed.
 
-5. **Film Grain and Muted Colors (MANDATORY):** MUST include "film grain" and "muted colors" for authentic iPhone aesthetic. Keep prompts detailed (30-60 words, target 40-55) for better LoRA activation.
+5. **Film Grain and Color Treatment (CONDITIONAL - Based on Reference Image/User Request):**
+   - **IF reference image is BLACK & WHITE or MONOCHROME OR user requests B&W:** MUST include "black and white" or "monochrome" - DO NOT add "muted colors"
+   - **IF reference image shows vibrant/editorial colors OR user requests vibrant/editorial:** Use appropriate color description (vibrant, editorial, etc.) - NOT "muted colors"
+   - **IF no specific request AND no reference image:** Include "film grain" and "muted colors" for authentic iPhone aesthetic
+   - Keep prompts detailed (30-60 words, target 40-55) for better LoRA activation
 
 6. **NO Natural Imperfections Lists:** Do NOT include lists of imperfections like "visible sensor noise", "slight motion blur", etc. Keep camera specs basic, but ALWAYS include natural skin texture requirements above.
 
@@ -557,20 +621,44 @@ Now apply your fashion intelligence and prompting mastery. Create ${count} conce
     ]
 
     // CRITICAL FIX: Function to ensure all mandatory anti-plastic requirements are present
-    function ensureRequiredElements(prompt: string, currentWordCount: number, MAX_WORDS: number): string {
+    // Now with conditional logic to respect user style requests AND reference image analysis
+    function ensureRequiredElements(
+      prompt: string,
+      currentWordCount: number,
+      MAX_WORDS: number,
+      userRequest?: string,
+      aesthetic?: string,
+      imageAnalysisText?: string,
+    ): string {
       let enhanced = prompt
       let addedCount = 0
 
-      console.log("[v0] Validating prompt for required anti-plastic elements...")
+      // Combine user request, aesthetic, and image analysis for style detection
+      const styleContext = `${userRequest || ""} ${aesthetic || ""} ${imageAnalysisText || ""}`.toLowerCase()
 
-      // Check for natural skin texture
+      // Detect if user wants professional/studio/magazine aesthetic (skip amateur requirements)
+      const wantsProfessional = /studio|magazine|cover|high.?end|high.?fashion|editorial|professional|luxury|fashion.?editorial|vogue|elle|runway/i.test(styleContext)
+      
+      // Detect if reference image or user request is B&W/monochrome
+      const wantsBAndW = /black.?and.?white|monochrome|b&w|grayscale|black and white/i.test(styleContext)
+      
+      // Detect if reference image shows studio lighting
+      const imageShowsStudio = /studio|professional.?lighting|studio.?lighting|controlled.?lighting/i.test(imageAnalysisText || "")
+
+      console.log("[v0] Validating prompt for required anti-plastic elements...")
+      console.log("[v0] Style context:", styleContext.substring(0, 100))
+      console.log("[v0] Professional/Studio request detected:", wantsProfessional)
+      console.log("[v0] B&W/Monochrome detected:", wantsBAndW)
+      console.log("[v0] Image shows studio:", imageShowsStudio)
+
+      // Check for natural skin texture (ALWAYS required - no exceptions)
       if (!/natural\s+skin\s+texture|pores\s+visible|visible\s+pores/i.test(enhanced)) {
         console.log("[v0] Missing: natural skin texture - adding")
         enhanced += ", natural skin texture with pores visible"
         addedCount += 6
       }
 
-      // Check for anti-plastic phrases (need at least 2)
+      // Check for anti-plastic phrases (need at least 2) (ALWAYS required - no exceptions)
       const antiPlasticMatches = enhanced.match(/not\s+(?:smooth|airbrushed|plastic-looking)|realistic\s+texture|natural\s+imperfections/gi) || []
       const antiPlasticCount = antiPlasticMatches.length
 
@@ -585,35 +673,143 @@ Now apply your fashion intelligence and prompting mastery. Create ${count} conce
         }
       }
 
-      // Check for film grain
+      // Check for film grain (ALWAYS required - no exceptions)
       if (!/film\s+grain|visible\s+film\s+grain|subtle\s+film\s+grain/i.test(enhanced)) {
         console.log("[v0] Missing: film grain - adding")
         enhanced += ", subtle film grain"
         addedCount += 3
       }
 
-      // Check for muted colors
-      if (!/muted\s+(?:colors?|color\s+palette|tones?)/i.test(enhanced)) {
-        console.log("[v0] Missing: muted colors - adding")
-        enhanced += ", muted colors"
-        addedCount += 2
-      }
+      // PRIORITY 1 FIX #1: Make muted colors conditional on user request AND reference image
+      // Check if user wants vibrant, pastel, high-contrast, B&W, or other non-muted styles
+      const userWantsVibrant = /vibrant|bright|saturated|high.?contrast|bold.?colors|colorful|neon/i.test(styleContext)
+      const userWantsPastel = /pastel|soft.?tones|gentle.?colors|light.?colors/i.test(styleContext)
+      const userWantsMonochrome = /monochrome|black.?and.?white|b&w|grayscale/i.test(styleContext)
+      const userWantsEditorial = /editorial|high.?fashion|fashion.?editorial|magazine/i.test(styleContext)
 
-      // Check for uneven lighting
-      if (!/uneven\s+(?:natural\s+)?lighting|uneven\s+illumination/i.test(enhanced)) {
-        console.log("[v0] Checking for lighting to make uneven...")
-        // Only modify if lighting description exists but doesn't have "uneven"
-        if (/\b(?:natural\s+)?lighting\b/i.test(enhanced) && !/uneven/i.test(enhanced)) {
-          enhanced = enhanced.replace(/\b(natural\s+)?lighting\b/gi, "uneven $1lighting")
-          console.log("[v0] Modified lighting to be 'uneven'")
+      // Check if prompt already has B&W/monochrome
+      const hasBAndW = /black.?and.?white|monochrome|b&w|grayscale/i.test(enhanced)
+
+      if (!/muted\s+(?:colors?|color\s+palette|tones?)/i.test(enhanced)) {
+        if (wantsBAndW || hasBAndW) {
+          // Reference image or prompt is B&W - DO NOT add muted colors, ensure B&W is present
+          console.log("[v0] B&W/Monochrome detected - skipping muted colors, ensuring B&W is in prompt")
+          if (!hasBAndW) {
+            enhanced += ", black and white"
+            addedCount += 3
+            console.log("[v0] Added 'black and white' to prompt")
+          }
+        } else if (wantsProfessional) {
+          // User wants vibrant - use "muted vibrant palette" as compromise (still authentic but respects request)
+          console.log("[v0] User wants vibrant colors - using muted vibrant palette")
+          enhanced += ", muted vibrant color palette"
+          addedCount += 4
+        } else if (userWantsPastel) {
+          // User wants pastel - use "muted pastel tones" as compromise
+          console.log("[v0] User wants pastel colors - using muted pastel tones")
+          enhanced += ", muted pastel tones"
+          addedCount += 3
+        } else if (userWantsMonochrome) {
+          // User wants monochrome - skip muted colors (monochrome is already muted)
+          console.log("[v0] User wants monochrome - skipping muted colors")
+        } else if (userWantsEditorial) {
+          // User wants editorial - use "muted editorial palette" as compromise
+          console.log("[v0] User wants editorial - using muted editorial color palette")
+          enhanced += ", muted editorial color palette"
+          addedCount += 4
+        } else {
+          // Default: add muted colors (Scandinavian minimalism default)
+          console.log("[v0] Missing: muted colors - adding (default)")
+          enhanced += ", muted colors"
+          addedCount += 2
         }
       }
 
-      // Add authentic iPhone aesthetic at the end if not present
-      if (!/authentic\s+iPhone\s+photo|iPhone\s+photo\s+aesthetic|amateur\s+iPhone/i.test(enhanced)) {
+      // PRIORITY 1 FIX #2: Make uneven lighting conditional on user request AND reference image
+      // Check if user wants dramatic, soft, golden hour, studio, or other specific lighting styles
+      const userWantsDramatic = /dramatic|cinematic|editorial|high.?fashion|fashion.?editorial|striking/i.test(styleContext)
+      const userWantsSoft = /soft|dreamy|gentle|diffused|soft.?glow|dreamy.?light/i.test(styleContext)
+      const userWantsGoldenHour = /golden.?hour|warm.?glow|sunset|sunrise|warm.?light/i.test(styleContext)
+      const userWantsMoody = /moody|dark|shadowy|deep.?shadows|low.?light/i.test(styleContext)
+      const userWantsStudio = /studio|professional.?lighting|studio.?lighting/i.test(styleContext)
+      
+      // Check if prompt already has studio lighting
+      const hasStudioLighting = /studio\s+lighting|professional\s+studio\s+lighting|dramatic\s+studio/i.test(enhanced)
+
+      if (!/uneven\s+(?:natural\s+)?lighting|uneven\s+illumination/i.test(enhanced)) {
+        // Check if user requested specific lighting style OR reference image shows studio
+        if (wantsProfessional || userWantsStudio || imageShowsStudio) {
+          // User wants professional/studio OR reference shows studio - skip uneven requirement, ensure studio lighting
+          console.log("[v0] Professional/studio lighting detected - skipping uneven requirement")
+          if (!hasStudioLighting && !/studio/i.test(enhanced)) {
+            // If no studio lighting mentioned, add it
+            enhanced += ", studio lighting"
+            addedCount += 2
+            console.log("[v0] Added 'studio lighting' to prompt")
+          }
+        } else if (userWantsDramatic) {
+          // User wants dramatic lighting - check if it's already in prompt or needs to be preserved
+          if (/\b(?:dramatic|cinematic|editorial)\s+lighting/i.test(enhanced)) {
+            // Already in prompt - keep it as-is, just ensure it's not "perfect"
+            console.log("[v0] User wants dramatic lighting - keeping as-is (not perfect)")
+            enhanced = enhanced.replace(/\bperfect\s+lighting\b/gi, "dramatic lighting")
+          } else {
+            // User wants dramatic but not in prompt yet - don't add "uneven", let Maya add dramatic
+            console.log("[v0] User wants dramatic lighting - skipping uneven requirement")
+          }
+        } else if (userWantsSoft) {
+          // User wants soft lighting - check if it's already in prompt
+          if (/\b(?:soft|dreamy|gentle|diffused)\s+lighting/i.test(enhanced)) {
+            // Already in prompt - keep it, but add natural shadows for authenticity
+            console.log("[v0] User wants soft lighting - keeping with natural shadows")
+            if (!/shadows|uneven/i.test(enhanced)) {
+              enhanced = enhanced.replace(/\b(soft|dreamy|gentle|diffused)\s+lighting\b/gi, "$1 lighting with natural shadows")
+              addedCount += 3
+            }
+          } else {
+            // User wants soft but not in prompt yet - don't add "uneven", let Maya add soft
+            console.log("[v0] User wants soft lighting - skipping uneven requirement")
+          }
+        } else if (userWantsGoldenHour) {
+          // User wants golden hour - check if it's already in prompt
+          if (/\b(?:golden.?hour|warm.?glow|sunset|sunrise)\s+lighting/i.test(enhanced)) {
+            // Already in prompt - keep it, but add natural variation
+            console.log("[v0] User wants golden hour lighting - keeping with natural variation")
+            if (!/uneven|variation|mixed/i.test(enhanced)) {
+              enhanced = enhanced.replace(/\b(golden.?hour|warm.?glow|sunset|sunrise)\s+lighting\b/gi, "$1 lighting with natural variation")
+              addedCount += 3
+            }
+          } else {
+            // User wants golden hour but not in prompt yet - don't add "uneven", let Maya add golden hour
+            console.log("[v0] User wants golden hour lighting - skipping uneven requirement")
+          }
+        } else if (userWantsMoody) {
+          // User wants moody lighting - check if it's already in prompt
+          if (/\b(?:moody|dark|shadowy)\s+lighting/i.test(enhanced)) {
+            // Already in prompt - keep it as-is (moody already implies uneven)
+            console.log("[v0] User wants moody lighting - keeping as-is")
+          } else {
+            // User wants moody but not in prompt yet - don't add "uneven", let Maya add moody
+            console.log("[v0] User wants moody lighting - skipping uneven requirement")
+          }
+        } else {
+          // Default: add uneven for natural lighting (Scandinavian minimalism default)
+          console.log("[v0] Checking for lighting to make uneven...")
+          // Only modify if lighting description exists but doesn't have "uneven"
+          if (/\b(?:natural\s+)?lighting\b/i.test(enhanced) && !/uneven/i.test(enhanced)) {
+            enhanced = enhanced.replace(/\b(natural\s+)?lighting\b/gi, "uneven $1lighting")
+            console.log("[v0] Modified lighting to be 'uneven' (default)")
+          }
+        }
+      }
+
+      // Add authentic iPhone aesthetic at the end if not present (skip for professional/studio requests)
+      if (!wantsProfessional && !/authentic\s+iPhone\s+photo|iPhone\s+photo\s+aesthetic|amateur\s+iPhone/i.test(enhanced)) {
         console.log("[v0] Missing: authentic iPhone aesthetic - adding")
         enhanced += ", authentic iPhone photo aesthetic"
         addedCount += 4
+      } else if (wantsProfessional) {
+        console.log("[v0] Professional/studio request - skipping authentic iPhone aesthetic")
       }
 
       // Clean up any double commas or trailing commas
@@ -766,72 +962,116 @@ Now apply your fashion intelligence and prompting mastery. Create ${count} conce
         currentWordCount = wordCount(prompt)
       }
 
-      // CRITICAL FIX #1: Ensure basic iPhone specs at the end (new simplified format)
-      // Remove any duplicate iPhone mentions first
-      const iphoneMatches = prompt.match(/(shot on iPhone[^,]*)/gi)
-      if (iphoneMatches && iphoneMatches.length > 1) {
-        // Keep only the last one, remove others
-        prompt = prompt.replace(/(shot on iPhone[^,]*),/gi, "")
-        // Re-add at the end if we removed all
-        if (!/shot on iPhone/i.test(prompt)) {
-          prompt = `${prompt}, shot on iPhone 15 Pro portrait mode, shallow depth of field`
+      // Check if user wants professional/studio/magazine aesthetic (skip iPhone requirements)
+      // Also check image analysis for studio/professional indicators
+      const wantsProfessional = /studio|magazine|cover|high.?end|high.?fashion|editorial|professional|luxury|fashion.?editorial|vogue|elle|runway/i.test(`${userRequest || ""} ${aesthetic || ""} ${imageAnalysis || ""}`.toLowerCase())
+      
+      // Check if image analysis or prompt indicates B&W/monochrome
+      const wantsBAndW = /black.?and.?white|monochrome|b&w|grayscale/i.test(`${userRequest || ""} ${aesthetic || ""} ${imageAnalysis || ""}`.toLowerCase())
+      const hasBAndWInPrompt = /black.?and.?white|monochrome|b&w|grayscale/i.test(prompt)
+
+      // CRITICAL FIX: Remove "muted colors" if B&W is detected
+      if (wantsBAndW || hasBAndWInPrompt) {
+        prompt = prompt.replace(/,\s*muted\s+colors?/gi, "")
+        prompt = prompt.replace(/muted\s+colors?,?\s*/gi, "")
+        console.log("[v0] Removed 'muted colors' because B&W/monochrome detected")
+        
+        // Ensure B&W is in the prompt
+        if (!hasBAndWInPrompt) {
+          prompt += ", black and white"
+          currentWordCount = wordCount(prompt)
+          console.log("[v0] Added 'black and white' to prompt")
         }
       }
       
-      const hasIPhone = /shot\s+on\s+iPhone/i.test(prompt)
-      const hasFocalLength = /\d+mm\s*(lens|focal)/i.test(prompt)
+      // CRITICAL FIX: Remove "uneven natural lighting" if studio/professional is detected
+      if (wantsProfessional) {
+        // Remove "uneven" from lighting descriptions for studio requests
+        prompt = prompt.replace(/uneven\s+(?:natural\s+)?lighting/gi, "studio lighting")
+        prompt = prompt.replace(/uneven\s+illumination/gi, "studio lighting")
+        console.log("[v0] Replaced 'uneven lighting' with 'studio lighting' for professional request")
+        
+        // Remove iPhone specs if they exist (should be replaced with professional camera)
+        prompt = prompt.replace(/,\s*shot\s+on\s+iPhone[^,]*/gi, "")
+        console.log("[v0] Removed iPhone specs for professional/studio request")
+      }
 
-      if (!hasIPhone && !hasFocalLength && currentWordCount < MAX_WORDS) {
-        // Add basic iPhone specs at the end (new format)
-        prompt = `${prompt}, shot on iPhone 15 Pro portrait mode, shallow depth of field`
-        currentWordCount = wordCount(prompt)
-      } else if (hasFocalLength && !hasIPhone && currentWordCount < MAX_WORDS) {
-        // If focal length but no iPhone, replace with basic iPhone specs
-        prompt = prompt.replace(/\d+mm\s*(lens|focal)[^,]*/i, "shot on iPhone 15 Pro portrait mode, shallow depth of field")
-        currentWordCount = wordCount(prompt)
-      } else if (hasIPhone) {
-        // Ensure it's in the new simplified format (at the end, basic specs only)
-        // Remove complex technical details if present
-        prompt = prompt.replace(/shot\s+on\s+iPhone\s*15\s*Pro[^,]*(?:,\s*[^,]+)*/gi, (match) => {
-          // If it has complex specs, simplify to basic format
-          if (/\d+mm|f\/\d+|ISO\s*\d+/i.test(match)) {
-            return "shot on iPhone 15 Pro portrait mode, shallow depth of field"
+      // CRITICAL FIX #1: Ensure basic iPhone specs at the end (new simplified format)
+      // Skip for professional/studio requests - allow professional camera specs instead
+      if (!wantsProfessional) {
+        // Remove any duplicate iPhone mentions first
+        const iphoneMatches = prompt.match(/(shot on iPhone[^,]*)/gi)
+        if (iphoneMatches && iphoneMatches.length > 1) {
+          // Keep only the last one, remove others
+          prompt = prompt.replace(/(shot on iPhone[^,]*),/gi, "")
+          // Re-add at the end if we removed all
+          if (!/shot on iPhone/i.test(prompt)) {
+            prompt = `${prompt}, shot on iPhone 15 Pro portrait mode, shallow depth of field`
           }
-          // If it's already simple, keep it but ensure it's at the end
-          return match
-        })
-        currentWordCount = wordCount(prompt)
+        }
+        
+        const hasIPhone = /shot\s+on\s+iPhone/i.test(prompt)
+        const hasFocalLength = /\d+mm\s*(lens|focal)/i.test(prompt)
+
+        if (!hasIPhone && !hasFocalLength && currentWordCount < MAX_WORDS) {
+          // Add basic iPhone specs at the end (new format)
+          prompt = `${prompt}, shot on iPhone 15 Pro portrait mode, shallow depth of field`
+          currentWordCount = wordCount(prompt)
+        } else if (hasFocalLength && !hasIPhone && currentWordCount < MAX_WORDS) {
+          // If focal length but no iPhone, replace with basic iPhone specs
+          prompt = prompt.replace(/\d+mm\s*(lens|focal)[^,]*/i, "shot on iPhone 15 Pro portrait mode, shallow depth of field")
+          currentWordCount = wordCount(prompt)
+        } else if (hasIPhone) {
+          // Ensure it's in the new simplified format (at the end, basic specs only)
+          // Remove complex technical details if present
+          prompt = prompt.replace(/shot\s+on\s+iPhone\s*15\s*Pro[^,]*(?:,\s*[^,]+)*/gi, (match) => {
+            // If it has complex specs, simplify to basic format
+            if (/\d+mm|f\/\d+|ISO\s*\d+/i.test(match)) {
+              return "shot on iPhone 15 Pro portrait mode, shallow depth of field"
+            }
+            // If it's already simple, keep it but ensure it's at the end
+            return match
+          })
+          currentWordCount = wordCount(prompt)
+        }
+      } else {
+        console.log("[v0] Professional/studio request - skipping iPhone requirement, allowing professional camera specs")
       }
 
       // CRITICAL FIX #2: Ensure authenticity keywords are present (research-backed)
       // These keywords prevent plastic look: "candid photo", "candid moment", "amateur cellphone photo", "cellphone photo"
-      const hasCandid = /candid\s+(photo|moment)/i.test(prompt)
-      const hasAmateur = /(amateur\s+cellphone\s+photo|cellphone\s+photo|amateur\s+photography)/i.test(prompt)
-      
-      if (!hasCandid && currentWordCount < MAX_WORDS) {
-        // Add "candid photo" or "candid moment" before iPhone specs
-        const iphoneIndex = prompt.search(/shot\s+on\s+iPhone/i)
-        if (iphoneIndex > 0) {
-          prompt = prompt.slice(0, iphoneIndex).trim() + ", candid photo, " + prompt.slice(iphoneIndex)
-        } else {
-          prompt = prompt + ", candid photo"
+      // BUT: Skip for professional/studio/magazine requests (wantsProfessional is defined above at line 967)
+      if (!wantsProfessional) {
+        const hasCandid = /candid\s+(photo|moment)/i.test(prompt)
+        const hasAmateur = /(amateur\s+cellphone\s+photo|cellphone\s+photo|amateur\s+photography)/i.test(prompt)
+        
+        if (!hasCandid && currentWordCount < MAX_WORDS) {
+          // Add "candid photo" or "candid moment" before iPhone specs
+          const iphoneIndex = prompt.search(/shot\s+on\s+iPhone/i)
+          if (iphoneIndex > 0) {
+            prompt = prompt.slice(0, iphoneIndex).trim() + ", candid photo, " + prompt.slice(iphoneIndex)
+          } else {
+            prompt = prompt + ", candid photo"
+          }
+          currentWordCount = wordCount(prompt)
         }
-        currentWordCount = wordCount(prompt)
-      }
-      
-      if (!hasAmateur && currentWordCount < MAX_WORDS) {
-        // Add "amateur cellphone photo" or "cellphone photo" before iPhone specs
-        const iphoneIndex = prompt.search(/shot\s+on\s+iPhone/i)
-        if (iphoneIndex > 0) {
-          prompt = prompt.slice(0, iphoneIndex).trim() + ", amateur cellphone photo, " + prompt.slice(iphoneIndex)
-        } else {
-          prompt = prompt + ", amateur cellphone photo"
+        
+        if (!hasAmateur && currentWordCount < MAX_WORDS) {
+          // Add "amateur cellphone photo" or "cellphone photo" before iPhone specs
+          const iphoneIndex = prompt.search(/shot\s+on\s+iPhone/i)
+          if (iphoneIndex > 0) {
+            prompt = prompt.slice(0, iphoneIndex).trim() + ", amateur cellphone photo, " + prompt.slice(iphoneIndex)
+          } else {
+            prompt = prompt + ", amateur cellphone photo"
+          }
+          currentWordCount = wordCount(prompt)
         }
-        currentWordCount = wordCount(prompt)
+      } else {
+        console.log("[v0] Professional/studio request - skipping candid/amateur keywords")
       }
 
-      // Apply complete anti-plastic validation
-      prompt = ensureRequiredElements(prompt, currentWordCount, MAX_WORDS)
+      // Apply complete anti-plastic validation (with user request context AND image analysis for conditional requirements)
+      prompt = ensureRequiredElements(prompt, currentWordCount, MAX_WORDS, userRequest, aesthetic, imageAnalysis)
       currentWordCount = wordCount(prompt)
 
       console.log("[v0] Final prompt after all validation:", prompt)
