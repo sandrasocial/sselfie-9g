@@ -20,44 +20,44 @@ export const FLUX_PROMPT_OPTIMIZATION = {
   OPTIMAL_LENGTHS: {
     // Solo portraits - focus on face
     CLOSE_UP_PORTRAIT: {
-      min: 15,
-      optimal: 25,
-      max: 35,
+      min: 30,
+      optimal: 40,
+      max: 55,
       reasoning:
-        "Close-ups need face emphasis. Keep prompts SHORT to prioritize trigger word and facial features over environmental details.",
+        "Close-ups need face emphasis with room for safety net feature descriptions. Keep prompts focused but include key features.",
     },
 
     // Half body - balance face + outfit
     HALF_BODY_LIFESTYLE: {
-      min: 20,
-      optimal: 30,
-      max: 40,
+      min: 30,
+      optimal: 45,
+      max: 60,
       reasoning:
-        "Medium shots need facial detail AND outfit context. Moderate length allows both without overwhelming the trigger.",
+        "Medium shots need facial detail AND outfit context. Moderate length allows both with safety net descriptions.",
     },
 
     // Full body - more scene context
     ENVIRONMENTAL_PORTRAIT: {
-      min: 25,
-      optimal: 35,
-      max: 45,
+      min: 30,
+      optimal: 50,
+      max: 60,
       reasoning:
-        "Wide shots can handle slightly longer prompts since face is smaller. Still prioritize subject over background.",
+        "Wide shots can handle slightly longer prompts since face is smaller. Still prioritize subject over background with safety net.",
     },
 
     // Action shots - movement focus
     CLOSE_UP_ACTION: {
-      min: 20,
-      optimal: 28,
-      max: 38,
-      reasoning: "Action requires describing movement, but face must stay recognizable. Keep concise and specific.",
+      min: 30,
+      optimal: 42,
+      max: 55,
+      reasoning: "Action requires describing movement, but face must stay recognizable. Include safety net features.",
     },
 
     // Product/object focus - less face prominence
     PRODUCT_FOCUS: {
-      min: 22,
-      optimal: 32,
-      max: 42,
+      min: 30,
+      optimal: 45,
+      max: 60,
       reasoning: "Product shots allow more descriptive room, but trigger word still crucial for recognizability.",
     },
   },
@@ -80,39 +80,32 @@ export const FLUX_PROMPT_OPTIMIZATION = {
       "consistent facial identity",
     ],
 
-    // CRITICAL: Avoid overloading with facial details (LoRA handles this)
-    // The LoRA was trained on these features - it already knows them
-    // Mentioning them can confuse the model or cause conflicts with character likeness
-    AVOID_FACE_MICROMANAGEMENT: [
-      "blue eyes", // LoRA knows user's eye color
-      "brown eyes", // LoRA knows user's eye color
-      "green eyes", // LoRA knows user's eye color
-      "sharp jawline", // LoRA knows face structure
-      "high cheekbones", // Trust the trained model
-      "defined nose", // Let LoRA handle features
-      "long hair", // LoRA knows hair length/style
-      "short hair", // LoRA knows hair length/style
-      "dark hair", // LoRA knows hair color
-      "blonde hair", // LoRA knows hair color
-      "round face", // LoRA knows face shape
-      "oval face", // LoRA knows face shape
-    ],
+    // BALANCED APPROACH: Include key features as safety net guidance
+    // While LoRA was trained on these features, results may vary based on training quality
+    // It's better to include subtle feature descriptions than to omit them and get wrong results
+    // USER PREFERENCES ARE MANDATORY - if user specified hair/body/age, these MUST be included
+    SAFETY_NET_APPROACH: {
+      // Include hair color/style as safety net guidance even if LoRA should know it
+      INCLUDE_WHEN_NEEDED: [
+        "hair color/style from user preferences (MANDATORY if specified)",
+        "body type from user preferences (MANDATORY if specified)",
+        "distinctive traits as safety net",
+      ],
+      // Focus on changeable elements (these are always safe to describe)
+      DESCRIBE_ALWAYS: [
+        "natural makeup", // Makeup is changeable
+        "minimal makeup", // Makeup is changeable
+        "relaxed expression", // Expression is changeable
+        "confident look", // Mood is changeable
+        "soft smile", // Expression is changeable
+        "looking away naturally", // Expression/pose is changeable
+        "eyes resting down", // Expression is changeable
+      ],
+    },
 
-    // DO describe face-adjacent elements (these are changeable, not fixed features)
-    DESCRIBE_INSTEAD: [
-      "natural makeup", // Makeup is changeable
-      "minimal makeup", // Makeup is changeable
-      "glowing skin", // Skin quality is changeable
-      "relaxed expression", // Expression is changeable
-      "confident look", // Mood is changeable
-      "soft smile", // Expression is changeable
-      "looking away naturally", // Expression/pose is changeable
-      "eyes resting down", // Expression is changeable
-    ],
-
-    // Trust the trained LoRA model to preserve facial features
-    // Focus on styling, pose, lighting, and environment instead
-    TRUST_LORA: true,
+    // Trust the trained LoRA model but reinforce critical features (especially from user preferences)
+    // Focus on styling, pose, lighting, and environment, but include safety net feature descriptions
+    BALANCED_LORA_APPROACH: true,
   },
 
   /**
@@ -131,13 +124,13 @@ export const FLUX_PROMPT_OPTIMIZATION = {
     ],
 
     PRINCIPLES: [
-      "Keep prompts 25-45 words for optimal face preservation (shorter = better character likeness)",
+      "Keep prompts 30-60 words for optimal face preservation with room for safety net descriptions",
       "Outfit descriptions: material + color + garment type (3-4 words max)",
       "Location: atmosphere + setting (2-3 words)",
       "Always end with camera/texture specs",
-      "Hard limit: 45 words maximum - exceeding degrades character likeness",
-      "Shorter prompts (25-35 words) = better facial consistency",
-      "Longer prompts (50+ words) = model may lose focus on character features",
+      "Target range (30-60 words) = optimal balance of detail and character consistency",
+      "Include safety net feature descriptions (hair color/style) when needed, especially from user preferences",
+      "MUST preserve: iPhone 15 Pro, natural skin texture, film grain, muted colors",
     ],
   },
 
@@ -193,10 +186,10 @@ export const FLUX_PROMPT_OPTIMIZATION = {
     ],
 
     WORD_COUNT_GUIDE: {
-      "15-25 words": "Maximum face preservation, minimal scene",
-      "25-35 words": "Balanced face + outfit + basic environment (RECOMMENDED)",
-      "35-45 words": "More scene detail, slight face dilution risk",
-      "45+ words": "HIGH RISK - trigger word loses importance, face may drift",
+      "30-40 words": "Optimal balance with safety net descriptions (RECOMMENDED)",
+      "40-55 words": "More scene detail with safety net, good for complex concepts",
+      "55-60 words": "Maximum recommended length with all safety features",
+      "60+ words": "HIGH RISK - trigger word loses importance, face may drift",
     },
   },
 
@@ -206,16 +199,16 @@ export const FLUX_PROMPT_OPTIMIZATION = {
   GENERATION_STRATEGY: {
     CONCEPT_MODE: {
       description: "Standalone images - diverse concepts",
-      target_length: "25-35 words",
+      target_length: "30-60 words",
       priority: "Variety in outfits, locations, vibes",
-      face_preservation: "HIGH - trigger word prominent, simple descriptions",
+      face_preservation: "HIGH - trigger word prominent, includes safety net feature descriptions",
     },
 
     PHOTOSHOOT_MODE: {
       description: "Carousel - consistent outfit/location",
-      target_length: "30-40 words (can be slightly longer since outfit repeats)",
+      target_length: "30-60 words (can be slightly longer since outfit repeats)",
       priority: "Same look, varied poses only",
-      face_preservation: "HIGH - trigger word + outfit consistency helps",
+      face_preservation: "HIGH - trigger word + outfit consistency helps, includes safety net",
     },
   },
 }
@@ -229,19 +222,42 @@ export function analyzePromptQuality(prompt: string) {
 
   let quality: "excellent" | "good" | "acceptable" | "too_long" = "excellent"
   let recommendation = ""
+  const missingFeatures: string[] = []
 
-  if (wordCount <= 25) {
+  // Check word count
+  if (wordCount >= 30 && wordCount <= 40) {
     quality = "excellent"
-    recommendation = "Perfect length for maximum face preservation"
-  } else if (wordCount <= 35) {
+    recommendation = "Perfect length for optimal face preservation with safety net descriptions"
+  } else if (wordCount >= 30 && wordCount <= 60) {
     quality = "good"
-    recommendation = "Good balance of detail and face preservation"
-  } else if (wordCount <= 45) {
+    recommendation = "Good balance of detail and face preservation with safety net"
+  } else if (wordCount < 30) {
     quality = "acceptable"
-    recommendation = "Slightly long - consider condensing to strengthen trigger word"
+    recommendation = "Too short - add safety net feature descriptions to reach 30+ words"
   } else {
     quality = "too_long"
     recommendation = "TOO LONG - high risk of face drift. Remove unnecessary details."
+  }
+
+  // Validate safety features
+  if (!hasSafetyFeature(prompt, "CAMERA")) {
+    missingFeatures.push("camera spec (iPhone 15 Pro or focal length)")
+  }
+  if (!hasSafetyFeature(prompt, "SKIN_TEXTURE")) {
+    missingFeatures.push("natural skin texture")
+  }
+  if (!hasSafetyFeature(prompt, "FILM_GRAIN")) {
+    missingFeatures.push("film grain")
+  }
+  if (!hasSafetyFeature(prompt, "MUTED_COLORS")) {
+    missingFeatures.push("muted colors")
+  }
+
+  if (missingFeatures.length > 0) {
+    recommendation += ` Missing: ${missingFeatures.join(", ")}`
+    if (quality === "excellent") {
+      quality = "good" // Downgrade if missing safety features
+    }
   }
 
   return {
@@ -249,20 +265,236 @@ export function analyzePromptQuality(prompt: string) {
     quality,
     recommendation,
     hasTriggerWord: /^[a-zA-Z0-9_]+/.test(prompt), // Check if starts with trigger pattern
+    hasCamera: hasSafetyFeature(prompt, "CAMERA"),
+    hasSkinTexture: hasSafetyFeature(prompt, "SKIN_TEXTURE"),
+    hasFilmGrain: hasSafetyFeature(prompt, "FILM_GRAIN"),
+    hasMutedColors: hasSafetyFeature(prompt, "MUTED_COLORS"),
+    missingFeatures,
   }
 }
 
 /**
- * HELPER FUNCTION: Condense a prompt while preserving meaning
+ * SAFETY FEATURES that must be preserved during optimization
+ */
+const SAFETY_FEATURES = {
+  CAMERA: {
+    patterns: [
+      /shot\s+on\s+iPhone\s+15\s+Pro/gi,
+      /shot\s+on\s+iPhone/gi,
+      /\d+mm/gi, // Focal length
+    ],
+    default: "shot on iPhone 15 Pro",
+  },
+  SKIN_TEXTURE: {
+    patterns: [
+      /natural\s+skin\s+texture/gi,
+      /pores\s+visible/gi,
+      /visible\s+pores/gi,
+      /realistic\s+texture/gi,
+      /organic\s+skin\s+texture/gi,
+    ],
+    default: "natural skin texture with pores visible",
+  },
+  FILM_GRAIN: {
+    patterns: [/film\s+grain/gi, /visible\s+film\s+grain/gi],
+    default: "film grain",
+  },
+  MUTED_COLORS: {
+    patterns: [/muted\s+colors?/gi, /muted\s+color\s+palette/gi],
+    default: "muted colors",
+  },
+  HAIR_COLOR: {
+    patterns: [
+      /\b(?:blonde|brown|black|red|gray|grey|auburn|brunette|natural)\s+hair\s+color/gi,
+      /\b(?:blonde|brown|black|red|gray|grey|auburn|brunette|natural)\s+hair\b/gi,
+    ],
+    default: null, // No default, only preserve if present
+  },
+}
+
+/**
+ * ANTI-PATTERNS to automatically remove
+ */
+const ANTI_PATTERNS = {
+  QUALITY_TERMS: [
+    /\bstunning\b/gi,
+    /\bperfect\b/gi,
+    /\bbeautiful\b/gi,
+    /\bflawless\b/gi,
+    /\bhigh\s+quality\b/gi,
+    /\b8K\b/gi,
+    /\b4K\b/gi,
+    /\bultra\s+realistic\b/gi,
+    /\bphotorealistic\b/gi,
+  ],
+  LIGHTING_TERMS: [
+    /\bstudio\s+lighting\b/gi,
+    /\bprofessional\s+lighting\b/gi,
+    /\bclean\s+lighting\b/gi,
+    /\beven\s+lighting\b/gi,
+    /\bperfect\s+lighting\b/gi,
+  ],
+  SKIN_TERMS: [
+    /\bsmooth\s+skin\b/gi,
+    /\bairbrushed\b/gi,
+    /\bflawless\s+skin\b/gi,
+    /\bperfect\s+skin\b/gi,
+    /\bplastic\b/gi,
+    /\bmannequin-like\b/gi,
+    /\bdoll-like\b/gi,
+  ],
+}
+
+/**
+ * HELPER FUNCTION: Check if prompt contains safety features
+ */
+function hasSafetyFeature(prompt: string, featureType: keyof typeof SAFETY_FEATURES): boolean {
+  const feature = SAFETY_FEATURES[featureType]
+  return feature.patterns.some((pattern) => pattern.test(prompt))
+}
+
+/**
+ * HELPER FUNCTION: Extract safety features before optimization
+ */
+function extractSafetyFeatures(prompt: string): {
+  camera: string | null
+  skinTexture: string | null
+  filmGrain: string | null
+  mutedColors: string | null
+  hairColor: string | null
+} {
+  const result = {
+    camera: null as string | null,
+    skinTexture: null as string | null,
+    filmGrain: null as string | null,
+    mutedColors: null as string | null,
+    hairColor: null as string | null,
+  }
+
+  // Extract camera spec
+  const cameraMatch = prompt.match(/shot\s+on\s+iPhone(?:\s+15\s+Pro)?(?:\s+[^,]+)?/gi)
+  if (cameraMatch) {
+    result.camera = cameraMatch[0]
+  } else {
+    const focalMatch = prompt.match(/\d+mm/gi)
+    if (focalMatch) {
+      result.camera = `shot on iPhone 15 Pro, ${focalMatch[0]}`
+    }
+  }
+
+  // Extract skin texture
+  const skinMatch = prompt.match(/natural\s+skin\s+texture(?:\s+with\s+pores\s+visible)?/gi)
+  if (skinMatch) {
+    result.skinTexture = skinMatch[0]
+  } else if (prompt.match(/pores\s+visible/gi)) {
+    result.skinTexture = "natural skin texture with pores visible"
+  }
+
+  // Extract film grain
+  const grainMatch = prompt.match(/(?:visible\s+)?film\s+grain/gi)
+  if (grainMatch) {
+    result.filmGrain = grainMatch[0]
+  }
+
+  // Extract muted colors
+  const colorMatch = prompt.match(/muted\s+(?:color\s+)?(?:palette|colors?)/gi)
+  if (colorMatch) {
+    result.mutedColors = colorMatch[0]
+  }
+
+  // Extract hair color (if present)
+  const hairMatch = prompt.match(/\b(?:blonde|brown|black|red|gray|grey|auburn|brunette|natural)\s+(?:hair\s+color|hair)\b/gi)
+  if (hairMatch) {
+    result.hairColor = hairMatch[0]
+  }
+
+  return result
+}
+
+/**
+ * HELPER FUNCTION: Remove anti-patterns while preserving safety features
+ */
+function removeAntiPatterns(prompt: string): string {
+  let cleaned = prompt
+
+  // Remove quality terms
+  ANTI_PATTERNS.QUALITY_TERMS.forEach((pattern) => {
+    cleaned = cleaned.replace(pattern, "")
+  })
+
+  // Remove lighting terms
+  ANTI_PATTERNS.LIGHTING_TERMS.forEach((pattern) => {
+    cleaned = cleaned.replace(pattern, "")
+  })
+
+  // Remove skin terms
+  ANTI_PATTERNS.SKIN_TERMS.forEach((pattern) => {
+    cleaned = cleaned.replace(pattern, "")
+  })
+
+  // Clean up extra spaces and commas
+  cleaned = cleaned
+    .replace(/,\s*,/g, ",") // Remove double commas
+    .replace(/,\s*,/g, ",") // Remove double commas again
+    .replace(/^,\s*/, "") // Remove leading comma
+    .replace(/\s*,\s*$/, "") // Remove trailing comma
+    .replace(/\s+/g, " ") // Normalize multiple spaces
+    .trim()
+
+  return cleaned
+}
+
+/**
+ * HELPER FUNCTION: Add missing safety features
+ */
+function addMissingSafetyFeatures(
+  prompt: string,
+  extracted: ReturnType<typeof extractSafetyFeatures>,
+): string {
+  let result = prompt
+
+  // Add camera spec if missing
+  if (!extracted.camera && !hasSafetyFeature(prompt, "CAMERA")) {
+    result = `${result}, ${SAFETY_FEATURES.CAMERA.default}`
+  }
+
+  // Add skin texture if missing
+  if (!extracted.skinTexture && !hasSafetyFeature(prompt, "SKIN_TEXTURE")) {
+    result = `${result}, ${SAFETY_FEATURES.SKIN_TEXTURE.default}`
+  }
+
+  // Add film grain if missing
+  if (!extracted.filmGrain && !hasSafetyFeature(prompt, "FILM_GRAIN")) {
+    result = `${result}, ${SAFETY_FEATURES.FILM_GRAIN.default}`
+  }
+
+  // Add muted colors if missing
+  if (!extracted.mutedColors && !hasSafetyFeature(prompt, "MUTED_COLORS")) {
+    result = `${result}, ${SAFETY_FEATURES.MUTED_COLORS.default}`
+  }
+
+  // Hair color is optional - only preserve if it was there
+
+  // Clean up
+  result = result.replace(/,\s*,/g, ",").replace(/^,\s*/, "").replace(/\s*,\s*$/, "").trim()
+
+  return result
+}
+
+/**
+ * HELPER FUNCTION: Condense a prompt while preserving safety features
  */
 export function condensePrompt(prompt: string): string {
-  // Remove redundant descriptors
-  const condensed = prompt
+  // Step 1: Extract safety features before any modification
+  const extracted = extractSafetyFeatures(prompt)
+
+  // Step 2: Remove anti-patterns
+  let condensed = removeAntiPatterns(prompt)
+
+  // Step 3: Remove redundant descriptors (but preserve safety features)
+  condensed = condensed
     .replace(/beautiful\s+/gi, "")
-    .replace(/stunning\s+/gi, "")
-    .replace(/gorgeous\s+/gi, "")
     .replace(/amazing\s+/gi, "")
-    .replace(/perfect\s+/gi, "")
     .replace(/incredible\s+/gi, "")
     .replace(/very\s+/gi, "")
     .replace(/highly\s+/gi, "")
@@ -272,5 +504,83 @@ export function condensePrompt(prompt: string): string {
     .replace(/,\s*,/g, ",")
     .trim()
 
+  // Step 4: Add back missing safety features
+  condensed = addMissingSafetyFeatures(condensed, extracted)
+
   return condensed
+}
+
+/**
+ * HELPER FUNCTION: Optimize and validate prompt
+ */
+export function optimizePrompt(prompt: string, targetLength: { min: number; max: number } = { min: 30, max: 60 }): {
+  optimized: string
+  wordCount: number
+  warnings: string[]
+  addedFeatures: string[]
+} {
+  const warnings: string[] = []
+  const addedFeatures: string[] = []
+
+  // Step 1: Extract safety features
+  const extracted = extractSafetyFeatures(prompt)
+
+  // Step 2: Remove anti-patterns
+  let optimized = removeAntiPatterns(prompt)
+
+  // Step 3: Remove redundant descriptors
+  optimized = optimized
+    .replace(/beautiful\s+/gi, "")
+    .replace(/amazing\s+/gi, "")
+    .replace(/incredible\s+/gi, "")
+    .replace(/very\s+/gi, "")
+    .replace(/highly\s+/gi, "")
+    .replace(/extremely\s+/gi, "")
+    .replace(/\s+with\s+/gi, " ")
+    .replace(/\s+and\s+/gi, ", ")
+    .replace(/,\s*,/g, ",")
+    .trim()
+
+  // Step 4: Validate and add missing safety features
+  const beforeAdd = optimized
+  optimized = addMissingSafetyFeatures(optimized, extracted)
+
+  // Track what was added
+  if (optimized !== beforeAdd) {
+    const added = optimized.replace(beforeAdd, "").trim()
+    if (added) {
+      addedFeatures.push(added)
+    }
+  }
+
+  // Step 5: Check word count
+  const words = optimized.trim().split(/\s+/)
+  const wordCount = words.length
+
+  if (wordCount < targetLength.min) {
+    warnings.push(`Prompt too short (${wordCount} words). Target: ${targetLength.min}-${targetLength.max} words.`)
+  } else if (wordCount > targetLength.max) {
+    warnings.push(`Prompt too long (${wordCount} words). Target: ${targetLength.min}-${targetLength.max} words.`)
+  }
+
+  // Step 6: Final validation
+  if (!hasSafetyFeature(optimized, "CAMERA")) {
+    warnings.push("Missing camera spec (iPhone 15 Pro or focal length)")
+  }
+  if (!hasSafetyFeature(optimized, "SKIN_TEXTURE")) {
+    warnings.push("Missing natural skin texture mention")
+  }
+  if (!hasSafetyFeature(optimized, "FILM_GRAIN")) {
+    warnings.push("Missing film grain")
+  }
+  if (!hasSafetyFeature(optimized, "MUTED_COLORS")) {
+    warnings.push("Missing muted colors")
+  }
+
+  return {
+    optimized,
+    wordCount,
+    warnings,
+    addedFeatures,
+  }
 }

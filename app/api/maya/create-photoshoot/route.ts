@@ -35,8 +35,14 @@ async function generatePhotoshootPoseVariations({
     characterDescriptor += `${ethnicity} `
   }
   if (physicalPreferences) {
-    // Remove instruction phrases - these are for Maya, not FLUX prompts
+    // Convert instruction language to descriptive language while preserving intent
     let cleanedPreferences = physicalPreferences.trim()
+    
+    // Check for specific intents BEFORE removing instruction phrases
+    const hasNaturalHairColor = /\b(?:keep\s+my\s+natural\s+hair\s+color|keep\s+my\s+natural\s+hair)\b/gi.test(cleanedPreferences)
+    const hasDontChangeFace = /\b(?:dont\s+change\s+the\s+face|don't\s+change\s+the\s+face|do\s+not\s+change\s+the\s+face)\b/gi.test(cleanedPreferences)
+    
+    // Remove instruction phrases - these are for Maya, not FLUX prompts
     const instructionPhrases = [
       /\bAlways keep my\b/gi,
       /\bAlways\s+keep\s+my\s+natural\s+features\b/gi,
@@ -52,22 +58,22 @@ async function generatePhotoshootPoseVariations({
       /\bmaintain my\b/gi,
       /\bdo not change\b/gi,
       /\bdo\s+not\s+change\s+the\s+face\b/gi,
-      // Special handling for hair color - preserve intent
-      /\bkeep\s+my\s+natural\s+hair\s+color\b/gi,  // Will preserve intent below
-      /\bkeep\s+my\s+natural\s+hair\b/gi,  // Will preserve intent below
+      // Remove "keep my natural hair color" phrase but preserve intent below
+      /\bkeep\s+my\s+natural\s+hair\s+color\b/gi,
+      /\bkeep\s+my\s+natural\s+hair\b/gi,
     ]
-    
-    // Check if user wants to preserve natural hair color
-    const hasNaturalHairColor = /\b(?:keep\s+my\s+natural\s+hair\s+color|keep\s+my\s+natural\s+hair)\b/gi.test(cleanedPreferences)
     
     instructionPhrases.forEach((regex) => {
       cleanedPreferences = cleanedPreferences.replace(regex, "")
     })
     
-    // If user specified "keep natural hair color" and no color is mentioned, preserve the intent
-    if (hasNaturalHairColor && !/\b(blonde|brown|black|red|gray|grey|auburn|brunette|hair\s+color)\b/gi.test(cleanedPreferences)) {
+    // PRESERVE INTENT: Convert instructions to descriptive language
+    // If user specified "keep natural hair color", convert to descriptive language
+    if (hasNaturalHairColor && !/\b(blonde|brown|black|red|gray|grey|auburn|brunette|hair\s+color|natural\s+hair\s+color)\b/gi.test(cleanedPreferences)) {
       cleanedPreferences = "natural hair color, " + cleanedPreferences
     }
+    
+    // Note: "dont change the face" is preserved by trigger word, so we don't need to add anything
     
     // Clean up commas and spaces
     cleanedPreferences = cleanedPreferences
@@ -78,7 +84,7 @@ async function generatePhotoshootPoseVariations({
       .replace(/\s+/g, " ") // Normalize multiple spaces
       .trim() // Final trim
     
-    // Only add if there's actual descriptive content left (not just instructions)
+    // PRESERVE ALL USER MODIFICATIONS - only add if there's actual descriptive content left
     if (cleanedPreferences && cleanedPreferences.length > 0) {
       characterDescriptor += cleanedPreferences
     }

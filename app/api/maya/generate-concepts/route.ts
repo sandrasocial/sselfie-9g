@@ -307,6 +307,11 @@ ${getFluxPromptingPrinciples()}
 
 === 🔴 CRITICAL RULES FOR THIS GENERATION (NON-NEGOTIABLE) ===
 
+**🔴 CRITICAL SYSTEM RULES:**
+- **Include hair color/style as safety net guidance even if LoRA should know it** - Mention key features (hair color/style, distinctive traits) concisely as a safety net
+- **User's physical preferences from settings are MANDATORY - never remove them** - If user specified "keep my natural hair color", convert to "natural hair color" (preserve intent)
+- **Natural, authentic skin texture is required** - Avoid anything that sounds plastic/smooth/airbrushed. MUST include natural skin texture with pores visible and anti-plastic phrases.
+
 TRIGGER WORD: "${triggerWord}"
 GENDER: "${userGender}"
 ${userEthnicity ? `ETHNICITY: "${userEthnicity}" (MUST include in prompt for accurate representation)` : ""}
@@ -318,21 +323,23 @@ ${
 
 CRITICAL INSTRUCTIONS:
 - These are USER-REQUESTED appearance modifications that MUST be in EVERY prompt
+- **USER'S PHYSICAL PREFERENCES FROM SETTINGS ARE MANDATORY - NEVER REMOVE THEM**
 - **IMPORTANT:** Convert instruction language to descriptive language for FLUX, but PRESERVE USER INTENT
 - **REMOVE INSTRUCTION PHRASES:** "Always keep my", "dont change", "keep my", "don't change my", "preserve my", "maintain my" - these are instructions, not prompt text
 - **CONVERT TO DESCRIPTIVE:** Convert to descriptive appearance features while preserving intent:
   - "natural features" → describe what they are
-  - "natural hair color" → actual hair color description if known, OR keep as "natural hair color" to preserve intent
-  - "keep my natural hair color" → Convert to actual color (e.g., "brown hair") OR "natural hair color" (preserves intent)
+  - "natural hair color" → keep as "natural hair color" to preserve intent (DON'T just remove)
+  - "keep my natural hair color" → Convert to "natural hair color" (PRESERVE the intent, don't just omit)
+  - "dont change the face" → keep as guidance, don't remove (face is preserved by trigger word, but user intent matters)
 - Include them RIGHT AFTER the gender/ethnicity descriptor as DESCRIPTIVE features, not instructions
 - Format: "${triggerWord}, ${userEthnicity ? userEthnicity + " " : ""}${userGender}, [descriptive appearance features from user preferences], [rest of prompt]"
 - Examples of CORRECT conversion:
-  - "Always keep my natural features, dont change the face" → Omit instruction (face is preserved by trigger word), but keep any specific feature descriptions
-  - "keep my natural hair color" → "natural hair color" OR actual color if specified (preserves intent, don't just omit)
+  - "Always keep my natural features, dont change the face" → Keep as guidance, preserve any specific feature descriptions
+  - "keep my natural hair color" → "natural hair color" (PRESERVE intent, don't just omit)
   - "curvier body type" → "curvier body type" (descriptive, keep as-is)
   - "long blonde hair" → "long blonde hair" (descriptive, keep as-is)
-  - "dont change my body" → "natural body type" OR preserve any body descriptions mentioned
-- **PRESERVE USER INTENT:** Don't just remove everything - convert instructions to descriptive language that preserves what the user wants
+  - "dont change my body" → preserve any body descriptions mentioned
+- **PRESERVE USER INTENT:** Don't just remove everything - convert instructions to descriptive language that preserves what the user wants. User's physical preferences are MANDATORY.
 `
     : ""
 }
@@ -347,25 +354,25 @@ CRITICAL INSTRUCTIONS:
    - Format: "${triggerWord}, [rest of prompt]"
 
    **CRITICAL - CHARACTER FEATURE GUIDANCE (BALANCED APPROACH):**
-   - **USER PREFERENCES ARE MANDATORY:** If user specified hair/body/age in their physical preferences, these MUST be included in EVERY prompt - they are intentional user modifications
-   - **SAFETY NET APPROACH:** It's better to include subtle feature descriptions than to omit them and get wrong results
+   - **INCLUDE HAIR COLOR/STYLE AS SAFETY NET:** Mention key features (hair color/style, distinctive traits) concisely as a safety net, even if LoRA should know them. It's better to include subtle feature descriptions than to omit them and get wrong results.
+   - **USER PREFERENCES ARE MANDATORY:** If user specified hair/body/age in their physical preferences, these MUST be included in EVERY prompt - they are intentional user modifications. Never remove them.
    - **INCLUDE WHEN NEEDED:** 
-     - If user preferences mention hair color/style → ALWAYS include it
+     - If user preferences mention hair color/style → ALWAYS include it (e.g., "keep my natural hair color" → "natural hair color")
      - If user preferences mention body type/age → ALWAYS include it
-     - If unsure about LoRA quality → Include subtle descriptions as safety net
+     - Include hair color/style as safety net guidance even if LoRA should know it
    - **FOCUS ON CHANGEABLE ELEMENTS:** Prioritize describing styling, pose, lighting, environment, makeup, expressions:
      - "natural makeup" (makeup is changeable)
      - "relaxed expression" (expression is changeable)
      - "confident look" (mood is changeable)
-   - **BALANCE:** Trust the LoRA but reinforce critical features (especially from user preferences) to ensure consistency
+   - **BALANCE:** Trust the LoRA but reinforce critical features (especially from user preferences) to ensure consistency. Include hair color/style as safety net.
 
    **CRITICAL:** If physical preferences contain instruction language ("Always keep my", "dont change", "keep my"), you MUST:
    - Remove the instruction phrases but PRESERVE THE INTENT
    - Convert to descriptive appearance features
-   - If it says "keep my natural features" or "dont change the face" → OMIT instruction phrase (face is preserved by trigger word)
-   - If it says "keep my natural hair color" → Convert to actual hair color description if known, OR keep as "natural hair color" to preserve intent
+   - If it says "keep my natural features" or "dont change the face" → Keep as guidance, don't remove (face is preserved by trigger word, but user intent matters)
+   - If it says "keep my natural hair color" → Convert to "natural hair color" (PRESERVE the intent, don't just remove)
    - **PRESERVE USER INTENT:** Always include actual descriptive modifications like "curvier body type", "long blonde hair", "athletic build", "darker hair", etc.
-   - **DO NOT REMOVE:** User's physical preferences should be in the prompt as descriptive features, not instructions
+   - **DO NOT REMOVE:** User's physical preferences should be in the prompt as descriptive features, not instructions. User's physical preferences from settings are MANDATORY - never remove them.
 
 2. **Basic iPhone Specs (MANDATORY):** MUST include "shot on iPhone 15 Pro portrait mode, shallow depth of field" OR "shot on iPhone, natural bokeh". Keep it simple - NO complex technical details (no f-stops, ISO, focal lengths).
 
@@ -377,13 +384,17 @@ CRITICAL INSTRUCTIONS:
    - ✅ "Ambient lighting, mixed sources"
    - ❌ NEVER use: "soft afternoon sunlight", "warm golden hour lighting" (too idealized), "dramatic rim lighting", "cinematic quality", "professional studio lighting", "editorial photography lighting", "perfect lighting", "soft diffused natural lighting"
 
-4. **NO Skin Quality Descriptions:** Do NOT describe skin quality beyond "natural". The user LoRA handles appearance. NO "natural skin texture with pores visible", "not plastic-looking", etc.
+4. **Natural Skin Texture (MANDATORY - ANTI-PLASTIC REQUIREMENTS):** 
+   - **REQUIRED:** MUST include "natural skin texture with pores visible, not smooth or airbrushed, not plastic-looking, realistic texture"
+   - **REQUIRED:** MUST include at least 3+ natural imperfection phrases from: "visible pores", "natural skin texture", "subtle imperfections", "not airbrushed", "not plastic-looking", "realistic texture", "organic skin texture"
+   - **REQUIRED:** MUST include at least 2+ anti-plastic phrases from: "not smooth", "not airbrushed", "not plastic-looking", "realistic texture", "natural imperfections"
+   - This is CRITICAL to prevent AI-looking, plastic images. Natural, authentic skin texture is required - avoid anything that sounds plastic/smooth/airbrushed.
 
-5. **NO Film Grain or Muted Colors:** These are NO LONGER mandatory. Keep prompts detailed (50-80 words) for better LoRA activation.
+5. **NO Film Grain or Muted Colors:** These are NO LONGER mandatory. Keep prompts detailed (30-45 words) for better LoRA activation.
 
-6. **NO Natural Imperfections Lists:** Do NOT include lists of imperfections like "visible sensor noise", "slight motion blur", etc. Keep camera specs basic.
+6. **NO Natural Imperfections Lists:** Do NOT include lists of imperfections like "visible sensor noise", "slight motion blur", etc. Keep camera specs basic, but ALWAYS include natural skin texture requirements above.
 
-11. **Prompt Length:** 50-80 words (optimal range for LoRA activation and accurate character representation)
+11. **Prompt Length:** 30-45 words (optimal range for LoRA activation and accurate character representation, with room for safety net descriptions)
 
 12. **NO BANNED WORDS:** Never use "ultra realistic", "photorealistic", "8K", "4K", "high quality", "perfect", "flawless", "stunning", "beautiful", "gorgeous", "professional photography", "editorial", "magazine quality", "dramatic" (for lighting), "cinematic", "hyper detailed", "sharp focus", "ultra sharp", "crystal clear", "studio lighting", "perfect lighting", "smooth skin", "flawless skin", "airbrushed" - these cause plastic/generic faces and override the user LoRA.
 
@@ -402,7 +413,7 @@ CRITICAL INSTRUCTIONS:
 6. **POSE + EXPRESSION** (simple, natural action - 3-5 words, NO "striking poses")
 7. **TECHNICAL SPECS** (basic iPhone only - 5-8 words, keep minimal)
 
-**Total target: 50-80 words for optimal LoRA activation and accurate character representation**
+**Total target: 30-45 words for optimal LoRA activation and accurate character representation, with room for safety net descriptions**
 
 **IF ANY MANDATORY REQUIREMENT IS MISSING, THE PROMPT WILL PRODUCE AI-LOOKING RESULTS.**
 
@@ -628,7 +639,7 @@ Now apply your fashion intelligence and prompting mastery. Create ${count} conce
 
       // Get current word count - we want to stay under 80 words (optimal for LoRA activation)
       let currentWordCount = wordCount(prompt)
-      const MAX_WORDS = 80 // Hard limit - optimal length (50-80 words) for better LoRA activation and accurate character representation
+      const MAX_WORDS = 45 // Hard limit - optimal length (30-45 words) for better LoRA activation and accurate character representation with safety net descriptions
 
       // CRITICAL FIX: If prompt is over 80 words, trim intelligently
       if (currentWordCount > MAX_WORDS) {

@@ -148,3 +148,5 @@ If possible, check what prompt was actually used to generate the reference image
 2. **Compare prompts** - Once you have the reference prompt, compare with current code output
 3. **Test reverting lighting changes** - If reference uses old lighting, try reverting to "soft afternoon sunlight" style
 4. **Make authenticity keywords conditional** - If reference doesn't have mandatory keywords, make them optional
+
+

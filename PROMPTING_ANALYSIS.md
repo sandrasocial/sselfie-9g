@@ -229,3 +229,5 @@ The current prompting structure is solid but may be missing:
 - **Phone characteristics** (processing, imperfections, artifacts)
 
 Adding these elements should bring generated images closer to the reference image quality.
+
+

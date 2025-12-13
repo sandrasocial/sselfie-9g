@@ -2,7 +2,7 @@
  * MAYA'S FLUX PROMPTING PRINCIPLES (FLUX-OPTIMIZED)
  *
  * Based on FLUX AI best practices:
- * - 50-80 word optimal length (better LoRA activation, accurate character representation)
+ * - 30-60 word optimal length (better LoRA activation, accurate character representation)
  * - Natural language (not keyword stuffing)
  * - Amateur cellphone photo aesthetic (not professional)
  * - Order matters (subject → outfit → environment → lighting → technical)
@@ -14,20 +14,37 @@
 export const FLUX_PROMPTING_PRINCIPLES = `
 === FLUX PROMPTING MASTERY (FLUX-OPTIMIZED) ===
 
+## 🔴 CRITICAL AVOIDANCES (Auto-removed if present)
+
+### Banned Quality Terms:
+- ❌ "stunning", "perfect", "beautiful", "flawless"
+- ❌ "high quality", "8K", "ultra realistic", "photorealistic"
+- ❌ "professional photography", "DSLR", "professional camera"
+
+### Banned Lighting Terms:
+- ❌ "perfect lighting", "studio lighting", "professional lighting"
+- ❌ "clean lighting", "even lighting"
+- ✅ **Instead use:** "uneven lighting", "mixed color temperatures", "natural window light"
+
+### Banned Skin/Texture Terms:
+- ❌ "smooth skin", "airbrushed", "flawless skin", "perfect skin"
+- ❌ "plastic", "mannequin-like", "doll-like"
+- ✅ **Instead use:** "natural skin texture", "visible pores", "realistic texture"
+
 You craft prompts using NATURAL LANGUAGE as if describing to a human photographer. FLUX's T5 encoder excels with conversational descriptions, not keyword soups.
 
 ## OPTIMAL PROMPT STRUCTURE FOR FLUX
 
 **FORMAT:** [TRIGGER WORD] + [Subject/Clothing Description] + [Setting/Context] + [Lighting Description] + [Camera/Technical] + [Mood/Action]
 
-**OPTIMAL LENGTH:** 50-80 words (Flux's dual-encoder system handles complex descriptions, more context = better LoRA activation)
+**OPTIMAL LENGTH:** 30-60 words (optimal for LoRA activation with room for safety net feature descriptions)
 
 **🔴 CRITICAL FOR CHARACTER LIKENESS:**
-- **Optimal prompts (50-80 words)** = Better LoRA activation, more accurate character representation
-- **Too short (<45 words)** = May miss essential detail, risks wrong hair/body/age
-- **Too long (>85 words)** = Model may lose focus on character features
-- **Hard limit: 80 words** (aim for 60-75 sweet spot)
-- Detailed prompts = more accurate character representation with custom character/face LoRAs
+- **Optimal prompts (30-60 words)** = Better LoRA activation with room for safety net descriptions
+- **Too short (<30 words)** = May miss essential detail, risks wrong hair/body/age
+- **Too long (>60 words)** = Model may lose focus on character features
+- **Target range: 30-60 words** (optimal balance)
+- Include safety net feature descriptions (hair color/style) when needed, especially from user preferences
 
 **WORD ORDER CRITICAL:** Place most important elements FIRST (subject → outfit → environment → lighting → technical → film grain)
 
@@ -40,12 +57,21 @@ You craft prompts using NATURAL LANGUAGE as if describing to a human photographe
 5. **POSE/ACTION** (3-5 words) - Natural actions only (no "striking poses")
 6. **CAMERA/TECHNICAL SPECS** (5-8 words) - Basic iPhone specs only (no complex technical details)
 
-**TOTAL TARGET:** 50-80 words for optimal LoRA activation and accurate character representation
+**TOTAL TARGET:** 30-60 words for optimal LoRA activation and accurate character representation
 
 **🔴 CHARACTER LIKENESS PRESERVATION:**
+
+### FEATURE SAFETY NET APPROACH:
+
+**Include key features (hair color/style, distinctive traits) concisely as guidance**
+- Even if LoRA should know features, mentioning them improves consistency
+- Keep descriptions brief but present: "brown hair" not "long luxurious brown hair"
+- This acts as a safety net when LoRA didn't learn features perfectly
+
+**Key Principles:**
 - Keep prompts concise to maintain focus on trigger word and character
-- Avoid over-describing - let the LoRA handle what it learned during training
-- Trust the trained model to preserve facial features, hair, and other fixed characteristics
+- **USER PREFERENCES ARE MANDATORY:** If user specified hair/body/age in their physical preferences, these MUST be included - they are intentional user modifications
+- Trust the trained model but reinforce critical features (especially from user preferences) to ensure consistency
 
 ## KEY PRINCIPLES FOR FLUX
 
@@ -94,22 +120,28 @@ This phrase causes blur in FLUX.1-dev:
 
 **NEVER MENTION:** smiling, laughing, grinning (looks forced)
 
-**🔴 CHARACTER FEATURE GUIDANCE (BALANCED APPROACH):**
+**🔴 CHARACTER FEATURE GUIDANCE (FEATURE SAFETY NET APPROACH):**
+
+**Include key features (hair color/style, distinctive traits) concisely as guidance**
+- Even if LoRA should know features, mentioning them improves consistency
+- Keep descriptions brief but present: "brown hair" not "long luxurious brown hair"
+- This acts as a safety net when LoRA didn't learn features perfectly
+
+**Key Principles:**
 - **LORA TRAINING:** The LoRA was trained on user's features, but results may vary based on training quality
-- **SAFETY NET APPROACH:** It's better to include subtle feature descriptions than to omit them and get wrong results
-- **USER PREFERENCES ARE MANDATORY:** If user specified hair/body/age in their physical preferences, these MUST be included - they are intentional user modifications
+- **SAFETY NET APPROACH:** Include hair color/style and key features concisely as safety net guidance, even if LoRA should know them. It's better to include subtle feature descriptions than to omit them and get wrong results.
+- **USER PREFERENCES ARE MANDATORY:** If user specified hair/body/age in their physical preferences, these MUST be included - they are intentional user modifications. Never remove them.
 - **INCLUDE WHEN NEEDED:** 
-  - If user preferences mention hair color/style → ALWAYS include it
+  - If user preferences mention hair color/style → ALWAYS include it (e.g., "keep my natural hair color" → "natural hair color")
   - If user preferences mention body type/age → ALWAYS include it
-  - If unsure about LoRA quality → Include subtle descriptions as safety net
+  - Include hair color/style as safety net guidance even if LoRA should know it
 - **FOCUS ON CHANGEABLE ELEMENTS:** Prioritize describing styling, pose, lighting, environment, makeup, expressions:
   - "natural makeup" (makeup is changeable)
   - "minimal makeup" (makeup is changeable)
   - "relaxed expression" (expression is changeable)
   - "confident look" (mood is changeable)
   - "soft smile" (expression is changeable)
-  - "glowing skin" (skin quality is changeable)
-- **BALANCE:** Trust the LoRA but reinforce critical features (especially from user preferences) to ensure consistency
+- **BALANCE:** Trust the LoRA but reinforce critical features (especially from user preferences) to ensure consistency. Include hair color/style as safety net.
 
 **SIMPLE EXPRESSIONS:** looking away naturally, eyes resting down, face neutral and relaxed, glancing to side, lost in thought
 
@@ -164,10 +196,11 @@ This phrase causes blur in FLUX.1-dev:
 ### CAMERA/TECHNICAL SPECS (8-12 words) - **AUTHENTIC IPHONE STYLE**
 
 **🔴 MANDATORY BASE:** Authentic iPhone photography descriptors
+- **MANDATORY:** MUST include "shot on iPhone 15 Pro" OR specific focal length (e.g., "50mm", "85mm")
 - **ALWAYS INCLUDE:** "candid photo" OR "candid moment" (creates authentic, unposed feel)
 - **ALWAYS INCLUDE:** "amateur photography" OR "cellphone photo" (prevents professional/plastic look)
 - **USE:** "shot on iPhone 15 Pro portrait mode, shallow depth of field"
-- **OR:** "shot on iPhone, natural bokeh"
+- **OR:** "shot on iPhone 15 Pro, 50mm, natural bokeh"
 - Goal: looks like a friend took it on their phone, NOT a professional shoot
 
 **AUTHENTICITY KEYWORDS (Research-backed):**
@@ -194,18 +227,19 @@ This phrase causes blur in FLUX.1-dev:
 
 **TRUST THE USER LoRA:** The user's trained LoRA handles appearance. Keep camera specs simple and authentic.
 
-### FILM AESTHETICS - **REMOVED**
+### MANDATORY REQUIREMENTS (EVERY PROMPT MUST HAVE):
 
-**🔴 CRITICAL CHANGE:** Film grain and muted color descriptions are NO LONGER mandatory. These were adding complexity and competing with the user LoRA.
+**🔴 CRITICAL - ALL PROMPTS MUST INCLUDE:**
 
-**NEW APPROACH:**
-- Trust the user LoRA for natural appearance
-- Keep prompts detailed (50-80 words) for better LoRA activation
-- Basic iPhone camera specs are enough
-- Natural lighting descriptions are enough
+1. **Camera Specs:** "shot on iPhone 15 Pro" OR specific focal length (e.g., "shot on iPhone 15 Pro, 50mm")
+2. **Natural Skin Texture:** "natural skin texture with pores visible, not smooth or airbrushed"
+3. **Film Grain + Muted Colors:** "film grain, muted colors" OR "visible film grain, muted color palette"
+4. **Uneven Lighting:** "uneven lighting with mixed color temperatures" OR "uneven natural lighting, mixed color temperatures"
 
-**WHY THIS LENGTH:**
-Flux's dual-encoder system (T5 + CLIP) handles complex descriptions well. More context = better LoRA activation. Detailed prompts (50-80 words) = more accurate character representation with custom character/face LoRAs.
+**Why These Are Mandatory:**
+- Natural skin texture prevents plastic/AI-looking images
+- Film grain + muted colors create authentic iPhone aesthetic
+- Uneven lighting mimics real phone photos (not professional studio lighting)
 
 ## 🔴 CRITICAL FLUX-SPECIFIC AVOIDANCES (HARD REQUIREMENTS)
 
@@ -216,9 +250,9 @@ Flux's dual-encoder system (T5 + CLIP) handles complex descriptions well. More c
 - ❌ "professional photography", "editorial", "magazine quality"
 - ❌ "dramatic" (for lighting)
 - ❌ "hyper detailed", "sharp focus", "ultra sharp", "crystal clear"
-- ❌ Any skin quality descriptions beyond "natural"
+- ❌ "smooth skin", "airbrushed", "flawless skin", "perfect skin", "plastic", "mannequin-like"
 - ❌ "cinematic quality", "cinematic"
-- ❌ "studio lighting", "professional lighting", "perfect lighting"
+- ❌ "studio lighting", "professional lighting", "perfect lighting", "clean lighting", "even lighting"
 - ❌ Prompt weight syntax: (word)++, [word], {word}, (word:1.5)
 - ❌ "White background" phrase (causes blur in FLUX)
 - ❌ Multiple contradictory actions: "first she walks, then she sits"
@@ -270,52 +304,58 @@ Flux's dual-encoder system (T5 + CLIP) handles complex descriptions well. More c
 
 | Shot Type | Target Words | Priority Elements |
 |-----------|--------------|-------------------|
-| Close-Up Portrait | 50-65 | Outfit fabrics, simple expression, natural lighting, basic iPhone specs |
-| Half Body Lifestyle | 55-70 | Outfit details, natural pose, simple setting, natural lighting, basic iPhone specs |
-| Environmental Portrait | 60-75 | Context, outfit, simple location, natural lighting, basic iPhone specs |
-| Action/Movement | 55-70 | Natural motion, outfit movement, natural lighting, basic iPhone specs |
+| Close-Up Portrait | 40-55 | Outfit fabrics, simple expression, natural lighting, iPhone specs, natural skin texture, film grain, safety net features |
+| Half Body Lifestyle | 40-55 | Outfit details, natural pose, simple setting, natural lighting, iPhone specs, natural skin texture, film grain, safety net features |
+| Environmental Portrait | 45-60 | Context, outfit, simple location, natural lighting, iPhone specs, natural skin texture, film grain, safety net features |
+| Action/Movement | 40-55 | Natural motion, outfit movement, natural lighting, iPhone specs, natural skin texture, film grain, safety net features |
 
-**Note:** Optimal prompts (50-80 words) = better LoRA activation, more accurate character representation. Flux's dual-encoder system handles complex descriptions well. More context = better LoRA activation. The goal is "looks like a friend took it" not "professional photoshoot"
+**Note:** Optimal prompts (30-60 words, target 40-55) = better LoRA activation with room for safety net descriptions. Include hair color/style as safety net guidance. The goal is "looks like a friend took it" not "professional photoshoot"
 
 ## THE FLUX QUALITY CHECKLIST (MANDATORY VERIFICATION)
 
 Before finalizing ANY prompt, verify ALL of these:
 
-✅ **Length:** 50-80 words? (Optimal for LoRA activation)
+✅ **Length:** 30-60 words? (Target 40-55 words for optimal LoRA activation with safety net)
 ✅ **Natural language:** Reads like describing to a photographer, not keywords?
 ✅ **Outfit specifics:** Fabrics/textures included? (Stay detailed here)
 ✅ **Simple setting:** One-line location description? (Keep brief)
-✅ **Realistic lighting:** Authentic lighting description with natural imperfections? (NO idealized terms like "soft afternoon sunlight" or "warm golden hour")
-✅ **Authentic iPhone specs:** Includes "candid photo" or "candid moment"? Includes "amateur cellphone photo" or "cellphone photo"? "shot on iPhone 15 Pro portrait mode, shallow depth of field" OR "shot on iPhone, natural bokeh"?
+✅ **Realistic lighting:** Authentic lighting description with natural imperfections? Includes "uneven lighting with mixed color temperatures"? (NO idealized terms like "soft afternoon sunlight" or "warm golden hour")
+✅ **Authentic iPhone specs:** MUST include "shot on iPhone 15 Pro" OR specific focal length? Includes "candid photo" or "candid moment"? Includes "amateur cellphone photo" or "cellphone photo"?
+✅ **Natural skin texture:** MUST include "natural skin texture with pores visible, not smooth or airbrushed"?
+✅ **Film grain + muted colors:** MUST include "film grain, muted colors" OR "visible film grain, muted color palette"?
 ✅ **Natural pose:** Simple action description? (NO "striking poses")
 ✅ **User preferences:** If user specified physical preferences (hair, body, age), are they included? **MANDATORY**
-✅ **No banned words:** No "ultra realistic", "photorealistic", "8K", "perfect", "flawless", "stunning", "beautiful", "professional photography", "editorial", "dramatic", "cinematic", "hyper detailed", "sharp focus"?
+✅ **Safety net features:** Hair color/style included as safety net guidance?
+✅ **No banned words:** No "ultra realistic", "photorealistic", "8K", "perfect", "flawless", "stunning", "beautiful", "professional photography", "editorial", "dramatic", "cinematic", "hyper detailed", "sharp focus", "smooth skin", "airbrushed", "studio lighting", "perfect lighting"?
 ✅ **No prompt weights:** No (word)++, [word], {word}?
-✅ **No skin quality descriptions:** Beyond "natural" only?
 
 **If ANY item is missing or incorrect, the prompt will create plastic/generic faces instead of preserving the user LoRA.**
 
 ## EXAMPLE COMPLETE FLUX PROMPTS (AUTHENTIC, PRESERVES USER LoRA)
 
-**Example 1: Casual Street Style (68 words - AUTHENTIC):**
-"user_trigger, woman in oversized brown leather blazer with relaxed fit, cream cashmere turtleneck underneath, high-waisted straight-leg jeans, chunky gold hoops, walking through SoHo carrying iced coffee, candid moment, uneven natural lighting with mixed color temperatures, natural shadows, amateur cellphone photo, shot on iPhone 15 Pro portrait mode, shallow depth of field"
+**Example 1: Casual Street Style (52 words - AUTHENTIC):**
+"user_trigger, woman, brown hair, in oversized brown leather blazer with relaxed fit, cream cashmere turtleneck underneath, high-waisted straight-leg jeans, walking through SoHo carrying iced coffee, uneven natural lighting with mixed color temperatures, candid moment, shot on iPhone 15 Pro portrait mode, shallow depth of field, natural skin texture with pores visible, not smooth or airbrushed, film grain, muted colors, authentic iPhone photo aesthetic"
 
-**Example 2: Cozy Home (64 words - AUTHENTIC):**
-"user_trigger, woman in oversized cream knit sweater with wide sleeves, matching lounge pants, delicate gold jewelry, sitting on grey sectional sofa holding ceramic mug, legs crossed comfortably, natural window light with shadows, slight unevenness, candid photo, shot on iPhone 15 Pro portrait mode, shallow depth of field"
+**Example 2: Cozy Home (48 words - AUTHENTIC):**
+"user_trigger, woman, natural hair color, in oversized cream knit sweater with wide sleeves, matching lounge pants, sitting on grey sectional sofa holding ceramic mug, natural window light with shadows, uneven lighting, candid photo, shot on iPhone 15 Pro, 50mm, natural skin texture with pores visible, not plastic-looking, film grain, muted color palette, authentic iPhone photo aesthetic"
 
-**Example 3: Evening Glam (70 words - AUTHENTIC):**
-"user_trigger, woman in black satin slip dress with thin straps, vintage leather bomber jacket draped over shoulders, strappy heels, diamond tennis bracelet, low bun with face-framing pieces, standing in dimly lit restaurant, ambient lighting with mixed sources, natural shadows, candid moment, cellphone photo, shot on iPhone 15 Pro portrait mode, shallow depth of field"
+**Example 3: Evening Glam (50 words - AUTHENTIC):**
+"user_trigger, woman, blonde hair, in black satin slip dress with thin straps, vintage leather bomber jacket draped over shoulders, standing in dimly lit restaurant, ambient lighting with mixed sources, uneven lighting, candid moment, shot on iPhone 15 Pro, 85mm, natural skin texture with pores visible, realistic texture, film grain, muted colors, authentic iPhone photo aesthetic"
 
 **Key Principles in These Examples:**
-- ✅ 50-80 words = better LoRA activation, more accurate character representation
+- ✅ 40-55 words = optimal LoRA activation with safety net descriptions
+- ✅ **ALL start with "shot on iPhone 15 Pro"** - Mandatory requirement
+- ✅ **ALL include "natural skin texture with pores visible, not smooth or airbrushed"** - Prevents plastic look
+- ✅ **ALL include "film grain, muted colors"** - Authentic iPhone aesthetic
+- ✅ **ALL include "uneven lighting with mixed color temperatures"** - Realistic phone photo lighting
+- ✅ **ALL end with "authentic iPhone photo aesthetic"** - Reinforces authentic feel
 - ✅ Detailed outfit descriptions with fabrics/textures (no enhancement words)
 - ✅ Simple but descriptive settings (one line, not elaborate)
 - ✅ Realistic lighting with natural imperfections (no idealized terms)
 - ✅ **ALWAYS includes "candid photo" or "candid moment"** - Creates authentic, unposed feel
-- ✅ **ALWAYS includes "amateur cellphone photo" or "cellphone photo"** - Prevents professional/plastic look
 - ✅ Natural poses/actions (no "striking poses", no "legs tucked under")
 - ✅ NO forbidden words (ultra realistic, 8K, perfect, professional, editorial, etc.)
-- ✅ Trusts user LoRA for appearance, detailed prompts help activate it better
+- ✅ Includes hair color/style as safety net guidance
 `
 
 export const ANTI_PATTERNS = `

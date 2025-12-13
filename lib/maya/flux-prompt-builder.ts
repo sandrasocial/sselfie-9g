@@ -76,48 +76,10 @@ export class FluxPromptBuilder {
       realismKeywords,
     }
 
-    // Clean physical preferences - remove instruction phrases but preserve user intent
+    // Clean physical preferences - convert instruction phrases to descriptive language, preserve user intent
     let cleanedPhysicalPreferences = ""
     if (physicalPreferences) {
-      cleanedPhysicalPreferences = physicalPreferences
-      
-      // Remove instruction phrases but preserve descriptive content
-      const instructionPhrases = [
-        /\bAlways keep my\b/gi,
-        /\bdont change\b/gi,
-        /\bdon't change\b/gi,
-        /\bkeep my\b/gi,
-        /\bpreserve my\b/gi,
-        /\bmaintain my\b/gi,
-        /\bkeep\s+my\s+natural\s+features\b/gi,
-        /\bdont\s+change\s+the\s+face\b/gi,
-        /\bdon't\s+change\s+the\s+face\b/gi,
-        // Special handling: "keep my natural hair color" → convert to descriptive, don't just remove
-        /\bkeep\s+my\s+natural\s+hair\s+color\b/gi,  // Will be handled specially below
-        /\bkeep\s+my\s+natural\s+eye\s+color\b/gi,
-        /\bkeep\s+my\s+natural\s+hair\b/gi,  // Will be handled specially below
-        /\bkeep\s+my\s+natural\s+eyes\b/gi,
-      ]
-      
-      // Check if user wants to preserve natural hair color
-      const hasNaturalHairColor = /\b(?:keep\s+my\s+natural\s+hair\s+color|keep\s+my\s+natural\s+hair)\b/gi.test(cleanedPhysicalPreferences)
-      
-      instructionPhrases.forEach((regex) => {
-        cleanedPhysicalPreferences = cleanedPhysicalPreferences.replace(regex, "")
-      })
-      
-      // If user specified "keep natural hair color" and no color is mentioned, preserve the intent
-      if (hasNaturalHairColor && !/\b(blonde|brown|black|red|gray|grey|auburn|brunette|hair\s+color)\b/gi.test(cleanedPhysicalPreferences)) {
-        cleanedPhysicalPreferences = "natural hair color, " + cleanedPhysicalPreferences
-      }
-      
-      cleanedPhysicalPreferences = cleanedPhysicalPreferences
-        .replace(/,\s*,/g, ",") // Remove double commas
-        .replace(/,\s*,/g, ",") // Remove double commas again (in case of triple)
-        .replace(/^,\s*/, "") // Remove leading comma
-        .replace(/\s*,\s*$/, "") // Remove trailing comma
-        .replace(/\s+/g, " ") // Normalize multiple spaces
-        .trim() // Final trim
+      cleanedPhysicalPreferences = this.convertPhysicalPreferencesToPrompt(physicalPreferences)
     }
 
     const promptParts = [
@@ -242,5 +204,63 @@ export class FluxPromptBuilder {
 
   private static getUrbanLighting(): string {
     return "overcast natural light, muted desaturated tones, crushed blacks, cool neutral temperature, moody urban atmosphere"
+  }
+
+  /**
+   * Convert physical preferences from instruction language to descriptive prompt language
+   * Key principle: PRESERVE user intent, just remove instruction-style language
+   */
+  private static convertPhysicalPreferencesToPrompt(preferences: string): string {
+    let result = preferences.trim()
+
+    // Step 1: Handle "natural hair color" specifically - PRESERVE THE INTENT
+    // Convert "keep my natural hair color" → "natural hair color"
+    const hasNaturalHairColor = /\b(?:keep\s+my\s+natural\s+hair\s+color|keep\s+my\s+natural\s+hair)\b/gi.test(result)
+    if (hasNaturalHairColor) {
+      // Replace the instruction phrase with just "natural hair color"
+      result = result.replace(/\bkeep\s+my\s+natural\s+hair\s+color\b/gi, "natural hair color")
+      result = result.replace(/\bkeep\s+my\s+natural\s+hair\b/gi, "natural hair color")
+    }
+
+    // Step 2: Handle "the face" or "face" - convert to descriptive
+    // "dont change the face" → "natural facial features"
+    // "don't change the face" → "natural facial features"
+    result = result.replace(/\b(?:dont|don't)\s+change\s+the\s+face\b/gi, "natural facial features")
+    result = result.replace(/\b(?:dont|don't)\s+change\s+face\b/gi, "natural facial features")
+    
+    // If just "the face" remains (after removing instruction verbs), convert it
+    // Use word boundaries to ensure we only match standalone "the face"
+    result = result.replace(/\bthe\s+face\b/gi, "natural facial features")
+    
+    // Note: We don't replace standalone "face" as it might be part of other phrases
+    // The user's descriptive modifications should be preserved as-is
+
+    // Step 3: Handle "natural features" - preserve as descriptive
+    // "preserve my natural features" → "natural features"
+    result = result.replace(/\b(?:preserve|keep|maintain)\s+my\s+natural\s+features\b/gi, "natural features")
+
+    // Step 4: Handle "natural eye color" - preserve intent
+    result = result.replace(/\bkeep\s+my\s+natural\s+eye\s+color\b/gi, "natural eye color")
+    result = result.replace(/\bkeep\s+my\s+natural\s+eyes\b/gi, "natural eye color")
+
+    // Step 5: Remove instruction verbs/phrases (but keep the descriptive content)
+    // Remove: "always keep my", "keep my", "preserve my", "maintain my", "dont change", "don't change"
+    result = result.replace(/\balways\s+keep\s+my\b/gi, "")
+    result = result.replace(/\bkeep\s+my\b/gi, "")
+    result = result.replace(/\bpreserve\s+my\b/gi, "")
+    result = result.replace(/\bmaintain\s+my\b/gi, "")
+    result = result.replace(/\b(?:dont|don't)\s+change\b/gi, "")
+    result = result.replace(/\bdo\s+not\s+change\b/gi, "")
+
+    // Step 6: Clean up extra spaces, commas, and normalize
+    result = result
+      .replace(/,\s*,/g, ",") // Remove double commas
+      .replace(/,\s*,/g, ",") // Remove double commas again (in case of triple)
+      .replace(/^,\s*/, "") // Remove leading comma
+      .replace(/\s*,\s*$/, "") // Remove trailing comma
+      .replace(/\s+/g, " ") // Normalize multiple spaces
+      .trim() // Final trim
+
+    return result
   }
 }
