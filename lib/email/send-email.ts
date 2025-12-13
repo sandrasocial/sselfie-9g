@@ -125,6 +125,7 @@ async function logEmailSend(
   status: "sent" | "delivered" | "failed" | "error",
   resendMessageId?: string,
   errorMessage?: string,
+  campaignId?: number,
 ): Promise<void> {
   try {
     await sql`
@@ -134,6 +135,7 @@ async function logEmailSend(
         resend_message_id,
         status,
         error_message,
+        campaign_id,
         sent_at
       )
       VALUES (
@@ -142,6 +144,7 @@ async function logEmailSend(
         ${resendMessageId || null},
         ${status},
         ${errorMessage || null},
+        ${campaignId || null},
         NOW()
       )
     `

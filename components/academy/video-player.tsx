@@ -139,13 +139,35 @@ export default function VideoPlayer({
           case "ended":
             setIsPlaying(false)
             break
+          case "error":
+            // Vimeo player error (often embedding blocked)
+            console.error("[v0] Vimeo player error:", data)
+            setVideoError("Video cannot be played. Please check if embedding is enabled on this Vimeo video.")
+            break
         }
       } catch (e) {
         // Ignore parsing errors for non-JSON messages
       }
     }
 
+    // Handle iframe load errors
+    const handleIframeError = () => {
+      console.error("[v0] Vimeo iframe failed to load")
+      setVideoError("Failed to load video. The video may not allow embedding. Please check Vimeo privacy settings.")
+    }
+
+    // Handle iframe load timeout
+    const loadTimeout = setTimeout(() => {
+      if (iframeRef.current && !duration) {
+        console.warn("[v0] Vimeo iframe load timeout - video may not allow embedding")
+        // Don't set error immediately, give it more time
+      }
+    }, 10000) // 10 second timeout
+
     window.addEventListener("message", handleVimeoMessage)
+    
+    const iframe = iframeRef.current
+    iframe.addEventListener("error", handleIframeError)
 
     // Subscribe to Vimeo events after iframe loads
     const iframe = iframeRef.current
@@ -189,10 +211,12 @@ export default function VideoPlayer({
     setTimeout(subscribeToEvents, 1000)
 
     return () => {
+      clearTimeout(loadTimeout)
       window.removeEventListener("message", handleVimeoMessage)
       iframe.removeEventListener("load", subscribeToEvents)
+      iframe.removeEventListener("error", handleIframeError)
     }
-  }, [isVimeo, initialWatchTime])
+  }, [isVimeo, initialWatchTime, duration])
 
   // Auto-save watch time every 10 seconds
   useEffect(() => {
@@ -438,6 +462,16 @@ export default function VideoPlayer({
             allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
             allowFullScreen
             title="Vimeo video player"
+            onError={() => {
+              console.error("[v0] Iframe load error - video may not allow embedding")
+              setVideoError("Video cannot be embedded. Please check Vimeo privacy settings to allow embedding.")
+            }}
+            onLoad={() => {
+              // Iframe loaded successfully
+              if (process.env.NODE_ENV === "development") {
+                console.log("[v0] Vimeo iframe loaded successfully")
+              }
+            }}
           />
         ) : isYouTube && youtubeEmbedUrl ? (
           <iframe

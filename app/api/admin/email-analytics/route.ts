@@ -33,6 +33,7 @@ export async function GET(request: Request) {
     }
 
     // Get all campaigns with metrics
+    // Use COALESCE to prefer email_logs count but fall back to admin_email_campaigns.total_sent
     const campaigns = await sql`
       SELECT 
         c.id,
@@ -46,7 +47,8 @@ export async function GET(request: Request) {
         c.total_recipients,
         c.total_sent,
         c.total_failed,
-        COUNT(DISTINCT el.id) as total_emails_sent,
+        COALESCE(COUNT(DISTINCT el.id), 0) as total_emails_sent_from_logs,
+        COALESCE(c.total_sent, 0) as total_sent_from_campaign,
         COUNT(DISTINCT CASE WHEN el.opened = true THEN el.id END) as total_opened,
         COUNT(DISTINCT CASE WHEN el.clicked = true THEN el.id END) as total_clicked,
         COUNT(DISTINCT CASE WHEN el.converted = true THEN el.id END) as total_converted,
@@ -60,7 +62,12 @@ export async function GET(request: Request) {
 
     // Calculate metrics for each campaign
     const campaignsWithMetrics = campaigns.map((campaign: any) => {
-      const sent = Number(campaign.total_emails_sent) || 0
+      // Use the higher of the two counts (email_logs or admin_email_campaigns.total_sent)
+      // This handles cases where emails were sent but not logged, or logged but campaign.total_sent wasn't updated
+      const sentFromLogs = Number(campaign.total_emails_sent_from_logs) || 0
+      const sentFromCampaign = Number(campaign.total_sent_from_campaign) || 0
+      const sent = Math.max(sentFromLogs, sentFromCampaign)
+      
       const opened = Number(campaign.total_opened) || 0
       const clicked = Number(campaign.total_clicked) || 0
       const converted = Number(campaign.total_converted) || 0
@@ -83,7 +90,7 @@ export async function GET(request: Request) {
         sentAt: campaign.sent_at,
         metrics: {
           totalRecipients: Number(campaign.total_recipients) || 0,
-          totalSent: Number(campaign.total_sent) || sent,
+          totalSent: sent, // Use the calculated sent count
           totalFailed: Number(campaign.total_failed) || 0,
           totalOpened: opened,
           totalClicked: clicked,

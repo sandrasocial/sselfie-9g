@@ -52,11 +52,20 @@ export async function POST(request: NextRequest) {
     }
 
     // Extract email and message ID from event data
-    const recipientEmail = eventData?.email || eventData?.to
-    const messageId = eventData?.email_id || eventData?.message_id || eventData?.id
+    // Resend webhook format: { data: { email_id: "...", email: "...", ... } }
+    const recipientEmail = eventData?.email || eventData?.to || eventData?.recipient
+    const messageId = eventData?.email_id || eventData?.message_id || eventData?.id || body.id
+
+    console.log("[v0] [Resend Webhook] Extracted:", {
+      recipientEmail,
+      messageId,
+      eventDataKeys: eventData ? Object.keys(eventData) : [],
+      bodyKeys: Object.keys(body),
+    })
 
     if (!recipientEmail && !messageId) {
       console.warn("[v0] [Resend Webhook] No email or message ID in event data")
+      console.warn("[v0] [Resend Webhook] Full event data:", JSON.stringify(body, null, 2))
       return NextResponse.json({ received: true, warning: "No email or message ID" })
     }
 
@@ -94,16 +103,37 @@ export async function POST(request: NextRequest) {
         if (messageId) {
           const openedAt = eventData?.timestamp ? new Date(eventData.timestamp) : new Date()
           
-          // Update email_logs
-          const emailLog = await sql`
+          // Try to find email by message ID first
+          let emailLog = await sql`
             UPDATE email_logs
             SET opened = true, opened_at = ${openedAt}
             WHERE resend_message_id = ${messageId}
             AND opened = false
-            RETURNING user_email, email_type
+            RETURNING id, user_email, email_type, campaign_id
           `
           
-          console.log(`[v0] [Resend Webhook] ✅ Marked as opened: ${messageId}`)
+          // If not found by message ID, try by email (for older emails without resend_message_id)
+          if (!emailLog || emailLog.length === 0) {
+            console.log(`[v0] [Resend Webhook] Message ID ${messageId} not found, trying by email: ${recipientEmail}`)
+            if (recipientEmail) {
+              emailLog = await sql`
+                UPDATE email_logs
+                SET opened = true, opened_at = ${openedAt}, resend_message_id = ${messageId}
+                WHERE user_email = ${recipientEmail}
+                AND resend_message_id IS NULL
+                AND opened = false
+                ORDER BY sent_at DESC
+                LIMIT 1
+                RETURNING id, user_email, email_type, campaign_id
+              `
+            }
+          }
+          
+          if (emailLog && emailLog.length > 0) {
+            console.log(`[v0] [Resend Webhook] ✅ Marked as opened: ${messageId} (email: ${emailLog[0].user_email})`)
+          } else {
+            console.warn(`[v0] [Resend Webhook] ⚠️ Could not find email_logs entry for message ID: ${messageId}, email: ${recipientEmail}`)
+          }
           
           // Update A/B test results if this is an A/B test email
           if (emailLog && emailLog.length > 0) {
@@ -116,7 +146,11 @@ export async function POST(request: NextRequest) {
               await updateABTestResults(testId, log.user_email, "opened")
               console.log(`[v0] [Resend Webhook] ✅ Updated A/B test ${testId} for opened`)
             }
+          } else {
+            console.warn(`[v0] [Resend Webhook] ⚠️ No email_logs entry updated for opened event`)
           }
+        } else {
+          console.warn(`[v0] [Resend Webhook] ⚠️ email.opened event received but no messageId:`, eventData)
         }
         break
 
@@ -126,16 +160,37 @@ export async function POST(request: NextRequest) {
           const clickedAt = eventData?.timestamp ? new Date(eventData.timestamp) : new Date()
           const clickedUrl = eventData?.link || eventData?.url || null
           
-          // Update email_logs
-          const emailLog = await sql`
+          // Try to find email by message ID first
+          let emailLog = await sql`
             UPDATE email_logs
             SET clicked = true, clicked_at = ${clickedAt}
             WHERE resend_message_id = ${messageId}
             AND clicked = false
-            RETURNING user_email, email_type
+            RETURNING id, user_email, email_type, campaign_id
           `
           
-          console.log(`[v0] [Resend Webhook] ✅ Marked as clicked: ${messageId} (URL: ${clickedUrl})`)
+          // If not found by message ID, try by email
+          if (!emailLog || emailLog.length === 0) {
+            console.log(`[v0] [Resend Webhook] Message ID ${messageId} not found for click, trying by email: ${recipientEmail}`)
+            if (recipientEmail) {
+              emailLog = await sql`
+                UPDATE email_logs
+                SET clicked = true, clicked_at = ${clickedAt}, resend_message_id = ${messageId}
+                WHERE user_email = ${recipientEmail}
+                AND resend_message_id IS NULL
+                AND clicked = false
+                ORDER BY sent_at DESC
+                LIMIT 1
+                RETURNING id, user_email, email_type, campaign_id
+              `
+            }
+          }
+          
+          if (emailLog && emailLog.length > 0) {
+            console.log(`[v0] [Resend Webhook] ✅ Marked as clicked: ${messageId} (email: ${emailLog[0].user_email}, URL: ${clickedUrl})`)
+          } else {
+            console.warn(`[v0] [Resend Webhook] ⚠️ Could not find email_logs entry for clicked message ID: ${messageId}`)
+          }
           
           // Update A/B test results if this is an A/B test email
           if (emailLog && emailLog.length > 0) {
