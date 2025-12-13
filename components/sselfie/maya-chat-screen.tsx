@@ -982,13 +982,41 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
   const handleSendMessage = async (customPrompt?: string) => {
     const messageText = customPrompt || inputValue.trim()
     if ((messageText || uploadedImage) && !isTyping) {
-      const messageContent = uploadedImage ? `${messageText}\n\n[Inspiration Image: ${uploadedImage}]` : messageText
+      // Build message content - use array format if there's an image, otherwise use string
+      let messageContent: string | Array<{ type: string; text?: string; image?: string }>
+      let savedMessageContent: string // For saving to database (keep the marker format for backward compatibility)
+
+      if (uploadedImage) {
+        // Use array format with both text and image for AI SDK
+        const contentParts: Array<{ type: string; text?: string; image?: string }> = []
+        
+        if (messageText.trim()) {
+          contentParts.push({
+            type: "text",
+            text: messageText,
+          })
+        }
+        
+        contentParts.push({
+          type: "image",
+          image: uploadedImage,
+        })
+        
+        messageContent = contentParts
+        // For database, keep the old format with marker for backward compatibility
+        savedMessageContent = messageText ? `${messageText}\n\n[Inspiration Image: ${uploadedImage}]` : `[Inspiration Image: ${uploadedImage}]`
+        console.log("[v0] ✅ Sending message with inspiration image:", uploadedImage.substring(0, 100) + "...")
+      } else {
+        messageContent = messageText
+        savedMessageContent = messageText
+      }
 
       console.log("[v0] 📤 Sending message with settings:", {
         styleStrength,
         promptAccuracy,
         aspectRatio,
         realismStrength, // Include realism strength in log
+        hasImage: !!uploadedImage,
       })
 
       isAtBottomRef.current = true
@@ -1014,7 +1042,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
         }
       }
 
-      // Save user message with the current chatId
+      // Save user message with the current chatId (using savedMessageContent for backward compatibility)
       if (currentChatId) {
         fetch("/api/maya/save-message", {
           method: "POST",
@@ -1023,24 +1051,49 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
           body: JSON.stringify({
             chatId: currentChatId,
             role: "user",
-            content: messageContent,
+            content: savedMessageContent,
           }),
         }).catch((error) => {
           console.error("[v0] Error saving user message:", error)
         })
       }
 
-      sendMessage({
-        text: messageContent,
-        experimental_providerMetadata: {
-          customSettings: {
-            styleStrength,
-            promptAccuracy,
-            aspectRatio,
-            realismStrength, // Include realism strength in customSettings
+      // Send message using proper format - use 'parts' array for multimodal content
+      if (typeof messageContent === "string") {
+        sendMessage({
+          role: "user",
+          parts: [{ type: "text", text: messageContent }],
+          experimental_providerMetadata: {
+            customSettings: {
+              styleStrength,
+              promptAccuracy,
+              aspectRatio,
+              realismStrength, // Include realism strength in customSettings
+            },
           },
-        },
-      })
+        })
+      } else {
+        // Array format for messages with images - convert to parts format
+        sendMessage({
+          role: "user",
+          parts: messageContent.map((part) => {
+            if (part.type === "text") {
+              return { type: "text", text: part.text || "" }
+            } else if (part.type === "image") {
+              return { type: "image", image: part.image || "" }
+            }
+            return part
+          }),
+          experimental_providerMetadata: {
+            customSettings: {
+              styleStrength,
+              promptAccuracy,
+              aspectRatio,
+              realismStrength,
+            },
+          },
+        })
+      }
       setInputValue("")
       setUploadedImage(null)
     }

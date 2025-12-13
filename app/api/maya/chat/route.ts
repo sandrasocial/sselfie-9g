@@ -1,4 +1,4 @@
-import { streamText } from "ai"
+import { streamText, convertToModelMessages, type UIMessage } from "ai"
 import { MAYA_SYSTEM_PROMPT } from "@/lib/maya/personality"
 import { getEffectiveNeonUser } from "@/lib/simple-impersonation"
 import { createServerClient } from "@/lib/supabase/server"
@@ -39,24 +39,61 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json()
-    const { messages, chatId } = body
+    const { messages: uiMessages, chatId } = body
 
-    if (!messages) {
+    if (!uiMessages) {
       console.error("[v0] Messages is null or undefined")
       return NextResponse.json({ error: "Messages is required" }, { status: 400 })
     }
 
-    if (!Array.isArray(messages)) {
-      console.error("[v0] Messages is not an array:", typeof messages)
+    if (!Array.isArray(uiMessages)) {
+      console.error("[v0] Messages is not an array:", typeof uiMessages)
       return NextResponse.json({ error: "Messages must be an array" }, { status: 400 })
     }
 
-    if (messages.length === 0) {
+    if (uiMessages.length === 0) {
       console.error("[v0] Messages array is empty")
       return NextResponse.json({ error: "Messages cannot be empty" }, { status: 400 })
     }
 
-    const conversationSummary = messages
+    // Process UI messages to extract inspiration images from text markers (backward compatibility)
+    const messages: UIMessage[] = uiMessages.map((m: any) => {
+      // Check if message has text content with inspiration image marker
+      let textContent = ""
+      if (m.parts && Array.isArray(m.parts)) {
+        const textParts = m.parts.filter((p: any) => p && p.type === "text")
+        textContent = textParts.map((p: any) => p.text || "").join("\n")
+      } else if (typeof m.content === "string") {
+        textContent = m.content
+      }
+
+      // Extract inspiration image URL from text if present
+      const inspirationImageMatch = textContent.match(/\[Inspiration Image: (https?:\/\/[^\]]+)\]/)
+      if (inspirationImageMatch && m.role === "user") {
+        const imageUrl = inspirationImageMatch[1]
+        const cleanedText = textContent.replace(/\[Inspiration Image: https?:\/\/[^\]]+\]/g, "").trim()
+        
+        // Check if image is already in parts
+        const hasImageInParts = m.parts && Array.isArray(m.parts) && 
+          m.parts.some((p: any) => p && (p.type === "image" || (p.type === "file" && p.mediaType?.startsWith("image/"))))
+        
+        if (!hasImageInParts) {
+          // Add image to parts array
+          const newParts = []
+          if (cleanedText) {
+            newParts.push({ type: "text", text: cleanedText })
+          }
+          newParts.push({ type: "image", image: imageUrl })
+          
+          console.log("[v0] ✅ Extracted inspiration image from text marker:", imageUrl.substring(0, 100) + "...")
+          return { ...m, parts: newParts }
+        }
+      }
+      
+      return m
+    })
+
+    const conversationSummary = uiMessages
       .filter((m: any) => m && (m.role === "user" || m.role === "assistant"))
       .slice(-10) // Last 10 messages for context
       .map((m: any) => {
@@ -72,10 +109,18 @@ export async function POST(req: Request) {
             .substring(0, 200)
         } else if (typeof m.content === "string") {
           content = m.content.substring(0, 200)
+        } else if (Array.isArray(m.content)) {
+          // Handle array format (text + image)
+          const textParts = m.content.filter((p: any) => p.type === "text")
+          content = textParts
+            .map((p: any) => p.text || "")
+            .join(" ")
+            .substring(0, 200)
         }
 
-        // Strip trigger text from content
+        // Strip trigger text and inspiration image markers from content
         content = content.replace(/\[GENERATE_CONCEPTS\][^\n]*/g, "").trim()
+        content = content.replace(/\[Inspiration Image: https?:\/\/[^\]]+\]/g, "").trim()
 
         return content ? `${role}: ${content}${content.length >= 200 ? "..." : ""}` : null
       })
@@ -84,53 +129,21 @@ export async function POST(req: Request) {
 
     console.log("[v0] Conversation summary length:", conversationSummary.length)
 
-    const modelMessages = messages
-      .filter(
-        (
-          m: { role?: string; toolInvocations?: unknown[] } | null | undefined,
-        ): m is { role: string; content?: string; parts?: Array<{ type: string; text?: string }> } => {
-          if (!m || typeof m !== "object") return false
-          if (!m.role) return false
-          if (m.role === "tool") return false
-          if (
-            m.role === "assistant" &&
-            m.toolInvocations &&
-            Array.isArray(m.toolInvocations) &&
-            m.toolInvocations.length > 0
-          )
-            return false
-          return true
-        },
-      )
-      .map((m) => {
-        let content = ""
-
-        // Extract text from parts if available
-        if (m.parts && Array.isArray(m.parts)) {
-          const textParts = m.parts.filter((p) => p && p.type === "text")
-          if (textParts.length > 0) {
-            content = textParts.map((p) => p.text || "").join("\n")
-          }
+    // Convert UI messages to model messages using AI SDK's convertToModelMessages
+    // This properly handles images, text, and other content types
+    const modelMessages = convertToModelMessages(messages)
+    
+    console.log("[v0] Converted", messages.length, "UI messages to", modelMessages.length, "model messages")
+    
+    // Log if any messages contain images
+    messages.forEach((m, idx) => {
+      if (m.parts && Array.isArray(m.parts)) {
+        const imageParts = m.parts.filter((p: any) => p && (p.type === "image" || (p.type === "file" && p.mediaType?.startsWith("image/"))))
+        if (imageParts.length > 0) {
+          console.log("[v0] ✅ Message", idx, "contains", imageParts.length, "image(s)")
         }
-
-        // Fallback to content string
-        if (!content && m.content) {
-          content = typeof m.content === "string" ? m.content : String(m.content)
-        }
-
-        if (content) {
-          content = content.replace(/\[GENERATE_CONCEPTS\][^\n]*/g, "").trim()
-        }
-
-        return {
-          role: m.role as "user" | "assistant" | "system",
-          content: content,
-        }
-      })
-      .filter(
-        (m): m is { role: "user" | "assistant" | "system"; content: string } =>
-          m.content !== null && m.content !== undefined && m.content.trim().length > 0,
-      )
+      }
+    })
 
     if (modelMessages.length === 0) {
       console.error("[v0] No valid messages after filtering")
@@ -142,9 +155,9 @@ export async function POST(req: Request) {
     console.log(
       "[v0] Maya chat API called with",
       modelMessages.length,
-      "messages (filtered from",
+      "model messages (from",
       messages.length,
-      "), chatId:",
+      "UI messages), chatId:",
       chatId,
     )
     console.log("[v0] User:", user.email, "ID:", user.id)
@@ -266,13 +279,24 @@ ${genderSpecificExamples}
     // Save chat to database if we have a chatId
     if (chatId && supabase) {
       try {
-        const lastUserMessage = messages.filter((m: { role: string }) => m.role === "user").pop()
+        const lastUserMessage = uiMessages.filter((m: { role: string }) => m.role === "user").pop()
         if (lastUserMessage) {
+          // Extract text content for title
+          let titleText = ""
+          if (lastUserMessage.parts && Array.isArray(lastUserMessage.parts)) {
+            const textParts = lastUserMessage.parts.filter((p: any) => p && p.type === "text")
+            titleText = textParts.map((p: any) => p.text || "").join(" ")
+          } else if (typeof lastUserMessage.content === "string") {
+            titleText = lastUserMessage.content
+          }
+          // Remove inspiration image marker from title
+          titleText = titleText.replace(/\[Inspiration Image: https?:\/\/[^\]]+\]/g, "").trim()
+          
           await supabase.from("maya_chats").upsert(
             {
               id: chatId,
               user_id: dbUserId,
-              title: lastUserMessage.content.slice(0, 50) + (lastUserMessage.content.length > 50 ? "..." : ""),
+              title: titleText.slice(0, 50) + (titleText.length > 50 ? "..." : ""),
               updated_at: new Date().toISOString(),
             },
             { onConflict: "id" },
