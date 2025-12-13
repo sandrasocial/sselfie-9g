@@ -52,6 +52,29 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "Campaign not found" }, { status: 404 })
       }
 
+      // Prevent duplicate sends - check if campaign was already sent
+      if (campaign.status === "sent") {
+        return NextResponse.json(
+          { 
+            error: "Campaign has already been sent. Cannot send again.",
+            campaignId: campaign.id,
+            sentAt: campaign.sent_at
+          },
+          { status: 400 }
+        )
+      }
+
+      // Prevent sending if already in progress
+      if (campaign.status === "sending") {
+        return NextResponse.json(
+          { 
+            error: "Campaign is currently being sent. Please wait for it to complete.",
+            campaignId: campaign.id
+          },
+          { status: 400 }
+        )
+      }
+
       // Get recipients based on target audience
       const targetAudience = campaign.target_audience || {}
       let recipientEmails: string[] = []
