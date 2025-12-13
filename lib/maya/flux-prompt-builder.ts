@@ -152,6 +152,9 @@ export class FluxPromptBuilder {
       "pores visible",
       "natural imperfections",
       "subtle film grain",
+      "muted colors",
+      "not airbrushed",
+      "not plastic-looking",
     ].join(", ")
   }
 

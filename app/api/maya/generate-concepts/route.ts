@@ -390,11 +390,11 @@ CRITICAL INSTRUCTIONS:
    - **REQUIRED:** MUST include at least 2+ anti-plastic phrases from: "not smooth", "not airbrushed", "not plastic-looking", "realistic texture", "natural imperfections"
    - This is CRITICAL to prevent AI-looking, plastic images. Natural, authentic skin texture is required - avoid anything that sounds plastic/smooth/airbrushed.
 
-5. **NO Film Grain or Muted Colors:** These are NO LONGER mandatory. Keep prompts detailed (30-45 words) for better LoRA activation.
+5. **Film Grain and Muted Colors (MANDATORY):** MUST include "film grain" and "muted colors" for authentic iPhone aesthetic. Keep prompts detailed (30-60 words, target 40-55) for better LoRA activation.
 
 6. **NO Natural Imperfections Lists:** Do NOT include lists of imperfections like "visible sensor noise", "slight motion blur", etc. Keep camera specs basic, but ALWAYS include natural skin texture requirements above.
 
-11. **Prompt Length:** 30-45 words (optimal range for LoRA activation and accurate character representation, with room for safety net descriptions)
+11. **Prompt Length:** 30-60 words (optimal range 40-55 for LoRA activation and accurate character representation, with room for safety net descriptions)
 
 12. **NO BANNED WORDS:** Never use "ultra realistic", "photorealistic", "8K", "4K", "high quality", "perfect", "flawless", "stunning", "beautiful", "gorgeous", "professional photography", "editorial", "magazine quality", "dramatic" (for lighting), "cinematic", "hyper detailed", "sharp focus", "ultra sharp", "crystal clear", "studio lighting", "perfect lighting", "smooth skin", "flawless skin", "airbrushed" - these cause plastic/generic faces and override the user LoRA.
 
@@ -413,7 +413,7 @@ CRITICAL INSTRUCTIONS:
 6. **POSE + EXPRESSION** (simple, natural action - 3-5 words, NO "striking poses")
 7. **TECHNICAL SPECS** (basic iPhone only - 5-8 words, keep minimal)
 
-**Total target: 30-45 words for optimal LoRA activation and accurate character representation, with room for safety net descriptions**
+**Total target: 30-60 words (optimal 40-55) for optimal LoRA activation and accurate character representation, with room for safety net descriptions**
 
 **IF ANY MANDATORY REQUIREMENT IS MISSING, THE PROMPT WILL PRODUCE AI-LOOKING RESULTS.**
 
@@ -556,6 +556,78 @@ Now apply your fashion intelligence and prompting mastery. Create ${count} conce
       "silk-like skin",
     ]
 
+    // CRITICAL FIX: Function to ensure all mandatory anti-plastic requirements are present
+    function ensureRequiredElements(prompt: string, currentWordCount: number, MAX_WORDS: number): string {
+      let enhanced = prompt
+      let addedCount = 0
+
+      console.log("[v0] Validating prompt for required anti-plastic elements...")
+
+      // Check for natural skin texture
+      if (!/natural\s+skin\s+texture|pores\s+visible|visible\s+pores/i.test(enhanced)) {
+        console.log("[v0] Missing: natural skin texture - adding")
+        enhanced += ", natural skin texture with pores visible"
+        addedCount += 6
+      }
+
+      // Check for anti-plastic phrases (need at least 2)
+      const antiPlasticMatches = enhanced.match(/not\s+(?:smooth|airbrushed|plastic-looking)|realistic\s+texture|natural\s+imperfections/gi) || []
+      const antiPlasticCount = antiPlasticMatches.length
+
+      if (antiPlasticCount < 2) {
+        console.log(`[v0] Anti-plastic phrases: ${antiPlasticCount}/2 - adding more`)
+        if (antiPlasticCount === 0) {
+          enhanced += ", not airbrushed, not plastic-looking"
+          addedCount += 4
+        } else {
+          enhanced += ", not plastic-looking"
+          addedCount += 2
+        }
+      }
+
+      // Check for film grain
+      if (!/film\s+grain|visible\s+film\s+grain|subtle\s+film\s+grain/i.test(enhanced)) {
+        console.log("[v0] Missing: film grain - adding")
+        enhanced += ", subtle film grain"
+        addedCount += 3
+      }
+
+      // Check for muted colors
+      if (!/muted\s+(?:colors?|color\s+palette|tones?)/i.test(enhanced)) {
+        console.log("[v0] Missing: muted colors - adding")
+        enhanced += ", muted colors"
+        addedCount += 2
+      }
+
+      // Check for uneven lighting
+      if (!/uneven\s+(?:natural\s+)?lighting|uneven\s+illumination/i.test(enhanced)) {
+        console.log("[v0] Checking for lighting to make uneven...")
+        // Only modify if lighting description exists but doesn't have "uneven"
+        if (/\b(?:natural\s+)?lighting\b/i.test(enhanced) && !/uneven/i.test(enhanced)) {
+          enhanced = enhanced.replace(/\b(natural\s+)?lighting\b/gi, "uneven $1lighting")
+          console.log("[v0] Modified lighting to be 'uneven'")
+        }
+      }
+
+      // Add authentic iPhone aesthetic at the end if not present
+      if (!/authentic\s+iPhone\s+photo|iPhone\s+photo\s+aesthetic|amateur\s+iPhone/i.test(enhanced)) {
+        console.log("[v0] Missing: authentic iPhone aesthetic - adding")
+        enhanced += ", authentic iPhone photo aesthetic"
+        addedCount += 4
+      }
+
+      // Clean up any double commas or trailing commas
+      enhanced = enhanced
+        .replace(/,\s*,/g, ",")
+        .replace(/^,\s*/, "")
+        .replace(/\s*,\s*$/, "")
+        .trim()
+
+      console.log(`[v0] Post-processing validation complete - added ${addedCount} words`)
+
+      return enhanced
+    }
+
     concepts.forEach((concept) => {
       let prompt = concept.prompt
 
@@ -639,7 +711,7 @@ Now apply your fashion intelligence and prompting mastery. Create ${count} conce
 
       // Get current word count - we want to stay under 80 words (optimal for LoRA activation)
       let currentWordCount = wordCount(prompt)
-      const MAX_WORDS = 45 // Hard limit - optimal length (30-45 words) for better LoRA activation and accurate character representation with safety net descriptions
+      const MAX_WORDS = 60 // Hard limit - optimal length (30-60 words, target 40-55) for better LoRA activation and accurate character representation with safety net descriptions
 
       // CRITICAL FIX: If prompt is over 80 words, trim intelligently
       if (currentWordCount > MAX_WORDS) {
@@ -757,6 +829,13 @@ Now apply your fashion intelligence and prompting mastery. Create ${count} conce
         }
         currentWordCount = wordCount(prompt)
       }
+
+      // Apply complete anti-plastic validation
+      prompt = ensureRequiredElements(prompt, currentWordCount, MAX_WORDS)
+      currentWordCount = wordCount(prompt)
+
+      console.log("[v0] Final prompt after all validation:", prompt)
+      console.log("[v0] Final word count:", currentWordCount)
 
       // Final cleanup
       prompt = prompt.replace(/,\s*,/g, ",").replace(/\s+/g, " ").trim()
