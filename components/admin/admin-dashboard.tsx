@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Loader2, TrendingUp, Users, BookOpen, MessageSquare, AlertCircle, DollarSign, Calendar, BarChart3, Coins, Mail, Star } from 'lucide-react'
+import { Loader2, TrendingUp, Users, BookOpen, MessageSquare, AlertCircle, DollarSign, Calendar, BarChart3, Coins, Mail, Star, FileText } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts"
 import { SystemHealthMonitor } from "./system-health-monitor"
@@ -453,6 +453,25 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
                   <div className="p-4 md:p-6">
                     <p className="text-sm md:text-base text-stone-600 leading-relaxed">
                       Approve and publish customer testimonials
+                    </p>
+                  </div>
+                </div>
+              </Link>
+
+              <Link href="/admin/content-templates" className="group">
+                <div className="bg-white rounded-xl md:rounded-2xl overflow-hidden border border-stone-200 shadow-lg hover:shadow-xl transition-all h-full">
+                  <div className="relative h-40 overflow-hidden bg-gradient-to-br from-pink-50 to-purple-50 flex items-center justify-center">
+                    <FileText className="w-20 h-20 text-pink-300" strokeWidth={1.5} />
+                    <div className="absolute inset-0 bg-gradient-to-t from-stone-950/60 to-transparent" />
+                    <div className="absolute bottom-4 left-4">
+                      <h3 className="font-['Times_New_Roman'] text-2xl md:text-3xl font-extralight tracking-[0.3em] uppercase text-white">
+                        TEMPLATES
+                      </h3>
+                    </div>
+                  </div>
+                  <div className="p-4 md:p-6">
+                    <p className="text-sm md:text-base text-stone-600 leading-relaxed">
+                      Instagram content templates and posting calendar
                     </p>
                   </div>
                 </div>
