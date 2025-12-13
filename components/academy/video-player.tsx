@@ -170,7 +170,6 @@ export default function VideoPlayer({
     iframe.addEventListener("error", handleIframeError)
 
     // Subscribe to Vimeo events after iframe loads
-    const iframe = iframeRef.current
     const subscribeToEvents = () => {
       if (iframe.contentWindow) {
         // Request Vimeo player to send events
