@@ -107,8 +107,37 @@ export async function GET() {
 
     const criticalNotifications = notifications.filter(n => n.type === "error" || (n.type === "warning" && n.id === "beta-limit"))
     
-    if (criticalNotifications.length > 0) {
-      console.log("[v0] Sending email notifications to admin:", ADMIN_EMAILS)
+    // Check which alerts need to be sent (haven't been sent in last 6 hours)
+    const ALERT_COOLDOWN_HOURS = 6
+    const alertsToSend: typeof criticalNotifications = []
+    
+    for (const notif of criticalNotifications) {
+      try {
+        // Check if this alert was sent recently
+        const recentAlert = await sql`
+          SELECT sent_at 
+          FROM admin_alert_sent 
+          WHERE alert_id = ${notif.id}
+            AND sent_at > NOW() - INTERVAL '6 hours'
+          ORDER BY sent_at DESC
+          LIMIT 1
+        `
+        
+        if (recentAlert.length === 0) {
+          // Alert hasn't been sent recently, add it to the send list
+          alertsToSend.push(notif)
+        } else {
+          console.log(`[v0] Skipping ${notif.id} - already sent ${Math.round((Date.now() - new Date(recentAlert[0].sent_at).getTime()) / (1000 * 60 * 60))} hours ago`)
+        }
+      } catch (checkError) {
+        // If table doesn't exist yet, log but don't fail - we'll still send the alert
+        console.warn(`[v0] Could not check alert history for ${notif.id}:`, checkError)
+        alertsToSend.push(notif)
+      }
+    }
+    
+    if (alertsToSend.length > 0) {
+      console.log(`[v0] Sending email notifications for ${alertsToSend.length} new alert(s) to admin:`, ADMIN_EMAILS)
       
       // Send email to admin about critical issues
       for (const adminEmail of ADMIN_EMAILS) {
@@ -116,7 +145,7 @@ export async function GET() {
           await resend.emails.send({
             from: "sselfie Admin <notifications@sselfie.ai>",
             to: adminEmail,
-            subject: `[sselfie Admin] ${criticalNotifications.length} Critical Alert${criticalNotifications.length > 1 ? 's' : ''}`,
+            subject: `[sselfie Admin] ${alertsToSend.length} Critical Alert${alertsToSend.length > 1 ? 's' : ''}`,
             html: `
               <!DOCTYPE html>
               <html>
@@ -140,9 +169,9 @@ export async function GET() {
                     </div>
                     <div class="content">
                       <p>Hi Sandra,</p>
-                      <p>You have ${criticalNotifications.length} critical alert${criticalNotifications.length > 1 ? 's' : ''} requiring your attention:</p>
+                      <p>You have ${alertsToSend.length} critical alert${alertsToSend.length > 1 ? 's' : ''} requiring your attention:</p>
                       
-                      ${criticalNotifications.map(notif => `
+                      ${alertsToSend.map(notif => `
                         <div class="${notif.type === 'error' ? 'alert' : 'warning'}">
                           <strong>${notif.title}</strong>
                           <p style="margin: 8px 0 0 0;">${notif.message}</p>
@@ -168,6 +197,21 @@ export async function GET() {
           console.error(`[v0] Error sending email to ${adminEmail}:`, emailError)
         }
       }
+      
+      // Record that we sent these alerts
+      for (const notif of alertsToSend) {
+        try {
+          await sql`
+            INSERT INTO admin_alert_sent (alert_id, alert_type, alert_data)
+            VALUES (${notif.id}, ${notif.type}, ${JSON.stringify(notif)})
+          `
+        } catch (recordError) {
+          // If table doesn't exist yet, log but don't fail
+          console.warn(`[v0] Could not record alert ${notif.id} in database:`, recordError)
+        }
+      }
+    } else if (criticalNotifications.length > 0) {
+      console.log(`[v0] ${criticalNotifications.length} critical alert(s) detected but all were sent recently (within ${ALERT_COOLDOWN_HOURS} hours)`)
     }
 
     return NextResponse.json({
