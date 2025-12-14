@@ -537,6 +537,33 @@ function buildBrandScenePrompt(params: {
   platformFormat?: '1:1' | '4:5' | '9:16' | '16:9'
 }): string {
   const { userRequest, inputImages, platformFormat } = params
+  
+  // CRITICAL: Check if userRequest is already a detailed prompt from Maya (concept cards)
+  // Maya's prompts contain specific markers like "**TEXT OVERLAY:**", detailed character descriptions,
+  // specific outfit details, text placement instructions, etc.
+  const isMayaDetailedPrompt = 
+    userRequest.includes('**TEXT OVERLAY:**') ||
+    userRequest.includes('**Composition:**') ||
+    userRequest.includes('**TEXT OVERLAY:**') ||
+    userRequest.includes('Font size:') ||
+    userRequest.includes('Text placement:') ||
+    (userRequest.includes('wearing') && userRequest.includes('85mm lens')) ||
+    (userRequest.length > 200 && userRequest.includes('Vertical') && userRequest.includes('format'))
+  
+  if (isMayaDetailedPrompt) {
+    // Maya has already created a detailed, specific prompt - use it directly
+    // This preserves all the text overlay instructions, character details, composition specs, etc.
+    console.log('[PROMPT-BUILDER] Detected Maya detailed prompt - using as-is')
+    
+    // Add multi-image note if needed (preserve identity across multiple reference images)
+    if (inputImages.baseImages.length > 1) {
+      return `${userRequest}\n\nNote: Use the first base image to preserve the person's face and identity. Use other base images as style/reference only.`
+    }
+    
+    return userRequest
+  }
+  
+  // Fallback: Build generic prompt for workbench-style requests
   const products = inputImages.productImages || []
   const productLine = products.length
     ? `Include the product(s): ${products
