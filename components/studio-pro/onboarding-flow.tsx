@@ -29,7 +29,11 @@ export default function OnboardingFlow({ entrySelection, onComplete }: Onboardin
   const [showGalleryModal, setShowGalleryModal] = useState(false)
 
   // Determine required steps based on entry selection
-  const requiredSteps: OnboardingStep[] = ['avatar'] // Always required
+  // CRITICAL: "editing" users don't need avatar setup - they work with existing images
+  const requiredSteps: OnboardingStep[] = []
+  if (entrySelection !== 'editing') {
+    requiredSteps.push('avatar') // Required for all except editing
+  }
   if (entrySelection === 'me-product' || entrySelection === 'full-brand') {
     requiredSteps.push('brand-assets')
   }
@@ -130,6 +134,19 @@ export default function OnboardingFlow({ entrySelection, onComplete }: Onboardin
 
   const handleNext = async () => {
     if (currentStep === 'avatar') {
+      // CRITICAL: Skip avatar validation for "editing" users
+      if (entrySelection === 'editing') {
+        // Editing users don't need avatars - skip to next step or complete
+        const nextStepIndex = requiredSteps.indexOf(currentStep) + 1
+        if (nextStepIndex < requiredSteps.length) {
+          setCurrentStep(requiredSteps[nextStepIndex])
+        } else {
+          await completeOnboarding()
+        }
+        return
+      }
+
+      // For other users, require avatar upload
       if (avatarImages.length < 3) {
         setError('Please upload at least 3 photos of yourself')
         return
@@ -287,6 +304,29 @@ export default function OnboardingFlow({ entrySelection, onComplete }: Onboardin
   const completeOnboarding = async () => {
     setUploading(true)
     try {
+      // CRITICAL: For "editing" users, skip avatar upload and unlock immediately
+      // They can complete onboarding without uploading avatars
+      if (entrySelection === 'editing') {
+        // No avatar upload needed - just unlock Pro
+        const response = await fetch('/api/studio-pro/setup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ unlockPro: true }),
+          credentials: 'include',
+        })
+
+        if (!response.ok) {
+          throw new Error('Failed to complete onboarding')
+        }
+
+        setCurrentStep('complete')
+        setTimeout(() => {
+          onComplete()
+        }, 2000)
+        return
+      }
+
+      // For other entry selections, require avatar upload first
       const response = await fetch('/api/studio-pro/setup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -318,6 +358,10 @@ export default function OnboardingFlow({ entrySelection, onComplete }: Onboardin
 
   const canProceed = () => {
     if (currentStep === 'avatar') {
+      // CRITICAL: For "editing" users, avatar is optional (can proceed with 0 images)
+      if (entrySelection === 'editing') {
+        return avatarImages.length <= 8 // Can have 0-8 images
+      }
       return avatarImages.length >= 3 && avatarImages.length <= 8
     }
     if (currentStep === 'brand-assets') {
@@ -366,10 +410,14 @@ export default function OnboardingFlow({ entrySelection, onComplete }: Onboardin
         {currentStep === 'avatar' && (
           <div>
             <h2 className="text-lg font-serif font-extralight tracking-[0.2em] uppercase text-stone-950 mb-2">
-              Upload your avatar photos
+              {entrySelection === 'editing' 
+                ? 'Upload reference photos (optional)' 
+                : 'Upload your avatar photos'}
             </h2>
             <p className="text-sm text-stone-600 mb-6 leading-relaxed tracking-wide">
-              Upload 3–8 photos of yourself. This lets me keep your face, vibe, and style consistent across everything we create.
+              {entrySelection === 'editing'
+                ? 'Upload 3–8 reference photos to help maintain consistency when editing. You can skip this and work with existing images from your gallery.'
+                : 'Upload 3–8 photos of yourself. This lets me keep your face, vibe, and style consistent across everything we create.'}
             </p>
 
             {/* Source Toggle */}

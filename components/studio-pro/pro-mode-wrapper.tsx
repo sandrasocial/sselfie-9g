@@ -33,14 +33,23 @@ export default function ProModeWrapper({ onWorkflowStart, onStartWorkflowInChat 
         const data = await response.json()
         setSetupStatus(data)
 
-        // Determine which view to show
+        // CRITICAL FIX: Check pro_features_unlocked FIRST (user has completed onboarding)
+        // If unlocked, go straight to dashboard regardless of avatar count
+        if (data.setup.pro_features_unlocked) {
+          console.log('[STUDIO-PRO] User has completed onboarding, showing dashboard')
+          setCurrentView('dashboard')
+          return
+        }
+
+        // If not unlocked, check entry selection
         if (!data.setup.entry_selection) {
+          console.log('[STUDIO-PRO] No entry selection, showing entry flow')
           setCurrentView('entry')
-        } else if (!data.canUsePro) {
+        } else {
+          // Has entry selection but not unlocked - show onboarding
+          console.log('[STUDIO-PRO] Entry selection exists but onboarding not complete, showing onboarding')
           setCurrentView('onboarding')
           setEntrySelection(data.setup.entry_selection)
-        } else {
-          setCurrentView('dashboard')
         }
       }
     } catch (error) {

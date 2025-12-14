@@ -64,21 +64,27 @@ export async function GET(request: NextRequest) {
     `
     const brandKitsCount = Number(brandKitsCountResult[0]?.count || 0)
 
+    // CRITICAL: Return setup with all fields, including pro_features_unlocked
+    const setupData = setup || {
+      user_id: neonUser.id,
+      has_completed_avatar_setup: false,
+      has_completed_brand_setup: false,
+      onboarding_completed_at: null,
+      pro_features_unlocked: false,
+      entry_selection: null,
+    }
+
     return NextResponse.json({
-      setup: setup || {
-        user_id: neonUser.id,
-        has_completed_avatar_setup: false,
-        has_completed_brand_setup: false,
-        onboarding_completed_at: null,
-        pro_features_unlocked: false,
-        entry_selection: null,
-      },
+      setup: setupData,
       counts: {
         avatarImages: avatarCount,
         brandAssets: brandAssetsCount,
         brandKits: brandKitsCount,
       },
-      canUsePro: avatarCount >= 3,
+      // CRITICAL FIX: canUsePro should check BOTH pro_features_unlocked AND avatar count
+      // If pro_features_unlocked is true, user can use Pro regardless of avatar count
+      // Otherwise, require at least 3 avatar images
+      canUsePro: setupData.pro_features_unlocked || avatarCount >= 3,
     })
   } catch (error) {
     console.error("[STUDIO-PRO] Error fetching setup status:", error)
@@ -141,20 +147,28 @@ export async function POST(request: NextRequest) {
     }
 
     if (unlockPro) {
-      // Check if avatar setup is complete
-      const avatarCount = await sql`
-        SELECT COUNT(*) as count
-        FROM user_avatar_images
-        WHERE user_id = ${neonUser.id} AND is_active = true
+      // CRITICAL: Check entry selection - "editing" users don't need avatars
+      const setupCheck = await sql`
+        SELECT entry_selection FROM user_pro_setup WHERE user_id = ${neonUser.id}
       `
+      const entrySelection = setupCheck[0]?.entry_selection
 
-      const count = Number(avatarCount[0]?.count || 0)
+      // Only require avatars if NOT editing (editing users work with existing images)
+      if (entrySelection !== 'editing') {
+        const avatarCount = await sql`
+          SELECT COUNT(*) as count
+          FROM user_avatar_images
+          WHERE user_id = ${neonUser.id} AND is_active = true
+        `
 
-      if (count < 3) {
-        return NextResponse.json(
-          { error: "Avatar setup incomplete. Need at least 3 images." },
-          { status: 400 }
-        )
+        const count = Number(avatarCount[0]?.count || 0)
+
+        if (count < 3) {
+          return NextResponse.json(
+            { error: "Avatar setup incomplete. Need at least 3 images." },
+            { status: 400 }
+          )
+        }
       }
 
       await sql`

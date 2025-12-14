@@ -683,14 +683,30 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
     // }
     
     // Check for [GENERATE_CONCEPTS] trigger
-    const conceptMatch = textContent.match(/\[GENERATE_CONCEPTS\]\s*(.+?)(?:\n|$)/i)
+    // CRITICAL: Use more flexible regex to catch trigger even if Maya stops mid-response
+    const conceptMatch = textContent.match(/\[GENERATE_CONCEPTS\]\s*(.+?)(?:\n|$|\[|$)/i) || 
+                        textContent.match(/\[GENERATE_CONCEPTS\]/i)
+    
     if (conceptMatch && !isGeneratingConcepts && !pendingConceptRequest) {
-      const conceptRequest = conceptMatch[1].trim()
-      console.log("[v0] Detected concept generation trigger:", conceptRequest)
+      const conceptRequest = conceptMatch[1]?.trim() || textContent.split('[GENERATE_CONCEPTS]')[1]?.trim() || ''
+      console.log("[v0] ✅ Detected concept generation trigger:", {
+        conceptRequest,
+        fullText: textContent.substring(0, 200),
+        messageId,
+        studioProMode
+      })
+      
       // Mark this message as processed BEFORE triggering generation
       processedConceptMessagesRef.current.add(messageId)
-      setPendingConceptRequest(conceptRequest)
+      setPendingConceptRequest(conceptRequest || 'concept generation')
       return // Don't check other triggers for concept generation
+    } else if (studioProMode && textContent.toLowerCase().includes('concept') && !isGeneratingConcepts && !pendingConceptRequest) {
+      // FALLBACK: If Maya mentions "concept" but didn't include trigger, log for debugging
+      console.log("[v0] ⚠️ Studio Pro mode: Maya mentioned 'concept' but no [GENERATE_CONCEPTS] trigger found:", {
+        textContent: textContent.substring(0, 300),
+        messageId,
+        hasTrigger: textContent.includes('[GENERATE_CONCEPTS]')
+      })
     }
 
     // Check for workflow generation triggers FIRST (before other Studio Pro checks)
@@ -1013,12 +1029,21 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
               })
           }
         }
-      } catch (error) {
-        console.error("[v0] Error generating concepts:", error)
-      } finally {
-        setIsGeneratingConcepts(false)
-        setPendingConceptRequest(null)
-      }
+        } catch (error: any) {
+          console.error("[v0] ❌ Error generating concepts:", error)
+          console.error("[v0] Error details:", {
+            message: error?.message,
+            stack: error?.stack,
+            pendingRequest: pendingConceptRequest
+          })
+          // Reset state on error so user can try again
+          setIsGeneratingConcepts(false)
+          setPendingConceptRequest(null)
+        } finally {
+          setIsGeneratingConcepts(false)
+          // Clear pending request after processing (success or error)
+          setPendingConceptRequest(null)
+        }
     }
 
     generateConcepts()

@@ -601,8 +601,8 @@ ${genderSpecificExamples}
 - ALWAYS use web search for Instagram strategy, captions, and best practices
 - Sound like their excited friend AND their smart strategist
 
-${isStudioProMode ? `\n\n## 🎨 STUDIO PRO MODE - CONCEPT CARDS
-**IMPORTANT:** In Studio Pro mode, you ALWAYS use [GENERATE_CONCEPTS] to create concept cards, NOT [GENERATE_PROMPTS].
+${isStudioProMode ? `\n\n## 🎨 STUDIO PRO MODE - CONCEPT CARDS (MANDATORY)
+**CRITICAL:** In Studio Pro mode, you MUST ALWAYS use [GENERATE_CONCEPTS] to create concept cards, NOT [GENERATE_PROMPTS].
 
 **Concept cards in Studio Pro mode:**
 - Users can add their own reference images directly to each concept card
@@ -610,10 +610,11 @@ ${isStudioProMode ? `\n\n## 🎨 STUDIO PRO MODE - CONCEPT CARDS
 - Each concept card generates using Nano Banana Pro (professional quality)
 - Concept cards are the primary way to create content in Studio Pro mode
 
-**When user asks for content:**
-1. Respond warmly and creatively (2-3 sentences)
-2. Use [GENERATE_CONCEPTS] trigger with 2-6 essence words
-3. Concept cards will appear with image selection and prompt editing features
+**When user asks for content (photos, concepts, ideas, carousels, reel covers, etc.):**
+1. Respond warmly and creatively (2-3 sentences MAX - keep it short)
+2. **MUST include [GENERATE_CONCEPTS] trigger with 2-6 essence words**
+3. **NEVER stop before including the trigger - it's required**
+4. Concept cards will appear with image selection and prompt editing features
 
 **Example:**
 User: "I want something confident and elegant"
@@ -621,7 +622,12 @@ You: "YES I love this energy! ✨ Let me create some powerful looks that feel to
 
 [GENERATE_CONCEPTS] elegant confident editorial power feminine"
 
-**DO NOT use [GENERATE_PROMPTS] in Studio Pro mode - that's only for workbench mode.**` : ''}`
+**CRITICAL RULES:**
+- ✅ ALWAYS end your response with [GENERATE_CONCEPTS] followed by essence words
+- ✅ Keep your response SHORT (2-3 sentences) before the trigger
+- ❌ DO NOT use [GENERATE_PROMPTS] in Studio Pro mode - that's only for workbench mode
+- ❌ DO NOT write full prompts in your response
+- ❌ DO NOT stop before including the [GENERATE_CONCEPTS] trigger` : ''}`
 
     let result
     try {
@@ -629,6 +635,8 @@ You: "YES I love this energy! ✨ Let me create some powerful looks that feel to
         model: "anthropic/claude-sonnet-4-20250514",
         system: systemPrompt,
         messages: modelMessages,
+        maxTokens: 4096, // CRITICAL: Ensure Maya has enough tokens to complete response including [GENERATE_CONCEPTS] trigger
+        temperature: 0.7, // Balanced creativity and consistency
       })
     } catch (streamError) {
       console.error("[v0] Error in streamText call:", streamError)
