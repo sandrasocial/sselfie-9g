@@ -230,26 +230,75 @@ export async function GET(request: NextRequest) {
         // Update database with latest status
         if (training.status === "succeeded") {
           let loraWeightsUrl = null
+          let extractionMethod = "none"
 
-          // Try multiple ways to get the LoRA weights URL
+          // CRITICAL: Try multiple ways to get the LoRA weights URL
+          // This must be consistent for both first-time training and retraining
           if (training.output) {
-            // Method 1: Direct weights URL
+            // Method 1: Direct weights URL (most reliable)
             if (training.output.weights) {
               loraWeightsUrl = training.output.weights
+              extractionMethod = "direct_weights"
+              console.log("[v0] ✅ LoRA URL extracted via Method 1: direct weights")
             }
-            // Method 2: Version-based URL
+            // Method 2: Version-based URL (construct from version hash)
             else if (training.output.version) {
-              loraWeightsUrl = `https://replicate.delivery/pbxt/${training.output.version}/trained_model.tar`
+              // Extract version hash if it's in format "model:hash"
+              const versionHash = training.output.version.includes(':')
+                ? training.output.version.split(':')[1]
+                : training.output.version
+              
+              loraWeightsUrl = `https://replicate.delivery/pbxt/${versionHash}/flux-lora.tar`
+              extractionMethod = "version_constructed"
+              console.log("[v0] ✅ LoRA URL extracted via Method 2: constructed from version hash")
+              console.log("[v0]   Version hash:", versionHash)
             }
             // Method 3: Check if output is a string URL
             else if (typeof training.output === "string" && training.output.startsWith("http")) {
               loraWeightsUrl = training.output
+              extractionMethod = "string_url"
+              console.log("[v0] ✅ LoRA URL extracted via Method 3: string URL")
+            }
+          }
+
+          if (!loraWeightsUrl) {
+            console.error("[v0] ❌ CRITICAL: Failed to extract LoRA weights URL!")
+            console.error("[v0] Training output:", JSON.stringify(training.output, null, 2))
+            // Try fallback: construct from model version if we have it
+            if (training.output?.model && training.output?.version) {
+              const versionHash = training.output.version.includes(':')
+                ? training.output.version.split(':')[1]
+                : training.output.version
+              loraWeightsUrl = `https://replicate.delivery/pbxt/${versionHash}/flux-lora.tar`
+              extractionMethod = "fallback_constructed"
+              console.log("[v0] ⚠️  Using fallback LoRA URL construction")
             }
           }
 
           console.log("[v0] Training completed - LoRA weights URL:", loraWeightsUrl)
+          console.log("[v0] Extraction method:", extractionMethod)
           console.log("[v0] Replicate model ID:", training.output?.model)
           console.log("[v0] Replicate version ID:", training.output?.version)
+          
+          if (!loraWeightsUrl) {
+            console.error("[v0] ❌ CRITICAL ERROR: LoRA weights URL is NULL after all extraction methods!")
+            console.error("[v0] This will cause image generation to fail!")
+          }
+
+          // CRITICAL: Preserve existing LoRA scale if it was customized (not default 1.0)
+          // Only set to 1.0 if it was never set or is null
+          // This ensures retraining doesn't reset a custom LoRA scale
+          const preservedLoraScale = model.lora_scale && parseFloat(model.lora_scale) !== 1.0
+            ? model.lora_scale
+            : 1.0
+
+          console.log("[v0] LoRA scale for completed training:", {
+            original: model.lora_scale,
+            preserved: preservedLoraScale,
+            reason: model.lora_scale && parseFloat(model.lora_scale) !== 1.0 
+              ? "Preserved custom scale" 
+              : "Using default 1.0"
+          })
 
           await sql`
             UPDATE user_models
@@ -259,7 +308,7 @@ export async function GET(request: NextRequest) {
               replicate_model_id = ${training.output?.model || model.replicate_model_id},
               replicate_version_id = ${training.output?.version || null},
               lora_weights_url = ${loraWeightsUrl},
-              lora_scale = COALESCE(lora_scale, 1.0),
+              lora_scale = ${preservedLoraScale}, -- Preserve custom scale or use 1.0
               completed_at = NOW(),
               updated_at = NOW()
             WHERE id = ${modelId}

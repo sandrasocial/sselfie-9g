@@ -125,8 +125,27 @@ export async function POST(request: Request) {
 
   console.log("[v0] ZIP uploaded to Blob:", blob.url)
 
-  const triggerWord = `user${neonUser.id.substring(0, 8)}`
-  console.log("[v0] Generated trigger word:", triggerWord)
+  // CRITICAL: Check if user has existing model to preserve trigger word on retraining
+  const existingModel = await sql`
+    SELECT trigger_word, lora_scale
+    FROM user_models
+    WHERE user_id = ${neonUser.id}
+    AND training_status = 'completed'
+    ORDER BY created_at DESC
+    LIMIT 1
+  `
+
+  // For retraining, use original trigger word. For first-time, generate new one.
+  const triggerWord = existingModel.length > 0 && existingModel[0].trigger_word
+    ? existingModel[0].trigger_word
+    : `user${neonUser.id.substring(0, 8)}`
+  
+  const isRetraining = existingModel.length > 0
+  console.log(`[v0] ${isRetraining ? 'RETRAINING' : 'FIRST-TIME TRAINING'}`)
+  console.log("[v0] Trigger word:", triggerWord, isRetraining ? "(preserved from original)" : "(new)")
+  if (isRetraining) {
+    console.log("[v0] Original LoRA scale:", existingModel[0].lora_scale)
+  }
 
   const model = await getOrCreateTrainingModel(
     neonUser.id,

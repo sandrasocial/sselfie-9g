@@ -113,17 +113,49 @@ export async function POST(request: NextRequest) {
       const finalBalance = await getUserCredits(neonUser.id)
       console.log("[v0] [TRAINING] Training started. Credits remaining:", finalBalance)
 
+      // CRITICAL FIX: Use FLUX_LORA_TRAINER_VERSION from replicate-client.ts instead of hardcoded version
+      // This ensures consistency between first-time training and retraining
+      const { FLUX_LORA_TRAINER, FLUX_LORA_TRAINER_VERSION } = await import("@/lib/replicate-client")
+      
+      // Check if user has existing model (retraining) to reuse model name
+      const existingModel = await sql`
+        SELECT replicate_model_id, trigger_word
+        FROM user_models
+        WHERE user_id = ${neonUser.id}
+        AND training_status = 'completed'
+        ORDER BY created_at DESC
+        LIMIT 1
+      `
+
+      const isRetraining = existingModel.length > 0
+      const destinationModelName = isRetraining && existingModel[0].replicate_model_id
+        ? existingModel[0].replicate_model_id.split('/')[1] // Extract model name from full ID
+        : `user-${neonUser.id.substring(0, 8)}-selfie-lora`
+      
+      const destination = `${process.env.REPLICATE_USERNAME || "sandrasocial"}/${destinationModelName}`
+      
+      // For retraining, preserve original trigger word
+      const finalTriggerWord = isRetraining && existingModel[0].trigger_word
+        ? existingModel[0].trigger_word
+        : triggerWord
+
+      console.log(`[v0] ${isRetraining ? 'RETRAINING' : 'FIRST-TIME TRAINING'}`)
+      console.log("[v0] Using trainer:", FLUX_LORA_TRAINER)
+      console.log("[v0] Using trainer version:", FLUX_LORA_TRAINER_VERSION)
+      console.log("[v0] Destination model:", destination)
+      console.log("[v0] Trigger word:", finalTriggerWord, isRetraining ? "(preserved)" : "(new)")
+
       // Start training with fast-flux-trainer
       const training = await replicate.trainings.create(
-        "lucataco", // "lucataco"
-        "fast-flux-trainer", // "fast-flux-trainer"
-        "2295cf884e30e255b7f96c0e65e880c36e6f467cffa17a6b60413e0f230db412", // version
+        FLUX_LORA_TRAINER.split("/")[0],
+        FLUX_LORA_TRAINER.split("/")[1],
+        FLUX_LORA_TRAINER_VERSION, // CRITICAL: Use constant instead of hardcoded version
         {
-          destination: `${process.env.REPLICATE_USERNAME || "sandrasocial"}/user-${neonUser.id.substring(0, 8)}-selfie-lora-${Date.now()}`,
+          destination, // CRITICAL: Reuse existing model name for retraining
           input: {
             ...DEFAULT_TRAINING_PARAMS,
             input_images: datasetUrl,
-            trigger_word: triggerWord,
+            trigger_word: finalTriggerWord, // CRITICAL: Preserve original trigger word for retraining
           },
         },
       )

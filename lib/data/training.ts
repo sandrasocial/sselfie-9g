@@ -77,7 +77,25 @@ export async function getOrCreateTrainingModel(
   const existingModel = await getLatestTrainedModel(userId)
 
   if (existingModel) {
-    console.log("[v0] Found existing model, updating it:", existingModel.id)
+    console.log("[v0] Found existing model, updating it for RETRAINING:", existingModel.id)
+    console.log("[v0] Original trigger word:", existingModel.trigger_word)
+    console.log("[v0] New trigger word provided:", triggerWord)
+    console.log("[v0] Original LoRA scale:", existingModel.lora_scale)
+
+    // CRITICAL: For retraining, preserve the original trigger word
+    // Changing trigger word on retraining causes inconsistency and quality issues
+    const preservedTriggerWord = existingModel.trigger_word || triggerWord
+    
+    // CRITICAL: Preserve LoRA scale if it was customized (not default 1.0)
+    // Only reset to 1.0 if it was never set or is null
+    const preservedLoraScale = existingModel.lora_scale && parseFloat(existingModel.lora_scale) !== 1.0
+      ? existingModel.lora_scale
+      : null // Will default to 1.0 in progress route
+
+    console.log("[v0] ✅ Preserving original trigger word:", preservedTriggerWord)
+    if (preservedLoraScale) {
+      console.log("[v0] ✅ Preserving custom LoRA scale:", preservedLoraScale)
+    }
 
     // Update the existing model
     const result = await sql`
@@ -85,13 +103,13 @@ export async function getOrCreateTrainingModel(
       SET 
         model_name = ${modelName},
         model_type = ${modelType},
-        trigger_word = ${triggerWord},
+        trigger_word = ${preservedTriggerWord}, -- CRITICAL: Keep original trigger word for retraining
         training_status = 'pending',
         training_progress = 0,
         training_id = NULL,
-        replicate_model_id = NULL,
-        replicate_version_id = NULL,
-        lora_weights_url = NULL,
+        replicate_model_id = NULL, -- Will be set when training starts
+        replicate_version_id = NULL, -- Will be set when training completes
+        lora_weights_url = NULL, -- Will be set when training completes
         started_at = NULL,
         completed_at = NULL,
         estimated_completion_time = NULL,
@@ -101,11 +119,12 @@ export async function getOrCreateTrainingModel(
       RETURNING *
     `
 
+    console.log("[v0] ✅ Model updated for retraining with preserved trigger word")
     return result[0] as TrainedModel
   }
 
   // Create new model if none exists
-  console.log("[v0] No existing model found, creating new one")
+  console.log("[v0] No existing model found, creating new one (first-time training)")
   return createTrainingModel(userId, modelName, modelType, "", triggerWord)
 }
 

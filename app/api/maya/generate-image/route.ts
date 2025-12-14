@@ -49,6 +49,7 @@ export async function POST(request: NextRequest) {
       textOverlayConfig,
       isHighlight,
       customSettings,
+      enhancedAuthenticity, // CRITICAL: Receive enhanced authenticity toggle from frontend
     } = body
 
     console.log("[v0] Generating image for concept:", {
@@ -141,15 +142,60 @@ export async function POST(request: NextRequest) {
     const categoryKey = category as keyof typeof MAYA_QUALITY_PRESETS
     const presetSettings = MAYA_QUALITY_PRESETS[categoryKey] || MAYA_QUALITY_PRESETS.default
 
+    // CRITICAL: Check multiple sources for authentic aesthetic
+    // 1. Enhanced Authenticity toggle (explicit user preference)
+    // 2. Prompt keywords (implicit from prompt content)
+    const promptLower = finalPrompt.toLowerCase()
+    const hasAuthenticAesthetic = /authentic\s+iphone|amateur\s+cellphone|raw\s+iphone|candid\s+photo|film\s+grain|muted\s+colors/i.test(promptLower)
+    
+    // CRITICAL FIX: If Enhanced Authenticity toggle is ON, force extra_lora_scale to 0
+    // Also check for manual slider adjustment (realismStrength or extraLoraScale)
+    const shouldDisableExtraLora = enhancedAuthenticity === true || hasAuthenticAesthetic
+    
+    // CRITICAL FIX: Map realismStrength to extraLoraScale if provided
+    // Frontend sends realismStrength, but API expects extraLoraScale
+    const manualExtraLoraScale = customSettings?.extraLoraScale ?? customSettings?.realismStrength
+    
     const qualitySettings = {
       ...presetSettings,
       aspect_ratio: customSettings?.aspectRatio || presetSettings.aspect_ratio,
-      lora_scale: customSettings?.styleStrength ?? presetSettings.lora_scale,
+      // CRITICAL: Use user's LoRA scale from database first, then fall back to settings/preset
+      // This ensures the trained model's optimal scale is used
+      lora_scale: userLoraScale ?? customSettings?.styleStrength ?? presetSettings.lora_scale,
       guidance_scale: customSettings?.promptAccuracy ?? presetSettings.guidance_scale,
       extra_lora: customSettings?.extraLora || presetSettings.extra_lora,
-      extra_lora_scale: customSettings?.extraLoraScale || presetSettings.extra_lora_scale,
+      // CRITICAL FIX: Handle extra_lora_scale with proper priority:
+      // 1. If Enhanced Authenticity toggle is ON → force to 0
+      // 2. If prompt has authentic aesthetic keywords → force to 0
+      // 3. If user manually adjusted slider (realismStrength/extraLoraScale) → use that value
+      // 4. Otherwise → use preset default
+      extra_lora_scale: shouldDisableExtraLora
+        ? 0  // Disable Super-Realism LoRA for authentic photos
+        : (manualExtraLoraScale !== undefined ? manualExtraLoraScale : presetSettings.extra_lora_scale),
       num_inference_steps: presetSettings.num_inference_steps,
     }
+    
+    console.log("[v0] LoRA Scale Priority:", {
+      userLoraScaleFromDB: userLoraScale,
+      styleStrengthFromSettings: customSettings?.styleStrength,
+      presetLoraScale: presetSettings.lora_scale,
+      finalLoraScale: qualitySettings.lora_scale
+    })
+    
+    console.log("[v0] Super-Realism LoRA:", {
+      enhancedAuthenticityToggle: enhancedAuthenticity,
+      hasAuthenticAestheticKeywords: hasAuthenticAesthetic,
+      shouldDisableExtraLora,
+      manualExtraLoraScale,
+      finalExtraLoraScale: qualitySettings.extra_lora_scale,
+      reason: shouldDisableExtraLora
+        ? enhancedAuthenticity 
+          ? "Disabled - Enhanced Authenticity toggle is ON" 
+          : "Disabled - conflicts with authentic iPhone aesthetic keywords in prompt"
+        : manualExtraLoraScale !== undefined
+          ? `Using manual slider value: ${manualExtraLoraScale}`
+          : "Using preset/default scale"
+    })
 
     let replicate
     try {
@@ -185,9 +231,13 @@ export async function POST(request: NextRequest) {
       model: qualitySettings.model ?? "dev",
     }
 
-    if (qualitySettings.extra_lora) {
+    // Only include Super-Realism LoRA if scale is > 0 (disabled for authentic photos)
+    if (qualitySettings.extra_lora && qualitySettings.extra_lora_scale > 0) {
       predictionInput.extra_lora = qualitySettings.extra_lora
-      predictionInput.extra_lora_scale = qualitySettings.extra_lora_scale || 0.2
+      predictionInput.extra_lora_scale = qualitySettings.extra_lora_scale
+      console.log("[v0] ✅ Super-Realism LoRA included:", qualitySettings.extra_lora_scale)
+    } else {
+      console.log("[v0] ✅ Super-Realism LoRA disabled (scale = 0) for authentic aesthetic")
     }
 
     const prediction = await replicate.predictions.create({

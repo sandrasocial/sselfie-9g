@@ -421,6 +421,9 @@ export default function ConceptCard({ concept, chatId, onCreditsUpdate, studioPr
           }
         : concept.customSettings
 
+      // CRITICAL: Get Enhanced Authenticity toggle from localStorage
+      const enhancedAuthenticity = localStorage.getItem('mayaEnhancedAuthenticity') === 'true'
+
       const response = await fetch("/api/maya/generate-image", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -433,6 +436,7 @@ export default function ConceptCard({ concept, chatId, onCreditsUpdate, studioPr
           chatId,
           referenceImageUrl: concept.referenceImageUrl,
           customSettings: finalSettings,
+          enhancedAuthenticity, // CRITICAL: Pass Enhanced Authenticity toggle to API
         }),
       })
 

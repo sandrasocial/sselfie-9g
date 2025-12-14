@@ -199,6 +199,9 @@ export default function StoryHighlightCard({
 
       console.log("[v0] Using Maya's saved prompt:", conceptPrompt)
 
+      // CRITICAL: Get Enhanced Authenticity toggle from localStorage
+      const enhancedAuthenticity = localStorage.getItem('mayaEnhancedAuthenticity') === 'true'
+
       const response = await fetch("/api/maya/generate-image", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -208,6 +211,7 @@ export default function StoryHighlightCard({
           conceptPrompt,
           category: "feed-design",
           isHighlight: true, // Flag to indicate this is a highlight cover
+          enhancedAuthenticity, // CRITICAL: Pass Enhanced Authenticity toggle to API
         }),
       })
 
