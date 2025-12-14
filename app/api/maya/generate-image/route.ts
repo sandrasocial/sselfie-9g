@@ -145,8 +145,9 @@ export async function POST(request: NextRequest) {
     // CRITICAL: Check multiple sources for authentic aesthetic
     // 1. Enhanced Authenticity toggle (explicit user preference)
     // 2. Prompt keywords (implicit from prompt content)
-    const promptLower = finalPrompt.toLowerCase()
-    const hasAuthenticAesthetic = /authentic\s+iphone|amateur\s+cellphone|raw\s+iphone|candid\s+photo|film\s+grain|muted\s+colors/i.test(promptLower)
+    // Note: Use finalPrompt (after trigger word check) for keyword detection
+    const finalPromptLower = finalPrompt.toLowerCase()
+    const hasAuthenticAesthetic = /authentic\s+iphone|amateur\s+cellphone|raw\s+iphone|candid\s+photo|film\s+grain|muted\s+colors/i.test(finalPromptLower)
     
     // CRITICAL FIX: If Enhanced Authenticity toggle is ON, force extra_lora_scale to 0
     // Also check for manual slider adjustment (realismStrength or extraLoraScale)
