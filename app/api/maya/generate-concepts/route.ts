@@ -251,6 +251,66 @@ IMPORTANT:
 `
       : ""
 
+    // CRITICAL: Detect workflow type in Studio Pro mode
+    let workflowType: string | null = null
+    let isCarouselRequest = false
+    let slideCount: number | null = null
+    
+    if (studioProMode) {
+      try {
+        const { detectStudioProIntent } = await import("@/lib/maya/studio-pro-system-prompt")
+        // userRequestLower already declared above, reuse it
+        const conversationContextLower = (conversationContext || "").toLowerCase()
+        const combinedRequest = `${userRequest || ""} ${conversationContext || ""}`.toLowerCase()
+        
+        // Detect workflow type using the same logic as Maya chat
+        const workflowIntent = detectStudioProIntent(combinedRequest)
+        workflowType = workflowIntent.mode || null
+        
+        // Legacy carousel detection (for backward compatibility)
+        isCarouselRequest = workflowType === "carousel-slides" ||
+          /carousel|multi.*slide|multiple.*slide|slide.*post|carousel.*post|multi.*image|several.*slide/i.test(userRequestLower) ||
+          /carousel|multi.*slide|multiple.*slide/i.test(conversationContextLower)
+        
+        slideCount = isCarouselRequest 
+          ? (() => {
+              // Extract slide count from various patterns, handling 0 as a valid value
+              const slideMatch = userRequestLower.match(/(\d+)\s*(?:slide|page)/i)?.[1]
+              const partMatch = userRequestLower.match(/(\d+)\s*(?:part|step)/i)?.[1]
+              const imageMatch = userRequestLower.match(/(\d+)\s*(?:image|photo)/i)?.[1]
+              
+              // Try each pattern, using nullish coalescing to handle 0 correctly
+              const slideNum = slideMatch != null ? parseInt(slideMatch, 10) : null
+              const partNum = partMatch != null ? parseInt(partMatch, 10) : null
+              const imageNum = imageMatch != null ? parseInt(imageMatch, 10) : null
+              
+              // Return first valid number (not null and not NaN), or default to 5
+              return (slideNum != null && !isNaN(slideNum)) ? slideNum :
+                     (partNum != null && !isNaN(partNum)) ? partNum :
+                     (imageNum != null && !isNaN(imageNum)) ? imageNum :
+                     5
+            })()
+          : null
+      } catch (importError) {
+        console.error("[v0] Error importing detectStudioProIntent:", importError)
+        // Fallback to basic carousel detection
+        isCarouselRequest = /carousel|multi.*slide|multiple.*slide|slide.*post|carousel.*post|multi.*image|several.*slide/i.test(userRequestLower) ||
+          /carousel|multi.*slide|multiple.*slide/i.test((conversationContext || "").toLowerCase())
+        
+        // Fallback: use default of 5 slides if carousel detected but no count specified
+        slideCount = isCarouselRequest ? 5 : null
+      }
+    }
+    
+    console.log("[v0] Workflow detection:", {
+      workflowType,
+      isCarouselRequest,
+      slideCount,
+      userRequest: userRequest?.substring(0, 100),
+      conversationContext: conversationContext?.substring(0, 100),
+      studioProMode
+    })
+
     const conceptPrompt = `You are Maya, an elite fashion photographer with 15 years of experience shooting for Vogue, Elle, and creating viral Instagram content. You have an OBSESSIVE eye for authenticity - you know that the best images feel stolen from real life, not produced.
 
 ${
@@ -520,7 +580,42 @@ ${
 13. Apply the LIGHTING PRINCIPLE for realistic, authentic lighting (NO idealized terms)
 
 **🔴 PROMPT STRUCTURE ARCHITECTURE (FOLLOW THIS ORDER):**
-1. **TRIGGER WORD** (first position - MANDATORY)
+${
+  (workflowType === "carousel-slides" || isCarouselRequest) && studioProMode
+    ? `**FOR CAROUSEL SLIDES - USE THIS STRUCTURE:**
+
+1. **CHARACTER DESCRIPTION** (consistent across all slides):
+   - Start with: "A ${userEthnicity ? userEthnicity + " " : ""}${userGender}, [hair description], [outfit: material + color + garment type]"
+   - Include physical preferences if specified
+   - NO trigger words (Nano Banana Pro doesn't use LoRA)
+
+2. **SCENE DESCRIPTION**:
+   - Pose/action (3-5 words)
+   - Location/environment (3-5 words)
+   - Lighting (professional, realistic - 3-6 words)
+
+3. **TECHNICAL SPECS**:
+   - "professional photography, 85mm lens, f/2.0 depth of field, natural skin texture with visible pores"
+
+4. **TEXT OVERLAY SECTION (MANDATORY - DETAILED):**
+   - Text content (e.g., "10 things", "Slide 2: Key point")
+   - Text placement (lower third, center-left, top, center)
+   - Font size (120-180pt for titles, 40-60pt for subtitles, 35-45pt for body)
+   - Font weight (bold for titles, regular for body)
+   - Text color (specify or use brand primary color)
+   - Background/overlay (semi-transparent dark overlay if busy, or clean white box)
+   - Contrast requirements (minimum 4.5:1 ratio)
+   - Readability requirement (readable at 400px width/thumbnail size)
+
+5. **COMPOSITION & FORMAT:**
+   - "Vertical 4:5 Instagram carousel format (1080x1350px)"
+   - "Maintain visual consistency with other carousel slides"
+   - "Subject positioned using rule of thirds"
+   - "Minimum 15% white space reserved for text area"
+
+**Total target: 80-120 words for carousel slides (includes detailed text overlay instructions)**
+`
+    : `1. **TRIGGER WORD** (first position - MANDATORY)
 2. **GENDER/ETHNICITY** (2-3 words)
 3. **OUTFIT** (material + color + garment type - 8-12 words, stay detailed here)
 4. **LOCATION** (simple, one-line - 3-5 words, keep brief)
@@ -529,6 +624,8 @@ ${
 7. **TECHNICAL SPECS** (basic iPhone only - 5-8 words, keep minimal)
 
 **Total target: 30-60 words (optimal 40-55) for optimal LoRA activation and accurate character representation, with room for safety net descriptions**
+`
+}
 
 **IF ANY MANDATORY REQUIREMENT IS MISSING, THE PROMPT WILL PRODUCE AI-LOOKING RESULTS.**
 
@@ -542,9 +639,195 @@ For each concept:
 - What lighting tells the STORY?
 - What makes this feel like a REAL stolen moment, not a posed photo?
 
+=== WORKFLOW-SPECIFIC INSTRUCTIONS ===
+
+${
+  workflowType === "carousel-slides" || isCarouselRequest
+    ? `**CRITICAL: This is a CAROUSEL REQUEST - Each concept card represents ONE SLIDE of a multi-slide carousel.**
+
+**CAROUSEL SLIDE REQUIREMENTS:**
+- Each slide MUST include TEXT OVERLAY instructions
+- Slide 1 (Cover): Large headline/title text in lower third or center-left
+- Slides 2-${slideCount}: Content slides with numbered points or teaching text
+- All slides must maintain character consistency across the carousel
+- Text must be legible and readable at thumbnail size
+- Include text placement, font size, and contrast instructions in each prompt
+
+**CAROUSEL PROMPT STRUCTURE (MANDATORY - FOLLOW THIS EXACT FORMAT):**
+
+Each carousel slide prompt MUST follow this complete structure:
+
+**1. CHARACTER DESCRIPTION (consistent across all slides):**
+"A ${userEthnicity ? userEthnicity + " " : ""}${userGender}, [hair description], [outfit: material + color + garment type], [pose/action], [location/environment], [lighting description], professional photography, 85mm lens, f/2.0 depth of field, natural skin texture with visible pores."
+
+**2. TEXT OVERLAY SECTION (REQUIRED - must be detailed):**
+"**TEXT OVERLAY:** [Specify text content like '10 things' or 'Slide 2: Key point']. Text placement: [lower third OR center-left OR top OR center]. Font size: [120-180pt for titles, 40-60pt for subtitles]. Font weight: bold for titles, regular for body. Text color: [specify color or use brand primary color]. Background: [If background is busy, specify 'semi-transparent dark overlay rgba(0,0,0,0.6) behind text area with 12px rounded corners' OR 'clean white box with subtle drop shadow']. Text must have minimum 4.5:1 contrast ratio and be readable at 400px width (thumbnail size)."
+
+**3. COMPOSITION & FORMAT:**
+"Vertical 4:5 Instagram carousel format (1080x1350px). Maintain visual consistency with other carousel slides. Subject positioned using rule of thirds. Minimum 15% white space for text area."
+
+**COMPLETE EXAMPLE FOR SLIDE 1 (Cover):**
+"A ${userEthnicity ? userEthnicity + " " : ""}${userGender}, long dark brown hair, wearing a sharp black blazer over a ribbed cream tank top with high-waisted black leather pants, standing confidently in a modern minimalist office space with venetian blind shadows creating lighting patterns across her face, slight confident smile while adjusting blazer lapel, professional photography, 85mm lens, f/2.0 depth of field, natural skin texture with visible pores. 
+
+**TEXT OVERLAY:** Large bold text '10 things' positioned in lower third (20% from bottom, left-aligned with 60px padding). Font size: 120-180pt equivalent, bold weight, color: #1A1A1A. Subtitle text 'I wish I knew before using AI' directly below main title, 40-60pt, same alignment. Semi-transparent dark overlay (rgba(0,0,0,0.6)) behind text area with 12px rounded corners and 30px padding. Text must have minimum 4.5:1 contrast ratio and be readable at 400px width (thumbnail size).
+
+**Composition:** Vertical 4:5 Instagram carousel format (1080x1350px). Maintain visual consistency with other carousel slides. Subject positioned using rule of thirds. Minimum 15% white space reserved for text area."
+
+**COMPLETE EXAMPLE FOR SLIDE 2 (Content):**
+"A ${userEthnicity ? userEthnicity + " " : ""}${userGender}, long dark brown hair, wearing [different outfit variation], [different pose/action], [complementary location], [consistent lighting style], professional photography, 85mm lens, f/2.0 depth of field, natural skin texture with visible pores.
+
+**TEXT OVERLAY:** Numbered point '1. [Key teaching point]' positioned in top third (center or left-aligned). Font size: 80-100pt for number, 60-80pt for main point text. Font weight: bold for number, regular for text. Text color: #1A1A1A. Supporting text below (35-45pt, 2-3 lines max). Semi-transparent dark overlay (rgba(0,0,0,0.65)) behind text area with 16px rounded corners and 40px padding. Text must have minimum 4.5:1 contrast ratio and be readable at 400px width.
+
+**Composition:** Vertical 4:5 Instagram carousel format (1080x1350px). Maintain visual consistency with cover slide. Same color palette and lighting quality. Subject positioned using rule of thirds. Minimum 15% white space reserved for text area.`
+    : workflowType === "reel-cover"
+    ? `**CRITICAL: This is a REEL COVER REQUEST - Each concept card represents a reel cover/thumbnail.**
+
+**REEL COVER REQUIREMENTS:**
+- Must be optimized for Instagram Reels (9:16 vertical format, 1080x1920px)
+- Text must be LARGE and readable at thumbnail size (works as tiny thumbnail on grid)
+- Title text should be 3-7 words max if possible
+- Big readable type that works as a tiny thumbnail
+- Safe zones respected (text not cut off by Instagram UI)
+- Clean, feed-consistent look (not noisy)
+- Subject should be clearly visible but text is primary focus
+
+**REEL COVER PROMPT STRUCTURE (MANDATORY):**
+1. **CHARACTER DESCRIPTION:**
+"A ${userEthnicity ? userEthnicity + " " : ""}${userGender}, [hair description], [outfit: material + color + garment type], [pose/action], [location/environment], [lighting description], professional photography, 85mm lens, f/2.0 depth of field, natural skin texture with visible pores."
+
+2. **TEXT OVERLAY SECTION (REQUIRED):**
+"**TEXT OVERLAY:** Title text '[Reel title - 3-7 words max]' positioned in [center OR top third OR lower third]. Font size: Very large (140-200pt equivalent), bold weight, high contrast color (white on dark background OR dark on light background). Text must be perfectly legible and readable at thumbnail size (should work as tiny thumbnail on grid). Safe zones: Keep text away from edges (60px minimum padding) to avoid Instagram UI cropping. Background: [If needed, specify semi-transparent overlay or solid color background for text readability]."
+
+3. **COMPOSITION & FORMAT:**
+"Vertical 9:16 Instagram reel format (1080x1920px). Optimized for thumbnail visibility. Subject positioned to allow text prominence. Clean, minimal design that works at small sizes."
+
+**COMPLETE EXAMPLE:**
+"A ${userEthnicity ? userEthnicity + " " : ""}${userGender}, long dark brown hair, wearing a sharp black blazer over a ribbed cream tank top, standing confidently in a modern minimalist office space with venetian blind shadows, slight confident smile, professional photography, 85mm lens, f/2.0 depth of field, natural skin texture with visible pores.
+
+**TEXT OVERLAY:** Title text '10 Things I Wish I Knew' positioned in center of image. Font size: Very large (160pt equivalent), bold weight, white color on semi-transparent dark background (rgba(0,0,0,0.7)). Text must be perfectly legible and readable at thumbnail size (should work as tiny thumbnail on grid). Safe zones: 60px minimum padding from all edges to avoid Instagram UI cropping.
+
+**Composition:** Vertical 9:16 Instagram reel format (1080x1920px). Optimized for thumbnail visibility. Subject positioned to allow text prominence. Clean, minimal design that works at small sizes.`
+    : workflowType === "text-overlay"
+    ? `**CRITICAL: This is a TEXT OVERLAY REQUEST - Each concept card should include prominent text overlay.**
+
+**TEXT OVERLAY REQUIREMENTS:**
+- Text must be clearly visible and readable
+- Specify exact text content, placement, font size, and style
+- Ensure high contrast for readability
+- Text can be headline, quote, caption, or instructional text
+
+**TEXT OVERLAY PROMPT STRUCTURE (MANDATORY):**
+1. **CHARACTER DESCRIPTION:**
+"A ${userEthnicity ? userEthnicity + " " : ""}${userGender}, [hair description], [outfit: material + color + garment type], [pose/action], [location/environment], [lighting description], professional photography, 85mm lens, f/2.0 depth of field, natural skin texture with visible pores."
+
+2. **TEXT OVERLAY SECTION (REQUIRED):**
+"**TEXT OVERLAY:** [Specify text content]. Text placement: [center OR top OR bottom OR left OR right]. Font size: [Specify size - large for headlines, medium for quotes, smaller for captions]. Font weight: [bold OR regular OR italic]. Font style: [modern sans-serif OR elegant serif OR handwritten]. Text color: [specify color with high contrast]. Background: [If needed, specify overlay or background for text readability]. Text must be clearly legible and readable."
+
+3. **COMPOSITION & FORMAT:**
+"Vertical 4:5 Instagram format (1080x1350px). Text is prominent and clearly visible. Subject positioned to complement text layout.`
+    : workflowType === "quote-graphic"
+    ? `**CRITICAL: This is a QUOTE GRAPHIC REQUEST - Each concept card should be a quote graphic with text as primary element.**
+
+**QUOTE GRAPHIC REQUIREMENTS:**
+- Quote text is the PRIMARY focus (larger than person)
+- Person can be background element or smaller
+- Clean, minimal design with emphasis on typography
+- High contrast for text readability
+
+**QUOTE GRAPHIC PROMPT STRUCTURE (MANDATORY):**
+1. **CHARACTER DESCRIPTION (optional/background):**
+"A ${userEthnicity ? userEthnicity + " " : ""}${userGender}, [hair description], [outfit: material + color + garment type], [pose/action], [location/environment], [lighting description], professional photography, 85mm lens, f/2.0 depth of field, natural skin texture with visible pores."
+
+2. **QUOTE TEXT SECTION (PRIMARY FOCUS - REQUIRED):**
+"**QUOTE TEXT:** [Specify quote text - 1-3 sentences]. Text placement: Center of image (primary focus). Font size: Very large (100-150pt equivalent), bold or elegant weight. Font style: [elegant serif OR modern sans-serif OR handwritten]. Text color: [High contrast color - white on dark OR dark on light]. Background: [Solid color background OR subtle gradient OR person as blurred background]. Quote attribution: [If needed, specify author name in smaller text below quote]. Text must be perfectly legible and the dominant visual element."
+
+3. **COMPOSITION & FORMAT:**
+"Vertical 4:5 Instagram format (1080x1350px). Quote text is the primary visual element. Person (if included) is secondary/background element. Clean, minimal, typography-focused design.`
+    : workflowType === "educational"
+    ? `**CRITICAL: This is an EDUCATIONAL/INFOGRAPHIC REQUEST - Each concept card should be an educational infographic.**
+
+**EDUCATIONAL INFOGRAPHIC REQUIREMENTS:**
+- Can be purely graphic (no person required) OR include person
+- Text must be perfectly legible and accurately spelled
+- Data visualization, step-by-step guides, statistics, or teaching content
+- Professional, clean design with clear visual hierarchy
+
+**EDUCATIONAL INFOGRAPHIC PROMPT STRUCTURE (MANDATORY):**
+1. **VISUAL TYPE:**
+"Vertical infographic in 4:5 format (1080x1350px), optimized for Instagram."
+
+2. **CONTENT STRUCTURE:**
+"**INFOGRAPHIC CONTENT:** [Specify content type - statistics, step-by-step guide, data visualization, teaching points, etc.]. Layout: [Specify layout - numbered steps, comparison chart, single statistic, multi-step process, etc.]. Text rendering: All text must be legible, accurately spelled, and professionally typeset (Nano Banana Pro strength)."
+
+3. **DESIGN ELEMENTS:**
+"**DESIGN STYLE:** Modern minimalist, luxury brand aesthetic, clean lines. Color palette: [Specify colors - soft beige background, dark navy text, gold accent, etc.]. Typography: Bold sans-serif for headers, regular weight for body text, high contrast for readability. Icons/Graphics: [Specify if needed - simple icons, arrows, numbers, etc.]. Spacing: Professional margins (60px all sides), generous white space, clear visual hierarchy."
+
+4. **PERSON (IF INCLUDED):**
+"If person is included: A ${userEthnicity ? userEthnicity + " " : ""}${userGender}, [outfit description], [pose/action], [location], professional photography, 85mm lens, f/2.0 depth of field, natural skin texture with visible pores. Person should complement the infographic design, not dominate it."
+
+**COMPLETE EXAMPLE:**
+"Vertical infographic in 4:5 format (1080x1350px), optimized for Instagram.
+
+**INFOGRAPHIC CONTENT:** Step-by-step guide with 5 numbered steps. Layout: 5 steps vertically stacked with icons. Text rendering: All text must be legible, accurately spelled, and professionally typeset.
+
+**DESIGN STYLE:** Modern minimalist, luxury brand aesthetic, clean lines. Color palette: Soft beige background (#F5F1E8), dark navy text (#1A2332), gold accent (#C9A96E). Typography: Bold sans-serif for headers (80pt), regular weight for body text (40pt), high contrast for readability. Icons/Graphics: Simple numbered circles (1-5) with connecting lines. Spacing: Professional margins (60px all sides), generous white space, clear visual hierarchy.`
+    : workflowType === "brand-scene"
+    ? `**CRITICAL: This is a BRAND SCENE REQUEST - Each concept card should integrate products/brand elements naturally.**
+
+**BRAND SCENE REQUIREMENTS:**
+- Person should naturally interact with or be near products/brand items
+- Products should be clearly visible but not forced
+- Natural, authentic integration (not obvious product placement)
+- Professional, lifestyle aesthetic
+
+**BRAND SCENE PROMPT STRUCTURE (MANDATORY):**
+1. **CHARACTER DESCRIPTION:**
+"A ${userEthnicity ? userEthnicity + " " : ""}${userGender}, [hair description], [outfit: material + color + garment type], [pose/action that naturally includes product - e.g., 'holding coffee mug', 'sitting at desk with laptop', 'carrying designer bag'], [location/environment], [lighting description], professional photography, 85mm lens, f/2.0 depth of field, natural skin texture with visible pores."
+
+2. **PRODUCT/BRAND INTEGRATION:**
+"**PRODUCT INTEGRATION:** [Specify product/brand item - e.g., 'holding ceramic coffee mug', 'sitting at modern desk with MacBook Pro visible', 'carrying minimalist leather tote bag']. Product placement: [Natural, visible but not forced - e.g., 'product naturally integrated into scene', 'product clearly visible in foreground/background']. Product styling: [Professional, lifestyle aesthetic - e.g., 'product styled authentically', 'product matches scene aesthetic']."
+
+3. **COMPOSITION & FORMAT:**
+"Vertical 4:5 Instagram format (1080x1350px). Person and product naturally integrated. Professional, lifestyle aesthetic. Product clearly visible but scene feels authentic, not staged.`
+    : ""
+}
+
 === JSON OUTPUT FORMAT ===
 
+${
+  workflowType === "carousel-slides" || isCarouselRequest
+    ? `**CRITICAL: This is a CAROUSEL REQUEST - Each concept card represents ONE SLIDE of a multi-slide carousel.**
+
 Return ONLY valid JSON array, no markdown:
+[
+  {
+    "title": "Slide ${slideCount ? '1' : 'X'} - [Carousel slide title]",
+    "description": "Carousel cover slide with text overlay",
+    "category": "Carousel Slide",
+    "fashionIntelligence": "Your outfit reasoning - WHY this outfit for this moment",
+    "lighting": "Your lighting reasoning",
+    "location": "Your location reasoning",
+    "prompt": "${
+      studioProMode
+        ? workflowType === "carousel-slides" || isCarouselRequest
+          ? `YOUR CRAFTED NANO BANANA PRO CAROUSEL PROMPT - MUST include TEXT OVERLAY instructions with placement, font size, contrast, and text content. Natural language scene description (50-80 words), NO trigger words, rich visual storytelling with brand context, professional quality. Format: Scene description + TEXT OVERLAY section with detailed text placement instructions.`
+          : workflowType === "reel-cover"
+          ? `YOUR CRAFTED NANO BANANA PRO REEL COVER PROMPT - MUST include large, readable title text optimized for thumbnail visibility. Natural language scene description (50-80 words), NO trigger words, professional quality. Format: Scene description + TEXT OVERLAY section with title text, font size, and safe zone instructions.`
+          : workflowType === "text-overlay"
+          ? `YOUR CRAFTED NANO BANANA PRO TEXT OVERLAY PROMPT - MUST include prominent text overlay with exact text content, placement, font size, and style. Natural language scene description (50-80 words), NO trigger words, professional quality. Format: Scene description + TEXT OVERLAY section with detailed text specifications.`
+          : workflowType === "quote-graphic"
+          ? `YOUR CRAFTED NANO BANANA PRO QUOTE GRAPHIC PROMPT - Quote text is PRIMARY focus, person is secondary/background. MUST include quote text, font style, and typography details. Natural language description (50-80 words), NO trigger words, professional quality. Format: Quote text section (primary) + optional person description (secondary).`
+          : workflowType === "educational"
+          ? `YOUR CRAFTED NANO BANANA PRO EDUCATIONAL INFOGRAPHIC PROMPT - MUST include infographic content structure, text rendering requirements, and design elements. Can be purely graphic OR include person. Natural language description (50-80 words), NO trigger words, professional quality. Format: Infographic content + design style + optional person integration.`
+          : workflowType === "brand-scene"
+          ? `YOUR CRAFTED NANO BANANA PRO BRAND SCENE PROMPT - MUST include natural product/brand integration. Person should naturally interact with products. Natural language scene description (50-80 words), NO trigger words, professional quality. Format: Scene description + PRODUCT INTEGRATION section with product details and natural placement.`
+          : `YOUR CRAFTED NANO BANANA PRO PROMPT - natural language scene description (50-80 words), NO trigger words, rich visual storytelling with brand context, professional quality`
+        : `YOUR CRAFTED FLUX PROMPT - synthesized from principles, MUST start with ${triggerWord}, ${userEthnicity ? userEthnicity + " " : ""}${userGender}${physicalPreferences ? `, [converted physical preferences - descriptive only, NO instruction phrases like 'dont change' or 'keep my']` : ""}`
+    }"
+  }
+]
+`
+    : `Return ONLY valid JSON array, no markdown:
 [
   {
     "title": "Simple, catchy title (2-4 words, everyday language)",
@@ -559,7 +842,8 @@ Return ONLY valid JSON array, no markdown:
         : `YOUR CRAFTED FLUX PROMPT - synthesized from principles, MUST start with ${triggerWord}, ${userEthnicity ? userEthnicity + " " : ""}${userGender}${physicalPreferences ? `, [converted physical preferences - descriptive only, NO instruction phrases like 'dont change' or 'keep my']` : ""}`
     }"
   }
-]
+]`
+}
 
 TITLE EXAMPLES (everyday language, not fashion jargon):
 ✅ "Coffee Run Glow"
@@ -575,7 +859,73 @@ DESCRIPTION EXAMPLES (warm, brief, exciting):
 ✅ "Cozy mornings that feel like a vibe"
 ❌ "Capturing the interplay of architectural elements and sartorial sophistication" (way too much!)
 
-Now apply your fashion intelligence and prompting mastery. Create ${count} concepts where every outfit choice is INTENTIONAL and story-driven.`
+${
+  workflowType === "carousel-slides" || isCarouselRequest
+    ? `**CRITICAL CAROUSEL INSTRUCTIONS:**
+- Create ${slideCount || count} carousel slide concepts (one per slide)
+- Each slide MUST include detailed TEXT OVERLAY instructions
+- Slide 1: Cover slide with large headline/title text
+- Slides 2-${slideCount || count}: Content slides with numbered points or teaching text
+- Maintain character consistency across ALL slides
+- Each prompt must specify text placement, font size, and contrast requirements
+- Use the carousel template structure with text overlay sections
+
+**TEXT OVERLAY REQUIREMENTS FOR EACH SLIDE:**
+- Specify text content (e.g., "10 things", "Slide 2: Key point", etc.)
+- Specify text placement (lower third, center, top, etc.)
+- Specify font size (large enough for mobile readability - minimum 24pt equivalent)
+- Specify contrast/background (text box overlay if background is busy)
+- Ensure text is readable at thumbnail size (400px width)
+
+Now create ${slideCount || count} carousel slide concepts with complete text overlay instructions.`
+    : workflowType === "reel-cover"
+    ? `**CRITICAL REEL COVER INSTRUCTIONS:**
+- Create ${count} reel cover concepts optimized for Instagram Reels
+- Each cover MUST include large, readable title text
+- Text must work as tiny thumbnail on grid (very large font size)
+- Safe zones respected (text not cut off by Instagram UI)
+- Clean, minimal design that works at small sizes
+- Title should be 3-7 words max if possible
+
+Now create ${count} reel cover concepts with prominent, readable title text.`
+    : workflowType === "text-overlay"
+    ? `**CRITICAL TEXT OVERLAY INSTRUCTIONS:**
+- Create ${count} concepts with prominent text overlay
+- Each concept MUST include detailed text specifications
+- Text should be clearly visible and readable
+- Specify exact text content, placement, font size, and style
+- Ensure high contrast for readability
+
+Now create ${count} text overlay concepts with detailed text specifications.`
+    : workflowType === "quote-graphic"
+    ? `**CRITICAL QUOTE GRAPHIC INSTRUCTIONS:**
+- Create ${count} quote graphic concepts
+- Quote text is the PRIMARY visual element (larger than person)
+- Person can be background element or smaller
+- Clean, minimal, typography-focused design
+- High contrast for text readability
+
+Now create ${count} quote graphic concepts with quote text as primary focus.`
+    : workflowType === "educational"
+    ? `**CRITICAL EDUCATIONAL INFOGRAPHIC INSTRUCTIONS:**
+- Create ${count} educational infographic concepts
+- Can be purely graphic OR include person
+- Text must be perfectly legible and accurately spelled
+- Professional, clean design with clear visual hierarchy
+- Data visualization, step-by-step guides, or teaching content
+
+Now create ${count} educational infographic concepts with clear, legible text and professional design.`
+    : workflowType === "brand-scene"
+    ? `**CRITICAL BRAND SCENE INSTRUCTIONS:**
+- Create ${count} brand scene concepts with natural product integration
+- Person should naturally interact with or be near products
+- Products clearly visible but not forced
+- Natural, authentic integration (not obvious product placement)
+- Professional, lifestyle aesthetic
+
+Now create ${count} brand scene concepts with natural product/brand integration.`
+    : `Now apply your fashion intelligence and prompting mastery. Create ${count} concepts where every outfit choice is INTENTIONAL and story-driven.`
+}`
 
     console.log("[v0] Calling generateText for concept generation")
 
@@ -1257,10 +1607,16 @@ Now apply your fashion intelligence and prompting mastery. Create ${count} conce
     })
   } catch (error) {
     console.error("[v0] Error generating concepts:", error)
+    console.error("[v0] Error details:", {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : undefined
+    })
     return NextResponse.json(
       {
         state: "error",
         message: "I need a bit more direction! What vibe are you going for?",
+        error: process.env.NODE_ENV === "development" ? (error instanceof Error ? error.message : String(error)) : undefined
       },
       { status: 500 },
     )

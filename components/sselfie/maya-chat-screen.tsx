@@ -4248,23 +4248,44 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
                   <li>Text rendering in any language</li>
                 </ul>
                 <p className="pt-2">
+                  <strong>Concept Cards - Quick & Easy:</strong>
+                </p>
+                <ul className="list-disc list-inside space-y-1 ml-2">
+                  <li>Maya generates concept cards with creative ideas for your content</li>
+                  <li>Each concept card lets you add reference images directly (upload from device or choose from gallery)</li>
+                  <li>Click the 3-dot menu (⋮) on any concept card to view and edit Maya's generated prompt</li>
+                  <li>Customize the prompt to your exact needs, then generate</li>
+                  <li>Perfect for quick content creation without writing prompts yourself</li>
+                </ul>
+                <p className="pt-2">
+                  <strong>Workbench - Advanced Control:</strong>
+                </p>
+                <ul className="list-disc list-inside space-y-1 ml-2">
+                  <li>Use the Workbench for more complex tasks and full creative control</li>
+                  <li>Write your own prompts or paste prompts from anywhere</li>
+                  <li>Select multiple reference images (up to 14 images)</li>
+                  <li>Perfect for multi-image compositions, complex edits, and precise control</li>
+                  <li>Access the Workbench from the Studio Pro dashboard</li>
+                </ul>
+                <p className="pt-2">
                   <strong>How to use Maya:</strong>
                 </p>
                 <ul className="list-disc list-inside space-y-1 ml-2">
-                  <li>Ask Maya for prompt suggestions - she'll provide copyable prompts</li>
-                  <li>Use the Workbench to paste prompts and select images</li>
-                  <li>Click "Use in Workbench" on Maya's suggestions to auto-fill prompts</li>
-                  <li>Upload images from your gallery or device</li>
-                  <li>Generate one image at a time for carousels</li>
+                  <li>Ask Maya for content ideas - she'll create concept cards automatically</li>
+                  <li>Add your own images to concept cards for personalized results</li>
+                  <li>Edit prompts via the 3-dot menu if you want to adjust Maya's suggestions</li>
+                  <li>Use the Workbench when you need more control or have specific requirements</li>
+                  <li>Maya detects what you want (carousel, reel cover, etc.) and uses the right templates</li>
                 </ul>
                 <p className="pt-2">
                   <strong>Pro tips:</strong>
                 </p>
                 <ul className="list-disc list-inside space-y-1 ml-2">
-                  <li>For carousels, Maya provides all slide prompts at once</li>
+                  <li>Start with concept cards for quick inspiration - they're perfect for most content</li>
+                  <li>Use the 3-dot menu to fine-tune prompts before generating</li>
+                  <li>Switch to Workbench for complex multi-image projects or custom workflows</li>
                   <li>Upload style references (like Pinterest outfits) to match aesthetics</li>
-                  <li>Use up to 14 images for complex compositions</li>
-                  <li>Maya guides you through each step - just ask!</li>
+                  <li>Maya automatically uses the right templates for carousels, reel covers, and more</li>
                 </ul>
                 <p className="pt-2">
                   <strong>Cost:</strong> 5 credits per generation
