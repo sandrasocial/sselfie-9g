@@ -571,3 +571,4 @@ export class PromptGenerator {
     return Math.min(1, Math.max(0, confidence))
   }
 }
+

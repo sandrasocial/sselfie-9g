@@ -73,6 +73,14 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
   const [aspectRatio, setAspectRatio] = useState("4:5")
   const [realismStrength, setRealismStrength] = useState(0.2) // Extra LoRA scale: 0.0-0.8
   const [showSettings, setShowSettings] = useState(false)
+  // Enhanced Authenticity toggle - only for Classic mode (injects more muted colors, iPhone quality, film grain)
+  const [enhancedAuthenticity, setEnhancedAuthenticity] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('mayaEnhancedAuthenticity')
+      return saved === 'true'
+    }
+    return false // Default to off
+  })
 
   const settingsSaveTimerRef = useRef<NodeJS.Timeout | null>(null)
   const messageSaveTimerRef = useRef<NodeJS.Timeout | null>(null)
@@ -211,6 +219,14 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
     }
   }, [styleStrength, promptAccuracy, aspectRatio, realismStrength]) // Added realismStrength to dependencies
 
+  // Save enhanced authenticity setting to localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('mayaEnhancedAuthenticity', enhancedAuthenticity.toString())
+      console.log("[v0] 💾 Saved enhanced authenticity setting:", enhancedAuthenticity)
+    }
+  }, [enhancedAuthenticity])
+
   const { messages, sendMessage, status, setMessages } = useChat({
     transport: new DefaultChatTransport({ 
       api: "/api/maya/chat",
@@ -254,257 +270,13 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
     },
   })
 
-  // Fallback: If Maya writes prompts without using [GENERATE_PROMPTS] trigger, extract and move to workbench
-  useEffect(() => {
-    if (!messages || messages.length === 0) return
-    if (!studioProMode || !isWorkbenchModeEnabled()) return
-    if (status === "streaming" || status === "submitted") return
-    if (isGeneratingPrompts || pendingPromptRequest) return // Don't interfere with active generation
-    
-    try {
-      const latestMessage = messages[messages.length - 1]
-      if (!latestMessage || latestMessage.role !== 'assistant') return
-      
-      const messageId = latestMessage.id?.toString() || `msg-${Date.now()}`
-      if (processedStudioProMessagesRef.current.has(messageId)) return
-      
-      // Extract text from message
-      const textParts = latestMessage.parts?.filter((p: any) => p.type === 'text') || []
-      const text = textParts.map((p: any) => p.text).join('\n')
-      
-      if (!text) return
-      
-      // Check if Maya wrote prompts without using trigger (fallback detection)
-      const hasOptions = /Option\s+\d+\s*[-–]/i.test(text)
-      const hasSlides = /Slide\s+\d+\s*[-–]/i.test(text)
-      const hasFullPrompts = (hasOptions || hasSlides) && text.length > 500 // Likely has full prompts
-      const hasTrigger = /\[GENERATE_PROMPTS\]/i.test(text)
-      
-      // Check if Maya provided guidance but forgot the trigger (common issue)
-      const hasGuidanceKeywords = /How to use|Select.*photos|Each prompt|Customize.*prompt/i.test(text)
-      const hasGuidanceButNoTrigger = hasGuidanceKeywords && !hasTrigger && text.length > 200 && text.length < 2000
-      
-      // If Maya wrote full prompts but didn't use trigger, extract them
-      if (hasFullPrompts && !hasTrigger) {
-        console.log("[WORKBENCH] Fallback: Maya wrote prompts without trigger, extracting...")
-        processedStudioProMessagesRef.current.add(messageId)
-        
-        // Parse prompts from text
-        const parsedPrompts = parsePromptSuggestions(text)
-        
-        if (parsedPrompts.length > 0) {
-          // Extract guide text (everything before first prompt)
-          let guideText = text
-          const firstPromptMatch = text.match(/(?:Option\s+\d+|Slide\s+\d+)/i)
-          if (firstPromptMatch && firstPromptMatch.index) {
-            guideText = text.substring(0, firstPromptMatch.index).trim()
-          }
-          
-          // Clean guide text
-          guideText = guideText
-            .replace(/Copy the one that feels right.*$/is, '')
-            .replace(/Copy any of these.*$/is, '')
-            .replace(/Select your images.*$/is, '')
-            .replace(/then hit Generate.*$/is, '')
-            .trim()
-          
-          // Convert to workbench format
-          const workbenchPromptsList = parsedPrompts.map((p, idx) => ({
-            id: `prompt-${Date.now()}-${idx}`,
-            title: p.label || `Option ${idx + 1}`,
-            description: p.description || "",
-            prompt: p.prompt,
-            category: p.label.includes('Slide') ? 'Carousel' : 'General'
-          }))
-          
-          // Check if carousel
-          const isCarousel = parsedPrompts.some(p => p.label.includes('Slide'))
-          
-          if (isCarousel) {
-            const slides = parsedPrompts.map((p, idx) => {
-              const slideNumMatch = p.label.match(/Slide\s+(\d+)/i)
-              return {
-                slideNumber: slideNumMatch ? parseInt(slideNumMatch[1]) : idx + 1,
-                label: p.label.replace(/Slide\s+\d+\s*(?:of\s+\d+)?\s*[-–]\s*/i, '').trim(),
-                prompt: p.prompt
-              }
-            })
-            setCarouselSlides(slides)
-            setWorkbenchPrompts([])
-          } else {
-            setWorkbenchPrompts(workbenchPromptsList)
-            setCarouselSlides([])
-          }
-          
-          setWorkbenchGuide(guideText || "Here are your photo ideas! Select images from your gallery and use these prompts in the workbench to generate your photos.")
-          
-          // Auto-populate first prompt
-          if (workbenchPromptsList.length > 0) {
-            window.dispatchEvent(new CustomEvent('workbench-prompt-update', { 
-              detail: { prompt: workbenchPromptsList[0].prompt } 
-            }))
-          }
-          
-          setIsWorkbenchExpanded(true)
-          
-          // Scroll to workbench after a short delay to ensure it's visible
-          setTimeout(() => {
-            const workbenchElement = document.querySelector('[data-workbench-strip]')
-            if (workbenchElement) {
-              workbenchElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-            }
-          }, 500)
-          
-          console.log("[WORKBENCH] Fallback: Extracted", workbenchPromptsList.length, "prompts from Maya's response")
-        }
-      } else if (hasGuidanceButNoTrigger && !promptGenerationTriggeredRef.current.has(messageId)) {
-        // Maya provided guidance but forgot the trigger - auto-generate prompts
-        console.log("[WORKBENCH] Fallback: Maya provided guidance but no trigger, auto-generating prompts")
-        processedStudioProMessagesRef.current.add(messageId)
-        promptGenerationTriggeredRef.current.add(messageId)
-        
-        // Extract the user's original request from conversation
-        const userMessages = messages.filter(m => m.role === 'user').slice(-3)
-        const lastUserMessage = userMessages[userMessages.length - 1]
-        let userRequest = ""
-        
-        if (lastUserMessage) {
-          if (typeof lastUserMessage.content === "string") {
-            userRequest = lastUserMessage.content
-          } else if (lastUserMessage.parts) {
-            userRequest = lastUserMessage.parts
-              .filter((p: any) => p.type === "text")
-              .map((p: any) => p.text)
-              .join(" ")
-          }
-        }
-        
-        // If no user request found, use the guidance text to infer what they want
-        if (!userRequest || userRequest.length < 10) {
-          // Try to infer from Maya's guidance
-          if (text.includes("reel cover")) {
-            userRequest = "reel cover"
-          } else if (text.includes("UGC") || text.includes("product photo")) {
-            userRequest = "UGC product photo"
-          } else if (text.includes("carousel")) {
-            userRequest = "carousel"
-          } else {
-            userRequest = "photo prompts"
-          }
-        }
-        
-        // Use the guidance text as context
-        const guideText = text.trim()
-        
-        // Set pending request to trigger generation
-        setPendingPromptRequest(userRequest)
-        setWorkbenchGuide(guideText)
-      }
-    } catch (error) {
-      console.error('[WORKBENCH] Fallback extraction error:', error)
-    }
-  }, [messages, status, studioProMode, isWorkbenchModeEnabled, isGeneratingPrompts, pendingPromptRequest])
+  // DISABLED: Fallback logic that intercepted Maya's responses and sent them to workbench
+  // Concept cards now always show - workbench is for manual prompt creation only
+  // This useEffect has been completely removed to prevent any workbench auto-extraction
   
-  // Extract carousel slides from latest assistant message (legacy - keeping for backward compatibility)
-  useEffect(() => {
-    if (!messages || messages.length === 0) {
-      setCarouselSlides([])
-      return
-    }
-    
-    try {
-      // Get the latest assistant message
-      const latestMessage = messages[messages.length - 1]
-      if (!latestMessage || latestMessage.role !== 'assistant') {
-        setCarouselSlides([])
-        return
-      }
-      
-      // Extract text from message
-      const textParts = latestMessage.parts?.filter((p: any) => p.type === 'text') || []
-      const text = textParts.map((p: any) => p.text).join('\n')
-      
-      if (!text) {
-        setCarouselSlides([])
-        return
-      }
-      
-      // Extract slides directly here (avoiding dependency on parsePromptSuggestions)
-      // Only extract if Studio Pro mode is enabled AND we haven't already processed prompts
-      if (!studioProMode || workbenchPrompts.length > 0) {
-        setCarouselSlides([])
-        return
-      }
-      
-      // Simple extraction pattern for carousel slides
-      const slideMatches = text.matchAll(/Slide\s+(\d+)\s*(?:of\s+(\d+))?\s*[-–]\s*([^:\n]+):/gi)
-      const slideArray = Array.from(slideMatches)
-      
-      if (slideArray.length === 0) {
-        setCarouselSlides([])
-        return
-      }
-      
-      const slides: Array<{ slideNumber: number; label: string; prompt: string }> = []
-      
-      slideArray.forEach((slideMatch, idx) => {
-        const slideNum = parseInt(slideMatch[1])
-        const totalSlides = slideMatch[2] || ''
-        const label = slideMatch[3]?.trim() || `Slide ${slideNum}`
-        const matchIndex = slideMatch.index || 0
-        
-        // Find the start of the prompt (after the colon)
-        const afterColonIndex = matchIndex + slideMatch[0].length
-        
-        // Find the end of this slide's content (next slide header, or end)
-        const nextSlideMatch = slideArray[idx + 1]
-        const endIndex = nextSlideMatch ? (nextSlideMatch.index || text.length) : text.length
-        
-        // Extract the complete prompt structure
-        let prompt = text.substring(afterColonIndex, endIndex).trim()
-        
-        // Remove any trailing instructions
-        prompt = prompt
-          .replace(/\n\n(Copy|Then|This is going|Once you|Here are all|Copy slide|Perfect! For carousels).*$/is, '')
-          .replace(/^[\s\n]+|[\s\n]+$/g, '')
-          .trim()
-        
-        // Only include if it's a substantial prompt with complete template structure
-        const hasTemplateStructure = 
-          (prompt.includes('EXACTLY identical') || prompt.includes('facial features EXACTLY')) &&
-          (prompt.includes('Composition:') || prompt.includes('Composition')) &&
-          (prompt.includes('Style:') || prompt.includes('Style')) &&
-          (prompt.includes('Lighting:') || prompt.includes('Lighting')) &&
-          (prompt.includes('Color Palette:') || prompt.includes('Color Palette')) &&
-          (prompt.includes('Technical Details:') || prompt.includes('Technical Details')) &&
-          (prompt.includes('Final Use:') || prompt.includes('Final Use')) &&
-          prompt.length > 500
-        
-        if (prompt && hasTemplateStructure) {
-          slides.push({
-            slideNumber: slideNum,
-            label: label,
-            prompt: prompt
-          })
-        }
-      })
-      
-      if (slides.length > 0) {
-        slides.sort((a, b) => a.slideNumber - b.slideNumber)
-        console.log('[MAYA-CHAT] Extracted carousel slides:', slides.length)
-        setCarouselSlides(slides)
-        setIsWorkbenchExpanded(true)
-        // Clear concept prompts when adding carousel slides
-        setWorkbenchPrompts([])
-        setWorkbenchGuide("")
-      } else {
-        setCarouselSlides([])
-      }
-    } catch (error) {
-      console.error('[MAYA-CHAT] Error extracting carousel slides:', error)
-      setCarouselSlides([])
-    }
-  }, [messages, studioProMode])
+  // DISABLED: Auto-extraction of carousel slides from Maya's messages
+  // Concept cards now always show - workbench is for manual prompt creation only
+  // This useEffect has been completely removed to prevent any workbench auto-extraction
 
   const loadChat = useCallback(
     async (specificChatId?: number) => {
@@ -903,37 +675,12 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
       alreadyProcessed: processedStudioProMessagesRef.current.has(messageId),
     })
 
-    // Check for [GENERATE_PROMPTS] trigger in Studio Pro mode (before concept generation)
-    if (studioProMode && isWorkbenchModeEnabled()) {
-      // More flexible regex to catch variations
-      const promptMatch = textContent.match(/\[GENERATE_PROMPTS[:\s]+([^\]]+)\]/i) || 
-                          textContent.match(/\[GENERATE_PROMPTS\]\s*(.+?)(?:\n|$)/i)
-      if (promptMatch && !isGeneratingPrompts && !pendingPromptRequest) {
-        // Check if we've already triggered prompt generation for this message
-        if (promptGenerationTriggeredRef.current.has(messageId)) {
-          console.log("[WORKBENCH] Prompt generation already triggered for message:", messageId)
-          return
-        }
-        
-        const promptRequest = (promptMatch[1] || promptMatch[2] || "").trim()
-        if (promptRequest) {
-          console.log("[WORKBENCH] Detected prompt generation trigger:", promptRequest)
-          
-          // If prompts exist from a previous message, clear them to allow new generation
-          if (workbenchPrompts.length > 0) {
-            console.log("[WORKBENCH] Clearing existing prompts to generate new ones")
-            setWorkbenchPrompts([])
-            setWorkbenchGuide("")
-          }
-          
-          // Mark this message as processed and triggered BEFORE setting pending request
-          processedStudioProMessagesRef.current.add(messageId)
-          promptGenerationTriggeredRef.current.add(messageId)
-          setPendingPromptRequest(promptRequest)
-          return // Don't check other triggers for prompt generation
-        }
-      }
-    }
+    // DISABLED: [GENERATE_PROMPTS] trigger detection for workbench
+    // Concept cards now always show - workbench is for manual prompt creation only
+    // Users can manually write prompts in workbench or use concept cards
+    // if (studioProMode && isWorkbenchModeEnabled()) {
+    //   ... disabled code ...
+    // }
     
     // Check for [GENERATE_CONCEPTS] trigger
     const conceptMatch = textContent.match(/\[GENERATE_CONCEPTS\]\s*(.+?)(?:\n|$)/i)
@@ -1065,135 +812,9 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
     }
   }, [messages, status, isGeneratingConcepts, pendingConceptRequest, isGeneratingStudioPro, studioProMode, isWorkbenchModeEnabled, pendingPromptRequest, isGeneratingPrompts])
   
-  // Generate Studio Pro prompts when [GENERATE_PROMPTS] is triggered
-  useEffect(() => {
-    if (!pendingPromptRequest || isGeneratingPrompts) return
-    if (!studioProMode || !isWorkbenchModeEnabled()) return
-
-    const generatePrompts = async () => {
-      setIsGeneratingPrompts(true)
-      console.log("[WORKBENCH] Calling generate-studio-pro-prompts API for:", pendingPromptRequest)
-
-      try {
-        // Extract conversation context
-        const conversationContext = messages
-          .filter((m) => m.role === "user" || m.role === "assistant")
-          .slice(-10)
-          .map((m) => {
-            let content = ""
-            if (typeof m.content === "string") {
-              content = m.content
-            } else if (m.parts) {
-              content = m.parts
-                .filter((p: any) => p.type === "text")
-                .map((p: any) => p.text)
-                .join(" ")
-            }
-            const cleanContent = content.replace(/\[GENERATE_PROMPTS\][^\n]*/g, "").trim()
-            if (!cleanContent) return null
-            return `${m.role === "user" ? "User" : "Maya"}: ${cleanContent.substring(0, 500)}`
-          })
-          .filter(Boolean)
-          .join("\n")
-
-        // Detect content type from request
-        let contentType = "general"
-        const requestLower = pendingPromptRequest.toLowerCase()
-        if (requestLower.includes("reel") || requestLower.includes("reel cover")) {
-          contentType = "reel-cover"
-        } else if (requestLower.includes("ugc") || requestLower.includes("product")) {
-          contentType = "ugc-product"
-        } else if (requestLower.includes("carousel")) {
-          contentType = "carousel"
-        } else if (requestLower.includes("quote")) {
-          contentType = "quote-graphic"
-        }
-
-        const response = await fetch("/api/maya/generate-studio-pro-prompts", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            userRequest: pendingPromptRequest,
-            count: 3,
-            conversationContext: conversationContext || undefined,
-            contentType: contentType,
-          }),
-        })
-
-        if (!response.ok) {
-          throw new Error(`API error: ${response.status}`)
-        }
-
-        const result = await response.json()
-        console.log("[WORKBENCH] Prompt generation result:", result.state, result.prompts?.length)
-
-        if (!result.success) {
-          console.error("[WORKBENCH] Prompt generation failed:", result.error)
-          // Show user-friendly error
-          alert(`Failed to generate prompts: ${result.error || "Unknown error"}. Please try again.`)
-          setIsGeneratingPrompts(false)
-          setPendingPromptRequest(null)
-          return
-        }
-
-        if (result.success && result.prompts && result.prompts.length > 0) {
-          // Find the current last assistant message
-          const lastAssistantMessage = [...messages].reverse().find((m) => m.role === "assistant")
-          
-          // Extract guide text from Maya's message (everything before [GENERATE_PROMPTS])
-          let guideText = ""
-          if (lastAssistantMessage) {
-            const textParts = lastAssistantMessage.parts?.filter((p: any) => p.type === "text") || []
-            const text = textParts.map((p: any) => p.text).join("\n")
-            const guideMatch = text.match(/(.+?)\[GENERATE_PROMPTS\]/is)
-            if (guideMatch) {
-              guideText = guideMatch[1].trim()
-            } else {
-              guideText = text.replace(/\[GENERATE_PROMPTS\][^\n]*/gi, "").trim()
-            }
-          }
-
-          // Add prompts to workbench
-          setWorkbenchPrompts(result.prompts)
-          setWorkbenchGuide(guideText || "Here are your photo ideas! Select images from your gallery and use these prompts in the workbench to generate your photos.")
-          
-          // Auto-populate first prompt into workbench prompt box
-          if (result.prompts.length > 0) {
-            window.dispatchEvent(new CustomEvent('workbench-prompt-update', { 
-              detail: { prompt: result.prompts[0].prompt } 
-            }))
-          }
-          
-          // Auto-open workbench
-          setIsWorkbenchExpanded(true)
-          
-          // Scroll to workbench after a short delay to ensure it's visible
-          setTimeout(() => {
-            const workbenchElement = document.querySelector('[data-workbench-strip]')
-            if (workbenchElement) {
-              workbenchElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-            }
-          }, 500)
-          
-          console.log("[WORKBENCH] Added", result.prompts.length, "prompts to workbench")
-        } else {
-          // Success but no prompts - shouldn't happen but handle gracefully
-          console.warn("[WORKBENCH] Prompt generation succeeded but no prompts returned")
-          alert("Prompts were generated but none were returned. Please try again.")
-        }
-      } catch (error) {
-        console.error("[WORKBENCH] Error generating prompts:", error)
-        const errorMessage = error instanceof Error ? error.message : "Unknown error"
-        // Show user-friendly error
-        alert(`Failed to generate prompts: ${errorMessage}. Please try again.`)
-      } finally {
-        setIsGeneratingPrompts(false)
-        setPendingPromptRequest(null)
-      }
-    }
-
-    generatePrompts()
-  }, [pendingPromptRequest, isGeneratingPrompts, studioProMode, isWorkbenchModeEnabled, workbenchPrompts.length])
+  // DISABLED: Auto-generation of workbench prompts from [GENERATE_PROMPTS] trigger
+  // Concept cards now always show - workbench is for manual prompt creation only
+  // This useEffect has been completely removed to prevent automatic workbench prompt generation
 
   // The problem was: message was saved BEFORE concepts were generated, so concepts were never persisted
   useEffect(() => {
@@ -1308,6 +929,8 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
             count: 6, // Changed from hardcoded 3 to 6, allowing Maya to create more concepts
             conversationContext: conversationContext || undefined,
             referenceImageUrl: referenceImageUrl, // Pass reference image if found
+            studioProMode: studioProMode, // Pass Studio Pro mode to use Nano Banana prompting
+            enhancedAuthenticity: !studioProMode && enhancedAuthenticity, // Only pass if Classic mode and toggle is ON
           }),
         })
 
@@ -1323,54 +946,27 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
           const lastAssistantMessage = [...messages].reverse().find((m) => m.role === "assistant")
           const messageId = lastAssistantMessage?.id?.toString()
 
-          // In Studio Pro mode, add concepts to workbench instead of showing concept cards
-          if (studioProMode && isWorkbenchModeEnabled()) {
-            // Extract guide text from Maya's message (text before concepts)
-            const textParts = lastAssistantMessage?.parts?.filter((p: any) => p.type === "text") || []
-            const guideText = textParts.map((p: any) => p.text).join("\n").trim()
-            
-            // Extract just the guide part (remove any [GENERATE_CONCEPTS] markers)
-            const cleanGuide = guideText
-              .replace(/\[GENERATE_CONCEPTS\][^\n]*/gi, "")
-              .trim()
-            
-            // Convert concepts to workbench prompts
-            const prompts = result.concepts.map((concept: any, index: number) => ({
-              id: `concept-${Date.now()}-${index}`,
-              title: concept.title || `Photo Idea ${index + 1}`,
-              description: concept.description || "",
-              prompt: concept.prompt || "",
-              category: concept.category || "General"
-            }))
-            
-            setWorkbenchPrompts(prompts)
-            setWorkbenchGuide(cleanGuide || "Here are your photo ideas! Select images from your gallery and use these prompts in the workbench to generate your photos.")
-            setIsWorkbenchExpanded(true)
-            // Clear carousel slides when adding concept prompts
-            setCarouselSlides([])
-            
-            console.log("[WORKBENCH] Added", prompts.length, "prompts to workbench in Studio Pro mode")
-          } else {
-            // Classic mode: Add concept cards to the last assistant message
-            setMessages((prevMessages) => {
-              const newMessages = [...prevMessages]
-              const lastIndex = newMessages.length - 1
-              if (lastIndex >= 0 && newMessages[lastIndex].role === "assistant") {
-                const existingParts = newMessages[lastIndex].parts || []
-                newMessages[lastIndex] = {
-                  ...newMessages[lastIndex],
-                  parts: [
-                    ...existingParts,
-                    {
-                      type: "tool-generateConcepts",
-                      output: result,
-                    } as any,
-                  ],
-                }
+          // In Studio Pro mode, show concept cards (they now support image upload/selection)
+          // Workbench is kept separate for manual prompt creation
+          // Always show concept cards - they work in both Classic and Studio Pro modes
+          setMessages((prevMessages) => {
+            const newMessages = [...prevMessages]
+            const lastIndex = newMessages.length - 1
+            if (lastIndex >= 0 && newMessages[lastIndex].role === "assistant") {
+              const existingParts = newMessages[lastIndex].parts || []
+              newMessages[lastIndex] = {
+                ...newMessages[lastIndex],
+                parts: [
+                  ...existingParts,
+                  {
+                    type: "tool-generateConcepts",
+                    output: result,
+                  } as any,
+                ],
               }
-              return newMessages
-            })
-          }
+            }
+            return newMessages
+          })
 
           // This ensures new concept cards are persisted and show in chat history
           if (chatId && result.concepts.length > 0) {
@@ -3536,6 +3132,37 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
                   <option value="16:9">Landscape (16:9)</option>
                 </select>
               </div>
+
+              {/* Enhanced Authenticity Toggle - Only show in Classic mode */}
+              {!studioProMode && (
+                <div className="pt-2 border-t border-stone-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <label className="text-xs tracking-wider uppercase text-stone-600 mb-1 block">
+                        Enhanced Authenticity
+                      </label>
+                      <p className="text-xs text-stone-500 mt-1">
+                        More muted colors, iPhone quality, and film grain for a more authentic look
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setEnhancedAuthenticity(!enhancedAuthenticity)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-stone-950 focus:ring-offset-2 ${
+                        enhancedAuthenticity ? 'bg-stone-900' : 'bg-stone-300'
+                      }`}
+                      role="switch"
+                      aria-checked={enhancedAuthenticity}
+                      aria-label="Enhanced Authenticity"
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          enhancedAuthenticity ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </>
@@ -4032,11 +3659,9 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
                               const toolPart = part as any
                               const output = toolPart.output
 
-                              // In Studio Pro mode with workbench enabled, don't show concept cards
-                              // They're already in the workbench
-                              if (studioProMode && isWorkbenchModeEnabled()) {
-                                return null
-                              }
+                              // Show concept cards in both Classic and Studio Pro modes
+                              // Concept cards now support image upload/selection in Studio Pro mode
+                              // Workbench is kept separate for manual prompt creation
 
                               if (output && output.state === "ready" && Array.isArray(output.concepts)) {
                                 const concepts = output.concepts

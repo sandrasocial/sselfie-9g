@@ -1,11 +1,13 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { MoreVertical } from "lucide-react"
+import { useState, useEffect, useRef } from "react"
+import { MoreVertical, X, Edit2 } from "lucide-react"
 import InstagramPhotoCard from "./instagram-photo-card"
 import InstagramReelCard from "./instagram-reel-card"
 import InstagramCarouselCard from "./instagram-carousel-card"
+import ImageGalleryModal from "./image-gallery-modal"
 import type { ConceptData } from "./types"
+import type { GalleryImage } from "@/lib/data/images"
 
 interface ConceptCardProps {
   concept: ConceptData
@@ -41,10 +43,183 @@ export default function ConceptCard({ concept, chatId, onCreditsUpdate, studioPr
   const [userId, setUserId] = useState<string | null>(null)
   const [photoshootError, setPhotoshootError] = useState<string | null>(null)
 
+  // Prompt editing state
+  const [showPromptEditor, setShowPromptEditor] = useState(false)
+  const [editedPrompt, setEditedPrompt] = useState<string | null>(null)
+  const [showMenu, setShowMenu] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+
   const [styleStrength, setStyleStrength] = useState<number | null>(null)
   const [promptAccuracy, setPromptAccuracy] = useState<number | null>(null)
   const [extraLora, setExtraLora] = useState<string | null>(null)
   const [realismStrength, setRealismStrength] = useState<number | null>(null)
+
+  // Image selection state for Studio Pro mode
+  // Initialize with baseImages prop if provided, otherwise start with 3 empty slots
+  const [selectedImages, setSelectedImages] = useState<Array<string | null>>(() => {
+    if (baseImages.length > 0) {
+      // Fill up to 3 slots with baseImages, pad with nulls if needed
+      const initial = [...baseImages.slice(0, 3)]
+      while (initial.length < 3) {
+        initial.push(null)
+      }
+      return initial
+    }
+    return [null, null, null]
+  })
+  const [showGalleryModal, setShowGalleryModal] = useState(false)
+  const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([])
+  const [loadingGallery, setLoadingGallery] = useState(false)
+  const [uploadingBoxIndex, setUploadingBoxIndex] = useState<number | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const currentBoxIndexRef = useRef<number | null>(null)
+
+  // Update selectedImages when baseImages prop changes
+  useEffect(() => {
+    if (baseImages.length > 0 && selectedImages.filter(img => img !== null).length === 0) {
+      const initial = [...baseImages.slice(0, 3)]
+      while (initial.length < 3) {
+        initial.push(null)
+      }
+      setSelectedImages(initial)
+    }
+  }, [baseImages])
+
+  // Load gallery images on mount (for Studio Pro mode)
+  useEffect(() => {
+    if (isProMode) {
+      loadGalleryImages()
+    }
+  }, [isProMode])
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false)
+      }
+    }
+
+    if (showMenu) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showMenu])
+
+  const loadGalleryImages = async () => {
+    setLoadingGallery(true)
+    try {
+      const response = await fetch('/api/gallery/images', {
+        credentials: 'include',
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to load gallery')
+      }
+      
+      const data = await response.json()
+      setGalleryImages(data.images || [])
+    } catch (error) {
+      console.error('[CONCEPT-CARD] Failed to load gallery:', error)
+      setGalleryImages([])
+    } finally {
+      setLoadingGallery(false)
+    }
+  }
+
+  const handleImageSelect = (boxIndex: number) => {
+    currentBoxIndexRef.current = boxIndex
+    setShowGalleryModal(true)
+  }
+
+  const handleGallerySelect = (imageUrl: string) => {
+    if (currentBoxIndexRef.current === null) return
+    
+    const boxIndex = currentBoxIndexRef.current
+    const newImages = [...selectedImages]
+    newImages[boxIndex] = imageUrl
+    
+    // If filling box 3 and 4th box doesn't exist yet, add it
+    if (boxIndex === 2 && newImages.length === 3) {
+      newImages.push(null) // Add 4th box
+    }
+    
+    setSelectedImages(newImages)
+    setShowGalleryModal(false)
+    currentBoxIndexRef.current = null
+  }
+
+  const handleUploadClick = (boxIndex: number) => {
+    currentBoxIndexRef.current = boxIndex
+    fileInputRef.current?.click()
+  }
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || currentBoxIndexRef.current === null) return
+
+    const boxIndex = currentBoxIndexRef.current
+
+    if (file.size > 10 * 1024 * 1024) {
+      alert("Image must be smaller than 10MB")
+      return
+    }
+
+    if (!file.type.startsWith("image/")) {
+      alert("Please upload an image file")
+      return
+    }
+
+    setUploadingBoxIndex(boxIndex)
+
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+
+      const response = await fetch("/api/upload-image", {
+        method: "POST",
+        body: formData,
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to upload image")
+      }
+
+      const { url } = await response.json()
+      
+      const newImages = [...selectedImages]
+      newImages[boxIndex] = url
+      
+      // If filling box 3 and 4th box doesn't exist yet, add it
+      if (boxIndex === 2 && newImages.length === 3) {
+        newImages.push(null) // Add 4th box
+      }
+      
+      setSelectedImages(newImages)
+    } catch (error) {
+      console.error("[CONCEPT-CARD] Error uploading image:", error)
+      alert("Failed to upload image. Please try again.")
+    } finally {
+      setUploadingBoxIndex(null)
+      currentBoxIndexRef.current = null
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+  }
+
+  const handleImageClear = (boxIndex: number) => {
+    const newImages = [...selectedImages]
+    newImages[boxIndex] = null
+    
+    // If clearing box 3 and 4th box exists, remove 4th box
+    if (boxIndex === 2 && newImages.length > 3) {
+      newImages.pop()
+    }
+    
+    setSelectedImages(newImages)
+  }
 
   // Poll for Classic mode (Flux) generation
   useEffect(() => {
@@ -120,30 +295,41 @@ export default function ConceptCard({ concept, chatId, onCreditsUpdate, studioPr
       // If Studio Pro mode is active, use Nano Banana Pro
       // CLASSIC MODE SAFETY: Use isProMode (normalized boolean)
       if (isProMode) {
-        // Get base images: prefer selected base images, fallback to concept reference image
-        const availableBaseImages = baseImages.length > 0 
-          ? baseImages 
-          : (concept.referenceImageUrl ? [concept.referenceImageUrl] : [])
+        // ============================================
+        // CONCEPT CARD FLOW (Studio Pro Mode):
+        // 1. Maya generates concept with detailed prompt (concept.prompt)
+        // 2. User adds reference images via upload/gallery
+        // 3. Generate using Maya's prompt + user's images
+        // ============================================
+        
+        // Get base images: prefer images selected in concept card, then prop baseImages, then concept reference image
+        const conceptCardImages = selectedImages.filter((img): img is string => img !== null)
+        const availableBaseImages = conceptCardImages.length > 0
+          ? conceptCardImages
+          : (baseImages.length > 0 
+              ? baseImages 
+              : (concept.referenceImageUrl ? [concept.referenceImageUrl] : []))
 
         if (availableBaseImages.length === 0) {
-          setError("Please select at least one base image from your gallery in Studio Pro mode, or use Classic mode")
+          setError("Please select at least one image (upload or from gallery) in Studio Pro mode, or use Classic mode")
           setIsGenerating(false)
           return
         }
 
         console.log("[CONCEPT-CARD] Using Studio Pro (Nano Banana Pro) with", availableBaseImages.length, "base image(s)")
 
-        // Use Studio Pro generation with Nano Banana Pro
-        // Use the concept's actual prompt (Maya's detailed prompt) instead of just title/description
-        const userRequest = concept.prompt || `${concept.title}: ${concept.description}`
+        // CRITICAL: Concept cards use Maya's generated prompt (concept.prompt) OR user-edited prompt
+        // If user edited the prompt, use that; otherwise use Maya's original prompt
+        // Mode "brand-scene" ensures proper prompt building with brand context
+        const userRequest = editedPrompt || concept.prompt || `${concept.title}: ${concept.description}`
         
         const response = await fetch("/api/maya/generate-studio-pro", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify({
-            mode: "brand-scene", // Concept cards in Studio Pro mode use brand-scene
-            userRequest: userRequest, // Use Maya's actual prompt from the concept
+            mode: "brand-scene", // Concept cards use brand-scene mode (Maya's prompt building)
+            userRequest: userRequest, // Maya's generated prompt from concept generation
             inputImages: {
               baseImages: availableBaseImages.map(url => ({ url, type: 'user-photo' })),
               productImages: []
@@ -666,9 +852,32 @@ export default function ConceptCard({ concept, chatId, onCreditsUpdate, studioPr
             <span className="text-xs text-stone-500">{concept.category}</span>
           </div>
         </div>
-        <button className="p-1 hover:bg-stone-100 rounded-full transition-colors">
-          <MoreVertical className="w-5 h-5 text-stone-700" />
-        </button>
+        <div className="relative" ref={menuRef}>
+          <button 
+            onClick={() => setShowMenu(!showMenu)}
+            className="p-1 hover:bg-stone-100 rounded-full transition-colors"
+            aria-label="More options"
+          >
+            <MoreVertical className="w-5 h-5 text-stone-700" />
+          </button>
+          
+          {showMenu && (
+            <div className="absolute right-0 top-8 z-50 w-48 bg-white border border-stone-200 rounded-lg shadow-lg py-1">
+              {isProMode && (
+                <button
+                  onClick={() => {
+                    setShowPromptEditor(true)
+                    setShowMenu(false)
+                  }}
+                  className="w-full px-4 py-2 text-left text-sm text-stone-700 hover:bg-stone-50 flex items-center gap-2 transition-colors"
+                >
+                  <Edit2 className="w-4 h-4" />
+                  <span>View/Edit Prompt</span>
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="px-3 py-3 space-y-3">
@@ -692,12 +901,88 @@ export default function ConceptCard({ concept, chatId, onCreditsUpdate, studioPr
         )}
 
         {!isGenerating && !isGenerated && !error && (
-          <div className="space-y-2">
+          <div className="space-y-3">
+            {/* Image selector for Studio Pro mode */}
+            {isProMode && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-serif font-extralight tracking-[0.15em] text-stone-700 uppercase">
+                    Reference Images
+                  </h4>
+                  <span className="text-[10px] font-light tracking-[0.1em] text-stone-500 uppercase">
+                    {selectedImages.filter(img => img !== null).length} / {selectedImages.length}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-2 -mx-1 px-1">
+                  {selectedImages.map((image, index) => (
+                    <div key={index} className="flex items-center gap-2 shrink-0">
+                      <div className="relative aspect-square w-20 sm:w-24 rounded-xl border-2 border-dashed border-stone-300/60 bg-gradient-to-br from-stone-50/80 via-white to-stone-50/40 overflow-hidden group transition-all duration-300 hover:border-stone-400/80">
+                        {image ? (
+                          <>
+                            <img
+                              src={image}
+                              alt={`Reference ${index + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-stone-950/50 via-stone-950/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleImageClear(index)
+                              }}
+                              className="absolute top-1.5 right-1.5 w-5 h-5 bg-stone-950/95 hover:bg-stone-950 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 text-sm font-light shadow-[0_2px_8px_rgba(0,0,0,0.3)]"
+                              aria-label={`Clear image ${index + 1}`}
+                            >
+                              ×
+                            </button>
+                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-stone-950/80 via-stone-950/40 to-transparent p-2">
+                              <span className="text-[9px] text-white font-light tracking-[0.1em] uppercase">Ref {index + 1}</span>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-2">
+                            {uploadingBoxIndex === index ? (
+                              <div className="flex flex-col items-center justify-center gap-1">
+                                <div className="w-4 h-4 border-2 border-stone-400 border-t-transparent rounded-full animate-spin" />
+                                <span className="text-[9px] font-light tracking-[0.1em] uppercase text-stone-500">Uploading...</span>
+                              </div>
+                            ) : (
+                              <>
+                                <button
+                                  onClick={() => handleImageSelect(index)}
+                                  className="w-full h-full flex flex-col items-center justify-center gap-0.5 text-stone-400 hover:text-stone-600 transition-all duration-300 text-[9px] font-light tracking-[0.1em] uppercase"
+                                >
+                                  Gallery
+                                </button>
+                                <button
+                                  onClick={() => handleUploadClick(index)}
+                                  className="w-full px-1.5 py-0.5 text-[8px] font-light tracking-[0.1em] uppercase text-stone-500 hover:text-stone-700 hover:bg-stone-100/50 rounded transition-all duration-200"
+                                >
+                                  Upload
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      {/* Plus sign between boxes (except after last box) */}
+                      {index < selectedImages.length - 1 && (
+                        <span className="text-stone-300/80 text-2xl font-extralight shrink-0 leading-none">+</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
             <button
               onClick={handleGenerate}
+              disabled={isProMode && selectedImages.filter(img => img !== null).length === 0}
               className={`group relative w-full text-white px-4 py-2.5 rounded-lg font-semibold text-sm transition-all duration-300 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] min-h-[40px] flex items-center justify-center ${
                 studioProMode
-                  ? 'bg-gradient-to-br from-stone-800 via-stone-900 to-stone-950 hover:from-stone-900 hover:via-stone-950 hover:to-black'
+                  ? selectedImages.filter(img => img !== null).length === 0
+                    ? 'bg-stone-400 cursor-not-allowed'
+                    : 'bg-gradient-to-br from-stone-800 via-stone-900 to-stone-950 hover:from-stone-900 hover:via-stone-950 hover:to-black'
                   : 'bg-gradient-to-br from-stone-600 via-stone-700 to-stone-800 hover:from-stone-700 hover:via-stone-800 hover:to-stone-900'
               }`}
             >
@@ -706,9 +991,9 @@ export default function ConceptCard({ concept, chatId, onCreditsUpdate, studioPr
             <div className="space-y-1">
               {studioProMode && (
                 <p className="text-[10px] text-stone-500 text-center leading-relaxed">
-                  {baseImages.length > 0 
-                    ? `Using ${baseImages.length} base image${baseImages.length > 1 ? 's' : ''} • 5 credits`
-                    : 'Select base images from gallery • 5 credits'}
+                  {selectedImages.filter(img => img !== null).length > 0 
+                    ? `Using ${selectedImages.filter(img => img !== null).length} reference image${selectedImages.filter(img => img !== null).length > 1 ? 's' : ''} • 5 credits`
+                    : 'Select at least 1 reference image to continue • 5 credits'}
                 </p>
               )}
               <p className="text-[10px] text-stone-400 text-center leading-relaxed">
@@ -904,6 +1189,118 @@ export default function ConceptCard({ concept, chatId, onCreditsUpdate, studioPr
           </div>
         )}
       </div>
+
+      {/* Hidden file input for uploads */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleFileSelect}
+      />
+
+      {/* Gallery Modal */}
+      {showGalleryModal && (
+        <ImageGalleryModal
+          images={galleryImages}
+          onSelect={handleGallerySelect}
+          onClose={() => {
+            setShowGalleryModal(false)
+            currentBoxIndexRef.current = null
+          }}
+        />
+      )}
+
+      {/* Prompt Editor Modal */}
+      {showPromptEditor && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-stone-200">
+              <div>
+                <h3 className="text-lg font-semibold text-stone-900">Edit Prompt</h3>
+                <p className="text-sm text-stone-500 mt-1">{concept.title}</p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowPromptEditor(false)
+                  // Reset to original if user closes without saving
+                  if (!editedPrompt) {
+                    setEditedPrompt(null)
+                  }
+                }}
+                className="p-2 hover:bg-stone-100 rounded-full transition-colors"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5 text-stone-600" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto px-6 py-4">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-stone-700 mb-2">
+                    Prompt Text
+                  </label>
+                  <textarea
+                    value={editedPrompt ?? concept.prompt ?? `${concept.title}: ${concept.description}`}
+                    onChange={(e) => setEditedPrompt(e.target.value)}
+                    className="w-full h-64 px-4 py-3 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-500 focus:border-transparent resize-none font-mono text-sm text-stone-900"
+                    placeholder="Enter your prompt..."
+                  />
+                  <p className="text-xs text-stone-500 mt-2">
+                    {editedPrompt ? editedPrompt.length : (concept.prompt?.length || 0)} characters
+                    {editedPrompt && editedPrompt !== concept.prompt && (
+                      <span className="ml-2 text-orange-600">• Modified</span>
+                    )}
+                  </p>
+                </div>
+
+                {concept.prompt && (
+                  <div className="pt-4 border-t border-stone-200">
+                    <p className="text-xs font-medium text-stone-600 mb-2">Original Maya Prompt:</p>
+                    <div className="bg-stone-50 rounded-lg p-3 border border-stone-200">
+                      <p className="text-xs text-stone-600 font-mono leading-relaxed">
+                        {concept.prompt}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setEditedPrompt(concept.prompt)
+                      }}
+                      className="mt-2 text-xs text-stone-600 hover:text-stone-900 underline"
+                    >
+                      Restore original
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-stone-200 bg-stone-50">
+              <button
+                onClick={() => {
+                  setShowPromptEditor(false)
+                  setEditedPrompt(null)
+                }}
+                className="px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-200 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setShowPromptEditor(false)
+                }}
+                className="px-4 py-2 text-sm font-medium text-white bg-stone-900 hover:bg-stone-800 rounded-lg transition-colors"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

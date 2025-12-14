@@ -1244,3 +1244,4 @@ function inferMode(prompt: string): StudioProMode | 'generic' {
 - Classic mode safety is priority #1
 - Feature flag enables safe rollout
 - Gradual migration reduces risk
+

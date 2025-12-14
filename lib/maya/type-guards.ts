@@ -58,3 +58,4 @@ export function guardProModeRoute(studioProMode: unknown, routeName: string): vo
     throw new Error(`[PRO-MODE-GUARD] Invalid mode in Pro route: ${routeName}. Mode must be boolean.`)
   }
 }
+

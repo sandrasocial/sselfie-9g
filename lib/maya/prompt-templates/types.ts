@@ -65,3 +65,4 @@ export interface PromptTemplate {
   promptStructure: (context: PromptContext) => string
   variations?: PromptVariation[]
 }
+

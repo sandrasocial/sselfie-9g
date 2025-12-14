@@ -111,6 +111,13 @@ export default function WorkbenchStrip({ onEnhancePrompt, onImageCountChange, ca
   const handleGenerate = async (prompt: string) => {
     if (isGenerating) return
 
+    // ============================================
+    // WORKBENCH FLOW:
+    // 1. User writes their own prompt (manual control)
+    // 2. User selects images from gallery/upload
+    // 3. Generate using user's prompt + selected images
+    // ============================================
+
     const baseImages = selectedImages
       .filter((img): img is { url: string; type: 'base' | 'product' } => img !== null && img.type === 'base')
       .map(img => ({ url: img.url }))
@@ -130,6 +137,8 @@ export default function WorkbenchStrip({ onEnhancePrompt, onImageCountChange, ca
     setResultImageUrl(null)
 
     try {
+      // CRITICAL: Workbench ALWAYS uses user-written prompts (no AI transformation)
+      // Mode "workbench" ensures prompt is used directly without modification
       const response = await fetch('/api/maya/generate-studio-pro', {
         method: 'POST',
         headers: {
@@ -137,8 +146,8 @@ export default function WorkbenchStrip({ onEnhancePrompt, onImageCountChange, ca
         },
         credentials: 'include',
         body: JSON.stringify({
-          mode: 'workbench', // Default mode for workbench
-          userRequest: prompt,
+          mode: 'workbench', // Workbench mode: user's prompt used directly (no AI transformation)
+          userRequest: prompt, // User-written prompt (NOT Maya-generated)
           inputImages: {
             baseImages: baseImages,
             productImages: productImages,

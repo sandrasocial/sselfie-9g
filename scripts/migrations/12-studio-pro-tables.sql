@@ -122,3 +122,4 @@ COMMENT ON TABLE pro_workflows IS 'Active Pro workflows (carousel, reel-cover, e
 COMMENT ON TABLE pro_generations IS 'Pro generations with revision tracking. parent_generation_id = NULL means original, non-null means edit/variant';
 COMMENT ON TABLE user_pro_setup IS 'Tracks Pro onboarding completion and entry selection';
 
+

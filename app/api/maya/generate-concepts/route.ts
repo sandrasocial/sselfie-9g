@@ -6,6 +6,7 @@ import { getFluxPromptingPrinciples } from "@/lib/maya/flux-prompting-principles
 import { getFashionIntelligencePrinciples } from "@/lib/maya/fashion-knowledge-2025"
 import { getLifestyleContextIntelligence } from "@/lib/maya/lifestyle-contexts"
 import INFLUENCER_POSING_KNOWLEDGE from "@/lib/maya/influencer-posing-knowledge"
+import { getNanoBananaPromptingPrinciples } from "@/lib/maya/nano-banana-prompt-builder"
 
 type MayaConcept = {
   title: string
@@ -55,6 +56,8 @@ export async function POST(req: NextRequest) {
       customSettings,
       mode = "concept",
       conversationContext,
+      studioProMode = false, // Studio Pro mode flag - uses Nano Banana prompting instead of Flux
+      enhancedAuthenticity = false, // Enhanced authenticity toggle - only for Classic mode
     } = body
 
     console.log("[v0] Generating concepts:", {
@@ -62,6 +65,8 @@ export async function POST(req: NextRequest) {
       aesthetic,
       mode,
       count,
+      studioProMode,
+      enhancedAuthenticity,
       hasConversationContext: !!conversationContext,
       hasReferenceImage: !!referenceImageUrl,
       referenceImageUrl: referenceImageUrl ? referenceImageUrl.substring(0, 100) + "..." : undefined,
@@ -355,9 +360,23 @@ Capture this EXACT vibe - the styling, mood, lighting, color treatment, and comp
     : ""
 }
 
-=== YOUR FLUX PROMPTING MASTERY ===
+${
+  studioProMode
+    ? `=== YOUR NANO BANANA PRO PROMPTING MASTERY ===
 
-${getFluxPromptingPrinciples()}
+${getNanoBananaPromptingPrinciples()}
+
+**CRITICAL FOR NANO BANANA PRO:**
+- NO trigger words (Nano Banana doesn't use LoRA trigger words)
+- Natural language descriptions (50-80 words optimal)
+- Focus on scene composition, mood, and visual storytelling
+- Include brand context and user preferences naturally
+- Professional quality descriptions (not iPhone/cellphone photo style)
+- Rich, detailed scene descriptions with lighting, environment, and mood`
+    : `=== YOUR FLUX PROMPTING MASTERY ===
+
+${getFluxPromptingPrinciples()}`
+}
 
 === 🔴 CRITICAL RULES FOR THIS GENERATION (NON-NEGOTIABLE) ===
 
@@ -400,12 +419,19 @@ CRITICAL INSTRUCTIONS:
 
 **🔴 MANDATORY REQUIREMENTS (EVERY PROMPT MUST HAVE):**
 
-1. **Start with:** "${triggerWord}, ${userEthnicity ? userEthnicity + " " : ""}${userGender}${physicalPreferences ? `, [converted physical preferences - descriptive only, no instructions]` : ""}"
+${
+  studioProMode
+    ? `1. **NO TRIGGER WORDS** - Nano Banana Pro doesn't use LoRA trigger words
+   - Start with natural scene description
+   - Include user's appearance naturally in the description
+   - Format: "A ${userEthnicity ? userEthnicity + " " : ""}${userGender}${physicalPreferences ? `, ${physicalPreferences}` : ""} [rest of scene description]"`
+    : `1. **Start with:** "${triggerWord}, ${userEthnicity ? userEthnicity + " " : ""}${userGender}${physicalPreferences ? `, [converted physical preferences - descriptive only, no instructions]` : ""}"
 
    **CRITICAL - TRIGGER WORD PLACEMENT:**
    - Trigger word MUST be the FIRST word in every prompt
    - This is non-negotiable for character likeness preservation
-   - Format: "${triggerWord}, [rest of prompt]"
+   - Format: "${triggerWord}, [rest of prompt]"`
+}
 
    **CRITICAL - CHARACTER FEATURE GUIDANCE (BALANCED APPROACH):**
    - **INCLUDE HAIR COLOR/STYLE AS SAFETY NET:** Mention key features (hair color/style, distinctive traits) concisely as a safety net, even if LoRA should know them. It's better to include subtle feature descriptions than to omit them and get wrong results.
@@ -429,9 +455,16 @@ CRITICAL INSTRUCTIONS:
    - **DO NOT REMOVE:** User's physical preferences should be in the prompt as descriptive features, not instructions. User's physical preferences from settings are MANDATORY - never remove them.
 
 2. **Camera Specs (CONDITIONAL - Based on Reference Image/User Request):**
-   - **IF reference image shows professional/studio/editorial OR user requests studio/magazine/editorial:** Use "shot on professional camera" or "DSLR" or "professional photography" - NOT iPhone
+   ${
+     studioProMode
+       ? `- **Nano Banana Pro:** Use professional photography descriptions
+   - "Professional photography", "high-quality image", "editorial style"
+   - NO iPhone/cellphone references (Nano Banana is professional quality)
+   - Focus on composition and visual quality`
+       : `- **IF reference image shows professional/studio/editorial OR user requests studio/magazine/editorial:** Use "shot on professional camera" or "DSLR" or "professional photography" - NOT iPhone
    - **IF no professional request AND no reference image:** Use "shot on iPhone 15 Pro portrait mode, shallow depth of field" OR "shot on iPhone, natural bokeh"
-   - Keep it simple - NO complex technical details (no f-stops, ISO, focal lengths)
+   - Keep it simple - NO complex technical details (no f-stops, ISO, focal lengths)`
+   }
 
 3. **Lighting (CONDITIONAL - Based on Reference Image/User Request):**
    - **IF reference image shows studio lighting OR user requests studio/editorial:** Use "studio lighting" or "professional studio lighting" or "dramatic studio lighting" - NOT "uneven natural lighting"
@@ -445,20 +478,38 @@ CRITICAL INSTRUCTIONS:
    - ❌ NEVER use (unless reference image shows it): "soft afternoon sunlight", "warm golden hour lighting" (too idealized), "dramatic rim lighting", "cinematic quality", "perfect lighting", "soft diffused natural lighting"
 
 4. **Natural Skin Texture (MANDATORY - ANTI-PLASTIC REQUIREMENTS):** 
-   - **REQUIRED:** MUST include "natural skin texture with pores visible, not smooth or airbrushed, not plastic-looking, realistic texture"
+   ${
+     studioProMode
+       ? `- **Nano Banana Pro:** Include natural, realistic skin texture
+   - "Natural skin texture", "realistic appearance", "authentic look"
+   - Professional quality but not overly processed
+   - Avoid "airbrushed", "plastic", "smooth" descriptors`
+       : `- **REQUIRED:** MUST include "natural skin texture with pores visible, not smooth or airbrushed, not plastic-looking, realistic texture"
    - **REQUIRED:** MUST include at least 3+ natural imperfection phrases from: "visible pores", "natural skin texture", "subtle imperfections", "not airbrushed", "not plastic-looking", "realistic texture", "organic skin texture"
    - **REQUIRED:** MUST include at least 2+ anti-plastic phrases from: "not smooth", "not airbrushed", "not plastic-looking", "realistic texture", "natural imperfections"
-   - This is CRITICAL to prevent AI-looking, plastic images. Natural, authentic skin texture is required - avoid anything that sounds plastic/smooth/airbrushed.
+   - This is CRITICAL to prevent AI-looking, plastic images. Natural, authentic skin texture is required - avoid anything that sounds plastic/smooth/airbrushed.`
+   }
 
 5. **Film Grain and Color Treatment (CONDITIONAL - Based on Reference Image/User Request):**
    - **IF reference image is BLACK & WHITE or MONOCHROME OR user requests B&W:** MUST include "black and white" or "monochrome" - DO NOT add "muted colors"
    - **IF reference image shows vibrant/editorial colors OR user requests vibrant/editorial:** Use appropriate color description (vibrant, editorial, etc.) - NOT "muted colors"
    - **IF no specific request AND no reference image:** Include "film grain" and "muted colors" for authentic iPhone aesthetic
+   ${enhancedAuthenticity && !studioProMode ? `
+   - **ENHANCED AUTHENTICITY MODE (ON):** When this mode is enabled, you MUST include:
+     * **More muted colors:** Use "heavily muted colors", "desaturated color palette", "muted tones" (stronger than normal)
+     * **More iPhone quality:** Emphasize "amateur cellphone photo", "raw iPhone photo", "authentic iPhone camera quality"
+     * **More film grain:** Use "visible film grain", "prominent film grain", "grainy texture" (stronger than normal)
+     * These keywords help prevent plastic/fake-looking images by emphasizing authentic, phone-camera aesthetic
+   ` : ''}
    - Keep prompts detailed (30-60 words, target 40-55) for better LoRA activation
 
 6. **NO Natural Imperfections Lists:** Do NOT include lists of imperfections like "visible sensor noise", "slight motion blur", etc. Keep camera specs basic, but ALWAYS include natural skin texture requirements above.
 
-11. **Prompt Length:** 30-60 words (optimal range 40-55 for LoRA activation and accurate character representation, with room for safety net descriptions)
+11. **Prompt Length:** ${
+  studioProMode
+    ? `50-80 words (optimal for Nano Banana Pro - rich scene descriptions with detail)`
+    : `30-60 words (optimal range 40-55 for LoRA activation and accurate character representation, with room for safety net descriptions)`
+}
 
 12. **NO BANNED WORDS:** Never use "ultra realistic", "photorealistic", "8K", "4K", "high quality", "perfect", "flawless", "stunning", "beautiful", "gorgeous", "professional photography", "editorial", "magazine quality", "dramatic" (for lighting), "cinematic", "hyper detailed", "sharp focus", "ultra sharp", "crystal clear", "studio lighting", "perfect lighting", "smooth skin", "flawless skin", "airbrushed" - these cause plastic/generic faces and override the user LoRA.
 
@@ -502,7 +553,11 @@ Return ONLY valid JSON array, no markdown:
     "fashionIntelligence": "Your outfit reasoning - WHY this outfit for this moment",
     "lighting": "Your lighting reasoning",
     "location": "Your location reasoning",
-    "prompt": "YOUR CRAFTED FLUX PROMPT - synthesized from principles, MUST start with ${triggerWord}, ${userEthnicity ? userEthnicity + " " : ""}${userGender}${physicalPreferences ? `, [converted physical preferences - descriptive only, NO instruction phrases like 'dont change' or 'keep my']` : ""}"
+    "prompt": "${
+      studioProMode
+        ? `YOUR CRAFTED NANO BANANA PRO PROMPT - natural language scene description (50-80 words), NO trigger words, rich visual storytelling with brand context, professional quality`
+        : `YOUR CRAFTED FLUX PROMPT - synthesized from principles, MUST start with ${triggerWord}, ${userEthnicity ? userEthnicity + " " : ""}${userGender}${physicalPreferences ? `, [converted physical preferences - descriptive only, NO instruction phrases like 'dont change' or 'keep my']` : ""}`
+    }"
   }
 ]
 
@@ -569,13 +624,20 @@ Now apply your fashion intelligence and prompting mastery. Create ${count} conce
         prompt = prompt.replace(/\blegs\s+folded\s+under\b/gi, "sitting with legs crossed")
       }
       
-      // Remove duplicate "shot on iPhone" mentions (keep only one at the end)
-      const iphoneMatches = prompt.match(/(shot\s+on\s+iPhone[^,]*)/gi)
-      if (iphoneMatches && iphoneMatches.length > 1) {
-        // Remove all iPhone mentions
+      // For Studio Pro mode: Remove ALL iPhone/cellphone references
+      if (studioProMode) {
         prompt = prompt.replace(/,\s*shot\s+on\s+iPhone[^,]*/gi, "")
-        // Add one at the end in the new format
-        prompt = `${prompt}, shot on iPhone 15 Pro portrait mode, shallow depth of field`
+        prompt = prompt.replace(/,\s*(amateur\s+cellphone\s+photo|cellphone\s+photo|amateur\s+photography|candid\s+photo|candid\s+moment)/gi, "")
+        prompt = prompt.replace(/authentic\s+iPhone\s+photo\s+aesthetic/gi, "")
+      } else {
+        // Remove duplicate "shot on iPhone" mentions (keep only one at the end)
+        const iphoneMatches = prompt.match(/(shot\s+on\s+iPhone[^,]*)/gi)
+        if (iphoneMatches && iphoneMatches.length > 1) {
+          // Remove all iPhone mentions
+          prompt = prompt.replace(/,\s*shot\s+on\s+iPhone[^,]*/gi, "")
+          // Add one at the end in the new format
+          prompt = `${prompt}, shot on iPhone 15 Pro portrait mode, shallow depth of field`
+        }
       }
       
       // Clean up double commas and extra spaces
@@ -629,6 +691,8 @@ Now apply your fashion intelligence and prompting mastery. Create ${count} conce
       userRequest?: string,
       aesthetic?: string,
       imageAnalysisText?: string,
+      isStudioPro?: boolean,
+      isEnhancedAuthenticity?: boolean,
     ): string {
       let enhanced = prompt
       let addedCount = 0
@@ -674,10 +738,21 @@ Now apply your fashion intelligence and prompting mastery. Create ${count} conce
       }
 
       // Check for film grain (ALWAYS required - no exceptions)
-      if (!/film\s+grain|visible\s+film\s+grain|subtle\s+film\s+grain/i.test(enhanced)) {
+      // Enhanced Authenticity mode: Use stronger film grain descriptions
+      const hasFilmGrain = /film\s+grain|visible\s+film\s+grain|subtle\s+film\s+grain|prominent\s+film\s+grain/i.test(enhanced)
+      if (!hasFilmGrain) {
         console.log("[v0] Missing: film grain - adding")
-        enhanced += ", subtle film grain"
-        addedCount += 3
+        if (enhancedAuthenticity && !isStudioPro) {
+          enhanced += ", visible film grain, grainy texture"
+          addedCount += 5
+        } else {
+          enhanced += ", subtle film grain"
+          addedCount += 3
+        }
+      } else if (enhancedAuthenticity && !isStudioPro && !/visible\s+film\s+grain|prominent\s+film\s+grain|grainy\s+texture/i.test(enhanced)) {
+        // Upgrade to stronger film grain if enhanced authenticity is enabled
+        enhanced = enhanced.replace(/subtle\s+film\s+grain/i, "visible film grain, grainy texture")
+        console.log("[v0] Upgraded film grain for enhanced authenticity")
       }
 
       // PRIORITY 1 FIX #1: Make muted colors conditional on user request AND reference image
@@ -719,9 +794,15 @@ Now apply your fashion intelligence and prompting mastery. Create ${count} conce
           addedCount += 4
         } else {
           // Default: add muted colors (Scandinavian minimalism default)
+          // Enhanced Authenticity mode: Use stronger muted color descriptions
           console.log("[v0] Missing: muted colors - adding (default)")
-          enhanced += ", muted colors"
-          addedCount += 2
+          if (enhancedAuthenticity && !isStudioPro) {
+            enhanced += ", heavily muted colors, desaturated color palette"
+            addedCount += 4
+          } else {
+            enhanced += ", muted colors"
+            addedCount += 2
+          }
         }
       }
 
@@ -803,13 +884,27 @@ Now apply your fashion intelligence and prompting mastery. Create ${count} conce
         }
       }
 
-      // Add authentic iPhone aesthetic at the end if not present (skip for professional/studio requests)
-      if (!wantsProfessional && !/authentic\s+iPhone\s+photo|iPhone\s+photo\s+aesthetic|amateur\s+iPhone/i.test(enhanced)) {
+      // Add authentic iPhone aesthetic at the end if not present (skip for professional/studio requests AND Studio Pro mode)
+      // Enhanced Authenticity mode: Use stronger iPhone quality descriptions
+      if (!isStudioPro && !wantsProfessional && !/authentic\s+iPhone\s+photo|iPhone\s+photo\s+aesthetic|amateur\s+iPhone/i.test(enhanced)) {
         console.log("[v0] Missing: authentic iPhone aesthetic - adding")
-        enhanced += ", authentic iPhone photo aesthetic"
-        addedCount += 4
+        if (enhancedAuthenticity) {
+          enhanced += ", raw iPhone photo, authentic iPhone camera quality, amateur cellphone aesthetic"
+          addedCount += 7
+        } else {
+          enhanced += ", authentic iPhone photo aesthetic"
+          addedCount += 4
+        }
+      } else if (isStudioPro) {
+        console.log("[v0] Studio Pro mode - skipping authentic iPhone aesthetic")
       } else if (wantsProfessional) {
         console.log("[v0] Professional/studio request - skipping authentic iPhone aesthetic")
+      } else if (enhancedAuthenticity && !isStudioPro && !wantsProfessional) {
+        // Upgrade existing iPhone aesthetic to stronger version if enhanced authenticity is enabled
+        if (/authentic\s+iPhone\s+photo\s+aesthetic/i.test(enhanced)) {
+          enhanced = enhanced.replace(/authentic\s+iPhone\s+photo\s+aesthetic/i, "raw iPhone photo, authentic iPhone camera quality, amateur cellphone aesthetic")
+          console.log("[v0] Upgraded iPhone aesthetic for enhanced authenticity")
+        }
       }
 
       // Clean up any double commas or trailing commas
@@ -984,6 +1079,15 @@ Now apply your fashion intelligence and prompting mastery. Create ${count} conce
         }
       }
       
+      // CRITICAL FIX: Remove iPhone/cellphone references for Studio Pro mode
+      if (studioProMode) {
+        // Remove ALL iPhone/cellphone/amateur photo references for Studio Pro
+        prompt = prompt.replace(/,\s*shot\s+on\s+iPhone[^,]*/gi, "")
+        prompt = prompt.replace(/,\s*(amateur\s+cellphone\s+photo|cellphone\s+photo|amateur\s+photography|candid\s+photo|candid\s+moment)/gi, "")
+        prompt = prompt.replace(/authentic\s+iPhone\s+photo\s+aesthetic/gi, "")
+        console.log("[v0] Removed all iPhone/cellphone references for Studio Pro mode")
+      }
+      
       // CRITICAL FIX: Remove "uneven natural lighting" if studio/professional is detected
       if (wantsProfessional) {
         // Remove "uneven" from lighting descriptions for studio requests
@@ -997,8 +1101,8 @@ Now apply your fashion intelligence and prompting mastery. Create ${count} conce
       }
 
       // CRITICAL FIX #1: Ensure basic iPhone specs at the end (new simplified format)
-      // Skip for professional/studio requests - allow professional camera specs instead
-      if (!wantsProfessional) {
+      // Skip for professional/studio requests AND Studio Pro mode - allow professional camera specs instead
+      if (!studioProMode && !wantsProfessional) {
         // Remove any duplicate iPhone mentions first
         const iphoneMatches = prompt.match(/(shot on iPhone[^,]*)/gi)
         if (iphoneMatches && iphoneMatches.length > 1) {
@@ -1015,19 +1119,33 @@ Now apply your fashion intelligence and prompting mastery. Create ${count} conce
 
         if (!hasIPhone && !hasFocalLength && currentWordCount < MAX_WORDS) {
           // Add basic iPhone specs at the end (new format)
-          prompt = `${prompt}, shot on iPhone 15 Pro portrait mode, shallow depth of field`
+          // Enhanced Authenticity mode: Use stronger iPhone quality descriptors
+          const iphoneSpecs = enhancedAuthenticity 
+            ? "shot on iPhone 15 Pro portrait mode, shallow depth of field, raw iPhone camera quality"
+            : "shot on iPhone 15 Pro portrait mode, shallow depth of field"
+          prompt = `${prompt}, ${iphoneSpecs}`
           currentWordCount = wordCount(prompt)
         } else if (hasFocalLength && !hasIPhone && currentWordCount < MAX_WORDS) {
           // If focal length but no iPhone, replace with basic iPhone specs
-          prompt = prompt.replace(/\d+mm\s*(lens|focal)[^,]*/i, "shot on iPhone 15 Pro portrait mode, shallow depth of field")
+          // Enhanced Authenticity mode: Use stronger iPhone quality descriptors
+          const iphoneSpecs = enhancedAuthenticity 
+            ? "shot on iPhone 15 Pro portrait mode, shallow depth of field, raw iPhone camera quality"
+            : "shot on iPhone 15 Pro portrait mode, shallow depth of field"
+          prompt = prompt.replace(/\d+mm\s*(lens|focal)[^,]*/i, iphoneSpecs)
           currentWordCount = wordCount(prompt)
         } else if (hasIPhone) {
           // Ensure it's in the new simplified format (at the end, basic specs only)
-          // Remove complex technical details if present
+          // Enhanced Authenticity mode: Upgrade to stronger iPhone quality if enabled
           prompt = prompt.replace(/shot\s+on\s+iPhone\s*15\s*Pro[^,]*(?:,\s*[^,]+)*/gi, (match) => {
             // If it has complex specs, simplify to basic format
             if (/\d+mm|f\/\d+|ISO\s*\d+/i.test(match)) {
-              return "shot on iPhone 15 Pro portrait mode, shallow depth of field"
+              return enhancedAuthenticity 
+                ? "shot on iPhone 15 Pro portrait mode, shallow depth of field, raw iPhone camera quality"
+                : "shot on iPhone 15 Pro portrait mode, shallow depth of field"
+            }
+            // Enhanced Authenticity: Upgrade existing simple format
+            if (enhancedAuthenticity && !/raw\s+iPhone\s+camera\s+quality/i.test(match)) {
+              return match.replace(/shot\s+on\s+iPhone\s*15\s*Pro[^,]*/i, "shot on iPhone 15 Pro portrait mode, shallow depth of field, raw iPhone camera quality")
             }
             // If it's already simple, keep it but ensure it's at the end
             return match
@@ -1040,38 +1158,47 @@ Now apply your fashion intelligence and prompting mastery. Create ${count} conce
 
       // CRITICAL FIX #2: Ensure authenticity keywords are present (research-backed)
       // These keywords prevent plastic look: "candid photo", "candid moment", "amateur cellphone photo", "cellphone photo"
-      // BUT: Skip for professional/studio/magazine requests (wantsProfessional is defined above at line 967)
-      if (!wantsProfessional) {
+      // BUT: Skip for professional/studio/magazine requests AND Studio Pro mode
+      if (!studioProMode && !wantsProfessional) {
         const hasCandid = /candid\s+(photo|moment)/i.test(prompt)
         const hasAmateur = /(amateur\s+cellphone\s+photo|cellphone\s+photo|amateur\s+photography)/i.test(prompt)
         
         if (!hasCandid && currentWordCount < MAX_WORDS) {
           // Add "candid photo" or "candid moment" before iPhone specs
+          // Enhanced Authenticity mode: Use stronger candid descriptions
           const iphoneIndex = prompt.search(/shot\s+on\s+iPhone/i)
+          const candidText = enhancedAuthenticity ? "candid moment, raw photo" : "candid photo"
           if (iphoneIndex > 0) {
-            prompt = prompt.slice(0, iphoneIndex).trim() + ", candid photo, " + prompt.slice(iphoneIndex)
+            prompt = prompt.slice(0, iphoneIndex).trim() + `, ${candidText}, ` + prompt.slice(iphoneIndex)
           } else {
-            prompt = prompt + ", candid photo"
+            prompt = prompt + `, ${candidText}`
           }
           currentWordCount = wordCount(prompt)
         }
         
         if (!hasAmateur && currentWordCount < MAX_WORDS) {
           // Add "amateur cellphone photo" or "cellphone photo" before iPhone specs
+          // Enhanced Authenticity mode: Use stronger amateur descriptions
           const iphoneIndex = prompt.search(/shot\s+on\s+iPhone/i)
+          const amateurText = enhancedAuthenticity ? "amateur cellphone photo, raw iPhone quality" : "amateur cellphone photo"
           if (iphoneIndex > 0) {
-            prompt = prompt.slice(0, iphoneIndex).trim() + ", amateur cellphone photo, " + prompt.slice(iphoneIndex)
+            prompt = prompt.slice(0, iphoneIndex).trim() + `, ${amateurText}, ` + prompt.slice(iphoneIndex)
           } else {
-            prompt = prompt + ", amateur cellphone photo"
+            prompt = prompt + `, ${amateurText}`
           }
           currentWordCount = wordCount(prompt)
         }
+      } else if (studioProMode) {
+        console.log("[v0] Studio Pro mode - skipping candid/amateur keywords")
       } else {
         console.log("[v0] Professional/studio request - skipping candid/amateur keywords")
       }
 
       // Apply complete anti-plastic validation (with user request context AND image analysis for conditional requirements)
-      prompt = ensureRequiredElements(prompt, currentWordCount, MAX_WORDS, userRequest, aesthetic, imageAnalysis)
+      // Skip for Studio Pro mode - use professional quality instead
+      if (!studioProMode) {
+        prompt = ensureRequiredElements(prompt, currentWordCount, MAX_WORDS, userRequest, aesthetic, imageAnalysis, studioProMode, enhancedAuthenticity)
+      }
       currentWordCount = wordCount(prompt)
 
       console.log("[v0] Final prompt after all validation:", prompt)

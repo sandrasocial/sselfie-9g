@@ -210,3 +210,4 @@ export default function CarouselWorkbench({ slides, onSlideGenerated }: Carousel
     </div>
   )
 }
+

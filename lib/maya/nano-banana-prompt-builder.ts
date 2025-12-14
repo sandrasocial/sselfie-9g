@@ -272,10 +272,15 @@ export async function buildNanoBananaPrompt(params: {
 
   const normalizedMode: StudioProMode = (modeMap[mode] || mode) as StudioProMode
 
-  // WORKBENCH MODE: Use user's prompt exactly as provided (no transformation)
+  // ============================================
+  // WORKBENCH MODE: User-written prompts (no AI transformation)
+  // ============================================
+  // Workbench gives users full control - their prompt is used exactly as written
+  // This is different from concept cards which use Maya's generated prompts
   if (normalizedMode === 'workbench') {
     // For workbench, we use the user's prompt directly without any modification
     // The user has full control over the prompt in workbench mode
+    // NO AI transformation, NO brand context injection, NO prompt building
     return {
       optimizedPrompt: userRequest.trim(),
       sceneDescription: 'Workbench generation',
@@ -483,8 +488,14 @@ export async function buildNanoBananaPrompt(params: {
 
     case 'brand-scene':
     default:
+      // ============================================
+      // BRAND-SCENE MODE: Maya-generated prompts (concept cards)
+      // ============================================
+      // Concept cards use Maya's generated prompts (from concept.prompt)
+      // These prompts go through full AI transformation with brand context
+      // This is different from workbench which uses user-written prompts directly
       optimizedPrompt = buildBrandScenePrompt({
-        userRequest,
+        userRequest, // This is Maya's generated prompt from concept generation
         inputImages: nanoInputs,
         brandKit,
         preferences,

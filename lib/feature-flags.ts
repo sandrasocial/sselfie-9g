@@ -21,3 +21,4 @@ export function isWorkbenchModeEnabled(): boolean {
   
   return envValue === 'true'
 }
+
