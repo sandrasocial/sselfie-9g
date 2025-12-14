@@ -69,6 +69,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "course_id, title, and lesson_type are required" }, { status: 400 })
     }
 
+    // Log the video URL being saved for debugging
+    if (video_url) {
+      console.log("[v0] Creating lesson with video URL:", video_url.substring(0, 100))
+    }
+
     const newLesson = await sql`
       INSERT INTO academy_lessons (
         course_id, title, description, lesson_type, video_url, 
@@ -82,7 +87,7 @@ export async function POST(request: Request) {
       RETURNING *
     `
 
-    console.log("[v0] Created lesson:", newLesson[0].id)
+    console.log("[v0] Created lesson:", newLesson[0].id, "Video URL:", newLesson[0].video_url ? `${newLesson[0].video_url.substring(0, 100)}...` : "null")
 
     return NextResponse.json({ lesson: newLesson[0] })
   } catch (error) {

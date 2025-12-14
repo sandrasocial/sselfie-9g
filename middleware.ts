@@ -38,7 +38,7 @@ export async function middleware(request: NextRequest) {
     "img-src 'self' blob: data: https:",
     "font-src 'self' data:",
     "connect-src 'self' https://api.v0.app https://va.vercel-scripts.com https://vercel.live https://*.pusher.com wss://*.pusher.com https://blob.vercel-storage.com https://*.blob.vercel-storage.com https://ai-gateway.vercel.sh https://*.vercel.sh https://gateway.ai.cloudflare.com https://api.anthropic.com https://api.openai.com https://*.vercel-ai.com https://*.vercel.app https://replicate.com https://*.replicate.com https://replicate.delivery https://api.replicate.com https://*.anthropic.com https://*.supabase.co https://api.stripe.com https://js.stripe.com https://*.stripe.com https://*.upstash.io https://*.neon.tech",
-    "frame-src 'self' https://vercel.live https://js.stripe.com https://*.stripe.com",
+    "frame-src 'self' https://vercel.live https://js.stripe.com https://*.stripe.com https://player.vimeo.com https://*.vimeo.com https://www.youtube.com https://*.youtube.com",
     "media-src 'self' blob: data: https://blob.vercel-storage.com https://*.blob.vercel-storage.com https://replicate.delivery https:",
   ].join("; ")
 

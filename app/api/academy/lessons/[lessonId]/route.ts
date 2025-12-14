@@ -45,6 +45,12 @@ export async function GET(req: NextRequest, { params }: { params: { lessonId: st
       return NextResponse.json({ error: "Lesson not found" }, { status: 404 })
     }
 
+    // Transform lesson to include duration_minutes for backward compatibility
+    const lessonWithDuration = {
+      ...lesson,
+      duration_minutes: lesson.duration_seconds ? Math.floor(lesson.duration_seconds / 60) : null,
+    }
+
     // Get exercises for this lesson
     const exercises = await getLessonExercises(lessonIdNum)
 
@@ -52,11 +58,12 @@ export async function GET(req: NextRequest, { params }: { params: { lessonId: st
     const progress = await getUserLessonProgress(neonUser.id, lessonIdNum)
 
     console.log("[v0] Lesson found:", lesson.title)
+    console.log("[v0] Video URL:", lesson.video_url ? `${lesson.video_url.substring(0, 80)}...` : "null")
     console.log("[v0] Exercises:", exercises.length)
     console.log("[v0] User progress:", progress?.is_completed ? "Completed" : "In Progress")
 
     return NextResponse.json({
-      lesson,
+      lesson: lessonWithDuration,
       exercises,
       progress,
     })

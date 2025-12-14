@@ -13,19 +13,37 @@ interface VideoPlayerProps {
 }
 
 function getVimeoVideoId(url: string): string | null {
+  if (!url || typeof url !== "string") {
+    console.warn("[v0] getVimeoVideoId: Invalid URL provided", url)
+    return null
+  }
+
+  // Clean the URL - remove whitespace and handle edge cases
+  const cleanUrl = url.trim()
+
   // Match patterns like:
   // https://vimeo.com/123456789
+  // https://vimeo.com/123456789?fl=tl&fe=ec
   // https://player.vimeo.com/video/123456789
+  // https://player.vimeo.com/video/123456789?h=abc123
   // vimeo.com/123456789
-  const patterns = [/vimeo\.com\/(\d+)/, /player\.vimeo\.com\/video\/(\d+)/]
+  // www.vimeo.com/123456789
+  const patterns = [
+    /(?:https?:\/\/)?(?:www\.)?vimeo\.com\/(\d+)(?:\?.*)?$/, // Standard vimeo.com URLs with optional query params
+    /(?:https?:\/\/)?player\.vimeo\.com\/video\/(\d+)(?:\?.*)?$/, // Player URLs with optional query params
+    /vimeo\.com\/(\d+)/, // Fallback for any vimeo.com pattern
+  ]
 
   for (const pattern of patterns) {
-    const match = url.match(pattern)
+    const match = cleanUrl.match(pattern)
     if (match && match[1]) {
-      return match[1]
+      const videoId = match[1]
+      console.log("[v0] ✅ Extracted Vimeo video ID:", videoId, "from URL:", cleanUrl)
+      return videoId
     }
   }
 
+  console.warn("[v0] ❌ Could not extract Vimeo video ID from URL:", cleanUrl)
   return null
 }
 
@@ -70,6 +88,7 @@ export default function VideoPlayer({
 
   // Validate video URL
   if (!videoUrl || videoUrl.trim() === "" || videoUrl === "PLACEHOLDER_VIDEO_URL") {
+    console.warn("[v0] VideoPlayer: Invalid or missing video URL", { videoUrl, lessonId })
     return (
       <div className="bg-stone-950 p-8 text-center">
         <p className="text-stone-50 font-light mb-4">Video URL is not available</p>
@@ -91,6 +110,18 @@ export default function VideoPlayer({
   const youtubeEmbedUrl = isYouTube
     ? `https://www.youtube.com/embed/${youtubeVideoId}?autoplay=0&rel=0&modestbranding=1`
     : null
+
+  // Log video detection for debugging (always log in browser)
+  console.log("[v0] VideoPlayer:", {
+    lessonId,
+    videoUrl: videoUrl.substring(0, 100),
+    vimeoVideoId,
+    youtubeVideoId,
+    isVimeo,
+    isYouTube,
+    isEmbedded,
+    vimeoEmbedUrl,
+  })
 
   useEffect(() => {
     if ((isVimeo || isYouTube) && durationMinutes) {
@@ -462,16 +493,31 @@ export default function VideoPlayer({
             allowFullScreen
             title="Vimeo video player"
             onError={() => {
-              console.error("[v0] Iframe load error - video may not allow embedding")
+              console.error("[v0] Iframe load error - video may not allow embedding", {
+                videoUrl,
+                vimeoVideoId,
+                embedUrl: vimeoEmbedUrl,
+              })
               setVideoError("Video cannot be embedded. Please check Vimeo privacy settings to allow embedding.")
             }}
             onLoad={() => {
               // Iframe loaded successfully
-              if (process.env.NODE_ENV === "development") {
-                console.log("[v0] Vimeo iframe loaded successfully")
-              }
+              console.log("[v0] ✅ Vimeo iframe loaded successfully", {
+                videoUrl,
+                vimeoVideoId,
+                embedUrl: vimeoEmbedUrl,
+              })
+              setVideoError(null) // Clear any previous errors
             }}
           />
+        ) : isVimeo && !vimeoEmbedUrl ? (
+          <div className="absolute inset-0 flex items-center justify-center bg-stone-950/90 z-20">
+            <div className="text-center p-6 max-w-md">
+              <p className="text-stone-50 font-light mb-2">Failed to generate Vimeo embed URL</p>
+              <p className="text-stone-400 text-sm mb-4">Video URL: {videoUrl.substring(0, 80)}...</p>
+              <p className="text-stone-400 text-xs">Please check the video URL format.</p>
+            </div>
+          </div>
         ) : isYouTube && youtubeEmbedUrl ? (
           <iframe
             ref={iframeRef}

@@ -27,6 +27,11 @@ export async function PATCH(request: Request, { params }: { params: { lessonId: 
     const { lessonId } = params
     const { title, description, video_url, duration_seconds, order_index, content } = await request.json()
 
+    // Log the video URL being saved for debugging
+    if (video_url) {
+      console.log("[v0] Saving video URL for lesson:", lessonId, "URL:", video_url.substring(0, 100))
+    }
+
     const updatedLesson = await sql`
       UPDATE academy_lessons
       SET 
@@ -45,7 +50,7 @@ export async function PATCH(request: Request, { params }: { params: { lessonId: 
       return NextResponse.json({ error: "Lesson not found" }, { status: 404 })
     }
 
-    console.log("[v0] Updated lesson:", lessonId)
+    console.log("[v0] Updated lesson:", lessonId, "Video URL saved:", updatedLesson[0].video_url ? `${updatedLesson[0].video_url.substring(0, 100)}...` : "null")
 
     return NextResponse.json({ lesson: updatedLesson[0] })
   } catch (error) {
