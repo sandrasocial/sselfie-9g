@@ -153,8 +153,8 @@ export class FluxPromptBuilder {
       "natural imperfections",
       "subtle film grain",
       "muted colors",
-      "not airbrushed",
-      "not plastic-looking",
+      "authentic texture",
+      "realistic skin texture",
     ].join(", ")
   }
 

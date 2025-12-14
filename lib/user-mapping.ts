@@ -199,3 +199,15 @@ export async function getUserId(): Promise<string | null> {
     return null
   }
 }
+
+/**
+ * Get Neon user ID from Supabase auth user ID
+ * Helper function for Scene Composer and other features
+ */
+export async function getUserIdFromSupabase(supabaseAuthId: string): Promise<string> {
+  const neonUser = await getUserByAuthId(supabaseAuthId)
+  if (!neonUser) {
+    throw new Error("User not found in database")
+  }
+  return neonUser.id
+}

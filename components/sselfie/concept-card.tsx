@@ -11,9 +11,15 @@ interface ConceptCardProps {
   concept: ConceptData
   chatId?: number
   onCreditsUpdate?: (newBalance: number) => void
+  studioProMode?: boolean
+  baseImages?: string[] // Base images for Studio Pro mode
 }
 
-export default function ConceptCard({ concept, chatId, onCreditsUpdate }: ConceptCardProps) {
+export default function ConceptCard({ concept, chatId, onCreditsUpdate, studioProMode = false, baseImages = [] }: ConceptCardProps) {
+  // CLASSIC MODE SAFETY: Normalize studioProMode to ensure it's explicitly boolean
+  // This prevents undefined/null from accidentally triggering Pro logic
+  // IMPORTANT: Only use isProMode (never raw studioProMode) in conditionals
+  const isProMode = studioProMode === true
   const [isGenerating, setIsGenerating] = useState(false)
   const [isGenerated, setIsGenerated] = useState(false)
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null)
@@ -40,8 +46,11 @@ export default function ConceptCard({ concept, chatId, onCreditsUpdate }: Concep
   const [extraLora, setExtraLora] = useState<string | null>(null)
   const [realismStrength, setRealismStrength] = useState<number | null>(null)
 
+  // Poll for Classic mode (Flux) generation
   useEffect(() => {
-    if (!predictionId || !generationId || isGenerated) return
+    // Skip polling if Studio Pro mode (handled in handleGenerate)
+    // CLASSIC MODE SAFETY: Use isProMode (normalized boolean) instead of raw prop
+    if (isProMode || !predictionId || !generationId || isGenerated) return
 
     const pollInterval = setInterval(async () => {
       try {
@@ -71,7 +80,7 @@ export default function ConceptCard({ concept, chatId, onCreditsUpdate }: Concep
     }, 3000) // Poll every 3 seconds
 
     return () => clearInterval(pollInterval)
-  }, [predictionId, generationId, isGenerated])
+  }, [predictionId, generationId, isGenerated, isProMode])
 
   useEffect(() => {
     if (!videoPredictionId || !videoId || videoUrl) return
@@ -108,6 +117,107 @@ export default function ConceptCard({ concept, chatId, onCreditsUpdate }: Concep
     setError(null)
 
     try {
+      // If Studio Pro mode is active, use Nano Banana Pro
+      // CLASSIC MODE SAFETY: Use isProMode (normalized boolean)
+      if (isProMode) {
+        // Get base images: prefer selected base images, fallback to concept reference image
+        const availableBaseImages = baseImages.length > 0 
+          ? baseImages 
+          : (concept.referenceImageUrl ? [concept.referenceImageUrl] : [])
+
+        if (availableBaseImages.length === 0) {
+          setError("Please select at least one base image from your gallery in Studio Pro mode, or use Classic mode")
+          setIsGenerating(false)
+          return
+        }
+
+        console.log("[CONCEPT-CARD] Using Studio Pro (Nano Banana Pro) with", availableBaseImages.length, "base image(s)")
+
+        // Use Studio Pro generation with Nano Banana Pro
+        // Use the concept's actual prompt (Maya's detailed prompt) instead of just title/description
+        const userRequest = concept.prompt || `${concept.title}: ${concept.description}`
+        
+        const response = await fetch("/api/maya/generate-studio-pro", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            mode: "brand-scene", // Concept cards in Studio Pro mode use brand-scene
+            userRequest: userRequest, // Use Maya's actual prompt from the concept
+            inputImages: {
+              baseImages: availableBaseImages.map(url => ({ url, type: 'user-photo' })),
+              productImages: []
+            },
+            resolution: "2K",
+            aspectRatio: concept.customSettings?.aspectRatio || "1:1"
+          }),
+        })
+
+        const data = await response.json()
+
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to generate Studio Pro image")
+        }
+
+        // Poll for completion (same as regular Studio Pro)
+        const pollStatus = async () => {
+          const maxAttempts = 60
+          let attempts = 0
+
+          const checkStatus = async () => {
+            try {
+              const statusResponse = await fetch(
+                `/api/maya/check-studio-pro?predictionId=${data.predictionId}`
+              )
+              const status = await statusResponse.json()
+
+              if (status.status === 'succeeded') {
+                setGeneratedImageUrl(status.output)
+                setIsGenerated(true)
+                setIsGenerating(false)
+                
+                // Update credits if callback provided
+                if (onCreditsUpdate) {
+                  // Credits already deducted, just refresh balance
+                  const creditsResponse = await fetch("/api/user/credits")
+                  const creditsData = await creditsResponse.json()
+                  if (creditsData.balance !== undefined) {
+                    onCreditsUpdate(creditsData.balance)
+                  }
+                }
+                return
+              }
+
+              if (status.status === 'failed') {
+                setError(status.error || "Generation failed")
+                setIsGenerating(false)
+                return
+              }
+
+              // Still processing
+              if (attempts < maxAttempts) {
+                attempts++
+                setTimeout(checkStatus, 5000)
+              } else {
+                setError("Generation timed out")
+                setIsGenerating(false)
+              }
+            } catch (err) {
+              console.error("[STUDIO-PRO] Status check error:", err)
+              setError("Failed to check generation status")
+              setIsGenerating(false)
+            }
+          }
+
+          checkStatus()
+        }
+
+        setPredictionId(data.predictionId)
+        pollStatus()
+        return
+      }
+
+      // Classic mode: Use Flux with user's LoRA
       const settingsStr = localStorage.getItem("mayaGenerationSettings")
       const parsedSettings = settingsStr ? JSON.parse(settingsStr) : null
 
@@ -529,7 +639,11 @@ export default function ConceptCard({ concept, chatId, onCreditsUpdate }: Concep
   }
 
   return (
-    <div className="bg-white border border-stone-200 rounded-lg overflow-hidden transition-all duration-300 hover:shadow-lg">
+    <div className={`bg-white border rounded-lg overflow-hidden transition-all duration-300 hover:shadow-lg ${
+      isProMode 
+        ? 'border-stone-300 bg-gradient-to-br from-stone-50 to-white' 
+        : 'border-stone-200'
+    }`}>
       <div className="flex items-center justify-between px-3 py-2.5 border-b border-stone-200">
         <div className="flex items-center gap-2.5">
           <div className="relative">
@@ -541,7 +655,14 @@ export default function ConceptCard({ concept, chatId, onCreditsUpdate }: Concep
             </div>
           </div>
           <div className="flex flex-col">
-            <span className="text-sm font-semibold text-stone-950">sselfie</span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-stone-950">sselfie</span>
+              {isProMode && (
+                <span className="text-[10px] font-medium text-stone-600 px-1.5 py-0.5 bg-stone-200/50 rounded">
+                  Studio Pro
+                </span>
+              )}
+            </div>
             <span className="text-xs text-stone-500">{concept.category}</span>
           </div>
         </div>
@@ -574,13 +695,28 @@ export default function ConceptCard({ concept, chatId, onCreditsUpdate }: Concep
           <div className="space-y-2">
             <button
               onClick={handleGenerate}
-              className="group relative w-full bg-gradient-to-br from-stone-600 via-stone-700 to-stone-800 text-white px-4 py-2.5 rounded-lg font-semibold text-sm transition-all duration-300 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] min-h-[40px] flex items-center justify-center hover:from-stone-700 hover:via-stone-800 hover:to-stone-900"
+              className={`group relative w-full text-white px-4 py-2.5 rounded-lg font-semibold text-sm transition-all duration-300 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] min-h-[40px] flex items-center justify-center ${
+                studioProMode
+                  ? 'bg-gradient-to-br from-stone-800 via-stone-900 to-stone-950 hover:from-stone-900 hover:via-stone-950 hover:to-black'
+                  : 'bg-gradient-to-br from-stone-600 via-stone-700 to-stone-800 hover:from-stone-700 hover:via-stone-800 hover:to-stone-900'
+              }`}
             >
-              <span>Create Photo</span>
+              <span>{studioProMode ? 'Create with Studio Pro' : 'Create Photo'}</span>
             </button>
-            <p className="text-[10px] text-stone-400 text-center leading-relaxed">
-              AI-generated photos may vary in quality and accuracy
-            </p>
+            <div className="space-y-1">
+              {studioProMode && (
+                <p className="text-[10px] text-stone-500 text-center leading-relaxed">
+                  {baseImages.length > 0 
+                    ? `Using ${baseImages.length} base image${baseImages.length > 1 ? 's' : ''} • 5 credits`
+                    : 'Select base images from gallery • 5 credits'}
+                </p>
+              )}
+              <p className="text-[10px] text-stone-400 text-center leading-relaxed">
+                {studioProMode 
+                  ? 'Multi-image composition with character consistency'
+                  : 'AI-generated photos may vary in quality and accuracy'}
+              </p>
+            </div>
           </div>
         )}
 
@@ -597,7 +733,9 @@ export default function ConceptCard({ concept, chatId, onCreditsUpdate }: Concep
                 style={{ animationDelay: "0.4s" }}
               ></div>
             </div>
-            <span className="text-xs font-semibold text-stone-700">Creating your photo</span>
+            <span className="text-xs font-semibold text-stone-700">
+              {isProMode ? 'Creating with Studio Pro...' : 'Creating your photo'}
+            </span>
           </div>
         )}
 

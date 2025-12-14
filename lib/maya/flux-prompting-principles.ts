@@ -232,7 +232,7 @@ This phrase causes blur in FLUX.1-dev:
 **🔴 CRITICAL - ALL PROMPTS MUST INCLUDE:**
 
 1. **Camera Specs:** "shot on iPhone 15 Pro" OR specific focal length (e.g., "shot on iPhone 15 Pro, 50mm")
-2. **Natural Skin Texture:** "natural skin texture with pores visible, not smooth or airbrushed"
+2. **Natural Skin Texture:** "natural skin texture with pores visible" (use positive descriptions only - no "not" phrases)
 3. **Film Grain + Muted Colors:** "film grain, muted colors" OR "visible film grain, muted color palette"
 4. **Uneven Lighting:** "uneven lighting with mixed color temperatures" OR "uneven natural lighting, mixed color temperatures"
 
@@ -321,7 +321,7 @@ Before finalizing ANY prompt, verify ALL of these:
 ✅ **Simple setting:** One-line location description? (Keep brief)
 ✅ **Realistic lighting:** Authentic lighting description with natural imperfections? Includes "uneven lighting with mixed color temperatures"? (NO idealized terms like "soft afternoon sunlight" or "warm golden hour")
 ✅ **Authentic iPhone specs:** MUST include "shot on iPhone 15 Pro" OR specific focal length? Includes "candid photo" or "candid moment"? Includes "amateur cellphone photo" or "cellphone photo"?
-✅ **Natural skin texture:** MUST include "natural skin texture with pores visible, not smooth or airbrushed"?
+✅ **Natural skin texture:** MUST include "natural skin texture with pores visible" (positive description only - no negative phrases)?
 ✅ **Film grain + muted colors:** MUST include "film grain, muted colors" OR "visible film grain, muted color palette"?
 ✅ **Natural pose:** Simple action description? (NO "striking poses")
 ✅ **User preferences:** If user specified physical preferences (hair, body, age), are they included? **MANDATORY**
@@ -333,11 +333,11 @@ Before finalizing ANY prompt, verify ALL of these:
 
 ## EXAMPLE COMPLETE FLUX PROMPTS (AUTHENTIC, PRESERVES USER LoRA)
 
-**Example 1: Casual Street Style (52 words - AUTHENTIC):**
-"user_trigger, woman, brown hair, in oversized brown leather blazer with relaxed fit, cream cashmere turtleneck underneath, high-waisted straight-leg jeans, walking through SoHo carrying iced coffee, uneven natural lighting with mixed color temperatures, candid moment, shot on iPhone 15 Pro portrait mode, shallow depth of field, natural skin texture with pores visible, not smooth or airbrushed, film grain, muted colors, authentic iPhone photo aesthetic"
+**Example 1: Casual Street Style (50 words - AUTHENTIC):**
+"user_trigger, woman, brown hair, in oversized brown leather blazer with relaxed fit, cream cashmere turtleneck underneath, high-waisted straight-leg jeans, walking through SoHo carrying iced coffee, uneven natural lighting with mixed color temperatures, candid moment, shot on iPhone 15 Pro portrait mode, shallow depth of field, natural skin texture with pores visible, film grain, muted colors, authentic iPhone photo aesthetic"
 
-**Example 2: Cozy Home (48 words - AUTHENTIC):**
-"user_trigger, woman, natural hair color, in oversized cream knit sweater with wide sleeves, matching lounge pants, sitting on grey sectional sofa holding ceramic mug, natural window light with shadows, uneven lighting, candid photo, shot on iPhone 15 Pro, 50mm, natural skin texture with pores visible, not plastic-looking, film grain, muted color palette, authentic iPhone photo aesthetic"
+**Example 2: Cozy Home (46 words - AUTHENTIC):**
+"user_trigger, woman, natural hair color, in oversized cream knit sweater with wide sleeves, matching lounge pants, sitting on grey sectional sofa holding ceramic mug, natural window light with shadows, uneven lighting, candid photo, shot on iPhone 15 Pro, 50mm, natural skin texture with pores visible, film grain, muted color palette, authentic iPhone photo aesthetic"
 
 **Example 3: Evening Glam (50 words - AUTHENTIC):**
 "user_trigger, woman, blonde hair, in black satin slip dress with thin straps, vintage leather bomber jacket draped over shoulders, standing in dimly lit restaurant, ambient lighting with mixed sources, uneven lighting, candid moment, shot on iPhone 15 Pro, 85mm, natural skin texture with pores visible, realistic texture, film grain, muted colors, authentic iPhone photo aesthetic"
@@ -345,8 +345,9 @@ Before finalizing ANY prompt, verify ALL of these:
 **Key Principles in These Examples:**
 - ✅ 40-55 words = optimal LoRA activation with safety net descriptions
 - ✅ **ALL start with "shot on iPhone 15 Pro"** - Mandatory requirement
-- ✅ **ALL include "natural skin texture with pores visible, not smooth or airbrushed"** - Prevents plastic look
+- ✅ **ALL include "natural skin texture with pores visible"** - Use positive descriptions only (no "not" phrases)
 - ✅ **ALL include "film grain, muted colors"** - Authentic iPhone aesthetic
+- ✅ **NO negative instructions** - Flux works better with positive descriptions only
 - ✅ **ALL include "uneven lighting with mixed color temperatures"** - Realistic phone photo lighting
 - ✅ **ALL end with "authentic iPhone photo aesthetic"** - Reinforces authentic feel
 - ✅ Detailed outfit descriptions with fabrics/textures (no enhancement words)

@@ -1,10 +1,54 @@
 import { streamText, convertToModelMessages, type UIMessage } from "ai"
 import { MAYA_SYSTEM_PROMPT } from "@/lib/maya/personality"
+import { MAYA_PRO_SYSTEM_PROMPT } from "@/lib/maya/pro-personality"
 import { getEffectiveNeonUser } from "@/lib/simple-impersonation"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { checkCredits, deductCredits } from "@/lib/credits"
+import { detectStudioProIntent, getStudioProSystemPrompt } from "@/lib/maya/studio-pro-system-prompt"
+import { isWorkbenchModeEnabled } from "@/lib/feature-flags"
+
+/**
+ * Get workflow-specific guidance for Maya Pro
+ */
+function getWorkflowGuidance(workflowType: string): string {
+  const guidance: Record<string, string> = {
+    carousel: `The user wants to create a carousel post. Guide them through:
+1. Ask what topic/theme (offer options: Trending tips, Product showcase, Educational content, Personal story, or Custom)
+2. Ask how many slides (3-5 recommended)
+3. Confirm you'll use their avatar images and brand kit for consistency
+4. After they respond, say "Ready to create? This will use 5 credits per slide."
+5. When ready, trigger generation with [GENERATE_CAROUSEL: topic, slideCount]`,
+    
+    'reel-cover': `The user wants to create a reel cover. Guide them through:
+1. Ask what the reel is about (title/topic)
+2. Ask if they want text overlay (yes/no)
+3. If yes, ask for the text content
+4. Confirm you'll use their avatar and brand kit
+5. When ready, trigger generation with [GENERATE_REEL_COVER: title: {title}, text: {textOverlay or 'none'}]`,
+    
+    'ugc-product': `The user wants to create a UGC product photo. Guide them through:
+1. Ask which product from their brand assets (or if they want to upload one)
+2. Ask what vibe/style (casual, professional, lifestyle, etc.)
+3. Confirm you'll place the product naturally in the scene
+4. When ready, trigger generation with [GENERATE_UGC_PRODUCT: productUrl, vibe]`,
+    
+    'quote-graphic': `The user wants to create a quote graphic. Guide them through:
+1. Ask for the quote text
+2. Ask for style preference (minimalist, bold, elegant, etc.)
+3. Confirm you'll use their brand colors and fonts
+4. When ready, trigger generation with [GENERATE_QUOTE_GRAPHIC: quote, style]`,
+    
+    'product-mockup': `The user wants to create a product mockup. Guide them through:
+1. Ask which product from their brand assets
+2. Ask what setting (lifestyle, studio, outdoor, etc.)
+3. Confirm you'll place it naturally
+4. When ready, trigger generation with [GENERATE_PRODUCT_MOCKUP: productUrl, setting]`,
+  }
+  
+  return guidance[workflowType] || `Guide the user through the "${workflowType}" workflow step-by-step with structured questions.`
+}
 import { NextResponse } from "next/server"
 import type { Request } from "next/server"
 
@@ -419,8 +463,56 @@ export async function POST(req: Request) {
       console.error("[v0] Error fetching gender:", e)
     }
 
-    let systemPrompt = MAYA_SYSTEM_PROMPT
+    // DETECT Studio Pro intent from last user message
+    const lastUserMessage = uiMessages
+      .filter((m: any) => m.role === "user")
+      .slice(-1)[0]
+    const lastMessageText = lastUserMessage?.content || 
+      (lastUserMessage?.parts?.find((p: any) => p.type === "text")?.text || "")
+    
+    // Detect workflow start: [WORKFLOW_START: carousel]
+    const workflowStartMatch = lastMessageText?.match(/\[WORKFLOW_START:\s*(\w+)\]/i)
+    const activeWorkflow = workflowStartMatch ? workflowStartMatch[1].toLowerCase() : null
+    
+    const studioProIntent = detectStudioProIntent(lastMessageText)
+    const studioProHeader = req.headers.get("x-studio-pro-mode")
+    // CLASSIC MODE SAFETY: Validate header is explicitly "true", not just truthy
+    const hasStudioProHeader = studioProHeader === "true"
+    
+    // CLASSIC MODE SAFETY: Log mode detection for debugging
+    console.log("[STUDIO-PRO] Intent detection:", {
+      isStudioPro: studioProIntent.isStudioPro || hasStudioProHeader || !!activeWorkflow,
+      mode: studioProIntent.mode,
+      workflow: activeWorkflow,
+      confidence: studioProIntent.confidence,
+      headerValue: studioProHeader,
+      headerValid: hasStudioProHeader,
+    })
 
+    // Use Maya Pro personality if in Studio Pro mode OR if workflow is active, otherwise use standard Maya
+    const isStudioProMode = studioProIntent.isStudioPro || hasStudioProHeader || !!activeWorkflow
+    const isWorkbenchMode = isWorkbenchModeEnabled() && hasStudioProHeader && !activeWorkflow
+    let systemPrompt = isStudioProMode ? MAYA_PRO_SYSTEM_PROMPT : MAYA_SYSTEM_PROMPT
+    
+    // Add workbench mode guidance if workbench is enabled
+    if (isWorkbenchMode) {
+      const workbenchGuidance = getStudioProSystemPrompt(userContext || '', userGender || 'person', true)
+      // Extract just the workbench section from the full prompt
+      const workbenchSection = workbenchGuidance.split('## 🛠️ WORKBENCH MODE')[1] || ''
+      if (workbenchSection) {
+        systemPrompt += `\n\n## 🛠️ WORKBENCH MODE - NEW SIMPLIFIED UX${workbenchSection.split('---')[0]}`
+      }
+    }
+    
+    // Add workflow context if workflow is starting
+    if (activeWorkflow) {
+      const workflowGuidance = getWorkflowGuidance(activeWorkflow)
+      systemPrompt += `\n\n## ACTIVE WORKFLOW: ${activeWorkflow.toUpperCase()}\n${workflowGuidance}`
+    }
+
+    // Add user context to system prompt
+    // Studio Pro mode: Add to Pro personality (which doesn't include it by default)
+    // Classic mode: Add to standard personality (which also doesn't include it by default)
     if (userContext) {
       systemPrompt += `\n\n## USER CONTEXT\n${userContext}`
     }

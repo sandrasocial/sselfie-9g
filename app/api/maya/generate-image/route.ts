@@ -1,3 +1,7 @@
+// CLASSIC MODE - DO NOT MODIFY FOR PRO REFACTOR
+// This route is for Classic mode (Flux) generation only
+// Studio Pro uses /api/maya/generate-studio-pro
+
 import { type NextRequest, NextResponse } from "next/server"
 import { getDbClient } from "@/lib/db-singleton"
 import { getReplicateClient } from "@/lib/replicate-client"
@@ -5,6 +9,7 @@ import { getUserByAuthId } from "@/lib/user-mapping"
 import { checkCredits, deductCredits, getUserCredits, CREDIT_COSTS } from "@/lib/credits"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { rateLimit } from "@/lib/rate-limit-api"
+import { guardClassicModeRoute } from "@/lib/maya/type-guards"
 
 const sql = getDbClient()
 

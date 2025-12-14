@@ -99,3 +99,4 @@ Link in bio to see what we're building
 **Image:** Candid, vulnerable moment (working late, thinking, etc.)
 
 **Hashtags:** #vulnerability #entrepreneurship #realtalk #buildinpublic
+

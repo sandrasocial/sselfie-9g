@@ -231,3 +231,4 @@ The current prompting structure is solid but may be missing:
 Adding these elements should bring generated images closer to the reference image quality.
 
 
+

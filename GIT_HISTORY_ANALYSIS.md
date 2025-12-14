@@ -150,3 +150,4 @@ If possible, check what prompt was actually used to generate the reference image
 4. **Make authenticity keywords conditional** - If reference doesn't have mandatory keywords, make them optional
 
 
+
