@@ -7,10 +7,12 @@ interface OnboardingFlowProps {
   onComplete: () => void
 }
 
-type OnboardingStep = 'avatar' | 'brand-assets' | 'brand-kit' | 'complete'
+// Avatar upload step has been removed from Pro onboarding due to upload errors.
+// We keep only brand-assets / brand-kit to avoid blocking users.
+type OnboardingStep = 'brand-assets' | 'brand-kit' | 'complete'
 
 export default function OnboardingFlow({ entrySelection, onComplete }: OnboardingFlowProps) {
-  const [currentStep, setCurrentStep] = useState<OnboardingStep>('avatar')
+  const [currentStep, setCurrentStep] = useState<OnboardingStep>('brand-assets')
   const [avatarImages, setAvatarImages] = useState<Array<{ id?: number; url: string; file?: File; fromGallery?: boolean }>>([])
   const [brandAssets, setBrandAssets] = useState<Array<{ id?: number; url: string; file?: File; type: string; fromGallery?: boolean }>>([])
   const [brandKit, setBrandKit] = useState({
@@ -29,11 +31,8 @@ export default function OnboardingFlow({ entrySelection, onComplete }: Onboardin
   const [showGalleryModal, setShowGalleryModal] = useState(false)
 
   // Determine required steps based on entry selection
-  // CRITICAL: "editing" users don't need avatar setup - they work with existing images
+  // Avatar setup has been removed from onboarding — users go straight to brand assets / brand kit.
   const requiredSteps: OnboardingStep[] = []
-  if (entrySelection !== 'editing') {
-    requiredSteps.push('avatar') // Required for all except editing
-  }
   if (entrySelection === 'me-product' || entrySelection === 'full-brand') {
     requiredSteps.push('brand-assets')
   }
@@ -133,97 +132,7 @@ export default function OnboardingFlow({ entrySelection, onComplete }: Onboardin
   }
 
   const handleNext = async () => {
-    if (currentStep === 'avatar') {
-      // CRITICAL: Skip avatar validation for "editing" users
-      if (entrySelection === 'editing') {
-        // Editing users don't need avatars - skip to next step or complete
-        const nextStepIndex = requiredSteps.indexOf(currentStep) + 1
-        if (nextStepIndex < requiredSteps.length) {
-          setCurrentStep(requiredSteps[nextStepIndex])
-        } else {
-          await completeOnboarding()
-        }
-        return
-      }
-
-      // For other users, require avatar upload
-      if (avatarImages.length < 3) {
-        setError('Please upload at least 3 photos of yourself')
-        return
-      }
-      if (avatarImages.length > 8) {
-        setError('Maximum 8 photos allowed')
-        return
-      }
-
-      // Upload avatar images
-      setUploading(true)
-      setError(null)
-
-      try {
-        // Separate gallery images (just URLs) from uploaded files
-        const uploadedFiles = avatarImages.filter(img => img.file)
-        const galleryImageUrls = avatarImages.filter(img => img.fromGallery).map(img => img.url)
-
-        // Upload files if any
-        if (uploadedFiles.length > 0) {
-          const formData = new FormData()
-          uploadedFiles.forEach((img) => {
-            if (img.file) {
-              formData.append('files', img.file)
-            }
-          })
-          formData.append('imageType', 'casual')
-
-          const uploadResponse = await fetch('/api/studio-pro/avatar', {
-            method: 'POST',
-            body: formData,
-            credentials: 'include',
-          })
-
-          if (!uploadResponse.ok) {
-            const data = await uploadResponse.json()
-            throw new Error(data.error || 'Failed to upload avatar images')
-          }
-        }
-
-        // Add gallery images by URL (if any)
-        if (galleryImageUrls.length > 0) {
-          for (const imageUrl of galleryImageUrls) {
-            try {
-              const galleryResponse = await fetch('/api/studio-pro/avatar', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  imageUrl,
-                  imageType: 'casual',
-                }),
-                credentials: 'include',
-              })
-
-              if (!galleryResponse.ok) {
-                const data = await galleryResponse.json().catch(() => ({ error: 'Failed to add gallery image' }))
-                throw new Error(data.error || 'Failed to add gallery image')
-              }
-            } catch (err: any) {
-              console.error('Error adding gallery image:', err)
-              // Continue with other images even if one fails
-            }
-          }
-        }
-
-        const nextStepIndex = requiredSteps.indexOf(currentStep) + 1
-        if (nextStepIndex < requiredSteps.length) {
-          setCurrentStep(requiredSteps[nextStepIndex])
-        } else {
-          await completeOnboarding()
-        }
-      } catch (err: any) {
-        setError(err.message || 'Failed to upload images')
-      } finally {
-        setUploading(false)
-      }
-    } else if (currentStep === 'brand-assets') {
+    if (currentStep === 'brand-assets') {
       // Upload brand assets
       setUploading(true)
       setError(null)
@@ -304,29 +213,7 @@ export default function OnboardingFlow({ entrySelection, onComplete }: Onboardin
   const completeOnboarding = async () => {
     setUploading(true)
     try {
-      // CRITICAL: For "editing" users, skip avatar upload and unlock immediately
-      // They can complete onboarding without uploading avatars
-      if (entrySelection === 'editing') {
-        // No avatar upload needed - just unlock Pro
-        const response = await fetch('/api/studio-pro/setup', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ unlockPro: true }),
-          credentials: 'include',
-        })
-
-        if (!response.ok) {
-          throw new Error('Failed to complete onboarding')
-        }
-
-        setCurrentStep('complete')
-        setTimeout(() => {
-          onComplete()
-        }, 2000)
-        return
-      }
-
-      // For other entry selections, require avatar upload first
+      // Unlock Pro features for all entry selections (avatar step has been removed)
       const response = await fetch('/api/studio-pro/setup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -357,13 +244,6 @@ export default function OnboardingFlow({ entrySelection, onComplete }: Onboardin
   }
 
   const canProceed = () => {
-    if (currentStep === 'avatar') {
-      // CRITICAL: For "editing" users, avatar is optional (can proceed with 0 images)
-      if (entrySelection === 'editing') {
-        return avatarImages.length <= 8 // Can have 0-8 images
-      }
-      return avatarImages.length >= 3 && avatarImages.length <= 8
-    }
     if (currentStep === 'brand-assets') {
       return true // Optional step
     }
@@ -407,7 +287,7 @@ export default function OnboardingFlow({ entrySelection, onComplete }: Onboardin
         </div>
 
         {/* Avatar Setup */}
-        {currentStep === 'avatar' && (
+        {false && currentStep === 'avatar' && (
           <div>
             <h2 className="text-lg font-serif font-extralight tracking-[0.2em] uppercase text-stone-950 mb-2">
               {entrySelection === 'editing' 
@@ -663,70 +543,7 @@ export default function OnboardingFlow({ entrySelection, onComplete }: Onboardin
         )}
 
 
-        {/* Gallery Modal */}
-        {showGalleryModal && (
-          <div className="fixed inset-0 z-50 bg-stone-950/80 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6" onClick={() => setShowGalleryModal(false)}>
-            <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-              <div className="p-4 sm:p-6 border-b border-stone-200/60">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm sm:text-base font-semibold text-stone-950">Choose from Gallery</h3>
-                  <button
-                    onClick={() => setShowGalleryModal(false)}
-                    className="w-8 h-8 flex items-center justify-center text-stone-600 hover:text-stone-900 transition-colors"
-                  >
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-
-              <div className="p-4 sm:p-6">
-                {loadingGallery ? (
-                  <div className="text-center py-12">
-                    <div className="text-stone-600 text-sm">Loading gallery...</div>
-                  </div>
-                ) : galleryImages.length === 0 ? (
-                  <div className="text-center py-12">
-                    <p className="text-sm text-stone-600">No images in your gallery yet.</p>
-                    <p className="text-xs text-stone-500 mt-2">Upload some images first, then come back here.</p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
-                    {galleryImages.map((image) => {
-                      const isSelected = avatarImages.some(img => img.url === image.image_url)
-                      return (
-                        <button
-                          key={image.id}
-                          onClick={() => !isSelected && handleGalleryImageSelect(image)}
-                          disabled={isSelected}
-                          className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all ${
-                            isSelected
-                              ? 'border-stone-900 opacity-50 cursor-not-allowed'
-                              : 'border-stone-200/60 hover:border-stone-900 cursor-pointer'
-                          }`}
-                        >
-                          <img
-                            src={image.image_url}
-                            alt={image.prompt || 'Gallery image'}
-                            className="w-full h-full object-cover"
-                          />
-                          {isSelected && (
-                            <div className="absolute inset-0 bg-stone-900/50 flex items-center justify-center">
-                              <svg className="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                              </svg>
-                            </div>
-                          )}
-                        </button>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Avatar gallery modal has been removed with avatar onboarding */}
         </div>
       </div>
 
