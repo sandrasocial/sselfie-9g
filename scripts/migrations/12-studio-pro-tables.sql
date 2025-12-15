@@ -123,3 +123,4 @@ COMMENT ON TABLE pro_generations IS 'Pro generations with revision tracking. par
 COMMENT ON TABLE user_pro_setup IS 'Tracks Pro onboarding completion and entry selection';
 
 
+

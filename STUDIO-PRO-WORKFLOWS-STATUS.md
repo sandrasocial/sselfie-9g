@@ -194,3 +194,4 @@ For each missing workflow, follow this pattern (same as carousel):
 **Estimated effort per workflow**: 2-3 hours (following carousel pattern)
 
 
+

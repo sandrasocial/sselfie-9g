@@ -7,7 +7,6 @@ import CourseCard from "../academy/course-card"
 import CourseDetail from "../academy/course-detail"
 import ResourceCard from "../academy/resource-card"
 import UnifiedLoading from "./unified-loading"
-import { createLandingCheckout } from "@/app/actions/landing-checkout"
 import { X, Home, Aperture, MessageCircle, ImageIcon, Grid, User, SettingsIcon, LogOut, Film } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
@@ -114,9 +113,17 @@ export default function AcademyScreen() {
   const handleUpgrade = async () => {
     try {
       setIsUpgrading(true)
-      const clientSecret = await createLandingCheckout("sselfie_studio_membership")
-      if (clientSecret) {
-        window.location.href = `/checkout?client_secret=${clientSecret}`
+      const response = await fetch("/api/landing/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId: "sselfie_studio_membership" }),
+      })
+
+      const data = await response.json()
+      if (response.ok && data?.clientSecret) {
+        window.location.href = `/checkout?client_secret=${data.clientSecret}`
+      } else {
+        throw new Error(data?.error || "Failed to start checkout")
       }
     } catch (error) {
       console.error("[v0] Error creating checkout:", error)

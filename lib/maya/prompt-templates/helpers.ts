@@ -598,3 +598,4 @@ export function generateVlogAuthenticityMarkers(): string {
   return 'Natural workspace details, authentic moments, not overly staged'
 }
 
+

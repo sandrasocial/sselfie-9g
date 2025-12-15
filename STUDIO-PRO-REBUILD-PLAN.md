@@ -483,3 +483,4 @@ const QUICK_ACTION_TEMPLATES = {
 - **Nano Banana Pro**: Always pass avatar images + brand assets. Use structured prompts, not free text.
 
 
+

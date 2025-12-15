@@ -23,6 +23,7 @@ import {
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import BrandAssetsManager from "./brand-assets-manager"
+import { UpgradeModal } from "@/components/upgrade/upgrade-modal"
 
 interface SettingsScreenProps {
   onBack?: () => void // Made onBack optional since it's not always provided
@@ -62,6 +63,7 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null)
   const [subscriptionInfo, setSubscriptionInfo] = useState<SubscriptionInfo | null>(null)
   const [isLoadingPortal, setIsLoadingPortal] = useState(false)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
 
   const [emailNotifications, setEmailNotifications] = useState(true)
   const [mayaUpdates, setMayaUpdates] = useState(true)
@@ -227,6 +229,7 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
 
   const isStudioMembership = userInfo?.product_type === "sselfie_studio_membership"
   const hasActiveSubscription = subscriptionInfo?.status === "active"
+  const currentTier = (userInfo?.product_type as any) ?? "one_time_session"
 
   const navigateToTab = (tabId: string) => {
     window.location.hash = tabId
@@ -481,6 +484,38 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
           </div>
         )}
 
+        {userInfo?.product_type === "sselfie_studio_membership" && (
+          <div className="bg-white/70 backdrop-blur-2xl rounded-xl sm:rounded-[1.75rem] p-4 sm:p-6 md:p-8 border border-stone-200/60 shadow-xl shadow-stone-900/10">
+            <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
+              <div className="p-2.5 sm:p-3.5 bg-stone-900 rounded-lg sm:rounded-[1.125rem] shadow-lg">
+                <CreditCard size={18} className="text-white" strokeWidth={2.5} />
+              </div>
+              <div>
+                <h3 className="text-base sm:text-lg md:text-xl font-bold text-stone-950">Upgrade to Brand Studio</h3>
+                <p className="text-sm text-stone-600">More credits, premium features, priority support.</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4">
+              <InfoPill label="Current plan" value="Studio Membership" />
+              <InfoPill label="Upgrade to" value="Brand Studio" />
+              <InfoPill label="Credits" value="300 credits / month" />
+            </div>
+
+            <button
+              onClick={() => setShowUpgradeModal(true)}
+              className="w-full flex items-center justify-center gap-2 text-sm tracking-[0.15em] uppercase font-medium rounded-2xl py-4 bg-stone-900 text-white hover:bg-stone-800 transition-colors"
+            >
+              Upgrade now
+              <ChevronRight size={14} />
+            </button>
+
+            <p className="text-xs text-stone-500 text-center mt-3">
+              We’ll prorate the change automatically. You can switch back anytime in Stripe.
+            </p>
+          </div>
+        )}
+
         {((hasActiveSubscription || userInfo?.stripe_customer_id) && !isStudioMembership) && (
           <div className="bg-white/50 backdrop-blur-2xl rounded-xl sm:rounded-[1.75rem] p-4 sm:p-6 md:p-8 border border-white/60 shadow-xl shadow-stone-900/10">
             <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
@@ -717,6 +752,13 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
           {isLoggingOut ? "Signing Out..." : "Sign Out"}
         </button>
       </div>
+
+      <UpgradeModal
+        open={showUpgradeModal && userInfo?.product_type === "sselfie_studio_membership"}
+        currentTier={currentTier}
+        targetTier="brand_studio_membership"
+        onClose={() => setShowUpgradeModal(false)}
+      />
     </div>
   )
 }
@@ -752,6 +794,15 @@ function ToggleItem({
           }`}
         ></div>
       </div>
+    </div>
+  )
+}
+
+function InfoPill({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-stone-200 bg-white/70 px-4 py-3 space-y-1">
+      <p className="text-[10px] uppercase tracking-[0.15em] text-stone-500">{label}</p>
+      <p className="text-sm font-semibold text-stone-900">{value}</p>
     </div>
   )
 }

@@ -34,6 +34,9 @@ import { FeedbackButton } from "@/components/feedback/feedback-button"
 import { UpgradeOrCredits } from "@/components/UpgradeOrCredits"
 import type { User as UserType } from "./types"
 import { getAccessState } from "./access"
+import { SmartUpgradeBanner } from "@/components/upgrade/smart-upgrade-banner"
+import { UpgradeModal } from "@/components/upgrade/upgrade-modal"
+import type { UpgradeOpportunity } from "@/lib/upgrade-detection"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -92,6 +95,13 @@ export default function SselfieApp({
   const lastScrollY = useRef(0)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [creditsFetchFailed, setCreditsFetchFailed] = useState(false)
+  const upgradeImpressionsLogged = useRef<Set<string>>(new Set())
+  const [upgradeOpportunities, setUpgradeOpportunities] = useState<UpgradeOpportunity[]>([])
+  const [dismissedUpgradeTypes, setDismissedUpgradeTypes] = useState<Set<string>>(new Set())
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [currentTierForUpgrade] = useState<"one_time_session" | "sselfie_studio_membership" | "brand_studio_membership">(
+    "sselfie_studio_membership",
+  )
 
   useEffect(() => {
     const handlePopState = () => {
@@ -117,6 +127,27 @@ export default function SselfieApp({
     window.addEventListener("popstate", handlePopState)
     return () => window.removeEventListener("popstate", handlePopState)
   }, [])
+
+  useEffect(() => {
+    let isMounted = true
+    const loadUpgradeOpportunities = async () => {
+      try {
+        const response = await fetch("/api/subscription/upgrade-opportunities", { credentials: "include" })
+        if (!response.ok) return
+        const data = await response.json()
+        if (isMounted && data?.opportunities) {
+          setUpgradeOpportunities(data.opportunities)
+        }
+      } catch (error) {
+        console.error("[v0] [UPGRADE] Failed to fetch upgrade opportunities", error)
+      }
+    }
+
+    loadUpgradeOpportunities()
+    return () => {
+      isMounted = false
+    }
+  }, [userId])
 
   const handleTabChange = (tabId: string) => {
     setActiveTab(tabId)
@@ -265,6 +296,38 @@ export default function SselfieApp({
     subscriptionStatus,
   })
 
+  const activeUpgrade = upgradeOpportunities.find((op) => !dismissedUpgradeTypes.has(op.type))
+  const shouldShowUpgradeBanner =
+    ["studio", "gallery", "maya"].includes(activeTab) && !!activeUpgrade && access.canUseGenerators
+
+  const logUpgradeEvent = async (eventType: "impression" | "dismiss" | "cta_click", opportunityType?: string) => {
+    try {
+      await fetch("/api/subscription/upgrade-analytics", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ eventType, opportunityType }),
+        keepalive: true,
+      })
+    } catch (error) {
+      console.error("[v0] [UPGRADE] Failed to log analytics", error)
+    }
+  }
+
+  const dismissUpgrade = (type: string) => {
+    setDismissedUpgradeTypes((prev) => new Set([...Array.from(prev), type]))
+    logUpgradeEvent("dismiss", type)
+  }
+
+  useEffect(() => {
+    if (shouldShowUpgradeBanner && activeUpgrade) {
+      const key = `${activeUpgrade.type}-impression`
+      if (!upgradeImpressionsLogged.current.has(key)) {
+        upgradeImpressionsLogged.current.add(key)
+        logUpgradeEvent("impression", activeUpgrade.type)
+      }
+    }
+  }, [shouldShowUpgradeBanner, activeUpgrade])
+
   if (isLoading || isLoadingTrainingStatus || isLoadingCredits) {
     return <LoadingScreen />
   }
@@ -356,6 +419,19 @@ export default function SselfieApp({
             ref={scrollContainerRef}
             className="h-full px-4 sm:px-6 md:px-8 pb-32 sm:pb-36 md:pb-40 pt-4 sm:pt-6 md:pt-8 overflow-y-auto"
           >
+            {shouldShowUpgradeBanner && activeUpgrade && (
+              <div className="mb-4">
+                <SmartUpgradeBanner
+                  opportunity={activeUpgrade}
+                  onUpgrade={() => {
+                    logUpgradeEvent("cta_click", activeUpgrade.type)
+                    setShowUpgradeModal(true)
+                  }}
+                  onDismiss={dismissUpgrade}
+                />
+              </div>
+            )}
+
             {(activeTab === "studio" || activeTab === "maya" || activeTab === "training") &&
             !access.canUseGenerators ? (
               <UpgradeOrCredits
@@ -457,6 +533,13 @@ export default function SselfieApp({
         open={showBuyCreditsModal}
         onOpenChange={setShowBuyCreditsModal}
         onSuccess={handleCreditsPurchased}
+      />
+
+      <UpgradeModal
+        open={showUpgradeModal}
+        currentTier={currentTierForUpgrade}
+        targetTier="brand_studio_membership"
+        onClose={() => setShowUpgradeModal(false)}
       />
 
       <LowCreditModal credits={creditBalance} threshold={30} />
