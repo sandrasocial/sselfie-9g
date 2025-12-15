@@ -3,10 +3,10 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { createLandingCheckoutSession } from "@/app/actions/landing-checkout"
 import { EmbeddedCheckoutProvider, EmbeddedCheckout } from "@stripe/react-stripe-js"
 import { loadStripe } from "@stripe/stripe-js"
 import { ArrowLeft, Sparkles } from "lucide-react"
+import { startEmbeddedCheckout } from "@/lib/start-embedded-checkout"
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 
@@ -28,18 +28,9 @@ export default function OneTimeCheckoutClient({
   const handleStartCheckout = async () => {
     setIsLoading(true)
     try {
-      const result = await createLandingCheckoutSession("one_time_session", redirectAfterSuccess)
-
-      if (result.error) {
-        console.error("[v0] Checkout error:", result.error)
-        alert("Failed to start checkout. Please try again.")
-        setIsLoading(false)
-        return
-      }
-
-      if (result.clientSecret) {
-        setClientSecret(result.clientSecret)
-      }
+      const clientSecret = await startEmbeddedCheckout("one_time_session")
+      setClientSecret(clientSecret)
+      setIsLoading(false)
     } catch (error) {
       console.error("[v0] Error starting checkout:", error)
       alert("Something went wrong. Please try again.")

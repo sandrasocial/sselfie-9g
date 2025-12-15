@@ -951,10 +951,20 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
         })
 
         if (!response.ok) {
-          throw new Error(`API error: ${response.status}`)
+          const errorText = await response.text().catch(() => "")
+          console.error("[v0] ❌ generate-concepts failed:", response.status, errorText)
+          setIsGeneratingConcepts(false)
+          setPendingConceptRequest(null)
+          return
         }
 
-        const result = await response.json()
+        const result = await response.json().catch(() => null)
+        if (!result) {
+          console.error("[v0] ❌ generate-concepts returned invalid JSON")
+          setIsGeneratingConcepts(false)
+          setPendingConceptRequest(null)
+          return
+        }
         console.log("[v0] Concept generation result:", result.state, result.concepts?.length)
 
         if (result.state === "ready" && result.concepts) {
@@ -1034,7 +1044,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
           console.error("[v0] Error details:", {
             message: error?.message,
             stack: error?.stack,
-            pendingRequest: pendingConceptRequest
+            pendingRequest: pendingConceptRequest,
           })
           // Reset state on error so user can try again
           setIsGeneratingConcepts(false)
@@ -1623,41 +1633,38 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
 
   // Generate prompt suggestions based on workbench context
   const generatePromptSuggestions = async (userMessage: string) => {
-    if (!isWorkbenchModeEnabled() || !studioProMode) return
-    
     setIsGeneratingSuggestions(true)
-    
+
     try {
       // Get selected images from workbench
-      // We need to get this from WorkbenchStrip - for now, we'll use uploadedImages
       const workbenchImages = uploadedImages.map((img, idx) => ({
         id: img.url,
-        type: img.type === 'base' ? 'user_lora' as const : 'product' as const,
+        type: img.type === "base" ? ("user_lora" as const) : ("product" as const),
         url: img.url,
-        position: idx
+        position: idx,
       }))
-      
-      const response = await fetch('/api/maya/generate-prompt-suggestions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+
+      const response = await fetch("/api/maya/generate-prompt-suggestions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          workbenchImages: workbenchImages,
+          workbenchImages,
           userIntent: userMessage,
-          previousMessages: messages.slice(-5).map(msg => ({
+          previousMessages: messages.slice(-5).map((msg) => ({
             role: msg.role,
-            content: msg.parts?.find((p: any) => p.type === 'text')?.text || ''
+            content: msg.parts?.find((p: any) => p.type === "text")?.text || "",
           })),
-          contentType: 'custom'
-        })
+          contentType: "custom",
+        }),
       })
-      
+
       const data = await response.json()
-      
+
       if (data.success && data.suggestions) {
         setPromptSuggestions(data.suggestions)
       }
     } catch (error) {
-      console.error('Failed to generate prompt suggestions:', error)
+      console.error("Failed to generate prompt suggestions:", error)
     } finally {
       setIsGeneratingSuggestions(false)
     }
@@ -2603,7 +2610,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
     return (
       <div className="flex flex-col h-full bg-white">
         {/* Pro Mode Header with Exit Button */}
-        <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 bg-white/80 backdrop-blur-xl border-b border-stone-200/50">
+        <div className="shrink-0 flex items-center justify-between px-4 py-3 bg-white/80 backdrop-blur-xl border-b border-stone-200/50">
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-full border border-stone-200/60 overflow-hidden">
               <img src="https://i.postimg.cc/fTtCnzZv/out-1-22.png" alt="Maya" className="w-full h-full object-cover" />
@@ -2660,7 +2667,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
 
   return (
     <div
-      className="flex flex-col h-full bg-gradient-to-b from-stone-50 to-white relative overflow-hidden"
+      className="flex flex-col h-full bg-linear-to-b from-stone-50 to-white relative overflow-hidden"
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}
@@ -2678,13 +2685,13 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
         </div>
       )}
 
-      <div className="flex-shrink-0 flex items-center justify-between px-3 sm:px-4 py-3 bg-white/80 backdrop-blur-xl border-b border-stone-200/50 relative z-50">
+      <div className="shrink-0 flex items-center justify-between px-3 sm:px-4 py-3 bg-white/80 backdrop-blur-xl border-b border-stone-200/50 relative z-50">
         <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
           {/* Back button for workflow chat */}
           {isWorkflowChat && (
             <button
               onClick={() => setIsWorkflowChat(false)}
-              className="p-1.5 hover:bg-stone-100 rounded-lg transition-colors flex-shrink-0"
+              className="p-1.5 hover:bg-stone-100 rounded-lg transition-colors shrink-0"
               aria-label="Back to dashboard"
             >
               <svg className="w-5 h-5 text-stone-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -2692,7 +2699,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
               </svg>
             </button>
           )}
-          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-stone-200/60 overflow-hidden flex-shrink-0">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-stone-200/60 overflow-hidden shrink-0">
             <img src="https://i.postimg.cc/fTtCnzZv/out-1-22.png" alt="Maya" className="w-full h-full object-cover" />
           </div>
           <div className="flex-1 min-w-0">
@@ -2797,7 +2804,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
 
         {/* Studio Pro Controls - hide when in workflow chat or workbench mode */}
         {studioProMode && !isWorkflowChat && !isWorkbenchModeEnabled() && (
-          <div className="px-3 sm:px-4 py-3 bg-gradient-to-r from-stone-50 to-stone-100/50 border-b border-stone-200/50">
+          <div className="px-3 sm:px-4 py-3 bg-linear-to-r from-stone-50 to-stone-100/50 border-b border-stone-200/50">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-semibold text-stone-900">Studio Pro</span>
               <span className="text-xs text-stone-600">
@@ -2855,7 +2862,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
             <div className="mt-3">
               <div className="flex gap-2 overflow-x-auto pb-1">
                 {uploadedImages.map((img, idx) => (
-                  <div key={idx} className="relative flex-shrink-0">
+                  <div key={idx} className="relative shrink-0">
                     <img 
                       src={img.url} 
                       alt={img.label || img.type}
@@ -2945,7 +2952,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
                       alt="Gallery image"
                       className="w-full h-full object-cover"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center p-2">
+                    <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center p-2">
                       <span className="text-white text-xs font-medium">Select</span>
                     </div>
                   </button>
@@ -2975,7 +2982,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
           {/* Sliding menu from right */}
           <div className="fixed top-0 right-0 bottom-0 w-80 bg-white/95 backdrop-blur-3xl border-l border-stone-200 shadow-2xl z-50 animate-in slide-in-from-right duration-300 flex flex-col">
             {/* Header with close button - fixed at top */}
-            <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-stone-200/50">
+            <div className="shrink-0 flex items-center justify-between px-6 py-4 border-b border-stone-200/50">
               <h3 className="text-sm font-serif font-extralight tracking-[0.2em] uppercase text-stone-950">Menu</h3>
               <button
                 onClick={() => setShowNavMenu(false)}
@@ -2987,7 +2994,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
             </div>
 
             {/* Credits display - fixed below header */}
-            <div className="flex-shrink-0 px-6 py-6 border-b border-stone-200/50">
+            <div className="shrink-0 px-6 py-6 border-b border-stone-200/50">
               <div className="text-[10px] tracking-[0.15em] uppercase font-light text-stone-500 mb-2">Your Credits</div>
               <div className="text-3xl font-serif font-extralight text-stone-950 tabular-nums">
                 {creditBalance.toFixed(1)}
@@ -3048,7 +3055,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
             </div>
 
             {/* Sign out button - fixed at bottom */}
-            <div className="flex-shrink-0 px-6 py-4 border-t border-stone-200/50 bg-white/95">
+            <div className="shrink-0 px-6 py-4 border-t border-stone-200/50 bg-white/95">
               <button
                 onClick={handleLogout}
                 disabled={isLoggingOut}
@@ -3063,7 +3070,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
       )}
 
       {showHistory && (
-        <div className="flex-shrink-0 mx-4 mt-2 mb-2 bg-white/50 backdrop-blur-3xl border border-white/60 rounded-2xl p-4 shadow-xl shadow-stone-950/5 animate-in slide-in-from-top-2 duration-300">
+        <div className="shrink-0 mx-4 mt-2 mb-2 bg-white/50 backdrop-blur-3xl border border-white/60 rounded-2xl p-4 shadow-xl shadow-stone-950/5 animate-in slide-in-from-top-2 duration-300">
           <MayaChatHistory
             currentChatId={chatId}
             onSelectChat={handleSelectChat}
@@ -3219,7 +3226,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
               <p className="text-xs sm:text-sm text-stone-600 tracking-wide text-center mb-4 sm:mb-6 max-w-md leading-relaxed px-4">
                 Hi, I'm Maya. I'll help you create beautiful photos and videos.
               </p>
-              <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 w-full max-w-2xl px-2 sm:px-4 -mx-2 sm:-mx-0">
+              <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 w-full max-w-2xl px-2 sm:px-4 -mx-2">
                 {currentPrompts.map((item, index) => (
                   <button
                     key={index}
@@ -3260,7 +3267,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
                         handleSendMessage(item.prompt)
                       }
                     }}
-                    className="flex-shrink-0 px-4 py-2.5 sm:py-3 bg-white/50 backdrop-blur-xl border border-white/70 rounded-xl hover:bg-stone-100 hover:border-stone-300 transition-all duration-300 touch-manipulation active:scale-95 min-h-[44px]"
+                    className="shrink-0 px-4 py-2.5 sm:py-3 bg-white/50 backdrop-blur-xl border border-white/70 rounded-xl hover:bg-stone-100 hover:border-stone-300 transition-all duration-300 touch-manipulation active:scale-95 min-h-[44px]"
                   >
                     <span className="text-xs tracking-wide font-medium text-stone-700 whitespace-nowrap">
                       {item.label}
@@ -3528,8 +3535,10 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
                                   <div key={idx}>
                                     {renderMessageContent(displayText, msg.role === "user")}
                                     
-                                    {/* Render prompt suggestion cards from API in workbench mode - HIDDEN in Studio Pro mode (prompts go to workbench instead) */}
-                                    {msg.role === 'assistant' && promptSuggestions.length > 0 && msg.id === messages[messages.length - 1]?.id && !(studioProMode && isWorkbenchModeEnabled()) && (
+                                    {/* Render prompt suggestion cards from API (concept cards pro) */}
+                                    {msg.role === 'assistant' &&
+                                      promptSuggestions.length > 0 &&
+                                      msg.id === messages[messages.length - 1]?.id && (
                                       <div className="mt-4 space-y-3">
                                         {promptSuggestions.map((suggestion) => (
                                           <NewPromptSuggestionCard
@@ -3622,7 +3631,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
                                           >
                                             <div className="flex items-start justify-between gap-3">
                                               <div className="flex-1">
-                                                <h4 className="text-sm font-serif font-extralight tracking-[0.1em] text-stone-950 mb-2 group-hover:text-stone-900">
+                                                <h4 className="text-sm font-serif font-extralight tracking-widest text-stone-950 mb-2 group-hover:text-stone-900">
                                                   {option.label}
                                                 </h4>
                                                 {option.description && (
@@ -3632,7 +3641,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
                                                 )}
                                               </div>
                                               <svg 
-                                                className="w-5 h-5 text-stone-400 group-hover:text-stone-600 transition-colors flex-shrink-0 mt-0.5" 
+                                                className="w-5 h-5 text-stone-400 group-hover:text-stone-600 transition-colors shrink-0 mt-0.5" 
                                                 fill="none" 
                                                 viewBox="0 0 24 24" 
                                                 stroke="currentColor" 
@@ -3728,14 +3737,14 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
 
                                 return (
                                   <div key={partIndex} className="mt-3">
-                                    <div className="bg-white border rounded-lg overflow-hidden transition-all duration-300 hover:shadow-lg border-stone-300 bg-gradient-to-br from-stone-50 to-white">
+                                    <div className="bg-white border rounded-lg overflow-hidden transition-all duration-300 hover:shadow-lg border-stone-300 bg-linear-to-br from-stone-50 to-white">
                                       <div className="flex items-center justify-between px-3 py-2.5 border-b border-stone-200">
                                         <div className="flex items-center gap-2.5">
                                           <div className="relative">
-                                            <div className="absolute inset-0 bg-gradient-to-tr from-purple-600 via-pink-600 to-orange-500 rounded-full p-[2px]">
+                                            <div className="absolute inset-0 bg-linear-to-tr from-purple-600 via-pink-600 to-orange-500 rounded-full p-[2px]">
                                               <div className="bg-white rounded-full w-full h-full"></div>
                                             </div>
-                                            <div className="relative w-8 h-8 rounded-full bg-gradient-to-br from-stone-200 to-stone-300 flex items-center justify-center">
+                                            <div className="relative w-8 h-8 rounded-full bg-linear-to-br from-stone-200 to-stone-300 flex items-center justify-center">
                                               <span className="text-xs font-bold text-stone-700">S</span>
                                             </div>
                                           </div>
@@ -3769,7 +3778,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
                                                   generateCarouselRef.current({ topic, slideCount })
                                                 }
                                               }}
-                                              className="group relative w-full text-white px-4 py-2.5 rounded-lg font-semibold text-sm transition-all duration-300 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] min-h-[40px] flex items-center justify-center bg-gradient-to-br from-stone-800 via-stone-900 to-stone-950 hover:from-stone-900 hover:via-stone-950 hover:to-black"
+                                              className="group relative w-full text-white px-4 py-2.5 rounded-lg font-semibold text-sm transition-all duration-300 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] min-h-[40px] flex items-center justify-center bg-linear-to-br from-stone-800 via-stone-900 to-stone-950 hover:from-stone-900 hover:via-stone-950 hover:to-black"
                                             >
                                               <span>Create with Studio Pro</span>
                                             </button>
@@ -3958,7 +3967,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
               isAtBottomRef.current = true
               scrollToBottom("smooth")
             }}
-            className="fixed bottom-[11rem] right-4 sm:right-6 p-3 bg-stone-950 text-white rounded-full shadow-2xl shadow-stone-900/40 hover:scale-110 active:scale-95 transition-all duration-300 z-10 animate-in fade-in slide-in-from-bottom-2 min-w-[48px] min-h-[48px] flex items-center justify-center touch-manipulation"
+            className="fixed bottom-44 right-4 sm:right-6 p-3 bg-stone-950 text-white rounded-full shadow-2xl shadow-stone-900/40 hover:scale-110 active:scale-95 transition-all duration-300 z-10 animate-in fade-in slide-in-from-bottom-2 min-w-[48px] min-h-[48px] flex items-center justify-center touch-manipulation"
             aria-label="Scroll to bottom"
           >
             <ArrowDown size={18} strokeWidth={2.5} />
@@ -4113,7 +4122,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
                     }
                   }}
                   disabled={isTyping}
-                  className="flex-shrink-0 px-3 py-2 bg-white/40 backdrop-blur-xl border border-white/60 rounded-lg hover:bg-white/60 transition-all duration-300 disabled:opacity-50 touch-manipulation active:scale-95 min-h-[44px]"
+                  className="shrink-0 px-3 py-2 bg-white/40 backdrop-blur-xl border border-white/60 rounded-lg hover:bg-white/60 transition-all duration-300 disabled:opacity-50 touch-manipulation active:scale-95 min-h-[44px]"
                 >
                   <span className="text-xs tracking-wide font-medium text-stone-700 whitespace-nowrap">
                     {item.label}
@@ -4186,7 +4195,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
                 e.currentTarget.focus()
               }}
               placeholder={uploadedImage ? "Describe the style..." : "Message Maya..."}
-              className="w-full pl-[5.5rem] pr-12 py-3 bg-white/40 backdrop-blur-2xl border border-white/60 rounded-xl text-stone-950 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-950/50 focus:bg-white/60 font-medium text-[16px] min-h-[48px] max-h-[80px] shadow-lg shadow-stone-950/10 transition-all duration-300 resize-none overflow-y-auto leading-relaxed touch-manipulation"
+              className="w-full pl-22 pr-12 py-3 bg-white/40 backdrop-blur-2xl border border-white/60 rounded-xl text-stone-950 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-950/50 focus:bg-white/60 font-medium text-[16px] min-h-[48px] max-h-[80px] shadow-lg shadow-stone-950/10 transition-all duration-300 resize-none overflow-y-auto leading-relaxed touch-manipulation"
               disabled={isTyping || isUploadingImage}
               aria-label="Message input"
               rows={1}
@@ -4231,7 +4240,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
                 <X size={20} strokeWidth={2} />
               </button>
               
-              <h2 className="text-xl font-serif font-light tracking-wide text-stone-900 mb-4 pr-8 flex-shrink-0">How Studio Pro Works</h2>
+              <h2 className="text-xl font-serif font-light tracking-wide text-stone-900 mb-4 pr-8 shrink-0">How Studio Pro Works</h2>
               <div className="space-y-3 text-sm text-stone-600 leading-relaxed overflow-y-auto flex-1 min-h-0 pb-4">
                 <p>
                   Studio Pro mode gives you advanced creative control with powerful features for professional content creation.
@@ -4296,7 +4305,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
               </div>
               <button
                 onClick={() => setShowStudioProOnboarding(false)}
-                className="w-full bg-stone-900 text-white px-6 py-3 rounded-lg text-sm font-light tracking-wide hover:bg-stone-800 transition-colors mt-4 flex-shrink-0"
+                className="w-full bg-stone-900 text-white px-6 py-3 rounded-lg text-sm font-light tracking-wide hover:bg-stone-800 transition-colors mt-4 shrink-0"
               >
                 Got it
               </button>

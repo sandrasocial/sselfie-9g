@@ -35,7 +35,13 @@ export function UpgradeModal({ open, currentTier, targetTier = "brand_studio_mem
         return
       }
 
-      // Success: reload to reflect new tier
+      if (data?.clientSecret) {
+        // No existing subscription: start embedded checkout
+        window.location.href = `/checkout?client_secret=${data.clientSecret}`
+        return
+      }
+
+      // Success via subscription update: reload to reflect new tier
       window.location.reload()
     } catch (err: any) {
       setError(err?.message || "Upgrade failed. Please try again.")
@@ -44,12 +50,12 @@ export function UpgradeModal({ open, currentTier, targetTier = "brand_studio_mem
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-950/70 backdrop-blur-sm px-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-950/75 backdrop-blur-sm px-4">
       <div className="w-full max-w-2xl">
-        <div className="bg-white/80 backdrop-blur-xl border border-stone-200/70 rounded-3xl shadow-2xl p-4 sm:p-6 space-y-4">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-[0.18em] text-stone-500">Upgrade</p>
+        <div className="bg-white/85 backdrop-blur-2xl border border-stone-200/70 rounded-3xl shadow-2xl shadow-stone-900/20 p-5 sm:p-6 space-y-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1">
+              <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">Upgrade</p>
               <h2 className="text-2xl font-serif font-extralight tracking-[0.28em] text-stone-900 uppercase">
                 Unlock more with Brand Studio
               </h2>
@@ -57,7 +63,7 @@ export function UpgradeModal({ open, currentTier, targetTier = "brand_studio_mem
             </div>
             <button
               onClick={onClose}
-              className="text-stone-400 hover:text-stone-700 text-sm font-medium tracking-[0.18em] uppercase"
+              className="text-stone-400 hover:text-stone-700 text-sm font-medium tracking-[0.18em] uppercase rounded-lg border border-transparent hover:border-stone-200 px-3 py-2"
             >
               Close
             </button>
@@ -69,6 +75,7 @@ export function UpgradeModal({ open, currentTier, targetTier = "brand_studio_mem
             onUpgrade={handleUpgrade}
             onClose={onClose}
             loading={loading}
+            showAllTiers
           />
 
           {error && <p className="text-sm text-red-600">{error}</p>}

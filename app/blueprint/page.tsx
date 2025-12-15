@@ -8,7 +8,7 @@ import { BlueprintConceptCard } from "@/components/blueprint/blueprint-concept-c
 import { BeforeAfterSlider } from "@/components/blueprint/before-after-slider"
 import { EmbeddedCheckout, EmbeddedCheckoutProvider } from "@stripe/react-stripe-js"
 import { loadStripe } from "@stripe/stripe-js"
-import { createLandingCheckoutSession } from "@/app/actions/landing-checkout"
+import { startEmbeddedCheckout } from "@/lib/start-embedded-checkout"
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 
@@ -371,7 +371,7 @@ export default function BrandBlueprintPage() {
   const handleStartCheckout = async (productId: string = "one_time_session") => {
     try {
       setShowCheckout(true)
-      const clientSecret = await createLandingCheckoutSession(productId)
+      const clientSecret = await startEmbeddedCheckout(productId)
       setCheckoutClientSecret(clientSecret)
     } catch (error) {
       console.error("[v0] Checkout error:", error)
@@ -431,13 +431,13 @@ export default function BrandBlueprintPage() {
             <div className="max-w-4xl mx-auto text-center">
               <h1
                 style={{ fontFamily: "'Times New Roman', serif" }}
-                className="text-2xl sm:text-4xl md:text-6xl font-extralight tracking-[0.1em] sm:tracking-[0.2em] uppercase mb-2 sm:mb-3 text-stone-950 text-balance leading-tight"
+                className="text-2xl sm:text-4xl md:text-6xl font-extralight tracking-widest sm:tracking-[0.2em] uppercase mb-2 sm:mb-3 text-stone-950 text-balance leading-tight"
               >
                 The AI Photo System That Got 2,700+ Creators Their Best Content Ever
               </h1>
               <h2
                 style={{ fontFamily: "'Times New Roman', serif" }}
-                className="text-xl sm:text-3xl md:text-5xl font-extralight tracking-[0.1em] sm:tracking-[0.2em] uppercase mb-4 sm:mb-6 text-stone-950 text-balance leading-tight"
+                className="text-xl sm:text-3xl md:text-5xl font-extralight tracking-widest sm:tracking-[0.2em] uppercase mb-4 sm:mb-6 text-stone-950 text-balance leading-tight"
               >
                 Get Your Free Custom Blueprint
               </h2>
@@ -448,19 +448,19 @@ export default function BrandBlueprintPage() {
               <div className="mb-6 sm:mb-8 max-w-xl mx-auto px-4">
                 <ul className="text-left space-y-2 sm:space-y-3 text-sm sm:text-base font-light text-stone-700">
                   <li className="flex items-start gap-2 sm:gap-3">
-                    <span className="text-stone-950 mt-0.5 flex-shrink-0">✓</span>
+                    <span className="text-stone-950 mt-0.5 shrink-0">✓</span>
                     <span>Discover your unique content vibe</span>
                   </li>
                   <li className="flex items-start gap-2 sm:gap-3">
-                    <span className="text-stone-950 mt-0.5 flex-shrink-0">✓</span>
+                    <span className="text-stone-950 mt-0.5 shrink-0">✓</span>
                     <span>Get 30 days of post ideas (done for you)</span>
                   </li>
                   <li className="flex items-start gap-2 sm:gap-3">
-                    <span className="text-stone-950 mt-0.5 flex-shrink-0">✓</span>
+                    <span className="text-stone-950 mt-0.5 shrink-0">✓</span>
                     <span>Learn which photos work best for YOUR audience</span>
                   </li>
                   <li className="flex items-start gap-2 sm:gap-3">
-                    <span className="text-stone-950 mt-0.5 flex-shrink-0">✓</span>
+                    <span className="text-stone-950 mt-0.5 shrink-0">✓</span>
                     <span>100% free • No credit card • Takes 10 minutes</span>
                   </li>
                 </ul>
@@ -1098,7 +1098,7 @@ export default function BrandBlueprintPage() {
                   <button
                     key={week}
                     onClick={() => setSelectedCalendarWeek(week)}
-                    className={`px-4 sm:px-6 py-2 sm:py-3 text-xs tracking-wider uppercase whitespace-nowrap border transition-all duration-200 flex-shrink-0 ${
+                    className={`px-4 sm:px-6 py-2 sm:py-3 text-xs tracking-wider uppercase whitespace-nowrap border transition-all duration-200 shrink-0 ${
                       selectedCalendarWeek === week
                         ? "border-stone-950 bg-stone-950 text-stone-50"
                         : "border-stone-300 text-stone-700 hover:border-stone-950"
@@ -1199,7 +1199,7 @@ export default function BrandBlueprintPage() {
                             </h4>
                             <button
                               onClick={() => copyToClipboard(template.template, template.id)}
-                              className="p-2 hover:bg-stone-100 rounded-full transition-colors flex-shrink-0"
+                              className="p-2 hover:bg-stone-100 rounded-full transition-colors shrink-0"
                             >
                               {copiedCaption === template.id ? (
                                 <Check className="w-4 h-4 text-green-600" />
@@ -1379,7 +1379,7 @@ export default function BrandBlueprintPage() {
 
       {showCheckout && (
         <div
-          className="fixed inset-0 bg-black/50 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4"
+          className="fixed inset-0 bg-black/50 z-9999 flex items-end sm:items-center justify-center p-0 sm:p-4"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
               setShowCheckout(false)
@@ -1388,11 +1388,11 @@ export default function BrandBlueprintPage() {
           }}
         >
           <div
-            className="bg-white w-full h-[100vh] sm:h-auto sm:max-h-[90vh] sm:max-w-2xl sm:rounded-lg flex flex-col shadow-2xl overflow-hidden"
+            className="bg-white w-full h-screen sm:h-auto sm:max-h-[90vh] sm:max-w-2xl sm:rounded-lg flex flex-col shadow-2xl overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Sticky Header */}
-            <div className="flex-shrink-0 bg-white z-20 px-4 sm:px-6 py-4 border-b border-stone-200 flex items-center justify-between sticky top-0">
+            <div className="shrink-0 bg-white z-20 px-4 sm:px-6 py-4 border-b border-stone-200 flex items-center justify-between sticky top-0">
               <h3 className="text-sm sm:text-base font-medium tracking-wider uppercase text-stone-950">
                 Complete Purchase
               </h3>
@@ -1401,7 +1401,7 @@ export default function BrandBlueprintPage() {
                   setShowCheckout(false)
                   setCheckoutClientSecret(null)
                 }}
-                className="p-2 hover:bg-stone-100 rounded-full transition-colors flex-shrink-0"
+                className="p-2 hover:bg-stone-100 rounded-full transition-colors shrink-0"
                 aria-label="Close checkout"
               >
                 <X className="w-5 h-5 sm:w-6 sm:h-6" />

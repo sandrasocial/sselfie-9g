@@ -1051,13 +1051,18 @@ Now create ${count} brand scene concepts with natural product/brand integration.
       const styleContext = `${userRequest || ""} ${aesthetic || ""} ${imageAnalysisText || ""}`.toLowerCase()
 
       // Detect if user wants professional/studio/magazine aesthetic (skip amateur requirements)
-      const wantsProfessional = /studio|magazine|cover|high.?end|high.?fashion|editorial|professional|luxury|fashion.?editorial|vogue|elle|runway/i.test(styleContext)
+      const wantsProfessional = /magazine|cover|high.?end|high.?fashion|editorial|professional|luxury|fashion.?editorial|vogue|elle|runway/i.test(styleContext)
+      const userExplicitStudio = /\b(studio\s+lighting|studio\s+shot|studio\s+photo|studio\s+images?|in\s+studio|photo\s+studio|studio\s+backdrop|studio\s+set|studio\s+session)\b/i.test(
+        styleContext,
+      )
       
       // Detect if reference image or user request is B&W/monochrome
       const wantsBAndW = /black.?and.?white|monochrome|b&w|grayscale|black and white/i.test(styleContext)
       
-      // Detect if reference image shows studio lighting
-      const imageShowsStudio = /studio|professional.?lighting|studio.?lighting|controlled.?lighting/i.test(imageAnalysisText || "")
+      // Detect if reference image shows studio lighting (explicit phrases only)
+      const imageShowsStudio = /\b(studio\s+lighting|studio\s+shot|studio\s+photo|photo\s+studio|controlled\s+studio\s+lighting|professional\s+studio\s+lighting)\b/i.test(
+        imageAnalysisText || "",
+      )
 
       console.log("[v0] Validating prompt for required anti-plastic elements...")
       console.log("[v0] Style context:", styleContext.substring(0, 100))
@@ -1072,18 +1077,24 @@ Now create ${count} brand scene concepts with natural product/brand integration.
         addedCount += 6
       }
 
-      // Check for anti-plastic phrases (need at least 2) (ALWAYS required - no exceptions)
-      const antiPlasticMatches = enhanced.match(/not\s+(?:smooth|airbrushed|plastic-looking)|realistic\s+texture|natural\s+imperfections/gi) || []
+      // Check for anti-plastic phrases (need at least 2 positive descriptors) (ALWAYS required - no exceptions)
+      const antiPlasticMatches =
+        enhanced.match(/organic\s+imperfections|unretouched\s+skin|matte\s+skin\s+texture|realistic\s+texture|visible\s+pores|natural\s+imperfections/gi) || []
       const antiPlasticCount = antiPlasticMatches.length
 
       if (antiPlasticCount < 2) {
         console.log(`[v0] Anti-plastic phrases: ${antiPlasticCount}/2 - adding more`)
-        if (antiPlasticCount === 0) {
-          enhanced += ", not airbrushed, not plastic-looking"
-          addedCount += 4
-        } else {
-          enhanced += ", not plastic-looking"
-          addedCount += 2
+        const antiPlasticPhrases = [
+          "organic imperfections",
+          "unretouched skin texture",
+          "matte skin texture",
+          "realistic texture",
+          "visible pores",
+        ]
+        const needed = Math.max(0, 2 - antiPlasticCount)
+        if (needed > 0) {
+          enhanced += ", " + antiPlasticPhrases.slice(0, needed).join(", ")
+          addedCount += 2 * needed
         }
       }
 
@@ -1162,22 +1173,22 @@ Now create ${count} brand scene concepts with natural product/brand integration.
       const userWantsSoft = /soft|dreamy|gentle|diffused|soft.?glow|dreamy.?light/i.test(styleContext)
       const userWantsGoldenHour = /golden.?hour|warm.?glow|sunset|sunrise|warm.?light/i.test(styleContext)
       const userWantsMoody = /moody|dark|shadowy|deep.?shadows|low.?light/i.test(styleContext)
-      const userWantsStudio = /studio|professional.?lighting|studio.?lighting/i.test(styleContext)
-      
       // Check if prompt already has studio lighting
       const hasStudioLighting = /studio\s+lighting|professional\s+studio\s+lighting|dramatic\s+studio/i.test(enhanced)
 
       if (!/uneven\s+(?:natural\s+)?lighting|uneven\s+illumination/i.test(enhanced)) {
         // Check if user requested specific lighting style OR reference image shows studio
-        if (wantsProfessional || userWantsStudio || imageShowsStudio) {
-          // User wants professional/studio OR reference shows studio - skip uneven requirement, ensure studio lighting
-          console.log("[v0] Professional/studio lighting detected - skipping uneven requirement")
+        if (userExplicitStudio || imageShowsStudio) {
+          // User explicitly asked for studio OR reference shows studio - allow studio lighting
+          console.log("[v0] Studio lighting explicitly requested or shown - skipping uneven requirement")
           if (!hasStudioLighting && !/studio/i.test(enhanced)) {
-            // If no studio lighting mentioned, add it
             enhanced += ", studio lighting"
             addedCount += 2
             console.log("[v0] Added 'studio lighting' to prompt")
           }
+        } else if (wantsProfessional) {
+          // Professional vibe without explicit studio request - do not force studio lighting
+          console.log("[v0] Professional vibe without studio request - keeping existing lighting")
         } else if (userWantsDramatic) {
           // User wants dramatic lighting - check if it's already in prompt or needs to be preserved
           if (/\b(?:dramatic|cinematic|editorial)\s+lighting/i.test(enhanced)) {
@@ -1407,9 +1418,19 @@ Now create ${count} brand scene concepts with natural product/brand integration.
         currentWordCount = wordCount(prompt)
       }
 
-      // Check if user wants professional/studio/magazine aesthetic (skip iPhone requirements)
-      // Also check image analysis for studio/professional indicators
-      const wantsProfessional = /studio|magazine|cover|high.?end|high.?fashion|editorial|professional|luxury|fashion.?editorial|vogue|elle|runway/i.test(`${userRequest || ""} ${aesthetic || ""} ${imageAnalysis || ""}`.toLowerCase())
+      // Check if user wants professional/magazine aesthetic (skip iPhone requirements)
+      // Keep studio detection explicit so we don't accidentally force studio lighting
+      const wantsProfessional = /magazine|cover|high.?end|high.?fashion|editorial|professional|luxury|fashion.?editorial|vogue|elle|runway/i.test(
+        `${userRequest || ""} ${aesthetic || ""} ${imageAnalysis || ""}`.toLowerCase(),
+      )
+      const userExplicitStudio = /\b(studio\s+lighting|studio\s+shot|studio\s+photo|studio\s+images?|in\s+studio|photo\s+studio|studio\s+backdrop|studio\s+set|studio\s+session)\b/i.test(
+        `${userRequest || ""} ${aesthetic || ""} ${context || ""}`.toLowerCase(),
+      )
+      const imageShowsStudio =
+        imageAnalysis &&
+        /\b(studio\s+lighting|studio\s+shot|studio\s+photo|photo\s+studio|controlled\s+studio\s+lighting|professional\s+studio\s+lighting)\b/i.test(
+          imageAnalysis.toLowerCase(),
+        )
       
       // Check if image analysis or prompt indicates B&W/monochrome
       const wantsBAndW = /black.?and.?white|monochrome|b&w|grayscale/i.test(`${userRequest || ""} ${aesthetic || ""} ${imageAnalysis || ""}`.toLowerCase())
@@ -1438,17 +1459,39 @@ Now create ${count} brand scene concepts with natural product/brand integration.
         console.log("[v0] Removed all iPhone/cellphone references for Studio Pro mode")
       }
       
-      // CRITICAL FIX: Remove "uneven natural lighting" if studio/professional is detected
-      if (wantsProfessional) {
-        // Remove "uneven" from lighting descriptions for studio requests
+      // CRITICAL FIX: Lighting handling - only use studio lighting when explicitly requested
+      if (userExplicitStudio || imageShowsStudio) {
+        // Upgrade to studio lighting only when the user asks for studio or the reference is studio
         prompt = prompt.replace(/uneven\s+(?:natural\s+)?lighting/gi, "studio lighting")
         prompt = prompt.replace(/uneven\s+illumination/gi, "studio lighting")
-        console.log("[v0] Replaced 'uneven lighting' with 'studio lighting' for professional request")
-        
-        // Remove iPhone specs if they exist (should be replaced with professional camera)
-        prompt = prompt.replace(/,\s*shot\s+on\s+iPhone[^,]*/gi, "")
-        console.log("[v0] Removed iPhone specs for professional/studio request")
+        console.log("[v0] Replaced 'uneven lighting' with 'studio lighting' due to explicit studio request/reference")
+      } else if (wantsProfessional) {
+        // Keep professional vibe but avoid forcing studio lighting
+        prompt = prompt.replace(/uneven\s+(?:natural\s+)?lighting/gi, "natural lighting with realistic shadows")
+        prompt = prompt.replace(/uneven\s+illumination/gi, "natural lighting with realistic shadows")
+        console.log("[v0] Kept professional vibe without studio lighting")
       }
+
+      // Guardrail: strip any studio-lighting phrases when the user didn't ask for studio and reference isn't studio
+      if (!userExplicitStudio && !imageShowsStudio) {
+        const before = prompt
+        prompt = prompt.replace(/\b(?:professional\s+)?studio\s+lighting\b/gi, "natural lighting with realistic shadows")
+        prompt = prompt.replace(/\bstudio\s+light\b/gi, "natural light with gentle variation")
+        if (before !== prompt) {
+          console.log("[v0] Removed unintended studio lighting phrasing to protect authenticity")
+        }
+      }
+
+      // Guardrail: remove negative prompting phrases to avoid inverse effects
+      const negativeToPositiveMap: Array<{ regex: RegExp; replacement: string }> = [
+        { regex: /\bnot\s+airbrushed\b/gi, replacement: "unretouched skin texture" },
+        { regex: /\bnot\s+plastic-?looking\b/gi, replacement: "organic imperfections" },
+        { regex: /\bnot\s+smooth\b/gi, replacement: "matte skin texture" },
+        { regex: /\bnot\s+flawless\b/gi, replacement: "realistic skin detail" },
+      ]
+      negativeToPositiveMap.forEach(({ regex, replacement }) => {
+        prompt = prompt.replace(regex, replacement)
+      })
 
       // CRITICAL FIX #1: Ensure basic iPhone specs at the end (new simplified format)
       // Skip for professional/studio requests AND Studio Pro mode - allow professional camera specs instead

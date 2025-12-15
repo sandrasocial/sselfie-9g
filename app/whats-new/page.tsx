@@ -5,8 +5,8 @@ import Link from "next/link"
 import Image from "next/image"
 import { useScroll, useTransform, motion } from "framer-motion"
 import { useRef } from "react"
-import { createLandingCheckoutSession } from "@/app/actions/landing-checkout"
 import TestimonialGrid from "@/components/testimonials/testimonial-grid"
+import { startEmbeddedCheckout } from "@/lib/start-embedded-checkout"
 
 export default function WhatsNewPage() {
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null)
@@ -20,10 +20,8 @@ export default function WhatsNewPage() {
   const handleStartCheckout = async (tierId: string) => {
     try {
       setCheckoutLoading(tierId)
-      const clientSecret = await createLandingCheckoutSession(tierId)
-      if (clientSecret) {
-        window.location.href = `/checkout?client_secret=${clientSecret}`
-      }
+      const clientSecret = await startEmbeddedCheckout(tierId)
+      window.location.href = `/checkout?client_secret=${clientSecret}`
     } catch (error) {
       console.error("Checkout error:", error)
       alert("Failed to start checkout. Please try again.")
@@ -52,7 +50,7 @@ export default function WhatsNewPage() {
             priority
           />
 
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/40 to-transparent" />
 
           <div className="absolute inset-0 flex items-end z-10 pb-12 sm:pb-16 md:pb-24 lg:pb-32 px-6 sm:px-8 md:px-12 lg:px-16">
             <div className="text-left text-white max-w-4xl">
@@ -74,7 +72,7 @@ export default function WhatsNewPage() {
               <a
                 href="#pricing"
                 onClick={scrollToPricing}
-                className="inline-block px-8 sm:px-10 py-3.5 sm:py-4 bg-white text-black text-sm sm:text-base uppercase tracking-wider transition-all duration-300 hover:bg-black hover:text-white border border-white min-h-[48px] flex items-center justify-center font-light"
+                className="inline-flex px-8 sm:px-10 py-3.5 sm:py-4 bg-white text-black text-sm sm:text-base uppercase tracking-wider transition-all duration-300 hover:bg-black hover:text-white border border-white min-h-[48px] items-center justify-center font-light"
               >
                 SEE WHAT'S NEW
               </a>
@@ -119,14 +117,14 @@ export default function WhatsNewPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-12 md:gap-16 max-w-6xl mx-auto">
             {/* Feature 1: 150+ Photos */}
             <div className="space-y-6">
-              <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-stone-200">
+              <div className="relative aspect-4/3 rounded-2xl overflow-hidden bg-stone-200">
                 <Image
                   src="/images/618-tvcuzvg8v6r2bput7px8v06bchrxgx.png"
                   fill
                   alt="150+ Professional Photos Every Month"
                   className="object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
                 <div className="absolute bottom-6 left-6 right-6">
                   <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-lg">
                     <p className="text-xs font-light tracking-[0.2em] uppercase text-stone-900">150+ Photos Monthly</p>
@@ -145,14 +143,14 @@ export default function WhatsNewPage() {
 
             {/* Feature 2: Academy */}
             <div className="space-y-6">
-              <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-stone-200">
+              <div className="relative aspect-4/3 rounded-2xl overflow-hidden bg-stone-200">
                 <Image
                   src="/images/616-nnepryg0hs2y745w8znu8twvfrgude.png"
                   fill
                   alt="Full Academy with Video Courses"
                   className="object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
                 <div className="absolute bottom-6 left-6 right-6">
                   <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-lg">
                     <p className="text-xs font-light tracking-[0.2em] uppercase text-stone-900">Complete Academy</p>
@@ -171,14 +169,14 @@ export default function WhatsNewPage() {
 
             {/* Feature 3: Feed Designer */}
             <div className="space-y-6">
-              <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-stone-200">
+              <div className="relative aspect-4/3 rounded-2xl overflow-hidden bg-stone-200">
                 <Image
                   src="/images/641-yz6rwohjtemwagcwy5xqjtsczx9lfh.png"
                   fill
                   alt="Feed Designer to Plan Your Content"
                   className="object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
                 <div className="absolute bottom-6 left-6 right-6">
                   <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-lg">
                     <p className="text-xs font-light tracking-[0.2em] uppercase text-stone-900">Feed Designer</p>
@@ -197,14 +195,14 @@ export default function WhatsNewPage() {
 
             {/* Feature 4: Monthly Drops */}
             <div className="space-y-6">
-              <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-stone-200">
+              <div className="relative aspect-4/3 rounded-2xl overflow-hidden bg-stone-200">
                 <Image
                   src="/images/380-iihccjipjsnt0xfvpt7urkd4bzhtyr.png"
                   fill
                   alt="Monthly Drops with Newest Strategies"
                   className="object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
                 <div className="absolute bottom-6 left-6 right-6">
                   <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-lg">
                     <p className="text-xs font-light tracking-[0.2em] uppercase text-stone-900">Monthly Strategy</p>

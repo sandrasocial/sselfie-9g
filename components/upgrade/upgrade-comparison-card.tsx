@@ -1,6 +1,7 @@
 "use client"
 
 import { Sparkles, ArrowRight, Check } from "lucide-react"
+import { getProductById } from "@/lib/products"
 
 type TierId = "one_time_session" | "sselfie_studio_membership" | "brand_studio_membership"
 
@@ -11,7 +12,7 @@ interface TierMeta {
   features: string[]
 }
 
-const TIER_META: Record<TierId, TierMeta> = {
+const BASE_TIER_META: Record<TierId, Omit<TierMeta, "price" | "credits"> & Partial<Pick<TierMeta, "price" | "credits">>> = {
   one_time_session: {
     name: "One-Time Session",
     price: "$49 one-time",
@@ -20,16 +21,37 @@ const TIER_META: Record<TierId, TierMeta> = {
   },
   sselfie_studio_membership: {
     name: "Studio Membership",
-    price: "$99 / month",
     credits: "250 credits / month",
     features: ["Unlimited trainings", "Full Maya access", "Academy + drops"],
   },
   brand_studio_membership: {
     name: "Brand Studio",
-    price: "$149 / month",
     credits: "300 credits / month",
     features: ["Priority support", "Premium features", "Power-user credit pool"],
   },
+}
+
+function formatPrice(cents: number, isSubscription: boolean) {
+  const dollars = (cents / 100).toFixed(0)
+  return isSubscription ? `$${dollars} / month` : `$${dollars} one-time`
+}
+
+function buildTierMeta(tierId: TierId): TierMeta {
+  const base = BASE_TIER_META[tierId]
+  const product = getProductById(tierId)
+
+  const price = product ? formatPrice(product.priceInCents, product.type !== "one_time_session") : base.price || "$0"
+  const credits =
+    product?.credits && product.credits > 0
+      ? `${product.credits} credits${product.type === "one_time_session" ? "" : " / month"}`
+      : base.credits || ""
+
+  return {
+    name: base.name,
+    price,
+    credits,
+    features: base.features,
+  }
 }
 
 interface UpgradeComparisonCardProps {
@@ -38,6 +60,7 @@ interface UpgradeComparisonCardProps {
   onUpgrade: () => void
   onClose?: () => void
   loading?: boolean
+  showAllTiers?: boolean
 }
 
 export function UpgradeComparisonCard({
@@ -46,9 +69,13 @@ export function UpgradeComparisonCard({
   onUpgrade,
   onClose,
   loading = false,
+  showAllTiers = false,
 }: UpgradeComparisonCardProps) {
-  const current = TIER_META[currentTier]
-  const target = TIER_META[targetTier]
+  const current = buildTierMeta(currentTier)
+  const target = buildTierMeta(targetTier)
+  const oneTime = buildTierMeta("one_time_session")
+  const studio = buildTierMeta("sselfie_studio_membership")
+  const brand = buildTierMeta("brand_studio_membership")
 
   return (
     <div className="bg-white/70 backdrop-blur-2xl border border-stone-200/70 shadow-xl shadow-stone-900/10 rounded-2xl p-5 sm:p-6 space-y-4">
@@ -73,10 +100,18 @@ export function UpgradeComparisonCard({
         )}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <TierSummary title="Current plan" tier={current} highlight={false} />
-        <TierSummary title="Upgrade to" tier={target} highlight />
-      </div>
+      {showAllTiers ? (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <TierSummary title="One-Time" tier={oneTime} highlight={currentTier === "one_time_session"} />
+          <TierSummary title="Studio" tier={studio} highlight={currentTier === "sselfie_studio_membership"} />
+          <TierSummary title="Brand Studio" tier={brand} highlight={currentTier === "brand_studio_membership"} />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <TierSummary title="Current plan" tier={current} highlight={false} />
+          <TierSummary title="Upgrade to" tier={target} highlight />
+        </div>
+      )}
 
       <button
         onClick={onUpgrade}

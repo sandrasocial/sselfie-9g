@@ -6,8 +6,8 @@ import { useState, useEffect, useRef, lazy, Suspense } from "react"
 import Link from "next/link"
 import { useScroll, useTransform, motion } from "framer-motion"
 import Image from "next/image"
-import { createLandingCheckoutSession } from "@/app/actions/landing-checkout"
 import { trackCTAClick, trackPricingView, trackCheckoutStart, trackEmailSignup, trackSocialClick } from "@/lib/analytics"
+import { startEmbeddedCheckout } from "@/lib/start-embedded-checkout"
 
 // Dynamic imports for heavy components (code splitting)
 const InteractivePipelineShowcase = lazy(() => import("./interactive-pipeline-showcase"))
@@ -142,10 +142,8 @@ export default function LandingPage() {
       trackCheckoutStart(tierId, undefined)
       trackCTAClick("pricing", productName, "/checkout")
       
-      const clientSecret = await createLandingCheckoutSession(tierId)
-      if (clientSecret) {
-        window.location.href = `/checkout?client_secret=${clientSecret}`
-      }
+      const clientSecret = await startEmbeddedCheckout(tierId)
+      window.location.href = `/checkout?client_secret=${clientSecret}`
     } catch (error) {
       if (process.env.NODE_ENV === "development") {
         console.error("Checkout error:", error)

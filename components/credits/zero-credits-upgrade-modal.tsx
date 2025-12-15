@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { createLandingCheckout } from "@/app/actions/landing-checkout"
 import { Sparkles } from "lucide-react"
+import { startEmbeddedCheckout } from "@/lib/start-embedded-checkout"
 
 interface ZeroCreditsUpgradeModalProps {
   credits: number
@@ -30,10 +30,8 @@ export function ZeroCreditsUpgradeModal({ credits, onClose }: ZeroCreditsUpgrade
   const handleUpgrade = async () => {
     try {
       setIsUpgrading(true)
-      const clientSecret = await createLandingCheckout("sselfie_studio_membership")
-      if (clientSecret) {
-        window.location.href = `/checkout?client_secret=${clientSecret}`
-      }
+      const clientSecret = await startEmbeddedCheckout("sselfie_studio_membership")
+      window.location.href = `/checkout?client_secret=${clientSecret}`
     } catch (error) {
       console.error("[v0] Error creating checkout:", error)
       alert("Failed to start checkout. Please try again.")
@@ -61,10 +59,10 @@ export function ZeroCreditsUpgradeModal({ credits, onClose }: ZeroCreditsUpgrade
   if (!showModal || credits > 0) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-950/90 backdrop-blur-sm p-4 animate-in fade-in duration-300">
-      <div className="relative w-full max-w-md bg-white rounded-2xl p-6 sm:p-8 shadow-2xl border border-stone-200/60 animate-in zoom-in-95 duration-300">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-950/80 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+      <div className="relative w-full max-w-md bg-white/90 backdrop-blur-xl rounded-2xl p-6 sm:p-7 shadow-2xl border border-stone-200/70 animate-in zoom-in-95 duration-300">
         <div className="flex flex-col items-center text-center mb-6">
-          <div className="w-16 h-16 bg-gradient-to-br from-stone-100 to-stone-200 rounded-full flex items-center justify-center mb-4">
+          <div className="w-16 h-16 bg-linear-to-br from-stone-100 to-stone-200 rounded-full flex items-center justify-center mb-4">
             <Sparkles size={32} className="text-stone-600" />
           </div>
           

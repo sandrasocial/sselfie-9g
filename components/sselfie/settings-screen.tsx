@@ -20,6 +20,7 @@ import {
   Grid,
   SettingsIcon,
   Lock,
+  Film,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import BrandAssetsManager from "./brand-assets-manager"
@@ -230,6 +231,12 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
   const isStudioMembership = userInfo?.product_type === "sselfie_studio_membership"
   const hasActiveSubscription = subscriptionInfo?.status === "active"
   const currentTier = (userInfo?.product_type as any) ?? "one_time_session"
+  const upgradeTargetTier =
+    currentTier === "brand_studio_membership"
+      ? null
+      : currentTier === "sselfie_studio_membership"
+        ? "brand_studio_membership"
+        : "sselfie_studio_membership"
 
   const navigateToTab = (tabId: string) => {
     window.location.hash = tabId
@@ -272,12 +279,12 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-b from-stone-50 via-stone-100/50 to-white text-stone-950 relative overflow-hidden">
-      <div className="flex items-center gap-4 pt-4">
+    <div className="flex flex-col h-screen bg-linear-to-b from-stone-50 via-stone-100/50 to-white text-stone-950 relative overflow-hidden">
+      <div className="flex items-center gap-4 pt-4 px-3 sm:px-4 md:px-6 pb-3 bg-white/70 backdrop-blur-xl border-b border-stone-200/50">
         {onBack && (
           <button
             onClick={onBack}
-            className="p-4 bg-stone-100/50 rounded-2xl border border-stone-200/40 hover:bg-stone-100/70 hover:border-stone-300/50 transition-all duration-200"
+            className="p-3 bg-white/70 rounded-xl border border-stone-200/50 hover:bg-white/90 hover:border-stone-300/60 transition-all duration-200 shadow-sm"
           >
             <ChevronRight size={18} className="text-stone-600 transform rotate-180" strokeWidth={1.5} />
           </button>
@@ -290,7 +297,7 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
         </div>
         <button
           onClick={() => setShowNavMenu(true)}
-          className="font-serif text-sm tracking-[0.3em] uppercase text-stone-600 hover:text-stone-950 transition-colors px-4 py-2"
+          className="font-serif text-sm tracking-[0.3em] uppercase text-stone-600 hover:text-stone-950 transition-colors px-4 py-2 rounded-xl border border-transparent hover:border-stone-200 bg-white/60 hover:bg-white/90 shadow-sm"
         >
           MENU
         </button>
@@ -341,6 +348,22 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
                 >
                   <MessageCircle size={20} className="text-stone-600" />
                   <span className="text-sm font-medium text-stone-900">Maya</span>
+                </button>
+
+                <button
+                  onClick={() => navigateToTab("b-roll")}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-stone-100/50 transition-colors text-left"
+                >
+                  <Film size={20} className="text-stone-600" />
+                  <span className="text-sm font-medium text-stone-900">B-Roll</span>
+                </button>
+
+                <button
+                  onClick={() => navigateToTab("feed-planner")}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-stone-100/50 transition-colors text-left"
+                >
+                  <Grid size={20} className="text-stone-600" />
+                  <span className="text-sm font-medium text-stone-900">Feed Planner</span>
                 </button>
 
                 <button
@@ -484,22 +507,39 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
           </div>
         )}
 
-        {userInfo?.product_type === "sselfie_studio_membership" && (
+        {userInfo && upgradeTargetTier && (
           <div className="bg-white/70 backdrop-blur-2xl rounded-xl sm:rounded-[1.75rem] p-4 sm:p-6 md:p-8 border border-stone-200/60 shadow-xl shadow-stone-900/10">
             <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
               <div className="p-2.5 sm:p-3.5 bg-stone-900 rounded-lg sm:rounded-[1.125rem] shadow-lg">
                 <CreditCard size={18} className="text-white" strokeWidth={2.5} />
               </div>
               <div>
-                <h3 className="text-base sm:text-lg md:text-xl font-bold text-stone-950">Upgrade to Brand Studio</h3>
+                <h3 className="text-base sm:text-lg md:text-xl font-bold text-stone-950">
+                  {upgradeTargetTier === "brand_studio_membership" ? "Upgrade to Brand Studio" : "Upgrade to Studio Membership"}
+                </h3>
                 <p className="text-sm text-stone-600">More credits, premium features, priority support.</p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4">
-              <InfoPill label="Current plan" value="Studio Membership" />
-              <InfoPill label="Upgrade to" value="Brand Studio" />
-              <InfoPill label="Credits" value="300 credits / month" />
+              <InfoPill
+                label="Current plan"
+                value={
+                  userInfo.product_type === "sselfie_studio_membership"
+                    ? "Studio Membership"
+                    : userInfo.product_type === "one_time_session"
+                      ? "One-Time Session"
+                      : "Free"
+                }
+              />
+              <InfoPill
+                label="Upgrade to"
+                value={upgradeTargetTier === "brand_studio_membership" ? "Brand Studio" : "Studio Membership"}
+              />
+              <InfoPill
+                label="Credits"
+                value={upgradeTargetTier === "brand_studio_membership" ? "300 credits / month" : "150 credits / month"}
+              />
             </div>
 
             <button
@@ -753,12 +793,14 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
         </button>
       </div>
 
-      <UpgradeModal
-        open={showUpgradeModal && userInfo?.product_type === "sselfie_studio_membership"}
-        currentTier={currentTier}
-        targetTier="brand_studio_membership"
-        onClose={() => setShowUpgradeModal(false)}
-      />
+      {upgradeTargetTier && (
+        <UpgradeModal
+          open={showUpgradeModal}
+          currentTier={currentTier}
+          targetTier={upgradeTargetTier}
+          onClose={() => setShowUpgradeModal(false)}
+        />
+      )}
     </div>
   )
 }
@@ -784,7 +826,7 @@ function ToggleItem({
         <p className="text-[10px] sm:text-xs text-stone-500 mt-1">{description}</p>
       </div>
       <div
-        className={`relative w-12 h-7 sm:w-14 sm:h-8 md:w-16 md:h-9 rounded-full transition-all duration-300 cursor-pointer shadow-inner flex-shrink-0 ${
+        className={`relative w-12 h-7 sm:w-14 sm:h-8 md:w-16 md:h-9 rounded-full transition-all duration-300 cursor-pointer shadow-inner shrink-0 ${
           value ? "bg-stone-950 shadow-stone-900/30" : "bg-stone-300/60"
         }`}
       >

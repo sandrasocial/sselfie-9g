@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { X, Check } from "lucide-react"
-import { Dialog, DialogContent } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import type { GalleryImage } from "@/lib/data/images"
 
 interface ImageGalleryModalProps {
@@ -41,9 +41,11 @@ export default function ImageGalleryModal({ images, onSelect, onClose }: ImageGa
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-stone-200/40">
             <div>
-              <h2 className="font-serif text-2xl font-extralight tracking-[0.2em] uppercase text-stone-950">
-                Select Image
-              </h2>
+              <DialogTitle asChild>
+                <h2 className="font-serif text-2xl font-extralight tracking-[0.2em] uppercase text-stone-950">
+                  Select Image
+                </h2>
+              </DialogTitle>
               <p className="text-sm text-stone-500 font-light mt-1">Choose from your gallery</p>
             </div>
             <button

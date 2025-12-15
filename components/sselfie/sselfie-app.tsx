@@ -334,7 +334,7 @@ export default function SselfieApp({
 
   return (
     <div
-        className="h-screen bg-gradient-to-br from-stone-50 via-stone-100/50 to-stone-50 relative overflow-hidden prevent-horizontal-scroll"
+        className="h-screen bg-linear-to-br from-stone-50 via-stone-100/50 to-stone-50 relative overflow-hidden prevent-horizontal-scroll"
         style={{
           fontFamily:
             '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
@@ -357,11 +357,11 @@ export default function SselfieApp({
       )}
 
       <main className="relative h-full mx-1 sm:mx-2 md:mx-3 pb-2 sm:pb-3 md:pb-4">
-        <div className="h-full bg-white/30 backdrop-blur-3xl rounded-[2rem] sm:rounded-[2.5rem] md:rounded-[3rem] border border-white/40 overflow-hidden shadow-2xl shadow-stone-900/10">
+        <div className="h-full bg-white/30 backdrop-blur-3xl rounded-4xl sm:rounded-[2.5rem] md:rounded-[3rem] border border-white/40 overflow-hidden shadow-2xl shadow-stone-900/10">
           {(activeTab === "studio" || activeTab === "training") && (
-            <header className="sticky top-0 z-10 bg-transparent backdrop-blur-xl border-b border-stone-200/20 px-3 sm:px-4 md:px-6 py-2.5 pt-safe">
+            <header className="sticky top-0 z-10 bg-white/70 backdrop-blur-xl border-b border-stone-200/40 px-3 sm:px-4 md:px-6 py-3 pt-safe">
               <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="flex items-center gap-2 shrink-0">
                   <div className="font-serif text-xl sm:text-2xl font-extralight tracking-[0.3em] uppercase text-stone-950">
                     SSELFIE
                   </div>
@@ -370,19 +370,41 @@ export default function SselfieApp({
                 <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
                   <DropdownMenuTrigger asChild>
                     <button
-                      className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-lg hover:bg-stone-100/50 transition-colors"
+                      className="flex items-center justify-center w-9 h-9 rounded-lg bg-white/70 border border-white/60 hover:bg-white/90 transition-colors shadow-sm"
                       aria-label="Menu"
                     >
                       <MoreVertical size={18} className="text-stone-600" />
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56 bg-white/95 backdrop-blur-xl border-stone-200/60">
+                  <DropdownMenuContent align="end" className="w-64 bg-white/95 backdrop-blur-xl border-stone-200/60 shadow-lg">
                     <div className="px-3 py-2">
                       <div className="text-[10px] tracking-[0.15em] uppercase font-light text-stone-500">
                         Your Credits
                       </div>
                       <div className="text-2xl font-serif font-extralight text-stone-950 tabular-nums mt-1">
                         {creditBalance.toFixed(1)}
+                      </div>
+                    </div>
+                    <DropdownMenuSeparator />
+                    <div className="px-3 py-2">
+                      <div className="text-[10px] tracking-[0.15em] uppercase font-light text-stone-500 mb-1">Navigate</div>
+                      <div className="grid grid-cols-2 gap-1">
+                        {tabs.map((tab) => {
+                          const Icon = tab.icon
+                          return (
+                            <button
+                              key={`menu-${tab.id}`}
+                              onClick={() => {
+                                handleTabChange(tab.id)
+                                setIsMenuOpen(false)
+                              }}
+                              className="flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-stone-100/60 text-left transition-colors"
+                            >
+                              <Icon size={16} className="text-stone-600" />
+                              <span className="text-xs font-medium text-stone-800">{tab.label}</span>
+                            </button>
+                          )
+                        })}
                       </div>
                     </div>
                     <DropdownMenuSeparator />
@@ -479,7 +501,7 @@ export default function SselfieApp({
           aria-label="Main navigation"
           aria-hidden={!isNavVisible}
         >
-          <div className="bg-white/20 backdrop-blur-3xl rounded-[1.75rem] sm:rounded-[2rem] md:rounded-[2.5rem] border border-white/40 shadow-2xl shadow-stone-900/20">
+          <div className="bg-white/20 backdrop-blur-3xl rounded-[1.75rem] sm:rounded-4xl md:rounded-[2.5rem] border border-white/40 shadow-2xl shadow-stone-900/20">
             <div className="overflow-x-auto scrollbar-hide px-1.5 sm:px-2 md:px-3 py-2 sm:py-2.5 md:py-3">
               <div className="flex gap-1 sm:gap-2 min-w-max sm:justify-around">
                 {tabs.map((tab) => {
@@ -490,17 +512,17 @@ export default function SselfieApp({
                     <button
                       key={tab.id}
                       onClick={() => handleTabChange(tab.id)}
-                      className={`flex flex-col items-center space-y-1 px-2 sm:px-2.5 md:px-4 py-2 sm:py-2.5 md:py-3 rounded-[1rem] sm:rounded-[1.25rem] md:rounded-[1.5rem] transition-all duration-500 ease-out min-w-[60px] sm:min-w-[68px] md:min-w-[76px] relative touch-manipulation ${
+                      className={`flex flex-col items-center space-y-1 px-2 sm:px-2.5 md:px-4 py-2 sm:py-2.5 md:py-3 rounded-2xl sm:rounded-2xl md:rounded-3xl transition-all duration-500 ease-out min-w-[60px] sm:min-w-[68px] md:min-w-[76px] relative touch-manipulation ${
                         isActive ? "transform scale-105" : "hover:scale-[1.02] active:scale-95"
                       }`}
                       aria-label={`Navigate to ${tab.label}`}
                       aria-current={isActive ? "page" : undefined}
                     >
                       {isActive && (
-                        <div className="absolute inset-0 bg-gradient-to-b from-white/90 to-white/70 backdrop-blur-2xl rounded-[1rem] sm:rounded-[1.25rem] md:rounded-[1.5rem] shadow-xl shadow-stone-900/20 border border-white/60"></div>
+                        <div className="absolute inset-0 bg-linear-to-b from-white/90 to-white/70 backdrop-blur-2xl rounded-2xl sm:rounded-2xl md:rounded-3xl shadow-xl shadow-stone-900/20 border border-white/60"></div>
                       )}
                       <div
-                        className={`relative z-10 w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-[0.875rem] sm:rounded-[1rem] md:rounded-[1.125rem] flex items-center justify-center transition-all duration-500 ${
+                        className={`relative z-10 w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-xl sm:rounded-2xl md:rounded-2xl flex items-center justify-center transition-all duration-500 ${
                           isActive ? "bg-stone-950 shadow-lg shadow-stone-900/30" : "bg-white/40 backdrop-blur-xl"
                         }`}
                         aria-hidden="true"

@@ -3,6 +3,7 @@ import { stripe } from "@/lib/stripe"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getDb } from "@/lib/db"
+import { createLandingCheckoutSession } from "@/app/actions/landing-checkout"
 
 type SupportedTier = "sselfie_studio_membership" | "brand_studio_membership"
 
@@ -45,16 +46,14 @@ export async function POST(req: NextRequest) {
 
     const subscription = activeSub[0]
 
-    if (!subscription) {
-      return NextResponse.json({ error: "No active subscription to upgrade" }, { status: 400 })
+    if (!subscription || !subscription.stripe_subscription_id) {
+      // No subscription on record — fall back to creating a new embedded checkout
+      const clientSecret = await createLandingCheckoutSession(targetTier)
+      return NextResponse.json({ requiresCheckout: true, clientSecret })
     }
 
     if (subscription.product_type === targetTier) {
       return NextResponse.json({ success: true, message: "Already on target tier" })
-    }
-
-    if (!subscription.stripe_subscription_id) {
-      return NextResponse.json({ error: "Missing Stripe subscription id" }, { status: 400 })
     }
 
     const targetPriceId = process.env.STRIPE_BRAND_STUDIO_MEMBERSHIP_PRICE_ID
