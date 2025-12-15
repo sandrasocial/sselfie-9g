@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Loader2, TrendingUp, Users, BookOpen, MessageSquare, AlertCircle, DollarSign, Calendar, BarChart3, Coins, Mail, Star, FileText } from 'lucide-react'
+import { Loader2, TrendingUp, Users, BookOpen, MessageSquare, AlertCircle, DollarSign, Calendar, BarChart3, Coins, Mail, Star, FileText, Brain, Rocket, Badge } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts"
 import { SystemHealthMonitor } from "./system-health-monitor"
@@ -476,6 +476,120 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
                   </div>
                 </div>
               </Link>
+
+              <Link href="/admin/calendar" className="group">
+                <div className="bg-white rounded-xl md:rounded-2xl overflow-hidden border border-stone-200 shadow-lg hover:shadow-xl transition-all h-full">
+                  <div className="relative h-40 overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
+                    <Calendar className="w-20 h-20 text-blue-300" strokeWidth={1.5} />
+                    <div className="absolute inset-0 bg-gradient-to-t from-stone-950/60 to-transparent" />
+                    <div className="absolute bottom-4 left-4">
+                      <h3 className="font-['Times_New_Roman'] text-2xl md:text-3xl font-extralight tracking-[0.3em] uppercase text-white">
+                        CALENDAR
+                      </h3>
+                    </div>
+                  </div>
+                  <div className="p-4 md:p-6">
+                    <p className="text-sm md:text-base text-stone-600 leading-relaxed">
+                      Manage Instagram posting calendar and schedule
+                    </p>
+                  </div>
+                </div>
+              </Link>
+
+              <Link href="/admin/knowledge" className="group">
+                <div className="bg-white rounded-xl md:rounded-2xl overflow-hidden border border-stone-200 shadow-lg hover:shadow-xl transition-all h-full">
+                  <div className="relative h-40 overflow-hidden bg-gradient-to-br from-purple-50 to-violet-50 flex items-center justify-center">
+                    <Brain className="w-20 h-20 text-purple-300" strokeWidth={1.5} />
+                    <div className="absolute inset-0 bg-gradient-to-t from-stone-950/60 to-transparent" />
+                    <div className="absolute bottom-4 left-4">
+                      <h3 className="font-['Times_New_Roman'] text-2xl md:text-3xl font-extralight tracking-[0.3em] uppercase text-white">
+                        KNOWLEDGE
+                      </h3>
+                    </div>
+                  </div>
+                  <div className="p-4 md:p-6">
+                    <p className="text-sm md:text-base text-stone-600 leading-relaxed">
+                      Manage AI knowledge base and semantic search
+                    </p>
+                  </div>
+                </div>
+              </Link>
+
+              <Link href="/admin/conversions" className="group">
+                <div className="bg-white rounded-xl md:rounded-2xl overflow-hidden border border-stone-200 shadow-lg hover:shadow-xl transition-all h-full">
+                  <div className="relative h-40 overflow-hidden bg-gradient-to-br from-green-50 to-emerald-50 flex items-center justify-center">
+                    <TrendingUp className="w-20 h-20 text-green-300" strokeWidth={1.5} />
+                    <div className="absolute inset-0 bg-gradient-to-t from-stone-950/60 to-transparent" />
+                    <div className="absolute bottom-4 left-4">
+                      <h3 className="font-['Times_New_Roman'] text-2xl md:text-3xl font-extralight tracking-[0.3em] uppercase text-white">
+                        CONVERSIONS
+                      </h3>
+                    </div>
+                  </div>
+                  <div className="p-4 md:p-6">
+                    <p className="text-sm md:text-base text-stone-600 leading-relaxed">
+                      Track conversion funnels and campaign performance
+                    </p>
+                  </div>
+                </div>
+              </Link>
+
+              <Link href="/admin/email-analytics" className="group">
+                <div className="bg-white rounded-xl md:rounded-2xl overflow-hidden border border-stone-200 shadow-lg hover:shadow-xl transition-all h-full">
+                  <div className="relative h-40 overflow-hidden bg-gradient-to-br from-cyan-50 to-teal-50 flex items-center justify-center">
+                    <BarChart3 className="w-20 h-20 text-cyan-300" strokeWidth={1.5} />
+                    <div className="absolute inset-0 bg-gradient-to-t from-stone-950/60 to-transparent" />
+                    <div className="absolute bottom-4 left-4">
+                      <h3 className="font-['Times_New_Roman'] text-2xl md:text-3xl font-extralight tracking-[0.3em] uppercase text-white">
+                        EMAIL ANALYTICS
+                      </h3>
+                    </div>
+                  </div>
+                  <div className="p-4 md:p-6">
+                    <p className="text-sm md:text-base text-stone-600 leading-relaxed">
+                      Detailed email campaign metrics and performance
+                    </p>
+                  </div>
+                </div>
+              </Link>
+
+              <Link href="/admin/beta" className="group">
+                <div className="bg-white rounded-xl md:rounded-2xl overflow-hidden border border-stone-200 shadow-lg hover:shadow-xl transition-all h-full">
+                  <div className="relative h-40 overflow-hidden bg-gradient-to-br from-yellow-50 to-amber-50 flex items-center justify-center">
+                    <Badge className="w-20 h-20 text-yellow-300" strokeWidth={1.5} />
+                    <div className="absolute inset-0 bg-gradient-to-t from-stone-950/60 to-transparent" />
+                    <div className="absolute bottom-4 left-4">
+                      <h3 className="font-['Times_New_Roman'] text-2xl md:text-3xl font-extralight tracking-[0.3em] uppercase text-white">
+                        BETA
+                      </h3>
+                    </div>
+                  </div>
+                  <div className="p-4 md:p-6">
+                    <p className="text-sm md:text-base text-stone-600 leading-relaxed">
+                      Manage beta program and beta user access
+                    </p>
+                  </div>
+                </div>
+              </Link>
+
+              <Link href="/admin/launch-email" className="group">
+                <div className="bg-white rounded-xl md:rounded-2xl overflow-hidden border border-stone-200 shadow-lg hover:shadow-xl transition-all h-full">
+                  <div className="relative h-40 overflow-hidden bg-gradient-to-br from-orange-50 to-red-50 flex items-center justify-center">
+                    <Rocket className="w-20 h-20 text-orange-300" strokeWidth={1.5} />
+                    <div className="absolute inset-0 bg-gradient-to-t from-stone-950/60 to-transparent" />
+                    <div className="absolute bottom-4 left-4">
+                      <h3 className="font-['Times_New_Roman'] text-2xl md:text-3xl font-extralight tracking-[0.3em] uppercase text-white">
+                        LAUNCH
+                      </h3>
+                    </div>
+                  </div>
+                  <div className="p-4 md:p-6">
+                    <p className="text-sm md:text-base text-stone-600 leading-relaxed">
+                      Send launch campaigns to subscribers
+                    </p>
+                  </div>
+                </div>
+              </Link>
             </div>
 
             {/* Recent Activity */}
@@ -665,7 +779,7 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
                 </Link>
               </div>
               <p className="text-stone-600 mb-6">
-                Comprehensive conversion funnel metrics, campaign performance, and revenue analytics.
+                Comprehensive conversion funnel metrics, campaign performance, and revenue analytics. Use the Conversions card in the Overview tab or click the button above to access the full dashboard.
               </p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="p-4 bg-stone-50 rounded-lg">

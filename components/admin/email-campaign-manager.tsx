@@ -24,7 +24,11 @@ interface EmailCampaign {
   preview_text: string | null
 }
 
-export function EmailCampaignManager() {
+interface EmailCampaignManagerProps {
+  refreshTrigger?: number
+}
+
+export function EmailCampaignManager({ refreshTrigger }: EmailCampaignManagerProps) {
   const [campaigns, setCampaigns] = useState<EmailCampaign[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedCampaign, setSelectedCampaign] = useState<EmailCampaign | null>(null)
@@ -35,7 +39,7 @@ export function EmailCampaignManager() {
   useEffect(() => {
     loadCampaigns()
     loadSubscriberCount()
-  }, [])
+  }, [refreshTrigger])
 
   const loadSubscriberCount = async () => {
     console.log("[v0] Loading subscriber count...")
