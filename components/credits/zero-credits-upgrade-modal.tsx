@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Sparkles } from "lucide-react"
 import { startEmbeddedCheckout } from "@/lib/start-embedded-checkout"
+import { BuyCreditsDialog } from "./buy-credits-dialog"
 
 interface ZeroCreditsUpgradeModalProps {
   credits: number
@@ -13,6 +13,7 @@ export function ZeroCreditsUpgradeModal({ credits, onClose }: ZeroCreditsUpgrade
   const [showModal, setShowModal] = useState(false)
   const [isUpgrading, setIsUpgrading] = useState(false)
   const [dismissed, setDismissed] = useState(false)
+  const [showBuyDialog, setShowBuyDialog] = useState(false)
 
   useEffect(() => {
     // Show modal when credits reach exactly 0 and haven't been dismissed
@@ -39,15 +40,9 @@ export function ZeroCreditsUpgradeModal({ credits, onClose }: ZeroCreditsUpgrade
     }
   }
 
-  const handleBuyCredits = async () => {
-    try {
-      setIsUpgrading(true)
-      // Redirect to studio with checkout modal
-      window.location.href = "/studio?showCheckout=true&checkout=one_time"
-    } catch (error) {
-      console.error("[v0] Error:", error)
-      setIsUpgrading(false)
-    }
+  const handleBuyCredits = () => {
+    setShowModal(false)
+    setShowBuyDialog(true)
   }
 
   const handleDismiss = () => {
@@ -59,59 +54,46 @@ export function ZeroCreditsUpgradeModal({ credits, onClose }: ZeroCreditsUpgrade
   if (!showModal || credits > 0) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-950/80 backdrop-blur-sm p-4 animate-in fade-in duration-300">
-      <div className="relative w-full max-w-md bg-white/90 backdrop-blur-xl rounded-2xl p-6 sm:p-7 shadow-2xl border border-stone-200/70 animate-in zoom-in-95 duration-300">
-        <div className="flex flex-col items-center text-center mb-6">
-          <div className="w-16 h-16 bg-linear-to-br from-stone-100 to-stone-200 rounded-full flex items-center justify-center mb-4">
-            <Sparkles size={32} className="text-stone-600" />
+    <>
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-950/80 p-4 animate-fade-in">
+          <div className="relative w-full max-w-sm bg-stone-50 rounded-lg p-6 sm:p-8">
+            <h2 className="font-serif text-2xl sm:text-3xl font-extralight tracking-[0.2em] uppercase text-stone-900 text-center mb-3">
+              OUT OF CREDITS
+            </h2>
+
+            <p className="text-center text-stone-600 font-light text-sm mb-6">
+              You've used all your credits. Upgrade to Studio Membership for monthly credits, or purchase a one-time session.
+            </p>
+
+            <div className="space-y-3 mb-8">
+              <button
+                onClick={handleUpgrade}
+                disabled={isUpgrading}
+                className="w-full bg-stone-900 text-stone-50 px-6 py-3 rounded-lg text-xs font-medium uppercase tracking-wider hover:bg-stone-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isUpgrading ? "Processing..." : "UPGRADE TO STUDIO"}
+              </button>
+              <button
+                onClick={handleBuyCredits}
+                disabled={isUpgrading}
+                className="w-full bg-stone-100 text-stone-900 px-6 py-3 rounded-lg text-xs font-medium uppercase tracking-wider hover:bg-stone-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed border border-stone-300/40"
+              >
+                BUY ONE-TIME SESSION
+              </button>
+              <button
+                onClick={handleDismiss}
+                className="w-full text-stone-600 hover:text-stone-900 px-6 py-3 text-xs font-light tracking-wider uppercase transition-colors"
+              >
+                MAYBE LATER
+              </button>
+            </div>
           </div>
-          
-          <h2 className="font-serif text-2xl sm:text-3xl font-extralight tracking-[0.2em] uppercase text-stone-900 mb-3">
-            You're All Out
-          </h2>
-
-          <p className="text-sm text-stone-600 font-light mb-2">
-            You've used all your credits
-          </p>
-          
-          <p className="text-xs text-stone-500 font-light">
-            Upgrade to Studio Membership for monthly credits, or purchase a one-time session
-          </p>
         </div>
+      )}
 
-        <div className="space-y-3 mb-6">
-          <button
-            onClick={handleUpgrade}
-            disabled={isUpgrading}
-            className="w-full bg-stone-950 text-white px-6 py-4 rounded-xl text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-          >
-            {isUpgrading ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Loading...
-              </>
-            ) : (
-              "Upgrade to Studio Membership"
-            )}
-          </button>
-          
-          <button
-            onClick={handleBuyCredits}
-            disabled={isUpgrading}
-            className="w-full bg-stone-100 text-stone-900 px-6 py-4 rounded-xl text-sm font-medium uppercase tracking-wider hover:bg-stone-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed border border-stone-300/40"
-          >
-            Buy One-Time Session
-          </button>
-        </div>
-
-        <button
-          onClick={handleDismiss}
-          className="w-full text-stone-500 hover:text-stone-700 px-6 py-2 text-xs font-light tracking-wider uppercase transition-colors"
-        >
-          Maybe Later
-        </button>
-      </div>
-    </div>
+      {showBuyDialog && <BuyCreditsDialog onClose={() => setShowBuyDialog(false)} />}
+    </>
   )
 }
 

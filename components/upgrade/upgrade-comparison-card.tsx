@@ -114,9 +114,16 @@ export function UpgradeComparisonCard({
       )}
 
       <button
-        onClick={onUpgrade}
+        onClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          console.log("[UPGRADE-CARD] Upgrade button clicked")
+          if (!loading && onUpgrade) {
+            onUpgrade()
+          }
+        }}
         disabled={loading}
-        className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-stone-900 text-white px-4 py-3 text-sm font-semibold tracking-[0.18em] uppercase hover:bg-stone-800 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+        className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-stone-900 text-white px-4 py-3 text-sm font-semibold tracking-[0.18em] uppercase hover:bg-stone-800 transition-all disabled:opacity-60 disabled:cursor-not-allowed active:scale-[0.98]"
       >
         {loading ? "Upgrading..." : "Upgrade now"}
         {!loading && <ArrowRight size={16} />}

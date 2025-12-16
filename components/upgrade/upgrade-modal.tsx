@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { UpgradeComparisonCard } from "@/components/upgrade/upgrade-comparison-card"
+import { getProductById } from "@/lib/products"
 
 type TierId = "one_time_session" | "sselfie_studio_membership" | "brand_studio_membership"
 
@@ -22,63 +22,107 @@ export function UpgradeModal({ open, currentTier, targetTier = "brand_studio_mem
     setLoading(true)
     setError(null)
     try {
+      console.log("[UPGRADE] Starting upgrade to:", targetTier)
       const response = await fetch("/api/subscription/upgrade", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ targetTier }),
       })
 
       const data = await response.json()
+      console.log("[UPGRADE] Response:", data)
+      
       if (!response.ok) {
-        setError(data.error || "Upgrade failed. Please try again.")
+        let errorMsg = data.error || "Upgrade failed. Please try again."
+        
+        // Provide more user-friendly error messages
+        if (errorMsg.includes("Stripe Price ID not configured")) {
+          errorMsg = "Upgrade service is temporarily unavailable. Please contact support or try again later."
+        } else if (errorMsg.includes("not configured")) {
+          errorMsg = "Upgrade service is temporarily unavailable. Please contact support."
+        }
+        
+        console.error("[UPGRADE] Error:", errorMsg, "Raw error:", data.error)
+        setError(errorMsg)
         setLoading(false)
         return
       }
 
-      if (data?.clientSecret) {
+      // Check for clientSecret (either directly or in requiresCheckout response)
+      if (data?.clientSecret || (data?.requiresCheckout && data?.clientSecret)) {
         // No existing subscription: start embedded checkout
-        window.location.href = `/checkout?client_secret=${data.clientSecret}`
+        const clientSecret = data.clientSecret
+        console.log("[UPGRADE] Redirecting to checkout with clientSecret")
+        window.location.href = `/checkout?client_secret=${clientSecret}`
         return
       }
 
       // Success via subscription update: reload to reflect new tier
-      window.location.reload()
+      if (data?.success) {
+        console.log("[UPGRADE] Upgrade successful, reloading page")
+        window.location.reload()
+        return
+      }
+
+      // Fallback: if we get here, something unexpected happened
+      console.warn("[UPGRADE] Unexpected response format:", data)
+      setError("Upgrade completed but response was unexpected. Please refresh the page.")
+      setLoading(false)
     } catch (err: any) {
+      console.error("[UPGRADE] Exception:", err)
       setError(err?.message || "Upgrade failed. Please try again.")
       setLoading(false)
     }
   }
 
+  const targetProduct = getProductById(targetTier)
+  const targetName = targetTier === "brand_studio_membership" 
+    ? "Brand Studio" 
+    : targetTier === "sselfie_studio_membership"
+    ? "Studio Membership"
+    : "One-Time Session"
+  const targetCredits = targetProduct?.credits || (targetTier === "brand_studio_membership" ? 300 : targetTier === "sselfie_studio_membership" ? 150 : 70)
+  const isSubscription = targetTier !== "one_time_session"
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-950/75 backdrop-blur-sm px-4">
-      <div className="w-full max-w-2xl">
-        <div className="bg-white/85 backdrop-blur-2xl border border-stone-200/70 rounded-3xl shadow-2xl shadow-stone-900/20 p-5 sm:p-6 space-y-5">
-          <div className="flex items-start justify-between gap-4">
-            <div className="space-y-1">
-              <p className="text-[11px] uppercase tracking-[0.18em] text-stone-500">Upgrade</p>
-              <h2 className="text-2xl font-serif font-extralight tracking-[0.28em] text-stone-900 uppercase">
-                Unlock more with Brand Studio
-              </h2>
-              <p className="text-sm text-stone-600 mt-1">Get more credits, premium features, and priority support.</p>
-            </div>
-            <button
-              onClick={onClose}
-              className="text-stone-400 hover:text-stone-700 text-sm font-medium tracking-[0.18em] uppercase rounded-lg border border-transparent hover:border-stone-200 px-3 py-2"
-            >
-              Close
-            </button>
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center bg-stone-950/80 p-4 animate-fade-in"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose()
+        }
+      }}
+    >
+      <div className="relative w-full max-w-sm bg-stone-50 rounded-lg p-6 sm:p-8" onClick={(e) => e.stopPropagation()}>
+        <h2 className="font-serif text-2xl sm:text-3xl font-extralight tracking-[0.2em] uppercase text-stone-900 text-center mb-3">
+          UPGRADE
+        </h2>
+
+        <p className="text-center text-stone-600 font-light text-sm mb-6">
+          Upgrade to <strong className="text-stone-900">{targetName}</strong> and get <strong className="text-stone-900">{targetCredits} credits{isSubscription ? " / month" : ""}</strong>
+        </p>
+
+        {error && (
+          <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-3">
+            <p className="text-sm text-red-600 text-center">{error}</p>
           </div>
+        )}
 
-          <UpgradeComparisonCard
-            currentTier={currentTier}
-            targetTier={targetTier}
-            onUpgrade={handleUpgrade}
-            onClose={onClose}
-            loading={loading}
-            showAllTiers
-          />
-
-          {error && <p className="text-sm text-red-600">{error}</p>}
+        <div className="space-y-3 mb-8">
+          <button
+            onClick={handleUpgrade}
+            disabled={loading}
+            className="w-full bg-stone-900 text-stone-50 px-6 py-3 rounded-lg text-xs font-medium uppercase tracking-wider hover:bg-stone-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? "Processing..." : `UPGRADE TO ${targetName.toUpperCase()}`}
+          </button>
+          <button
+            onClick={onClose}
+            className="w-full text-stone-600 hover:text-stone-900 px-6 py-3 text-xs font-light tracking-wider uppercase transition-colors"
+          >
+            MAYBE LATER
+          </button>
         </div>
       </div>
     </div>

@@ -76,6 +76,9 @@ export default function WorkbenchPromptBox({ onGenerate, hasImages = false, isGe
       const enhancedPrompt = await onEnhancePrompt(prompt)
       if (enhancedPrompt) {
         setPrompt(enhancedPrompt)
+        if (onPromptChange) {
+          onPromptChange(enhancedPrompt)
+        }
       }
     } catch (error) {
       console.error('[WORKBENCH] Error enhancing prompt:', error)

@@ -1298,69 +1298,44 @@ export async function POST(request: NextRequest) {
             `[v0] ⚠️ Skipping credit grant - this is a TEST MODE payment. Credits are only granted for real (production) payments.`,
           )
         } else {
-          // Check if we've already granted credits for this billing period (idempotency)
-          const invoicePeriodStart = invoice.period_start
-            ? new Date(invoice.period_start * 1000)
-            : null
+          // Grant credits for studio membership subscriptions (Content Creator Studio or Brand Studio)
+          if (
+            sub.product_type === "sselfie_studio_membership" ||
+            sub.product_type === "brand_studio_membership"
+          ) {
+            // Check if we've already granted credits for this invoice period (idempotency)
+            // Use invoice.period_start to check for duplicates, not subscription period
+            const invoicePeriodStart = invoice.period_start
+              ? new Date(invoice.period_start * 1000)
+              : null
 
-          if (invoicePeriodStart && sub.current_period_start) {
-            const dbPeriodStart = new Date(sub.current_period_start)
-            // Check if we've already granted credits for this period
-            const recentGrants = await sql`
-              SELECT COUNT(*) as count
-              FROM credit_transactions
-              WHERE user_id = ${sub.user_id}
-              AND transaction_type = 'subscription_grant'
-              AND created_at >= ${dbPeriodStart}
-              AND created_at <= NOW()
-            `
+            let shouldGrant = true
+            if (invoicePeriodStart) {
+              // Check if we've already granted credits for this specific invoice period
+              // This prevents duplicates while allowing credits for upgrades/new subscriptions
+              const recentGrants = await sql`
+                SELECT COUNT(*) as count
+                FROM credit_transactions
+                WHERE user_id = ${sub.user_id}
+                AND transaction_type = 'subscription_grant'
+                AND created_at >= ${invoicePeriodStart}
+                AND created_at <= NOW()
+              `
 
-            if (recentGrants[0]?.count > 0) {
-              console.log(
-                `[v0] ⚠️ Credits already granted for this billing period (${recentGrants[0].count} grant(s) found). Skipping to prevent duplicates.`,
-              )
-            } else {
-              // Grant credits for studio membership subscriptions (Content Creator Studio or Brand Studio)
-              if (
-                sub.product_type === "sselfie_studio_membership" ||
-                sub.product_type === "brand_studio_membership"
-              ) {
-                try {
-                  console.log(`[v0] Granting monthly credits for ${sub.product_type} to user ${sub.user_id}`)
-                  const result = await grantMonthlyCredits(
-                    sub.user_id,
-                    sub.product_type as "sselfie_studio_membership" | "brand_studio_membership",
-                    false, // Always false for production payments
-                  )
-                  if (result.success) {
-                    console.log(
-                      `[v0] ✅ Monthly credits granted to user ${sub.user_id}. New balance: ${result.newBalance}`,
-                    )
-                  } else {
-                    console.error(
-                      `[v0] ❌ Failed to grant monthly credits to user ${sub.user_id}: ${result.error}`,
-                    )
-                  }
-                } catch (creditError: any) {
-                  console.error(
-                    `[v0] ❌ Error granting monthly credits to user ${sub.user_id}:`,
-                    creditError.message,
-                  )
-                  console.error(`[v0] Error stack:`, creditError.stack)
-                  // Don't break the webhook - continue to update subscription period
-                }
-              } else {
-                console.log(`[v0] Skipping credit grant - product type is ${sub.product_type}, not studio membership`)
+              if (recentGrants[0]?.count > 0) {
+                console.log(
+                  `[v0] ⚠️ Credits already granted for this invoice period (${recentGrants[0].count} grant(s) found). Skipping to prevent duplicates.`,
+                )
+                shouldGrant = false
               }
             }
-          } else {
-            // If we can't determine the period, grant anyway (might be first invoice)
-            if (
-              sub.product_type === "sselfie_studio_membership" ||
-              sub.product_type === "brand_studio_membership"
-            ) {
+
+            if (shouldGrant) {
               try {
-                console.log(`[v0] Granting monthly credits (no period check) for ${sub.product_type} to user ${sub.user_id}`)
+                console.log(`[v0] Granting monthly credits for ${sub.product_type} to user ${sub.user_id}`)
+                console.log(`[v0] Invoice billing_reason: ${invoice.billing_reason || "N/A"}`)
+                console.log(`[v0] Invoice period_start: ${invoicePeriodStart?.toISOString() || "N/A"}`)
+                
                 const result = await grantMonthlyCredits(
                   sub.user_id,
                   sub.product_type as "sselfie_studio_membership" | "brand_studio_membership",
@@ -1380,8 +1355,12 @@ export async function POST(request: NextRequest) {
                   `[v0] ❌ Error granting monthly credits to user ${sub.user_id}:`,
                   creditError.message,
                 )
+                console.error(`[v0] Error stack:`, creditError.stack)
+                // Don't break the webhook - continue to update subscription period
               }
             }
+          } else {
+            console.log(`[v0] Skipping credit grant - product type is ${sub.product_type}, not studio membership`)
           }
         }
 

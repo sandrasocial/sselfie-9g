@@ -1246,3 +1246,4 @@ function inferMode(prompt: string): StudioProMode | 'generic' {
 - Gradual migration reduces risk
 
 
+

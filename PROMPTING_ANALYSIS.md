@@ -234,3 +234,4 @@ Adding these elements should bring generated images closer to the reference imag
 
 
 
+

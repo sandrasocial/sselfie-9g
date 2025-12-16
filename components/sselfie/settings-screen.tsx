@@ -543,8 +543,13 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
             </div>
 
             <button
-              onClick={() => setShowUpgradeModal(true)}
-              className="w-full flex items-center justify-center gap-2 text-sm tracking-[0.15em] uppercase font-medium rounded-2xl py-4 bg-stone-900 text-white hover:bg-stone-800 transition-colors"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                console.log("[SETTINGS] Upgrade button clicked, opening modal")
+                setShowUpgradeModal(true)
+              }}
+              className="w-full flex items-center justify-center gap-2 text-sm tracking-[0.15em] uppercase font-medium rounded-2xl py-4 bg-stone-900 text-white hover:bg-stone-800 transition-colors active:scale-[0.98]"
             >
               Upgrade now
               <ChevronRight size={14} />

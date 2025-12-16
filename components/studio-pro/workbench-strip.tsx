@@ -64,6 +64,7 @@ export default function WorkbenchStrip({ onEnhancePrompt, onImageCountChange, ca
   // If prompts are provided, show unified prompts workbench
   // We'll handle this in the main workbench render below by adding prompts section
   const [workbenchPrompt, setWorkbenchPrompt] = useState("")
+  const [aspectRatio, setAspectRatio] = useState<"1:1" | "4:5" | "9:16" | "16:9">("1:1")
   
   // Listen for custom events to update prompt from chat suggestions
   useEffect(() => {
@@ -153,7 +154,7 @@ export default function WorkbenchStrip({ onEnhancePrompt, onImageCountChange, ca
             productImages: productImages,
           },
           resolution: '2K',
-          aspectRatio: '1:1',
+          aspectRatio,
         }),
       })
 
@@ -388,7 +389,42 @@ export default function WorkbenchStrip({ onEnhancePrompt, onImageCountChange, ca
         <div className="bg-white/80 backdrop-blur-md rounded-2xl p-6 sm:p-8 border border-stone-200/80 shadow-[0_4px_24px_rgba(0,0,0,0.04)]">
           <WorkbenchInputStrip selectedImages={selectedImages} onImagesChange={handleImagesChange} />
         </div>
-        <div className="bg-white/80 backdrop-blur-md rounded-2xl p-6 sm:p-8 border border-stone-200/80 shadow-[0_4px_24px_rgba(0,0,0,0.04)]">
+        <div className="bg-white/80 backdrop-blur-md rounded-2xl p-6 sm:p-8 border border-stone-200/80 shadow-[0_4px_24px_rgba(0,0,0,0.04)] space-y-4">
+          {/* Aspect ratio selector */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-medium tracking-[0.16em] text-stone-500 uppercase">
+                Aspect Ratio
+              </p>
+              <p className="text-[11px] text-stone-500 mt-0.5">
+                Choose the frame for this shot
+              </p>
+            </div>
+            <div className="inline-flex rounded-full border border-stone-200/80 bg-stone-50/70 p-0.5">
+              {[
+                { value: "1:1" as const, label: "1:1", hint: "Square" },
+                { value: "4:5" as const, label: "4:5", hint: "Portrait" },
+                { value: "9:16" as const, label: "9:16", hint: "Reel/Story" },
+                { value: "16:9" as const, label: "16:9", hint: "Wide" },
+              ].map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setAspectRatio(option.value)}
+                  className={[
+                    "px-3 py-1.5 rounded-full text-[11px] font-medium tracking-[0.12em] uppercase transition-all duration-200",
+                    aspectRatio === option.value
+                      ? "bg-stone-950 text-white shadow-[0_2px_10px_rgba(0,0,0,0.25)]"
+                      : "bg-transparent text-stone-600 hover:bg-white/70 hover:text-stone-900",
+                  ].join(" ")}
+                  title={option.hint}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <WorkbenchPromptBox 
             onGenerate={handleGenerate} 
             hasImages={hasImages}

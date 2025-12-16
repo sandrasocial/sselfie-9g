@@ -2604,66 +2604,12 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
 
   const isEmpty = !messages || messages.length === 0
 
-  // Show Pro mode interface when Studio Pro is enabled
-  // BUT: If workbench mode is enabled, show workbench in normal chat UI instead
-  if (studioProMode && !isWorkflowChat && !isWorkbenchModeEnabled()) {
-    return (
-      <div className="flex flex-col h-full bg-white">
-        {/* Pro Mode Header with Exit Button */}
-        <div className="shrink-0 flex items-center justify-between px-4 py-3 bg-white/80 backdrop-blur-xl border-b border-stone-200/50">
-          <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-full border border-stone-200/60 overflow-hidden">
-              <img src="https://i.postimg.cc/fTtCnzZv/out-1-22.png" alt="Maya" className="w-full h-full object-cover" />
-            </div>
-            <div>
-              <h3 className="text-sm font-serif font-extralight tracking-[0.2em] text-stone-950 uppercase">
-                Studio Pro
-              </h3>
-            </div>
-          </div>
-          
-          {/* Exit to Standard Mode Button */}
-          <button
-            onClick={() => handleModeSwitch(false)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-stone-100 text-stone-900 hover:bg-stone-200 transition-colors"
-            aria-label="Switch to Classic mode"
-          >
-            <span className="text-xs">Switch to Classic</span>
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-        
-        <div className="flex-1 overflow-hidden">
-          <ProModeWrapper
-            onWorkflowStart={(workflowType) => {
-              // Handle form-based workflows (edit/reuse)
-              console.log('[STUDIO-PRO] Starting form workflow:', workflowType)
-            }}
-            onStartWorkflowInChat={(workflowType) => {
-              // Switch to chat interface within Pro mode
-              setIsWorkflowChat(true)
-              const workflowMessage = `[WORKFLOW_START: ${workflowType}]`
-              setTimeout(() => {
-                // Send message internally without showing it as user input
-                if (sendMessage) {
-                  sendMessage({
-                    role: 'user',
-                    parts: [{ type: 'text', text: workflowMessage }],
-                  })
-                }
-              }, 100) // Small delay to ensure chat is ready
-            }}
-          />
-        </div>
-      </div>
-    )
-  }
+  // NOTE: Workbench should always be available in Studio Pro mode for manual creation
+  // Therefore, we always show the chat UI when in Studio Pro mode, which includes the workbench
+  // The old ProModeWrapper (form-based interface) has been removed in favor of the workbench-based chat UI
 
   // Note: Workflow chat mode now uses the normal chat UI below, but with isWorkflowChat=true
   // The header will show "Studio Pro Chat" and hide Studio Pro controls
-
 
   return (
     <div
@@ -3975,10 +3921,10 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
         )}
       </div>
 
-      {/* Workbench Strip - Show ABOVE input area when enabled and expanded */}
+      {/* Workbench Strip - Show ABOVE input area when in Studio Pro mode and expanded */}
       {(() => {
-        const workbenchEnabled = isWorkbenchModeEnabled()
-        const shouldShow = workbenchEnabled && studioProMode && isWorkbenchExpanded
+        // Workbench should always be available in Studio Pro mode for manual creation
+        const shouldShow = studioProMode && isWorkbenchExpanded
         return shouldShow ? (
           <div 
             className="fixed left-0 right-0 z-40 transition-all duration-300 ease-in-out"
