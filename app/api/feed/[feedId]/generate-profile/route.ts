@@ -39,6 +39,7 @@ export async function POST(req: NextRequest, { params }: { params: { feedId: str
       FROM user_models
       WHERE user_id = ${user.id}
       AND training_status = 'completed'
+      AND (is_test = false OR is_test IS NULL)
       ORDER BY created_at DESC
       LIMIT 1
     `
@@ -131,15 +132,24 @@ Be sophisticated and specific - this should feel like a Vogue editorial, not a L
       qualitySettings.lora_scale = Number(model.lora_scale)
     }
 
+    // CRITICAL FIX: Ensure version is just the hash, not full model path
+    let replicateVersionId = model.replicate_version_id
+    if (replicateVersionId && replicateVersionId.includes(':')) {
+      const parts = replicateVersionId.split(':')
+      replicateVersionId = parts[parts.length - 1] // Get last part (the hash)
+      console.log("[v0] ⚠️ Version was in full format, extracted hash:", replicateVersionId)
+    }
+
     console.log("[v0] Generating profile image:", {
       feedId,
       prompt: finalPrompt.substring(0, 100) + "...",
+      versionHash: replicateVersionId,
     })
 
     const replicate = getReplicateClient()
 
     const prediction = await replicate.predictions.create({
-      version: model.replicate_version_id,
+      version: replicateVersionId,
       input: {
         prompt: finalPrompt,
         guidance_scale: qualitySettings.guidance_scale,

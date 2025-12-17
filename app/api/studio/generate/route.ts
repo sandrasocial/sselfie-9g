@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
       ...presetSettings,
       num_outputs: 4, // Studio generates 4 variations
       aspect_ratio: "1:1", // Studio uses square format
-      lora_scale: Number(model.lora_scale || presetSettings.lora_scale),
+      lora_scale: Number(modelWithCleanVersion.lora_scale || presetSettings.lora_scale),
     }
 
     // Start generation using the trained model with quality presets

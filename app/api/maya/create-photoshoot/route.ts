@@ -357,7 +357,14 @@ export async function POST(request: NextRequest) {
     }
 
     const triggerWord = userData.trigger_word || `user${neonUser.id}`
-    const replicateVersionId = userData.replicate_version_id
+    // CRITICAL FIX: Ensure version is just the hash, not full model path
+    let replicateVersionId = userData.replicate_version_id
+    if (replicateVersionId && replicateVersionId.includes(':')) {
+      const parts = replicateVersionId.split(':')
+      replicateVersionId = parts[parts.length - 1] // Get last part (the hash)
+      console.log("[v0] ⚠️ Version was in full format, extracted hash:", replicateVersionId)
+    }
+    
     const replicateModelId = userData.replicate_model_id
     const userLoraScale = userData.lora_scale
     const loraWeightsUrl = userData.lora_weights_url

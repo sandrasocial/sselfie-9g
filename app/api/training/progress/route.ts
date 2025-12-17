@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
-import { getUserByAuthId } from "@/lib/user-mapping"
+import { getEffectiveNeonUser } from "@/lib/simple-impersonation"
 import { getReplicateClient } from "@/lib/replicate-client"
 import { neon } from "@neondatabase/serverless"
 
@@ -104,7 +104,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const neonUser = await getUserByAuthId(authUser.id)
+    const neonUser = await getEffectiveNeonUser(authUser.id)
     if (!neonUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
@@ -278,11 +278,63 @@ export async function GET(request: NextRequest) {
           console.log("[v0] Training completed - LoRA weights URL:", loraWeightsUrl)
           console.log("[v0] Extraction method:", extractionMethod)
           console.log("[v0] Replicate model ID:", training.output?.model)
-          console.log("[v0] Replicate version ID:", training.output?.version)
+          console.log("[v0] Replicate version ID (raw):", training.output?.version)
           
           if (!loraWeightsUrl) {
             console.error("[v0] ❌ CRITICAL ERROR: LoRA weights URL is NULL after all extraction methods!")
             console.error("[v0] This will cause image generation to fail!")
+          }
+
+          // CRITICAL FIX: Extract version hash properly from training.output.version
+          // training.output.version can be:
+          // 1. Full format: "sandrasocial/user-50c-selfie-lora:4e0de78d"
+          // 2. Just hash: "4e0de78d"
+          // We need to store JUST the hash for predictions.create({ version: "hash" })
+          let versionHash = null
+          if (training.output?.version) {
+            versionHash = training.output.version.includes(':')
+              ? training.output.version.split(':')[1]  // Extract hash from "model:hash"
+              : training.output.version  // Already just hash
+            console.log("[v0] ✅ Extracted version hash:", versionHash)
+          } else {
+            console.warn("[v0] ⚠️ No version in training.output, keeping existing version")
+            versionHash = model.replicate_version_id
+          }
+
+          // CRITICAL: Verify we're using the destination model version, not trainer version
+          // If we have the model ID, we can optionally fetch the latest version to ensure it's correct
+          const replicateModelId = training.output?.model || model.replicate_model_id
+          if (replicateModelId && versionHash) {
+            try {
+              // Fetch latest version from destination model to verify
+              const modelResponse = await fetch(`https://api.replicate.com/v1/models/${replicateModelId}/versions`, {
+                headers: {
+                  Authorization: `Bearer ${process.env.REPLICATE_API_TOKEN}`,
+                },
+              })
+              
+              if (modelResponse.ok) {
+                const versionsData = await modelResponse.json()
+                const latestVersion = versionsData.results?.[0]?.id
+                
+                if (latestVersion && latestVersion !== versionHash) {
+                  console.warn(`[v0] ⚠️ Version mismatch detected! DB has ${versionHash}, latest is ${latestVersion}`)
+                  console.log(`[v0] ✅ Updating to latest version: ${latestVersion}`)
+                  versionHash = latestVersion
+                  
+                  // Update LoRA URL if we're using version-based construction
+                  if (extractionMethod === "version_constructed" || extractionMethod === "fallback_constructed") {
+                    loraWeightsUrl = `https://replicate.delivery/pbxt/${versionHash}/flux-lora.tar`
+                    console.log("[v0] ✅ Updated LoRA URL to match latest version")
+                  }
+                } else if (latestVersion === versionHash) {
+                  console.log("[v0] ✅ Version hash matches latest version from destination model")
+                }
+              }
+            } catch (versionCheckError) {
+              console.warn("[v0] ⚠️ Could not verify version with Replicate API, using extracted version:", versionCheckError)
+              // Continue with extracted version if verification fails
+            }
           }
 
           // CRITICAL: Preserve existing LoRA scale if it was customized (not default 1.0)
@@ -305,8 +357,8 @@ export async function GET(request: NextRequest) {
             SET 
               training_status = 'completed',
               training_progress = 100,
-              replicate_model_id = ${training.output?.model || model.replicate_model_id},
-              replicate_version_id = ${training.output?.version || null},
+              replicate_model_id = ${replicateModelId},
+              replicate_version_id = ${versionHash}, -- CRITICAL FIX: Store just the hash, not full string
               lora_weights_url = ${loraWeightsUrl},
               lora_scale = ${preservedLoraScale}, -- Preserve custom scale or use 1.0
               completed_at = NOW(),
@@ -321,8 +373,8 @@ export async function GET(request: NextRequest) {
               ...model,
               training_status: "completed",
               training_progress: 100,
-              replicate_model_id: training.output?.model || model.replicate_model_id,
-              replicate_version_id: training.output?.version,
+              replicate_model_id: replicateModelId,
+              replicate_version_id: versionHash, // CRITICAL FIX: Return just the hash
               lora_weights_url: loraWeightsUrl,
             },
             debug: debugInfo,

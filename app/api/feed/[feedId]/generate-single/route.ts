@@ -152,6 +152,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       FROM user_models
       WHERE user_id = ${user.id}
       AND training_status = 'completed'
+      AND (is_test = false OR is_test IS NULL)
       ORDER BY created_at DESC
       LIMIT 1
     `
@@ -364,14 +365,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
     }
 
     console.log("[v0] [GENERATE-SINGLE] Creating Replicate prediction with:", {
-      version: model.replicate_version_id,
+      version: replicateVersionId,
       hasLora: !!generationInput.lora,
       promptLength: generationInput.prompt?.length,
       seed: generationInput.seed,
     })
 
     const prediction = await replicate.predictions.create({
-      version: model.replicate_version_id,
+      version: replicateVersionId,
       input: generationInput,
     })
 

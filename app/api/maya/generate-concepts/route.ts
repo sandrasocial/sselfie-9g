@@ -89,7 +89,9 @@ export async function POST(req: NextRequest) {
     const userDataResult = await sql`
       SELECT u.gender, u.ethnicity, um.trigger_word, upb.physical_preferences
       FROM users u
-      LEFT JOIN user_models um ON u.id = um.user_id AND um.training_status = 'completed'
+      LEFT JOIN user_models um ON u.id = um.user_id 
+        AND um.training_status = 'completed'
+        AND (um.is_test = false OR um.is_test IS NULL)
       LEFT JOIN user_personal_brand upb ON u.id = upb.user_id
       WHERE u.id = ${effectiveUser.id} 
       LIMIT 1

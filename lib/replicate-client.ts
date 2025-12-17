@@ -34,6 +34,55 @@ export function getReplicateClient() {
 export const FLUX_LORA_TRAINER = "replicate/fast-flux-trainer"
 export const FLUX_LORA_TRAINER_VERSION = "f463fbfc97389e10a2f443a8a84b6953b1058eafbf0c9af4d84457ff07cb04db"
 
+// CRITICAL FIX: Adaptive training parameters based on image count
+// This prevents overfitting when users retrain with fewer images
+// NOTE: Base parameters are tested and quality-checked - only adjusting for smaller datasets
+export function getAdaptiveTrainingParams(imageCount: number) {
+  // Base parameters for optimal quality with 15-25 images (TESTED AND VERIFIED)
+  const baseParams = {
+    steps: 1400,
+    lora_rank: 48,
+    optimizer: "adamw_bf16",
+    batch_size: 1,
+    resolution: "1024",
+    autocaption: true,
+    trigger_word: "", // Will be set dynamically per user
+    learning_rate: 0.00008,
+    num_repeats: 20,
+    caption_dropout_rate: 0.15,
+    cache_latents_to_disk: false,
+    network_alpha: 48,
+    save_every_n_steps: 250,
+    guidance_scale_training: 1.0,
+    lr_scheduler: "constant_with_warmup",
+  }
+  
+  // Adjust parameters for smaller datasets to prevent overfitting
+  if (imageCount < 10) {
+    // Very few images: reduce repeats and rank to prevent overfitting
+    return {
+      ...baseParams,
+      num_repeats: Math.max(10, Math.floor(imageCount * 1.5)), // Scale with image count
+      lora_rank: 32, // Lower rank for smaller datasets
+      network_alpha: 32, // Match rank
+      steps: 1200, // Slightly fewer steps
+    }
+  } else if (imageCount < 15) {
+    // Few images: moderate adjustments
+    return {
+      ...baseParams,
+      num_repeats: Math.max(15, Math.floor(imageCount * 1.3)),
+      lora_rank: 40,
+      network_alpha: 40,
+    }
+  }
+  
+  // 15+ images: use optimal base parameters (TESTED AND VERIFIED)
+  return baseParams
+}
+
+// Default parameters (for backward compatibility)
+// Uses optimal settings assuming 15-25 images (TESTED AND VERIFIED)
 export const DEFAULT_TRAINING_PARAMS = {
   steps: 1400, // Original optimal settings for quality
   lora_rank: 48, // Increased from 16 to 48 for much better face detail capture

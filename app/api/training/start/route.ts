@@ -1,8 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
-import { getUserByAuthId } from "@/lib/user-mapping"
+import { getEffectiveNeonUser } from "@/lib/simple-impersonation"
 import { createTrainingModel } from "@/lib/data/training"
-import { getReplicateClient, DEFAULT_TRAINING_PARAMS } from "@/lib/replicate-client"
+import { getReplicateClient, DEFAULT_TRAINING_PARAMS, getAdaptiveTrainingParams } from "@/lib/replicate-client"
 import { createTrainingZip } from "@/lib/storage"
 import { getDbClient } from "@/lib/db-singleton"
 import { rateLimit } from "@/lib/rate-limit-api"
@@ -47,11 +47,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
     }
 
-    // Get Neon user
-    const neonUser = await getUserByAuthId(authUser.id)
+    // Get Neon user (respects admin impersonation)
+    const neonUser = await getEffectiveNeonUser(authUser.id)
     if (!neonUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
+    
+    console.log("[v0] [TRAINING] Using effective user for training:", {
+      userId: neonUser.id,
+      email: neonUser.email,
+    })
 
     const hasEnoughCredits = await checkCredits(neonUser.id, CREDIT_COSTS.TRAINING)
     if (!hasEnoughCredits) {
@@ -103,6 +108,18 @@ export async function POST(request: NextRequest) {
 
       // Create training dataset ZIP
       const datasetUrl = await createTrainingZip(imageUrls)
+      
+      // CRITICAL FIX: Use adaptive training parameters based on image count
+      const imageCount = imageUrls?.length || 0
+      const adaptiveParams = getAdaptiveTrainingParams(imageCount)
+      
+      if (imageCount > 0) {
+        console.log(`[v0] Using adaptive training parameters for ${imageCount} images:`, {
+          num_repeats: adaptiveParams.num_repeats,
+          lora_rank: adaptiveParams.lora_rank,
+          steps: adaptiveParams.steps,
+        })
+      }
 
       // Generate trigger word
       const triggerWord = `user${neonUser.id}`
@@ -117,26 +134,28 @@ export async function POST(request: NextRequest) {
       // This ensures consistency between first-time training and retraining
       const { FLUX_LORA_TRAINER, FLUX_LORA_TRAINER_VERSION } = await import("@/lib/replicate-client")
       
-      // Check if user has existing model (retraining) to reuse model name
-      const existingModel = await sql`
+      // CRITICAL FIX: Check for existing model BEFORE calling getOrCreateTrainingModel
+      // getOrCreateTrainingModel sets replicate_model_id to NULL, which would break this check!
+      const existingModelCheck = await sql`
         SELECT replicate_model_id, trigger_word
         FROM user_models
         WHERE user_id = ${neonUser.id}
         AND training_status = 'completed'
+        AND (is_test = false OR is_test IS NULL)
         ORDER BY created_at DESC
         LIMIT 1
       `
 
-      const isRetraining = existingModel.length > 0
-      const destinationModelName = isRetraining && existingModel[0].replicate_model_id
-        ? existingModel[0].replicate_model_id.split('/')[1] // Extract model name from full ID
+      const isRetraining = existingModelCheck.length > 0
+      const destinationModelName = isRetraining && existingModelCheck[0].replicate_model_id
+        ? existingModelCheck[0].replicate_model_id.split('/')[1] // Extract model name from full ID
         : `user-${neonUser.id.substring(0, 8)}-selfie-lora`
       
       const destination = `${process.env.REPLICATE_USERNAME || "sandrasocial"}/${destinationModelName}`
       
       // For retraining, preserve original trigger word
-      const finalTriggerWord = isRetraining && existingModel[0].trigger_word
-        ? existingModel[0].trigger_word
+      const finalTriggerWord = isRetraining && existingModelCheck[0].trigger_word
+        ? existingModelCheck[0].trigger_word
         : triggerWord
 
       console.log(`[v0] ${isRetraining ? 'RETRAINING' : 'FIRST-TIME TRAINING'}`)
@@ -153,7 +172,7 @@ export async function POST(request: NextRequest) {
         {
           destination, // CRITICAL: Reuse existing model name for retraining
           input: {
-            ...DEFAULT_TRAINING_PARAMS,
+            ...adaptiveParams, // CRITICAL FIX: Use adaptive parameters based on image count
             input_images: datasetUrl,
             trigger_word: finalTriggerWord, // CRITICAL: Preserve original trigger word for retraining
           },
@@ -165,11 +184,12 @@ export async function POST(request: NextRequest) {
       console.log("[v0] Using fast-flux-trainer with Claude's optimized settings")
 
       // Update model with training ID and trigger word
+      // CRITICAL FIX: Use finalTriggerWord (preserved for retraining) instead of triggerWord
       await sql`
         UPDATE user_models
         SET 
           training_id = ${training.id},
-          trigger_word = ${triggerWord},
+          trigger_word = ${finalTriggerWord}, -- CRITICAL FIX: Preserve original trigger word for retraining
           training_status = 'training',
           started_at = NOW(),
           updated_at = NOW()

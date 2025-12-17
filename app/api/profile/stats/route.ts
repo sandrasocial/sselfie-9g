@@ -62,6 +62,7 @@ export async function GET() {
         completed_at
       FROM user_models 
       WHERE user_id = ${neonUser.id}
+      AND (is_test = false OR is_test IS NULL)
       ORDER BY created_at DESC
       LIMIT 1
     `

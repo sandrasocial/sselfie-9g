@@ -45,7 +45,8 @@ export async function POST(request: Request, { params }: { params: { feedId: str
       SELECT replicate_model_url, trigger_word, replicate_version_id, lora_weights_url, lora_scale
       FROM user_models 
       WHERE user_id = ${neonUser.id} 
-      AND training_status = 'completed' 
+      AND training_status = 'completed'
+      AND (is_test = false OR is_test IS NULL)
       ORDER BY created_at DESC 
       LIMIT 1
     `
@@ -92,8 +93,23 @@ export async function POST(request: Request, { params }: { params: { feedId: str
       qualitySettings.lora_scale = Number(model.lora_scale)
     }
 
+    // CRITICAL FIX: Ensure version is just the hash, not full model path
+    let replicateVersionId = model.replicate_version_id
+    if (replicateVersionId && replicateVersionId.includes(':')) {
+      const parts = replicateVersionId.split(':')
+      replicateVersionId = parts[parts.length - 1] // Get last part (the hash)
+      console.log("[v0] ⚠️ Version was in full format, extracted hash:", replicateVersionId)
+    }
+    
+    if (!replicateVersionId) {
+      return NextResponse.json(
+        { error: "Model version not found. Please retrain your model." },
+        { status: 400 }
+      )
+    }
+
     const prediction = await replicate.predictions.create({
-      version: model.replicate_version_id,
+      version: replicateVersionId,
       input: {
         prompt: finalPrompt,
         guidance_scale: qualitySettings.guidance_scale,

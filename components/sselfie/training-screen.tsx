@@ -318,6 +318,7 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
       formData.append("gender", selectedGender)
       formData.append("ethnicity", selectedEthnicity)
       formData.append("modelName", `${user.display_name || "User"}'s Model`)
+      formData.append("imageCount", String(compressedFiles.length)) // For validation
 
       const uploadResponse = await fetch("/api/training/upload-zip", {
         method: "POST",

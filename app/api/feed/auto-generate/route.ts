@@ -117,6 +117,7 @@ export async function POST(req: NextRequest) {
       SELECT trigger_word FROM user_models
       WHERE user_id = ${user.id}
       AND training_status = 'completed'
+      AND (is_test = false OR is_test IS NULL)
       ORDER BY created_at DESC
       LIMIT 1
     `

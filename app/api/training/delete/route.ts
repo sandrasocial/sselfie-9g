@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { deleteTrainingImage } from "@/lib/data/training"
-import { getUserByAuthId } from "@/lib/user-mapping"
+import { getEffectiveNeonUser } from "@/lib/simple-impersonation"
 import { createServerClient } from "@/lib/supabase/server"
 import { del } from "@vercel/blob"
 
@@ -15,7 +15,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const user = await getUserByAuthId(authUser.id)
+    const user = await getEffectiveNeonUser(authUser.id)
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }

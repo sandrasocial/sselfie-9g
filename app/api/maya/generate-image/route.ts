@@ -95,6 +95,7 @@ export async function POST(request: NextRequest) {
       LEFT JOIN user_models um ON u.id = um.user_id
       WHERE u.id = ${neonUser.id}
       AND um.training_status = 'completed'
+      AND (um.is_test = false OR um.is_test IS NULL)
       ORDER BY um.created_at DESC
       LIMIT 1
     `
@@ -107,10 +108,29 @@ export async function POST(request: NextRequest) {
     const triggerWord = userData.trigger_word || "person"
     const gender = userData.gender
     const ethnicity = userData.ethnicity
-    const replicateVersionId = userData.replicate_version_id
+    
+    // CRITICAL FIX: Ensure version is just the hash, not full model path
+    // replicate_version_id should be just the hash (e.g., "4e0de78d")
+    // If it's in format "model:hash", extract just the hash
+    let replicateVersionId = userData.replicate_version_id
+    if (replicateVersionId && replicateVersionId.includes(':')) {
+      const parts = replicateVersionId.split(':')
+      replicateVersionId = parts[parts.length - 1] // Get last part (the hash)
+      console.log("[v0] ⚠️ Version was in full format, extracted hash:", replicateVersionId)
+    }
+    
     const replicateModelId = userData.replicate_model_id
     const userLoraScale = userData.lora_scale
     const loraWeightsUrl = userData.lora_weights_url
+    
+    // Validate version exists
+    if (!replicateVersionId) {
+      console.error("[v0] ❌ CRITICAL: replicate_version_id is missing!")
+      return NextResponse.json(
+        { error: "Model version not found. Please retrain your model." },
+        { status: 400 }
+      )
+    }
 
     let genderEthnicityTerm = "person"
 

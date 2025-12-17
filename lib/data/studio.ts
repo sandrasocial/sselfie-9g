@@ -76,6 +76,7 @@ export async function getUserTrainedModel(userId: string) {
     FROM user_models
     WHERE user_id = ${userId}
       AND training_status = 'completed'
+      AND (is_test = false OR is_test IS NULL)
     ORDER BY created_at DESC
     LIMIT 1
   `

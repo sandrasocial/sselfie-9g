@@ -2,8 +2,9 @@
 import type { QualitySettings } from "./types" // Hypothetical import, adjust according to actual file structure
 
 // Instagram aesthetic is now achieved through prompt keywords instead of LoRA
+// RESEARCH-BASED: Guidance scale 3.5 is good, but can be lowered for more natural skin
 export const MAYA_DEFAULT_QUALITY_SETTINGS: QualitySettings = {
-  guidance_scale: 3.5,
+  guidance_scale: 3.5, // Research: 3.5 is optimal balance (higher = more plastic)
   num_inference_steps: 50,
   aspect_ratio: "4:5",
   megapixels: "1",
@@ -22,7 +23,7 @@ export const MAYA_QUALITY_PRESETS = {
   portrait: {
     ...MAYA_DEFAULT_QUALITY_SETTINGS,
     aspect_ratio: "4:5",
-    guidance_scale: 3.5,
+    guidance_scale: 3.5, // Research: 3.5 optimal for portraits (lower = more natural skin)
     lora_scale: 1.0,
     num_inference_steps: 50,
     extra_lora: "https://huggingface.co/strangerzonehf/Flux-Super-Realism-LoRA/resolve/main/super-realism.safetensors",
@@ -31,7 +32,7 @@ export const MAYA_QUALITY_PRESETS = {
   headshot: {
     ...MAYA_DEFAULT_QUALITY_SETTINGS,
     aspect_ratio: "1:1",
-    guidance_scale: 3.5,
+    guidance_scale: 3.5, // Research: Keep at 3.5 for natural skin texture
     lora_scale: 1.0,
     num_inference_steps: 50,
     extra_lora: "https://huggingface.co/strangerzonehf/Flux-Super-Realism-LoRA/resolve/main/super-realism.safetensors",
@@ -40,7 +41,7 @@ export const MAYA_QUALITY_PRESETS = {
   "Close-Up": {
     ...MAYA_DEFAULT_QUALITY_SETTINGS,
     aspect_ratio: "4:5",
-    guidance_scale: 3.5,
+    guidance_scale: 3.5, // Research: Lower guidance = more natural skin (3.5 is good)
     lora_scale: 1.0,
     num_inference_steps: 50,
     extra_lora: "https://huggingface.co/strangerzonehf/Flux-Super-Realism-LoRA/resolve/main/super-realism.safetensors",

@@ -1,6 +1,6 @@
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client"
 import { NextResponse } from "next/server"
-import { getUserByAuthId } from "@/lib/user-mapping"
+import { getEffectiveNeonUser } from "@/lib/simple-impersonation"
 import { createServerClient } from "@/lib/supabase/server"
 
 export async function POST(request: Request): Promise<NextResponse> {
@@ -17,7 +17,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
     }
 
-    const neonUser = await getUserByAuthId(authUser.id)
+    const neonUser = await getEffectiveNeonUser(authUser.id)
     if (!neonUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }

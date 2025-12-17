@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Loader2, TrendingUp, Users, BookOpen, MessageSquare, AlertCircle, DollarSign, Calendar, BarChart3, Coins, Mail, Star, FileText, Brain, Rocket, Badge } from 'lucide-react'
+import { Loader2, TrendingUp, Users, BookOpen, MessageSquare, AlertCircle, DollarSign, Calendar, BarChart3, Coins, Mail, Star, FileText, Brain, Rocket, Badge, FlaskConical, RefreshCw, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts"
 import { SystemHealthMonitor } from "./system-health-monitor"
@@ -74,6 +74,9 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
   const [revenueHistory, setRevenueHistory] = useState<any[]>([])
   const [pendingTestimonialsCount, setPendingTestimonialsCount] = useState<number>(0)
   const [loading, setLoading] = useState(true)
+  const [syncData, setSyncData] = useState<any>(null)
+  const [syncingUsers, setSyncingUsers] = useState<Set<string>>(new Set())
+  const [syncLoading, setSyncLoading] = useState(false)
 
   useEffect(() => {
     fetchDashboardStats()
@@ -81,6 +84,7 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
     fetchFeedbackData()
     fetchRevenueHistory()
     fetchPendingTestimonialsCount()
+    fetchSyncStatus()
     
     const refreshInterval = setInterval(() => {
       console.log("[v0] Auto-refreshing dashboard data...")
@@ -89,6 +93,7 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
       fetchFeedbackData()
       fetchRevenueHistory()
       fetchPendingTestimonialsCount()
+      fetchSyncStatus()
     }, 30000) // 30 seconds
     
     return () => clearInterval(refreshInterval)
@@ -143,6 +148,88 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
       }
     } catch (error) {
       console.error("[v0] Error fetching revenue history:", error)
+    }
+  }
+
+  const fetchSyncStatus = async () => {
+    try {
+      const response = await fetch("/api/admin/training/sync-status")
+      if (response.ok) {
+        const data = await response.json()
+        setSyncData(data)
+      }
+    } catch (error) {
+      console.error("[v0] Error fetching sync status:", error)
+    }
+  }
+
+  const handleSyncUser = async (userId: string) => {
+    setSyncingUsers((prev) => new Set(prev).add(userId))
+    try {
+      const response = await fetch("/api/admin/training/sync-user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId }),
+      })
+      if (response.ok) {
+        const result = await response.json()
+        if (result.updated) {
+          alert(`User synced successfully! Updated from ${result.oldVersion} to ${result.newVersion}`)
+        } else {
+          alert(result.message || "User already up to date")
+        }
+        // Refresh sync status
+        await fetchSyncStatus()
+      } else {
+        const error = await response.json()
+        alert(`Sync failed: ${error.error || "Unknown error"}`)
+      }
+    } catch (error) {
+      console.error("[v0] Error syncing user:", error)
+      alert("Failed to sync user")
+    } finally {
+      setSyncingUsers((prev) => {
+        const next = new Set(prev)
+        next.delete(userId)
+        return next
+      })
+    }
+  }
+
+  const handleBulkSync = async () => {
+    if (!syncData || syncData.users.length === 0) return
+    
+    const usersNeedingSync = syncData.users
+      .filter((u: any) => u.needsSync)
+      .map((u: any) => u.id)
+    
+    if (usersNeedingSync.length === 0) {
+      alert("No users need syncing!")
+      return
+    }
+
+    if (!confirm(`Sync ${usersNeedingSync.length} users?`)) return
+
+    setSyncLoading(true)
+    try {
+      const response = await fetch("/api/admin/training/bulk-sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userIds: usersNeedingSync }),
+      })
+      
+      if (response.ok) {
+        const result = await response.json()
+        alert(`Sync complete: ${result.summary.updated} updated, ${result.summary.alreadyUpToDate} already up to date, ${result.summary.failed} failed`)
+        await fetchSyncStatus()
+      } else {
+        alert("Bulk sync failed")
+      }
+    } catch (error) {
+      console.error("[v0] Error in bulk sync:", error)
+      alert("Bulk sync failed")
+    } finally {
+      setSyncLoading(false)
     }
   }
 
@@ -261,7 +348,7 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
         {/* Tabs */}
         <Tabs defaultValue="overview" className="w-full">
           <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
-            <TabsList className="inline-flex w-auto md:grid md:w-full md:grid-cols-5 mb-6 md:mb-8 bg-white/80 backdrop-blur-xl rounded-2xl p-2 border border-stone-200 min-w-max md:min-w-0">
+            <TabsList className="inline-flex w-auto md:grid md:w-full md:grid-cols-6 mb-6 md:mb-8 bg-white/80 backdrop-blur-xl rounded-2xl p-2 border border-stone-200 min-w-max md:min-w-0">
               <TabsTrigger value="overview" className="data-[state=active]:bg-stone-950 data-[state=active]:text-white whitespace-nowrap text-xs md:text-sm">
                 <BarChart3 className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
                 Overview
@@ -281,6 +368,10 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
               <TabsTrigger value="conversions" className="data-[state=active]:bg-stone-950 data-[state=active]:text-white whitespace-nowrap text-xs md:text-sm">
                 <TrendingUp className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
                 Conversions
+              </TabsTrigger>
+              <TabsTrigger value="model-sync" className="data-[state=active]:bg-stone-950 data-[state=active]:text-white whitespace-nowrap text-xs md:text-sm">
+                <RefreshCw className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
+                Model Sync
               </TabsTrigger>
             </TabsList>
           </div>
@@ -590,6 +681,25 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
                   </div>
                 </div>
               </Link>
+
+              <Link href="/admin/maya-testing" className="group">
+                <div className="bg-white rounded-xl md:rounded-2xl overflow-hidden border border-stone-200 shadow-lg hover:shadow-xl transition-all h-full">
+                  <div className="relative h-40 overflow-hidden bg-gradient-to-br from-violet-50 to-purple-50 flex items-center justify-center">
+                    <FlaskConical className="w-20 h-20 text-violet-300" strokeWidth={1.5} />
+                    <div className="absolute inset-0 bg-gradient-to-t from-stone-950/60 to-transparent" />
+                    <div className="absolute bottom-4 left-4">
+                      <h3 className="font-['Times_New_Roman'] text-2xl md:text-3xl font-extralight tracking-[0.3em] uppercase text-white">
+                        MAYA TESTING
+                      </h3>
+                    </div>
+                  </div>
+                  <div className="p-4 md:p-6">
+                    <p className="text-sm md:text-base text-stone-600 leading-relaxed">
+                      Test training parameters, prompts, and generation settings
+                    </p>
+                  </div>
+                </div>
+              </Link>
             </div>
 
             {/* Recent Activity */}
@@ -874,6 +984,223 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
                   <p className="text-sm md:text-base text-stone-500 text-center py-8 md:py-12">No feedback yet</p>
                 )}
               </div>
+            </div>
+          </TabsContent>
+
+          {/* Model Sync Tab */}
+          <TabsContent value="model-sync" className="space-y-6 md:space-y-8">
+            {/* Summary Stats */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+              <div className="bg-white rounded-xl md:rounded-2xl p-4 md:p-6 border border-stone-200 shadow-lg">
+                <p className="text-2xl md:text-3xl font-['Times_New_Roman'] font-extralight text-stone-950 mb-1">
+                  {syncData?.summary?.total || 0}
+                </p>
+                <p className="text-[10px] md:text-sm tracking-wider uppercase text-stone-500">Total Models</p>
+              </div>
+              <div className="bg-white rounded-xl md:rounded-2xl p-4 md:p-6 border border-stone-200 shadow-lg">
+                <div className="flex items-center gap-2 mb-1">
+                  <AlertTriangle className="w-5 h-5 text-amber-600" />
+                  <p className="text-2xl md:text-3xl font-['Times_New_Roman'] font-extralight text-amber-600">
+                    {syncData?.summary?.needsSync || 0}
+                  </p>
+                </div>
+                <p className="text-[10px] md:text-sm tracking-wider uppercase text-stone-500">Need Sync</p>
+              </div>
+              <div className="bg-white rounded-xl md:rounded-2xl p-4 md:p-6 border border-stone-200 shadow-lg">
+                <div className="flex items-center gap-2 mb-1">
+                  <CheckCircle2 className="w-5 h-5 text-green-600" />
+                  <p className="text-2xl md:text-3xl font-['Times_New_Roman'] font-extralight text-green-600">
+                    {syncData?.summary?.upToDate || 0}
+                  </p>
+                </div>
+                <p className="text-[10px] md:text-sm tracking-wider uppercase text-stone-500">Up to Date</p>
+              </div>
+              <div className="bg-white rounded-xl md:rounded-2xl p-4 md:p-6 border border-stone-200 shadow-lg">
+                <div className="flex items-center gap-2 mb-1">
+                  <XCircle className="w-5 h-5 text-red-600" />
+                  <p className="text-2xl md:text-3xl font-['Times_New_Roman'] font-extralight text-red-600">
+                    {syncData?.summary?.errors || 0}
+                  </p>
+                </div>
+                <p className="text-[10px] md:text-sm tracking-wider uppercase text-stone-500">Errors</p>
+              </div>
+            </div>
+
+            {/* Bulk Actions */}
+            {syncData?.summary?.needsSync > 0 && (
+              <div className="bg-white rounded-xl md:rounded-2xl p-4 md:p-6 border border-stone-200 shadow-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-['Times_New_Roman'] text-lg md:text-xl font-extralight tracking-[0.2em] uppercase text-stone-950 mb-1">
+                      Bulk Sync
+                    </h3>
+                    <p className="text-sm text-stone-600">
+                      Sync all {syncData.summary.needsSync} users who need updating
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleBulkSync}
+                    disabled={syncLoading}
+                    className="px-4 py-2 bg-stone-950 text-white rounded-lg hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {syncLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Syncing...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="w-4 h-4" />
+                        Sync All
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Users List */}
+            <div className="bg-white rounded-xl md:rounded-2xl p-4 md:p-8 border border-stone-200 shadow-lg">
+              <div className="flex items-center justify-between mb-4 md:mb-6">
+                <h2 className="font-['Times_New_Roman'] text-lg md:text-2xl font-extralight tracking-[0.2em] uppercase text-stone-950">
+                  Model Sync Status
+                </h2>
+                <button
+                  onClick={fetchSyncStatus}
+                  className="text-[10px] md:text-sm tracking-[0.2em] uppercase text-stone-600 hover:text-stone-950 transition-colors flex items-center gap-2"
+                >
+                  <RefreshCw className="w-3 h-3 md:w-4 md:h-4" />
+                  Refresh
+                </button>
+              </div>
+
+              {/* Filter/Search */}
+              <div className="mb-4">
+                <input
+                  type="text"
+                  placeholder="Search by email or model name..."
+                  className="w-full px-4 py-2 border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-950"
+                  onChange={(e) => {
+                    const searchTerm = e.target.value.toLowerCase()
+                    // Filter users based on search
+                    // This is handled by filtering in the map below
+                  }}
+                  id="sync-search"
+                />
+              </div>
+
+              <div className="space-y-3">
+                {syncData?.users && syncData.users.length > 0 ? (
+                  syncData.users
+                    .filter((user: any) => {
+                      const searchInput = (document.getElementById('sync-search') as HTMLInputElement)?.value?.toLowerCase() || ''
+                      if (!searchInput) return true
+                      return (
+                        user.email?.toLowerCase().includes(searchInput) ||
+                        user.display_name?.toLowerCase().includes(searchInput) ||
+                        user.replicate_model_id?.toLowerCase().includes(searchInput)
+                      )
+                    })
+                    .map((user: any, index: number) => (
+                    <div
+                      key={`${user.id}-${user.model_id}-${index}`}
+                      className={`flex items-center justify-between p-4 rounded-xl border transition-colors ${
+                        user.needsSync
+                          ? "bg-amber-50 border-amber-200"
+                          : user.status === "error"
+                          ? "bg-red-50 border-red-200"
+                          : "bg-stone-50 border-stone-100"
+                      }`}
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          {user.needsSync ? (
+                            <AlertTriangle className="w-4 h-4 text-amber-600" />
+                          ) : user.status === "error" ? (
+                            <XCircle className="w-4 h-4 text-red-600" />
+                          ) : (
+                            <CheckCircle2 className="w-4 h-4 text-green-600" />
+                          )}
+                          <span className="text-sm md:text-base font-medium text-stone-900">
+                            {user.display_name || user.email}
+                          </span>
+                          {user.needsSync && (
+                            <span className="text-xs tracking-wider uppercase text-amber-600 bg-amber-100 px-2 py-1 rounded">
+                              Needs Sync
+                            </span>
+                          )}
+                          {user.status === "error" && (
+                            <span className="text-xs tracking-wider uppercase text-red-600 bg-red-100 px-2 py-1 rounded">
+                              Error
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs md:text-sm text-stone-600 space-y-1 ml-7">
+                          <p>Email: {user.email}</p>
+                          <p>Model: {user.replicate_model_id?.split('/')[1] || 'N/A'}</p>
+                          <div className="flex items-center gap-4 flex-wrap">
+                            <span>
+                              Current: <code className="bg-stone-200 px-1 rounded text-xs">{user.currentVersion || 'N/A'}</code>
+                            </span>
+                            {user.latestVersion && (
+                              <span>
+                                Latest: <code className="bg-stone-200 px-1 rounded text-xs">{user.latestVersion}</code>
+                              </span>
+                            )}
+                            {user.totalVersionsOnReplicate && (
+                              <span className="text-xs text-stone-500">
+                                ({user.totalVersionsOnReplicate} versions on Replicate)
+                              </span>
+                            )}
+                          </div>
+                          {user.error && (
+                            <p className="text-red-600 text-xs">Error: {user.error}</p>
+                          )}
+                          {user.model_updated_at && (
+                            <p className="text-xs text-stone-400">
+                              Last updated: {new Date(user.model_updated_at).toLocaleDateString()}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {user.needsSync && (
+                          <button
+                            onClick={() => handleSyncUser(user.id)}
+                            disabled={syncingUsers.has(user.id)}
+                            className="px-3 py-2 bg-stone-950 text-white text-xs rounded-lg hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                          >
+                            {syncingUsers.has(user.id) ? (
+                              <>
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                                Syncing...
+                              </>
+                            ) : (
+                              <>
+                                <RefreshCw className="w-3 h-3" />
+                                Sync
+                              </>
+                            )}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm md:text-base text-stone-500 text-center py-8 md:py-12">
+                    {syncLoading ? "Loading..." : "No users with trained models found"}
+                  </p>
+                )}
+              </div>
+              
+              {/* Debug Info (if needed) */}
+              {process.env.NODE_ENV === 'development' && syncData && (
+                <div className="mt-4 p-4 bg-stone-50 rounded-lg border border-stone-200">
+                  <p className="text-xs text-stone-600 font-mono">
+                    Debug: Total users checked: {syncData.summary?.total || 0}
+                  </p>
+                </div>
+              )}
             </div>
           </TabsContent>
         </Tabs>

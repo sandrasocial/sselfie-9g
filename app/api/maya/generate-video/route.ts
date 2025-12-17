@@ -69,6 +69,7 @@ export async function POST(request: NextRequest) {
       FROM user_models um
       WHERE um.user_id = ${neonUser.id}
       AND um.training_status = 'completed'
+      AND (um.is_test = false OR um.is_test IS NULL)
       ORDER BY um.created_at DESC
       LIMIT 1
     `

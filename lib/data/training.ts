@@ -18,6 +18,7 @@ export interface TrainedModel {
   completed_at: Date | null
   estimated_completion_time: Date | null
   failure_reason: string | null
+  is_test: boolean | null
   created_at: Date
   updated_at: Date
 }
@@ -46,12 +47,13 @@ export async function getUserTrainedModels(userId: string): Promise<TrainedModel
   return models as TrainedModel[]
 }
 
-export async function getLatestTrainedModel(userId: string): Promise<TrainedModel | null> {
-  console.log("[v0] Fetching latest trained model for user:", userId)
+export async function getLatestTrainedModel(userId: string, includeTest: boolean = false): Promise<TrainedModel | null> {
+  console.log("[v0] Fetching latest trained model for user:", userId, "includeTest:", includeTest)
 
   const models = await sql`
     SELECT * FROM user_models
     WHERE user_id = ${userId}
+    ${includeTest ? sql`` : sql`AND (is_test = false OR is_test IS NULL)`}
     ORDER BY created_at DESC
     LIMIT 1
   `
@@ -70,62 +72,102 @@ export async function getOrCreateTrainingModel(
   modelName: string,
   modelType: string,
   triggerWord: string,
+  isTest: boolean = false,
 ): Promise<TrainedModel> {
-  console.log("[v0] Getting or creating training model for user:", userId)
+  console.log("[v0] Getting or creating training model for user:", userId, "isTest:", isTest)
 
-  // Check if user already has a model
-  const existingModel = await getLatestTrainedModel(userId)
+  // CRITICAL FIX: Check for ANY existing model for this user (test or production)
+  // Because user_models has a unique constraint on user_id, we can only ever have
+  // ONE row per user. So:
+  // - For test runs (isTest = true), we want to reuse the same row and just mark is_test = true
+  // - For production runs (isTest = false), we ALSO reuse the same row (even if it was a test row)
+  //   and flip is_test to false, instead of trying to INSERT a new row.
+  //
+  // We therefore ALWAYS include test models in the search here.
+  const existingModel = await getLatestTrainedModel(userId, true)
 
   if (existingModel) {
     console.log("[v0] Found existing model, updating it for RETRAINING:", existingModel.id)
+    console.log("[v0] Current training status:", existingModel.training_status)
     console.log("[v0] Original trigger word:", existingModel.trigger_word)
     console.log("[v0] New trigger word provided:", triggerWord)
     console.log("[v0] Original LoRA scale:", existingModel.lora_scale)
 
-    // CRITICAL: For retraining, preserve the original trigger word
-    // Changing trigger word on retraining causes inconsistency and quality issues
-    const preservedTriggerWord = existingModel.trigger_word || triggerWord
+    // CRITICAL:
+    // - For TEST runs (isTest = true): preserve the existing trigger word if present
+    //   to avoid changing the LoRA trigger mid-test.
+    // - For PRODUCTION runs (isTest = false): ALWAYS use the canonical triggerWord passed in.
+    //   This lets us safely convert a previous test row into the user's real production model
+    //   (e.g. when a test-only user now trains from inside their own account).
+    const newTriggerWord =
+      isTest && existingModel.trigger_word ? existingModel.trigger_word : triggerWord
     
     // CRITICAL: Preserve LoRA scale if it was customized (not default 1.0)
     // Only reset to 1.0 if it was never set or is null
-    const preservedLoraScale = existingModel.lora_scale && parseFloat(existingModel.lora_scale) !== 1.0
-      ? existingModel.lora_scale
-      : null // Will default to 1.0 in progress route
+    const preservedLoraScale =
+      existingModel.lora_scale && parseFloat(existingModel.lora_scale) !== 1.0
+        ? existingModel.lora_scale
+        : null // Will default to 1.0 in progress route
 
-    console.log("[v0] ✅ Preserving original trigger word:", preservedTriggerWord)
+    console.log("[v0] ✅ Using trigger word for this run:", newTriggerWord)
     if (preservedLoraScale) {
       console.log("[v0] ✅ Preserving custom LoRA scale:", preservedLoraScale)
     }
 
-    // Update the existing model
-    const result = await sql`
-      UPDATE user_models
-      SET 
-        model_name = ${modelName},
-        model_type = ${modelType},
-        trigger_word = ${preservedTriggerWord}, -- CRITICAL: Keep original trigger word for retraining
-        training_status = 'pending',
-        training_progress = 0,
-        training_id = NULL,
-        replicate_model_id = NULL, -- Will be set when training starts
-        replicate_version_id = NULL, -- Will be set when training completes
-        lora_weights_url = NULL, -- Will be set when training completes
-        started_at = NULL,
-        completed_at = NULL,
-        estimated_completion_time = NULL,
-        failure_reason = NULL,
-        updated_at = NOW()
-      WHERE id = ${existingModel.id}
-      RETURNING *
-    `
+    // CRITICAL FIX: Preserve replicate_model_id when updating for retraining
+    // We need it to reuse the same model name on Replicate
+    // Only clear it if it doesn't exist (shouldn't happen for completed models)
+    const preservedModelId = existingModel.replicate_model_id
+    
+    // CRITICAL FIX: Update the existing model by ID (most reliable)
+    // Use user_id as backup in WHERE clause to ensure we update the right model
+    try {
+      const result = await sql`
+        UPDATE user_models
+        SET 
+          model_name = ${modelName},
+          model_type = ${modelType},
+          trigger_word = ${newTriggerWord}, -- Use preserved or canonical trigger word based on isTest
+          training_status = 'pending',
+          training_progress = 0,
+          training_id = NULL,
+          replicate_model_id = ${preservedModelId}, -- CRITICAL FIX: Preserve model ID for retraining (needed to reuse model name)
+          replicate_version_id = NULL, -- Will be set when training completes
+          lora_weights_url = NULL, -- Will be set when training completes
+          started_at = NULL,
+          completed_at = NULL,
+          estimated_completion_time = NULL,
+          failure_reason = NULL,
+          is_test = ${isTest}, -- Set test flag
+          updated_at = NOW()
+        WHERE id = ${existingModel.id}
+          AND user_id = ${userId} -- CRITICAL: Double-check user_id to prevent updating wrong model
+        RETURNING *
+      `
 
-    console.log("[v0] ✅ Model updated for retraining with preserved trigger word")
-    return result[0] as TrainedModel
+      if (result.length === 0) {
+        // UPDATE didn't match - this shouldn't happen, but handle gracefully
+        console.error("[v0] ⚠️ UPDATE didn't match any rows! Model ID:", existingModel.id, "User ID:", userId)
+        throw new Error(`Failed to update existing model. Model may have been deleted or ID mismatch.`)
+      }
+
+      console.log("[v0] ✅ Model updated for retraining with preserved trigger word")
+      return result[0] as TrainedModel
+    } catch (error: any) {
+      // If UPDATE fails, log the error and rethrow
+      console.error("[v0] ❌ Error updating model for retraining:", error)
+      console.error("[v0] Existing model details:", {
+        id: existingModel.id,
+        user_id: existingModel.user_id,
+        training_status: existingModel.training_status,
+      })
+      throw error
+    }
   }
 
   // Create new model if none exists
   console.log("[v0] No existing model found, creating new one (first-time training)")
-  return createTrainingModel(userId, modelName, modelType, "", triggerWord)
+  return createTrainingModel(userId, modelName, modelType, "", triggerWord, isTest)
 }
 
 export async function getUserTrainingImages(userId: string): Promise<TrainingImage[]> {
@@ -147,35 +189,59 @@ export async function createTrainingModel(
   modelType: string,
   gender: string,
   triggerWord: string, // Made required again since DB has NOT NULL constraint
+  isTest: boolean = false,
 ): Promise<TrainedModel> {
-  console.log("[v0] Creating new training model for user:", userId)
+  console.log("[v0] Creating new training model for user:", userId, "isTest:", isTest)
+  console.log("[v0] Model details:", {
+    modelName,
+    modelType,
+    triggerWord,
+    userId,
+  })
 
-  const result = await sql`
-    INSERT INTO user_models (
-      user_id,
-      model_name,
-      model_type,
-      training_status,
-      training_progress,
-      trigger_word,
-      created_at,
-      updated_at
-    )
-    VALUES (
-      ${userId},
-      ${modelName},
-      ${modelType},
-      'pending',
-      0,
-      ${triggerWord},
-      NOW(),
-      NOW()
-    )
-    RETURNING *
-  `
+  try {
+    const result = await sql`
+      INSERT INTO user_models (
+        user_id,
+        model_name,
+        model_type,
+        training_status,
+        training_progress,
+        trigger_word,
+        is_test,
+        created_at,
+        updated_at
+      )
+      VALUES (
+        ${userId},
+        ${modelName},
+        ${modelType},
+        'pending',
+        0,
+        ${triggerWord},
+        ${isTest},
+        NOW(),
+        NOW()
+      )
+      RETURNING *
+    `
 
-  console.log("[v0] Created training model:", result[0])
-  return result[0] as TrainedModel
+    console.log("[v0] Created training model:", result[0])
+    return result[0] as TrainedModel
+  } catch (error: any) {
+    console.error("[v0] ❌ Error creating training model:", {
+      message: error?.message,
+      code: error?.code,
+      constraint: error?.constraint,
+      detail: error?.detail,
+      hint: error?.hint,
+      userId,
+      modelName,
+      triggerWord,
+      isTest,
+    })
+    throw error
+  }
 }
 
 export async function updateTrainingProgress(modelId: number, progress: number, status: string): Promise<void> {

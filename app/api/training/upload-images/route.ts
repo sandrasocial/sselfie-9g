@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
-import { getUserByAuthId } from "@/lib/user-mapping"
+import { getEffectiveNeonUser } from "@/lib/simple-impersonation"
 
 export const runtime = "edge"
 
@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
   }
 
-  const neonUser = await getUserByAuthId(authUser.id)
+  const neonUser = await getEffectiveNeonUser(authUser.id)
   if (!neonUser) {
     return NextResponse.json({ error: "User not found" }, { status: 404 })
   }
