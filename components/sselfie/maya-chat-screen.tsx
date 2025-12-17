@@ -146,8 +146,6 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
   // Prompt suggestions state
   const [promptSuggestions, setPromptSuggestions] = useState<PromptSuggestion[]>([])
   const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false)
-  const [isGeneratingPrompts, setIsGeneratingPrompts] = useState(false) // Loading state for prompt generation in Studio Pro
-  const [pendingPromptRequest, setPendingPromptRequest] = useState<string | null>(null) // Store the request for prompt generation
   
   // Carousel slides state (extracted from messages)
   const [carouselSlides, setCarouselSlides] = useState<Array<{ slideNumber: number; label: string; prompt: string }>>([])
@@ -269,14 +267,6 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
       // toast.error(errorMessage || "An error occurred while chatting with Maya. Please try again.")
     },
   })
-
-  // DISABLED: Fallback logic that intercepted Maya's responses and sent them to workbench
-  // Concept cards now always show - workbench is for manual prompt creation only
-  // This useEffect has been completely removed to prevent any workbench auto-extraction
-  
-  // DISABLED: Auto-extraction of carousel slides from Maya's messages
-  // Concept cards now always show - workbench is for manual prompt creation only
-  // This useEffect has been completely removed to prevent any workbench auto-extraction
 
   const loadChat = useCallback(
     async (specificChatId?: number) => {
@@ -675,13 +665,6 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
       alreadyProcessed: processedStudioProMessagesRef.current.has(messageId),
     })
 
-    // DISABLED: [GENERATE_PROMPTS] trigger detection for workbench
-    // Concept cards now always show - workbench is for manual prompt creation only
-    // Users can manually write prompts in workbench or use concept cards
-    // if (studioProMode && isWorkbenchModeEnabled()) {
-    //   ... disabled code ...
-    // }
-    
     // Check for [GENERATE_CONCEPTS] trigger
     // CRITICAL: Use more flexible regex to catch trigger even if Maya stops mid-response
     const conceptMatch = textContent.match(/\[GENERATE_CONCEPTS\]\s*(.+?)(?:\n|$|\[|$)/i) || 
@@ -826,11 +809,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
       // Call generateReelCover via ref to avoid dependency issues
       generateReelCoverRef.current?.({ title, textOverlay })
     }
-  }, [messages, status, isGeneratingConcepts, pendingConceptRequest, isGeneratingStudioPro, studioProMode, isWorkbenchModeEnabled, pendingPromptRequest, isGeneratingPrompts])
-  
-  // DISABLED: Auto-generation of workbench prompts from [GENERATE_PROMPTS] trigger
-  // Concept cards now always show - workbench is for manual prompt creation only
-  // This useEffect has been completely removed to prevent automatic workbench prompt generation
+  }, [messages, status, isGeneratingConcepts, pendingConceptRequest, isGeneratingStudioPro, studioProMode, isWorkbenchModeEnabled])
 
   // The problem was: message was saved BEFORE concepts were generated, so concepts were never persisted
   useEffect(() => {
@@ -1832,7 +1811,6 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
       savedMessageIds.current.clear()
       processedConceptMessagesRef.current.clear()
       promptGenerationTriggeredRef.current.clear() // Clear prompt generation tracking
-      setPendingPromptRequest(null) // Clear any pending requests
       setWorkbenchPrompts([]) // Clear workbench prompts
       setWorkbenchGuide("") // Clear workbench guide
 
@@ -1877,7 +1855,6 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
       setWorkbenchPrompts([]) // Clear workbench prompts
       setWorkbenchGuide("") // Clear workbench guide
       promptGenerationTriggeredRef.current.clear() // Clear prompt generation tracking
-      setPendingPromptRequest(null) // Clear any pending requests
 
       localStorage.setItem("mayaCurrentChatId", data.chatId.toString())
 
@@ -2748,7 +2725,30 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
         </button>
       </div>
 
-        {/* Studio Pro Controls - hide when in workflow chat or workbench mode */}
+      {/* Studio Pro step strip (simple 4-step story) */}
+      {studioProMode && !isWorkflowChat && (
+        <div className="px-3 sm:px-4 py-2 bg-stone-50/80 border-b border-stone-200/40">
+          <div className="flex flex-wrap items-center gap-1.5 text-[11px] sm:text-xs text-stone-700">
+            <span className="uppercase tracking-[0.16em] text-[10px] text-stone-500">Studio Pro Flow</span>
+            <div className="flex flex-wrap gap-1.5 flex-1 min-w-0">
+              <span className="px-2.5 py-1 rounded-full bg-stone-900 text-white">
+                Step 1 · Chat with Maya
+              </span>
+              <span className="px-2.5 py-1 rounded-full bg-stone-100 text-stone-800">
+                Step 2 · Pick a concept
+              </span>
+              <span className="px-2.5 py-1 rounded-full bg-stone-100 text-stone-800">
+                Step 3 · Add your photos
+              </span>
+              <span className="px-2.5 py-1 rounded-full bg-stone-100 text-stone-800">
+                Step 4 · Generate images
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Studio Pro Controls - hide when in workflow chat or workbench mode */}
         {studioProMode && !isWorkflowChat && !isWorkbenchModeEnabled() && (
           <div className="px-3 sm:px-4 py-3 bg-linear-to-r from-stone-50 to-stone-100/50 border-b border-stone-200/50">
             <div className="flex items-center justify-between mb-2">
@@ -3224,6 +3224,52 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
             </div>
           )}
 
+          {studioProMode && !isWorkflowChat && messages.length === 0 && (
+            <div className="px-4 sm:px-6 pt-4 pb-2 border-b border-stone-200/60 bg-white/80">
+              <div className="mb-2 text-xs font-semibold text-stone-900">
+                What do you want to create?
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  {
+                    label: "Outfit photos",
+                    prompt:
+                      "I want Studio Pro outfit photos that feel like Alo Yoga — premium athletic outfits, neutral colors and natural movement.",
+                  },
+                  {
+                    label: "Wellness content",
+                    prompt:
+                      "I want Studio Pro wellness content in Alo Yoga style — yoga, stretching and calm movement in soft neutral environments.",
+                  },
+                  {
+                    label: "Clean girl selfie",
+                    prompt:
+                      "I want a clean girl selfie aesthetic like Glossier — dewy skin, bright natural light and minimal styling.",
+                  },
+                  {
+                    label: "Airport travel photo",
+                    prompt:
+                      "I want an airport it girl travel photo — lounge or gate setting with suitcase, headphones and coffee.",
+                  },
+                  {
+                    label: "Pinterest-style carousel",
+                    prompt:
+                      "I want a Pinterest-style Instagram carousel, modern and minimal, that feels ready for Studio Pro.",
+                  },
+                ].map((recipe) => (
+                  <button
+                    key={recipe.label}
+                    type="button"
+                    onClick={() => handleSendMessage(recipe.prompt)}
+                    className="px-3 py-1.5 rounded-full border border-stone-200 bg-white text-xs text-stone-800 hover:bg-stone-100 transition-colors"
+                  >
+                    {recipe.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {filteredMessages &&
             Array.isArray(filteredMessages) &&
             filteredMessages
@@ -3270,66 +3316,8 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
                                 // Remove prompts from display text if they're in workbench (Studio Pro mode)
                                 let displayText = text
                                 
-                                // In Studio Pro mode, remove all prompts from display text (they're in workbench)
-                                if (studioProMode && isWorkbenchModeEnabled()) {
-                                  // Store original text before cleaning
-                                  const originalText = displayText
-                                  
-                                  // Remove GENERATE_PROMPTS trigger first (but preserve guide text before it)
-                                  displayText = displayText.replace(/\[GENERATE_PROMPTS[:\s]+[^\]]+\]/gi, '')
-                                  displayText = displayText.replace(/\[GENERATE_PROMPTS\]/gi, '')
-                                  
-                                  // Aggressively remove all prompt patterns
-                                  // Remove "Here are X prompts" or "Here are X options" sections
-                                  displayText = displayText.replace(/Here are \d+.*?prompts.*?(?=\n\n|$)/gis, '')
-                                  displayText = displayText.replace(/Here are \d+.*?options.*?(?=\n\n|$)/gis, '')
-                                  
-                                  // Remove all "Option X - Label:" sections with full prompts
-                                  displayText = displayText.replace(/Option\s+\d+\s*[-–]\s*[^:]+:[\s\S]*?(?=Option\s+\d+\s*[-–]|Copy|Select|then hit|$)/gi, '')
-                                  
-                                  // Remove all "Slide X - Label:" sections
-                                  displayText = displayText.replace(/Slide\s+\d+\s*(?:of\s+\d+)?\s*[-–]\s*[^:]+:[\s\S]*?(?=Slide\s+\d+\s*[-–]|Copy|Select|then hit|$)/gi, '')
-                                  
-                                  // Remove code blocks with prompts
-                                  displayText = displayText.replace(/```[\s\S]*?```/g, '')
-                                  
-                                  // Remove common ending phrases
-                                  displayText = displayText
-                                    .replace(/Copy the one that feels right.*$/is, '')
-                                    .replace(/Copy any of these.*$/is, '')
-                                    .replace(/Select your images.*$/is, '')
-                                    .replace(/then hit Generate.*$/is, '')
-                                    .replace(/Here are \d+ different vibes.*$/is, '')
-                                    .replace(/Which style feels.*$/is, '')
-                                    .replace(/Keep the .*?facial features EXACTLY identical.*?This is critical\./gis, '')
-                                    .replace(/Composition:.*?Final Use:.*?/gis, '')
-                                    .replace(/Character Lock.*?/gis, '')
-                                    .replace(/\*\*Character Lock\*\*/gi, '')
-                                    .replace(/\n{3,}/g, '\n\n')
-                                    .trim()
-                                  
-                                  // Only show fallback message if text is actually empty AND we're not waiting for prompt generation
-                                  // AND the message is complete (not streaming)
-                                  const isMessageComplete = status !== "streaming" && msg.id !== messages[messages.length - 1]?.id
-                                  const isLastMessage = msg.id === messages[messages.length - 1]?.id
-                                  const isCurrentlyStreaming = isLastMessage && status === "streaming"
-                                  
-                                  // If text is very short, check if we should show fallback or preserve guide text
-                                  if (displayText.length < 20) {
-                                    // Try to extract guide text from original (before [GENERATE_PROMPTS])
-                                    const guideMatch = originalText.match(/(.+?)\[GENERATE_PROMPTS\]/is)
-                                    if (guideMatch && guideMatch[1].trim().length > 20) {
-                                      // Use the guide text instead of fallback
-                                      displayText = guideMatch[1].trim()
-                                    } else if (!isCurrentlyStreaming && !isGeneratingPrompts && !pendingPromptRequest && isMessageComplete) {
-                                      // Only show fallback if message is complete and we're not generating
-                                      displayText = "I'll create those prompts for you in the workbench!"
-                                    } else if (isCurrentlyStreaming || isGeneratingPrompts || pendingPromptRequest) {
-                                      // If we're waiting, show nothing or minimal text
-                                      displayText = originalText.replace(/\[GENERATE_PROMPTS[:\s]+[^\]]+\]/gi, '').trim() || ""
-                                    }
-                                  }
-                                } else if (parsedPromptSuggestions.length > 0) {
+                                // When not in workbench mode, remove prompts that are rendered as cards
+                                if (!(studioProMode && isWorkbenchModeEnabled()) && parsedPromptSuggestions.length > 0) {
                                   // Classic mode: Remove carousel slide prompts from text (they'll be shown as cards)
                                   parsedPromptSuggestions.forEach(suggestion => {
                                     if (suggestion.label.includes('Slide')) {
@@ -3486,6 +3474,9 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
                                       promptSuggestions.length > 0 &&
                                       msg.id === messages[messages.length - 1]?.id && (
                                       <div className="mt-4 space-y-3">
+                                        <div className="text-xs text-stone-700 mb-1">
+                                          Step 2 – Pick a concept you like, then send it to your Workbench below.
+                                        </div>
                                         {promptSuggestions.map((suggestion) => (
                                           <NewPromptSuggestionCard
                                             key={`api-suggestion-${suggestion.id}`}
@@ -3890,20 +3881,6 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
             </div>
           )}
           
-          {/* Prompt generation loading indicator for Studio Pro mode */}
-          {isGeneratingPrompts && studioProMode && isWorkbenchModeEnabled() && (
-            <div className="flex justify-start mt-4">
-              <div className="bg-white/50 backdrop-blur-xl border border-white/70 p-3 rounded-2xl max-w-[85%] shadow-lg shadow-stone-900/5">
-                <div className="flex items-center gap-3">
-                  <div className="w-4 h-4 border-2 border-stone-300 border-t-stone-700 rounded-full animate-spin" />
-                  <span className="text-xs tracking-[0.15em] uppercase font-light text-stone-600">
-                    Creating your prompts...
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-
           <div ref={messagesEndRef} />
         </div>
 

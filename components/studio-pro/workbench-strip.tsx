@@ -128,7 +128,7 @@ export default function WorkbenchStrip({ onEnhancePrompt, onImageCountChange, ca
       .map(img => ({ url: img.url }))
 
     if (baseImages.length === 0 && productImages.length === 0) {
-      alert("Please select at least one image")
+      alert("You are almost ready to generate. Add at least one photo so Maya can keep your look consistent.")
       return
     }
 

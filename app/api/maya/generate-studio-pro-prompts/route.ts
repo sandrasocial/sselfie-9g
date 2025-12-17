@@ -78,9 +78,9 @@ Generate ${count} complete Studio Pro prompts for Nano Banana Pro. Each prompt s
 **CONTENT TYPE:** ${contentType || 'general'}
 
 **IMPORTANT - NANO BANANA PRO FORMAT (MANDATORY FOR ALL CONTENT TYPES):**
-- Use natural language, NOT Flux trigger words
-- NO LoRA references (no "user_trigger", no trigger words)
-- NO Flux-specific formatting (no "shot on iPhone 15 Pro", no "candid photo", no "amateur cellphone photo")
+- Use natural language, NOT legacy Flux-style trigger words
+- NO LoRA references (no training trigger tokens or internal model tags)
+- NO Flux-specific camera formatting (no explicit phone model names, no "candid photo" or "amateur cellphone photo" boilerplate)
 - Describe what you want to see, not technical AI terms
 - Be explicit about composition, style, lighting, colors
 - If text is needed, specify EXACT text in quotes
@@ -127,10 +127,10 @@ Each prompt should describe what the FINAL IMAGE will look like:
 **ONLY DESCRIBE THE FINAL IMAGE** - what Nano Banana Pro should generate.
 
 **FORBIDDEN FORMATS (DO NOT USE):**
-- ❌ Flux trigger words: "user_trigger", "woman", trigger tokens
-- ❌ Flux camera specs: "shot on iPhone 15 Pro", "candid photo", "amateur cellphone photo"
-- ❌ Flux lighting: "uneven natural lighting with mixed color temperatures"
-- ❌ Flux technical: "portrait mode, shallow depth of field", "film grain, muted colors"
+- ❌ Flux-style trigger words or training tokens (any short all-caps tags or pseudo-identifiers)
+- ❌ Flux camera specs: phone model names like "shot on iPhone 15 Pro", or stock phrases like "candid photo" / "amateur cellphone photo"
+- ❌ Flux lighting boilerplate like "uneven natural lighting with mixed color temperatures"
+- ❌ Flux technical boilerplate like "portrait mode, shallow depth of field" or "film grain, muted colors"
 - ❌ LoRA references: Any mention of trigger words, LoRA, or model training
 - ❌ User instructions: "Use photos from your gallery", "Select images"
 

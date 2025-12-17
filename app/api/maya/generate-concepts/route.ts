@@ -7,6 +7,7 @@ import { getFashionIntelligencePrinciples } from "@/lib/maya/fashion-knowledge-2
 import { getLifestyleContextIntelligence } from "@/lib/maya/lifestyle-contexts"
 import INFLUENCER_POSING_KNOWLEDGE from "@/lib/maya/influencer-posing-knowledge"
 import { getNanoBananaPromptingPrinciples } from "@/lib/maya/nano-banana-prompt-builder"
+import { detectCategoryAndBrand } from "@/lib/maya/prompt-templates/high-end-brands"
 
 type MayaConcept = {
   title: string
@@ -176,6 +177,45 @@ Keep it conversational and specific. I need to recreate this EXACT vibe.`
 
     const lifestyleContext = getLifestyleContextIntelligence(userRequest || aesthetic || "")
 
+    // Detect brand/category intent from user request + aesthetic + context.
+    // This is a best-effort enhancement; failures should never break concept generation.
+    let brandGuidance = ""
+    try {
+      const brandDetectionText = `${userRequest || ""} ${aesthetic || ""} ${context || ""} ${conversationContext || ""}`.trim()
+      const brandIntent = detectCategoryAndBrand(brandDetectionText)
+
+      // If high confidence brand match, enhance system prompt with brand-specific guidance
+      if (brandIntent.confidence >= 0.7 && brandIntent.suggestedBrands.length > 0) {
+        const brand = brandIntent.suggestedBrands[0] as any
+        const commonElements: string[] = brand?.visuals?.commonElements || []
+        const avoidElements: string[] = brand?.visuals?.avoid || []
+
+        brandGuidance = `
+
+=== DETECTED BRAND STYLE: ${brand.name} ===
+
+You must generate prompts matching this brand's exact aesthetic:
+
+**Visual Aesthetic:**
+${JSON.stringify(brand.aesthetic, null, 2)}
+
+**Style Guide:**
+${JSON.stringify(brand.visuals, null, 2)}
+
+**Common Elements to Include:**
+${commonElements.join(", ")}
+
+**Elements to Avoid:**
+${avoidElements.join(", ")}
+
+**CRITICAL:** Match this brand's photography style, composition, and mood exactly. Each concept prompt should feel like official ${brand.name} content.
+`
+      }
+    } catch (brandError) {
+      console.error("[v0] Error during brand detection for Nano Banana prompt:", brandError)
+      // Intentionally swallow errors here to avoid breaking concept generation.
+    }
+
     // PRIORITY 1 FIX #3: Make Scandinavian filter conditional - default but allow override
     // Check if user specified a different aesthetic (before trend research)
     const userAestheticLower = (aesthetic || "").toLowerCase()
@@ -330,6 +370,7 @@ ${trendFilterInstruction}
 
 ${conversationContextSection}
 ${fashionIntelligence}
+${brandGuidance}
 
 ${
   lifestyleContext

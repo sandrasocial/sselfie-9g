@@ -16,6 +16,8 @@
  */
 
 import { getUserContextForMaya } from './get-user-context'
+import type { PromptContext } from './prompt-templates/types'
+import { detectCategoryAndBrand, getBrandTemplate } from './prompt-templates/high-end-brands'
 
 /**
  * Studio Pro Mode Types
@@ -312,6 +314,16 @@ export async function buildNanoBananaPrompt(params: {
     ...(preferencesInput || {}),
   }
 
+  // Preferred high-end brand templates for each known brand id
+  const BRAND_DEFAULT_TEMPLATE_IDS: Record<string, string> = {
+    ALO: 'alo_yoga_lifestyle',
+    LULULEMON: 'lululemon_lifestyle',
+    GLOSSIER: 'glossier_clean_girl',
+    CHANEL: 'chanel_editorial',
+    DIOR: 'dior_romantic',
+    FREE_PEOPLE: 'free_people_bohemian',
+  }
+
   // Convert inputImages into NanoBananaInputImages format
   const nanoInputs: NanoBananaInputImages = {
     baseImages: (inputImages.baseImages || []).map((img) => ({
@@ -457,7 +469,7 @@ export async function buildNanoBananaPrompt(params: {
       })
       sceneDescription = `Product mockup`
       break
-
+    
     case 'transformation':
       optimizedPrompt = buildTransformationPrompt({
         userRequest,
@@ -468,7 +480,7 @@ export async function buildNanoBananaPrompt(params: {
       })
       sceneDescription = `Transformation`
       break
-
+    
     case 'educational':
       optimizedPrompt = buildEducationalPrompt({
         userRequest,
@@ -478,24 +490,72 @@ export async function buildNanoBananaPrompt(params: {
       })
       sceneDescription = `Educational infographic`
       break
-
+    
     case 'workbench':
       // Workbench mode uses user's prompt directly (handled above, but included here for completeness)
       // This case should never be reached due to early return, but keeping for safety
       optimizedPrompt = userRequest
       sceneDescription = 'Workbench generation'
       break
+    
+    case 'brand-scene': {
+      // Try to detect a specific high-end brand and use its template
+      const brandIntent = detectCategoryAndBrand(userRequest)
+      let usedBrandTemplate = false
 
-    case 'brand-scene':
+      if (brandIntent.confidence >= 0.7 && brandIntent.suggestedBrands.length > 0) {
+        const detectedBrand = brandIntent.suggestedBrands[0] as { id: string; name: string }
+        const templateId = BRAND_DEFAULT_TEMPLATE_IDS[detectedBrand.id]
+        const template = templateId ? getBrandTemplate(templateId) : null
+
+        if (template) {
+          const context: PromptContext = {
+            userIntent: userRequest,
+            contentType: 'lifestyle',
+            userImages: nanoInputs.baseImages.map((img, index) => ({
+              url: img.url,
+              type: img.type === 'user-photo' ? 'user_lora' : 'inspiration',
+              description:
+                img.type === 'user-photo'
+                  ? `User reference image ${index + 1}`
+                  : `Inspiration image ${index + 1}`,
+            })),
+          }
+
+          optimizedPrompt = template.promptStructure(context)
+          sceneDescription = `${detectedBrand.name} brand scene`
+          usedBrandTemplate = true
+
+          console.log('[PROMPT-BUILDER] Using high-end brand template for', {
+            brandId: detectedBrand.id,
+            templateId,
+          })
+        }
+      }
+
+      if (!usedBrandTemplate) {
+        // ============================================
+        // BRAND-SCENE MODE: Maya-generated prompts (concept cards)
+        // ============================================
+        // Concept cards use Maya's generated prompts (from concept.prompt)
+        // These prompts go through full AI transformation with brand context
+        // This is different from workbench which uses user-written prompts directly
+        optimizedPrompt = buildBrandScenePrompt({
+          userRequest, // This is Maya's generated prompt from concept generation
+          inputImages: nanoInputs,
+          brandKit,
+          preferences,
+          platformFormat: workflowMeta?.platformFormat ?? '4:5',
+        })
+        sceneDescription = `Brand scene`
+      }
+      break
+    }
+
     default:
-      // ============================================
-      // BRAND-SCENE MODE: Maya-generated prompts (concept cards)
-      // ============================================
-      // Concept cards use Maya's generated prompts (from concept.prompt)
-      // These prompts go through full AI transformation with brand context
-      // This is different from workbench which uses user-written prompts directly
+      // Fallback: treat unknown modes as generic brand scene
       optimizedPrompt = buildBrandScenePrompt({
-        userRequest, // This is Maya's generated prompt from concept generation
+        userRequest,
         inputImages: nanoInputs,
         brandKit,
         preferences,
