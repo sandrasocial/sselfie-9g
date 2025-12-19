@@ -738,6 +738,25 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
                   </div>
                 </div>
               </Link>
+
+              <Link href="/admin/composition-analytics" className="group">
+                <div className="bg-white rounded-xl md:rounded-2xl overflow-hidden border border-stone-200 shadow-lg hover:shadow-xl transition-all h-full">
+                  <div className="relative h-40 overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
+                    <BarChart3 className="w-20 h-20 text-blue-300" strokeWidth={1.5} />
+                    <div className="absolute inset-0 bg-gradient-to-t from-stone-950/60 to-transparent" />
+                    <div className="absolute bottom-4 left-4">
+                      <h3 className="font-['Times_New_Roman'] text-2xl md:text-3xl font-extralight tracking-[0.3em] uppercase text-white">
+                        COMPOSITION ANALYTICS
+                      </h3>
+                    </div>
+                  </div>
+                  <div className="p-4 md:p-6">
+                    <p className="text-sm md:text-base text-stone-600 leading-relaxed">
+                      Monitor composition system performance and diversity metrics
+                    </p>
+                  </div>
+                </div>
+              </Link>
             </div>
 
             {/* Recent Activity */}

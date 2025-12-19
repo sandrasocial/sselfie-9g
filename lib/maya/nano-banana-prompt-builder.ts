@@ -695,22 +695,58 @@ function buildBrandScenePrompt(params: {
   const { userRequest, inputImages, platformFormat } = params
   
   // CRITICAL: Check if userRequest is already a detailed prompt from Maya (concept cards)
-  // Maya's prompts contain specific markers like "**TEXT OVERLAY:**", detailed character descriptions,
-  // specific outfit details, text placement instructions, etc.
-  const isMayaDetailedPrompt = 
+  // Maya's prompts contain specific markers like:
+  // - Character consistency instructions ("maintaining exactly the characteristics")
+  // - Detailed outfit descriptions with materials/fabrics
+  // - Camera specs (lens, aperture, professional photography)
+  // - Specific lighting descriptions
+  // - Brand mentions ("from Alo", "Alo brand outfit")
+  // - Text overlay instructions
+  // - Long, detailed descriptions (typically 150+ words)
+  // - NOT the generic "Create a natural lifestyle brand scene" pattern
+  const isGenericPrompt = userRequest.trim().startsWith('Create a natural lifestyle brand scene')
+  const isMayaDetailedPrompt = !isGenericPrompt && (
+    // Character consistency markers (Maya always includes this for Studio Pro)
+    userRequest.includes('maintaining exactly the characteristics') ||
+    userRequest.includes('maintaining exactly the characteristics of the') ||
+    userRequest.includes('without copying the photo') ||
+    // Camera specs (Maya includes specific technical details)
+    (userRequest.includes('85mm lens') || userRequest.includes('50mm lens') || userRequest.includes('35mm lens')) ||
+    (userRequest.includes('professional photography') && userRequest.includes('lens')) ||
+    (userRequest.includes('f/') && (userRequest.includes('lens') || userRequest.includes('aperture'))) ||
+    // Brand mentions (Maya includes brand context)
+    (userRequest.includes('from ') && (userRequest.includes('brand') || userRequest.includes('Alo') || userRequest.includes('Chanel'))) ||
+    // Text overlay markers
     userRequest.includes('**TEXT OVERLAY:**') ||
     userRequest.includes('**Composition:**') ||
-    userRequest.includes('**TEXT OVERLAY:**') ||
     userRequest.includes('Font size:') ||
     userRequest.includes('Text placement:') ||
-    (userRequest.includes('wearing') && userRequest.includes('85mm lens')) ||
-    (userRequest.length > 200 && userRequest.includes('Vertical') && userRequest.includes('format'))
+    // Detailed outfit descriptions (Maya includes materials/fabrics)
+    (userRequest.includes('wearing') && (userRequest.includes('leather') || userRequest.includes('cashmere') || userRequest.includes('silk') || userRequest.includes('wool'))) ||
+    // Long, detailed prompts (Maya's prompts are typically 150+ words)
+    (userRequest.length > 200 && userRequest.includes('Vertical') && userRequest.includes('format')) ||
+    // Studio Pro attachment reference format
+    (userRequest.includes('Woman, maintaining') && userRequest.length > 150) ||
+    // If prompt is long (>150 chars) and doesn't match generic pattern, assume it's Maya's
+    (userRequest.length > 150 && !isGenericPrompt)
+  )
+  
+  // Log detection for debugging
+  console.log('[PROMPT-BUILDER] Checking if prompt is Maya\'s:', {
+    isGenericPrompt,
+    isMayaDetailedPrompt,
+    promptLength: userRequest.length,
+    promptStart: userRequest.substring(0, 100),
+    hasMaintaining: userRequest.includes('maintaining exactly the characteristics'),
+    hasLens: userRequest.includes('lens'),
+    hasBrand: userRequest.includes('from ') && userRequest.includes('brand'),
+  })
   
   if (isMayaDetailedPrompt) {
     // Maya has already created a detailed, specific prompt - clean it before using
     // This preserves all the text overlay instructions, character details, composition specs, etc.
     // but removes formatting and unwanted terms
-    console.log('[PROMPT-BUILDER] Detected Maya detailed prompt - cleaning before use')
+    console.log('[PROMPT-BUILDER] ✅ Detected Maya detailed prompt - using Maya\'s prompt (cleaned)')
     
     // Clean the prompt to remove headlines and formatting
     let cleanedPrompt = cleanStudioProPrompt(userRequest, userRequest)
@@ -722,6 +758,8 @@ function buildBrandScenePrompt(params: {
     
     return cleanedPrompt
   }
+  
+  console.log('[PROMPT-BUILDER] ⚠️ Not detected as Maya prompt - building generic prompt')
   
   // Fallback: Build generic prompt for workbench-style requests
   const products = inputImages.productImages || []

@@ -247,9 +247,10 @@ You understand modern Instagram carousel best practices and create prompts that 
 - backgroundColor: Default background
 
 **If NO brand colors set:**
-- Default: Monochrome (black #1A1A1A, white #FFFFFF, gray #E8E8E8)
+- Default: Neutral palette with subtle colors (avoid monochrome unless user explicitly requests it)
 - Extract accent from user's existing photos
 - NEVER assume gold, navy, or specific colors
+- NEVER default to monochrome/black and white unless user explicitly requests it
 - Ask user: "I notice you haven't set brand colors. Would you like me to suggest a palette based on your photos?"
 
 ### Typography Rules:
@@ -559,7 +560,7 @@ Style: Editorial Instagram influencer aesthetic - luxury but approachable, aspir
 
 Lighting: Golden hour natural window light from left, soft warm glow on face, gentle shadows defining cheekbones, slight catchlight in eyes
 
-Color Palette: [Use user's brand colors OR default: Warm monochrome - cream (#F5F0E8), beige (#D4C5B0), soft black (#1A1A1A), coffee brown accents (#8B7355)]
+Color Palette: [Use user's brand colors OR default: Warm neutral palette - cream (#F5F0E8), beige (#D4C5B0), soft earth tones, coffee brown accents (#8B7355). Only use monochrome/black and white if user explicitly requests it.]
 
 Text Space: Lower-left corner CLEAR for text overlay - this is where the title will go
 
@@ -1161,7 +1162,7 @@ Style: Editorial Instagram influencer meets Paris street photography - luxury bu
 
 Lighting: Golden hour natural window light streaming from left side, creating soft warm glow on face, gentle shadows defining cheekbones, slight catchlight in eyes, warm cafe ambiance in background (2700K color temperature)
 
-Color Palette: Warm monochrome - cream (#F5F0E8), beige (#D4C5B0), soft black text (#1A1A1A), coffee brown accents (#8B7355), NO bright colors
+Color Palette: Warm neutral palette - cream (#F5F0E8), beige (#D4C5B0), soft earth tones, coffee brown accents (#8B7355). Only use monochrome/black and white if user explicitly requests it.
 
 Technical Details: 50mm lens at f/1.8 for beautiful background bokeh, shallow depth of field, sharp focus on face and hands, 2K resolution with slight film grain texture
 

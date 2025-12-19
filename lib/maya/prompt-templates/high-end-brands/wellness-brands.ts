@@ -27,15 +27,17 @@ export function generateAloAction(context: PromptContext): string {
 export function generateAloOutfit(context: PromptContext): string {
   const intent = (context.userIntent || "").toLowerCase()
 
-  if (intent.includes("monochrome") || intent.includes("neutral")) {
+  // Only generate monochrome if explicitly requested
+  if (intent.includes("monochrome") || intent.includes("black and white") || intent.includes("b&w")) {
     return "Monochromatic Alo Yoga set in soft neutral tones – high-waisted leggings and fitted bra top with subtle logo on waistband or chest."
   }
 
-  if (intent.includes("earth") || intent.includes("beige") || intent.includes("stone")) {
+  if (intent.includes("earth") || intent.includes("beige") || intent.includes("stone") || intent.includes("neutral")) {
     return "Earth-toned Alo Yoga outfit – warm beige or stone-colored leggings with matching top, clean lines, and discreet logo detailing."
   }
 
-  return "Alo Yoga monochromatic athletic wear – fitted high-waisted leggings and matching top in soft neutral tones, with subtle Alo logo visible but not overpowering."
+  // Default: Use neutral tones but not monochrome
+  return "Alo Yoga athletic wear in soft neutral tones – fitted high-waisted leggings and matching top, with subtle Alo logo visible but not overpowering."
 }
 
 export function generateAloLighting(context: PromptContext): string {
@@ -79,8 +81,14 @@ function generateLululemonOutfit(context: PromptContext): string {
     return "Bold technical set with jewel-tone leggings and contrasting sports bra, clear Lululemon logo placement on hip or waistband."
   }
 
-  if (intent.includes("black") || intent.includes("monochrome")) {
+  // Only generate black-on-black if explicitly monochrome/B&W requested
+  if (intent.includes("monochrome") || intent.includes("black and white") || intent.includes("b&w")) {
     return "Black-on-black performance outfit – sleek leggings and supportive top, subtle tonal logo and technical seams highlighting performance fit."
+  }
+  
+  // Regular black outfit (not monochrome)
+  if (intent.includes("black")) {
+    return "Black performance outfit – sleek leggings and supportive top with subtle tonal logo and technical seams highlighting performance fit."
   }
 
   return "Performance-focused Lululemon outfit – technical leggings and fitted top in bold or jewel-tone colors, with visible but refined logo placement."

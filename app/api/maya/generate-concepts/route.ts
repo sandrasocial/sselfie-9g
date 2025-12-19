@@ -58,6 +58,11 @@ import {
 } from "@/lib/maya/prompt-builders/guide-prompt-handler"
 import { minimalCleanup } from "@/lib/maya/post-processing/minimal-cleanup"
 import { SHARED_MAYA_PERSONALITY } from "@/lib/maya/personality/shared-personality"
+import { getComponentDatabase } from "@/lib/maya/prompt-components/component-database"
+import { DiversityEngine } from "@/lib/maya/prompt-components/diversity-engine"
+import { CompositionBuilder } from "@/lib/maya/prompt-components/composition-builder"
+import { getMetricsTracker } from "@/lib/maya/prompt-components/metrics-tracker"
+import type { ConceptComponents } from "@/lib/maya/prompt-components/types"
 
 type MayaConcept = {
   title: string
@@ -77,6 +82,89 @@ type MayaConcept = {
 }
 
 // Guide prompt handler functions are now imported from lib/maya/prompt-builders/guide-prompt-handler.ts
+
+/**
+ * Helper: Detect category from user request
+ */
+function detectCategoryFromRequest(
+  userRequest?: string,
+  aesthetic?: string,
+  context?: string
+): string {
+  const combinedText = `${userRequest || ''} ${aesthetic || ''} ${context || ''}`.toLowerCase()
+
+  // Match to Universal Prompt categories
+  if (combinedText.includes('alo') || combinedText.includes('workout') || combinedText.includes('fitness')) {
+    return 'alo-workout'
+  }
+  if (combinedText.includes('chanel') || combinedText.includes('luxury fashion')) {
+    return 'chanel-luxury'
+  }
+  if (combinedText.includes('travel') || combinedText.includes('airport')) {
+    return 'travel-lifestyle'
+  }
+  if (combinedText.includes('christmas') || combinedText.includes('holiday')) {
+    return 'seasonal-christmas'
+  }
+  if (combinedText.includes('beauty') || combinedText.includes('makeup') || combinedText.includes('skincare')) {
+    return 'beauty'
+  }
+  if (combinedText.includes('tech') || combinedText.includes('workspace')) {
+    return 'tech'
+  }
+  if (combinedText.includes('selfie') || combinedText.includes('portrait')) {
+    return 'selfies'
+  }
+
+  // Default to generic lifestyle
+  return 'lifestyle-wellness'
+}
+
+/**
+ * Helper: Detect brand from text
+ */
+function detectBrand(text?: string): string | undefined {
+  if (!text) return undefined
+
+  const lower = text.toLowerCase()
+
+  if (lower.includes('alo')) return 'ALO'
+  if (lower.includes('chanel')) return 'CHANEL'
+  if (lower.includes('lululemon') || lower.includes('lulu')) return 'LULULEMON'
+  if (lower.includes('glossier')) return 'GLOSSIER'
+
+  return undefined
+}
+
+/**
+ * Helper: Map component category to Maya's expected category
+ */
+function mapComponentCategoryToMayaCategory(category: string): string {
+  // Map component categories to Maya's expected categories
+  const mapping: Record<string, string> = {
+    'alo-workout': 'Full Body',
+    'chanel-luxury': 'Half Body',
+    'travel-lifestyle': 'Lifestyle',
+    'beauty': 'Close-Up',
+    'selfies': 'Close-Up',
+    'lifestyle-wellness': 'Lifestyle',
+    'seasonal-christmas': 'Lifestyle',
+    'tech': 'Lifestyle',
+  }
+
+  return mapping[category] || 'Lifestyle'
+}
+
+/**
+ * Helper: Derive fashion intelligence from components
+ */
+function deriveFashionIntelligence(components: ConceptComponents): string {
+  // Derive fashion intelligence from components
+  const outfit = components.outfit.description
+  const styling = components.styling?.description || 'Natural styling'
+
+  return `${outfit}. ${styling}`
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -1294,13 +1382,13 @@ ${
 ${imageAnalysis}
 
 CRITICAL INSTRUCTIONS FOR REFERENCE IMAGES:
-- If the reference image is BLACK & WHITE or MONOCHROME → EVERY prompt MUST include "black and white" or "monochrome" - this is MANDATORY
+- If the user explicitly requests BLACK & WHITE or MONOCHROME → EVERY prompt MUST include "black and white" or "monochrome" - this is MANDATORY
 - If the reference image is a STUDIO shot → Use "studio lighting" or "professional studio lighting" - NOT "uneven natural lighting" or "iPhone"
 - If the reference image is EDITORIAL/HIGH-FASHION → Use professional camera specs, dramatic lighting, NOT "shot on iPhone" or "amateur cellphone photo"
 - If the reference image shows professional photography → Use "shot on professional camera" or "DSLR" - NOT "shot on iPhone 15 Pro"
-- The reference image's aesthetic (B&W, studio, editorial) OVERRIDES default requirements
+- The user's explicit request (B&W, studio, editorial) OVERRIDES default requirements
 - Match the EXACT lighting style, color treatment, and camera quality shown in the reference image
-- If reference is B&W → DO NOT add "muted colors" - use "black and white" or "monochrome" instead
+- If user explicitly requests B&W → DO NOT add "muted colors" - use "black and white" or "monochrome" instead
 - If reference is studio → DO NOT add "uneven natural lighting" - use the studio lighting style shown
 - If reference is editorial → DO NOT add "candid photo" or "amateur cellphone photo" - use professional photography terms
 
@@ -1513,10 +1601,11 @@ ${
        : `- Skip: Skin texture not found in user prompt, guide prompt, or templates - do not add skin texture requirements`
    }
 
-5. **Film Grain and Color Treatment (CONDITIONAL - Based on Reference Image/User Request):**
-   - **IF reference image is BLACK & WHITE or MONOCHROME OR user requests B&W:** MUST include "black and white" or "monochrome" - DO NOT add "muted colors"
-   - **IF reference image shows vibrant/editorial colors OR user requests vibrant/editorial:** Use appropriate color description (vibrant, editorial, etc.) - NOT "muted colors"
-   - **IF no specific request AND no reference image:** Include "film grain" and "muted colors" for authentic iPhone aesthetic
+5. **Film Grain and Color Treatment (CONDITIONAL - Based on User Request Only):**
+   - **IF user explicitly requests B&W/monochrome:** MUST include "black and white" or "monochrome" - DO NOT add "muted colors"
+   - **IF user requests vibrant/editorial colors:** Use appropriate color description (vibrant, editorial, etc.) - NOT "muted colors"
+   - **IF no specific request:** Include "film grain" and "muted colors" for authentic iPhone aesthetic
+   - **DO NOT add B&W based on reference image analysis - only if user explicitly requests it**
    ${enhancedAuthenticity && !studioProMode ? `
    - **ENHANCED AUTHENTICITY MODE (ON):** When this mode is enabled, you MUST include:
      * **More muted colors:** Use "heavily muted colors", "desaturated color palette", "muted tones" (stronger than normal)
@@ -2034,33 +2123,200 @@ ${shouldIncludeSkinTexture(userRequest, detectedGuidePrompt, templateExamples) ?
 - Only add B&W if user specifically asks for it or reference images clearly show B&W`
 }`
 
-    console.log("[v0] Calling generateText for concept generation")
+    // 🔴 NEW: Use composition system instead of AI generation
+    console.log("[v0] Using composition system for concept generation")
 
-    const { text } = await generateText({
-      model: "anthropic/claude-sonnet-4-20250514",
-      messages: [
-        {
-          role: "user",
-          content: conceptPrompt,
-        },
-      ],
-      maxTokens: 4096,
-      temperature: 0.85, // Restored from 0.75 for more creative, varied concept generation
+    // Initialize composition system
+    const componentDB = getComponentDatabase()
+    const diversityEngine = new DiversityEngine({
+      minPoseDiversity: 0.6,
+      minLocationDiversity: 0.5,
+      maxComponentReuse: 2,
     })
+    const compositionBuilder = new CompositionBuilder(componentDB, diversityEngine)
 
-    console.log("[v0] Generated concept text (first 300 chars):", text.substring(0, 300))
+    // Detect category from user request
+    const detectedCategory = detectCategoryFromRequest(userRequest, aesthetic, context)
+    const detectedBrandValue = detectBrand(userRequest || aesthetic || context)
 
-    // Parse JSON response
-    const jsonMatch = text.match(/\[[\s\S]*\]/)
-    if (!jsonMatch) {
-      throw new Error("No JSON array found in response")
+    console.log("[v0] Detected category:", detectedCategory, "brand:", detectedBrandValue)
+
+    // Generate concepts using composition
+    const composedConcepts: MayaConcept[] = []
+    let attempts = 0
+    const maxAttemptsPerConcept = 5
+    const targetCount = count
+
+    // If guide prompt provided, use it for concept #1
+    if (detectedGuidePrompt && detectedGuidePrompt.trim().length > 0) {
+      const guidePromptWithImages = mergeGuidePromptWithImages(
+        detectedGuidePrompt,
+        referenceImages,
+        studioProMode
+      )
+      const guidePromptConcept: MayaConcept = {
+        title: 'Your Custom Prompt',
+        description: 'Using your guide prompt exactly as specified',
+        category: mapComponentCategoryToMayaCategory(detectedCategory),
+        fashionIntelligence: '',
+        lighting: '',
+        location: '',
+        prompt: guidePromptWithImages,
+      }
+      composedConcepts.push(guidePromptConcept)
+      console.log('[v0] [COMPOSITION] Added guide prompt as concept #1')
     }
 
-    let concepts: MayaConcept[] = JSON.parse(jsonMatch[0])
+    // Generate remaining concepts using composition
+    const remainingCount = targetCount - composedConcepts.length
+    console.log(`[v0] [COMPOSITION] Generating ${remainingCount} concepts using composition system`)
+
+    // Track composed components for diversity checking
+    const composedComponents: ConceptComponents[] = []
+
+    while (composedConcepts.length < targetCount && attempts < targetCount * maxAttemptsPerConcept) {
+      attempts++
+
+      try {
+        const composed = compositionBuilder.composePrompt({
+          category: detectedCategory,
+          userIntent: userRequest || context || aesthetic || '',
+          brand: detectedBrandValue,
+          count: composedConcepts.length,
+          previousConcepts: composedComponents, // Use actual components for diversity
+        })
+
+        // Check diversity (skip check for guide prompt concept)
+        if (composedConcepts.length === 0 && detectedGuidePrompt) {
+          // First concept is guide prompt, skip diversity check
+        } else {
+          const diversityCheck = diversityEngine.isDiverseEnough(composed.components)
+
+          if (!diversityCheck.diverse) {
+            console.log(
+              `[v0] [COMPOSITION] Rejected (${attempts}/${targetCount * maxAttemptsPerConcept}): ${diversityCheck.reason}`
+            )
+            continue
+          }
+
+          diversityEngine.addToHistory(composed.components)
+          composedComponents.push(composed.components) // Track for next iteration
+        }
+
+        // Convert to MayaConcept format
+        const concept: MayaConcept = {
+          title: composed.title,
+          description: composed.description,
+          category: mapComponentCategoryToMayaCategory(composed.category),
+          fashionIntelligence: deriveFashionIntelligence(composed.components),
+          lighting: composed.components.lighting.description,
+          location: composed.components.location.description,
+          prompt: composed.prompt,
+        }
+
+        composedConcepts.push(concept)
+        console.log(
+          `[v0] [COMPOSITION] Generated concept ${composedConcepts.length}/${targetCount}: ${concept.title}`
+        )
+      } catch (error) {
+        console.error(`[v0] [COMPOSITION] Error generating concept:`, error)
+      }
+    }
+
+    if (composedConcepts.length < targetCount) {
+      console.warn(
+        `[v0] [COMPOSITION] Only generated ${composedConcepts.length}/${targetCount} concepts after ${attempts} attempts`
+      )
+      console.log(`[v0] [COMPOSITION] Falling back to AI for remaining ${targetCount - composedConcepts.length} concepts`)
+
+      // Fallback to AI generation for remaining concepts
+      const { text } = await generateText({
+        model: 'anthropic/claude-sonnet-4-20250514',
+        messages: [
+          {
+            role: 'user',
+            content: conceptPrompt,
+          },
+        ],
+        maxTokens: 4096,
+        temperature: 0.85,
+      })
+
+      console.log('[v0] Generated concept text (first 300 chars):', text.substring(0, 300))
+
+      // Parse JSON response
+      const jsonMatch = text.match(/\[[\s\S]*\]/)
+      if (jsonMatch) {
+        const aiConcepts: MayaConcept[] = JSON.parse(jsonMatch[0])
+        // Add AI-generated concepts to fill remaining slots
+        const needed = targetCount - composedConcepts.length
+        composedConcepts.push(...aiConcepts.slice(0, needed))
+        console.log(`[v0] [COMPOSITION] Added ${Math.min(needed, aiConcepts.length)} AI-generated concepts as fallback`)
+      }
+    }
+
+    let concepts: MayaConcept[] = composedConcepts
+
+    // Track metrics for this batch
+    // 🔴 CRITICAL FIX: Only track composed concepts (not guide prompts) for metrics
+    // Guide prompts don't have components, so we need to filter them out before mapping
+    if (composedConcepts.length > 0 && composedComponents.length > 0) {
+      const metricsTracker = getMetricsTracker()
+      const batchId = `batch-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      
+      // Identify which concepts are guide prompts vs composed
+      const isGuidePromptConcept = (concept: MayaConcept) => 
+        concept.title === 'Your Custom Prompt' && 
+        concept.description === 'Using your guide prompt exactly as specified'
+      
+      // Filter out guide prompt concepts and map only composed concepts to their components
+      // composedComponents array only contains components for composed concepts (not guide prompts)
+      const composedPrompts = composedConcepts
+        .map((concept, index) => {
+          // Check if this is a guide prompt concept
+          if (isGuidePromptConcept(concept)) {
+            return null // Skip guide prompts - they don't have components
+          }
+          // Find the corresponding component index
+          // If guide prompt exists at index 0, composed concepts start at index 1
+          // So we need to adjust: composedComponents[0] maps to composedConcepts[1] (if guide prompt exists)
+          const guidePromptOffset = composedConcepts[0] && isGuidePromptConcept(composedConcepts[0]) ? 1 : 0
+          const componentIndex = index - guidePromptOffset
+          
+          // Only include if we have a matching component
+          if (componentIndex >= 0 && componentIndex < composedComponents.length) {
+            return {
+              prompt: concept.prompt,
+              components: composedComponents[componentIndex],
+              title: concept.title,
+              description: concept.description,
+              category: detectedCategory,
+            }
+          }
+          return null
+        })
+        .filter((prompt): prompt is NonNullable<typeof prompt> => prompt !== null)
+
+      if (composedPrompts.length > 0) {
+        metricsTracker.trackBatch(
+          batchId,
+          detectedCategory,
+          composedPrompts,
+          composedComponents
+        )
+        
+        console.log(`[v0] [METRICS] Tracked batch ${batchId} with ${composedPrompts.length} composed concepts (guide prompts excluded)`)
+      }
+    }
 
     // 🔴 CRITICAL: If guide prompt is provided (explicit or auto-detected), use it for concept #1 and create variations for 2-6
-    if (detectedGuidePrompt && detectedGuidePrompt.trim().length > 0 && concepts.length > 0) {
-      console.log("[v0] 📋 Using guide prompt for concept #1, creating variations for concepts 2-6")
+    // NOTE: This is now handled in the composition system above, but we keep this for AI fallback cases
+    // Only run if we used AI fallback (check if first concept is NOT the guide prompt we added)
+    const firstConceptIsGuidePrompt = composedConcepts.length > 0 && 
+      composedConcepts[0].title === 'Your Custom Prompt' && 
+      composedConcepts[0].description === 'Using your guide prompt exactly as specified'
+    if (detectedGuidePrompt && detectedGuidePrompt.trim().length > 0 && concepts.length > 0 && !firstConceptIsGuidePrompt) {
+      console.log("[v0] 📋 Using guide prompt for concept #1 (AI fallback), creating variations for concepts 2-6")
       
       // Concept #1: Use guide prompt EXACTLY (but merge with user's image references)
       const guidePromptWithImages = mergeGuidePromptWithImages(detectedGuidePrompt, referenceImages, studioProMode)
@@ -2303,8 +2559,8 @@ ${shouldIncludeSkinTexture(userRequest, detectedGuidePrompt, templateExamples) ?
         styleContext,
       )
       
-      // Detect if reference image or user request is B&W/monochrome
-      const wantsBAndW = /black.?and.?white|monochrome|b&w|grayscale|black and white/i.test(styleContext)
+      // Detect if user request is B&W/monochrome (NOT from image analysis - only user's explicit request)
+      const wantsBAndW = /black.?and.?white|monochrome|b&w|grayscale|black and white/i.test(userRequest || "")
       
       // Detect if reference image shows studio lighting (explicit phrases only)
       const imageShowsStudio = /\b(studio\s+lighting|studio\s+shot|studio\s+photo|photo\s+studio|controlled\s+studio\s+lighting|professional\s+studio\s+lighting)\b/i.test(
@@ -2433,16 +2689,15 @@ ${shouldIncludeSkinTexture(userRequest, detectedGuidePrompt, templateExamples) ?
       // Check if prompt already has B&W/monochrome
       const hasBAndW = /black.?and.?white|monochrome|b&w|grayscale/i.test(enhanced)
 
-      // 🔴 CRITICAL: Only add B&W if explicitly requested by user OR clearly shown in reference images
-      // Do NOT add B&W based on vague detection - be strict
+      // 🔴 CRITICAL: Only add B&W if explicitly requested by user (NOT from image analysis)
+      // Do NOT add B&W based on image analysis - only user's explicit request
       const userExplicitlyWantsBAndW = /(?:black\s+and\s+white|monochrome|b&w|grayscale|black\s+white)\b/i.test(userRequest || "")
-      const imageAnalysisShowsBAndW = /(?:black\s+and\s+white|monochrome|b&w|grayscale|black\s+white|no\s+color|colorless)\b/i.test(imageAnalysisText || "")
 
       if (!/muted\s+(?:colors?|color\s+palette|tones?)/i.test(enhanced)) {
-        // Only add B&W if user explicitly requested it OR reference image clearly shows B&W
-        if ((userExplicitlyWantsBAndW || imageAnalysisShowsBAndW) && !hasBAndW) {
-          // User or reference image explicitly wants B&W - add it
-          console.log("[v0] B&W/Monochrome explicitly requested - adding to prompt")
+        // Only add B&W if user explicitly requested it (NOT from image analysis)
+        if (userExplicitlyWantsBAndW && !hasBAndW) {
+          // User explicitly wants B&W - add it
+          console.log("[v0] B&W/Monochrome explicitly requested by user - adding to prompt")
           enhanced += ", black and white"
           addedCount += 3
         } else if (hasBAndW) {
@@ -2728,26 +2983,25 @@ ${shouldIncludeSkinTexture(userRequest, detectedGuidePrompt, templateExamples) ?
           imageAnalysis.toLowerCase(),
         )
       
-      // 🔴 CRITICAL: Only add B&W if explicitly requested by user OR clearly shown in reference images
-      // Do NOT add B&W based on vague detection - be strict
+      // 🔴 CRITICAL: Only add B&W if explicitly requested by user (NOT from image analysis)
+      // Do NOT add B&W based on image analysis - only user's explicit request
       // BUT: Do NOT add B&W to guide prompt concepts (they should preserve the original guide prompt)
       const userExplicitlyWantsBAndW = /(?:black\s+and\s+white|monochrome|b&w|grayscale|black\s+white)\b/i.test(userRequest || "")
-      const imageAnalysisShowsBAndW = /(?:black\s+and\s+white|monochrome|b&w|grayscale|black\s+white|no\s+color|colorless)\b/i.test(imageAnalysis || "")
       const hasBAndWInPrompt = /black.?and.?white|monochrome|b&w|grayscale/i.test(prompt)
 
-      // CRITICAL FIX: Remove "muted colors" if B&W is explicitly requested or already in prompt
+      // CRITICAL FIX: Remove "muted colors" if B&W is explicitly requested by user or already in prompt
       // BUT: Skip B&W modifications for guide prompt concepts (preserve original guide prompt)
-      if (!isFromGuidePrompt && (userExplicitlyWantsBAndW || imageAnalysisShowsBAndW || hasBAndWInPrompt)) {
+      if (!isFromGuidePrompt && (userExplicitlyWantsBAndW || hasBAndWInPrompt)) {
         prompt = prompt.replace(/,\s*muted\s+colors?/gi, "")
         prompt = prompt.replace(/muted\s+colors?,?\s*/gi, "")
         console.log("[v0] Removed 'muted colors' because B&W/monochrome detected")
         
-        // Only add B&W if explicitly requested and not already in prompt
+        // Only add B&W if user explicitly requested it and not already in prompt
         // BUT: Never add B&W to guide prompt concepts
-        if ((userExplicitlyWantsBAndW || imageAnalysisShowsBAndW) && !hasBAndWInPrompt) {
+        if (userExplicitlyWantsBAndW && !hasBAndWInPrompt) {
           prompt += ", black and white"
           currentWordCount = wordCount(prompt)
-          console.log("[v0] Added 'black and white' to prompt (explicitly requested)")
+          console.log("[v0] Added 'black and white' to prompt (explicitly requested by user)")
         }
       } else if (isFromGuidePrompt) {
         // For guide prompt concepts, preserve B&W if it's in the original guide prompt
