@@ -464,6 +464,44 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
                 </div>
               </Link>
 
+              <Link href="/admin/prompt-guide-builder" className="group">
+                <div className="bg-white rounded-xl md:rounded-2xl overflow-hidden border border-stone-200 shadow-lg hover:shadow-xl transition-all h-full">
+                  <div className="relative h-40 overflow-hidden bg-gradient-to-br from-indigo-50 to-blue-50 flex items-center justify-center">
+                    <FileText className="w-20 h-20 text-indigo-300" strokeWidth={1.5} />
+                    <div className="absolute inset-0 bg-gradient-to-t from-stone-950/60 to-transparent" />
+                    <div className="absolute bottom-4 left-4">
+                      <h3 className="font-['Times_New_Roman'] text-2xl md:text-3xl font-extralight tracking-[0.3em] uppercase text-white">
+                        PROMPT BUILDER
+                      </h3>
+                    </div>
+                  </div>
+                  <div className="p-4 md:p-6">
+                    <p className="text-sm md:text-base text-stone-600 leading-relaxed">
+                      Create and manage prompt guide collections
+                    </p>
+                  </div>
+                </div>
+              </Link>
+
+              <Link href="/admin/prompt-guides" className="group">
+                <div className="bg-white rounded-xl md:rounded-2xl overflow-hidden border border-stone-200 shadow-lg hover:shadow-xl transition-all h-full">
+                  <div className="relative h-40 overflow-hidden bg-gradient-to-br from-slate-50 to-gray-50 flex items-center justify-center">
+                    <FileText className="w-20 h-20 text-slate-300" strokeWidth={1.5} />
+                    <div className="absolute inset-0 bg-gradient-to-t from-stone-950/60 to-transparent" />
+                    <div className="absolute bottom-4 left-4">
+                      <h3 className="font-['Times_New_Roman'] text-2xl md:text-3xl font-extralight tracking-[0.3em] uppercase text-white">
+                        MANAGE GUIDES
+                      </h3>
+                    </div>
+                  </div>
+                  <div className="p-4 md:p-6">
+                    <p className="text-sm md:text-base text-stone-600 leading-relaxed">
+                      View, publish, and manage all prompt guides
+                    </p>
+                  </div>
+                </div>
+              </Link>
+
               <Link href="/admin/email-broadcast" className="group">
                 <div className="bg-white rounded-xl md:rounded-2xl overflow-hidden border border-stone-200 shadow-lg hover:shadow-xl transition-all h-full">
                   <div className="relative h-40 overflow-hidden bg-gradient-to-br from-stone-50 to-stone-100 flex items-center justify-center">
