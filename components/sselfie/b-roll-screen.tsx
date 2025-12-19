@@ -19,6 +19,7 @@ import {
 import InstagramPhotoCard from "./instagram-photo-card"
 import InstagramReelCard from "./instagram-reel-card"
 import { useRouter } from "next/navigation"
+import BuyCreditsModal from "./buy-credits-modal"
 
 interface BRollScreenProps {
   user: any
@@ -58,6 +59,7 @@ export default function BRollScreen({ user }: BRollScreenProps) {
   const [showNavMenu, setShowNavMenu] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [creditBalance, setCreditBalance] = useState(0)
+  const [showBuyCreditsModal, setShowBuyCreditsModal] = useState(false)
   const router = useRouter()
   
   // Use ref to track polling intervals so they persist across re-renders
@@ -207,6 +209,21 @@ export default function BRollScreen({ user }: BRollScreenProps) {
       const data = await response.json()
 
       if (!response.ok) {
+        // Show buy credits modal for insufficient credits (only if not already generating)
+        if (response.status === 402) {
+          setGeneratingVideos((prev) => {
+            const newSet = new Set(prev)
+            newSet.delete(imageId)
+            return newSet
+          })
+          setShowBuyCreditsModal(true)
+          return
+        }
+        setGeneratingVideos((prev) => {
+          const newSet = new Set(prev)
+          newSet.delete(imageId)
+          return newSet
+        })
         throw new Error(data.error || "Failed to generate video")
       }
 
@@ -222,9 +239,28 @@ export default function BRollScreen({ user }: BRollScreenProps) {
       // Polling will start automatically via useEffect when videoPredictions changes
     } catch (err) {
       console.error("[v0] Error generating video:", err)
+      const errorMessage = err instanceof Error ? err.message : "Failed to generate video"
+      
+      // Check if error is about insufficient credits
+      if (errorMessage.toLowerCase().includes("insufficient credits") || 
+          errorMessage.toLowerCase().includes("insufficient credit")) {
+        setShowBuyCreditsModal(true)
+        setAnalyzingMotion((prev) => {
+          const newSet = new Set(prev)
+          newSet.delete(imageId)
+          return newSet
+        })
+        setGeneratingVideos((prev) => {
+          const newSet = new Set(prev)
+          newSet.delete(imageId)
+          return newSet
+        })
+        return
+      }
+      
       setVideoErrors((prev) => {
         const newErrors = new Map(prev)
-        newErrors.set(imageId, err instanceof Error ? err.message : "Failed to generate video")
+        newErrors.set(imageId, errorMessage)
         return newErrors
       })
       setAnalyzingMotion((prev) => {
@@ -694,6 +730,34 @@ export default function BRollScreen({ user }: BRollScreenProps) {
           )}
         </>
       )}
+
+      <BuyCreditsModal
+        open={showBuyCreditsModal}
+        onOpenChange={setShowBuyCreditsModal}
+        onSuccess={() => {
+          setShowBuyCreditsModal(false)
+          // Refresh credit balance after purchase (with retry for webhook delay)
+          const refreshCredits = async (retries = 3, delay = 1000) => {
+            for (let i = 0; i < retries; i++) {
+              try {
+                const res = await fetch("/api/user/credits")
+                const data = await res.json()
+                if (data.balance !== undefined) {
+                  setCreditBalance(data.balance)
+                  return // Success, exit retry loop
+                }
+              } catch (err) {
+                console.error("[v0] Error refreshing credits (attempt", i + 1, "):", err)
+              }
+              // Wait before retry (webhook might need time to process)
+              if (i < retries - 1) {
+                await new Promise((resolve) => setTimeout(resolve, delay))
+              }
+            }
+          }
+          refreshCredits()
+        }}
+      />
     </div>
   )
 }

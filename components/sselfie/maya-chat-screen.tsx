@@ -22,6 +22,7 @@ import {
   Clock,
   Sparkles,
   Image,
+  Menu,
 } from "lucide-react"
 import { useState, useEffect, useRef, useCallback } from "react"
 import { createPortal } from "react-dom"
@@ -35,6 +36,9 @@ import WorkbenchStrip from "../studio-pro/workbench-strip"
 import { PromptSuggestionCard as NewPromptSuggestionCard } from "./prompt-suggestion-card"
 import type { PromptSuggestion } from "@/lib/maya/prompt-generator"
 import { isWorkbenchModeEnabled } from "@/lib/feature-flags"
+import StudioProImageUploadModule from "./studio-pro-image-upload-module"
+import { getConceptPrompt } from "@/lib/maya/concept-templates"
+import BuyCreditsModal from "./buy-credits-modal"
 
 interface MayaChatScreenProps {
   onImageGenerated?: () => void
@@ -65,6 +69,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
   const [showHeader, setShowHeader] = useState(true)
   const [creditBalance, setCreditBalance] = useState<number>(0)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [showBuyCreditsModal, setShowBuyCreditsModal] = useState(false)
   const router = useRouter()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -89,6 +94,72 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
 
   const [pendingConceptRequest, setPendingConceptRequest] = useState<string | null>(null)
   const [isGeneratingConcepts, setIsGeneratingConcepts] = useState(false)
+  
+  // Track messages that should show image upload module
+  const [messagesWithUploadModule, setMessagesWithUploadModule] = useState<Set<string>>(new Set())
+  
+  // Load persisted upload module state from localStorage on mount
+  const loadPersistedUploadState = () => {
+    if (typeof window === "undefined") return null
+    try {
+      const stored = localStorage.getItem("studio-pro-upload-state")
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        console.log("[v0] Loaded persisted upload state from localStorage:", parsed)
+        return parsed
+      }
+    } catch (error) {
+      console.error("[v0] Error loading persisted upload state:", error)
+    }
+    return null
+  }
+
+  // Track uploaded images for concept generation
+  const [conceptGenerationImages, setConceptGenerationImages] = useState<{
+    selfies: string[]
+    products: string[]
+    styleRefs: string[]
+    userDescription?: string
+    category?: string
+    concept?: string
+  } | null>(loadPersistedUploadState)
+  
+  // Track last category used for quick actions - load from persisted state
+  const [lastCategoryContext, setLastCategoryContext] = useState<string>(() => {
+    if (typeof window === "undefined") return ""
+    try {
+      const stored = localStorage.getItem("studio-pro-upload-state")
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        return parsed.category || ""
+      }
+    } catch (error) {
+      console.error("[v0] Error loading persisted category:", error)
+    }
+    return ""
+  })
+  
+  // Track manually triggered upload module (for image icon button)
+  const [showManualUploadModule, setShowManualUploadModule] = useState(false)
+  const [uploadModuleKey, setUploadModuleKey] = useState(0) // Key to force remount with fresh state
+  const [manualUploadCategory, setManualUploadCategory] = useState<string>(() => {
+    if (typeof window === "undefined") return ""
+    try {
+      const stored = localStorage.getItem("studio-pro-upload-state")
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        return parsed.category || ""
+      }
+    } catch (error) {
+      console.error("[v0] Error loading persisted category:", error)
+    }
+    return ""
+  })
+  const [selectedPrompt, setSelectedPrompt] = useState<string>("")
+  
+  // Track if user has used Maya before (has any chat history)
+  // Default to false (show welcome screen) until we know otherwise
+  const [hasUsedMayaBefore, setHasUsedMayaBefore] = useState<boolean>(false)
   const processedConceptMessagesRef = useRef<Set<string>>(new Set())
   
   // Studio Pro state
@@ -115,6 +186,9 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
     }
     return []
   })
+  
+  // Shared images from first concept card - auto-populates other cards
+  const [sharedConceptImages, setSharedConceptImages] = useState<Array<string | null>>([null, null, null])
   const [showGallerySelector, setShowGallerySelector] = useState(false)
   const [galleryImages, setGalleryImages] = useState<any[]>([])
   const [isGeneratingStudioPro, setIsGeneratingStudioPro] = useState(false)
@@ -238,29 +312,33 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
       studioProMode: studioProMode,
     },
     onError: (error) => {
-      // Handle different error types safely
-      let errorMessage = "Unknown error"
-      let errorStack: string | undefined
+      // Simplified error handling - just extract message safely
+      let errorMessage = "An error occurred while chatting with Maya. Please try again."
       
-      if (error instanceof Error) {
+      // Minimal, safe error extraction
+      if (error instanceof Error && error.message) {
         errorMessage = error.message
-        errorStack = error.stack
-      } else if (error && typeof error === "object") {
-        // Try to extract message from error object
-        errorMessage = (error as any).message || (error as any).error || JSON.stringify(error)
-        errorStack = (error as any).stack
-      } else if (typeof error === "string") {
+      } else if (typeof error === "string" && error) {
         errorMessage = error
-      } else {
-        errorMessage = String(error)
+      } else if (error && typeof error === "object") {
+        const err = error as any
+        if (err.message && typeof err.message === "string") {
+          errorMessage = err.message
+        } else if (err.error && typeof err.error === "string") {
+          errorMessage = err.error
+        }
       }
       
-      console.error("[v0] Maya chat error:", {
-        error: errorMessage,
-        stack: errorStack,
-        rawError: error,
-        timestamp: new Date().toISOString(),
-      })
+      // Minimal logging - avoid complex serialization that causes issues
+      try {
+        if (error instanceof Error) {
+          console.error("[v0] Maya chat error:", errorMessage, error.stack ? "\nStack: " + error.stack.substring(0, 200) : "")
+        } else {
+          console.error("[v0] Maya chat error:", errorMessage)
+        }
+      } catch {
+        // Silently fail if logging causes issues
+      }
       
       // TODO: Add toast import if you want user-facing error notifications
       // import { toast } from "sonner"
@@ -287,14 +365,31 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
           throw new Error(`Failed to load chat: ${response.status}`)
         }
 
-        const data = await response.json()
+        let data: any
+        try {
+          data = await response.json()
+        } catch (jsonError) {
+          console.error("[v0] Error parsing chat response JSON")
+          // Don't throw - just log and return empty state
+          setIsLoadingChat(false)
+          return
+        }
+        
+        // Safely check if data exists before accessing properties
+        if (!data || typeof data !== "object") {
+          console.error("[v0] Invalid chat data received - data is not an object")
+          // Don't throw - just log and return empty state
+          setIsLoadingChat(false)
+          return
+        }
+        
         console.log("[v0] Loaded chat ID:", data.chatId, "Messages:", data.messages?.length, "Title:", data.chatTitle)
 
         if (data.chatId) {
           setChatId(data.chatId)
         }
 
-        if (data.chatTitle) {
+        if (data.chatTitle && typeof data.chatTitle === "string") {
           setChatTitle(data.chatTitle)
         }
 
@@ -349,13 +444,41 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
 
         setShowHistory(false)
       } catch (error) {
-        console.error("[v0] Error loading chat:", error)
+        // Silently handle errors in loadChat - don't let them propagate
+        console.error("[v0] Error loading chat:", error instanceof Error ? error.message : "Unknown error")
+        // Don't throw - just log and continue
       } finally {
         setIsLoadingChat(false)
       }
     },
     [setMessages],
   )
+
+  // Check if user has any chat history to determine if welcome screen should show
+  useEffect(() => {
+    const checkChatHistory = async () => {
+      if (!user) {
+        setHasUsedMayaBefore(false)
+        return
+      }
+
+      try {
+        const response = await fetch("/api/maya/chats?chatType=maya")
+        if (response.ok) {
+          const data = await response.json()
+          const hasChats = data.chats && Array.isArray(data.chats) && data.chats.length > 0
+          setHasUsedMayaBefore(hasChats)
+          console.log("[v0] Chat history check:", { hasChats, chatCount: data.chats?.length || 0 })
+        }
+      } catch (error) {
+        console.error("[v0] Error checking chat history:", error)
+        // On error, default to showing welcome screen (hasUsedMayaBefore = false)
+        setHasUsedMayaBefore(false)
+      }
+    }
+
+    checkChatHistory()
+  }, [user])
 
   useEffect(() => {
     console.log("[v0] 🚀 Maya chat screen mounted, user:", user?.email)
@@ -458,7 +581,8 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
         const errorMessage = errorData.error || 'Carousel generation failed'
         
         if (response.status === 402) {
-          alert(`Insufficient credits. ${errorMessage}`)
+          // Show buy credits modal instead of alert
+          setShowBuyCreditsModal(true)
         } else {
           alert(`Failed to generate carousel: ${errorMessage}`)
         }
@@ -520,6 +644,14 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
       setIsGeneratingStudioPro(false)
     } catch (error) {
       console.error('[CAROUSEL] Generation error:', error)
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      
+      // Check if error is about insufficient credits
+      if (errorMessage.toLowerCase().includes("insufficient credits") || 
+          errorMessage.toLowerCase().includes("insufficient credit")) {
+        setShowBuyCreditsModal(true)
+      }
+      
       setIsGeneratingStudioPro(false)
     }
   }, [onImageGenerated, setMessages, setIsGeneratingStudioPro])
@@ -544,7 +676,8 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
         const errorMessage = errorData.error || 'Reel cover generation failed'
         
         if (response.status === 402) {
-          alert(`Insufficient credits. ${errorMessage}`)
+          // Show buy credits modal instead of alert
+          setShowBuyCreditsModal(true)
         } else {
           alert(`Failed to generate reel cover: ${errorMessage}`)
         }
@@ -589,6 +722,14 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
       setIsGeneratingStudioPro(false)
     } catch (error) {
       console.error('[REEL-COVER] Generation error:', error)
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      
+      // Check if error is about insufficient credits
+      if (errorMessage.toLowerCase().includes("insufficient credits") || 
+          errorMessage.toLowerCase().includes("insufficient credit")) {
+        setShowBuyCreditsModal(true)
+      }
+      
       setIsGeneratingStudioPro(false)
     }
   }, [onImageGenerated, setMessages, setIsGeneratingStudioPro])
@@ -603,8 +744,14 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
   useEffect(() => {
     // Allow processing when ready OR when messages change (to catch newly saved messages)
     if (messages.length === 0) return
-    // Don't process while actively streaming, but allow after streaming completes
-    if (status === "streaming" || status === "submitted") return
+    // 🔴 CRITICAL: Don't process while actively streaming - this is the main check
+    // Once status is NOT "streaming" or "submitted", the message is complete and safe to process
+    if (status === "streaming" || status === "submitted") {
+      console.log("[v0] ⏳ Skipping trigger detection - status is:", status)
+      return
+    }
+    
+    // If we get here, streaming is complete - safe to process triggers
 
     // Find the last assistant message
     const lastAssistantMessage = [...messages].reverse().find((m) => m.role === "assistant")
@@ -653,6 +800,9 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
             .map((p) => p.text)
             .join("") || ""
 
+    // 🔴 CRITICAL: Since status is NOT "streaming", the message is complete
+    // Process the trigger immediately - the status check above ensures we only get here when streaming is done
+
     console.log("[CAROUSEL-DEBUG] Checking message for triggers:", {
       messageId,
       hasContent: !!lastAssistantMessage.content,
@@ -663,20 +813,50 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
       textContentPreview: textContent.substring(0, 200),
       isGeneratingStudioPro,
       alreadyProcessed: processedStudioProMessagesRef.current.has(messageId),
+      status,
     })
 
-    // Check for [GENERATE_CONCEPTS] trigger
-    // CRITICAL: Use more flexible regex to catch trigger even if Maya stops mid-response
+    // DISABLED: No longer auto-triggering upload module from Maya's responses
+    // Users should click the image icon in chat input to change images/products/categories
+    // Maya will guide them to do this instead of programmatically triggering the module
+    // 
+    // const uploadModuleMatch = textContent.match(/\[SHOW_IMAGE_UPLOAD_MODULE\]\s*(.+?)(?:\n|$|\[|$)/i) || 
+    //                          textContent.match(/\[SHOW_IMAGE_UPLOAD_MODULE\]/i)
+    // 
+    // if (uploadModuleMatch && studioProMode && !messagesWithUploadModule.has(messageId)) {
+    //   const categoryContext = uploadModuleMatch[1]?.trim() || textContent.split('[SHOW_IMAGE_UPLOAD_MODULE]')[1]?.trim() || ''
+    //   console.log("[v0] ✅ Detected image upload module trigger:", {
+    //     categoryContext,
+    //     messageId,
+    //     studioProMode
+    //   })
+    //   
+    //   // Mark this message to show upload module
+    //   setMessagesWithUploadModule(prev => new Set(prev).add(messageId))
+    //   processedConceptMessagesRef.current.add(messageId)
+    //   return // Don't check other triggers
+    // }
+    
+    // Check for [GENERATE_CONCEPTS] trigger (after images are uploaded)
+    // CRITICAL: In Studio Pro mode, only process this trigger if images have been uploaded
+    // CRITICAL: Only process if message appears complete (trigger at end or minimal text after)
     const conceptMatch = textContent.match(/\[GENERATE_CONCEPTS\]\s*(.+?)(?:\n|$|\[|$)/i) || 
                         textContent.match(/\[GENERATE_CONCEPTS\]/i)
     
     if (conceptMatch && !isGeneratingConcepts && !pendingConceptRequest) {
+      // In Studio Pro mode, require images to be uploaded before processing concept generation trigger
+      if (studioProMode && !conceptGenerationImages) {
+        console.log("[v0] ⚠️ Studio Pro mode: [GENERATE_CONCEPTS] trigger detected but no images uploaded yet. Ignoring trigger until images are provided.")
+        return // Don't process the trigger - wait for images
+      }
+      
       const conceptRequest = conceptMatch[1]?.trim() || textContent.split('[GENERATE_CONCEPTS]')[1]?.trim() || ''
       console.log("[v0] ✅ Detected concept generation trigger:", {
         conceptRequest,
         fullText: textContent.substring(0, 200),
         messageId,
-        studioProMode
+        studioProMode,
+        hasImages: !!conceptGenerationImages
       })
       
       // Mark this message as processed BEFORE triggering generation
@@ -809,11 +989,18 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
       // Call generateReelCover via ref to avoid dependency issues
       generateReelCoverRef.current?.({ title, textOverlay })
     }
-  }, [messages, status, isGeneratingConcepts, pendingConceptRequest, isGeneratingStudioPro, studioProMode, isWorkbenchModeEnabled])
+  }, [messages, status, isGeneratingConcepts, pendingConceptRequest, isGeneratingStudioPro, studioProMode, isWorkbenchModeEnabled, messagesWithUploadModule, conceptGenerationImages])
 
   // The problem was: message was saved BEFORE concepts were generated, so concepts were never persisted
   useEffect(() => {
     if (!pendingConceptRequest || isGeneratingConcepts) return
+    
+    // CRITICAL: In Studio Pro mode, require images to be uploaded before generating concepts
+    // Don't generate concepts if we're in Studio Pro and no images have been uploaded
+    if (studioProMode && !conceptGenerationImages) {
+      console.log("[v0] ⚠️ Studio Pro mode: Concept generation requires uploaded images. Waiting for images...")
+      return
+    }
 
     const generateConcepts = async () => {
       setIsGeneratingConcepts(true)
@@ -890,6 +1077,97 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
           })))
         }
 
+        // 🔴 CRITICAL: Detect and extract guide prompt from user messages
+        // Wrapped in try-catch to prevent errors from breaking normal chat flow
+        let extractedGuidePrompt: string | null = null
+        let guidePromptActive = false
+        
+        try {
+          // Check all user messages for [USE_GUIDE_PROMPT] pattern
+          for (const m of messages) {
+            if (m.role === "user") {
+              let messageText = ""
+              
+              try {
+                if (typeof m.content === "string") {
+                  messageText = m.content
+                } else if (m.parts && Array.isArray(m.parts)) {
+                  messageText = m.parts
+                    .filter((p: any) => p && p.type === "text")
+                    .map((p: any) => p.text || "")
+                    .join(" ")
+                }
+              } catch (textError) {
+                // Skip this message if we can't extract text
+                continue
+              }
+              
+              // Detect [USE_GUIDE_PROMPT] pattern (case-insensitive, multiline)
+              try {
+                const guidePromptMatch = messageText.match(/\[USE_GUIDE_PROMPT\]\s*([\s\S]*?)(?=\[|$)/i)
+                if (guidePromptMatch && guidePromptMatch[1]) {
+                  const prompt = guidePromptMatch[1].trim()
+                  if (prompt && prompt.length > 0) {
+                    extractedGuidePrompt = prompt
+                    guidePromptActive = true
+                    console.log("[v0] ✅ Detected guide prompt (length:", prompt.length, "chars)")
+                    break // Use the most recent guide prompt
+                  }
+                }
+              } catch (matchError) {
+                // Skip guide prompt detection for this message
+                console.error("[v0] Error matching guide prompt:", matchError)
+              }
+              
+              // Check if user is clearing the guide prompt
+              try {
+                const clearGuidePromptKeywords = /different|change|instead|new.*prompt|clear.*guide|stop.*using.*guide/i.test(messageText)
+                if (clearGuidePromptKeywords && extractedGuidePrompt) {
+                  guidePromptActive = false
+                  console.log("[v0] 🔄 User requested to clear guide prompt")
+                }
+              } catch (clearError) {
+                // Skip clear detection if it fails
+              }
+            }
+          }
+          
+          // Store guide prompt in localStorage for persistence (only in browser)
+          if (typeof window !== "undefined" && window.localStorage) {
+            try {
+              if (extractedGuidePrompt && guidePromptActive) {
+                localStorage.setItem("maya-guide-prompt", JSON.stringify({
+                  prompt: extractedGuidePrompt,
+                  active: true,
+                  setAt: new Date().toISOString()
+                }))
+              } else if (!guidePromptActive) {
+                // Clear if user requested to clear
+                localStorage.removeItem("maya-guide-prompt")
+              } else {
+                // Try to load from localStorage if not in current messages
+                const stored = localStorage.getItem("maya-guide-prompt")
+                if (stored) {
+                  const parsed = JSON.parse(stored)
+                  if (parsed && parsed.active && parsed.prompt) {
+                    extractedGuidePrompt = parsed.prompt
+                    guidePromptActive = true
+                    console.log("[v0] 📋 Loaded guide prompt from localStorage")
+                  }
+                }
+              }
+            } catch (storageError) {
+              // Silently fail - guide prompt is optional feature
+              console.error("[v0] Error with guide prompt storage:", storageError)
+            }
+          }
+        } catch (guidePromptError) {
+          // If guide prompt detection fails, continue without it - don't break chat
+          console.error("[v0] Error in guide prompt detection, continuing without it:", guidePromptError)
+          extractedGuidePrompt = null
+          guidePromptActive = false
+        }
+        
         const conversationContext = messages
           .filter((m) => m.role === "user" || m.role === "assistant")
           .slice(-10)
@@ -904,8 +1182,9 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
                 .join(" ")
             }
             const cleanContent = content.replace(/\[GENERATE_CONCEPTS\][^\n]*/g, "").trim()
-            if (!cleanContent) return null
-            return `${m.role === "user" ? "User" : "Maya"}: ${cleanContent.substring(0, 500)}`
+            const cleanContent2 = cleanContent.replace(/\[USE_GUIDE_PROMPT\]/gi, "").trim()
+            if (!cleanContent2) return null
+            return `${m.role === "user" ? "User" : "Maya"}: ${cleanContent2.substring(0, 500)}`
           })
           .filter(Boolean)
           .join("\n")
@@ -916,21 +1195,48 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
           referenceImageUrl: referenceImageUrl ? referenceImageUrl.substring(0, 100) + "..." : undefined,
         })
 
-        const response = await fetch("/api/maya/generate-concepts", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            userRequest: pendingConceptRequest,
-            count: 6, // Changed from hardcoded 3 to 6, allowing Maya to create more concepts
-            conversationContext: conversationContext || undefined,
-            referenceImageUrl: referenceImageUrl, // Pass reference image if found
-            studioProMode: studioProMode, // Pass Studio Pro mode to use Nano Banana prompting
-            enhancedAuthenticity: !studioProMode && enhancedAuthenticity, // Only pass if Classic mode and toggle is ON
-          }),
-        })
+        // If we have uploaded images from the upload module, use those instead of searching
+        const allImages = conceptGenerationImages 
+          ? [...conceptGenerationImages.selfies, ...conceptGenerationImages.products, ...conceptGenerationImages.styleRefs]
+          : referenceImageUrl 
+          ? [referenceImageUrl]
+          : []
+
+        let response: Response
+        try {
+          response = await fetch("/api/maya/generate-concepts", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              userRequest: pendingConceptRequest,
+              count: 6, // Changed from hardcoded 3 to 6, allowing Maya to create more concepts
+              conversationContext: conversationContext || undefined,
+              referenceImageUrl: allImages.length > 0 ? allImages[0] : referenceImageUrl, // Primary image (first selfie)
+              referenceImages: conceptGenerationImages ? {
+                selfies: conceptGenerationImages.selfies,
+                products: conceptGenerationImages.products,
+                styleRefs: conceptGenerationImages.styleRefs,
+                userDescription: conceptGenerationImages.userDescription,
+              } : undefined, // All images with structure
+              studioProMode: studioProMode, // Pass Studio Pro mode to use Nano Banana prompting
+              enhancedAuthenticity: !studioProMode && enhancedAuthenticity, // Only pass if Classic mode and toggle is ON
+              guidePrompt: guidePromptActive && extractedGuidePrompt ? extractedGuidePrompt : undefined, // Pass guide prompt if active
+            }),
+          })
+        } catch (fetchError) {
+          console.error("[v0] ❌ Error fetching generate-concepts:", fetchError)
+          setIsGeneratingConcepts(false)
+          setPendingConceptRequest(null)
+          return
+        }
 
         if (!response.ok) {
-          const errorText = await response.text().catch(() => "")
+          let errorText = ""
+          try {
+            errorText = await response.text()
+          } catch {
+            errorText = `HTTP ${response.status}`
+          }
           console.error("[v0] ❌ generate-concepts failed:", response.status, errorText)
           setIsGeneratingConcepts(false)
           setPendingConceptRequest(null)
@@ -950,6 +1256,19 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
           // Find the current last assistant message ID before updating
           const lastAssistantMessage = [...messages].reverse().find((m) => m.role === "assistant")
           const messageId = lastAssistantMessage?.id?.toString()
+          
+          // Store category context if not already stored
+          if (!lastCategoryContext && pendingConceptRequest) {
+            // Extract category from request (first few words or common patterns)
+            const categoryMatch = pendingConceptRequest.match(/(travel|beauty|fashion|luxury|wellness|tech|selfie|brand|alo|chanel|glossier|airport|skincare|makeup)/i)
+            if (categoryMatch) {
+              setLastCategoryContext(categoryMatch[1].toLowerCase())
+            } else {
+              // Fallback: use first few words as category
+              const words = pendingConceptRequest.split(/\s+/).slice(0, 3).join(' ')
+              setLastCategoryContext(words)
+            }
+          }
 
           // In Studio Pro mode, show concept cards (they now support image upload/selection)
           // Workbench is kept separate for manual prompt creation
@@ -1032,11 +1351,13 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
           setIsGeneratingConcepts(false)
           // Clear pending request after processing (success or error)
           setPendingConceptRequest(null)
+          // DO NOT clear conceptGenerationImages here - we need it for concept cards to receive baseImages
+          // It will be cleared when user starts a new chat or uses quick actions
         }
     }
 
     generateConcepts()
-  }, [pendingConceptRequest, isGeneratingConcepts, setMessages, messages, chatId]) // Added 'messages' to dependency array
+  }, [pendingConceptRequest, isGeneratingConcepts, setMessages, messages, chatId, conceptGenerationImages]) // Added 'conceptGenerationImages' to dependency array
 
   useEffect(() => {
     // Don't save if we're currently generating concepts - wait for them to be added first
@@ -1797,6 +2118,16 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
   }
 
   const handleNewChat = async () => {
+    // Reset state for new chat
+    // Only clear images when starting a completely new chat
+    setConceptGenerationImages(null)
+    setShowManualUploadModule(false)
+    setManualUploadCategory("")
+    setSelectedPrompt("")
+    setMessagesWithUploadModule(new Set())
+    setPendingConceptRequest(null)
+    setLastCategoryContext("")
+    
     try {
       const response = await fetch("/api/maya/new-chat", {
         method: "POST",
@@ -2026,8 +2357,8 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
         // Handle insufficient credits
         if (response.status === 402) {
           console.error('[STUDIO-PRO] Insufficient credits:', errorMessage)
-          // Show user-friendly message
-          alert(`Insufficient credits. ${errorMessage}`)
+          // Show buy credits modal instead of alert
+          setShowBuyCreditsModal(true)
         } else {
           console.error('[STUDIO-PRO] Generation failed:', errorMessage)
           alert(`Failed to generate: ${errorMessage}`)
@@ -2043,6 +2374,14 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
 
     } catch (error) {
       console.error('[STUDIO-PRO] Generation error:', error)
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      
+      // Check if error is about insufficient credits
+      if (errorMessage.toLowerCase().includes("insufficient credits") || 
+          errorMessage.toLowerCase().includes("insufficient credit")) {
+        setShowBuyCreditsModal(true)
+      }
+      
       setIsGeneratingStudioPro(false)
     }
   }
@@ -2423,8 +2762,8 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
 
   // Helper function to parse and render markdown-style text
   const renderMarkdownText = (text: string): React.ReactNode => {
-    // Remove emojis first
-    let cleanedText = removeEmojis(text)
+    // Keep emojis - Maya's responses should include emojis
+    let cleanedText = text
     
     // Split by lines to handle lists and paragraphs
     const lines = cleanedText.split('\n')
@@ -2725,24 +3064,58 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
         </button>
       </div>
 
-      {/* Studio Pro step strip (simple 4-step story) */}
-      {studioProMode && !isWorkflowChat && (
-        <div className="px-3 sm:px-4 py-2 bg-stone-50/80 border-b border-stone-200/40">
-          <div className="flex flex-wrap items-center gap-1.5 text-[11px] sm:text-xs text-stone-700">
-            <span className="uppercase tracking-[0.16em] text-[10px] text-stone-500">Studio Pro Flow</span>
-            <div className="flex flex-wrap gap-1.5 flex-1 min-w-0">
-              <span className="px-2.5 py-1 rounded-full bg-stone-900 text-white">
-                Step 1 · Chat with Maya
-              </span>
-              <span className="px-2.5 py-1 rounded-full bg-stone-100 text-stone-800">
-                Step 2 · Pick a concept
-              </span>
-              <span className="px-2.5 py-1 rounded-full bg-stone-100 text-stone-800">
-                Step 3 · Add your photos
-              </span>
-              <span className="px-2.5 py-1 rounded-full bg-stone-100 text-stone-800">
-                Step 4 · Generate images
-              </span>
+      {/* Simplified Studio Pro Guidance */}
+      {studioProMode && !isWorkflowChat && !isWorkbenchModeEnabled() && (
+        <div className="border-b border-stone-200/50 bg-linear-to-r from-stone-50 to-white px-4 py-4">
+          <div className="max-w-4xl mx-auto">
+            <div className="flex items-center justify-between mb  -3">
+              <div>
+                <h2 className="text-sm font-serif tracking-[0.2em] uppercase text-stone-900">
+                  Studio Pro
+                </h2>
+                <p className="text-xs text-stone-600 mt-0.5 font-light">
+                  Professional content creation with Maya's guidance
+                </p>
+              </div>
+              <button
+                onClick={() => setShowStudioProOnboarding(true)}
+                className="text-xs tracking-[0.15em] uppercase text-stone-600 hover:text-stone-900 transition-colors font-light underline underline-offset-2"
+              >
+                How it works
+              </button>
+            </div>
+            
+            {/* Visual Progress Indicator */}
+            <div className="grid grid-cols-3 gap-2 text-[10px]">
+              <div className="flex items-start gap-2">
+                <div className="w-5 h-5 rounded-full border border-stone-300 flex items-center justify-center shrink-0 bg-white">
+                  <span className="font-serif text-[10px] text-stone-600">1</span>
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium text-stone-900 tracking-wide uppercase">Describe</p>
+                  <p className="text-stone-500 leading-relaxed mt-0.5">Tell Maya what you want to create</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-2">
+                <div className="w-5 h-5 rounded-full border border-stone-300 flex items-center justify-center shrink-0 bg-white">
+                  <span className="font-serif text-[10px] text-stone-600">2</span>
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium text-stone-900 tracking-wide uppercase">Choose</p>
+                  <p className="text-stone-500 leading-relaxed mt-0.5">Select concept and add your images</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-2">
+                <div className="w-5 h-5 rounded-full border border-stone-300 flex items-center justify-center shrink-0 bg-white">
+                  <span className="font-serif text-[10px] text-stone-600">3</span>
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium text-stone-900 tracking-wide uppercase">Generate</p>
+                  <p className="text-stone-500 leading-relaxed mt-0.5">Create your professional content</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -2766,10 +3139,9 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
           <div className="flex gap-2">
             <button
               onClick={() => setShowGallerySelector(true)}
-              className="flex items-center gap-2 px-3 py-2 bg-white border border-stone-200 rounded-lg hover:bg-stone-50 transition-colors text-xs"
+              className="px-3 py-2 bg-white border border-stone-200 rounded-lg hover:bg-stone-50 transition-colors text-xs"
             >
-              <Image className="w-4 h-4" />
-              <span>Pick from Gallery</span>
+              Pick from Gallery
             </button>
             
             <button
@@ -2786,19 +3158,17 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
                 input.click()
               }}
               disabled={isUploadingImage || uploadedImages.length >= 14}
-              className="flex items-center gap-2 px-3 py-2 bg-white border border-stone-200 rounded-lg hover:bg-stone-50 transition-colors text-xs disabled:opacity-50"
+              className="px-3 py-2 bg-white border border-stone-200 rounded-lg hover:bg-stone-50 transition-colors text-xs disabled:opacity-50"
             >
-              <Plus className="w-4 h-4" />
-              <span>{isUploadingImage ? 'Uploading...' : 'Upload Product'}</span>
+              {isUploadingImage ? 'Uploading...' : 'Upload Product'}
             </button>
 
             {uploadedImages.length > 0 && (
               <button
                 onClick={clearStudioProImages}
-                className="flex items-center gap-2 px-3 py-2 bg-white border border-stone-200 rounded-lg hover:bg-stone-50 transition-colors text-xs"
+                className="px-3 py-2 bg-white border border-stone-200 rounded-lg hover:bg-stone-50 transition-colors text-xs"
               >
-                <X className="w-4 h-4" />
-                <span>Clear</span>
+                Clear
               </button>
             )}
           </div>
@@ -3157,7 +3527,188 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
           aria-live="polite"
           aria-label="Chat messages"
         >
-          {isEmpty && !isTyping && (
+          {/* Studio Pro Empty State */}
+          {isEmpty && studioProMode && !isWorkflowChat && !isTyping && (
+            <div className="flex-1 flex items-center justify-center p-6 sm:p-8">
+              <div className="max-w-2xl w-full space-y-8">
+                {/* Welcome Screen - Only for first-time users */}
+                {hasUsedMayaBefore === false && (
+                  <div className="space-y-10">
+                    
+                    {/* Welcome */}
+                    <div className="text-center space-y-2">
+                      <h2 className="text-3xl sm:text-4xl font-serif font-extralight tracking-[0.3em] uppercase text-stone-900">
+                        Studio Pro
+                      </h2>
+                      <p className="text-sm text-stone-500 font-light tracking-wide">
+                        Professional content creation with Maya's expert guidance
+                      </p>
+                    </div>
+
+                    {/* How to Start - Clean Steps */}
+                    <div className="border-t border-b border-stone-200/40 py-8">
+                      <div className="space-y-6">
+                        <div className="flex items-start gap-4">
+                          <div className="w-8 h-8 rounded-full border border-stone-300 flex items-center justify-center shrink-0 bg-white">
+                            <span className="text-xs font-serif text-stone-600">1</span>
+                          </div>
+                          <div className="flex-1 pt-0.5">
+                            <p className="text-sm font-light text-stone-900 mb-1">
+                              Describe what you want
+                            </p>
+                            <p className="text-xs text-stone-500 font-light leading-relaxed">
+                              Choose a category below or type your request
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-start gap-4">
+                          <div className="w-8 h-8 rounded-full border border-stone-300 flex items-center justify-center shrink-0 bg-white">
+                            <span className="text-xs font-serif text-stone-600">2</span>
+                          </div>
+                          <div className="flex-1 pt-0.5">
+                            <p className="text-sm font-light text-stone-900 mb-1">
+                              Maya creates concepts
+                            </p>
+                            <p className="text-xs text-stone-500 font-light leading-relaxed">
+                              Review detailed prompts and select your favorite
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-start gap-4">
+                          <div className="w-8 h-8 rounded-full border border-stone-300 flex items-center justify-center shrink-0 bg-white">
+                            <span className="text-xs font-serif text-stone-600">3</span>
+                          </div>
+                          <div className="flex-1 pt-0.5">
+                            <p className="text-sm font-light text-stone-900 mb-1">
+                              Add images and generate
+                            </p>
+                            <p className="text-xs text-stone-500 font-light leading-relaxed">
+                              Upload base photos and product references, then generate
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+                )}
+                
+                {/* Upload Module - Always show for new chats (with category dropdown and quick prompts) */}
+                <StudioProImageUploadModule
+                  category=""
+                  showCategoryDropdown={true}
+                  onCategorySelect={(category, prompt) => {
+                    // When category/prompt is selected, just store them
+                    // Don't send message to Maya - user needs to upload images first
+                    setManualUploadCategory(category)
+                    setSelectedPrompt(prompt)
+                  }}
+                  onImagesReady={async (images) => {
+                    console.log("[v0] Images ready from new chat upload module:", images)
+                    // Store images for concept generation (will be used when Maya triggers it)
+                    setConceptGenerationImages(images)
+                    
+                    // Persist to localStorage
+                    try {
+                      const stateToSave = {
+                        selfies: images.selfies,
+                        products: images.products,
+                        styleRefs: images.styleRefs,
+                        userDescription: images.userDescription,
+                        category: images.category,
+                        concept: images.concept,
+                      }
+                      localStorage.setItem("studio-pro-upload-state", JSON.stringify(stateToSave))
+                      console.log("[v0] Saved upload state to localStorage:", stateToSave)
+                    } catch (error) {
+                      console.error("[v0] Error saving upload state to localStorage:", error)
+                    }
+
+                    const categoryContext = images.category || manualUploadCategory
+                    setLastCategoryContext(categoryContext)
+                    
+                    // Build comprehensive message text with category, concept, and description
+                    let messageText = ""
+                    if (images.category) {
+                      // Try to get category prompt from the category value
+                      const categoryData = [
+                        { value: "brand-content", label: "Brand Content", prompt: "I want Studio Pro outfit photos that feel like Alo Yoga — premium athletic outfits, neutral colors and natural movement." },
+                        { value: "beauty-self-care", label: "Beauty & Self-Care", prompt: "I want a beauty skincare routine morning glow — dewy skin, natural light, clean girl aesthetic." },
+                        { value: "selfie-styles", label: "Selfie Styles", prompt: "I want a clean girl selfie aesthetic — mirror selfies, golden hour, natural beauty moments." },
+                        { value: "travel-lifestyle", label: "Travel & Lifestyle", prompt: "I want an airport it girl travel photo — lounge or gate setting with suitcase, headphones and coffee." },
+                        { value: "tech-work", label: "Tech & Work", prompt: "I want tech home office productivity content — modern workspace, laptop, coffee, professional vibes." },
+                        { value: "fashion-editorial", label: "Fashion Editorial", prompt: "I want luxury fashion editorial photos in Chanel style — sophisticated, elegant, timeless aesthetic." },
+                        { value: "wellness-content", label: "Wellness Content", prompt: "I want Studio Pro wellness content in Alo Yoga style — yoga, stretching and calm movement in soft neutral environments." },
+                        { value: "seasonal-holiday", label: "Seasonal Holiday", prompt: "I want Christmas holiday cozy vibes — warm lighting, festive atmosphere, elegant winter aesthetic." },
+                        { value: "luxury-travel", label: "Luxury Travel", prompt: "I want luxury destination travel photos — Venice canals, Thailand beaches, sophisticated travel moments." },
+                        { value: "carousels-reels", label: "Carousels & Reels", prompt: "I want a Pinterest-style Instagram carousel, modern and minimal, that feels ready for Studio Pro." },
+                      ]
+                      
+                      const categoryInfo = categoryData.find(c => c.value === images.category)
+                      
+                      if (images.concept) {
+                        // Use concept-specific prompt if available
+                        const conceptPrompt = getConceptPrompt(images.category, images.concept)
+                        if (conceptPrompt) {
+                          messageText = conceptPrompt
+                        } else if (categoryInfo) {
+                          messageText = categoryInfo.prompt
+                        }
+                      } else if (categoryInfo) {
+                        messageText = categoryInfo.prompt
+                      } else {
+                        messageText = `I want to create ${images.category} content`
+                      }
+                    } else {
+                      messageText = selectedPrompt || categoryContext || 'concept generation'
+                    }
+                    
+                    // Add user description if provided
+                    if (images.userDescription) {
+                      messageText = `${messageText}\n\nAdditional context: ${images.userDescription}`
+                    }
+                    
+                    // Send message to Maya with all images
+                    // Maya will respond first, then trigger concept generation with [GENERATE_CONCEPTS]
+                    if (sendMessage) {
+                      const allImages = [...images.selfies, ...images.products, ...images.styleRefs]
+                      const messageParts: Array<{ type: string; text?: string; image?: string }> = []
+                      
+                      // Add text part
+                      if (messageText) {
+                        messageParts.push({ type: "text", text: messageText })
+                      }
+                      
+                      // Add all images
+                      allImages.forEach(imageUrl => {
+                        messageParts.push({ type: "image", image: imageUrl })
+                      })
+                      
+                      console.log("[v0] 📤 Sending message to Maya with images:", {
+                        text: messageText,
+                        imageCount: allImages.length,
+                        category: images.category,
+                        concept: images.concept
+                      })
+                      
+                      sendMessage({
+                        role: "user",
+                        parts: messageParts,
+                      })
+                    }
+                  }}
+                  onCancel={() => {
+                    // Don't allow canceling - this is the main entry point
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Classic Mode Empty State */}
+          {isEmpty && !studioProMode && !isTyping && (
             <div className="flex flex-col items-center justify-center h-full px-4 py-8 animate-in fade-in duration-500">
               <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-stone-200/60 overflow-hidden mb-4 sm:mb-6">
                 <img
@@ -3224,51 +3775,6 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
             </div>
           )}
 
-          {studioProMode && !isWorkflowChat && messages.length === 0 && (
-            <div className="px-4 sm:px-6 pt-4 pb-2 border-b border-stone-200/60 bg-white/80">
-              <div className="mb-2 text-xs font-semibold text-stone-900">
-                What do you want to create?
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {[
-                  {
-                    label: "Outfit photos",
-                    prompt:
-                      "I want Studio Pro outfit photos that feel like Alo Yoga — premium athletic outfits, neutral colors and natural movement.",
-                  },
-                  {
-                    label: "Wellness content",
-                    prompt:
-                      "I want Studio Pro wellness content in Alo Yoga style — yoga, stretching and calm movement in soft neutral environments.",
-                  },
-                  {
-                    label: "Clean girl selfie",
-                    prompt:
-                      "I want a clean girl selfie aesthetic like Glossier — dewy skin, bright natural light and minimal styling.",
-                  },
-                  {
-                    label: "Airport travel photo",
-                    prompt:
-                      "I want an airport it girl travel photo — lounge or gate setting with suitcase, headphones and coffee.",
-                  },
-                  {
-                    label: "Pinterest-style carousel",
-                    prompt:
-                      "I want a Pinterest-style Instagram carousel, modern and minimal, that feels ready for Studio Pro.",
-                  },
-                ].map((recipe) => (
-                  <button
-                    key={recipe.label}
-                    type="button"
-                    onClick={() => handleSendMessage(recipe.prompt)}
-                    className="px-3 py-1.5 rounded-full border border-stone-200 bg-white text-xs text-stone-800 hover:bg-stone-100 transition-colors"
-                  >
-                    {recipe.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
 
           {filteredMessages &&
             Array.isArray(filteredMessages) &&
@@ -3344,11 +3850,18 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
                                   .replace(/\[GENERATE_PROMPTS[:\s]+[^\]]+\]/gi, '')
                                   .replace(/\[GENERATE_PROMPTS\]/gi, '')
                                 
+                                // Remove SHOW_IMAGE_UPLOAD_MODULE trigger from display (with any following text on same line)
+                                displayText = displayText
+                                  .replace(/\[SHOW_IMAGE_UPLOAD_MODULE[:\s]+[^\]]+\]/gi, '')
+                                  .replace(/\[SHOW_IMAGE_UPLOAD_MODULE\][^\n]*/gi, '')
+                                  .replace(/\[SHOW_IMAGE_UPLOAD_MODULE\]/gi, '')
+                                
                                 // Clean up any remaining prompt fragments
                                 displayText = displayText
                                   .replace(/Keep the .*?facial features EXACTLY identical.*?This is critical\./gis, '')
                                   .replace(/Composition:.*?Final Use:.*?Slide \d+ of \d+/gis, '')
                                   .replace(/\n{3,}/g, '\n\n')
+                                  .replace(/\s{2,}/g, ' ') // Clean up multiple spaces
                                   .trim()
                                 }
                                 
@@ -3465,9 +3978,287 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
                                   displayText = removeWorkflowOptionsFromText(displayText, workflowOptions)
                                 }
                                 
+                                // Get original message text for category extraction
+                                const originalMessageText = textParts.map((p: any) => p.text).join(' ')
+                                
+                                // Check if this message already has concept cards
+                                const hasConceptCards = msg.parts?.some((p: any) => 
+                                  p.type === 'tool-generateConcepts' && 
+                                  p.output?.state === 'ready' && 
+                                  p.output?.concepts?.length > 0
+                                ) || false
+                                
                                 return (
                                   <div key={idx}>
                                     {renderMessageContent(displayText, msg.role === "user")}
+                                    
+                                    {/* Render image upload module if trigger detected AND no concept cards exist yet (new chat only) */}
+                                    {msg.role === 'assistant' && 
+                                     messagesWithUploadModule.has(msg.id?.toString() || '') && 
+                                     !conceptGenerationImages && 
+                                     !hasConceptCards && (
+                                      <div className="mt-4">
+                                        <StudioProImageUploadModule
+                                          category={originalMessageText.match(/\[SHOW_IMAGE_UPLOAD_MODULE\]\s*(.+?)(?:\n|$|\[|$)/i)?.[1]?.trim() || ''}
+                                          showCategoryDropdown={false}
+                                          onImagesReady={async (images) => {
+                                            console.log("[v0] Images ready from upload module:", images)
+                                            // Store images for concept generation (will be used when Maya triggers it)
+                                            setConceptGenerationImages(images)
+                                            
+                                            // Persist to localStorage
+                                            try {
+                                              const stateToSave = {
+                                                selfies: images.selfies,
+                                                products: images.products,
+                                                styleRefs: images.styleRefs,
+                                                userDescription: images.userDescription,
+                                                category: images.category,
+                                                concept: images.concept,
+                                              }
+                                              localStorage.setItem("studio-pro-upload-state", JSON.stringify(stateToSave))
+                                              console.log("[v0] Saved upload state to localStorage:", stateToSave)
+                                            } catch (error) {
+                                              console.error("[v0] Error saving upload state to localStorage:", error)
+                                            }
+
+                                            // Extract category/request from message
+                                            const categoryMatch = originalMessageText.match(/\[SHOW_IMAGE_UPLOAD_MODULE\]\s*(.+?)(?:\n|$|\[|$)/i)
+                                            const categoryContext = images.category || categoryMatch?.[1]?.trim() || ''
+                                            
+                                            // Store category for quick actions
+                                            setLastCategoryContext(categoryContext)
+                                            
+                                            // Build message text with category, concept, and description
+                                            let messageText = ""
+                                            if (images.category) {
+                                              const categoryData = [
+                                                { value: "brand-content", label: "Brand Content", prompt: "I want Studio Pro outfit photos that feel like Alo Yoga — premium athletic outfits, neutral colors and natural movement." },
+                                                { value: "beauty-self-care", label: "Beauty & Self-Care", prompt: "I want a beauty skincare routine morning glow — dewy skin, natural light, clean girl aesthetic." },
+                                                { value: "selfie-styles", label: "Selfie Styles", prompt: "I want a clean girl selfie aesthetic — mirror selfies, golden hour, natural beauty moments." },
+                                                { value: "travel-lifestyle", label: "Travel & Lifestyle", prompt: "I want an airport it girl travel photo — lounge or gate setting with suitcase, headphones and coffee." },
+                                                { value: "tech-work", label: "Tech & Work", prompt: "I want tech home office productivity content — modern workspace, laptop, coffee, professional vibes." },
+                                                { value: "fashion-editorial", label: "Fashion Editorial", prompt: "I want luxury fashion editorial photos in Chanel style — sophisticated, elegant, timeless aesthetic." },
+                                                { value: "wellness-content", label: "Wellness Content", prompt: "I want Studio Pro wellness content in Alo Yoga style — yoga, stretching and calm movement in soft neutral environments." },
+                                                { value: "seasonal-holiday", label: "Seasonal Holiday", prompt: "I want Christmas holiday cozy vibes — warm lighting, festive atmosphere, elegant winter aesthetic." },
+                                                { value: "luxury-travel", label: "Luxury Travel", prompt: "I want luxury destination travel photos — Venice canals, Thailand beaches, sophisticated travel moments." },
+                                                { value: "carousels-reels", label: "Carousels & Reels", prompt: "I want a Pinterest-style Instagram carousel, modern and minimal, that feels ready for Studio Pro." },
+                                              ]
+                                              
+                                              const categoryInfo = categoryData.find(c => c.value === images.category)
+                                              
+                                              if (images.concept) {
+                                                const conceptPrompt = getConceptPrompt(images.category, images.concept)
+                                                if (conceptPrompt) {
+                                                  messageText = conceptPrompt
+                                                } else if (categoryInfo) {
+                                                  messageText = categoryInfo.prompt
+                                                }
+                                              } else if (categoryInfo) {
+                                                messageText = categoryInfo.prompt
+                                              }
+                                            } else {
+                                              // Fallback to user request or category context
+                                              const userRequest = messages
+                                                .filter(m => m.role === 'user')
+                                                .reverse()
+                                                .find(m => {
+                                                  const content = typeof m.content === 'string' ? m.content : m.parts?.find((p: any) => p.type === 'text')?.text || ''
+                                                  return content && !content.includes('[SHOW_IMAGE_UPLOAD_MODULE]')
+                                                })
+                                              
+                                              messageText = userRequest 
+                                                ? (typeof userRequest.content === 'string' 
+                                                  ? userRequest.content 
+                                                  : userRequest.parts?.find((p: any) => p.type === 'text')?.text || '')
+                                                : categoryContext || 'concept generation'
+                                            }
+                                            
+                                            // Add user description if provided
+                                            if (images.userDescription) {
+                                              messageText = `${messageText}\n\nAdditional context: ${images.userDescription}`
+                                            }
+                                            
+                                            // Send message to Maya with all images
+                                            // Maya will respond first, then trigger concept generation with [GENERATE_CONCEPTS]
+                                            if (sendMessage) {
+                                              const allImages = [...images.selfies, ...images.products, ...images.styleRefs]
+                                              const messageParts: Array<{ type: string; text?: string; image?: string }> = []
+                                              
+                                              // Add text part
+                                              if (messageText) {
+                                                messageParts.push({ type: "text", text: messageText })
+                                              }
+                                              
+                                              // Add all images
+                                              allImages.forEach(imageUrl => {
+                                                messageParts.push({ type: "image", image: imageUrl })
+                                              })
+                                              
+                                              console.log("[v0] 📤 Sending message to Maya with images:", {
+                                                text: messageText,
+                                                imageCount: allImages.length,
+                                                category: images.category,
+                                                concept: images.concept
+                                              })
+                                              
+                                              sendMessage({
+                                                role: "user",
+                                                parts: messageParts,
+                                              })
+                                            }
+                                          }}
+                                        />
+                                      </div>
+                                    )}
+                                    
+                                    {/* Render manual upload module (triggered by image icon button) */}
+                                    {showManualUploadModule && (
+                                      <div className="mt-4" key={`upload-module-${uploadModuleKey}`}>
+                                        <StudioProImageUploadModule
+                                          category={manualUploadCategory || lastCategoryContext || ""}
+                                          showCategoryDropdown={true}
+                                          initialSelfies={conceptGenerationImages?.selfies || []}
+                                          initialProducts={conceptGenerationImages?.products || []}
+                                          initialStyleRefs={conceptGenerationImages?.styleRefs || []}
+                                          initialCategory={lastCategoryContext || ""}
+                                          initialDescription={conceptGenerationImages?.userDescription || ""}
+                                          onCategorySelect={(category, prompt) => {
+                                            // When category is selected, just set it (don't send message)
+                                            // User will upload images and click Create/Describe
+                                            setManualUploadCategory(category)
+                                            
+                                            // Persist category to localStorage
+                                            try {
+                                              const currentState = conceptGenerationImages || {
+                                                selfies: [],
+                                                products: [],
+                                                styleRefs: [],
+                                              }
+                                              const stateToSave = {
+                                                ...currentState,
+                                                category: category,
+                                              }
+                                              localStorage.setItem("studio-pro-upload-state", JSON.stringify(stateToSave))
+                                            } catch (error) {
+                                              console.error("[v0] Error saving category to localStorage:", error)
+                                            }
+                                          }}
+                                          onImagesReady={async (images) => {
+                                            console.log("[v0] Images ready from manual upload module:", images)
+                                            // Store images for concept generation (will be used when Maya triggers it)
+                                            setConceptGenerationImages(images)
+                                            
+                                            // Persist to localStorage
+                                            try {
+                                              const stateToSave = {
+                                                selfies: images.selfies,
+                                                products: images.products,
+                                                styleRefs: images.styleRefs,
+                                                userDescription: images.userDescription,
+                                                category: images.category,
+                                                concept: images.concept,
+                                              }
+                                              localStorage.setItem("studio-pro-upload-state", JSON.stringify(stateToSave))
+                                              console.log("[v0] Saved upload state to localStorage:", stateToSave)
+                                            } catch (error) {
+                                              console.error("[v0] Error saving upload state to localStorage:", error)
+                                            }
+                                            
+                                            setShowManualUploadModule(false)
+                                            
+                                            const categoryContext = images.category || manualUploadCategory
+                                            setLastCategoryContext(categoryContext)
+                                            
+                                            // Persist category to localStorage
+                                            try {
+                                              const stateToSave = {
+                                                selfies: images.selfies,
+                                                products: images.products,
+                                                styleRefs: images.styleRefs,
+                                                userDescription: images.userDescription,
+                                                category: categoryContext,
+                                                concept: images.concept,
+                                              }
+                                              localStorage.setItem("studio-pro-upload-state", JSON.stringify(stateToSave))
+                                              console.log("[v0] Saved upload state to localStorage (with category):", stateToSave)
+                                            } catch (error) {
+                                              console.error("[v0] Error saving upload state to localStorage:", error)
+                                            }
+                                            
+                                            // Build message text with category, concept, and description
+                                            let messageText = ""
+                                            if (images.category) {
+                                              const categoryData = [
+                                                { value: "brand-content", label: "Brand Content", prompt: "I want Studio Pro outfit photos that feel like Alo Yoga — premium athletic outfits, neutral colors and natural movement." },
+                                                { value: "beauty-self-care", label: "Beauty & Self-Care", prompt: "I want a beauty skincare routine morning glow — dewy skin, natural light, clean girl aesthetic." },
+                                                { value: "selfie-styles", label: "Selfie Styles", prompt: "I want a clean girl selfie aesthetic — mirror selfies, golden hour, natural beauty moments." },
+                                                { value: "travel-lifestyle", label: "Travel & Lifestyle", prompt: "I want an airport it girl travel photo — lounge or gate setting with suitcase, headphones and coffee." },
+                                                { value: "tech-work", label: "Tech & Work", prompt: "I want tech home office productivity content — modern workspace, laptop, coffee, professional vibes." },
+                                                { value: "fashion-editorial", label: "Fashion Editorial", prompt: "I want luxury fashion editorial photos in Chanel style — sophisticated, elegant, timeless aesthetic." },
+                                                { value: "wellness-content", label: "Wellness Content", prompt: "I want Studio Pro wellness content in Alo Yoga style — yoga, stretching and calm movement in soft neutral environments." },
+                                                { value: "seasonal-holiday", label: "Seasonal Holiday", prompt: "I want Christmas holiday cozy vibes — warm lighting, festive atmosphere, elegant winter aesthetic." },
+                                                { value: "luxury-travel", label: "Luxury Travel", prompt: "I want luxury destination travel photos — Venice canals, Thailand beaches, sophisticated travel moments." },
+                                                { value: "carousels-reels", label: "Carousels & Reels", prompt: "I want a Pinterest-style Instagram carousel, modern and minimal, that feels ready for Studio Pro." },
+                                              ]
+                                              
+                                              const categoryInfo = categoryData.find(c => c.value === images.category)
+                                              
+                                              if (images.concept) {
+                                                const conceptPrompt = getConceptPrompt(images.category, images.concept)
+                                                if (conceptPrompt) {
+                                                  messageText = conceptPrompt
+                                                } else if (categoryInfo) {
+                                                  messageText = categoryInfo.prompt
+                                                }
+                                              } else if (categoryInfo) {
+                                                messageText = categoryInfo.prompt
+                                              }
+                                            } else {
+                                              messageText = categoryContext || 'concept generation'
+                                            }
+                                            
+                                            // Add user description if provided
+                                            if (images.userDescription) {
+                                              messageText = `${messageText}\n\nAdditional context: ${images.userDescription}`
+                                            }
+                                            
+                                            // Send message to Maya with all images
+                                            // Maya will respond first, then trigger concept generation with [GENERATE_CONCEPTS]
+                                            if (sendMessage) {
+                                              const allImages = [...images.selfies, ...images.products, ...images.styleRefs]
+                                              const messageParts: Array<{ type: string; text?: string; image?: string }> = []
+                                              
+                                              // Add text part
+                                              if (messageText) {
+                                                messageParts.push({ type: "text", text: messageText })
+                                              }
+                                              
+                                              // Add all images
+                                              allImages.forEach(imageUrl => {
+                                                messageParts.push({ type: "image", image: imageUrl })
+                                              })
+                                              
+                                              console.log("[v0] 📤 Sending message to Maya with images:", {
+                                                text: messageText,
+                                                imageCount: allImages.length,
+                                                category: images.category,
+                                                concept: images.concept
+                                              })
+                                              
+                                              sendMessage({
+                                                role: "user",
+                                                parts: messageParts,
+                                              })
+                                            }
+                                          }}
+                                          onCancel={() => {
+                                            setShowManualUploadModule(false)
+                                            setManualUploadCategory("")
+                                          }}
+                                        />
+                                      </div>
+                                    )}
                                     
                                     {/* Render prompt suggestion cards from API (concept cards pro) */}
                                     {msg.role === 'assistant' &&
@@ -3646,17 +4437,69 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
                                       </span>
                                     </div>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
-                                      {concepts.map((concept: any, conceptIndex: number) => (
-                                        <ConceptCard 
-                                          key={conceptIndex} 
-                                          concept={concept} 
-                                          chatId={chatId || undefined} 
-                                          onCreditsUpdate={setCreditBalance}
-                                          studioProMode={studioProMode}
-                                          baseImages={uploadedImages.filter(img => img.type === 'base').map(img => img.url)}
-                                        />
-                                      ))}
+                                      {concepts.map((concept: any, conceptIndex: number) => {
+                                        // Determine baseImages: prefer conceptGenerationImages (from upload module), then uploadedImages, then empty
+                                        const allBaseImages = conceptGenerationImages
+                                          ? [...conceptGenerationImages.selfies, ...conceptGenerationImages.products, ...conceptGenerationImages.styleRefs]
+                                          : uploadedImages.filter(img => img.type === 'base').map(img => img.url)
+                                        
+                                        // Debug logging
+                                        if (conceptIndex === 0) {
+                                          console.log("[v0] 🖼️ Rendering concept card with baseImages:", {
+                                            hasConceptGenerationImages: !!conceptGenerationImages,
+                                            selfiesCount: conceptGenerationImages?.selfies?.length || 0,
+                                            productsCount: conceptGenerationImages?.products?.length || 0,
+                                            styleRefsCount: conceptGenerationImages?.styleRefs?.length || 0,
+                                            allBaseImagesCount: allBaseImages.length,
+                                            allBaseImages: allBaseImages
+                                          })
+                                        }
+                                        
+                                        return (
+                                          <ConceptCard 
+                                            key={conceptIndex} 
+                                            concept={concept} 
+                                            chatId={chatId || undefined} 
+                                            onCreditsUpdate={setCreditBalance}
+                                            studioProMode={studioProMode}
+                                            baseImages={allBaseImages}
+                                            selfies={conceptGenerationImages?.selfies || []}
+                                            products={conceptGenerationImages?.products || []}
+                                            styleRefs={conceptGenerationImages?.styleRefs || []}
+                                            isFirstCard={conceptIndex === 0}
+                                            sharedImages={sharedConceptImages}
+                                            onSharedImagesChange={conceptIndex === 0 ? setSharedConceptImages : undefined}
+                                          />
+                                        )
+                                      })}
                                     </div>
+                                    
+                                    {/* Quick Action Button - Studio Pro Only */}
+                                    {studioProMode && conceptGenerationImages && lastCategoryContext && (
+                                      <div className="mt-6 pt-6 border-t border-stone-200/60">
+                                        <button
+                                          onClick={() => {
+                                            // Send message to Maya first so she can respond with voice validation and guidance
+                                            // Then she'll automatically trigger concept generation with [GENERATE_CONCEPTS]
+                                            if (sendMessage) {
+                                              sendMessage({
+                                                role: "user",
+                                                parts: [{ 
+                                                  type: "text", 
+                                                  text: `Create more concept cards like this for ${lastCategoryContext}` 
+                                                }],
+                                              })
+                                            }
+                                          }}
+                                          className="w-full px-4 py-2.5 bg-white border border-stone-300 text-stone-900 text-xs font-light tracking-wide rounded-lg hover:bg-stone-50 transition-colors"
+                                        >
+                                          Create More Like This
+                                        </button>
+                                        <p className="text-[10px] text-stone-500 text-center mt-2 font-light">
+                                          Want different images or categories? Click the image icon in the chat input to update your photos, products, or style references.
+                                        </p>
+                                      </div>
+                                    )}
                                   </div>
                                 )
                               }
@@ -3867,16 +4710,43 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
             </div>
           )}
 
-          {/* Concept generation loading indicator */}
+          {/* Enhanced Concept Generation Loading */}
           {isGeneratingConcepts && (
-            <div className="flex justify-start mt-4">
-              <div className="bg-white/50 backdrop-blur-xl border border-white/70 p-3 rounded-2xl max-w-[85%] shadow-lg shadow-stone-900/5">
-                <div className="flex items-center gap-3">
-                  <div className="w-4 h-4 border-2 border-stone-300 border-t-stone-700 rounded-full animate-spin" />
-                  <span className="text-xs tracking-[0.15em] uppercase font-light text-stone-600">
-                    Creating photo concepts...
-                  </span>
+            <div className="flex justify-center mt-8 mb-4">
+              <div className="bg-white rounded-2xl border border-stone-200/60 p-6 max-w-md w-full shadow-lg">
+                <div className="space-y-4">
+                  
+                  {/* Animated Progress */}
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-stone-900 animate-pulse"></div>
+                    <div className="w-2 h-2 rounded-full bg-stone-700 animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                    <div className="w-2 h-2 rounded-full bg-stone-500 animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                  </div>
+                  
+                  {/* Status Text */}
+                  <div className="text-center space-y-1">
+                    <p className="text-sm font-medium text-stone-900 tracking-wide">
+                      Creating Your Concepts
+                    </p>
+                    <p className="text-xs text-stone-600 leading-relaxed">
+                      Maya is designing professional concepts for you
+                    </p>
+                  </div>
+                  
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Success Message After Concepts Load */}
+          {!isGeneratingConcepts && messages.some(msg => 
+            msg.role === 'assistant' && msg.parts?.some(part => part.type === 'tool-generateConcepts')
+          ) && (
+            <div className="flex justify-center mt-4 mb-2">
+              <div className="bg-stone-50 rounded-lg border border-stone-200/60 px-4 py-2">
+                <p className="text-xs text-stone-600 text-center">
+                  Select a concept below, add your images, and generate
+                </p>
               </div>
             </div>
           )}
@@ -4016,33 +4886,53 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
           paddingBottom: "calc(env(safe-area-inset-bottom) + 0.75rem)",
         }}
       >
-        {!isEmpty && !uploadedImage && (
+        {/* Quick Actions - Alternative Creation Methods */}
+        {!isEmpty && !uploadedImage && studioProMode && !isWorkflowChat && !isWorkbenchModeEnabled() && (
+          <div className="mb-3 border-t border-stone-200/50 pt-3">
+            {/* Section Header */}
+            <div className="mb-2">
+              <h3 className="text-xs tracking-[0.2em] uppercase text-stone-900 font-medium">
+                Quick Actions
+              </h3>
+              <p className="text-[10px] text-stone-600 mt-0.5 leading-relaxed">
+                Or create specific content types directly
+              </p>
+            </div>
+
+            {/* Quick Action Buttons */}
+            <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1 -mx-2 px-2 sm:mx-0 sm:px-0">
+              {currentPrompts.map((item, index) => (
+                <button
+                  key={index}
+                  onClick={() => {
+                    // Send message to Maya to create concepts
+                    setInputValue(item.prompt)
+                    setTimeout(() => {
+                      handleSendMessage(item.prompt)
+                    }, 100)
+                  }}
+                  disabled={isTyping}
+                  className="shrink-0 px-4 py-2.5 rounded-lg border border-stone-300 bg-white hover:border-stone-900 hover:bg-stone-50 transition-all disabled:opacity-50 touch-manipulation active:scale-95 min-h-[44px]"
+                >
+                  <span className="text-xs text-stone-700 hover:text-stone-900 whitespace-nowrap">
+                    {item.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Classic Mode Quick Actions */}
+        {!isEmpty && !uploadedImage && !studioProMode && (
           <div className="mb-2">
             <div className="flex gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide pb-1 -mx-2 px-2 sm:mx-0 sm:px-0">
               {currentPrompts.map((item, index) => (
                 <button
                   key={index}
                   onClick={() => {
-                    if (studioProMode) {
-                      // In Studio Pro mode, trigger workflow start
-                      const workflowType = item.label.toLowerCase()
-                        .replace('create ', '')
-                        .replace(' ', '-')
-                      // Set workflow chat mode and send workflow start message
-                      setIsWorkflowChat(true)
-                      const workflowMessage = `[WORKFLOW_START: ${workflowType}]`
-                      setTimeout(() => {
-                        if (sendMessage) {
-                          sendMessage({
-                            role: 'user',
-                            parts: [{ type: 'text', text: workflowMessage }],
-                          })
-                        }
-                      }, 100)
-                    } else {
-                      // Classic mode, send regular message
-                      handleSendMessage(item.prompt)
-                    }
+                    // Classic mode, send regular message
+                    handleSendMessage(item.prompt)
                   }}
                   disabled={isTyping}
                   className="shrink-0 px-3 py-2 bg-white/40 backdrop-blur-xl border border-white/60 rounded-lg hover:bg-white/60 transition-all duration-300 disabled:opacity-50 touch-manipulation active:scale-95 min-h-[44px]"
@@ -4083,15 +4973,51 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
               aria-label="Upload image file"
             />
 
-            <button
-              onClick={() => setShowChatMenu(!showChatMenu)}
-              disabled={isTyping}
-              className="absolute left-2 bottom-2.5 w-9 h-9 flex items-center justify-center text-stone-600 hover:text-stone-950 transition-colors disabled:opacity-50 touch-manipulation active:scale-95 z-10 pointer-events-auto"
-              aria-label="Chat menu"
-              type="button"
-            >
-              <Sliders size={20} strokeWidth={2} />
-            </button>
+            {/* Studio Pro: Upload Images Button */}
+            {studioProMode && (
+              <button
+                onClick={() => {
+                  // Always set category to lastCategoryContext if available, so upload module shows correct category
+                  setManualUploadCategory(lastCategoryContext || "")
+                  // Force remount by updating key - this ensures state resets from props
+                  setUploadModuleKey(prev => prev + 1)
+                  setShowManualUploadModule(true)
+                }}
+                disabled={isTyping}
+                className="absolute left-2 bottom-2.5 w-9 h-9 flex items-center justify-center text-stone-600 hover:text-stone-950 transition-colors disabled:opacity-50 touch-manipulation active:scale-95 z-10 pointer-events-auto"
+                aria-label="Upload images"
+                type="button"
+                title={conceptGenerationImages ? "Change images or settings" : "Upload images"}
+              >
+                <ImageIcon size={20} strokeWidth={2} />
+              </button>
+            )}
+
+            {/* Studio Pro: Menu Button */}
+            {studioProMode && (
+              <button
+                onClick={() => setShowChatMenu(!showChatMenu)}
+                disabled={isTyping}
+                className="absolute left-12 bottom-2.5 w-9 h-9 flex items-center justify-center text-stone-600 hover:text-stone-950 transition-colors disabled:opacity-50 touch-manipulation active:scale-95 z-10 pointer-events-auto"
+                aria-label="Menu"
+                type="button"
+              >
+                <Menu size={20} strokeWidth={2} />
+              </button>
+            )}
+
+            {/* Chat Menu Button - Classic mode only */}
+            {!studioProMode && (
+              <button
+                onClick={() => setShowChatMenu(!showChatMenu)}
+                disabled={isTyping}
+                className="absolute left-2 bottom-2.5 w-9 h-9 flex items-center justify-center text-stone-600 hover:text-stone-950 transition-colors disabled:opacity-50 touch-manipulation active:scale-95 z-10 pointer-events-auto"
+                aria-label="Chat menu"
+                type="button"
+              >
+                <Sliders size={20} strokeWidth={2} />
+              </button>
+            )}
 
             <textarea
               ref={textareaRef}
@@ -4163,75 +5089,115 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
                 <X size={20} strokeWidth={2} />
               </button>
               
-              <h2 className="text-xl font-serif font-light tracking-wide text-stone-900 mb-4 pr-8 shrink-0">How Studio Pro Works</h2>
-              <div className="space-y-3 text-sm text-stone-600 leading-relaxed overflow-y-auto flex-1 min-h-0 pb-4">
-                <p>
-                  Studio Pro mode gives you advanced creative control with powerful features for professional content creation.
-                </p>
-                <p>
-                  <strong>What you can create:</strong>
-                </p>
-                <ul className="list-disc list-inside space-y-1 ml-2">
-                  <li>Instagram carousels with text overlays</li>
-                  <li>Multi-image compositions (up to 14 images)</li>
-                  <li>Reel covers with custom text</li>
-                  <li>Brand scenes with product integration</li>
-                  <li>Educational infographics with real-time data</li>
-                  <li>Text rendering in any language</li>
-                </ul>
-                <p className="pt-2">
-                  <strong>Concept Cards - Quick & Easy:</strong>
-                </p>
-                <ul className="list-disc list-inside space-y-1 ml-2">
-                  <li>Maya generates concept cards with creative ideas for your content</li>
-                  <li>Each concept card lets you add reference images directly (upload from device or choose from gallery)</li>
-                  <li>Click the 3-dot menu (⋮) on any concept card to view and edit Maya's generated prompt</li>
-                  <li>Customize the prompt to your exact needs, then generate</li>
-                  <li>Perfect for quick content creation without writing prompts yourself</li>
-                </ul>
-                <p className="pt-2">
-                  <strong>Workbench - Advanced Control:</strong>
-                </p>
-                <ul className="list-disc list-inside space-y-1 ml-2">
-                  <li>Use the Workbench for more complex tasks and full creative control</li>
-                  <li>Write your own prompts or paste prompts from anywhere</li>
-                  <li>Select multiple reference images (up to 14 images)</li>
-                  <li>Perfect for multi-image compositions, complex edits, and precise control</li>
-                  <li>Access the Workbench from the Studio Pro dashboard</li>
-                </ul>
-                <p className="pt-2">
-                  <strong>How to use Maya:</strong>
-                </p>
-                <ul className="list-disc list-inside space-y-1 ml-2">
-                  <li>Ask Maya for content ideas - she'll create concept cards automatically</li>
-                  <li>Add your own images to concept cards for personalized results</li>
-                  <li>Edit prompts via the 3-dot menu if you want to adjust Maya's suggestions</li>
-                  <li>Use the Workbench when you need more control or have specific requirements</li>
-                  <li>Maya detects what you want (carousel, reel cover, etc.) and uses the right templates</li>
-                </ul>
-                <p className="pt-2">
-                  <strong>Pro tips:</strong>
-                </p>
-                <ul className="list-disc list-inside space-y-1 ml-2">
-                  <li>Start with concept cards for quick inspiration - they're perfect for most content</li>
-                  <li>Use the 3-dot menu to fine-tune prompts before generating</li>
-                  <li>Switch to Workbench for complex multi-image projects or custom workflows</li>
-                  <li>Upload style references (like Pinterest outfits) to match aesthetics</li>
-                  <li>Maya automatically uses the right templates for carousels, reel covers, and more</li>
-                </ul>
-                <p className="pt-2">
-                  <strong>Cost:</strong> 5 credits per generation
-                </p>
-                <p className="pt-2 text-xs text-stone-500">
-                  Images are generated using advanced AI models optimized for professional content creation.
-                </p>
+              {/* Header */}
+              <h2 className="text-xl font-serif font-light tracking-[0.15em] uppercase text-stone-900 mb-2 pr-8">
+                Studio Pro
+              </h2>
+              <p className="text-sm text-stone-600 mb-6 leading-relaxed">
+                Professional content creation guided by Maya
+              </p>
+              
+              {/* Content */}
+              <div className="space-y-6 overflow-y-auto flex-1 min-h-0 pb-4">
+                
+                {/* Step 1 */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-stone-900 flex items-center justify-center flex-shrink-0">
+                      <span className="text-white text-sm font-serif">1</span>
+                    </div>
+                    <h3 className="text-sm font-medium text-stone-900 tracking-wide">
+                      Tell Maya What You Want
+                    </h3>
+                  </div>
+                  <p className="text-xs text-stone-600 leading-relaxed ml-11">
+                    Describe the content you want to create. Examples: "Alo Yoga style workout photos", "Professional LinkedIn headshot", or "Coffee shop entrepreneur vibes"
+                  </p>
+                </div>
+                
+                {/* Step 2 */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-stone-900 flex items-center justify-center flex-shrink-0">
+                      <span className="text-white text-sm font-serif">2</span>
+                    </div>
+                    <h3 className="text-sm font-medium text-stone-900 tracking-wide">
+                      Choose Your Concept
+                    </h3>
+                  </div>
+                  <p className="text-xs text-stone-600 leading-relaxed ml-11">
+                    Maya creates 3 professional concepts for you. Each concept includes a detailed prompt you can use as-is or customize.
+                  </p>
+                </div>
+                
+                {/* Step 3 */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-stone-900 flex items-center justify-center flex-shrink-0">
+                      <span className="text-white text-sm font-serif">3</span>
+                    </div>
+                    <h3 className="text-sm font-medium text-stone-900 tracking-wide">
+                      Add Your Images
+                    </h3>
+                  </div>
+                  <p className="text-xs text-stone-600 leading-relaxed ml-11">
+                    Select at least one image from your gallery or upload new photos. You can add up to 4 reference images per concept.
+                  </p>
+                </div>
+                
+                {/* Step 4 */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-stone-900 flex items-center justify-center flex-shrink-0">
+                      <span className="text-white text-sm font-serif">4</span>
+                    </div>
+                    <h3 className="text-sm font-medium text-stone-900 tracking-wide">
+                      Generate
+                    </h3>
+                  </div>
+                  <p className="text-xs text-stone-600 leading-relaxed ml-11">
+                    Click the generate button to create your professional content. Each generation costs 5 credits and takes about 30 seconds.
+                  </p>
+                </div>
+                
+                {/* Pro Tips */}
+                <div className="border-t border-stone-200 pt-4 mt-6">
+                  <h3 className="text-xs tracking-[0.15em] uppercase text-stone-900 font-medium mb-3">
+                    Pro Tips
+                  </h3>
+                  <ul className="space-y-2">
+                    <li className="flex items-start gap-2">
+                      <span className="text-xs text-stone-900 mt-0.5">—</span>
+                      <p className="text-xs text-stone-600 leading-relaxed flex-1">
+                        Click the three-dot menu on any concept to view or edit the detailed prompt
+                      </p>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-xs text-stone-900 mt-0.5">—</span>
+                      <p className="text-xs text-stone-600 leading-relaxed flex-1">
+                        Your first image should be your main photo. Additional images can be style references
+                      </p>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-xs text-stone-900 mt-0.5">—</span>
+                      <p className="text-xs text-stone-600 leading-relaxed flex-1">
+                        Use the Quick Actions bar to create specific content types like carousels or reel covers
+                      </p>
+                    </li>
+                  </ul>
+                </div>
+                
               </div>
-              <button
-                onClick={() => setShowStudioProOnboarding(false)}
-                className="w-full bg-stone-900 text-white px-6 py-3 rounded-lg text-sm font-light tracking-wide hover:bg-stone-800 transition-colors mt-4 shrink-0"
-              >
-                Got it
-              </button>
+              
+              {/* Footer Button */}
+              <div className="pt-4 border-t border-stone-200">
+                <button
+                  onClick={() => setShowStudioProOnboarding(false)}
+                  className="w-full py-3 bg-stone-900 text-white rounded-lg hover:bg-stone-800 transition-colors text-sm font-medium tracking-wide uppercase"
+                >
+                  Got It
+                </button>
+              </div>
             </div>
           </div>,
           document.body
@@ -4239,50 +5205,117 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
 
         {showChatMenu && (
           <div className="absolute bottom-full left-3 right-3 mb-2 bg-white/95 backdrop-blur-3xl border border-stone-200 rounded-2xl overflow-hidden shadow-xl shadow-stone-950/10 animate-in slide-in-from-bottom-2 duration-300">
-            <button
-              onClick={() => {
-                handleNewChat()
-                setShowChatMenu(false)
-              }}
-              className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-stone-700 hover:bg-stone-50 transition-colors border-b border-stone-100 touch-manipulation"
-            >
-              <Plus size={18} strokeWidth={2} />
-              <span className="font-medium">New Chat</span>
-            </button>
-            <button
-              onClick={() => {
-                setShowHistory(!showHistory)
-                setShowChatMenu(false)
-              }}
-              className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-stone-700 hover:bg-stone-50 transition-colors border-b border-stone-100 touch-manipulation"
-            >
-              <Clock size={18} strokeWidth={2} />
-              <span className="font-medium">Chat History</span>
-            </button>
-            <button
-              onClick={() => {
-                fileInputRef.current?.click()
-                setShowChatMenu(false)
-              }}
-              disabled={isUploadingImage}
-              className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-stone-700 hover:bg-stone-50 transition-colors touch-manipulation disabled:opacity-50"
-            >
-              <Camera size={18} strokeWidth={2} />
-              <span className="font-medium">{isUploadingImage ? "Uploading..." : "Upload Inspiration"}</span>
-            </button>
-            <button
-              onClick={() => {
-                setShowSettings(!showSettings)
-                setShowChatMenu(false)
-              }}
-              className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-stone-700 hover:bg-stone-50 transition-colors touch-manipulation"
-            >
-              <Sliders size={18} strokeWidth={2} />
-              <span className="font-medium">Generation Settings</span>
-            </button>
+            {studioProMode ? (
+              // Studio Pro Mode Menu (text-only, no icons)
+              <>
+                <button
+                  onClick={() => {
+                    // Open upload module for new reference images
+                    setManualUploadCategory(lastCategoryContext || "")
+                    setUploadModuleKey(prev => prev + 1)
+                    setShowManualUploadModule(true)
+                    setShowChatMenu(false)
+                  }}
+                  className="w-full px-4 py-3 text-left text-sm text-stone-700 hover:bg-stone-50 transition-colors border-b border-stone-100 touch-manipulation"
+                >
+                  <span className="font-medium">New reference images</span>
+                </button>
+                <button
+                  onClick={() => {
+                    handleNewChat()
+                    setShowChatMenu(false)
+                  }}
+                  className="w-full px-4 py-3 text-left text-sm text-stone-700 hover:bg-stone-50 transition-colors border-b border-stone-100 touch-manipulation"
+                >
+                  <span className="font-medium">New chat</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setShowHistory(!showHistory)
+                    setShowChatMenu(false)
+                  }}
+                  className="w-full px-4 py-3 text-left text-sm text-stone-700 hover:bg-stone-50 transition-colors touch-manipulation"
+                >
+                  <span className="font-medium">Chat history</span>
+                </button>
+              </>
+            ) : (
+              // Classic Mode Menu (with icons)
+              <>
+                <button
+                  onClick={() => {
+                    handleNewChat()
+                    setShowChatMenu(false)
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-stone-700 hover:bg-stone-50 transition-colors border-b border-stone-100 touch-manipulation"
+                >
+                  <Plus size={18} strokeWidth={2} />
+                  <span className="font-medium">New Chat</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setShowHistory(!showHistory)
+                    setShowChatMenu(false)
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-stone-700 hover:bg-stone-50 transition-colors border-b border-stone-100 touch-manipulation"
+                >
+                  <Clock size={18} strokeWidth={2} />
+                  <span className="font-medium">Chat History</span>
+                </button>
+                <button
+                  onClick={() => {
+                    fileInputRef.current?.click()
+                    setShowChatMenu(false)
+                  }}
+                  disabled={isUploadingImage}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-stone-700 hover:bg-stone-50 transition-colors touch-manipulation disabled:opacity-50"
+                >
+                  <Camera size={18} strokeWidth={2} />
+                  <span className="font-medium">{isUploadingImage ? "Uploading..." : "Upload Inspiration"}</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setShowSettings(!showSettings)
+                    setShowChatMenu(false)
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-stone-700 hover:bg-stone-50 transition-colors touch-manipulation"
+                >
+                  <Sliders size={18} strokeWidth={2} />
+                  <span className="font-medium">Generation Settings</span>
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>
+
+      <BuyCreditsModal
+        open={showBuyCreditsModal}
+        onOpenChange={setShowBuyCreditsModal}
+        onSuccess={() => {
+          setShowBuyCreditsModal(false)
+          // Refresh credit balance after purchase (with retry for webhook delay)
+          const refreshCredits = async (retries = 3, delay = 1000) => {
+            for (let i = 0; i < retries; i++) {
+              try {
+                const res = await fetch("/api/user/credits")
+                const data = await res.json()
+                if (data.balance !== undefined) {
+                  setCreditBalance(data.balance)
+                  return // Success, exit retry loop
+                }
+              } catch (err) {
+                console.error("[v0] Error refreshing credits (attempt", i + 1, "):", err)
+              }
+              // Wait before retry (webhook might need time to process)
+              if (i < retries - 1) {
+                await new Promise((resolve) => setTimeout(resolve, delay))
+              }
+            }
+          }
+          refreshCredits()
+        }}
+      />
     </div>
   )
 }

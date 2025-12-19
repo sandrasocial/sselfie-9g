@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { MoreVertical, X, Edit2 } from "lucide-react"
 import InstagramPhotoCard from "./instagram-photo-card"
 import InstagramReelCard from "./instagram-reel-card"
@@ -8,16 +8,32 @@ import InstagramCarouselCard from "./instagram-carousel-card"
 import ImageGalleryModal from "./image-gallery-modal"
 import type { ConceptData } from "./types"
 import type { GalleryImage } from "@/lib/data/images"
+import BuyCreditsModal from "./buy-credits-modal"
 
 interface ConceptCardProps {
   concept: ConceptData
   chatId?: number
   onCreditsUpdate?: (newBalance: number) => void
   studioProMode?: boolean
-  baseImages?: string[] // Base images for Studio Pro mode
+  baseImages?: string[] // Base images for Studio Pro mode (legacy - will be replaced)
+  selfies?: string[] // Selfie images from upload module
+  products?: string[] // Product images from upload module
+  styleRefs?: string[] // Style reference images from upload module
 }
 
-export default function ConceptCard({ concept, chatId, onCreditsUpdate, studioProMode = false, baseImages = [] }: ConceptCardProps) {
+export default function ConceptCard({ 
+  concept, 
+  chatId, 
+  onCreditsUpdate, 
+  studioProMode = false, 
+  baseImages = [],
+  selfies = [],
+  products = [],
+  styleRefs = [],
+  isFirstCard = false,
+  sharedImages = [null, null, null],
+  onSharedImagesChange
+}: ConceptCardProps) {
   // CLASSIC MODE SAFETY: Normalize studioProMode to ensure it's explicitly boolean
   // This prevents undefined/null from accidentally triggering Pro logic
   // IMPORTANT: Only use isProMode (never raw studioProMode) in conditionals
@@ -42,6 +58,7 @@ export default function ConceptCard({ concept, chatId, onCreditsUpdate, studioPr
   const [showPhotoshootConfirm, setShowPhotoshootConfirm] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
   const [photoshootError, setPhotoshootError] = useState<string | null>(null)
+  const [showBuyCreditsModal, setShowBuyCreditsModal] = useState(false)
 
   // Prompt editing state
   const [showPromptEditor, setShowPromptEditor] = useState(false)
@@ -55,18 +72,22 @@ export default function ConceptCard({ concept, chatId, onCreditsUpdate, studioPr
   const [realismStrength, setRealismStrength] = useState<number | null>(null)
 
   // Image selection state for Studio Pro mode
-  // Initialize with baseImages prop if provided, otherwise start with 3 empty slots
+  // Initialize with baseImages prop if provided, otherwise use sharedImages (for non-first cards) or empty
+  // NOTE: No limit on number of images - can accept all images from upload module
   const [selectedImages, setSelectedImages] = useState<Array<string | null>>(() => {
     if (baseImages.length > 0) {
-      // Fill up to 3 slots with baseImages, pad with nulls if needed
-      const initial = [...baseImages.slice(0, 3)]
-      while (initial.length < 3) {
-        initial.push(null)
-      }
-      return initial
+      // Use all baseImages (no 3-image limit)
+      return [...baseImages]
     }
-    return [null, null, null]
+    // For non-first cards, use shared images if available
+    if (!isFirstCard && sharedImages.some(img => img !== null)) {
+      return [...sharedImages]
+    }
+    return [null, null, null] // Start with 3 empty slots for UI, but can expand
   })
+  
+  // Track if user has manually overridden shared images
+  const [hasOverriddenImages, setHasOverriddenImages] = useState(false)
   const [showGalleryModal, setShowGalleryModal] = useState(false)
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([])
   const [loadingGallery, setLoadingGallery] = useState(false)
@@ -74,39 +95,98 @@ export default function ConceptCard({ concept, chatId, onCreditsUpdate, studioPr
   const fileInputRef = useRef<HTMLInputElement>(null)
   const currentBoxIndexRef = useRef<number | null>(null)
 
+  // Track previous baseImages to detect actual changes
+  const prevBaseImagesRef = useRef<string[]>(baseImages)
+  
   // Update selectedImages when baseImages prop changes
+  // CRITICAL: Always update when baseImages are provided, even if card already has images
+  // This ensures uploaded images from the upload module are always passed to concept cards
   useEffect(() => {
-    if (baseImages.length > 0 && selectedImages.filter(img => img !== null).length === 0) {
-      const initial = [...baseImages.slice(0, 3)]
-      while (initial.length < 3) {
-        initial.push(null)
-      }
-      setSelectedImages(initial)
+    // Check if baseImages actually changed
+    const baseImagesChanged = JSON.stringify(prevBaseImagesRef.current) !== JSON.stringify(baseImages)
+    
+    if (!baseImagesChanged) {
+      return // Skip if baseImages hasn't actually changed
     }
-  }, [baseImages])
+    
+    if (baseImages.length > 0) {
+      // If baseImages are provided, use them (even if card already has images)
+      // This ensures the upload module images are always used
+      // NOTE: No limit - use all baseImages
+      const initial = [...baseImages]
+      
+      console.log("[v0] 🖼️ ConceptCard: Setting selectedImages from baseImages:", {
+        baseImagesCount: baseImages.length,
+        baseImages: baseImages,
+        initial: initial
+      })
+      
+      // Use functional update to avoid needing selectedImages in dependencies
+      setSelectedImages(prev => {
+        // Only update if the new value is actually different
+        const isDifferent = prev.length !== initial.length || 
+          initial.some((img, idx) => img !== prev[idx])
+        return isDifferent ? initial : prev
+      })
+      
+      prevBaseImagesRef.current = [...baseImages]
+    } else {
+      // Only reset to empty if we previously had baseImages
+      const hadBaseImages = prevBaseImagesRef.current.length > 0
+      
+      if (hadBaseImages) {
+        // Use functional update to check current state without needing it in dependencies
+        setSelectedImages(prev => {
+          // Only reset if current state has images
+          const hasImages = prev.some(img => img !== null)
+          return hasImages ? [null, null, null] : prev
+        })
+      }
+      
+      prevBaseImagesRef.current = []
+    }
+  }, [baseImages]) // Only depend on baseImages
+  
+  // Track previous shared images to detect changes
+  const prevSharedImagesRef = useRef<Array<string | null>>(sharedImages)
+  
+  // Sync with shared images for non-first cards (unless user has overridden)
+  useEffect(() => {
+    if (!isFirstCard && !hasOverriddenImages) {
+      const sharedHasImages = sharedImages.some(img => img !== null)
+      const hasImages = selectedImages.some(img => img !== null)
+      const sharedChanged = JSON.stringify(prevSharedImagesRef.current) !== JSON.stringify(sharedImages)
+      
+      // If shared images have content and this card is empty, sync
+      if (sharedHasImages && !hasImages) {
+        setSelectedImages([...sharedImages])
+        prevSharedImagesRef.current = [...sharedImages]
+      }
+      // If shared images changed and this card currently matches the old shared state, update
+      else if (sharedHasImages && sharedChanged) {
+        const currentMatchesPrevShared = selectedImages.every((img, idx) => img === prevSharedImagesRef.current[idx])
+        if (currentMatchesPrevShared) {
+          setSelectedImages([...sharedImages])
+          prevSharedImagesRef.current = [...sharedImages]
+        }
+      }
+    } else {
+      prevSharedImagesRef.current = [...sharedImages]
+    }
+  }, [sharedImages, isFirstCard, hasOverriddenImages, selectedImages])
+  
+  // Update shared images when first card changes
+  // CRITICAL: Always call onSharedImagesChange when first card changes, even when all images are cleared
+  // This ensures other cards are notified to reset their shared images
+  useEffect(() => {
+    if (isFirstCard && onSharedImagesChange) {
+      onSharedImagesChange([...selectedImages])
+    }
+  }, [selectedImages, isFirstCard, onSharedImagesChange])
 
   // Load gallery images on mount (for Studio Pro mode)
-  useEffect(() => {
-    if (isProMode) {
-      loadGalleryImages()
-    }
-  }, [isProMode])
-
-  // Close menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setShowMenu(false)
-      }
-    }
-
-    if (showMenu) {
-      document.addEventListener('mousedown', handleClickOutside)
-      return () => document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [showMenu])
-
-  const loadGalleryImages = async () => {
+  // Memoize loadGalleryImages to prevent infinite loops
+  const loadGalleryImages = useCallback(async () => {
     setLoadingGallery(true)
     try {
       const response = await fetch('/api/gallery/images', {
@@ -125,7 +205,27 @@ export default function ConceptCard({ concept, chatId, onCreditsUpdate, studioPr
     } finally {
       setLoadingGallery(false)
     }
-  }
+  }, []) // No dependencies - this function doesn't depend on any props or state
+
+  useEffect(() => {
+    if (isProMode) {
+      loadGalleryImages()
+    }
+  }, [isProMode, loadGalleryImages])
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false)
+      }
+    }
+
+    if (showMenu) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showMenu])
 
   const handleImageSelect = (boxIndex: number) => {
     currentBoxIndexRef.current = boxIndex
@@ -145,6 +245,12 @@ export default function ConceptCard({ concept, chatId, onCreditsUpdate, studioPr
     }
     
     setSelectedImages(newImages)
+    
+    // Mark as overridden if not first card
+    if (!isFirstCard) {
+      setHasOverriddenImages(true)
+    }
+    
     setShowGalleryModal(false)
     currentBoxIndexRef.current = null
   }
@@ -196,6 +302,11 @@ export default function ConceptCard({ concept, chatId, onCreditsUpdate, studioPr
       }
       
       setSelectedImages(newImages)
+      
+      // Mark as overridden if not first card
+      if (!isFirstCard) {
+        setHasOverriddenImages(true)
+      }
     } catch (error) {
       console.error("[CONCEPT-CARD] Error uploading image:", error)
       alert("Failed to upload image. Please try again.")
@@ -212,6 +323,11 @@ export default function ConceptCard({ concept, chatId, onCreditsUpdate, studioPr
   const handleImageClear = (boxIndex: number) => {
     const newImages = [...selectedImages]
     newImages[boxIndex] = null
+    
+    // Mark as overridden if not first card
+    if (!isFirstCard) {
+      setHasOverriddenImages(true)
+    }
     
     // If clearing box 3 and 4th box exists, remove 4th box
     if (boxIndex === 2 && newImages.length > 3) {
@@ -302,26 +418,39 @@ export default function ConceptCard({ concept, chatId, onCreditsUpdate, studioPr
         // 3. Generate using Maya's prompt + user's images
         // ============================================
         
-        // Get base images: prefer images selected in concept card, then prop baseImages, then concept reference image
-        const conceptCardImages = selectedImages.filter((img): img is string => img !== null)
-        const availableBaseImages = conceptCardImages.length > 0
-          ? conceptCardImages
-          : (baseImages.length > 0 
-              ? baseImages 
-              : (concept.referenceImageUrl ? [concept.referenceImageUrl] : []))
+        // Get images: prefer separate arrays (selfies, products, styleRefs), then fallback to baseImages/selectedImages
+        // Use separate arrays if provided, otherwise combine all images
+        const finalSelfies = selfies.length > 0 ? selfies : (selectedImages.filter((img): img is string => img !== null).length > 0 ? selectedImages.filter((img): img is string => img !== null) : (baseImages.length > 0 ? baseImages : (concept.referenceImageUrl ? [concept.referenceImageUrl] : [])))
+        const finalProducts = products.length > 0 ? products : []
+        const finalStyleRefs = styleRefs.length > 0 ? styleRefs : []
 
-        if (availableBaseImages.length === 0) {
+        // Check if we have at least selfies (required)
+        if (finalSelfies.length === 0) {
           setError("Please select at least one image (upload or from gallery) in Studio Pro mode, or use Classic mode")
           setIsGenerating(false)
           return
         }
 
-        console.log("[CONCEPT-CARD] Using Studio Pro (Nano Banana Pro) with", availableBaseImages.length, "base image(s)")
+        console.log("[CONCEPT-CARD] Using Studio Pro (Nano Banana Pro) with:", {
+          selfies: finalSelfies.length,
+          products: finalProducts.length,
+          styleRefs: finalStyleRefs.length,
+          total: finalSelfies.length + finalProducts.length + finalStyleRefs.length
+        })
 
         // CRITICAL: Concept cards use Maya's generated prompt (concept.prompt) OR user-edited prompt
         // If user edited the prompt, use that; otherwise use Maya's original prompt
         // Mode "brand-scene" ensures proper prompt building with brand context
         const userRequest = editedPrompt || concept.prompt || `${concept.title}: ${concept.description}`
+        
+        // 🔴 CRITICAL: Log the prompt being sent to Studio Pro for debugging
+        console.log('[CONCEPT-CARD] Sending prompt to Studio Pro:', {
+          hasEditedPrompt: !!editedPrompt,
+          hasConceptPrompt: !!concept.prompt,
+          promptLength: userRequest.length,
+          promptPreview: userRequest.substring(0, 200) + (userRequest.length > 200 ? '...' : ''),
+          startsWithAttachmentRef: /^Woman, maintaining exactly the characteristics/i.test(userRequest.trim())
+        })
         
         const response = await fetch("/api/maya/generate-studio-pro", {
           method: "POST",
@@ -331,18 +460,52 @@ export default function ConceptCard({ concept, chatId, onCreditsUpdate, studioPr
             mode: "brand-scene", // Concept cards use brand-scene mode (Maya's prompt building)
             userRequest: userRequest, // Maya's generated prompt from concept generation
             inputImages: {
-              baseImages: availableBaseImages.map(url => ({ url, type: 'user-photo' })),
-              productImages: []
+              baseImages: finalSelfies.map(url => ({ url, type: 'user-photo' })),
+              productImages: finalProducts.map(url => ({ url, label: 'Product', type: 'product' })),
+              styleRefs: finalStyleRefs.map(url => ({ url, type: 'style-reference' }))
             },
             resolution: "2K",
             aspectRatio: concept.customSettings?.aspectRatio || "1:1"
           }),
         })
 
-        const data = await response.json()
+        let data
+        try {
+          const text = await response.text()
+          try {
+            data = JSON.parse(text)
+          } catch (jsonError) {
+            console.error("[CONCEPT-CARD] Failed to parse response as JSON:", jsonError)
+            console.error("[CONCEPT-CARD] Response text:", text)
+            throw new Error("Invalid response from server. Please try again.")
+          }
+        } catch (textError) {
+          console.error("[CONCEPT-CARD] Failed to read response:", textError)
+          throw new Error("Failed to read server response. Please try again.")
+        }
 
         if (!response.ok) {
-          throw new Error(data.error || "Failed to generate Studio Pro image")
+          const errorMessage = 
+            (data && typeof data.error === 'string' && data.error) ||
+            (data && typeof data.details === 'string' && data.details) ||
+            `Server error (${response.status}): ${response.statusText || "Unknown error"}`
+          
+          console.error("[CONCEPT-CARD] Studio Pro generation error:", {
+            status: response.status,
+            statusText: response.statusText,
+            error: data?.error,
+            details: data?.details,
+            fullResponse: data
+          })
+          
+          // Show buy credits modal for insufficient credits
+          if (response.status === 402) {
+            setShowBuyCreditsModal(true)
+            setIsGenerating(false)
+            return
+          }
+          
+          throw new Error(String(errorMessage))
         }
 
         // Poll for completion (same as regular Studio Pro)
@@ -375,7 +538,7 @@ export default function ConceptCard({ concept, chatId, onCreditsUpdate, studioPr
               }
 
               if (status.status === 'failed') {
-                setError(status.error || "Generation failed")
+                setError(status.error || "Generation didn't complete. Please try again or check your images.")
                 setIsGenerating(false)
                 return
               }
@@ -385,12 +548,12 @@ export default function ConceptCard({ concept, chatId, onCreditsUpdate, studioPr
                 attempts++
                 setTimeout(checkStatus, 5000)
               } else {
-                setError("Generation timed out")
+                setError("Generation is taking longer than expected. Please try again.")
                 setIsGenerating(false)
               }
             } catch (err) {
               console.error("[STUDIO-PRO] Status check error:", err)
-              setError("Failed to check generation status")
+              setError("Unable to check generation status. Please try again.")
               setIsGenerating(false)
             }
           }
@@ -443,6 +606,12 @@ export default function ConceptCard({ concept, chatId, onCreditsUpdate, studioPr
       const data = await response.json()
 
       if (!response.ok) {
+        // Show buy credits modal for insufficient credits
+        if (response.status === 402) {
+          setShowBuyCreditsModal(true)
+          setIsGenerating(false)
+          return
+        }
         throw new Error(data.error || "Failed to generate image")
       }
 
@@ -451,7 +620,17 @@ export default function ConceptCard({ concept, chatId, onCreditsUpdate, studioPr
       setUserId(data.userId)
     } catch (err) {
       console.error("[v0] Error generating image:", err)
-      setError(err instanceof Error ? err.message : "Failed to generate image")
+      const errorMessage = err instanceof Error ? err.message : "Failed to generate image"
+      
+      // Check if error is about insufficient credits
+      if (errorMessage.toLowerCase().includes("insufficient credits") || 
+          errorMessage.toLowerCase().includes("insufficient credit")) {
+        setShowBuyCreditsModal(true)
+        setIsGenerating(false)
+        return
+      }
+      
+      setError(errorMessage)
       setIsGenerating(false)
     }
   }
@@ -543,6 +722,13 @@ export default function ConceptCard({ concept, chatId, onCreditsUpdate, studioPr
       const data = await response.json()
 
       if (!response.ok) {
+        // Show buy credits modal for insufficient credits (only if not already generating)
+        if (response.status === 402) {
+          setIsGeneratingVideo(false)
+          setShowBuyCreditsModal(true)
+          return
+        }
+        setIsGeneratingVideo(false)
         throw new Error(data.error || "Failed to generate video")
       }
 
@@ -552,7 +738,17 @@ export default function ConceptCard({ concept, chatId, onCreditsUpdate, studioPr
       setVideoId(data.videoId.toString())
     } catch (err) {
       console.error("[v0] Error generating video:", err)
-      setVideoError(err instanceof Error ? err.message : "Failed to generate video")
+      const errorMessage = err instanceof Error ? err.message : "Failed to generate video"
+      
+      // Check if error is about insufficient credits
+      if (errorMessage.toLowerCase().includes("insufficient credits") || 
+          errorMessage.toLowerCase().includes("insufficient credit")) {
+        setShowBuyCreditsModal(true)
+        setIsGeneratingVideo(false)
+        return
+      }
+      
+      setVideoError(errorMessage)
       setIsGeneratingVideo(false)
     }
   }
@@ -829,31 +1025,26 @@ export default function ConceptCard({ concept, chatId, onCreditsUpdate, studioPr
   }
 
   return (
-    <div className={`bg-white border rounded-lg overflow-hidden transition-all duration-300 hover:shadow-lg ${
+    <div className={`bg-white border rounded-lg overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-stone-300 ${
       isProMode 
-        ? 'border-stone-300 bg-gradient-to-br from-stone-50 to-white' 
-        : 'border-stone-200'
+        ? 'border-stone-200/60' 
+        : 'border-stone-200/60'
     }`}>
-      <div className="flex items-center justify-between px-3 py-2.5 border-b border-stone-200">
-        <div className="flex items-center gap-2.5">
-          <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-tr from-purple-600 via-pink-600 to-orange-500 rounded-full p-[2px]">
-              <div className="bg-white rounded-full w-full h-full"></div>
-            </div>
-            <div className="relative w-8 h-8 rounded-full bg-gradient-to-br from-stone-200 to-stone-300 flex items-center justify-center">
-              <span className="text-xs font-bold text-stone-700">S</span>
-            </div>
+      <div className="flex items-center justify-between px-4 py-3 border-b border-stone-200/60">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full border border-stone-300 bg-white flex items-center justify-center">
+            <span className="text-xs font-serif text-stone-700">S</span>
           </div>
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-stone-950">sselfie</span>
+              <span className="text-sm font-serif font-light tracking-[0.1em] uppercase text-stone-900">SSELFIE</span>
               {isProMode && (
-                <span className="text-[10px] font-medium text-stone-600 px-1.5 py-0.5 bg-stone-200/50 rounded">
+                <span className="text-[9px] font-light tracking-[0.2em] uppercase text-stone-600 px-2 py-0.5 border border-stone-300 rounded">
                   Studio Pro
                 </span>
               )}
             </div>
-            <span className="text-xs text-stone-500">{concept.category}</span>
+            <span className="text-xs text-stone-500 font-light">{concept.category}</span>
           </div>
         </div>
         <div className="relative" ref={menuRef}>
@@ -884,12 +1075,12 @@ export default function ConceptCard({ concept, chatId, onCreditsUpdate, studioPr
         </div>
       </div>
 
-      <div className="px-3 py-3 space-y-3">
-        <div className="space-y-1">
-          <p className="text-sm leading-relaxed text-stone-950">
-            <span className="font-semibold">sselfie</span> {concept.title}
+      <div className="px-4 py-4 space-y-4">
+        <div className="space-y-2">
+          <p className="text-sm leading-relaxed text-stone-950 font-serif font-light">
+            {concept.title}
           </p>
-          <p className="text-sm leading-relaxed text-stone-600 line-clamp-2">{concept.description}</p>
+          <p className="text-xs leading-relaxed text-stone-600 font-light line-clamp-2">{concept.description}</p>
         </div>
 
         {error && (
@@ -897,7 +1088,7 @@ export default function ConceptCard({ concept, chatId, onCreditsUpdate, studioPr
             <p className="text-xs text-red-600">{error}</p>
             <button
               onClick={handleGenerate}
-              className="mt-2 text-xs font-semibold text-red-700 hover:text-red-900 min-h-[40px] px-3 py-2"
+              className="mt-2 text-xs font-semibold text-red-700 hover:text-red-900 min-h-[44px] px-3 py-2 rounded-lg transition-colors"
             >
               Try Again
             </button>
@@ -905,105 +1096,79 @@ export default function ConceptCard({ concept, chatId, onCreditsUpdate, studioPr
         )}
 
         {!isGenerating && !isGenerated && !error && (
-          <div className="space-y-3">
-            {/* Image selector for Studio Pro mode */}
-            {isProMode && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-serif font-extralight tracking-[0.15em] text-stone-700 uppercase">
+          <div className="space-y-4">
+            {/* Reference Images Preview - Studio Pro Only (Read-only when images provided from upload module) */}
+            {isProMode && baseImages.length > 0 && (
+              <div className="space-y-3 border-t border-stone-200/60 pt-4">
+                <div className="flex items-center justify-between px-1">
+                  <span className="text-[10px] tracking-[0.15em] uppercase text-stone-500 font-light">
                     Reference Images
-                  </h4>
-                  <span className="text-[10px] font-light tracking-[0.1em] text-stone-500 uppercase">
-                    {selectedImages.filter(img => img !== null).length} / {selectedImages.length}
+                  </span>
+                  <span className="text-[10px] text-stone-500 font-light">
+                    {baseImages.length} image{baseImages.length !== 1 ? "s" : ""}
                   </span>
                 </div>
-                <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-2 -mx-1 px-1">
-                  {selectedImages.map((image, index) => (
-                    <div key={index} className="flex items-center gap-2 shrink-0">
-                      <div className="relative aspect-square w-20 sm:w-24 rounded-xl border-2 border-dashed border-stone-300/60 bg-gradient-to-br from-stone-50/80 via-white to-stone-50/40 overflow-hidden group transition-all duration-300 hover:border-stone-400/80">
-                        {image ? (
-                          <>
-                            <img
-                              src={image}
-                              alt={`Reference ${index + 1}`}
-                              className="w-full h-full object-cover"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-stone-950/50 via-stone-950/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleImageClear(index)
-                              }}
-                              className="absolute top-1.5 right-1.5 w-5 h-5 bg-stone-950/95 hover:bg-stone-950 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 text-sm font-light shadow-[0_2px_8px_rgba(0,0,0,0.3)]"
-                              aria-label={`Clear image ${index + 1}`}
-                            >
-                              ×
-                            </button>
-                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-stone-950/80 via-stone-950/40 to-transparent p-2">
-                              <span className="text-[9px] text-white font-light tracking-[0.1em] uppercase">Ref {index + 1}</span>
-                            </div>
-                          </>
-                        ) : (
-                          <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-2">
-                            {uploadingBoxIndex === index ? (
-                              <div className="flex flex-col items-center justify-center gap-1">
-                                <div className="w-4 h-4 border-2 border-stone-400 border-t-transparent rounded-full animate-spin" />
-                                <span className="text-[9px] font-light tracking-[0.1em] uppercase text-stone-500">Uploading...</span>
-                              </div>
-                            ) : (
-                              <>
-                                <button
-                                  onClick={() => handleImageSelect(index)}
-                                  className="w-full h-full flex flex-col items-center justify-center gap-0.5 text-stone-400 hover:text-stone-600 transition-all duration-300 text-[9px] font-light tracking-[0.1em] uppercase"
-                                >
-                                  Gallery
-                                </button>
-                                <button
-                                  onClick={() => handleUploadClick(index)}
-                                  className="w-full px-1.5 py-0.5 text-[8px] font-light tracking-[0.1em] uppercase text-stone-500 hover:text-stone-700 hover:bg-stone-100/50 rounded transition-all duration-200"
-                                >
-                                  Upload
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        )}
+                <div className="flex gap-2 overflow-x-auto pb-2">
+                  {baseImages.map((imageUrl, index) => (
+                    <div key={index} className="relative shrink-0">
+                      <img
+                        src={imageUrl}
+                        alt={`Reference ${index + 1}`}
+                        className="w-20 h-20 object-cover rounded-lg border border-stone-200"
+                      />
+                      <div className="absolute bottom-0 left-0 right-0 bg-stone-950/80 p-1.5">
+                        <span className="text-[9px] text-white font-light tracking-[0.1em] uppercase block text-center">
+                          Ref {index + 1}
+                        </span>
                       </div>
-                      {/* Plus sign between boxes (except after last box) */}
-                      {index < selectedImages.length - 1 && (
-                        <span className="text-stone-300/80 text-2xl font-extralight shrink-0 leading-none">+</span>
-                      )}
                     </div>
                   ))}
                 </div>
+                <p className="text-[10px] text-stone-500 leading-relaxed px-1 font-light">
+                  Images analyzed and incorporated into prompts
+                </p>
               </div>
             )}
-            
+
+            {/* Enhanced Generate Button with Clear Status */}
             <button
               onClick={handleGenerate}
-              disabled={isProMode && selectedImages.filter(img => img !== null).length === 0}
-              className={`group relative w-full text-white px-4 py-2.5 rounded-lg font-semibold text-sm transition-all duration-300 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] min-h-[40px] flex items-center justify-center ${
-                studioProMode
-                  ? selectedImages.filter(img => img !== null).length === 0
-                    ? 'bg-stone-400 cursor-not-allowed'
-                    : 'bg-gradient-to-br from-stone-800 via-stone-900 to-stone-950 hover:from-stone-900 hover:via-stone-950 hover:to-black'
-                  : 'bg-gradient-to-br from-stone-600 via-stone-700 to-stone-800 hover:from-stone-700 hover:via-stone-800 hover:to-stone-900'
+              disabled={isGenerating || (isProMode && baseImages.length === 0 && selectedImages.filter((img) => img !== null).length === 0)}
+              className={`w-full py-3.5 rounded-lg text-xs font-light tracking-[0.2em] uppercase transition-all duration-300 ${
+                isGenerating
+                  ? "bg-stone-300 text-stone-600 cursor-wait"
+                  : isProMode && baseImages.length === 0 && selectedImages.filter((img) => img !== null).length === 0
+                  ? "bg-stone-200 text-stone-500 cursor-not-allowed"
+                  : "bg-stone-900 hover:bg-stone-800 text-white shadow-lg hover:shadow-xl"
               }`}
             >
-              <span>{studioProMode ? 'Create with Studio Pro' : 'Create Photo'}</span>
+              {isGenerating
+                ? isProMode
+                  ? "Creating..."
+                  : "Creating your photo"
+                : isProMode
+                ? baseImages.length > 0
+                  ? `Generate with Studio Pro • ${baseImages.length} Image${baseImages.length !== 1 ? "s" : ""}`
+                  : selectedImages.filter((img) => img !== null).length === 0
+                  ? "Add Images to Continue"
+                  : `Generate with Studio Pro • ${
+                      selectedImages.filter((img) => img !== null).length
+                    } Image${
+                      selectedImages.filter((img) => img !== null).length !== 1 ? "s" : ""
+                    }`
+                : "Create Photo"}
             </button>
-            <div className="space-y-1">
-              {studioProMode && (
-                <p className="text-[10px] text-stone-500 text-center leading-relaxed">
-                  {selectedImages.filter(img => img !== null).length > 0 
-                    ? `Using ${selectedImages.filter(img => img !== null).length} reference image${selectedImages.filter(img => img !== null).length > 1 ? 's' : ''} • 5 credits`
-                    : 'Select at least 1 reference image to continue • 5 credits'}
-                </p>
-              )}
-              <p className="text-[10px] text-stone-400 text-center leading-relaxed">
-                {studioProMode 
-                  ? 'Multi-image composition with character consistency'
-                  : 'AI-generated photos may vary in quality and accuracy'}
+
+            {/* Status Message Below Button */}
+            <div className="text-center">
+              <p className="text-[10px] text-stone-500 leading-relaxed font-light">
+                {isProMode
+                  ? baseImages.length > 0
+                    ? "Professional quality • 5 credits per generation"
+                    : selectedImages.filter((img) => img !== null).length === 0
+                    ? "Select at least one reference image from your gallery or upload new photos"
+                    : "Professional quality • 5 credits per generation"
+                  : "AI-generated photos may vary in quality and accuracy"}
               </p>
             </div>
           </div>
@@ -1012,17 +1177,17 @@ export default function ConceptCard({ concept, chatId, onCreditsUpdate, studioPr
         {isGenerating && (
           <div className="flex flex-col items-center justify-center py-6 space-y-3">
             <div className="flex gap-1.5">
-              <div className="w-2 h-2 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 animate-bounce"></div>
+              <div className="w-2 h-2 rounded-full bg-stone-900 animate-pulse"></div>
               <div
-                className="w-2 h-2 rounded-full bg-gradient-to-r from-pink-600 to-orange-500 animate-bounce"
+                className="w-2 h-2 rounded-full bg-stone-700 animate-pulse"
                 style={{ animationDelay: "0.2s" }}
               ></div>
               <div
-                className="w-2 h-2 rounded-full bg-gradient-to-r from-orange-500 to-purple-600 animate-bounce"
+                className="w-2 h-2 rounded-full bg-stone-500 animate-pulse"
                 style={{ animationDelay: "0.4s" }}
               ></div>
             </div>
-            <span className="text-xs font-semibold text-stone-700">
+            <span className="text-xs font-light text-stone-700 tracking-wide">
               {isProMode ? 'Creating with Studio Pro...' : 'Creating your photo'}
             </span>
           </div>
@@ -1305,6 +1470,36 @@ export default function ConceptCard({ concept, chatId, onCreditsUpdate, studioPr
           </div>
         </div>
       )}
+
+      <BuyCreditsModal
+        open={showBuyCreditsModal}
+        onOpenChange={setShowBuyCreditsModal}
+        onSuccess={() => {
+          setShowBuyCreditsModal(false)
+          // Refresh credit balance after purchase (with retry for webhook delay)
+          const refreshCredits = async (retries = 3, delay = 1000) => {
+            for (let i = 0; i < retries; i++) {
+              try {
+                const res = await fetch("/api/user/credits")
+                const data = await res.json()
+                if (data.balance !== undefined) {
+                  if (onCreditsUpdate) {
+                    onCreditsUpdate(data.balance)
+                  }
+                  return // Success, exit retry loop
+                }
+              } catch (err) {
+                console.error("[v0] Error refreshing credits (attempt", i + 1, "):", err)
+              }
+              // Wait before retry (webhook might need time to process)
+              if (i < retries - 1) {
+                await new Promise((resolve) => setTimeout(resolve, delay))
+              }
+            }
+          }
+          refreshCredits()
+        }}
+      />
     </div>
   )
 }

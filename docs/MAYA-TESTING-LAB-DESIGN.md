@@ -244,3 +244,7 @@ CREATE TABLE IF NOT EXISTS maya_test_images (
 - Ability to visually compare results
 - Confidence in changes before production
 - Number of test iterations before finding optimal settings
+
+
+
+

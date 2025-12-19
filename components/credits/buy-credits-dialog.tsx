@@ -164,7 +164,7 @@ export function BuyCreditsDialog({ onClose }: { onClose?: () => void }) {
             </div>
             <div className="flex justify-between">
               <span>Animation</span>
-              <span>2.5 credits</span>
+              <span>3 credits</span>
             </div>
           </div>
         </div>

@@ -133,6 +133,20 @@ Use these as inspiration but create something DIFFERENT and unique to this speci
 
       const visionPrompt = `You're Maya - a creative director specializing in authentic Instagram B-roll motion for WAN-2.5 I2V.
 
+**🔴 CRITICAL: WAN-2.5 PROMPT OPTIMIZER IS ENABLED**
+The WAN model has prompt expansion enabled, which automatically:
+- Enhances motion descriptions with natural attributes
+- Adds appropriate camera movements when needed
+- Structures the prompt for optimal video generation
+- Optimizes the description for better visual appeal
+
+**YOUR ROLE: Focus on SUBJECT MOTION ONLY**
+Since the optimizer handles camera work and enhancements, you should:
+- Describe ONLY what the subject does (body movements, subtle actions)
+- Keep it natural and simple (15-30 words)
+- Let the optimizer add camera movements and enhance details
+- Trust the optimizer to structure it properly
+
 **ENHANCED IMAGE ANALYSIS (MINIMAL EXPRESSION FOCUS):**
 1. **Body Position:** Exact pose? (sitting, standing, leaning, walking, etc.)
 2. **Hands/Arms:** Where positioned? What are they doing or could do?
@@ -145,18 +159,7 @@ Use these as inspiration but create something DIFFERENT and unique to this speci
 9. **Mood & Atmosphere:** What feeling does the scene evoke? (Express through body language, NOT facial expression)
 10. **Motion Constraints:** What movements are physically possible from this pose? **Focus on body movements, NOT facial expressions**
 
-**WAN-2.5 I2V MOTION FORMULA:**
-Motion Description + Camera Movement (split on purpose)
-
-**5-SECOND STRUCTURE:**
-[0-2s] Initial subject motion + camera starts
-[2-4s] Motion develops + camera continues
-[4-5s] Settle + camera completes
-
-**PROMPT FORMAT:**
-"[Subject performs action]; camera [specific movement]"
-
-**SUBJECT MOTION PRINCIPLES (30-50 words) - MINIMAL EXPRESSION FOCUS:**
+**SUBJECT MOTION PRINCIPLES (15-30 words) - OPTIMIZER-COMPATIBLE:**
 - Match the exact pose (sitting stays sitting, standing stays standing)
 - **🔴 MINIMAL EXPRESSIONS:** Keep facial expressions neutral, subtle, or minimal - avoid any dramatic expressions
 - **🔴 NO SMILING:** Never include smiling, laughing, or grinning - these make videos look fake and AI-generated
@@ -166,6 +169,7 @@ Motion Description + Camera Movement (split on purpose)
 - Body parts: eyes (subtle glances), head (gentle turns), fingers, hands, shoulders, chest, hair, neck - **AVOID lips/mouth movements**
 - ONE continuous fluid sequence - no jumps or cuts
 - Motion intensity: Keep it subtle (10-20%) or moderate (30-50%) - avoid dynamic (60-80%) which looks fake
+- **Keep it SIMPLE** - the optimizer will enhance it naturally
 
 **MOTION TYPES TO CONSIDER (MINIMAL EXPRESSION):**
 - Environmental: breeze effects, light shifts, shadow movements, reflections
@@ -181,29 +185,24 @@ Motion Description + Camera Movement (split on purpose)
 - **Face:** Neutral, relaxed, contemplative - NOT expressive, NOT animated
 - **Focus on body:** Hands, shoulders, head turns, weight shifts - NOT facial expressions
 
-**EXPANDED CAMERA MOVEMENT OPTIONS (choose one):**
-- "camera fixed" (most authentic Instagram, no movement)
-- "camera gentle push-in" (subtle intimacy, 10-15% zoom)
-- "camera subtle pull-out" (reveal more context, breathing room)
-- "camera slight tilt up" (reveal upper context, sky, ceiling)
-- "camera slight tilt down" (reveal lower context, ground, objects)
-- "camera slow pan left" (environmental reveal, follow action)
-- "camera slow pan right" (environmental reveal, follow action)
-- "camera subtle dolly-in" (intimate approach, focus on subject)
-- "camera subtle dolly-out" (contextual reveal, space expansion)
-- "camera gentle arc left" (cinematic movement, dynamic framing)
-- "camera gentle arc right" (cinematic movement, dynamic framing)
-- "camera slight rotation clockwise" (subtle dynamism)
-- "camera slight rotation counter-clockwise" (subtle dynamism)
-- "camera fixed with micro-adjust" (imperceptible human-like movement)
+**🔴 CAMERA MOVEMENTS - DO NOT INCLUDE:**
+Since the WAN optimizer automatically adds appropriate camera movements, you should:
+- **DO NOT** mention camera movements in your prompt
+- **DO NOT** use format like "camera fixed" or "camera push-in"
+- **DO NOT** split motion and camera - just describe subject motion
+- The optimizer will add camera work automatically when needed
+- Focus ONLY on what the subject does
+
+**PROMPT FORMAT (OPTIMIZER-COMPATIBLE):**
+Return ONLY the subject's motion description (15-30 words)
+Example: "subtle breathing, gentle weight shift, hair moves slightly in breeze, fingers adjust grip on coffee cup, eyes glance away naturally"
+NOT: "subtle breathing; camera fixed" (camera is handled by optimizer)
 
 **KEY FOR REALISM:**
-- Split motion on purpose: subject performs; camera moves independently
-- Favor gentle camera moves (70% static, 30% movement) to prevent jitter
-- Keep camera mostly static for Instagram authenticity
-- Avoid tiny flickering details that cause artifacts
+- Keep prompts simple and natural - optimizer enhances them
 - No conflicting movements with pose
 - Motion should feel natural and unforced
+- Trust the optimizer to add camera work and structure
 
 ❌ AVOID (CRITICAL - These make videos look fake):
 - **SMILING, LAUGHING, GRINNING** - These always look fake and AI-generated
@@ -211,11 +210,11 @@ Motion Description + Camera Movement (split on purpose)
 - **Micro-expressions** - Too subtle to animate well, looks fake
 - **Lip/mouth movements** - Never mention these
 - **Dramatic eye movements** - Keep eyes subtle (gentle glances, blinks only)
+- **Camera movements** - Let the optimizer handle these
 - Dramatic gestures or poses that don't match the image
 - Walking/running if person is still in image
 - Camera-aware movements (subject looking at camera)
 - Multiple simultaneous complex actions
-- Fast camera movements that cause jitter
 - Repetitive motions from recent videos
 - **Expressive faces** - Neutral is more authentic${diversityConstraint}
 
@@ -223,8 +222,8 @@ Scene: "${fluxPrompt}"
 ${description ? `Mood: "${description}"` : ""}
 ${category ? `Category: "${category}"` : ""}${motionInspiration}${intensityGuidance}${diversityConstraint}
 
-Return ONLY: [Subject motion]; camera [movement]
-No headers, quotes, explanations, or bullet points.`
+Return ONLY: [Subject motion description - 15-30 words, no camera movements]
+No headers, quotes, explanations, bullet points, or camera mentions.`
 
       console.log("[v0] 🔍 Sending image to Claude Sonnet 4 for vision analysis...")
       console.log("[v0] 📋 Vision prompt length:", visionPrompt.length, "characters")
@@ -272,6 +271,12 @@ No headers, quotes, explanations, or bullet points.`
       // Remove any prefixes like "Motion:" or "Prompt:"
       trimmedPrompt = trimmedPrompt.replace(/^(motion|prompt|description):\s*/i, "")
 
+      // 🔴 POST-PROCESSING: Remove camera movements (optimizer handles these)
+      // Remove camera movement patterns like "; camera fixed", "; camera push-in", etc.
+      trimmedPrompt = trimmedPrompt.replace(/;\s*camera\s+[^;]*/gi, "")
+      trimmedPrompt = trimmedPrompt.replace(/,\s*camera\s+[^,]*/gi, "")
+      trimmedPrompt = trimmedPrompt.replace(/\bcamera\s+(fixed|push-in|pull-out|tilt|pan|dolly|arc|rotation|micro-adjust)[^,;]*/gi, "")
+      
       // 🔴 POST-PROCESSING: Remove expression-related words that make videos look fake
       const expressionWords = [
         "smiling", "smile", "laughing", "laugh", "grinning", "grin",
@@ -328,6 +333,11 @@ No headers, quotes, explanations, or bullet points.`
           altPrompt = altPrompt.replace(/^["'`]|["'`]$/g, "")
           altPrompt = altPrompt.replace(/\*/g, "")
           altPrompt = altPrompt.replace(/^(motion|prompt|description):\s*/i, "")
+          
+          // 🔴 POST-PROCESSING: Remove camera movements (optimizer handles these)
+          altPrompt = altPrompt.replace(/;\s*camera\s+[^;]*/gi, "")
+          altPrompt = altPrompt.replace(/,\s*camera\s+[^,]*/gi, "")
+          altPrompt = altPrompt.replace(/\bcamera\s+(fixed|push-in|pull-out|tilt|pan|dolly|arc|rotation|micro-adjust)[^,;]*/gi, "")
           
           // 🔴 POST-PROCESSING: Remove expression-related words that make videos look fake
           const expressionWords = [
@@ -386,18 +396,21 @@ Use these as inspiration but create something DIFFERENT and unique.`
       model: "anthropic/claude-sonnet-4-20250514",
       system: `You're Maya, creating authentic motion prompts for WAN-2.5 I2V (image-to-video) 5-second clips.
 
-**WAN-2.5 FORMULA:**
-Motion Description + Camera Movement (split on purpose)
+**🔴 CRITICAL: WAN-2.5 PROMPT OPTIMIZER IS ENABLED**
+The WAN model has prompt expansion enabled, which automatically:
+- Enhances motion descriptions with natural attributes
+- Adds appropriate camera movements when needed
+- Structures the prompt for optimal video generation
+- Optimizes the description for better visual appeal
 
-**FORMAT:**
-"[Subject performs action]; camera [specific movement]"
+**YOUR ROLE: Focus on SUBJECT MOTION ONLY**
+Since the optimizer handles camera work and enhancements, you should:
+- Describe ONLY what the subject does (body movements, subtle actions)
+- Keep it natural and simple (15-30 words)
+- Let the optimizer add camera movements and enhance details
+- Trust the optimizer to structure it properly
 
-**5-SECOND STRUCTURE:**
-[0-2s] Initial subject motion + camera starts
-[2-4s] Motion develops + camera continues  
-[4-5s] Settle + camera completes
-
-**SUBJECT MOTION PRINCIPLES (30-50 words) - MINIMAL EXPRESSION FOCUS:**
+**SUBJECT MOTION PRINCIPLES (15-30 words) - OPTIMIZER-COMPATIBLE:**
 - Use varied speed modifiers: slowly, gently, subtly, gradually, softly, naturally, smoothly, delicately, tenderly
 - **🔴 MINIMAL EXPRESSIONS:** Keep facial expressions neutral, subtle, or minimal - avoid any dramatic expressions
 - **🔴 NO SMILING:** Never include smiling, laughing, or grinning - these make videos look fake and AI-generated
@@ -406,6 +419,7 @@ Motion Description + Camera Movement (split on purpose)
 - Motion intensity: Keep it subtle (10-20%) or moderate (30-50%) - avoid dynamic (60-80%) which looks fake
 - ONE continuous sequence - no jumps or cuts
 - Micro-movements: blinks, breaths, weight shifts, finger movements, subtle eye movements (NOT facial expressions), muscle relaxations
+- **Keep it SIMPLE** - the optimizer will enhance it naturally
 
 **MOTION TYPES TO CONSIDER (MINIMAL EXPRESSION):**
 - Environmental: breeze effects, light shifts, shadow movements, reflections, temperature changes
@@ -414,29 +428,20 @@ Motion Description + Camera Movement (split on purpose)
 - Temporal: morning energy, evening calm, mid-day pause, contemplative moments, energetic bursts
 - Sensory: reacting to warmth, cold, texture, sound, visual interest, smells
 
-**EXPANDED CAMERA MOVEMENT OPTIONS (choose one):**
-- "camera fixed" (most authentic Instagram, no movement - use 40% of the time)
-- "camera gentle push-in" (subtle intimacy, 10-15% zoom)
-- "camera subtle pull-out" (reveal more context, breathing room)
-- "camera slight tilt up" (reveal upper context, sky, ceiling)
-- "camera slight tilt down" (reveal lower context, ground, objects)
-- "camera slow pan left" (environmental reveal, follow action)
-- "camera slow pan right" (environmental reveal, follow action)
-- "camera subtle dolly-in" (intimate approach, focus on subject)
-- "camera subtle dolly-out" (contextual reveal, space expansion)
-- "camera gentle arc left" (cinematic movement, dynamic framing)
-- "camera gentle arc right" (cinematic movement, dynamic framing)
-- "camera slight rotation clockwise" (subtle dynamism)
-- "camera slight rotation counter-clockwise" (subtle dynamism)
-- "camera fixed with micro-adjust" (imperceptible human-like movement)
+**🔴 CAMERA MOVEMENTS - DO NOT INCLUDE:**
+Since the WAN optimizer automatically adds appropriate camera movements, you should:
+- **DO NOT** mention camera movements in your prompt
+- **DO NOT** use format like "camera fixed" or "camera push-in"
+- **DO NOT** split motion and camera - just describe subject motion
+- The optimizer will add camera work automatically when needed
+- Focus ONLY on what the subject does
 
 **KEY PRINCIPLES:**
-- Split motion: subject performs; camera moves independently
-- Favor gentle camera moves (70% static, 30% movement) to prevent jitter
-- Keep camera mostly static for Instagram authenticity
+- Keep prompts simple and natural - optimizer enhances them
 - Avoid tiny flickering details that cause artifacts
 - Motion should feel natural and unforced
-- Vary motion intensity and camera movement type for diversity${diversityConstraint}
+- Trust the optimizer to add camera work and structure
+- Vary motion intensity for diversity${diversityConstraint}
 
 **🔴 EXPRESSION RULES (CRITICAL FOR AUTHENTICITY):**
 - **Facial expression:** Keep neutral, minimal, or completely omit
@@ -451,14 +456,19 @@ Motion Description + Camera Movement (split on purpose)
 - **Micro-expressions** - Too subtle to animate well, looks fake
 - **Lip/mouth movements** - Never mention these
 - **Dramatic eye movements** - Keep eyes subtle (gentle glances, blinks only)
+- **Camera movements** - Let the optimizer handle these
 - Dramatic gestures or poses that don't match the image
 - Walking/running if person is still in image
 - Camera-aware movements (subject looking at camera)
 - Multiple simultaneous complex actions
-- Fast camera movements that cause jitter
 - **Expressive faces** - Neutral is more authentic
 
-Return ONLY: [Subject motion]; camera [movement]`,
+**PROMPT FORMAT (OPTIMIZER-COMPATIBLE):**
+Return ONLY the subject's motion description (15-30 words)
+Example: "subtle breathing, gentle weight shift, hair moves slightly in breeze, fingers adjust grip on coffee cup, eyes glance away naturally"
+NOT: "subtle breathing; camera fixed" (camera is handled by optimizer)
+
+Return ONLY: [Subject motion description - 15-30 words, no camera movements]`,
       prompt: `Scene: "${fluxPrompt}"
 ${description ? `Mood: "${description}"` : ""}
 ${category ? `Category: "${category}"` : ""}${motionInspiration}${intensityGuidance}${diversityConstraint}
@@ -475,6 +485,12 @@ Create a unique 5-second motion sequence that feels authentic and human:`,
     trimmedPrompt = trimmedPrompt.replace(/\*/g, "")
     trimmedPrompt = trimmedPrompt.replace(/^(motion|prompt|description):\s*/i, "")
     
+    // 🔴 POST-PROCESSING: Remove camera movements (optimizer handles these)
+    // Remove camera movement patterns like "; camera fixed", "; camera push-in", etc.
+    trimmedPrompt = trimmedPrompt.replace(/;\s*camera\s+[^;]*/gi, "")
+    trimmedPrompt = trimmedPrompt.replace(/,\s*camera\s+[^,]*/gi, "")
+    trimmedPrompt = trimmedPrompt.replace(/\bcamera\s+(fixed|push-in|pull-out|tilt|pan|dolly|arc|rotation|micro-adjust)[^,;]*/gi, "")
+    
     // 🔴 POST-PROCESSING: Remove expression-related words that make videos look fake
     const expressionWords = [
       "smiling", "smile", "laughing", "laugh", "grinning", "grin",
@@ -487,7 +503,7 @@ Create a unique 5-second motion sequence that feels authentic and human:`,
       const regex = new RegExp(`\\b${word}\\b`, "gi")
       trimmedPrompt = trimmedPrompt.replace(regex, "")
     })
-
+    
     // Clean up multiple commas and spaces
     trimmedPrompt = trimmedPrompt.replace(/,\s*,/g, ",").replace(/\s+/g, " ").trim()
     
@@ -507,18 +523,21 @@ Create a unique 5-second motion sequence that feels authentic and human:`,
           model: "anthropic/claude-sonnet-4-20250514",
           system: `You're Maya, creating authentic motion prompts for WAN-2.5 I2V (image-to-video) 5-second clips.
 
-**WAN-2.5 FORMULA:**
-Motion Description + Camera Movement (split on purpose)
+**🔴 CRITICAL: WAN-2.5 PROMPT OPTIMIZER IS ENABLED**
+The WAN model has prompt expansion enabled, which automatically:
+- Enhances motion descriptions with natural attributes
+- Adds appropriate camera movements when needed
+- Structures the prompt for optimal video generation
+- Optimizes the description for better visual appeal
 
-**FORMAT:**
-"[Subject performs action]; camera [specific movement]"
+**YOUR ROLE: Focus on SUBJECT MOTION ONLY**
+Since the optimizer handles camera work and enhancements, you should:
+- Describe ONLY what the subject does (body movements, subtle actions)
+- Keep it natural and simple (15-30 words)
+- Let the optimizer add camera movements and enhance details
+- Trust the optimizer to structure it properly
 
-**5-SECOND STRUCTURE:**
-[0-2s] Initial subject motion + camera starts
-[2-4s] Motion develops + camera continues  
-[4-5s] Settle + camera completes
-
-**SUBJECT MOTION PRINCIPLES (30-50 words) - MINIMAL EXPRESSION FOCUS:**
+**SUBJECT MOTION PRINCIPLES (15-30 words) - OPTIMIZER-COMPATIBLE:**
 - Use varied speed modifiers: slowly, gently, subtly, gradually, softly, naturally, smoothly, delicately, tenderly
 - **🔴 MINIMAL EXPRESSIONS:** Keep facial expressions neutral, subtle, or minimal - avoid any dramatic expressions
 - **🔴 NO SMILING:** Never include smiling, laughing, or grinning - these make videos look fake and AI-generated
@@ -527,6 +546,7 @@ Motion Description + Camera Movement (split on purpose)
 - Motion intensity: Keep it subtle (10-20%) or moderate (30-50%) - avoid dynamic (60-80%) which looks fake
 - ONE continuous sequence - no jumps or cuts
 - Micro-movements: blinks, breaths, weight shifts, finger movements, subtle eye movements (NOT facial expressions), muscle relaxations
+- **Keep it SIMPLE** - the optimizer will enhance it naturally
 
 **MOTION TYPES TO CONSIDER (MINIMAL EXPRESSION):**
 - Environmental: breeze effects, light shifts, shadow movements, reflections, temperature changes
@@ -535,29 +555,20 @@ Motion Description + Camera Movement (split on purpose)
 - Temporal: morning energy, evening calm, mid-day pause, contemplative moments, energetic bursts
 - Sensory: reacting to warmth, cold, texture, sound, visual interest, smells
 
-**EXPANDED CAMERA MOVEMENT OPTIONS (choose one):**
-- "camera fixed" (most authentic Instagram, no movement - use 40% of the time)
-- "camera gentle push-in" (subtle intimacy, 10-15% zoom)
-- "camera subtle pull-out" (reveal more context, breathing room)
-- "camera slight tilt up" (reveal upper context, sky, ceiling)
-- "camera slight tilt down" (reveal lower context, ground, objects)
-- "camera slow pan left" (environmental reveal, follow action)
-- "camera slow pan right" (environmental reveal, follow action)
-- "camera subtle dolly-in" (intimate approach, focus on subject)
-- "camera subtle dolly-out" (contextual reveal, space expansion)
-- "camera gentle arc left" (cinematic movement, dynamic framing)
-- "camera gentle arc right" (cinematic movement, dynamic framing)
-- "camera slight rotation clockwise" (subtle dynamism)
-- "camera slight rotation counter-clockwise" (subtle dynamism)
-- "camera fixed with micro-adjust" (imperceptible human-like movement)
+**🔴 CAMERA MOVEMENTS - DO NOT INCLUDE:**
+Since the WAN optimizer automatically adds appropriate camera movements, you should:
+- **DO NOT** mention camera movements in your prompt
+- **DO NOT** use format like "camera fixed" or "camera push-in"
+- **DO NOT** split motion and camera - just describe subject motion
+- The optimizer will add camera work automatically when needed
+- Focus ONLY on what the subject does
 
 **KEY PRINCIPLES:**
-- Split motion: subject performs; camera moves independently
-- Favor gentle camera moves (70% static, 30% movement) to prevent jitter
-- Keep camera mostly static for Instagram authenticity
+- Keep prompts simple and natural - optimizer enhances them
 - Avoid tiny flickering details that cause artifacts
 - Motion should feel natural and unforced
-- Vary motion intensity and camera movement type for diversity${diversityConstraint}
+- Trust the optimizer to add camera work and structure
+- Vary motion intensity for diversity${diversityConstraint}
 
 **🔴 EXPRESSION RULES (CRITICAL FOR AUTHENTICITY):**
 - **Facial expression:** Keep neutral, minimal, or completely omit
@@ -572,14 +583,19 @@ Motion Description + Camera Movement (split on purpose)
 - **Micro-expressions** - Too subtle to animate well, looks fake
 - **Lip/mouth movements** - Never mention these
 - **Dramatic eye movements** - Keep eyes subtle (gentle glances, blinks only)
+- **Camera movements** - Let the optimizer handle these
 - Dramatic gestures or poses that don't match the image
 - Walking/running if person is still in image
 - Camera-aware movements (subject looking at camera)
 - Multiple simultaneous complex actions
-- Fast camera movements that cause jitter
 - **Expressive faces** - Neutral is more authentic
 
-Return ONLY: [Subject motion]; camera [movement]`,
+**PROMPT FORMAT (OPTIMIZER-COMPATIBLE):**
+Return ONLY the subject's motion description (15-30 words)
+Example: "subtle breathing, gentle weight shift, hair moves slightly in breeze, fingers adjust grip on coffee cup, eyes glance away naturally"
+NOT: "subtle breathing; camera fixed" (camera is handled by optimizer)
+
+Return ONLY: [Subject motion description - 15-30 words, no camera movements]`,
           prompt: `Scene: "${fluxPrompt}"
 ${description ? `Mood: "${description}"` : ""}
 ${category ? `Category: "${category}"` : ""}${motionInspiration}${intensityGuidance}
@@ -595,6 +611,11 @@ IMPORTANT: The previous attempt was too similar to recent videos. Create somethi
         altPrompt = altPrompt.replace(/^["'`]|["'`]$/g, "")
         altPrompt = altPrompt.replace(/\*/g, "")
         altPrompt = altPrompt.replace(/^(motion|prompt|description):\s*/i, "")
+        
+        // 🔴 POST-PROCESSING: Remove camera movements (optimizer handles these)
+        altPrompt = altPrompt.replace(/;\s*camera\s+[^;]*/gi, "")
+        altPrompt = altPrompt.replace(/,\s*camera\s+[^,]*/gi, "")
+        altPrompt = altPrompt.replace(/\bcamera\s+(fixed|push-in|pull-out|tilt|pan|dolly|arc|rotation|micro-adjust)[^,;]*/gi, "")
         
         // 🔴 POST-PROCESSING: Remove expression-related words that make videos look fake
         const expressionWords = [

@@ -54,6 +54,8 @@ export async function POST(request: Request) {
         user_id: neonUser.id,
         package_id: creditPackage.id,
         credits: creditPackage.credits.toString(),
+        product_type: "credit_topup",
+        source: "app",
       },
     })
 

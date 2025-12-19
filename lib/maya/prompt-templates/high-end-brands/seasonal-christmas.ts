@@ -373,7 +373,9 @@ export const CHRISTMAS_WHITE_MINIMAL: PromptTemplate = {
     const lighting = generateChristmasLighting({ ...context, userIntent: `${context.userIntent} minimal white` })
     const mood = generateChristmasMood({ ...context, userIntent: `${context.userIntent} minimal white` })
 
-    return `Model kneeling or interacting near a decorated silver or white Christmas tree, holding a transparent ornament or delicate decorative element.
+    return `Model maintains only the natural physical characteristics from Image 1 (face, body, skin tone, hair and visual identity), without copying the original photo. Do not copy pose, setting or identical items.
+
+Model kneeling or interacting near a decorated silver or white Christmas tree, holding a transparent ornament or delicate decorative element.
 
 **FRESH AESTHETIC:**
 White oversized mini sweater dress paired with long knit socks, emphasizing soft texture and cozy warmth. Hair pulled back with large white bow, focusing attention on face and clean neckline. Overall look stays away from traditional red-and-green palette, leaning into modern, airy Christmas styling.
@@ -394,10 +396,540 @@ Light should create gentle highlights along ornament and sweater texture, with s
   },
 }
 
+// ---------- Additional Christmas/Holiday Templates ----------
+
+export const CHRISTMAS_MORNING_COZY: PromptTemplate = {
+  id: "christmas_morning_cozy",
+  name: "Christmas Morning Cozy",
+  description:
+    "Peaceful Christmas morning portrait with tree, morning light and cozy sweater aesthetic.",
+  useCases: [
+    "Christmas morning content",
+    "Holiday lifestyle imagery",
+    "Cozy Christmas campaigns",
+    "Morning holiday lifestyle",
+  ],
+  requiredImages: {
+    min: 1,
+    max: 2,
+    types: ["user_lora", "inspiration"],
+  },
+  promptStructure: (context: PromptContext): string => {
+    return `Reference image: photo sent. Face: maintain same person from reference image. Format: portrait 2:3.
+
+Illuminated brown hair, long, with soft waves and natural volume. Without altering eye color, features or skin tone. Hyper-realistic.
+
+Scene: woman seated on floor beside decorated Christmas tree with warm golden lights, morning light streaming through window.
+
+**OUTFIT & STYLING:**
+Cream cable knit oversized sweater + matching lounge pants. Accessories: delicate gold jewelry, holding white ceramic mug with steam.
+
+**POSE & EXPRESSION:**
+Legs crossed, leaning against couch, natural relaxed expression with soft smile.
+
+**LIGHTING:**
+Soft natural morning light + warm Christmas tree lights creating golden glow.
+
+**ENVIRONMENT:**
+Modern living room, wrapped presents in background, cozy minimalist aesthetic.
+
+**CAMERA:**
+Camera at approximately 1.5m, 50mm lens, focus on face.
+
+**MOOD:**
+Peaceful luxury, Christmas morning elegance – cozy and sophisticated holiday moment.`.trim()
+  },
+}
+
+export const CHRISTMAS_HOLIDAY_SHOPPING: PromptTemplate = {
+  id: "christmas_holiday_shopping",
+  name: "Holiday Shopping Elegance",
+  description:
+    "Sophisticated holiday shopping portrait with snowy city street and luxury bags.",
+  useCases: [
+    "Holiday shopping content",
+    "Winter street style imagery",
+    "Christmas shopping campaigns",
+    "Luxury holiday lifestyle",
+  ],
+  requiredImages: {
+    min: 1,
+    max: 2,
+    types: ["user_lora", "inspiration"],
+  },
+  promptStructure: (context: PromptContext): string => {
+    return `Reference image: photo sent. Face: maintain exactly same features from reference image. Format: portrait 2:3.
+
+Hair: illuminated brown, polished waves with volume, soft shine. Without altering features, skin tone. Hyper-realistic.
+
+Scene: woman standing on snowy city street with holiday window displays and lights in background.
+
+**OUTFIT & STYLING:**
+Camel wool coat, black turtleneck, straight black pants, black leather boots. Accessories: luxury shopping bags (red, gold, white), beige leather gloves, gold watch.
+
+**POSE & EXPRESSION:**
+Standing confidently, bags in one hand, looking over shoulder at camera with elegant smile.
+
+**LIGHTING:**
+Warm street lighting mixed with cold winter daylight, bokeh from holiday lights.
+
+**ENVIRONMENT:**
+Luxury shopping district, decorated storefronts, light snow falling.
+
+**CAMERA:**
+Camera at 1.8m distance, 85mm lens, American shot.
+
+**MOOD:**
+Sophisticated holiday shopping, old money winter elegance – luxury winter street style.`.trim()
+  },
+}
+
+export const CHRISTMAS_ELEGANT_DINNER: PromptTemplate = {
+  id: "christmas_elegant_dinner",
+  name: "Elegant Holiday Dinner",
+  description:
+    "Luxury holiday dinner portrait with fine china, candles and sophisticated atmosphere.",
+  useCases: [
+    "Holiday dinner content",
+    "Entertaining lifestyle imagery",
+    "Christmas dinner campaigns",
+    "Luxury holiday entertaining",
+  ],
+  requiredImages: {
+    min: 1,
+    max: 2,
+    types: ["user_lora", "inspiration"],
+  },
+  promptStructure: (context: PromptContext): string => {
+    return `Reference image: photo sent. Face: maintain same person from reference image. Format: portrait 2:3.
+
+Illuminated brown hair, elegant updo with loose romantic pieces. Without altering features or skin tone. Hyper-realistic.
+
+Scene: woman seated at elegant dinner table with gold candlesticks, evergreen centerpiece, and fine china.
+
+**OUTFIT & STYLING:**
+Emerald green silk slip dress with delicate straps, elegant draping. Accessories: gold statement earrings, layered delicate necklaces, champagne glass in hand.
+
+**POSE & EXPRESSION:**
+Seated gracefully, one arm resting on table, looking at camera with sophisticated expression.
+
+**LIGHTING:**
+Warm candlelight creating soft glow on face, ambient room lighting.
+
+**ENVIRONMENT:**
+Elegant dining room, Christmas tree softly lit in background.
+
+**CAMERA:**
+Camera at 1.2m distance, 50mm lens, upper body shot.
+
+**MOOD:**
+Luxury holiday entertaining, timeless sophistication – elegant dinner moment.`.trim()
+  },
+}
+
+export const CHRISTMAS_WINTER_WHITE: PromptTemplate = {
+  id: "christmas_winter_white",
+  name: "Winter White Elegance",
+  description:
+    "Clean white Christmas portrait with silver ornaments and Scandinavian aesthetic.",
+  useCases: [
+    "White Christmas content",
+    "Scandinavian holiday imagery",
+    "Minimalist Christmas campaigns",
+    "Clean holiday lifestyle",
+  ],
+  requiredImages: {
+    min: 1,
+    max: 2,
+    types: ["user_lora", "inspiration"],
+  },
+  promptStructure: (context: PromptContext): string => {
+    return `Reference image: photo sent. Face: maintain same features from reference image. Format: portrait 2:3.
+
+Hair: illuminated brown, long loose waves with natural shine. Hyper-realistic.
+
+Scene: woman standing in front of decorated white Christmas tree with silver and crystal ornaments.
+
+**OUTFIT & STYLING:**
+Ivory cashmere sweater dress, knee-length, soft texture, paired with nude heels. Accessories: silver jewelry, holding small wrapped gift box with white ribbon.
+
+**POSE & EXPRESSION:**
+Standing with slight hip tilt, one hand holding gift, other hand relaxed at side, serene expression.
+
+**LIGHTING:**
+Soft diffused lighting from tree and room, creating ethereal white-on-white aesthetic.
+
+**ENVIRONMENT:**
+Minimalist modern space, all-white décor, crystal ornaments catching light.
+
+**CAMERA:**
+Camera at 1.5m, 50mm lens, full body composition.
+
+**MOOD:**
+Clean luxury, Scandinavian Christmas aesthetic – minimalist and sophisticated.`.trim()
+  },
+}
+
+export const CHRISTMAS_FIRESIDE_READING: PromptTemplate = {
+  id: "christmas_fireside_reading",
+  name: "Fireside Christmas Reading",
+  description:
+    "Intimate fireside portrait with book, fireplace and cozy holiday atmosphere.",
+  useCases: [
+    "Fireside lifestyle content",
+    "Reading holiday imagery",
+    "Cozy Christmas campaigns",
+    "Intimate holiday lifestyle",
+  ],
+  requiredImages: {
+    min: 1,
+    max: 2,
+    types: ["user_lora", "inspiration"],
+  },
+  promptStructure: (context: PromptContext): string => {
+    return `Reference image: photo sent. Face: maintain same person from reference image. Format: portrait 2:3.
+
+Illuminated brown hair, natural waves, cozy styling. Without altering features. Hyper-realistic.
+
+Scene: woman curled up in armchair beside fireplace, Christmas tree in corner of frame.
+
+**OUTFIT & STYLING:**
+Burgundy cashmere sweater, cream wool pants, fuzzy socks. Accessories: reading glasses resting in hair, book in lap, tea cup on side table.
+
+**POSE & EXPRESSION:**
+Legs tucked under, relaxed into chair, natural contemplative expression.
+
+**LIGHTING:**
+Warm firelight from side, soft ambient room lighting, Christmas lights in background.
+
+**ENVIRONMENT:**
+Cozy home library or living room, stockings hung, wrapped presents visible.
+
+**CAMERA:**
+Camera at 1.2m, 35mm lens, environmental portrait.
+
+**MOOD:**
+Intimate holiday luxury, quiet moment – cozy and peaceful fireside scene.`.trim()
+  },
+}
+
+export const CHRISTMAS_HOLIDAY_BAKING: PromptTemplate = {
+  id: "christmas_holiday_baking",
+  name: "Holiday Baking Scene",
+  description:
+    "Luxury kitchen baking portrait with marble counters and holiday decorations.",
+  useCases: [
+    "Holiday baking content",
+    "Kitchen lifestyle imagery",
+    "Christmas baking campaigns",
+    "Domestic luxury lifestyle",
+  ],
+  requiredImages: {
+    min: 1,
+    max: 2,
+    types: ["user_lora", "inspiration"],
+  },
+  promptStructure: (context: PromptContext): string => {
+    return `Reference image: photo sent. Face: maintain same features from reference image. Format: portrait 2:3.
+
+Hair: illuminated brown, pulled back in casual elegant bun with loose pieces. Hyper-realistic.
+
+Scene: woman in beautiful kitchen with marble counters, Christmas décor, flour dusted on counter.
+
+**OUTFIT & STYLING:**
+White linen apron over cream ribbed sweater. Accessories: gold jewelry, holding wooden spoon, mixing bowl visible.
+
+**POSE & EXPRESSION:**
+Leaning against counter, looking at camera with genuine warm smile, flour on hands.
+
+**LIGHTING:**
+Natural window light plus warm kitchen pendants, cozy domestic atmosphere.
+
+**ENVIRONMENT:**
+Luxury kitchen with greenery garland, copper cookware, holiday decorations.
+
+**CAMERA:**
+Camera at 1m, 50mm lens, waist-up composition.
+
+**MOOD:**
+Domestic elegance, lifestyle luxury, holiday traditions – sophisticated baking moment.`.trim()
+  },
+}
+
+export const CHRISTMAS_NYE_ELEGANCE: PromptTemplate = {
+  id: "christmas_nye_elegance",
+  name: "Champagne New Year's Eve",
+  description:
+    "Glamorous New Year's Eve portrait with sequined dress and celebration atmosphere.",
+  useCases: [
+    "New Year's Eve content",
+    "NYE celebration imagery",
+    "Holiday party campaigns",
+    "Glamorous evening lifestyle",
+  ],
+  requiredImages: {
+    min: 1,
+    max: 2,
+    types: ["user_lora", "inspiration"],
+  },
+  promptStructure: (context: PromptContext): string => {
+    return `Reference image: photo sent. Face: maintain same person from reference image. Format: portrait 2:3.
+
+Hair: illuminated brown, glamorous waves, polished styling. Hyper-realistic.
+
+Scene: woman at elegant celebration, NYE décor with gold and black balloons in background.
+
+**OUTFIT & STYLING:**
+Sequined gold mini dress with structured shoulders, sophisticated cut. Accessories: gold strappy heels, statement earrings, champagne flute in hand.
+
+**POSE & EXPRESSION:**
+Standing with slight turn, champagne raised slightly, confident celebratory expression.
+
+**LIGHTING:**
+Dramatic lighting with golden highlights, bokeh from party lights and decorations.
+
+**ENVIRONMENT:**
+Upscale party venue or penthouse, city lights visible through windows.
+
+**CAMERA:**
+Camera at 1.5m, 85mm lens, portrait composition.
+
+**MOOD:**
+New Year's elegance, celebration luxury, glamorous evening – sophisticated NYE moment.`.trim()
+  },
+}
+
+export const CHRISTMAS_WINTER_OUTDOOR: PromptTemplate = {
+  id: "christmas_winter_outdoor",
+  name: "Winter Outdoor Portrait",
+  description:
+    "Winter outdoor portrait with snow, evergreen trees and holiday lights.",
+  useCases: [
+    "Winter outdoor content",
+    "Snowy holiday imagery",
+    "Outdoor Christmas campaigns",
+    "Winter lifestyle editorial",
+  ],
+  requiredImages: {
+    min: 1,
+    max: 2,
+    types: ["user_lora", "inspiration"],
+  },
+  promptStructure: (context: PromptContext): string => {
+    return `Reference image: photo sent. Face: maintain same features from reference image. Format: portrait 2:3.
+
+Hair: illuminated brown, loose under beige knit beanie, natural waves. Hyper-realistic.
+
+Scene: woman outdoors in winter setting with snow-covered evergreen trees and holiday lights.
+
+**OUTFIT & STYLING:**
+Long cream wool coat, cream cable knit scarf, leather gloves. Accessories: holding to-go coffee cup, small shopping bag with ribbon handles.
+
+**POSE & EXPRESSION:**
+Walking toward camera, natural movement, genuine smile, rosy cheeks from cold.
+
+**LIGHTING:**
+Golden hour winter light, soft glow on face, twinkling lights in background.
+
+**ENVIRONMENT:**
+Snowy town square or park, decorated lamp posts, festive atmosphere.
+
+**CAMERA:**
+Camera at 1.8m, 85mm lens, upper body shot.
+
+**MOOD:**
+Winter luxury lifestyle, holiday joy, outdoor elegance – festive winter moment.`.trim()
+  },
+}
+
+export const CHRISTMAS_GIFT_WRAPPING: PromptTemplate = {
+  id: "christmas_gift_wrapping",
+  name: "Gift Wrapping Elegance",
+  description:
+    "Sophisticated gift wrapping scene with luxury supplies and organized aesthetic.",
+  useCases: [
+    "Gift wrapping content",
+    "Holiday preparation imagery",
+    "Christmas preparation campaigns",
+    "Domestic luxury lifestyle",
+  ],
+  requiredImages: {
+    min: 1,
+    max: 2,
+    types: ["user_lora", "inspiration"],
+  },
+  promptStructure: (context: PromptContext): string => {
+    return `Reference image: photo sent. Face: maintain same person from reference image. Format: portrait 2:3.
+
+Hair: illuminated brown, natural waves, casual elegant styling. Hyper-realistic.
+
+Scene: woman seated at table surrounded by luxury gift wrapping supplies, ribbon, and wrapped boxes.
+
+**OUTFIT & STYLING:**
+Soft grey cashmere sweater, delicate gold necklaces layered. Accessories: scissors in hand, rolls of silk ribbon, designer shopping bags nearby.
+
+**POSE & EXPRESSION:**
+Focused on wrapping gift, natural concentration, looking down at work with slight smile.
+
+**LIGHTING:**
+Soft natural light from window, warm ambient light, clean bright aesthetic.
+
+**ENVIRONMENT:**
+White marble or wood table, organized wrapping station, minimalist elegant.
+
+**CAMERA:**
+Camera at 1m, 50mm lens, overhead angle slightly tilted.
+
+**MOOD:**
+Thoughtful luxury, preparation ritual, domestic sophistication – elegant gift wrapping moment.`.trim()
+  },
+}
+
+export const CHRISTMAS_TRAVEL_READY: PromptTemplate = {
+  id: "christmas_travel_ready",
+  name: "Christmas Travel Ready",
+  description:
+    "Luxury holiday travel portrait with designer luggage and airport terminal.",
+  useCases: [
+    "Holiday travel content",
+    "Christmas travel imagery",
+    "Luxury travel campaigns",
+    "Holiday jet-set lifestyle",
+  ],
+  requiredImages: {
+    min: 1,
+    max: 2,
+    types: ["user_lora", "inspiration"],
+  },
+  promptStructure: (context: PromptContext): string => {
+    return `Reference image: photo sent. Face: maintain same features from reference image. Format: portrait 2:3.
+
+Hair: illuminated brown, polished low bun or sleek ponytail. Hyper-realistic.
+
+Scene: woman in airport or private terminal with Christmas decorations, luggage beside her.
+
+**OUTFIT & STYLING:**
+Camel wool coat, white turtleneck, tailored trousers, ankle boots. Accessories: Louis Vuitton luggage, passport in hand, designer handbag, aviator sunglasses.
+
+**POSE & EXPRESSION:**
+Standing beside luggage, confident travel pose, looking at camera with excited expression.
+
+**LIGHTING:**
+Bright airport lighting, natural window light, clean professional look.
+
+**ENVIRONMENT:**
+Modern terminal with holiday décor, decorated tree in background.
+
+**CAMERA:**
+Camera at 1.5m, 50mm lens, full body shot.
+
+**MOOD:**
+Luxury holiday travel, jet-set lifestyle, sophisticated wanderlust – elegant travel moment.`.trim()
+  },
+}
+
+export const CHRISTMAS_VELVET_ELEGANCE: PromptTemplate = {
+  id: "christmas_velvet_elegance",
+  name: "Velvet Holiday Elegance",
+  description:
+    "Old money Christmas portrait with velvet, fireplace and timeless elegance.",
+  useCases: [
+    "Luxury Christmas content",
+    "Old money holiday imagery",
+    "Traditional Christmas campaigns",
+    "Timeless holiday lifestyle",
+  ],
+  requiredImages: {
+    min: 1,
+    max: 2,
+    types: ["user_lora", "inspiration"],
+  },
+  promptStructure: (context: PromptContext): string => {
+    return `Reference image: photo sent. Face: maintain same person from reference image. Format: portrait 2:3.
+
+Hair: illuminated brown, Hollywood waves, glamorous volume. Hyper-realistic.
+
+Scene: woman on velvet emerald green sofa with Christmas tree and fireplace in background.
+
+**OUTFIT & STYLING:**
+Deep burgundy velvet blazer, black silk camisole, tailored black pants. Accessories: gold jewelry, holding crystal wine glass, designer heels.
+
+**POSE & EXPRESSION:**
+Seated elegantly, legs crossed, one arm on sofa back, sophisticated evening expression.
+
+**LIGHTING:**
+Warm firelight mixed with Christmas tree lights, creating luxurious ambiance.
+
+**ENVIRONMENT:**
+Traditional luxury living room, rich textures, classic holiday décor.
+
+**CAMERA:**
+Camera at 1.2m, 85mm lens, seated portrait.
+
+**MOOD:**
+Old money Christmas, timeless elegance, intimate luxury – sophisticated evening moment.`.trim()
+  },
+}
+
+export const CHRISTMAS_SNOW_DAY: PromptTemplate = {
+  id: "christmas_snow_day",
+  name: "Snow Day Luxury",
+  description:
+    "Peaceful snow day portrait with window, hot chocolate and cozy aesthetic.",
+  useCases: [
+    "Snow day content",
+    "Winter cozy imagery",
+    "Holiday cozy campaigns",
+    "Peaceful winter lifestyle",
+  ],
+  requiredImages: {
+    min: 1,
+    max: 2,
+    types: ["user_lora", "inspiration"],
+  },
+  promptStructure: (context: PromptContext): string => {
+    return `Reference image: photo sent. Face: maintain same features from reference image. Format: portrait 2:3.
+
+Hair: illuminated brown, natural loose waves. Hyper-realistic.
+
+Scene: woman by large window with snow falling outside, holding hot chocolate with marshmallows.
+
+**OUTFIT & STYLING:**
+Oversized cream chunky knit cardigan, white thermal top, soft lounge pants. Accessories: fuzzy slippers, cozy blanket draped over shoulders, minimalist jewelry.
+
+**POSE & EXPRESSION:**
+Standing by window, looking outside, profile to 3/4 angle, peaceful contemplative expression.
+
+**LIGHTING:**
+Soft diffused natural light from snowy day, bright clean aesthetic.
+
+**ENVIRONMENT:**
+Modern minimalist home, window seat, simple elegant holiday touches.
+
+**CAMERA:**
+Camera at 1m, 50mm lens, window light portrait.
+
+**MOOD:**
+Quiet luxury, peaceful winter day, cozy sophistication – serene snow day moment.`.trim()
+  },
+}
+
 export const SEASONAL_CHRISTMAS = {
   CATEGORY: SEASONAL_CHRISTMAS_CATEGORY,
   CHRISTMAS_COZY_LUXURY,
   CHRISTMAS_PINTEREST_EDITORIAL,
   CHRISTMAS_ELEGANT_EVENING,
   CHRISTMAS_WHITE_MINIMAL,
+  CHRISTMAS_MORNING_COZY,
+  CHRISTMAS_HOLIDAY_SHOPPING,
+  CHRISTMAS_ELEGANT_DINNER,
+  CHRISTMAS_WINTER_WHITE,
+  CHRISTMAS_FIRESIDE_READING,
+  CHRISTMAS_HOLIDAY_BAKING,
+  CHRISTMAS_NYE_ELEGANCE,
+  CHRISTMAS_WINTER_OUTDOOR,
+  CHRISTMAS_GIFT_WRAPPING,
+  CHRISTMAS_TRAVEL_READY,
+  CHRISTMAS_VELVET_ELEGANCE,
+  CHRISTMAS_SNOW_DAY,
 } satisfies Record<string, unknown>

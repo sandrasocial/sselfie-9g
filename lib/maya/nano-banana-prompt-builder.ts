@@ -86,6 +86,93 @@ export interface ProPreferences {
 }
 
 /**
+ * Clean Studio Pro prompt for Replicate
+ * Removes formatting, headlines, unwanted terms, and converts to natural language
+ */
+export function cleanStudioProPrompt(prompt: string, userRequest?: string): string {
+  if (!prompt || prompt.trim().length === 0) {
+    return prompt
+  }
+
+  let cleaned = prompt
+
+  // 1. Remove markdown headlines (e.g., **MOVEMENT & ACTION:**, **OUTFIT & STYLING:**)
+  // Match patterns like **HEADLINE:** or **HEADLINE WITH SPACES:**
+  cleaned = cleaned.replace(/\*\*[^*]+\*\*:\s*/g, '')
+  
+  // Also remove standalone headlines without colons (e.g., **MOVEMENT & ACTION**)
+  cleaned = cleaned.replace(/\*\*[^*]+\*\*\s*\n/g, '')
+  
+  // Remove any remaining markdown bold formatting
+  cleaned = cleaned.replace(/\*\*([^*]+)\*\*/g, '$1')
+
+  // 2. Remove "Note:" instructions (these are for system, not for Replicate)
+  // Match "Note:" followed by text until end of line or next section
+  cleaned = cleaned.replace(/Note:\s*[^\n]+/gi, '')
+  cleaned = cleaned.replace(/Note\s*:\s*[^\n]+/gi, '')
+  // Also handle "Note: Use the first base image..." patterns
+  cleaned = cleaned.replace(/Note:\s*Use\s+the\s+first\s+base\s+image[^\n]*/gi, '')
+  cleaned = cleaned.replace(/Note:\s*Use\s+other\s+base\s+images[^\n]*/gi, '')
+
+  // 3. Check if user explicitly requested black and white
+  const userRequestLower = (userRequest || '').toLowerCase()
+  const explicitlyRequestedBw = 
+    userRequestLower.includes('black and white') ||
+    userRequestLower.includes('black & white') ||
+    userRequestLower.includes('b&w') ||
+    userRequestLower.includes('monochrome') ||
+    userRequestLower.includes('grayscale')
+
+  // 4. Remove "black and white" unless explicitly requested
+  if (!explicitlyRequestedBw) {
+    // Remove various forms of black and white mentions
+    cleaned = cleaned.replace(/\bblack\s+and\s+white\b/gi, '')
+    cleaned = cleaned.replace(/\bblack\s+&\s+white\b/gi, '')
+    cleaned = cleaned.replace(/\bb&w\b/gi, '')
+    cleaned = cleaned.replace(/\bmonochrome\b/gi, '')
+    cleaned = cleaned.replace(/\bgrayscale\b/gi, '')
+  }
+
+  // 5. Fix "visible pores" issues - remove incomplete phrases
+  // Remove patterns like "visible pores (not )" or "visible pores (not"
+  cleaned = cleaned.replace(/\bvisible\s+pores\s*\(not\s*\)/gi, 'natural skin texture')
+  cleaned = cleaned.replace(/\bvisible\s+pores\s*\(not\b/gi, 'natural skin texture')
+  cleaned = cleaned.replace(/\bvisible\s+pores\s*\(not\s+[^)]*\)/gi, 'natural skin texture')
+  
+  // Remove standalone "black and white" at the end (if not explicitly requested)
+  if (!explicitlyRequestedBw) {
+    // Remove at end of line or end of prompt
+    cleaned = cleaned.replace(/,\s*black\s+and\s+white\s*$/i, '')
+    cleaned = cleaned.replace(/,\s*black\s+&\s+white\s*$/i, '')
+    cleaned = cleaned.replace(/\s+black\s+and\s+white\s*$/i, '')
+    cleaned = cleaned.replace(/\s+black\s+&\s+white\s*$/i, '')
+    // Also remove if it's on its own line at the end
+    cleaned = cleaned.replace(/\n\s*black\s+and\s+white\s*$/i, '')
+    cleaned = cleaned.replace(/\n\s*black\s+&\s+white\s*$/i, '')
+  }
+
+  // 6. Clean up extra whitespace and newlines
+  cleaned = cleaned.replace(/\n{3,}/g, '\n\n') // Max 2 consecutive newlines
+  cleaned = cleaned.replace(/[ \t]+/g, ' ') // Multiple spaces to single space
+  cleaned = cleaned.replace(/^\s+|\s+$/gm, '') // Trim each line
+  cleaned = cleaned.replace(/\n\s*\n/g, '\n') // Remove empty lines between content
+
+  // 7. Remove any remaining formatting artifacts
+  cleaned = cleaned.replace(/^[-*]\s+/gm, '') // Remove bullet points
+  cleaned = cleaned.replace(/^\d+\.\s+/gm, '') // Remove numbered lists
+
+  // 8. Ensure proper sentence structure - fix common issues
+  cleaned = cleaned.replace(/,\s*,/g, ',') // Remove double commas
+  cleaned = cleaned.replace(/\s+\./g, '.') // Fix space before period
+  cleaned = cleaned.replace(/\.\s*\./g, '.') // Remove double periods
+
+  // 9. Final trim
+  cleaned = cleaned.trim()
+
+  return cleaned
+}
+
+/**
  * Nano Banana Pro Prompting Principles (kept short; longer guidance should live in docs)
  */
 export function getNanoBananaPromptingPrinciples(): string {
@@ -577,10 +664,19 @@ export async function buildNanoBananaPrompt(params: {
   // The finalPrompt includes system instructions for Maya's understanding
   // But for Replicate, we ONLY want the creation brief (optimizedPrompt)
   // The system instructions are for Maya to build prompts, not for the image model
-  const finalPrompt = `${mayaProBlock}\n\n## CREATION BRIEF\n${optimizedPrompt}`.trim()
+  
+  // 🔴 CRITICAL: Clean the prompt before returning
+  // Remove headlines, formatting, unwanted terms, and convert to natural language
+  const cleanedPrompt = cleanStudioProPrompt(optimizedPrompt, userRequest)
+  
+  console.log('[PROMPT-BUILDER] Prompt cleaned:', {
+    originalLength: optimizedPrompt.length,
+    cleanedLength: cleanedPrompt.length,
+    hasHeadlines: optimizedPrompt.includes('**') && !cleanedPrompt.includes('**'),
+  })
 
   return {
-    optimizedPrompt: optimizedPrompt, // Only the creation brief for Replicate (no system instructions)
+    optimizedPrompt: cleanedPrompt, // Clean, natural language prompt for Replicate
     sceneDescription,
   }
 }
@@ -611,16 +707,20 @@ function buildBrandScenePrompt(params: {
     (userRequest.length > 200 && userRequest.includes('Vertical') && userRequest.includes('format'))
   
   if (isMayaDetailedPrompt) {
-    // Maya has already created a detailed, specific prompt - use it directly
+    // Maya has already created a detailed, specific prompt - clean it before using
     // This preserves all the text overlay instructions, character details, composition specs, etc.
-    console.log('[PROMPT-BUILDER] Detected Maya detailed prompt - using as-is')
+    // but removes formatting and unwanted terms
+    console.log('[PROMPT-BUILDER] Detected Maya detailed prompt - cleaning before use')
     
-    // Add multi-image note if needed (preserve identity across multiple reference images)
+    // Clean the prompt to remove headlines and formatting
+    let cleanedPrompt = cleanStudioProPrompt(userRequest, userRequest)
+    
+    // Add multi-image instruction in natural language (not as a "Note:")
     if (inputImages.baseImages.length > 1) {
-      return `${userRequest}\n\nNote: Use the first base image to preserve the person's face and identity. Use other base images as style/reference only.`
+      cleanedPrompt = `${cleanedPrompt}\n\nUse the first base image to preserve the person's face and identity. Use other base images as style/reference only.`
     }
     
-    return userRequest
+    return cleanedPrompt
   }
   
   // Fallback: Build generic prompt for workbench-style requests
@@ -631,9 +731,44 @@ function buildBrandScenePrompt(params: {
         .join(', ')}.`
     : `No product is required unless the reference images include one.`
 
+  // 🔴 CRITICAL: Build attachment reference matching Maya's style
+  let attachmentReference = ''
+  if (inputImages.baseImages.length > 0) {
+    const selfieCount = inputImages.baseImages.length
+    if (selfieCount === 1) {
+      attachmentReference = `Woman, maintaining exactly the characteristics of the woman in image 1 (face, body, skin tone, hair and visual identity), without copying the photo.`
+    } else {
+      const selfieNumbers = Array.from({ length: selfieCount }, (_, i) => i + 1).join(', ')
+      attachmentReference = `Woman, maintaining exactly the characteristics of the woman in image ${selfieNumbers} (face, body, skin tone, hair and visual identity), without copying the photo.`
+    }
+  } else {
+    attachmentReference = `Woman, maintaining exactly the characteristics of the woman in the image (face, body, skin tone, hair and visual identity), without copying the photo.`
+  }
+
   const scene = pickSetting(userRequest)
   const mood = pickMood(userRequest)
   const lighting = pickLighting(scene, userRequest)
+  
+  // Extract outfit from userRequest if present
+  const outfitMatch = userRequest.match(/\b(wearing|dressed in|outfit|in)\s+([^,\.]+(?:with|and|\+|,)\s*[^,\.]*){0,3}/i)
+  const outfitDescription = outfitMatch 
+    ? outfitMatch[0].replace(/\b(wearing|dressed in|outfit|in)\s+/i, '').trim()
+    : scene === 'modern interior' ? 'elegant outfit' : scene === 'outdoor' ? 'casual outfit' : 'stylish outfit'
+  
+  // Extract pose from userRequest if present
+  const poseMatch = userRequest.match(/\b(standing|sitting|walking|holding|leaning|posing|lounging)\s+[^,\.]*(?:with|and|\+)?[^,\.]*/i)
+  const poseDescription = poseMatch ? poseMatch[0].trim() : 'standing confidently'
+  
+  // Build location phrase
+  const locationPhrase = scene === 'modern interior' 
+    ? 'in a modern interior setting'
+    : scene === 'living room'
+      ? 'in a living room'
+      : `in ${scene}`
+  
+  // Build natural language matching Maya's style
+  const naturalDesc = `Wearing ${outfitDescription}, ${poseDescription}, ${locationPhrase}, ${lighting}.`
+  const productText = products.length > 0 ? ' Product naturally integrated into scene.' : ''
 
   const multiImageNote =
     inputImages.baseImages.length > 1

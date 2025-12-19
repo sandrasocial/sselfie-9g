@@ -218,8 +218,430 @@ Clean, sharp image with subtle depth of field and minimal noise. Color grading l
   ] satisfies PromptVariation[],
 }
 
+// ---------- General Fashion Editorial Templates ----------
+
+export const FASHION_CHAMPAGNE_SATIN_EDITORIAL: PromptTemplate = {
+  id: "fashion_champagne_satin_editorial",
+  name: "Champagne Satin Dress Editorial",
+  description:
+    "High-end fashion editorial portrait with satin dress, studio lighting and Vogue campaign aesthetic.",
+  useCases: [
+    "Fashion editorial content",
+    "Luxury fashion campaigns",
+    "Vogue-style imagery",
+    "High-end fashion portraits",
+  ],
+  requiredImages: {
+    min: 1,
+    max: 2,
+    types: ["user_lora", "inspiration"],
+  },
+  promptStructure: (context: PromptContext): string => {
+    return `Maintain the woman's characteristics from attachment without changing features. Without altering hair color, eyes, skin color. Hyper-realistic.
+
+Hyper-realistic editorial photo, Hasselblad medium format, 105mm lens for compression.
+
+**OUTFIT & STYLING:**
+Woman in satin champagne dress with open back, posed turning slightly away from camera, chin over shoulder, eyes looking back with smoldering gaze. Jewelry: diamond drop earrings.
+
+**HAIR:**
+Hair styled in glossy waves flowing over one side.
+
+**LIGHTING:**
+Soft golden high-end studio light, gentle highlights tracing back, collarbone, and jawline.
+
+**SKIN:**
+Skin highly detailed with natural sheen, golden undertone glow.
+
+**ENVIRONMENT:**
+Background elevated beige wall with soft vignette shadows.
+
+**CAMERA:**
+Hasselblad medium format, 105mm lens for compression. Sharp focus on face and back.
+
+**MOOD:**
+Luxury fashion editorial mood, sensual yet refined Vogue campaign style.`.trim()
+  },
+}
+
+export const FASHION_CITY_STREET: PromptTemplate = {
+  id: "fashion_city_street",
+  name: "City Street Confident Pose",
+  description:
+    "Confident city street portrait with urban background and bold accessories.",
+  useCases: [
+    "City street fashion content",
+    "Urban fashion imagery",
+    "Street style campaigns",
+    "City lifestyle editorial",
+  ],
+  requiredImages: {
+    min: 1,
+    max: 2,
+    types: ["user_lora", "inspiration"],
+  },
+  promptStructure: (context: PromptContext): string => {
+    return `Maintain the woman's characteristics from attachment without changing features. Without altering hair color, eyes, skin color. Hyper-realistic.
+
+**POSE & EXPRESSION:**
+Woman poses confidently in middle of busy city street, flanked by yellow taxis. Her posture is erect, hands relaxed in front of body while she looks directly at camera.
+
+**OUTFIT & STYLING:**
+Elegant white one-shoulder top, black shorts at knee height, black cat-eye sunglasses, large gold hoop earrings, gold pulse watch and carries small black bag with top handle.
+
+**ENVIRONMENT:**
+Busy city street with yellow taxis and urban architecture in background.
+
+**LIGHTING:**
+Natural city light creating highlights on outfit and accessories.
+
+**CAMERA:**
+50mm or 85mm lens, vertical framing. Sharp focus on subject, with city street softly blurred.
+
+**MOOD:**
+Confident urban fashion – bold, sophisticated and street-style editorial.`.trim()
+  },
+}
+
+export const FASHION_CROSSWALK: PromptTemplate = {
+  id: "fashion_crosswalk",
+  name: "Pedestrian Crosswalk City Scene",
+  description:
+    "Elegant crosswalk portrait with autumn leaves and urban atmosphere.",
+  useCases: [
+    "City crosswalk fashion content",
+    "Urban fashion imagery",
+    "Autumn fashion campaigns",
+    "Street style editorial",
+  ],
+  requiredImages: {
+    min: 1,
+    max: 2,
+    types: ["user_lora", "inspiration"],
+  },
+  promptStructure: (context: PromptContext): string => {
+    return `Maintain the woman's characteristics from attachment without changing features. Without altering hair color, eyes, skin color. Hyper-realistic.
+
+**POSE & EXPRESSION:**
+An elegant woman is in middle of pedestrian crosswalk in busy city street, surrounded by buildings and people in background. One of her hands is raised, pulling her dark hair into ponytail.
+
+**OUTFIT & STYLING:**
+Beige mesh sweater with embroidered bear, over white collared shirt, and brown pleated checkered skirt. She completes look with black sunglasses and brown shoulder bag, and is holding coffee cup and magazine.
+
+**ENVIRONMENT:**
+Busy city street with buildings and people in background. Orange and yellow autumn leaves are overlaid on upper part of image.
+
+**LIGHTING:**
+Natural city light with autumn atmosphere.
+
+**CAMERA:**
+50mm or 85mm lens, vertical framing. Sharp focus on subject, with city street softly blurred.
+
+**MOOD:**
+Elegant urban fashion – sophisticated, autumn-inspired and street-style editorial.`.trim()
+  },
+}
+
+export const FASHION_LEATHER_SOFA: PromptTemplate = {
+  id: "fashion_leather_sofa",
+  name: "Black Leather Sofa Portrait",
+  description:
+    "Sophisticated portrait on black leather sofa with dramatic makeup and elegant styling.",
+  useCases: [
+    "Interior fashion content",
+    "Studio fashion imagery",
+    "Luxury fashion campaigns",
+    "Editorial fashion portraits",
+  ],
+  requiredImages: {
+    min: 1,
+    max: 2,
+    types: ["user_lora", "inspiration"],
+  },
+  promptStructure: (context: PromptContext): string => {
+    return `Do not change characteristics of person in attachment maintaining their real characteristics.
+
+**POSE & EXPRESSION:**
+An elegant woman is seated on black leather sofa, slightly tilted to right. Right leg is visibly crossed over left, and her left arm rests on chin. Expression is sophisticated and confident, with fixed gaze at camera.
+
+**OUTFIT & STYLING:**
+Brown suit, with wine/burgundy draped coat over shoulders, without sleeves being worn. Large gold hoop earrings and dramatic makeup with dark wine lipstick.
+
+**HAIR:**
+Hair is combed back in elegant bun.
+
+**ENVIRONMENT:**
+Background is neutral and illuminated, focusing on woman.
+
+**LIGHTING:**
+Neutral studio lighting creating highlights on outfit and dramatic makeup.
+
+**CAMERA:**
+50mm or 85mm lens, vertical framing. Sharp focus on face and outfit.
+
+**MOOD:**
+Sophisticated and confident – luxury fashion editorial with dramatic elegance.`.trim()
+  },
+}
+
+export const FASHION_YSL_STUDIO: PromptTemplate = {
+  id: "fashion_ysl_studio",
+  name: "YSL-Inspired Studio Portrait",
+  description:
+    "Glamorous studio portrait with YSL-inspired styling and dramatic makeup.",
+  useCases: [
+    "Studio fashion content",
+    "Luxury brand imagery",
+    "Editorial fashion campaigns",
+    "High-fashion portraits",
+  ],
+  requiredImages: {
+    min: 1,
+    max: 2,
+    types: ["user_lora", "inspiration"],
+  },
+  promptStructure: (context: PromptContext): string => {
+    return `Do not change characteristics of attached person.
+
+**POSE & EXPRESSION:**
+Woman with illuminated brown hair pulled back in high elegant ponytail, with hair falling over right shoulder, hair is medium length and she is holding with one hand end of hair. She is seated on ground, legs crossed relaxed way, with hands on knees or on legs. Woman is looking to right side of photo, with serious and confident expression.
+
+**OUTFIT & STYLING:**
+Black sleeveless body, with white shirt collar underneath, and black tie with gold logo (similar to YSL). She also wears long black gloves that reach elbows and wide light wash jeans pants.
+
+**MAKEUP:**
+Glamorous makeup, with winged eyeliner and nude lipstick.
+
+**ENVIRONMENT:**
+Background is simple studio, light gray or pale blue color, uniformly illuminated.
+
+**LIGHTING:**
+Uniform studio lighting creating even highlights.
+
+**CAMERA:**
+50mm or 85mm lens, vertical framing. Sharp focus on face and styling.
+
+**MOOD:**
+Serious and confident – YSL-inspired luxury fashion editorial with glamorous aesthetic.`.trim()
+  },
+}
+
+export const FASHION_FUR_COAT: PromptTemplate = {
+  id: "fashion_fur_coat",
+  name: "Fur Coat Classic Elegance",
+  description:
+    "Elegant portrait with fur coat, satin dress and classic Mediterranean setting.",
+  useCases: [
+    "Luxury fashion content",
+    "Classic elegance imagery",
+    "High-end fashion campaigns",
+    "Editorial fashion portraits",
+  ],
+  requiredImages: {
+    min: 1,
+    max: 2,
+    types: ["user_lora", "inspiration"],
+  },
+  promptStructure: (context: PromptContext): string => {
+    return `Do not change characteristics of woman in attachment.
+
+**POSE & EXPRESSION:**
+Feminine model, probably between 20 and 30 years old, with illuminated brown hair and wavy with volume falling over one shoulder. She is looking directly at camera with serious or seductive expression, and her lips are slightly open. Her pose is elegant and confident, with body slightly turned to side, highlighting her silhouette.
+
+**OUTFIT & STYLING:**
+Dark brown or similar fur coat, which is sliding down her shoulders, revealing upper part of her back and bare shoulder. Underneath, she has brown or bronze satin dress, which fits her figure and has high thigh slit. Simple gold earrings and makeup that highlights her eyes and lips.
+
+**ENVIRONMENT:**
+She is standing in hallway or arcade with light stone pillars in background, which appear to be classic or Mediterranean style. In background, can see garden or patio with statues and foliage, suggesting luxurious and well-kept outdoor scenario or in grand property.
+
+**LIGHTING:**
+Natural and soft, creating some shadows, but keeping model well illuminated.
+
+**CAMERA:**
+50mm or 85mm lens, vertical framing. Sharp focus on face and outfit.
+
+**MOOD:**
+Elegant and confident – luxury fashion editorial with classic Mediterranean elegance.`.trim()
+  },
+}
+
+export const FASHION_BEAUTY_CLOSEUP: PromptTemplate = {
+  id: "fashion_beauty_closeup",
+  name: "Glamorous Beauty Close-up",
+  description:
+    "High-quality beauty portrait with glamorous makeup and holographic jacket.",
+  useCases: [
+    "Beauty fashion content",
+    "Editorial beauty imagery",
+    "Makeup campaigns",
+    "Beauty editorial portraits",
+  ],
+  requiredImages: {
+    min: 1,
+    max: 2,
+    types: ["user_lora", "inspiration"],
+  },
+  promptStructure: (context: PromptContext): string => {
+    return `High-quality feminine portrait, ultra-realistic, preserving 100% original face of woman from provided photo.
+
+**HAIR & MAKEUP:**
+She has illuminated and natural skin, glamorous makeup with earthy tones, subtle eyeliner and silver glitter applied on temples and cheekbones of face, creating sophisticated shine. Hair is illuminated brown, long, wavy and pinned in high ponytail with volume, with some loose highlights at front framing face.
+
+**OUTFIT & ACCESSORIES:**
+She wears gold flower-shaped earrings and black jacket with holographic shine and slightly reflective texture.
+
+**POSE & EXPRESSION:**
+Expression is confident and soft, with gaze lightly turned to side.
+
+**ENVIRONMENT:**
+Background is neutral and clean, professional studio lighting, soft diffused light and controlled reflections.
+
+**CAMERA:**
+85mm, f/2.0, soft side light, sharp focus on face. 8K quality.
+
+**MOOD:**
+Editorial beauty photography style, realistic, with detailed skin and hair texture – sophisticated and glamorous.`.trim()
+  },
+}
+
+export const FASHION_EUROPEAN_STREET: PromptTemplate = {
+  id: "fashion_european_street",
+  name: "European Street Elegant Walk",
+  description:
+    "Elegant European street portrait with blazer dress and luxury accessories.",
+  useCases: [
+    "European street fashion content",
+    "Urban fashion imagery",
+    "Luxury fashion campaigns",
+    "Street style editorial",
+  ],
+  requiredImages: {
+    min: 1,
+    max: 2,
+    types: ["user_lora", "inspiration"],
+  },
+  promptStructure: (context: PromptContext): string => {
+    return `Maintain the woman's characteristics from attachment without changing features. Without altering hair color, eyes, skin color. Hyper-realistic.
+
+**HAIR:**
+Illuminated brown with loose waves, without short bangs.
+
+**SCENE:**
+Elegant European street.
+
+**OUTFIT & STYLING:**
+Brown blazer worn as dress + black over-the-knee boots + black gloves + beige LV scarf.
+
+**POSE & EXPRESSION:**
+Walking with bag in hand. Confident and elegant expression.
+
+**LIGHTING:**
+Soft neutral lighting creating sophisticated atmosphere.
+
+**CAMERA:**
+~2.4 m, full body. 50mm or 85mm lens.
+
+**MOOD:**
+Elegant European fashion – sophisticated, luxury and street-style editorial.`.trim()
+  },
+}
+
+export const FASHION_LONDON_CHRISTMAS: PromptTemplate = {
+  id: "fashion_london_christmas",
+  name: "London Street Christmas Lights",
+  description:
+    "London street portrait with red telephone booth and Christmas lights.",
+  useCases: [
+    "London fashion content",
+    "Christmas fashion imagery",
+    "Winter fashion campaigns",
+    "Holiday street style",
+  ],
+  requiredImages: {
+    min: 1,
+    max: 2,
+    types: ["user_lora", "inspiration"],
+  },
+  promptStructure: (context: PromptContext): string => {
+    return `Maintain the woman's characteristics from attachment without changing features. Without altering hair color, eyes, skin color. Hyper-realistic.
+
+**HAIR:**
+Illuminated brown, defined and shiny waves, without short bangs.
+
+**SCENE:**
+London street with red telephone booth and Christmas lights in background.
+
+**OUTFIT & STYLING:**
+Wine sweater with bear + white shirt + checkered mini skirt + black tights + black boots.
+
+**POSE & EXPRESSION:**
+Stopped beside booth, light smile. Relaxed and cheerful expression.
+
+**LIGHTING:**
+Soft neutral winter lighting with Christmas lights creating atmosphere.
+
+**CAMERA:**
+~2 m, full body. 50mm or 85mm lens.
+
+**MOOD:**
+London winter fashion – festive, cozy and street-style editorial.`.trim()
+  },
+}
+
+export const FASHION_EUROPEAN_DOOR: PromptTemplate = {
+  id: "fashion_european_door",
+  name: "European Wooden Door Autumn",
+  description:
+    "Autumn European street portrait with wooden door and sophisticated styling.",
+  useCases: [
+    "European street fashion content",
+    "Autumn fashion imagery",
+    "Urban fashion campaigns",
+    "Street style editorial",
+  ],
+  requiredImages: {
+    min: 1,
+    max: 2,
+    types: ["user_lora", "inspiration"],
+  },
+  promptStructure: (context: PromptContext): string => {
+    return `Reference image: photo sent. Maintain the woman's characteristics from attachment without changing features. Without altering hair color, eyes, skin color. Hyper-realistic.
+
+**HAIR:**
+Illuminated brown, voluminous loose waves (without short bangs).
+
+**SCENE:**
+Street with European wooden door in background.
+
+**OUTFIT & STYLING:**
+Brown blazer + brown sweater + brown mini skirt + beige tights + brown moccasin. Accessories: oversized dark sunglasses + brown bag + takeaway coffee.
+
+**POSE & EXPRESSION:**
+Bent leg, relaxed confident expression. Natural and sophisticated pose.
+
+**LIGHTING:**
+Soft external, autumn chic mood creating warm highlights.
+
+**CAMERA:**
+~1.8 m, mid-body to full body. 50mm or 85mm lens.
+
+**MOOD:**
+Autumn chic – sophisticated European fashion with warm, cozy atmosphere.`.trim()
+  },
+}
+
 export const FASHION_BRANDS = {
   REFORMATION_FEMININE,
   EVERLANE_MINIMAL,
   ARITZIA_ELEVATED,
+  FASHION_CHAMPAGNE_SATIN_EDITORIAL,
+  FASHION_CITY_STREET,
+  FASHION_CROSSWALK,
+  FASHION_LEATHER_SOFA,
+  FASHION_YSL_STUDIO,
+  FASHION_FUR_COAT,
+  FASHION_BEAUTY_CLOSEUP,
+  FASHION_EUROPEAN_STREET,
+  FASHION_LONDON_CHRISTMAS,
+  FASHION_EUROPEAN_DOOR,
 } satisfies Record<string, PromptTemplate>

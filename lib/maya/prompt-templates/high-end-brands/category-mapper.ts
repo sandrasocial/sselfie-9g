@@ -113,15 +113,17 @@ const BRAND_AESTHETIC_KEYWORDS: Record<string, string[]> = {
 
 function pickPrimaryCategory(categoryScores: Record<BrandCategoryKey, number>): BrandCategoryKey {
   let bestKey: BrandCategoryKey = "lifestyle"
-  let bestScore = -Infinity
+  // Initialize to -1 to ensure any score >= 0 will be selected
+  let bestScore: number = -1
 
-  (Object.keys(BRAND_CATEGORIES) as BrandCategoryKey[]).forEach((key) => {
+  const categoryKeys = Object.keys(BRAND_CATEGORIES) as BrandCategoryKey[]
+  for (const key of categoryKeys) {
     const score = categoryScores[key] ?? 0
     if (score > bestScore) {
       bestScore = score
       bestKey = key
     }
-  })
+  }
 
   return bestKey
 }

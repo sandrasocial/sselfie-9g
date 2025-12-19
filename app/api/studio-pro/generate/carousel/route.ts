@@ -86,15 +86,16 @@ export async function POST(req: NextRequest) {
     `
     const brandKit = brandKitResult[0] || null
 
-    // CALCULATE CREDITS (5 credits per slide)
-    const creditsRequired = slideCount * 5
+    // CALCULATE CREDITS (2 credits per slide)
+    const creditsPerSlide = getStudioProCreditCost('2K')
+    const creditsRequired = slideCount * creditsPerSlide
 
     // CHECK CREDITS
     const currentBalance = await getUserCredits(neonUser.id)
     if (currentBalance < creditsRequired) {
       return NextResponse.json(
         { 
-          error: `Insufficient credits. Need ${creditsRequired} credits (${slideCount} slides × 5 credits), you have ${currentBalance}.` 
+          error: `Insufficient credits. Need ${creditsRequired} credits (${slideCount} slides × ${creditsPerSlide} credits), you have ${currentBalance}.` 
         },
         { status: 402 }
       )
@@ -177,11 +178,12 @@ export async function POST(req: NextRequest) {
         } : undefined,
       })
 
-      // DEDUCT CREDITS (5 per slide)
+      // DEDUCT CREDITS (2 per slide)
+      const creditsPerSlide = getStudioProCreditCost('2K')
       const tempReferenceId = `carousel-${workflow.id}-slide-${slideNumber}-${Date.now()}`
       const deductionResult = await deductCredits(
         neonUser.id,
-        5,
+        creditsPerSlide,
         'image',
         `Carousel slide ${slideNumber}`,
         tempReferenceId
@@ -201,7 +203,7 @@ export async function POST(req: NextRequest) {
         )
       }
 
-      totalCreditsDeducted += 5
+      totalCreditsDeducted += creditsPerSlide
 
       // GENERATE with Nano Banana Pro
       let generation
@@ -364,6 +366,10 @@ export async function POST(req: NextRequest) {
     )
   }
 }
+
+
+
+
 
 
 

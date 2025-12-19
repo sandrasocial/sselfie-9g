@@ -53,12 +53,34 @@ export async function POST(req: NextRequest) {
     })
 
     // BUILD optimized Nano Banana prompt
-    const { optimizedPrompt, sceneDescription } = await buildNanoBananaPrompt({
-      userId: neonUserId,
-      mode: mode as any,
-      userRequest,
-      inputImages: inputImages || {},
-    })
+    let optimizedPrompt: string
+    let sceneDescription: string
+    try {
+      const result = await buildNanoBananaPrompt({
+        userId: neonUserId,
+        mode: mode as any,
+        userRequest,
+        inputImages: inputImages || {},
+      })
+      optimizedPrompt = result.optimizedPrompt
+      sceneDescription = result.sceneDescription
+      console.log("[STUDIO-PRO] Prompt built successfully:", {
+        promptLength: optimizedPrompt.length,
+        sceneDescription
+      })
+    } catch (promptError) {
+      console.error("[STUDIO-PRO] Failed to build prompt:", promptError)
+      const errorDetails = promptError instanceof Error ? promptError.message : String(promptError)
+      const errorStack = promptError instanceof Error ? promptError.stack : undefined
+      console.error("[STUDIO-PRO] Error details:", { errorDetails, errorStack })
+      return NextResponse.json(
+        { 
+          error: "Failed to build generation prompt",
+          details: errorDetails
+        },
+        { status: 500 }
+      )
+    }
 
     // CALCULATE credits
     const creditsRequired = getStudioProCreditCost(resolution as "1K" | "2K" | "4K")
@@ -76,16 +98,17 @@ export async function POST(req: NextRequest) {
     }
 
     // COLLECT image URLs from input (up to 14 total)
+    // Order: selfies (baseImages) first, then products, then styleRefs
     const imageUrls: string[] = []
     
-    // Add base images first (these establish character consistency)
+    // Add base images first (these establish character consistency - selfies)
     if (inputImages?.baseImages && inputImages.baseImages.length > 0) {
       const baseUrls = inputImages.baseImages
         .map((img: any) => img.url)
         .filter((url: string) => url && typeof url === 'string' && url.startsWith('http'))
       
       imageUrls.push(...baseUrls)
-      console.log("[STUDIO-PRO] Added", baseUrls.length, "base image(s)")
+      console.log("[STUDIO-PRO] Added", baseUrls.length, "selfie image(s)")
     }
     
     // Add product images
@@ -96,6 +119,16 @@ export async function POST(req: NextRequest) {
       
       imageUrls.push(...productUrls)
       console.log("[STUDIO-PRO] Added", productUrls.length, "product image(s)")
+    }
+    
+    // Add style reference images
+    if (inputImages?.styleRefs && inputImages.styleRefs.length > 0) {
+      const styleUrls = inputImages.styleRefs
+        .map((img: any) => img.url)
+        .filter((url: string) => url && typeof url === 'string' && url.startsWith('http'))
+      
+      imageUrls.push(...styleUrls)
+      console.log("[STUDIO-PRO] Added", styleUrls.length, "style reference image(s)")
     }
 
     // Validate we have images
@@ -251,10 +284,13 @@ export async function POST(req: NextRequest) {
 
   } catch (error) {
     console.error("[STUDIO-PRO] Generation error:", error)
+    const errorMessage = error instanceof Error ? error.message : "Unknown error"
+    const errorStack = error instanceof Error ? error.stack : undefined
+    console.error("[STUDIO-PRO] Error details:", { errorMessage, errorStack })
     return NextResponse.json(
       { 
-        error: "Failed to generate Studio Pro content",
-        details: error instanceof Error ? error.message : "Unknown error"
+        error: errorMessage || "Failed to generate Studio Pro content",
+        details: errorStack
       },
       { status: 500 }
     )

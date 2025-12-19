@@ -623,22 +623,19 @@ export async function POST(request: NextRequest) {
             console.log(
               `[v0] ⚠️ Subscription checkout completed. Credits will be granted when invoice.payment_succeeded fires (after payment confirmation).`,
             )
-          } else if (!event.livemode) {
-            console.log(
-              `[v0] ⚠️ Skipping credit grant - this is a TEST MODE payment. Credits are only granted for real (production) payments.`,
-            )
           } else if (!isPaymentPaid) {
             console.log(
               `[v0] ⚠️ Skipping credit grant - payment not confirmed (status: '${session.payment_status}').`,
             )
           } else if (productType === "one_time_session") {
-            console.log(`[v0] One-time session purchase for user ${userId}`)
+            console.log(`[v0] One-time session purchase for user ${userId} (test mode: ${!event.livemode})`)
             await grantOneTimeSessionCredits(userId)
             console.log(`[v0] One-time session credits granted for user ${userId}`)
           } else if (productType === "credit_topup") {
-            console.log(`[v0] Credit top-up: ${credits} credits for user ${userId}`)
-            await addCredits(userId, credits, "purchase", `Credit top-up purchase`, undefined, !event.livemode)
-            console.log(`[v0] Successfully added ${credits} credits to user ${userId}`)
+            const isTestMode = !event.livemode
+            console.log(`[v0] Credit top-up: ${credits} credits for user ${userId} (test mode: ${isTestMode})`)
+            await addCredits(userId, credits, "purchase", `Credit top-up purchase`, undefined, isTestMode)
+            console.log(`[v0] Successfully added ${credits} credits to user ${userId} (test mode: ${isTestMode})`)
           }
         } else if (session.mode === "subscription") {
           let userId = session.metadata.user_id

@@ -15,7 +15,7 @@ const sql = getDatabase()
 export const CREDIT_COSTS = {
   TRAINING: 25, // $5 / $0.20 per credit
   IMAGE: 1, // $0.20
-  ANIMATION: 5, // Updated from 3 to 5 credits ($1.00) to match wan-2.5-i2v-fast cost (~$0.50) with healthy margin
+  ANIMATION: 3, // Video/B-roll generation
 } as const
 
 export const SUBSCRIPTION_CREDITS = {

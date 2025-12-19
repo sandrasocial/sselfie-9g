@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { neon } from "@neondatabase/serverless"
-import { generateWithNanoBanana, checkNanoBananaPrediction } from "@/lib/nano-banana-client"
+import { generateWithNanoBanana, getStudioProCreditCost, checkNanoBananaPrediction } from "@/lib/nano-banana-client"
 import { buildNanoBananaPrompt } from "@/lib/maya/nano-banana-prompt-builder"
 import { getUserCredits, deductCredits, addCredits } from "@/lib/credits"
 import { put } from "@vercel/blob/client"
@@ -82,9 +82,9 @@ export async function POST(req: NextRequest) {
     `
     const brandKit = brandKitResult[0] || null
 
-    // CALCULATE CREDITS (5 credits for 2K, 8 for 4K)
+    // CALCULATE CREDITS (2 credits for Studio Pro)
     const resolution = '2K' // Reel covers use 2K (9:16 aspect ratio)
-    const creditsRequired = 5
+    const creditsRequired = getStudioProCreditCost(resolution)
 
     // CHECK CREDITS
     const currentBalance = await getUserCredits(neonUser.id)
@@ -330,6 +330,10 @@ export async function POST(req: NextRequest) {
     )
   }
 }
+
+
+
+
 
 
 

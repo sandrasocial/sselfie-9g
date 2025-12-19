@@ -96,3 +96,7 @@ COMMENT ON TABLE maya_test_trainings IS 'Training sessions with custom parameter
 COMMENT ON TABLE maya_test_images IS 'Generated images from prompt/generation tests';
 COMMENT ON TABLE maya_test_comparisons IS 'Groupings of tests for side-by-side comparison';
 COMMENT ON TABLE maya_test_configs IS 'Saved test configurations for easy reuse';
+
+
+
+

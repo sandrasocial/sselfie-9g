@@ -48,6 +48,7 @@ export async function POST(request: NextRequest) {
 
     console.log("[v0] ✅ Neon user found:", neonUser.id)
 
+    // Check and deduct credits BEFORE starting the Replicate call to prevent race conditions
     const hasEnoughCredits = await checkCredits(neonUser.id, CREDIT_COSTS.ANIMATION)
     if (!hasEnoughCredits) {
       return NextResponse.json(
@@ -59,6 +60,20 @@ export async function POST(request: NextRequest) {
         { status: 402 },
       )
     }
+
+    // Deduct credits BEFORE Replicate call to prevent race conditions with credit purchases
+    const deductionResult = await deductCredits(neonUser.id, CREDIT_COSTS.ANIMATION, "animation", `Animated image: ${imageId}`)
+    if (!deductionResult.success) {
+      console.error("[v0] ❌ Failed to deduct credits:", deductionResult.error)
+      return NextResponse.json(
+        {
+          error: "Failed to deduct credits",
+          details: deductionResult.error || "Unable to process credit deduction. Please try again.",
+        },
+        { status: 500 },
+      )
+    }
+    console.log("[v0] ✅ Deducted", CREDIT_COSTS.ANIMATION, "credits for video generation. New balance:", deductionResult.newBalance)
 
     // Get user's trained LoRA model
     const userDataResult = await sql`
@@ -110,20 +125,18 @@ export async function POST(request: NextRequest) {
     // This allows for consistent character appearance while varying motion
     const controlledSeed = Math.floor(Math.random() * 1000000)
 
-    // Prompt expansion testing: Default to false for better control
-    // Set to true if you want WAN-2.5 to expand/optimize the prompt
-    // Testing shows: false = more precise motion control, true = richer but potentially less accurate
-    const enablePromptExpansion = process.env.WAN_25_PROMPT_EXPANSION === "true" || false
+    // Prompt expansion enabled for better video quality
+    const enablePromptExpansion = true
 
     // WAN 2.5 architecture: Motion + Camera Movement structure
     const predictionInput = {
       image: imageUrl,
       prompt: baseMotionPrompt,
       duration: 5, // wan-2.5 supports 5 or 10 seconds
-      resolution: "720p", // "720p" or "1080p"
+      resolution: "1080p", // "720p" or "1080p"
       negative_prompt:
         "blurry, low quality, distorted face, warping, morphing, identity drift, unnatural motion, flickering, artifacts, extra limbs, duplicate person, no extra characters, jittery edges, camera shake",
-      enable_prompt_expansion: enablePromptExpansion, // Configurable: false for precise control, true for richer prompts
+      enable_prompt_expansion: enablePromptExpansion, // Enabled for better video quality
       seed: controlledSeed, // Controlled seed variation (0-999999) for consistency with variety
     }
 
@@ -134,26 +147,38 @@ export async function POST(request: NextRequest) {
     console.log("[v0] Duration:", predictionInput.duration, "seconds (5s for optimal quality)")
     console.log("[v0] Resolution:", predictionInput.resolution)
     console.log("[v0] Negative prompt:", predictionInput.negative_prompt)
-    console.log("[v0] Prompt expansion:", predictionInput.enable_prompt_expansion, `(configurable via WAN_25_PROMPT_EXPANSION env var)`)
+    console.log("[v0] Prompt expansion:", predictionInput.enable_prompt_expansion, "(enabled for better video quality)")
     console.log("[v0] Seed:", predictionInput.seed, "(controlled variation: 0-999999 for consistency with variety)")
     console.log("[v0] LoRA support: Not available in WAN-2.5 (native LoRA not supported)")
     console.log("[v0] Full prediction input:", JSON.stringify(predictionInput, null, 2))
     console.log("[v0] ================================================")
 
-    const prediction = await replicate.predictions.create({
-      model: "wan-video/wan-2.5-i2v-fast",
-      input: predictionInput,
-    })
+    // Create Replicate prediction (credits already deducted above)
+    let prediction
+    try {
+      prediction = await replicate.predictions.create({
+        model: "wan-video/wan-2.5-i2v-fast",
+        input: predictionInput,
+      })
 
-    console.log("[v0] ========== REPLICATE VIDEO RESPONSE ==========")
-    console.log("[v0] ✅ Prediction created successfully")
-    console.log("[v0] Prediction ID:", prediction.id)
-    console.log("[v0] Prediction status:", prediction.status)
-    console.log("[v0] Full prediction:", JSON.stringify(prediction, null, 2))
-    console.log("[v0] ================================================")
-
-    await deductCredits(neonUser.id, CREDIT_COSTS.ANIMATION, "animation", `Animated image: ${imageId}`)
-    console.log("[v0] Deducted", CREDIT_COSTS.ANIMATION, "credits for video generation")
+      console.log("[v0] ========== REPLICATE VIDEO RESPONSE ==========")
+      console.log("[v0] ✅ Prediction created successfully")
+      console.log("[v0] Prediction ID:", prediction.id)
+      console.log("[v0] Prediction status:", prediction.status)
+      console.log("[v0] Full prediction:", JSON.stringify(prediction, null, 2))
+      console.log("[v0] ================================================")
+    } catch (replicateError) {
+      // If Replicate call fails, refund the credits using addCredits
+      console.error("[v0] ❌ Replicate API call failed, refunding credits:", replicateError)
+      const { addCredits } = await import("@/lib/credits")
+      const refundResult = await addCredits(neonUser.id, CREDIT_COSTS.ANIMATION, "refund", `Refund for failed video generation: ${imageId}`)
+      if (refundResult.success) {
+        console.log("[v0] ✅ Credits refunded. New balance:", refundResult.newBalance)
+      } else {
+        console.error("[v0] ❌ Failed to refund credits:", refundResult.error)
+      }
+      throw replicateError
+    }
 
     // Store video generation in database
     const insertResult = await sql`

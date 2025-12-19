@@ -8,12 +8,18 @@ import { WELLNESS_BRANDS } from "./wellness-brands"
 import { LUXURY_BRANDS } from "./luxury-brands"
 import { LIFESTYLE_BRANDS } from "./lifestyle-brands"
 import { FASHION_BRANDS } from "./fashion-brands"
+import { TECH_BRANDS } from "./tech-brands"
+import { SELFIES } from "./selfies"
+import { BEAUTY_BRANDS } from "./beauty-brands"
 
 // Re-export brand template modules
 export * from "./wellness-brands"
 export * from "./luxury-brands"
 export * from "./lifestyle-brands"
 export * from "./fashion-brands"
+export * from "./tech-brands"
+export * from "./selfies"
+export * from "./beauty-brands"
 
 // Re-export core registry + detection utilities
 export * from "./brand-registry"
@@ -30,6 +36,9 @@ export const ALL_BRAND_TEMPLATES: Record<string, PromptTemplate> = {
   ...LUXURY_BRANDS,
   ...LIFESTYLE_BRANDS,
   ...FASHION_BRANDS,
+  ...TECH_BRANDS,
+  ...SELFIES,
+  ...BEAUTY_BRANDS,
 }
 
 // ---------- Convenience helpers ----------

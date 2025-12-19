@@ -169,9 +169,9 @@ export async function checkNanoBananaPrediction(
  */
 export function getStudioProCreditCost(resolution: "1K" | "2K" | "4K"): number {
   const costs = {
-    "1K": 3,  // $0.60 - Quick preview
-    "2K": 5,  // $1.00 - Instagram quality (RECOMMENDED)
-    "4K": 8,  // $1.60 - High-res print
+    "1K": 2,  // Quick preview
+    "2K": 2,  // Instagram quality (RECOMMENDED)
+    "4K": 2,  // High-res print
   }
   return costs[resolution]
 }
