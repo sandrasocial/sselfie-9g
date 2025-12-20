@@ -118,6 +118,9 @@ export function useProModeChat(
 
       setMessages((prev) => [...prev, userMessage])
 
+      // 🔴 FIX: Declare mayaMessageId early so it's available in catch block
+      let mayaMessageId: string | null = null
+
       try {
         // Prepare request body
         const requestBody = {
@@ -156,13 +159,14 @@ export function useProModeChat(
           throw new Error('No response body')
         }
 
+        // 🔴 FIX: Only create message ID and placeholder after validation passes
+        mayaMessageId = generateMessageId()
         const reader = response.body.getReader()
         const decoder = new TextDecoder()
-        let mayaMessageId = generateMessageId()
         let mayaContent = ''
         let buffer = ''
 
-        // Create Maya message placeholder
+        // Create Maya message placeholder (only after validation)
         const mayaMessage: ProModeMessage = {
           id: mayaMessageId,
           role: 'maya',
@@ -275,8 +279,10 @@ export function useProModeChat(
         console.error('[useProModeChat] Error sending message:', err)
         setError(errorMessage)
 
-        // Remove the Maya message placeholder on error
-        setMessages((prev) => prev.filter((msg) => msg.id !== mayaMessageId))
+        // Remove the Maya message placeholder on error (only if it was created)
+        if (mayaMessageId) {
+          setMessages((prev) => prev.filter((msg) => msg.id !== mayaMessageId))
+        }
       } finally {
         setIsLoading(false)
         abortControllerRef.current = null

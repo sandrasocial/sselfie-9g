@@ -16,7 +16,7 @@ import {
 import { getCategoryByKey } from "@/lib/maya/pro/category-system"
 import { getMayaPersonality } from "@/lib/maya/personality-enhanced"
 
-export const maxDuration = 60
+export const maxDuration = 120 // Increased to 2 minutes to handle slow AI responses
 
 /**
  * Link images to concept based on category and concept type
@@ -386,8 +386,18 @@ export async function POST(req: NextRequest) {
 
 Generate 6 unique, creative concept cards based on the user's request. Use your fashion expertise and editorial knowledge to create diverse, sophisticated concepts.
 
+**🔴🔴🔴 CRITICAL: USER'S REQUEST IS YOUR PRIMARY GUIDE**
 **USER'S REQUEST:**
 ${userRequest}
+
+**YOUR RESPONSIBILITY:**
+The user has explicitly requested: "${userRequest}"
+- Your concept titles, descriptions, and all details MUST reflect this request
+- If the user asks for "Christmas", create Christmas-themed concepts (holiday outfits, festive settings, cozy holiday moments)
+- If the user asks for "beach", create beach-themed concepts (coastal outfits, ocean settings, beach vibes)
+- Do NOT use generic defaults that ignore the user's request
+- Every concept should clearly show you understood and are delivering on their specific request
+
 ${categoryHint}
 
 ${libraryContext}
@@ -397,14 +407,31 @@ ${libraryContext}
 **YOUR TASK:**
 Create 6 diverse, creative concepts. Each concept must be:
 - Unique and different from the others
-- Based on the user's actual request (not generic)
+- **DIRECTLY based on the user's actual request** - if they said "Christmas", make it Christmas-themed
 - Professional and editorial quality matching SSELFIE's aesthetic
-- Specific to their request (e.g., if they said "Pinterest influencer style", make it Pinterest-specific)
+- Specific to their request (e.g., if they said "Christmas", use holiday outfits, festive settings, cozy holiday moments - NOT generic street style)
 - Use your fashion expertise to determine the most appropriate category for each concept
+
+**🔴 CRITICAL: DESCRIPTION REQUIREMENTS**
+Your "description" field MUST include:
+- Specific outfit details (e.g., "wearing cozy holiday pajamas" or "elegant holiday evening wear")
+- Specific setting details (e.g., "cozy living room with Christmas tree" or "festive holiday market")
+- Specific mood/atmosphere (e.g., "warm festive atmosphere" or "magical holiday ambiance")
+- Do NOT use generic descriptions - be specific and match the user's request
+
+**EXAMPLE for Christmas request:**
+- Title: "Christmas Morning Cozy"
+- Description: "Cozy holiday morning moment, wearing soft cashmere sweater in festive colors, sitting by decorated Christmas tree with warm fireplace, holding warm mug, peaceful and joyful holiday atmosphere, soft morning light through windows, twinkling Christmas tree lights in background"
+- Category: "Lifestyle" or "Seasonal" (not generic "Fashion")
+
+**EXAMPLE for beach request:**
+- Title: "Coastal Beach Moment"
+- Description: "Beach setting, wearing flowy resort wear or swimwear, ocean views, soft coastal light, beach atmosphere, natural textures"
+- Category: "Travel" or "Lifestyle" (not generic "Fashion")
 
 **CATEGORY DETERMINATION:**
 You have full creative freedom to determine categories based on:
-- The user's request and intent
+- **The user's request and intent (PRIMARY)** - if they say "Christmas", the category should reflect holiday/seasonal themes
 - Your fashion expertise and knowledge of current trends
 - The aesthetic and style of each concept
 - Available categories: Wellness, Luxury, Lifestyle, Fashion, Travel, Beauty, or create new categories that fit
@@ -414,12 +441,12 @@ Do NOT default to "Lifestyle" unless it truly fits. Use your expertise to determ
 Return ONLY a valid JSON array of 6 concepts:
 [
   {
-    "title": "string - unique concept title (e.g., 'Pinterest Morning Ritual', 'Editorial Street Style', 'Luxury Resort Moment')",
-    "description": "string - detailed description reflecting user's request and your fashion expertise",
-    "category": "string - category you determine based on the concept (Wellness, Luxury, Lifestyle, Fashion, Travel, Beauty, or your own)",
-    "aesthetic": "string - aesthetic description matching SSELFIE's clean, feminine, modern aesthetic",
+    "title": "string - unique concept title that reflects the user's request (e.g., if user said 'Christmas', use 'Christmas Morning Cozy' or 'Holiday Fireplace Reading')",
+    "description": "string - detailed description that MUST include specific outfit details, setting, and mood that match the user's request. If user said 'Christmas', describe Christmas outfits, holiday settings, festive atmosphere. Include outfit details like 'wearing cozy holiday pajamas' or 'elegant holiday evening wear'.",
+    "category": "string - category you determine based on the concept (Wellness, Luxury, Lifestyle, Fashion, Travel, Beauty, or your own). If user said 'Christmas', use a category that reflects holiday/seasonal themes.",
+    "aesthetic": "string - aesthetic description matching SSELFIE's clean, feminine, modern aesthetic AND the user's request",
     "brandReferences": ["string"] - array of relevant brand names that fit the concept,
-    "stylingDetails": "string - specific styling details",
+    "stylingDetails": "string - specific styling details that match the user's request",
     "technicalSpecs": "string - camera/technical specs"
   }
 ]
@@ -441,6 +468,13 @@ Make each concept unique, sophisticated, and based on the user's request. Use yo
       }
 
       const aiConcepts = JSON.parse(jsonMatch[0])
+      
+      // 🔴 DEBUG: Log what Maya generated
+      console.log('[v0] [PRO MODE] Maya generated concepts:', aiConcepts.map((c: any) => ({
+        title: c.title?.substring(0, 50),
+        description: c.description?.substring(0, 100),
+        category: c.category,
+      })))
 
       // Validate AI concepts array
       if (!Array.isArray(aiConcepts) || aiConcepts.length === 0) {
@@ -483,7 +517,20 @@ Make each concept unique, sophisticated, and based on the user's request. Use yo
         const promptCategory = (safeCategory && typeof safeCategory === 'string') 
           ? safeCategory.toUpperCase() 
           : (categoryKey && typeof categoryKey === 'string' ? categoryKey : 'LIFESTYLE')
+        
+        // 🔴 DEBUG: Log what we're passing to buildProModePrompt
+        console.log(`[v0] [PRO MODE] Building prompt for concept ${index + 1}:`, {
+          title: safeTitle,
+          description: safeDescription,
+          category: promptCategory,
+          userRequest: userRequest?.substring(0, 100),
+          conceptCategory: safeCategory,
+        })
+        
         const fullPrompt = buildProModePrompt(promptCategory, conceptComponents, library, userRequest)
+        
+        // 🔴 DEBUG: Log the generated prompt
+        console.log(`[v0] [PRO MODE] Generated prompt for concept ${index + 1} (first 200 chars):`, fullPrompt.substring(0, 200))
 
         // Create a mock UniversalPrompt for image linking (using safe values)
         const mockUniversalPrompt = {
