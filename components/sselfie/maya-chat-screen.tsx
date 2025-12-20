@@ -1123,22 +1123,40 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
 
         let response: Response
         try {
-          response = await fetch("/api/maya/generate-concepts", {
+          // 🔴 CRITICAL FIX: Use Pro Mode API when studioProMode is true
+          const apiEndpoint = studioProMode 
+            ? "/api/maya/pro/generate-concepts"
+            : "/api/maya/generate-concepts"
+          
+          console.log("[v0] 📤 Calling concept generation API:", apiEndpoint, "studioProMode:", studioProMode)
+          
+          // Pro Mode API expects: userRequest, imageLibrary, category (optional), essenceWords (optional)
+          // Classic Mode API expects: userRequest, count, conversationContext, referenceImageUrl, studioProMode, etc.
+          const requestBody = studioProMode
+            ? {
+                userRequest: pendingConceptRequest,
+                imageLibrary: imageLibrary, // Required for Pro Mode
+                category: null, // Let Maya determine dynamically
+                essenceWords: pendingConceptRequest?.split(' ').slice(0, 5).join(' ') || undefined, // Extract essence words from request
+              }
+            : {
+                userRequest: pendingConceptRequest,
+                count: 6, // Changed from hardcoded 3 to 6, allowing Maya to create more concepts
+                conversationContext: conversationContext || undefined,
+                referenceImageUrl: allImages.length > 0 ? allImages[0] : referenceImageUrl, // Primary image
+                studioProMode: studioProMode, // Pass Studio Pro mode to use Nano Banana prompting
+                enhancedAuthenticity: !studioProMode && enhancedAuthenticity, // Only pass if Classic mode and toggle is ON
+                guidePrompt: guidePromptActive && extractedGuidePrompt ? extractedGuidePrompt : undefined, // Pass guide prompt if active
+                // Include full image library in Pro Mode
+                ...(studioProMode && {
+                  imageLibrary: imageLibrary,
+                }),
+              }
+          
+          response = await fetch(apiEndpoint, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              userRequest: pendingConceptRequest,
-              count: 6, // Changed from hardcoded 3 to 6, allowing Maya to create more concepts
-              conversationContext: conversationContext || undefined,
-              referenceImageUrl: allImages.length > 0 ? allImages[0] : referenceImageUrl, // Primary image
-              studioProMode: studioProMode, // Pass Studio Pro mode to use Nano Banana prompting
-              enhancedAuthenticity: !studioProMode && enhancedAuthenticity, // Only pass if Classic mode and toggle is ON
-              guidePrompt: guidePromptActive && extractedGuidePrompt ? extractedGuidePrompt : undefined, // Pass guide prompt if active
-              // Include full image library in Pro Mode
-              ...(studioProMode && {
-                imageLibrary: imageLibrary,
-              }),
-            }),
+            body: JSON.stringify(requestBody),
           })
         } catch (fetchError) {
           console.error("[v0] ❌ Error fetching generate-concepts:", fetchError)
@@ -1167,9 +1185,21 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
           setPendingConceptRequest(null)
           return
         }
-        console.log("[v0] Concept generation result:", result.state, result.concepts?.length)
+        
+        // 🔴 FIX: Handle both Classic Mode (has state) and Pro Mode (no state, just concepts) response formats
+        const concepts = result.concepts && Array.isArray(result.concepts) 
+          ? result.concepts 
+          : (result.state === "ready" && result.concepts && Array.isArray(result.concepts))
+          ? result.concepts
+          : null
+        console.log("[v0] Concept generation result:", {
+          hasState: !!result.state,
+          state: result.state,
+          conceptsCount: concepts?.length,
+          isProMode: studioProMode,
+        })
 
-        if (result.state === "ready" && result.concepts) {
+        if (concepts && Array.isArray(concepts) && concepts.length > 0) {
           // Find the current last assistant message ID before updating
           const lastAssistantMessage = [...messages].reverse().find((m) => m.role === "assistant")
           const messageId = lastAssistantMessage?.id?.toString()
@@ -1219,7 +1249,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
                 .trim()
             }
 
-            console.log("[v0] Saving concept cards to database:", result.concepts.length)
+            console.log("[v0] Saving concept cards to database:", concepts.length)
 
             // Remove the message from savedMessageIds so the save effect won't skip it
             // OR directly save/update the concepts
@@ -1231,7 +1261,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
                 chatId,
                 role: "assistant",
                 content: textContent || "",
-                conceptCards: result.concepts,
+                conceptCards: concepts,
                 updateExisting: true, // Signal to update if message exists
               }),
             })
