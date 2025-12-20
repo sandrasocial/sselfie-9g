@@ -90,6 +90,8 @@ export default function ProModeChat({
   // Convert ProModeMessage to Message format for display
   const [displayMessages, setDisplayMessages] = useState<Message[]>([])
   const [concepts, setConcepts] = useState<ConceptData[]>([])
+  const [generatingConceptId, setGeneratingConceptId] = useState<string | null>(null)
+  const [generationError, setGenerationError] = useState<string | null>(null)
 
   // Calculate total library count
   const libraryCount =
@@ -166,6 +168,126 @@ export default function ProModeChat({
     }
   }
 
+  const handleGenerateConcept = async (concept: ConceptData): Promise<{ predictionId?: string; generationId?: string } | void> => {
+    if (!concept.fullPrompt) {
+      setGenerationError('Concept prompt is missing. Please regenerate concepts.')
+      return
+    }
+
+    setGeneratingConceptId(concept.id)
+    setGenerationError(null)
+
+    try {
+      console.log('[ProModeChat] Generating image for concept:', concept.id, concept.title)
+
+      const response = await fetch('/api/maya/pro/generate-image', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          fullPrompt: concept.fullPrompt,
+          conceptTitle: concept.title,
+          conceptDescription: concept.description,
+          category: concept.category || 'concept',
+          linkedImages: concept.linkedImages || [],
+          resolution: '2K', // Default to 2K for Instagram quality
+          aspectRatio: '1:1', // Default to square
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        if (response.status === 402 || data.error === 'Insufficient credits') {
+          throw new Error(
+            `Need ${data.required || 2} credit${data.required > 1 ? 's' : ''}. ${data.message || 'Please purchase more credits or upgrade your plan.'}`
+          )
+        }
+        throw new Error(data.error || 'Failed to generate image')
+      }
+
+      console.log('[ProModeChat] Generation started:', {
+        predictionId: data.predictionId,
+        generationId: data.generationId,
+        status: data.status,
+      })
+
+      // If generation completed immediately
+      if (data.status === 'succeeded' && data.imageUrl) {
+        console.log('[ProModeChat] Image generated successfully:', data.imageUrl)
+        if (onImageGenerated) {
+          onImageGenerated()
+        }
+        setGeneratingConceptId(null)
+        // Return IDs even for immediate completion (for consistency)
+        return { predictionId: data.predictionId, generationId: data.generationId }
+      }
+
+      // If generation is in progress, return IDs for ConceptCardPro to handle polling
+      // Note: ConceptCardPro handles its own polling, so we don't need to poll here
+      if (data.predictionId) {
+        setGeneratingConceptId(null) // Clear generating state - ConceptCardPro will handle its own state
+        return { predictionId: data.predictionId, generationId: data.generationId }
+      } else {
+        throw new Error('No prediction ID returned')
+      }
+    } catch (error) {
+      console.error('[ProModeChat] Error generating image:', error)
+      setGenerationError(error instanceof Error ? error.message : 'Failed to generate image')
+      setGeneratingConceptId(null)
+      throw error // Re-throw so ConceptCardPro can handle the error
+    }
+  }
+
+  const pollGenerationStatus = async (predictionId: string, maxAttempts = 60) => {
+    let attempts = 0
+
+    const poll = async (): Promise<void> => {
+      if (attempts >= maxAttempts) {
+        setGenerationError('Generation is taking longer than expected. Please check your gallery.')
+        setGeneratingConceptId(null)
+        return
+      }
+
+      try {
+        const response = await fetch(`/api/maya/pro/check-generation?predictionId=${predictionId}`, {
+          method: 'GET',
+          credentials: 'include',
+        })
+
+        if (!response.ok) {
+          throw new Error('Failed to check generation status')
+        }
+
+        const data = await response.json()
+
+        if (data.status === 'succeeded' && data.imageUrl) {
+          console.log('[ProModeChat] Image generated successfully:', data.imageUrl)
+          if (onImageGenerated) {
+            onImageGenerated()
+          }
+          setGeneratingConceptId(null)
+          return
+        } else if (data.status === 'failed') {
+          throw new Error(data.error || 'Generation failed')
+        } else {
+          // Still processing, poll again
+          attempts++
+          setTimeout(poll, 2000) // Poll every 2 seconds
+        }
+      } catch (error) {
+        console.error('[ProModeChat] Error polling generation status:', error)
+        setGenerationError(error instanceof Error ? error.message : 'Failed to check generation status')
+        setGeneratingConceptId(null)
+      }
+    }
+
+    // Start polling after a short delay
+    setTimeout(poll, 2000)
+  }
+
   return (
     <div
       className="flex flex-col h-full w-full"
@@ -193,7 +315,7 @@ export default function ProModeChat({
       >
         <div className="max-w-[1200px] mx-auto px-6 py-8">
           {/* Error display */}
-          {(chatError || conceptError) && (
+          {(chatError || conceptError || generationError) && (
             <div
               className="mb-8 p-4 rounded-lg"
               style={{
@@ -208,7 +330,7 @@ export default function ProModeChat({
                   color: '#DC2626',
                 }}
               >
-                {chatError || conceptError}
+                {chatError || conceptError || generationError}
               </p>
             </div>
           )}
@@ -268,12 +390,8 @@ export default function ProModeChat({
                   <ConceptCardPro
                     key={concept.id}
                     concept={concept}
-                    onGenerate={() => {
-                      // TODO: Handle concept generation
-                      if (onImageGenerated) {
-                        onImageGenerated()
-                      }
-                    }}
+                    onGenerate={() => handleGenerateConcept(concept)}
+                    isGenerating={generatingConceptId === concept.id}
                     onViewPrompt={() => {
                       // TODO: Show full prompt modal
                       console.log('View prompt:', concept.fullPrompt)
@@ -285,7 +403,7 @@ export default function ProModeChat({
           )}
 
           {/* Loading indicator */}
-          {isLoading && (
+          {(isChatLoading || isGeneratingConcepts) && (
             <div className="flex justify-start mb-8">
               <div
                 className="bg-stone-100 rounded-2xl px-6 py-4"

@@ -1186,11 +1186,12 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
           return
         }
         
-        // 🔴 FIX: Handle both Classic Mode (has state) and Pro Mode (no state, just concepts) response formats
-        const concepts = result.concepts && Array.isArray(result.concepts) 
-          ? result.concepts 
-          : (result.state === "ready" && result.concepts && Array.isArray(result.concepts))
+        // 🔴 FIX: Both Classic Mode and Pro Mode now return { state: "ready", concepts: [...] }
+        // This ensures consistent handling across both modes
+        const concepts = (result.state === "ready" && result.concepts && Array.isArray(result.concepts))
           ? result.concepts
+          : (result.concepts && Array.isArray(result.concepts))
+          ? result.concepts // Fallback for backward compatibility
           : null
         console.log("[v0] Concept generation result:", {
           hasState: !!result.state,
@@ -1238,7 +1239,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
           })
 
           // This ensures new concept cards are persisted and show in chat history
-          if (chatId && result.concepts.length > 0) {
+          if (chatId && concepts && concepts.length > 0) {
             // Extract text content from the message
             let textContent = ""
             if (lastAssistantMessage?.parts && Array.isArray(lastAssistantMessage.parts)) {
@@ -1369,18 +1370,33 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
     }
 
     // Extract concept cards from parts
+    // 🔴 FIX: Both Classic Mode and Pro Mode now return { state: "ready", concepts: [...] }
+    // This ensures consistent handling across both modes
     const conceptCards: any[] = []
     if (lastAssistantMessage.parts && Array.isArray(lastAssistantMessage.parts)) {
       for (const part of lastAssistantMessage.parts) {
         if (part.type === "tool-generateConcepts") {
           const toolPart = part as any
           const output = toolPart.output
-          if (output && output.state === "ready" && Array.isArray(output.concepts)) {
-            conceptCards.push(...output.concepts)
+          if (output) {
+            // Both modes now use: output.state === "ready" && output.concepts
+            if (output.state === "ready" && Array.isArray(output.concepts)) {
+              conceptCards.push(...output.concepts)
+            } else if (Array.isArray(output.concepts)) {
+              // Fallback for backward compatibility (old Pro Mode format)
+              conceptCards.push(...output.concepts)
+            }
           }
         }
       }
     }
+    
+    console.log("[v0] Save effect - extracted concept cards:", {
+      conceptCardsCount: conceptCards.length,
+      hasParts: !!lastAssistantMessage.parts,
+      partsCount: lastAssistantMessage.parts?.length || 0,
+      partsTypes: lastAssistantMessage.parts?.map((p: any) => p.type) || [],
+    })
 
     // Only save if we have something to save
     if (!saveTextContent && conceptCards.length === 0) {
@@ -1938,8 +1954,12 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
       if (!currentChatId) {
         console.log("[v0] No chatId exists, creating new chat before sending message...")
         try {
+          // 🔴 FIX: Use correct chatType based on mode (Pro Mode vs Classic Mode)
+          const chatType = studioProMode ? 'pro' : 'maya'
           const response = await fetch("/api/maya/new-chat", {
             method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ chatType }),
           })
           if (response.ok) {
             const data = await response.json()
@@ -1947,7 +1967,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
               currentChatId = data.chatId
               setChatId(data.chatId)
               setChatTitle("New Chat")
-              console.log("[v0] Created new chat with ID:", data.chatId)
+              console.log("[v0] Created new chat with ID:", data.chatId, "chatType:", chatType)
             }
           }
         } catch (error) {
@@ -3580,28 +3600,96 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
                                       {concepts.map((concept: any, conceptIndex: number) => {
                                         // Use Pro Mode concept cards in Studio Pro, Classic cards in Classic Mode
                                         if (studioProMode) {
+                                          // Use linkedImages from concept (already linked by API with up to 5 images)
+                                          // The API's linkImagesToConcept function links multiple images intelligently
+                                          const conceptLinkedImages = concept.linkedImages && Array.isArray(concept.linkedImages) && concept.linkedImages.length > 0
+                                            ? concept.linkedImages
+                                            : [] // If no linkedImages from API, use empty array (user needs to add images)
+
+                                          // Use stable key based on concept.id and message.id to preserve component state across re-renders
+                                          const conceptId = concept.id || `concept-${msg.id}-${conceptIndex}`
+                                          const stableKey = `pro-concept-${msg.id}-${conceptId}`
+
                                           return (
                                             <ConceptCardPro
-                                              key={conceptIndex}
+                                              key={stableKey}
                                               concept={{
-                                                id: concept.id || `concept-${conceptIndex}`,
+                                                id: conceptId,
                                                 title: concept.title || concept.label || 'Untitled Concept',
                                                 description: concept.description || concept.prompt || '',
                                                 category: concept.category,
                                                 aesthetic: concept.aesthetic,
-                                                linkedImages: imageLibrary.selfies.slice(0, 1).concat(
-                                                  imageLibrary.products.slice(0, 1),
-                                                  imageLibrary.people.slice(0, 1),
-                                                  imageLibrary.vibes.slice(0, 1)
-                                                ).filter(Boolean),
+                                                linkedImages: conceptLinkedImages,
                                                 fullPrompt: concept.fullPrompt || concept.prompt,
                                               }}
                                               onGenerate={async () => {
-                                                // TODO: Integrate with image generation
-                                                if (onImageGenerated) {
-                                                  onImageGenerated()
+                                                console.log('[Pro Mode] 🎬 onGenerate called for concept:', concept.title)
+                                                
+                                                if (!concept.fullPrompt && !concept.prompt) {
+                                                  console.error('[Pro Mode] ❌ Concept missing prompt')
+                                                  throw new Error('Concept missing prompt')
+                                                }
+
+                                                console.log('[Pro Mode] 📤 Calling /api/maya/pro/generate-image with:', {
+                                                  conceptTitle: concept.title,
+                                                  promptLength: (concept.fullPrompt || concept.prompt)?.length,
+                                                  linkedImagesCount: conceptLinkedImages?.length || 0,
+                                                })
+
+                                                try {
+                                                  const response = await fetch('/api/maya/pro/generate-image', {
+                                                    method: 'POST',
+                                                    headers: { 'Content-Type': 'application/json' },
+                                                    credentials: 'include',
+                                                    body: JSON.stringify({
+                                                      fullPrompt: concept.fullPrompt || concept.prompt,
+                                                      conceptTitle: concept.title || concept.label,
+                                                      conceptDescription: concept.description,
+                                                      category: concept.category || 'concept',
+                                                      linkedImages: conceptLinkedImages,
+                                                      resolution: '2K',
+                                                      aspectRatio: '1:1',
+                                                    }),
+                                                  })
+
+                                                  console.log('[Pro Mode] 📥 Response status:', response.status, response.ok)
+
+                                                  const data = await response.json()
+                                                  console.log('[Pro Mode] 📥 Response data:', {
+                                                    success: data.success,
+                                                    status: data.status,
+                                                    hasPredictionId: !!data.predictionId,
+                                                    hasGenerationId: !!data.generationId,
+                                                    hasImageUrl: !!data.imageUrl,
+                                                  })
+
+                                                  if (!response.ok) {
+                                                    console.error('[Pro Mode] ❌ Generation failed:', data.error)
+                                                    throw new Error(data.error || 'Generation failed')
+                                                  }
+
+                                                  // Return predictionId and generationId so ConceptCardPro can poll
+                                                  if (data.status === 'succeeded' && data.imageUrl) {
+                                                    // Already completed - trigger callback
+                                                    console.log('[Pro Mode] ✅ Generation completed immediately, imageUrl:', data.imageUrl.substring(0, 100))
+                                                    if (onImageGenerated) {
+                                                      onImageGenerated()
+                                                    }
+                                                    return { predictionId: data.predictionId, generationId: data.generationId }
+                                                  } else if (data.predictionId) {
+                                                    // Return IDs for polling in ConceptCardPro
+                                                    console.log('[Pro Mode] ⏳ Generation in progress, returning IDs for polling')
+                                                    return { predictionId: data.predictionId, generationId: data.generationId }
+                                                  } else {
+                                                    console.warn('[Pro Mode] ⚠️ No predictionId in response')
+                                                    throw new Error('No predictionId returned from API')
+                                                  }
+                                                } catch (error) {
+                                                  console.error('[Pro Mode] ❌ Generation error:', error)
+                                                  throw error
                                                 }
                                               }}
+                                              onImageGenerated={onImageGenerated}
                                               onViewPrompt={() => {
                                                 // View prompt modal is handled by ConceptCardPro component
                                                 console.log('[Pro Mode] View prompt:', concept.fullPrompt || concept.prompt)

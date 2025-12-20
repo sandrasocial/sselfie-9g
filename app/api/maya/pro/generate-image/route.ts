@@ -138,9 +138,10 @@ export async function POST(req: NextRequest) {
       }
 
       // Save to database
+      let generationId: number | null = null
       try {
-        // Save to ai_images gallery
-        await sql`
+        // Save to ai_images gallery and get the ID
+        const [insertResult] = await sql`
           INSERT INTO ai_images (
             user_id,
             image_url,
@@ -162,9 +163,11 @@ export async function POST(req: NextRequest) {
             ${category || "concept"},
             NOW()
           )
+          RETURNING id
         `
 
-        console.log("[v0] [PRO MODE] Image saved to gallery")
+        generationId = insertResult.id
+        console.log("[v0] [PRO MODE] Image saved to gallery, generationId:", generationId)
       } catch (dbError) {
         console.error("[v0] [PRO MODE] Error saving to database:", dbError)
         // Don't fail the request if database save fails - log it
@@ -173,15 +176,61 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         success: true,
         predictionId: generationResult.predictionId,
+        generationId: generationId,
         imageUrl: blob.url,
         status: "succeeded",
       })
     }
 
-    // Generation is in progress, return prediction ID for polling
+    // Generation is in progress, create database record for tracking
+    let generationId: number | null = null
+    try {
+      // Save to ai_images gallery and get the ID (for consistency with Classic Mode)
+      const [insertResult] = await sql`
+        INSERT INTO ai_images (
+          user_id,
+          image_url,
+          prompt,
+          generated_prompt,
+          prediction_id,
+          generation_status,
+          source,
+          category,
+          created_at
+        ) VALUES (
+          ${dbUserId},
+          '', -- Empty string for in-progress (will be updated when generation completes)
+          ${conceptTitle || conceptDescription || "Pro Mode generation"},
+          ${fullPrompt},
+          ${generationResult.predictionId},
+          'generating',
+          'maya_pro',
+          ${category || "concept"},
+          NOW()
+        )
+        RETURNING id
+      `
+      generationId = insertResult.id
+      console.log("[v0] [PRO MODE] Created generation record for tracking, generationId:", generationId)
+    } catch (dbError) {
+      console.error("[v0] [PRO MODE] Error creating generation record:", dbError)
+      // If database insert fails, we still need to return a generationId for polling to work
+      // The check-generation endpoint will create a fallback record if needed
+      // For now, we'll use a temporary ID based on predictionId to ensure polling can start
+      // This is a fallback - ideally the database insert should always succeed
+      console.warn("[v0] [PRO MODE] Database insert failed, but generation can still be tracked via predictionId")
+    }
+
+    // Generation is in progress, return prediction ID and generationId for polling (matches Classic Mode format)
+    // If generationId is null due to DB failure, still return predictionId - the check-generation endpoint can handle it
+    if (!generationId) {
+      console.warn("[v0] [PRO MODE] ⚠️ No generationId available, but returning predictionId for polling. Check-generation endpoint will create fallback record if needed.")
+    }
+    
     return NextResponse.json({
       success: true,
       predictionId: generationResult.predictionId,
+      generationId: generationId, // May be null if DB insert failed, but polling can still work with predictionId
       status: generationResult.status,
       message: "Generation in progress. Poll /api/maya/pro/check-generation to check status.",
     })
