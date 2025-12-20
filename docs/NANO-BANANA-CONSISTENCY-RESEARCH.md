@@ -166,3 +166,14 @@ Standing, adjusting hair... [OK - this should change]
 6. https://www.cursor-ide.com/blog/nano-banana-best-prompts
 7. https://superprompt.com/blog/google-nano-banana-ai-image-generation-complete-guide
 
+
+
+
+
+
+
+
+
+
+
+

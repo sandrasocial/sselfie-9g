@@ -453,11 +453,6 @@ Return ONLY valid JSON. No markdown.`
       if (!hasSimpleLighting) {
         additions.push('uneven natural lighting')
       }
-          composition.fluxPrompt = composition.fluxPrompt.substring(0, idx) + 'uneven lighting, ' + composition.fluxPrompt.substring(idx)
-        } else {
-          additions.push('uneven lighting with mixed color temperatures')
-        }
-      }
       
       // Add missing requirements naturally into the prompt
       if (additions.length > 0) {

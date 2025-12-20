@@ -412,10 +412,11 @@ export async function buildNanoBananaPrompt(params: {
   }
 
   // Convert inputImages into NanoBananaInputImages format
+  // If type is not specified, assume it's a user photo (selfie) for backward compatibility
   const nanoInputs: NanoBananaInputImages = {
     baseImages: (inputImages.baseImages || []).map((img) => ({
       url: img.url,
-      type: (img.type === 'user-photo' ? 'user-photo' : 'reference-photo') as
+      type: (img.type === 'reference-photo' ? 'reference-photo' : 'user-photo') as
         | 'user-photo'
         | 'reference-photo',
     })),
@@ -751,10 +752,17 @@ function buildBrandScenePrompt(params: {
     // Clean the prompt to remove headlines and formatting
     let cleanedPrompt = cleanStudioProPrompt(userRequest, userRequest)
     
-    // Add multi-image instruction in natural language (not as a "Note:")
-    if (inputImages.baseImages.length > 1) {
-      cleanedPrompt = `${cleanedPrompt}\n\nUse the first base image to preserve the person's face and identity. Use other base images as style/reference only.`
+    // Only add multi-image instruction if there are style references mixed with selfies
+    // When all images are selfies of the user, they should ALL be used for identity preservation
+    const hasStyleReferences = inputImages.baseImages.some(img => img.type === 'reference-photo')
+    const hasUserPhotos = inputImages.baseImages.some(img => img.type === 'user-photo')
+    
+    if (inputImages.baseImages.length > 1 && hasStyleReferences && hasUserPhotos) {
+      // Mixed: user photos + style references - need guidance
+      cleanedPrompt = `${cleanedPrompt}\n\nUse the user photos (type: user-photo) to preserve the person's face and identity. Use reference photos (type: reference-photo) only as style/reference.`
     }
+    // If all images are selfies (user-photo), no guidance needed - they're all for identity preservation
+    // If all images are style references, no guidance needed - no identity to preserve
     
     return cleanedPrompt
   }
@@ -808,10 +816,29 @@ function buildBrandScenePrompt(params: {
   const naturalDesc = `Wearing ${outfitDescription}, ${poseDescription}, ${locationPhrase}, ${lighting}.`
   const productText = products.length > 0 ? ' Product naturally integrated into scene.' : ''
 
-  const multiImageNote =
-    inputImages.baseImages.length > 1
-      ? `Use the first base image to preserve the person's face and identity. Use the other base images only as style/reference inputs. Keep the person consistent.`
-      : `Use the base image to preserve the person's face and identity.`
+  // Only add multi-image guidance if there are style references mixed with user photos
+  // When all images are selfies (user-photo), they all preserve identity - no guidance needed
+  const hasStyleReferences = inputImages.baseImages.some(img => img.type === 'reference-photo')
+  const hasUserPhotos = inputImages.baseImages.some(img => img.type === 'user-photo')
+  const allAreUserPhotos = inputImages.baseImages.length > 0 && inputImages.baseImages.every(img => img.type === 'user-photo' || !img.type)
+  
+  let multiImageNote = ''
+  if (inputImages.baseImages.length === 0) {
+    multiImageNote = ''
+  } else if (inputImages.baseImages.length === 1) {
+    // Single image - simple guidance
+    if (inputImages.baseImages[0].type === 'user-photo' || !inputImages.baseImages[0].type) {
+      multiImageNote = `Use the base image to preserve the person's face and identity.`
+    }
+    // If it's a reference photo, no guidance needed
+  } else if (hasStyleReferences && hasUserPhotos) {
+    // Mixed: user photos + style references - need guidance
+    multiImageNote = `Use the user photos to preserve the person's face and identity. Use reference photos only as style/reference inputs. Keep the person consistent.`
+  } else if (allAreUserPhotos) {
+    // All images are selfies - no guidance needed, they all preserve identity
+    multiImageNote = ''
+  }
+  // If all are style references, no guidance needed
 
   return `
 Create a natural lifestyle brand scene for social media (${platformFormat || '4:5'}).
@@ -1051,10 +1078,28 @@ function buildTransformationPrompt(params: {
   const lighting = pickLighting(pickSetting(userRequest), userRequest)
   const mood = pickMood(userRequest)
 
-  const multiImageNote =
-    inputImages.baseImages.length > 1
-      ? `Preserve identity from the first base image. Use other images as reference only.`
-      : `Preserve identity from the base image.`
+  // Only add guidance if there are multiple images AND we can confirm there are style references
+  // When all images are selfies, they all preserve identity - no guidance needed
+  const hasStyleReferences = inputImages.baseImages.some(img => img.type === 'reference-photo')
+  const hasUserPhotos = inputImages.baseImages.some(img => img.type === 'user-photo')
+  const allAreUserPhotos = inputImages.baseImages.length > 0 && inputImages.baseImages.every(img => img.type === 'user-photo' || !img.type)
+  
+  let multiImageNote = ''
+  if (inputImages.baseImages.length === 0) {
+    multiImageNote = ''
+  } else if (inputImages.baseImages.length === 1) {
+    // Single image - only add guidance if it's clearly a user photo
+    if (inputImages.baseImages[0].type === 'user-photo' || !inputImages.baseImages[0].type) {
+      multiImageNote = `Preserve identity from the base image.`
+    }
+  } else if (hasStyleReferences && hasUserPhotos) {
+    // Mixed: user photos + style references - need guidance
+    multiImageNote = `Preserve identity from the user photos. Use reference photos as style reference only.`
+  } else if (allAreUserPhotos) {
+    // All images are selfies - no guidance needed, they all preserve identity
+    multiImageNote = ''
+  }
+  // If all are style references or we can't determine, no guidance needed
 
   return `
 Transform the provided image while preserving the person’s identity and realism (${platformFormat || '4:5'}).

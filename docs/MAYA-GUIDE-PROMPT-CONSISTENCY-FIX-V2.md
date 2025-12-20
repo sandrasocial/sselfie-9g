@@ -206,3 +206,14 @@ If outfit/hair/location are still not preserved:
 
 3. **Improve patterns** if specific clothing descriptions aren't being caught
 
+
+
+
+
+
+
+
+
+
+
+

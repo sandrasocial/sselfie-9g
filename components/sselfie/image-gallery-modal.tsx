@@ -7,8 +7,9 @@ import type { GalleryImage } from "@/lib/data/images"
 
 interface ImageGalleryModalProps {
   images: GalleryImage[]
-  onSelect: (imageUrl: string) => void
+  onSelect: (imageUrl: string | string[]) => void
   onClose: () => void
+  multiple?: boolean
 }
 
 function getOptimizedImageUrl(url: string, width?: number, quality?: number): string {
@@ -24,13 +25,37 @@ function getOptimizedImageUrl(url: string, width?: number, quality?: number): st
   return url
 }
 
-export default function ImageGalleryModal({ images, onSelect, onClose }: ImageGalleryModalProps) {
+export default function ImageGalleryModal({ images, onSelect, onClose, multiple = false }: ImageGalleryModalProps) {
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
+  const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set())
+
+  const handleImageClick = (imageUrl: string) => {
+    if (multiple) {
+      setSelectedImages((prev) => {
+        const newSet = new Set(prev)
+        if (newSet.has(imageUrl)) {
+          newSet.delete(imageUrl)
+        } else {
+          newSet.add(imageUrl)
+        }
+        return newSet
+      })
+    } else {
+      setSelectedImage(imageUrl)
+    }
+  }
 
   const handleSelect = () => {
-    if (selectedImage) {
-      onSelect(selectedImage)
-      onClose()
+    if (multiple) {
+      if (selectedImages.size > 0) {
+        onSelect(Array.from(selectedImages))
+        onClose()
+      }
+    } else {
+      if (selectedImage) {
+        onSelect(selectedImage)
+        onClose()
+      }
     }
   }
 
@@ -43,10 +68,12 @@ export default function ImageGalleryModal({ images, onSelect, onClose }: ImageGa
             <div>
               <DialogTitle asChild>
                 <h2 className="font-serif text-2xl font-extralight tracking-[0.2em] uppercase text-stone-950">
-                  Select Image
+                  {multiple ? 'Select Images' : 'Select Image'}
                 </h2>
               </DialogTitle>
-              <p className="text-sm text-stone-500 font-light mt-1">Choose from your gallery</p>
+              <p className="text-sm text-stone-500 font-light mt-1">
+                {multiple ? 'Choose multiple images from your gallery' : 'Choose from your gallery'}
+              </p>
             </div>
             <button
               onClick={onClose}
@@ -66,31 +93,42 @@ export default function ImageGalleryModal({ images, onSelect, onClose }: ImageGa
               </div>
             ) : (
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-                {images.map((image) => (
-                  <button
-                    key={image.id}
-                    onClick={() => setSelectedImage(image.image_url)}
-                    className={`aspect-square relative group overflow-hidden rounded-lg border-2 transition-all ${
-                      selectedImage === image.image_url
-                        ? "border-stone-950 ring-2 ring-stone-950"
-                        : "border-stone-200/40 hover:border-stone-400"
-                    }`}
-                  >
-                    <img
-                      src={getOptimizedImageUrl(image.image_url, 400, 75) || "/placeholder.svg"}
-                      alt={image.prompt || "Gallery image"}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
-                    {selectedImage === image.image_url && (
-                      <div className="absolute inset-0 bg-stone-950/40 flex items-center justify-center">
-                        <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
-                          <Check size={16} className="text-stone-950" strokeWidth={3} />
+                {images.map((image) => {
+                  const isSelected = multiple 
+                    ? selectedImages.has(image.image_url)
+                    : selectedImage === image.image_url
+                  
+                  return (
+                    <button
+                      key={image.id}
+                      onClick={() => handleImageClick(image.image_url)}
+                      className={`aspect-square relative group overflow-hidden rounded-lg border-2 transition-all ${
+                        isSelected
+                          ? "border-stone-950 ring-2 ring-stone-950"
+                          : "border-stone-200/40 hover:border-stone-400"
+                      }`}
+                    >
+                      <img
+                        src={getOptimizedImageUrl(image.image_url, 400, 75) || "/placeholder.svg"}
+                        alt={image.prompt || "Gallery image"}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                      {isSelected && (
+                        <div className="absolute inset-0 bg-stone-950/40 flex items-center justify-center">
+                          <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
+                            <Check size={16} className="text-stone-950" strokeWidth={3} />
+                          </div>
                         </div>
-                      </div>
-                    )}
-                  </button>
-                ))}
+                      )}
+                      {multiple && isSelected && (
+                        <div className="absolute top-2 right-2 w-6 h-6 bg-stone-950 text-white rounded-full flex items-center justify-center text-xs font-medium">
+                          {Array.from(selectedImages).indexOf(image.image_url) + 1}
+                        </div>
+                      )}
+                    </button>
+                  )
+                })}
               </div>
             )}
           </div>
@@ -103,12 +141,17 @@ export default function ImageGalleryModal({ images, onSelect, onClose }: ImageGa
             >
               Cancel
             </button>
+            {multiple && selectedImages.size > 0 && (
+              <div className="text-sm text-stone-600 font-light">
+                {selectedImages.size} {selectedImages.size === 1 ? 'image' : 'images'} selected
+              </div>
+            )}
             <button
               onClick={handleSelect}
-              disabled={!selectedImage}
+              disabled={multiple ? selectedImages.size === 0 : !selectedImage}
               className="px-6 py-3 text-sm font-medium tracking-wider uppercase bg-stone-950 text-white rounded-lg hover:bg-stone-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Use Image
+              {multiple ? `Use ${selectedImages.size > 0 ? `${selectedImages.size} ` : ''}Image${selectedImages.size !== 1 ? 's' : ''}` : 'Use Image'}
             </button>
           </div>
         </div>

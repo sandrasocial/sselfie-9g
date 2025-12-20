@@ -72,8 +72,8 @@ export const INSTAGRAM_TEXT_RULES = {
       alignment: 'left OR center (consistent across slides)',
       examples: [
         '1. You can create a whole photoshoot without leaving your house.',
-        '4. You don't need to be an "influencer" to monetize with AI.',
-        '9. AI doesn't replace your creativity: IT UNLOCKS IT.'
+        '4. You don\'t need to be an "influencer" to monetize with AI.',
+        '9. AI doesn\'t replace your creativity: IT UNLOCKS IT.'
       ]
     },
     supportingText: {
@@ -86,7 +86,7 @@ export const INSTAGRAM_TEXT_RULES = {
       examples: [
         'I used to spend hours planning, choosing wardrobe, makeup, editing...',
         'Now, AI creates the whole outfit, background, lighting, all from one prompt.',
-        'The ideas you've had in your head for months? AI helps bring them to life. In minutes.'
+        'The ideas you\'ve had in your head for months? AI helps bring them to life. In minutes.'
       ]
     },
     textBoxConsistency: {
@@ -185,7 +185,7 @@ export const INSTAGRAM_TEXT_RULES = {
     'Centering body text (hard to read, use left-align)',
     'All-caps for long text (decreases readability)',
     'Script/handwritten fonts for body text',
-    'Text positioned over subject's face (unless intentional)',
+    'Text positioned over subject\'s face (unless intentional)',
     'Inconsistent text placement across slides',
     'Text boxes with different styles on different slides',
     'No breathing room / cluttered composition'
@@ -227,6 +227,16 @@ export function validateTextPlacement(textConfig: TextPlacementConfig): Validati
     warnings
   }
 }
+
+
+
+
+
+
+
+
+
+
 
 
 

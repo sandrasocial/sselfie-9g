@@ -628,6 +628,15 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
                 )
               })}
             </div>
+            <button
+              onClick={() => setActiveTab("gallery")}
+              className="group relative bg-white/60 backdrop-blur-3xl border border-white/70 text-stone-900 px-6 py-3 rounded-xl font-light tracking-wider text-sm transition-all duration-500 hover:bg-white/80 hover:border-white/90 hover:shadow-xl hover:shadow-stone-900/10 hover:scale-[1.02] active:scale-95 w-full sm:w-auto"
+            >
+              <span className="relative z-10 flex items-center justify-center gap-2">
+                View All
+                <ChevronRight size={16} strokeWidth={1.5} className="group-hover:translate-x-1 transition-transform duration-500" />
+              </span>
+            </button>
           </div>
         ) : null}
 

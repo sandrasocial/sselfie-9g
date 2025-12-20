@@ -170,3 +170,14 @@ To verify the fix works:
 3. Verify old concepts/categories don't persist inappropriately
 4. Check logs to confirm correct behavior
 
+
+
+
+
+
+
+
+
+
+
+

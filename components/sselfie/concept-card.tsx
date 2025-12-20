@@ -232,9 +232,13 @@ export default function ConceptCard({
     setShowGalleryModal(true)
   }
 
-  const handleGallerySelect = (imageUrl: string) => {
+  const handleGallerySelect = (imageUrlOrUrls: string | string[]) => {
     if (currentBoxIndexRef.current === null) return
-    
+
+    // Handle both single string and array (for backward compatibility)
+    const imageUrl = Array.isArray(imageUrlOrUrls) ? imageUrlOrUrls[0] : imageUrlOrUrls
+    if (!imageUrl) return
+
     const boxIndex = currentBoxIndexRef.current
     const newImages = [...selectedImages]
     newImages[boxIndex] = imageUrl

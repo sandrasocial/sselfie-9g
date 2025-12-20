@@ -1,0 +1,589 @@
+import { NextResponse } from "next/server"
+import type { NextRequest } from "next/server"
+import { getAuthenticatedUser } from "@/lib/auth-helper"
+import { getEffectiveNeonUser } from "@/lib/simple-impersonation"
+import { checkCredits } from "@/lib/credits"
+import { generateText } from "ai"
+import {
+  detectCategory,
+  type ImageLibrary,
+  type CategoryInfo,
+} from "@/lib/maya/pro/category-system"
+import {
+  buildProModePrompt,
+  type ConceptComponents,
+} from "@/lib/maya/pro/prompt-builder"
+import { getCategoryByKey } from "@/lib/maya/pro/category-system"
+import { getMayaPersonality } from "@/lib/maya/personality-enhanced"
+
+export const maxDuration = 60
+
+/**
+ * Link images to concept based on category and concept type
+ * 🔴 ENHANCED: Intelligent image linking with smart multi-image selection
+ * Uses concept analysis to link 3-5 relevant images per concept
+ */
+function linkImagesToConcept(
+  concept: { title?: string | null; description?: string | null; brandReferences?: string[] | null; aesthetic?: string | null },
+  imageLibrary: ImageLibrary,
+  category: string | null
+): string[] {
+  const linkedImages: string[] = []
+  // Safe null/undefined handling
+  // Handle null category gracefully - link images based on concept content, not category
+  const categoryLower = (category && typeof category === 'string') ? category.toLowerCase() : ''
+  const titleLower = (concept.title && typeof concept.title === 'string') ? concept.title.toLowerCase() : ''
+  const descLower = (concept.description && typeof concept.description === 'string') ? concept.description.toLowerCase() : ''
+  const aestheticLower = (concept.aesthetic && typeof concept.aesthetic === 'string') ? concept.aesthetic.toLowerCase() : ''
+  
+  // Combine all text for keyword analysis
+  const combinedText = `${titleLower} ${descLower} ${aestheticLower}`.toLowerCase()
+
+  // ============================================
+  // STEP 1: ALWAYS INCLUDE SELFIES (Required)
+  // ============================================
+  if (imageLibrary.selfies.length > 0) {
+    // Always include at least one selfie (required for identity preservation)
+    linkedImages.push(imageLibrary.selfies[0])
+    
+    // Add second selfie for beauty/portrait concepts or if multiple selfies available
+    if (imageLibrary.selfies.length > 1) {
+      const needsMultipleSelfies = 
+        categoryLower === 'beauty' ||
+        titleLower.includes('portrait') ||
+        titleLower.includes('close-up') ||
+        descLower.includes('portrait') ||
+        descLower.includes('beauty') ||
+        descLower.includes('skincare') ||
+        descLower.includes('makeup')
+      
+      if (needsMultipleSelfies && !linkedImages.includes(imageLibrary.selfies[1])) {
+        linkedImages.push(imageLibrary.selfies[1])
+      }
+    }
+  }
+
+  // ============================================
+  // STEP 2: INTELLIGENT PRODUCT LINKING
+  // ============================================
+  const hasBrandReferences = concept.brandReferences && concept.brandReferences.length > 0
+  const productKeywords = [
+    'product', 'brand', 'partnership', 'collaboration', 'sponsored',
+    'skincare', 'makeup', 'beauty product', 'wellness product',
+    'fashion', 'outfit', 'clothing', 'accessories', 'jewelry',
+    'bag', 'shoes', 'sunglasses', 'watch', 'perfume'
+  ]
+  
+  const mentionsProducts = productKeywords.some(keyword => 
+    combinedText.includes(keyword)
+  ) || hasBrandReferences || 
+    categoryLower === 'beauty' ||
+    categoryLower === 'wellness' ||
+    categoryLower === 'fashion' ||
+    categoryLower === 'luxury'
+
+  if (mentionsProducts && imageLibrary.products.length > 0) {
+    // Determine how many products to link based on concept focus
+    let productCount = 1
+    if (categoryLower === 'beauty' || titleLower.includes('product') || descLower.includes('product')) {
+      productCount = 2 // Beauty/product-focused: link 2 products
+    } else if (hasBrandReferences && concept.brandReferences!.length > 1) {
+      productCount = 2 // Multiple brands: link 2 products
+    }
+    
+    // Link products
+    imageLibrary.products.slice(0, productCount).forEach(product => {
+      if (!linkedImages.includes(product) && linkedImages.length < 5) {
+        linkedImages.push(product)
+      }
+    })
+  }
+
+  // ============================================
+  // STEP 3: INTELLIGENT PEOPLE/LIFESTYLE LINKING
+  // ============================================
+  const lifestyleKeywords = [
+    'lifestyle', 'portrait', 'moment', 'group', 'people', 'friends',
+    'together', 'social', 'community', 'gathering', 'event',
+    'party', 'celebration', 'dinner', 'brunch', 'coffee', 'cafe'
+  ]
+  
+  const isLifestyle = lifestyleKeywords.some(keyword => 
+    combinedText.includes(keyword)
+  ) || categoryLower === 'lifestyle' ||
+    categoryLower === 'travel' ||
+    categoryLower === 'casual-lifestyle'
+
+  if (isLifestyle && imageLibrary.people.length > 0) {
+    // Link 1-2 people images for lifestyle concepts
+    const peopleCount = (descLower.includes('group') || descLower.includes('friends') || descLower.includes('together')) ? 2 : 1
+    imageLibrary.people.slice(0, peopleCount).forEach(person => {
+      if (!linkedImages.includes(person) && linkedImages.length < 5) {
+        linkedImages.push(person)
+      }
+    })
+  }
+
+  // ============================================
+  // STEP 4: INTELLIGENT VIBE/AESTHETIC LINKING
+  // ============================================
+  const vibeKeywords = [
+    'aesthetic', 'mood', 'inspiration', 'style', 'vibe', 'curated',
+    'editorial', 'dreamy', 'minimal', 'luxury', 'feminine', 'soft',
+    'pinterest', 'instagram', 'aspirational', 'inspo', 'mood board',
+    'visual', 'atmosphere', 'ambiance', 'feeling', 'energy'
+  ]
+  
+  const hasVibeKeywords = vibeKeywords.some(keyword => 
+    combinedText.includes(keyword)
+  )
+  
+  const isAestheticFocused = hasVibeKeywords ||
+    categoryLower === 'fashion' ||
+    categoryLower === 'luxury' ||
+    titleLower.includes('aesthetic') ||
+    titleLower.includes('mood') ||
+    titleLower.includes('style') ||
+    descLower.includes('aesthetic') ||
+    descLower.includes('mood') ||
+    descLower.includes('vibe')
+
+  if (isAestheticFocused && imageLibrary.vibes.length > 0) {
+    // Link 1-2 vibe images for aesthetic-focused concepts
+    const vibeCount = (hasVibeKeywords && imageLibrary.vibes.length > 1) ? 2 : 1
+    imageLibrary.vibes.slice(0, vibeCount).forEach(vibe => {
+      if (!linkedImages.includes(vibe) && linkedImages.length < 5) {
+        linkedImages.push(vibe)
+      }
+    })
+  }
+
+  // ============================================
+  // STEP 5: CATEGORY-SPECIFIC ENHANCEMENTS
+  // ============================================
+  if (categoryLower === 'wellness' || categoryLower === 'alo-workout') {
+    // Wellness/workout: ensure products are linked (for workout gear, supplements, etc.)
+    if (imageLibrary.products.length > 0 && !linkedImages.includes(imageLibrary.products[0]) && linkedImages.length < 5) {
+      linkedImages.push(imageLibrary.products[0])
+    }
+    // Add vibe for wellness aesthetic
+    if (imageLibrary.vibes.length > 0 && !linkedImages.includes(imageLibrary.vibes[0]) && linkedImages.length < 5) {
+      linkedImages.push(imageLibrary.vibes[0])
+    }
+  } else if (categoryLower === 'luxury' || categoryLower === 'luxury-fashion') {
+    // Luxury: prioritize products and vibes
+    if (imageLibrary.products.length > 0 && !linkedImages.includes(imageLibrary.products[0]) && linkedImages.length < 5) {
+      linkedImages.push(imageLibrary.products[0])
+    }
+    if (imageLibrary.vibes.length > 0 && !linkedImages.includes(imageLibrary.vibes[0]) && linkedImages.length < 5) {
+      linkedImages.push(imageLibrary.vibes[0])
+    }
+  } else if (categoryLower === 'travel' || categoryLower === 'travel-airport') {
+    // Travel: prioritize people and vibes
+    if (imageLibrary.people.length > 0 && !linkedImages.includes(imageLibrary.people[0]) && linkedImages.length < 5) {
+      linkedImages.push(imageLibrary.people[0])
+    }
+    if (imageLibrary.vibes.length > 0 && !linkedImages.includes(imageLibrary.vibes[0]) && linkedImages.length < 5) {
+      linkedImages.push(imageLibrary.vibes[0])
+    }
+  } else if (categoryLower === 'beauty') {
+    // Beauty: prioritize products and additional selfies
+    if (imageLibrary.products.length > 0 && !linkedImages.includes(imageLibrary.products[0]) && linkedImages.length < 5) {
+      linkedImages.push(imageLibrary.products[0])
+    }
+    // Add second product if available
+    if (imageLibrary.products.length > 1 && !linkedImages.includes(imageLibrary.products[1]) && linkedImages.length < 5) {
+      linkedImages.push(imageLibrary.products[1])
+    }
+  } else if (categoryLower === 'lifestyle' || categoryLower === 'casual-lifestyle') {
+    // Lifestyle: add people and vibes if not already linked
+    if (imageLibrary.people.length > 0 && !linkedImages.includes(imageLibrary.people[0]) && linkedImages.length < 5) {
+      linkedImages.push(imageLibrary.people[0])
+    }
+    if (imageLibrary.vibes.length > 0 && !linkedImages.includes(imageLibrary.vibes[0]) && linkedImages.length < 5) {
+      linkedImages.push(imageLibrary.vibes[0])
+    }
+  }
+
+  // ============================================
+  // STEP 6: FILL REMAINING SLOTS (if < 3 images)
+  // ============================================
+  // Ensure we have at least 3 images when possible (for better concept representation)
+  if (linkedImages.length < 3) {
+    // Prioritize filling with available image types
+    const availableTypes = [
+      { type: 'products', images: imageLibrary.products },
+      { type: 'people', images: imageLibrary.people },
+      { type: 'vibes', images: imageLibrary.vibes },
+      { type: 'selfies', images: imageLibrary.selfies },
+    ]
+    
+    for (const { images } of availableTypes) {
+      if (linkedImages.length >= 3) break
+      
+      for (const image of images) {
+        if (!linkedImages.includes(image) && linkedImages.length < 5) {
+          linkedImages.push(image)
+          if (linkedImages.length >= 3) break
+        }
+      }
+    }
+  }
+
+  // Remove duplicates and limit to max 5 images per concept
+  const uniqueImages = [...new Set(linkedImages)]
+  return uniqueImages.slice(0, 5)
+}
+
+
+/**
+ * Pro Mode Generate Concepts API Route
+ * 
+ * Generates concepts for Studio Pro Mode using:
+ * - Category detection
+ * - Universal Prompts
+ * - Prompt builder for full prompts
+ * - Image linking logic
+ */
+export async function POST(req: NextRequest) {
+  console.log("[v0] [PRO MODE] Generate concepts API called")
+
+  try {
+    // Wrap entire function in try-catch to catch any null reference errors
+    // Authenticate user
+    const { user: authUser, error: authError } = await getAuthenticatedUser()
+
+    if (authError || !authUser) {
+      console.error("[v0] [PRO MODE] Authentication failed:", authError?.message || "No user")
+      return NextResponse.json({ error: authError?.message || "Unauthorized" }, { status: 401 })
+    }
+
+    const userId = authUser.id
+    const user = await getEffectiveNeonUser(userId)
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 })
+    }
+
+    const dbUserId = user.id
+
+    console.log("[v0] [PRO MODE] User authenticated:", { userId, dbUserId })
+
+    // Check credits (1 credit per concept generation)
+    const hasCredits = await checkCredits(dbUserId, 1)
+    if (!hasCredits) {
+      console.log("[v0] [PRO MODE] User has insufficient credits for concept generation")
+      return NextResponse.json({ error: "Insufficient credits" }, { status: 402 })
+    }
+
+    // Parse request body
+    const body = await req.json()
+    const { userRequest, imageLibrary, category, essenceWords, concepts } = body
+
+    if (!userRequest || typeof userRequest !== "string") {
+      return NextResponse.json({ error: "userRequest is required" }, { status: 400 })
+    }
+
+    if (!imageLibrary) {
+      return NextResponse.json({ error: "imageLibrary is required" }, { status: 400 })
+    }
+
+    // Safe null handling for imageLibrary - ensure all fields are arrays/strings
+    const library: ImageLibrary = {
+      selfies: (Array.isArray(imageLibrary.selfies)) ? imageLibrary.selfies : [],
+      products: (Array.isArray(imageLibrary.products)) ? imageLibrary.products : [],
+      people: (Array.isArray(imageLibrary.people)) ? imageLibrary.people : [],
+      vibes: (Array.isArray(imageLibrary.vibes)) ? imageLibrary.vibes : [],
+      intent: (imageLibrary.intent && typeof imageLibrary.intent === 'string') ? imageLibrary.intent : "",
+    }
+
+    // Validate that selfies are available (required)
+    if (library.selfies.length === 0) {
+      return NextResponse.json(
+        { error: "At least one selfie is required to generate concepts" },
+        { status: 400 }
+      )
+    }
+
+    // 🔴 FIX: Category detection is now OPTIONAL - just as hints for Maya
+    // Maya will determine categories dynamically using her personality and expertise
+    let categoryKey: string | null = (category && typeof category === 'string') ? category : null
+    let categoryInfo: CategoryInfo | null = null
+    
+    // Try to detect category as a HINT (not required)
+    if (!categoryKey) {
+      categoryInfo = detectCategory(userRequest, library)
+      if (categoryInfo && categoryInfo.key && typeof categoryInfo.key === 'string') {
+        categoryKey = categoryInfo.key
+        console.log("[v0] [PRO MODE] Category hint detected:", categoryInfo.name || categoryInfo.key)
+      } else {
+        console.log("[v0] [PRO MODE] No category hint - Maya will determine categories dynamically")
+        categoryKey = null
+        categoryInfo = null
+      }
+    } else {
+      // Category was provided - get category info (ensure categoryKey is string)
+      if (typeof categoryKey === 'string') {
+        categoryInfo = getCategoryByKey(categoryKey)
+        if (!categoryInfo) {
+          console.log("[v0] [PRO MODE] Category key provided but not found in system:", categoryKey)
+          // Fallback: try to detect category from userRequest as hint
+          categoryInfo = detectCategory(userRequest, library)
+          if (categoryInfo && categoryInfo.key && typeof categoryInfo.key === 'string') {
+            categoryKey = categoryInfo.key
+          } else {
+            categoryKey = null
+            categoryInfo = null
+          }
+        }
+      } else {
+        // categoryKey is not a string - reset to null
+        categoryKey = null
+        categoryInfo = null
+      }
+    }
+
+    // Now log with categoryInfo safely initialized
+    console.log("[v0] [PRO MODE] Request:", {
+      userRequestLength: userRequest.length,
+      categoryHint: (categoryInfo && categoryInfo.name) ? categoryInfo.name : (categoryKey || "none - Maya will determine dynamically"),
+      essenceWords: essenceWords || "none",
+      hasConcepts: !!concepts,
+      conceptsCount: Array.isArray(concepts) ? concepts.length : 0,
+      imageLibraryCounts: {
+        selfies: library.selfies.length,
+        products: library.products.length,
+        people: library.people.length,
+        vibes: library.vibes.length,
+      },
+    })
+
+    // 🔴 FIX: No early return - always proceed with AI generation
+    // Category is optional - Maya will determine categories dynamically
+
+    // 🔴 FIX: Use AI generation with Maya's personality
+    // Generate dynamic concepts based on userRequest using Maya's fashion expertise
+    console.log("[v0] [PRO MODE] Generating concepts with AI using Maya's personality:", userRequest.substring(0, 100))
+
+    // Get Maya's personality for Pro Mode
+    const mayaPersonality = getMayaPersonality()
+
+    // Category context is OPTIONAL - just a hint, not a requirement
+    const categoryHint = categoryInfo && categoryInfo.name && categoryInfo.description
+      ? `\n**Optional Category Hint:** ${categoryInfo.name} - ${categoryInfo.description}${(categoryInfo.brands && Array.isArray(categoryInfo.brands) && categoryInfo.brands.length > 0) ? `\nRelevant brands: ${categoryInfo.brands.join(", ")}` : ""}\n(Use this as inspiration, but determine the best category based on the user's request)`
+      : ""
+
+    const libraryContext = `
+**Image Library:**
+- Selfies: ${library.selfies.length}
+- Products: ${library.products.length}
+- People: ${library.people.length}
+- Vibes: ${library.vibes.length}
+- Intent: ${library.intent || "Not specified"}
+`
+
+    const aiPrompt = `${mayaPersonality}
+
+Generate 6 unique, creative concept cards based on the user's request. Use your fashion expertise and editorial knowledge to create diverse, sophisticated concepts.
+
+**USER'S REQUEST:**
+${userRequest}
+${categoryHint}
+
+${libraryContext}
+
+**ESSENCE WORDS:** ${essenceWords || "None provided"}
+
+**YOUR TASK:**
+Create 6 diverse, creative concepts. Each concept must be:
+- Unique and different from the others
+- Based on the user's actual request (not generic)
+- Professional and editorial quality matching SSELFIE's aesthetic
+- Specific to their request (e.g., if they said "Pinterest influencer style", make it Pinterest-specific)
+- Use your fashion expertise to determine the most appropriate category for each concept
+
+**CATEGORY DETERMINATION:**
+You have full creative freedom to determine categories based on:
+- The user's request and intent
+- Your fashion expertise and knowledge of current trends
+- The aesthetic and style of each concept
+- Available categories: Wellness, Luxury, Lifestyle, Fashion, Travel, Beauty, or create new categories that fit
+
+Do NOT default to "Lifestyle" unless it truly fits. Use your expertise to determine the best category for each concept.
+
+Return ONLY a valid JSON array of 6 concepts:
+[
+  {
+    "title": "string - unique concept title (e.g., 'Pinterest Morning Ritual', 'Editorial Street Style', 'Luxury Resort Moment')",
+    "description": "string - detailed description reflecting user's request and your fashion expertise",
+    "category": "string - category you determine based on the concept (Wellness, Luxury, Lifestyle, Fashion, Travel, Beauty, or your own)",
+    "aesthetic": "string - aesthetic description matching SSELFIE's clean, feminine, modern aesthetic",
+    "brandReferences": ["string"] - array of relevant brand names that fit the concept,
+    "stylingDetails": "string - specific styling details",
+    "technicalSpecs": "string - camera/technical specs"
+  }
+]
+
+Make each concept unique, sophisticated, and based on the user's request. Use your full fashion expertise - do NOT use generic descriptions.`
+
+    try {
+      const { text } = await generateText({
+        model: "anthropic/claude-sonnet-4-20250514",
+        prompt: aiPrompt,
+        maxTokens: 4000,
+        temperature: 0.85,
+      })
+
+      // Parse AI response
+      const jsonMatch = text.match(/\[[\s\S]*\]/)
+      if (!jsonMatch) {
+        throw new Error("No JSON array found in AI response")
+      }
+
+      const aiConcepts = JSON.parse(jsonMatch[0])
+
+      // Validate AI concepts array
+      if (!Array.isArray(aiConcepts) || aiConcepts.length === 0) {
+        throw new Error("AI returned invalid or empty concepts array")
+      }
+
+      // Build concepts with full prompts and linked images
+      const generatedConcepts = aiConcepts.map((aiConcept: any, index: number) => {
+        // Validate and sanitize AI concept data
+        const safeTitle = (aiConcept.title && typeof aiConcept.title === 'string') ? aiConcept.title : `Concept ${index + 1}`
+        const safeDescription = (aiConcept.description && typeof aiConcept.description === 'string') ? aiConcept.description : ''
+        const safeAesthetic = (aiConcept.aesthetic && typeof aiConcept.aesthetic === 'string') ? aiConcept.aesthetic : undefined
+        const safeBrandReferences = Array.isArray(aiConcept.brandReferences) ? aiConcept.brandReferences : []
+        // 🔴 FIX: Use AI-determined category, or try to infer from title/description if missing
+        // Don't default to LIFESTYLE - Maya should always return a category
+        let safeCategory = (aiConcept.category && typeof aiConcept.category === 'string') ? aiConcept.category : null
+        
+        // If AI didn't return category, try to infer from title/description
+        if (!safeCategory) {
+          const titleDesc = `${safeTitle} ${safeDescription}`.toLowerCase()
+          if (/wellness|yoga|fitness|workout|athletic/i.test(titleDesc)) safeCategory = 'WELLNESS'
+          else if (/luxury|elegant|chic|sophisticated|premium/i.test(titleDesc)) safeCategory = 'LUXURY'
+          else if (/fashion|street|style|editorial/i.test(titleDesc)) safeCategory = 'FASHION'
+          else if (/travel|vacation|airport|jet-set/i.test(titleDesc)) safeCategory = 'TRAVEL'
+          else if (/beauty|skincare|makeup|routine/i.test(titleDesc)) safeCategory = 'BEAUTY'
+          else safeCategory = 'LIFESTYLE' // Last resort fallback
+        }
+        
+        // Convert to ConceptComponents
+        const conceptComponents: ConceptComponents = {
+          title: safeTitle,
+          description: safeDescription,
+          category: safeCategory,
+          aesthetic: safeAesthetic,
+          brandReferences: safeBrandReferences,
+        }
+
+        // Build full prompt using prompt builder (with userRequest for personalization)
+        // Use AI-determined category, or fallback to LIFESTYLE only if needed for prompt builder
+        const promptCategory = (safeCategory && typeof safeCategory === 'string') 
+          ? safeCategory.toUpperCase() 
+          : (categoryKey && typeof categoryKey === 'string' ? categoryKey : 'LIFESTYLE')
+        const fullPrompt = buildProModePrompt(promptCategory, conceptComponents, library, userRequest)
+
+        // Create a mock UniversalPrompt for image linking (using safe values)
+        const mockUniversalPrompt = {
+          id: `concept-${Date.now()}-${index}`,
+          title: safeTitle,
+          description: safeDescription,
+          category: safeCategory,
+          aesthetic: safeAesthetic,
+          brandReferences: safeBrandReferences,
+        }
+
+        // Link images to concept (ensure safeCategory is a valid string, never null)
+        const finalCategory = (safeCategory && typeof safeCategory === 'string') ? safeCategory : 'LIFESTYLE'
+        const linkedImages = linkImagesToConcept(mockUniversalPrompt, library, finalCategory)
+
+        // Build concept object
+        return {
+          id: `concept-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`,
+          title: safeTitle,
+          description: safeDescription,
+          category: safeCategory,
+          aesthetic: safeAesthetic,
+          linkedImages: linkedImages.length > 0 ? linkedImages : undefined,
+          fullPrompt: fullPrompt,
+          template: undefined,
+          brandReferences: safeBrandReferences,
+          stylingDetails: (aiConcept.stylingDetails && typeof aiConcept.stylingDetails === 'string') ? aiConcept.stylingDetails : undefined,
+          technicalSpecs: (aiConcept.technicalSpecs && typeof aiConcept.technicalSpecs === 'string') ? aiConcept.technicalSpecs : undefined,
+          // For compatibility with ConceptData
+          prompt: fullPrompt,
+          referenceImageUrl: linkedImages[0], // Use first linked image as reference
+        }
+      })
+
+      console.log("[v0] [PRO MODE] Generated", generatedConcepts.length, "concepts using AI")
+    } catch (aiError: any) {
+      console.error("[v0] [PRO MODE] AI generation error:", aiError)
+      // Fallback: return error but don't crash
+      return NextResponse.json({
+        error: "Failed to generate concepts with AI",
+        details: aiError.message,
+      }, { status: 500 })
+    }
+
+    // If concepts were provided (from hook), enhance them
+    if (Array.isArray(concepts) && concepts.length > 0) {
+      console.log("[v0] [PRO MODE] Enhancing", concepts.length, "provided concepts")
+      
+      // Merge provided concepts with generated ones
+      const enhancedConcepts = concepts.map((providedConcept: any, index: number) => {
+        const generatedConcept = generatedConcepts[index] || generatedConcepts[0]
+        
+        return {
+          ...providedConcept,
+          // Enhance with generated data
+          fullPrompt: generatedConcept.fullPrompt,
+          linkedImages: generatedConcept.linkedImages || providedConcept.linkedImages,
+          brandReferences: generatedConcept.brandReferences || providedConcept.brandReferences,
+          stylingDetails: generatedConcept.stylingDetails || providedConcept.stylingDetails,
+          technicalSpecs: generatedConcept.technicalSpecs || providedConcept.technicalSpecs,
+          // Ensure compatibility fields
+          prompt: generatedConcept.fullPrompt || providedConcept.prompt,
+          referenceImageUrl: generatedConcept.linkedImages?.[0] || providedConcept.referenceImageUrl,
+        }
+      })
+
+      return NextResponse.json({
+        concepts: enhancedConcepts,
+        category: categoryKey,
+        count: enhancedConcepts.length,
+      })
+    }
+
+    // Return generated concepts
+    return NextResponse.json({
+      concepts: generatedConcepts,
+      category: categoryKey,
+      count: generatedConcepts.length,
+    })
+  } catch (error: any) {
+    console.error("[v0] [PRO MODE] Generate concepts API error:", error)
+    console.error("[v0] [PRO MODE] Error stack:", error.stack)
+    console.error("[v0] [PRO MODE] Error details:", {
+      message: error.message,
+      name: error.name,
+      cause: error.cause,
+    })
+    
+    // Provide more helpful error message
+    const errorMessage = error.message || "Internal server error"
+    const isNullReference = errorMessage.includes("Cannot read properties of null") || errorMessage.includes("toLowerCase")
+    
+    return NextResponse.json(
+      { 
+        error: isNullReference 
+          ? "An internal error occurred while processing your request. Please try again with more specific details."
+          : errorMessage,
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined,
+      },
+      { status: 500 }
+    )
+  }
+}

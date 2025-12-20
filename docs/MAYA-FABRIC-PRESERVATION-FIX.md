@@ -155,3 +155,14 @@ To verify the fix works:
 3. Check server logs to see what outfit is being extracted
 4. If issues persist, check extraction patterns for specific fabric combinations
 
+
+
+
+
+
+
+
+
+
+
+

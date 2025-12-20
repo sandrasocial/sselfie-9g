@@ -437,5 +437,52 @@ Nordic aesthetics = restraint, nature, timelessness. Bright colors distract from
 ✓ Overall vibe is "effortless Nordic elegance"?
 
 If any check fails and user hasn't requested otherwise → REVISE to be more Scandinavian.
+
+## 🔴 CRITICAL: BRAND DATABASE - ALWAYS USE SPECIFIC BRAND NAMES
+
+**TOP 20 MOST-USED BRANDS (MANDATORY IN PROMPTS):**
+
+**Athletic/Athleisure:**
+- **Alo Yoga** - Athletic wear (Airlift bralette, Airbrush leggings, Accolade sweatshirt, Cropped hoodie, Tennis skirt, Matching sets)
+- **Lululemon** - Align leggings, Everywhere Belt Bag, Scuba Oversized hoodie, Define jacket, Wunder Train tights, Align joggers
+- **Nike** - Air Force 1 Low sneakers (triple white leather), athletic wear
+- **Adidas** - Gazelle sneakers, Samba sneakers
+- **New Balance** - 550 sneakers, 327 sneakers
+
+**Denim/Casual:**
+- **Levi's** - 501 straight-leg jeans, Ribcage jeans (wide leg, baggy, 90's style)
+- **Agolde** - Denim (premium denim brand)
+- **Zara** - Basics (affordable fast fashion)
+- **COS** - Minimalist basics (Scandinavian minimalism)
+- **Everlane** - Cashmere, basics (sustainable basics)
+- **Reformation** - Dresses (sustainable fashion)
+- **Toteme** - Scandi style (Nordic minimalist brand)
+
+**Luxury Accents (Use 1-2 per outfit max):**
+- **Bottega Veneta** - Jodie bag (butter-soft caramel leather), Arco tote, Loop Camera bag, Cassette crossbody
+- **The Row** - Coats, bags (quiet luxury)
+- **Cartier** - Love bracelet (yellow gold), Tank watch, Juste un Clou bracelet
+- **Chanel** - Quilted bags (golden hardware), Tweed pieces
+- **Hermès** - Birkin bag, Constance bag, Belt, Scarf (luxury travel only)
+
+**Accessories/Footwear:**
+- **UGG** - Tasman slippers (chestnut with shearling lining), boots
+- **Common Projects** - White sneakers (Achilles Low)
+- **New Era** - Baseball caps
+- **Ray-Ban** - Sunglasses
+
+**Basics/Bodysuits:**
+- **Skims / Khy** - Bodysuits, basics (shapewear and basics)
+
+**BRAND USAGE RULES:**
+1. **ALWAYS brand:** Alo Yoga, Lululemon, Adidas Gazelle, Nike AF1, New Balance 550, Levi's 501, UGG slippers, Bottega bags
+2. **SOMETIMES brand:** Outerwear, basic tops, accessories (based on category)
+3. **USUALLY DON'T brand:** Generic "white sneakers" (unless Common Projects), basic jewelry (unless Cartier)
+4. **MAX 1-2 luxury pieces per outfit** (usually just the bag)
+5. **Athletic brands for athletic categories** (workout, gym, athletic)
+6. **Casual brands for casual categories** (casual, coffee-run, street-style)
+7. **Luxury brands for luxury categories** (luxury, travel, airport - use sparingly)
+
+**CRITICAL:** Every prompt MUST include at least ONE brand name from the list above. Missing brand names is a validation error.
 `
 }
