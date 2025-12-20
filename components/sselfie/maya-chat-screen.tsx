@@ -292,11 +292,13 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
         setIsLoadingChat(true)
 
         // Build URL - either load specific chat or default maya chat
+        // 🔴 FIX: Use correct chatType based on mode (Pro Mode vs Classic Mode)
+        const chatType = studioProMode ? 'pro' : 'maya'
         const url = specificChatId
           ? `/api/maya/load-chat?chatId=${specificChatId}`
-          : `/api/maya/load-chat?chatType=maya`
+          : `/api/maya/load-chat?chatType=${chatType}`
 
-        console.log("[v0] Loading chat from URL:", url)
+        console.log("[v0] Loading chat from URL:", url, "chatType:", chatType, "studioProMode:", studioProMode)
 
         const response = await fetch(url)
         console.log("[v0] Load chat response status:", response.status)
@@ -400,7 +402,9 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
       }
 
       try {
-        const response = await fetch("/api/maya/chats?chatType=maya")
+        // 🔴 FIX: Use correct chatType based on mode
+        const chatType = studioProMode ? 'pro' : 'maya'
+        const response = await fetch(`/api/maya/chats?chatType=${chatType}`)
         if (response.ok) {
           const data = await response.json()
           const hasChats = data.chats && Array.isArray(data.chats) && data.chats.length > 0
@@ -1986,8 +1990,12 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
     setPendingConceptRequest(null)
     
     try {
+      // 🔴 FIX: Create new chat with correct chatType based on mode
+      const chatType = studioProMode ? 'pro' : 'maya'
       const response = await fetch("/api/maya/new-chat", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chatType }),
       })
 
       if (!response.ok) throw new Error("Failed to create new chat")
@@ -2013,9 +2021,12 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
     if (studioProMode === newMode) return
 
     try {
-      // Create new chat for the new mode
+      // 🔴 FIX: Create new chat with correct chatType based on mode
+      const chatType = newMode ? 'pro' : 'maya'
       const response = await fetch("/api/maya/new-chat", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chatType }),
       })
 
       if (!response.ok) throw new Error("Failed to create new chat")
