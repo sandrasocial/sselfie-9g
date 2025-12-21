@@ -390,7 +390,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
         setIsLoadingChat(false)
       }
     },
-    [setMessages],
+    [setMessages, studioProMode], // Added studioProMode to dependencies
   )
 
   // Check if user has any chat history to determine if welcome screen should show
@@ -409,7 +409,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
           const data = await response.json()
           const hasChats = data.chats && Array.isArray(data.chats) && data.chats.length > 0
           setHasUsedMayaBefore(hasChats)
-          console.log("[v0] Chat history check:", { hasChats, chatCount: data.chats?.length || 0 })
+          console.log("[v0] Chat history check:", { hasChats, chatCount: data.chats?.length || 0, chatType, studioProMode })
         }
       } catch (error) {
         console.error("[v0] Error checking chat history:", error)
@@ -419,23 +419,36 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
     }
 
     checkChatHistory()
-  }, [user])
+  }, [user, studioProMode]) // Added studioProMode to dependencies
 
   useEffect(() => {
-    console.log("[v0] 🚀 Maya chat screen mounted, user:", user?.email)
+    console.log("[v0] 🚀 Maya chat screen mounted, user:", user?.email, "studioProMode:", studioProMode)
 
-    if (user && !hasLoadedChatRef.current) {
-      hasLoadedChatRef.current = true
+    if (user) {
+      // Reset hasLoadedChatRef when mode changes so we reload chat history
+      if (hasLoadedChatRef.current) {
+        // If mode changed, reset and reload
+        const savedMode = localStorage.getItem("mayaStudioProMode")
+        if (savedMode !== String(studioProMode)) {
+          console.log("[v0] Mode changed, resetting chat load state")
+          hasLoadedChatRef.current = false
+          localStorage.setItem("mayaStudioProMode", String(studioProMode))
+        }
+      }
 
-      // Check localStorage for saved chat
-      const savedChatId = localStorage.getItem("mayaCurrentChatId")
-      if (savedChatId) {
-        console.log("[v0] Found saved chatId in localStorage, loading:", savedChatId)
-        loadChat(Number(savedChatId))
-      } else {
-        // No saved chat - load the most recent chat to show history
-        console.log("[v0] No saved chatId, loading most recent chat")
-        loadChat() // This calls API without chatId, which loads most recent
+      if (!hasLoadedChatRef.current) {
+        hasLoadedChatRef.current = true
+
+        // Check localStorage for saved chat
+        const savedChatId = localStorage.getItem("mayaCurrentChatId")
+        if (savedChatId) {
+          console.log("[v0] Found saved chatId in localStorage, loading:", savedChatId)
+          loadChat(Number(savedChatId))
+        } else {
+          // No saved chat - load the most recent chat to show history
+          console.log("[v0] No saved chatId, loading most recent chat for mode:", studioProMode ? 'pro' : 'maya')
+          loadChat() // This calls API without chatId, which loads most recent
+        }
       }
     } else if (!user) {
       // If no user, set loading to false and show empty state
@@ -446,7 +459,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
       setChatTitle("Chat with Maya")
       localStorage.removeItem("mayaCurrentChatId")
     }
-  }, [user]) // Removed loadChat from dependencies
+  }, [user, studioProMode, loadChat]) // Added studioProMode and loadChat to dependencies
 
   useEffect(() => {
     if (chatId) {
@@ -3054,6 +3067,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
             onSelectChat={handleSelectChat}
             onNewChat={handleNewChat}
             onDeleteChat={handleDeleteChat}
+            chatType={studioProMode ? 'pro' : 'maya'}
           />
         </div>
       )}

@@ -61,6 +61,18 @@ export default function ConceptCardPro({
   const [generationId, setGenerationId] = useState<string | null>(null)
   const [isGeneratingState, setIsGeneratingState] = useState(false)
 
+  // Debug: Log state changes
+  useEffect(() => {
+    console.log('[ConceptCardPro] 🔍 State changed:', {
+      isGenerated,
+      hasGeneratedImageUrl: !!generatedImageUrl,
+      generatedImageUrl: generatedImageUrl?.substring(0, 100) || 'null',
+      predictionId,
+      generationId,
+      isGeneratingState,
+    })
+  }, [isGenerated, generatedImageUrl, predictionId, generationId, isGeneratingState])
+
   // Restore polling state from localStorage on mount (survives remounts)
   useEffect(() => {
     const storageKey = `pro-generation-${concept.id}`
@@ -75,10 +87,28 @@ export default function ConceptCardPro({
           setGenerationId(savedGenerationId)
           setIsGeneratingState(true)
         } else if (savedIsGenerated && savedImageUrl) {
-          // Restore completed generation
-          console.log('[ConceptCardPro] ✅ Restoring completed generation from localStorage')
-          setIsGenerated(true)
-          setGeneratedImageUrl(savedImageUrl)
+          // Restore completed generation - BOTH must be present
+          // Verify the image URL is valid BEFORE setting state
+          if (!savedImageUrl || typeof savedImageUrl !== 'string' || savedImageUrl.length === 0) {
+            console.warn('[ConceptCardPro] ⚠️ Invalid imageUrl in localStorage, clearing state')
+            localStorage.removeItem(storageKey)
+            setIsGenerated(false)
+            setGeneratedImageUrl(null)
+          } else {
+            // Image URL is valid, restore state
+            console.log('[ConceptCardPro] ✅ Restoring completed generation from localStorage:', { 
+              hasImageUrl: !!savedImageUrl, 
+              imageUrlPreview: savedImageUrl?.substring(0, 100),
+              imageUrlLength: savedImageUrl?.length 
+            })
+            setIsGenerated(true)
+            setGeneratedImageUrl(savedImageUrl)
+          }
+        } else if (savedIsGenerated && !savedImageUrl) {
+          // If isGenerated is true but no imageUrl, something went wrong - reset state
+          console.warn('[ConceptCardPro] ⚠️ Found isGenerated=true but no imageUrl in localStorage, resetting state')
+          localStorage.removeItem(storageKey)
+          setIsGenerated(false)
         }
       } catch (err) {
         console.error('[ConceptCardPro] ❌ Error restoring state from localStorage:', err)
@@ -162,11 +192,16 @@ export default function ConceptCardPro({
   // Poll for generation status (matches Classic Mode exactly)
   useEffect(() => {
     // Match Classic Mode: requires predictionId (generationId is optional - check-generation can create fallback)
-    // Skip if already generated
-    if (!predictionId || isGenerated) {
+    // Skip if already generated AND has image URL
+    if (!predictionId || (isGenerated && generatedImageUrl)) {
       if (!predictionId) console.log('[ConceptCardPro] ⏸️ Polling skipped: no predictionId')
-      if (isGenerated) console.log('[ConceptCardPro] ⏸️ Polling skipped: already generated')
-      return
+      if (isGenerated && generatedImageUrl) console.log('[ConceptCardPro] ⏸️ Polling skipped: already generated with image URL')
+      if (isGenerated && !generatedImageUrl) {
+        // If isGenerated is true but no imageUrl, continue polling to get the image
+        console.warn('[ConceptCardPro] ⚠️ isGenerated=true but no imageUrl, continuing to poll...')
+      } else {
+        return
+      }
     }
     
     // Log if generationId is missing but continue polling (check-generation endpoint can handle it)
@@ -202,9 +237,20 @@ export default function ConceptCardPro({
         if (data.status === 'succeeded') {
           // Match Classic Mode: check for imageUrl and set it
           if (data.imageUrl) {
-            console.log('[ConceptCardPro] ✅✅✅ Generation succeeded! Setting image URL:', data.imageUrl.substring(0, 100))
-            setGeneratedImageUrl(data.imageUrl)
-            setIsGenerated(true)
+            console.log('[ConceptCardPro] ✅✅✅ Generation succeeded! Setting image URL:', {
+              fullUrl: data.imageUrl,
+              urlLength: data.imageUrl.length,
+              urlPreview: data.imageUrl.substring(0, 100)
+            })
+            // Use functional updates to ensure state is set correctly
+            setGeneratedImageUrl((prev) => {
+              console.log('[ConceptCardPro] Setting generatedImageUrl:', { prev, new: data.imageUrl })
+              return data.imageUrl
+            })
+            setIsGenerated((prev) => {
+              console.log('[ConceptCardPro] Setting isGenerated:', { prev, new: true })
+              return true
+            })
             setIsGeneratingState(false)
             clearInterval(pollInterval)
             console.log('[ConceptCardPro] ✅ Polling stopped, image should be displayed')
@@ -501,6 +547,17 @@ export default function ConceptCardPro({
         {/* Generated image preview */}
         {isGenerated && generatedImageUrl && (
           <div className="mt-4">
+            {(() => {
+              console.log('[ConceptCardPro] 🖼️ Rendering image preview:', { 
+                isGenerated, 
+                hasImageUrl: !!generatedImageUrl, 
+                imageUrl: generatedImageUrl,
+                imageUrlLength: generatedImageUrl?.length,
+                imageUrlPreview: generatedImageUrl?.substring(0, 100),
+                generationId: generationId?.toString() || ''
+              })
+              return null
+            })()}
             <InstagramPhotoCard
               concept={{
                 title: concept.title,
@@ -509,7 +566,7 @@ export default function ConceptCardPro({
                 prompt: concept.fullPrompt || concept.prompt || '',
               }}
               imageUrl={generatedImageUrl}
-              imageId={generationId || ''}
+              imageId={generationId?.toString() || ''}
               isFavorite={false}
               onFavoriteToggle={async () => {
                 // TODO: Implement favorite toggle
@@ -523,6 +580,15 @@ export default function ConceptCardPro({
                 setPredictionId(null)
               }}
             />
+          </div>
+        )}
+        
+        {/* Debug: Show state if image should be displayed but isn't */}
+        {isGenerated && !generatedImageUrl && (
+          <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-xs text-yellow-800">
+              ⚠️ Debug: isGenerated=true but generatedImageUrl is missing. Polling should continue...
+            </p>
           </div>
         )}
       </div>
