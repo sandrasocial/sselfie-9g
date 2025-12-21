@@ -2113,12 +2113,137 @@ ${
 `
     : ""
 }`
-    : `=== YOUR FLUX PROMPTING MASTERY ===
+    : `=== YOUR FLUX PROMPTING MASTERY FOR CLASSIC MODE ===
+
+🔴 CRITICAL: Classic Mode = SHORT, NATURAL LANGUAGE PROMPTS (30-60 words)
+
+**CLASSIC MODE PROMPT FORMAT:**
+[TRIGGER], [gender], [hair - 2-3 words], [outfit - 4-6 words], [pose/action - 3-5 words], [location - 2-4 words], [lighting - 2-3 words], shot on iPhone 15 Pro portrait mode, candid photo, natural skin texture with pores visible, film grain, muted colors
+
+**WORD COUNT TARGET: 30-60 words (STRICT LIMIT)**
+- 30-40 words: Optimal
+- 40-50 words: Good
+- 50-60 words: Maximum
+- 60+ words: TOO LONG - WILL FAIL
+
+**DESCRIPTION STYLE:**
+- Natural language (like texting a friend)
+- Simple adjectives (1-2 max per item)
+- NO structured sections (no "POSE:", "SETTING:", etc.)
+- NO redundant descriptors (ultra-realistic, influencer style, natural bokeh)
+- NO duplicate camera specs
+
+**WHAT TO INCLUDE:**
+1. Trigger word (always first)
+2. Gender + ethnicity (if applicable)
+3. Hair: 2-3 words max (color, style)
+4. Outfit: 4-6 words (key pieces only, simple materials/colors)
+5. Pose/Action: 3-5 words (what they're doing)
+6. Location: 2-4 words (where they are)
+7. Lighting: 2-3 words (simple, natural)
+8. Camera: "shot on iPhone 15 Pro portrait mode" (ONCE only)
+9. Authenticity: "candid photo, natural skin texture with pores visible, film grain, muted colors" (ONCE only)
+
+**WHAT NOT TO INCLUDE:**
+❌ NO "ultra-realistic" / "photorealistic" / "high quality"
+❌ NO "influencer selfie style" / "natural bokeh" (redundant with iPhone spec)
+❌ NO "authentic iPhone photo aesthetic" (redundant with candid photo)
+❌ NO structured sections (POSE:, SETTING:, LIGHTING:)
+❌ NO duplicate iPhone specs (say it ONCE)
+❌ NO long outfit descriptions (keep to 4-6 words total)
+❌ NO verbose location descriptions
+
+**GOOD EXAMPLES (30-60 words):**
+
+Example 1 (42 words):
+"user42585527, White woman, long dark hair in ponytail, cream tank top, black Lululemon belt bag, arm extended selfie at mountain summit with valley view, natural hiking light, shot on iPhone 15 Pro portrait mode, candid photo, natural skin texture with pores visible, film grain, muted colors"
+
+Example 2 (38 words):
+"user42585527, Asian woman, shoulder-length black hair, navy Alo yoga set, sitting cross-legged on yoga mat in bright studio, soft window lighting, shot on iPhone 15 Pro portrait mode, candid photo, natural skin texture, film grain, muted colors"
+
+Example 3 (45 words):
+"user42585527, Latina woman, wavy brown hair down, oversized beige blazer with white tee, walking through SoHo street with coffee cup, overcast daylight, shot on iPhone 15 Pro portrait mode, candid photo, natural skin texture with pores visible, film grain, muted colors"
+
+**BAD EXAMPLES (TOO LONG/DETAILED):**
+
+Bad Example 1 (78 words - TOO LONG):
+"user42585527, White woman, long dark brown hair pulled back in ponytail, in cream ribbed cotton tank top, black Lululemon Everywhere Belt Bag across chest, arm extended holding iPhone for selfie, standing at mountain summit with valley view behind, mixed color temperatures from tree coverage, natural hiking glow, ultra-realistic iPhone 15 Pro front camera selfie, influencer selfie style, natural bokeh, shot on iPhone 15 Pro portrait mode, shallow depth of field, subtle film grain, muted colors, authentic iPhone photo aesthetic"
+❌ Way too long
+❌ Too many redundant descriptors
+❌ Duplicate iPhone specs
+❌ Unnecessary detail
+
+**COMPRESSION TECHNIQUE:**
+If your first draft is too long, compress like this:
+
+Before (too detailed):
+"long dark brown hair pulled back in ponytail"
+After (compressed):
+"long dark hair in ponytail"
+
+Before (too detailed):
+"in cream ribbed cotton tank top"
+After (compressed):
+"cream tank top"
+
+Before (too detailed):
+"black Lululemon Everywhere Belt Bag across chest"
+After (compressed):
+"black Lululemon belt bag"
+
+Before (too detailed):
+"ultra-realistic iPhone 15 Pro front camera selfie, influencer selfie style, natural bokeh"
+After (compressed):
+"shot on iPhone 15 Pro portrait mode" (ONE mention only)
+
+**YOUR TASK:**
+Generate ${count} concepts with prompts that are:
+- 30-60 words (STRICT)
+- Natural language (no structured sections)
+- Simple, clear, concise
+- NO redundancy
+- NO verbose descriptions
+
+Count your words before finalizing. If over 60, compress further.
 
 ${getFluxPromptingPrinciples()}`
 }
 
 === RULES FOR THIS GENERATION ===
+
+${
+  !studioProMode ? `
+🔴 CLASSIC MODE SPECIFIC RULES:
+
+**TRIGGER WORD:** "${triggerWord}" (MUST be first word)
+**GENDER:** "${userGender}"
+${userEthnicity ? `**ETHNICITY:** "${userEthnicity}" (include after trigger)` : ''}
+${physicalPreferences ? `**PHYSICAL PREFERENCES:** "${physicalPreferences}" (convert to simple descriptors, no instruction phrases)` : ''}
+
+**MANDATORY FORMAT:**
+${triggerWord}, ${userEthnicity ? userEthnicity + ' ' : ''}${userGender}, [hair], [outfit], [pose], [location], [lighting], shot on iPhone 15 Pro portrait mode, candid photo, natural skin texture with pores visible, film grain, muted colors
+
+**WORD COUNT VALIDATION:**
+After writing each prompt, count the words. If over 60, compress until it's 30-60.
+
+**COMPRESSION CHECKLIST:**
+- Remove redundant adjectives (beautiful, amazing, incredible)
+- Simplify outfit descriptions (keep brand names, remove fabric details)
+- Shorten location descriptions (2-4 words max)
+- Remove duplicate camera specs
+- Remove redundant authenticity markers
+
+**QUALITY CHECK:**
+✅ Starts with trigger word?
+✅ 30-60 words total?
+✅ Natural language (no structured sections)?
+✅ Simple, clear descriptions?
+✅ No redundancy?
+✅ Camera specs mentioned ONCE?
+✅ Authenticity markers mentioned ONCE?
+
+` : ''
+}
 
 **System Rules:**
 - Include hair color/style as safety net guidance even if LoRA should know it - mention key features (hair color/style, distinctive traits) concisely as a safety net

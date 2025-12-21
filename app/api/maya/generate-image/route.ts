@@ -10,8 +10,115 @@ import { checkCredits, deductCredits, getUserCredits, CREDIT_COSTS } from "@/lib
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { rateLimit } from "@/lib/rate-limit-api"
 import { guardClassicModeRoute } from "@/lib/maya/type-guards"
+import { buildClassicPrompt, type ClassicPromptContext } from '@/lib/maya/prompt-builders/classic-prompt-builder'
 
 const sql = getDbClient()
+
+// =============================================================================
+// HELPER FUNCTIONS: Extract prompt elements from Maya's creative prompts
+// =============================================================================
+
+/**
+ * Extract outfit description from prompt
+ * Looks for patterns like "wearing X", "in X", "dressed in X"
+ */
+function extractOutfit(prompt: string): string | null {
+  const patterns = [
+    /wearing\s+([^,]+)/i,
+    /in\s+(?:a\s+)?([^,]+?)(?:\s+(?:outfit|dress|sweater|shirt|jacket|pants|jeans|skirt|trousers))/i,
+    /dressed\s+in\s+([^,]+)/i,
+    /(?:outfit|dress|sweater|shirt|jacket|pants|jeans|skirt|trousers)[\s:]+([^,]+)/i,
+  ]
+  
+  for (const pattern of patterns) {
+    const match = prompt.match(pattern)
+    if (match && match[1]) {
+      return match[1].trim()
+    }
+  }
+  
+  return null
+}
+
+/**
+ * Extract location/setting from prompt
+ * Looks for patterns like "in X", "at X", "on X"
+ */
+function extractLocation(prompt: string): string | null {
+  const patterns = [
+    /\b(?:in|at|on)\s+(?:a\s+|an\s+|the\s+)?([^,]+?)(?:\s+(?:room|cafe|street|office|kitchen|restaurant|park|bar|rooftop|terrace|home|building|space|setting|location))/i,
+    /\b(?:room|cafe|street|office|kitchen|restaurant|park|bar|rooftop|terrace|home|building|space|setting|location)[\s:]+([^,]+)/i,
+  ]
+  
+  for (const pattern of patterns) {
+    const match = prompt.match(pattern)
+    if (match && match[1]) {
+      return match[1].trim()
+    }
+  }
+  
+  return null
+}
+
+/**
+ * Extract pose/action from prompt
+ * Looks for patterns like "standing", "sitting", "posing", etc.
+ */
+function extractPose(prompt: string): string | null {
+  const patterns = [
+    /\b((?:standing|sitting|posing|walking|leaning|resting|relaxing|positioned)[^,]*)/i,
+    /\b(?:pose|position|action)[\s:]+([^,]+)/i,
+  ]
+  
+  for (const pattern of patterns) {
+    const match = prompt.match(pattern)
+    if (match && match[1]) {
+      return match[1].trim()
+    }
+  }
+  
+  return null
+}
+
+/**
+ * Extract mood/expression from prompt
+ * Looks for patterns like "warm smile", "joyful", "confident", etc.
+ */
+function extractMood(prompt: string): string | null {
+  const patterns = [
+    /\b((?:warm\s+smile|joyful|confident|relaxed|serene|playful|elegant|sophisticated)[^,]*)/i,
+    /\b(?:mood|expression|feeling)[\s:]+([^,]+)/i,
+  ]
+  
+  for (const pattern of patterns) {
+    const match = prompt.match(pattern)
+    if (match && match[1]) {
+      return match[1].trim()
+    }
+  }
+  
+  return null
+}
+
+/**
+ * Extract lighting description from prompt
+ * Looks for patterns like "soft morning light", "natural lighting", etc.
+ */
+function extractLighting(prompt: string): string | null {
+  const patterns = [
+    /\b((?:soft\s+(?:morning|afternoon|evening|window)?\s*light|natural\s+lighting|warm\s+light|golden\s+hour|window\s+light)[^,]*)/i,
+    /\b(?:lighting|light)[\s:]+([^,]+)/i,
+  ]
+  
+  for (const pattern of patterns) {
+    const match = prompt.match(pattern)
+    if (match && match[1]) {
+      return match[1].trim()
+    }
+  }
+  
+  return null
+}
 
 export async function POST(request: NextRequest) {
   const rateLimitResult = await rateLimit(request, {
@@ -145,17 +252,88 @@ export async function POST(request: NextRequest) {
       genderEthnicityTerm = genderTerm
     }
 
-    let finalPrompt = conceptPrompt
-
+    // =============================================================================
+    // PROMPT QUALITY VALIDATION & FALLBACK
+    // =============================================================================
+    // Validate Maya's prompt quality before using it
+    // If quality checks fail, rebuild using buildClassicPrompt for guaranteed quality
+    
+    const wordCount = conceptPrompt.split(/\s+/).length
+    const hasIphoneSpecs = /iphone.*pro|portrait mode/i.test(conceptPrompt)
+    const hasAuthenticityMarkers = /candid|natural.*texture|film grain|muted colors/i.test(conceptPrompt)
+    
+    let finalPrompt: string
+    let promptRebuilt = false
+    
+    if (wordCount < 20 || wordCount > 80 || !hasIphoneSpecs || !hasAuthenticityMarkers) {
+      // Quality checks failed - rebuild with buildClassicPrompt
+      console.log("[v0] [PROMPT-VALIDATION] Maya's prompt failed quality checks, rebuilding with buildClassicPrompt", {
+        wordCount,
+        hasIphoneSpecs,
+        hasAuthenticityMarkers
+      })
+      
+      // Extract elements from Maya's prompt
+      const extractedOutfit = extractOutfit(conceptPrompt)
+      const extractedLocation = extractLocation(conceptPrompt)
+      const extractedPose = extractPose(conceptPrompt)
+      const extractedMood = extractMood(conceptPrompt)
+      const extractedLighting = extractLighting(conceptPrompt)
+      
+      // Build context for buildClassicPrompt
+      const context: ClassicPromptContext = {
+        triggerWord,
+        userGender: genderTerm,
+        userEthnicity: ethnicity && ethnicity !== 'Other' ? ethnicity : undefined,
+        physicalPreferences: undefined, // Not available in request, could be extracted if needed
+        outfit: extractedOutfit || 'styled outfit',
+        location: extractedLocation || 'elegant setting',
+        lighting: extractedLighting || 'natural lighting',
+        pose: extractedPose || 'natural pose',
+        mood: extractedMood,
+        photographyStyle: enhancedAuthenticity ? 'authentic' : undefined
+      }
+      
+      // Rebuild prompt using buildClassicPrompt
+      const result = buildClassicPrompt(context)
+      
+      // Log metadata for debugging
+      console.log('[v0] [PROMPT-VALIDATION] Rebuilt prompt metadata:', {
+        wordCount: result.wordCount,
+        validated: result.validated,
+        warnings: result.warnings
+      })
+      
+      // Use the rebuilt prompt
+      finalPrompt = result.prompt
+      promptRebuilt = true
+      
+      // Log validation warnings if any
+      if (!result.validated) {
+        console.error('[v0] [PROMPT-VALIDATION] Rebuilt prompt failed validation, but continuing with prompt')
+      }
+    } else {
+      // Quality checks passed - use Maya's creative prompt (fast path)
+      console.log("[v0] [PROMPT-VALIDATION] Maya's prompt passed quality checks, using directly", {
+        wordCount,
+        hasIphoneSpecs,
+        hasAuthenticityMarkers
+      })
+      
+      finalPrompt = conceptPrompt
+      
+      // Ensure trigger word is at the start
+      const promptLower = finalPrompt.toLowerCase().trim()
+      const triggerLower = triggerWord.toLowerCase()
+      
+      if (!promptLower.startsWith(triggerLower)) {
+        finalPrompt = `${triggerWord}, ${finalPrompt}`
+      }
+    }
+    
+    // Apply highlight modifications if needed
     if (isHighlight) {
       finalPrompt = `${finalPrompt}, professional Instagram story highlight aesthetic, elegant and minimalistic design, soft lighting, high-end editorial quality, perfect for text overlay, circular crop friendly, trending Instagram aesthetic 2025`
-    }
-
-    const promptLower = finalPrompt.toLowerCase().trim()
-    const triggerLower = triggerWord.toLowerCase()
-
-    if (!promptLower.startsWith(triggerLower)) {
-      finalPrompt = `${triggerWord}, ${finalPrompt}`
     }
 
     const { MAYA_QUALITY_PRESETS } = await import("@/lib/maya/quality-settings")
