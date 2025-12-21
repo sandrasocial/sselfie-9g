@@ -79,6 +79,14 @@ import {
   getPromptById,
   type UniversalPrompt 
 } from "@/lib/maya/universal-prompts"
+import { 
+  convertToSelfie, 
+  isSelfieConceptAlready, 
+  getRandomSelfieType,
+  getCategoryPreferredSelfieType,
+  validateSelfiePrompt,
+  type ConceptToConvert
+} from '@/lib/maya/pro/selfie-converter'
 
 type MayaConcept = {
   title: string
@@ -2806,6 +2814,84 @@ ${shouldIncludeSkinTexture(userRequest, detectedGuidePrompt, templateExamples) &
 - This is a regular concept card (not a carousel or reel cover)
 - Do not include any text overlay instructions, sections, or mentions
 - Do not include: "TEXT OVERLAY:", "text placement:", "font size:", "text color:", or any text-related instructions
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🤳 SELFIE REQUIREMENT (CRITICAL FOR SSELFIE STUDIO)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+MANDATORY: At least 1-2 concepts MUST be SELFIE concepts (out of ${count} total).
+
+SELFIE = Same quality/luxury/styling as professional concepts, but with:
+- iPhone front camera (not DSLR)
+- Selfie framing (arm extended, mirror reflection, or tripod setup)
+- Authentic influencer aesthetic
+- Natural bokeh and iPhone camera characteristics
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SELFIE TYPE EXAMPLES (Use these formats):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+TYPE 1: HANDHELD SELFIE (Most common - 50%)
+Camera: "ultra-realistic iPhone 15 Pro front camera selfie"
+Pose: "arm extended holding phone at slight angle"
+Framing: "close-up to medium shot, face and upper body"
+Style: "natural bokeh, influencer selfie style, front-facing camera aesthetic"
+
+Example: "Ultra-realistic iPhone 15 Pro front camera selfie of influencer in Alo Yoga set, arm extended holding phone showing post-workout glow, sitting on yoga mat, bright studio with natural window lighting creating soft bokeh, authentic influencer selfie style"
+
+TYPE 2: MIRROR SELFIE (Popular - 30%)
+Camera: "ultra-realistic iPhone 15 Pro mirror selfie reflection"
+Pose: "standing in front of mirror holding phone at chest level"
+Framing: "full body or three-quarter reflection"
+Style: "mirror visible in frame, authentic selfie aesthetic"
+
+Example: "Ultra-realistic iPhone 15 Pro mirror selfie reflection of influencer in Toteme blazer and tailored pants, standing before boutique fitting room mirror, full body reflection showing complete outfit, marble floors visible, polished yet authentic mirror selfie"
+
+TYPE 3: ELEVATED SELFIE (Polished - 20%)
+Camera: "ultra-realistic iPhone 15 Pro elevated selfie setup"
+Pose: "phone on tripod with ring light, professional setup"
+Framing: "face to upper body, slightly elevated angle"
+Style: "ring light illumination, professional influencer content quality"
+
+Example: "Ultra-realistic iPhone 15 Pro elevated selfie setup of influencer in silk robe, phone on tripod with ring light providing soft illumination, face and upper body framing, luxury bathroom with marble surfaces, professional influencer content aesthetic"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CRITICAL SELFIE RULES:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ DO:
+- Maintain SAME outfit quality (designer brands, luxury pieces)
+- Maintain SAME setting quality (luxury hotel, designer boutique, elegant home)
+- Use "iPhone 15 Pro front camera selfie" OR "iPhone 15 Pro mirror selfie"
+- Include "influencer" maintaining physical characteristics
+- Add selfie-specific details (arm extended, holding phone, mirror visible)
+- Make prompts 200-300 words (same length as professional concepts)
+- Use natural, authentic language
+
+❌ DON'T:
+- Use "DSLR" or "professional camera" in selfie concepts
+- Use "professional photography" language for selfies
+- Lower the quality/luxury for selfie concepts
+- Make selfie prompts shorter than other prompts
+- Forget the iPhone camera specification
+- Use technical camera specs (85mm f/1.4, etc.) for selfies
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CATEGORY-SPECIFIC SELFIE GUIDANCE:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+WELLNESS: Handheld selfies showing post-workout glow, gym mirror selfies
+FASHION: Mirror selfies showcasing outfit, boutique fitting room selfies
+LUXURY: Elevated selfies with ring light, luxury hotel bathroom mirror selfies
+HOLIDAY: Handheld selfies with festive elements, cozy morning selfies
+LIFESTYLE: Coffee shop handheld selfies, morning routine mirror selfies
+BEAUTY: Skincare routine mirror selfies, makeup application elevated selfies
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+REMEMBER: SSELFIE Studio is built for selfie content! Selfies are not
+an afterthought - they're central to the brand positioning. Every generation
+should celebrate the power of the selfie for visibility and economic freedom.
 - This should be a pure lifestyle/brand photo with no text
 - Only include text overlays if workflowType is explicitly "carousel-slides", "reel-cover", or "text-overlay" (which it is not in this case)
 - The prompt should end after camera specs and natural skin texture - no text overlay section
@@ -4666,13 +4752,157 @@ ${shouldIncludeSkinTexture(userRequest, detectedGuidePrompt, templateExamples) &
     }
 
     console.log("[v0] Successfully generated", concepts.length, "sophisticated concepts")
-    
+
+    // ================================================================
+    // SELFIE ENFORCEMENT - Ensure at least 1 selfie per generation
+    // ================================================================
+
+    console.log('[MAYA-CONCEPTS] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.log('[MAYA-CONCEPTS] 🤳 SELFIE ENFORCEMENT CHECK')
+    console.log('[MAYA-CONCEPTS] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+
+    // Count how many concepts are already selfies
+    let selfieCount = concepts.filter(c => 
+      isSelfieConceptAlready(c.prompt)
+    ).length
+
+    console.log(`[MAYA-CONCEPTS] Found ${selfieCount} selfie concept(s) in ${concepts.length} total concepts`)
+
+    // If no selfies found, convert one concept
+    if (selfieCount === 0 && concepts.length >= 3) {
+      console.log('[MAYA-CONCEPTS] ⚠️ No selfie concepts found! Converting one concept to selfie...')
+      
+      // Pick a random concept (avoid first and last for variety)
+      const convertibleIndices = concepts.length > 3 
+        ? Array.from({ length: concepts.length - 2 }, (_, i) => i + 1)
+        : [Math.floor(concepts.length / 2)]
+      
+      const indexToConvert = convertibleIndices[
+        Math.floor(Math.random() * convertibleIndices.length)
+      ]
+      
+      // Get category-appropriate selfie type or random
+      const category = concepts[indexToConvert].category || 'LIFESTYLE'
+      const preferredType = getCategoryPreferredSelfieType(category)
+      const selfieType = preferredType || getRandomSelfieType()
+      
+      console.log(`[MAYA-CONCEPTS] Converting concept #${indexToConvert} to ${selfieType} selfie`)
+      console.log(`[MAYA-CONCEPTS] Original title: "${concepts[indexToConvert].title}"`)
+      
+      // Convert the concept
+      const conceptToConvert: ConceptToConvert = {
+        title: concepts[indexToConvert].title,
+        description: concepts[indexToConvert].description,
+        prompt: concepts[indexToConvert].prompt,
+        category: category,
+        aesthetic: undefined
+      }
+      
+      const converted = convertToSelfie(conceptToConvert, selfieType)
+      
+      // Update the concept
+      concepts[indexToConvert] = {
+        ...concepts[indexToConvert],
+        title: converted.title,
+        description: converted.description,
+        prompt: converted.prompt,
+      }
+      
+      // Validate the conversion
+      const validation = validateSelfiePrompt(concepts[indexToConvert].prompt)
+      if (!validation.valid) {
+        console.warn(`[MAYA-CONCEPTS] ⚠️ Selfie validation warnings:`, validation.warnings)
+      }
+      
+      console.log(`[MAYA-CONCEPTS] ✅ Converted to: "${concepts[indexToConvert].title}"`)
+      
+      selfieCount = 1
+    }
+
+    // If we have 6 concepts and only 1 selfie, optionally add a second for variety
+    if (selfieCount === 1 && concepts.length >= 6) {
+      // 50% chance to add second selfie when we have 6+ concepts
+      const shouldAddSecond = Math.random() < 0.5
+      
+      if (shouldAddSecond) {
+        console.log('[MAYA-CONCEPTS] Adding second selfie for variety...')
+        
+        // Find non-selfie concepts
+        const nonSelfieIndices = concepts
+          .map((c, i) => ({ concept: c, index: i }))
+          .filter(({ concept }) => !isSelfieConceptAlready(concept.prompt))
+          .map(({ index }) => index)
+        
+        if (nonSelfieIndices.length > 0) {
+          const randomIndex = nonSelfieIndices[
+            Math.floor(Math.random() * nonSelfieIndices.length)
+          ]
+          
+          // Use different type than first selfie for variety
+          const firstSelfie = concepts.find(c => isSelfieConceptAlready(c.prompt))
+          const firstSelfieIsHandheld = firstSelfie?.prompt.includes('arm extended')
+          const firstSelfieIsMirror = firstSelfie?.prompt.includes('mirror')
+          
+          let newSelfieType: 'handheld' | 'mirror' | 'elevated'
+          
+          if (firstSelfieIsHandheld) {
+            newSelfieType = Math.random() < 0.6 ? 'mirror' : 'elevated'
+          } else if (firstSelfieIsMirror) {
+            newSelfieType = Math.random() < 0.7 ? 'handheld' : 'elevated'
+          } else {
+            // First was elevated, use handheld or mirror
+            newSelfieType = Math.random() < 0.6 ? 'handheld' : 'mirror'
+          }
+          
+          console.log(`[MAYA-CONCEPTS] Converting concept #${randomIndex} to ${newSelfieType} selfie (different from first)`)
+          
+          const conceptToConvert: ConceptToConvert = {
+            title: concepts[randomIndex].title,
+            description: concepts[randomIndex].description,
+            prompt: concepts[randomIndex].prompt,
+            category: concepts[randomIndex].category || 'LIFESTYLE',
+            aesthetic: undefined
+          }
+          
+          const converted = convertToSelfie(conceptToConvert, newSelfieType)
+          
+          concepts[randomIndex] = {
+            ...concepts[randomIndex],
+            title: converted.title,
+            description: converted.description,
+            prompt: converted.prompt,
+          }
+          
+          selfieCount = 2
+        }
+      }
+    }
+
+    // Final count and log
+    const finalSelfieCount = concepts.filter(c => 
+      isSelfieConceptAlready(c.prompt)
+    ).length
+
+    console.log('[MAYA-CONCEPTS] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.log(`[MAYA-CONCEPTS] ✅ FINAL SELFIE COUNT: ${finalSelfieCount}/${concepts.length} concepts`)
+    console.log('[MAYA-CONCEPTS] Selfie concepts:')
+    concepts.forEach((c, i) => {
+      if (isSelfieConceptAlready(c.prompt)) {
+        const type = c.prompt.includes('mirror') ? 'mirror' : 
+                     c.prompt.includes('elevated') || c.prompt.includes('tripod') ? 'elevated' : 
+                     'handheld'
+        console.log(`[MAYA-CONCEPTS]   #${i + 1}: "${c.title}" (${type})`)
+      }
+    })
+    console.log('[MAYA-CONCEPTS] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+
     // 🔴 CRITICAL: Log all final prompts before returning (what gets sent to frontend)
     console.log("[v0] ========== FINAL CONCEPT PROMPTS (RETURNED TO FRONTEND) ==========")
     concepts.slice(0, count).forEach((concept, idx) => {
       console.log(`[v0] Concept #${idx + 1} PROMPT:`, concept.prompt)
       console.log(`[v0] Concept #${idx + 1} has visible pores:`, /visible\s+pores/i.test(concept.prompt))
       console.log(`[v0] Concept #${idx + 1} has scene/location:`, /(?:tree|sofa|fireplace|room|setting|scene|location|background|interior|illuminated|presents|Christmas)/i.test(concept.prompt))
+      console.log(`[v0] Concept #${idx + 1} is selfie:`, isSelfieConceptAlready(concept.prompt))
     })
     console.log("[v0] ========== END FINAL CONCEPT PROMPTS ==========")
 
