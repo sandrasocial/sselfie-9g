@@ -606,11 +606,31 @@ Make each concept unique, sophisticated, and based on the user's request. Use yo
           })
           
           let fullPrompt: string
+          let finalCategory: string = promptCategory
           try {
-            fullPrompt = buildProModePrompt(promptCategory, conceptComponents, library, userRequest)
+            // 🎯 Pass conceptIndex (0-5) for varied compositions across concepts
+            // Each concept gets different framing/angle/position/composition for visual variety:
+            // Concept 0: close-up + slightly-above + three-quarter + rule-of-thirds
+            // Concept 1: half-body + eye-level + front-facing + centered
+            // Concept 2: full-body + slightly-above + three-quarter + negative-space
+            // Concept 3: environmental + eye-level + three-quarter + rule-of-thirds
+            // Concept 4: three-quarter + low-angle + front-facing + centered
+            // Concept 5: medium + slightly-above + three-quarter + frame-within-frame
+            // User preferences (if detected) override framing/angle/composition, but positions still vary
+            const { fullPrompt: generatedPrompt, category: promptCategoryResult } = await buildProModePrompt(
+              promptCategory,
+              conceptComponents,
+              library,
+              userRequest,
+              undefined,
+              index
+            )
+            fullPrompt = generatedPrompt
+            finalCategory = promptCategoryResult || promptCategory
             
             // 🔴 DEBUG: Log the generated prompt
             console.log(`[v0] [PRO MODE] Generated prompt for concept ${index + 1} (first 200 chars):`, fullPrompt.substring(0, 200))
+            console.log(`[v0] [PRO MODE] Final category for concept ${index + 1}:`, finalCategory)
           } catch (promptError: any) {
             console.error(`[v0] [PRO MODE] Error building prompt for concept ${index + 1}:`, promptError)
             // Fallback to a basic prompt if buildProModePrompt fails
@@ -627,9 +647,10 @@ Make each concept unique, sophisticated, and based on the user's request. Use yo
             brandReferences: safeBrandReferences,
           }
 
-          // Link images to concept (ensure safeCategory is a valid string, never null)
-          const finalCategory = (safeCategory && typeof safeCategory === 'string') ? safeCategory : 'LIFESTYLE'
-          const linkedImages = linkImagesToConcept(mockUniversalPrompt, library, finalCategory)
+          // Link images to concept (use finalCategory from buildProModePrompt, ensure it's a valid string)
+          // finalCategory is set on line 629 from buildProModePrompt return value
+          const categoryForLinking = (finalCategory && typeof finalCategory === 'string') ? finalCategory : (safeCategory && typeof safeCategory === 'string') ? safeCategory : 'LIFESTYLE'
+          const linkedImages = linkImagesToConcept(mockUniversalPrompt, library, categoryForLinking)
 
           // Build concept object
           const concept = {

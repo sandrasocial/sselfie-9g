@@ -154,7 +154,7 @@ const ACCESSIBLE_BRANDS: BrandCollection = {
   'levis': [
     {
       brand: "Levi's",
-      name: '501 straight-leg jeans',
+      name: '501 baggy straight-leg jeans',
       colors: ['light vintage wash', 'vintage blue wash']
     },
     {
@@ -448,7 +448,7 @@ export function getBrandedPiece(
   // Casual categories
   if (categoryLower === 'casual' || categoryLower === 'coffee-run' || categoryLower === 'street-style') {
     if (itemType === 'bottom' || item === 'jeans') {
-      return getDetailedDescription("Levi's", '501 straight-leg jeans')
+      return getDetailedDescription("Levi's", '501 baggy straight-leg jeans')
     }
     if (itemType === 'shoes' || item === 'sneakers') {
       // Gazelle is preferred for casual
@@ -566,7 +566,7 @@ export function generateCompleteOutfit(
 
   if (categoryLower === 'casual' || categoryLower === 'coffee-run') {
     outfit.top = 'oversized cream cable knit sweater' // unbranded
-    outfit.bottom = getDetailedDescription("Levi's", '501 straight-leg jeans')
+    outfit.bottom = getDetailedDescription("Levi's", '501 baggy straight-leg jeans')
     outfit.shoes = getDetailedDescription('Adidas', 'Gazelle sneakers') // Will return "Adidas Gazelle sneakers in burgundy suede"
     outfit.accessory = 'black baseball cap' // unbranded
     return outfit
@@ -575,7 +575,7 @@ export function generateCompleteOutfit(
   if (categoryLower === 'street-style') {
     outfit.outerwear = 'oversized black wool coat' // unbranded
     outfit.top = 'white ribbed cotton tank' // unbranded
-    outfit.bottom = getDetailedDescription("Levi's", '501 straight-leg jeans')
+    outfit.bottom = getDetailedDescription("Levi's", '501 baggy straight-leg jeans')
     outfit.shoes = getDetailedDescription('New Balance', '550 sneakers')
     outfit.bag = getDetailedDescription('Bottega Veneta', 'Jodie bag') // 1 luxury piece
     outfit.accessory = 'minimal gold jewelry' // unbranded
@@ -614,7 +614,7 @@ export function generateCompleteOutfit(
   if (Object.keys(outfit).length === 0) {
     // Default to casual with brands
     outfit.top = 'oversized cream cable knit sweater' // unbranded
-    outfit.bottom = getDetailedDescription("Levi's", '501 straight-leg jeans')
+    outfit.bottom = getDetailedDescription("Levi's", '501 baggy straight-leg jeans')
     outfit.shoes = getDetailedDescription('Adidas', 'Gazelle sneakers')
   }
   

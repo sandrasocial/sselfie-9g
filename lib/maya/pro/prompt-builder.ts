@@ -7,6 +7,42 @@
 
 import { PRO_MODE_CATEGORIES, getCategoryByKey, ImageLibrary } from './category-system'
 import { selectMixedBrands } from './prompt-architecture'
+import {
+  buildChristmasSetting,
+  buildChristmasOutfit,
+  buildNewYearsSetting,
+  detectSeasonalContent,
+  CHRISTMAS_INTERIORS,
+  CHRISTMAS_OUTFITS,
+  CHRISTMAS_DECOR,
+  NEW_YEARS_CONTENT,
+  SEASONAL_POSES,
+  SEASONAL_PHOTOGRAPHY,
+  SEASONAL_MOOD,
+} from './seasonal-luxury-content'
+import {
+  PhotographyStyle,
+  detectPhotographyStyle,
+  buildSettingForStyle,
+  buildLightingForStyle,
+  buildCameraForStyle,
+  buildMoodForStyle,
+} from './photography-styles'
+import {
+  FramingType,
+  CameraAngle,
+  CameraPosition,
+  CompositionRule,
+  buildCameraComposition,
+  detectFramingPreference,
+  detectAnglePreference,
+  detectCompositionPreference,
+  selectCompositionForConcept,
+} from './camera-composition'
+import {
+  buildSmartSetting,
+  getSettingDetailLevel,
+} from './smart-setting-builder'
 
 export interface ConceptComponents {
   title: string
@@ -39,12 +75,14 @@ export interface ConceptComponents {
  * - Mood section
  * - Aesthetic description
  */
-export function buildProModePrompt(
+export async function buildProModePrompt(
   category: string | null,
   concept: ConceptComponents,
   userImages: ImageLibrary,
-  userRequest?: string
-): string {
+  userRequest?: string,
+  userPhotographyStyle?: PhotographyStyle,
+  conceptIndex?: number // NEW: Which concept (0-5) for variation
+): Promise<{ fullPrompt: string; category: string }> {
   // 🔴 FIX: Use concept's category if provided, otherwise use category parameter, fallback to LIFESTYLE only for prompt builder compatibility
   // The concept's category comes from Maya's AI generation, so it's the most accurate
   const conceptCategory = (concept.category && typeof concept.category === 'string') ? concept.category.toUpperCase() : null
@@ -84,14 +122,90 @@ export function buildProModePrompt(
   const isLifestyleStyle = /lifestyle|casual|everyday|authentic|real/i.test(userRequest || '')
   const isLuxuryStyle = /luxury|elegant|chic|sophisticated|premium/i.test(userRequest || '')
 
+  // 🎯 Detect photography style from user request
+  const combinedTextForStyle = `${concept.title || ''} ${concept.description || ''} ${userRequest || ''}`
+  const detectedStyle = detectPhotographyStyle(combinedTextForStyle)
+  const photographyStyle: PhotographyStyle = detectedStyle || userPhotographyStyle || 'authentic' // Default to authentic if not detected
+  
+  console.log('[buildProModePrompt] Photography style:', {
+    detected: detectedStyle,
+    userProvided: userPhotographyStyle,
+    final: photographyStyle,
+  })
+
+  // 🎯 Detect user preferences for composition
+  const userFraming = detectFramingPreference(userRequest || '')
+  const userAngle = detectAnglePreference(userRequest || '')
+  const userComposition = detectCompositionPreference(userRequest || '')
+
+  // Select composition for this concept (with variety across 6 concepts)
+  const index = conceptIndex !== undefined ? conceptIndex : 0
+  const cameraComp = selectCompositionForConcept(
+    index,
+    userFraming,
+    userAngle,
+    userComposition
+  )
+
+  console.log('[buildProModePrompt] Camera composition:', {
+    conceptIndex: index,
+    framing: cameraComp.framing,
+    angle: cameraComp.angle,
+    position: cameraComp.position,
+    composition: cameraComp.composition,
+  })
+
   // 🔴 CRITICAL: Build sections using concept title/description and userRequest
-  // buildOutfitSection, buildPoseSection, etc. will extract from description first, then fall back to category defaults
+  // Build sections in order, coordinating them so they match each other
   const outfitSection = buildOutfitSection(concept, categoryInfo, userRequest)
+  
+  // Build pose first - we'll use this to coordinate setting
   const poseSection = buildPoseSection(concept, userRequest)
-  const lightingSection = buildLightingSection(concept, userRequest)
-  const settingSection = buildSettingSection(concept, userRequest)
+  
+  // Build setting - it can coordinate with pose if needed
+  const fullSettingSection = buildSettingSection(concept, userRequest, photographyStyle, poseSection)
+  
+  // Build lighting - can coordinate with pose and setting
+  const lightingSection = buildLightingSection(concept, userRequest, poseSection, fullSettingSection)
+  
+  // 🎯 Smart Setting: Calibrate setting detail based on framing
+  // Close-ups get bokeh backgrounds, environmental gets full detail
+  // Extract seasonal context for smart setting builder
+  const combinedTextForSeasonal = `${concept.title || ''} ${concept.description || ''} ${userRequest || ''}`
+  const seasonal = detectSeasonalContent(combinedTextForSeasonal)
+  const seasonalType = seasonal.season === 'christmas' ? 'christmas' : seasonal.season === 'new-years' ? 'new-years' : null
+  
+  // Extract original setting text (remove "Setting: " prefix if present)
+  const originalSettingText = fullSettingSection.replace(/^Setting:\s*/i, '').replace(/\.\s*$/, '')
+  
+  // Apply smart setting calibration based on framing
+  // This prevents wasting detailed descriptions in close-up bokeh shots
+  const calibratedSetting = buildSmartSetting(
+    cameraComp.framing,
+    originalSettingText,
+    seasonalType
+  )
+  
+  const settingSection = `Setting: ${calibratedSetting}.`
+  
+  console.log('[buildProModePrompt] Setting calibration:', {
+    framing: cameraComp.framing,
+    detailLevel: getSettingDetailLevel(cameraComp.framing),
+    originalLength: originalSettingText.length,
+    calibratedLength: calibratedSetting.length,
+  })
+  
   const moodSection = buildMoodSection(concept, userRequest)
   const aestheticSection = buildAestheticDescription(categoryInfo, concept, userRequest)
+
+  // Build camera composition description
+  const cameraDescription = buildCameraComposition(
+    cameraComp.framing,
+    cameraComp.angle,
+    cameraComp.position,
+    cameraComp.composition,
+    photographyStyle
+  )
 
   // 🔴 DEBUG: Log generated sections
   console.log('[buildProModePrompt] Generated sections:', {
@@ -100,11 +214,16 @@ export function buildProModePrompt(
     setting: settingSection.substring(0, 50),
   })
 
-  // Determine photography style based on category and request
+  // Determine camera specs - prioritize photography style if detected, otherwise use category-based defaults
   const categoryLower = safeCategory.toLowerCase()
   let cameraSpecs: string
   
-  if (categoryLower.includes('luxury') || isEditorialStyle) {
+  // 🎯 Use photography style functions when style is explicitly detected or provided
+  if (photographyStyle && (detectedStyle || userPhotographyStyle)) {
+    // Use style-specific camera specs
+    cameraSpecs = buildCameraForStyle(photographyStyle)
+    console.log('[buildProModePrompt] Using photography style camera specs:', cameraSpecs.substring(0, 100))
+  } else if (categoryLower.includes('luxury') || isEditorialStyle) {
     // Editorial/Luxury: Professional fashion photography
     cameraSpecs = 'Vertical format, editorial photography, controlled lighting, fashion-editorial framing, professional fashion shoot aesthetic.'
   } else if (categoryLower.includes('fashion')) {
@@ -120,8 +239,8 @@ export function buildProModePrompt(
     // Travel: Lifestyle travel photography
     cameraSpecs = 'Vertical format, lifestyle travel photography, natural or soft ambient lighting, lifestyle photography feel.'
   } else {
-    // Default: Lifestyle photography
-    cameraSpecs = 'Vertical format, lifestyle photography, natural or soft editorial lighting, shallow depth of field, lifestyle photography feel.'
+    // Default: Use photography style function (will default to authentic)
+    cameraSpecs = buildCameraForStyle(photographyStyle)
   }
 
   const prompt = `Professional photography. ${isPinterestStyle ? 'Pinterest-style' : isEditorialStyle ? 'Editorial' : 'Influencer'} portrait maintaining exactly the same physical characteristics, facial features, and body proportions. Editorial quality, professional photography aesthetic.
@@ -130,9 +249,11 @@ ${outfitSection}
 
 ${poseSection}
 
+${settingSection}
+
 ${lightingSection}
 
-${settingSection}
+Camera Composition: ${cameraDescription}.
 
 ${moodSection}
 
@@ -140,7 +261,10 @@ Aesthetic: ${aestheticSection}
 
 ${cameraSpecs}`
 
-  return prompt.trim()
+  return {
+    fullPrompt: prompt.trim(),
+    category: safeCategory,
+  }
 }
 
 /**
@@ -156,22 +280,93 @@ function buildOutfitSection(
   categoryInfo: { brands: string[]; name: string },
   userRequest?: string
 ): string {
-  const category = (categoryInfo.name && typeof categoryInfo.name === 'string') 
-    ? categoryInfo.name.toLowerCase() 
+  // 🔴 VALIDATION: Setting keywords to detect when outfit descriptions contain setting details
+  const settingKeywords = ['room', 'fireplace', 'tree', 'living', 'bedroom', 'kitchen', 'studio', 'backdrop', 'sofa', 'couch', 'armchair', 'flooring', 'floor', 'wall', 'window', 'shelves', 'art', 'vase', 'marble', 'oak', 'countertop', 'interior', 'outdoor', 'scene', 'elegant living room', 'with fireplace']
+  
+  const category = (categoryInfo.name && typeof categoryInfo.name === 'string')
+    ? categoryInfo.name.toLowerCase()
     : 'lifestyle'
 
   // If concept has specific outfit details, use them
   if (concept.outfit) {
-    const parts: string[] = []
-    if (concept.outfit.top) parts.push(concept.outfit.top)
-    if (concept.outfit.bottom) parts.push(concept.outfit.bottom)
-    if (concept.outfit.outerwear) parts.push(concept.outfit.outerwear)
-    if (concept.outfit.accessories && concept.outfit.accessories.length > 0) {
-      parts.push(concept.outfit.accessories.join(', '))
+    // 🔴 FIX 1.1: Handle case where outfit might be a string (from extraction/API)
+    if (typeof concept.outfit === 'string') {
+      const outfitLower = concept.outfit.toLowerCase()
+      const hasSettingKeywords = settingKeywords.some(kw => outfitLower.includes(kw))
+      
+      if (hasSettingKeywords) {
+        console.warn('[buildOutfitSection] ⚠️ Detected setting in outfit field (string), ignoring:', concept.outfit.substring(0, 80))
+        // Skip broken outfit, build fresh one - fall through to outfit building below
+      } else {
+        // Valid outfit string - return it
+        return `Outfit: ${concept.outfit}.`
+      }
     }
-    if (concept.outfit.shoes) parts.push(concept.outfit.shoes)
+    
+    // 🔴 VALIDATION: Check each outfit part to ensure it's actually clothing, not setting
+    // (outfit is an object with top, bottom, etc.)
+    const parts: string[] = []
+    const invalidParts: string[] = []
+    
+    // Validate each outfit part individually
+    if (concept.outfit.top) {
+      const topLower = concept.outfit.top.toLowerCase()
+      if (settingKeywords.some(kw => topLower.includes(kw))) {
+        console.warn('[buildOutfitSection] ⚠️ Outfit.top contains setting keywords, skipping:', concept.outfit.top.substring(0, 60))
+        invalidParts.push('top')
+      } else {
+        parts.push(concept.outfit.top)
+      }
+    }
+    
+    if (concept.outfit.bottom) {
+      const bottomLower = concept.outfit.bottom.toLowerCase()
+      if (settingKeywords.some(kw => bottomLower.includes(kw))) {
+        console.warn('[buildOutfitSection] ⚠️ Outfit.bottom contains setting keywords, skipping:', concept.outfit.bottom.substring(0, 60))
+        invalidParts.push('bottom')
+      } else {
+        parts.push(concept.outfit.bottom)
+      }
+    }
+    
+    if (concept.outfit.outerwear) {
+      const outerwearLower = concept.outfit.outerwear.toLowerCase()
+      if (settingKeywords.some(kw => outerwearLower.includes(kw))) {
+        console.warn('[buildOutfitSection] ⚠️ Outfit.outerwear contains setting keywords, skipping:', concept.outfit.outerwear.substring(0, 60))
+        invalidParts.push('outerwear')
+      } else {
+        parts.push(concept.outfit.outerwear)
+      }
+    }
+    
+    if (concept.outfit.accessories && concept.outfit.accessories.length > 0) {
+      const accessoriesText = concept.outfit.accessories.join(', ')
+      const accessoriesLower = accessoriesText.toLowerCase()
+      if (settingKeywords.some(kw => accessoriesLower.includes(kw))) {
+        console.warn('[buildOutfitSection] ⚠️ Outfit.accessories contains setting keywords, skipping')
+        invalidParts.push('accessories')
+      } else {
+        parts.push(accessoriesText)
+      }
+    }
+    
+    if (concept.outfit.shoes) {
+      const shoesLower = concept.outfit.shoes.toLowerCase()
+      if (settingKeywords.some(kw => shoesLower.includes(kw))) {
+        console.warn('[buildOutfitSection] ⚠️ Outfit.shoes contains setting keywords, skipping:', concept.outfit.shoes.substring(0, 60))
+        invalidParts.push('shoes')
+      } else {
+        parts.push(concept.outfit.shoes)
+      }
+    }
 
-    if (parts.length > 0) {
+    // If any part had invalid content (setting keywords), skip the entire outfit object
+    // This ensures we don't mix valid clothing with invalid setting descriptions
+    if (invalidParts.length > 0) {
+      console.warn('[buildOutfitSection] ⚠️ Outfit object contained setting descriptions in:', invalidParts.join(', '), '- building fresh outfit instead')
+      // Fall through to build proper outfit below
+    } else if (parts.length > 0) {
+      // All parts are valid clothing descriptions
       return `Outfit: ${parts.join(', ')}.`
     }
   }
@@ -183,13 +378,93 @@ function buildOutfitSection(
   const requestText = userRequest || ''
   const combinedText = `${titleText} ${descText} ${aestheticText} ${requestText}`.toLowerCase()
 
-  // Try to extract outfit from description first
+  // 🔴 PRIORITY 1: Try to extract outfit from description FIRST (Maya's vision)
+  // This ensures we use Maya's specific outfit details from her description
+  // This MUST happen before seasonal/category defaults to preserve Maya's vision
   if (descText && descText.length > 30) {
-    // First pattern: captures outfit details after common keywords
-    const outfitPattern = /(?:wearing|in|outfit|dressed in|styled in|attire)\s+([^\.]{15,200})/i
-    const match = descText.match(outfitPattern)
-    if (match && match[1] && match[1].length > 15) {
-      return `Outfit: ${match[1].trim()}.`
+    console.log('[buildOutfitSection] 🔍 Attempting to extract outfit from Maya\'s description (length:', descText.length, ')')
+    // Multiple patterns to catch different ways outfits are described
+    const outfitPatterns = [
+      // Pattern 1: "wearing [outfit details]" - capture until pose action or sentence end
+      // Example: "wearing Reformation slip dress in champagne silk, adjusting necklace"
+      // Should capture: "Reformation slip dress in champagne silk"
+      // Use non-greedy match with lookahead for pose actions
+      /wearing\s+((?:(?!,\s*(?:adjusting|smoothing|holding|looking|standing|sitting|walking|one hand|both hands|touching|putting|before|in front of|beside))[^.,]){10,250}?)(?:\s*,\s*(?:adjusting|smoothing|holding|looking|standing|sitting|walking|one hand|both hands|touching|putting)|[.,]|$)/i,
+      // Pattern 2: Simpler pattern - capture after "wearing" until comma+action or period
+      /wearing\s+([^.,]{15,250}?)(?=\s*,\s*(?:adjusting|smoothing|holding|looking|one hand|both hands|touching|putting|standing|sitting|walking)|[.,]|$)/i,
+      // Pattern 3: "in [outfit]" for dress/skirt (but not "in [room]")
+      // Example: "in Reformation slip dress"
+      /\bin\s+([a-z][^.,]{10,150}?(?:dress|sweater|shirt|blouse|pants|jeans|skirt|coat|jacket|blazer))(?=\s*,\s*|[.,]|$)/i,
+      // Pattern 4: Explicit outfit mentions
+      /(?:outfit|dressed in|styled in|attire)\s*:?\s*([^.]{15,200})/i,
+    ]
+
+    for (const outfitPattern of outfitPatterns) {
+      const match = descText.match(outfitPattern)
+      if (match && match[1] && match[1].length > 10) {
+        let extractedOutfit = match[1].trim()
+        
+        // 🔴 CLEANUP: Stop at pose/action keywords that indicate we've moved to pose section
+        // Stop at: "adjusting", "smoothing", "holding", "one hand", "both hands", pose verbs
+        const poseActionPattern = /\s*,\s*\b(adjusting|smoothing|holding|touching|putting|standing|sitting|walking|looking|gazing|one hand|both hands)\b/i
+        const poseMatch = extractedOutfit.match(poseActionPattern)
+        if (poseMatch && poseMatch.index !== undefined) {
+          extractedOutfit = extractedOutfit.substring(0, poseMatch.index).trim()
+        }
+        
+        // Remove trailing commas and clean up
+        extractedOutfit = extractedOutfit.replace(/[,\.\s]+$/, '').trim()
+        
+        // 🔴 FIX 1.1: VALIDATION - Make sure we're building CLOTHING, not setting
+        const extractedOutfitLower = extractedOutfit.toLowerCase()
+        const hasSettingKeywords = settingKeywords.some(kw => extractedOutfitLower.includes(kw))
+        
+        if (hasSettingKeywords) {
+          console.warn('[buildOutfitSection] ⚠️ Detected setting in extracted outfit field, skipping:', extractedOutfit.substring(0, 80))
+          continue // Try next pattern - don't use this broken outfit description
+        }
+        
+        // Validate it contains actual clothing words or brand names (luxury brands count as clothing indicators)
+        const clothingWords = /\b(dress|sweater|shirt|blouse|pants|jeans|denim|skirt|coat|jacket|blazer|top|bottom|outerwear|shoes|heels|sneakers|boots|bag|clutch|necklace|jewelry|accessories|Reformation|Jenni Kayne|Bottega Veneta|Van Cleef|Gianvito Rossi|The Row|Chanel|Dior)\b/i
+        if (!clothingWords.test(extractedOutfit) && extractedOutfit.length < 50) {
+          console.warn('[buildOutfitSection] ⚠️ Extracted text doesn\'t seem to be clothing, skipping:', extractedOutfit.substring(0, 80))
+          continue // Try next pattern
+        }
+        
+        // Valid outfit description - return it immediately (don't fall through to seasonal/category defaults)
+        console.log('[buildOutfitSection] ✅ Extracted outfit from Maya\'s description:', extractedOutfit.substring(0, 100))
+        return `Outfit: ${extractedOutfit}.`
+      }
+    }
+    console.log('[buildOutfitSection] ⚠️ Could not extract outfit from description, falling back to seasonal/category defaults')
+  }
+
+  // 🎄 Check for seasonal outfits (only if description extraction failed)
+  const seasonal = detectSeasonalContent(combinedText)
+  
+  if (seasonal.season === 'christmas' && seasonal.outfit) {
+    console.log('[buildOutfitSection] ✅ Detected Christmas outfit request')
+    
+    const colorTheme = /red|burgundy/i.test(combinedText) ? 'burgundy' :
+                       /traditional|classic/i.test(combinedText) ? 'holiday' : 'neutral'
+    
+    const christmasOutfit = buildChristmasOutfit(seasonal.outfit, colorTheme)
+    return `Outfit: ${christmasOutfit}.`
+  }
+  
+  if (seasonal.season === 'new-years') {
+    console.log('[buildOutfitSection] ✅ Detected New Years outfit request')
+    
+    // New Years outfits from NEW_YEARS_CONTENT.OUTFITS
+    const pick = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)]
+    
+    if (seasonal.style === 'party') {
+      const outfit = pick(NEW_YEARS_CONTENT.OUTFITS.PARTY_GLAMOUR)
+      const accessories = pick(NEW_YEARS_CONTENT.OUTFITS.ACCESSORIES)
+      return `Outfit: ${outfit}, ${accessories}.`
+    } else {
+      const outfit = pick(NEW_YEARS_CONTENT.OUTFITS.COZY_CELEBRATION)
+      return `Outfit: ${outfit}.`
     }
   }
 
@@ -201,38 +476,6 @@ function buildOutfitSection(
 
   // Build outfit based on category and theme
   let outfitDescription = 'Outfit: '
-
-  // CHRISTMAS/HOLIDAY THEME (must check before other categories for consistency)
-  if (theme === 'christmas' || /christmas|holiday|festive|winter|cozy.*holiday/i.test(combinedText)) {
-    // Christmas-specific cozy outfits with appropriate brands
-    if (/morning|coffee|breakfast/i.test(combinedText)) {
-      // Morning: cozy loungewear/cashmere
-      const accessibleBrand = accessible[0] || 'Jenni Kayne'
-      outfitDescription += `${accessibleBrand} cashmere sweater in warm cream or festive red, high-waisted denim or cozy knit pants`
-      if (luxury) outfitDescription += `, ${luxury} crossbody bag as subtle luxury accent`
-      outfitDescription += ', warm slippers or cozy socks, minimal jewelry, relaxed comfortable holiday morning vibe.'
-    } else if (/fireplace|evening|night|dinner/i.test(combinedText)) {
-      // Evening: elegant but cozy
-      const accessibleBrand = accessible[0] || 'Everlane'
-      outfitDescription += `${accessibleBrand} cashmere turtleneck or cozy knit sweater in neutral or festive tone, tailored trousers or elegant skirt`
-      if (luxury) outfitDescription += `, ${luxury} structured bag as elegant accent`
-      else outfitDescription += ', Everlane leather bag'
-      outfitDescription += ', elegant flats or ankle boots, refined jewelry, sophisticated holiday evening look.'
-    } else if (/market|shopping|outdoor/i.test(combinedText)) {
-      // Outdoor/market: practical but chic
-      outfitDescription += 'Warm oversized coat in camel or cream, chunky knit sweater, high-waisted denim'
-      if (luxury) outfitDescription += `, ${luxury} leather tote`
-      else outfitDescription += ', Everlane crossbody bag'
-      outfitDescription += ', comfortable boots, warm accessories, practical but stylish holiday market look.'
-    } else {
-      // Default Christmas: cozy and festive
-      const accessibleBrand = accessible[0] || 'Jenni Kayne'
-      outfitDescription += `${accessibleBrand} cashmere sweater in warm festive colors, high-waisted denim or cozy knit pants`
-      if (luxury) outfitDescription += `, ${luxury} crossbody bag`
-      outfitDescription += ', comfortable loafers or boots, minimal jewelry, cozy festive holiday outfit.'
-    }
-    return outfitDescription
-  }
 
   // WELLNESS/FITNESS
   if (category.includes('wellness') || category.includes('fitness') || theme.includes('workout')) {
@@ -250,8 +493,31 @@ function buildOutfitSection(
   }
   // LIFESTYLE
   else if (category.includes('lifestyle')) {
-    const accessibleBrand = accessible[0] || 'Everlane'
-    outfitDescription += `${accessibleBrand} oversized knit sweater in cream, high-waisted denim`
+    // 🔴 FIX 1.3: Diversified knitwear (not always Jenni Kayne)
+    const KNITWEAR_OPTIONS = [
+      'oversized cashmere crewneck in cream (Jenni Kayne, Quince, Everlane)',
+      'chunky cable knit sweater in oatmeal (& Other Stories, COS)',
+      'ribbed turtleneck in black (Uniqlo, Wolford)',
+      'cashmere v-neck in camel (Everlane, Naadam)',
+      'oversized cardigan in grey (Toteme, Mango)',
+      'cropped cashmere hoodie in taupe (Reformation, Zara)',
+      'fine merino knit in ivory (COS, Arket)',
+      'chunky turtleneck in charcoal (& Other Stories, Toteme)',
+    ]
+    const selectedKnitwear = KNITWEAR_OPTIONS[Math.floor(Math.random() * KNITWEAR_OPTIONS.length)]
+    
+    // 🔴 FIX 1.2: Baggy/wide-leg jeans (NOT skinny/fitted)
+    const JEANS_OPTIONS = [
+      'baggy straight-leg jeans in light wash',
+      'wide-leg jeans in medium wash with relaxed fit',
+      'relaxed straight denim in vintage blue',
+      '90s-inspired baggy jeans in light wash',
+      'barrel jeans in medium wash',
+      'wide-leg denim with relaxed straight fit',
+    ]
+    const selectedJeans = JEANS_OPTIONS[Math.floor(Math.random() * JEANS_OPTIONS.length)]
+    
+    outfitDescription += `${selectedKnitwear}, ${selectedJeans}`
     if (luxury) outfitDescription += `, ${luxury} leather bag as luxury accent`
     else if (accessible[1]) outfitDescription += `, ${accessible[1]} crossbody bag`
     outfitDescription += ', white sneakers, minimal gold jewelry.'
@@ -311,19 +577,70 @@ function buildPoseSection(concept: ConceptComponents, userRequest?: string): str
   const descText = (concept.description && typeof concept.description === 'string') ? concept.description : ''
   if (descText && descText.length > 30) {
     // Look for pose patterns in description
+    // 🔴 FIX: Stop extraction at clothing keywords or commas that indicate outfit details
+    const clothingStopWords = /\b(wearing|outfit|dressed|in|with)\s+[a-z]/i
     const posePatterns = [
-      /(?:sitting|standing|walking|leaning|lying|kneeling|crouching)[^\.]{10,100}/i,
-      /(?:holding|looking|reading|smiling|laughing|gazing)[^\.]{10,100}/i,
-      /pose[^\.]{10,100}/i,
+      // Match pose verbs but stop before clothing details
+      /(?:sitting|standing|walking|leaning|lying|kneeling|crouching)(?:[^\.]|(?<!,\s*wearing|,\s*in|,\s*with|,\s*dressed)){10,80}/i,
+      /(?:holding|looking|reading|smiling|laughing|gazing)(?:[^\.]|(?<!,\s*wearing|,\s*in|,\s*with)){10,80}/i,
+      /pose[^\.]{10,80}/i,
     ]
 
     for (const pattern of posePatterns) {
       const match = descText.match(pattern)
       if (match && match[0] && match[0].length > 20) {
-        const extractedPose = match[0].trim()
+        let extractedPose = match[0].trim()
+        
+        // 🔴 CLEANUP: Aggressively remove outfit and setting details that might have been captured
+        
+        // First, stop at clothing keywords (these ALWAYS indicate outfit, not pose)
+        const clothingKeywords = /\b(wearing|outfit|dressed|wearing|in|with|sweater|dress|blouse|shirt|pants|jeans|denim|skirt|coat|jacket|blazer|heels|sneakers|shoes|boots|bag|clutch|necklace|jewelry)\s+/i
+        const clothingMatch = extractedPose.match(clothingKeywords)
+        if (clothingMatch && clothingMatch.index !== undefined) {
+          console.log('[buildPoseSection] 🔴 Removing outfit details from pose at index', clothingMatch.index)
+          extractedPose = extractedPose.substring(0, clothingMatch.index).trim()
+        }
+        
+        // Stop at action verbs that often precede outfit descriptions
+        // "standing before mirror, wearing dress" -> stop before "wearing"
+        // "adjusting necklace" -> stop (accessory/outfit detail)
+        const outfitActionPatterns = [
+          /\b(adjusting|smoothing|touching|putting on|wearing|putting)\s+/i,
+        ]
+        for (const pattern of outfitActionPatterns) {
+          const match = extractedPose.match(pattern)
+          if (match && match.index !== undefined) {
+            // Only stop if it's followed by clothing-related words
+            const afterMatch = extractedPose.substring(match.index + match[0].length)
+            if (/\b(dress|sweater|necklace|clutch|heels|bag|fabric|outfit|jewelry|accessories)\b/i.test(afterMatch)) {
+              console.log('[buildPoseSection] 🔴 Removing outfit action from pose at index', match.index)
+              extractedPose = extractedPose.substring(0, match.index).trim()
+              break
+            }
+          }
+        }
+        
+        // Stop at setting keywords if they appear (but only if they're clearly setting, not part of pose)
+        const settingMatch = extractedPose.match(/\b(in|before|beside|near|at)\s+(?:a|the|full-length|dresser|mirror|room|fireplace|tree|living|bedroom|kitchen|market|sofa|couch|armchair|flooring|wall|window)\s+/i)
+        if (settingMatch && settingMatch.index !== undefined && settingMatch.index > 20) {
+          // Only stop if it's clearly a setting mention (not part of the pose action)
+          // "standing before full-length mirror" -> keep "standing before mirror", but stop if followed by outfit
+          const beforeSetting = extractedPose.substring(0, settingMatch.index + settingMatch[0].length).trim()
+          // Check if what comes after is outfit-related
+          const afterSetting = extractedPose.substring(settingMatch.index + settingMatch[0].length)
+          if (/\b(wearing|outfit|dressed|sweater|dress)\b/i.test(afterSetting)) {
+            console.log('[buildPoseSection] 🔴 Setting mention followed by outfit, stopping at setting')
+            extractedPose = beforeSetting
+          }
+        }
+        
+        // Clean up trailing commas, "and", "with", etc. that might lead to outfit details
+        extractedPose = extractedPose.replace(/[,\s]+(and|with|in|wearing|outfit|dressed).*$/i, '').trim()
+        extractedPose = extractedPose.replace(/[,\s]+(adjusting|smoothing|touching|putting).*$/i, '').trim()
+        
         // Clean up and return pose
         if (extractedPose.length > 20 && extractedPose.length < 200) {
-          console.log('[buildPoseSection] ✅ Extracted pose from description:', extractedPose.substring(0, 80))
+          console.log('[buildPoseSection] ✅ Extracted and cleaned pose from description:', extractedPose.substring(0, 80))
           return `Pose: ${extractedPose}.`
         }
       }
@@ -366,13 +683,31 @@ function buildPoseSection(concept: ConceptComponents, userRequest?: string): str
  * Realistic, authentic lighting - no "perfect lighting"
  * Personalizes based on userRequest when available.
  */
-function buildLightingSection(concept: ConceptComponents, userRequest?: string): string {
+function buildLightingSection(
+  concept: ConceptComponents, 
+  userRequest?: string,
+  poseSection?: string,
+  settingSection?: string
+): string {
   if (concept.lighting) {
     return `Lighting: ${concept.lighting}.`
   }
 
+  // 🔴 COORDINATION: Check pose and setting to match lighting context
+  const poseText = poseSection ? poseSection.toLowerCase() : ''
+  const settingText = settingSection ? settingSection.toLowerCase() : ''
+  
   // 🔴 CRITICAL: Extract lighting from description FIRST if it contains detailed lighting information
   const descText = (concept.description && typeof concept.description === 'string') ? concept.description : ''
+  
+  // Extract combinedText for later use
+  const combinedText = `${concept.title || ''} ${concept.description || ''} ${userRequest || ''}`.toLowerCase()
+  
+  // 🔴 COORDINATION: If pose/setting mention market, use market lighting (check early)
+  if ((/market|shopping|outdoor/i.test(poseText) || /market|shopping|outdoor/i.test(settingText)) && /christmas|holiday/i.test(combinedText)) {
+    return 'Lighting: String lights overhead, wooden market stalls with evergreen garlands, warm golden hour light casting festive shadows, magical holiday market atmosphere.'
+  }
+  
   if (descText && descText.length > 30) {
     // Look for lighting patterns in description
     const lightingPatterns = [
@@ -383,14 +718,28 @@ function buildLightingSection(concept: ConceptComponents, userRequest?: string):
     for (const pattern of lightingPatterns) {
       const match = descText.match(pattern)
       if (match && match[0] && match[0].length > 20) {
-        const extractedLighting = match[0].trim()
-        // Extract a more complete sentence if possible
+        let extractedLighting = match[0].trim()
+        
+        // 🔴 CLEANUP: Remove setting details that might have been captured
+        // Stop at setting keywords if they appear
+        const settingStopWords = /\b(market|stall|sofa|couch|room|fireplace|tree|living|bedroom|kitchen)\s+/i
+        const settingMatch = extractedLighting.match(settingStopWords)
+        if (settingMatch && settingMatch.index !== undefined && settingMatch.index > 50) {
+          extractedLighting = extractedLighting.substring(0, settingMatch.index).trim()
+        }
+        
+        // Extract a more complete sentence if possible, but only if it's about lighting
         const sentences = descText.split(/[\.!?]/)
         for (const sentence of sentences) {
           if (sentence.includes(match[0].substring(0, 20))) {
             if (sentence.length > 30 && sentence.length < 200 && /light|lighting|glow|illumination/i.test(sentence)) {
-              console.log('[buildLightingSection] ✅ Extracted lighting from description:', sentence.substring(0, 80))
-              return `Lighting: ${sentence.trim()}.`
+              // Check if sentence is primarily about lighting, not setting
+              const lightingWords = (sentence.match(/\b(light|lighting|glow|illumination|bright|dark|shade|shadow|sun|daylight|ambient)\b/gi) || []).length
+              const settingWords = (sentence.match(/\b(market|stall|sofa|room|fireplace|tree|table|chair)\b/gi) || []).length
+              if (lightingWords >= settingWords) {
+                console.log('[buildLightingSection] ✅ Extracted lighting from description:', sentence.substring(0, 80))
+                return `Lighting: ${sentence.trim()}.`
+              }
             }
           }
         }
@@ -404,7 +753,6 @@ function buildLightingSection(concept: ConceptComponents, userRequest?: string):
 
   // 🔴 CRITICAL: Use concept title/description and userRequest to infer lighting
   // This ensures prompts match Maya's vision from her chat response
-  const combinedText = `${concept.title || ''} ${concept.description || ''} ${userRequest || ''}`.toLowerCase()
   
   // Check for specific themes in concept/request (e.g., Christmas, holiday, cozy)
   if (/christmas|holiday|festive|winter|cozy.*holiday|holiday.*cozy/i.test(combinedText)) {
@@ -437,7 +785,12 @@ function buildLightingSection(concept: ConceptComponents, userRequest?: string):
  * Includes detailed luxury settings with marble, premium materials, etc.
  * Personalizes based on userRequest when available.
  */
-function buildSettingSection(concept: ConceptComponents, userRequest?: string): string {
+function buildSettingSection(
+  concept: ConceptComponents,
+  userRequest?: string,
+  photographyStyle: PhotographyStyle = 'authentic',
+  poseSection?: string
+): string {
   if (concept.setting) {
     return `Setting: ${concept.setting}.`
   }
@@ -448,6 +801,73 @@ function buildSettingSection(concept: ConceptComponents, userRequest?: string): 
   const aestheticText = (concept.aesthetic && typeof concept.aesthetic === 'string') ? concept.aesthetic : ''
   const requestText = userRequest || ''
   const combinedText = `${titleText} ${descText} ${aestheticText} ${requestText}`.toLowerCase()
+
+  // 🎄 PRIORITY 0: Check for SEASONAL content (Christmas, New Years)
+  const seasonal = detectSeasonalContent(combinedText)
+  
+  if (seasonal.season === 'christmas') {
+    console.log('[buildSettingSection] ✅ Detected Christmas seasonal content')
+    
+    // 🔴 COORDINATION: Check pose section to ensure setting matches pose location
+    const poseTextLower = poseSection ? poseSection.toLowerCase() : ''
+    
+    // If pose mentions market/outdoor shopping, use market setting instead of indoor
+    if (/market|shopping|outdoor|walking.*through/i.test(poseTextLower) || /market|shopping|outdoor/i.test(combinedText)) {
+      console.log('[buildSettingSection] ✅ Coordinating with pose: using outdoor market setting')
+      return 'Setting: Festive holiday market, twinkling lights everywhere, wooden market stalls with evergreen garlands, holiday decorations, winter atmosphere, natural daylight, magical seasonal ambiance.'
+    }
+    
+    // Detect room type - prioritize pose cues, then combinedText
+    let roomType: 'living' | 'bedroom' | 'kitchen' | 'dining' | 'entryway'
+    if (/sitting|seated|sofa|couch|living/i.test(poseTextLower) || /living room|lounge|sofa|couch/i.test(combinedText)) {
+      roomType = 'living'
+    } else if (/bedroom|bed/i.test(combinedText) || /bedroom|bed/i.test(poseTextLower)) {
+      roomType = 'bedroom'
+    } else if (/kitchen/i.test(combinedText) || /kitchen/i.test(poseTextLower)) {
+      roomType = 'kitchen'
+    } else if (/dining/i.test(combinedText) || /dining/i.test(poseTextLower)) {
+      roomType = 'dining'
+    } else {
+      roomType = 'living' // default
+    }
+    
+    const style = seasonal.style === 'elegant' ? 'luxury' : 
+                  seasonal.style === 'cozy' ? 'cozy' : 'minimal'
+    
+    const timeOfDay = /morning|breakfast/i.test(combinedText) ? 'morning' :
+                      /evening|night/i.test(combinedText) ? 'evening' : 'morning'
+    
+    const christmasSetting = buildChristmasSetting(roomType, style, timeOfDay)
+    return `Setting: ${christmasSetting}.`
+  }
+  
+  if (seasonal.season === 'new-years') {
+    console.log('[buildSettingSection] ✅ Detected New Years seasonal content')
+    
+    const type = seasonal.style === 'party' ? 'party' : 'dinner'
+    const newYearsSetting = buildNewYearsSetting(type)
+    return `Setting: ${newYearsSetting}.`
+  }
+
+  // 🎯 PHOTOGRAPHY STYLE CHECK
+  if (photographyStyle === 'editorial') {
+    console.log('[buildSettingSection] ✅ Using editorial setting')
+    
+    // Editorial can be: studio, luxury interior, architectural, outdoor
+    // Let buildSettingForStyle decide based on userRequest cues
+    const editorialSetting = buildSettingForStyle('editorial', concept.category || 'LIFESTYLE', userRequest)
+    return `Setting: ${editorialSetting}.`
+  }
+
+  // 🎯 For authentic, use Scandinavian interiors or car/casual
+  if (photographyStyle === 'authentic') {
+    const authenticSetting = buildSettingForStyle('authentic', concept.category || 'LIFESTYLE', userRequest)
+    
+    // If it returned a specific authentic setting, use it
+    if (authenticSetting) {
+      return `Setting: ${authenticSetting}.`
+    }
+  }
 
   // Detailed luxury settings based on theme
   if (/luxury|elegant|chic|sophisticated|premium|high-end/i.test(combinedText)) {
@@ -464,18 +884,7 @@ function buildSettingSection(concept: ConceptComponents, userRequest?: string): 
     }
   }
 
-  // Christmas/Holiday settings
-  if (/christmas|holiday|festive|winter|cozy.*holiday/i.test(combinedText)) {
-    if (/morning|breakfast|coffee/i.test(combinedText)) {
-      return 'Setting: Cozy Christmas morning scene, decorated living room with illuminated tree, warm fireplace, holiday decorations, soft morning light through windows, festive atmosphere.'
-    } else if (/fireplace|evening|night/i.test(combinedText)) {
-      return 'Setting: Elegant living room with crackling fireplace, Christmas tree with twinkling lights, luxurious holiday atmosphere, warm evening lighting, tasteful festive decorations.'
-    } else if (/market|outdoor|shopping/i.test(combinedText)) {
-      return 'Setting: Festive holiday market, twinkling lights everywhere, holiday decorations, winter atmosphere, natural daylight, magical seasonal ambiance.'
-    } else {
-      return 'Setting: Cozy holiday setting with beautifully decorated Christmas tree, warm festive atmosphere, elegant holiday decorations, soft natural lighting, magical seasonal ambiance.'
-    }
-  }
+  // (Christmas/Holiday settings now handled by seasonal system above)
 
   // Beach/Coastal settings
   if (/beach|coastal|ocean|seaside|tropical|resort/i.test(combinedText)) {
