@@ -63,6 +63,8 @@ export default function ConceptCardPro({
   // Use refs to persist values across remounts and avoid stale closures
   const predictionIdRef = useRef<string | null>(null)
   const generationIdRef = useRef<string | null>(null)
+  // Store polling interval ref outside effect to persist across remounts
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null)
   
   // Sync refs with state
   useEffect(() => {
@@ -86,21 +88,16 @@ export default function ConceptCardPro({
   }, [isGenerated, generatedImageUrl, predictionId, generationId, isGeneratingState])
 
   // Restore polling state from localStorage on mount (survives remounts)
+  // This MUST run first before polling starts
   useEffect(() => {
     const storageKey = `pro-generation-${concept.id}`
     const saved = localStorage.getItem(storageKey)
     if (saved) {
       try {
         const { predictionId: savedPredictionId, generationId: savedGenerationId, isGenerated: savedIsGenerated, generatedImageUrl: savedImageUrl } = JSON.parse(saved)
-        if (savedPredictionId && savedGenerationId && !savedIsGenerated) {
-          // Only restore if generation is still in progress
-          console.log('[ConceptCardPro] 🔄 Restoring polling state from localStorage:', { savedPredictionId, savedGenerationId })
-          setPredictionId(savedPredictionId)
-          setGenerationId(savedGenerationId)
-          predictionIdRef.current = savedPredictionId
-          generationIdRef.current = savedGenerationId
-          setIsGeneratingState(true)
-        } else if (savedIsGenerated && savedImageUrl) {
+        
+        // PRIORITY: If generation is complete, restore that first and exit
+        if (savedIsGenerated && savedImageUrl) {
           // Restore completed generation - BOTH must be present
           // Verify the image URL is valid BEFORE setting state
           if (!savedImageUrl || typeof savedImageUrl !== 'string' || savedImageUrl.length === 0) {
@@ -109,7 +106,7 @@ export default function ConceptCardPro({
             setIsGenerated(false)
             setGeneratedImageUrl(null)
           } else {
-            // Image URL is valid, restore state
+            // Image URL is valid, restore state and STOP - don't start polling
             console.log('[ConceptCardPro] ✅ Restoring completed generation from localStorage:', { 
               hasImageUrl: !!savedImageUrl, 
               imageUrlPreview: savedImageUrl?.substring(0, 100),
@@ -117,6 +114,12 @@ export default function ConceptCardPro({
             })
             setIsGenerated(true)
             setGeneratedImageUrl(savedImageUrl)
+            // Clear any polling refs - generation is done
+            predictionIdRef.current = null
+            generationIdRef.current = null
+            setIsGeneratingState(false)
+            // Don't restore predictionId/generationId - generation is complete
+            return // Exit early - don't restore polling state
           }
         } else if (savedIsGenerated && !savedImageUrl) {
           // If isGenerated is true but no imageUrl, something went wrong - reset state
@@ -124,19 +127,37 @@ export default function ConceptCardPro({
           localStorage.removeItem(storageKey)
           setIsGenerated(false)
         }
+        
+        // Only restore polling state if generation is NOT complete
+        if (savedPredictionId && savedGenerationId && !savedIsGenerated) {
+          // Only restore if generation is still in progress
+          console.log('[ConceptCardPro] 🔄 Restoring polling state from localStorage:', { savedPredictionId, savedGenerationId })
+          // CRITICAL: Set refs FIRST (they persist across remounts)
+          predictionIdRef.current = savedPredictionId
+          generationIdRef.current = savedGenerationId
+          // Then set state (triggers re-render and polling effect)
+          setPredictionId(savedPredictionId)
+          setGenerationId(savedGenerationId)
+          setIsGeneratingState(true)
+        }
       } catch (err) {
         console.error('[ConceptCardPro] ❌ Error restoring state from localStorage:', err)
       }
     }
-  }, [concept.id])
+  }, [concept.id]) // Only run on mount/concept change
 
   // Persist state to localStorage whenever it changes
+  // CRITICAL: Use refs for localStorage updates to ensure we're saving the latest values
   useEffect(() => {
     const storageKey = `pro-generation-${concept.id}`
-    if (predictionId && generationId) {
+    // Always check refs first, then fall back to state
+    const currentPredictionId = predictionIdRef.current || predictionId
+    const currentGenerationId = generationIdRef.current || generationId
+    
+    if (currentPredictionId && currentGenerationId) {
       localStorage.setItem(storageKey, JSON.stringify({
-        predictionId,
-        generationId,
+        predictionId: currentPredictionId,
+        generationId: currentGenerationId,
         isGenerated,
         generatedImageUrl,
       }))
@@ -149,8 +170,12 @@ export default function ConceptCardPro({
         generatedImageUrl,
       }))
     } else {
-      // Clear if no active generation
-      localStorage.removeItem(storageKey)
+      // Only clear if truly no active generation (don't clear during remounts)
+      // Keep existing localStorage entry if refs have values but state hasn't updated yet
+      const saved = localStorage.getItem(storageKey)
+      if (!saved || (!currentPredictionId && !isGenerated)) {
+        localStorage.removeItem(storageKey)
+      }
     }
   }, [predictionId, generationId, isGenerated, generatedImageUrl, concept.id])
 
@@ -207,43 +232,35 @@ export default function ConceptCardPro({
 
   // Poll for generation status (matches Classic Mode exactly)
   useEffect(() => {
-    // Always check refs first (they persist across remounts), then fall back to state
-    const currentPredictionId = predictionIdRef.current || predictionId
-    const currentGenerationId = generationIdRef.current || generationId
-    
-    // Match Classic Mode: requires predictionId
-    // Skip if already generated AND has image URL
-    if (!currentPredictionId) {
-      console.log('[ConceptCardPro] ⏸️ Polling skipped: no predictionId', {
-        refValue: predictionIdRef.current,
-        stateValue: predictionId,
-        currentPredictionId
-      })
-      return
-    }
-    
-    if (isGenerated && generatedImageUrl) {
-      console.log('[ConceptCardPro] ⏸️ Polling skipped: already generated with image URL')
+    // Match Classic Mode: Skip if already generated OR missing required IDs
+    // Pro Mode only needs predictionId (not generationId like Classic Mode)
+    if (isGenerated || !predictionId) {
+      // Clear any existing polling interval
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current)
+        pollingIntervalRef.current = null
+      }
       return
     }
 
     console.log('[ConceptCardPro] 🔄 Starting polling with:', {
-      predictionId: currentPredictionId,
-      generationId: currentGenerationId,
-      refValue: predictionIdRef.current,
-      stateValue: predictionId
+      predictionId,
+      generationId,
+      isGenerated,
+      hasImageUrl: !!generatedImageUrl
     })
 
-    const pollInterval = setInterval(async () => {
-      // Always check refs to get the latest values (persist across remounts)
-      const pollPredictionId = predictionIdRef.current || predictionId
-      
-      if (!pollPredictionId) {
-        console.log('[ConceptCardPro] ⏸️ Polling skipped in interval: no predictionId in ref or state')
-        clearInterval(pollInterval)
-        return
-      }
-      
+    // Match Classic Mode: Use closure values (predictionId captured when interval is created)
+    // Capture values in closure to prevent stale closures
+    const pollPredictionId = predictionId
+    const pollConceptId = concept.id
+    const pollOnImageGenerated = onImageGenerated
+    
+    // Store interval reference so poll function can clear it
+    let pollIntervalRef: NodeJS.Timeout | null = null
+    
+    // Poll function that can be called immediately or via interval
+    const poll = async () => {
       try {
         console.log('[ConceptCardPro] 🔍 Polling check-generation API for:', pollPredictionId)
         const response = await fetch(
@@ -264,6 +281,7 @@ export default function ConceptCardPro({
           hasImageUrl: !!data.imageUrl,
           imageUrlPreview: data.imageUrl ? data.imageUrl.substring(0, 100) : 'none',
           error: data.error || null,
+          fullResponse: JSON.stringify(data).substring(0, 300),
         })
 
         if (data.status === 'succeeded') {
@@ -272,66 +290,94 @@ export default function ConceptCardPro({
             console.log('[ConceptCardPro] ✅✅✅ Generation succeeded! Setting image URL:', {
               fullUrl: data.imageUrl,
               urlLength: data.imageUrl.length,
-              urlPreview: data.imageUrl.substring(0, 100)
+              urlPreview: data.imageUrl.substring(0, 100),
+              conceptId: pollConceptId,
             })
             
-            // Clear interval FIRST to prevent race conditions
-            clearInterval(pollInterval)
-            
-            // Set state synchronously (not functional updates) to ensure immediate update
-            // This matches Classic Mode's approach
+            // Match Classic Mode: Set state and clear interval
             setGeneratedImageUrl(data.imageUrl)
             setIsGenerated(true)
             setIsGeneratingState(false)
+            if (pollIntervalRef) {
+              clearInterval(pollIntervalRef)
+              pollIntervalRef = null
+            }
             
-            // Clear refs after success
-            predictionIdRef.current = null
-            generationIdRef.current = null
+            console.log('[ConceptCardPro] ✅✅✅ Generation succeeded! Image URL set, polling stopped.')
             
-            console.log('[ConceptCardPro] ✅ State updated, polling stopped, image should be displayed')
+            // Update localStorage for restoration on remount
+            const storageKey = `pro-generation-${pollConceptId}`
+            localStorage.setItem(storageKey, JSON.stringify({
+              predictionId: null,
+              generationId: null,
+              isGenerated: true,
+              generatedImageUrl: data.imageUrl,
+            }))
             
-            // Clear localStorage since generation is complete
-            const storageKey = `pro-generation-${concept.id}`
-            localStorage.removeItem(storageKey)
-            
-            if (onImageGenerated) {
-              onImageGenerated()
+            if (pollOnImageGenerated) {
+              pollOnImageGenerated()
             }
           } else {
-            console.warn('[ConceptCardPro] ⚠️ Generation succeeded but no imageUrl in response, data:', JSON.stringify(data).substring(0, 200))
-            // Continue polling if imageUrl is missing
+            console.warn('[ConceptCardPro] ⚠️ Generation succeeded but no imageUrl in response', {
+              status: data.status,
+              fullResponse: JSON.stringify(data).substring(0, 300),
+            })
+            // Continue polling if imageUrl is missing - might be a race condition
           }
         } else if (data.status === 'failed') {
+          // Match Classic Mode: Set error and clear interval
           console.error('[ConceptCardPro] ❌ Generation failed:', data.error)
           setError(data.error || 'Generation failed')
           setIsGeneratingState(false)
-          clearInterval(pollInterval)
-          
-          // Clear refs on failure
-          predictionIdRef.current = null
-          generationIdRef.current = null
+          if (pollIntervalRef) {
+            clearInterval(pollIntervalRef)
+            pollIntervalRef = null
+          }
           
           // Clear localStorage on failure
-          const storageKey = `pro-generation-${concept.id}`
+          const storageKey = `pro-generation-${pollConceptId}`
           localStorage.removeItem(storageKey)
         } else {
           // Still processing
           console.log('[ConceptCardPro] ⏳ Still processing, status:', data.status)
         }
       } catch (err) {
+        // Match Classic Mode: Set error and stop polling on catch
         console.error('[ConceptCardPro] ❌ Error polling generation:', err)
-        // Don't stop polling on network errors, just log them
+        setError('Failed to check generation status')
+        setIsGeneratingState(false)
+        if (pollIntervalRef) {
+          clearInterval(pollIntervalRef)
+          pollIntervalRef = null
+        }
       }
-    }, 3000) // Poll every 3 seconds (matches Classic Mode)
-
-    console.log('[ConceptCardPro] ✅ Polling interval started')
-
-    return () => {
-      console.log('[ConceptCardPro] 🛑 Polling interval cleared')
-      clearInterval(pollInterval)
     }
-    // Include all relevant dependencies
-  }, [predictionId, generationId, isGenerated, generatedImageUrl, onImageGenerated, concept.id])
+    
+    // Create interval FIRST so pollIntervalRef is available if poll completes immediately
+    pollIntervalRef = setInterval(poll, 3000)
+    
+    // Then start polling immediately (don't wait 3 seconds for first poll)
+    // pollIntervalRef is now set, so if generation completes during this call,
+    // the interval can be properly cleared
+    poll()
+
+    console.log('[ConceptCardPro] ✅ Polling interval started (immediate first poll + interval)')
+
+    // Match Classic Mode: Cleanup function
+    return () => {
+      console.log('[ConceptCardPro] 🛑 Polling interval cleared (cleanup)', {
+        predictionId: pollPredictionId,
+        conceptId: pollConceptId
+      })
+      if (pollIntervalRef) {
+        clearInterval(pollIntervalRef)
+        pollIntervalRef = null
+      }
+    }
+    // Match Classic Mode: Keep dependency array consistent size
+    // Note: onImageGenerated and concept.id are captured in closure, not used from deps
+    // But we include them so effect restarts if they change (which shouldn't happen often)
+  }, [predictionId, generationId, isGenerated])
 
   // Image thumbnails component
   const ImageThumbnailsGrid = ({ images }: { images: string[] }) => {

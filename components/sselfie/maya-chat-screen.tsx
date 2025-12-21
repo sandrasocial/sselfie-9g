@@ -4050,19 +4050,6 @@ export default function MayaChatScreen({ onImageGenerated, user, setActiveTab }:
             </div>
           )}
 
-          {/* Success Message After Concepts Load */}
-          {!isGeneratingConcepts && messages.some(msg => 
-            msg.role === 'assistant' && msg.parts?.some(part => part.type === 'tool-generateConcepts')
-          ) && (
-            <div className="flex justify-center mt-4 mb-2">
-              <div className="bg-stone-50 rounded-lg border border-stone-200/60 px-4 py-2">
-                <p className="text-xs text-stone-600 text-center">
-                  Select a concept below, add your images, and generate
-                </p>
-              </div>
-            </div>
-          )}
-          
           <div ref={messagesEndRef} />
         </div>
 

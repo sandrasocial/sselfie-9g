@@ -34,7 +34,31 @@ export async function GET(req: NextRequest) {
 
     console.log("[v0] [PRO MODE] 🔍 Checking prediction status:", predictionId)
 
-    // Check prediction status
+    // FIRST: Check database for already completed generation (prevents unnecessary Replicate API calls)
+    const [existingGeneration] = await sql`
+      SELECT id, image_url, generation_status
+      FROM ai_images
+      WHERE prediction_id = ${predictionId}
+      AND generation_status = 'completed'
+      AND image_url IS NOT NULL
+      ORDER BY created_at DESC
+      LIMIT 1
+    `
+
+    if (existingGeneration && existingGeneration.image_url) {
+      console.log("[v0] [PRO MODE] ✅ Found completed generation in database, returning cached result:", {
+        id: existingGeneration.id,
+        imageUrl: existingGeneration.image_url.substring(0, 100)
+      })
+      return NextResponse.json({
+        status: "succeeded",
+        imageUrl: existingGeneration.image_url,
+      })
+    }
+
+    console.log("[v0] [PRO MODE] No completed generation in database, checking Replicate...")
+
+    // Check prediction status with Replicate
     const status = await checkNanoBananaPrediction(predictionId)
 
     console.log("[v0] [PRO MODE] 📊 Prediction status:", {
