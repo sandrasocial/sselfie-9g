@@ -32,6 +32,7 @@ interface ImageUploadFlowProps {
   onCancel?: () => void
   initialLibrary?: ImageLibrary
   showAfterState?: boolean
+  editCategory?: 'selfies' | 'products' | 'people' | 'vibes' | null // Category being edited/managed
   onManageCategory?: (category: 'selfies' | 'products' | 'people' | 'vibes') => void
   onStartCreating?: () => void
 }
@@ -41,10 +42,18 @@ export default function ImageUploadFlow({
   onCancel,
   initialLibrary,
   showAfterState = false,
+  editCategory = null,
   onManageCategory,
   onStartCreating,
 }: ImageUploadFlowProps) {
-  const [currentStep, setCurrentStep] = useState<number>(1)
+  // If editCategory is specified, start at the appropriate step
+  const getInitialStep = () => {
+    if (editCategory === 'selfies') return 2
+    if (editCategory && ['products', 'people', 'vibes'].includes(editCategory)) return 3
+    return 1
+  }
+  
+  const [currentStep, setCurrentStep] = useState<number>(getInitialStep())
   const [library, setLibrary] = useState<ImageLibrary>(
     initialLibrary || {
       selfies: [],
@@ -785,17 +794,26 @@ export default function ImageUploadFlow({
   }
 
   // ============================================================================
-  // STEP 2: SELFIES (REQUIRED)
+  // STEP 2: SELFIES (REQUIRED) - or editing selfies
   // ============================================================================
 
-  if (currentStep === 2) {
+  if (currentStep === 2 && (!editCategory || editCategory === 'selfies')) {
     return (
       <>
         <div className="flex flex-col min-h-[600px] px-6 py-12">
         <div className="max-w-[700px] w-full mx-auto space-y-8">
           {/* Back button */}
           <button
-            onClick={handleBack}
+            onClick={() => {
+              if (editCategory === 'selfies') {
+                // When editing, back should cancel/close
+                if (onCancel) {
+                  onCancel()
+                }
+              } else {
+                handleBack()
+              }
+            }}
             style={{
               fontFamily: Typography.ui.fontFamily,
               fontSize: Typography.ui.sizes.sm,
@@ -1011,38 +1029,51 @@ export default function ImageUploadFlow({
             </div>
           )}
 
-          {/* Continue button */}
+          {/* Continue/Save button */}
           <div className="pt-6">
             <button
-              onClick={handleContinueFromStep2}
-              disabled={library.selfies.length === 0}
+              onClick={() => {
+                if (editCategory === 'selfies') {
+                  // When editing, save and close
+                  if (onComplete) {
+                    onComplete(library)
+                  }
+                  if (onCancel) {
+                    onCancel()
+                  }
+                } else {
+                  // Normal flow, continue to next step
+                  handleContinueFromStep2()
+                }
+              }}
+              disabled={library.selfies.length === 0 && editCategory !== 'selfies'}
               style={{
                 fontFamily: Typography.ui.fontFamily,
                 fontSize: Typography.ui.sizes.md,
                 fontWeight: Typography.ui.weights.medium,
                 letterSpacing: '0.5px',
                 color: Colors.surface,
-                backgroundColor: library.selfies.length > 0 ? Colors.primary : Colors.border,
+                backgroundColor: (library.selfies.length > 0 || editCategory === 'selfies') ? Colors.primary : Colors.border,
                 padding: '12px 32px',
                 borderRadius: BorderRadius.button,
                 border: 'none',
-                cursor: library.selfies.length > 0 ? 'pointer' : 'not-allowed',
+                cursor: (library.selfies.length > 0 || editCategory === 'selfies') ? 'pointer' : 'not-allowed',
                 transition: 'all 0.2s ease',
-                opacity: library.selfies.length > 0 ? 1 : 0.5,
+                opacity: (library.selfies.length > 0 || editCategory === 'selfies') ? 1 : 0.5,
               }}
               onMouseEnter={(e) => {
-                if (library.selfies.length > 0) {
+                if (library.selfies.length > 0 || editCategory === 'selfies') {
                   e.currentTarget.style.backgroundColor = Colors.accent
                 }
               }}
               onMouseLeave={(e) => {
-                if (library.selfies.length > 0) {
+                if (library.selfies.length > 0 || editCategory === 'selfies') {
                   e.currentTarget.style.backgroundColor = Colors.primary
                 }
               }}
               className="hover:opacity-90"
             >
-              {ButtonLabels.continue}
+              {editCategory === 'selfies' ? 'Done' : ButtonLabels.continue}
             </button>
           </div>
         </div>
@@ -1065,10 +1096,10 @@ export default function ImageUploadFlow({
   }
 
   // ============================================================================
-  // STEP 3: PRODUCTS, PEOPLE, VIBES (OPTIONAL)
+  // STEP 3: PRODUCTS, PEOPLE, VIBES (OPTIONAL) - or editing one of these categories
   // ============================================================================
 
-  if (currentStep === 3) {
+  if (currentStep === 3 && (!editCategory || ['products', 'people', 'vibes'].includes(editCategory))) {
     // Helper component for optional category section
     const OptionalCategorySection = ({
       title,
@@ -1270,13 +1301,55 @@ export default function ImageUploadFlow({
       </div>
     )
 
+    // Determine which category sections to show
+    const categoryMap = {
+      products: {
+        title: 'Products',
+        description: 'Brand products, packaging, or items for partnership content',
+        count: library.products.length,
+        labelFn: UILabels.products,
+        images: library.products,
+        category: 'products' as const,
+      },
+      people: {
+        title: 'People',
+        description: 'Lifestyle moments, group photos, or people in your content',
+        count: library.people.length,
+        labelFn: UILabels.people,
+        images: library.people,
+        category: 'people' as const,
+      },
+      vibes: {
+        title: 'Vibes & Inspiration',
+        description: 'Aesthetic references, mood boards, or style inspiration',
+        count: library.vibes.length,
+        labelFn: UILabels.vibes,
+        images: library.vibes,
+        category: 'vibes' as const,
+      },
+    }
+
+    // If editing a specific category, only show that one
+    const categoriesToShow = editCategory && ['products', 'people', 'vibes'].includes(editCategory)
+      ? [categoryMap[editCategory]]
+      : [categoryMap.products, categoryMap.people, categoryMap.vibes]
+
     return (
       <>
         <div className="flex flex-col min-h-[600px] px-6 py-12">
           <div className="max-w-[700px] w-full mx-auto space-y-12">
           {/* Back button */}
           <button
-            onClick={handleBack}
+            onClick={() => {
+              if (editCategory) {
+                // When editing, back should cancel/close
+                if (onCancel) {
+                  onCancel()
+                }
+              } else {
+                handleBack()
+              }
+            }}
             style={{
               fontFamily: Typography.ui.fontFamily,
               fontSize: Typography.ui.sizes.sm,
@@ -1293,64 +1366,49 @@ export default function ImageUploadFlow({
             ← Back
           </button>
 
-          {/* Products Section */}
-          <OptionalCategorySection
-            title="Products"
-            description="Brand products, packaging, or items for partnership content"
-            count={library.products.length}
-            labelFn={UILabels.products}
-            onChooseFromGallery={() => handleChooseFromGalleryForCategory('products')}
-            onUploadNew={() => handleUploadNewForCategory('products')}
-            images={library.products}
-            category="products"
-          />
+          {/* Category Sections */}
+          {categoriesToShow.map((catConfig, index) => (
+            <div key={catConfig.category}>
+              {index > 0 && (
+                <div
+                  style={{
+                    height: '1px',
+                    backgroundColor: Colors.border,
+                    width: '100%',
+                    marginBottom: '3rem',
+                  }}
+                />
+              )}
+              <OptionalCategorySection
+                title={catConfig.title}
+                description={catConfig.description}
+                count={catConfig.count}
+                labelFn={catConfig.labelFn}
+                onChooseFromGallery={() => handleChooseFromGalleryForCategory(catConfig.category)}
+                onUploadNew={() => handleUploadNewForCategory(catConfig.category)}
+                images={catConfig.images}
+                category={catConfig.category}
+              />
+            </div>
+          ))}
 
-          {/* Dividing line between sections */}
-          <div
-            style={{
-              height: '1px',
-              backgroundColor: Colors.border,
-              width: '100%',
-            }}
-          />
-
-          {/* People Section */}
-          <OptionalCategorySection
-            title="People"
-            description="Lifestyle moments, group photos, or people in your content"
-            count={library.people.length}
-            labelFn={UILabels.people}
-            onChooseFromGallery={() => handleChooseFromGalleryForCategory('people')}
-            onUploadNew={() => handleUploadNewForCategory('people')}
-            images={library.people}
-            category="people"
-          />
-
-          {/* Dividing line between sections */}
-          <div
-            style={{
-              height: '1px',
-              backgroundColor: Colors.border,
-              width: '100%',
-            }}
-          />
-
-          {/* Vibes & Inspiration Section */}
-          <OptionalCategorySection
-            title="Vibes & Inspiration"
-            description="Aesthetic references, mood boards, or style inspiration"
-            count={library.vibes.length}
-            labelFn={UILabels.vibes}
-            onChooseFromGallery={() => handleChooseFromGalleryForCategory('vibes')}
-            onUploadNew={() => handleUploadNewForCategory('vibes')}
-            images={library.vibes}
-            category="vibes"
-          />
-
-          {/* Continue button */}
+          {/* Continue/Done button */}
           <div className="pt-6">
             <button
-              onClick={handleContinueFromStep3}
+              onClick={() => {
+                if (editCategory && ['products', 'people', 'vibes'].includes(editCategory)) {
+                  // When editing, save and close
+                  if (onComplete) {
+                    onComplete(library)
+                  }
+                  if (onCancel) {
+                    onCancel()
+                  }
+                } else {
+                  // Normal flow, continue to next step
+                  handleContinueFromStep3()
+                }
+              }}
               style={{
                 fontFamily: Typography.ui.fontFamily,
                 fontSize: Typography.ui.sizes.md,
@@ -1372,7 +1430,7 @@ export default function ImageUploadFlow({
               }}
               className="hover:opacity-90"
             >
-              {ButtonLabels.continue}
+              {editCategory && ['products', 'people', 'vibes'].includes(editCategory) ? 'Done' : ButtonLabels.continue}
             </button>
           </div>
           </div>

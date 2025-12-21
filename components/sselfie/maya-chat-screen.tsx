@@ -2116,8 +2116,17 @@ export default function MayaChatScreen({ onImageGenerated, user, setActiveTab }:
   }
 
   const handleNewChat = async () => {
+    // In Studio Pro Mode, "New Project" should clear library (like "Start Fresh")
+    if (studioProMode) {
+      // Show confirmation dialog for Studio Pro Mode (matching Start Fresh behavior)
+      if (!confirm('Are you sure you want to start a new project? This will clear your image library and start fresh.')) {
+        return
+      }
+      // Clear library before creating new chat
+      await clearLibrary()
+    }
+    
     // Reset state for new chat
-    // Only clear images when starting a completely new chat
     setSelectedPrompt("")
     setMessagesWithUploadModule(new Set())
     setPendingConceptRequest(null)
@@ -4660,11 +4669,18 @@ export default function MayaChatScreen({ onImageGenerated, user, setActiveTab }:
             <div className="p-4 overflow-y-auto max-h-[calc(90vh-120px)]">
               <ImageUploadFlow
                 initialLibrary={imageLibrary}
-                showAfterState={true}
+                showAfterState={!manageCategory}
+                editCategory={manageCategory || undefined}
                 onComplete={async (library) => {
                   await saveLibrary(library)
                   if (library.intent) {
                     await updateIntent(library.intent)
+                  }
+                  // Close modal after saving when editing
+                  if (manageCategory) {
+                    setShowUploadFlow(false)
+                    setManageCategory(null)
+                    setShowLibraryModal(true) // Reopen library modal to show updated library
                   }
                 }}
                 onStartCreating={async () => {
@@ -4711,6 +4727,12 @@ export default function MayaChatScreen({ onImageGenerated, user, setActiveTab }:
                 onCancel={() => {
                   setShowUploadFlow(false)
                   setManageCategory(null)
+                  // Reopen library modal when canceling from edit mode
+                  if (manageCategory) {
+                    setTimeout(() => {
+                      setShowLibraryModal(true)
+                    }, 100)
+                  }
                 }}
               />
             </div>
