@@ -193,10 +193,16 @@ export default function ConceptCardPro({
   useEffect(() => {
     // Match Classic Mode: requires predictionId (generationId is optional - check-generation can create fallback)
     // Skip if already generated AND has image URL
-    if (!predictionId || (isGenerated && generatedImageUrl)) {
+    // Use a ref to track the current generatedImageUrl to avoid dependency issues
+    const currentImageUrl = generatedImageUrl
+    
+    if (!predictionId || (isGenerated && currentImageUrl)) {
       if (!predictionId) console.log('[ConceptCardPro] ⏸️ Polling skipped: no predictionId')
-      if (isGenerated && generatedImageUrl) console.log('[ConceptCardPro] ⏸️ Polling skipped: already generated with image URL')
-      if (isGenerated && !generatedImageUrl) {
+      if (isGenerated && currentImageUrl) {
+        console.log('[ConceptCardPro] ⏸️ Polling skipped: already generated with image URL')
+        return
+      }
+      if (isGenerated && !currentImageUrl) {
         // If isGenerated is true but no imageUrl, continue polling to get the image
         console.warn('[ConceptCardPro] ⚠️ isGenerated=true but no imageUrl, continuing to poll...')
       } else {
@@ -242,18 +248,17 @@ export default function ConceptCardPro({
               urlLength: data.imageUrl.length,
               urlPreview: data.imageUrl.substring(0, 100)
             })
-            // Use functional updates to ensure state is set correctly
-            setGeneratedImageUrl((prev) => {
-              console.log('[ConceptCardPro] Setting generatedImageUrl:', { prev, new: data.imageUrl })
-              return data.imageUrl
-            })
-            setIsGenerated((prev) => {
-              console.log('[ConceptCardPro] Setting isGenerated:', { prev, new: true })
-              return true
-            })
-            setIsGeneratingState(false)
+            
+            // Clear interval FIRST to prevent race conditions
             clearInterval(pollInterval)
-            console.log('[ConceptCardPro] ✅ Polling stopped, image should be displayed')
+            
+            // Set state synchronously (not functional updates) to ensure immediate update
+            // This matches Classic Mode's approach
+            setGeneratedImageUrl(data.imageUrl)
+            setIsGenerated(true)
+            setIsGeneratingState(false)
+            
+            console.log('[ConceptCardPro] ✅ State updated, polling stopped, image should be displayed')
             
             // Clear localStorage since generation is complete
             const storageKey = `pro-generation-${concept.id}`
@@ -291,7 +296,11 @@ export default function ConceptCardPro({
       console.log('[ConceptCardPro] 🛑 Polling interval cleared')
       clearInterval(pollInterval)
     }
-  }, [predictionId, isGenerated, onImageGenerated]) // generationId removed from dependencies since it's optional
+    // Note: We intentionally don't include generatedImageUrl in dependencies to prevent
+    // the effect from restarting when the image URL is set. The condition inside checks
+    // the current value, and once isGenerated && generatedImageUrl are both true,
+    // the effect will naturally skip on the next render cycle.
+  }, [predictionId, isGenerated, onImageGenerated]) // Removed generatedImageUrl to prevent unnecessary restarts
 
   // Image thumbnails component
   const ImageThumbnailsGrid = ({ images }: { images: string[] }) => {

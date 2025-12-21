@@ -164,3 +164,4 @@ This is the vibe check. Don't just read these - embody them in your outfit choic
 
 
 
+

@@ -179,6 +179,8 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
   const chatIdToLoad = user ? Number(user.chatId) : null // Replace with actual logic to get chatIdToLoad
 
   const hasLoadedChatRef = useRef(false)
+  const lastModeRef = useRef<string | null>(null) // Track last mode to detect changes
+  const hasClearedStateRef = useRef(false) // Track if we've already cleared state when user is undefined
 
   useEffect(() => {
     const settingsStr = localStorage.getItem("mayaGenerationSettings")
@@ -422,44 +424,57 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
   }, [user, studioProMode]) // Added studioProMode to dependencies
 
   useEffect(() => {
-    console.log("[v0] 🚀 Maya chat screen mounted, user:", user?.email, "studioProMode:", studioProMode)
-
-    if (user) {
-      // Reset hasLoadedChatRef when mode changes so we reload chat history
-      if (hasLoadedChatRef.current) {
-        // If mode changed, reset and reload
-        const savedMode = localStorage.getItem("mayaStudioProMode")
-        if (savedMode !== String(studioProMode)) {
-          console.log("[v0] Mode changed, resetting chat load state")
-          hasLoadedChatRef.current = false
-          localStorage.setItem("mayaStudioProMode", String(studioProMode))
-        }
+    // Skip if user is not available - don't do anything
+    if (!user) {
+      // Only clear state once when user becomes undefined (use ref to track)
+      if (!hasClearedStateRef.current) {
+        console.log("[v0] User is undefined, clearing chat state (one-time)")
+        hasClearedStateRef.current = true
+        hasLoadedChatRef.current = false
+        lastModeRef.current = null
+        setIsLoadingChat(false)
+        setMessages([])
+        setChatId(null)
+        setChatTitle("Chat with Maya")
+        localStorage.removeItem("mayaCurrentChatId")
       }
-
-      if (!hasLoadedChatRef.current) {
-        hasLoadedChatRef.current = true
-
-        // Check localStorage for saved chat
-        const savedChatId = localStorage.getItem("mayaCurrentChatId")
-        if (savedChatId) {
-          console.log("[v0] Found saved chatId in localStorage, loading:", savedChatId)
-          loadChat(Number(savedChatId))
-        } else {
-          // No saved chat - load the most recent chat to show history
-          console.log("[v0] No saved chatId, loading most recent chat for mode:", studioProMode ? 'pro' : 'maya')
-          loadChat() // This calls API without chatId, which loads most recent
-        }
-      }
-    } else if (!user) {
-      // If no user, set loading to false and show empty state
-      hasLoadedChatRef.current = false
-      setIsLoadingChat(false)
-      setMessages([])
-      setChatId(null)
-      setChatTitle("Chat with Maya")
-      localStorage.removeItem("mayaCurrentChatId")
+      return
     }
-  }, [user, studioProMode, loadChat]) // Added studioProMode and loadChat to dependencies
+
+    // Reset cleared state ref when user becomes available
+    hasClearedStateRef.current = false
+
+    console.log("[v0] 🚀 Loading chat for user:", user?.email, "studioProMode:", studioProMode)
+
+    // User is available - proceed with loading chat
+    // Check if mode changed
+    const currentMode = studioProMode ? 'pro' : 'maya'
+    const modeChanged = lastModeRef.current !== null && lastModeRef.current !== currentMode
+    
+    if (modeChanged) {
+      console.log("[v0] Mode changed from", lastModeRef.current, "to", currentMode, "- resetting chat load state")
+      hasLoadedChatRef.current = false
+      localStorage.setItem("mayaStudioProMode", String(studioProMode))
+    }
+    
+    lastModeRef.current = currentMode
+
+    if (!hasLoadedChatRef.current) {
+      hasLoadedChatRef.current = true
+
+      // Check localStorage for saved chat
+      const savedChatId = localStorage.getItem("mayaCurrentChatId")
+      if (savedChatId) {
+        console.log("[v0] Found saved chatId in localStorage, loading:", savedChatId)
+        loadChat(Number(savedChatId))
+      } else {
+        // No saved chat - load the most recent chat to show history
+        console.log("[v0] No saved chatId, loading most recent chat for mode:", currentMode)
+        loadChat() // This calls API without chatId, which loads most recent
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, studioProMode]) // Removed loadChat from dependencies to prevent infinite loops
 
   useEffect(() => {
     if (chatId) {
