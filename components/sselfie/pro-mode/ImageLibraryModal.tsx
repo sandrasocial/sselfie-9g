@@ -50,8 +50,17 @@ export default function ImageLibraryModal({
 }: ImageLibraryModalProps) {
   const [showStartFreshConfirm, setShowStartFreshConfirm] = useState(false)
 
+  // Memoize library to prevent unnecessary re-renders and blinking
+  const memoizedLibrary = useMemo(() => library, [
+    library.selfies.join(','),
+    library.products.join(','),
+    library.people.join(','),
+    library.vibes.join(','),
+    library.intent,
+  ])
+
   const getTotalImageCount = () => {
-    return library.selfies.length + library.products.length + library.people.length + library.vibes.length
+    return memoizedLibrary.selfies.length + memoizedLibrary.products.length + memoizedLibrary.people.length + memoizedLibrary.vibes.length
   }
 
   const handleStartFresh = () => {
@@ -133,7 +142,7 @@ export default function ImageLibraryModal({
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3">
           {images.map((imageUrl, index) => (
             <div
-              key={`${category}-${index}`}
+              key={`${category}-${imageUrl}`}
               className="aspect-square rounded-lg overflow-hidden border bg-stone-50"
               style={{
                 borderRadius: BorderRadius.image,
@@ -193,19 +202,19 @@ export default function ImageLibraryModal({
 
           <div className="space-y-8">
             {/* Selfies */}
-            {library.selfies.length > 0 && (
+            {memoizedLibrary.selfies.length > 0 && (
               <CategorySection
                 title="Selfies"
-                images={library.selfies}
+                images={memoizedLibrary.selfies}
                 labelFn={UILabels.selfies}
                 category="selfies"
               />
             )}
 
             {/* Products */}
-            {library.products.length > 0 && (
+            {memoizedLibrary.products.length > 0 && (
               <>
-                {library.selfies.length > 0 && (
+                {memoizedLibrary.selfies.length > 0 && (
                   <div
                     style={{
                       height: '1px',
@@ -216,7 +225,7 @@ export default function ImageLibraryModal({
                 )}
                 <CategorySection
                   title="Products"
-                  images={library.products}
+                  images={memoizedLibrary.products}
                   labelFn={UILabels.products}
                   category="products"
                 />
@@ -224,9 +233,9 @@ export default function ImageLibraryModal({
             )}
 
             {/* People */}
-            {library.people.length > 0 && (
+            {memoizedLibrary.people.length > 0 && (
               <>
-                {(library.selfies.length > 0 || library.products.length > 0) && (
+                {(memoizedLibrary.selfies.length > 0 || memoizedLibrary.products.length > 0) && (
                   <div
                     style={{
                       height: '1px',
@@ -237,7 +246,7 @@ export default function ImageLibraryModal({
                 )}
                 <CategorySection
                   title="People"
-                  images={library.people}
+                  images={memoizedLibrary.people}
                   labelFn={UILabels.people}
                   category="people"
                 />
@@ -245,11 +254,11 @@ export default function ImageLibraryModal({
             )}
 
             {/* Vibes */}
-            {library.vibes.length > 0 && (
+            {memoizedLibrary.vibes.length > 0 && (
               <>
-                {(library.selfies.length > 0 ||
-                  library.products.length > 0 ||
-                  library.people.length > 0) && (
+                {(memoizedLibrary.selfies.length > 0 ||
+                  memoizedLibrary.products.length > 0 ||
+                  memoizedLibrary.people.length > 0) && (
                   <div
                     style={{
                       height: '1px',
@@ -260,7 +269,7 @@ export default function ImageLibraryModal({
                 )}
                 <CategorySection
                   title="Vibes & Inspiration"
-                  images={library.vibes}
+                  images={memoizedLibrary.vibes}
                   labelFn={UILabels.vibes}
                   category="vibes"
                 />
@@ -285,7 +294,7 @@ export default function ImageLibraryModal({
             )}
 
             {/* Current Intent */}
-            {library.intent && (
+            {memoizedLibrary.intent && (
               <div className="space-y-3 pt-4 border-t" style={{ borderColor: Colors.border }}>
                 <p
                   style={{
@@ -308,7 +317,7 @@ export default function ImageLibraryModal({
                     lineHeight: Typography.body.lineHeight,
                   }}
                 >
-                  {library.intent}
+                  {memoizedLibrary.intent}
                 </p>
                 {onEditIntent && (
                   <button

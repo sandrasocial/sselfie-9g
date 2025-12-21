@@ -172,6 +172,7 @@ export default function MayaChatScreen({ onImageGenerated, user, setActiveTab }:
   const [showLibraryModal, setShowLibraryModal] = useState(false)
   const [showUploadFlow, setShowUploadFlow] = useState(false)
   const [showProModeHistory, setShowProModeHistory] = useState(false)
+  const [manageCategory, setManageCategory] = useState<'selfies' | 'products' | 'people' | 'vibes' | null>(null)
   
   // Prompt suggestions state
   const [promptSuggestions, setPromptSuggestions] = useState<PromptSuggestion[]>([])
@@ -4601,10 +4602,16 @@ export default function MayaChatScreen({ onImageGenerated, user, setActiveTab }:
           library={imageLibrary}
           onClose={() => setShowLibraryModal(false)}
           onManageCategory={(category) => {
-            // Open upload flow for specific category
+            // Open upload flow for specific category - store category to focus on it
             console.log('[Pro Mode] Manage category:', category)
+            setManageCategory(category)
             setShowLibraryModal(false)
-            setShowUploadFlow(true)
+            // Use requestAnimationFrame to ensure modal close completes before opening upload flow
+            requestAnimationFrame(() => {
+              requestAnimationFrame(() => {
+                setShowUploadFlow(true)
+              })
+            })
           }}
           onStartFresh={async () => {
             if (confirm('Are you sure you want to start fresh? This will clear your image library.')) {
@@ -4637,8 +4644,8 @@ export default function MayaChatScreen({ onImageGenerated, user, setActiveTab }:
         />
       )}
 
-      {/* Pro Mode Upload Flow Modal (when triggered from header/input) */}
-      {studioProMode && showUploadFlow && !isEmpty && (
+      {/* Pro Mode Upload Flow Modal (when triggered from header/input or manage button) */}
+      {studioProMode && showUploadFlow && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
             <div className="p-4 border-b border-stone-200 flex items-center justify-between">
@@ -4701,7 +4708,10 @@ export default function MayaChatScreen({ onImageGenerated, user, setActiveTab }:
                   setShowUploadFlow(false)
                   setShowLibraryModal(true)
                 }}
-                onCancel={() => setShowUploadFlow(false)}
+                onCancel={() => {
+                  setShowUploadFlow(false)
+                  setManageCategory(null)
+                }}
               />
             </div>
           </div>
