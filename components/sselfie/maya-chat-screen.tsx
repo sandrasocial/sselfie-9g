@@ -1641,6 +1641,51 @@ export default function MayaChatScreen({ onImageGenerated, user, setActiveTab }:
     ],
   }
 
+  // Get Pro Mode quick suggestions based on categories
+  const getProModeQuickSuggestions = (): Array<{ label: string; prompt: string }> => {
+    const categories = ['WELLNESS', 'LUXURY', 'LIFESTYLE', 'FASHION', 'TRAVEL', 'BEAUTY']
+    const suggestions: Array<{ label: string; prompt: string }> = []
+
+    const categoryExamples: Record<string, Array<{ label: string; prompt: string }>> = {
+      WELLNESS: [
+        { label: 'Wellness Moment', prompt: 'Create wellness content with calm, grounded presence in minimal space' },
+        { label: 'Athletic Ready', prompt: 'Alo Yoga athletic wear, natural movement, wellness aesthetic' },
+      ],
+      LUXURY: [
+        { label: 'Quiet Luxury', prompt: 'Sophisticated editorial portrait, quiet luxury aesthetic, timeless pieces' },
+        { label: 'Chic Minimal', prompt: 'Minimalist luxury look, refined styling, architectural setting' },
+      ],
+      LIFESTYLE: [
+        { label: 'Coastal Living', prompt: 'Coastal lifestyle moment, effortless styling, natural light' },
+        { label: 'Coffee Run', prompt: 'Relatable everyday moment, cafe setting, Pinterest aesthetic' },
+      ],
+      FASHION: [
+        { label: 'Street Style', prompt: 'Editorial street style, fashion-forward outfit, urban setting' },
+        { label: 'Editorial Look', prompt: 'Fashion editorial portrait, trend-aware styling, clean background' },
+      ],
+      TRAVEL: [
+        { label: 'Airport Chic', prompt: 'Effortless travel style, airport terminal, sophisticated travel aesthetic' },
+        { label: 'Destination Ready', prompt: 'Travel content, destination setting, aspirational calm energy' },
+      ],
+      BEAUTY: [
+        { label: 'Clean Beauty', prompt: 'Natural beauty moment, fresh skin focus, editorial beauty lighting' },
+        { label: 'Skincare Glow', prompt: 'Skincare routine content, glowing skin, minimal beauty aesthetic' },
+      ],
+    }
+
+    // Get 1 example from each category
+    categories.forEach(category => {
+      const examples = categoryExamples[category]
+      if (examples && examples.length > 0) {
+        const randomExample = examples[Math.floor(Math.random() * examples.length)]
+        suggestions.push(randomExample)
+      }
+    })
+
+    // Shuffle and return 4 suggestions
+    return suggestions.sort(() => Math.random() - 0.5).slice(0, 4)
+  }
+
   const getRandomPrompts = (gender: string | null) => {
     const promptPool = gender === "woman" ? promptPoolWoman : promptPoolMan
     const allCategories = Object.values(promptPool)
@@ -1669,16 +1714,26 @@ export default function MayaChatScreen({ onImageGenerated, user, setActiveTab }:
           const data = await response.json()
           console.log("[v0] Profile API data:", data)
           setUserGender(data.gender || null)
-          const prompts = getRandomPrompts(data.gender || null)
-          console.log("[v0] Setting prompts for gender:", data.gender, "Prompts:", prompts.length)
-          setCurrentPrompts(prompts)
+          
+          // 🔴 FIX: Use Pro Mode prompts if in Pro Mode
+          if (studioProMode) {
+            // Get Pro Mode category-specific prompts
+            const proPrompts = getProModeQuickSuggestions()
+            console.log("[v0] Setting Pro Mode prompts:", proPrompts.length)
+            setCurrentPrompts(proPrompts)
+          } else {
+            // Classic Mode prompts
+            const prompts = getRandomPrompts(data.gender || null)
+            console.log("[v0] Setting Classic Mode prompts for gender:", data.gender, "Prompts:", prompts.length)
+            setCurrentPrompts(prompts)
+          }
         } else {
           console.error("[v0] Profile API error:", response.status, response.statusText)
-          setCurrentPrompts(getRandomPrompts(null))
+          setCurrentPrompts(studioProMode ? getProModeQuickSuggestions() : getRandomPrompts(null))
         }
       } catch (error) {
         console.error("[v0] Error fetching user gender:", error)
-        setCurrentPrompts(getRandomPrompts(null))
+        setCurrentPrompts(studioProMode ? getProModeQuickSuggestions() : getRandomPrompts(null))
       }
     }
     fetchUserGender()
@@ -3367,10 +3422,20 @@ export default function MayaChatScreen({ onImageGenerated, user, setActiveTab }:
                       {(currentPrompts.length > 0 || !(imageLibrary.intent && imageLibrary.intent.trim())) && (
                         <div className="space-y-3">
                           <p className="text-xs text-stone-600 font-light tracking-wide uppercase">
-                            {imageLibrary.intent && imageLibrary.intent.trim() 
-                              ? "Or Start with Maya's Signature Styles" 
-                              : "Start with Maya's Signature Styles"}
+                            {studioProMode 
+                              ? (imageLibrary.intent && imageLibrary.intent.trim() 
+                                  ? "Or Start with Pro Mode Examples" 
+                                  : "Start with Pro Mode Examples")
+                              : (imageLibrary.intent && imageLibrary.intent.trim() 
+                                  ? "Or Start with Maya's Signature Styles" 
+                                  : "Start with Maya's Signature Styles")
+                            }
                           </p>
+                          {studioProMode && (
+                            <p className="text-xs text-stone-500 text-center mb-3">
+                              Pro Mode category examples - tap to inspire Maya
+                            </p>
+                          )}
                           {currentPrompts.length > 0 ? (
                             <div className="flex flex-wrap gap-2 justify-center max-w-2xl mx-auto">
                               {currentPrompts.map((item, index) => (
@@ -3714,17 +3779,65 @@ export default function MayaChatScreen({ onImageGenerated, user, setActiveTab }:
                                                 linkedImages: conceptLinkedImages,
                                                 fullPrompt: concept.fullPrompt || concept.prompt,
                                               }}
+                                              onPromptUpdate={(updatedConceptId, newFullPrompt) => {
+                                                // Update the concept's fullPrompt in the messages array
+                                                setMessages((prevMessages) => {
+                                                  return prevMessages.map((message) => {
+                                                    if (message.id === msg.id && message.parts) {
+                                                      return {
+                                                        ...message,
+                                                        parts: message.parts.map((part: any) => {
+                                                          if (part.type === 'tool-generateConcepts' && part.output?.concepts) {
+                                                            return {
+                                                              ...part,
+                                                              output: {
+                                                                ...part.output,
+                                                                concepts: part.output.concepts.map((c: any) => {
+                                                                  const cId = c.id || `concept-${msg.id}-${conceptIndex}`
+                                                                  if (cId === updatedConceptId) {
+                                                                    return {
+                                                                      ...c,
+                                                                      fullPrompt: newFullPrompt,
+                                                                    }
+                                                                  }
+                                                                  return c
+                                                                }),
+                                                              },
+                                                            }
+                                                          }
+                                                          return part
+                                                        }),
+                                                      }
+                                                    }
+                                                    return message
+                                                  })
+                                                })
+                                                console.log('[Pro Mode] ✅ Prompt updated for concept:', updatedConceptId)
+                                              }}
                                               onGenerate={async () => {
-                                                console.log('[Pro Mode] 🎬 onGenerate called for concept:', concept.title)
+                                                // Get the current concept from messages to ensure we use the latest prompt (including edits)
+                                                const currentMessage = messages.find(m => m.id === msg.id)
+                                                const currentConceptPart = currentMessage?.parts?.find((p: any) => 
+                                                  p.type === 'tool-generateConcepts' && p.output?.concepts
+                                                )
+                                                const currentConcepts = currentConceptPart?.output?.concepts || []
+                                                const currentConcept = currentConcepts.find((c: any) => {
+                                                  const cId = c.id || `concept-${msg.id}-${conceptIndex}`
+                                                  return cId === conceptId
+                                                }) || concept
+
+                                                const promptToUse = currentConcept.fullPrompt || currentConcept.prompt || concept.fullPrompt || concept.prompt
+
+                                                console.log('[Pro Mode] 🎬 onGenerate called for concept:', currentConcept.title || concept.title)
                                                 
-                                                if (!concept.fullPrompt && !concept.prompt) {
+                                                if (!promptToUse) {
                                                   console.error('[Pro Mode] ❌ Concept missing prompt')
                                                   throw new Error('Concept missing prompt')
                                                 }
 
                                                 console.log('[Pro Mode] 📤 Calling /api/maya/pro/generate-image with:', {
-                                                  conceptTitle: concept.title,
-                                                  promptLength: (concept.fullPrompt || concept.prompt)?.length,
+                                                  conceptTitle: currentConcept.title || concept.title,
+                                                  promptLength: promptToUse.length,
                                                   linkedImagesCount: conceptLinkedImages?.length || 0,
                                                 })
 
@@ -3734,7 +3847,7 @@ export default function MayaChatScreen({ onImageGenerated, user, setActiveTab }:
                                                     headers: { 'Content-Type': 'application/json' },
                                                     credentials: 'include',
                                                     body: JSON.stringify({
-                                                      fullPrompt: concept.fullPrompt || concept.prompt,
+                                                      fullPrompt: promptToUse,
                                                       conceptTitle: concept.title || concept.label,
                                                       conceptDescription: concept.description,
                                                       category: concept.category || 'concept',
@@ -4116,13 +4229,13 @@ export default function MayaChatScreen({ onImageGenerated, user, setActiveTab }:
         {/* Input Area - Pro Mode or Classic Mode */}
         {studioProMode ? (
           <>
-            {/* Pro Mode Quick Suggestions - Same as Classic Mode */}
+            {/* Pro Mode Quick Suggestions - Category-based prompts */}
             {!isEmpty && !uploadedImage && currentPrompts.length > 0 && (
               <div className="mb-2">
                 <div className="flex gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide pb-1 -mx-2 px-2 sm:mx-0 sm:px-0">
                   {currentPrompts.map((item, index) => (
                     <button
-                      key={index}
+                      key={`pro-mode-prompt-${index}-${item.label}`}
                       onClick={() => {
                         handleSendMessage(item.prompt)
                       }}

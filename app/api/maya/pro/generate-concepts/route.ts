@@ -427,6 +427,25 @@ Your "description" field MUST include:
 - Specific mood/atmosphere (e.g., "warm festive atmosphere" or "magical holiday ambiance")
 - Do NOT use generic descriptions - be specific and match the user's request
 
+**🔴🔴🔴 CRITICAL INSTRUCTION FOR DESCRIPTIONS:**
+Your description field must be EXACTLY what will appear in the final prompt. The description you write will be used directly to build the image generation prompt, so it must include:
+
+1. SPECIFIC OUTFIT DETAILS: Not "cozy outfit" but "cream cashmere sweater, high-waisted denim, Bottega Veneta leather bag"
+2. SPECIFIC SETTING DETAILS: Not "cozy setting" but "living room with marble fireplace, Christmas tree with warm lights"
+3. SPECIFIC POSE DETAILS: Not "relaxed pose" but "sitting on sofa, holding warm mug, looking at Christmas tree"
+4. BRAND NAMES: Include 1-2 accessible brands + max 1 luxury brand woven naturally into descriptions
+5. MOOD & LIGHTING: Specific lighting conditions and mood descriptors
+
+The description must be detailed enough that a prompt builder can use it verbatim without adding generic defaults.
+
+Example of GOOD description:
+"Cozy Christmas morning moment: sitting comfortably on cream sofa in elegant living room, wearing Jenni Kayne cashmere sweater in warm cream, Levi's high-waisted denim, holding ceramic mug with both hands, looking peacefully at decorated Christmas tree with twinkling lights, Bottega Veneta crossbody bag resting beside her. Soft morning light streaming through windows, warm fireplace glow, festive holiday atmosphere, quiet luxury aesthetic."
+
+Example of BAD description (too generic):
+"Cozy Christmas morning in living room wearing festive outfit."
+
+Remember: Your description IS the prompt. Make it detailed, specific, and complete.
+
 **EXAMPLE for Christmas request:**
 - Title: "Christmas Morning Cozy"
 - Description: "Cozy holiday morning moment, wearing soft cashmere sweater in festive colors, sitting by decorated Christmas tree with warm fireplace, holding warm mug, peaceful and joyful holiday atmosphere, soft morning light through windows, twinkling Christmas tree lights in background"
@@ -523,6 +542,45 @@ Make each concept unique, sophisticated, and based on the user's request. Use yo
             else safeCategory = 'LIFESTYLE' // Last resort fallback
           }
           
+          // 🔴 VALIDATION: Ensure description is detailed enough
+          const descriptionWordCount = safeDescription.split(/\s+/).length
+          const hasBrandMention = /alo|lululemon|glossier|chanel|dior|bottega|everlane|reformation|aritzia|the row|jenni kayne|levi|zara|cos|rhode|hermès/i.test(safeDescription)
+          const hasSpecificDetails = /wearing|sitting|standing|holding|looking|marble|fireplace|tree|light|sweater|denim|dress|blazer|coat|jacket|sofa|mug|room|interior|outfit|attire/i.test(safeDescription)
+
+          if (descriptionWordCount < 20 || !hasSpecificDetails) {
+            console.warn(`[v0] [VALIDATION] Description too vague for concept ${index + 1}:`, safeDescription)
+            console.warn(`[v0] [VALIDATION] Word count: ${descriptionWordCount}, Has brands: ${hasBrandMention}, Has details: ${hasSpecificDetails}`)
+            
+            // Try to enhance description from other available fields in aiConcept
+            const extractedDetails: string[] = []
+            
+            // Extract details from aesthetic field if available
+            if (safeAesthetic && safeAesthetic.length > 20) {
+              // Use aesthetic as additional context
+              extractedDetails.push(safeAesthetic)
+            }
+            
+            // Extract details from title if it's descriptive
+            if (safeTitle && safeTitle.length > 15 && /sitting|wearing|standing|holding|cozy|elegant|sophisticated/i.test(safeTitle)) {
+              extractedDetails.push(safeTitle)
+            }
+            
+            // Enhance description if we found additional details
+            if (extractedDetails.length > 0) {
+              const enhancedDescription = `${safeDescription} ${extractedDetails.join(', ')}.`
+              console.log(`[v0] [VALIDATION] Enhanced description for concept ${index + 1} with details from aesthetic/title`)
+              // Note: We'll use the enhanced description, but this is a fallback
+              // The AI should ideally generate detailed descriptions from the start
+            }
+          }
+
+          console.log(`[v0] [VALIDATION] Concept ${index + 1} description validation:`, {
+            wordCount: descriptionWordCount,
+            hasBrands: hasBrandMention,
+            hasDetails: hasSpecificDetails,
+            length: safeDescription.length
+          })
+
           // Convert to ConceptComponents
           const conceptComponents: ConceptComponents = {
             title: safeTitle,

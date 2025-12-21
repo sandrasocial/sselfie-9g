@@ -1,340 +1,520 @@
-# Maya Pro Mode Prompting System - Complete Audit
+# Maya Pro Mode Prompting Pipeline - Audit Document
 
-## Executive Summary
-
-**Problem:** Maya is creating prompts in Studio Pro mode that do NOT use the 100+ prompt examples/templates that have been created for each category. She's generating generic prompts instead of following the structured template examples.
-
-**Root Cause:** The prompt template system exists but is NOT being integrated into Maya's concept generation flow. Maya receives generic instructions but not the actual template examples.
+**Date:** January 2025  
+**Status:** Audit Only - No Implementation  
+**Purpose:** Identify all file paths and line numbers requiring attention for Pro Mode prompting issues
 
 ---
 
-## Current Architecture
+## Issue #1: Missing Luxurious Aesthetics, Details, Sceneries, and Luxury/Mixed Brands (Always Falls Back to Glossier)
 
-### 1. Template System Location
-**Location:** `lib/maya/prompt-templates/`
+### Problem Summary
+Maya's prompts in Pro Mode are missing:
+- Luxurious aesthetic descriptions
+- Detailed scenery descriptions
+- Luxury or mixed brand names (e.g., Chanel, Dior, Hermès, Reformation, etc.)
+- Always defaults to Glossier instead of using diverse luxury brands
 
-**Structure:**
-```
-lib/maya/prompt-templates/
-├── index.ts                          # Main export (exports ALL_TEMPLATES)
-├── types.ts                          # TypeScript interfaces
-├── helpers.ts                        # Utility functions
-├── carousel-prompts.ts              # Carousel templates
-├── ugc-prompts.ts                   # UGC templates
-├── product-mockup-prompts.ts        # Product mockup templates
-├── brand-partnership-prompts.ts     # Brand partnership templates
-├── reel-cover-prompts.ts            # Reel cover templates
-├── high-end-brands/
-│   ├── index.ts                     # Brand templates export
-│   ├── brand-registry.ts            # Brand profiles & metadata
-│   ├── category-mapper.ts           # detectCategoryAndBrand() function
-│   ├── wellness-brands.ts           # Alo Yoga, Lululemon templates
-│   ├── luxury-brands.ts             # Chanel, Dior templates
-│   ├── lifestyle-brands.ts          # Glossier, Free People templates
-│   ├── fashion-brands.ts            # Reformation, Everlane, Aritzia templates
-│   ├── beauty-brands.ts             # Beauty brand templates
-│   ├── tech-brands.ts               # Tech brand templates
-│   ├── selfies.ts                   # Selfie templates
-│   ├── travel-lifestyle.ts          # Airport/travel templates (100+ examples)
-│   └── seasonal-christmas.ts        # Christmas templates
-└── CATEGORIES_AND_TEMPLATES.md      # Documentation
-```
+### Root Causes & File Locations
 
-### 2. Template Structure
+#### 1.1 Brand Selection Logic - Glossier Fallback
+**File:** `lib/maya/pro/prompt-builder.ts`  
+**Lines:** 278-296 (LIFESTYLE category), 322-329 (BEAUTY category)
 
-Each template follows this structure:
-```typescript
-export const TEMPLATE_NAME: PromptTemplate = {
-  id: "template_id",
-  name: "Template Name",
-  description: "Description",
-  useCases: ["use case 1", "use case 2"],
-  requiredImages: { min: 1, max: 2, types: ["user_lora", "inspiration"] },
-  promptStructure: (context: PromptContext): string => {
-    // Returns a complete prompt string
-    return `Woman, maintaining exactly the characteristics...`
-  },
-  variations?: PromptVariation[]
-}
-```
+**Issue:** 
+- Lines 290-292: LIFESTYLE category defaults to Glossier when brands array is empty
+- Lines 323-325: BEAUTY category defaults to Rhode, but no luxury brand diversification
+- No logic to select from multiple luxury brands based on context
 
-**Key Files with Examples:**
-- `travel-lifestyle.ts` - Contains 100+ airport/travel prompt examples
-- `wellness-brands.ts` - Contains Alo Yoga, Lululemon examples
-- `luxury-brands.ts` - Contains Chanel, Dior examples
-- `seasonal-christmas.ts` - Contains Christmas examples
+**File:** `lib/maya/pro/category-system.ts`  
+**Lines:** 60-81
 
-### 3. Current Usage in Code
+**Issue:**
+- Category definitions list brands, but prompt builder doesn't use them intelligently
+- LIFESTYLE category lists: `['Glossier', 'Free People', 'Jenni Kayne']` but always picks Glossier first
+- BEAUTY category lists: `['Rhode', 'Glossier', 'The Ordinary']` but defaults to single brand
 
-**✅ What IS Being Used:**
-1. `detectCategoryAndBrand()` - Called in `generate-concepts/route.ts` (line 245)
-   - Detects category and brand from user request
-   - Returns `CategoryDetectionResult` with suggested brands
-   - **BUT:** Only used to add brand name guidance, NOT to load templates
+#### 1.2 Missing Luxury Brand Database Integration
+**File:** `lib/maya/prompt-templates/high-end-brands/brand-registry.ts`  
+**Lines:** 203-206 (GLOSSIER definition)
 
-2. `getBrandTemplate()` - Exists in `high-end-brands/index.ts`
-   - Can retrieve a template by ID
-   - **BUT:** NOT being called anywhere in concept generation
+**Issue:**
+- Brand registry exists but prompt builder doesn't reference it
+- No logic to randomly select from luxury brands or match context
 
-3. `ALL_BRAND_TEMPLATES` - Exists in `high-end-brands/index.ts`
-   - Contains all brand templates
-   - **BUT:** NOT being used in concept generation
+**File:** `lib/maya/prompt-templates/high-end-brands/lifestyle-brands.ts`  
+**Lines:** 1-1150
 
-**❌ What is NOT Being Used:**
-1. **Template Examples:** The actual prompt examples from templates are NOT being passed to Maya
-2. **Template Structure:** The `promptStructure()` functions are NOT being called
-3. **Category Templates:** Templates for detected categories are NOT being loaded
-4. **Example Prompts:** The 100+ example prompts are NOT being shown to Maya as guidance
+**Issue:**
+- GLOSSIER_CLEAN_GIRL template exists but is overused
+- Other lifestyle brands (Free People, Goop) have templates but aren't integrated into prompt builder
 
----
+#### 1.3 Missing Luxury Aesthetic Enhancements
+**File:** `lib/maya/pro/prompt-builder.ts`  
+**Lines:** 109-336 (buildOutfitSection function)
 
-## Current Concept Generation Flow
+**Issue:**
+- Lines 247-254: Luxury theme detection exists but doesn't include specific luxury brand names
+- No logic to enhance prompts with luxury materials (cashmere, silk, leather, etc.)
+- Missing detailed scenery descriptions for luxury settings
 
-### File: `app/api/maya/generate-concepts/route.ts`
+**File:** `lib/maya/pro/prompt-builder.ts`  
+**Lines:** 482-494 (buildSettingSection function)
 
-**Current Flow:**
-1. **Line 245:** `detectCategoryAndBrand()` is called
-2. **Lines 248-288:** If brand detected (confidence >= 0.7), adds `brandGuidance` string
-   - This guidance includes brand name, visual aesthetic, style guide
-   - **BUT:** Does NOT include actual template examples
-3. **Lines 600-1300:** System prompt is built with:
-   - Generic Nano Banana Pro principles
-   - Brand guidance (if detected)
-   - Generic prompt structure instructions
-   - **BUT:** NO template examples are included
-4. **Line 1328:** Maya generates concepts using `generateText()`
-   - Maya receives instructions but NOT the actual template examples
-   - Maya creates prompts from scratch instead of following examples
+**Issue:**
+- Default settings are generic (e.g., "Coastal home interior")
+- Missing luxury setting details (e.g., "Marble staircase", "Five-star hotel lobby", "Luxury boutique")
 
-**The Problem:**
-- Maya receives: "Create prompts like this format..."
-- Maya does NOT receive: "Here are 5-10 actual example prompts to follow..."
-- Result: Maya creates generic prompts that don't match the template style
+#### 1.4 Prompt Generation - Missing Luxury Context
+**File:** `app/api/maya/pro/generate-concepts/route.ts`  
+**Lines:** 393-462 (AI prompt for concept generation)
+
+**Issue:**
+- AI prompt doesn't emphasize luxury brands, materials, or detailed sceneries
+- No instruction to Maya to include luxury/mixed brands in brandReferences
+- Missing guidance on detailed scenery descriptions
+
+**File:** `lib/maya/pro/prompt-builder.ts`  
+**Lines:** 538-590 (buildAestheticDescription function)
+
+**Issue:**
+- Lines 579-588: Aesthetic enhancements don't include luxury-specific language
+- Missing terms like "luxurious marble", "sophisticated architecture", "refined elegance"
+
+#### 1.5 Brand Detection Logic
+**File:** `app/api/maya/generate-concepts/route.ts`  
+**Lines:** 682-693 (detectBrand function)
+
+**Issue:**
+- Only detects 4 brands: ALO, CHANEL, LULULEMON, GLOSSIER
+- Missing Dior, Hermès, Reformation, Everlane, Aritzia, etc.
+- No fallback to luxury brand selection when brand not explicitly mentioned
 
 ---
 
-## What Needs to Change
+## Issue #2: Maya's Description/Vision Doesn't Match Generated Prompts
 
-### 1. Load Templates Based on Detected Category/Brand
+### Problem Summary
+The concept card `description` field (Maya's vision) doesn't match the `fullPrompt` field generated by the prompt builder.
 
-**Location:** `app/api/maya/generate-concepts/route.ts`
+### Root Causes & File Locations
 
-**After line 245** (after `detectCategoryAndBrand()`):
-- Load relevant templates for the detected category
-- Load templates for detected brand (if any)
-- Extract example prompts from templates
+#### 2.1 Concept Generation vs Prompt Building Disconnect
+**File:** `app/api/maya/pro/generate-concepts/route.ts`  
+**Lines:** 393-462 (AI prompt for concept generation)
 
-**Example:**
-```typescript
-// After detectCategoryAndBrand()
-const categoryTemplates = getAllTemplatesForCategory(brandIntent.category)
-const brandTemplate = brandIntent.suggestedBrands[0] 
-  ? getBrandTemplate(brandIntent.suggestedBrands[0].id) 
-  : null
+**Issue:**
+- AI generates `description` field independently
+- Prompt builder (`buildProModePrompt`) generates `fullPrompt` from description, but transforms it
+- No validation that fullPrompt matches description's intent
 
-// Get example prompts from templates
-const examplePrompts = []
-if (brandTemplate) {
-  // Use brand template's promptStructure to generate examples
-  const exampleContext: PromptContext = {
-    userImages: [],
-    contentType: "concept",
-    userIntent: userRequest || ""
-  }
-  examplePrompts.push(brandTemplate.promptStructure(exampleContext))
-}
-```
+**Lines:** 526-560 (concept building loop)
 
-### 2. Include Template Examples in System Prompt
+**Issue:**
+- Line 552: `buildProModePrompt` is called with `conceptComponents`, but the description is transformed
+- Description might say "cozy Christmas morning" but prompt builder adds generic outfit details
 
-**Location:** `app/api/maya/generate-concepts/route.ts`
+#### 2.2 Description Extraction Logic
+**File:** `lib/maya/pro/prompt-builder.ts`  
+**Lines:** 144-196 (buildOutfitSection - description extraction)
 
-**In the system prompt construction (around line 600-1300):**
-- Add a section: "PROMPT TEMPLATE EXAMPLES"
-- Include 5-10 actual example prompts from relevant templates
-- Make it clear: "Follow these examples EXACTLY in structure and style"
+**Issue:**
+- Lines 153-179: Tries to extract outfit from description, but may fail
+- If extraction fails, falls back to category defaults
+- This causes mismatch: description says one thing, prompt says another
 
-**Example:**
-```typescript
-const templateExamplesSection = examplePrompts.length > 0 ? `
+**Lines:** 424-494 (buildSettingSection)
 
-=== 🔴 CRITICAL: PROMPT TEMPLATE EXAMPLES ===
+**Issue:**
+- Lines 432-458: Theme detection from description
+- But if theme not detected, uses category defaults
+- Description might have detailed setting, but prompt uses generic default
 
-You MUST follow these example prompts EXACTLY in structure, style, and format.
-These are the ONLY acceptable prompt formats for this category.
+#### 2.3 AI Prompt Instructions
+**File:** `app/api/maya/pro/generate-concepts/route.ts`  
+**Lines:** 423-428 (description requirements)
 
-**EXAMPLE PROMPTS:**
+**Issue:**
+- Instructions tell Maya to include specific details in description
+- But prompt builder may override these details if extraction fails
+- No instruction to Maya that description should be EXACTLY what appears in prompt
 
-${examplePrompts.map((ex, i) => `${i + 1}. ${ex}`).join('\n\n')}
+**Lines:** 449-460 (JSON structure)
 
-**REQUIREMENTS:**
-- Use the SAME structure as these examples
-- Use the SAME style and tone
-- Use the SAME level of detail
-- Match the SAME format (sections, organization, etc.)
-- DO NOT create prompts that deviate from these examples
-
-` : ''
-```
-
-### 3. Use Template Structure Functions
-
-**Location:** `app/api/maya/generate-concepts/route.ts`
-
-**Instead of:** Maya generating prompts from scratch
-**Do:** Use template's `promptStructure()` function to generate base prompts, then let Maya create variations
-
-**OR:**
-
-**Keep current flow BUT:** Show Maya the template examples so she can match the style
+**Issue:**
+- Returns `description` and `fullPrompt` as separate fields
+- No validation that they match
+- Prompt builder regenerates prompt from description, causing potential drift
 
 ---
 
-## Files That Need Changes
+## Issue #3: Quick Prompts Using Classic Mode Styles Instead of Pro Mode Universal Prompts
 
-### Primary Changes
+### Problem Summary
+Quick suggestion prompts in the chat input use Classic Mode styles/signatures instead of Pro Mode universal prompts/examples.
 
-1. **`app/api/maya/generate-concepts/route.ts`**
-   - Import template functions: `getAllTemplatesForCategory`, `getBrandTemplate`
-   - Load templates after category/brand detection
-   - Extract example prompts from templates
-   - Add template examples section to system prompt
-   - **Lines to modify:** ~245-290 (after brand detection), ~600-1300 (system prompt construction)
+### Root Causes & File Locations
 
-2. **`lib/maya/prompt-templates/high-end-brands/index.ts`**
-   - Verify `getAllTemplatesForCategory()` works correctly
-   - May need to add helper to extract example prompts from templates
+#### 3.1 Quick Prompts Generation
+**File:** `components/sselfie/maya-chat-screen.tsx`  
+**Lines:** 1661-1681 (quick prompts fetching logic)
 
-### Secondary Changes (if needed)
+**Issue:**
+- Lines 1661-1677: Uses `getRandomPrompts(null)` which may be Classic Mode prompts
+- No differentiation between Classic and Pro Mode prompts
+- `currentPrompts` state doesn't filter by mode
 
-3. **`lib/maya/prompt-templates/helpers.ts`**
-   - May need helper function to extract/generate example prompts from templates
+#### 3.2 Signature Styles vs Universal Prompts
+**File:** `lib/maya/universal-prompts/index.ts`  
+**Lines:** 1257+ (getRandomPrompts function)
 
-4. **`lib/maya/studio-pro-system-prompt.ts`**
-   - May need to reference template examples in system prompt
+**Issue:**
+- Function exists but may not be filtering for Pro Mode specific prompts
+- No parameter to distinguish Classic vs Pro Mode styles
 
----
+**File:** `components/sselfie/maya-chat-screen.tsx`  
+**Lines:** 3340-3426 (quick suggestions rendering)
 
-## Template Examples Available
+**Issue:**
+- Lines 3366-3377: Shows "Maya's Signature Styles" 
+- But these are Classic Mode signatures, not Pro Mode universal prompts
+- Should show Pro Mode specific examples based on category system
 
-### Travel Lifestyle (100+ examples)
-- **File:** `lib/maya/prompt-templates/high-end-brands/travel-lifestyle.ts`
-- **Templates:** 
-  - `AIRPORT_IT_GIRL`
-  - `AIRPORT_EDITORIAL_WALK`
-  - `AIRPORT_GOLDEN_HOUR`
-  - `AIRPORT_FLOOR_SELFIE`
-  - `AIRPORT_VOGUE_EDITORIAL`
-  - Plus many more variations
+#### 3.3 Pro Mode Category System Not Used
+**File:** `lib/maya/pro/category-system.ts`  
+**Lines:** 1-150
 
-### Wellness Brands
-- **File:** `lib/maya/prompt-templates/high-end-brands/wellness-brands.ts`
-- **Templates:**
-  - `ALO_YOGA_LIFESTYLE`
-  - `LULULEMON_LIFESTYLE`
+**Issue:**
+- Category system exists with Pro Mode categories and examples
+- But quick prompts don't use this system
+- Should fetch prompts based on Pro Mode categories (Wellness, Luxury, Lifestyle, Fashion, Travel, Beauty)
 
-### Luxury Brands
-- **File:** `lib/maya/prompt-templates/high-end-brands/luxury-brands.ts`
-- **Templates:**
-  - `CHANEL_EDITORIAL`
-  - `DIOR_ROMANTIC`
+**File:** `components/sselfie/maya-chat-screen.tsx`  
+**Lines:** 4119-4123 (Pro Mode quick suggestions section)
 
-### Lifestyle Brands
-- **File:** `lib/maya/prompt-templates/high-end-brands/lifestyle-brands.ts`
-- **Templates:**
-  - `GLOSSIER_CLEAN_GIRL`
-  - `FREE_PEOPLE_BOHEMIAN`
+**Issue:**
+- Shows `currentPrompts` but these are Classic Mode prompts
+- Should use Pro Mode universal prompts from category system
+- No logic to fetch Pro Mode specific examples
 
-### Fashion Brands
-- **File:** `lib/maya/prompt-templates/high-end-brands/fashion-brands.ts`
-- **Templates:**
-  - `REFORMATION_FEMININE`
-  - `EVERLANE_MINIMAL`
-  - `ARITZIA_ELEVATED`
+#### 3.4 Universal Prompts vs Concept Templates
+**File:** `lib/maya/concept-templates.ts`  
+**Lines:** 10-71 (CONCEPT_TEMPLATES)
 
-### Seasonal
-- **File:** `lib/maya/prompt-templates/high-end-brands/seasonal-christmas.ts`
-- **Templates:**
-  - `CHRISTMAS_COZY_LUXURY`
-  - `CHRISTMAS_PINTEREST_EDITORIAL`
-  - `CHRISTMAS_ELEGANT_EVENING`
-  - `CHRISTMAS_WHITE_MINIMAL`
+**Issue:**
+- Concept templates exist for Pro Mode categories
+- But these are not used for quick suggestion prompts
+- Should convert these to quick prompt format
+
+**File:** `lib/maya/universal-prompts/index.ts`  
+**Lines:** 1-1257
+
+**Issue:**
+- Universal prompts system exists
+- But may not have Pro Mode specific filtering
+- Need to ensure Pro Mode uses universal prompts from Pro Mode categories
 
 ---
 
-## Implementation Plan
+## Summary of Files Requiring Attention
 
-### Phase 1: Load Templates
-1. After `detectCategoryAndBrand()` call, load relevant templates
-2. Extract example prompts from templates using `promptStructure()` function
-3. Store examples in a variable
+### Critical Files (High Priority)
 
-### Phase 2: Include in System Prompt
-1. Add template examples section to system prompt
-2. Make it clear these are MANDATORY examples to follow
-3. Include 5-10 examples (not just 1-2)
+1. **`lib/maya/pro/prompt-builder.ts`** (Lines 109-336, 424-494, 538-590)
+   - Add luxury brand selection logic
+   - Enhance outfit section with luxury materials
+   - Add detailed scenery descriptions
+   - Fix description-to-prompt matching
 
-### Phase 3: Test & Refine
-1. Test with different categories (travel, wellness, luxury, etc.)
-2. Verify Maya follows examples
-3. Adjust examples shown if needed
+2. **`app/api/maya/pro/generate-concepts/route.ts`** (Lines 393-462, 526-560)
+   - Update AI prompt to emphasize luxury brands and detailed sceneries
+   - Add validation that description matches fullPrompt
+   - Ensure brandReferences includes luxury/mixed brands
+
+3. **`components/sselfie/maya-chat-screen.tsx`** (Lines 1661-1681, 3340-3426, 4119-4123)
+   - Replace Classic Mode prompts with Pro Mode universal prompts
+   - Use category system to fetch Pro Mode specific examples
+   - Filter quick prompts by Studio Pro mode
+
+### Medium Priority Files
+
+4. **`lib/maya/pro/category-system.ts`** (Lines 60-81)
+   - Add logic to randomly select brands from category lists
+   - Ensure luxury brands are prioritized over Glossier
+
+5. **`lib/maya/prompt-templates/high-end-brands/brand-registry.ts`** (Lines 203-206)
+   - Integrate brand registry into prompt builder
+   - Add brand selection logic based on context
+
+6. **`app/api/maya/generate-concepts/route.ts`** (Lines 682-693)
+   - Expand brand detection to include more luxury brands
+   - Add luxury brand fallback when brand not detected
+
+7. **`lib/maya/universal-prompts/index.ts`** (Lines 1257+)
+   - Add Pro Mode filtering parameter
+   - Ensure Pro Mode uses Pro Mode specific universal prompts
+
+### Reference Files (For Context)
+
+8. **`lib/maya/prompt-templates/high-end-brands/lifestyle-brands.ts`** (Lines 1-1150)
+   - Contains Glossier template (overused)
+   - Contains other lifestyle brands (underused)
+
+9. **`lib/maya/concept-templates.ts`** (Lines 10-71)
+   - Pro Mode concept templates exist but not used for quick prompts
+
+10. **`lib/maya/pro-personality.ts`** (Lines 335-373)
+    - Mentions brand examples but doesn't enforce luxury brand usage
 
 ---
 
-## Key Questions to Answer
+## Recommended Implementation Order
 
-1. **How many examples to show?**
-   - Recommendation: 5-10 examples per category
-   - Too few = Maya might not understand the pattern
-   - Too many = Token limit issues
+1. **Fix Issue #3 First** (Quick Prompts)
+   - Quickest win, affects user experience immediately
+   - Files: `components/sselfie/maya-chat-screen.tsx`, `lib/maya/universal-prompts/index.ts`
 
-2. **Should we use `promptStructure()` or show static examples?**
-   - Option A: Generate examples using `promptStructure()` with different contexts
-   - Option B: Include static example prompts in templates
-   - Recommendation: Option A (more flexible)
+2. **Fix Issue #1 Second** (Luxury Brands)
+   - Core functionality issue
+   - Files: `lib/maya/pro/prompt-builder.ts`, `lib/maya/pro/category-system.ts`
 
-3. **What if no category/brand detected?**
-   - Fallback to generic lifestyle templates
-   - Or show examples from multiple categories
-
-4. **Should examples be in the system prompt or separate?**
-   - Recommendation: In system prompt (Maya sees them every time)
-   - Could also be in a separate "examples" section
-
----
-
-## Next Steps
-
-1. ✅ **AUDIT COMPLETE** - This document
-2. ⏳ **IMPLEMENTATION** - Modify `generate-concepts/route.ts` to:
-   - Load templates after category detection
-   - Extract example prompts
-   - Include examples in system prompt
-3. ⏳ **TESTING** - Test with various categories
-4. ⏳ **REFINEMENT** - Adjust based on results
+3. **Fix Issue #2 Third** (Description Matching)
+   - Requires careful validation
+   - Files: `app/api/maya/pro/generate-concepts/route.ts`, `lib/maya/pro/prompt-builder.ts`
 
 ---
 
 ## Notes
 
-- The template system is well-structured and ready to use
-- The main issue is integration - templates exist but aren't being used
-- This should be a relatively straightforward fix (load templates, show examples)
-- The hardest part will be deciding how many examples to show and how to format them
+- All line numbers are approximate and may shift with code changes
+- Some issues may require changes across multiple files simultaneously
+- Brand selection logic should be randomized or context-aware to avoid always using Glossier
+- Quick prompts should be dynamic based on user's image library and category preferences
+- **All prompts must follow the 6-section NanoBanana Pro architecture structure** (see Issue #4)
+- Mixed brand strategy: 1-2 accessible brands (foundation) + 1 luxury brand (accent), maximum one luxury hero per outfit
+- Structured architecture is the foundation - all other fixes should work within this framework
 
+---
 
+## Issue #4: Missing Structured Prompt Architecture (NanoBanana Pro Best Practices)
 
+### Problem Summary
+Current prompts don't follow the required NanoBanana Pro structured architecture. Prompts are inconsistent and missing critical sections:
+- No structured format with 6 required sections
+- Missing mixed brand strategy (1-2 accessible + 1 luxury accent)
+- Inconsistent luxury/editorial mood language
+- Missing negative instructions
+- Environment/context not properly integrated
+- Camera/framing/lighting not following standards
 
+### Required Architecture Structure
 
+Every Maya Pro Mode prompt must follow this structure:
 
+1. **SUBJECT IDENTITY & POSE**
+   - Clear visual description of person and stance
+   - Natural influencer-style body language
+   - Avoid dramatic or exaggerated posing
 
+2. **OUTFIT DESCRIPTION (Mixed Brands - Core Rule)**
+   - One cohesive look, not a list
+   - 1-2 accessible brands as foundation
+   - 1 premium/luxury brand as accent
+   - Brands woven into clothing description, not listed separately
+   - RULE: One luxury hero max per outfit
 
+3. **LUXURY & EDITORIAL MOOD LANGUAGE**
+   - quiet luxury, effortless styling, neutral color palette
+   - clean silhouettes, soft textures, timeless, modern, editorial
+   - Avoid hype or marketing language
 
+4. **ENVIRONMENT & CONTEXT**
+   - Setting that supports outfit without stealing focus
+   - Match color story, feel real and lived-in, stay visually calm
+   - Minimal, lifestyle-friendly, Pinterest-safe
 
+5. **CAMERA, FRAMING & LIGHTING**
+   - Vertical format (Pinterest-friendly)
+   - Natural or soft editorial lighting
+   - Realistic depth of field
+   - Lifestyle photography feel
+   - Tells model: fashion shoot, not illustration
 
+6. **NEGATIVE INSTRUCTIONS (Essential)**
+   - Block: distorted anatomy, extra fingers/limbs, messy logos
+   - Block: random objects, over-sharpening, cartoon/AI-art look
 
+### Root Causes & File Locations
 
+#### 4.1 Missing Structured Format
+**File:** `lib/maya/pro/prompt-builder.ts`  
+**Lines:** 41-101 (buildProModePrompt function)
 
+**Issue:**
+- Current prompt structure doesn't follow 6-section architecture
+- Lines 84-98: Basic structure exists but missing:
+  - Clear section headers
+  - Negative instructions section
+  - Mixed brand strategy not enforced
+  - No validation of structure compliance
 
+**File:** `lib/maya/nano-banana-prompt-builder.ts`  
+**Lines:** 689-860 (buildBrandScenePrompt function)
 
+**Issue:**
+- Generic prompt builder doesn't enforce NanoBanana structure
+- Missing structured sections
+- No mixed brand logic
+- No negative instructions
 
+#### 4.2 Missing Mixed Brand Strategy
+**File:** `lib/maya/pro/prompt-builder.ts`  
+**Lines:** 109-336 (buildOutfitSection function)
+
+**Issue:**
+- Lines 256-334: Only selects ONE brand from category list
+- No logic to select 1-2 accessible brands + 1 luxury accent
+- Always defaults to first brand in array (Glossier in LIFESTYLE)
+- Missing "mixed brand" strategy implementation
+
+**File:** `lib/maya/pro/category-system.ts`  
+**Lines:** 42-85 (PRO_MODE_CATEGORIES)
+
+**Issue:**
+- Category definitions don't distinguish between accessible and luxury brands
+- Need to categorize brands as: accessible (foundation) vs luxury (accent)
+- Current structure: all brands in one array
+
+#### 4.3 Missing Luxury & Editorial Mood Language
+**File:** `lib/maya/pro/prompt-builder.ts`  
+**Lines:** 538-590 (buildAestheticDescription function)
+
+**Issue:**
+- Lines 579-588: Aesthetic enhancements don't enforce luxury/editorial language
+- Missing required terms: "quiet luxury", "effortless styling", "neutral color palette"
+- No systematic application of editorial mood language
+- Generic aesthetic descriptions instead of structured mood section
+
+**File:** `app/api/maya/pro/generate-concepts/route.ts`  
+**Lines:** 393-462 (AI prompt for concept generation)
+
+**Issue:**
+- AI prompt doesn't instruct Maya to use specific luxury/editorial language
+- No template for mood language section
+- Missing guidance on avoiding "hype or marketing language"
+
+#### 4.4 Missing Environment & Context Section
+**File:** `lib/maya/pro/prompt-builder.ts`  
+**Lines:** 418-494 (buildSettingSection function)
+
+**Issue:**
+- Lines 482-494: Settings are generic, not following architecture
+- Missing requirements:
+  - Setting supports outfit without stealing focus
+  - Match color story
+  - Feel real and lived-in
+  - Visually calm, minimal, lifestyle-friendly
+- No structured "Environment & Context" section header
+
+#### 4.5 Missing Camera, Framing & Lighting Standards
+**File:** `lib/maya/pro/prompt-builder.ts`  
+**Lines:** 84-98 (main prompt structure)
+
+**Issue:**
+- Line 98: Generic camera specs at end
+- Missing structured section for camera/framing/lighting
+- Doesn't enforce:
+  - Vertical format requirement
+  - Natural or soft editorial lighting
+  - Lifestyle photography feel
+  - "Fashion shoot, not illustration" instruction
+
+**File:** `lib/maya/nano-banana-prompt-builder.ts`  
+**Lines:** 689-860 (buildBrandScenePrompt)
+
+**Issue:**
+- Camera specs scattered throughout, not in dedicated section
+- No validation of vertical format requirement
+- Missing lifestyle photography feel instruction
+
+#### 4.6 Missing Negative Instructions Section
+**File:** `lib/maya/pro/prompt-builder.ts`  
+**Lines:** 84-101 (main prompt structure)
+
+**Issue:**
+- No negative instructions section anywhere
+- Missing critical blocks:
+  - Distorted anatomy
+  - Extra fingers/limbs
+  - Messy logos
+  - Random objects
+  - Over-sharpening
+  - Cartoon/AI-art look
+
+**File:** `lib/maya/nano-banana-prompt-builder.ts`  
+**Lines:** 92-173 (cleanStudioProPrompt function)
+
+**Issue:**
+- Cleaning function removes unwanted terms, but doesn't add negative instructions
+- Should add structured negative instructions section to every prompt
+
+#### 4.7 AI Generation Not Following Structure
+**File:** `app/api/maya/pro/generate-concepts/route.ts`  
+**Lines:** 393-462 (AI prompt for concept generation)
+
+**Issue:**
+- AI prompt doesn't instruct Maya to follow 6-section architecture
+- No template showing the required structure
+- Maya generates free-form descriptions instead of structured sections
+- Missing instruction that prompts MUST follow this exact format
+
+### Files Requiring Attention for Issue #4
+
+**Critical Priority:**
+1. **`lib/maya/pro/prompt-builder.ts`** (Lines 41-101, 109-336, 418-494, 538-590)
+   - Restructure `buildProModePrompt` to enforce 6-section architecture
+   - Add mixed brand selection logic (1-2 accessible + 1 luxury)
+   - Add structured sections with clear headers
+   - Add negative instructions section
+   - Enforce luxury/editorial mood language
+   - Add camera/framing/lighting section
+
+2. **`lib/maya/pro/category-system.ts`** (Lines 42-85)
+   - Restructure brand arrays to separate accessible vs luxury
+   - Add brand categorization logic
+   - Support mixed brand selection
+
+3. **`app/api/maya/pro/generate-concepts/route.ts`** (Lines 393-462)
+   - Update AI prompt to include structured architecture template
+   - Instruct Maya to follow 6-section format exactly
+   - Provide example of structured prompt
+
+**Medium Priority:**
+4. **`lib/maya/nano-banana-prompt-builder.ts`** (Lines 689-860, 92-173)
+   - Update `buildBrandScenePrompt` to follow structure
+   - Add negative instructions to cleaning function
+   - Ensure vertical format enforcement
+
+5. **`lib/maya/pro-personality.ts`** (Lines 19-537)
+   - Update system prompt to reference structured architecture
+   - Add guidelines about mixed brand strategy
+
+---
+
+## Updated Implementation Priority
+
+1. **Fix Issue #4 First** (Structured Prompt Architecture)
+   - Foundation for all other fixes
+   - Files: `lib/maya/pro/prompt-builder.ts`, `lib/maya/pro/category-system.ts`
+
+2. **Fix Issue #1 Second** (Luxury Brands) - Now includes mixed brand strategy
+   - Works within structured architecture
+   - Files: `lib/maya/pro/prompt-builder.ts`, `lib/maya/pro/category-system.ts`
+
+3. **Fix Issue #3 Third** (Quick Prompts)
+   - Quick win, but must follow new architecture
+   - Files: `components/sselfie/maya-chat-screen.tsx`, `lib/maya/universal-prompts/index.ts`
+
+4. **Fix Issue #2 Fourth** (Description Matching)
+   - Requires structured architecture first
+   - Files: `app/api/maya/pro/generate-concepts/route.ts`, `lib/maya/pro/prompt-builder.ts`

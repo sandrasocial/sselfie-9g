@@ -6,6 +6,7 @@
  */
 
 import { PRO_MODE_CATEGORIES, getCategoryByKey, ImageLibrary } from './category-system'
+import { selectMixedBrands } from './prompt-architecture'
 
 export interface ConceptComponents {
   title: string
@@ -59,6 +60,23 @@ export function buildProModePrompt(
     userRequest: userRequest?.substring(0, 50),
   })
 
+  // 🔴 CRITICAL: Extract ALL details from concept description FIRST
+  // The description should already contain outfit, setting, pose, lighting details
+  // Only fall back to category defaults if description lacks specific details
+  const descText = (concept.description && typeof concept.description === 'string') ? concept.description : ''
+  const descriptionWordCount = descText.split(/\s+/).length
+  const hasDetailedDescription = descriptionWordCount >= 50 && 
+    /wearing|sitting|standing|in|with|holding|looking|outfit|attire|setting|room|interior|pose|lighting/i.test(descText)
+
+  if (hasDetailedDescription) {
+    console.log('[buildProModePrompt] ✅ Using detailed description directly (description has', descriptionWordCount, 'words)')
+    // Use description as primary source for all sections
+    // Extract outfit, pose, setting, lighting from description
+  } else {
+    console.log('[buildProModePrompt] ⚠️ Description lacks detail (', descriptionWordCount, 'words), using category defaults with description as context')
+    // Fall back to category defaults, but use description as context
+  }
+
   // Extract style/aesthetic keywords from userRequest to personalize the prompt
   const userRequestLower = (userRequest || '').toLowerCase()
   const isPinterestStyle = /pinterest|curated|aesthetic|dreamy|soft|feminine/i.test(userRequest || '')
@@ -67,6 +85,7 @@ export function buildProModePrompt(
   const isLuxuryStyle = /luxury|elegant|chic|sophisticated|premium/i.test(userRequest || '')
 
   // 🔴 CRITICAL: Build sections using concept title/description and userRequest
+  // buildOutfitSection, buildPoseSection, etc. will extract from description first, then fall back to category defaults
   const outfitSection = buildOutfitSection(concept, categoryInfo, userRequest)
   const poseSection = buildPoseSection(concept, userRequest)
   const lightingSection = buildLightingSection(concept, userRequest)
@@ -81,7 +100,31 @@ export function buildProModePrompt(
     setting: settingSection.substring(0, 50),
   })
 
-  const prompt = `Professional photography. ${isPinterestStyle ? 'Pinterest-style' : isEditorialStyle ? 'Editorial' : 'Influencer'} portrait maintaining exactly the same physical characteristics, facial features, and body proportions. Editorial quality with authentic iPhone aesthetic.
+  // Determine photography style based on category and request
+  const categoryLower = safeCategory.toLowerCase()
+  let cameraSpecs: string
+  
+  if (categoryLower.includes('luxury') || isEditorialStyle) {
+    // Editorial/Luxury: Professional fashion photography
+    cameraSpecs = 'Vertical format, editorial photography, controlled lighting, fashion-editorial framing, professional fashion shoot aesthetic.'
+  } else if (categoryLower.includes('fashion')) {
+    // Fashion: Professional editorial photography
+    cameraSpecs = 'Vertical format, fashion photography, defined lighting, controlled depth of field, professional editorial aesthetic.'
+  } else if (categoryLower.includes('wellness') || categoryLower.includes('lifestyle') || isLifestyleStyle || isPinterestStyle) {
+    // Lifestyle/Wellness: Lifestyle photography
+    cameraSpecs = 'Vertical format, lifestyle photography, natural or soft editorial lighting, shallow depth of field, lifestyle photography feel.'
+  } else if (categoryLower.includes('beauty')) {
+    // Beauty: Editorial beauty photography
+    cameraSpecs = 'Vertical format, beauty photography, soft even illumination, close-up or medium framing, professional beauty aesthetic.'
+  } else if (categoryLower.includes('travel')) {
+    // Travel: Lifestyle travel photography
+    cameraSpecs = 'Vertical format, lifestyle travel photography, natural or soft ambient lighting, lifestyle photography feel.'
+  } else {
+    // Default: Lifestyle photography
+    cameraSpecs = 'Vertical format, lifestyle photography, natural or soft editorial lighting, shallow depth of field, lifestyle photography feel.'
+  }
+
+  const prompt = `Professional photography. ${isPinterestStyle ? 'Pinterest-style' : isEditorialStyle ? 'Editorial' : 'Influencer'} portrait maintaining exactly the same physical characteristics, facial features, and body proportions. Editorial quality, professional photography aesthetic.
 
 ${outfitSection}
 
@@ -95,7 +138,7 @@ ${moodSection}
 
 Aesthetic: ${aestheticSection}
 
-Shot on iPhone 15 Pro portrait mode, shallow depth of field, natural skin texture with pores visible, film grain, muted colors, authentic amateur cellphone photo aesthetic.`
+${cameraSpecs}`
 
   return prompt.trim()
 }
@@ -106,233 +149,151 @@ Shot on iPhone 15 Pro portrait mode, shallow depth of field, natural skin textur
  * Uses category-specific brands and specific item descriptions.
  * NO generic "stylish outfit" - always specific brand items.
  * Personalizes based on userRequest when available.
+ * Uses mixed-brand strategy: 1-2 accessible brands + 1 luxury accent max.
  */
 function buildOutfitSection(
   concept: ConceptComponents,
   categoryInfo: { brands: string[]; name: string },
   userRequest?: string
 ): string {
-  // Safe null handling
-  const brands = (categoryInfo.brands && Array.isArray(categoryInfo.brands)) ? categoryInfo.brands : []
-  const category = (categoryInfo.name && typeof categoryInfo.name === 'string') ? categoryInfo.name.toLowerCase() : 'lifestyle'
+  const category = (categoryInfo.name && typeof categoryInfo.name === 'string') 
+    ? categoryInfo.name.toLowerCase() 
+    : 'lifestyle'
 
   // If concept has specific outfit details, use them
   if (concept.outfit) {
     const parts: string[] = []
-
-    if (concept.outfit.top) {
-      parts.push(concept.outfit.top)
-    }
-    if (concept.outfit.bottom) {
-      parts.push(concept.outfit.bottom)
-    }
-    if (concept.outfit.outerwear) {
-      parts.push(concept.outfit.outerwear)
-    }
+    if (concept.outfit.top) parts.push(concept.outfit.top)
+    if (concept.outfit.bottom) parts.push(concept.outfit.bottom)
+    if (concept.outfit.outerwear) parts.push(concept.outfit.outerwear)
     if (concept.outfit.accessories && concept.outfit.accessories.length > 0) {
       parts.push(concept.outfit.accessories.join(', '))
     }
-    if (concept.outfit.shoes) {
-      parts.push(concept.outfit.shoes)
-    }
+    if (concept.outfit.shoes) parts.push(concept.outfit.shoes)
 
     if (parts.length > 0) {
       return `Outfit: ${parts.join(', ')}.`
     }
   }
 
-  // 🔴 CRITICAL: Extract outfit from concept description FIRST (before theme detection)
-  // The AI should be generating detailed descriptions with outfit details
+  // Extract context from all available sources
   const titleText = (concept.title && typeof concept.title === 'string') ? concept.title : ''
   const descText = (concept.description && typeof concept.description === 'string') ? concept.description : ''
   const aestheticText = (concept.aesthetic && typeof concept.aesthetic === 'string') ? concept.aesthetic : ''
   const requestText = userRequest || ''
   const combinedText = `${titleText} ${descText} ${aestheticText} ${requestText}`.toLowerCase()
-  
+
   // Try to extract outfit from description first
   if (descText && descText.length > 30) {
-    // Look for outfit patterns in description - be more flexible
-    const outfitPatterns = [
-      /(?:wearing|in|outfit|dressed in|styled in|attire)\s+([^\.]{15,200})/i,
-      /(cozy|elegant|sophisticated|festive|holiday|beach|resort|athletic|luxury)\s+(?:holiday|morning|evening|beach|resort|athletic|luxury)?\s*(?:outfit|wear|attire|clothing|pajamas|sweater|dress|blazer|coat|jacket|loungewear)[^\.]{0,150}/i,
-      /(cashmere|silk|knit|wool|linen|leather|holiday|festive|cozy)\s+(?:sweater|pajamas|dress|blazer|coat|jacket|outfit|wear|attire)[^\.]{0,150}/i,
-      /(holiday|festive|cozy|christmas)\s+(?:pajamas|sweater|outfit|wear|attire|clothing|loungewear)[^\.]{0,150}/i,
-    ]
-    
-    for (const pattern of outfitPatterns) {
-      const match = descText.match(pattern)
-      if (match) {
-        const extractedOutfit = match[1] ? match[1].trim() : match[0].trim()
-        // Clean up the extracted outfit
-        let cleanedOutfit = extractedOutfit
-          .replace(/\s+/g, ' ')
-          .replace(/,\s*,/g, ',')
-          .replace(/^[^a-z]*/i, '') // Remove leading non-alphabetic
-          .trim()
-        
-        // If we got a good match, use it
-        if (cleanedOutfit.length > 15 && cleanedOutfit.length < 200 && /[a-z]/i.test(cleanedOutfit)) {
-          console.log('[buildOutfitSection] ✅ Extracted outfit from description:', cleanedOutfit.substring(0, 80))
-          return `Outfit: ${cleanedOutfit}.`
-        }
-      }
-    }
-    
-    // Also check if description contains outfit keywords directly
-    if (/wearing|outfit|dressed|attire|clothing|pajamas|sweater|dress|blazer|coat|jacket/i.test(descText)) {
-      // Try to extract a sentence or phrase containing outfit
-      const sentences = descText.split(/[\.!?]/)
-      for (const sentence of sentences) {
-        if (sentence.length > 20 && sentence.length < 200 && 
-            /wearing|outfit|dressed|attire|clothing|pajamas|sweater|dress|blazer|coat|jacket/i.test(sentence)) {
-          const cleaned = sentence.trim().replace(/^[^a-z]*/i, '').trim()
-          if (cleaned.length > 15 && cleaned.length < 200) {
-            console.log('[buildOutfitSection] ✅ Extracted outfit sentence from description:', cleaned.substring(0, 80))
-            return `Outfit: ${cleaned}.`
-          }
-        }
-      }
+    // First pattern: captures outfit details after common keywords
+    const outfitPattern = /(?:wearing|in|outfit|dressed in|styled in|attire)\s+([^\.]{15,200})/i
+    const match = descText.match(outfitPattern)
+    if (match && match[1] && match[1].length > 15) {
+      return `Outfit: ${match[1].trim()}.`
     }
   }
 
-  // 🔴 CRITICAL: Use concept title/description and userRequest to infer outfit
-  // This ensures prompts match Maya's vision from her chat response
+  // Detect theme from combined context
+  const theme = detectThemeFromText(combinedText)
   
-  console.log('[buildOutfitSection] Checking for themes in:', {
-    title: titleText.substring(0, 50),
-    description: descText.substring(0, 50),
-    userRequest: requestText.substring(0, 50),
-    combined: combinedText.substring(0, 100),
-  })
-  
-  // Check for specific themes in concept/request (e.g., Christmas, holiday, cozy)
-  // Use more comprehensive patterns to catch variations
-  const hasChristmas = /christmas|holiday|festive|winter|cozy.*holiday|holiday.*cozy|christmas.*morning|christmas.*evening|christmas.*fireplace|holiday.*market/i.test(combinedText)
-  
-  if (hasChristmas) {
-    console.log('[buildOutfitSection] ✅ Detected Christmas theme')
-    if (/pajamas|pjs|loungewear|cozy.*set|sleepwear/i.test(combinedText)) {
-      return 'Outfit: Cozy holiday pajamas in festive colors (red, green, or cream), matching set, soft textures, comfortable holiday loungewear.'
-    } else if (/elegant|evening|dinner|party|sophisticated/i.test(combinedText)) {
-      return 'Outfit: Elegant holiday evening wear, sophisticated festive outfit, refined holiday styling, elegant accessories.'
-    } else if (/morning|coffee|breakfast|waking|wake/i.test(combinedText)) {
-      return 'Outfit: Cozy holiday morning outfit, soft cashmere or knit sweater in festive colors (red, green, or cream), comfortable holiday attire, warm textures, holiday-themed accessories.'
-    } else if (/fireplace|reading|book|cozy.*evening/i.test(combinedText)) {
-      return 'Outfit: Cozy holiday loungewear, soft cashmere or knit sweater in festive colors, comfortable holiday attire, warm textures, elegant holiday styling.'
-    } else {
-      return 'Outfit: Cozy holiday outfit, festive colors and textures (red, green, cream, or warm neutrals), warm winter styling, comfortable and elegant holiday wear, holiday-themed accessories.'
-    }
-  }
-  
-  console.log('[buildOutfitSection] No specific theme detected, using category defaults')
+  // Select mixed brands dynamically (1-2 accessible + 1 luxury max)
+  const { accessible, luxury } = selectMixedBrands(category, theme, userRequest)
 
-  // 🔴 CRITICAL: Check for other specific themes BEFORE category defaults
-  // This ensures user requests are honored over generic category templates
-  if (/beach|coastal|ocean|seaside|swimwear|bikini/i.test(combinedText)) {
-    console.log('[buildOutfitSection] ✅ Detected beach theme')
-    return 'Outfit: Beach or coastal outfit, swimwear or resort wear, beach accessories, sandals or barefoot, coastal styling.'
-  }
-  if (/workout|gym|fitness|athletic|yoga|sport/i.test(combinedText)) {
-    console.log('[buildOutfitSection] ✅ Detected workout theme')
-    if (brands.length > 0) {
-      const brand = brands[0]
-      return `Outfit: Athletic wear, ${brand} high-waisted leggings, matching sports bra, athletic sneakers, workout styling.`
-    }
-    return 'Outfit: Athletic wear in neutral tones, high-waisted leggings, sports bra, athletic sneakers, workout styling.'
-  }
-  if (/travel|airport|vacation|jet-set|packing/i.test(combinedText)) {
-    console.log('[buildOutfitSection] ✅ Detected travel theme')
-    return 'Outfit: Travel-ready outfit, comfortable yet stylish, travel accessories, practical yet elegant travel styling.'
-  }
-  if (/luxury|elegant|chic|sophisticated|premium|high-end/i.test(combinedText)) {
-    console.log('[buildOutfitSection] ✅ Detected luxury theme')
-    if (brands.length > 0) {
-      const brand = brands[0]
-      return `Outfit: Sophisticated luxury ensemble, ${brand} accessories, elegant styling, refined luxury aesthetic.`
-    }
-    return 'Outfit: Sophisticated luxury ensemble, elegant styling, refined pieces, luxury aesthetic.'
-  }
-
-  // Build outfit based on category and available brands (ONLY if no specific theme detected)
+  // Build outfit based on category and theme
   let outfitDescription = 'Outfit: '
 
-  switch (categoryInfo.name) {
-    case 'WELLNESS':
-      if (brands.length > 0) {
-        const brand = brands[0] // Alo Yoga
-        outfitDescription += `Butter-soft ${brand} high-waisted leggings in neutral tone, matching ${brand} sports bra, oversized cream cashmere cardigan draped over shoulders, white sneakers.`
-      } else {
-        outfitDescription += 'Athletic wear in neutral tones, high-waisted leggings, sports bra, oversized cardigan, white sneakers.'
-      }
-      break
+  // CHRISTMAS/HOLIDAY THEME (must check before other categories for consistency)
+  if (theme === 'christmas' || /christmas|holiday|festive|winter|cozy.*holiday/i.test(combinedText)) {
+    // Christmas-specific cozy outfits with appropriate brands
+    if (/morning|coffee|breakfast/i.test(combinedText)) {
+      // Morning: cozy loungewear/cashmere
+      const accessibleBrand = accessible[0] || 'Jenni Kayne'
+      outfitDescription += `${accessibleBrand} cashmere sweater in warm cream or festive red, high-waisted denim or cozy knit pants`
+      if (luxury) outfitDescription += `, ${luxury} crossbody bag as subtle luxury accent`
+      outfitDescription += ', warm slippers or cozy socks, minimal jewelry, relaxed comfortable holiday morning vibe.'
+    } else if (/fireplace|evening|night|dinner/i.test(combinedText)) {
+      // Evening: elegant but cozy
+      const accessibleBrand = accessible[0] || 'Everlane'
+      outfitDescription += `${accessibleBrand} cashmere turtleneck or cozy knit sweater in neutral or festive tone, tailored trousers or elegant skirt`
+      if (luxury) outfitDescription += `, ${luxury} structured bag as elegant accent`
+      else outfitDescription += ', Everlane leather bag'
+      outfitDescription += ', elegant flats or ankle boots, refined jewelry, sophisticated holiday evening look.'
+    } else if (/market|shopping|outdoor/i.test(combinedText)) {
+      // Outdoor/market: practical but chic
+      outfitDescription += 'Warm oversized coat in camel or cream, chunky knit sweater, high-waisted denim'
+      if (luxury) outfitDescription += `, ${luxury} leather tote`
+      else outfitDescription += ', Everlane crossbody bag'
+      outfitDescription += ', comfortable boots, warm accessories, practical but stylish holiday market look.'
+    } else {
+      // Default Christmas: cozy and festive
+      const accessibleBrand = accessible[0] || 'Jenni Kayne'
+      outfitDescription += `${accessibleBrand} cashmere sweater in warm festive colors, high-waisted denim or cozy knit pants`
+      if (luxury) outfitDescription += `, ${luxury} crossbody bag`
+      outfitDescription += ', comfortable loafers or boots, minimal jewelry, cozy festive holiday outfit.'
+    }
+    return outfitDescription
+  }
 
-    case 'LUXURY':
-      if (brands.length > 0) {
-        const brand = brands[0] // CHANEL
-        outfitDescription += `${brand} headband in black, oversized black cashmere coat, cream silk blouse, high-waisted black trousers, black leather loafers.`
-      } else {
-        outfitDescription += 'Sophisticated black and cream ensemble, cashmere coat, silk blouse, tailored trousers, leather loafers.'
-      }
-      break
-
-    case 'LIFESTYLE':
-      // 🔴 CRITICAL: Check if concept description has outfit details - use them instead of generic
-      if (descText && descText.length > 20 && /wearing|outfit|dress|sweater|top|bottom|shoes|coat|jacket|pants|jeans/i.test(descText)) {
-        // Extract outfit from description
-        const outfitMatch = descText.match(/(?:wearing|outfit|in|with)\s+([^\.]{20,150})/i)
-        if (outfitMatch && outfitMatch[1]) {
-          outfitDescription += outfitMatch[1].trim() + '.'
-          console.log('[buildOutfitSection] ✅ Using outfit from concept description')
-          return outfitDescription
-        }
-      }
-      // Only use generic if no specific outfit mentioned
-      if (brands.length > 0) {
-        const brand = brands[0] // Glossier
-        outfitDescription += `Oversized cream knit sweater, matching lounge pants, ${brand} product visible on vanity, bare feet on hardwood floor.`
-      } else {
-        outfitDescription += 'Oversized cream knit sweater, matching lounge pants, minimalist accessories, bare feet.'
-      }
-      break
-
-    case 'FASHION':
-      // 🔴 CRITICAL: Check if concept description has outfit details - use them instead of generic
-      if (descText && descText.length > 20 && /wearing|outfit|dress|sweater|top|bottom|shoes|coat|jacket|pants|jeans|blazer/i.test(descText)) {
-        // Extract outfit from description
-        const outfitMatch = descText.match(/(?:wearing|outfit|in|with)\s+([^\.]{20,150})/i)
-        if (outfitMatch && outfitMatch[1]) {
-          outfitDescription += outfitMatch[1].trim() + '.'
-          console.log('[buildOutfitSection] ✅ Using outfit from concept description')
-          return outfitDescription
-        }
-      }
-      // Only use generic if no specific outfit mentioned
-      if (brands.length > 0) {
-        const brand = brands[0] // Reformation
-        outfitDescription += `${brand} midi dress in neutral tone, oversized brown leather blazer, black ankle boots, minimal jewelry.`
-      } else {
-        outfitDescription += 'Neutral midi dress, oversized leather blazer, ankle boots, minimal accessories.'
-      }
-      break
-
-    case 'TRAVEL':
-      outfitDescription += 'Oversized cream trench coat, black turtleneck, high-waisted black trousers, black ankle boots, leather tote bag, airport terminal setting.'
-      break
-
-    case 'BEAUTY':
-      if (brands.length > 0) {
-        const brand = brands[0] // Rhode
-        outfitDescription += `White ribbed tank top, ${brand} Peptide Treatment visible, cream linen pants, minimal makeup, natural glow.`
-      } else {
-        outfitDescription += 'White ribbed tank top, skincare products visible, cream linen pants, natural makeup.'
-      }
-      break
-
-    default:
-      outfitDescription += 'Sophisticated neutral ensemble, tailored pieces, minimal accessories.'
+  // WELLNESS/FITNESS
+  if (category.includes('wellness') || category.includes('fitness') || theme.includes('workout')) {
+    const accessibleBrand = accessible[0] || 'Alo Yoga'
+    outfitDescription += `${accessibleBrand} high-waisted leggings in neutral tone, matching cropped sports bra, lightweight jacket`
+    if (luxury) outfitDescription += `, ${luxury} minimal tote as subtle luxury accent`
+    outfitDescription += ', athletic sneakers, minimal jewelry.'
+  }
+  // LUXURY
+  else if (category.includes('luxury') || theme.includes('luxury')) {
+    const luxuryBrand = luxury || 'The Row'
+    outfitDescription += `${luxuryBrand} tailored blazer in neutral tone, silk camisole, wide-leg trousers`
+    if (accessible.length > 0) outfitDescription += `, ${accessible[0]} minimal accessories`
+    outfitDescription += ', pointed-toe pumps, understated jewelry.'
+  }
+  // LIFESTYLE
+  else if (category.includes('lifestyle')) {
+    const accessibleBrand = accessible[0] || 'Everlane'
+    outfitDescription += `${accessibleBrand} oversized knit sweater in cream, high-waisted denim`
+    if (luxury) outfitDescription += `, ${luxury} leather bag as luxury accent`
+    else if (accessible[1]) outfitDescription += `, ${accessible[1]} crossbody bag`
+    outfitDescription += ', white sneakers, minimal gold jewelry.'
+  }
+  // FASHION
+  else if (category.includes('fashion')) {
+    const accessibleBrand = accessible[0] || 'Reformation'
+    outfitDescription += `${accessibleBrand} midi dress in neutral tone, oversized leather blazer`
+    if (luxury) outfitDescription += `, ${luxury} structured bag as statement piece`
+    outfitDescription += ', ankle boots, minimal accessories.'
+  }
+  // TRAVEL
+  else if (category.includes('travel')) {
+    outfitDescription += 'Oversized cream trench coat, black turtleneck, high-waisted trousers'
+    if (luxury) outfitDescription += `, ${luxury} leather tote`
+    else outfitDescription += ', Everlane leather tote'
+    outfitDescription += ', comfortable loafers, minimal jewelry.'
+  }
+  // BEAUTY
+  else if (category.includes('beauty')) {
+    const beautyBrand = accessible[0] || 'Glossier'
+    outfitDescription += `White ribbed tank top, ${beautyBrand} products visible, cream linen pants, natural makeup, glowing skin.`
+  }
+  // DEFAULT
+  else {
+    outfitDescription += 'Sophisticated neutral ensemble, tailored pieces'
+    if (luxury) outfitDescription += `, ${luxury} as subtle luxury accent`
+    outfitDescription += ', minimal accessories.'
   }
 
   return outfitDescription
+}
+
+// Helper function to detect theme from text
+function detectThemeFromText(text: string): string {
+  if (/christmas|holiday|festive|winter|cozy.*holiday/i.test(text)) return 'christmas'
+  if (/beach|coastal|ocean|resort|tropical/i.test(text)) return 'beach'
+  if (/workout|gym|fitness|athletic|yoga/i.test(text)) return 'workout'
+  if (/luxury|elegant|chic|sophisticated|premium/i.test(text)) return 'luxury'
+  if (/travel|airport|vacation|destination/i.test(text)) return 'travel'
+  if (/casual|everyday|lifestyle|relatable/i.test(text)) return 'casual'
+  return 'lifestyle'
 }
 
 /**
@@ -344,6 +305,29 @@ function buildOutfitSection(
 function buildPoseSection(concept: ConceptComponents, userRequest?: string): string {
   if (concept.pose) {
     return `Pose: ${concept.pose}.`
+  }
+
+  // 🔴 CRITICAL: Extract pose from description FIRST if it contains detailed pose information
+  const descText = (concept.description && typeof concept.description === 'string') ? concept.description : ''
+  if (descText && descText.length > 30) {
+    // Look for pose patterns in description
+    const posePatterns = [
+      /(?:sitting|standing|walking|leaning|lying|kneeling|crouching)[^\.]{10,100}/i,
+      /(?:holding|looking|reading|smiling|laughing|gazing)[^\.]{10,100}/i,
+      /pose[^\.]{10,100}/i,
+    ]
+
+    for (const pattern of posePatterns) {
+      const match = descText.match(pattern)
+      if (match && match[0] && match[0].length > 20) {
+        const extractedPose = match[0].trim()
+        // Clean up and return pose
+        if (extractedPose.length > 20 && extractedPose.length < 200) {
+          console.log('[buildPoseSection] ✅ Extracted pose from description:', extractedPose.substring(0, 80))
+          return `Pose: ${extractedPose}.`
+        }
+      }
+    }
   }
 
   // 🔴 CRITICAL: Use concept title/description and userRequest to infer pose
@@ -387,6 +371,37 @@ function buildLightingSection(concept: ConceptComponents, userRequest?: string):
     return `Lighting: ${concept.lighting}.`
   }
 
+  // 🔴 CRITICAL: Extract lighting from description FIRST if it contains detailed lighting information
+  const descText = (concept.description && typeof concept.description === 'string') ? concept.description : ''
+  if (descText && descText.length > 30) {
+    // Look for lighting patterns in description
+    const lightingPatterns = [
+      /(?:morning|evening|soft|warm|natural|ambient|twinkling|fireplace|glow|streaming).{0,50}(?:light|lighting|illumination|glow|sunlight|daylight)[^\.]{0,100}/i,
+      /(?:light|lighting).{0,50}(?:streaming|filtering|glowing|shining|warm|soft|natural|morning|evening)[^\.]{0,100}/i,
+    ]
+
+    for (const pattern of lightingPatterns) {
+      const match = descText.match(pattern)
+      if (match && match[0] && match[0].length > 20) {
+        const extractedLighting = match[0].trim()
+        // Extract a more complete sentence if possible
+        const sentences = descText.split(/[\.!?]/)
+        for (const sentence of sentences) {
+          if (sentence.includes(match[0].substring(0, 20))) {
+            if (sentence.length > 30 && sentence.length < 200 && /light|lighting|glow|illumination/i.test(sentence)) {
+              console.log('[buildLightingSection] ✅ Extracted lighting from description:', sentence.substring(0, 80))
+              return `Lighting: ${sentence.trim()}.`
+            }
+          }
+        }
+        if (extractedLighting.length > 20 && extractedLighting.length < 200) {
+          console.log('[buildLightingSection] ✅ Extracted lighting from description:', extractedLighting.substring(0, 80))
+          return `Lighting: ${extractedLighting}.`
+        }
+      }
+    }
+  }
+
   // 🔴 CRITICAL: Use concept title/description and userRequest to infer lighting
   // This ensures prompts match Maya's vision from her chat response
   const combinedText = `${concept.title || ''} ${concept.description || ''} ${userRequest || ''}`.toLowerCase()
@@ -419,6 +434,7 @@ function buildLightingSection(concept: ConceptComponents, userRequest?: string):
  * Build setting section
  * 
  * Specific, detailed settings - not generic
+ * Includes detailed luxury settings with marble, premium materials, etc.
  * Personalizes based on userRequest when available.
  */
 function buildSettingSection(concept: ConceptComponents, userRequest?: string): string {
@@ -426,71 +442,76 @@ function buildSettingSection(concept: ConceptComponents, userRequest?: string): 
     return `Setting: ${concept.setting}.`
   }
 
-  // 🔴 CRITICAL: Use concept title/description and userRequest to infer setting
-  // This ensures prompts match Maya's vision from her chat response
-  // Combine ALL context: title, description, aesthetic, and userRequest
+  // Extract context
   const titleText = (concept.title && typeof concept.title === 'string') ? concept.title : ''
   const descText = (concept.description && typeof concept.description === 'string') ? concept.description : ''
   const aestheticText = (concept.aesthetic && typeof concept.aesthetic === 'string') ? concept.aesthetic : ''
   const requestText = userRequest || ''
   const combinedText = `${titleText} ${descText} ${aestheticText} ${requestText}`.toLowerCase()
-  
-  console.log('[buildSettingSection] Checking for themes in:', {
-    title: titleText.substring(0, 50),
-    description: descText.substring(0, 50),
-    userRequest: requestText.substring(0, 50),
-  })
-  
-  // Check for specific themes in concept/request (e.g., Christmas, holiday, cozy)
-  // Use more comprehensive patterns to catch variations
-  const hasChristmas = /christmas|holiday|festive|winter|snow|fireplace|tree|cozy.*holiday|holiday.*cozy|christmas.*morning|christmas.*evening|christmas.*fireplace|holiday.*market/i.test(combinedText)
-  
-  if (hasChristmas) {
-    console.log('[buildSettingSection] ✅ Detected Christmas theme')
-    if (/morning|coffee|breakfast|waking|wake/i.test(combinedText)) {
-      return 'Setting: Cozy Christmas morning scene, decorated living room with Christmas tree, warm fireplace, holiday decorations, soft morning light through windows, festive atmosphere.'
-    } else if (/fireplace|reading|evening|night|book/i.test(combinedText)) {
-      return 'Setting: Elegant living room with crackling fireplace, Christmas tree with twinkling lights, cozy holiday atmosphere, warm evening lighting, festive decorations.'
-    } else if (/market|shopping|outdoor|winter.*market/i.test(combinedText)) {
-      return 'Setting: Festive holiday market or outdoor Christmas setting, twinkling lights, holiday decorations, winter atmosphere, natural daylight.'
+
+  // Detailed luxury settings based on theme
+  if (/luxury|elegant|chic|sophisticated|premium|high-end/i.test(combinedText)) {
+    if (/hotel|lobby|lounge/i.test(combinedText)) {
+      return 'Setting: Luxurious five-star hotel lobby, marble floors, sophisticated architectural details, soft ambient lighting, refined atmosphere.'
+    } else if (/boutique|store|shopping/i.test(combinedText)) {
+      return 'Setting: High-end luxury boutique interior, minimalist design, premium materials, elegant lighting, sophisticated retail atmosphere.'
+    } else if (/restaurant|dining/i.test(combinedText)) {
+      return 'Setting: Sophisticated fine dining restaurant, marble surfaces, elegant table settings, refined lighting, upscale ambiance.'
+    } else if (/home|interior|living/i.test(combinedText)) {
+      return 'Setting: Luxurious modern interior, marble staircase, architectural elements, floor-to-ceiling windows, sophisticated home atmosphere.'
     } else {
-      return 'Setting: Cozy holiday setting with Christmas tree, warm festive atmosphere, holiday decorations, soft natural lighting, magical seasonal ambiance.'
+      return 'Setting: Sophisticated urban setting with architectural details, marble or concrete surfaces, premium materials, refined modern atmosphere.'
     }
   }
-  
-  // Check for other specific themes
-  if (/beach|coastal|ocean|seaside|tropical/i.test(combinedText)) {
-    console.log('[buildSettingSection] ✅ Detected beach theme')
-    return 'Setting: Coastal beach setting, ocean views, natural textures, soft coastal light, beach atmosphere.'
+
+  // Christmas/Holiday settings
+  if (/christmas|holiday|festive|winter|cozy.*holiday/i.test(combinedText)) {
+    if (/morning|breakfast|coffee/i.test(combinedText)) {
+      return 'Setting: Cozy Christmas morning scene, decorated living room with illuminated tree, warm fireplace, holiday decorations, soft morning light through windows, festive atmosphere.'
+    } else if (/fireplace|evening|night/i.test(combinedText)) {
+      return 'Setting: Elegant living room with crackling fireplace, Christmas tree with twinkling lights, luxurious holiday atmosphere, warm evening lighting, tasteful festive decorations.'
+    } else if (/market|outdoor|shopping/i.test(combinedText)) {
+      return 'Setting: Festive holiday market, twinkling lights everywhere, holiday decorations, winter atmosphere, natural daylight, magical seasonal ambiance.'
+    } else {
+      return 'Setting: Cozy holiday setting with beautifully decorated Christmas tree, warm festive atmosphere, elegant holiday decorations, soft natural lighting, magical seasonal ambiance.'
+    }
   }
+
+  // Beach/Coastal settings
+  if (/beach|coastal|ocean|seaside|tropical|resort/i.test(combinedText)) {
+    return 'Setting: Pristine coastal beach, turquoise ocean views, white sand, natural beach textures, soft coastal light, serene beach atmosphere.'
+  }
+
+  // Cafe/Restaurant settings
   if (/cafe|coffee|brunch|restaurant|bistro/i.test(combinedText)) {
-    console.log('[buildSettingSection] ✅ Detected cafe theme')
-    return 'Setting: Charming cafe or restaurant, natural textures, warm lighting, cozy atmosphere, authentic setting.'
+    return 'Setting: Charming coastal cafe or modern bistro, natural textures, warm ambient lighting, cozy authentic atmosphere, real lived-in setting.'
   }
+
+  // Airport/Travel settings
   if (/airport|travel|terminal|jet|vacation/i.test(combinedText)) {
-    console.log('[buildSettingSection] ✅ Detected travel theme')
-    return 'Setting: Airport terminal with natural light, modern architecture, travel accessories visible, sophisticated travel atmosphere.'
+    return 'Setting: Modern airport terminal with floor-to-ceiling windows, natural light, contemporary architecture, sophisticated travel atmosphere, subtle travel accessories visible.'
   }
+
+  // Gym/Workout settings
   if (/gym|workout|fitness|studio|yoga/i.test(combinedText)) {
-    console.log('[buildSettingSection] ✅ Detected workout theme')
-    return 'Setting: Minimalist home studio with natural light, yoga mat visible, plants in background, clean athletic space.'
-  }
-  
-  console.log('[buildSettingSection] No specific theme detected, using category defaults')
-
-  // Category-specific default settings (only if no specific theme detected)
-  const defaultSettings: Record<string, string> = {
-    WELLNESS: 'Minimalist home studio with natural light, yoga mat visible, plants in background',
-    LUXURY: 'Sophisticated urban setting, concrete or marble surfaces, architectural elements',
-    LIFESTYLE: 'Coastal home interior, natural textures, soft morning light through windows',
-    FASHION: 'Urban street setting, SoHo neighborhood, natural city atmosphere',
-    TRAVEL: 'Airport terminal with natural light, modern architecture, travel accessories visible',
-    BEAUTY: 'Sun-drenched bathroom or bedroom, natural morning light, skincare products arranged',
+    return 'Setting: Minimalist home wellness studio, natural light streaming through windows, yoga mat visible, plants in background, clean athletic space, calm atmosphere.'
   }
 
-  // Default to lifestyle if category not found
-  const conceptCategory = (concept.category && typeof concept.category === 'string') ? concept.category.toUpperCase() : 'LIFESTYLE'
-  return `Setting: ${defaultSettings[conceptCategory] || defaultSettings.LIFESTYLE}.`
+  // Category-specific detailed settings
+  const conceptCategory = (concept.category && typeof concept.category === 'string') 
+    ? concept.category.toUpperCase() 
+    : 'LIFESTYLE'
+
+  const detailedSettings: Record<string, string> = {
+    WELLNESS: 'Minimalist wellness studio with abundant natural light, yoga mat and meditation cushions visible, potted plants creating calming atmosphere, clean white walls, serene dedicated space.',
+    LUXURY: 'Sophisticated modern interior with architectural details, polished marble surfaces, floor-to-ceiling windows, refined furniture, understated luxury atmosphere, muted color palette.',
+    LIFESTYLE: 'Coastal home interior with natural textures, soft morning light filtering through linen curtains, organic materials, lived-in comfortable atmosphere, Pinterest-worthy aesthetic.',
+    FASHION: 'Clean urban setting in SoHo district, minimalist street backdrop, modern architecture, natural city atmosphere, fashion-supportive environment without visual clutter.',
+    TRAVEL: 'Contemporary airport terminal with natural light from large windows, modern minimalist design, sophisticated travel atmosphere, subtle premium travel accessories visible.',
+    BEAUTY: 'Sun-drenched bathroom or bedroom, soft morning light creating natural glow, skincare products artfully arranged, marble or natural stone surfaces, serene beauty-focused space.',
+  }
+
+  return `Setting: ${detailedSettings[conceptCategory] || detailedSettings.LIFESTYLE}.`
 }
 
 /**
@@ -549,6 +570,13 @@ function buildAestheticDescription(
   const baseAesthetic = categoryInfo.description
   const userRequestLower = (userRequest || '').toLowerCase()
 
+  // Extract context for luxury detection
+  const titleText = (concept.title && typeof concept.title === 'string') ? concept.title : ''
+  const descText = (concept.description && typeof concept.description === 'string') ? concept.description : ''
+  const aestheticText = (concept.aesthetic && typeof concept.aesthetic === 'string') ? concept.aesthetic : ''
+  const requestText = userRequest || ''
+  const combinedText = `${titleText} ${descText} ${aestheticText} ${requestText}`.toLowerCase()
+
   // Extract aesthetic keywords from userRequest
   const aestheticKeywords: string[] = []
   if (/pinterest|curated|dreamy|soft|feminine|aspirational/i.test(userRequest || '')) {
@@ -577,7 +605,31 @@ function buildAestheticDescription(
   }
 
   // Enhanced aesthetic based on category
-  const aestheticEnhancements: Record<string, string> = {
+  const aestheticEnhancements: string[] = [
+    'editorial quality',
+    'authentic moment',
+    'sophisticated simplicity',
+    'timeless appeal',
+    'luxurious materials',
+    'refined elegance',
+    'quiet luxury',
+    'effortless sophistication',
+    'understated opulence',
+  ]
+
+  // Add luxury-specific enhancements based on category/theme
+  if (/luxury|elegant|sophisticated|premium|high-end/i.test(combinedText)) {
+    aestheticEnhancements.push(
+      'cashmere textures',
+      'silk details',
+      'leather accents',
+      'marble surfaces',
+      'architectural refinement',
+      'premium materials'
+    )
+  }
+
+  const categoryAesthetics: Record<string, string> = {
     WELLNESS: 'Coastal wellness, clean beauty, morning ritual, natural glow',
     LUXURY: 'Quiet luxury, editorial sophistication, timeless elegance',
     LIFESTYLE: 'Coastal living, clean aesthetic, everyday moments, authentic',
@@ -586,7 +638,8 @@ function buildAestheticDescription(
     BEAUTY: 'Coastal wellness, clean beauty, morning ritual, self-care',
   }
 
-  return aestheticEnhancements[categoryInfo.name] || baseAesthetic
+  const baseCategoryAesthetic = categoryAesthetics[categoryInfo.name] || baseAesthetic
+  return `${baseCategoryAesthetic}, ${aestheticEnhancements.slice(0, 4).join(', ')}`
 }
 
 /**

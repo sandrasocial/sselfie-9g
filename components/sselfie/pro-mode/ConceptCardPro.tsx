@@ -41,6 +41,7 @@ interface ConceptCardProProps {
   onGenerate?: () => Promise<{ predictionId?: string; generationId?: string } | void>
   onViewPrompt?: () => void
   onEditPrompt?: () => void
+  onPromptUpdate?: (conceptId: string, newFullPrompt: string) => void
   isGenerating?: boolean
   onImageGenerated?: () => void
 }
@@ -50,10 +51,20 @@ export default function ConceptCardPro({
   onGenerate,
   onViewPrompt,
   onEditPrompt,
+  onPromptUpdate,
   isGenerating = false,
   onImageGenerated,
 }: ConceptCardProProps) {
   const [showPromptModal, setShowPromptModal] = useState(false)
+  const [isEditingPrompt, setIsEditingPrompt] = useState(false)
+  const [editedPrompt, setEditedPrompt] = useState(concept.fullPrompt || '')
+
+  // Sync editedPrompt with concept.fullPrompt when concept changes (but not when editing)
+  useEffect(() => {
+    if (!isEditingPrompt) {
+      setEditedPrompt(concept.fullPrompt || '')
+    }
+  }, [concept.fullPrompt, isEditingPrompt])
   const [isGenerated, setIsGenerated] = useState(false)
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -181,9 +192,28 @@ export default function ConceptCardPro({
 
   const handleViewPrompt = () => {
     setShowPromptModal(true)
+    setEditedPrompt(concept.fullPrompt || '')
+    setIsEditingPrompt(false)
     if (onViewPrompt) {
       onViewPrompt()
     }
+  }
+
+  const handleStartEdit = () => {
+    setIsEditingPrompt(true)
+    setEditedPrompt(concept.fullPrompt || '')
+  }
+
+  const handleCancelEdit = () => {
+    setIsEditingPrompt(false)
+    setEditedPrompt(concept.fullPrompt || '')
+  }
+
+  const handleSavePrompt = () => {
+    if (onPromptUpdate && editedPrompt.trim() !== (concept.fullPrompt || '')) {
+      onPromptUpdate(concept.id, editedPrompt.trim())
+    }
+    setIsEditingPrompt(false)
   }
 
   const handleGenerate = async () => {
@@ -682,7 +712,14 @@ export default function ConceptCardPro({
       </div>
 
       {/* View Prompt Modal */}
-      <Dialog open={showPromptModal} onOpenChange={setShowPromptModal}>
+      <Dialog open={showPromptModal} onOpenChange={(open) => {
+        setShowPromptModal(open)
+        if (!open) {
+          // Reset editing state when modal closes
+          setIsEditingPrompt(false)
+          setEditedPrompt(concept.fullPrompt || '')
+        }
+      }}>
         <DialogContent
           className="max-w-[95vw] sm:max-w-2xl md:max-w-3xl max-h-[90vh] overflow-y-auto mx-2 sm:mx-4"
           style={{
@@ -801,20 +838,50 @@ export default function ConceptCardPro({
             />
 
             {/* Full Prompt */}
-            {concept.fullPrompt ? (
+            {concept.fullPrompt || editedPrompt ? (
               <div className="space-y-3">
-                <p
-                  style={{
-                    fontFamily: Typography.ui.fontFamily,
-                    fontSize: Typography.ui.sizes.sm,
-                    fontWeight: Typography.ui.weights.medium,
-                    color: Colors.textPrimary,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                  }}
-                >
-                  Full Prompt
-                </p>
+                <div className="flex items-center justify-between">
+                  <p
+                    style={{
+                      fontFamily: Typography.ui.fontFamily,
+                      fontSize: Typography.ui.sizes.sm,
+                      fontWeight: Typography.ui.weights.medium,
+                      color: Colors.textPrimary,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                    }}
+                  >
+                    Full Prompt
+                  </p>
+                  {!isEditingPrompt && (
+                    <button
+                      onClick={handleStartEdit}
+                      className="touch-manipulation active:scale-95"
+                      style={{
+                        fontFamily: Typography.ui.fontFamily,
+                        fontSize: Typography.ui.sizes.xs,
+                        fontWeight: Typography.ui.weights.medium,
+                        color: Colors.primary,
+                        backgroundColor: 'transparent',
+                        padding: '6px 12px',
+                        borderRadius: BorderRadius.buttonSm,
+                        border: `1px solid ${Colors.border}`,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = Colors.hover
+                        e.currentTarget.style.borderColor = Colors.primary
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent'
+                        e.currentTarget.style.borderColor = Colors.border
+                      }}
+                    >
+                      Edit
+                    </button>
+                  )}
+                </div>
                 <div
                   className="p-4 rounded-lg"
                   style={{
@@ -823,20 +890,42 @@ export default function ConceptCardPro({
                     borderRadius: BorderRadius.cardSm,
                   }}
                 >
-                  <p
-                    style={{
-                      fontFamily: Typography.body.fontFamily,
-                      fontSize: Typography.body.sizes.md,
-                      fontWeight: Typography.body.weights.regular,
-                      color: Colors.textPrimary,
-                      lineHeight: Typography.body.lineHeight,
-                      letterSpacing: Typography.body.letterSpacing,
-                      whiteSpace: 'pre-wrap',
-                      wordBreak: 'break-word',
-                    }}
-                  >
-                    {concept.fullPrompt}
-                  </p>
+                  {isEditingPrompt ? (
+                    <textarea
+                      value={editedPrompt}
+                      onChange={(e) => setEditedPrompt(e.target.value)}
+                      className="w-full resize-none"
+                      style={{
+                        fontFamily: Typography.body.fontFamily,
+                        fontSize: Typography.body.sizes.md,
+                        fontWeight: Typography.body.weights.regular,
+                        color: Colors.textPrimary,
+                        lineHeight: Typography.body.lineHeight,
+                        letterSpacing: Typography.body.letterSpacing,
+                        backgroundColor: 'transparent',
+                        border: 'none',
+                        outline: 'none',
+                        minHeight: '200px',
+                        wordBreak: 'break-word',
+                      }}
+                      rows={12}
+                    />
+                  ) : (
+                    <p
+                      style={{
+                        fontFamily: Typography.body.fontFamily,
+                        fontSize: Typography.body.sizes.md,
+                        fontWeight: Typography.body.weights.regular,
+                        color: Colors.textPrimary,
+                        lineHeight: Typography.body.lineHeight,
+                        letterSpacing: Typography.body.letterSpacing,
+                        whiteSpace: 'pre-wrap',
+                        wordBreak: 'break-word',
+                      }}
+                    >
+                      {concept.fullPrompt || editedPrompt}
+                    </p>
+                  )}
                 </div>
               </div>
             ) : (
@@ -941,69 +1030,94 @@ export default function ConceptCardPro({
 
             {/* Action buttons */}
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-4 border-t" style={{ borderColor: Colors.border }}>
-              {onEditPrompt && (
+              {isEditingPrompt ? (
+                <>
+                  <button
+                    onClick={handleSavePrompt}
+                    className="touch-manipulation active:scale-95"
+                    style={{
+                      fontFamily: Typography.ui.fontFamily,
+                      fontSize: 'clamp(13px, 3vw, 14px)',
+                      fontWeight: Typography.ui.weights.medium,
+                      letterSpacing: '0.01em',
+                      color: Colors.surface,
+                      backgroundColor: Colors.primary,
+                      padding: 'clamp(10px, 2.5vw, 12px) clamp(16px, 4vw, 20px)',
+                      minHeight: '44px',
+                      borderRadius: BorderRadius.button,
+                      border: 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      flex: 1,
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = Colors.accent
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = Colors.primary
+                    }}
+                  >
+                    Save Changes
+                  </button>
+                  <button
+                    onClick={handleCancelEdit}
+                    className="touch-manipulation active:scale-95"
+                    style={{
+                      fontFamily: Typography.ui.fontFamily,
+                      fontSize: 'clamp(13px, 3vw, 14px)',
+                      fontWeight: Typography.ui.weights.medium,
+                      letterSpacing: '0.01em',
+                      color: Colors.textPrimary,
+                      backgroundColor: 'transparent',
+                      padding: 'clamp(10px, 2.5vw, 12px) clamp(16px, 4vw, 20px)',
+                      minHeight: '44px',
+                      borderRadius: BorderRadius.button,
+                      border: `1px solid ${Colors.border}`,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      flex: 1,
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = Colors.hover
+                      e.currentTarget.style.borderColor = Colors.textPrimary
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent'
+                      e.currentTarget.style.borderColor = Colors.border
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </>
+              ) : (
                 <button
-                  onClick={() => {
-                    if (onEditPrompt) {
-                      onEditPrompt()
-                    }
-                    setShowPromptModal(false)
-                  }}
+                  onClick={() => setShowPromptModal(false)}
                   className="touch-manipulation active:scale-95"
                   style={{
                     fontFamily: Typography.ui.fontFamily,
                     fontSize: 'clamp(13px, 3vw, 14px)',
                     fontWeight: Typography.ui.weights.medium,
                     letterSpacing: '0.01em',
-                    color: Colors.primary,
-                    backgroundColor: 'transparent',
+                    color: Colors.surface,
+                    backgroundColor: Colors.primary,
                     padding: 'clamp(10px, 2.5vw, 12px) clamp(16px, 4vw, 20px)',
                     minHeight: '44px',
                     borderRadius: BorderRadius.button,
-                    border: `1px solid ${Colors.border}`,
+                    border: 'none',
                     cursor: 'pointer',
                     transition: 'all 0.2s ease',
                     flex: 1,
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = Colors.hover
-                    e.currentTarget.style.borderColor = Colors.primary
+                    e.currentTarget.style.backgroundColor = Colors.accent
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'transparent'
-                    e.currentTarget.style.borderColor = Colors.border
+                    e.currentTarget.style.backgroundColor = Colors.primary
                   }}
                 >
-                  Edit Prompt
+                  {ButtonLabels.close}
                 </button>
               )}
-              <button
-                onClick={() => setShowPromptModal(false)}
-                className="touch-manipulation active:scale-95"
-                style={{
-                  fontFamily: Typography.ui.fontFamily,
-                  fontSize: 'clamp(13px, 3vw, 14px)',
-                  fontWeight: Typography.ui.weights.medium,
-                  letterSpacing: '0.01em',
-                  color: Colors.surface,
-                  backgroundColor: Colors.primary,
-                  padding: 'clamp(10px, 2.5vw, 12px) clamp(16px, 4vw, 20px)',
-                  minHeight: '44px',
-                  borderRadius: BorderRadius.button,
-                  border: 'none',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  flex: 1,
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = Colors.accent
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = Colors.primary
-                }}
-              >
-                {ButtonLabels.close}
-              </button>
             </div>
           </div>
         </DialogContent>
