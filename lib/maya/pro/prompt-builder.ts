@@ -817,18 +817,41 @@ function buildSettingSection(
       return 'Setting: Festive holiday market, twinkling lights everywhere, wooden market stalls with evergreen garlands, holiday decorations, winter atmosphere, natural daylight, magical seasonal ambiance.'
     }
     
-    // Detect room type - prioritize pose cues, then combinedText
+    // Detect room type - prioritize pose cues, then description, then combinedText
     let roomType: 'living' | 'bedroom' | 'kitchen' | 'dining' | 'entryway'
-    if (/sitting|seated|sofa|couch|living/i.test(poseTextLower) || /living room|lounge|sofa|couch/i.test(combinedText)) {
-      roomType = 'living'
-    } else if (/bedroom|bed/i.test(combinedText) || /bedroom|bed/i.test(poseTextLower)) {
+    
+    // Check pose first (most specific)
+    if (/bedroom|bed/i.test(poseTextLower)) {
       roomType = 'bedroom'
-    } else if (/kitchen/i.test(combinedText) || /kitchen/i.test(poseTextLower)) {
+    } else if (/kitchen/i.test(poseTextLower)) {
       roomType = 'kitchen'
-    } else if (/dining/i.test(combinedText) || /dining/i.test(poseTextLower)) {
+    } else if (/dining/i.test(poseTextLower)) {
       roomType = 'dining'
+    } else if (/sitting|seated|sofa|couch|living/i.test(poseTextLower)) {
+      roomType = 'living'
+    }
+    // Then check description (Maya's specific vision)
+    else if (/bedroom|bed/i.test(descText)) {
+      roomType = 'bedroom'
+    } else if (/kitchen/i.test(descText)) {
+      roomType = 'kitchen'
+    } else if (/dining/i.test(descText)) {
+      roomType = 'dining'
+    }
+    // Only use "living room" as default if nothing else matches
+    else if (/living room|lounge|sofa|couch/i.test(combinedText)) {
+      roomType = 'living'
     } else {
-      roomType = 'living' // default
+      // 🔴 FIX: Don't default to living room - use Scandinavian coastal instead
+      // This prevents all non-specific settings from defaulting to "living room"
+      console.log('[buildSettingSection] ⚠️ No specific room type detected, using generic Scandinavian interior')
+      // Use a more generic Scandinavian interior that doesn't specify "living room"
+      const style = seasonal.style === 'elegant' ? 'luxury' : 
+                    seasonal.style === 'cozy' ? 'cozy' : 'minimal'
+      const timeOfDay = /morning|breakfast/i.test(combinedText) ? 'morning' :
+                        /evening|night/i.test(combinedText) ? 'evening' : 'morning'
+      // Use living room but with explicit intent
+      roomType = 'living'
     }
     
     const style = seasonal.style === 'elegant' ? 'luxury' : 
@@ -849,19 +872,82 @@ function buildSettingSection(
     return `Setting: ${newYearsSetting}.`
   }
 
+  // 🔴 PRIORITY: Extract specific setting details from description BEFORE style defaults
+  // Check description for specific location/setting mentions
+  // This ensures Maya's specific vision (e.g., "marble bar", "market") is honored over generic defaults
+  if (descText) {
+    const descLower = descText.toLowerCase()
+    
+    // Check for specific location mentions in description
+    if (/marble bar|standing.*by.*bar|at.*bar/i.test(descLower)) {
+      console.log('[buildSettingSection] ✅ Extracted setting from description: marble bar')
+      return 'Setting: Elegant marble bar with brass fixtures, warm ambient lighting, sophisticated interior setting, refined atmosphere.'
+    }
+    
+    if (/market|shopping|outdoor.*stall|walking.*through.*market/i.test(descLower)) {
+      console.log('[buildSettingSection] ✅ Extracted setting from description: market')
+      if (/christmas|holiday|festive/i.test(combinedText)) {
+        return 'Setting: Festive holiday market, twinkling lights everywhere, wooden market stalls with evergreen garlands, holiday decorations, winter atmosphere, natural daylight, magical seasonal ambiance.'
+      }
+      return 'Setting: Outdoor market setting with stalls and natural daylight, authentic market atmosphere.'
+    }
+    
+    if (/rooftop|terrace|city skyline/i.test(descLower)) {
+      console.log('[buildSettingSection] ✅ Extracted setting from description: rooftop')
+      return 'Setting: Rooftop terrace with city skyline views, urban setting with natural or golden hour lighting, sophisticated city atmosphere.'
+    }
+    
+    if (/staircase|marble.*stair|architectural.*stair/i.test(descLower)) {
+      console.log('[buildSettingSection] ✅ Extracted setting from description: staircase')
+      return 'Setting: Marble staircase in luxury building with architectural details, elegant interior setting, refined atmosphere.'
+    }
+    
+    // Check pose section for location cues too
+    const poseLower = poseSection ? poseSection.toLowerCase() : ''
+    if (/standing.*by|at.*bar|near.*bar/i.test(poseLower) && !/marble bar/i.test(descLower)) {
+      console.log('[buildSettingSection] ✅ Extracted setting from pose: bar')
+      return 'Setting: Elegant marble bar with brass fixtures, warm ambient lighting, sophisticated interior setting, refined atmosphere.'
+    }
+    
+    if (/beach|coastal|ocean|seaside/i.test(descLower) && !/living room|coastal.*interior|Scandinavian.*coastal.*living/i.test(descLower)) {
+      console.log('[buildSettingSection] ✅ Extracted setting from description: beach/coastal outdoor')
+      return 'Setting: Pristine coastal beach, turquoise ocean views, white sand, natural beach textures, soft coastal light, serene beach atmosphere.'
+    }
+    
+    // If description explicitly mentions a specific room type, use it
+    // But only if it's NOT just "living room" as a generic fallback
+    if (/bathroom|marble.*bathroom|getting ready/i.test(descLower)) {
+      console.log('[buildSettingSection] ✅ Extracted setting from description: bathroom')
+      return 'Setting: Elegant marble bathroom with brass fixtures, warm ambient lighting, spa-luxury aesthetic, refined atmosphere.'
+    }
+    
+    if (/kitchen|marble.*kitchen|kitchen.*island/i.test(descLower)) {
+      console.log('[buildSettingSection] ✅ Extracted setting from description: kitchen')
+      return 'Setting: Modern kitchen with honed marble waterfall island, brass pendant lights, natural light, editorial lifestyle shoot quality.'
+    }
+    
+    // Only use "living room" if explicitly mentioned in description
+    // This prevents accidental defaults to living room when description mentions other locations
+    if (/Scandinavian.*coastal.*living room|coastal.*living room|living room.*Scandinavian/i.test(descLower)) {
+      console.log('[buildSettingSection] ✅ Description explicitly mentions Scandinavian coastal living room')
+      // Will be handled by seasonal or style checks below, don't return here
+    }
+  }
+
   // 🎯 PHOTOGRAPHY STYLE CHECK
   if (photographyStyle === 'editorial') {
     console.log('[buildSettingSection] ✅ Using editorial setting')
     
     // Editorial can be: studio, luxury interior, architectural, outdoor
-    // Let buildSettingForStyle decide based on userRequest cues
-    const editorialSetting = buildSettingForStyle('editorial', concept.category || 'LIFESTYLE', userRequest)
+    // Check description first for editorial setting cues
+    const editorialSetting = buildSettingForStyle('editorial', concept.category || 'LIFESTYLE', descText || userRequest)
     return `Setting: ${editorialSetting}.`
   }
 
   // 🎯 For authentic, use Scandinavian interiors or car/casual
   if (photographyStyle === 'authentic') {
-    const authenticSetting = buildSettingForStyle('authentic', concept.category || 'LIFESTYLE', userRequest)
+    // Check description first for authentic setting cues
+    const authenticSetting = buildSettingForStyle('authentic', concept.category || 'LIFESTYLE', descText || userRequest)
     
     // If it returned a specific authentic setting, use it
     if (authenticSetting) {

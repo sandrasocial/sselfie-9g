@@ -328,17 +328,34 @@ export function buildSettingForStyle(
       return pick(AUTHENTIC_STYLE.SETTINGS.CAR)
     }
     
-    // Home settings
-    if (/home|living room|bedroom|kitchen|bathroom/i.test(requestLower)) {
-      return pick(AUTHENTIC_STYLE.SETTINGS.HOME)
+    // Specific room/home settings - be explicit
+    if (/bedroom|bed/i.test(requestLower)) {
+      return pick(AUTHENTIC_STYLE.SETTINGS.HOME.filter(s => /bedroom|bed/i.test(s)))
+    }
+    if (/kitchen/i.test(requestLower)) {
+      return pick(AUTHENTIC_STYLE.SETTINGS.HOME.filter(s => /kitchen/i.test(s)))
+    }
+    if (/bathroom/i.test(requestLower)) {
+      return pick(AUTHENTIC_STYLE.SETTINGS.HOME.filter(s => /bathroom/i.test(s)))
     }
     
-    // Casual locations
-    const authenticSettings = [
-      ...AUTHENTIC_STYLE.SETTINGS.HOME,
-      ...AUTHENTIC_STYLE.SETTINGS.CASUAL_LOCATIONS,
-    ]
-    return pick(authenticSettings)
+    // Only use "living room" if explicitly mentioned
+    if (/living room|lounge|sofa|couch/i.test(requestLower)) {
+      return pick(AUTHENTIC_STYLE.SETTINGS.HOME.filter(s => /living room/i.test(s)))
+    }
+    
+    // If "home" is mentioned but no specific room, use casual locations or bedroom/kitchen variety
+    if (/home/i.test(requestLower) && !/living room|bedroom|kitchen|bathroom/i.test(requestLower)) {
+      const homeVariety = [
+        ...AUTHENTIC_STYLE.SETTINGS.HOME.filter(s => !/living room/i.test(s)), // Prefer non-living room home settings
+        ...AUTHENTIC_STYLE.SETTINGS.CASUAL_LOCATIONS,
+      ]
+      return pick(homeVariety.length > 0 ? homeVariety : AUTHENTIC_STYLE.SETTINGS.CASUAL_LOCATIONS)
+    }
+    
+    // 🔴 FIX: Default to casual locations instead of living room
+    // This prevents everything from defaulting to "living room"
+    return pick(AUTHENTIC_STYLE.SETTINGS.CASUAL_LOCATIONS)
   }
 }
 
