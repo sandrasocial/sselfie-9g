@@ -71,6 +71,7 @@ export default function ConceptCardPro({
   const [predictionId, setPredictionId] = useState<string | null>(null)
   const [generationId, setGenerationId] = useState<string | null>(null)
   const [isGeneratingState, setIsGeneratingState] = useState(false)
+  const [isFavoriteState, setIsFavoriteState] = useState(false)
   // Use refs to persist values across remounts and avoid stale closures
   const predictionIdRef = useRef<string | null>(null)
   const generationIdRef = useRef<string | null>(null)
@@ -260,6 +261,43 @@ export default function ConceptCardPro({
     }
   }
 
+  const handleFavoriteToggle = async () => {
+    if (!generationId) {
+      console.warn('[ConceptCardPro] Cannot toggle favorite: no generationId')
+      return
+    }
+
+    const newFavoriteState = !isFavoriteState
+    console.log('[ConceptCardPro] Toggling favorite:', {
+      generationId,
+      currentState: isFavoriteState,
+      newState: newFavoriteState,
+      imageId: `ai_${generationId}`
+    })
+
+    try {
+      const response = await fetch("/api/images/favorite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageId: `ai_${generationId}`,
+          isFavorite: newFavoriteState,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => 'Unknown error')
+        console.error('[ConceptCardPro] API error response:', errorText)
+        throw new Error("Failed to toggle favorite")
+      }
+
+      console.log('[ConceptCardPro] ✅ Favorite toggle API call succeeded')
+      setIsFavoriteState(newFavoriteState)
+    } catch (error) {
+      console.error("[ConceptCardPro] Error toggling favorite:", error)
+    }
+  }
+
   // Poll for generation status (matches Classic Mode exactly)
   useEffect(() => {
     // Match Classic Mode: Skip if already generated OR missing required IDs
@@ -328,6 +366,8 @@ export default function ConceptCardPro({
             setGeneratedImageUrl(data.imageUrl)
             setIsGenerated(true)
             setIsGeneratingState(false)
+            // Reset favorite state when new image is generated
+            setIsFavoriteState(false)
             if (pollIntervalRef) {
               clearInterval(pollIntervalRef)
               pollIntervalRef = null
@@ -684,18 +724,16 @@ export default function ConceptCardPro({
                 prompt: concept.fullPrompt || concept.prompt || '',
               }}
               imageUrl={generatedImageUrl}
-              imageId={generationId?.toString() || ''}
-              isFavorite={false}
-              onFavoriteToggle={async () => {
-                // TODO: Implement favorite toggle
-                console.log('[ConceptCardPro] Favorite toggle not yet implemented')
-              }}
+              imageId={generationId || ''}
+              isFavorite={isFavoriteState}
+              onFavoriteToggle={handleFavoriteToggle}
               onDelete={async () => {
                 // Reset state when image is deleted
                 setGeneratedImageUrl(null)
                 setIsGenerated(false)
                 setGenerationId(null)
                 setPredictionId(null)
+                setIsFavoriteState(false)
               }}
             />
           </div>

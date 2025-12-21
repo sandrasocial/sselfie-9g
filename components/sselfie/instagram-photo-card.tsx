@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Play, Camera } from "lucide-react"
 import FullscreenImageModal from "./fullscreen-image-modal"
@@ -43,6 +43,11 @@ export default function InstagramPhotoCard({
   const [isEditingCaption, setIsEditingCaption] = useState(false)
   const [captionValue, setCaptionValue] = useState(concept.description)
   const [isCreatingPhotoshoot, setIsCreatingPhotoshoot] = useState(false)
+
+  // Sync liked state with isFavorite prop
+  useEffect(() => {
+    setLiked(isFavorite)
+  }, [isFavorite])
 
   const formatCaption = (text: string) => {
     return text.split("\n").map((line, index, array) => (
@@ -323,7 +328,7 @@ export default function InstagramPhotoCard({
       {/* Fullscreen Image Modal */}
       <FullscreenImageModal
         imageUrl={imageUrl}
-        imageId={Number.parseInt(imageId)}
+        imageId={imageId}
         title={concept.title}
         isOpen={isViewerOpen}
         onClose={() => setIsViewerOpen(false)}
