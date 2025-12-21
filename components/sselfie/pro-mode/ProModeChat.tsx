@@ -313,7 +313,7 @@ export default function ProModeChat({
           backgroundColor: Colors.background,
         }}
       >
-        <div className="max-w-[1200px] mx-auto px-6 py-8">
+        <div className="max-w-[1200px] mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8">
           {/* Error display */}
           {(chatError || conceptError || generationError) && (
             <div
@@ -344,7 +344,7 @@ export default function ProModeChat({
                   className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-[85%] rounded-2xl px-6 py-4 ${
+                    className={`max-w-[90%] sm:max-w-[85%] rounded-2xl px-4 py-3 sm:px-6 sm:py-4 ${
                       message.role === 'user'
                         ? 'bg-stone-950 text-white'
                         : 'bg-stone-100 text-stone-900'
@@ -356,7 +356,7 @@ export default function ProModeChat({
                     <div
                       style={{
                         fontFamily: Typography.body.fontFamily,
-                        fontSize: Typography.body.sizes.md,
+                        fontSize: 'clamp(14px, 2.5vw, 16px)',
                         fontWeight: Typography.body.weights.regular,
                         lineHeight: Typography.body.lineHeight,
                         whiteSpace: 'pre-wrap',
@@ -385,7 +385,7 @@ export default function ProModeChat({
               >
                 Concepts
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
                 {concepts.map((concept) => (
                   <ConceptCardPro
                     key={concept.id}
@@ -406,7 +406,7 @@ export default function ProModeChat({
           {(isChatLoading || isGeneratingConcepts) && (
             <div className="flex justify-start mb-8">
               <div
-                className="bg-stone-100 rounded-2xl px-6 py-4"
+                className="bg-stone-100 rounded-2xl px-4 py-3 sm:px-6 sm:py-4"
                 style={{
                   borderRadius: '16px',
                 }}
@@ -414,7 +414,7 @@ export default function ProModeChat({
                 <div
                   style={{
                     fontFamily: Typography.body.fontFamily,
-                    fontSize: Typography.body.sizes.sm,
+                    fontSize: 'clamp(13px, 2.5vw, 15px)',
                     color: Colors.textTertiary,
                     fontStyle: 'italic',
                   }}
@@ -427,12 +427,12 @@ export default function ProModeChat({
 
           {/* Empty state */}
           {displayMessages.length === 0 && concepts.length === 0 && !isChatLoading && !isGeneratingConcepts && (
-            <div className="flex flex-col items-center justify-center h-full text-center py-12">
-              <div className="max-w-md">
+            <div className="flex flex-col items-center justify-center h-full text-center py-8 sm:py-12 px-4">
+              <div className="max-w-md w-full">
                 <h2
                   style={{
                     fontFamily: Typography.headers.fontFamily,
-                    fontSize: Typography.headers.sizes.lg,
+                    fontSize: 'clamp(20px, 5vw, 28px)',
                     fontWeight: Typography.headers.weights.medium,
                     color: Colors.textPrimary,
                     marginBottom: Spacing.element,
@@ -443,7 +443,7 @@ export default function ProModeChat({
                 <p
                   style={{
                     fontFamily: Typography.body.fontFamily,
-                    fontSize: Typography.body.sizes.md,
+                    fontSize: 'clamp(14px, 3vw, 16px)',
                     fontWeight: Typography.body.weights.light,
                     color: Colors.textSecondary,
                     lineHeight: Typography.body.lineHeight,

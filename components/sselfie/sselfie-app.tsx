@@ -477,7 +477,13 @@ export default function SselfieApp({
                     setActiveTab={handleTabChange}
                   />
                 )}
-                {activeTab === "maya" && <MayaChatScreen onImageGenerated={refreshCredits} user={user} />}
+                {activeTab === "maya" && (
+                  <MayaChatScreen 
+                    onImageGenerated={refreshCredits} 
+                    user={user} 
+                    setActiveTab={handleTabChange}
+                  />
+                )}
                 {activeTab === "b-roll" && <BRollScreen user={user} />}
                 {activeTab === "gallery" && <GalleryScreen user={user} userId={userId} />}
                 {activeTab === "feed-planner" && <FeedPlannerScreen />}
@@ -567,7 +573,10 @@ export default function SselfieApp({
       <LowCreditModal credits={creditBalance} threshold={30} />
       <ZeroCreditsUpgradeModal credits={creditBalance} />
 
-      <FeedbackButton userId={userId} userEmail={userEmail} userName={userName} />
+      {/* Hide feedback button when on maya chat screen */}
+      {activeTab !== "maya" && (
+        <FeedbackButton userId={userId} userEmail={userEmail} userName={userName} />
+      )}
       </div>
   )
 }

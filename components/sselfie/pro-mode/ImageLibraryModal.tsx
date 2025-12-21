@@ -101,14 +101,16 @@ export default function ImageLibraryModal({
           {onManageCategory && (
             <button
               onClick={() => onManageCategory(category)}
+              className="touch-manipulation active:scale-95"
               style={{
                 fontFamily: Typography.ui.fontFamily,
-                fontSize: Typography.ui.sizes.sm,
+                fontSize: 'clamp(12px, 2.5vw, 14px)',
                 fontWeight: Typography.ui.weights.medium,
                 color: Colors.primary,
                 backgroundColor: 'transparent',
                 border: `1px solid ${Colors.border}`,
-                padding: '6px 16px',
+                padding: 'clamp(6px, 1.5vw, 8px) clamp(12px, 3vw, 16px)',
+                minHeight: '36px',
                 borderRadius: BorderRadius.buttonSm,
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
@@ -121,7 +123,6 @@ export default function ImageLibraryModal({
                 e.currentTarget.style.backgroundColor = 'transparent'
                 e.currentTarget.style.borderColor = Colors.border
               }}
-              className="hover:opacity-90"
             >
               {ButtonLabels.manage}
             </button>
@@ -129,7 +130,7 @@ export default function ImageLibraryModal({
         </div>
 
         {/* Image grid */}
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3">
           {images.map((imageUrl, index) => (
             <div
               key={`${category}-${index}`}
@@ -159,7 +160,7 @@ export default function ImageLibraryModal({
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent
-          className="max-w-4xl max-h-[90vh] overflow-y-auto"
+          className="max-w-[95vw] sm:max-w-3xl md:max-w-4xl max-h-[90vh] overflow-y-auto mx-2 sm:mx-4"
           style={{
             backgroundColor: Colors.surface,
             borderColor: Colors.border,
@@ -411,17 +412,19 @@ export default function ImageLibraryModal({
               Are you sure you want to start a fresh project? This will clear your current image library and intent.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2">
               <button
                 onClick={cancelStartFresh}
+                className="touch-manipulation active:scale-95"
                 style={{
                   fontFamily: Typography.ui.fontFamily,
-                  fontSize: Typography.ui.sizes.sm,
+                  fontSize: 'clamp(13px, 3vw, 14px)',
                   fontWeight: Typography.ui.weights.medium,
                   letterSpacing: '0.01em',
                   color: Colors.primary,
                   backgroundColor: 'transparent',
-                  padding: '10px 20px',
+                  padding: 'clamp(10px, 2.5vw, 12px) clamp(16px, 4vw, 20px)',
+                  minHeight: '44px',
                   borderRadius: BorderRadius.button,
                   border: `1px solid ${Colors.border}`,
                   cursor: 'pointer',
@@ -436,21 +439,22 @@ export default function ImageLibraryModal({
                   e.currentTarget.style.backgroundColor = 'transparent'
                   e.currentTarget.style.borderColor = Colors.border
                 }}
-                className="hover:opacity-90"
               >
                 {ButtonLabels.cancel}
               </button>
 
               <button
                 onClick={confirmStartFresh}
+                className="touch-manipulation active:scale-95"
                 style={{
                   fontFamily: Typography.ui.fontFamily,
-                  fontSize: Typography.ui.sizes.sm,
+                  fontSize: 'clamp(13px, 3vw, 14px)',
                   fontWeight: Typography.ui.weights.medium,
                   letterSpacing: '0.01em',
                   color: Colors.surface,
                   backgroundColor: Colors.primary,
-                  padding: '10px 20px',
+                  padding: 'clamp(10px, 2.5vw, 12px) clamp(16px, 4vw, 20px)',
+                  minHeight: '44px',
                   borderRadius: BorderRadius.button,
                   border: 'none',
                   cursor: 'pointer',
@@ -463,7 +467,6 @@ export default function ImageLibraryModal({
                 onMouseLeave={(e) => {
                   e.currentTarget.style.backgroundColor = Colors.primary
                 }}
-                className="hover:opacity-90"
               >
                 {ButtonLabels.confirm}
               </button>

@@ -471,8 +471,8 @@ export default function ImageUploadFlow({
 
   if (showAfterState && getTotalImageCount() > 0) {
     return (
-      <div className="flex flex-col min-h-[600px] px-6 py-12">
-        <div className="max-w-[900px] w-full mx-auto space-y-8">
+      <div className="flex flex-col min-h-[600px] px-3 sm:px-4 md:px-6 py-6 sm:py-8 md:py-12">
+        <div className="max-w-[900px] w-full mx-auto space-y-6 sm:space-y-8">
           {/* Header */}
           <div className="space-y-2">
             <h2
@@ -627,31 +627,32 @@ export default function ImageUploadFlow({
 
           {/* Start Creating button */}
           <div className="pt-6">
-            <button
-              onClick={handleStartCreating}
-              style={{
-                fontFamily: Typography.ui.fontFamily,
-                fontSize: Typography.ui.sizes.md,
-                fontWeight: Typography.ui.weights.medium,
-                letterSpacing: '0.5px',
-                color: Colors.surface,
-                backgroundColor: Colors.primary,
-                padding: '12px 32px',
-                borderRadius: BorderRadius.button,
-                border: 'none',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = Colors.accent
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = Colors.primary
-              }}
-              className="hover:opacity-90"
-            >
-              {ButtonLabels.startCreating}
-            </button>
+          <button
+            onClick={handleStartCreating}
+            className="touch-manipulation active:scale-95 w-full sm:w-auto"
+            style={{
+              fontFamily: Typography.ui.fontFamily,
+              fontSize: 'clamp(14px, 3.5vw, 16px)',
+              fontWeight: Typography.ui.weights.medium,
+              letterSpacing: '0.5px',
+              color: Colors.surface,
+              backgroundColor: Colors.primary,
+              padding: 'clamp(12px, 3vw, 14px) clamp(24px, 6vw, 32px)',
+              minHeight: '44px',
+              borderRadius: BorderRadius.button,
+              border: 'none',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = Colors.accent
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = Colors.primary
+            }}
+          >
+            {ButtonLabels.startCreating}
+          </button>
           </div>
         </div>
       </div>
@@ -665,13 +666,13 @@ export default function ImageUploadFlow({
   if (currentStep === 1) {
     return (
       <>
-        <div className="flex flex-col items-center justify-center min-h-[600px] px-6 py-12">
-        <div className="max-w-[600px] w-full space-y-8 text-center">
+        <div className="flex flex-col items-center justify-center min-h-[600px] px-4 sm:px-6 py-8 sm:py-12">
+        <div className="max-w-[600px] w-full space-y-6 sm:space-y-8 text-center">
           {/* Main Header: "Studio Pro Mode" */}
           <h1
             style={{
               fontFamily: Typography.headers.fontFamily,
-              fontSize: Typography.headers.sizes.xl,
+              fontSize: 'clamp(24px, 6vw, 32px)',
               fontWeight: Typography.headers.weights.medium,
               color: Colors.textPrimary,
               lineHeight: Typography.headers.lineHeight,
@@ -685,7 +686,7 @@ export default function ImageUploadFlow({
           <h2
             style={{
               fontFamily: Typography.subheaders.fontFamily,
-              fontSize: Typography.subheaders.sizes.lg,
+              fontSize: 'clamp(18px, 4.5vw, 22px)',
               fontWeight: Typography.subheaders.weights.regular,
               color: Colors.accentLight,
               lineHeight: Typography.subheaders.lineHeight,
@@ -699,13 +700,14 @@ export default function ImageUploadFlow({
           <p
             style={{
               fontFamily: Typography.body.fontFamily,
-              fontSize: Typography.body.sizes.md,
+              fontSize: 'clamp(14px, 3.5vw, 16px)',
               fontWeight: Typography.body.weights.light,
               color: Colors.textSecondary,
               lineHeight: Typography.body.lineHeight,
               letterSpacing: Typography.body.letterSpacing,
               maxWidth: '500px',
               margin: '0 auto',
+              padding: '0 clamp(16px, 4vw, 24px)',
             }}
           >
             We'll help you organize your images into categories: selfies for your face and features, 
@@ -717,14 +719,16 @@ export default function ImageUploadFlow({
           <div className="pt-4">
             <button
               onClick={handleBeginSetup}
+              className="touch-manipulation active:scale-95 w-full sm:w-auto"
               style={{
                 fontFamily: Typography.ui.fontFamily,
-                fontSize: Typography.ui.sizes.md,
+                fontSize: 'clamp(14px, 3.5vw, 16px)',
                 fontWeight: Typography.ui.weights.medium,
                 letterSpacing: '0.5px',
                 color: Colors.surface,
                 backgroundColor: Colors.primary,
-                padding: '12px 32px',
+                padding: 'clamp(12px, 3vw, 14px) clamp(24px, 6vw, 32px)',
+                minHeight: '44px',
                 borderRadius: BorderRadius.button,
                 border: 'none',
                 cursor: 'pointer',
@@ -736,7 +740,6 @@ export default function ImageUploadFlow({
               onMouseLeave={(e) => {
                 e.currentTarget.style.backgroundColor = Colors.primary
               }}
-              className="hover:opacity-90"
             >
               {ButtonLabels.beginSetup}
             </button>
@@ -864,72 +867,74 @@ export default function ImageUploadFlow({
             Photos for face and features
           </p>
 
-          {/* Action buttons */}
-          <div className="flex flex-col sm:flex-row gap-4">
-            {/* Choose from Gallery button */}
-            <button
-              onClick={handleChooseFromGallery}
-              style={{
-                fontFamily: Typography.ui.fontFamily,
-                fontSize: Typography.ui.sizes.md,
-                fontWeight: Typography.ui.weights.medium,
-                letterSpacing: '0.01em',
-                color: Colors.primary,
-                backgroundColor: 'transparent',
-                padding: '12px 24px',
-                borderRadius: BorderRadius.button,
-                border: `1px solid ${Colors.border}`,
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                flex: 1,
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = Colors.hover
-                e.currentTarget.style.borderColor = Colors.primary
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent'
-                e.currentTarget.style.borderColor = Colors.border
-              }}
-              className="hover:opacity-90"
-            >
-              {ButtonLabels.chooseFromGallery}
-            </button>
+        {/* Action buttons */}
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+          {/* Choose from Gallery button */}
+          <button
+            onClick={handleChooseFromGallery}
+            className="touch-manipulation active:scale-95"
+            style={{
+              fontFamily: Typography.ui.fontFamily,
+              fontSize: 'clamp(14px, 3.5vw, 16px)',
+              fontWeight: Typography.ui.weights.medium,
+              letterSpacing: '0.01em',
+              color: Colors.primary,
+              backgroundColor: 'transparent',
+              padding: 'clamp(12px, 3vw, 14px) clamp(20px, 5vw, 24px)',
+              minHeight: '44px',
+              borderRadius: BorderRadius.button,
+              border: `1px solid ${Colors.border}`,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              flex: 1,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = Colors.hover
+              e.currentTarget.style.borderColor = Colors.primary
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent'
+              e.currentTarget.style.borderColor = Colors.border
+            }}
+          >
+            {ButtonLabels.chooseFromGallery}
+          </button>
 
-            {/* Upload New button */}
-            <button
-              onClick={handleUploadNew}
-              disabled={isUploading}
-              style={{
-                fontFamily: Typography.ui.fontFamily,
-                fontSize: Typography.ui.sizes.md,
-                fontWeight: Typography.ui.weights.medium,
-                letterSpacing: '0.01em',
-                color: Colors.surface,
-                backgroundColor: isUploading ? Colors.border : Colors.primary,
-                padding: '12px 24px',
-                borderRadius: BorderRadius.button,
-                border: 'none',
-                cursor: isUploading ? 'not-allowed' : 'pointer',
-                transition: 'all 0.2s ease',
-                flex: 1,
-                opacity: isUploading ? 0.6 : 1,
-              }}
-              onMouseEnter={(e) => {
-                if (!isUploading) {
-                  e.currentTarget.style.backgroundColor = Colors.accent
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isUploading) {
-                  e.currentTarget.style.backgroundColor = Colors.primary
-                }
-              }}
-              className="hover:opacity-90"
-            >
-              {isUploading ? 'Uploading...' : ButtonLabels.uploadNew}
-            </button>
-          </div>
+          {/* Upload New button */}
+          <button
+            onClick={handleUploadNew}
+            disabled={isUploading}
+            className="touch-manipulation active:scale-95 disabled:active:scale-100"
+            style={{
+              fontFamily: Typography.ui.fontFamily,
+              fontSize: 'clamp(14px, 3.5vw, 16px)',
+              fontWeight: Typography.ui.weights.medium,
+              letterSpacing: '0.01em',
+              color: Colors.surface,
+              backgroundColor: isUploading ? Colors.border : Colors.primary,
+              padding: 'clamp(12px, 3vw, 14px) clamp(20px, 5vw, 24px)',
+              minHeight: '44px',
+              borderRadius: BorderRadius.button,
+              border: 'none',
+              cursor: isUploading ? 'not-allowed' : 'pointer',
+              transition: 'all 0.2s ease',
+              flex: 1,
+              opacity: isUploading ? 0.6 : 1,
+            }}
+            onMouseEnter={(e) => {
+              if (!isUploading) {
+                e.currentTarget.style.backgroundColor = Colors.accent
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isUploading) {
+                e.currentTarget.style.backgroundColor = Colors.primary
+              }
+            }}
+          >
+            {isUploading ? 'Uploading...' : ButtonLabels.uploadNew}
+          </button>
+        </div>
 
           {/* Error display */}
           {uploadError && (

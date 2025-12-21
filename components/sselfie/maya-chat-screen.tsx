@@ -43,13 +43,16 @@ import ProModeHeader from "./pro-mode/ProModeHeader"
 import ProModeInput from "./pro-mode/ProModeInput"
 import ConceptCardPro from "./pro-mode/ConceptCardPro"
 import ImageLibraryModal from "./pro-mode/ImageLibraryModal"
+import ProModeChatHistory from "./pro-mode/ProModeChatHistory"
+import { Typography, Colors } from '@/lib/maya/pro/design-system'
 
 interface MayaChatScreenProps {
   onImageGenerated?: () => void
   user: SessionUser | null // Assuming user object is passed down
+  setActiveTab?: (tab: string) => void // Navigation handler from parent
 }
 
-export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScreenProps) {
+export default function MayaChatScreen({ onImageGenerated, user, setActiveTab }: MayaChatScreenProps) {
   const [inputValue, setInputValue] = useState("")
   const [chatId, setChatId] = useState<number | null>(null)
   const [chatTitle, setChatTitle] = useState<string>("Chat with Maya") // Added for chat title
@@ -168,6 +171,7 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
   // Pro Mode library management state
   const [showLibraryModal, setShowLibraryModal] = useState(false)
   const [showUploadFlow, setShowUploadFlow] = useState(false)
+  const [showProModeHistory, setShowProModeHistory] = useState(false)
   
   // Prompt suggestions state
   const [promptSuggestions, setPromptSuggestions] = useState<PromptSuggestion[]>([])
@@ -1654,35 +1658,30 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
 
   // Update prompts based on mode
   useEffect(() => {
-    if (studioProMode) {
-      // Studio Pro mode: no quick actions (sophisticated UX - no generic SaaS buttons)
-      setCurrentPrompts([])
-    } else {
-      // Classic mode: fetch user gender and show style prompts
-      const fetchUserGender = async () => {
-        try {
-          console.log("[v0] Fetching user gender from /api/user/profile")
-          const response = await fetch("/api/user/profile")
-          console.log("[v0] Profile API response status:", response.status)
+    // Both modes now support quick suggestions
+    const fetchUserGender = async () => {
+      try {
+        console.log("[v0] Fetching user gender from /api/user/profile")
+        const response = await fetch("/api/user/profile")
+        console.log("[v0] Profile API response status:", response.status)
 
-          if (response.ok) {
-            const data = await response.json()
-            console.log("[v0] Profile API data:", data)
-            setUserGender(data.gender || null)
-            const prompts = getRandomPrompts(data.gender || null)
-            console.log("[v0] Setting prompts for gender:", data.gender, "Prompts:", prompts.length)
-            setCurrentPrompts(prompts)
-          } else {
-            console.error("[v0] Profile API error:", response.status, response.statusText)
-            setCurrentPrompts(getRandomPrompts(null))
-          }
-        } catch (error) {
-          console.error("[v0] Error fetching user gender:", error)
+        if (response.ok) {
+          const data = await response.json()
+          console.log("[v0] Profile API data:", data)
+          setUserGender(data.gender || null)
+          const prompts = getRandomPrompts(data.gender || null)
+          console.log("[v0] Setting prompts for gender:", data.gender, "Prompts:", prompts.length)
+          setCurrentPrompts(prompts)
+        } else {
+          console.error("[v0] Profile API error:", response.status, response.statusText)
           setCurrentPrompts(getRandomPrompts(null))
         }
+      } catch (error) {
+        console.error("[v0] Error fetching user gender:", error)
+        setCurrentPrompts(getRandomPrompts(null))
       }
-      fetchUserGender()
     }
+    fetchUserGender()
   }, [studioProMode])
 
   useEffect(() => {
@@ -2177,8 +2176,12 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
   }
 
   const handleNavigation = (tab: string) => {
-    // Navigate by updating the hash
-    window.location.hash = tab
+    // Update parent's activeTab state if provided
+    if (setActiveTab) {
+      setActiveTab(tab)
+    }
+    // Update URL without triggering a page reload (matches sselfie-app.tsx pattern)
+    window.history.pushState(null, "", `#${tab}`)
     setShowNavMenu(false)
   }
 
@@ -2845,17 +2848,11 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
                 await updateIntent(newIntent)
               }
             }}
+            onNavigation={handleNavigation}
+            onLogout={handleLogout}
+            isLoggingOut={isLoggingOut}
+            onSwitchToClassic={() => handleModeSwitch(false)}
           />
-          {/* Mode Toggle in Pro Mode Header Area */}
-          <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
-            <span className="text-xs text-stone-600 hidden sm:inline">Mode:</span>
-            <button
-              onClick={() => handleModeSwitch(false)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors bg-stone-100 text-stone-900 hover:bg-stone-200"
-            >
-              <span className="text-xs">Switch to Classic</span>
-            </button>
-          </div>
         </div>
       ) : (
         <div className="shrink-0 flex items-center justify-between px-3 sm:px-4 py-3 bg-white/80 backdrop-blur-xl border-b border-stone-200/50 relative z-50">
@@ -2871,13 +2868,13 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
           </div>
 
           {/* Studio Pro Mode Toggle - Classic Mode */}
-          <div className="flex items-center gap-2 sm:gap-3 mr-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 mr-2">
             <span className="text-xs text-stone-600 hidden sm:inline">Mode:</span>
             <button
               onClick={() => handleModeSwitch(true)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors bg-stone-100 text-stone-900 hover:bg-stone-200"
+              className="touch-manipulation active:scale-95 flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-lg transition-colors bg-stone-100 text-stone-900 hover:bg-stone-200 min-h-[36px]"
             >
-              <span className="text-xs">Switch to Studio Pro</span>
+              <span className="text-[11px] sm:text-xs">Switch to Studio Pro</span>
             </button>
           </div>
 
@@ -3330,13 +3327,79 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
                   />
                 ) : (
                   // Welcome message when library has images
-                  <div className="text-center space-y-4">
-                    <h2 className="text-3xl sm:text-4xl font-serif font-extralight tracking-[0.3em] uppercase text-stone-900">
-                      Studio Pro
-                    </h2>
-                    <p className="text-sm text-stone-500 font-light tracking-wide">
-                      Your creative library is ready. What would you like to create?
-                    </p>
+                  <div className="text-center space-y-6">
+                    <div className="space-y-4">
+                      <h2 className="text-3xl sm:text-4xl font-serif font-extralight tracking-[0.3em] uppercase text-stone-900">
+                        Studio Pro
+                      </h2>
+                      <p className="text-sm text-stone-500 font-light tracking-wide">
+                        Your creative library is ready. What would you like to create?
+                      </p>
+                    </div>
+
+                    {/* Quick Suggestion Prompts - Pro Mode */}
+                    <div className="pt-6 space-y-6">
+                      {/* Smart suggestions based on library intent */}
+                      {imageLibrary.intent && imageLibrary.intent.trim() && (
+                        <div className="space-y-3">
+                          <p className="text-xs text-stone-600 font-light tracking-wide uppercase">
+                            Based on Your Library Intent
+                          </p>
+                          <button
+                            onClick={() => {
+                              handleSendMessage(imageLibrary.intent)
+                            }}
+                            disabled={isTyping || isGeneratingConcepts}
+                            className="px-6 py-3 bg-white border border-stone-300 rounded-lg hover:bg-stone-50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation active:scale-95"
+                            style={{
+                              fontFamily: Typography.ui.fontFamily,
+                              fontSize: Typography.ui.sizes.sm,
+                              fontWeight: Typography.ui.weights.medium,
+                              color: Colors.textPrimary,
+                            }}
+                          >
+                            {imageLibrary.intent}
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Signature style prompts - Always show if available */}
+                      {(currentPrompts.length > 0 || !(imageLibrary.intent && imageLibrary.intent.trim())) && (
+                        <div className="space-y-3">
+                          <p className="text-xs text-stone-600 font-light tracking-wide uppercase">
+                            {imageLibrary.intent && imageLibrary.intent.trim() 
+                              ? "Or Start with Maya's Signature Styles" 
+                              : "Start with Maya's Signature Styles"}
+                          </p>
+                          {currentPrompts.length > 0 ? (
+                            <div className="flex flex-wrap gap-2 justify-center max-w-2xl mx-auto">
+                              {currentPrompts.map((item, index) => (
+                                <button
+                                  key={index}
+                                  onClick={() => {
+                                    handleSendMessage(item.prompt)
+                                  }}
+                                  disabled={isTyping || isGeneratingConcepts}
+                                  className="px-4 py-2 bg-white border border-stone-300 rounded-lg hover:bg-stone-50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation active:scale-95"
+                                  style={{
+                                    fontFamily: Typography.ui.fontFamily,
+                                    fontSize: Typography.ui.sizes.sm,
+                                    fontWeight: Typography.ui.weights.regular,
+                                    color: Colors.textSecondary,
+                                  }}
+                                >
+                                  {item.label}
+                                </button>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-center py-2">
+                              <p className="text-xs text-stone-400 italic">Loading suggestions...</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -4065,28 +4128,58 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
 
         {/* Input Area - Pro Mode or Classic Mode */}
         {studioProMode ? (
-          <ProModeInput
-            onSend={(message, imageUrl) => {
-              // Pro Mode: Send message with optional image
-              if (imageUrl) {
-                // Set uploaded image state and send message
-                setUploadedImage(imageUrl)
-                // Use inputValue if message is empty, otherwise use message
-                const messageToSend = message || inputValue.trim()
-                if (messageToSend || imageUrl) {
-                  handleSendMessage(messageToSend)
+          <>
+            {/* Pro Mode Quick Suggestions - Same as Classic Mode */}
+            {!isEmpty && !uploadedImage && currentPrompts.length > 0 && (
+              <div className="mb-2">
+                <div className="flex gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide pb-1 -mx-2 px-2 sm:mx-0 sm:px-0">
+                  {currentPrompts.map((item, index) => (
+                    <button
+                      key={index}
+                      onClick={() => {
+                        handleSendMessage(item.prompt)
+                      }}
+                      disabled={isTyping || isGeneratingConcepts}
+                      className="shrink-0 px-3 py-2 bg-white border border-stone-300 rounded-lg hover:bg-stone-50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation active:scale-95 min-h-[44px]"
+                      style={{
+                        fontFamily: Typography.ui.fontFamily,
+                        fontSize: Typography.ui.sizes.sm,
+                        fontWeight: Typography.ui.weights.regular,
+                        color: Colors.textSecondary,
+                      }}
+                    >
+                      <span className="whitespace-nowrap">{item.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <ProModeInput
+              onSend={(message, imageUrl) => {
+                // Pro Mode: Send message with optional image
+                if (imageUrl) {
+                  // Set uploaded image state and send message
+                  setUploadedImage(imageUrl)
+                  // Use inputValue if message is empty, otherwise use message
+                  const messageToSend = message || inputValue.trim()
+                  if (messageToSend || imageUrl) {
+                    handleSendMessage(messageToSend)
+                  }
+                } else {
+                  // Just send text message
+                  handleSendMessage(message)
                 }
-              } else {
-                // Just send text message
-                handleSendMessage(message)
-              }
-            }}
-            onImageUpload={() => setShowUploadFlow(true)}
-            onManageLibrary={() => setShowLibraryModal(true)}
-            isLoading={isTyping || isGeneratingConcepts}
-            disabled={isTyping || isGeneratingConcepts}
-            placeholder="What would you like to create?"
-          />
+              }}
+              onImageUpload={() => setShowUploadFlow(true)}
+              onManageLibrary={() => setShowLibraryModal(true)}
+              onNewChat={handleNewChat}
+              onShowHistory={() => setShowProModeHistory(true)}
+              isLoading={isTyping || isGeneratingConcepts}
+              disabled={isTyping || isGeneratingConcepts}
+              placeholder="What would you like to create?"
+            />
+          </>
         ) : (
           <div className="flex gap-2 items-end">
             <div className="flex-1 relative">
@@ -4428,6 +4521,19 @@ export default function MayaChatScreen({ onImageGenerated, user }: MayaChatScree
               await updateIntent(newIntent)
             }
           }}
+        />
+      )}
+
+      {/* Pro Mode Chat History Modal */}
+      {studioProMode && (
+        <ProModeChatHistory
+          isOpen={showProModeHistory}
+          onClose={() => setShowProModeHistory(false)}
+          currentChatId={chatId}
+          onSelectChat={handleSelectChat}
+          onNewChat={handleNewChat}
+          onDeleteChat={handleDeleteChat}
+          chatType="pro"
         />
       )}
 

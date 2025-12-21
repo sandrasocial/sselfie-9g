@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -60,6 +60,18 @@ export default function ConceptCardPro({
   const [predictionId, setPredictionId] = useState<string | null>(null)
   const [generationId, setGenerationId] = useState<string | null>(null)
   const [isGeneratingState, setIsGeneratingState] = useState(false)
+  // Use refs to persist values across remounts and avoid stale closures
+  const predictionIdRef = useRef<string | null>(null)
+  const generationIdRef = useRef<string | null>(null)
+  
+  // Sync refs with state
+  useEffect(() => {
+    predictionIdRef.current = predictionId
+  }, [predictionId])
+  
+  useEffect(() => {
+    generationIdRef.current = generationId
+  }, [generationId])
 
   // Debug: Log state changes
   useEffect(() => {
@@ -85,6 +97,8 @@ export default function ConceptCardPro({
           console.log('[ConceptCardPro] 🔄 Restoring polling state from localStorage:', { savedPredictionId, savedGenerationId })
           setPredictionId(savedPredictionId)
           setGenerationId(savedGenerationId)
+          predictionIdRef.current = savedPredictionId
+          generationIdRef.current = savedGenerationId
           setIsGeneratingState(true)
         } else if (savedIsGenerated && savedImageUrl) {
           // Restore completed generation - BOTH must be present
@@ -169,10 +183,12 @@ export default function ConceptCardPro({
       
       if (result?.predictionId) {
         setPredictionId(result.predictionId)
+        predictionIdRef.current = result.predictionId
         console.log('[ConceptCardPro] 📝 Set predictionId:', result.predictionId)
       }
       if (result?.generationId) {
         setGenerationId(result.generationId)
+        generationIdRef.current = result.generationId
         console.log('[ConceptCardPro] 📝 Set generationId:', result.generationId)
       }
       
@@ -191,37 +207,47 @@ export default function ConceptCardPro({
 
   // Poll for generation status (matches Classic Mode exactly)
   useEffect(() => {
-    // Match Classic Mode: requires predictionId (generationId is optional - check-generation can create fallback)
-    // Skip if already generated AND has image URL
-    // Use a ref to track the current generatedImageUrl to avoid dependency issues
-    const currentImageUrl = generatedImageUrl
+    // Always check refs first (they persist across remounts), then fall back to state
+    const currentPredictionId = predictionIdRef.current || predictionId
+    const currentGenerationId = generationIdRef.current || generationId
     
-    if (!predictionId || (isGenerated && currentImageUrl)) {
-      if (!predictionId) console.log('[ConceptCardPro] ⏸️ Polling skipped: no predictionId')
-      if (isGenerated && currentImageUrl) {
-        console.log('[ConceptCardPro] ⏸️ Polling skipped: already generated with image URL')
-        return
-      }
-      if (isGenerated && !currentImageUrl) {
-        // If isGenerated is true but no imageUrl, continue polling to get the image
-        console.warn('[ConceptCardPro] ⚠️ isGenerated=true but no imageUrl, continuing to poll...')
-      } else {
-        return
-      }
+    // Match Classic Mode: requires predictionId
+    // Skip if already generated AND has image URL
+    if (!currentPredictionId) {
+      console.log('[ConceptCardPro] ⏸️ Polling skipped: no predictionId', {
+        refValue: predictionIdRef.current,
+        stateValue: predictionId,
+        currentPredictionId
+      })
+      return
     }
     
-    // Log if generationId is missing but continue polling (check-generation endpoint can handle it)
-    if (!generationId) {
-      console.warn('[ConceptCardPro] ⚠️ Polling without generationId - check-generation endpoint will create fallback record if needed')
+    if (isGenerated && generatedImageUrl) {
+      console.log('[ConceptCardPro] ⏸️ Polling skipped: already generated with image URL')
+      return
     }
 
-    console.log('[ConceptCardPro] 🔄 Starting polling with:', { predictionId, generationId })
+    console.log('[ConceptCardPro] 🔄 Starting polling with:', {
+      predictionId: currentPredictionId,
+      generationId: currentGenerationId,
+      refValue: predictionIdRef.current,
+      stateValue: predictionId
+    })
 
     const pollInterval = setInterval(async () => {
+      // Always check refs to get the latest values (persist across remounts)
+      const pollPredictionId = predictionIdRef.current || predictionId
+      
+      if (!pollPredictionId) {
+        console.log('[ConceptCardPro] ⏸️ Polling skipped in interval: no predictionId in ref or state')
+        clearInterval(pollInterval)
+        return
+      }
+      
       try {
-        console.log('[ConceptCardPro] 🔍 Polling check-generation API for:', predictionId)
+        console.log('[ConceptCardPro] 🔍 Polling check-generation API for:', pollPredictionId)
         const response = await fetch(
-          `/api/maya/pro/check-generation?predictionId=${predictionId}`,
+          `/api/maya/pro/check-generation?predictionId=${pollPredictionId}`,
           { credentials: 'include' }
         )
         
@@ -258,6 +284,10 @@ export default function ConceptCardPro({
             setIsGenerated(true)
             setIsGeneratingState(false)
             
+            // Clear refs after success
+            predictionIdRef.current = null
+            generationIdRef.current = null
+            
             console.log('[ConceptCardPro] ✅ State updated, polling stopped, image should be displayed')
             
             // Clear localStorage since generation is complete
@@ -276,6 +306,10 @@ export default function ConceptCardPro({
           setError(data.error || 'Generation failed')
           setIsGeneratingState(false)
           clearInterval(pollInterval)
+          
+          // Clear refs on failure
+          predictionIdRef.current = null
+          generationIdRef.current = null
           
           // Clear localStorage on failure
           const storageKey = `pro-generation-${concept.id}`
@@ -296,11 +330,8 @@ export default function ConceptCardPro({
       console.log('[ConceptCardPro] 🛑 Polling interval cleared')
       clearInterval(pollInterval)
     }
-    // Note: We intentionally don't include generatedImageUrl in dependencies to prevent
-    // the effect from restarting when the image URL is set. The condition inside checks
-    // the current value, and once isGenerated && generatedImageUrl are both true,
-    // the effect will naturally skip on the next render cycle.
-  }, [predictionId, isGenerated, onImageGenerated]) // Removed generatedImageUrl to prevent unnecessary restarts
+    // Include all relevant dependencies
+  }, [predictionId, generationId, isGenerated, generatedImageUrl, onImageGenerated, concept.id])
 
   // Image thumbnails component
   const ImageThumbnailsGrid = ({ images }: { images: string[] }) => {
@@ -338,7 +369,7 @@ export default function ConceptCardPro({
   return (
     <>
       <div
-        className="bg-white rounded-xl p-6 space-y-4 border"
+        className="bg-white rounded-xl p-4 sm:p-5 md:p-6 space-y-3 sm:space-y-4 border"
         style={{
           borderRadius: BorderRadius.card,
           borderColor: Colors.border,
@@ -349,7 +380,7 @@ export default function ConceptCardPro({
         <h3
           style={{
             fontFamily: Typography.subheaders.fontFamily,
-            fontSize: Typography.subheaders.sizes.lg,
+            fontSize: 'clamp(18px, 4vw, 22px)',
             fontWeight: Typography.subheaders.weights.regular,
             color: Colors.textPrimary,
             lineHeight: Typography.subheaders.lineHeight,
@@ -363,7 +394,7 @@ export default function ConceptCardPro({
         <p
           style={{
             fontFamily: Typography.body.fontFamily,
-            fontSize: Typography.body.sizes.md,
+            fontSize: 'clamp(14px, 3vw, 16px)',
             fontWeight: Typography.body.weights.light,
             color: Colors.textSecondary,
             lineHeight: Typography.body.lineHeight,
@@ -436,18 +467,20 @@ export default function ConceptCardPro({
         )}
 
         {/* Action buttons */}
-        <div className="flex flex-col sm:flex-row gap-3 pt-2">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2">
           {/* View Prompt button */}
           <button
             onClick={handleViewPrompt}
+            className="touch-manipulation active:scale-95"
             style={{
               fontFamily: Typography.ui.fontFamily,
-              fontSize: Typography.ui.sizes.sm,
+              fontSize: 'clamp(13px, 3vw, 14px)',
               fontWeight: Typography.ui.weights.medium,
               letterSpacing: '0.01em',
               color: Colors.primary,
               backgroundColor: 'transparent',
-              padding: '10px 20px',
+              padding: 'clamp(10px, 2.5vw, 12px) clamp(16px, 4vw, 20px)',
+              minHeight: '44px',
               borderRadius: BorderRadius.button,
               border: `1px solid ${Colors.border}`,
               cursor: 'pointer',
@@ -462,7 +495,6 @@ export default function ConceptCardPro({
               e.currentTarget.style.backgroundColor = 'transparent'
               e.currentTarget.style.borderColor = Colors.border
             }}
-            className="hover:opacity-90"
           >
             {ButtonLabels.viewPrompt}
           </button>
@@ -471,14 +503,16 @@ export default function ConceptCardPro({
           <button
             onClick={handleGenerate}
             disabled={isGenerating || isGeneratingState}
+            className="touch-manipulation active:scale-95 disabled:active:scale-100"
             style={{
               fontFamily: Typography.ui.fontFamily,
-              fontSize: Typography.ui.sizes.sm,
+              fontSize: 'clamp(13px, 3vw, 14px)',
               fontWeight: Typography.ui.weights.medium,
               letterSpacing: '0.01em',
               color: Colors.surface,
               backgroundColor: (isGenerating || isGeneratingState) ? Colors.border : Colors.primary,
-              padding: '10px 20px',
+              padding: 'clamp(10px, 2.5vw, 12px) clamp(16px, 4vw, 20px)',
+              minHeight: '44px',
               borderRadius: BorderRadius.button,
               border: 'none',
               cursor: (isGenerating || isGeneratingState) ? 'not-allowed' : 'pointer',
@@ -496,7 +530,6 @@ export default function ConceptCardPro({
                 e.currentTarget.style.backgroundColor = Colors.primary
               }
             }}
-            className="hover:opacity-90"
           >
             {(isGenerating || isGeneratingState) ? 'Generating...' : ButtonLabels.generate}
           </button>
@@ -605,7 +638,7 @@ export default function ConceptCardPro({
       {/* View Prompt Modal */}
       <Dialog open={showPromptModal} onOpenChange={setShowPromptModal}>
         <DialogContent
-          className="max-w-3xl max-h-[90vh] overflow-y-auto"
+          className="max-w-[95vw] sm:max-w-2xl md:max-w-3xl max-h-[90vh] overflow-y-auto mx-2 sm:mx-4"
           style={{
             backgroundColor: Colors.surface,
             borderColor: Colors.border,
@@ -861,7 +894,7 @@ export default function ConceptCardPro({
             )}
 
             {/* Action buttons */}
-            <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t" style={{ borderColor: Colors.border }}>
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-4 border-t" style={{ borderColor: Colors.border }}>
               {onEditPrompt && (
                 <button
                   onClick={() => {
@@ -870,14 +903,16 @@ export default function ConceptCardPro({
                     }
                     setShowPromptModal(false)
                   }}
+                  className="touch-manipulation active:scale-95"
                   style={{
                     fontFamily: Typography.ui.fontFamily,
-                    fontSize: Typography.ui.sizes.sm,
+                    fontSize: 'clamp(13px, 3vw, 14px)',
                     fontWeight: Typography.ui.weights.medium,
                     letterSpacing: '0.01em',
                     color: Colors.primary,
                     backgroundColor: 'transparent',
-                    padding: '10px 20px',
+                    padding: 'clamp(10px, 2.5vw, 12px) clamp(16px, 4vw, 20px)',
+                    minHeight: '44px',
                     borderRadius: BorderRadius.button,
                     border: `1px solid ${Colors.border}`,
                     cursor: 'pointer',
@@ -892,21 +927,22 @@ export default function ConceptCardPro({
                     e.currentTarget.style.backgroundColor = 'transparent'
                     e.currentTarget.style.borderColor = Colors.border
                   }}
-                  className="hover:opacity-90"
                 >
                   Edit Prompt
                 </button>
               )}
               <button
                 onClick={() => setShowPromptModal(false)}
+                className="touch-manipulation active:scale-95"
                 style={{
                   fontFamily: Typography.ui.fontFamily,
-                  fontSize: Typography.ui.sizes.sm,
+                  fontSize: 'clamp(13px, 3vw, 14px)',
                   fontWeight: Typography.ui.weights.medium,
                   letterSpacing: '0.01em',
                   color: Colors.surface,
                   backgroundColor: Colors.primary,
-                  padding: '10px 20px',
+                  padding: 'clamp(10px, 2.5vw, 12px) clamp(16px, 4vw, 20px)',
+                  minHeight: '44px',
                   borderRadius: BorderRadius.button,
                   border: 'none',
                   cursor: 'pointer',
@@ -919,7 +955,6 @@ export default function ConceptCardPro({
                 onMouseLeave={(e) => {
                   e.currentTarget.style.backgroundColor = Colors.primary
                 }}
-                className="hover:opacity-90"
               >
                 {ButtonLabels.close}
               </button>

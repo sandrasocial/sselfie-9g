@@ -21,6 +21,8 @@ interface ProModeInputProps {
   onSend?: (message: string, imageUrl?: string) => void
   onImageUpload?: () => void
   onManageLibrary?: () => void
+  onNewChat?: () => void
+  onShowHistory?: () => void
   isLoading?: boolean
   disabled?: boolean
   placeholder?: string
@@ -30,6 +32,8 @@ export default function ProModeInput({
   onSend,
   onImageUpload,
   onManageLibrary,
+  onNewChat,
+  onShowHistory,
   isLoading = false,
   disabled = false,
   placeholder = "What would you like to create?",
@@ -127,7 +131,10 @@ export default function ProModeInput({
       style={{
         borderColor: Colors.border,
         backgroundColor: Colors.surface,
-        padding: `${Spacing.card} ${Spacing.section}`,
+        paddingTop: 'clamp(12px, 3vw, 16px)',
+        paddingBottom: 'clamp(12px, 3vw, 16px)',
+        paddingLeft: 'clamp(12px, 3vw, 24px)',
+        paddingRight: 'clamp(12px, 3vw, 24px)',
       }}
     >
       <form onSubmit={handleSubmit} className="max-w-[1200px] mx-auto">
@@ -167,18 +174,21 @@ export default function ProModeInput({
           </div>
         )}
 
-        <div className="flex items-end gap-3">
+        <div className="flex items-end gap-2 sm:gap-3">
           {/* Image upload button */}
           <button
             type="button"
             onClick={handleImageClick}
             disabled={isLoading || disabled || isUploadingImage}
+            className="touch-manipulation active:scale-95 shrink-0"
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: '40px',
-              height: '40px',
+              width: 'clamp(40px, 10vw, 44px)',
+              height: 'clamp(40px, 10vw, 44px)',
+              minWidth: '44px',
+              minHeight: '44px',
               borderRadius: BorderRadius.button,
               border: `1px solid ${Colors.border}`,
               backgroundColor: 'transparent',
@@ -228,17 +238,18 @@ export default function ProModeInput({
               placeholder={placeholder}
               disabled={isLoading || disabled}
               rows={1}
+              className="focus:outline-none touch-manipulation"
               style={{
                 fontFamily: Typography.body.fontFamily,
-                fontSize: Typography.body.sizes.md,
+                fontSize: 'clamp(15px, 4vw, 16px)',
                 fontWeight: Typography.body.weights.regular,
                 color: Colors.textPrimary,
                 backgroundColor: Colors.surface,
                 border: `1px solid ${Colors.border}`,
                 borderRadius: BorderRadius.input,
-                padding: '10px 14px',
+                padding: 'clamp(10px, 3vw, 12px) clamp(12px, 3vw, 14px)',
                 width: '100%',
-                minHeight: '40px',
+                minHeight: '44px',
                 maxHeight: '200px',
                 resize: 'none',
                 lineHeight: Typography.body.lineHeight,
@@ -251,33 +262,22 @@ export default function ProModeInput({
               onBlur={(e) => {
                 e.currentTarget.style.borderColor = Colors.border
               }}
-              className="focus:outline-none"
             />
-            <div
-              style={{
-                position: 'absolute',
-                bottom: '8px',
-                right: '8px',
-                fontFamily: Typography.ui.fontFamily,
-                fontSize: Typography.ui.sizes.xs,
-                color: Colors.textTertiary,
-                pointerEvents: 'none',
-              }}
-            >
-              Cmd/Ctrl + Enter to send
-            </div>
           </div>
 
           {/* Send button */}
           <button
             type="submit"
             disabled={(!inputValue.trim() && !uploadedImage) || isLoading || disabled}
+            className="touch-manipulation active:scale-95 shrink-0"
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: '40px',
-              height: '40px',
+              width: 'clamp(40px, 10vw, 44px)',
+              height: 'clamp(40px, 10vw, 44px)',
+              minWidth: '44px',
+              minHeight: '44px',
               borderRadius: BorderRadius.button,
               border: 'none',
               backgroundColor:
@@ -321,12 +321,14 @@ export default function ProModeInput({
           </button>
         </div>
 
-        {/* Manage Library button */}
-        {onManageLibrary && (
-          <div className="mt-3 flex justify-start">
+        {/* Action buttons row */}
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+          {/* Left side: Manage Library */}
+          {onManageLibrary && (
             <button
               type="button"
               onClick={onManageLibrary}
+              className="touch-manipulation active:scale-95"
               style={{
                 fontFamily: Typography.ui.fontFamily,
                 fontSize: Typography.ui.sizes.sm,
@@ -338,12 +340,75 @@ export default function ProModeInput({
                 padding: '4px 0',
                 transition: 'opacity 0.2s ease',
               }}
-              className="hover:opacity-70"
             >
               {ButtonLabels.openLibrary}
             </button>
+          )}
+
+          {/* Right side: New Project and History */}
+          <div className="flex items-center gap-2 sm:gap-3 ml-auto">
+            {onNewChat && (
+              <button
+                type="button"
+                onClick={onNewChat}
+                className="touch-manipulation active:scale-95"
+                style={{
+                  fontFamily: Typography.ui.fontFamily,
+                  fontSize: Typography.ui.sizes.sm,
+                  fontWeight: Typography.ui.weights.medium,
+                  color: Colors.textSecondary,
+                  backgroundColor: 'transparent',
+                  border: `1px solid ${Colors.border}`,
+                  padding: '6px 12px',
+                  minHeight: '32px',
+                  borderRadius: BorderRadius.buttonSm,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = Colors.hover
+                  e.currentTarget.style.borderColor = Colors.primary
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent'
+                  e.currentTarget.style.borderColor = Colors.border
+                }}
+              >
+                New Project
+              </button>
+            )}
+            {onShowHistory && (
+              <button
+                type="button"
+                onClick={onShowHistory}
+                className="touch-manipulation active:scale-95"
+                style={{
+                  fontFamily: Typography.ui.fontFamily,
+                  fontSize: Typography.ui.sizes.sm,
+                  fontWeight: Typography.ui.weights.medium,
+                  color: Colors.textSecondary,
+                  backgroundColor: 'transparent',
+                  border: `1px solid ${Colors.border}`,
+                  padding: '6px 12px',
+                  minHeight: '32px',
+                  borderRadius: BorderRadius.buttonSm,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = Colors.hover
+                  e.currentTarget.style.borderColor = Colors.primary
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent'
+                  e.currentTarget.style.borderColor = Colors.border
+                }}
+              >
+                History
+              </button>
+            )}
           </div>
-        )}
+        </div>
       </form>
     </div>
   )
