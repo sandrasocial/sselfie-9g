@@ -439,6 +439,25 @@ export async function POST(request: NextRequest) {
       console.log("[v0] ✅ Super-Realism LoRA disabled (scale = 0) for authentic aesthetic")
     }
 
+    // 🔴 CRITICAL: Include reference image if provided
+    // FLUX.1 [dev] uses `image` parameter (single reference image only)
+    // Note: FLUX.1 [dev] may not support reference images - this is for compatibility
+    // If referenceImageUrl is an array, use the first image only
+    if (referenceImageUrl) {
+      const imageUrl = Array.isArray(referenceImageUrl) 
+        ? referenceImageUrl.find(url => url) // Get first truthy URL from array
+        : referenceImageUrl
+      
+      if (imageUrl) {
+        predictionInput.image = imageUrl
+        console.log("[v0] ✅ Reference image included:", imageUrl)
+      } else {
+        console.log("[v0] ⚠️ Reference image array provided but empty - skipping")
+      }
+    } else {
+      console.log("[v0] ⚠️ No reference image provided - character consistency may be affected")
+    }
+
     const prediction = await replicate.predictions.create({
       version: replicateVersionId,
       input: predictionInput,

@@ -268,7 +268,7 @@ From description, extract:
 ${isEditorial 
   ? 'Professional photography. Pinterest-style editorial portrait.' 
   : 'Authentic influencer content. Pinterest-style portrait.'
-} Reference images attached: maintain exactly the same physical characteristics, facial features, and body proportions as shown in the attached reference images. ${isEditorial ? 'Editorial quality, professional photography aesthetic.' : 'Natural, relatable iPhone aesthetic.'}
+} Character consistency with provided reference images. Match the exact facial features, hair, skin tone, body type, and physical characteristics of the person in the reference images. This is the same person in a different scene. ${isEditorial ? 'Editorial quality, professional photography aesthetic.' : 'Natural, relatable iPhone aesthetic.'}
 
 **Outfit:** [Write EXACT outfit from description. Include EVERY brand name, EVERY piece, EVERY material. Example: "The Row cream cashmere turtleneck sweater, Brunello Cucinelli camel wide-leg trousers, Cartier watch" - NOT "luxurious sweater, elegant trousers, gold jewelry"]
 
