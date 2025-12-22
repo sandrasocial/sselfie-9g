@@ -572,13 +572,15 @@ export async function POST(req: Request) {
     })
 
     // Check for prompt builder chat type first (highest priority)
+    // Define isStudioProMode outside conditional so it's available for later use
+    const isStudioProMode = chatType !== "prompt_builder" && (studioProIntent.isStudioPro || hasStudioProHeader)
+    
     let systemPrompt: string
     if (chatType === "prompt_builder") {
       systemPrompt = PROMPT_BUILDER_SYSTEM
       console.log("[Maya Chat] Using Prompt Builder system prompt")
     } else {
       // Use Maya Pro personality if in Studio Pro mode, otherwise use standard Maya
-      const isStudioProMode = studioProIntent.isStudioPro || hasStudioProHeader
       systemPrompt = isStudioProMode ? MAYA_PRO_SYSTEM_PROMPT : MAYA_SYSTEM_PROMPT
     }
 
