@@ -89,6 +89,7 @@ import {
 } from '@/lib/maya/pro/selfie-converter'
 import {
   generateConceptsWithFinalPrompts,
+  generatePromptDirect,
   applyProgrammaticFixes,
   validatePromptLight,
   type DirectPromptContext
@@ -113,17 +114,44 @@ import {
  * 🧪 TESTING: Currently disabled by default
  * To enable: Set USE_DIRECT_PROMPT_GENERATION=true in environment
  */
-const USE_DIRECT_PROMPT_GENERATION = process.env.USE_DIRECT_PROMPT_GENERATION === 'true'
 
-console.log('[v0] [FEATURE-FLAG] Environment check:', {
+/**
+ * Helper function to check feature flag at runtime
+ * More reliable than checking at module load time
+ */
+function isDirectPromptGenerationEnabled(): boolean {
+  const envValue = process.env.USE_DIRECT_PROMPT_GENERATION
+  const isEnabled = envValue === 'true' || envValue === '1' || envValue === 'True' || envValue === 'TRUE'
+  
+  // Log for debugging
+  if (!isEnabled) {
+    console.log('[v0] [FEATURE-FLAG] [HELPER] Direct generation disabled:', {
+      envValue,
+      envValueType: typeof envValue,
+      isEnabled
+    })
+  }
+  
+  return isEnabled
+}
+
+// 🔴 CRITICAL: Check feature flag at module load AND at runtime
+// Next.js may cache env vars, so we check both times
+const USE_DIRECT_PROMPT_GENERATION_MODULE = isDirectPromptGenerationEnabled()
+
+console.log('[v0] [FEATURE-FLAG] [MODULE-LOAD] Environment check:', {
   envVar: process.env.USE_DIRECT_PROMPT_GENERATION,
-  enabled: USE_DIRECT_PROMPT_GENERATION
+  envVarType: typeof process.env.USE_DIRECT_PROMPT_GENERATION,
+  envVarLength: process.env.USE_DIRECT_PROMPT_GENERATION?.length,
+  enabled: USE_DIRECT_PROMPT_GENERATION_MODULE,
+  allEnvKeys: Object.keys(process.env).filter(k => k.includes('DIRECT') || k.includes('PROMPT')).join(', ')
 })
 
-if (USE_DIRECT_PROMPT_GENERATION) {
-  console.log('[v0] [FEATURE-FLAG] ✅ Direct Prompt Generation ENABLED - using new simplified system')
+if (USE_DIRECT_PROMPT_GENERATION_MODULE) {
+  console.log('[v0] [FEATURE-FLAG] [MODULE-LOAD] ✅ Direct Prompt Generation ENABLED - using new simplified system')
 } else {
-  console.log('[v0] [FEATURE-FLAG] ⚙️ Direct Prompt Generation DISABLED - using old extraction/rebuild system')
+  console.log('[v0] [FEATURE-FLAG] [MODULE-LOAD] ⚙️ Direct Prompt Generation DISABLED - using old extraction/rebuild system')
+  console.log('[v0] [FEATURE-FLAG] [MODULE-LOAD] ⚠️ To enable: Set USE_DIRECT_PROMPT_GENERATION=true in .env.local and restart server')
 }
 
 type MayaConcept = {
@@ -770,28 +798,7 @@ function deriveFashionIntelligence(components: ConceptComponents): string {
 
 export async function POST(req: NextRequest) {
   try {
-    // ═══════════════════════════════════════════════════════════════════════════
-    // 🚨🚨🚨 API ROUTE CALLED - CHECK THIS LOG 🚨🚨🚨
-    // ═══════════════════════════════════════════════════════════════════════════
-    console.log("")
-    console.log("=".repeat(80))
-    console.log("🚨 [v0] Generate concepts API called - ROUTE IS ACTIVE 🚨")
-    console.log("=".repeat(80))
-    console.log("")
     
-    // 🔴 FEATURE FLAG: Log status on every request (uses module-level const)
-    console.log('')
-    console.log('🔴🔴🔴 FEATURE FLAG STATUS 🔴🔴🔴')
-    console.log('[v0] [FEATURE-FLAG] Environment check:', {
-      envVar: process.env.USE_DIRECT_PROMPT_GENERATION,
-      enabled: USE_DIRECT_PROMPT_GENERATION
-    })
-    if (USE_DIRECT_PROMPT_GENERATION) {
-      console.log('[v0] [FEATURE-FLAG] ✅✅✅ Direct Prompt Generation ENABLED - using new simplified system ✅✅✅')
-    } else {
-      console.log('[v0] [FEATURE-FLAG] ⚙️⚙️⚙️ Direct Prompt Generation DISABLED - using old extraction/rebuild system ⚙️⚙️⚙️')
-    }
-    console.log('')
 
     // Authenticate user
     const supabase = await createServerClient()
@@ -3402,102 +3409,43 @@ should celebrate the power of the selfie for visibility and economic freedom.
     
     // 🔴 NEW: Direct Prompt Generation (Feature Flag)
     // When enabled, Maya generates final prompts directly - no extraction/rebuilding needed
-    console.log('')
-    console.log('🔵🔵🔵 DIRECT PROMPT GENERATION CHECK 🔵🔵🔵')
-    console.log('[v0] [DIRECT] Checking conditions:', {
-      flagEnabled: USE_DIRECT_PROMPT_GENERATION,
-      conceptsLength: concepts.length,
-      willRun: USE_DIRECT_PROMPT_GENERATION && concepts.length > 0
-    })
-    console.log('')
     
+    // 🔴 CRITICAL: Check feature flag at RUNTIME (not just module load)
+    // This ensures we pick up env vars even if Next.js cached them
+    const USE_DIRECT_PROMPT_GENERATION_RUNTIME = isDirectPromptGenerationEnabled()
+    const USE_DIRECT_PROMPT_GENERATION = USE_DIRECT_PROMPT_GENERATION_RUNTIME || USE_DIRECT_PROMPT_GENERATION_MODULE
+    
+    
+    // Direct Prompt Generation (Feature Flag)
     if (USE_DIRECT_PROMPT_GENERATION && concepts.length > 0) {
-      console.log('🚀🚀🚀 [v0] [DIRECT] Using direct prompt generation system 🚀🚀🚀')
-      console.log('[v0] [DIRECT] Concepts to process:', concepts.length)
-      
-      try {
-        // Generate concepts with final prompts directly
-        const directConcepts = await generateConceptsWithFinalPrompts(
-          userRequest || '',
-          {
-            count: concepts.length,
-            mode: studioProMode ? 'pro' : 'classic',
+      for (let i = 0; i < concepts.length; i++) {
+        const concept = concepts[i]
+        
+        try {
+          const result = await generatePromptDirect({
+            userRequest: concept.description || userRequest || '',
+            category: concept.category,
+            conceptIndex: i,
             triggerWord: triggerWord || '',
             gender: gender || 'woman',
             ethnicity: ethnicity,
             physicalPreferences: physicalPreferences,
-            category: detectedCategory || undefined,
-            conversationContext: conversationContext || undefined
-          }
-        )
-        
-        // Merge direct concepts with existing concepts (preserve titles, descriptions, categories)
-        // Replace prompts with direct generation results
-        concepts = concepts.map((concept, index) => {
-          if (index < directConcepts.length) {
-            const directConcept = directConcepts[index]
-            
-            // Apply programmatic fixes
-            const context: DirectPromptContext = {
-              userRequest: userRequest || '',
-              category: concept.category || directConcept.category,
-              conceptIndex: index,
-              triggerWord: triggerWord || '',
-              gender: gender || 'woman',
-              ethnicity: ethnicity,
-              physicalPreferences: physicalPreferences,
-              mode: studioProMode ? 'pro' : 'classic'
-            }
-            
-            let fixedPrompt = applyProgrammaticFixes(directConcept.prompt, context)
-            
-            // Validate
-            const validation = validatePromptLight(fixedPrompt, context)
-            
-            if (validation.critical.length > 0) {
-              console.warn(`[v0] [DIRECT] Concept ${index + 1} has critical issues:`, validation.critical)
-              // Use fallback to old system for this concept
-              console.log(`[v0] [DIRECT] Falling back to old system for concept ${index + 1}`)
-              return concept // Keep original concept
-            }
-            
-            if (validation.warnings.length > 0) {
-              console.log(`[v0] [DIRECT] Concept ${index + 1} warnings:`, validation.warnings)
-            }
-            
-            // Update concept with direct prompt
-            return {
-              ...concept,
-              prompt: fixedPrompt,
-              // Optionally update description if direct generation provided better one
-              description: directConcept.description || concept.description
-            }
-          }
-          return concept
-        })
-        
-        console.log('')
-        console.log('✅✅✅ [v0] [DIRECT] Successfully generated prompts using direct system ✅✅✅')
-        console.log('[v0] [DIRECT] Processed', concepts.length, 'concepts')
-        console.log('')
-      } catch (directError) {
-        console.error('[v0] [DIRECT] ❌ Error in direct prompt generation, falling back to old system')
-        console.error('[v0] [DIRECT] Error details:', directError)
-        if (directError instanceof Error) {
-          console.error('[v0] [DIRECT] Error message:', directError.message)
-          console.error('[v0] [DIRECT] Error stack:', directError.stack)
+            mode: studioProMode ? 'pro' : 'classic',
+            referenceImages: referenceImages,
+            conversationContext: conversationContext
+          })
+          
+          // Set prompt
+          concept.prompt = result.prompt
+          concept.fullPrompt = result.prompt
+        } catch (error) {
+          console.error(`[v0] [DIRECT] Error generating prompt for concept ${i + 1}:`, error)
+          
+          // Fallback: Use description as prompt (better than broken extraction)
+          concept.prompt = `${triggerWord || ''}, ${concept.description || ''}`.trim()
+          concept.fullPrompt = concept.prompt
         }
-        // Fall through to old system
       }
-    } else {
-      console.log('')
-      console.log('⏭️⏭️⏭️ [v0] [DIRECT] Skipping direct generation ⏭️⏭️⏭️')
-      console.log('[v0] [DIRECT] Reason:', {
-        flagEnabled: USE_DIRECT_PROMPT_GENERATION,
-        conceptsLength: concepts.length,
-        reason: !USE_DIRECT_PROMPT_GENERATION ? 'flag disabled' : 'no concepts'
-      })
-      console.log('')
     }
     
     // 🔴 CRITICAL: Prompt constructor usage depends on mode

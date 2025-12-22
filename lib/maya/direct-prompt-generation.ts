@@ -50,7 +50,13 @@ export async function generatePromptDirect(
   
   console.log('[DIRECT] Starting direct generation', retryCount > 0 ? `(retry ${retryCount}/${MAX_RETRIES})` : '')
   console.log('[DIRECT] Mode:', context.mode)
-  console.log('[DIRECT] Request:', context.userRequest?.substring(0, 100))
+  console.log('[DIRECT] ========== INPUT DESCRIPTION ==========')
+  console.log('[DIRECT] Description length:', context.userRequest?.length)
+  console.log('[DIRECT] First 200 chars:', context.userRequest?.substring(0, 200))
+  console.log('[DIRECT] Contains "The Row"?', context.userRequest?.includes('The Row'))
+  console.log('[DIRECT] Contains "Brunello"?', context.userRequest?.includes('Brunello'))
+  console.log('[DIRECT] Contains "Cartier"?', context.userRequest?.includes('Cartier'))
+  console.log('[DIRECT] =======================================')
   
   // 1. Build system prompt with perfect examples
   const systemPrompt = buildSystemPromptWithExamples(context)
@@ -166,123 +172,173 @@ Start with: "${triggerWord}, ${ethnicity ? ethnicity + ' ' : ''}${gender}"`
 
 /**
  * PRO MODE SYSTEM PROMPT
+ * 
+ * 🔴 CRITICAL: This prompt tells Maya to TRANSFORM the description into a structured prompt,
+ * NOT to generate new content. The description is the PRIMARY INPUT.
  */
 function buildProSystemPrompt(context: DirectPromptContext): string {
   
-  const { triggerWord, gender, ethnicity, physicalPreferences, conceptIndex } = context
+  const { userRequest, conceptIndex } = context
   
-  // Determine camera style based on conceptIndex
+  // Determine camera style
   const isEditorial = conceptIndex !== undefined && conceptIndex < 3
   const cameraStyle = isEditorial ? 'professional DSLR' : 'authentic iPhone'
   
-  return `You are generating a FINAL IMAGE GENERATION PROMPT for Nano Banana Pro (Studio Pro Mode).
+  return `🔴🔴🔴 CRITICAL TRANSFORMATION TASK 🔴🔴🔴
 
-🔴 CRITICAL REQUIREMENTS:
+You are transforming a DESCRIPTION into a structured prompt.
 
-**FORMAT:** Structured sections, 150-400 words total
-**SECTIONS:** Outfit, Pose, Setting, Lighting, Camera, Mood, Aesthetic
-**STYLE:** Complete, coherent, professional (NOT fragmented)
+RULE #1: PRESERVE EVERY SPECIFIC DETAIL
+- Brand names: COPY EXACTLY (The Row → "The Row", not "luxury brand")
+- Product descriptions: COPY EXACTLY (cashmere turtleneck → "cashmere turtleneck", not "sweater")
+- Colors + materials: COPY EXACTLY (cream silk → "cream silk", not "light-colored")
+- Decorative items: LIST ALL (Fraser fir tree, crystal ornaments, Hermès boxes, white orchids)
 
-**NO TRIGGER WORD** - Nano Banana Pro doesn't use LoRA trigger words
-**REFERENCE:** "Reference images attached: maintain exactly the same physical characteristics, facial features, and body proportions as shown in the attached reference images."
+RULE #2: NO VAGUE LANGUAGE
+❌ WRONG: "cream sweater or silk blouse"
+✅ RIGHT: "The Row cream cashmere turtleneck sweater"
 
-**CAMERA FOR THIS CONCEPT:** ${cameraStyle}
+❌ WRONG: "trousers or skirt"
+✅ RIGHT: "Brunello Cucinelli camel wide-leg trousers"
+
+❌ WRONG: "delicate gold jewelry"  
+✅ RIGHT: "Cartier watch"
+
+❌ WRONG: "sophisticated Christmas decorations"
+✅ RIGHT: "Fraser fir Christmas tree with crystal ornaments and warm white lights"
+
+RULE #3: NO OR STATEMENTS
+If description says ONE item, write ONE item. Never add alternatives with "or".
+
+RULE #4: INCLUDE EVERY SPECIFIC BRAND/ITEM
+Count the brands in the description. ALL must appear in your prompt.
+- The Row → Must appear in Outfit
+- Brunello Cucinelli → Must appear in Outfit
+- Cartier → Must appear in Outfit
+- Hermès → Must appear in Setting
+- Fraser fir → Must appear in Setting
+- Crystal ornaments → Must appear in Setting
+- White orchids → Must appear in Setting
+
+RULE #5: COMPLETE SENTENCES ONLY
+No fragments like "with professional brush," or "in ,"
+Every section must have complete, grammatically correct sentences.
+
+---
+
+**THE DESCRIPTION TO TRANSFORM:**
+
+"""
+${userRequest || 'No description provided'}
+"""
+
+---
+
+**EXTRACT THESE SPECIFICS (mandatory checklist):**
+
+From description, extract:
+
+**OUTFIT ITEMS (list EVERY piece mentioned with EXACT brands/descriptions):**
+- [ ] Top (exact brand, color, material, style)
+- [ ] Bottom (exact brand, color, material, style)
+- [ ] Shoes (exact brand/style if mentioned)
+- [ ] Accessories (EVERY item: watch, jewelry, bag, etc. with brands)
+- [ ] Outerwear/layers (exact brand/style if mentioned)
+
+**ACTION/POSE (exact activity mentioned):**
+- [ ] Primary action (sitting/standing/walking + WHERE + DOING WHAT)
+- [ ] Hand position/what holding (exact item: teacup, phone, etc.)
+- [ ] Facial expression/gaze direction
+
+**SETTING DETAILS (list EVERY item mentioned):**
+- [ ] Primary furniture (exact description: ivory velvet sofa, marble vanity, etc.)
+- [ ] Decorative items (ALL items: tree, ornaments, flowers, boxes, etc.)
+- [ ] Architectural features (windows, fireplace, doors, etc.)
+- [ ] Background elements (dress hanging, snow outside, etc.)
+
+**LIGHTING (exact description):**
+- [ ] Light source (natural, fireplace, bulbs, candlelight, etc.)
+- [ ] Quality (soft, warm, golden, bright, etc.)
+- [ ] Effect (creating what atmosphere)
+
+---
+
+**NOW TRANSFORM INTO THIS EXACT FORMAT:**
+
 ${isEditorial 
-  ? '**USE:** Professional DSLR, Canon EOS R5, 85mm f/1.4 lens, editorial quality'
-  : '**USE:** iPhone 15 Pro portrait mode, authentic influencer aesthetic'
+  ? 'Professional photography. Pinterest-style editorial portrait.' 
+  : 'Authentic influencer content. Pinterest-style portrait.'
+} Reference images attached: maintain exactly the same physical characteristics, facial features, and body proportions as shown in the attached reference images. ${isEditorial ? 'Editorial quality, professional photography aesthetic.' : 'Natural, relatable iPhone aesthetic.'}
+
+**Outfit:** [Write EXACT outfit from description. Include EVERY brand name, EVERY piece, EVERY material. Example: "The Row cream cashmere turtleneck sweater, Brunello Cucinelli camel wide-leg trousers, Cartier watch" - NOT "luxurious sweater, elegant trousers, gold jewelry"]
+
+**Pose:** [Write EXACT action from description. Example: "Gracefully sitting on ivory velvet sofa beside towering Fraser fir Christmas tree, holding fine bone china teacup with both hands, gazing thoughtfully at flickering marble fireplace" - NOT "poised sitting position with elegant hand placement"]
+
+**Setting:** [Write EVERY specific item from description. Example: "Living room with ivory velvet sofa, towering Fraser fir Christmas tree adorned with crystal ornaments and warm white lights, flickering marble fireplace, floor-to-ceiling windows with soft morning snow falling outside, wrapped Hermès boxes beneath tree, fresh white orchids on side table" - NOT "upscale interior with sophisticated decorations"]
+
+**Lighting:** [Write EXACT lighting from description. Example: "Golden fireplace glow mixed with natural winter light from floor-to-ceiling windows, creating serene luxury atmosphere" - NOT "soft sophisticated lighting creating elegant ambiance"]
+
+**Camera Composition:** 
+${isEditorial 
+  ? 'Editorial portrait from mid-thigh upward, frontal camera position, symmetrical centered framing, professional DSLR, Canon EOS R5 or Sony A7R IV, 85mm f/1.4 lens, camera distance 1.5-2m from subject, shallow depth of field (f/2.0-f/2.8).'
+  : 'Authentic iPhone 15 Pro portrait mode, 77mm equivalent, natural bokeh effect, shot from 1.5m distance, portrait mode depth creating soft background blur, influencer content aesthetic.'
 }
 
----
+**Mood:** [Extract mood words from description. Example: "Serene, luxurious, elegant, sophisticated holiday morning, refined festive spirit" - NOT generic mood words not in description]
 
-📸 PERFECT EXAMPLES:
-
----
-
-**EXAMPLE 1: Industrial Christmas Loft (Editorial/DSLR - 287 words)**
-
-Professional photography. Pinterest-style editorial portrait. Reference images attached: maintain exactly the same physical characteristics, facial features, and body proportions as shown in the attached reference images. Editorial quality, professional photography aesthetic.
-
-Outfit: Oversized black Ganni blazer with dramatic shoulders, leather leggings, combat boots, silver chain jewelry.
-
-Pose: Sitting on leather sofa, relaxed urban confidence with natural body language, authentic moment.
-
-Setting: Industrial loft with exposed brick walls, minimalist black Christmas tree with geometric ornaments, string lights creating warm contrast against raw architecture, floor-to-ceiling windows showing city lights, metal and leather textures throughout space.
-
-Lighting: String lights creating warm intimate glow against industrial backdrop, mixed with ambient city light from windows, creating dramatic contrast with modern gothic atmosphere.
-
-Camera Composition: Editorial portrait from mid-thigh upward, frontal camera position creating direct connection, symmetrical centered framing, professional DSLR, Canon EOS R5, 85mm f/1.4 lens, camera distance 1.5-2m from subject, shallow depth of field (f/2.0-f/2.8).
-
-Mood: Modern gothic, edgy, sophisticated urban Christmas aesthetic with architectural edge, festive yet minimal.
-
-Aesthetic: Industrial Christmas luxury with urban edge and modern gothic styling, Pinterest-curated, aspirational sophistication.
+**Aesthetic:** [Extract aesthetic from description combined with Pinterest language. Example: "Luxurious holiday morning elegance, sophisticated Christmas styling, high-end festive living, aspirational holiday luxury"]
 
 ---
 
-**EXAMPLE 2: Cozy Kitchen Morning (iPhone - 265 words)**
+🔴 VERIFICATION CHECKLIST (you MUST verify before submitting):
 
-Authentic influencer content. Pinterest-style portrait. Reference images attached: maintain exactly the same physical characteristics, facial features, and body proportions as shown in the attached reference images. Natural, relatable iPhone aesthetic.
+Before you finalize, check:
+✅ Every brand mentioned in description appears in prompt?
+✅ No vague words like "elegant", "sophisticated" replacing specific items?
+✅ No OR statements adding alternatives not in description?
+✅ Every decorative item from description listed in Setting?
+✅ Action in Pose matches description exactly?
+✅ All sentences complete (no fragments ending with commas)?
 
-Outfit: Emerald green and cream striped silk pajama set with matching robe loosely tied, barefoot.
-
-Pose: Standing at marble kitchen island preparing holiday breakfast, one hand reaching for fresh berries, looking over shoulder with warm smile, natural morning moment.
-
-Setting: Bright modern kitchen with marble countertops, decorated with subtle holiday touches including garland draped over white cabinets, bowl of ornaments on counter, steaming coffee in ceramic mug nearby, fresh ingredients scattered naturally.
-
-Lighting: Soft morning light streaming through large windows creating bright airy atmosphere, natural window light with warm festive glow, creating inviting cozy ambiance.
-
-Camera Composition: Authentic iPhone 15 Pro portrait mode, 77mm equivalent, natural bokeh, shot from 1-1.5m distance, portrait mode depth effect showing face and upper body with kitchen context, influencer selfie aesthetic.
-
-Mood: Cozy, warm, festive, magical holiday atmosphere, peaceful morning ritual, aspirational yet relatable.
-
-Aesthetic: Clean modern kitchen with holiday touches, effortless luxury living, Instagram-worthy morning moments, coastal living influence.
+If ANY box is unchecked, revise that section.
 
 ---
 
-**EXAMPLE 3: Luxury Travel Portrait (Editorial/DSLR - 298 words)**
+🔴 WRONG vs RIGHT EXAMPLES:
 
-Professional photography. Pinterest-style editorial portrait. Reference images attached: maintain exactly the same physical characteristics, facial features, and body proportions as shown in the attached reference images. Editorial quality, professional photography aesthetic.
+**DESCRIPTION:** "wearing The Row cream cashmere turtleneck sweater"
 
-Outfit: Flowing white linen Zimmermann dress with delicate embroidery, Chanel espadrilles, minimal gold jewelry, natural beach waves.
+❌ WRONG: "wearing luxurious cream cashmere sweater"
+❌ WRONG: "wearing cream sweater or silk blouse"  
+❌ WRONG: "wearing elegant knitwear"
+✅ RIGHT: "wearing The Row cream cashmere turtleneck sweater"
 
-Pose: Walking along cobblestone street in Mediterranean village, hand lightly touching stone wall, turning back toward camera with genuine smile, effortless movement captured mid-stride.
+**DESCRIPTION:** "Fraser fir Christmas tree with crystal ornaments, Hermès boxes, white orchids"
 
-Setting: Narrow winding street in whitewashed Greek island village, bougainvillea cascading over ancient stone walls, glimpses of turquoise Aegean Sea in background, traditional blue doors and shutters, authentic Mediterranean architecture.
+❌ WRONG: "Christmas tree with elegant decorations"
+❌ WRONG: "sophisticated holiday styling with luxury accents"
+❌ WRONG: "beautifully decorated Christmas tree"
+✅ RIGHT: "Fraser fir Christmas tree with crystal ornaments and warm white lights, wrapped Hermès boxes beneath tree, fresh white orchids on side table"
 
-Lighting: Golden hour sunlight creating warm directional light from side, long soft shadows across cobblestones, sun-drenched Mediterranean quality with natural warmth, creating dreamy romantic atmosphere.
+**DESCRIPTION:** "holding fine bone china teacup with both hands"
 
-Camera Composition: Editorial portrait from waist upward with environmental context, three-quarter angle capturing both subject and scenic background, professional DSLR, Canon EOS R5, 85mm f/1.4 lens, camera distance 2m from subject, moderate depth of field (f/2.8) keeping subject sharp while softly contextualizing background.
-
-Mood: Effortless elegance, wanderlust, Mediterranean summer dream, sophisticated travel content, aspirational lifestyle moment.
-
-Aesthetic: Luxury travel editorial, European summer sophistication, Instagram travel influencer quality, Pinterest-worthy destination content, timeless elegant style.
-
----
-
-🚫 WHAT NOT TO DO:
-
-❌ DON'T write fragmented text (no "througho", "agains", "dgy", "ist")
-❌ DON'T cut off mid-word (always complete sentences)
-❌ DON'T duplicate sections (outfit in outfit, setting in setting)
-❌ DON'T contradict yourself (DSLR in one place, iPhone in another)
-❌ DON'T miss outfit items (if blazer, leggings, boots - include ALL)
-❌ DON'T use generic descriptions (be specific like examples)
-❌ DON'T describe TAKING a photo (describe what the photo SHOWS)
+❌ WRONG: "elegant hand positioning"
+❌ WRONG: "holding delicate cup"
+✅ RIGHT: "holding fine bone china teacup with both hands"
 
 ---
 
-✅ YOUR TASK:
+NOW TRANSFORM THE DESCRIPTION INTO THE STRUCTURED FORMAT ABOVE.
 
-Generate ONE complete prompt (150-400 words) matching the examples above.
+REMEMBER:
+🔴 EXACT brands
+🔴 EXACT items  
+🔴 EVERY detail
+🔴 NO vague language
+🔴 NO or statements
+🔴 COMPLETE sentences
 
-**CRITICAL:**
-- Include ALL outfit items (not just first one)
-- Write complete sentences (no cut-off words)
-- Use ${cameraStyle} specifications
-- Match section structure from examples
-- Be specific and detailed like examples
-- Count words: must be 150-400 total
-
-Start with: "${isEditorial ? 'Professional photography. Pinterest-style editorial portrait.' : 'Authentic influencer content. Pinterest-style portrait.'} Reference images attached..."`
+Generate the prompt now:`
 }
 
 /**
@@ -397,19 +453,19 @@ export function validatePromptLight(
   const wordCount = prompt.split(/\s+/).length
   
   if (context.mode === 'classic') {
-    if (wordCount < 20) {
+    if (wordCount < 30) {
       critical.push(`Too short: ${wordCount} words (minimum 30)`)
-    } else if (wordCount > 80) {
-      critical.push(`Too long: ${wordCount} words (maximum 60)`)
     } else if (wordCount > 60) {
+      critical.push(`Too long: ${wordCount} words (maximum 60)`)
+    } else if (wordCount > 55) {
       warnings.push(`Slightly long: ${wordCount} words (target 30-60)`)
     }
   } else {
-    if (wordCount < 100) {
+    if (wordCount < 150) {
       critical.push(`Too short: ${wordCount} words (minimum 150)`)
-    } else if (wordCount > 500) {
+    } else if (wordCount > 400) {
       critical.push(`Too long: ${wordCount} words (maximum 400)`)
-    } else if (wordCount < 150 || wordCount > 400) {
+    } else if (wordCount < 160 || wordCount > 380) {
       warnings.push(`Outside target: ${wordCount} words (target 150-400)`)
     }
   }
@@ -510,8 +566,14 @@ export async function generateConceptsWithFinalPrompts(
   
   const { count = 6, mode, triggerWord = '', gender = 'woman', ethnicity, physicalPreferences, category, conversationContext } = options
   
+  console.log('')
+  console.log('='.repeat(80))
+  console.log('[DIRECT] ========== STARTING DIRECT GENERATION ==========')
   console.log('[DIRECT] Generating concepts with final prompts directly')
   console.log('[DIRECT] Count:', count, 'Mode:', mode)
+  console.log('[DIRECT] User request:', userRequest?.substring(0, 100))
+  console.log('='.repeat(80))
+  console.log('')
   
   // Build system prompt that tells Maya to generate FINAL PROMPTS
   const systemPrompt = buildConceptGenerationSystemPrompt({
@@ -588,7 +650,13 @@ export async function generateConceptsWithFinalPrompts(
     }
   })
   
+  console.log('')
+  console.log('='.repeat(80))
+  console.log('[DIRECT] ========== DIRECT GENERATION COMPLETE ==========')
   console.log('[DIRECT] ✅ Generated', fixedConcepts.length, 'concepts with final prompts')
+  console.log('[DIRECT] Sample prompt (first 200 chars):', fixedConcepts[0]?.prompt?.substring(0, 200))
+  console.log('='.repeat(80))
+  console.log('')
   
   return fixedConcepts
 }

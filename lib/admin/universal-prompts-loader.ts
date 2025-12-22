@@ -165,3 +165,4 @@ export async function getTemplateCountForCategory(category: string): Promise<num
   const templates = await loadUniversalPromptsForAdmin(category)
   return templates.length
 }
+

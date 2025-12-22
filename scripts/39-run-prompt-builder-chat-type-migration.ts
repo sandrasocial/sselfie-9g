@@ -98,3 +98,4 @@ runMigration()
     console.error("[Migration] Migration script failed:", error)
     process.exit(1)
   })
+

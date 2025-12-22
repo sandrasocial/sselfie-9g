@@ -616,36 +616,101 @@ Make each concept unique, sophisticated, and based on the user's request. Use yo
             conceptCategory: safeCategory,
           })
           
+          // 🔴 NEW: Direct Prompt Generation (Feature Flag)
+          // Check feature flag at runtime
+          const USE_DIRECT_PROMPT_GENERATION_RUNTIME = process.env.USE_DIRECT_PROMPT_GENERATION === 'true'
+          let useDirectGeneration = USE_DIRECT_PROMPT_GENERATION_RUNTIME
+          
           let fullPrompt: string
           let finalCategory: string = promptCategory
-          try {
-            // 🎯 Pass conceptIndex (0-5) for varied compositions across concepts
-            // Each concept gets different framing/angle/position/composition for visual variety:
-            // Concept 0: close-up + slightly-above + three-quarter + rule-of-thirds
-            // Concept 1: half-body + eye-level + front-facing + centered
-            // Concept 2: full-body + slightly-above + three-quarter + negative-space
-            // Concept 3: environmental + eye-level + three-quarter + rule-of-thirds
-            // Concept 4: three-quarter + low-angle + front-facing + centered
-            // Concept 5: medium + slightly-above + three-quarter + frame-within-frame
-            // User preferences (if detected) override framing/angle/composition, but positions still vary
-            const { fullPrompt: generatedPrompt, category: promptCategoryResult } = await buildProModePrompt(
-              promptCategory,
-              conceptComponents,
-              library,
-              userRequest,
-              undefined,
-              index
-            )
-            fullPrompt = generatedPrompt
-            finalCategory = promptCategoryResult || promptCategory
-            
-            // 🔴 DEBUG: Log the generated prompt
-            console.log(`[v0] [PRO MODE] Generated prompt for concept ${index + 1} (first 200 chars):`, fullPrompt.substring(0, 200))
-            console.log(`[v0] [PRO MODE] Final category for concept ${index + 1}:`, finalCategory)
-          } catch (promptError: any) {
-            console.error(`[v0] [PRO MODE] Error building prompt for concept ${index + 1}:`, promptError)
-            // Fallback to a basic prompt if buildProModePrompt fails
-            fullPrompt = `Professional photography. ${safeTitle}. ${safeDescription}. Shot on iPhone 15 Pro portrait mode, shallow depth of field, natural skin texture with pores visible, film grain, muted colors, authentic iPhone photo aesthetic.`
+          
+          // 🔴 NEW: Use direct generation if enabled
+          if (useDirectGeneration) {
+            try {
+              const { generatePromptDirect } = await import('@/lib/maya/direct-prompt-generation')
+              
+              // 🔴 CRITICAL: Pass the CONCEPT DESCRIPTION, not the original userRequest!
+              // The description contains all the specific details (brands, items, settings) that Maya needs
+              const directResult = await generatePromptDirect({
+                userRequest: safeDescription, // Use concept description with all specific details
+                category: safeCategory || undefined,
+                conceptIndex: index,
+                triggerWord: '', // Pro mode doesn't use trigger words
+                gender: 'woman', // TODO: Get from user profile
+                ethnicity: undefined,
+                physicalPreferences: undefined,
+                mode: 'pro'
+              })
+              
+              fullPrompt = directResult.prompt
+              finalCategory = promptCategory
+            } catch (directError: any) {
+              console.error(`[v0] [PRO MODE] Error in direct generation for concept ${index + 1}, falling back to buildProModePrompt:`, directError)
+              // Fall through to buildProModePrompt
+              useDirectGeneration = false // Force fallback
+              
+              // Fallback to old system if direct generation failed
+              try {
+                // 🎯 Pass conceptIndex (0-5) for varied compositions across concepts
+                // Each concept gets different framing/angle/position/composition for visual variety:
+                // Concept 0: close-up + slightly-above + three-quarter + rule-of-thirds
+                // Concept 1: half-body + eye-level + front-facing + centered
+                // Concept 2: full-body + slightly-above + three-quarter + negative-space
+                // Concept 3: environmental + eye-level + three-quarter + rule-of-thirds
+                // Concept 4: three-quarter + low-angle + front-facing + centered
+                // Concept 5: medium + slightly-above + three-quarter + frame-within-frame
+                // User preferences (if detected) override framing/angle/composition, but positions still vary
+                const { fullPrompt: generatedPrompt, category: promptCategoryResult } = await buildProModePrompt(
+                  promptCategory,
+                  conceptComponents,
+                  library,
+                  userRequest,
+                  undefined,
+                  index
+                )
+                fullPrompt = generatedPrompt
+                finalCategory = promptCategoryResult || promptCategory
+              
+                // 🔴 DEBUG: Log the generated prompt
+                console.log(`[v0] [PRO MODE] Generated prompt for concept ${index + 1} (first 200 chars):`, fullPrompt.substring(0, 200))
+                console.log(`[v0] [PRO MODE] Final category for concept ${index + 1}:`, finalCategory)
+              } catch (promptError: any) {
+                console.error(`[v0] [PRO MODE] Error building prompt for concept ${index + 1}:`, promptError)
+                // Fallback to a basic prompt if buildProModePrompt fails
+                fullPrompt = `Professional photography. ${safeTitle}. ${safeDescription}. Shot on iPhone 15 Pro portrait mode, shallow depth of field, natural skin texture with pores visible, film grain, muted colors, authentic iPhone photo aesthetic.`
+              }
+            }
+          } else {
+            // Fallback to old system if direct generation not enabled
+            try {
+              // 🎯 Pass conceptIndex (0-5) for varied compositions across concepts
+              // Each concept gets different framing/angle/position/composition for visual variety:
+              // Concept 0: close-up + slightly-above + three-quarter + rule-of-thirds
+              // Concept 1: half-body + eye-level + front-facing + centered
+              // Concept 2: full-body + slightly-above + three-quarter + negative-space
+              // Concept 3: environmental + eye-level + three-quarter + rule-of-thirds
+              // Concept 4: three-quarter + low-angle + front-facing + centered
+              // Concept 5: medium + slightly-above + three-quarter + frame-within-frame
+              // User preferences (if detected) override framing/angle/composition, but positions still vary
+              const { fullPrompt: generatedPrompt, category: promptCategoryResult } = await buildProModePrompt(
+                promptCategory,
+                conceptComponents,
+                library,
+                userRequest,
+                undefined,
+                index
+              )
+              fullPrompt = generatedPrompt
+              finalCategory = promptCategoryResult || promptCategory
+              
+              // 🔴 DEBUG: Log the generated prompt
+              console.log(`[v0] [PRO MODE] Generated prompt for concept ${index + 1} (first 200 chars):`, fullPrompt.substring(0, 200))
+              console.log(`[v0] [PRO MODE] Final category for concept ${index + 1}:`, finalCategory)
+            } catch (promptError: any) {
+              console.error(`[v0] [PRO MODE] Error building prompt for concept ${index + 1}:`, promptError)
+              // Fallback to a basic prompt if buildProModePrompt fails
+              fullPrompt = `Professional photography. ${safeTitle}. ${safeDescription}. Shot on iPhone 15 Pro portrait mode, shallow depth of field, natural skin texture with pores visible, film grain, muted colors, authentic iPhone photo aesthetic.`
+            }
           }
 
           // Create a mock UniversalPrompt for image linking (using safe values)
