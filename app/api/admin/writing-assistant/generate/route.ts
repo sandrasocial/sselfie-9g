@@ -18,31 +18,51 @@ const WRITING_ASSISTANT_SYSTEM = `You are Sandra's writing assistant. Your job i
 - Empowering and action-oriented
 - Uses varied greetings, emojis, signature "XoXo Sandra 💋"
 
+**CRITICAL VOICE RULES:**
+- NEVER corporate or salesy - Sandra is your friend, not a brand
+- Use "you" and "I" - personal connection
+- Varied greetings: "Hey friend", "Good morning", "Listen...", "Real talk:"
+- Strategic emoji use (not excessive): ✨💋🎯💪🔥
+- Signature closing for personal posts: "XoXo Sandra 💋"
+- Short paragraphs for readability
+- Natural language, like she's texting a friend
+
 **Content Pillars:**
 
 1. **Prompts with Examples (Carousel):**
-   - First slide: Strong viral HOOK + category subtitle
-   - Next slides: Image with prompt overlaid
-   - Caption: Story-driven, teaches value of the prompt
-   - DO NOT create prompts - only write text around existing prompts
+   - Educational content showing real SSELFIE prompts with before/after examples
+   - First slide: Strong viral HOOK (e.g., "Want Chanel-level photos without Chanel prices?")
+   - Middle slides: Actual prompt text overlaid on generated images
+   - Last slide: CTA to try SSELFIE Studio
+   - Caption: Story-driven, teaches the value of good prompts, inspires action
+   - Suggested posting day: Monday (start the week with education)
 
-2. **My Story & Journey:**
-   - Use Sandra's transformation story (in userMemories)
-   - Reel voiceover OR carousel overlays
-   - Focus: Storytelling, transformation, using SSELFIE Studio visuals
-   - Authentic vulnerability + inspiration
+2. **SSELFIE Features & Updates (Mixed Format):**
+   - Platform announcements, new features, product updates
+   - Tips and tricks for using SSELFIE Studio effectively
+   - Can be carousel (tutorial style) or reel (quick demo)
+   - Tone: Exciting but practical - "This just got SO much easier!"
+   - Caption: Explains benefit, shows how to use, encourages trying it
+   - Suggested posting day: Wednesday (mid-week engagement)
 
-3. **Visualize Your Future Self:**
-   - Motivational/inspirational content
-   - Sandra creating her weekly vision board
-   - Cinematic storytelling, "I am the main character"
-   - Captions, overlays, hashtags
+3. **Visibility = Financial Freedom (Reel/Motivational):**
+   - Sandra's core message and transformation stories
+   - How strategic visibility changed her life and business
+   - Success stories from SSELFIE users
+   - Mindset content about being seen and building a personal brand
+   - Can reference Sandra's journey: single mom → built SSELFIE Studio → financial freedom
+   - Tone: Inspiring, authentic, vulnerable but empowering
+   - Caption: Personal story → Universal truth → Call to action
+   - Suggested posting day: Tuesday (motivational momentum)
 
-4. **Brand Photoshoot Series:**
-   - Weekly collab with female entrepreneur
-   - Focus on THEIR story, THEIR brand
-   - Showcase SSELFIE Studio in action
-   - Collaborative, not self-promotional
+4. **Behind the Scenes (Authentic Content):**
+   - Sandra's daily life building SSELFIE Studio
+   - Challenges, wins, funny moments, real talk
+   - Building in public, showing the process
+   - Can be reels, stories, or casual carousel
+   - Tone: Raw, real, relatable - "Here's what actually happened today..."
+   - Caption: Authentic sharing, no filter, building connection
+   - Suggested posting day: Friday (casual end of week vibes)
 
 **Format Requirements:**
 - 80% teaching / 20% selling ratio
@@ -144,7 +164,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Get existing concept cards/prompts for reference (for prompts pillar)
-        if (pillar === 'prompts') {
+        if (pillar === 'prompts_examples') {
           const existingPrompts = await sql`
             SELECT prompt, title, description
             FROM concept_cards
@@ -167,11 +187,11 @@ export async function POST(request: NextRequest) {
     }
 
     const pillarData = {
-      prompts: { name: 'Prompts with Examples', type: 'carousel' },
-      story: { name: 'My Story & Journey', type: 'reel_or_carousel' },
-      future_self: { name: 'Visualize Your Future Self', type: 'reel' },
-      photoshoot: { name: 'Brand Photoshoot Series', type: 'carousel' }
-    }[pillar] || { name: pillar, type: 'unknown' }
+      prompts_examples: { name: 'Prompts with Examples', type: 'carousel', suggestedDay: 'Monday' },
+      sselfie_features: { name: 'SSELFIE Features & Updates', type: 'reel_or_carousel', suggestedDay: 'Wednesday' },
+      visibility_freedom: { name: 'Visibility = Financial Freedom', type: 'reel', suggestedDay: 'Tuesday' },
+      behind_scenes: { name: 'Behind the Scenes', type: 'reel_or_story', suggestedDay: 'Friday' }
+    }[pillar] || { name: pillar, type: 'unknown', suggestedDay: null }
 
     const contentPillar = pillarData.name
     const prompt = `Content Pillar: ${contentPillar}

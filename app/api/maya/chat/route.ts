@@ -13,6 +13,74 @@ import type { Request } from "next/server"
 
 export const maxDuration = 60
 
+const PROMPT_BUILDER_SYSTEM = `You are Maya in Prompt Builder Mode, helping Sandra create professional, reusable prompts for SSELFIE Studio prompt guides.
+
+## Your Role:
+
+You're helping Sandra build a library of high-quality prompts that her users will copy and use. These prompts need to be:
+- Professional and detailed (50-80 words for Nano Banana Pro)
+- Structured with specific sections (outfit, pose, lighting, camera specs, etc.)
+- Using real brand names (Chanel, ALO, Nike, not generic descriptions)
+- Varied and diverse (no repetition across concepts)
+- Ready to use without editing
+
+## Your Process:
+
+When Sandra describes a concept (e.g., "Chanel luxury editorial", "ALO workout shots"):
+
+1. **Understand the aesthetic** - What's the vibe? Luxury? Athletic? Casual?
+2. **Reference brand knowledge** - Use real Chanel pieces, ALO garments, Nike shoes
+3. **Create variations** - Generate 3 different concepts with diverse:
+   - Poses (standing, sitting, walking, leaning)
+   - Locations (indoor, outdoor, studio, specific settings)
+   - Lighting (natural window light, golden hour, studio lighting)
+   - Outfits (different combinations of brand-specific items)
+
+4. **Wait for feedback** - Let Sandra pick concepts and generate images
+5. **Iterate if needed** - Refine based on her input
+
+## Response Style:
+
+- **Brief acknowledgments** - "Perfect! Creating Chanel luxury concepts ✨"
+- **No lengthy explanations** - Sandra knows what she wants
+- **Action-oriented** - Focus on generating concepts, not discussing them
+- **Professional tone** - This is for her business, keep it sophisticated
+
+## Critical Rules:
+
+- ALWAYS use real brand names when applicable (not "athletic wear" - "ALO Airbrush leggings")
+- ALWAYS include specific garment details (not "jacket" - "Chanel black tweed jacket with gold chain trim")
+- NEVER assume hair color, ethnicity, or body type (reference attachment instead)
+- ALWAYS include camera specs (e.g., "85mm lens, f/2.0 depth of field")
+- ALWAYS include lighting description (e.g., "soft diffused natural window light")
+- For Studio Pro Mode: Natural language prompts (50-80 words), NO trigger words
+
+## Example Interaction:
+
+Sandra: "Create some Chanel luxury prompts"
+
+You: "Perfect! Creating Chanel luxury concepts with iconic pieces ✨
+
+I'll generate 3 variations with:
+- Classic Chanel tweed and quilted bags
+- Parisian apartment and cafe settings  
+- Soft editorial lighting
+- Elegant poses and styling
+
+One moment..."
+
+[System generates concepts using /api/maya/generate-concepts]
+
+Sandra: "Love the first one! Can you make it more casual?"
+
+You: "Absolutely! Keeping the Chanel aesthetic but making it more relaxed..."
+
+[Generates new variation]
+
+## Remember:
+
+These prompts will be used by hundreds of users. Quality and professionalism matter. Sandra trusts you to create prompts that represent her brand well.`
+
 export async function POST(req: Request) {
   console.log("[v0] Maya chat API called")
 
@@ -33,16 +101,26 @@ export async function POST(req: Request) {
 
     const dbUserId = user.id
 
-    console.log("[v0] User authenticated:", { userId, dbUserId })
-
-    const hasCredits = await checkCredits(dbUserId, 1)
-    if (!hasCredits) {
-      console.log("[v0] User has insufficient credits for Maya chat")
-      return NextResponse.json({ error: "Insufficient credits" }, { status: 402 })
-    }
+    console.log("[v0] User authenticated:", { userId, dbUserId, userEmail: user.email })
 
     const body = await req.json()
-    const { messages: uiMessages, chatId } = body
+    const { messages: uiMessages, chatId, chatType } = body
+
+    // Check if this is prompt_builder mode (admin tool) or admin user - bypass credit check
+    const isPromptBuilder = chatType === "prompt_builder"
+    const ADMIN_EMAIL = "ssa@ssasocial.com"
+    const isAdmin = user.email === ADMIN_EMAIL
+
+    // Only check credits for non-admin, non-prompt-builder chats
+    if (!isPromptBuilder && !isAdmin) {
+      const hasCredits = await checkCredits(dbUserId, 1)
+      if (!hasCredits) {
+        console.log("[v0] User has insufficient credits for Maya chat")
+        return NextResponse.json({ error: "Insufficient credits" }, { status: 402 })
+      }
+    } else {
+      console.log("[v0] Bypassing credit check for:", isPromptBuilder ? "prompt_builder mode" : "admin user")
+    }
 
     if (!uiMessages) {
       console.error("[v0] Messages is null or undefined")
@@ -493,9 +571,16 @@ export async function POST(req: Request) {
       headerValid: hasStudioProHeader,
     })
 
-    // Use Maya Pro personality if in Studio Pro mode, otherwise use standard Maya
-    const isStudioProMode = studioProIntent.isStudioPro || hasStudioProHeader
-    let systemPrompt = isStudioProMode ? MAYA_PRO_SYSTEM_PROMPT : MAYA_SYSTEM_PROMPT
+    // Check for prompt builder chat type first (highest priority)
+    let systemPrompt: string
+    if (chatType === "prompt_builder") {
+      systemPrompt = PROMPT_BUILDER_SYSTEM
+      console.log("[Maya Chat] Using Prompt Builder system prompt")
+    } else {
+      // Use Maya Pro personality if in Studio Pro mode, otherwise use standard Maya
+      const isStudioProMode = studioProIntent.isStudioPro || hasStudioProHeader
+      systemPrompt = isStudioProMode ? MAYA_PRO_SYSTEM_PROMPT : MAYA_SYSTEM_PROMPT
+    }
 
     // Add user context to system prompt
     // Studio Pro mode: Add to Pro personality (which doesn't include it by default)
@@ -844,13 +929,18 @@ You: "Love the cozy fall vibe! 🥰 Creating some concepts with warm textures, t
 
     // Wrapped in try/catch to avoid breaking the stream if deduction fails
     try {
-      await deductCredits(
-        dbUserId,
-        1,
-        "image", // Using "image" type as "maya_chat" is not in the enum
-        "Maya conversation",
-      )
-      console.log("[v0] Successfully deducted 1 credit for Maya chat")
+      // Only deduct credits if not prompt_builder mode and not admin
+      if (!isPromptBuilder && !isAdmin) {
+        await deductCredits(
+          dbUserId,
+          1,
+          "image", // Using "image" type as "maya_chat" is not in the enum
+          "Maya conversation",
+        )
+        console.log("[v0] Successfully deducted 1 credit for Maya chat")
+      } else {
+        console.log("[v0] Skipping credit deduction for:", isPromptBuilder ? "prompt_builder mode" : "admin user")
+      }
     } catch (deductError) {
       console.error("[v0] Failed to deduct credits for Maya chat (non-fatal):", deductError)
     }

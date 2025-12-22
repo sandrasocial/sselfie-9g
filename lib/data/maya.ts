@@ -557,13 +557,36 @@ export async function getUserChats(userId: string, chatType?: string, limit = 20
 
 // Create a new chat (not just get or create)
 export async function createNewChat(userId: string, chatType = "maya", title?: string): Promise<MayaChat> {
-  const newChat = await sql`
-    INSERT INTO maya_chats (user_id, chat_title, chat_category, chat_type, last_activity)
-    VALUES (${userId}, ${title || "New Chat"}, 'general', ${chatType}, NOW())
-    RETURNING *
-  `
+  if (!userId) {
+    throw new Error("User ID is required to create a chat")
+  }
 
-  return newChat[0] as MayaChat
+  console.log("[v0] createNewChat called:", { userId, chatType, title })
+
+  try {
+    const newChat = await sql`
+      INSERT INTO maya_chats (user_id, chat_title, chat_category, chat_type, last_activity)
+      VALUES (${userId}, ${title || "New Chat"}, 'general', ${chatType}, NOW())
+      RETURNING *
+    `
+
+    if (!newChat || newChat.length === 0) {
+      throw new Error("Failed to create chat - no data returned")
+    }
+
+    console.log("[v0] Chat created in database:", { chatId: newChat[0].id, userId: newChat[0].user_id })
+    return newChat[0] as MayaChat
+  } catch (error: any) {
+    console.error("[v0] Database error in createNewChat:", {
+      message: error.message,
+      code: error.code,
+      constraint: error.constraint,
+      detail: error.detail,
+      userId,
+      chatType
+    })
+    throw error
+  }
 }
 
 // Update chat title

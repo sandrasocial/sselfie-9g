@@ -99,9 +99,18 @@ export async function POST(request: Request) {
       WHERE id = ${guideId}
     `
 
+    // Get updated guide stats
+    const [updatedGuide] = await sql`
+      SELECT total_approved, total_prompts
+      FROM prompt_guides
+      WHERE id = ${guideId}
+    `
+
     return NextResponse.json({
       success: true,
       itemId: item.id,
+      totalApproved: updatedGuide?.total_approved || 0,
+      totalPrompts: updatedGuide?.total_prompts || 0,
       message: "Item approved and added to guide",
     })
   } catch (error) {

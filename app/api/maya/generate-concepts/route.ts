@@ -765,6 +765,7 @@ export async function POST(req: NextRequest) {
       studioProMode = false, // Studio Pro mode flag - uses Nano Banana prompting instead of Flux
       enhancedAuthenticity = false, // Enhanced authenticity toggle - only for Classic mode
       guidePrompt, // NEW: Guide prompt from user (for concept #1, then variations for 2-6)
+      templateExamples: providedTemplateExamples, // NEW: Pre-loaded template examples from admin prompt builder
     } = body
 
     // 🔴 CRITICAL: Auto-detect detailed prompts as guide prompts if not explicitly provided
@@ -1096,7 +1097,12 @@ Keep it conversational and specific. I need to recreate this EXACT vibe.`
     // Detect brand/category intent from user request + aesthetic + context.
     // This is a best-effort enhancement; failures should never break concept generation.
     let brandGuidance = ""
-    let templateExamples: string[] = []
+    // ✅ Use provided templates if available (from admin prompt builder), otherwise load internally
+    let templateExamples: string[] = Array.isArray(providedTemplateExamples) ? providedTemplateExamples : []
+    
+    if (templateExamples.length > 0) {
+      console.log("[v0] Using", templateExamples.length, "pre-loaded template examples from admin prompt builder")
+    }
     
     try {
       const brandDetectionText = `${userRequest || ""} ${aesthetic || ""} ${context || ""} ${conversationContext || ""}`.trim()
@@ -1147,7 +1153,8 @@ ${avoidElements.join(", ")}
       
       // Load templates and generate example prompts (Studio Pro mode only)
       // 🔴 CRITICAL: Skip template loading when guide prompt is active - guide prompt takes absolute priority
-      if (studioProMode && !detectedGuidePrompt) {
+      // ✅ Also skip if templates were provided from admin prompt builder
+      if (studioProMode && !detectedGuidePrompt && templateExamples.length === 0) {
         const relevantTemplates: PromptTemplate[] = []
         
         // 🔴 CRITICAL: Check if we have an explicit category from upload module
