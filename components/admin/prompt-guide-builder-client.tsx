@@ -106,7 +106,34 @@ export default function PromptGuideBuilderClient({ userId }: PromptGuideBuilderC
   const [showCategoryGrid, setShowCategoryGrid] = useState(false)
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null)
   const [showQuickStart, setShowQuickStart] = useState(false)
+  // Studio Pro Mode state (lifted from chat component for header display)
+  const [studioProMode, setStudioProMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('adminPromptBuilderStudioProMode')
+      return saved === 'true'
+    }
+    return false // Default to Classic Mode
+  })
   const { toast } = useToast()
+
+  // Persist Studio Pro mode to localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('adminPromptBuilderStudioProMode', studioProMode.toString())
+    }
+  }, [studioProMode])
+
+  // Handle mode switching
+  const handleModeSwitch = (newMode: boolean) => {
+    if (studioProMode === newMode) return
+    setStudioProMode(newMode)
+    toast({
+      title: `Switched to ${newMode ? "Pro Mode" : "Classic Mode"}`,
+      description: newMode 
+        ? "Using Nano Banana Pro for generation" 
+        : "Using Custom Flux for generation",
+    })
+  }
 
   // Load guides on mount
   useEffect(() => {
@@ -120,9 +147,22 @@ export default function PromptGuideBuilderClient({ userId }: PromptGuideBuilderC
       if (response.ok) {
         const data = await response.json()
         setGuides(data.guides || [])
+        console.log("[PromptGuideBuilder] Loaded guides:", data.guides?.length || 0)
+      } else {
+        console.error("[PromptGuideBuilder] Failed to load guides:", response.status)
+        toast({
+          title: "Failed to Load Guides",
+          description: "Could not load prompt guides. Please refresh the page.",
+          variant: "destructive"
+        })
       }
     } catch (error) {
       console.error("[PromptGuideBuilder] Error loading guides:", error)
+      toast({
+        title: "Error Loading Guides",
+        description: "Failed to load guides. Please try again.",
+        variant: "destructive"
+      })
     } finally {
       setIsLoadingGuides(false)
     }
@@ -182,9 +222,15 @@ export default function PromptGuideBuilderClient({ userId }: PromptGuideBuilderC
     const guideId = Number.parseInt(value)
     const guide = guides.find(g => g.id === guideId)
     if (guide) {
+      console.log("[PromptGuideBuilder] Guide selected:", guide.id, guide.title, guide.category)
       setSelectedGuideId(guide.id)
       setSelectedGuideCategory(guide.category)
+      toast({
+        title: "Guide Selected",
+        description: `Selected "${guide.title}" - You can now create prompts for this guide`,
+      })
     } else {
+      console.warn("[PromptGuideBuilder] Guide not found for ID:", guideId)
       setSelectedGuideId(null)
       setSelectedGuideCategory(null)
     }
@@ -285,68 +331,161 @@ export default function PromptGuideBuilderClient({ userId }: PromptGuideBuilderC
               <span className="hidden sm:inline">Prompt Guide </span>Builder
             </h1>
 
-            {/* Guide Selector - Minimal */}
-            {mode === "image-prompts" && (
-              <div className="w-[120px] sm:w-[180px]">
-                <Select 
-                  value={selectedGuideId?.toString() || ""} 
-                  onValueChange={handleGuideSelect}
-                >
-                  <SelectTrigger 
-                    className="h-9 text-xs border-0 shadow-none"
+            {/* Right Side: Guide Indicator, Mode Toggle, and Guide Selector */}
+            <div className="flex items-center gap-2 sm:gap-3">
+              {/* Guide Indicator - Only show in Image Prompts mode */}
+              {mode === "image-prompts" && (
+                <>
+                  {selectedGuideId ? (
+                    <div 
+                      className="px-2.5 sm:px-3 py-2 sm:py-1.5 text-xs rounded shrink-0"
+                      style={{
+                        backgroundColor: Colors.backgroundAlt,
+                        border: `1px solid ${Colors.border}`,
+                        borderRadius: BorderRadius.buttonSm,
+                        fontFamily: Typography.ui.fontFamily,
+                        color: Colors.textSecondary,
+                        minHeight: '36px',
+                        display: 'flex',
+                        alignItems: 'center'
+                      }}
+                    >
+                      <span className="hidden sm:inline">Guide: </span>
+                      <span>{selectedGuideId}</span>
+                    </div>
+                  ) : (
+                    <div 
+                      className="px-2.5 sm:px-3 py-2 sm:py-1.5 text-xs rounded shrink-0"
+                      style={{
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        border: `1px solid rgba(239, 68, 68, 0.3)`,
+                        borderRadius: BorderRadius.buttonSm,
+                        fontFamily: Typography.ui.fontFamily,
+                        color: '#dc2626',
+                        minHeight: '36px',
+                        display: 'flex',
+                        alignItems: 'center'
+                      }}
+                    >
+                      <span className="hidden sm:inline">No Guide</span>
+                      <span className="sm:hidden">No Guide</span>
+                    </div>
+                  )}
+
+                  {/* Mode Switcher - Classic/Pro */}
+                  <div 
+                    className="flex items-center gap-0.5 sm:gap-1 px-0.5 sm:px-1 py-0.5 sm:py-1 rounded shrink-0"
                     style={{
                       backgroundColor: Colors.backgroundAlt,
-                      color: Colors.textSecondary,
-                      fontFamily: Typography.ui.fontFamily,
-                      fontSize: Typography.ui.sizes.xs,
+                      border: `1px solid ${Colors.border}`,
                       borderRadius: BorderRadius.buttonSm
                     }}
                   >
-                    <SelectValue placeholder="Select guide" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {guides.map(guide => (
-                      <SelectItem 
-                        key={guide.id} 
-                        value={guide.id.toString()}
-                        style={{
-                          fontFamily: Typography.ui.fontFamily,
-                          fontSize: Typography.ui.sizes.sm
-                        }}
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="truncate max-w-[140px]">{guide.title}</span>
-                          <span 
-                            className="text-xs"
-                            style={{ 
-                              color: Colors.textMuted,
-                              fontFamily: Typography.data.fontFamily,
-                              fontWeight: Typography.data.weights.medium
-                            }}
-                          >
-                            {guide.total_approved}/{guide.total_prompts}
-                          </span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                    <SelectItem 
-                      value="create-new"
-                      style={{ 
-                        color: Colors.textPrimary,
+                    <button
+                      onClick={() => handleModeSwitch(false)}
+                      className="px-2.5 sm:px-3 py-1.5 text-xs tracking-[0.1em] uppercase transition-all touch-manipulation"
+                      style={{
                         fontFamily: Typography.ui.fontFamily,
-                        fontWeight: Typography.ui.weights.medium
+                        fontSize: Typography.ui.sizes.xs,
+                        fontWeight: Typography.ui.weights.medium,
+                        color: !studioProMode ? Colors.surface : Colors.textSecondary,
+                        backgroundColor: !studioProMode ? Colors.primary : 'transparent',
+                        borderRadius: BorderRadius.buttonSm,
+                        minHeight: '36px',
+                        minWidth: '50px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
                       }}
                     >
-                      Create New Guide
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-            
-            {mode === "writing-assistant" && (
-              <div className="w-[120px] sm:w-[180px]" />
-            )}
+                      Classic
+                    </button>
+                    <button
+                      onClick={() => handleModeSwitch(true)}
+                      className="px-2.5 sm:px-3 py-1.5 text-xs tracking-[0.1em] uppercase transition-all touch-manipulation"
+                      style={{
+                        fontFamily: Typography.ui.fontFamily,
+                        fontSize: Typography.ui.sizes.xs,
+                        fontWeight: Typography.ui.weights.medium,
+                        color: studioProMode ? Colors.surface : Colors.textSecondary,
+                        backgroundColor: studioProMode ? Colors.primary : 'transparent',
+                        borderRadius: BorderRadius.buttonSm,
+                        minHeight: '36px',
+                        minWidth: '50px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      Pro
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {/* Guide Selector - Minimal */}
+              {mode === "image-prompts" && (
+                <div className="w-[120px] sm:w-[180px]">
+                  <Select 
+                    value={selectedGuideId?.toString() || ""} 
+                    onValueChange={handleGuideSelect}
+                  >
+                    <SelectTrigger 
+                      className="h-9 text-xs border-0 shadow-none"
+                      style={{
+                        backgroundColor: Colors.backgroundAlt,
+                        color: Colors.textSecondary,
+                        fontFamily: Typography.ui.fontFamily,
+                        fontSize: Typography.ui.sizes.xs,
+                        borderRadius: BorderRadius.buttonSm
+                      }}
+                    >
+                      <SelectValue placeholder="Select guide" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {guides.map(guide => (
+                        <SelectItem 
+                          key={guide.id} 
+                          value={guide.id.toString()}
+                          style={{
+                            fontFamily: Typography.ui.fontFamily,
+                            fontSize: Typography.ui.sizes.sm
+                          }}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="truncate max-w-[140px]">{guide.title}</span>
+                            <span 
+                              className="text-xs"
+                              style={{ 
+                                color: Colors.textMuted,
+                                fontFamily: Typography.data.fontFamily,
+                                fontWeight: Typography.data.weights.medium
+                              }}
+                            >
+                              {guide.total_approved}/{guide.total_prompts}
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                      <SelectItem 
+                        value="create-new"
+                        style={{ 
+                          color: Colors.textPrimary,
+                          fontFamily: Typography.ui.fontFamily,
+                          fontWeight: Typography.ui.weights.medium
+                        }}
+                      >
+                        Create New Guide
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              
+              {mode === "writing-assistant" && (
+                <div className="w-[120px] sm:w-[180px]" />
+              )}
+            </div>
           </div>
         </div>
 
@@ -444,10 +583,12 @@ export default function PromptGuideBuilderClient({ userId }: PromptGuideBuilderC
       {/* Main Content Area */}
       <div className="p-4 sm:p-6" style={{ paddingTop: Spacing.section }}>
         {mode === "image-prompts" ? (
-          <PromptBuilderChat 
+          <PromptBuilderChat
             userId={userId}
             selectedGuideId={selectedGuideId}
             selectedGuideCategory={selectedGuideCategory}
+            studioProMode={studioProMode}
+            onModeSwitch={handleModeSwitch}
             onGuideChange={(id, category) => {
               setSelectedGuideId(id)
               setSelectedGuideCategory(category)

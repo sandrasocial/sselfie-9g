@@ -2,7 +2,14 @@
 
 import { useState, useEffect, useRef, useCallback } from "react"
 import { useChat } from "@ai-sdk/react"
-import { Send, Sliders, X, Check, XCircle, Image as ImageIcon, Wand2, Loader2, CheckCircle2, FileText, Eye, Copy } from "lucide-react"
+import { Send, Sliders, X, Check, XCircle, Image as ImageIcon, Wand2, Loader2, CheckCircle2, FileText, Eye, Copy, MoreVertical } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import MayaChatHistory from "@/components/sselfie/maya-chat-history"
 import ConceptCard from "@/components/sselfie/concept-card"
 import UnifiedLoading from "@/components/sselfie/unified-loading"
@@ -20,6 +27,9 @@ import { useToast } from "@/hooks/use-toast"
 import { loadUniversalPromptsForAdmin } from '@/lib/admin/universal-prompts-loader'
 import { detectCategoryAndBrand } from '@/lib/maya/prompt-templates/high-end-brands/category-mapper'
 import { Typography, Colors, Spacing, BorderRadius, ButtonLabels } from '@/lib/maya/pro/design-system'
+import ImageUploadFlow from '@/components/sselfie/pro-mode/ImageUploadFlow'
+import type { ImageLibrary } from '@/lib/maya/pro/category-system'
+import FullscreenImageModal from '@/components/sselfie/fullscreen-image-modal'
 
 const PROMPT_BUILDER_SYSTEM = `You are Maya, helping Sandra create and refine image generation prompts for her SSELFIE Studio prompt guides.
 
@@ -48,16 +58,69 @@ export default function PromptBuilderChat({
   userId, 
   selectedGuideId: propSelectedGuideId,
   selectedGuideCategory: propSelectedGuideCategory,
-  onGuideChange
+  onGuideChange,
+  studioProMode: propStudioProMode,
+  onModeSwitch: propOnModeSwitch
 }: PromptBuilderChatProps) {
   // All state declarations first
   const [chatId, setChatId] = useState<number | null>(null)
-  const [isLoadingChat, setIsLoadingChat] = useState(true)
+  const [isLoadingChat, setIsLoadingChat] = useState(false) // Start as false - don't block input
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  // Fallback input state in case useChat doesn't provide handleInputChange
+  const [localInput, setLocalInput] = useState("")
+  // Mode switching: Classic (Flux) vs Pro Mode (Nano Banana Pro)
+  // Use prop if provided, otherwise manage locally (for backward compatibility)
+  const [localStudioProMode, setLocalStudioProMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('adminPromptBuilderStudioProMode')
+      return saved === 'true'
+    }
+    return false // Default to Classic Mode
+  })
+  const studioProMode = propStudioProMode !== undefined ? propStudioProMode : localStudioProMode
   const [showSettings, setShowSettings] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  const [showLibraryWizard, setShowLibraryWizard] = useState(false)
+  // Initialize image library from localStorage
+  const [imageLibrary, setImageLibrary] = useState<ImageLibrary>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('adminPromptBuilderImageLibrary')
+        if (saved) {
+          const parsed = JSON.parse(saved)
+          return {
+            selfies: parsed.selfies || [],
+            products: parsed.products || [],
+            people: parsed.people || [],
+            vibes: parsed.vibes || [],
+            intent: parsed.intent || '',
+          }
+        }
+      } catch (error) {
+        console.error('[PromptBuilder] Error loading image library from localStorage:', error)
+      }
+    }
+    return {
+      selfies: [],
+      products: [],
+      people: [],
+      vibes: [],
+      intent: '',
+    }
+  })
+  
+  // Persist image library to localStorage when it changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('adminPromptBuilderImageLibrary', JSON.stringify(imageLibrary))
+      } catch (error) {
+        console.error('[PromptBuilder] Error saving image library to localStorage:', error)
+      }
+    }
+  }, [imageLibrary])
 
   // Generation settings
   const [styleStrength, setStyleStrength] = useState(1.0)
@@ -103,15 +166,23 @@ export default function PromptBuilderChat({
   // Prompt structure viewer state
   const [viewingPromptStructure, setViewingPromptStructure] = useState<any | null>(null)
   
+  // Fullscreen image modal state
+  const [fullscreenImage, setFullscreenImage] = useState<{
+    imageUrl: string
+    title: string
+  } | null>(null)
+  
   // Hooks
   const { toast } = useToast()
 
   // Sync with parent component when props change
   useEffect(() => {
     if (propSelectedGuideId !== undefined) {
+      console.log("[PromptBuilder] Guide ID updated from props:", propSelectedGuideId)
       setCurrentGuideId(propSelectedGuideId)
     }
     if (propSelectedGuideCategory !== undefined) {
+      console.log("[PromptBuilder] Guide category updated from props:", propSelectedGuideCategory)
       setCurrentGuideCategory(propSelectedGuideCategory)
     }
   }, [propSelectedGuideId, propSelectedGuideCategory])
@@ -284,8 +355,7 @@ export default function PromptBuilderChat({
     body: {
       chatId: chatId || undefined,
       chatType: "prompt_builder",
-      // TODO: Add systemPrompt support to API route
-      // systemPrompt: PROMPT_BUILDER_SYSTEM,
+      // Note: System prompt is handled by API route based on chatType="prompt_builder"
     },
     onFinish: async (message) => {
       // Messages are automatically saved by the chat API
@@ -293,75 +363,82 @@ export default function PromptBuilderChat({
     },
   })
 
-  // Initialize chat on mount
+  // Initialize chat on mount - try to restore last chat or create new one
   useEffect(() => {
     const initializeChat = async () => {
-      // Auto-create a new chat on mount if none exists
-      if (!chatId) {
+      // If chatId already exists, nothing to do
+      if (chatId) {
+        return
+      }
+
+      // First, try to restore the last chatId from localStorage
+      if (typeof window !== 'undefined') {
         try {
-          console.log("[PromptBuilder] Attempting to create new chat...")
-          const response = await fetch("/api/maya/new-chat", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chatType: "prompt_builder",
-            }),
-          })
-          
-          console.log("[PromptBuilder] Response status:", response.status, response.statusText)
-          
-          if (response.ok) {
-            const data = await response.json()
-            if (data.chatId) {
-              setChatId(data.chatId)
-              setIsLoadingChat(false) // ✅ FIX: Enable input when chat is created
-            } else {
-              console.error("[PromptBuilder] Chat created but no chatId returned:", data)
-              // Allow chat to work without ID - useChat will create one when needed
-              setIsLoadingChat(false)
+          const savedChatId = localStorage.getItem('adminPromptBuilderLastChatId')
+          if (savedChatId) {
+            const chatIdNum = Number.parseInt(savedChatId)
+            if (!isNaN(chatIdNum)) {
+              console.log("[PromptBuilder] Restoring last chat from localStorage:", chatIdNum)
+              setChatId(chatIdNum)
+              // loadChat will be called by the useEffect that watches chatId
+              return
             }
-          } else {
-            // Try to get error message
-            let errorMessage = `Server error: ${response.status} ${response.statusText}`
-            
-            try {
-              const text = await response.text()
-              console.error("[PromptBuilder] Error response text:", text)
-              
-              if (text && text.trim()) {
-                try {
-                  const errorDetails = JSON.parse(text)
-                  console.error("[PromptBuilder] Error creating chat (parsed):", errorDetails)
-                  errorMessage = errorDetails.details || errorDetails.error || errorDetails.message || errorMessage
-                } catch {
-                  // Not JSON, use text as error message
-                  errorMessage = text || errorMessage
-                }
-              }
-            } catch (parseError: any) {
-              console.error("[PromptBuilder] Error parsing response:", parseError)
-            }
-            
-            console.error("[PromptBuilder] Chat creation failed:", errorMessage)
-            // Don't block the UI - allow chat to work without pre-created chat ID
-            // The useChat hook will create a chat when the first message is sent
-            setIsLoadingChat(false)
-            toast({
-              title: "Chat Initialization Warning",
-              description: "Chat will be created when you send your first message.",
-              variant: "default"
-            })
           }
-        } catch (error: any) {
-          console.error("[PromptBuilder] Error initializing chat:", error)
-          // Don't block the UI - allow chat to work
-          setIsLoadingChat(false)
-          toast({
-            title: "Chat Initialization Warning",
-            description: "Chat will be created when you send your first message.",
-            variant: "default"
-          })
+        } catch (error) {
+          console.error("[PromptBuilder] Error reading chatId from localStorage:", error)
         }
+      }
+
+      // If no saved chatId, try to load the active chat (which will get or create one)
+      try {
+        console.log("[PromptBuilder] Loading active chat...")
+        const response = await fetch("/api/maya/load-chat?chatType=prompt_builder")
+        
+        if (response.ok) {
+          const data = await response.json()
+          if (data.chatId) {
+            console.log("[PromptBuilder] Active chat loaded:", data.chatId, "with", data.messages?.length || 0, "messages")
+            setChatId(data.chatId)
+            // Save to localStorage for next time
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('adminPromptBuilderLastChatId', data.chatId.toString())
+            }
+            // Restore messages if they exist
+            if (data.messages && Array.isArray(data.messages) && data.messages.length > 0) {
+              setMessages(data.messages)
+            }
+            return
+          }
+        }
+      } catch (error) {
+        console.error("[PromptBuilder] Error loading active chat:", error)
+      }
+
+      // Fallback: Create a new chat if loading failed
+      try {
+        console.log("[PromptBuilder] Creating new chat...")
+        const response = await fetch("/api/maya/new-chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chatType: "prompt_builder",
+          }),
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          if (data.chatId) {
+            setChatId(data.chatId)
+            // Save to localStorage for next time
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('adminPromptBuilderLastChatId', data.chatId.toString())
+            }
+            console.log("[PromptBuilder] New chat created:", data.chatId)
+          }
+        }
+      } catch (error: any) {
+        console.error("[PromptBuilder] Error creating chat:", error)
+        // Silently fail - chat will be created when first message is sent
       }
     }
     
@@ -373,6 +450,10 @@ export default function PromptBuilderChat({
   useEffect(() => {
     if (chatId) {
       loadChat(chatId)
+      // Persist chatId to localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('adminPromptBuilderLastChatId', chatId.toString())
+      }
     }
   }, [chatId])
 
@@ -427,6 +508,10 @@ export default function PromptBuilderChat({
         if (data.chatId) {
           setChatId(data.chatId)
           setMessages([])
+          // Save to localStorage
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('adminPromptBuilderLastChatId', data.chatId.toString())
+          }
           return true
         } else {
           console.error("[PromptBuilder] Chat created but no chatId:", data)
@@ -476,21 +561,64 @@ export default function PromptBuilderChat({
     setGeneratingImages((prev) => new Set(prev).add(conceptKey))
 
     try {
-      const response = await fetch("/api/maya/generate-image", {
+      // Use different API endpoints based on mode
+      const apiEndpoint = studioProMode 
+        ? "/api/maya/generate-studio-pro"  // Pro Mode: Nano Banana Pro
+        : "/api/maya/generate-image"       // Classic Mode: Custom Flux
+
+      // Prepare input images from library wizard (Pro Mode only)
+      const libraryImages = studioProMode ? {
+        // Map library wizard images to Pro Mode format
+        baseImages: (imageLibrary.selfies || []).map(url => ({ url })), // Selfies for character consistency
+        productImages: (imageLibrary.products || []).map(url => ({ url })), // Products for brand integration
+        styleRefs: [
+          ...(imageLibrary.vibes || []).map(url => ({ url })), // Vibes for aesthetic reference
+          ...(imageLibrary.people || []).map(url => ({ url })) // People for lifestyle reference
+        ]
+      } : {}
+
+      // Log library usage for debugging
+      if (studioProMode) {
+        const totalImages = (imageLibrary.selfies?.length || 0) + 
+                           (imageLibrary.products?.length || 0) + 
+                           (imageLibrary.people?.length || 0) + 
+                           (imageLibrary.vibes?.length || 0)
+        console.log('[PromptBuilder] Using library images for Pro Mode:', {
+          selfies: imageLibrary.selfies?.length || 0,
+          products: imageLibrary.products?.length || 0,
+          people: imageLibrary.people?.length || 0,
+          vibes: imageLibrary.vibes?.length || 0,
+          total: totalImages
+        })
+      }
+
+      const requestBody = studioProMode
+        ? {
+            // Pro Mode request body (Nano Banana Pro)
+            mode: "brand-scene", // Use brand-scene mode for prompt builder
+            userRequest: concept.prompt || concept.promptText || concept.description,
+            inputImages: libraryImages,
+            resolution: "2K",
+            aspectRatio: aspectRatio || "1:1"
+          }
+        : {
+            // Classic Mode request body
+            conceptPrompt: concept.prompt || concept.promptText || concept.description,
+            conceptTitle: concept.title || concept.label,
+            conceptDescription: concept.description,
+            category: concept.category || currentGuideCategory || "portrait",
+            customSettings: {
+              styleStrength: styleStrength,
+              promptAccuracy: promptAccuracy,
+              aspectRatio: aspectRatio,
+              realismStrength: realismStrength,
+            },
+          }
+
+      const response = await fetch(apiEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          conceptPrompt: concept.prompt || concept.promptText || concept.description,
-          conceptTitle: concept.title || concept.label,
-          conceptDescription: concept.description,
-          category: concept.category || currentGuideCategory || "portrait",
-          customSettings: {
-            styleStrength: styleStrength,
-            promptAccuracy: promptAccuracy,
-            aspectRatio: aspectRatio,
-            realismStrength: realismStrength,
-          },
-        }),
+        body: JSON.stringify(requestBody),
       })
 
       if (!response.ok) {
@@ -500,11 +628,24 @@ export default function PromptBuilderChat({
 
       const data = await response.json()
 
-      if (data.success && data.predictionId && data.generationId) {
-        // Start polling for completion
-        pollPrediction(data.predictionId, data.generationId, conceptKey, concept)
+      if (studioProMode) {
+        // Pro Mode: Uses /api/maya/generate-studio-pro
+        // Response format: { success: true, predictionId: string }
+        if (data.success && data.predictionId) {
+          // Pro Mode polling uses different endpoint
+          pollPredictionProMode(data.predictionId, conceptKey, concept)
+        } else {
+          throw new Error(data.error || "Invalid response from Pro Mode generation API")
+        }
       } else {
-        throw new Error("Invalid response from generation API")
+        // Classic Mode: Uses /api/maya/generate-image
+        // Response format: { success: true, predictionId: string, generationId: number }
+        if (data.success && data.predictionId && data.generationId) {
+          // Start polling for completion
+          pollPrediction(data.predictionId, data.generationId, conceptKey, concept)
+        } else {
+          throw new Error("Invalid response from generation API")
+        }
       }
     } catch (error: any) {
       console.error("[PromptBuilder] Error generating image:", error)
@@ -513,25 +654,217 @@ export default function PromptBuilderChat({
         next.delete(conceptKey)
         return next
       })
-      // TODO: Show error message to user
+      toast({
+        title: "Image Generation Failed",
+        description: error.message || "Failed to generate image. Please try again.",
+        variant: "destructive"
+      })
     }
   }
 
+  // Pro Mode polling (Nano Banana Pro)
+  const pollPredictionProMode = async (
+    predictionId: string,
+    conceptKey: string,
+    concept: any
+  ) => {
+    console.log('[PromptBuilder] 🚀 Starting Pro Mode polling for:', { predictionId, conceptKey })
+    
+    let pollIntervalRef: NodeJS.Timeout | null = null
+    
+    const poll = async () => {
+      try {
+        console.log('[PromptBuilder] 🔍 Polling check-studio-pro API for:', predictionId)
+        const response = await fetch(
+          `/api/maya/check-studio-pro?predictionId=${predictionId}`
+        )
+        
+        if (!response.ok) {
+          throw new Error(`Polling request failed: ${response.status}`)
+        }
+        
+        const data = await response.json()
+        console.log('[PromptBuilder] 📊 Poll response:', { 
+          status: data.status, 
+          hasOutput: !!data.output,
+          predictionId 
+        })
+
+        if (data.status === "succeeded" && data.output) {
+          // Image is ready
+          console.log('[PromptBuilder] ✅ Image generation succeeded!', { imageUrl: data.output.substring(0, 50) + '...' })
+          
+          setGeneratingImages((prev) => {
+            const next = new Set(prev)
+            next.delete(conceptKey)
+            return next
+          })
+          setGeneratedImages((prev) => {
+            const next = new Map(prev)
+            next.set(conceptKey, {
+              imageUrl: data.output,
+              predictionId,
+              generationId: null, // Pro Mode doesn't use generationId
+              concept,
+            })
+            return next
+          })
+          
+          if (pollIntervalRef) {
+            clearInterval(pollIntervalRef)
+            pollIntervalRef = null
+          }
+
+          // Add image as a message in the chat
+          if (append && typeof append === 'function') {
+            append({
+              role: "assistant",
+              content: `Image generated for "${concept.title || concept.label}":`,
+              parts: [
+                {
+                  type: "text",
+                  text: `Image generated for "${concept.title || concept.label}":`,
+                },
+                {
+                  type: "image",
+                  image: data.output,
+                },
+              ],
+            })
+          } else {
+            // Fallback: use setMessages
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: `assistant-image-${Date.now()}`,
+                role: "assistant",
+                content: `Image generated for "${concept.title || concept.label}":`,
+                parts: [
+                  {
+                    type: "text",
+                    text: `Image generated for "${concept.title || concept.label}":`,
+                  },
+                  {
+                    type: "image",
+                    image: data.output,
+                  },
+                ],
+              }
+            ])
+          }
+        } else if (data.status === "failed") {
+          console.error('[PromptBuilder] ❌ Image generation failed:', data.error)
+          setGeneratingImages((prev) => {
+            const next = new Set(prev)
+            next.delete(conceptKey)
+            return next
+          })
+          
+          if (pollIntervalRef) {
+            clearInterval(pollIntervalRef)
+            pollIntervalRef = null
+          }
+          
+          toast({
+            title: "Image Generation Failed",
+            description: data.error || "The image generation request failed. Please try again.",
+            variant: "destructive"
+          })
+        } else {
+          // Still processing
+          console.log('[PromptBuilder] ⏳ Still processing, status:', data.status)
+        }
+      } catch (error) {
+        console.error("[PromptBuilder] ❌ Error polling Pro Mode prediction:", error)
+        setGeneratingImages((prev) => {
+          const next = new Set(prev)
+          next.delete(conceptKey)
+          return next
+        })
+        
+        if (pollIntervalRef) {
+          clearInterval(pollIntervalRef)
+          pollIntervalRef = null
+        }
+        
+        toast({
+          title: "Polling Error",
+          description: "Failed to check generation status. Please refresh the page.",
+          variant: "destructive"
+        })
+      }
+    }
+    
+    // Start polling immediately (don't wait for first interval)
+    poll()
+    
+    // Then set up interval for subsequent polls
+    pollIntervalRef = setInterval(poll, 5000) // Poll every 5 seconds for Pro Mode
+    console.log('[PromptBuilder] ✅ Polling interval started (immediate first poll + interval)')
+
+    // Cleanup after 5 minutes (timeout)
+    const timeoutId = setTimeout(() => {
+      console.log('[PromptBuilder] ⏱️ Polling timeout after 5 minutes')
+      if (pollIntervalRef) {
+        clearInterval(pollIntervalRef)
+        pollIntervalRef = null
+      }
+      setGeneratingImages((prev) => {
+        const next = new Set(prev)
+        next.delete(conceptKey)
+        return next
+      })
+      toast({
+        title: "Generation Timeout",
+        description: "Image generation is taking longer than expected. Please try again.",
+        variant: "destructive"
+      })
+    }, 5 * 60 * 1000)
+    
+    // Return cleanup function
+    return () => {
+      if (pollIntervalRef) {
+        clearInterval(pollIntervalRef)
+        pollIntervalRef = null
+      }
+      clearTimeout(timeoutId)
+    }
+  }
+
+  // Classic Mode polling (Custom Flux)
   const pollPrediction = async (
     predictionId: string,
     generationId: number,
     conceptKey: string,
     concept: any
   ) => {
-    const pollInterval = setInterval(async () => {
+    console.log('[PromptBuilder] 🚀 Starting Classic Mode polling for:', { predictionId, generationId, conceptKey })
+    
+    let pollIntervalRef: NodeJS.Timeout | null = null
+    
+    const poll = async () => {
       try {
+        console.log('[PromptBuilder] 🔍 Polling check-generation API for:', { predictionId, generationId })
         const response = await fetch(
           `/api/maya/check-generation?predictionId=${predictionId}&generationId=${generationId}`
         )
+        
+        if (!response.ok) {
+          throw new Error(`Polling request failed: ${response.status}`)
+        }
+        
         const data = await response.json()
+        console.log('[PromptBuilder] 📊 Poll response:', { 
+          status: data.status, 
+          hasImageUrl: !!data.imageUrl,
+          predictionId,
+          generationId
+        })
 
-        if (data.status === "succeeded") {
+        if (data.status === "succeeded" && data.imageUrl) {
           // Image is ready
+          console.log('[PromptBuilder] ✅ Image generation succeeded!', { imageUrl: data.imageUrl.substring(0, 50) + '...' })
+          
           setGeneratingImages((prev) => {
             const next = new Set(prev)
             next.delete(conceptKey)
@@ -547,7 +880,11 @@ export default function PromptBuilderChat({
             })
             return next
           })
-          clearInterval(pollInterval)
+          
+          if (pollIntervalRef) {
+            clearInterval(pollIntervalRef)
+            pollIntervalRef = null
+          }
 
           // Add image as a message in the chat
           if (append && typeof append === 'function') {
@@ -587,34 +924,82 @@ export default function PromptBuilderChat({
             ])
           }
         } else if (data.status === "failed") {
+          console.error('[PromptBuilder] ❌ Image generation failed:', data.error)
           setGeneratingImages((prev) => {
             const next = new Set(prev)
             next.delete(conceptKey)
             return next
           })
-          clearInterval(pollInterval)
-          // TODO: Show error message
+          
+          if (pollIntervalRef) {
+            clearInterval(pollIntervalRef)
+            pollIntervalRef = null
+          }
+          
+          toast({
+            title: "Image Generation Failed",
+            description: data.error || "The image generation request failed. Please try again.",
+            variant: "destructive"
+          })
+        } else {
+          // Still processing
+          console.log('[PromptBuilder] ⏳ Still processing, status:', data.status)
         }
       } catch (error) {
-        console.error("[PromptBuilder] Error polling prediction:", error)
+        console.error("[PromptBuilder] ❌ Error polling prediction:", error)
         setGeneratingImages((prev) => {
           const next = new Set(prev)
           next.delete(conceptKey)
           return next
         })
-        clearInterval(pollInterval)
+        
+        if (pollIntervalRef) {
+          clearInterval(pollIntervalRef)
+          pollIntervalRef = null
+        }
+        
+        toast({
+          title: "Polling Error",
+          description: "Failed to check generation status. Please refresh the page.",
+          variant: "destructive"
+        })
       }
-    }, 3000) // Poll every 3 seconds
+    }
+    
+    // Start polling immediately (don't wait for first interval)
+    poll()
+    
+    // Then set up interval for subsequent polls
+    pollIntervalRef = setInterval(poll, 3000) // Poll every 3 seconds for Classic Mode
+    console.log('[PromptBuilder] ✅ Polling interval started (immediate first poll + interval)')
 
     // Cleanup after 5 minutes (timeout)
-    setTimeout(() => {
-      clearInterval(pollInterval)
+    const timeoutId = setTimeout(() => {
+      console.log('[PromptBuilder] ⏱️ Polling timeout after 5 minutes')
+      if (pollIntervalRef) {
+        clearInterval(pollIntervalRef)
+        pollIntervalRef = null
+      }
       setGeneratingImages((prev) => {
         const next = new Set(prev)
         next.delete(conceptKey)
         return next
       })
+      toast({
+        title: "Generation Timeout",
+        description: "Image generation is taking longer than expected. Please try again.",
+        variant: "destructive"
+      })
     }, 5 * 60 * 1000)
+    
+    // Return cleanup function
+    return () => {
+      if (pollIntervalRef) {
+        clearInterval(pollIntervalRef)
+        pollIntervalRef = null
+      }
+      clearTimeout(timeoutId)
+    }
   }
 
   const handleApproveImage = async (imageUrl: string, conceptKey: string) => {
@@ -696,10 +1081,19 @@ export default function PromptBuilderChat({
   const safeHandleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newInput = e.target.value
     
-    // Call original handler first - this updates the useChat input state
-    // handleInputChange should always be available from useChat hook
-    if (handleInputChange) {
-      handleInputChange(e)
+    // Update local state as fallback
+    setLocalInput(newInput)
+    
+    // Call original handler if available - this updates the useChat input state
+    if (handleInputChange && typeof handleInputChange === 'function') {
+      try {
+        handleInputChange(e)
+      } catch (error) {
+        console.error("[PromptBuilder] Error in handleInputChange:", error)
+        // Fallback to local state only
+      }
+    } else {
+      console.warn("[PromptBuilder] handleInputChange not available, using local state fallback")
     }
     
     // Detect brands in input (only if input is substantial enough)
@@ -775,19 +1169,40 @@ export default function PromptBuilderChat({
       const templateExamples = await loadUniversalPromptsForAdmin(currentGuideCategory || 'Lifestyle')
       console.log('[PromptBuilder] Loaded', templateExamples.length, 'template examples')
       
+      // Prepare request body
+      const requestBody: any = {
+        userRequest: userMessage,
+        studioProMode: studioProMode, // ✅ Use current mode (Classic or Pro)
+        count: 3, // Generate 3 concept variations
+        category: currentGuideCategory || "portrait",
+        conversationContext: messages.slice(-5).map(m =>
+          typeof m.content === "string" ? m.content : JSON.stringify(m.content)
+        ).join("\n"),
+        templateExamples: templateExamples, // ✅ ADDED: Pass templates to API
+      }
+
+      // ✅ ADDED: Include image library when in Pro Mode
+      if (studioProMode && (imageLibrary.selfies.length > 0 || imageLibrary.products.length > 0 || imageLibrary.people.length > 0 || imageLibrary.vibes.length > 0)) {
+        requestBody.referenceImages = {
+          selfies: imageLibrary.selfies,
+          products: imageLibrary.products,
+          people: imageLibrary.people,
+          vibes: imageLibrary.vibes,
+          intent: imageLibrary.intent,
+        }
+        console.log('[PromptBuilder] Including image library in Pro Mode request:', {
+          selfies: imageLibrary.selfies.length,
+          products: imageLibrary.products.length,
+          people: imageLibrary.people.length,
+          vibes: imageLibrary.vibes.length,
+          intent: imageLibrary.intent,
+        })
+      }
+
       const response = await fetch("/api/maya/generate-concepts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userRequest: userMessage,
-          studioProMode: true, // ✅ Enable Studio Pro Mode
-          count: 3, // Generate 3 concept variations
-          category: currentGuideCategory || "portrait",
-          conversationContext: messages.slice(-5).map(m => 
-            typeof m.content === "string" ? m.content : JSON.stringify(m.content)
-          ).join("\n"),
-          templateExamples: templateExamples, // ✅ ADDED: Pass templates to API
-        }),
+        body: JSON.stringify(requestBody),
       })
 
       if (!response.ok) {
@@ -850,6 +1265,8 @@ export default function PromptBuilderChat({
         }
         
         // Clear input after successful concept generation
+        // Clear both useChat input and localInput state to prevent stale text
+        setLocalInput("") // Clear localInput state first
         if (textareaRef.current) {
           textareaRef.current.value = ""
           // Trigger input change to sync with useChat state
@@ -884,9 +1301,11 @@ export default function PromptBuilderChat({
   const handleSubmitWithConceptGeneration = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!input?.trim()) return
+    // Use input from useChat, fallback to localInput if not available
+    const currentInput = input || localInput
+    if (!currentInput?.trim()) return
     
-    const userMessage = input.trim()
+    const userMessage = currentInput.trim()
     
     // Reset auto-selection flag after submitting (allows new detection on next message)
     setCategoryAutoSelected(false)
@@ -898,7 +1317,8 @@ export default function PromptBuilderChat({
     if (isConceptRequest) {
       // Use Pro Mode concept generation
       await handleGenerateConceptsFromMessage(userMessage)
-      // Clear input after sending
+      // Clear input after sending - clear both useChat input and localInput state
+      setLocalInput("") // Clear localInput state to prevent stale text
       if (handleInputChange) {
         const syntheticEvent = {
           target: { value: "" }
@@ -930,68 +1350,35 @@ export default function PromptBuilderChat({
 
   const onSubmit = handleSubmitWithConceptGeneration
 
-  if (isLoadingChat) {
-    return <UnifiedLoading message="Loading chat..." />
+  // Persist Studio Pro mode to localStorage (only if managing locally)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && propStudioProMode === undefined) {
+      localStorage.setItem('adminPromptBuilderStudioProMode', localStudioProMode.toString())
+    }
+  }, [localStudioProMode, propStudioProMode])
+
+  // Handle mode switching - use prop callback if provided, otherwise manage locally
+  const handleModeSwitch = (newMode: boolean) => {
+    if (studioProMode === newMode) return
+    if (propOnModeSwitch) {
+      // Use parent's handler
+      propOnModeSwitch(newMode)
+    } else {
+      // Manage locally (backward compatibility)
+      setLocalStudioProMode(newMode)
+      toast({
+        title: `Switched to ${newMode ? "Pro Mode" : "Classic Mode"}`,
+        description: newMode 
+          ? "Using Nano Banana Pro for generation" 
+          : "Using Custom Flux for generation",
+      })
+    }
   }
+
+  // Removed loading check - input is always enabled, chat initializes in background
 
   return (
     <div className="flex flex-col" style={{ height: 'calc(100vh - 220px)' }}>
-      {/* Top Actions - Editorial Style */}
-      <div 
-        className="flex items-center justify-between mb-6 pb-4"
-        style={{ borderBottom: `1px solid ${Colors.borderLight}` }}
-      >
-        <div className="flex gap-2">
-          <button
-            onClick={() => setShowHistory(!showHistory)}
-            className="px-4 py-2 text-xs tracking-[0.1em] uppercase transition-all"
-            style={{
-              fontFamily: Typography.ui.fontFamily,
-              fontSize: Typography.ui.sizes.xs,
-              fontWeight: Typography.ui.weights.medium,
-              color: Colors.textSecondary,
-              border: `1px solid ${Colors.border}`,
-              borderRadius: BorderRadius.buttonSm,
-              backgroundColor: showHistory ? Colors.backgroundAlt : Colors.surface
-            }}
-          >
-            {showHistory ? 'Hide' : 'Show'} History
-          </button>
-          
-          <button
-            onClick={handleNewChat}
-            className="px-4 py-2 text-xs tracking-[0.1em] uppercase transition-all"
-            style={{
-              fontFamily: Typography.ui.fontFamily,
-              fontSize: Typography.ui.sizes.xs,
-              fontWeight: Typography.ui.weights.medium,
-              color: Colors.textSecondary,
-              border: `1px solid ${Colors.border}`,
-              borderRadius: BorderRadius.buttonSm,
-              backgroundColor: Colors.surface
-            }}
-          >
-            New Chat
-          </button>
-
-          <button
-            onClick={() => setShowTemplateSidebar(!showTemplateSidebar)}
-            className="px-4 py-2 text-xs tracking-[0.1em] uppercase transition-all"
-            style={{
-              fontFamily: Typography.ui.fontFamily,
-              fontSize: Typography.ui.sizes.xs,
-              fontWeight: Typography.ui.weights.medium,
-              color: Colors.textSecondary,
-              border: `1px solid ${Colors.border}`,
-              borderRadius: BorderRadius.buttonSm,
-              backgroundColor: showTemplateSidebar ? Colors.backgroundAlt : Colors.surface
-            }}
-          >
-            <FileText className="w-4 h-4 inline mr-2" />
-            {showTemplateSidebar ? 'Hide' : 'Show'} Templates
-          </button>
-        </div>
-      </div>
 
       {/* Main Content Area */}
       <div className="flex-1 flex gap-6 overflow-hidden">
@@ -1080,6 +1467,42 @@ export default function PromptBuilderChat({
             {messages.length === 0 && !isGeneratingConcepts ? (
               /* Empty State - Editorial */
               <div className="flex flex-col items-center justify-center h-full text-center">
+                {/* Guide Selection Warning */}
+                {!currentGuideId && (
+                  <div 
+                    className="mb-6 px-4 py-3 rounded-lg max-w-md w-full"
+                    style={{
+                      backgroundColor: Colors.backgroundAlt,
+                      border: `1px solid ${Colors.border}`,
+                      borderRadius: BorderRadius.card
+                    }}
+                  >
+                    <p 
+                      className="text-sm mb-1"
+                      style={{
+                        fontFamily: Typography.ui.fontFamily,
+                        fontSize: Typography.ui.sizes.sm,
+                        fontWeight: Typography.ui.weights.medium,
+                        color: Colors.textPrimary
+                      }}
+                    >
+                      ⚠️ No Guide Selected
+                    </p>
+                    <p 
+                      className="text-xs"
+                      style={{
+                        fontFamily: Typography.body.fontFamily,
+                        fontSize: Typography.body.sizes.sm,
+                        fontWeight: Typography.body.weights.light,
+                        color: Colors.textSecondary,
+                        lineHeight: Typography.body.lineHeight
+                      }}
+                    >
+                      Select a guide from the dropdown above to start creating prompts. You can still generate concepts, but you'll need to select a guide to approve and save them.
+                    </p>
+                  </div>
+                )}
+
                 <div 
                   className="w-20 h-20 rounded-full flex items-center justify-center mb-6"
                   style={{ backgroundColor: Colors.backgroundAlt }}
@@ -1115,13 +1538,75 @@ export default function PromptBuilderChat({
                   Ask Maya to generate professional prompt concepts for your guides
                 </p>
 
-                {/* Quick Start Examples - Editorial */}
+                {/* Quick Start Examples - Dynamic based on guide category */}
                 <div className="space-y-2 w-full max-w-md">
-                  {[
-                    { text: 'Create Chanel luxury prompts', icon: '◇' },
-                    { text: 'Generate ALO workout concepts', icon: '◇' },
-                    { text: 'Make travel lifestyle prompts', icon: '◇' }
-                  ].map((example, i) => (
+                  {(() => {
+                    // Generate dynamic prompts based on guide category
+                    const getCategoryPrompts = (category: string | null): Array<{ text: string; icon: string }> => {
+                      const categoryLower = (category || '').toLowerCase()
+                      
+                      // Map categories to relevant prompt suggestions
+                      if (categoryLower.includes('christmas') || categoryLower.includes('holiday') || categoryLower.includes('seasonal')) {
+                        return [
+                          { text: 'Create cozy Christmas morning prompts', icon: '◇' },
+                          { text: 'Generate holiday party concepts', icon: '◇' },
+                          { text: 'Make winter wonderland prompts', icon: '◇' }
+                        ]
+                      }
+                      if (categoryLower.includes('luxury') || categoryLower.includes('chanel') || categoryLower.includes('fashion')) {
+                        return [
+                          { text: 'Create luxury editorial prompts', icon: '◇' },
+                          { text: 'Generate high-end fashion concepts', icon: '◇' },
+                          { text: 'Make elegant lifestyle prompts', icon: '◇' }
+                        ]
+                      }
+                      if (categoryLower.includes('workout') || categoryLower.includes('fitness') || categoryLower.includes('alo') || categoryLower.includes('wellness')) {
+                        return [
+                          { text: 'Create ALO workout prompts', icon: '◇' },
+                          { text: 'Generate fitness lifestyle concepts', icon: '◇' },
+                          { text: 'Make wellness content prompts', icon: '◇' }
+                        ]
+                      }
+                      if (categoryLower.includes('travel') || categoryLower.includes('lifestyle')) {
+                        return [
+                          { text: 'Create travel destination prompts', icon: '◇' },
+                          { text: 'Generate lifestyle content concepts', icon: '◇' },
+                          { text: 'Make adventure prompts', icon: '◇' }
+                        ]
+                      }
+                      if (categoryLower.includes('beauty') || categoryLower.includes('makeup')) {
+                        return [
+                          { text: 'Create beauty editorial prompts', icon: '◇' },
+                          { text: 'Generate makeup look concepts', icon: '◇' },
+                          { text: 'Make skincare lifestyle prompts', icon: '◇' }
+                        ]
+                      }
+                      if (categoryLower.includes('tech') || categoryLower.includes('work')) {
+                        return [
+                          { text: 'Create professional work prompts', icon: '◇' },
+                          { text: 'Generate tech lifestyle concepts', icon: '◇' },
+                          { text: 'Make modern workspace prompts', icon: '◇' }
+                        ]
+                      }
+                      if (categoryLower.includes('cozy') || categoryLower.includes('home')) {
+                        return [
+                          { text: 'Create cozy home prompts', icon: '◇' },
+                          { text: 'Generate comfort lifestyle concepts', icon: '◇' },
+                          { text: 'Make warm interior prompts', icon: '◇' }
+                        ]
+                      }
+                      
+                      // Default prompts for unknown categories
+                      return [
+                        { text: `Create ${category || 'professional'} prompts`, icon: '◇' },
+                        { text: `Generate ${category || 'lifestyle'} concepts`, icon: '◇' },
+                        { text: `Make ${category || 'content'} prompts`, icon: '◇' }
+                      ]
+                    }
+                    
+                    const prompts = getCategoryPrompts(currentGuideCategory)
+                    
+                    return prompts.map((example, i) => (
                     <button
                       key={i}
                       onClick={() => {
@@ -1144,7 +1629,8 @@ export default function PromptBuilderChat({
                       </span>
                       {example.text}
                     </button>
-                  ))}
+                  ))
+                  })()}
                 </div>
               </div>
             ) : (
@@ -1196,227 +1682,304 @@ export default function PromptBuilderChat({
                                 return (
                                   <div
                                     key={conceptIdx}
-                                    className="overflow-hidden transition-all hover:shadow-lg"
+                                    className="bg-white rounded-xl p-4 sm:p-5 md:p-6 space-y-3 sm:space-y-4 border"
                                     style={{
+                                      borderRadius: BorderRadius.card,
+                                      borderColor: Colors.border,
                                       backgroundColor: Colors.surface,
-                                      border: `1px solid ${Colors.border}`,
-                                      borderRadius: BorderRadius.card
                                     }}
                                   >
-                                    {/* Card Header - Editorial */}
-                                    <div 
-                                      className="px-5 py-4"
-                                      style={{ 
-                                        backgroundColor: Colors.backgroundAlt,
-                                        borderBottom: `1px solid ${Colors.borderLight}`
+                                    {/* Title - Match Pro Mode exactly */}
+                                    <h3
+                                      style={{
+                                        fontFamily: Typography.subheaders.fontFamily,
+                                        fontSize: 'clamp(18px, 4vw, 22px)',
+                                        fontWeight: Typography.subheaders.weights.regular,
+                                        color: Colors.textPrimary,
+                                        lineHeight: Typography.subheaders.lineHeight,
+                                        letterSpacing: Typography.subheaders.letterSpacing,
                                       }}
                                     >
-                                      <div className="flex items-start justify-between gap-3">
-                                        <div className="flex-1 min-w-0">
-                                          <h4 
-                                            className="mb-1"
+                                      {concept.title || concept.label}
+                                    </h3>
+
+                                    {/* Description - Match Pro Mode exactly */}
+                                    {concept.description && (
+                                      <p
+                                        style={{
+                                          fontFamily: Typography.body.fontFamily,
+                                          fontSize: 'clamp(14px, 3vw, 16px)',
+                                          fontWeight: Typography.body.weights.light,
+                                          color: Colors.textSecondary,
+                                          lineHeight: Typography.body.lineHeight,
+                                          letterSpacing: Typography.body.letterSpacing,
+                                        }}
+                                      >
+                                        {concept.description}
+                                      </p>
+                                    )}
+
+                                    {/* Dividing line - Match Pro Mode */}
+                                    <div
+                                      style={{
+                                        height: '1px',
+                                        backgroundColor: Colors.border,
+                                        width: '100%',
+                                      }}
+                                    />
+
+                                    {/* Category - Match Pro Mode */}
+                                    {concept.category && (
+                                      <div className="space-y-1">
+                                        <p
+                                          style={{
+                                            fontFamily: Typography.ui.fontFamily,
+                                            fontSize: Typography.ui.sizes.xs,
+                                            fontWeight: Typography.ui.weights.medium,
+                                            color: Colors.textSecondary,
+                                            textTransform: 'uppercase',
+                                            letterSpacing: '0.05em',
+                                          }}
+                                        >
+                                          {concept.category}
+                                        </p>
+                                      </div>
+                                    )}
+
+                                    {/* Status Indicator - Compact */}
+                                    {generatedImage && (
+                                      <div className="flex gap-2 items-center">
+                                        {isApproved && (
+                                          <div 
+                                            className="w-6 h-6 rounded-full flex items-center justify-center"
+                                            style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)' }}
+                                          >
+                                            <Check className="w-3.5 h-3.5" style={{ color: '#22C55E' }} />
+                                          </div>
+                                        )}
+                                        {isRejected && (
+                                          <div 
+                                            className="w-6 h-6 rounded-full flex items-center justify-center"
+                                            style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)' }}
+                                          >
+                                            <X className="w-3.5 h-3.5" style={{ color: '#EF4444' }} />
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+
+                                    {/* Prompt Preview - Always Visible (like Pro Mode) */}
+                                    {(concept.prompt || concept.promptText) && (
+                                      <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                          <span
+                                            className="text-xs tracking-[0.1em] uppercase"
                                             style={{
-                                              fontFamily: Typography.subheaders.fontFamily,
-                                              fontSize: Typography.subheaders.sizes.md,
-                                              fontWeight: Typography.subheaders.weights.regular,
-                                              color: Colors.textPrimary,
-                                              lineHeight: Typography.subheaders.lineHeight
+                                              fontFamily: Typography.ui.fontFamily,
+                                              fontSize: Typography.ui.sizes.xs,
+                                              fontWeight: Typography.ui.weights.medium,
+                                              color: Colors.textSecondary
                                             }}
                                           >
-                                            {concept.title || concept.label}
-                                          </h4>
-                                          {concept.category && (
-                                            <span 
-                                              className="inline-block px-2 py-1 text-xs tracking-[0.1em] uppercase"
-                                              style={{
-                                                fontFamily: Typography.ui.fontFamily,
-                                                fontSize: Typography.ui.sizes.xs,
-                                                color: Colors.textTertiary,
-                                                backgroundColor: Colors.background,
-                                                borderRadius: BorderRadius.buttonSm
-                                              }}
-                                            >
-                                              {concept.category}
-                                            </span>
-                                          )}
+                                            Prompt
+                                          </span>
+                                          <button
+                                            onClick={() => {
+                                              const newExpanded = new Set(expandedPrompts)
+                                              if (newExpanded.has(conceptKey)) {
+                                                newExpanded.delete(conceptKey)
+                                              } else {
+                                                newExpanded.add(conceptKey)
+                                              }
+                                              setExpandedPrompts(newExpanded)
+                                            }}
+                                            className="text-xs tracking-[0.1em] uppercase transition-colors hover:opacity-70"
+                                            style={{
+                                              fontFamily: Typography.ui.fontFamily,
+                                              fontSize: Typography.ui.sizes.xs,
+                                              color: Colors.primary
+                                            }}
+                                          >
+                                            {expandedPrompts.has(conceptKey) ? 'Show Less' : 'Show Full'}
+                                          </button>
                                         </div>
                                         
-                                        {/* Status Indicator */}
-                                        {generatedImage && (
-                                          <div className="flex gap-2">
-                                            {isApproved && (
-                                              <div 
-                                                className="w-8 h-8 rounded-full flex items-center justify-center"
-                                                style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)' }}
-                                              >
-                                                <Check className="w-4 h-4" style={{ color: '#22C55E' }} />
-                                              </div>
-                                            )}
-                                            {isRejected && (
-                                              <div 
-                                                className="w-8 h-8 rounded-full flex items-center justify-center"
-                                                style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)' }}
-                                              >
-                                                <X className="w-4 h-4" style={{ color: '#EF4444' }} />
-                                              </div>
-                                            )}
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-
-                                    {/* Card Body - Editorial Spacing */}
-                                    <div style={{ padding: Spacing.card }}>
-                                      <div className="space-y-4">
-                                        {/* Description */}
-                                        {concept.description && (
-                                          <p 
-                                            className="leading-relaxed"
-                                            style={{
-                                              fontFamily: Typography.body.fontFamily,
-                                              fontSize: Typography.body.sizes.md,
-                                              fontWeight: Typography.body.weights.light,
-                                              color: Colors.textSecondary,
-                                              lineHeight: Typography.body.lineHeight
-                                            }}
-                                          >
-                                            {concept.description}
-                                          </p>
-                                        )}
-
-                                        {/* Prompt Preview - Collapsible */}
-                                        {(concept.prompt || concept.promptText) && (
-                                          <div>
-                                            <button
-                                              onClick={() => {
-                                                const newExpanded = new Set(expandedPrompts)
-                                                if (newExpanded.has(conceptKey)) {
-                                                  newExpanded.delete(conceptKey)
-                                                } else {
-                                                  newExpanded.add(conceptKey)
-                                                }
-                                                setExpandedPrompts(newExpanded)
-                                              }}
-                                              className="text-xs tracking-[0.1em] uppercase transition-colors"
-                                              style={{
-                                                fontFamily: Typography.ui.fontFamily,
-                                                fontSize: Typography.ui.sizes.xs,
-                                                color: Colors.textSecondary
-                                              }}
-                                            >
-                                              {expandedPrompts.has(conceptKey) ? 'Hide Prompt' : 'View Prompt'}
-                                            </button>
-                                            
-                                            {expandedPrompts.has(conceptKey) && (
-                                              <div 
-                                                className="mt-3 p-4 text-xs font-mono leading-relaxed max-h-48 overflow-y-auto"
-                                                style={{
-                                                  backgroundColor: Colors.backgroundAlt,
-                                                  border: `1px solid ${Colors.borderLight}`,
-                                                  borderRadius: BorderRadius.buttonSm
-                                                }}
-                                              >
-                                                {(concept.prompt || concept.promptText).substring(0, 500)}
-                                                {(concept.prompt || concept.promptText).length > 500 && "..."}
-                                              </div>
-                                            )}
-                                          </div>
-                                        )}
-
-                                        {/* Generated Image */}
-                                        {generatedImage && (
-                                          <div 
-                                            className="relative overflow-hidden"
-                                            style={{ borderRadius: BorderRadius.image }}
-                                          >
-                                            <img
-                                              src={generatedImage.imageUrl}
-                                              alt={concept.title || concept.label}
-                                              className="w-full h-auto"
-                                            />
-                                            {isGenerating && (
-                                              <div 
-                                                className="absolute inset-0 flex items-center justify-center"
-                                                style={{ backgroundColor: 'rgba(28, 25, 23, 0.6)' }}
-                                              >
-                                                <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#FFFFFF' }} />
-                                              </div>
-                                            )}
-                                          </div>
-                                        )}
-
-                                        {/* Action Buttons - Editorial Style */}
-                                        <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                                          {!generatedImage && !isGenerating && (
-                                            <button
-                                              onClick={() => handleGenerateImage(concept, conceptIdx)}
-                                              className="flex-1 px-5 py-3 text-xs tracking-[0.15em] uppercase transition-all min-h-[48px]"
-                                              style={{
-                                                fontFamily: Typography.ui.fontFamily,
-                                                fontSize: Typography.ui.sizes.xs,
-                                                fontWeight: Typography.ui.weights.medium,
-                                                backgroundColor: Colors.primary,
-                                                color: '#FFFFFF',
-                                                borderRadius: BorderRadius.input
-                                              }}
-                                            >
-                                              Generate Image
-                                            </button>
-                                          )}
-
-                                          {generatedImage && !isApproved && !isRejected && (
-                                            <>
-                                              <button
-                                                onClick={() => handleApproveImage(generatedImage.imageUrl, conceptKey)}
-                                                className="flex-1 px-5 py-3 text-xs tracking-[0.15em] uppercase transition-all min-h-[48px]"
-                                                style={{
-                                                  fontFamily: Typography.ui.fontFamily,
-                                                  fontSize: Typography.ui.sizes.xs,
-                                                  fontWeight: Typography.ui.weights.medium,
-                                                  backgroundColor: '#22C55E',
-                                                  color: '#FFFFFF',
-                                                  borderRadius: BorderRadius.input
-                                                }}
-                                              >
-                                                Approve
-                                              </button>
-                                              <button
-                                                onClick={() => handleRejectImage(generatedImage.imageUrl)}
-                                                className="flex-1 px-5 py-3 text-xs tracking-[0.15em] uppercase transition-all min-h-[48px]"
-                                                style={{
-                                                  fontFamily: Typography.ui.fontFamily,
-                                                  fontSize: Typography.ui.sizes.xs,
-                                                  fontWeight: Typography.ui.weights.medium,
-                                                  backgroundColor: Colors.surface,
-                                                  color: '#EF4444',
-                                                  border: `1px solid rgba(239, 68, 68, 0.3)`,
-                                                  borderRadius: BorderRadius.input
-                                                }}
-                                              >
-                                                Reject
-                                              </button>
-                                            </>
-                                          )}
-
-                                          {(isApproved || isRejected) && (
-                                            <button
-                                              onClick={() => handleGenerateImage(concept, conceptIdx)}
-                                              className="flex-1 px-5 py-3 text-xs tracking-[0.15em] uppercase transition-all min-h-[48px]"
-                                              style={{
-                                                fontFamily: Typography.ui.fontFamily,
-                                                fontSize: Typography.ui.sizes.xs,
-                                                fontWeight: Typography.ui.weights.medium,
-                                                backgroundColor: Colors.surface,
-                                                color: Colors.textSecondary,
-                                                border: `1px solid ${Colors.border}`,
-                                                borderRadius: BorderRadius.input
-                                              }}
-                                            >
-                                              Generate Again
-                                            </button>
-                                          )}
+                                        <div 
+                                          className="p-4 text-xs font-mono leading-relaxed overflow-y-auto"
+                                          style={{
+                                            backgroundColor: Colors.backgroundAlt,
+                                            border: `1px solid ${Colors.borderLight}`,
+                                            borderRadius: BorderRadius.buttonSm,
+                                            maxHeight: expandedPrompts.has(conceptKey) ? 'none' : '120px'
+                                          }}
+                                        >
+                                          {expandedPrompts.has(conceptKey) 
+                                            ? (concept.prompt || concept.promptText)
+                                            : (
+                                                <>
+                                                  {(concept.prompt || concept.promptText).substring(0, 300)}
+                                                  {(concept.prompt || concept.promptText).length > 300 && (
+                                                    <span style={{ color: Colors.textMuted }}>...</span>
+                                                  )}
+                                                </>
+                                              )
+                                          }
                                         </div>
                                       </div>
+                                    )}
+
+                                    {/* Generated Image */}
+                                    {generatedImage && (
+                                      <div 
+                                        className="relative overflow-hidden cursor-pointer"
+                                        style={{ borderRadius: BorderRadius.image }}
+                                        onClick={() => {
+                                          setFullscreenImage({
+                                            imageUrl: generatedImage.imageUrl,
+                                            title: concept.title || concept.label || 'Generated Image'
+                                          })
+                                        }}
+                                      >
+                                        <img
+                                          src={generatedImage.imageUrl}
+                                          alt={concept.title || concept.label}
+                                          className="w-full h-auto"
+                                        />
+                                        {isGenerating && (
+                                          <div 
+                                            className="absolute inset-0 flex items-center justify-center"
+                                            style={{ backgroundColor: 'rgba(28, 25, 23, 0.6)' }}
+                                          >
+                                            <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#FFFFFF' }} />
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+
+                                    {/* Action Buttons - Match Pro Mode */}
+                                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2">
+                                      {/* View Prompt button - Match Pro Mode */}
+                                      {(concept.prompt || concept.promptText) && (
+                                        <button
+                                          onClick={() => {
+                                            setViewingPromptStructure(concept)
+                                          }}
+                                          className="touch-manipulation active:scale-95 flex-1"
+                                          style={{
+                                            fontFamily: Typography.ui.fontFamily,
+                                            fontSize: 'clamp(13px, 3vw, 14px)',
+                                            fontWeight: Typography.ui.weights.medium,
+                                            letterSpacing: '0.01em',
+                                            color: Colors.primary,
+                                            backgroundColor: 'transparent',
+                                            padding: 'clamp(10px, 2.5vw, 12px) clamp(16px, 4vw, 20px)',
+                                            minHeight: '44px',
+                                            borderRadius: BorderRadius.button,
+                                            border: `1px solid ${Colors.border}`,
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s ease',
+                                          }}
+                                          onMouseEnter={(e) => {
+                                            e.currentTarget.style.backgroundColor = Colors.hover
+                                            e.currentTarget.style.borderColor = Colors.primary
+                                          }}
+                                          onMouseLeave={(e) => {
+                                            e.currentTarget.style.backgroundColor = 'transparent'
+                                            e.currentTarget.style.borderColor = Colors.border
+                                          }}
+                                        >
+                                          View Prompt
+                                        </button>
+                                      )}
+
+                                      {/* Generate button - Match Pro Mode */}
+                                      {!generatedImage && !isGenerating && (
+                                        <button
+                                          onClick={() => handleGenerateImage(concept, conceptIdx)}
+                                          disabled={isGenerating}
+                                          className="touch-manipulation active:scale-95 disabled:active:scale-100 flex-1"
+                                          style={{
+                                            fontFamily: Typography.ui.fontFamily,
+                                            fontSize: 'clamp(13px, 3vw, 14px)',
+                                            fontWeight: Typography.ui.weights.medium,
+                                            letterSpacing: '0.01em',
+                                            color: Colors.surface,
+                                            backgroundColor: isGenerating ? Colors.border : Colors.primary,
+                                            padding: 'clamp(10px, 2.5vw, 12px) clamp(16px, 4vw, 20px)',
+                                            minHeight: '44px',
+                                            borderRadius: BorderRadius.button,
+                                            border: 'none',
+                                            cursor: isGenerating ? 'not-allowed' : 'pointer',
+                                            transition: 'all 0.2s ease',
+                                            opacity: isGenerating ? 0.7 : 1,
+                                          }}
+                                          onMouseEnter={(e) => {
+                                            if (!isGenerating) {
+                                              e.currentTarget.style.backgroundColor = Colors.accent
+                                            }
+                                          }}
+                                          onMouseLeave={(e) => {
+                                            if (!isGenerating) {
+                                              e.currentTarget.style.backgroundColor = Colors.primary
+                                            }
+                                          }}
+                                        >
+                                          {isGenerating ? 'Generating...' : 'Generate'}
+                                        </button>
+                                      )}
+
+                                      {/* Approve/Reject buttons */}
+                                      {generatedImage && !isApproved && !isRejected && (
+                                        <>
+                                          <button
+                                            onClick={() => handleApproveImage(generatedImage.imageUrl, conceptKey)}
+                                            className="flex-1 px-5 py-3 text-xs tracking-[0.15em] uppercase transition-all min-h-[44px] touch-manipulation"
+                                            style={{
+                                              fontFamily: Typography.ui.fontFamily,
+                                              fontSize: Typography.ui.sizes.xs,
+                                              fontWeight: Typography.ui.weights.medium,
+                                              backgroundColor: '#22C55E',
+                                              color: '#FFFFFF',
+                                              borderRadius: BorderRadius.button
+                                            }}
+                                          >
+                                            Approve
+                                          </button>
+                                          <button
+                                            onClick={() => handleRejectImage(generatedImage.imageUrl)}
+                                            className="flex-1 px-5 py-3 text-xs tracking-[0.15em] uppercase transition-all min-h-[44px] touch-manipulation"
+                                            style={{
+                                              fontFamily: Typography.ui.fontFamily,
+                                              fontSize: Typography.ui.sizes.xs,
+                                              fontWeight: Typography.ui.weights.medium,
+                                              backgroundColor: Colors.surface,
+                                              color: '#EF4444',
+                                              border: `1px solid rgba(239, 68, 68, 0.3)`,
+                                              borderRadius: BorderRadius.button
+                                            }}
+                                          >
+                                            Reject
+                                          </button>
+                                        </>
+                                      )}
+
+                                      {(isApproved || isRejected) && (
+                                        <button
+                                          onClick={() => handleGenerateImage(concept, conceptIdx)}
+                                          className="flex-1 px-5 py-3 text-xs tracking-[0.15em] uppercase transition-all min-h-[44px] touch-manipulation"
+                                          style={{
+                                            fontFamily: Typography.ui.fontFamily,
+                                            fontSize: Typography.ui.sizes.xs,
+                                            fontWeight: Typography.ui.weights.medium,
+                                            backgroundColor: Colors.surface,
+                                            color: Colors.textSecondary,
+                                            border: `1px solid ${Colors.border}`,
+                                            borderRadius: BorderRadius.button
+                                          }}
+                                        >
+                                          Generate Again
+                                        </button>
+                                      )}
                                     </div>
                                   </div>
                                 )
@@ -1446,6 +2009,16 @@ export default function PromptBuilderChat({
                             <img
                               src={imageUrl}
                               alt="Generated"
+                              className="cursor-pointer"
+                              onClick={() => {
+                                const conceptTitle = imageEntry?.[1]?.concept?.title || 
+                                                   imageEntry?.[1]?.concept?.label || 
+                                                   'Generated Image'
+                                setFullscreenImage({
+                                  imageUrl,
+                                  title: conceptTitle
+                                })
+                              }}
                               style={{
                                 borderRadius: BorderRadius.image,
                                 width: '100%',
@@ -1737,23 +2310,151 @@ export default function PromptBuilderChat({
               </div>
             )}
 
-            {/* Chat Input */}
-            <form onSubmit={onSubmit} className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => setShowSettings(!showSettings)}
-                className="h-12 w-12 flex items-center justify-center shrink-0 transition-all"
-                style={{
-                  backgroundColor: showSettings ? Colors.primary : Colors.backgroundAlt,
-                  borderRadius: BorderRadius.input,
-                  color: showSettings ? '#FFFFFF' : Colors.textSecondary
-                }}
-              >
-                <Sliders size={18} />
-              </button>
+            {/* Chat Input - Simplified with Menu (like Pro Mode) */}
+            <form onSubmit={onSubmit} className="flex gap-2 sm:gap-3">
+              {/* Menu Dropdown - Replaces settings button */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className="h-12 w-12 sm:h-12 sm:w-12 flex items-center justify-center shrink-0 transition-all touch-manipulation"
+                    style={{
+                      backgroundColor: Colors.backgroundAlt,
+                      borderRadius: BorderRadius.input,
+                      border: `1px solid ${Colors.border}`,
+                      color: Colors.textSecondary,
+                      minHeight: '44px',
+                      minWidth: '44px'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = Colors.hover
+                      e.currentTarget.style.borderColor = Colors.primary
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = Colors.backgroundAlt
+                      e.currentTarget.style.borderColor = Colors.border
+                    }}
+                  >
+                    <MoreVertical size={18} strokeWidth={2} />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="start"
+                  style={{
+                    backgroundColor: Colors.surface,
+                    borderColor: Colors.border,
+                    borderRadius: BorderRadius.cardSm,
+                    minWidth: '200px',
+                    padding: '4px',
+                  }}
+                >
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setShowSettings(!showSettings)
+                    }}
+                    style={{
+                      fontFamily: Typography.ui.fontFamily,
+                      fontSize: Typography.ui.sizes.sm,
+                      color: Colors.textPrimary,
+                      padding: '8px 12px',
+                      cursor: 'pointer',
+                    }}
+                    className="hover:bg-stone-100"
+                  >
+                    <Sliders className="w-4 h-4 mr-2" />
+                    {showSettings ? 'Hide' : 'Show'} Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setShowTemplateSidebar(!showTemplateSidebar)
+                    }}
+                    style={{
+                      fontFamily: Typography.ui.fontFamily,
+                      fontSize: Typography.ui.sizes.sm,
+                      color: Colors.textPrimary,
+                      padding: '8px 12px',
+                      cursor: 'pointer',
+                    }}
+                    className="hover:bg-stone-100"
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    {showTemplateSidebar ? 'Hide' : 'Show'} Templates
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator
+                    style={{
+                      backgroundColor: Colors.border,
+                      margin: '4px 0',
+                    }}
+                  />
+                  <DropdownMenuItem
+                    onClick={handleNewChat}
+                    style={{
+                      fontFamily: Typography.ui.fontFamily,
+                      fontSize: Typography.ui.sizes.sm,
+                      color: Colors.textPrimary,
+                      padding: '8px 12px',
+                      cursor: 'pointer',
+                    }}
+                    className="hover:bg-stone-100"
+                  >
+                    New Chat
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => setShowHistory(!showHistory)}
+                    style={{
+                      fontFamily: Typography.ui.fontFamily,
+                      fontSize: Typography.ui.sizes.sm,
+                      color: Colors.textPrimary,
+                      padding: '8px 12px',
+                      cursor: 'pointer',
+                    }}
+                    className="hover:bg-stone-100"
+                  >
+                    {showHistory ? 'Hide' : 'Show'} History
+                  </DropdownMenuItem>
+                  {studioProMode && (
+                    <>
+                      <DropdownMenuSeparator
+                        style={{
+                          backgroundColor: Colors.border,
+                          margin: '4px 0',
+                        }}
+                      />
+                      <DropdownMenuItem
+                        onClick={() => setShowLibraryWizard(true)}
+                        style={{
+                          fontFamily: Typography.ui.fontFamily,
+                          fontSize: Typography.ui.sizes.sm,
+                          color: Colors.textPrimary,
+                          padding: '8px 12px',
+                          cursor: 'pointer',
+                        }}
+                        className="hover:bg-stone-100"
+                      >
+                        <ImageIcon className="w-4 h-4 mr-2" />
+                        <span className="flex-1">Manage Library</span>
+                        {(imageLibrary.selfies.length > 0 || imageLibrary.products.length > 0 || imageLibrary.people.length > 0 || imageLibrary.vibes.length > 0) && (
+                          <span
+                            style={{
+                              fontFamily: Typography.ui.fontFamily,
+                              fontSize: Typography.ui.sizes.xs,
+                              color: Colors.primary,
+                              fontWeight: Typography.ui.weights.medium,
+                            }}
+                          >
+                            {imageLibrary.selfies.length + imageLibrary.products.length + imageLibrary.people.length + imageLibrary.vibes.length}
+                          </span>
+                        )}
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Text Input - Full width now */}
               <textarea
                 ref={textareaRef}
-                value={input || ""}
+                value={input || localInput || ""}
                 onChange={safeHandleInputChange}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
@@ -1762,7 +2463,7 @@ export default function PromptBuilderChat({
                   }
                 }}
                 placeholder="Describe the prompt concept you want to create..."
-                className="flex-1 min-h-[48px] max-h-32 px-4 py-3 resize-none focus:outline-none focus:ring-1 transition-all"
+                className="flex-1 min-h-[44px] sm:min-h-[48px] max-h-32 px-4 py-3 resize-none focus:outline-none focus:ring-1 transition-all touch-manipulation"
                 style={{
                   fontFamily: Typography.body.fontFamily,
                   fontSize: Typography.body.sizes.md,
@@ -1774,15 +2475,29 @@ export default function PromptBuilderChat({
                   lineHeight: Typography.body.lineHeight
                 }}
                 rows={1}
-                disabled={isLoading || isGeneratingConcepts || isLoadingChat}
+                disabled={isLoading || isGeneratingConcepts}
               />
+              
+              {/* Send Button */}
               <button
                 type="submit"
-                disabled={!input?.trim() || isLoading || isGeneratingConcepts || isLoadingChat}
-                className="h-12 w-12 flex items-center justify-center shrink-0 transition-all disabled:opacity-40"
+                disabled={!(input || localInput)?.trim() || isLoading || isGeneratingConcepts}
+                className="h-12 w-12 sm:h-12 sm:w-12 flex items-center justify-center shrink-0 transition-all disabled:opacity-40 touch-manipulation"
                 style={{
                   backgroundColor: Colors.primary,
-                  borderRadius: BorderRadius.input
+                  borderRadius: BorderRadius.input,
+                  minHeight: '44px',
+                  minWidth: '44px'
+                }}
+                onMouseEnter={(e) => {
+                  if (!(isLoading || isGeneratingConcepts || !(input || localInput)?.trim())) {
+                    e.currentTarget.style.backgroundColor = Colors.accent
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!(isLoading || isGeneratingConcepts || !(input || localInput)?.trim())) {
+                    e.currentTarget.style.backgroundColor = Colors.primary
+                  }
                 }}
               >
                 {isGeneratingConcepts || isLoading ? (
@@ -2059,6 +2774,50 @@ export default function PromptBuilderChat({
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Library Wizard Modal - Only show in Pro Mode */}
+      {studioProMode && showLibraryWizard && (
+        <Dialog open={showLibraryWizard} onOpenChange={setShowLibraryWizard}>
+          <DialogContent
+            className="max-w-4xl max-h-[90vh] overflow-y-auto"
+            style={{
+              backgroundColor: Colors.surface,
+              borderColor: Colors.border,
+            }}
+          >
+            <DialogHeader>
+              <DialogTitle>Manage Image Library</DialogTitle>
+              <DialogDescription>
+                Upload and organize reference images for Pro Mode generation. Add selfies, products, people, and vibe references.
+              </DialogDescription>
+            </DialogHeader>
+            <ImageUploadFlow
+              onComplete={(library) => {
+                setImageLibrary(library)
+                setShowLibraryWizard(false)
+                toast({
+                  title: "Library Updated",
+                  description: `Added ${library.selfies.length + library.products.length + library.people.length + library.vibes.length} images to your library`,
+                })
+              }}
+              onCancel={() => setShowLibraryWizard(false)}
+              initialLibrary={imageLibrary}
+              showAfterState={imageLibrary.selfies.length > 0 || imageLibrary.products.length > 0 || imageLibrary.people.length > 0 || imageLibrary.vibes.length > 0}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Fullscreen Image Modal */}
+      {fullscreenImage && (
+        <FullscreenImageModal
+          imageUrl={fullscreenImage.imageUrl}
+          imageId={fullscreenImage.imageUrl.split('/').pop() || 'image'}
+          title={fullscreenImage.title}
+          isOpen={!!fullscreenImage}
+          onClose={() => setFullscreenImage(null)}
+        />
+      )}
     </div>
   )
 }
