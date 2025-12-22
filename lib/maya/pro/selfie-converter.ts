@@ -1,11 +1,14 @@
 /**
- * Selfie Converter for Maya Pro Mode
+ * Selfie Converter - FIRST-PERSON POV
  * 
  * Converts traditional professional photography concepts
  * into authentic selfie concepts while maintaining quality.
  * 
  * CRITICAL: Selfies are NOT a separate category - they're a variation
  * that can be applied to ANY category (Luxury, Wellness, Fashion, etc.)
+ * 
+ * CRITICAL FIX: Selfie prompts describe what the SELFIE shows (first-person POV),
+ * NOT describing someone taking a selfie (external observer perspective).
  * 
  * Selfie Types:
  * 1. Handheld (50%) - Arm extended, front camera, intimate
@@ -24,7 +27,102 @@ export interface ConceptToConvert {
 }
 
 /**
- * Convert a traditional concept to selfie concept
+ * Scene elements extracted from description
+ * Used to build first-person POV selfie prompts
+ */
+interface SceneElements {
+  action: string
+  posture: string
+  outfit: string
+  brands: string[]
+  setting: string
+  details: string[]
+  lighting: string
+  mood: string
+}
+
+/**
+ * Extract scene elements from description for first-person POV selfie prompts
+ */
+function extractSceneFromDescription(description: string): SceneElements {
+  const scene: SceneElements = {
+    action: '',
+    posture: '',
+    outfit: '',
+    brands: [],
+    setting: '',
+    details: [],
+    lighting: '',
+    mood: ''
+  }
+  
+  if (!description || description.length < 30) {
+    return scene
+  }
+  
+  // Extract outfit
+  const outfitMatch = description.match(/wearing\s+([^,\.]{15,200}?)(?:\s*,\s*(?:standing|sitting|with|looking|in|at)|[.,]|$)/i)
+  if (outfitMatch && outfitMatch[1]) {
+    scene.outfit = outfitMatch[1].trim()
+  }
+  
+  // Extract brands
+  const brandPattern = /\b(Ganni|Reformation|Alo|Lululemon|Set Active|Sleeper|Toteme|Khaite|The Row|Bottega Veneta|Chanel|Dior|Hermès|Jenni Kayne|Everlane|Mango|Zara|COS|Eberjey|Saint Laurent|Jimmy Choo)\b/gi
+  const brandMatches = description.match(brandPattern)
+  if (brandMatches) {
+    scene.brands = [...new Set(brandMatches.map(b => b.charAt(0).toUpperCase() + b.slice(1)))]
+  }
+  
+  // Extract posture
+  const postureMatch = description.match(/\b(sitting|standing|seated|kneeling|lying|leaning|walking)\b/i)
+  if (postureMatch) {
+    scene.posture = postureMatch[1].toLowerCase()
+  }
+  
+  // Extract action
+  const actionMatch = description.match(/((?:sitting|standing|leaning|walking)\s+(?:on|in|at|by)\s+[^,\.]{5,80})/i)
+  if (actionMatch) {
+    scene.action = actionMatch[1].trim()
+  } else if (scene.posture) {
+    scene.action = scene.posture
+  }
+  
+  // Extract setting
+  const settingMatch = description.match(/(?:in|at)\s+((?:industrial|modern|cozy|bright|elegant|luxury|spacious|minimal)[^,]{10,150}?)(?:,|\.|with|wearing)/i)
+  if (settingMatch && settingMatch[1]) {
+    scene.setting = settingMatch[1].trim()
+  }
+  
+  // Extract details (props, decor, etc.)
+  const detailsPatterns = [
+    /(?:with|featuring|decorated with)\s+([^,\.]{5,80})/gi,
+    /(?:Christmas tree|garland|ornaments|lights|candles|flowers)/gi
+  ]
+  
+  for (const pattern of detailsPatterns) {
+    const matches = description.match(pattern)
+    if (matches) {
+      scene.details.push(...matches.map(m => m.trim()))
+    }
+  }
+  
+  // Extract lighting
+  const lightingMatch = description.match(/((?:string lights|natural (?:window )?light|warm (?:contrast|glow)|soft (?:light|lighting)|golden hour|evening light)(?:\s+[^,.]{0,60})?)/i)
+  if (lightingMatch) {
+    scene.lighting = lightingMatch[1].trim()
+  }
+  
+  // Extract mood
+  const moodMatch = description.match(/(modern gothic|industrial|cozy|elegant|sophisticated|edgy|minimal(?:ist)?|confident|natural)/i)
+  if (moodMatch) {
+    scene.mood = moodMatch[1]
+  }
+  
+  return scene
+}
+
+/**
+ * Convert a traditional concept to selfie concept - FIRST-PERSON POV
  * 
  * @param concept - The concept to convert
  * @param type - Type of selfie to create (default: handheld)
@@ -35,45 +133,46 @@ export function convertToSelfie(
   type: SelfieType = 'handheld'
 ): ConceptToConvert {
   
-  const { prompt, title, description, category } = concept
+  console.log(`[SELFIE-CONVERTER] Converting to ${type} selfie - FIRST-PERSON POV`)
   
-  console.log(`[SELFIE-CONVERTER] Converting to ${type} selfie:`, {
-    originalTitle: title,
-    category
-  })
+  const { prompt, title, description } = concept
   
-  // Extract key elements - PRIORITY: Use description first (Maya's outfit details), then fall back to prompt
-  const elements = extractPromptElements(description || prompt, prompt)
+  // Extract scene from description
+  const scene = extractSceneFromDescription(description || '')
   
-  // Build selfie prompt based on type
+  // Build selfie prompt with proper POV
   let selfiePrompt = ''
   let selfieTitle = ''
   let selfieDescription = ''
   
   switch (type) {
     case 'handheld':
-      selfiePrompt = buildHandheldSelfiePrompt(elements)
+      selfiePrompt = buildHandheldSelfieFromScene(scene)
       selfieTitle = `${title} - Selfie`
       selfieDescription = `Authentic front camera selfie: ${description}`
       break
       
     case 'mirror':
-      selfiePrompt = buildMirrorSelfiePrompt(elements)
+      selfiePrompt = buildMirrorSelfieFromScene(scene)
       selfieTitle = `${title} - Mirror Selfie`
-      selfieDescription = `Mirror reflection selfie: ${description}`
+      selfieDescription = `Mirror selfie reflection: ${description}`
       break
       
     case 'elevated':
-      selfiePrompt = buildElevatedSelfiePrompt(elements)
+      selfiePrompt = buildElevatedSelfieFromScene(scene)
       selfieTitle = `${title} - Pro Selfie`
       selfieDescription = `Professional selfie setup: ${description}`
       break
   }
   
-  console.log(`[SELFIE-CONVERTER] Created ${type} selfie:`, {
-    newTitle: selfieTitle,
-    promptLength: selfiePrompt.length
-  })
+  // Remove any external observer language
+  selfiePrompt = removeExternalObserverLanguage(selfiePrompt)
+  
+  // Ensure first-person POV elements present
+  selfiePrompt = ensureFirstPersonPOV(selfiePrompt)
+  
+  console.log(`[SELFIE-CONVERTER] Created ${type} selfie (${selfiePrompt.length} chars)`)
+  console.log(`[SELFIE-CONVERTER] First 150 chars:`, selfiePrompt.substring(0, 150))
   
   return {
     ...concept,
@@ -81,6 +180,69 @@ export function convertToSelfie(
     description: selfieDescription,
     prompt: selfiePrompt
   }
+}
+
+/**
+ * CRITICAL FIX: Remove external observer language
+ */
+function removeExternalObserverLanguage(prompt: string): string {
+  
+  // Remove phrases that describe TAKING a selfie (external view)
+  const externalPhrases = [
+    /\bnatural hand positioning holding phone\b/gi,
+    /\bslight tilt for flattering angle\b/gi,
+    /\bauthentic selfie composition that feels\b/gi,
+    /\bperson taking selfie\b/gi,
+    /\bwoman taking selfie\b/gi,
+    /\bman taking selfie\b/gi,
+    /\btaking a selfie\b/gi,
+    /\bpositioning phone for selfie\b/gi,
+    /\bholding phone to take selfie\b/gi
+  ]
+  
+  let cleaned = prompt
+  
+  for (const phrase of externalPhrases) {
+    cleaned = cleaned.replace(phrase, '')
+  }
+  
+  // Clean up any double spaces or commas
+  cleaned = cleaned.replace(/\s+/g, ' ').replace(/,\s*,/g, ',').trim()
+  
+  return cleaned
+}
+
+/**
+ * CRITICAL FIX: Add first-person POV elements
+ */
+function ensureFirstPersonPOV(prompt: string): string {
+  
+  // Check for required first-person POV elements
+  const hasArmExtended = /arm extended holding phone|holding phone at (?:angle|chest|waist)/i.test(prompt)
+  const hasFaceVisible = /face (?:and upper body )?visible|showing face|face close to camera/i.test(prompt)
+  const hasSelfieFraming = /close-up to medium shot|selfie framing|front camera/i.test(prompt)
+  
+  let enhanced = prompt
+  
+  // Add missing first-person elements
+  if (!hasArmExtended && /front camera selfie/i.test(prompt) && !/mirror/i.test(prompt)) {
+    // For handheld selfies, arm must be visible
+    enhanced = enhanced.replace(
+      /(iPhone 15 Pro front camera selfie\.)/i,
+      '$1 Arm extended holding phone at slight angle,'
+    )
+  }
+  
+  if (!hasFaceVisible) {
+    // Face should be mentioned as visible in frame
+    const insertPoint = enhanced.search(/\./i)
+    if (insertPoint >= 0) {
+      // Handle edge case where period is at position 0
+      enhanced = enhanced.substring(0, insertPoint + 1) + ' Face and upper body visible in frame.' + enhanced.substring(insertPoint + 1)
+    }
+  }
+  
+  return enhanced
 }
 
 /**
@@ -413,142 +575,69 @@ function extractPromptElements(description: string, prompt: string): {
 }
 
 /**
- * Build handheld selfie prompt
- * Most common type (50%) - authentic, intimate, front camera
+ * Build HANDHELD SELFIE - First-Person POV
+ * 
+ * CRITICAL: This is what the SELFIE shows, not describing taking it
  */
-function buildHandheldSelfiePrompt(elements: ReturnType<typeof extractPromptElements>): string {
-  const { outfit, setting, locationDetails, lighting, mood, aesthetic, brands, props, decor, activity, posture } = elements
+function buildHandheldSelfieFromScene(scene: SceneElements): string {
   
-  // Build brand context if brands present
-  const brandContext = brands.length > 0 
-    ? `wearing ${brands.join(' and ')} pieces - ${outfit}` 
-    : outfit ? `wearing ${outfit}` : 'in styled outfit'
+  // Build outfit description
+  const outfitText = scene.brands.length > 0
+    ? `wearing ${scene.brands.join(' and ')} ${scene.outfit}`
+    : scene.outfit ? `wearing ${scene.outfit}` : 'in styled outfit'
   
-  // Build setting with details
-  let settingWithDetails = locationDetails || setting
-  if (decor.length > 0) {
-    const decorText = decor.slice(0, 3).join(', ')
-    settingWithDetails = `${settingWithDetails}${decorText ? `, ${decorText}` : ''}`
-  }
+  // Build setting context
+  const settingText = scene.details.length > 0
+    ? `${scene.setting}, ${scene.details.slice(0, 3).join(', ')} visible in background`
+    : scene.setting
   
-  // Build props/details text
-  let propsText = ''
-  if (props.length > 0) {
-    propsText = props.slice(0, 4).join(', ')
-  }
-  
-  // Build pose/activity text
-  let poseText = ''
-  if (activity) {
-    poseText = activity
-  } else if (posture) {
-    poseText = posture
-  } else {
-    poseText = 'Arm extended holding phone at slight angle'
-  }
-  
-  return `Ultra-realistic iPhone 15 Pro front camera selfie. Reference images attached: use these reference images to maintain exactly the same physical characteristics, facial features, and body proportions as shown in the attached reference images. Authentic selfie aesthetic with natural bokeh, influencer selfie style.
-
-Intimate selfie setting: ${settingWithDetails}, ${brandContext}${propsText ? `. Details visible: ${propsText}` : ''}. ${poseText}, creating close-up to medium shot framing showing face and upper body. Looking at phone screen with natural, genuine expression that feels authentic and in-the-moment.
-
-${lighting} creating soft, flattering illumination. ${mood} with ${aesthetic}. Front-facing camera characteristics: natural bokeh from iPhone portrait mode, slightly wide-angle lens effect typical of front cameras, authentic influencer content style.
-
-Selfie framing: Close enough to feel personal and intimate, showing personality and genuine moment, with enough context to show setting and styling details. Natural hand positioning holding phone, slight tilt for flattering angle, authentic selfie composition that feels relatable yet aspirational.`
+  return `Ultra-realistic iPhone 15 Pro front camera selfie. Reference images attached: maintain exactly the same physical characteristics, facial features, and body proportions as shown in the attached reference images. ${scene.action || 'Standing'} ${settingText ? 'in ' + settingText : ''}, arm extended holding phone at slight angle, ${outfitText}. Face and upper body visible in close-up to medium shot framing, showing personality and scene context. ${scene.lighting || 'Natural lighting'} creating soft flattering illumination ${scene.mood ? 'with ' + scene.mood : ''}. Looking at phone screen or directly at front camera lens with natural ${scene.mood || 'confident'} expression. Natural bokeh from iPhone portrait mode, slightly wide-angle front camera lens effect, authentic influencer selfie aesthetic. Arm holding phone visible in frame, natural selfie angle and composition.`.trim()
 }
 
 /**
- * Build mirror selfie prompt
- * Second most common (30%) - outfit showcase, full body, reflection
+ * Build MIRROR SELFIE - First-Person POV
+ * 
+ * CRITICAL: Shows reflection in mirror, not describing someone at mirror
  */
-function buildMirrorSelfiePrompt(elements: ReturnType<typeof extractPromptElements>): string {
-  const { outfit, setting, locationDetails, lighting, mood, aesthetic, brands, props, decor, activity, posture } = elements
+function buildMirrorSelfieFromScene(scene: SceneElements): string {
   
-  // Build brand context
-  const brandContext = brands.length > 0 
-    ? `wearing ${brands.join(' and ')} pieces - ${outfit}` 
-    : outfit ? `wearing ${outfit}` : 'in complete styled outfit'
+  // Build outfit description
+  const outfitText = scene.brands.length > 0
+    ? `wearing ${scene.brands.join(' and ')} ${scene.outfit}`
+    : scene.outfit ? `wearing ${scene.outfit}` : 'in styled outfit'
   
-  // Determine mirror type based on setting
-  let mirrorType = 'large mirror'
-  const settingLower = (locationDetails || setting).toLowerCase()
-  if (settingLower.includes('bathroom')) mirrorType = 'bathroom vanity mirror'
-  if (settingLower.includes('boutique') || settingLower.includes('fitting')) mirrorType = 'full-length boutique mirror'
-  if (settingLower.includes('gym') || settingLower.includes('studio')) mirrorType = 'studio mirror'
-  if (settingLower.includes('bedroom') || settingLower.includes('home')) mirrorType = 'floor-length bedroom mirror'
+  // Build setting context
+  const settingText = scene.details.length > 0
+    ? `${scene.setting}, ${scene.details.slice(0, 3).join(', ')} visible in mirror reflection`
+    : scene.setting
   
-  // Build setting with details
-  let settingWithDetails = locationDetails || setting
-  if (decor.length > 0) {
-    const decorText = decor.slice(0, 4).join(', ')
-    settingWithDetails = `${settingWithDetails}${decorText ? `, ${decorText}` : ''}`
-  }
+  // Determine mirror type
+  let mirrorType = 'full-length mirror'
+  if (scene.setting.includes('bathroom')) mirrorType = 'bathroom mirror'
+  if (scene.setting.includes('boutique')) mirrorType = 'boutique fitting room mirror'
+  if (scene.setting.includes('bedroom')) mirrorType = 'bedroom full-length mirror'
   
-  // Build props/details text
-  let propsText = ''
-  if (props.length > 0) {
-    propsText = props.slice(0, 5).join(', ')
-  }
-  
-  // Build pose text
-  let poseText = 'Standing'
-  if (posture) {
-    poseText = posture.charAt(0).toUpperCase() + posture.slice(1)
-  }
-  
-  return `Ultra-realistic iPhone 15 Pro mirror selfie reflection. Reference images attached: use these reference images to maintain exactly the same physical characteristics, facial features, and body proportions as shown in the attached reference images. Authentic mirror selfie aesthetic showing complete outfit and setting.
-
-${poseText} in front of ${mirrorType} in ${settingWithDetails}, ${brandContext}${propsText ? `. Details visible in reflection: ${propsText}` : ''}. Holding phone at chest to waist level, capturing full body or three-quarter reflection in mirror. Mirror clearly visible in frame showing complete outfit styling from head to toe, phone visible in reflection creating authentic selfie composition.
-
-${lighting} creating balanced illumination across reflection. ${mood} with ${aesthetic}. Mirror reflection showing: complete outfit details, subtle room/setting details in background through mirror${propsText ? `, ${propsText}` : ''}, natural selfie positioning with phone held confidently.
-
-Looking at phone screen or glancing at mirror reflection, creating natural mirror selfie dynamic. Reflection framing: Full outfit visible showing styling choices, posture confident but natural, authentic influencer mirror selfie that showcases both outfit and setting elegantly. Clean mirror surface with realistic reflection quality, subtle room details visible creating context and depth.`
+  return `Ultra-realistic iPhone 15 Pro mirror selfie reflection. Reference images attached: maintain exactly the same physical characteristics, facial features, and body proportions as shown in the attached reference images. ${scene.posture || 'Standing'} in front of ${mirrorType}, ${outfitText}, holding phone at chest to waist level capturing full body or three-quarter reflection. Mirror clearly visible in frame showing complete outfit styling from head to toe, phone visible in reflection creating authentic mirror selfie composition. ${settingText ? settingText + ' visible through mirror.' : ''} ${scene.lighting || 'Natural overhead and side lighting'} creating balanced illumination across reflection ${scene.mood ? 'with ' + scene.mood : ''}. Looking at phone screen or glancing at mirror reflection, creating natural mirror selfie dynamic. Reflection shows complete scene: full outfit details visible, ${scene.action || 'natural pose'}, authentic influencer mirror selfie aesthetic. Clean mirror surface with realistic reflection quality, complete scene visible in background through mirror.`.trim()
 }
 
 /**
- * Build elevated selfie prompt
- * Least common (20%) - professional setup, polished, ring light
+ * Build ELEVATED SELFIE - First-Person POV
+ * 
+ * CRITICAL: Phone on tripod with self-timer (still first-person view)
  */
-function buildElevatedSelfiePrompt(elements: ReturnType<typeof extractPromptElements>): string {
-  const { outfit, setting, locationDetails, lighting, mood, aesthetic, brands, props, decor, activity, posture } = elements
+function buildElevatedSelfieFromScene(scene: SceneElements): string {
   
-  // Build brand context
-  const brandContext = brands.length > 0 
-    ? `wearing ${brands.join(' and ')} pieces - ${outfit}` 
-    : outfit ? `wearing ${outfit}` : 'in polished styled outfit'
+  // Build outfit description
+  const outfitText = scene.brands.length > 0
+    ? `wearing ${scene.brands.join(' and ')} ${scene.outfit}`
+    : scene.outfit ? `wearing ${scene.outfit}` : 'in polished styled outfit'
   
-  // Build setting with details
-  let settingWithDetails = locationDetails || setting
-  if (decor.length > 0) {
-    const decorText = decor.slice(0, 3).join(', ')
-    settingWithDetails = `${settingWithDetails}${decorText ? `, ${decorText}` : ''}`
-  }
+  // Build setting context
+  const settingText = scene.details.length > 0
+    ? `${scene.setting}, ${scene.details.slice(0, 3).join(', ')} visible in frame`
+    : scene.setting
   
-  // Build props/details text
-  let propsText = ''
-  if (props.length > 0) {
-    propsText = props.slice(0, 4).join(', ')
-  }
-  
-  // Build pose text
-  let poseText = 'looking directly at camera lens with confident, polished expression'
-  if (posture || activity) {
-    const poseParts: string[] = []
-    if (posture) poseParts.push(posture)
-    if (activity) poseParts.push(activity)
-    if (poseParts.length > 0) {
-      poseText = `${poseParts.join(', ')}, looking directly at camera lens with confident, polished expression`
-    }
-  }
-  
-  return `Ultra-realistic iPhone 15 Pro elevated selfie setup. Reference images attached: use these reference images to maintain exactly the same physical characteristics, facial features, and body proportions as shown in the attached reference images. Professional influencer selfie aesthetic with polished production quality.
-
-Professional selfie setting: ${settingWithDetails}, ${brandContext}${propsText ? `. Details visible: ${propsText}` : ''}. Phone positioned on small tripod or elevated stable surface, creating controlled self-timer or remote shutter setup. Face to upper body framing, slightly elevated camera angle creating flattering perspective, ${poseText}.
-
-Ring light positioned at face level providing soft, even, flattering illumination, combined with ${lighting} for dimensional lighting. ${mood} with ${aesthetic} elevated to professional influencer content standard. Consistent, controlled lighting creating flawless, polished look while maintaining iPhone selfie authenticity.
-
-Elevated selfie characteristics: Professional lighting setup visible or implied, consistent exposure across frame, slightly elevated angle for flattering perspective, polished influencer content quality. Setup shows: ring light catchlights in eyes, even skin tones, professional content creator aesthetic, but unmistakably iPhone selfie style not DSLR photography.
-
-Framing: Waist-up or bust shot showing face clearly with enough context for styling details, professional posing with relaxed confidence, authentic influencer who invests in content quality. Studio-quality selfie that maintains iPhone front camera authenticity while achieving professional influencer production values.`
+  return `Ultra-realistic iPhone 15 Pro elevated selfie setup. Reference images attached: maintain exactly the same physical characteristics, facial features, and body proportions as shown in the attached reference images. ${scene.posture || 'Standing'} ${settingText ? 'in ' + settingText : ''}, ${outfitText}, phone positioned on tripod with self-timer capturing face to upper body or full body framing. Slightly elevated camera angle creating flattering perspective showing ${scene.action || 'confident pose'}. Ring light or natural lighting combined with ${scene.lighting || 'soft window light'} providing dimensional illumination ${scene.mood ? 'creating ' + scene.mood : ''}. Professional lighting setup with even, flattering exposure showing complete scene. Looking at camera with natural ${scene.mood || 'confident'} expression, slightly elevated angle perspective, polished influencer content aesthetic. Setup creates professional yet authentic iPhone selfie quality, not DSLR photography. Frame shows complete context: outfit details visible, scene setting clear, elevated selfie production quality maintaining iPhone aesthetic.`.trim()
 }
 
 /**
