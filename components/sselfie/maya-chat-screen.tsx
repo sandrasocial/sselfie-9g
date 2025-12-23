@@ -45,16 +45,34 @@ import ConceptCardPro from "./pro-mode/ConceptCardPro"
 import ImageLibraryModal from "./pro-mode/ImageLibraryModal"
 import ProModeChatHistory from "./pro-mode/ProModeChatHistory"
 import { Typography, Colors } from '@/lib/maya/pro/design-system'
+import { useToast } from "@/hooks/use-toast"
 
 interface MayaChatScreenProps {
   onImageGenerated?: () => void
   user: SessionUser | null // Assuming user object is passed down
   setActiveTab?: (tab: string) => void // Navigation handler from parent
+  userId?: string // User ID (optional, can be derived from user)
+  initialChatId?: number // Initial chat ID to load
+  studioProMode?: boolean // Force Pro Mode (for admin)
+  isAdmin?: boolean // Admin mode - enables save to guide functionality
+  selectedGuideId?: number | null // Selected guide ID for saving
+  selectedGuideCategory?: string | null // Selected guide category
 }
 
-export default function MayaChatScreen({ onImageGenerated, user, setActiveTab }: MayaChatScreenProps) {
+export default function MayaChatScreen({ 
+  onImageGenerated, 
+  user, 
+  setActiveTab,
+  userId,
+  initialChatId,
+  studioProMode: forcedStudioProMode,
+  isAdmin = false,
+  selectedGuideId = null,
+  selectedGuideCategory = null,
+}: MayaChatScreenProps) {
+  const { toast } = useToast()
   const [inputValue, setInputValue] = useState("")
-  const [chatId, setChatId] = useState<number | null>(null)
+  const [chatId, setChatId] = useState<number | null>(initialChatId || null)
   const [chatTitle, setChatTitle] = useState<string>("Chat with Maya") // Added for chat title
   const [isLoadingChat, setIsLoadingChat] = useState(true)
   const [showHistory, setShowHistory] = useState(false)
@@ -111,8 +129,11 @@ export default function MayaChatScreen({ onImageGenerated, user, setActiveTab }:
   // Default to false (show welcome screen) until we know otherwise
   const [hasUsedMayaBefore, setHasUsedMayaBefore] = useState<boolean>(false)
   
-  // Studio Pro state
+  // Studio Pro state - use forced mode if provided (admin), otherwise use localStorage
   const [studioProMode, setStudioProMode] = useState(() => {
+    if (forcedStudioProMode !== undefined) {
+      return forcedStudioProMode
+    }
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('mayaStudioProMode')
       return saved === 'true'
@@ -2158,6 +2179,55 @@ export default function MayaChatScreen({ onImageGenerated, user, setActiveTab }:
   }
 
   // Handle mode switching - creates a new chat when switching between Classic and Studio Pro
+  // Handle saving concept to guide (admin mode)
+  const handleSaveToGuide = useCallback(async (concept: any, imageUrl?: string) => {
+    if (!isAdmin) return // Only available in admin mode
+    
+    if (!selectedGuideId) {
+      toast({
+        title: "No guide selected",
+        description: "Please select a guide from the dropdown at the top of the page",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      const response = await fetch("/api/admin/prompt-guide/approve-item", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          guideId: selectedGuideId,
+          promptText: concept.fullPrompt || concept.prompt || concept.description,
+          conceptTitle: concept.title || concept.label,
+          conceptDescription: concept.description,
+          category: concept.category || selectedGuideCategory || "General",
+          imageUrl: imageUrl || null,
+          replicatePredictionId: null,
+          generationSettings: {},
+        }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        toast({
+          title: "Saved to guide! ✨",
+          description: `Added "${concept.title || concept.label}" ${imageUrl ? 'with image' : ''} to your guide`,
+        })
+      } else {
+        const errorData = await response.json().catch(() => ({ error: "Failed to save" }))
+        throw new Error(errorData.error || "Failed to save")
+      }
+    } catch (error) {
+      console.error("[v0] Error saving to guide:", error)
+      toast({
+        title: "Failed to save",
+        description: "Could not save prompt to guide. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }, [isAdmin, selectedGuideId, selectedGuideCategory, toast])
+
   const handleModeSwitch = async (newMode: boolean) => {
     // Only create new chat if mode is actually changing
     if (studioProMode === newMode) return
@@ -3274,7 +3344,7 @@ export default function MayaChatScreen({ onImageGenerated, user, setActiveTab }:
           ref={messagesContainerRef}
           className="h-full overflow-y-auto pr-1 scroll-smooth"
           style={{
-            paddingBottom: "11rem",
+            paddingBottom: "15rem", // Increased to account for quick prompts above input
           }}
           role="log"
           aria-live="polite"
@@ -3928,6 +3998,10 @@ export default function MayaChatScreen({ onImageGenerated, user, setActiveTab }:
                                             products={[]}
                                             styleRefs={[]}
                                             isFirstCard={conceptIndex === 0}
+                                            isAdmin={isAdmin}
+                                            selectedGuideId={selectedGuideId}
+                                            adminUserId={user?.id?.toString()}
+                                            onSaveToGuide={handleSaveToGuide}
                                             sharedImages={sharedConceptImages}
                                             onSharedImagesChange={conceptIndex === 0 ? setSharedConceptImages : undefined}
                                           />
@@ -4199,7 +4273,7 @@ export default function MayaChatScreen({ onImageGenerated, user, setActiveTab }:
       >
         {/* Classic Mode Quick Actions */}
         {!isEmpty && !uploadedImage && !studioProMode && (
-          <div className="mb-2">
+          <div className="mb-2 mt-2">
             <div className="flex gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide pb-1 -mx-2 px-2 sm:mx-0 sm:px-0">
               {currentPrompts.map((item, index) => (
                 <button
@@ -4241,7 +4315,7 @@ export default function MayaChatScreen({ onImageGenerated, user, setActiveTab }:
           <>
             {/* Pro Mode Quick Suggestions - Category-based prompts */}
             {!isEmpty && !uploadedImage && currentPrompts.length > 0 && (
-              <div className="mb-2">
+              <div className="mb-2 mt-2">
                 <div className="flex gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide pb-1 -mx-2 px-2 sm:mx-0 sm:px-0">
                   {currentPrompts.map((item, index) => (
                     <button

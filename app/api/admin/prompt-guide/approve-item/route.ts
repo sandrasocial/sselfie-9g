@@ -32,9 +32,9 @@ export async function POST(request: Request) {
       generationSettings,
     } = body
 
-    if (!promptText || !imageUrl) {
+    if (!promptText) {
       return NextResponse.json(
-        { error: "Missing required fields: promptText and imageUrl" },
+        { error: "Missing required field: promptText" },
         { status: 400 }
       )
     }
@@ -80,7 +80,7 @@ export async function POST(request: Request) {
         ${conceptTitle || null},
         ${conceptDescription || null},
         ${category || null},
-        ${imageUrl},
+        ${imageUrl || null},
         ${replicatePredictionId || null},
         'approved',
         ${JSON.stringify(generationSettings || {})},

@@ -1,0 +1,51 @@
+"use client"
+
+import { useState } from "react"
+import MayaChatScreen from "@/components/sselfie/maya-chat-screen"
+import MayaGuideControls from "@/components/admin/maya-guide-controls"
+import type { User as UserType } from "@/components/sselfie/types"
+
+interface MayaStudioClientProps {
+  userId: string
+  userEmail: string
+  userName: string | null
+}
+
+export default function MayaStudioClient({ userId, userEmail, userName }: MayaStudioClientProps) {
+  const [selectedGuideId, setSelectedGuideId] = useState<number | null>(null)
+  const [selectedGuideCategory, setSelectedGuideCategory] = useState<string | null>(null)
+
+  // Create user object for MayaChatScreen
+  const user = {
+    id: userId,
+    email: userEmail,
+    name: userName,
+  } as any
+
+  return (
+    <div className="h-screen flex flex-col bg-stone-50">
+      {/* Guide Selector Bar */}
+      <MayaGuideControls
+        userId={userId}
+        selectedGuideId={selectedGuideId}
+        selectedGuideCategory={selectedGuideCategory}
+        onGuideChange={(id, category) => {
+          setSelectedGuideId(id)
+          setSelectedGuideCategory(category)
+        }}
+      />
+
+      {/* Maya Chat - Same as user app, just with admin context */}
+      <div className="flex-1 min-h-0">
+        <MayaChatScreen
+          user={user}
+          studioProMode={true} // Always use Pro Mode in admin
+          isAdmin={true} // New prop to enable admin features
+          selectedGuideId={selectedGuideId}
+          selectedGuideCategory={selectedGuideCategory}
+        />
+      </div>
+    </div>
+  )
+}
+

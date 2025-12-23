@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef, useCallback } from "react"
-import { MoreVertical, X, Edit2 } from "lucide-react"
+import { MoreVertical, X, Edit2, Bookmark, Save } from "lucide-react"
 import InstagramPhotoCard from "./instagram-photo-card"
 import InstagramReelCard from "./instagram-reel-card"
 import InstagramCarouselCard from "./instagram-carousel-card"
@@ -19,6 +19,10 @@ interface ConceptCardProps {
   selfies?: string[] // Selfie images from upload module
   products?: string[] // Product images from upload module
   styleRefs?: string[] // Style reference images from upload module
+  isAdmin?: boolean // Admin mode - enables save to guide functionality
+  selectedGuideId?: number | null // Selected guide ID for saving
+  adminUserId?: string // User ID for saving to guide (admin mode)
+  onSaveToGuide?: (concept: ConceptData, imageUrl?: string) => void // Save handler from parent
 }
 
 export default function ConceptCard({ 
@@ -32,7 +36,11 @@ export default function ConceptCard({
   styleRefs = [],
   isFirstCard = false,
   sharedImages = [null, null, null],
-  onSharedImagesChange
+  onSharedImagesChange,
+  isAdmin = false,
+  selectedGuideId = null,
+  adminUserId,
+  onSaveToGuide
 }: ConceptCardProps) {
   // CLASSIC MODE SAFETY: Normalize studioProMode to ensure it's explicitly boolean
   // This prevents undefined/null from accidentally triggering Pro logic
@@ -65,6 +73,24 @@ export default function ConceptCard({
   const [editedPrompt, setEditedPrompt] = useState<string | null>(null)
   const [showMenu, setShowMenu] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+  const [isSavingToGuide, setIsSavingToGuide] = useState(false)
+
+  const handleSaveToGuide = async () => {
+    if (!onSaveToGuide) {
+      console.warn("[v0] onSaveToGuide handler not provided")
+      return
+    }
+
+    setIsSavingToGuide(true)
+    try {
+      await onSaveToGuide(concept, generatedImageUrl || undefined)
+      setShowMenu(false)
+    } catch (error) {
+      console.error("[v0] Error saving to guide:", error)
+    } finally {
+      setIsSavingToGuide(false)
+    }
+  }
 
   const [styleStrength, setStyleStrength] = useState<number | null>(null)
   const [promptAccuracy, setPromptAccuracy] = useState<number | null>(null)
@@ -1074,6 +1100,16 @@ export default function ConceptCard({
                   <span>View/Edit Prompt</span>
                 </button>
               )}
+              {isAdmin && selectedGuideId && (
+                <button
+                  onClick={handleSaveToGuide}
+                  disabled={isSavingToGuide}
+                  className="w-full px-4 py-2 text-left text-sm text-stone-700 hover:bg-stone-50 flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Bookmark className="w-4 h-4" />
+                  <span>{isSavingToGuide ? "Saving..." : "Save to Guide"}</span>
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -1134,34 +1170,52 @@ export default function ConceptCard({
               </div>
             )}
 
-            {/* Enhanced Generate Button with Clear Status */}
-            <button
-              onClick={handleGenerate}
-              disabled={isGenerating || (isProMode && baseImages.length === 0 && selectedImages.filter((img) => img !== null).length === 0)}
-              className={`w-full py-3.5 rounded-lg text-xs font-light tracking-[0.2em] uppercase transition-all duration-300 ${
-                isGenerating
-                  ? "bg-stone-300 text-stone-600 cursor-wait"
-                  : isProMode && baseImages.length === 0 && selectedImages.filter((img) => img !== null).length === 0
-                  ? "bg-stone-200 text-stone-500 cursor-not-allowed"
-                  : "bg-stone-900 hover:bg-stone-800 text-white shadow-lg hover:shadow-xl"
-              }`}
-            >
-              {isGenerating
-                ? isProMode
-                  ? "Creating..."
-                  : "Creating your photo"
-                : isProMode
-                ? baseImages.length > 0
-                  ? `Generate with Studio Pro • ${baseImages.length} Image${baseImages.length !== 1 ? "s" : ""}`
-                  : selectedImages.filter((img) => img !== null).length === 0
-                  ? "Add Images to Continue"
-                  : `Generate with Studio Pro • ${
-                      selectedImages.filter((img) => img !== null).length
-                    } Image${
-                      selectedImages.filter((img) => img !== null).length !== 1 ? "s" : ""
-                    }`
-                : "Create Photo"}
-            </button>
+            {/* Button Group: Generate and Save to Guide */}
+            <div className="flex gap-2">
+              {/* Enhanced Generate Button with Clear Status */}
+              <button
+                onClick={handleGenerate}
+                disabled={isGenerating || (isProMode && baseImages.length === 0 && selectedImages.filter((img) => img !== null).length === 0)}
+                className={`flex-1 py-3.5 rounded-lg text-xs font-light tracking-[0.2em] uppercase transition-all duration-300 ${
+                  isGenerating
+                    ? "bg-stone-300 text-stone-600 cursor-wait"
+                    : isProMode && baseImages.length === 0 && selectedImages.filter((img) => img !== null).length === 0
+                    ? "bg-stone-200 text-stone-500 cursor-not-allowed"
+                    : "bg-stone-900 hover:bg-stone-800 text-white shadow-lg hover:shadow-xl"
+                }`}
+              >
+                {isGenerating
+                  ? isProMode
+                    ? "Creating..."
+                    : "Creating your photo"
+                  : isProMode
+                  ? baseImages.length > 0
+                    ? `Generate with Studio Pro • ${baseImages.length} Image${baseImages.length !== 1 ? "s" : ""}`
+                    : selectedImages.filter((img) => img !== null).length === 0
+                    ? "Add Images to Continue"
+                    : `Generate with Studio Pro • ${
+                        selectedImages.filter((img) => img !== null).length
+                      } Image${
+                        selectedImages.filter((img) => img !== null).length !== 1 ? "s" : ""
+                      }`
+                  : "Create Photo"}
+              </button>
+
+              {/* Save to Guide button (admin only) */}
+              {isAdmin && (
+                <button
+                  onClick={handleSaveToGuide}
+                  disabled={!selectedGuideId || isSavingToGuide}
+                  className="flex-1 px-4 py-2 bg-stone-900 text-white rounded-lg hover:bg-stone-800 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
+                  title={!selectedGuideId ? "Select a guide first" : "Save this prompt to your guide"}
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <Save size={16} />
+                    <span>{isSavingToGuide ? "Saving..." : generatedImageUrl ? "Save with Image" : "Save Prompt"}</span>
+                  </div>
+                </button>
+              )}
+            </div>
 
             {/* Status Message Below Button */}
             <div className="text-center">
