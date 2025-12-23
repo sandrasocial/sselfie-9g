@@ -20,7 +20,7 @@ if (!databaseUrl) {
 
 const sql = neon(databaseUrl)
 
-async function runMigration() {
+export async function runMigration() {
   console.log("[Migration] Starting prompt guide tables migration...\n")
 
   try {
@@ -67,8 +67,20 @@ async function runMigration() {
     console.log("  - writing_assistant_outputs")
   } catch (error: any) {
     console.error("[Migration] ❌ Migration failed:", error.message)
-    process.exit(1)
+    throw error // Re-throw instead of process.exit() so API route can handle it
   }
 }
 
-runMigration()
+// Only run directly if this script is executed (not imported)
+// This works for both CommonJS and ES modules
+if (typeof require !== 'undefined' && require.main === module) {
+  runMigration()
+    .then(() => {
+      console.log("[Migration] Script execution completed")
+      process.exit(0)
+    })
+    .catch((error) => {
+      console.error("[Migration] Script execution failed:", error)
+      process.exit(1)
+    })
+}
