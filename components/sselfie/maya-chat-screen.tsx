@@ -3859,6 +3859,9 @@ export default function MayaChatScreen({
                                                 linkedImages: conceptLinkedImages,
                                                 fullPrompt: concept.fullPrompt || concept.prompt,
                                               }}
+                                              isAdmin={isAdmin}
+                                              selectedGuideId={selectedGuideId}
+                                              onSaveToGuide={handleSaveToGuide}
                                               onPromptUpdate={(updatedConceptId, newFullPrompt) => {
                                                 // Update the concept's fullPrompt in the messages array
                                                 setMessages((prevMessages) => {

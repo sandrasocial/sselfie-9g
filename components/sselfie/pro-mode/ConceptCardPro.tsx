@@ -8,7 +8,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Typography, Colors, BorderRadius, Spacing, UILabels, ButtonLabels } from '@/lib/maya/pro/design-system'
-import { X } from 'lucide-react'
+import { X, Save, Bookmark } from 'lucide-react'
 import InstagramPhotoCard from '../instagram-photo-card'
 
 /**
@@ -44,6 +44,9 @@ interface ConceptCardProProps {
   onPromptUpdate?: (conceptId: string, newFullPrompt: string) => void
   isGenerating?: boolean
   onImageGenerated?: () => void
+  isAdmin?: boolean // Admin mode - enables save to guide functionality
+  selectedGuideId?: number | null // Selected guide ID for saving
+  onSaveToGuide?: (concept: any, imageUrl?: string) => void // Save handler from parent
 }
 
 export default function ConceptCardPro({
@@ -54,6 +57,9 @@ export default function ConceptCardPro({
   onPromptUpdate,
   isGenerating = false,
   onImageGenerated,
+  isAdmin = false,
+  selectedGuideId = null,
+  onSaveToGuide,
 }: ConceptCardProProps) {
   const [showPromptModal, setShowPromptModal] = useState(false)
   const [isEditingPrompt, setIsEditingPrompt] = useState(false)
@@ -217,6 +223,30 @@ export default function ConceptCardPro({
     setIsEditingPrompt(false)
   }
 
+  const [isSavingToGuide, setIsSavingToGuide] = useState(false)
+
+  const handleSaveToGuide = async () => {
+    if (!onSaveToGuide) {
+      console.warn("[ConceptCardPro] onSaveToGuide handler not provided")
+      return
+    }
+
+    if (!selectedGuideId) {
+      alert("Please select a guide first")
+      return
+    }
+
+    setIsSavingToGuide(true)
+    try {
+      await onSaveToGuide(concept, generatedImageUrl || undefined)
+    } catch (error) {
+      console.error("[ConceptCardPro] Error saving to guide:", error)
+      alert("Failed to save to guide. Please try again.")
+    } finally {
+      setIsSavingToGuide(false)
+    }
+  }
+
   const handleGenerate = async () => {
     console.log('[ConceptCardPro] 🎬 Generate button clicked')
     if (!onGenerate) {
@@ -326,9 +356,28 @@ export default function ConceptCardPro({
     
     // Store interval reference so poll function can clear it
     let pollIntervalRef: NodeJS.Timeout | null = null
+    let pollAttempts = 0
+    const MAX_POLL_ATTEMPTS = 120 // 10 minutes max (120 * 5 seconds)
     
     // Poll function that can be called immediately or via interval
     const poll = async () => {
+      pollAttempts++
+      
+      // Stop polling after max attempts
+      if (pollAttempts > MAX_POLL_ATTEMPTS) {
+        console.error('[ConceptCardPro] ❌ Max polling attempts reached, stopping')
+        setError('Generation is taking longer than expected. Please try again.')
+        setIsGeneratingState(false)
+        if (pollIntervalRef) {
+          clearInterval(pollIntervalRef)
+          pollIntervalRef = null
+        }
+        if (pollingIntervalRef.current) {
+          clearInterval(pollingIntervalRef.current)
+          pollingIntervalRef.current = null
+        }
+        return
+      }
       try {
         console.log('[ConceptCardPro] 🔍 Polling check-generation API for:', pollPredictionId)
         const response = await fetch(
@@ -649,6 +698,49 @@ export default function ConceptCardPro({
           >
             {(isGenerating || isGeneratingState) ? 'Generating...' : ButtonLabels.generate}
           </button>
+
+          {/* Save to Guide button (admin only) */}
+          {isAdmin && (
+            <button
+              onClick={handleSaveToGuide}
+              disabled={!selectedGuideId || isSavingToGuide}
+              className="touch-manipulation active:scale-95 disabled:active:scale-100"
+              style={{
+                fontFamily: Typography.ui.fontFamily,
+                fontSize: 'clamp(13px, 3vw, 14px)',
+                fontWeight: Typography.ui.weights.medium,
+                letterSpacing: '0.01em',
+                color: Colors.surface,
+                backgroundColor: (!selectedGuideId || isSavingToGuide) ? Colors.border : Colors.primary,
+                padding: 'clamp(10px, 2.5vw, 12px) clamp(16px, 4vw, 20px)',
+                minHeight: '44px',
+                borderRadius: BorderRadius.button,
+                border: 'none',
+                cursor: (!selectedGuideId || isSavingToGuide) ? 'not-allowed' : 'pointer',
+                transition: 'all 0.2s ease',
+                flex: 1,
+                opacity: (!selectedGuideId || isSavingToGuide) ? 0.7 : 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+              }}
+              onMouseEnter={(e) => {
+                if (selectedGuideId && !isSavingToGuide) {
+                  e.currentTarget.style.backgroundColor = Colors.accent
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (selectedGuideId && !isSavingToGuide) {
+                  e.currentTarget.style.backgroundColor = Colors.primary
+                }
+              }}
+              title={!selectedGuideId ? "Select a guide first" : "Save this prompt to your guide"}
+            >
+              <Save size={16} />
+              <span>{isSavingToGuide ? "Saving..." : generatedImageUrl ? "Save with Image" : "Save Prompt"}</span>
+            </button>
+          )}
         </div>
 
         {/* Error message */}
