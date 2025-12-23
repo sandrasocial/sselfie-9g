@@ -42,17 +42,21 @@ export async function GET(request: NextRequest) {
 
     const guides = await sql`
       SELECT 
-        id, 
-        title, 
-        category, 
-        status, 
-        total_prompts, 
-        total_approved,
-        created_at, 
-        published_at,
-        description
-      FROM prompt_guides
-      ORDER BY created_at DESC
+        pg.id, 
+        pg.title, 
+        pg.category, 
+        pg.status, 
+        pg.total_prompts, 
+        pg.total_approved,
+        pg.created_at, 
+        pg.published_at,
+        pg.description,
+        pp.slug AS page_slug
+      FROM prompt_guides pg
+      LEFT JOIN prompt_pages pp
+        ON pp.guide_id = pg.id
+       AND pp.status = 'published'
+      ORDER BY pg.created_at DESC
     `
 
     return NextResponse.json({ guides })

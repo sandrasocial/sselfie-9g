@@ -10,6 +10,7 @@ import {
 import { Typography, Colors, BorderRadius, Spacing, UILabels, ButtonLabels } from '@/lib/maya/pro/design-system'
 import { X, Save, Bookmark } from 'lucide-react'
 import InstagramPhotoCard from '../instagram-photo-card'
+import { useToast } from '@/hooks/use-toast'
 
 /**
  * ConceptCardPro Component
@@ -61,6 +62,7 @@ export default function ConceptCardPro({
   selectedGuideId = null,
   onSaveToGuide,
 }: ConceptCardProProps) {
+  const { toast } = useToast()
   const [showPromptModal, setShowPromptModal] = useState(false)
   const [isEditingPrompt, setIsEditingPrompt] = useState(false)
   const [editedPrompt, setEditedPrompt] = useState(concept.fullPrompt || '')
@@ -228,20 +230,41 @@ export default function ConceptCardPro({
   const handleSaveToGuide = async () => {
     if (!onSaveToGuide) {
       console.warn("[ConceptCardPro] onSaveToGuide handler not provided")
+      toast({
+        title: "Error",
+        description: "Save to guide functionality is not available",
+        variant: "destructive",
+      })
       return
     }
 
     if (!selectedGuideId) {
-      alert("Please select a guide first")
+      toast({
+        title: "No guide selected",
+        description: "Please select a guide from the dropdown at the top of the page",
+        variant: "destructive",
+      })
       return
     }
 
     setIsSavingToGuide(true)
     try {
+      // Call parent handler - it should show success/error/duplicate toast
       await onSaveToGuide(concept, generatedImageUrl || undefined)
+      // Parent's handler will show appropriate toast (success, duplicate, or error)
+      // No need to show duplicate toast here as parent handles it
     } catch (error) {
       console.error("[ConceptCardPro] Error saving to guide:", error)
-      alert("Failed to save to guide. Please try again.")
+      // Only show error toast if parent didn't handle it (shouldn't happen, but backup)
+      const errorMessage = error instanceof Error ? error.message : "Could not save prompt to guide. Please try again."
+      // Don't show error toast if it's a duplicate (parent already handled it)
+      if (!errorMessage.includes("already exists") && !errorMessage.includes("Already saved")) {
+        toast({
+          title: "Failed to save",
+          description: errorMessage,
+          variant: "destructive",
+        })
+      }
     } finally {
       setIsSavingToGuide(false)
     }

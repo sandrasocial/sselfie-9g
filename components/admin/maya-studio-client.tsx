@@ -3,6 +3,7 @@
 import { useState } from "react"
 import MayaChatScreen from "@/components/sselfie/maya-chat-screen"
 import MayaGuideControls from "@/components/admin/maya-guide-controls"
+import { Toaster } from "@/components/ui/toaster"
 import type { User as UserType } from "@/components/sselfie/types"
 
 interface MayaStudioClientProps {
@@ -22,8 +23,8 @@ export default function MayaStudioClient({ userId, userEmail, userName }: MayaSt
     name: userName,
   } as any
 
-  return (
-    <div className="h-screen flex flex-col bg-stone-50">
+      return (
+        <div className="min-h-screen h-screen flex flex-col bg-stone-50 overflow-hidden">
       {/* Guide Selector Bar */}
       <MayaGuideControls
         userId={userId}
@@ -45,6 +46,9 @@ export default function MayaStudioClient({ userId, userEmail, userName }: MayaSt
           selectedGuideCategory={selectedGuideCategory}
         />
       </div>
+
+      {/* Toast notifications */}
+      <Toaster />
     </div>
   )
 }

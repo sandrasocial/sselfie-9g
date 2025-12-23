@@ -60,7 +60,33 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Guide not found" }, { status: 404 })
     }
 
+    // Check for duplicate: same guide_id, prompt_text, and image_url
+    // Use IS NOT DISTINCT FROM for proper NULL handling
+    const [existingItem] = await sql`
+      SELECT id, concept_title, created_at
+      FROM prompt_guide_items
+      WHERE guide_id = ${guideId}
+        AND prompt_text = ${promptText}
+        AND image_url IS NOT DISTINCT FROM ${imageUrl || null}
+      LIMIT 1
+    `
+
+    if (existingItem) {
+      return NextResponse.json({
+        success: false,
+        isDuplicate: true,
+        existingItemId: existingItem.id,
+        message: "This prompt and image combination already exists in the guide",
+        existingItem: {
+          id: existingItem.id,
+          title: existingItem.concept_title,
+          createdAt: existingItem.created_at,
+        },
+      }, { status: 409 }) // 409 Conflict
+    }
+
     // Insert into prompt_guide_items
+    // Since "Save with Image" is the approval action, we directly save with approved status
     const [item] = await sql`
       INSERT INTO prompt_guide_items (
         guide_id,
@@ -95,6 +121,7 @@ export async function POST(request: Request) {
       UPDATE prompt_guides
       SET 
         total_approved = total_approved + 1,
+        total_prompts = COALESCE(total_prompts, 0) + 1,
         updated_at = NOW()
       WHERE id = ${guideId}
     `
@@ -111,13 +138,13 @@ export async function POST(request: Request) {
       itemId: item.id,
       totalApproved: updatedGuide?.total_approved || 0,
       totalPrompts: updatedGuide?.total_prompts || 0,
-      message: "Item approved and added to guide",
+      message: "Saved to guide",
     })
   } catch (error) {
-    console.error("[PromptGuide] Error approving item:", error)
+    console.error("[PromptGuide] Error saving item:", error)
     return NextResponse.json(
       {
-        error: "Failed to approve item",
+        error: "Failed to save item",
         details: error instanceof Error ? error.message : String(error),
       },
       { status: 500 }

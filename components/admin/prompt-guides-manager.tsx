@@ -270,7 +270,22 @@ export default function PromptGuidesManager({ userId }: PromptGuidesManagerProps
 
   const openPublishModal = (guide: PromptGuide) => {
     setSelectedGuide(guide)
-    setPublishSlug(guide.title.toLowerCase().replace(/[^a-z0-9]+/g, "-"))
+
+    // Auto-generate slug from title
+    const baseSlug = guide.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")
+    setPublishSlug(baseSlug)
+
+    // Auto-generate Sandra-style copy
+    const friendlyCategory = guide.category ? guide.category.toLowerCase() : "your brand"
+    const generatedWelcome = `Hey, Sandra here. I pulled together my favorite ${friendlyCategory} prompts for you. Use them to capture an easy, polished look that feels confident and very you.`
+    const generatedUpsellText = `Want me to tailor these ${friendlyCategory} prompts to your exact vibe? Upgrade to Studio Pro and I'll personalize the angles, lighting, and styling for your shoots.`
+    const generatedEmailTag = `prompt-guide-${baseSlug}`
+
+    setPublishWelcomeMessage(generatedWelcome)
+    setPublishEmailTag(generatedEmailTag)
+    setPublishUpsellLink("/checkout/membership")
+    setPublishUpsellText(generatedUpsellText)
+
     setShowPublishModal(true)
   }
 
@@ -360,7 +375,7 @@ export default function PromptGuidesManager({ userId }: PromptGuidesManagerProps
                   {guide.description && (
                     <p className="text-sm text-stone-600 mb-3">{guide.description}</p>
                   )}
-                  <div className="flex items-center gap-4 text-sm text-stone-500">
+                  <div className="flex items-center gap-4 text-sm text-stone-500 flex-wrap">
                     <span>
                       Progress: {guide.total_approved}/{guide.total_prompts} prompts approved
                     </span>
@@ -370,6 +385,28 @@ export default function PromptGuidesManager({ userId }: PromptGuidesManagerProps
                     {guide.published_at && (
                       <span>
                         Published: {new Date(guide.published_at).toLocaleDateString()}
+                      </span>
+                    )}
+
+                    {/* Preview before publishing (opens builder with guide selected) */}
+                    <button
+                      onClick={() => router.push(`/admin/prompt-guide-builder?guideId=${guide.id}`)}
+                      className="text-stone-700 hover:text-stone-900 underline underline-offset-2"
+                    >
+                      Preview (builder)
+                    </button>
+
+                    {/* Preview published page when available */}
+                    {guide.page_slug ? (
+                      <button
+                        onClick={() => window.open(`/prompt-guides/${guide.page_slug}`, "_blank")}
+                        className="text-stone-700 hover:text-stone-900 underline underline-offset-2"
+                      >
+                        Preview (published)
+                      </button>
+                    ) : (
+                      <span className="text-stone-400">
+                        Published preview unavailable (not published)
                       </span>
                     )}
                   </div>

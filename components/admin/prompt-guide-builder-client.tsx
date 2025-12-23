@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useSearchParams } from "next/navigation"
 import PromptBuilderChat from "./prompt-builder-chat"
 import { WritingAssistant } from "./writing-assistant"
 import { Button } from "@/components/ui/button"
@@ -94,6 +95,7 @@ const CATEGORY_INFO = [
 ]
 
 export default function PromptGuideBuilderClient({ userId }: PromptGuideBuilderClientProps) {
+  const searchParams = useSearchParams()
   const [mode, setMode] = useState<Mode>("image-prompts")
   const [guides, setGuides] = useState<PromptGuide[]>([])
   const [selectedGuideId, setSelectedGuideId] = useState<number | null>(null)
@@ -139,6 +141,22 @@ export default function PromptGuideBuilderClient({ userId }: PromptGuideBuilderC
   useEffect(() => {
     loadGuides()
   }, [])
+
+  // Auto-select guide from URL parameter
+  useEffect(() => {
+    const guideIdParam = searchParams.get('guideId')
+    if (guideIdParam && guides.length > 0) {
+      const guideId = Number.parseInt(guideIdParam, 10)
+      if (!Number.isNaN(guideId)) {
+        const guide = guides.find(g => g.id === guideId)
+        if (guide && selectedGuideId !== guideId) {
+          setSelectedGuideId(guide.id)
+          setSelectedGuideCategory(guide.category)
+          console.log("[PromptGuideBuilder] Auto-selected guide from URL:", guide.title)
+        }
+      }
+    }
+  }, [guides, searchParams, selectedGuideId])
 
   const loadGuides = async () => {
     try {

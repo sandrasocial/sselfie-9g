@@ -2208,23 +2208,55 @@ export default function MayaChatScreen({
         }),
       })
 
+      // Handle duplicate (409 Conflict) - don't throw error, just show info toast
+      if (response.status === 409) {
+        const data = await response.json().catch(() => ({ message: "Already exists" }))
+        toast({
+          title: "Already saved",
+          description: data.message || "This prompt and image combination already exists in the guide",
+          variant: "default",
+        })
+        return // Exit early, don't throw error
+      }
+
+      // Handle success (200-299)
       if (response.ok) {
         const data = await response.json()
         toast({
           title: "Saved to guide! ✨",
           description: `Added "${concept.title || concept.label}" ${imageUrl ? 'with image' : ''} to your guide`,
         })
-      } else {
-        const errorData = await response.json().catch(() => ({ error: "Failed to save" }))
-        throw new Error(errorData.error || "Failed to save")
+        return // Exit early on success
       }
-    } catch (error) {
-      console.error("[v0] Error saving to guide:", error)
+
+      // Handle other errors (400, 401, 403, 500, etc.)
+      let errorMessage = `Failed to save (HTTP ${response.status})`
+      try {
+        const errorData = await response.json()
+        errorMessage = errorData.error || errorData.message || errorData.details || errorMessage
+      } catch (parseError) {
+        // If JSON parsing fails, use status text
+        errorMessage = response.statusText || errorMessage
+      }
+      
+      // Show error toast and throw (but don't let it propagate to outer catch)
       toast({
         title: "Failed to save",
-        description: "Could not save prompt to guide. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       })
+      // Don't throw - we've already shown the error toast
+      return
+    } catch (error) {
+      // Only catch network errors or unexpected errors
+      console.error("[v0] Error saving to guide:", error)
+      const errorMessage = error instanceof Error ? error.message : "Could not save prompt to guide. Please try again."
+      toast({
+        title: "Failed to save",
+        description: errorMessage,
+        variant: "destructive",
+      })
+      // Don't re-throw - we've handled the error
     }
   }, [isAdmin, selectedGuideId, selectedGuideCategory, toast])
 
