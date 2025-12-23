@@ -67,6 +67,7 @@
     "embla-carousel-react": "8.5.1",
     "framer-motion": "latest",
     "fs": "0.0.1-security",
+    "html-to-text": "^9.0.5",
     "input-otp": "1.4.1",
     "jszip": "latest",
     "lucide-react": "^0.454.0",

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Loader2, TrendingUp, Users, BookOpen, MessageSquare, AlertCircle, DollarSign, Calendar, BarChart3, Coins, Mail, Star, FileText, Brain, Rocket, Badge, FlaskConical, RefreshCw, CheckCircle2, XCircle, AlertTriangle, Sparkles } from 'lucide-react'
+import { Loader2, TrendingUp, Users, BookOpen, MessageSquare, AlertCircle, DollarSign, Calendar, BarChart3, RefreshCw, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts"
 import { SystemHealthMonitor } from "./system-health-monitor"
@@ -466,8 +466,12 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
 
               <Link href="/admin/maya-studio" className="group">
                 <div className="bg-white rounded-xl md:rounded-2xl overflow-hidden border border-stone-200 shadow-lg hover:shadow-xl transition-all h-full">
-                  <div className="relative h-40 overflow-hidden bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center">
-                    <Sparkles className="w-20 h-20 text-purple-400" strokeWidth={1.5} />
+                  <div className="relative h-40 overflow-hidden">
+                    <img
+                      src="/minimalist-photography-studio-with-lighting-equipm.jpg"
+                      alt="Maya Studio"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
                     <div className="absolute inset-0 bg-gradient-to-t from-stone-950/60 to-transparent" />
                     <div className="absolute bottom-4 left-4">
                       <h3 className="font-['Times_New_Roman'] text-2xl md:text-3xl font-extralight tracking-[0.3em] uppercase text-white">
@@ -485,8 +489,12 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
 
               <Link href="/admin/prompt-guide-builder" className="group">
                 <div className="bg-white rounded-xl md:rounded-2xl overflow-hidden border border-stone-200 shadow-lg hover:shadow-xl transition-all h-full">
-                  <div className="relative h-40 overflow-hidden bg-gradient-to-br from-indigo-50 to-blue-50 flex items-center justify-center">
-                    <FileText className="w-20 h-20 text-indigo-300" strokeWidth={1.5} />
+                  <div className="relative h-40 overflow-hidden">
+                    <img
+                      src="/black-laptop-with-coffee-minimalist-desk-setup.jpg"
+                      alt="Prompt Builder"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
                     <div className="absolute inset-0 bg-gradient-to-t from-stone-950/60 to-transparent" />
                     <div className="absolute bottom-4 left-4">
                       <h3 className="font-['Times_New_Roman'] text-2xl md:text-3xl font-extralight tracking-[0.3em] uppercase text-white">
@@ -504,8 +512,12 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
 
               <Link href="/admin/prompt-guides" className="group">
                 <div className="bg-white rounded-xl md:rounded-2xl overflow-hidden border border-stone-200 shadow-lg hover:shadow-xl transition-all h-full">
-                  <div className="relative h-40 overflow-hidden bg-gradient-to-br from-slate-50 to-gray-50 flex items-center justify-center">
-                    <FileText className="w-20 h-20 text-slate-300" strokeWidth={1.5} />
+                  <div className="relative h-40 overflow-hidden">
+                    <img
+                      src="/black-productivity-planner-with-iced-coffee-minima.jpg"
+                      alt="Manage Guides"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
                     <div className="absolute inset-0 bg-gradient-to-t from-stone-950/60 to-transparent" />
                     <div className="absolute bottom-4 left-4">
                       <h3 className="font-['Times_New_Roman'] text-2xl md:text-3xl font-extralight tracking-[0.3em] uppercase text-white">
@@ -523,8 +535,12 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
 
               <Link href="/admin/email-broadcast" className="group">
                 <div className="bg-white rounded-xl md:rounded-2xl overflow-hidden border border-stone-200 shadow-lg hover:shadow-xl transition-all h-full">
-                  <div className="relative h-40 overflow-hidden bg-gradient-to-br from-stone-50 to-stone-100 flex items-center justify-center">
-                    <Mail className="w-20 h-20 text-stone-300" strokeWidth={1.5} />
+                  <div className="relative h-40 overflow-hidden">
+                    <img
+                      src="/minimalist-phone-with-instagram-aesthetic-white-ba.jpg"
+                      alt="Emails"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
                     <div className="absolute inset-0 bg-gradient-to-t from-stone-950/60 to-transparent" />
                     <div className="absolute bottom-4 left-4">
                       <h3 className="font-['Times_New_Roman'] text-2xl md:text-3xl font-extralight tracking-[0.3em] uppercase text-white">
@@ -542,8 +558,12 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
 
               <Link href="/admin/credits" className="group">
                 <div className="bg-white rounded-xl md:rounded-2xl overflow-hidden border border-stone-200 shadow-lg hover:shadow-xl transition-all h-full">
-                  <div className="relative h-40 overflow-hidden bg-gradient-to-br from-amber-50 to-orange-50 flex items-center justify-center">
-                    <Coins className="w-20 h-20 text-amber-600/30" strokeWidth={1.5} />
+                  <div className="relative h-40 overflow-hidden">
+                    <img
+                      src="/luxury-black-business-cards-and-stationery-with-go.jpg"
+                      alt="Credits"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
                     <div className="absolute inset-0 bg-gradient-to-t from-stone-950/60 to-transparent" />
                     <div className="absolute bottom-4 left-4">
                       <h3 className="font-['Times_New_Roman'] text-2xl md:text-3xl font-extralight tracking-[0.3em] uppercase text-white">
@@ -584,8 +604,12 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
 
               <Link href="/admin/testimonials" className="group relative">
                 <div className="bg-white rounded-xl md:rounded-2xl overflow-hidden border border-stone-200 shadow-lg hover:shadow-xl transition-all h-full">
-                  <div className="relative h-40 overflow-hidden bg-gradient-to-br from-stone-50 to-stone-100 flex items-center justify-center">
-                    <Star className="w-20 h-20 text-stone-300" strokeWidth={1.5} />
+                  <div className="relative h-40 overflow-hidden">
+                    <img
+                      src="/instagram-post-lifestyle.png"
+                      alt="Reviews"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
                     <div className="absolute inset-0 bg-gradient-to-t from-stone-950/60 to-transparent" />
                     <div className="absolute bottom-4 left-4">
                       <h3 className="font-['Times_New_Roman'] text-2xl md:text-3xl font-extralight tracking-[0.3em] uppercase text-white">
@@ -608,8 +632,12 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
 
               <Link href="/admin/content-templates" className="group">
                 <div className="bg-white rounded-xl md:rounded-2xl overflow-hidden border border-stone-200 shadow-lg hover:shadow-xl transition-all h-full">
-                  <div className="relative h-40 overflow-hidden bg-gradient-to-br from-pink-50 to-purple-50 flex items-center justify-center">
-                    <FileText className="w-20 h-20 text-pink-300" strokeWidth={1.5} />
+                  <div className="relative h-40 overflow-hidden">
+                    <img
+                      src="/books-and-coffee-flatlay-editorial-lifestyle-aesth.jpg"
+                      alt="Templates"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
                     <div className="absolute inset-0 bg-gradient-to-t from-stone-950/60 to-transparent" />
                     <div className="absolute bottom-4 left-4">
                       <h3 className="font-['Times_New_Roman'] text-2xl md:text-3xl font-extralight tracking-[0.3em] uppercase text-white">
@@ -627,8 +655,12 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
 
               <Link href="/admin/calendar" className="group">
                 <div className="bg-white rounded-xl md:rounded-2xl overflow-hidden border border-stone-200 shadow-lg hover:shadow-xl transition-all h-full">
-                  <div className="relative h-40 overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
-                    <Calendar className="w-20 h-20 text-blue-300" strokeWidth={1.5} />
+                  <div className="relative h-40 overflow-hidden">
+                    <img
+                      src="/minimalist-desk-setup-with-pendant-light-neutral-a.jpg"
+                      alt="Calendar"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
                     <div className="absolute inset-0 bg-gradient-to-t from-stone-950/60 to-transparent" />
                     <div className="absolute bottom-4 left-4">
                       <h3 className="font-['Times_New_Roman'] text-2xl md:text-3xl font-extralight tracking-[0.3em] uppercase text-white">
@@ -646,8 +678,12 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
 
               <Link href="/admin/knowledge" className="group">
                 <div className="bg-white rounded-xl md:rounded-2xl overflow-hidden border border-stone-200 shadow-lg hover:shadow-xl transition-all h-full">
-                  <div className="relative h-40 overflow-hidden bg-gradient-to-br from-purple-50 to-violet-50 flex items-center justify-center">
-                    <Brain className="w-20 h-20 text-purple-300" strokeWidth={1.5} />
+                  <div className="relative h-40 overflow-hidden">
+                    <img
+                      src="/friendly-ai-assistant-avatar-maya.jpg"
+                      alt="Knowledge"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
                     <div className="absolute inset-0 bg-gradient-to-t from-stone-950/60 to-transparent" />
                     <div className="absolute bottom-4 left-4">
                       <h3 className="font-['Times_New_Roman'] text-2xl md:text-3xl font-extralight tracking-[0.3em] uppercase text-white">
@@ -665,8 +701,12 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
 
               <Link href="/admin/conversions" className="group">
                 <div className="bg-white rounded-xl md:rounded-2xl overflow-hidden border border-stone-200 shadow-lg hover:shadow-xl transition-all h-full">
-                  <div className="relative h-40 overflow-hidden bg-gradient-to-br from-green-50 to-emerald-50 flex items-center justify-center">
-                    <TrendingUp className="w-20 h-20 text-green-300" strokeWidth={1.5} />
+                  <div className="relative h-40 overflow-hidden">
+                    <img
+                      src="/inspirational-quote.jpg"
+                      alt="Conversions"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
                     <div className="absolute inset-0 bg-gradient-to-t from-stone-950/60 to-transparent" />
                     <div className="absolute bottom-4 left-4">
                       <h3 className="font-['Times_New_Roman'] text-2xl md:text-3xl font-extralight tracking-[0.3em] uppercase text-white">
@@ -684,8 +724,12 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
 
               <Link href="/admin/email-analytics" className="group">
                 <div className="bg-white rounded-xl md:rounded-2xl overflow-hidden border border-stone-200 shadow-lg hover:shadow-xl transition-all h-full">
-                  <div className="relative h-40 overflow-hidden bg-gradient-to-br from-cyan-50 to-teal-50 flex items-center justify-center">
-                    <BarChart3 className="w-20 h-20 text-cyan-300" strokeWidth={1.5} />
+                  <div className="relative h-40 overflow-hidden">
+                    <img
+                      src="/professional-camera-with-lenses-black-aesthetic-fl.jpg"
+                      alt="Email Analytics"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
                     <div className="absolute inset-0 bg-gradient-to-t from-stone-950/60 to-transparent" />
                     <div className="absolute bottom-4 left-4">
                       <h3 className="font-['Times_New_Roman'] text-2xl md:text-3xl font-extralight tracking-[0.3em] uppercase text-white">
@@ -703,8 +747,12 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
 
               <Link href="/admin/beta" className="group">
                 <div className="bg-white rounded-xl md:rounded-2xl overflow-hidden border border-stone-200 shadow-lg hover:shadow-xl transition-all h-full">
-                  <div className="relative h-40 overflow-hidden bg-gradient-to-br from-yellow-50 to-amber-50 flex items-center justify-center">
-                    <Badge className="w-20 h-20 text-yellow-300" strokeWidth={1.5} />
+                  <div className="relative h-40 overflow-hidden">
+                    <img
+                      src="/images/885-brnmqkhxcplb1ff5xk1uywrrsonfvm.png"
+                      alt="Beta"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
                     <div className="absolute inset-0 bg-gradient-to-t from-stone-950/60 to-transparent" />
                     <div className="absolute bottom-4 left-4">
                       <h3 className="font-['Times_New_Roman'] text-2xl md:text-3xl font-extralight tracking-[0.3em] uppercase text-white">
@@ -722,8 +770,12 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
 
               <Link href="/admin/launch-email" className="group">
                 <div className="bg-white rounded-xl md:rounded-2xl overflow-hidden border border-stone-200 shadow-lg hover:shadow-xl transition-all h-full">
-                  <div className="relative h-40 overflow-hidden bg-gradient-to-br from-orange-50 to-red-50 flex items-center justify-center">
-                    <Rocket className="w-20 h-20 text-orange-300" strokeWidth={1.5} />
+                  <div className="relative h-40 overflow-hidden">
+                    <img
+                      src="/professional-woman-entrepreneur-in-stylish-outfit-.jpg"
+                      alt="Launch"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
                     <div className="absolute inset-0 bg-gradient-to-t from-stone-950/60 to-transparent" />
                     <div className="absolute bottom-4 left-4">
                       <h3 className="font-['Times_New_Roman'] text-2xl md:text-3xl font-extralight tracking-[0.3em] uppercase text-white">
@@ -741,8 +793,12 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
 
               <Link href="/admin/maya-testing" className="group">
                 <div className="bg-white rounded-xl md:rounded-2xl overflow-hidden border border-stone-200 shadow-lg hover:shadow-xl transition-all h-full">
-                  <div className="relative h-40 overflow-hidden bg-gradient-to-br from-violet-50 to-purple-50 flex items-center justify-center">
-                    <FlaskConical className="w-20 h-20 text-violet-300" strokeWidth={1.5} />
+                  <div className="relative h-40 overflow-hidden">
+                    <img
+                      src="/images/380-iihccjipjsnt0xfvpt7urkd4bzhtyr.png"
+                      alt="Maya Testing"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
                     <div className="absolute inset-0 bg-gradient-to-t from-stone-950/60 to-transparent" />
                     <div className="absolute bottom-4 left-4">
                       <h3 className="font-['Times_New_Roman'] text-2xl md:text-3xl font-extralight tracking-[0.3em] uppercase text-white">
@@ -760,8 +816,12 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
 
               <Link href="/admin/composition-analytics" className="group">
                 <div className="bg-white rounded-xl md:rounded-2xl overflow-hidden border border-stone-200 shadow-lg hover:shadow-xl transition-all h-full">
-                  <div className="relative h-40 overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
-                    <BarChart3 className="w-20 h-20 text-blue-300" strokeWidth={1.5} />
+                  <div className="relative h-40 overflow-hidden">
+                    <img
+                      src="/images/641-yz6rwohjtemwagcwy5xqjtsczx9lfh.png"
+                      alt="Composition Analytics"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
                     <div className="absolute inset-0 bg-gradient-to-t from-stone-950/60 to-transparent" />
                     <div className="absolute bottom-4 left-4">
                       <h3 className="font-['Times_New_Roman'] text-2xl md:text-3xl font-extralight tracking-[0.3em] uppercase text-white">
