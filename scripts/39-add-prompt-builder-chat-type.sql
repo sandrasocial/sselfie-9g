@@ -29,3 +29,4 @@ BEGIN
   RAISE NOTICE 'Successfully updated chat_type constraint to include: maya, feed-designer, pro, prompt_builder';
 END $$;
 
+

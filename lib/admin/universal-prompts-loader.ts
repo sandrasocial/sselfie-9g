@@ -166,3 +166,4 @@ export async function getTemplateCountForCategory(category: string): Promise<num
   return templates.length
 }
 
+
