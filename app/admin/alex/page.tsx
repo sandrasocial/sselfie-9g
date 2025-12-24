@@ -1,13 +1,13 @@
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId, getOrCreateNeonUser } from "@/lib/user-mapping"
 import { redirect } from "next/navigation"
-import { AdminDashboard } from "@/components/admin/admin-dashboard"
+import AlexChat from "@/components/admin/alex-chat"
 
 export const dynamic = "force-dynamic"
 
 const ADMIN_EMAIL = "ssa@ssasocial.com"
 
-export default async function AdminPage() {
+export default async function AlexPage() {
   const supabase = await createServerClient()
   const {
     data: { user },
@@ -51,9 +51,11 @@ export default async function AdminPage() {
   }
 
   return (
-    <AdminDashboard
+    <AlexChat
       userId={String(neonUser.id)}
-      userName={neonUser.display_name || "Admin"}
+      userName={neonUser.display_name || undefined}
+      userEmail={neonUser.email}
     />
   )
 }
+

@@ -378,7 +378,20 @@ export async function POST(req: Request) {
 
     // Convert UI messages to model messages using AI SDK's convertToModelMessages
     // This properly handles images, text, and other content types
-    let modelMessages = convertToModelMessages(messages)
+    let modelMessages: any[]
+    try {
+      modelMessages = await convertToModelMessages(messages)
+      
+      // CRITICAL: Ensure modelMessages is always an array
+      if (!Array.isArray(modelMessages)) {
+        console.error("[v0] ⚠️ convertToModelMessages did not return an array:", typeof modelMessages, modelMessages)
+        modelMessages = []
+      }
+    } catch (conversionError: any) {
+      console.error("[v0] ⚠️ Error converting messages to model format:", conversionError)
+      console.error("[v0] Messages that failed conversion:", JSON.stringify(messages, null, 2))
+      modelMessages = []
+    }
     
     console.log("[v0] Converted", messages.length, "UI messages to", modelMessages.length, "model messages")
     

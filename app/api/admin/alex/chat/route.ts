@@ -1,4 +1,4 @@
-import { streamText, tool } from "ai"
+import { streamText, tool, createUIMessageStream, createUIMessageStreamResponse } from "ai"
 import { z } from "zod"
 import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
@@ -9,6 +9,8 @@ import { neon } from "@neondatabase/serverless"
 import { readFile } from "fs/promises"
 import { join } from "path"
 import { createBackup, getBackup, restoreFromBackup, getRecentBackups } from "@/lib/admin/alex-backup-manager"
+import Anthropic from '@anthropic-ai/sdk'
+import { convertToolsToAnthropicFormat, convertMessagesToAnthropicFormat } from "@/lib/admin/anthropic-tool-converter"
 
 const sql = neon(process.env.DATABASE_URL!)
 const ADMIN_EMAIL = "ssa@ssasocial.com"
@@ -39,7 +41,7 @@ export async function POST(req: Request) {
     // Get or create chat
     let activeChatId = chatId
     if (!activeChatId) {
-      const newChat = await createNewChat(user.id, "Chat with Alex", "unified")
+      const newChat = await createNewChat(user.id, "Chat with Alex", null)
       activeChatId = newChat.id
     }
 
@@ -582,24 +584,300 @@ export async function ${method}(request: Request) {
       }
     }
 
-    const result = streamText({
-      model: "anthropic/claude-sonnet-4-20250514",
-      system: systemPrompt,
-      messages: modelMessages,
-      maxOutputTokens: 4000,
-      tools,
-      onFinish: async ({ text }) => {
-        if (text && activeChatId) {
-          await saveChatMessage(activeChatId, "assistant", text)
+    // SOLUTION: Use Anthropic SDK directly to bypass Vercel Gateway -> Bedrock serialization issues
+    const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY
+    const hasTools = tools && Object.keys(tools).length > 0
+    const useDirectAnthropic = hasAnthropicKey && hasTools
+    
+    console.log('[Alex] 🔍 Environment check:', {
+      hasAnthropicKey,
+      hasTools,
+      useDirectAnthropic,
+      toolCount: hasTools ? Object.keys(tools).length : 0,
+    })
+    
+    if (useDirectAnthropic) {
+      console.log('[Alex] 🚀 Using Anthropic SDK directly (bypassing gateway)')
+      
+      try {
+        // Create Anthropic client
+        const anthropic = new Anthropic({
+          apiKey: process.env.ANTHROPIC_API_KEY,
+        })
+        
+        // Convert messages and tools to Anthropic format
+        const anthropicMessages = convertMessagesToAnthropicFormat(modelMessages)
+        const anthropicTools = convertToolsToAnthropicFormat(tools)
+        
+        // Helper function to process Anthropic stream with tool execution
+        async function* processAnthropicStream(stream: any, initialMessages: any[], maxIterations = 5): AsyncGenerator<string> {
+          let messages = initialMessages
+          let iteration = 0
+          
+          while (iteration < maxIterations) {
+            iteration++
+            let currentToolCall: { id: string; name: string; input: string } | null = null
+            const toolCalls: Array<{ id: string; name: string; input: any }> = []
+            const toolResults: Array<{ tool_use_id: string; name: string; content: any }> = []
+            
+            for await (const event of stream) {
+              // Handle tool use start
+              if (event.type === 'content_block_start' && 'content_block' in event && event.content_block && 'type' in event.content_block && event.content_block.type === 'tool_use') {
+                const toolUse = event.content_block as any
+                currentToolCall = {
+                  id: toolUse.id,
+                  name: toolUse.name,
+                  input: '',
+                }
+                console.log(`[Alex] 🔧 Tool use started: ${toolUse.name} (${toolUse.id})`)
+              }
+              
+              // Handle tool input JSON deltas
+              else if (event.type === 'content_block_delta' && 'delta' in event && event.delta && 'type' in event.delta && event.delta.type === 'input_json_delta' && currentToolCall) {
+                const delta = event.delta as any
+                currentToolCall.input += delta.partial_json || ''
+              }
+              
+              // Handle tool use stop - execute the tool
+              else if (event.type === 'content_block_stop' && currentToolCall) {
+                try {
+                  console.log(`[Alex] 🔧 Tool use complete: ${currentToolCall.name}, executing...`)
+                  
+                  // Parse tool input
+                  let toolInput: any = {}
+                  try {
+                    toolInput = JSON.parse(currentToolCall.input)
+                  } catch (parseError) {
+                    console.error(`[Alex] ❌ Failed to parse tool input for ${currentToolCall.name}:`, currentToolCall.input)
+                    toolCalls.push({ id: currentToolCall.id, name: currentToolCall.name, input: {} })
+                    toolResults.push({
+                      tool_use_id: currentToolCall.id,
+                      name: currentToolCall.name,
+                      content: { error: 'Invalid tool input format' },
+                    })
+                    currentToolCall = null
+                    continue
+                  }
+                  
+                  // Store tool call info
+                  toolCalls.push({ id: currentToolCall.id, name: currentToolCall.name, input: toolInput })
+                  
+                  // Find and execute the tool
+                  const tool = tools[currentToolCall.name as keyof typeof tools]
+                  if (!tool || !tool.execute) {
+                    console.error(`[Alex] ❌ Tool not found: ${currentToolCall.name}`)
+                    toolResults.push({
+                      tool_use_id: currentToolCall.id,
+                      name: currentToolCall.name,
+                      content: { error: `Tool ${currentToolCall.name} not found` },
+                    })
+                  } else {
+                    try {
+                      const result = await tool.execute(toolInput)
+                      toolResults.push({
+                        tool_use_id: currentToolCall.id,
+                        name: currentToolCall.name,
+                        content: result,
+                      })
+                      console.log(`[Alex] ✅ Tool ${currentToolCall.name} executed successfully`)
+                    } catch (toolError: any) {
+                      console.error(`[Alex] ❌ Tool ${currentToolCall.name} execution error:`, toolError)
+                      toolResults.push({
+                        tool_use_id: currentToolCall.id,
+                        name: currentToolCall.name,
+                        content: { error: toolError.message || 'Tool execution failed' },
+                      })
+                    }
+                  }
+                } catch (error: any) {
+                  console.error(`[Alex] ❌ Error processing tool call:`, error)
+                  if (currentToolCall) {
+                    toolCalls.push({ id: currentToolCall.id, name: currentToolCall.name, input: {} })
+                    toolResults.push({
+                      tool_use_id: currentToolCall.id,
+                      name: currentToolCall.name,
+                      content: { error: error.message || 'Tool processing failed' },
+                    })
+                  }
+                } finally {
+                  currentToolCall = null
+                }
+              }
+              
+              // Handle text deltas - yield text directly
+              else if (event.type === 'content_block_delta' && 'delta' in event && event.delta && 'type' in event.delta && event.delta.type === 'text_delta') {
+                const text = event.delta.text
+                yield text
+              }
+              
+              // Handle message stop - check if we need to continue with tool results
+              else if (event.type === 'message_stop') {
+                console.log(`[Alex] 🏁 Message complete (iteration ${iteration})`)
+                
+                // If we have tool results, continue the conversation
+                if (toolResults.length > 0) {
+                  console.log(`[Alex] 🔄 Continuing conversation with ${toolResults.length} tool result(s)`)
+                  
+                  // Build assistant message with tool uses
+                  const assistantContent = toolCalls.map(tc => ({
+                    type: 'tool_use' as const,
+                    id: tc.id,
+                    name: tc.name,
+                    input: tc.input,
+                  }))
+                  
+                  // Build user message with tool results
+                  const userContent = toolResults.map(tr => ({
+                    type: 'tool_result' as const,
+                    tool_use_id: tr.tool_use_id,
+                    content: JSON.stringify(tr.content),
+                  }))
+                  
+                  // Add messages for continuation
+                  messages = [
+                    ...messages,
+                    {
+                      role: 'assistant' as const,
+                      content: assistantContent,
+                    },
+                    {
+                      role: 'user' as const,
+                      content: userContent,
+                    },
+                  ]
+                  
+                  // Create a new Anthropic request with tool results
+                  const continuationResponse = await anthropic.messages.create({
+                    model: 'claude-sonnet-4-20250514',
+                    max_tokens: 4000,
+                    system: systemPrompt,
+                    messages: messages as any,
+                    tools: anthropicTools.length > 0 ? anthropicTools : undefined,
+                    stream: true,
+                  })
+                  
+                  // Recursively process continuation stream
+                  yield* processAnthropicStream(continuationResponse, messages, maxIterations - 1)
+                  return // Exit after continuation
+                }
+              }
+            }
+            
+            // If no tool results, we're done
+            if (toolResults.length === 0) {
+              break
+            }
+          }
         }
-      },
-    })
-
-    return result.toUIMessageStreamResponse({
-      headers: {
-        'X-Chat-Id': String(activeChatId),
+        
+        // Create Anthropic streaming response
+        const anthropicResponse = await anthropic.messages.create({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 4000,
+          system: systemPrompt,
+          messages: anthropicMessages as any,
+          tools: anthropicTools.length > 0 ? anthropicTools : undefined,
+          stream: true,
+        })
+        
+        // Create async generator that yields text chunks and handles tool execution
+        async function* generateTextStream() {
+          let accumulatedText = ''
+          console.log('[Alex] 📡 Starting to process Anthropic stream events...')
+          
+          for await (const text of processAnthropicStream(anthropicResponse, anthropicMessages)) {
+            accumulatedText += text
+            yield text
+          }
+          
+          console.log(`[Alex] 📊 Stream complete, total text length: ${accumulatedText.length}`)
+          
+          // Save message when done
+          if (accumulatedText && activeChatId) {
+            try {
+              await saveChatMessage(activeChatId, 'assistant', accumulatedText)
+              console.log('[Alex] ✅ Saved assistant message to chat:', activeChatId)
+            } catch (error) {
+              console.error("[Alex] ❌ Error saving assistant message:", error)
+            }
+          }
+        }
+        
+        // Convert text stream to UI message stream format for useChat compatibility
+        console.log('[Alex] Creating UI message stream...')
+        
+        const uiMessageStream = createUIMessageStream({
+          execute: async ({ writer }) => {
+            try {
+              let messageId = 'msg-' + Date.now()
+              for await (const text of generateTextStream()) {
+                // Write text deltas in the format useChat expects
+                // AI SDK v6 expects 'delta' not 'textDelta', and requires 'id'
+                writer.write({ 
+                  type: 'text-delta', 
+                  id: messageId,
+                  delta: text 
+                } as any)
+              }
+            } catch (error: any) {
+              console.error('[Alex] Stream error:', error)
+              throw error
+            }
+          },
+          onFinish: async () => {
+            // Message finished - already saved in generateTextStream
+            console.log('[Alex] ✅ UI message stream finished')
+          },
+        })
+        
+        // Return UI message stream response (same format as toUIMessageStreamResponse)
+        return createUIMessageStreamResponse({
+          stream: uiMessageStream,
+          headers: {
+            'X-Chat-Id': String(activeChatId),
+          },
+        })
+      } catch (streamError: any) {
+        console.error('[Alex] Error creating stream:', streamError)
+        return NextResponse.json(
+          { error: "Failed to create stream", details: streamError.message },
+          { status: 500 }
+        )
       }
-    })
+    } else {
+      // Fallback to AI SDK (for cases without tools or without ANTHROPIC_API_KEY)
+      if (!hasAnthropicKey) {
+        console.log('[Alex] ⚠️ ANTHROPIC_API_KEY not set - falling back to AI SDK (tools may fail due to gateway issue)')
+      } else if (!hasTools) {
+        console.log('[Alex] Using AI SDK (no tools in this request)')
+      } else {
+        console.log('[Alex] Using AI SDK (fallback mode)')
+      }
+      
+      const result = streamText({
+        model: "anthropic/claude-sonnet-4-20250514",
+        system: systemPrompt,
+        messages: modelMessages,
+        maxOutputTokens: 4000,
+        tools: tools,
+        onFinish: async ({ text }) => {
+          if (text && activeChatId) {
+            try {
+              await saveChatMessage(activeChatId, "assistant", text)
+              console.log('[Alex] ✅ Saved assistant message to chat:', activeChatId)
+            } catch (error) {
+              console.error("[Alex] ❌ Error saving assistant message:", error)
+            }
+          }
+        },
+      })
+
+      return result.toUIMessageStreamResponse({
+        headers: {
+          'X-Chat-Id': String(activeChatId),
+        }
+      })
+    }
   } catch (error: any) {
     console.error("[Alex] Chat error:", error)
     return NextResponse.json(

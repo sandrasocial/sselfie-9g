@@ -441,6 +441,29 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
                 </div>
               </Link>
 
+              <Link href="/admin/alex" className="group">
+                <div className="bg-white rounded-xl md:rounded-2xl overflow-hidden border border-stone-200 shadow-lg hover:shadow-xl transition-all h-full">
+                  <div className="relative h-40 overflow-hidden">
+                    <img
+                      src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/maya_68de145ae1rme0cs07ja9mcp90_0_1756673402614%20%281%29-v0JUZYIdnHyMNS5iYx5wGACaoJUT3R.png"
+                      alt="Alex"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-stone-950/60 to-transparent" />
+                    <div className="absolute bottom-4 left-4">
+                      <h3 className="font-['Times_New_Roman'] text-2xl md:text-3xl font-extralight tracking-[0.3em] uppercase text-white">
+                        ALEX
+                      </h3>
+                    </div>
+                  </div>
+                  <div className="p-4 md:p-6">
+                    <p className="text-sm md:text-base text-stone-600 leading-relaxed">
+                      Your AI business partner for content, email marketing, and strategy
+                    </p>
+                  </div>
+                </div>
+              </Link>
+
               <Link href="/admin/agent" className="group">
                 <div className="bg-white rounded-xl md:rounded-2xl overflow-hidden border border-stone-200 shadow-lg hover:shadow-xl transition-all h-full">
                   <div className="relative h-40 overflow-hidden">

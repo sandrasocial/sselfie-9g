@@ -51,12 +51,13 @@ interface MayaChatScreenProps {
   onImageGenerated?: () => void
   user: SessionUser | null // Assuming user object is passed down
   setActiveTab?: (tab: string) => void // Navigation handler from parent
-  userId?: string // User ID (optional, can be derived from user)
+  userId?: string // User ID (optional, can be derived from user, also used for admin guide controls)
   initialChatId?: number // Initial chat ID to load
   studioProMode?: boolean // Force Pro Mode (for admin)
   isAdmin?: boolean // Admin mode - enables save to guide functionality
   selectedGuideId?: number | null // Selected guide ID for saving
   selectedGuideCategory?: string | null // Selected guide category
+  onGuideChange?: (id: number | null, category: string | null) => void // Callback when guide selection changes
 }
 
 export default function MayaChatScreen({ 
@@ -69,6 +70,7 @@ export default function MayaChatScreen({
   isAdmin = false,
   selectedGuideId = null,
   selectedGuideCategory = null,
+  onGuideChange,
 }: MayaChatScreenProps) {
   const { toast } = useToast()
   const [inputValue, setInputValue] = useState("")
@@ -424,6 +426,11 @@ export default function MayaChatScreen({
   // Check if user has any chat history to determine if welcome screen should show
   useEffect(() => {
     const checkChatHistory = async () => {
+      // Only run in browser
+      if (typeof window === 'undefined') {
+        return
+      }
+
       if (!user) {
         setHasUsedMayaBefore(false)
         return
@@ -432,12 +439,18 @@ export default function MayaChatScreen({
       try {
         // 🔴 FIX: Use correct chatType based on mode
         const chatType = studioProMode ? 'pro' : 'maya'
-        const response = await fetch(`/api/maya/chats?chatType=${chatType}`)
+        const response = await fetch(`/api/maya/chats?chatType=${chatType}`, {
+          credentials: 'include', // Include cookies for authentication
+        })
         if (response.ok) {
           const data = await response.json()
           const hasChats = data.chats && Array.isArray(data.chats) && data.chats.length > 0
           setHasUsedMayaBefore(hasChats)
           console.log("[v0] Chat history check:", { hasChats, chatCount: data.chats?.length || 0, chatType, studioProMode })
+        } else {
+          // Handle non-OK responses gracefully
+          console.warn("[v0] Chat history check failed with status:", response.status)
+          setHasUsedMayaBefore(false)
         }
       } catch (error) {
         console.error("[v0] Error checking chat history:", error)
@@ -3009,6 +3022,11 @@ export default function MayaChatScreen({
                 handleNewChat()
               }
             }}
+            isAdmin={isAdmin}
+            selectedGuideId={selectedGuideId}
+            selectedGuideCategory={selectedGuideCategory}
+            onGuideChange={onGuideChange}
+            userId={userId}
             onEditIntent={async () => {
               const newIntent = prompt('Enter your creative intent:', imageLibrary.intent || '')
               if (newIntent !== null) {

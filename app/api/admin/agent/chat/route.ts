@@ -1,13 +1,14 @@
-import { streamText, tool, generateText } from "ai"
+import { streamText, tool, generateText, createUIMessageStream, createUIMessageStreamResponse } from "ai"
 import { z } from "zod"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getCompleteAdminContext } from "@/lib/admin/get-complete-context"
 import { NextResponse } from "next/server"
-import type { Request } from "next/server"
 import { saveChatMessage, createNewChat } from "@/lib/data/admin-agent"
 import { neon } from "@neondatabase/serverless"
 import { Resend } from "resend"
+import Anthropic from '@anthropic-ai/sdk'
+import { convertToolsToAnthropicFormat, convertMessagesToAnthropicFormat } from "@/lib/admin/anthropic-tool-converter"
 
 // HTML stripping function - uses regex fallback (works without html-to-text package)
 // If html-to-text package is installed later, it can be enhanced, but this works fine for now
@@ -168,7 +169,7 @@ export async function POST(req: Request) {
           model: "anthropic/claude-sonnet-4-20250514",
           system: `You are Sandra's email marketing assistant. Generate warm, personal subject lines that match Sandra's voice: friendly, empowering, conversational. Keep it under 50 characters.`,
           prompt: `Generate a subject line for: ${intent}\n\nEmail type: ${emailType}\n\nReturn ONLY the subject line, no quotes, no explanation.`,
-          maxTokens: 100,
+          maxOutputTokens: 100,
         })
         return text.trim().replace(/^["']|["']$/g, '')
       } catch (error) {
@@ -211,7 +212,14 @@ export async function POST(req: Request) {
       
       parameters: composeEmailSchema,
       
-      execute: async ({ intent, emailType, subjectLine, keyPoints, tone = 'warm', previousVersion }) => {
+      execute: async ({ intent, emailType, subjectLine, keyPoints, tone = 'warm', previousVersion }: {
+        intent: string
+        emailType: string
+        subjectLine?: string
+        keyPoints?: string[]
+        tone?: string
+        previousVersion?: string
+      }) => {
         try {
           // 1. Get email templates for this type
           const templates = await sql`
@@ -243,7 +251,7 @@ export async function POST(req: Request) {
             model: "anthropic/claude-sonnet-4-20250514",
             system: systemPrompt,
             prompt: userPrompt,
-            maxTokens: 2000,
+            maxOutputTokens: 2000,
           })
           
           // 3. Generate subject line if not provided
@@ -266,7 +274,7 @@ export async function POST(req: Request) {
           }
         }
       }
-    })
+    } as any)
 
     const scheduleCampaignTool = tool({
       description: `Schedule or send an email campaign. Creates campaign in database and Resend.
@@ -293,7 +301,14 @@ export async function POST(req: Request) {
         campaignType: z.string()
       }),
       
-      execute: async ({ campaignName, subjectLine, emailHtml, targetAudience, scheduledFor, campaignType }) => {
+      execute: async ({ campaignName, subjectLine, emailHtml, targetAudience, scheduledFor, campaignType }: {
+        campaignName: string
+        subjectLine: string
+        emailHtml: string
+        targetAudience: any
+        scheduledFor?: string
+        campaignType: string
+      }) => {
         try {
           // 1. Create campaign in database
           const bodyText = stripHtml(emailHtml)
@@ -404,7 +419,7 @@ export async function POST(req: Request) {
           }
         }
       }
-    })
+    } as any)
 
     const checkCampaignStatusTool = tool({
       description: `Check status of email campaigns and get delivery metrics.
@@ -416,7 +431,10 @@ export async function POST(req: Request) {
         timeframe: z.enum(['today', 'week', 'month', 'all']).optional().describe("Timeframe for campaigns (defaults to week if not specified)")
       }),
       
-      execute: async ({ campaignId, timeframe = 'week' }) => {
+      execute: async ({ campaignId, timeframe = 'week' }: {
+        campaignId?: number
+        timeframe?: string
+      }) => {
         try {
           let campaigns
           
@@ -501,7 +519,7 @@ export async function POST(req: Request) {
           }
         }
       }
-    })
+    } as any)
 
     const getResendAudienceDataTool = tool({
       description: `Get real-time audience data from Resend including all segments and contact counts.
@@ -518,7 +536,9 @@ export async function POST(req: Request) {
         includeSegmentDetails: z.boolean().optional().describe("Include detailed segment information (defaults to true if not specified)")
       }),
       
-      execute: async ({ includeSegmentDetails = true }) => {
+      execute: async ({ includeSegmentDetails = true }: {
+        includeSegmentDetails?: boolean
+      }) => {
         try {
           if (!resend) {
             return { 
@@ -603,7 +623,7 @@ export async function POST(req: Request) {
           }
         }
       }
-    })
+    } as any)
 
     const analyzeEmailStrategyTool = tool({
       description: `Analyze Sandra's audience and create intelligent email campaign strategies.
@@ -629,7 +649,10 @@ export async function POST(req: Request) {
         lastCampaignDays: z.number().optional().describe("Days since last campaign (fetch from database)")
       }),
       
-      execute: async ({ audienceData, lastCampaignDays }) => {
+      execute: async ({ audienceData, lastCampaignDays }: {
+        audienceData: any
+        lastCampaignDays?: number
+      }) => {
         try {
           // Get recent campaign history
           const recentCampaigns = await sql`
@@ -792,7 +815,7 @@ export async function POST(req: Request) {
           }
         }
       }
-    })
+    } as any)
 
     const systemPrompt = `You are Sandra's Personal Business Mentor - an 8-9 figure business coach who knows her story intimately and speaks like her trusted friend, but with the wisdom and directness of someone who's scaled multiple businesses to massive success.
 
@@ -948,7 +971,7 @@ The UI automatically detects tool results, but you can also explicitly trigger U
   \`\`\`
   [SHOW_CAMPAIGNS]
   [CAMPAIGNS:[{"id":1,"name":"Campaign Name","sentCount":100,"openedCount":25,"openRate":25,"date":"2025-01-15","status":"sent"}]]
-  \`\`\`
+\`\`\`
 
 **IMPORTANT:** The system will also automatically trigger UI from tool return values, but including these markers ensures the UI appears even if automatic detection fails.
 
@@ -1050,34 +1073,281 @@ Use **check_campaign_status** to report on:
       check_campaign_status: checkCampaignStatusTool,
       get_resend_audience_data: getResendAudienceDataTool,
       analyze_email_strategy: analyzeEmailStrategyTool,
-    }
+    } as any
 
-    // CRITICAL ISSUE: Vercel Gateway -> AWS Bedrock Tool Serialization Error
-    // The Vercel AI Gateway automatically routes through AWS Bedrock when tools are present,
-    // but Bedrock has stricter tool schema requirements that cause serialization failures.
-    // Error: "The value at toolConfig.tools.0.toolSpec.inputSchema.json.type must be one of the following: object."
-    // 
-    // WORKAROUND: Temporarily disable tools so chat works for basic conversations
-    // TODO: Fix by either:
-    //   1. Using Anthropic SDK directly (bypass gateway)
-    //   2. Fixing tool schema serialization for Bedrock
-    //   3. Waiting for Vercel to fix gateway/Bedrock compatibility
-    //
-    // All tools are properly defined below, just commented out until gateway issue is resolved
+    // SOLUTION: Use Anthropic SDK directly to bypass Vercel Gateway -> Bedrock serialization issues
+    // This allows tools to work properly without the gateway mangling the tool schemas
+    const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY
+    const hasTools = tools && Object.keys(tools).length > 0
+    const useDirectAnthropic = hasAnthropicKey && hasTools
+    
+    // Log environment status for debugging
+    console.log('[v0] 🔍 Environment check:', {
+      hasAnthropicKey,
+      hasTools,
+      useDirectAnthropic,
+      toolCount: hasTools ? Object.keys(tools).length : 0,
+    })
+    
+    if (useDirectAnthropic) {
+      console.log('[v0] 🚀 Using Anthropic SDK directly (bypassing gateway)')
+      console.log('[v0] 📊 About to create stream, activeChatId:', activeChatId)
+      
+      // Create Anthropic client
+      const anthropic = new Anthropic({
+        apiKey: process.env.ANTHROPIC_API_KEY,
+      })
+      
+      // Convert messages and tools to Anthropic format
+      const anthropicMessages = convertMessagesToAnthropicFormat(modelMessages)
+      const anthropicTools = convertToolsToAnthropicFormat(tools)
+      
+      // Helper function to process Anthropic stream with tool execution
+      async function* processAnthropicStream(stream: any, initialMessages: any[], maxIterations = 5): AsyncGenerator<string> {
+        let messages = initialMessages
+        let iteration = 0
+        
+        while (iteration < maxIterations) {
+          iteration++
+          let currentToolCall: { id: string; name: string; input: string } | null = null
+          const toolCalls: Array<{ id: string; name: string; input: any }> = []
+          const toolResults: Array<{ tool_use_id: string; name: string; content: any }> = []
+          
+          for await (const event of stream) {
+            // Handle tool use start
+            if (event.type === 'content_block_start' && 'content_block' in event && event.content_block && 'type' in event.content_block && event.content_block.type === 'tool_use') {
+              const toolUse = event.content_block as any
+              currentToolCall = {
+                id: toolUse.id,
+                name: toolUse.name,
+                input: '',
+              }
+              console.log(`[v0] 🔧 Tool use started: ${toolUse.name} (${toolUse.id})`)
+            }
+            
+            // Handle tool input JSON deltas
+            else if (event.type === 'content_block_delta' && 'delta' in event && event.delta && 'type' in event.delta && event.delta.type === 'input_json_delta' && currentToolCall) {
+              const delta = event.delta as any
+              currentToolCall.input += delta.partial_json || ''
+            }
+            
+            // Handle tool use stop - execute the tool
+            else if (event.type === 'content_block_stop' && currentToolCall) {
+              try {
+                console.log(`[v0] 🔧 Tool use complete: ${currentToolCall.name}, executing...`)
+                
+                // Parse tool input
+                let toolInput: any = {}
+                try {
+                  toolInput = JSON.parse(currentToolCall.input)
+                } catch (parseError) {
+                  console.error(`[v0] ❌ Failed to parse tool input for ${currentToolCall.name}:`, currentToolCall.input)
+                  toolCalls.push({ id: currentToolCall.id, name: currentToolCall.name, input: {} })
+                  toolResults.push({
+                    tool_use_id: currentToolCall.id,
+                    name: currentToolCall.name,
+                    content: { error: 'Invalid tool input format' },
+                  })
+                  currentToolCall = null
+                  continue
+                }
+                
+                // Store tool call info
+                toolCalls.push({ id: currentToolCall.id, name: currentToolCall.name, input: toolInput })
+                
+                // Find and execute the tool
+                const tool = tools[currentToolCall.name as keyof typeof tools]
+                if (!tool || !tool.execute) {
+                  console.error(`[v0] ❌ Tool not found: ${currentToolCall.name}`)
+                  toolResults.push({
+                    tool_use_id: currentToolCall.id,
+                    name: currentToolCall.name,
+                    content: { error: `Tool ${currentToolCall.name} not found` },
+                  })
+                } else {
+                  try {
+                    const result = await tool.execute(toolInput)
+                    toolResults.push({
+                      tool_use_id: currentToolCall.id,
+                      name: currentToolCall.name,
+                      content: result,
+                    })
+                    console.log(`[v0] ✅ Tool ${currentToolCall.name} executed successfully`)
+                  } catch (toolError: any) {
+                    console.error(`[v0] ❌ Tool ${currentToolCall.name} execution error:`, toolError)
+                    toolResults.push({
+                      tool_use_id: currentToolCall.id,
+                      name: currentToolCall.name,
+                      content: { error: toolError.message || 'Tool execution failed' },
+                    })
+                  }
+                }
+              } catch (error: any) {
+                console.error(`[v0] ❌ Error processing tool call:`, error)
+                if (currentToolCall) {
+                  toolCalls.push({ id: currentToolCall.id, name: currentToolCall.name, input: {} })
+                  toolResults.push({
+                    tool_use_id: currentToolCall.id,
+                    name: currentToolCall.name,
+                    content: { error: error.message || 'Tool processing failed' },
+                  })
+                }
+              } finally {
+                currentToolCall = null
+              }
+            }
+            
+            // Handle text deltas - yield text directly
+            else if (event.type === 'content_block_delta' && 'delta' in event && event.delta && 'type' in event.delta && event.delta.type === 'text_delta') {
+              const text = event.delta.text
+              yield text
+            }
+            
+            // Handle message stop - check if we need to continue with tool results
+            else if (event.type === 'message_stop') {
+              console.log(`[v0] 🏁 Message complete (iteration ${iteration})`)
+              
+              // If we have tool results, continue the conversation
+              if (toolResults.length > 0) {
+                console.log(`[v0] 🔄 Continuing conversation with ${toolResults.length} tool result(s)`)
+                
+                // Build assistant message with tool uses
+                const assistantContent = toolCalls.map(tc => ({
+                  type: 'tool_use' as const,
+                  id: tc.id,
+                  name: tc.name,
+                  input: tc.input,
+                }))
+                
+                // Build user message with tool results
+                const userContent = toolResults.map(tr => ({
+                  type: 'tool_result' as const,
+                  tool_use_id: tr.tool_use_id,
+                  content: JSON.stringify(tr.content),
+                }))
+                
+                // Add messages for continuation
+                messages = [
+                  ...messages,
+                  {
+                    role: 'assistant' as const,
+                    content: assistantContent,
+                  },
+                  {
+                    role: 'user' as const,
+                    content: userContent,
+                  },
+                ]
+                
+                // Create a new Anthropic request with tool results
+                const continuationResponse = await anthropic.messages.create({
+                  model: 'claude-sonnet-4-20250514',
+                  max_tokens: 4000,
+                  system: systemPrompt,
+                  messages: messages as any,
+                  tools: anthropicTools.length > 0 ? anthropicTools : undefined,
+                  stream: true,
+                })
+                
+                // Recursively process continuation stream
+                yield* processAnthropicStream(continuationResponse, messages, maxIterations - 1)
+                return // Exit after continuation
+              }
+            }
+          }
+          
+          // If no tool results, we're done
+          if (toolResults.length === 0) {
+            break
+          }
+        }
+      }
+      
+      // Create Anthropic streaming response
+      const anthropicResponse = await anthropic.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4000,
+        system: systemPrompt,
+        messages: anthropicMessages as any,
+        tools: anthropicTools.length > 0 ? anthropicTools : undefined,
+        stream: true,  // ← Must be true
+      })
+      
+      // Create async generator that yields text chunks and handles tool execution
+      async function* generateTextStream() {
+        let accumulatedText = ''
+        console.log('[v0] 📡 Starting to process Anthropic stream events...')
+        
+        for await (const text of processAnthropicStream(anthropicResponse, anthropicMessages)) {
+          accumulatedText += text
+          yield text
+        }
+        
+        console.log(`[v0] 📊 Stream complete, total text length: ${accumulatedText.length}`)
+        
+        // Save message when done
+        if (accumulatedText && activeChatId) {
+          try {
+            await saveChatMessage(activeChatId, 'assistant', accumulatedText)
+            console.log('[v0] ✅ Saved assistant message to chat:', activeChatId)
+          } catch (error) {
+            console.error("[v0] ❌ Error saving assistant message:", error)
+          }
+        }
+      }
+      
+      // Convert text stream to UI message stream format for useChat compatibility
+      console.log('[v0] Creating UI message stream...')
+      
+      const uiMessageStream = createUIMessageStream({
+        execute: async ({ writer }) => {
+          try {
+            let messageId = 'msg-' + Date.now()
+            for await (const text of generateTextStream()) {
+              // Write text deltas in the format useChat expects
+              // AI SDK v6 expects 'delta' not 'textDelta', and requires 'id'
+              writer.write({ 
+                type: 'text-delta', 
+                id: messageId,
+                delta: text 
+              } as any)
+            }
+          } catch (error: any) {
+            console.error('[v0] Stream error:', error)
+            throw error
+          }
+        },
+        onFinish: async () => {
+          // Message finished - already saved in generateTextStream
+          console.log('[v0] ✅ UI message stream finished')
+        },
+      })
+      
+      // Return UI message stream response (same format as toUIMessageStreamResponse)
+      return createUIMessageStreamResponse({
+        stream: uiMessageStream,
+        headers: {
+          'X-Chat-Id': String(activeChatId),
+        },
+      })
+    } else {
+      // Fallback to AI SDK (for cases without tools or without ANTHROPIC_API_KEY)
+      if (!hasAnthropicKey) {
+        console.log('[v0] ⚠️ ANTHROPIC_API_KEY not set - falling back to AI SDK (tools may fail due to gateway issue)')
+      } else if (!hasTools) {
+        console.log('[v0] Using AI SDK (no tools in this request)')
+      } else {
+        console.log('[v0] Using AI SDK (fallback mode)')
+      }
+
     const result = streamText({
-      model: "anthropic/claude-sonnet-4-20250514",
+        model: "anthropic/claude-sonnet-4-20250514",
       system: systemPrompt,
       messages: modelMessages,
       maxOutputTokens: 4000,
-      // Tools temporarily disabled due to Vercel Gateway -> Bedrock serialization issue
-      // tools,
+        tools: tools,
       headers: {
         'anthropic-beta': 'context-1m-2025-08-07',
-      },
-      experimental_providerOptions: {
-        anthropic: {
-          cacheControl: true,
-        }
       },
       onFinish: async ({ text }) => {
         if (text && activeChatId) {
@@ -1097,6 +1367,7 @@ Use **check_campaign_status** to report on:
         'X-Chat-Id': String(activeChatId),
       }
     })
+    }
   } catch (error: any) {
     console.error("[v0] Admin agent chat error:", error)
     return NextResponse.json({ error: "Failed to process chat", details: error.message }, { status: 500 })

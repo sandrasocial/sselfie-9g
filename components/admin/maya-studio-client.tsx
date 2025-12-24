@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import MayaChatScreen from "@/components/sselfie/maya-chat-screen"
-import MayaGuideControls from "@/components/admin/maya-guide-controls"
 import { Toaster } from "@/components/ui/toaster"
 import type { User as UserType } from "@/components/sselfie/types"
 
@@ -25,18 +24,8 @@ export default function MayaStudioClient({ userId, userEmail, userName }: MayaSt
 
       return (
         <div className="min-h-screen h-screen flex flex-col bg-stone-50 overflow-hidden">
-      {/* Guide Selector Bar */}
-      <MayaGuideControls
-        userId={userId}
-        selectedGuideId={selectedGuideId}
-        selectedGuideCategory={selectedGuideCategory}
-        onGuideChange={(id, category) => {
-          setSelectedGuideId(id)
-          setSelectedGuideCategory(category)
-        }}
-      />
-
       {/* Maya Chat - Same as user app, just with admin context */}
+      {/* Guide controls are now in the ProModeHeader dropdown */}
       <div className="flex-1 min-h-0">
         <MayaChatScreen
           user={user}
@@ -44,6 +33,11 @@ export default function MayaStudioClient({ userId, userEmail, userName }: MayaSt
           isAdmin={true} // New prop to enable admin features
           selectedGuideId={selectedGuideId}
           selectedGuideCategory={selectedGuideCategory}
+          userId={userId}
+          onGuideChange={(id, category) => {
+            setSelectedGuideId(id)
+            setSelectedGuideCategory(category)
+          }}
         />
       </div>
 
