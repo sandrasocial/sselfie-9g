@@ -4,7 +4,7 @@ import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getCompleteAdminContext } from "@/lib/admin/get-complete-context"
 import { NextResponse } from "next/server"
-import { saveChatMessage, createNewChat } from "@/lib/data/admin-agent"
+import { saveChatMessage, createNewChat, getOrCreateActiveChat } from "@/lib/data/admin-agent"
 import { neon } from "@neondatabase/serverless"
 import { Resend } from "resend"
 import Anthropic from '@anthropic-ai/sdk'
@@ -71,10 +71,24 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Messages cannot be empty" }, { status: 400 })
     }
 
-    // Process messages - extract text content
+    // Process messages - preserve images and text content (like Alex route)
     const modelMessages = messages
       .filter((m: any) => m && (m.role === "user" || m.role === "assistant"))
       .map((m: any) => {
+        // Preserve full content structure for images
+        if (m.content && Array.isArray(m.content)) {
+          // Check if message has images
+          const hasImages = m.content.some((p: any) => p && p.type === "image")
+          if (hasImages) {
+            // Preserve full content array with images for Anthropic
+            return {
+              role: m.role as "user" | "assistant" | "system",
+              content: m.content, // Keep full array with images
+            }
+          }
+        }
+
+        // For text-only messages, extract text content
         let content = ""
 
         // Extract text from parts if available
@@ -100,7 +114,14 @@ export async function POST(req: Request) {
           content: content.trim(),
         }
       })
-      .filter((m: any) => m.content && m.content.length > 0)
+      .filter((m: any) => {
+        // Filter: keep messages with content (text or images)
+        if (Array.isArray(m.content)) {
+          // Has images or text parts
+          return m.content.length > 0
+        }
+        return m.content && m.content.length > 0
+      })
 
     if (modelMessages.length === 0) {
       console.error("[v0] No valid messages after filtering")
@@ -116,32 +137,97 @@ export async function POST(req: Request) {
       chatId,
     )
 
-    // Get or create chat
+    // Get or create chat - ALWAYS prioritize provided chatId
     let activeChatId = chatId
-    if (!activeChatId) {
-      // Create new chat from first message
-      const firstMessage = modelMessages[0]
-      const chatTitle = firstMessage.content.substring(0, 100) || "New Chat"
-      const newChat = await createNewChat(user.id, chatTitle, null)
-      activeChatId = newChat.id
-      console.log("[v0] ✅ Created new chat ID:", activeChatId)
+    // Use explicit null/undefined check to handle chatId === 0 correctly
+    if (activeChatId === null || activeChatId === undefined) {
+      // ✅ Check for existing active chat first (prevents creating new chat every time)
+      // Only use getOrCreateActiveChat if chatId is explicitly not provided
+      console.log('[v0] 🔍 No chatId provided in request body, checking for existing active chat...')
+      const existingChat = await getOrCreateActiveChat(user.id)
+      activeChatId = existingChat.id
+      console.log('[v0] 🔄 Using existing active chat:', activeChatId, '(title:', existingChat.chat_title, ')')
+    } else {
+      // ✅ CRITICAL: If chatId is provided, use it - don't call getOrCreateActiveChat
+      // This ensures we use the exact chat the user selected, not the "most recent"
+      console.log('[v0] ✅ Using provided chat ID from request body:', activeChatId)
+      
+      // Verify the chat exists and belongs to this user
+      // Reuse existing sql connection (initialized at top of file) instead of creating new one
+      const chatExists = await sql`
+        SELECT id FROM admin_agent_chats
+        WHERE id = ${activeChatId} AND admin_user_id = ${user.id}
+        LIMIT 1
+      `
+      
+      if (chatExists.length === 0) {
+        console.log('[v0] ⚠️ Provided chatId does not exist or does not belong to user, falling back to active chat')
+        const existingChat = await getOrCreateActiveChat(user.id)
+        activeChatId = existingChat.id
+        console.log('[v0] 🔄 Using fallback active chat:', activeChatId)
+      }
     }
 
     // Save the last user message to database
     const lastUserMessage = modelMessages.filter((m: any) => m.role === "user").pop()
     if (lastUserMessage && activeChatId) {
       try {
-        await saveChatMessage(activeChatId, "user", lastUserMessage.content)
-        console.log("[v0] 💾 Saved user message to chat:", activeChatId)
+        // Extract text content for database storage
+        let textContent = ""
+        if (Array.isArray(lastUserMessage.content)) {
+          const textParts = lastUserMessage.content.filter((p: any) => p && p.type === "text")
+          textContent = textParts.map((p: any) => p.text || "").join("\n")
+        } else {
+          textContent = typeof lastUserMessage.content === "string" ? lastUserMessage.content : String(lastUserMessage.content || "")
+        }
+        
+        // Always save user messages, even if they only contain images (textContent will be empty)
+        // Use a placeholder for image-only messages to ensure they're persisted
+        const contentToSave = textContent.trim() || (Array.isArray(lastUserMessage.content) && lastUserMessage.content.some((p: any) => p && p.type === "image") ? "[Image message]" : "")
+        
+        if (contentToSave) {
+          await saveChatMessage(activeChatId, "user", contentToSave)
+          console.log("[v0] 💾 Saved user message to chat:", activeChatId)
+        }
       } catch (error) {
         console.error("[v0] Error saving user message:", error)
         // Continue even if save fails
       }
     }
 
+    // Extract image URLs from user messages (for compose_email tool)
+    const extractImageUrls = (message: any): string[] => {
+      const urls: string[] = []
+      if (Array.isArray(message.content)) {
+        message.content.forEach((part: any) => {
+          if (part && part.type === "image" && part.image) {
+            // Handle different image formats: { image: "url" } or { image: { url: "..." } }
+            const imageUrl = typeof part.image === 'string' ? part.image : part.image?.url
+            if (imageUrl && typeof imageUrl === 'string') {
+              urls.push(imageUrl)
+            }
+          }
+        })
+      }
+      return urls
+    }
+
+    // Collect all image URLs from recent user messages (last 5 messages)
+    const recentUserMessages = modelMessages
+      .filter((m: any) => m.role === 'user')
+      .slice(-5)
+    const availableImageUrls = recentUserMessages
+      .flatMap((m: any) => extractImageUrls(m))
+      .filter((url: string) => url && url.length > 0)
+
     // Get admin context
     const completeContext = await getCompleteAdminContext()
     console.log('[v0] 📚 Knowledge base loaded:', completeContext.length, 'chars')
+    
+    // Log available images for debugging
+    if (availableImageUrls.length > 0) {
+      console.log('[v0] 🖼️ Available image URLs from user messages:', availableImageUrls.length)
+    }
 
     // Helper function to strip HTML tags for plain text version
     // Uses regex-based stripping (works without external packages)
@@ -193,7 +279,9 @@ export async function POST(req: Request) {
       subjectLine: z.string().optional().describe("Subject line (generate if not provided)"),
       keyPoints: z.array(z.string()).optional().describe("Main points to include"),
       tone: z.enum(['warm', 'professional', 'excited', 'urgent']).optional().describe("Tone for the email (defaults to warm if not specified)"),
-      previousVersion: z.string().optional().describe("Previous email HTML if refining")
+      previousVersion: z.string().optional().describe("Previous email HTML if refining"),
+      imageUrls: z.array(z.string()).optional().describe("Array of image URLs to include in the email. These are gallery images Sandra selected. Include them naturally in the email HTML using <img> tags with proper styling."),
+      campaignName: z.string().optional().describe("Optional campaign name for generating tracked links. If provided, will be used to create URL-safe campaign slug for UTM parameters.")
     })
 
     const composeEmailTool = tool({
@@ -212,13 +300,15 @@ export async function POST(req: Request) {
       
       parameters: composeEmailSchema,
       
-      execute: async ({ intent, emailType, subjectLine, keyPoints, tone = 'warm', previousVersion }: {
+      execute: async ({ intent, emailType, subjectLine, keyPoints, tone = 'warm', previousVersion, imageUrls, campaignName }: {
         intent: string
         emailType: string
         subjectLine?: string
         keyPoints?: string[]
         tone?: string
         previousVersion?: string
+        imageUrls?: string[]
+        campaignName?: string
       }) => {
         try {
           // 1. Get email templates for this type
@@ -229,7 +319,18 @@ export async function POST(req: Request) {
             LIMIT 1
           `
           
-          // 2. Use Claude to generate/refine email content
+          // 2. Get campaign context for link generation (if available)
+          const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://sselfie.ai'
+          
+          // Generate campaign slug from campaign name (if provided)
+          const campaignSlug = campaignName
+            ? campaignName
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-+|-+$/g, '')
+            : 'email-campaign'
+          
+          // 3. Use Claude to generate/refine email content
           const systemPrompt = `You are Sandra's email marketing assistant for SSELFIE Studio.
     
     Brand Voice: ${tone}, empowering, personal
@@ -243,24 +344,132 @@ export async function POST(req: Request) {
     
     ${templates[0]?.body_html ? `Template reference: ${templates[0].body_html.substring(0, 500)}` : 'Create from scratch'}
     
-    Return ONLY valid HTML email content (no markdown, no explanations). Use proper HTML structure with DOCTYPE, inline styles, and responsive design. Include unsubscribe link: {{{RESEND_UNSUBSCRIBE_URL}}}`
+    ${imageUrls && imageUrls.length > 0 ? `IMPORTANT: Include these images in the email HTML:
+    ${imageUrls.map((url, idx) => `${idx + 1}. ${url}`).join('\n    ')}
+    
+    Use proper <img> tags with inline styles:
+    - width: 100% (or max-width: 600px for container)
+    - height: auto
+    - display: block
+    - style="width: 100%; height: auto; display: block;"
+    - Include alt text describing the image
+    - Place images naturally in the email flow (hero image at top, supporting images in content)
+    - Use table-based layout for email compatibility` : ''}
+    
+    **CRITICAL: Product Links & Tracking**
+    
+    When including links in the email, you MUST use the correct product URLs with proper tracking:
+    
+    **Product Checkout Links (use campaign slug: "${campaignSlug}"):**
+    - Studio Membership: \`${siteUrl}/studio?checkout=studio_membership&utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=cta_button&campaign_id={campaign_id}\`
+    - One-Time Session: \`${siteUrl}/studio?checkout=one_time&utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=cta_button&campaign_id={campaign_id}\`
+    
+    **Landing Pages (use campaign slug: "${campaignSlug}"):**
+    - Why Studio: \`${siteUrl}/why-studio?utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=text_link&campaign_id={campaign_id}\`
+    - Homepage: \`${siteUrl}/?utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=text_link&campaign_id={campaign_id}\`
+    
+    **Link Tracking Requirements:**
+    1. ALL links must include UTM parameters: \`utm_source=email\`, \`utm_medium=email\`, \`utm_campaign=${campaignSlug}\`, \`utm_content={link_type}\`
+    2. Use \`campaign_id={campaign_id}\` as placeholder (will be replaced with actual ID when campaign is scheduled)
+    3. Use the campaign slug "${campaignSlug}" for all \`utm_campaign\` parameters
+    4. Use appropriate \`utm_content\` values: \`cta_button\` (primary CTA), \`text_link\` (body links), \`footer_link\` (footer), \`image_link\` (image links)
+    
+    **Link Examples (use these exact formats with campaign slug "${campaignSlug}"):**
+    - Primary CTA: \`<a href="${siteUrl}/studio?checkout=studio_membership&utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=cta_button&campaign_id={campaign_id}" style="display: inline-block; background-color: #1c1917; color: #fafaf9; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 500;">Join SSELFIE Studio</a>\`
+    - Secondary link: \`<a href="${siteUrl}/why-studio?utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=text_link&campaign_id={campaign_id}" style="color: #1c1917; text-decoration: underline;">Learn more</a>\`
+    
+    **When to Use Which Link:**
+    - Primary CTA → Use checkout links (\`checkout=studio_membership\` or \`checkout=one_time\`)
+    - Educational/nurturing content → Use landing pages (\`/why-studio\`, \`/\`)
+    - Always include full tracking parameters for conversion attribution
+    
+    **CRITICAL OUTPUT FORMAT:**
+    - Return ONLY raw HTML code (no markdown code blocks, no triple backticks with html, no explanations)
+    - Start directly with <!DOCTYPE html> or <html>
+    - Do NOT wrap the HTML in markdown code blocks
+    - Do NOT include triple backticks or markdown code block syntax anywhere in your response
+    - Return pure HTML that can be directly used in email clients
+    
+    Use proper HTML structure with DOCTYPE, inline styles, and responsive design. Include unsubscribe link: {{{RESEND_UNSUBSCRIBE_URL}}}`
           
-          const userPrompt = `${intent}\n\n${keyPoints && keyPoints.length > 0 ? `Key points: ${keyPoints.join(', ')}\n\n` : ''}${previousVersion || ''}`
+          const userPrompt = `${intent}\n\n${keyPoints && keyPoints.length > 0 ? `Key points: ${keyPoints.join(', ')}\n\n` : ''}${imageUrls && imageUrls.length > 0 ? `\nImages to include:\n${imageUrls.map((url, idx) => `- Image ${idx + 1}: ${url}`).join('\n')}\n\n` : ''}${previousVersion || ''}`
           
-          const { text: emailHtml } = await generateText({
+          const { text: emailHtmlRaw } = await generateText({
             model: "anthropic/claude-sonnet-4-20250514",
             system: systemPrompt,
             prompt: userPrompt,
             maxOutputTokens: 2000,
           })
           
+          // Clean up the HTML response - remove markdown code blocks if present
+          let emailHtml = emailHtmlRaw.trim()
+          
+          // Remove markdown code blocks (```html ... ``` or ``` ... ```)
+          emailHtml = emailHtml.replace(/^```html\s*/i, '')
+          emailHtml = emailHtml.replace(/^```\s*/, '')
+          emailHtml = emailHtml.replace(/\s*```$/g, '')
+          emailHtml = emailHtml.trim()
+          
+          // Ensure images are properly included if imageUrls were provided
+          if (imageUrls && imageUrls.length > 0) {
+            // Check if images are already in the HTML
+            const missingImages = imageUrls.filter(url => !emailHtml.includes(url))
+            
+            // If some images are missing, add them at the top as hero images
+            if (missingImages.length > 0) {
+              console.log(`[v0] Adding ${missingImages.length} missing images to email HTML`)
+              
+              // Create simple image HTML for missing images (email-compatible table structure)
+              const imageRows = missingImages.map((url, idx) => {
+                return `
+          <tr>
+            <td style="padding: ${idx === 0 ? '0' : '10px'} 0;">
+              <img src="${url}" alt="Email image ${idx + 1}" style="width: 100%; max-width: 600px; height: auto; display: block;" />
+            </td>
+          </tr>`
+              }).join('\n')
+              
+              // Try to insert images into the first table after <body>
+              const bodyMatch = emailHtml.match(/<body[^>]*>([\s\S]*?)<\/body>/i)
+              if (bodyMatch) {
+                const bodyContent = bodyMatch[1]
+                // Find the first main table
+                const mainTableMatch = bodyContent.match(/(<table[^>]*role=["']presentation["'][^>]*>)/i)
+                if (mainTableMatch) {
+                  const tableStart = mainTableMatch.index! + mainTableMatch[0].length
+                  // Insert images right after the opening table tag
+                  emailHtml = emailHtml.substring(0, bodyMatch.index! + bodyMatch[0].indexOf(mainTableMatch[0]) + mainTableMatch[0].length) + 
+                    imageRows + 
+                    emailHtml.substring(bodyMatch.index! + bodyMatch[0].indexOf(mainTableMatch[0]) + mainTableMatch[0].length)
+                } else {
+                  // No table found, prepend images wrapped in a table
+                  const imageTable = `
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+          ${imageRows}
+        </table>`
+                  emailHtml = emailHtml.replace(/<body[^>]*>/i, (match) => match + imageTable)
+                }
+              } else {
+                // No body tag found, prepend images at the very start
+                const imageTable = `
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+          ${imageRows}
+        </table>`
+                emailHtml = imageTable + emailHtml
+              }
+            }
+          }
+          
           // 3. Generate subject line if not provided
           const finalSubjectLine = subjectLine || await generateSubjectLine(intent, emailType)
           
+          // Generate preview text (strip HTML for preview)
+          const previewText = stripHtml(emailHtml).substring(0, 200)
+          
           return {
-            html: emailHtml.trim(),
+            html: emailHtml,
             subjectLine: finalSubjectLine,
-            preview: emailHtml.substring(0, 500) + '...',
+            preview: previewText,
             readyToSend: true
           }
         } catch (error: any) {
@@ -310,7 +519,14 @@ export async function POST(req: Request) {
         campaignType: string
       }) => {
         try {
-          // 1. Create campaign in database
+          // Use a temporary campaign ID placeholder that we'll replace after INSERT
+          // We need the actual campaign ID, so we'll use a transaction-like approach:
+          // 1. Insert with placeholder
+          // 2. Get the ID
+          // 3. Replace placeholders
+          // 4. Update with final HTML
+          // If UPDATE fails, we'll rollback by deleting the campaign
+          
           const bodyText = stripHtml(emailHtml)
           
           const campaignResult = await sql`
@@ -341,7 +557,35 @@ export async function POST(req: Request) {
           
           const campaign = campaignResult[0]
           
-          // 2. If sending now, create Resend broadcast
+          // Replace {campaign_id} placeholder in email HTML with actual campaign ID
+          const finalEmailHtml = emailHtml.replace(/{campaign_id}/g, String(campaign.id))
+          
+          // Generate final body_text from finalEmailHtml (with placeholders replaced)
+          const finalBodyText = stripHtml(finalEmailHtml)
+          
+          // Update database with final HTML and text (with campaign_id replaced)
+          // If this UPDATE fails, delete the campaign to prevent broken data
+          try {
+            await sql`
+              UPDATE admin_email_campaigns 
+              SET body_html = ${finalEmailHtml}, body_text = ${finalBodyText}
+              WHERE id = ${campaign.id}
+            `
+          } catch (updateError: any) {
+            console.error("[v0] Failed to update campaign with final HTML, rolling back:", updateError)
+            // Rollback: delete the campaign to prevent broken data
+            await sql`
+              DELETE FROM admin_email_campaigns 
+              WHERE id = ${campaign.id}
+            `
+            return {
+              success: false,
+              error: `Failed to save campaign: ${updateError.message}. Campaign creation was rolled back.`,
+              campaignId: null,
+            }
+          }
+          
+          // 5. If sending now, create Resend broadcast
           let broadcastId = null
           if (!scheduledFor) {
             if (!resend) {
@@ -379,12 +623,12 @@ export async function POST(req: Request) {
                 audienceId: targetAudienceId,
                 from: 'Sandra from SSELFIE <hello@sselfie.ai>',
                 subject: subjectLine,
-                html: emailHtml
+                html: finalEmailHtml
               })
               
               broadcastId = broadcast.data?.id || null
               
-              // Update campaign with broadcast ID
+              // Update campaign with broadcast ID and status (body_html already updated above)
               await sql`
                 UPDATE admin_email_campaigns 
                 SET resend_broadcast_id = ${broadcastId}, status = 'sent'
@@ -1065,6 +1309,15 @@ Use **check_campaign_status** to report on:
 
 **CRITICAL:** Never create/send emails without Sandra's explicit approval. Always show preview first and confirm before scheduling or sending.`
 
+    // Add image context to system prompt if images are available
+    const systemPromptWithImages = availableImageUrls.length > 0
+      ? systemPrompt + `\n\n**IMPORTANT: Image Context**
+Sandra has shared ${availableImageUrls.length} image(s) in this conversation. When creating emails using the compose_email tool, you MUST include these image URLs in the imageUrls parameter:
+${availableImageUrls.map((url: string, idx: number) => `${idx + 1}. ${url}`).join('\n')}
+
+These images should be included naturally in the email HTML.`
+      : systemPrompt
+
     // Validate tools before passing to streamText
     // All email tools are properly defined and enabled
     const tools = {
@@ -1103,7 +1356,7 @@ Use **check_campaign_status** to report on:
       const anthropicTools = convertToolsToAnthropicFormat(tools)
       
       // Helper function to process Anthropic stream with tool execution
-      async function* processAnthropicStream(stream: any, initialMessages: any[], maxIterations = 5): AsyncGenerator<string> {
+      async function* processAnthropicStream(stream: any, initialMessages: any[], maxIterations = 5): AsyncGenerator<string | { type: 'tool-result', data: any }> {
         let messages = initialMessages
         let iteration = 0
         
@@ -1167,12 +1420,38 @@ Use **check_campaign_status** to report on:
                 } else {
                   try {
                     const result = await tool.execute(toolInput)
-                    toolResults.push({
+                    const toolResult = {
                       tool_use_id: currentToolCall.id,
                       name: currentToolCall.name,
                       content: result,
-                    })
+                    }
+                    toolResults.push(toolResult)
                     console.log(`[v0] ✅ Tool ${currentToolCall.name} executed successfully`)
+                    
+                    // Emit tool-result event for compose_email so client can display preview immediately
+                    if (currentToolCall.name === 'compose_email' && result && result.html && result.subjectLine) {
+                      // Unescape HTML newlines if present
+                      let emailHtml = result.html
+                      if (typeof emailHtml === 'string') {
+                        emailHtml = emailHtml.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\'/g, "'")
+                      }
+                      
+                      // Yield tool-result event so client can detect and display email preview
+                      yield {
+                        type: 'tool-result' as const,
+                        data: {
+                          toolName: 'compose_email',
+                          toolCallId: currentToolCall.id,
+                          result: {
+                            html: emailHtml,
+                            subjectLine: result.subjectLine,
+                            preview: result.preview || stripHtml(emailHtml).substring(0, 200) + '...',
+                            readyToSend: result.readyToSend || true
+                          }
+                        }
+                      }
+                      console.log('[v0] 📧 Emitted tool-result event for compose_email')
+                    }
                   } catch (toolError: any) {
                     console.error(`[v0] ❌ Tool ${currentToolCall.name} execution error:`, toolError)
                     toolResults.push({
@@ -1199,8 +1478,12 @@ Use **check_campaign_status** to report on:
             
             // Handle text deltas - yield text directly
             else if (event.type === 'content_block_delta' && 'delta' in event && event.delta && 'type' in event.delta && event.delta.type === 'text_delta') {
-              const text = event.delta.text
-              yield text
+              // Safely access text property with fallback
+              const text = event.delta?.text
+              // Only yield if text is defined, not empty, and is a string
+              if (text !== undefined && text !== null && typeof text === 'string' && text.length > 0) {
+                yield text
+              }
             }
             
             // Handle message stop - check if we need to continue with tool results
@@ -1243,7 +1526,7 @@ Use **check_campaign_status** to report on:
                 const continuationResponse = await anthropic.messages.create({
                   model: 'claude-sonnet-4-20250514',
                   max_tokens: 4000,
-                  system: systemPrompt,
+                  system: systemPromptWithImages, // Use system prompt with image context
                   messages: messages as any,
                   tools: anthropicTools.length > 0 ? anthropicTools : undefined,
                   stream: true,
@@ -1267,7 +1550,7 @@ Use **check_campaign_status** to report on:
       const anthropicResponse = await anthropic.messages.create({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 4000,
-        system: systemPrompt,
+        system: systemPromptWithImages,
         messages: anthropicMessages as any,
         tools: anthropicTools.length > 0 ? anthropicTools : undefined,
         stream: true,  // ← Must be true
@@ -1275,58 +1558,133 @@ Use **check_campaign_status** to report on:
       
       // Create async generator that yields text chunks and handles tool execution
       async function* generateTextStream() {
-        let accumulatedText = ''
         console.log('[v0] 📡 Starting to process Anthropic stream events...')
         
-        for await (const text of processAnthropicStream(anthropicResponse, anthropicMessages)) {
-          accumulatedText += text
-          yield text
-        }
-        
-        console.log(`[v0] 📊 Stream complete, total text length: ${accumulatedText.length}`)
-        
-        // Save message when done
-        if (accumulatedText && activeChatId) {
-          try {
-            await saveChatMessage(activeChatId, 'assistant', accumulatedText)
-            console.log('[v0] ✅ Saved assistant message to chat:', activeChatId)
-          } catch (error) {
-            console.error("[v0] ❌ Error saving assistant message:", error)
+        for await (const item of processAnthropicStream(anthropicResponse, anthropicMessages)) {
+          // Handle tool-result events
+          if (typeof item === 'object' && item !== null && 'type' in item && item.type === 'tool-result') {
+            yield item // Pass through tool-result events
+          }
+          // Handle text chunks
+          else if (typeof item === 'string' && item.length > 0) {
+            yield item
           }
         }
+        
+        console.log('[v0] 📊 Generator iteration complete')
       }
       
       // Convert text stream to UI message stream format for useChat compatibility
       console.log('[v0] Creating UI message stream...')
       
-      const uiMessageStream = createUIMessageStream({
-        execute: async ({ writer }) => {
+      // Create a ReadableStream that emits Server-Sent Events format
+      // This is what DefaultChatTransport expects
+      console.log('[v0] Creating SSE stream...')
+      
+      const stream = new ReadableStream({
+        async start(controller) {
+          const encoder = new TextEncoder()
+          let messageId = 'msg-' + Date.now()
+          let chunkCount = 0
+          
+          // Track accumulated text and email preview data for persistence
+          let accumulatedText = ''
+          let emailPreviewData: { html: string; subjectLine: string; preview: string } | null = null
+          
           try {
-            let messageId = 'msg-' + Date.now()
-            for await (const text of generateTextStream()) {
-              // Write text deltas in the format useChat expects
-              // AI SDK v6 expects 'delta' not 'textDelta', and requires 'id'
-              writer.write({ 
-                type: 'text-delta', 
-                id: messageId,
-                delta: text 
-              } as any)
+            for await (const item of generateTextStream()) {
+              // Handle tool-result events
+              if (typeof item === 'object' && item !== null && 'type' in item && item.type === 'tool-result') {
+                // Store email preview data if compose_email tool executed
+                if (item.data.toolName === 'compose_email' && item.data.result) {
+                  emailPreviewData = {
+                    html: item.data.result.html,
+                    subjectLine: item.data.result.subjectLine,
+                    preview: item.data.result.preview || ''
+                  }
+                  console.log('[v0] 📧 Captured email preview data from tool-result')
+                }
+                
+                // Emit tool-result event for client to detect
+                const toolResultMessage = {
+                  type: 'tool-result',
+                  id: messageId,
+                  toolName: item.data.toolName,
+                  toolCallId: item.data.toolCallId,
+                  result: item.data.result
+                }
+                const toolResultData = `data: ${JSON.stringify(toolResultMessage)}\n\n`
+                controller.enqueue(encoder.encode(toolResultData))
+                console.log(`[v0] 📧 Emitted tool-result event for ${item.data.toolName}`)
+              }
+              // Handle text chunks
+              else if (typeof item === 'string' && item.length > 0) {
+                accumulatedText += item
+                chunkCount++
+                
+                // Format as SSE event - AI SDK expects this format
+                const message = {
+                  type: 'text-delta',
+                  id: messageId,
+                  delta: item
+                }
+                
+                // SSE format: data: <json>\n\n
+                const data = `data: ${JSON.stringify(message)}\n\n`
+                controller.enqueue(encoder.encode(data))
+                
+                if (chunkCount % 10 === 0) {
+                  console.log(`[v0] 📝 Sent ${chunkCount} chunks so far...`)
+                }
+              }
             }
+            
+            // Send final message to indicate completion
+            const doneMessage = {
+              type: 'finish',
+              id: messageId
+            }
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify(doneMessage)}\n\n`))
+            
+            console.log(`[v0] ✅ Sent ${chunkCount} chunks, closing stream`)
+            controller.close()
           } catch (error: any) {
-            console.error('[v0] Stream error:', error)
-            throw error
+            console.error('[v0] ❌ Stream error:', error)
+            // Send error message
+            const errorMessage = {
+              type: 'error',
+              id: messageId,
+              error: error.message || 'Stream error'
+            }
+            try {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify(errorMessage)}\n\n`))
+            } catch (e) {
+              // Ignore errors when sending error message
+            }
+            controller.close()
+          } finally {
+            // Save message in finally block to ensure it runs even if stream is interrupted
+            // This prevents data loss on network errors, client disconnects, or exceptions
+            if (accumulatedText && activeChatId) {
+              try {
+                await saveChatMessage(activeChatId, 'assistant', accumulatedText, emailPreviewData)
+                console.log('[v0] ✅ Saved assistant message to chat:', activeChatId, emailPreviewData ? 'with email preview data' : '')
+              } catch (error) {
+                console.error("[v0] ❌ Error saving assistant message:", error)
+              }
+            } else if (accumulatedText) {
+              console.log('[v0] ⚠️ Message not saved: no activeChatId or empty text')
+            }
           }
-        },
-        onFinish: async () => {
-          // Message finished - already saved in generateTextStream
-          console.log('[v0] ✅ UI message stream finished')
-        },
+        }
       })
       
-      // Return UI message stream response (same format as toUIMessageStreamResponse)
-      return createUIMessageStreamResponse({
-        stream: uiMessageStream,
+      // Return SSE response with proper headers
+      return new Response(stream, {
         headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
           'X-Chat-Id': String(activeChatId),
         },
       })
@@ -1342,7 +1700,7 @@ Use **check_campaign_status** to report on:
 
     const result = streamText({
         model: "anthropic/claude-sonnet-4-20250514",
-      system: systemPrompt,
+      system: systemPromptWithImages,
       messages: modelMessages,
       maxOutputTokens: 4000,
         tools: tools,

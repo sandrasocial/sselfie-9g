@@ -24,20 +24,48 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { campaignId, testEmail } = body
+    const { campaignId, testEmail, subject, html } = body
 
-    if (!campaignId) {
-      return NextResponse.json({ error: "Campaign ID required" }, { status: 400 })
-    }
+    // Support both: campaignId (existing campaign) OR direct email data (before campaign creation)
+    let emailSubject: string
+    let emailHtml: string
+    let emailText: string
 
-    // Get campaign details
-    const [campaign] = await sql`
-      SELECT * FROM admin_email_campaigns
-      WHERE id = ${campaignId}
-    `
+    // Use explicit null/undefined check to handle campaignId === 0 correctly
+    if (campaignId !== null && campaignId !== undefined) {
+      // Get campaign details from database
+      const [campaign] = await sql`
+        SELECT * FROM admin_email_campaigns
+        WHERE id = ${campaignId}
+      `
 
-    if (!campaign) {
-      return NextResponse.json({ error: "Campaign not found" }, { status: 404 })
+      if (!campaign) {
+        return NextResponse.json({ error: "Campaign not found" }, { status: 404 })
+      }
+
+      emailSubject = campaign.subject_line
+      emailHtml = campaign.body_html
+      emailText = campaign.body_text || ''
+
+      // Track test email sent for existing campaign
+      const recipientEmail = testEmail || ADMIN_EMAIL
+      await sql`
+        UPDATE admin_email_campaigns
+        SET 
+          test_email_sent_to = ${recipientEmail},
+          test_email_sent_at = NOW(),
+          updated_at = NOW()
+        WHERE id = ${campaignId}
+      `
+    } else if (subject && html) {
+      // Use provided email data directly (for testing before campaign creation)
+      emailSubject = subject
+      emailHtml = html
+      emailText = html.replace(/<[^>]*>/g, '').substring(0, 500) // Simple HTML to text conversion
+    } else {
+      return NextResponse.json({ 
+        error: "Either campaignId or (subject + html) required" 
+      }, { status: 400 })
     }
 
     const recipientEmail = testEmail || ADMIN_EMAIL
@@ -45,20 +73,10 @@ export async function POST(request: Request) {
     // Send test email with [TEST] prefix
     const result = await sendEmail({
       to: recipientEmail,
-      subject: `[TEST] ${campaign.subject_line}`,
-      html: campaign.body_html,
-      text: campaign.body_text,
+      subject: `[TEST] ${emailSubject}`,
+      html: emailHtml,
+      text: emailText,
     })
-
-    // Track test email sent
-    await sql`
-      UPDATE admin_email_campaigns
-      SET 
-        test_email_sent_to = ${recipientEmail},
-        test_email_sent_at = NOW(),
-        updated_at = NOW()
-      WHERE id = ${campaignId}
-    `
 
     return NextResponse.json({ success: true, message: `Test email sent to ${recipientEmail}` })
   } catch (error) {

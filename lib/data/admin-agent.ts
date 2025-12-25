@@ -17,6 +17,7 @@ export interface AdminAgentMessage {
   chat_id: number
   role: "user" | "assistant"
   content: string
+  email_preview_data?: any | null
   created_at: Date
 }
 
@@ -59,7 +60,8 @@ export async function loadChatById(chatId: number, userId: string): Promise<Admi
 
 export async function getChatMessages(chatId: number): Promise<AdminAgentMessage[]> {
   const messages = await sql`
-    SELECT * FROM admin_agent_messages
+    SELECT id, chat_id, role, content, email_preview_data, created_at
+    FROM admin_agent_messages
     WHERE chat_id = ${chatId}
     ORDER BY created_at ASC
   `
@@ -71,10 +73,11 @@ export async function saveChatMessage(
   chatId: number,
   role: "user" | "assistant",
   content: string,
+  emailPreviewData?: any | null,
 ): Promise<AdminAgentMessage> {
   const result = await sql`
-    INSERT INTO admin_agent_messages (chat_id, role, content, created_at)
-    VALUES (${chatId}, ${role}, ${content}, NOW())
+    INSERT INTO admin_agent_messages (chat_id, role, content, email_preview_data, created_at)
+    VALUES (${chatId}, ${role}, ${content}, ${emailPreviewData ? JSON.stringify(emailPreviewData) : null}::jsonb, NOW())
     RETURNING *
   `
 
@@ -97,6 +100,7 @@ export async function createNewChat(userId: string, title: string, mode: string 
 
   return result[0] as AdminAgentChat
 }
+
 
 
 

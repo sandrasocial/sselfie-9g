@@ -1,7 +1,7 @@
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId, getOrCreateNeonUser } from "@/lib/user-mapping"
 import { redirect } from "next/navigation"
-import AlexChat from "@/components/admin/alex-chat"
+import AdminAgentChatNew from "@/components/admin/admin-agent-chat-new"
 
 export const dynamic = "force-dynamic"
 
@@ -51,10 +51,14 @@ export default async function AlexPage() {
   }
 
   return (
-    <AlexChat
+    <AdminAgentChatNew
       userId={String(neonUser.id)}
       userName={neonUser.display_name || undefined}
       userEmail={neonUser.email}
+      apiEndpoint="/api/admin/alex/chat"
+      loadChatEndpoint="/api/admin/agent/load-chat"
+      chatsEndpoint="/api/admin/agent/chats"
+      newChatEndpoint="/api/admin/agent/new-chat"
     />
   )
 }
