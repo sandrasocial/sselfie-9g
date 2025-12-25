@@ -727,18 +727,89 @@ export async function POST(req: Request) {
             }
           }
           
-          // For each campaign with resend_broadcast_id, fetch stats from email_logs
+          // For each campaign with resend_broadcast_id, fetch stats from Resend API (real-time)
           const results = []
           for (const campaign of campaigns) {
-            const logs = await sql`
-              SELECT 
-                COUNT(*) as total,
-                COUNT(*) FILTER (WHERE status = 'sent') as sent,
-                COUNT(*) FILTER (WHERE status = 'failed') as failed
-              FROM email_logs
-              WHERE email_type = 'campaign' 
-              AND campaign_id = ${campaign.id}
-            `
+            let stats: any = { total: 0, sent: 0, failed: 0, delivered: 0, opened: 0, clicked: 0, bounced: 0 }
+            let resendStats: any = null
+            
+            // If we have a Resend broadcast ID, fetch real stats from Resend API
+            if (campaign.resend_broadcast_id && resend) {
+              try {
+                console.log(`[v0] 📊 Fetching Resend stats for broadcast: ${campaign.resend_broadcast_id}`)
+                
+                // Try to get broadcast stats from Resend API
+                // Note: Resend SDK may use broadcasts.get() or similar
+                const broadcastResponse = await (resend as any).broadcasts?.get?.(campaign.resend_broadcast_id) ||
+                                         await (resend as any).broadcasts?.retrieve?.(campaign.resend_broadcast_id) ||
+                                         null
+                
+                if (broadcastResponse && broadcastResponse.data) {
+                  resendStats = broadcastResponse.data
+                  console.log(`[v0] ✅ Got Resend stats for broadcast ${campaign.resend_broadcast_id}`)
+                } else {
+                  // Fallback: Try direct API call
+                  try {
+                    const apiResponse = await fetch(`https://api.resend.com/broadcasts/${campaign.resend_broadcast_id}`, {
+                      method: 'GET',
+                      headers: {
+                        'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+                        'Content-Type': 'application/json',
+                      },
+                    })
+                    
+                    if (apiResponse.ok) {
+                      const apiData = await apiResponse.json()
+                      resendStats = apiData
+                      console.log(`[v0] ✅ Got Resend stats via direct API`)
+                    }
+                  } catch (apiError) {
+                    console.warn(`[v0] ⚠️ Direct API call failed for broadcast ${campaign.resend_broadcast_id}:`, apiError)
+                  }
+                }
+                
+                // Extract stats from Resend response
+                if (resendStats) {
+                  stats = {
+                    total: resendStats.recipients_count || resendStats.total_recipients || 0,
+                    sent: resendStats.sent_count || resendStats.total_sent || 0,
+                    delivered: resendStats.delivered_count || resendStats.total_delivered || 0,
+                    opened: resendStats.opened_count || resendStats.total_opens || 0,
+                    clicked: resendStats.clicked_count || resendStats.total_clicks || 0,
+                    bounced: resendStats.bounced_count || resendStats.total_bounces || 0,
+                    failed: resendStats.failed_count || resendStats.total_failed || 0,
+                    // Calculate rates
+                    deliveryRate: resendStats.delivered_count && resendStats.sent_count 
+                      ? ((resendStats.delivered_count / resendStats.sent_count) * 100).toFixed(1) + '%'
+                      : null,
+                    openRate: resendStats.opened_count && resendStats.delivered_count
+                      ? ((resendStats.opened_count / resendStats.delivered_count) * 100).toFixed(1) + '%'
+                      : null,
+                    clickRate: resendStats.clicked_count && resendStats.delivered_count
+                      ? ((resendStats.clicked_count / resendStats.delivered_count) * 100).toFixed(1) + '%'
+                      : null,
+                  }
+                }
+              } catch (resendError: any) {
+                console.warn(`[v0] ⚠️ Failed to fetch Resend stats for broadcast ${campaign.resend_broadcast_id}:`, resendError.message)
+                // Fall through to database logs
+              }
+            }
+            
+            // FALLBACK: If Resend API didn't return stats, use database logs
+            if (!resendStats) {
+              const logs = await sql`
+                SELECT 
+                  COUNT(*) as total,
+                  COUNT(*) FILTER (WHERE status = 'sent') as sent,
+                  COUNT(*) FILTER (WHERE status = 'failed') as failed
+                FROM email_logs
+                WHERE email_type = 'campaign' 
+                AND campaign_id = ${campaign.id}
+              `
+              
+              stats = logs[0] || { total: 0, sent: 0, failed: 0 }
+            }
             
             results.push({
               id: campaign.id,
@@ -748,9 +819,17 @@ export async function POST(req: Request) {
               createdAt: campaign.created_at,
               scheduledFor: campaign.scheduled_for,
               broadcastId: campaign.resend_broadcast_id,
-              stats: logs[0] || { total: 0, sent: 0, failed: 0 }
+              stats: stats,
+              source: resendStats ? 'resend_api' : 'database_logs' // Indicate data source
             })
           }
+          
+          // Build detailed summary with real-time metrics
+          const sentCampaigns = results.filter(c => c.status === 'sent')
+          const totalSent = sentCampaigns.reduce((sum, c) => sum + (c.stats.sent || 0), 0)
+          const totalDelivered = sentCampaigns.reduce((sum, c) => sum + (c.stats.delivered || 0), 0)
+          const totalOpened = sentCampaigns.reduce((sum, c) => sum + (c.stats.opened || 0), 0)
+          const totalClicked = sentCampaigns.reduce((sum, c) => sum + (c.stats.clicked || 0), 0)
           
           return {
             campaigns: results,
@@ -758,7 +837,23 @@ export async function POST(req: Request) {
               total: results.length,
               sent: results.filter(c => c.status === 'sent').length,
               scheduled: results.filter(c => c.status === 'scheduled').length,
-              draft: results.filter(c => c.status === 'draft').length
+              draft: results.filter(c => c.status === 'draft').length,
+              // Real-time metrics from Resend (if available)
+              metrics: {
+                totalSent,
+                totalDelivered,
+                totalOpened,
+                totalClicked,
+                avgDeliveryRate: sentCampaigns.length > 0 && totalSent > 0
+                  ? ((totalDelivered / totalSent) * 100).toFixed(1) + '%'
+                  : null,
+                avgOpenRate: sentCampaigns.length > 0 && totalDelivered > 0
+                  ? ((totalOpened / totalDelivered) * 100).toFixed(1) + '%'
+                  : null,
+                avgClickRate: sentCampaigns.length > 0 && totalDelivered > 0
+                  ? ((totalClicked / totalDelivered) * 100).toFixed(1) + '%'
+                  : null,
+              }
             }
           }
         } catch (error: any) {
@@ -818,52 +913,126 @@ export async function POST(req: Request) {
           let segments: any[] = []
           
           if (includeSegmentDetails) {
-            // Get known segments from database campaigns
-            const knownSegments = await sql`
-              SELECT DISTINCT 
-                jsonb_extract_path_text(target_audience, 'resend_segment_id') as segment_id,
-                jsonb_extract_path_text(target_audience, 'segment_name') as segment_name
-              FROM admin_email_campaigns
-              WHERE target_audience ? 'resend_segment_id'
-                AND jsonb_extract_path_text(target_audience, 'resend_segment_id') IS NOT NULL
-            `
-            
-            // Also check for known segment IDs from environment variables
-            const knownSegmentIds = [
-              { id: process.env.RESEND_BETA_SEGMENT_ID, name: 'Beta Users' },
-              // Add other known segments here if they exist in env vars
-            ].filter(s => s.id)
-            
-            // Combine database segments with env var segments
-            const allSegments = new Map()
-            
-            knownSegments.forEach((s: any) => {
-              if (s.segment_id) {
-                allSegments.set(s.segment_id, {
-                  id: s.segment_id,
-                  name: s.segment_name || 'Unknown Segment'
-                })
+            // FIRST: Try to get segments from Resend API (real-time data)
+            try {
+              console.log('[v0] 📋 Fetching segments from Resend API...')
+              // Note: Resend SDK may use segments.list() or similar
+              // If the method doesn't exist, we'll fall back to database/env
+              const segmentsResponse = await (resend as any).segments?.list?.() || 
+                                      await (resend as any).segments?.getAll?.() ||
+                                      null
+              
+              if (segmentsResponse && segmentsResponse.data && Array.isArray(segmentsResponse.data)) {
+                console.log(`[v0] ✅ Found ${segmentsResponse.data.length} segments from Resend API`)
+                segments = segmentsResponse.data.map((seg: any) => ({
+                  id: seg.id,
+                  name: seg.name || 'Unnamed Segment',
+                  size: seg.contact_count || seg.size || null, // Get real segment size if available
+                  createdAt: seg.created_at || null
+                }))
+              } else {
+                // Fallback: Try direct API call if SDK method doesn't exist
+                console.log('[v0] ⚠️ SDK segments.list() not available, trying direct API...')
+                try {
+                  const apiResponse = await fetch('https://api.resend.com/segments', {
+                    method: 'GET',
+                    headers: {
+                      'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+                      'Content-Type': 'application/json',
+                    },
+                  })
+                  
+                  if (apiResponse.ok) {
+                    const apiData = await apiResponse.json()
+                    if (apiData.data && Array.isArray(apiData.data)) {
+                      console.log(`[v0] ✅ Found ${apiData.data.length} segments from Resend API (direct)`)
+                      segments = apiData.data.map((seg: any) => ({
+                        id: seg.id,
+                        name: seg.name || 'Unnamed Segment',
+                        size: seg.contact_count || seg.size || null,
+                        createdAt: seg.created_at || null
+                      }))
+                    }
+                  }
+                } catch (apiError) {
+                  console.warn('[v0] ⚠️ Direct API call failed, falling back to database/env:', apiError)
+                }
               }
-            })
+            } catch (error: any) {
+              console.warn('[v0] ⚠️ Failed to fetch segments from Resend API, falling back to database/env:', error.message)
+            }
             
-            knownSegmentIds.forEach(s => {
-              if (s.id) {
-                allSegments.set(s.id, {
-                  id: s.id,
-                  name: s.name
-                })
-              }
-            })
+            // FALLBACK: If Resend API didn't return segments, use database/env as backup
+            if (segments.length === 0) {
+              console.log('[v0] 📋 Using fallback: Getting segments from database and env vars...')
+              
+              // Get known segments from database campaigns
+              const knownSegments = await sql`
+                SELECT DISTINCT 
+                  jsonb_extract_path_text(target_audience, 'resend_segment_id') as segment_id,
+                  jsonb_extract_path_text(target_audience, 'segment_name') as segment_name
+                FROM admin_email_campaigns
+                WHERE target_audience ? 'resend_segment_id'
+                  AND jsonb_extract_path_text(target_audience, 'resend_segment_id') IS NOT NULL
+              `
+              
+              // Also check for known segment IDs from environment variables
+              const knownSegmentIds = [
+                { id: process.env.RESEND_BETA_SEGMENT_ID, name: 'Beta Users' },
+                // Add other known segments here if they exist in env vars
+              ].filter(s => s.id)
+              
+              // Combine database segments with env var segments
+              const allSegments = new Map()
+              
+              knownSegments.forEach((s: any) => {
+                if (s.segment_id) {
+                  allSegments.set(s.segment_id, {
+                    id: s.segment_id,
+                    name: s.segment_name || 'Unknown Segment',
+                    size: null // Size not available from database
+                  })
+                }
+              })
+              
+              knownSegmentIds.forEach(s => {
+                if (s.id) {
+                  allSegments.set(s.id, {
+                    id: s.id,
+                    name: s.name,
+                    size: null // Size not available from env vars
+                  })
+                }
+              })
+              
+              segments = Array.from(allSegments.values())
+            }
             
-            segments = Array.from(allSegments.values())
+            // For segments without size, try to get contact count from Resend
+            // Note: This might require filtering contacts by segment, which Resend may not support directly
+            // We'll leave size as null if we can't get it
+            console.log(`[v0] 📊 Final segments list: ${segments.length} segments`)
           }
+          
+          // Build summary with segment details
+          let summary = `You have ${contacts.length} total contacts in your audience`
+          if (segments.length > 0) {
+            const segmentsWithSize = segments.filter(s => s.size !== null && s.size !== undefined)
+            if (segmentsWithSize.length > 0) {
+              const totalSegmentSize = segmentsWithSize.reduce((sum, s) => sum + (s.size || 0), 0)
+              summary += ` across ${segments.length} segments (${totalSegmentSize} contacts in tracked segments)`
+            } else {
+              summary += ` across ${segments.length} segments`
+            }
+          }
+          summary += '.'
           
           return {
             audienceId: audience.data?.id || audienceId,
             audienceName: audience.data?.name || 'SSELFIE Audience',
             totalContacts: contacts.length,
             segments: segments,
-            summary: `You have ${contacts.length} total contacts in your audience${segments.length > 0 ? ` across ${segments.length} segments` : ''}.`
+            summary: summary
           }
           
         } catch (error: any) {
