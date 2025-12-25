@@ -48,7 +48,7 @@ export default function AlexChat({ userId, userName, userEmail }: AlexChatProps)
   
   const { messages, sendMessage, status, setMessages, isLoading: useChatIsLoading } = useChat({
     id: currentChatId ? String(currentChatId) : undefined,
-    transport: new DefaultChatTransport({ api: '/api/admin/alex/chat' }) as any,
+    transport: new DefaultChatTransport({ api: '/api/admin/agent/chat' }) as any,
     body: chatBody as any,
     onResponse: async (response: Response) => {
       console.log('[Alex] 📥 Response received, status:', response.status)

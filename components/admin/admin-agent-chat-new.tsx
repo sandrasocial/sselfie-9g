@@ -22,34 +22,84 @@ interface AdminAgentChatProps {
   newChatEndpoint?: string
 }
 
+// Helper function to detect and filter Next.js error page HTML
+const filterErrorPageHTML = (text: string): string => {
+  if (!text || typeof text !== 'string') return text
+  
+  // Check if this is a Next.js error page HTML
+  const hasErrorPage = text.includes('<!DOCTYPE html') && 
+                      (text.includes('<title>404: This page could not be found.</title>') ||
+                       text.includes('next-error-h1') ||
+                       text.includes('/_next/static/chunks'))
+  
+  if (hasErrorPage) {
+    console.error('[v0] ❌ Detected Next.js error page HTML in error message, filtering out')
+    return 'The chat API route was not found. Please check that the route exists and refresh the page.'
+  }
+  
+  return text
+}
+
 const getMessageContent = (message: any): string => {
+  // Defensive check - ensure message exists
+  if (!message || typeof message !== 'object') {
+    console.warn('[v0] ⚠️ getMessageContent called with invalid message:', message)
+    return ""
+  }
+  
+  // Debug logging
+  console.log('[v0] 🔍 getMessageContent called with message:', {
+    id: message.id,
+    role: message.role,
+    hasContent: !!message.content,
+    contentType: typeof message.content,
+    hasParts: !!message.parts,
+    partsLength: message.parts?.length,
+    contentPreview: typeof message.content === 'string' 
+      ? message.content.substring(0, 100) 
+      : 'not a string'
+  })
+  
   // Handle string content
   if (typeof message.content === "string") {
-    return message.content
+    const content = message.content.trim()
+    if (content) {
+      console.log('[v0] ✅ Returning string content, length:', content.length)
+      return content
+    }
   }
-
+  
   // Handle array of parts in content
   if (Array.isArray(message.content)) {
-    return message.content
-      .filter((part: any) => part.type === "text" && part.text)
+    const textParts = message.content
+      .filter((part: any) => part && typeof part === 'object' && part.type === "text" && typeof part.text === 'string')
       .map((part: any) => part.text)
-      .join("\n")
-      .trim()
+      .filter((text: any) => text != null && text !== '')
+    const result = textParts.join("\n").trim()
+    if (result) {
+      console.log('[v0] ✅ Returning content array, length:', result.length)
+      return result
+    }
   }
-
+  
   // Handle parts array (alternative format)
   if (message.parts && Array.isArray(message.parts)) {
-    return message.parts
-      .filter((part: any) => part.type === "text" && part.text)
+    const textParts = message.parts
+      .filter((part: any) => part && typeof part === 'object' && part.type === "text" && typeof part.text === 'string')
       .map((part: any) => part.text)
-      .join("\n")
-      .trim()
+      .filter((text: any) => text != null && text !== '')
+    const result = textParts.join("\n").trim()
+    if (result) {
+      console.log('[v0] ✅ Returning parts array, length:', result.length)
+      return result
+    }
   }
 
+  console.warn('[v0] ⚠️ getMessageContent returning empty string for message:', message.id)
   return ""
 }
 
-export default function AdminAgentChat({ 
+export default function AdminAgentChatNew({ 
   userId, 
   userName, 
   userEmail,
@@ -72,6 +122,7 @@ export default function AdminAgentChat({
   const [chats, setChats] = useState<any[]>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const hasLoadedChatRef = useRef(false)
+  const lastLoadedChatIdRef = useRef<number | null>(null) // Track last loaded chatId to prevent infinite loops
   const { toast } = useToast()
   
   // Email UI state
@@ -84,6 +135,7 @@ export default function AdminAgentChat({
   // Loading and error states
   const [toolLoading, setToolLoading] = useState<string | null>(null) // Track which tool is loading
   const [toolErrors, setToolErrors] = useState<Record<string, string>>({}) // Track tool errors
+  const [executingTool, setExecutingTool] = useState<string | null>(null) // Track tool execution from toolInvocations
   
   // Gallery state
   interface GalleryImage {
@@ -228,66 +280,62 @@ export default function AdminAgentChat({
     )
   }
 
-  // Use useMemo to make body reactive to chatId changes
-  // Only include chatId in body if it exists (don't send undefined/null)
-  // Use explicit null/undefined check to handle chatId === 0 correctly
-  const chatBody = useMemo(() => {
-    if (chatId !== null && chatId !== undefined) {
-      return { chatId }
-    }
-    return {} // Empty object if no chatId
-  }, [chatId])
+  // Ensure apiEndpoint is set correctly
+  const finalApiEndpoint = apiEndpoint || "/api/admin/agent/chat"
+  console.log('[v0] 🔗 useChat configured with apiEndpoint:', finalApiEndpoint)
 
-  const { messages, sendMessage, status, setMessages, isLoading: useChatIsLoading } = useChat({
-    transport: new DefaultChatTransport({ api: apiEndpoint }),
-    initialMessages: [],
-    body: chatBody,
-    // Let useChat manage messages automatically
-    // Only use setMessages when loading existing chats from database
-    keepLastMessageOnError: true,
-    onRequest: async (request) => {
-      console.log('[v0] 📤 Sending request with chatId:', chatBody.chatId)
-    },
-    onResponse: async (response) => {
-      console.log('[v0] 📥 Response received, status:', response.status)
+  const { messages, sendMessage, status, setMessages, error } = useChat({
+    transport: new DefaultChatTransport({ api: finalApiEndpoint }),
+    body: { chatId },
+    onResponse: async (response: any) => {
+      // DEBUG: Check if body is consumed (should be false!)
+      console.log('[v0] 🔍 Response received:', {
+        status: response.status,
+        headers: Object.fromEntries(response.headers.entries()),
+        bodyUsed: response.bodyUsed  // Should be false!
+      })
+      
+      // Only read headers, do NOT consume body
       const chatIdHeader = response.headers.get('X-Chat-Id')
       if (chatIdHeader) {
         const newChatId = parseInt(chatIdHeader)
-        console.log('[v0] 🆔 Chat ID from header:', newChatId)
-        // Use explicit null/undefined check to handle chatId === 0 correctly
-        if (chatId === null || chatId === undefined || chatId !== newChatId) {
+        if (chatId !== newChatId) {
           setChatId(newChatId)
           await loadChats()
         }
       }
+      
+      // Verify body is still not consumed after header reading
+      if (response.bodyUsed) {
+        console.error('[v0] ❌ ERROR: Response body was consumed in onResponse!')
+      }
     },
-    onError: (error) => {
-      console.error("[v0] ❌ Admin agent chat error:", error)
-      console.error("[v0] ❌ Error stack:", error.stack)
+    onFinish: (message: any) => {
+      console.log('[v0] ✅ Message finished:', message)
+    },
+    onError: (error: any) => {
+      console.error("[v0] ❌ Chat error:", error)
       setToolLoading(null)
-      setToolErrors(prev => ({ ...prev, general: error.message || "An error occurred" }))
-      toast({
-        title: "Chat Error",
-        description: error.message || "An error occurred",
-        variant: "destructive"
-      })
+      setExecutingTool(null)
+      
+      // Filter out Next.js error page HTML from error messages
+      let errorMessage = error.message || "An error occurred"
+      errorMessage = filterErrorPageHTML(errorMessage)
+      
+      setToolErrors(prev => ({ ...prev, general: errorMessage }))
     },
-    onFinish: (message) => {
-      console.log('[v0] ✅ Message finished streaming:', message.content?.substring(0, 50))
-    },
-  })
+  } as any)
 
-  const isLoading = status === "submitted" || status === "streaming" || useChatIsLoading
+  const isLoading = status === "submitted" || status === "streaming"
 
   // Add status logging
   useEffect(() => {
     console.log('[v0] 🔄 Status changed to:', status, {
       messageCount: messages.length,
       isLoading,
-      useChatIsLoading,
       chatId
     })
-  }, [status, isLoading, useChatIsLoading, messages.length, chatId])
+  }, [status, isLoading, messages.length, chatId])
 
   const loadChats = async () => {
     try {
@@ -332,7 +380,13 @@ export default function AdminAgentChat({
         }
 
         // Wait a tick to ensure chatId state is updated before setting messages
-        // This prevents useChat from resetting messages when chatId changes
+        // CRITICAL: Update the ref IMMEDIATELY to prevent race condition
+        // The ref must be updated before setChatId triggers useEffect
+        if (data.chatId !== null && data.chatId !== undefined) {
+          lastLoadedChatIdRef.current = data.chatId
+        }
+
+        // Small delay to prevent useChat from resetting messages when chatId changes
         await new Promise(resolve => setTimeout(resolve, 100))
 
         if (data.messages && Array.isArray(data.messages) && data.messages.length > 0) {
@@ -387,20 +441,30 @@ export default function AdminAgentChat({
   }, [loadChat])
 
   // Safety net: Ensure messages are set when chatId changes (if messages were loaded but not set)
+  // Use a ref to track messages length to avoid dependency issues
+  const messagesLengthRef = useRef(0)
+  messagesLengthRef.current = messages.length
+  
   useEffect(() => {
     // This effect ensures messages persist when chatId changes
     // It's a safety net in case useChat resets messages
     // Use explicit null/undefined check to handle chatId === 0 correctly
-    if (chatId !== null && chatId !== undefined && messages.length === 0 && !isLoadingChat && hasLoadedChatRef.current) {
+    if (chatId !== null && 
+        chatId !== undefined && 
+        chatId !== lastLoadedChatIdRef.current && // Only load if chatId actually changed
+        messagesLengthRef.current === 0 && // Use ref to check messages length without adding to deps
+        !isLoadingChat && 
+        hasLoadedChatRef.current) {
       // Only reload if we have a chatId but no messages and we're not currently loading
       // This prevents infinite loops
+      lastLoadedChatIdRef.current = chatId
       const timer = setTimeout(() => {
         console.log("[v0] ChatId set but no messages detected, reloading chat...")
         loadChat(chatId)
       }, 200)
       return () => clearTimeout(timer)
     }
-  }, [chatId, messages.length, isLoadingChat, loadChat])
+  }, [chatId, isLoadingChat, loadChat]) // Removed messages.length to prevent infinite loops
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -412,9 +476,13 @@ export default function AdminAgentChat({
       const lastMessage = messages[messages.length - 1]
       // Check if last message has tool calls
       if (lastMessage.parts && Array.isArray(lastMessage.parts)) {
-        const toolCall = lastMessage.parts.find((p: any) => p.type === 'tool-call' || p.type?.startsWith('tool-'))
+        const toolCall = lastMessage.parts.find((p: any) => {
+          const partType = (p as any)?.type
+          return partType === 'tool-call' || (typeof partType === 'string' && partType.startsWith('tool-'))
+        })
         if (toolCall) {
-          const toolName = toolCall.toolName || toolCall.type?.replace('tool-', '')
+          const toolCallAny = toolCall as any
+          const toolName = toolCallAny.toolName || (typeof toolCallAny.type === 'string' ? toolCallAny.type.replace('tool-', '') : undefined)
           if (toolName) {
             setToolLoading(toolName)
           }
@@ -430,9 +498,10 @@ export default function AdminAgentChat({
       const lastMessage = messages[messages.length - 1]
       if (lastMessage.parts && Array.isArray(lastMessage.parts)) {
         for (const part of lastMessage.parts) {
-          if (part.type === 'tool-result' && part.result && typeof part.result === 'object') {
-            const result = part.result as any
-            const toolName = part.toolName || 'unknown'
+          const partAny = part as any
+          if (partAny.type === 'tool-result' && partAny.result && typeof partAny.result === 'object') {
+            const result = partAny.result as any
+            const toolName = partAny.toolName || 'unknown'
             
             if ('error' in result) {
               setToolErrors(prev => ({ ...prev, [toolName]: result.error }))
@@ -464,180 +533,148 @@ export default function AdminAgentChat({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading, messages])
 
-  // Parse agent response for UI triggers (both from text markers and tool results)
+  // Error boundary for tool execution
+  useEffect(() => {
+    if (error) {
+      console.error('[v0] Chat error:', error)
+      
+      // Filter out Next.js error page HTML from error messages
+      let errorMessage = error.message || "Something went wrong"
+      errorMessage = filterErrorPageHTML(errorMessage)
+      
+      toast({
+        title: "Chat Error",
+        description: errorMessage,
+        variant: "destructive"
+      })
+    }
+  }, [error, toast])
+
+  // Track tool execution from toolInvocations
+  useEffect(() => {
+    if (!isLoading) {
+      setExecutingTool(null)
+      return
+    }
+    
+    const lastMsg = messages[messages.length - 1]
+    if (lastMsg?.role === 'assistant') {
+      const invocations = (lastMsg as any).toolInvocations
+      if (invocations && invocations.length > 0) {
+        const latest = invocations[invocations.length - 1]
+        if (latest.state === 'call') {
+          setExecutingTool(latest.toolName)
+        }
+      }
+    }
+  }, [messages, isLoading])
+
+  // Parse agent response for UI triggers from tool results (simplified)
   useEffect(() => {
     if (!messages.length) return
     
-    console.log('[v0] 🔍 Checking messages for email preview triggers, total messages:', messages.length)
+    // Check most recent assistant message for tool results
+    const lastAssistantMsg = messages
+      .filter(m => m.role === 'assistant')
+      .pop()
     
-    // Check ALL assistant messages (not just the last one) for tool results
-    // Tool results might be in a previous message
-    for (let i = messages.length - 1; i >= 0; i--) {
-      const message = messages[i]
-      if (message.role !== 'assistant') continue
-      
-      const content = getMessageContent(message)
-      
-      // First, check for explicit UI markers in text
-      // Check for segment selector trigger
-      if (content.includes('[SHOW_SEGMENT_SELECTOR]')) {
-        // Parse segments from response
-        const segmentsMatch = content.match(/\[SEGMENTS:(.*?)\]/s)
-        if (segmentsMatch) {
-          try {
-            const segments = JSON.parse(segmentsMatch[1])
-            setAvailableSegments(segments)
-            setShowSegmentSelector(true)
-            return // Don't check tool results if explicit marker found
-          } catch (error) {
-            console.error('[v0] Error parsing segments:', error)
+    if (!lastAssistantMsg) return
+    
+    // AI SDK stores tool results in toolInvocations array or in parts array
+    // Check both locations for compatibility
+    const toolInvocations = (lastAssistantMsg as any).toolInvocations
+    const parts = (lastAssistantMsg as any).parts
+    
+    // Process toolInvocations (AI SDK format)
+    if (toolInvocations && Array.isArray(toolInvocations)) {
+      for (const invocation of toolInvocations) {
+        // Check for compose_email tool
+        if (invocation.toolName === 'compose_email' && invocation.result) {
+          const result = invocation.result
+          
+          if (result.html && result.subjectLine && !result.error) {
+            console.log('[v0] ✅ Email preview found in toolInvocations')
+            setEmailPreview({
+              subject: result.subjectLine,
+              preview: result.preview || result.html.replace(/<[^>]*>/g, '').substring(0, 200) + '...',
+              html: result.html,
+              targetSegment: 'All Subscribers',
+              targetCount: 2746
+            })
+            return // Stop after first email found
+          }
+        }
+        
+        // Check for audience data tool
+        if (invocation.toolName === 'get_resend_audience_data' && invocation.result) {
+          const result = invocation.result
+          if (result.segments && Array.isArray(result.segments)) {
+            const formattedSegments = result.segments.map((s: any) => ({
+              id: s.id || 'all',
+              name: s.name || 'Unknown Segment',
+              size: s.size || 0,
+              description: s.description
+            }))
+            setAvailableSegments(formattedSegments)
+          }
+        }
+        
+        // Check for campaign status tool
+        if (invocation.toolName === 'check_campaign_status' && invocation.result) {
+          const result = invocation.result
+          if (result.campaigns && Array.isArray(result.campaigns) && result.campaigns.length > 0) {
+            const formattedCampaigns = result.campaigns.map((c: any) => ({
+              id: c.id,
+              name: c.name,
+              sentCount: c.stats?.sent || c.stats?.total || 0,
+              openedCount: 0,
+              openRate: 0,
+              date: new Date(c.createdAt).toLocaleDateString(),
+              status: c.status || 'sent'
+            }))
+            setRecentCampaigns(formattedCampaigns)
           }
         }
       }
-      
-      // Check for email preview trigger
-      if (content.includes('[SHOW_EMAIL_PREVIEW]')) {
-        // Use a more robust regex that handles multiline JSON
-        // Match [EMAIL_PREVIEW:...] where ... can span multiple lines until we find a closing bracket
-        // The pattern should match until ] that's not part of the JSON content
-        const previewMatch = content.match(/\[EMAIL_PREVIEW:([\s\S]*?)\](?=\n|$|\[|```)/)
-        if (previewMatch) {
-          try {
-            let previewJson = previewMatch[1].trim()
-            
-            // Handle case where JSON might have escaped quotes or newlines
-            // Remove any leading/trailing whitespace
-            previewJson = previewJson.trim()
-            
-            const preview = JSON.parse(previewJson)
-            
-            // Validate required fields
-            if (preview.subject && preview.html) {
-              console.log('[v0] ✅ Setting email preview from explicit marker')
-              setEmailPreview(preview)
-              return // Don't check tool results if explicit marker found
-            } else {
-              console.error('[v0] Email preview missing required fields:', preview)
-            }
-          } catch (error) {
-            console.error('[v0] Error parsing email preview:', error)
-            console.error('[v0] Preview JSON (first 500 chars):', previewMatch[1].substring(0, 500))
-            // Try to extract just the JSON part if it's wrapped in extra text
-            try {
-              const jsonMatch = previewMatch[1].match(/\{[\s\S]*\}/)
-              if (jsonMatch) {
-                const preview = JSON.parse(jsonMatch[0])
-                if (preview.subject && preview.html) {
-                  console.log('[v0] ✅ Setting email preview from explicit marker (retry)')
-                  setEmailPreview(preview)
-                  return
-                }
-              }
-            } catch (retryError) {
-              console.error('[v0] Retry parse also failed:', retryError)
-            }
-          }
-        }
-      }
-      
-      // Check for campaign status trigger
-      if (content.includes('[SHOW_CAMPAIGNS]')) {
-        const campaignsMatch = content.match(/\[CAMPAIGNS:(.*?)\]/s)
-        if (campaignsMatch) {
-          try {
-            const campaigns = JSON.parse(campaignsMatch[1])
-            setRecentCampaigns(campaigns)
-            return // Don't check tool results if explicit marker found
-          } catch (error) {
-            console.error('[v0] Error parsing campaigns:', error)
-          }
-        }
-      }
-      
-      // Automatic UI triggers from tool results
-      // Check if message contains tool calls/results
-      if (message.parts && Array.isArray(message.parts)) {
-        console.log('[v0] 🔍 Checking message parts for tool results, parts count:', message.parts.length)
-        for (const part of message.parts) {
-          console.log('[v0] 🔍 Part type:', part.type, 'toolName:', part.toolName)
+    }
+    
+    // Fallback: Check parts array (alternative format)
+    if (parts && Array.isArray(parts)) {
+      for (const part of parts) {
+        const partAny = part as any
           
           // Check for compose_email tool result
-          if (part.type === 'tool-result' && part.toolName === 'compose_email' && part.result) {
-            const result = part.result
-            console.log('[v0] 📧 compose_email tool result found in parts:', {
-              hasHtml: !!result.html,
-              hasSubjectLine: !!result.subjectLine,
-              hasError: !!result.error,
-              resultKeys: Object.keys(result || {}),
-              resultType: typeof result,
-              resultString: typeof result === 'string' ? result.substring(0, 100) : 'not a string'
-            })
-            
-            // Handle case where result might be a stringified JSON
+        if (partAny.type === 'tool-result' && partAny.toolName === 'compose_email' && partAny.result) {
+          const result = partAny.result
+          
+          // Handle stringified JSON
             let parsedResult = result
             if (typeof result === 'string') {
               try {
                 parsedResult = JSON.parse(result)
               } catch (e) {
                 console.warn('[v0] ⚠️ Could not parse result as JSON:', e)
+              continue
               }
             }
             
             if (parsedResult && parsedResult.html && parsedResult.subjectLine && !parsedResult.error) {
-              // Ensure HTML is a string and not escaped
-              let emailHtml = parsedResult.html
-              if (typeof emailHtml === 'string') {
-                // Check if HTML is escaped (contains &lt; instead of <)
-                if (emailHtml.includes('&lt;') || emailHtml.includes('&gt;')) {
-                  console.log('[v0] 🔧 HTML appears to be escaped, unescaping...')
-                  // Unescape HTML entities
-                  const tempDiv = document.createElement('div')
-                  tempDiv.innerHTML = emailHtml
-                  emailHtml = tempDiv.textContent || tempDiv.innerText || emailHtml
-                  // If that didn't work, try manual replacement
-                  if (emailHtml.includes('&lt;')) {
-                    emailHtml = emailHtml.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
-                  }
-                }
-                
-                // Ensure HTML is valid (starts with < or <!DOCTYPE)
-                if (!emailHtml.trim().startsWith('<') && !emailHtml.trim().startsWith('<!DOCTYPE')) {
-                  console.warn('[v0] ⚠️ HTML does not appear to be valid HTML')
-                  // Try to extract HTML from the string
-                  const htmlMatch = emailHtml.match(/(<!DOCTYPE\s+html[\s\S]*?<\/html>|<html[\s\S]*?<\/html>)/i)
-                  if (htmlMatch) {
-                    emailHtml = htmlMatch[1]
-                    console.log('[v0] ✅ Extracted HTML from string')
-                  }
-                }
-              }
-              
-              console.log('[v0] ✅ Setting email preview from tool result in parts')
-              console.log('[v0] 📧 Email HTML length:', emailHtml.length)
-              console.log('[v0] 📧 Email HTML preview (first 200 chars):', emailHtml.substring(0, 200))
+            console.log('[v0] ✅ Email preview found in parts')
               setEmailPreview({
                 subject: parsedResult.subjectLine,
-                preview: parsedResult.preview || emailHtml.replace(/<[^>]*>/g, '').substring(0, 200) + '...',
-                html: emailHtml, // Use the processed HTML
-                targetSegment: 'All Subscribers', // Default, can be updated
-                targetCount: 2746 // Default, can be updated from audience data
+              preview: parsedResult.preview || parsedResult.html.replace(/<[^>]*>/g, '').substring(0, 200) + '...',
+              html: parsedResult.html,
+              targetSegment: 'All Subscribers',
+              targetCount: 2746
               })
               return
-            } else {
-              console.warn('[v0] ⚠️ compose_email result missing required fields:', {
-                html: !!parsedResult?.html,
-                subjectLine: !!parsedResult?.subjectLine,
-                error: parsedResult?.error,
-                parsedResultKeys: parsedResult ? Object.keys(parsedResult) : []
-              })
             }
           }
           
           // Check for get_resend_audience_data tool result
-          if (part.type === 'tool-result' && part.toolName === 'get_resend_audience_data' && part.result) {
-            const result = part.result
-            if (result.segments && Array.isArray(result.segments) && result.segments.length > 0) {
-              // Format segments for selector
+        if (partAny.type === 'tool-result' && partAny.toolName === 'get_resend_audience_data' && partAny.result) {
+          const result = partAny.result
+          if (result.segments && Array.isArray(result.segments)) {
               const formattedSegments = result.segments.map((s: any) => ({
                 id: s.id || 'all',
                 name: s.name || 'Unknown Segment',
@@ -645,161 +682,27 @@ export default function AdminAgentChat({
                 description: s.description
               }))
               setAvailableSegments(formattedSegments)
-              // Don't auto-show selector, wait for agent to ask
             }
           }
           
           // Check for check_campaign_status tool result
-          if (part.type === 'tool-result' && part.toolName === 'check_campaign_status' && part.result) {
-            const result = part.result
+        if (partAny.type === 'tool-result' && partAny.toolName === 'check_campaign_status' && partAny.result) {
+          const result = partAny.result
             if (result.campaigns && Array.isArray(result.campaigns) && result.campaigns.length > 0) {
-              // Format campaigns for status cards
               const formattedCampaigns = result.campaigns.map((c: any) => ({
                 id: c.id,
                 name: c.name,
                 sentCount: c.stats?.sent || c.stats?.total || 0,
-                openedCount: 0, // Resend doesn't provide this via API
-                openRate: 0, // Would need webhook data
+              openedCount: 0,
+              openRate: 0,
                 date: new Date(c.createdAt).toLocaleDateString(),
                 status: c.status || 'sent'
               }))
               setRecentCampaigns(formattedCampaigns)
-              return
-            }
-          }
-        }
-      }
-      
-      // Also check message content for tool results (fallback)
-      // Some implementations might include tool results in content
-      if (typeof message.content === 'string') {
-        const contentStr = message.content
-        
-        // Check if content contains HTML email structure (indicates compose_email was used)
-        // Look for common email HTML patterns
-        const hasEmailHtml = contentStr.includes('<!DOCTYPE html') || 
-                            contentStr.includes('<html') || 
-                            (contentStr.includes('<table') && contentStr.includes('role="presentation"'))
-        
-        // Check if content mentions email creation or contains email-related keywords
-        const hasEmailKeywords = contentStr.includes('email') || 
-                                contentStr.includes('campaign') || 
-                                contentStr.includes('subject') ||
-                                contentStr.includes('compose_email')
-        
-        if (hasEmailHtml || hasEmailKeywords) {
-          console.log('[v0] 🔍 Checking message content for email data')
-          console.log('[v0] 🔍 Content length:', contentStr.length)
-          console.log('[v0] 🔍 Content preview (first 500 chars):', contentStr.substring(0, 500))
-          
-          // Try to extract HTML email from content
-          // Look for HTML block (might be wrapped in markdown or plain text)
-          const htmlMatch = contentStr.match(/(<!DOCTYPE\s+html[\s\S]*?<\/html>|<html[\s\S]*?<\/html>)/i)
-          if (htmlMatch) {
-            const emailHtml = htmlMatch[1]
-            
-            // Try to extract subject line from content (look for patterns like "Subject:" or in HTML title)
-            let subjectLine = ''
-            const subjectMatch = contentStr.match(/(?:subject|Subject)[\s:]+([^\n<]+)/i)
-            if (subjectMatch) {
-              subjectLine = subjectMatch[1].trim()
-            } else {
-              // Try to extract from HTML title tag
-              const titleMatch = emailHtml.match(/<title[^>]*>([^<]+)<\/title>/i)
-              if (titleMatch) {
-                subjectLine = titleMatch[1].trim()
-              } else {
-                // Fallback: use first heading or first line
-                const headingMatch = emailHtml.match(/<h[1-6][^>]*>([^<]+)<\/h[1-6]>/i)
-                if (headingMatch) {
-                  subjectLine = headingMatch[1].trim()
-                } else {
-                  subjectLine = 'Email Campaign'
-                }
-              }
-            }
-            
-            if (emailHtml && subjectLine) {
-              console.log('[v0] ✅ Setting email preview from extracted HTML in content')
-              setEmailPreview({
-                subject: subjectLine,
-                preview: emailHtml.replace(/<[^>]*>/g, '').substring(0, 200) + '...',
-                html: emailHtml,
-                targetSegment: 'All Subscribers',
-                targetCount: 2746
-              })
-              return
-            }
-          }
-          
-          // Try to find JSON object with html and subjectLine
-          try {
-            // Look for JSON objects that might contain email data (more flexible pattern)
-            const jsonPattern = /\{[^{}]*(?:"html"|"subjectLine"|"subject")[^{}]*\}/g
-            const jsonMatches = contentStr.match(jsonPattern)
-            if (jsonMatches) {
-              for (const jsonStr of jsonMatches) {
-                try {
-                  // Try to parse as complete JSON
-                  const parsed = JSON.parse(jsonStr)
-                  if (parsed.html && (parsed.subjectLine || parsed.subject)) {
-                    console.log('[v0] ✅ Setting email preview from content JSON match')
-                    setEmailPreview({
-                      subject: parsed.subjectLine || parsed.subject || 'Email Campaign',
-                      preview: parsed.preview || parsed.html.replace(/<[^>]*>/g, '').substring(0, 200) + '...',
-                      html: parsed.html,
-                      targetSegment: 'All Subscribers',
-                      targetCount: 2746
-                    })
-                    return
-                  }
-                } catch (e) {
-                  // Try to extract just the html and subjectLine fields
-                  const htmlMatch = jsonStr.match(/"html"\s*:\s*"([^"]+)"/)
-                  const subjectMatch = jsonStr.match(/"subjectLine"\s*:\s*"([^"]+)"|"subject"\s*:\s*"([^"]+)"/)
-                  if (htmlMatch && subjectMatch) {
-                    console.log('[v0] ✅ Setting email preview from content JSON field extraction')
-                    setEmailPreview({
-                      subject: subjectMatch[1] || subjectMatch[2] || 'Email Campaign',
-                      preview: htmlMatch[1].replace(/<[^>]*>/g, '').substring(0, 200) + '...',
-                      html: htmlMatch[1],
-                      targetSegment: 'All Subscribers',
-                      targetCount: 2746
-                    })
-                    return
-                  }
-                }
-              }
-            }
-            
-            // Also try the original regex pattern for tool results
-            const toolResultMatch = contentStr.match(/"toolName"\s*:\s*"compose_email"[^}]*"result"\s*:\s*({[^}]+})/s)
-            if (toolResultMatch) {
-              try {
-                const toolResult = JSON.parse(toolResultMatch[1])
-                if (toolResult.html && toolResult.subjectLine) {
-                  console.log('[v0] ✅ Setting email preview from content tool result match')
-                  setEmailPreview({
-                    subject: toolResult.subjectLine,
-                    preview: toolResult.preview || toolResult.html.replace(/<[^>]*>/g, '').substring(0, 200) + '...',
-                    html: toolResult.html,
-                    targetSegment: 'All Subscribers',
-                    targetCount: 2746
-                  })
-                  return
-                }
-              } catch (e) {
-                console.warn('[v0] ⚠️ Could not parse tool result JSON:', e)
-              }
-            }
-          } catch (error) {
-            console.warn('[v0] ⚠️ Error parsing tool result from content:', error)
           }
         }
       }
     }
-    
-    console.log('[v0] ⚠️ No email preview found in any messages')
   }, [messages])
 
   const handleNewChat = async () => {
@@ -927,167 +830,68 @@ export default function AdminAgentChat({
     
     if ((!hasText && !hasImages) || isLoading) return
 
-    // Wait for chat to finish loading if it's still loading
-    if (isLoadingChat) {
-      console.log("[v0] Chat is still loading, waiting...")
-      toast({
-        title: "Please wait",
-        description: "Chat is loading. Please wait a moment before sending.",
-        variant: "default"
-      })
-      return
-    }
-
+    // Ensure chat exists
     let currentChatId = chatId
-    
-    // If no chatId exists, try to load the most recent chat first (don't create new one immediately)
-    // Use explicit null/undefined check to handle chatId === 0 correctly
     if (currentChatId === null || currentChatId === undefined) {
-      console.log("[v0] No chatId exists, attempting to load most recent chat...")
       try {
-        // Try to load the most recent chat (this will use getOrCreateActiveChat on backend)
         const response = await fetch(loadChatEndpoint)
-        if (response.ok) {
           const data = await response.json()
-          // Use explicit null/undefined check to handle chatId === 0 correctly
+        
           if (data.chatId !== null && data.chatId !== undefined) {
             currentChatId = data.chatId
             setChatId(data.chatId)
-            if (data.chatTitle) {
-              setChatTitle(data.chatTitle)
-            }
-            console.log("[v0] Loaded existing chat with ID:", data.chatId)
-            
-            // If there are messages, set them (only when loading existing chat)
-            // When sending new messages, useChat will handle it automatically
-            if (data.messages && Array.isArray(data.messages) && data.messages.length > 0) {
-              const formattedMessages = data.messages.map((msg: any) => ({
-                id: msg.id || `msg-${Date.now()}-${Math.random()}`,
-                role: msg.role,
-                parts: msg.parts || [],
-                content: msg.content || ''
-              }))
-              setMessages(formattedMessages)
-            }
           } else {
-            // No existing chat found, create a new one
-            console.log("[v0] No existing chat found, creating new chat...")
-            const newChatResponse = await fetch(newChatEndpoint, {
-              method: "POST",
-            })
-            if (newChatResponse.ok) {
+          // Create new chat
+          const newChatResponse = await fetch(newChatEndpoint, { method: "POST" })
               const newChatData = await newChatResponse.json()
-              // Use explicit null/undefined check to handle chatId === 0 correctly
-              if (newChatData.chatId !== null && newChatData.chatId !== undefined) {
                 currentChatId = newChatData.chatId
                 setChatId(newChatData.chatId)
-                setChatTitle("New Chat")
-                console.log("[v0] Created new chat with ID:", newChatData.chatId)
-              } else {
-                throw new Error("No chatId in new chat response")
-              }
-            } else {
-              throw new Error(`Failed to create new chat: ${newChatResponse.status}`)
-            }
-          }
-        } else {
-          // Load failed, try creating new chat
-          console.log("[v0] Load chat failed, creating new chat...")
-          const newChatResponse = await fetch(newChatEndpoint, {
-            method: "POST",
-          })
-          if (newChatResponse.ok) {
-            const newChatData = await newChatResponse.json()
-            // Use explicit null/undefined check to handle chatId === 0 correctly
-            if (newChatData.chatId !== null && newChatData.chatId !== undefined) {
-              currentChatId = newChatData.chatId
-              setChatId(newChatData.chatId)
-              setChatTitle("New Chat")
-              console.log("[v0] Created new chat with ID:", newChatData.chatId)
-            } else {
-              throw new Error("No chatId in new chat response")
-            }
-          } else {
-            throw new Error(`Failed to create new chat: ${newChatResponse.status}`)
-          }
         }
       } catch (error) {
-        console.error("[v0] Error loading/creating chat:", error)
         toast({
           title: "Error",
-          description: error instanceof Error ? error.message : "Failed to load or create chat. Please try again.",
+          description: "Failed to initialize chat",
           variant: "destructive"
         })
-        return // Don't proceed with sending message
+        return
       }
     }
 
-    // Validate that we have a chatId before sending
-    // Use explicit null/undefined check to handle chatId === 0 correctly
-    if (currentChatId === null || currentChatId === undefined) {
-      console.error("[v0] Cannot send message: No chatId available")
-      toast({
-        title: "Error",
-        description: "Unable to send message. Please try creating a new chat first.",
-        variant: "destructive"
-      })
-      return
-    }
-
-    // Build message content with images
+    // Build message content
     let messageContent: string | Array<{ type: string; text?: string; image?: string }> = inputValue.trim()
     
-    if (selectedGalleryImages.size > 0) {
+    if (hasImages) {
       const contentParts: Array<{ type: string; text?: string; image?: string }> = []
-      
       if (hasText) {
-        contentParts.push({
-          type: 'text',
-          text: inputValue.trim()
-        })
+        contentParts.push({ type: 'text', text: inputValue.trim() })
       }
-      
-      // Add all selected images
       selectedGalleryImages.forEach((imageUrl) => {
-        contentParts.push({
-          type: 'image',
-          image: imageUrl
+        contentParts.push({ type: 'image', image: imageUrl })
         })
-      })
-      
       messageContent = contentParts
     }
 
-    // Store current values before clearing (for error recovery)
-    const originalInputValue = inputValue
-    const originalSelectedImages = new Set(selectedGalleryImages)
-
-    // Clear UI state optimistically
+    // Clear UI
     setInputValue("")
     setSelectedGalleryImages(new Set())
     setShowGallery(false)
 
+    // Send message using useChat
+    // sendMessage accepts { text: string } or message object with parts
     try {
-      // sendMessage automatically adds the user message to the messages array
-      // useChat expects either a string, { text: string }, or { content: array } format
-      // It automatically sets role to "user", so we don't need to specify it
-      if (Array.isArray(messageContent)) {
-        // Multi-part message with images: pass content array directly
-        await sendMessage({ content: messageContent })
-      } else {
-        // Text-only message: use { text: ... } format
+      if (typeof messageContent === 'string') {
         await sendMessage({ text: messageContent })
+      } else {
+        // For multi-part messages, sendMessage expects a message object
+        await sendMessage({ 
+          role: 'user',
+          content: messageContent as any
+        } as any)
       }
-      console.log('[v0] ✅ Message sent successfully, useChat will handle adding it to messages')
-      // Success - state already cleared, no need to restore
-    } catch (error) {
-      console.error("[v0] Error sending message:", error)
-      // Restore user input and selected images on error
-      setInputValue(originalInputValue)
-      setSelectedGalleryImages(originalSelectedImages)
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to send message. Your input has been restored.",
+        description: error.message || "Failed to send message",
         variant: "destructive"
       })
     }
@@ -1120,7 +924,7 @@ export default function AdminAgentChat({
   return (
     <div className="flex h-screen bg-stone-50 overflow-hidden">
       {/* Sidebar */}
-      <div className={`w-80 bg-white border-r border-stone-200 flex flex-col transition-all ${showHistory ? '' : '-ml-80 md:ml-0'} flex-shrink-0`}>
+      <div className={`w-80 bg-white border-r border-stone-200 flex flex-col transition-all ${showHistory ? '' : '-ml-80 md:ml-0'} shrink-0`}>
         <div className="p-4 border-b border-stone-200">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-stone-900">Chat History</h2>
@@ -1197,7 +1001,26 @@ export default function AdminAgentChat({
             <div className="flex items-center justify-center h-full">
               <div className="text-stone-500">Loading chat...</div>
             </div>
-          ) : messages.length === 0 ? (
+          ) : (
+            <>
+              {/* Tool Execution Loading Indicator */}
+              {executingTool && (
+                <div className="max-w-4xl mx-auto mb-4">
+                  <div className="bg-stone-50 border border-stone-200 rounded-lg p-4 flex items-center gap-3">
+                    <div className="w-5 h-5 border-2 border-stone-900 border-t-transparent rounded-full animate-spin"></div>
+                    <div>
+                      <p className="text-sm font-medium text-stone-900">
+                        {executingTool === 'compose_email' && 'Creating your email...'}
+                        {executingTool === 'schedule_campaign' && 'Scheduling campaign...'}
+                        {executingTool === 'get_resend_audience_data' && 'Fetching audience data...'}
+                        {!['compose_email', 'schedule_campaign', 'get_resend_audience_data'].includes(executingTool) && `Executing ${executingTool}...`}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {messages.length === 0 ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center text-stone-500">
                 <p className="text-lg mb-2">Start a conversation</p>
@@ -1206,6 +1029,22 @@ export default function AdminAgentChat({
             </div>
           ) : (
             <div className="space-y-4 max-w-4xl mx-auto">
+              {(() => {
+                console.log('[v0] 📋 Rendering messages:', {
+                  count: messages.length,
+                  messages: messages.map((m: any) => ({
+                    id: m.id,
+                    role: m.role,
+                    hasContent: !!m.content,
+                    contentType: typeof m.content,
+                    hasParts: !!m.parts,
+                    contentPreview: typeof m.content === 'string' 
+                      ? m.content.substring(0, 50) 
+                      : 'not a string'
+                  }))
+                })
+                return null
+              })()}
               {messages.map((message) => (
                 <div
                   key={message.id}
@@ -1218,140 +1057,37 @@ export default function AdminAgentChat({
                         : "bg-stone-100 text-stone-900"
                     }`}
                   >
-                    <div className="text-sm leading-relaxed whitespace-pre-wrap">
-                      {(() => {
-                        // Extract images and text from parts array if available
-                        let content = ""
-                        let imageUrls: string[] = []
-                        
-                        if (message.parts && Array.isArray(message.parts)) {
-                          message.parts.forEach((p: any) => {
-                            if (p.type === "text") {
-                              content += (content ? '\n' : '') + (p.text || "")
-                            } else if (p.type === "image") {
-                              const imageUrl = p.image || p.url
-                              // Only push if we have a valid URL (not empty string)
-                              if (imageUrl && typeof imageUrl === 'string' && imageUrl.trim().length > 0) {
-                                imageUrls.push(imageUrl)
-                              }
-                            }
+                    <div className="text-sm leading-relaxed">
+                      {message.role === "assistant" ? (
+                        (() => {
+                          const content = getMessageContent(message)
+                          console.log('[v0] 📝 Rendering assistant message content:', {
+                            messageId: message.id,
+                            contentLength: content.length,
+                            contentPreview: content.substring(0, 100),
+                            isEmpty: !content.trim()
                           })
-                        } else if (Array.isArray(message.content)) {
-                          message.content.forEach((p: any) => {
-                            if (p.type === "text") {
-                              content += (content ? '\n' : '') + (p.text || "")
-                            } else if (p.type === "image") {
-                              const imageUrl = p.image || p.url
-                              // Only push if we have a valid URL (not empty string)
-                              if (imageUrl && typeof imageUrl === 'string' && imageUrl.trim().length > 0) {
-                                imageUrls.push(imageUrl)
-                              }
-                            }
-                          })
-                        } else if (typeof message.content === 'string') {
-                          content = message.content
-                        } else {
-                          content = JSON.stringify(message.content || "")
-                        }
-                        
-                        // Filter out empty or invalid URLs before rendering
-                        const validImageUrls = imageUrls.filter((url) => 
-                          url && typeof url === 'string' && url.trim().length > 0
-                        )
-                        
-                        // Display images if present
-                        const imageSection = validImageUrls.length > 0 ? (
-                          <div className="mb-3 grid grid-cols-2 gap-2">
-                            {validImageUrls.map((url, idx) => (
-                              <div key={idx} className="relative aspect-square rounded-lg overflow-hidden bg-stone-100">
-                                <Image
-                                  src={url}
-                                  alt={`Image ${idx + 1}`}
-                                  fill
-                                  className="object-cover"
-                                  unoptimized
-                                />
-                              </div>
-                            ))}
-                          </div>
-                        ) : null
-
-                        // Check if content contains JSON email campaign block
-                        const jsonMatch = content.match(/```json\s*(\{[\s\S]*?\})\s*```/)
-                        if (jsonMatch) {
-                          try {
-                            const emailData = JSON.parse(jsonMatch[1])
-                            // Check for new format (campaign_name, create_for_all_segments) or old format (subject_line, html_content)
-                            if ((emailData.campaign_name || emailData.subject_line) && emailData.html_content) {
-                              return (
-                                <div>
-                                  {imageSection}
-                                  <div className="mb-4">{content.replace(/```json[\s\S]*?```/g, '').trim()}</div>
-                                  <EmailCampaignCreator data={emailData} />
-                                </div>
-                              )
-                            }
-                          } catch (e) {
-                            // Not valid JSON, continue with normal rendering
+                          // Fallback to plain text if content is very short or ReactMarkdown fails
+                          if (!content.trim()) {
+                            return <div className="text-stone-500 italic">Empty message</div>
                           }
-                        }
-
-                        // Filter out UI trigger markers from displayed content
-                        let displayContent = content
-                        
-                        // Remove email preview markers (handle multiline JSON)
-                        displayContent = displayContent.replace(/\[SHOW_EMAIL_PREVIEW\]/g, '')
-                        displayContent = displayContent.replace(/\[EMAIL_PREVIEW:[\s\S]*?\]/g, '')
-                        
-                        // Remove segment selector markers
-                        displayContent = displayContent.replace(/\[SHOW_SEGMENT_SELECTOR\]/g, '')
-                        displayContent = displayContent.replace(/\[SEGMENTS:[\s\S]*?\]/g, '')
-                        
-                        // Remove campaign status markers
-                        displayContent = displayContent.replace(/\[SHOW_CAMPAIGNS\]/g, '')
-                        displayContent = displayContent.replace(/\[CAMPAIGNS:[\s\S]*?\]/g, '')
-                        
-                        // Clean up extra whitespace/newlines left by marker removal
-                        displayContent = displayContent.replace(/\n{3,}/g, '\n\n').trim()
-
-                        // Render markdown for assistant messages, plain text for user messages
-                        const textContent = displayContent.trim()
-                        if (message.role === "assistant" && textContent) {
                           return (
-                            <>
-                              {imageSection}
-                              <div className="prose prose-sm max-w-none text-stone-900">
-                                <ReactMarkdown
-                                  components={{
-                                    p: ({ children }) => <p className="mb-3 last:mb-0 text-stone-900">{children}</p>,
-                                    strong: ({ children }) => <strong className="font-semibold text-stone-900">{children}</strong>,
-                                    em: ({ children }) => <em className="italic">{children}</em>,
-                                    ul: ({ children }) => <ul className="list-disc list-inside mb-3 space-y-1 text-stone-900">{children}</ul>,
-                                    ol: ({ children }) => <ol className="list-decimal list-inside mb-3 space-y-1 text-stone-900">{children}</ol>,
-                                    li: ({ children }) => <li className="ml-2 text-stone-900">{children}</li>,
-                                    h1: ({ children }) => <h1 className="text-lg font-bold mb-2 mt-4 first:mt-0 text-stone-900">{children}</h1>,
-                                    h2: ({ children }) => <h2 className="text-base font-semibold mb-2 mt-3 first:mt-0 text-stone-900">{children}</h2>,
-                                    h3: ({ children }) => <h3 className="text-sm font-semibold mb-1 mt-2 first:mt-0 text-stone-900">{children}</h3>,
-                                    code: ({ children }) => <code className="bg-stone-200 px-1.5 py-0.5 rounded text-xs font-mono text-stone-900">{children}</code>,
-                                    pre: ({ children }) => <pre className="bg-stone-200 p-3 rounded-lg overflow-x-auto mb-3 text-stone-900">{children}</pre>,
-                                    blockquote: ({ children }) => <blockquote className="border-l-4 border-stone-400 pl-3 italic my-2 text-stone-700">{children}</blockquote>,
-                                  }}
-                                >
-                                  {textContent}
-                                </ReactMarkdown>
-                              </div>
-                            </>
+                            <div className="prose prose-sm max-w-none text-stone-900">
+                              <ReactMarkdown>{content}</ReactMarkdown>
+                            </div>
                           )
-                        }
-                        
-                        // Plain text for user messages
-                        return (
-                          <>
-                            {imageSection}
-                            {textContent}
-                          </>
-                        )
-                      })()}
+                        })()
+                      ) : (
+                        (() => {
+                          const content = getMessageContent(message)
+                          console.log('[v0] 📝 Rendering user message content:', {
+                            messageId: message.id,
+                            contentLength: content.length,
+                            contentPreview: content.substring(0, 100)
+                          })
+                          return <div className="whitespace-pre-wrap">{content || '(empty)'}</div>
+                        })()
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1377,6 +1113,8 @@ export default function AdminAgentChat({
               <div ref={messagesEndRef} />
             </div>
           )}
+            </>
+          )}
 
           {/* Tool Loading Indicator */}
           {toolLoading && (
@@ -1401,24 +1139,28 @@ export default function AdminAgentChat({
           {/* Tool Error Display */}
           {Object.keys(toolErrors).length > 0 && (
             <div className="max-w-4xl mx-auto mb-4">
-              {Object.entries(toolErrors).map(([toolName, error]) => (
-                <div key={toolName} className="bg-red-50 border border-red-200 rounded-lg p-4 mb-2">
-                  <p className="text-sm font-medium text-red-900 mb-1">
-                    {toolName} Error
-                  </p>
-                  <p className="text-xs text-red-700">{error}</p>
-                  <button
-                    onClick={() => setToolErrors(prev => {
-                      const newErrors = { ...prev }
-                      delete newErrors[toolName]
-                      return newErrors
-                    })}
-                    className="mt-2 text-xs text-red-700 hover:text-red-900 underline"
-                  >
-                    Dismiss
-                  </button>
-                </div>
-              ))}
+              {Object.entries(toolErrors).map(([toolName, error]) => {
+                // Filter out Next.js error page HTML from error messages
+                const filteredError = filterErrorPageHTML(error)
+                return (
+                  <div key={toolName} className="bg-red-50 border border-red-200 rounded-lg p-4 mb-2">
+                    <p className="text-sm font-medium text-red-900 mb-1">
+                      {toolName === 'general' ? 'Chat Error' : `${toolName} Error`}
+                    </p>
+                    <p className="text-xs text-red-700">{filteredError}</p>
+                    <button
+                      onClick={() => setToolErrors(prev => {
+                        const newErrors = { ...prev }
+                        delete newErrors[toolName]
+                        return newErrors
+                      })}
+                      className="mt-2 text-xs text-red-700 hover:text-red-900 underline"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                )
+              })}
             </div>
           )}
 
@@ -1729,7 +1471,7 @@ export default function AdminAgentChat({
                 type="button"
                 onClick={() => setShowGallery(!showGallery)}
                 disabled={isLoading}
-                className={`px-4 py-3 border rounded-lg transition-colors flex items-center gap-2 flex-shrink-0 ${
+                className={`px-4 py-3 border rounded-lg transition-colors flex items-center gap-2 shrink-0 ${
                   showGallery
                     ? 'bg-stone-900 text-white border-stone-900'
                     : 'bg-white text-stone-700 border-stone-300 hover:bg-stone-50'
@@ -1750,7 +1492,7 @@ export default function AdminAgentChat({
               <button
                 type="submit"
                 disabled={(!inputValue.trim() && selectedGalleryImages.size === 0) || isLoading}
-                className="px-6 py-3 bg-stone-950 text-white rounded-lg hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 flex-shrink-0"
+                className="px-6 py-3 bg-stone-950 text-white rounded-lg hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shrink-0"
               >
                 <Send className="w-4 h-4" />
                 <span>Send</span>

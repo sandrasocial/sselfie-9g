@@ -5,6 +5,7 @@ const nextConfig = {
   },
   images: {
     unoptimized: true,
+    qualities: [75, 80, 85], // Configure quality values to suppress warnings
   },
   experimental: {
     serverActions: {

@@ -209,8 +209,16 @@ export async function GET(request: NextRequest) {
       chatTitle: chat.chat_title,
       messages: formattedMessages,
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error("[v0] Error loading admin chat:", error)
-    return NextResponse.json({ error: "Failed to load chat" }, { status: 500 })
+    console.error("[v0] Error details:", {
+      message: error?.message,
+      stack: error?.stack,
+      name: error?.name
+    })
+    return NextResponse.json({ 
+      error: "Failed to load chat",
+      details: process.env.NODE_ENV === 'development' ? error?.message : undefined
+    }, { status: 500 })
   }
 }

@@ -46,8 +46,14 @@ export default async function AlexPage() {
   }
 
   // Check if user is admin
-  if (neonUser.email !== ADMIN_EMAIL) {
+  if (!neonUser.email || neonUser.email !== ADMIN_EMAIL) {
     redirect("/")
+  }
+
+  // Ensure all required props are available
+  if (!neonUser.id || !neonUser.email) {
+    console.error("[v0] Missing required user data:", { id: neonUser.id, email: neonUser.email })
+    redirect("/auth/login")
   }
 
   return (
@@ -55,7 +61,7 @@ export default async function AlexPage() {
       userId={String(neonUser.id)}
       userName={neonUser.display_name || undefined}
       userEmail={neonUser.email}
-      apiEndpoint="/api/admin/alex/chat"
+      apiEndpoint="/api/admin/agent/chat"
       loadChatEndpoint="/api/admin/agent/load-chat"
       chatsEndpoint="/api/admin/agent/chats"
       newChatEndpoint="/api/admin/agent/new-chat"

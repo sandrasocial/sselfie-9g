@@ -1,4 +1,4 @@
-import { streamText, tool, generateText, createUIMessageStream, createUIMessageStreamResponse } from "ai"
+import { streamText, tool, generateText } from "ai"
 import { z } from "zod"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
@@ -500,24 +500,31 @@ export async function POST(req: Request) {
         campaignName: z.string().describe("Name for this campaign"),
         subjectLine: z.string(),
         emailHtml: z.string().describe("The approved email HTML"),
-        targetAudience: z.object({
-          all_users: z.boolean().optional(),
-          plan: z.string().optional(),
-          resend_segment_id: z.string().optional(),
-          recipients: z.array(z.string()).optional()
-        }).describe("Who receives this email"),
+        targetAudienceAllUsers: z.boolean().optional().describe("Send to all users"),
+        targetAudiencePlan: z.string().optional().describe("Target specific plan"),
+        targetAudienceResendSegmentId: z.string().optional().describe("Resend segment ID"),
+        targetAudienceRecipients: z.array(z.string()).optional().describe("Specific recipient emails"),
         scheduledFor: z.string().optional().describe("ISO datetime to send, or null for immediate"),
         campaignType: z.string()
       }),
       
-      execute: async ({ campaignName, subjectLine, emailHtml, targetAudience, scheduledFor, campaignType }: {
+      execute: async ({ campaignName, subjectLine, emailHtml, targetAudienceAllUsers, targetAudiencePlan, targetAudienceResendSegmentId, targetAudienceRecipients, scheduledFor, campaignType }: {
         campaignName: string
         subjectLine: string
         emailHtml: string
-        targetAudience: any
+        targetAudienceAllUsers?: boolean
+        targetAudiencePlan?: string
+        targetAudienceResendSegmentId?: string
+        targetAudienceRecipients?: string[]
         scheduledFor?: string
         campaignType: string
       }) => {
+        // Reconstruct targetAudience from flattened parameters
+        const targetAudience: any = {}
+        if (targetAudienceAllUsers !== undefined) targetAudience.all_users = targetAudienceAllUsers
+        if (targetAudiencePlan) targetAudience.plan = targetAudiencePlan
+        if (targetAudienceResendSegmentId) targetAudience.resend_segment_id = targetAudienceResendSegmentId
+        if (targetAudienceRecipients) targetAudience.recipients = targetAudienceRecipients
         try {
           // Use a temporary campaign ID placeholder that we'll replace after INSERT
           // We need the actual campaign ID, so we'll use a transaction-like approach:
@@ -881,22 +888,26 @@ export async function POST(req: Request) {
   Be proactive and strategic - Sandra wants AI to help her scale.`,
       
       parameters: z.object({
-        audienceData: z.object({
-          totalContacts: z.number(),
-          segments: z.array(z.object({
-            id: z.string().optional(),
-            name: z.string().optional(),
-            size: z.number().optional()
-          }))
-        }).describe("Audience data from get_resend_audience_data"),
-        
+        totalContacts: z.number().describe("Total number of contacts in the audience"),
+        segments: z.array(z.object({
+          id: z.string().optional(),
+          name: z.string().optional(),
+          size: z.number().optional()
+        })).describe("Array of audience segments"),
         lastCampaignDays: z.number().optional().describe("Days since last campaign (fetch from database)")
       }),
       
-      execute: async ({ audienceData, lastCampaignDays }: {
-        audienceData: any
+      execute: async ({ totalContacts, segments, lastCampaignDays }: {
+        totalContacts: number
+        segments: Array<{ id?: string; name?: string; size?: number }>
         lastCampaignDays?: number
       }) => {
+        // Reconstruct audienceData from flattened parameters
+        const audienceData = {
+          totalContacts,
+          segments
+        }
+        
         try {
           // Get recent campaign history
           const recentCampaigns = await sql`
@@ -1328,13 +1339,12 @@ These images should be included naturally in the email HTML.`
       analyze_email_strategy: analyzeEmailStrategyTool,
     } as any
 
-    // SOLUTION: Use Anthropic SDK directly to bypass Vercel Gateway -> Bedrock serialization issues
-    // This allows tools to work properly without the gateway mangling the tool schemas
+    // Use Anthropic SDK directly to bypass gateway tool schema conversion issues
+    // This ensures tools work correctly with proper schema formatting
     const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY
     const hasTools = tools && Object.keys(tools).length > 0
     const useDirectAnthropic = hasAnthropicKey && hasTools
     
-    // Log environment status for debugging
     console.log('[v0] 🔍 Environment check:', {
       hasAnthropicKey,
       hasTools,
@@ -1366,7 +1376,17 @@ These images should be included naturally in the email HTML.`
           const toolCalls: Array<{ id: string; name: string; input: any }> = []
           const toolResults: Array<{ tool_use_id: string; name: string; content: any }> = []
           
+          let eventCount = 0
+          let hasYieldedText = false
+          
           for await (const event of stream) {
+            eventCount++
+            
+            // Log first few events to debug
+            if (eventCount <= 3) {
+              console.log(`[v0] 📨 Event ${eventCount}:`, event.type, event.delta?.type || 'no delta')
+            }
+            
             // Handle tool use start
             if (event.type === 'content_block_start' && 'content_block' in event && event.content_block && 'type' in event.content_block && event.content_block.type === 'tool_use') {
               const toolUse = event.content_block as any
@@ -1476,12 +1496,20 @@ These images should be included naturally in the email HTML.`
               }
             }
             
+            // Handle content_block_start for text blocks (may come before deltas)
+            else if (event.type === 'content_block_start' && 'content_block' in event && event.content_block && 'type' in event.content_block && event.content_block.type === 'text') {
+              // Text block started - this is just informational, we'll get deltas next
+              console.log(`[v0] 📝 Text content block started (event ${eventCount})`)
+            }
+            
             // Handle text deltas - yield text directly
             else if (event.type === 'content_block_delta' && 'delta' in event && event.delta && 'type' in event.delta && event.delta.type === 'text_delta') {
-              // Safely access text property with fallback
               const text = event.delta?.text
-              // Only yield if text is defined, not empty, and is a string
               if (text !== undefined && text !== null && typeof text === 'string' && text.length > 0) {
+                if (!hasYieldedText) {
+                  hasYieldedText = true
+                  console.log(`[v0] ✅ First text delta yielded (event ${eventCount}): "${text.substring(0, 50)}..."`)
+                }
                 yield text
               }
             }
@@ -1526,7 +1554,7 @@ These images should be included naturally in the email HTML.`
                 const continuationResponse = await anthropic.messages.create({
                   model: 'claude-sonnet-4-20250514',
                   max_tokens: 4000,
-                  system: systemPromptWithImages, // Use system prompt with image context
+                  system: systemPromptWithImages,
                   messages: messages as any,
                   tools: anthropicTools.length > 0 ? anthropicTools : undefined,
                   stream: true,
@@ -1553,7 +1581,7 @@ These images should be included naturally in the email HTML.`
         system: systemPromptWithImages,
         messages: anthropicMessages as any,
         tools: anthropicTools.length > 0 ? anthropicTools : undefined,
-        stream: true,  // ← Must be true
+        stream: true,
       })
       
       // Create async generator that yields text chunks and handles tool execution
@@ -1574,9 +1602,6 @@ These images should be included naturally in the email HTML.`
         console.log('[v0] 📊 Generator iteration complete')
       }
       
-      // Convert text stream to UI message stream format for useChat compatibility
-      console.log('[v0] Creating UI message stream...')
-      
       // Create a ReadableStream that emits Server-Sent Events format
       // This is what DefaultChatTransport expects
       console.log('[v0] Creating SSE stream...')
@@ -1586,13 +1611,65 @@ These images should be included naturally in the email HTML.`
           const encoder = new TextEncoder()
           let messageId = 'msg-' + Date.now()
           let chunkCount = 0
+          let isClosed = false
+          let hasYieldedData = false
+          let streamStartTime = Date.now()
           
           // Track accumulated text and email preview data for persistence
           let accumulatedText = ''
           let emailPreviewData: { html: string; subjectLine: string; preview: string } | null = null
           
+          // Helper to safely enqueue data
+          const safeEnqueue = (data: Uint8Array) => {
+            if (!isClosed) {
+              try {
+                controller.enqueue(data)
+                if (!hasYieldedData) {
+                  hasYieldedData = true
+                  const timeToFirstChunk = Date.now() - streamStartTime
+                  console.log(`[v0] ✅ First chunk sent after ${timeToFirstChunk}ms`)
+                }
+              } catch (e: any) {
+                if (e.message?.includes('closed') || e.name === 'TypeError') {
+                  isClosed = true
+                  const timeToClose = Date.now() - streamStartTime
+                  console.warn(`[v0] ⚠️ Controller already closed after ${timeToClose}ms, skipping enqueue`)
+                } else {
+                  throw e
+                }
+              }
+            }
+          }
+          
+          // Helper to safely close controller
+          const safeClose = () => {
+            if (!isClosed) {
+              try {
+                controller.close()
+                isClosed = true
+                const streamDuration = Date.now() - streamStartTime
+                console.log(`[v0] 🔒 Stream closed after ${streamDuration}ms, yielded ${chunkCount} chunks`)
+              } catch (e) {
+                // Ignore errors when closing
+              }
+            }
+          }
+          
+          // Note: ReadableStreamDefaultController doesn't have a signal property
+          // We'll detect closure through the enqueue error instead
+          
           try {
+            console.log('[v0] 🔄 Starting to iterate over generateTextStream()...')
+            let itemsProcessed = 0
+            
             for await (const item of generateTextStream()) {
+              itemsProcessed++
+              if (isClosed) {
+                const timeToClose = Date.now() - streamStartTime
+                console.warn(`[v0] ⚠️ Stream already closed after ${timeToClose}ms, stopping iteration (processed ${itemsProcessed} items)`)
+                break
+              }
+              
               // Handle tool-result events
               if (typeof item === 'object' && item !== null && 'type' in item && item.type === 'tool-result') {
                 // Store email preview data if compose_email tool executed
@@ -1614,15 +1691,27 @@ These images should be included naturally in the email HTML.`
                   result: item.data.result
                 }
                 const toolResultData = `data: ${JSON.stringify(toolResultMessage)}\n\n`
-                controller.enqueue(encoder.encode(toolResultData))
+                safeEnqueue(encoder.encode(toolResultData))
                 console.log(`[v0] 📧 Emitted tool-result event for ${item.data.toolName}`)
               }
               // Handle text chunks
               else if (typeof item === 'string' && item.length > 0) {
+                // Send text-start event before first chunk (DefaultChatTransport requirement)
+                if (chunkCount === 0) {
+                  const startMessage = {
+                    type: 'text-start',
+                    id: messageId
+                  }
+                  const startData = `data: ${JSON.stringify(startMessage)}\n\n`
+                  safeEnqueue(encoder.encode(startData))
+                  console.log('[v0] 📝 Sent text-start event')
+                }
+                
                 accumulatedText += item
                 chunkCount++
                 
-                // Format as SSE event - AI SDK expects this format
+                // Format as SSE event - DefaultChatTransport expects this format
+                // Must include 'id' field and 'delta' property (not 'text')
                 const message = {
                   type: 'text-delta',
                   id: messageId,
@@ -1631,40 +1720,43 @@ These images should be included naturally in the email HTML.`
                 
                 // SSE format: data: <json>\n\n
                 const data = `data: ${JSON.stringify(message)}\n\n`
-                controller.enqueue(encoder.encode(data))
+                safeEnqueue(encoder.encode(data))
                 
                 if (chunkCount % 10 === 0) {
-                  console.log(`[v0] 📝 Sent ${chunkCount} chunks so far...`)
+                  console.log(`[v0] 📝 Sent ${chunkCount} chunks so far, total text length: ${accumulatedText.length}`)
                 }
               }
             }
             
-            // Send final message to indicate completion
-            const doneMessage = {
-              type: 'finish',
-              id: messageId
+            // Send text-end event if we sent any text chunks (DefaultChatTransport requirement)
+            if (chunkCount > 0 && !isClosed) {
+              const endMessage = {
+                type: 'text-end',
+                id: messageId
+              }
+              safeEnqueue(encoder.encode(`data: ${JSON.stringify(endMessage)}\n\n`))
+              console.log('[v0] 📝 Sent text-end event')
             }
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify(doneMessage)}\n\n`))
             
+            // Note: DefaultChatTransport doesn't need a 'finish' event - it handles completion automatically
+            // The stream closing is sufficient to signal completion
             console.log(`[v0] ✅ Sent ${chunkCount} chunks, closing stream`)
-            controller.close()
           } catch (error: any) {
             console.error('[v0] ❌ Stream error:', error)
-            // Send error message
-            const errorMessage = {
-              type: 'error',
-              id: messageId,
-              error: error.message || 'Stream error'
+            // Send error message (only if not closed)
+            if (!isClosed) {
+              const errorMessage = {
+                type: 'error',
+                id: messageId,
+                errorText: error.message || 'Stream error'
+              }
+              safeEnqueue(encoder.encode(`data: ${JSON.stringify(errorMessage)}\n\n`))
             }
-            try {
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify(errorMessage)}\n\n`))
-            } catch (e) {
-              // Ignore errors when sending error message
-            }
-            controller.close()
           } finally {
+            safeClose()
+            console.log('[v0] ✅ UI message stream finished')
+            
             // Save message in finally block to ensure it runs even if stream is interrupted
-            // This prevents data loss on network errors, client disconnects, or exceptions
             if (accumulatedText && activeChatId) {
               try {
                 await saveChatMessage(activeChatId, 'assistant', accumulatedText, emailPreviewData)
@@ -1697,34 +1789,30 @@ These images should be included naturally in the email HTML.`
       } else {
         console.log('[v0] Using AI SDK (fallback mode)')
       }
-
-    const result = streamText({
+      
+      const result = streamText({
         model: "anthropic/claude-sonnet-4-20250514",
-      system: systemPromptWithImages,
-      messages: modelMessages,
-      maxOutputTokens: 4000,
+        system: systemPromptWithImages,
+        messages: modelMessages,
+        maxOutputTokens: 4000,
         tools: tools,
-      headers: {
-        'anthropic-beta': 'context-1m-2025-08-07',
-      },
-      onFinish: async ({ text }) => {
-        if (text && activeChatId) {
-          try {
-            await saveChatMessage(activeChatId, "assistant", text)
-            console.log('[v0] ✅ Saved assistant message to chat:', activeChatId)
-          } catch (error) {
-            console.error("[v0] ❌ Error saving assistant message:", error)
+        onFinish: async ({ text }) => {
+          if (text && activeChatId) {
+            try {
+              await saveChatMessage(activeChatId, "assistant", text)
+              console.log('[v0] ✅ Saved assistant message to chat:', activeChatId)
+            } catch (error) {
+              console.error("[v0] ❌ Error saving assistant message:", error)
+            }
           }
+        },
+      })
+      
+      return result.toUIMessageStreamResponse({
+        headers: {
+          'X-Chat-Id': String(activeChatId),
         }
-      },
-    })
-
-    // Return stream with chat ID in headers
-    return result.toUIMessageStreamResponse({
-      headers: {
-        'X-Chat-Id': String(activeChatId),
-      }
-    })
+      })
     }
   } catch (error: any) {
     console.error("[v0] Admin agent chat error:", error)

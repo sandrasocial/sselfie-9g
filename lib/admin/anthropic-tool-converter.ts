@@ -9,7 +9,10 @@ import { zodToJsonSchema } from 'zod-to-json-schema'
  * Convert Zod schema to Anthropic tool format
  */
 function zodToAnthropicTool(name: string, description: string, schema: any) {
-  const jsonSchema = zodToJsonSchema(schema, { target: 'openApi3' })
+  const jsonSchema = zodToJsonSchema(schema, { target: 'openApi3' }) as {
+    properties?: Record<string, any>
+    required?: string[]
+  }
   
   return {
     name,
