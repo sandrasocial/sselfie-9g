@@ -513,9 +513,73 @@ Return ONLY a valid JSON array of 6 concepts:
     "aesthetic": "string - aesthetic description matching SSELFIE's clean, feminine, modern aesthetic AND the user's request",
     "brandReferences": ["string"] - array of relevant brand names that fit the concept,
     "stylingDetails": "string - specific styling details that match the user's request",
-    "technicalSpecs": "string - camera/technical specs"
+    "technicalSpecs": "string - camera/technical specs",
+    "prompt": "COMPLETE STRUCTURED PROMPT for Nano Banana Pro (150-400 words) - see format below"
   }
 ]
+
+**🔴 CRITICAL: PROMPT FIELD REQUIREMENTS**
+
+The "prompt" field must be a COMPLETE, STRUCTURED PROMPT ready for Nano Banana Pro. Generate this directly - do not generate a description that needs transformation.
+
+**PROMPT FORMAT (Pro Mode - Editorial Quality):**
+
+For concepts 0-2 (Editorial - first 3 concepts):
+Professional photography. Pinterest-style editorial portrait. Character consistency with provided reference images. Match the exact facial features, hair, skin tone, body type, and physical characteristics of the person in the reference images. This is the same person in a different scene. Editorial quality, professional photography aesthetic.
+
+**Outfit:** [Complete outfit with ALL brands, materials, and specific pieces. Example: "The Row cream cashmere turtleneck sweater, Brunello Cucinelli camel wide-leg trousers, Cartier watch, Bottega Veneta crossbody bag"]
+
+**Pose:** [Exact action and body position. Example: "Gracefully sitting on ivory velvet sofa beside Fraser fir Christmas tree, holding fine bone china teacup with both hands, gazing thoughtfully at fireplace"]
+
+**Setting:** [ALL specific items and environment details. Example: "Living room with ivory velvet sofa, Fraser fir Christmas tree with crystal ornaments and warm white lights, floor-to-ceiling windows, wrapped Hermès boxes beneath tree, white orchids on side table"]
+
+**Lighting:** [Exact lighting description. Example: "Golden fireplace glow mixed with natural winter light from windows, creating serene luxury atmosphere"]
+
+**Camera Composition:** Editorial portrait from mid-thigh upward, frontal camera position, symmetrical centered framing, professional DSLR, Canon EOS R5 or Sony A7R IV, 85mm f/1.4 lens, camera distance 1.5-2m from subject, shallow depth of field (f/2.0-f/2.8).
+
+**Mood:** [Mood words from description. Example: "Serene, luxurious, elegant holiday morning"]
+
+**Aesthetic:** [Aesthetic from description with Pinterest language. Example: "Luxurious holiday morning elegance, sophisticated Christmas styling, aspirational holiday luxury"]
+
+For concepts 3-5 (Authentic iPhone - last 3 concepts):
+Authentic influencer content. Pinterest-style portrait. Character consistency with provided reference images. Match the exact facial features, hair, skin tone, body type, and physical characteristics of the person in the reference images. This is the same person in a different scene. Natural, relatable iPhone aesthetic.
+
+**Outfit:** [Complete outfit with ALL brands and materials. Example: "Jenni Kayne cashmere sweater in warm cream, Levi's high-waisted denim, Bottega Veneta crossbody bag"]
+
+**Pose:** [Exact action. Example: "Sitting cross-legged on cream sofa, holding ceramic mug with both hands, looking peacefully at decorated Christmas tree"]
+
+**Setting:** [Environment details. Example: "Living room with cream sofa, Fraser fir Christmas tree with twinkling lights, floor-to-ceiling windows, wrapped presents beneath tree"]
+
+**Lighting:** [Lighting description. Example: "Soft morning light streaming through windows, warm fireplace glow"]
+
+**Camera Composition:** Authentic iPhone 15 Pro portrait mode, 77mm equivalent, natural bokeh effect, shot from 1.5m distance, portrait mode depth creating soft background blur, influencer content aesthetic.
+
+**Mood:** [Mood. Example: "Peaceful, joyful holiday morning"]
+
+**Aesthetic:** [Aesthetic. Example: "Cozy holiday morning elegance, quiet luxury aesthetic"]
+
+**SELFIE HANDLING:**
+If the concept is a selfie (description mentions "selfie", "front camera", "mirror selfie"):
+- Use iPhone front camera specifications (not DSLR)
+- Include selfie-specific framing details (arm extended, mirror reflection, etc.)
+- Maintain same quality and luxury as professional concepts
+- Use "iPhone 15 Pro front camera selfie" or "iPhone 15 Pro mirror selfie" in Camera Composition section
+
+**BRAND RULES:**
+- Include specific luxury brands naturally: The Row, Alo Yoga, Toteme, Khaite, Bottega Veneta, Glossier, Lululemon, Jenni Kayne, Brunello Cucinelli, Cartier, Hermès
+- No "MANDATORY" language - natural integration only
+- Brands as inspiration, not forced mentions
+- Copy brands/products EXACTLY (The Row → "The Row", not "luxury brand")
+- No vague language ("elegant sweater" → "The Row cream cashmere turtleneck")
+- Include ALL brands/items mentioned in description
+
+**CRITICAL:**
+- This prompt field should be COMPLETE and ready for Nano Banana Pro - no transformation needed
+- Generate the complete structured prompt directly - do not generate a description that needs to be transformed
+- The prompt must be usable as-is for image generation
+- Every brand in description must appear in prompt
+- No OR statements - if description says ONE item, write ONE item
+- All sentences must be complete (no fragments)
 
 Make each concept unique, sophisticated, and based on the user's request. Use your full fashion expertise - do NOT use generic descriptions.`
 
