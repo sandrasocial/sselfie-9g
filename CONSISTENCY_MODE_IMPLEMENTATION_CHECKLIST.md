@@ -221,3 +221,4 @@ if (invalidUrls.length > 0) {
 6. **Add logging** - More detailed logs to trace reference image flow
 
 
+

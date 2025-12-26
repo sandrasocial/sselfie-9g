@@ -51,3 +51,4 @@ COMMENT ON COLUMN admin_email_drafts.parent_draft_id IS 'Links to previous versi
 COMMENT ON COLUMN admin_email_drafts.is_current_version IS 'True for the latest version of a draft. Previous versions are kept for history.';
 
 
+
