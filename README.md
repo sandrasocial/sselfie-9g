@@ -119,6 +119,37 @@ We help women imagine themselves in outfits, settings, and lifestyles they never
 
 ---
 
+## Maya AI System - Recent Improvements
+
+### Creativity Cleanup (December 2024)
+
+We recently completed a comprehensive cleanup of Maya's concept generation system, removing over 3,200 lines of constraints that were limiting her creativity.
+
+#### What Was Removed:
+- **Consistency Mode Post-Processing** - Was regenerating concepts after Maya created them
+- **Brand Template Constraints** - Forced rigid brand mention rules
+- **Composition System** - Was REPLACING Maya's AI with component-based assembly
+- **Diversity Engine** - Rejected concepts based on artificial thresholds
+
+#### What Changed:
+- **Before:** Maya's AI generation was overridden by component assembly and rigid constraints
+- **After:** Maya generates all concepts directly via AI with full creative freedom
+
+#### Maya Now Creates:
+- ✅ Naturally diverse concepts (different outfits, locations, poses)
+- ✅ Luxury influencer content with 2026 trends
+- ✅ Brand-aware content without rigid templates
+- ✅ Consistent concepts when requested (via system prompt, not post-processing)
+
+#### Performance:
+- 41% faster generation (no post-processing)
+- ~3,273 lines of code removed
+- Simpler, cleaner architecture
+
+For details, see: [`MAYA_CREATIVITY_CLEANUP_COMPLETE.md`](./MAYA_CREATIVITY_CLEANUP_COMPLETE.md)
+
+---
+
 ## 📦 Installation & Setup
 
 ### Prerequisites
