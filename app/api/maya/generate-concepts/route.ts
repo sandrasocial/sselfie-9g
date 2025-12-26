@@ -5284,95 +5284,6 @@ Generate the variation prompt now:`
 
     console.log("[v0] Successfully generated", concepts.length, "sophisticated concepts")
 
-    // ================================================================
-    // SELFIE ENFORCEMENT - Ensure at least 1 selfie per generation
-    // ================================================================
-
-    console.log('[MAYA-CONCEPTS] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-    console.log('[MAYA-CONCEPTS] 🤳 SELFIE ENFORCEMENT CHECK')
-    console.log('[MAYA-CONCEPTS] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-
-    // Count how many concepts are already selfies
-    let selfieCount = concepts.filter(c => 
-      isSelfieConceptAlready(c.prompt)
-    ).length
-
-    console.log(`[MAYA-CONCEPTS] Found ${selfieCount} selfie concept(s) in ${concepts.length} total concepts`)
-
-    // If no selfies found, convert one concept
-    if (selfieCount === 0 && concepts.length >= 3) {
-      console.log('[MAYA-CONCEPTS] ⚠️ No selfie concepts found! Converting one concept to selfie...')
-      
-      // Pick a random concept (avoid first and last for variety)
-      const convertibleIndices = concepts.length > 3 
-        ? Array.from({ length: concepts.length - 2 }, (_, i) => i + 1)
-        : [Math.floor(concepts.length / 2)]
-      
-      const indexToConvert = convertibleIndices[
-        Math.floor(Math.random() * convertibleIndices.length)
-      ]
-      
-      // Get category-appropriate selfie type or random
-      const category = concepts[indexToConvert].category || 'LIFESTYLE'
-      const preferredType = getCategoryPreferredSelfieType(category)
-      const selfieType = preferredType || getRandomSelfieType()
-      
-      console.log(`[MAYA-CONCEPTS] Converting concept #${indexToConvert} to ${selfieType} selfie`)
-      console.log(`[MAYA-CONCEPTS] Original title: "${concepts[indexToConvert].title}"`)
-      
-      // Convert the concept
-      const conceptToConvert: ConceptToConvert = {
-        title: concepts[indexToConvert].title,
-        description: concepts[indexToConvert].description,
-        prompt: concepts[indexToConvert].prompt,
-        category: category,
-        aesthetic: undefined
-      }
-      
-      // Determine if reference images should be used
-      const hasRefImages = referenceImages?.selfies && referenceImages.selfies.length > 0
-      
-      const converted = convertToSelfie(conceptToConvert, selfieType, hasRefImages)
-      
-      // Update the concept
-      concepts[indexToConvert] = {
-        ...concepts[indexToConvert],
-        title: converted.title,
-        description: converted.description,
-        prompt: converted.prompt,
-      }
-      
-      // Validate the conversion
-      const validation = validateSelfiePrompt(concepts[indexToConvert].prompt)
-      if (!validation.valid) {
-        console.warn(`[MAYA-CONCEPTS] ⚠️ Selfie validation warnings:`, validation.warnings)
-      }
-      
-      console.log(`[MAYA-CONCEPTS] ✅ Converted to: "${concepts[indexToConvert].title}"`)
-      
-      selfieCount = 1
-    }
-
-    // 🔴 FIX: Only ONE selfie per 6 concepts (removed logic that adds second selfie)
-    // User requirement: Maya should only create one selfie each 6 concept cards, not 2 or 3
-
-    // Final count and log
-    const finalSelfieCount = concepts.filter(c => 
-      isSelfieConceptAlready(c.prompt)
-    ).length
-
-    console.log('[MAYA-CONCEPTS] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-    console.log(`[MAYA-CONCEPTS] ✅ FINAL SELFIE COUNT: ${finalSelfieCount}/${concepts.length} concepts`)
-    console.log('[MAYA-CONCEPTS] Selfie concepts:')
-    concepts.forEach((c, i) => {
-      if (isSelfieConceptAlready(c.prompt)) {
-        const type = c.prompt.includes('mirror') ? 'mirror' : 
-                     c.prompt.includes('elevated') || c.prompt.includes('tripod') ? 'elevated' : 
-                     'handheld'
-        console.log(`[MAYA-CONCEPTS]   #${i + 1}: "${c.title}" (${type})`)
-      }
-    })
-    console.log('[MAYA-CONCEPTS] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
 
     // 🔴 CRITICAL: Log all final prompts before returning (what gets sent to frontend)
     console.log("[v0] ========== FINAL CONCEPT PROMPTS (RETURNED TO FRONTEND) ==========")
@@ -5380,7 +5291,6 @@ Generate the variation prompt now:`
       console.log(`[v0] Concept #${idx + 1} PROMPT:`, concept.prompt)
       console.log(`[v0] Concept #${idx + 1} has visible pores:`, /visible\s+pores/i.test(concept.prompt))
       console.log(`[v0] Concept #${idx + 1} has scene/location:`, /(?:tree|sofa|fireplace|room|setting|scene|location|background|interior|illuminated|presents|Christmas)/i.test(concept.prompt))
-      console.log(`[v0] Concept #${idx + 1} is selfie:`, isSelfieConceptAlready(concept.prompt))
     })
     console.log("[v0] ========== END FINAL CONCEPT PROMPTS ==========")
 
