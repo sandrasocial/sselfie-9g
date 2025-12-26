@@ -35,7 +35,6 @@ import {
   type UniversalPrompt 
 } from "@/lib/maya/universal-prompts"
 import {
-  generatePromptDirect,
   applyProgrammaticFixes,
   validatePromptLight,
   type DirectPromptContext
@@ -2724,34 +2723,20 @@ Same quality/luxury/styling as professional concepts, but with:
       referenceImagesKeys: referenceImages ? Object.keys(referenceImages) : "none"
     })
     
-    // Direct Prompt Generation - generate final prompts for all concepts
+    // Verify Maya generated prompts
     if (concepts.length > 0) {
-      for (let i = 0; i < concepts.length; i++) {
-        const concept = concepts[i]
-        
-        try {
-          const result = await generatePromptDirect({
-            userRequest: concept.description || userRequest || '',
-            category: concept.category,
-            conceptIndex: i,
-            triggerWord: triggerWord || '',
-            gender: userGender || 'woman',
-            ethnicity: userEthnicity || undefined,
-            physicalPreferences: physicalPreferences || undefined,
-            mode: studioProMode ? 'pro' : 'classic',
-            referenceImages: referenceImages,
-            conversationContext: conversationContext
-          })
-          
-          // Set prompt
-          concept.prompt = result.prompt
-        } catch (error) {
-          console.error(`[v0] [DIRECT] Error generating prompt for concept ${i + 1}:`, error)
-          
-          // Fallback: Use description as prompt if direct generation fails
+      concepts.forEach((concept, i) => {
+        if (!concept.prompt || concept.prompt.trim().length === 0) {
+          console.warn(`[v0] Concept ${i + 1} missing prompt, using description fallback`)
+          // Simple fallback only if Maya didn't generate a prompt
           concept.prompt = `${triggerWord || ''}, ${concept.description || ''}`.trim()
         }
-      }
+      })
+      
+      console.log('[v0] Using Maya\'s generated prompts directly:', {
+        conceptsWithPrompts: concepts.filter(c => c.prompt).length,
+        totalConcepts: concepts.length
+      })
     }
     
     // Prompt constructor is disabled - direct generation handles all prompts
