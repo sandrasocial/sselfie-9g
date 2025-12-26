@@ -504,10 +504,13 @@ Mood: outdoor cycling freedom, cardio dedication, active coastal lifestyle, athl
 ]
 
 // ============================================
-// CHRISTMAS / HOLIDAY PROMPTS (8 prompts)
+// CHRISTMAS / HOLIDAY PROMPTS (8 prompts) - REMOVED
 // ============================================
-// Note: Removed 2 hardcoded "couch + mug" scenarios to allow Maya to generate diverse Christmas content naturally
+// REMOVED: These generic Christmas prompts were causing repetitive concepts
+// Maya now generates Christmas content naturally based on user requests
+// Kept commented for reference only
 
+/*
 export const CHRISTMAS_UNIVERSAL_PROMPTS: UniversalPrompt[] = [
   {
     id: 'christmas-fireplace-morning-1',
@@ -694,6 +697,7 @@ Camera: 85mm lens at f/2.8 maintaining environmental context, camera positioned 
 Mood: winter wonderland peace, snowy walk calm, cold weather serenity, quiet winter beauty, connection with nature, outdoor contentment. 4K resolution. Hyper-realistic quality with visible snowflakes, realistic cold weather appearance, authentic winter lighting, natural snowy environment, real winter breath visible.`
   }
 ]
+*/
 
 // ============================================
 // CASUAL LIFESTYLE / STREET STYLE (10 prompts)
@@ -1153,7 +1157,7 @@ Mood: luxury spa peace, ultimate self-care calm, post-treatment bliss, wellness 
 export const UNIVERSAL_PROMPT_LIBRARIES = {
   'travel-airport': TRAVEL_UNIVERSAL_PROMPTS,
   'alo-workout': ALO_WORKOUT_UNIVERSAL_PROMPTS,
-  'seasonal-christmas': CHRISTMAS_UNIVERSAL_PROMPTS,
+  // 'seasonal-christmas': CHRISTMAS_UNIVERSAL_PROMPTS, // REMOVED - Maya generates naturally
   'casual-lifestyle': CASUAL_LIFESTYLE_UNIVERSAL_PROMPTS,
   'luxury-fashion': LUXURY_FASHION_UNIVERSAL_PROMPTS,
 }
