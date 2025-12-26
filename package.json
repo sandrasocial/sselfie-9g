@@ -9,7 +9,7 @@
     "start": "next start"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "2.0.47",
+    "@ai-sdk/anthropic": "latest",
     "@ai-sdk/openai": "latest",
     "@ai-sdk/openai-compatible": "1.0.27",
     "@ai-sdk/react": "latest",
