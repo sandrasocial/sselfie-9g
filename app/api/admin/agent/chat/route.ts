@@ -3151,10 +3151,10 @@ This tool provides critical business intelligence to make data-driven decisions.
       get_resend_audience_data: getResendAudienceDataTool,
       get_email_timeline: getEmailTimelineTool,
       analyze_email_strategy: analyzeEmailStrategyTool,
-      read_codebase_file: readCodebaseFileTool as any,
+      read_codebase_file: readCodebaseFileTool,
       web_search: webSearchTool,
       get_revenue_metrics: getRevenueMetricsTool,
-    } as any
+    }
 
     // Use Anthropic SDK directly to bypass gateway tool schema conversion issues
     // This ensures tools work correctly with proper schema formatting
