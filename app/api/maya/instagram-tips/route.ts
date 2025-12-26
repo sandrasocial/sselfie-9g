@@ -57,30 +57,6 @@ Research current Instagram best practices and provide:
 5. Reel suggestion based on this content
 
 Format as a conversational tip from Maya, not a list.`,
-      tools: {
-        searchWeb: {
-          description: "Search the web for current Instagram trends, best practices, and strategies",
-          parameters: {
-            type: "object",
-            properties: {
-              query: {
-                type: "string",
-                description: "Search query for Instagram trends and best practices",
-              },
-            },
-            required: ["query"],
-          },
-          execute: async ({ query }: { query: string }) => {
-            // This will trigger web search for real-time Instagram trends
-            const response = await fetch("https://api.search.brave.com/res/v1/web/search", {
-              headers: {
-                "X-Subscription-Token": process.env.BRAVE_SEARCH_API_KEY || "",
-              },
-            })
-            return { results: "Instagram trends data" }
-          },
-        },
-      },
     })
 
     return NextResponse.json({ tips })

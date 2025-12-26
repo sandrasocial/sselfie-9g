@@ -389,7 +389,7 @@ async function callMayaForFinalPrompt(
         }
       ],
       temperature: 0.7,
-      maxTokens: context.mode === 'classic' ? 500 : 2000
+      maxOutputTokens: context.mode === 'classic' ? 500 : 2000
     })
     
     console.log('[DIRECT] ✅ Maya response received:', text.length, 'chars')
@@ -621,9 +621,9 @@ export async function generateConceptsWithFinalPrompts(
         content: userPrompt
       }
     ],
-    temperature: 0.85,
-    maxTokens: mode === 'classic' ? 2000 : 4000
-  })
+      temperature: 0.85,
+      maxOutputTokens: mode === 'classic' ? 2000 : 4000
+    })
   
   // Parse JSON response
   const jsonMatch = text.match(/\{[\s\S]*"concepts"[\s\S]*\[[\s\S]*\]/i) || text.match(/\[[\s\S]*\]/)

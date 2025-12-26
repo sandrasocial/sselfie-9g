@@ -3,8 +3,7 @@ import type { NextRequest } from "next/server"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getEffectiveNeonUser } from "@/lib/simple-impersonation"
 import { checkCredits } from "@/lib/credits"
-import { generateText, tool } from "ai"
-import { z } from "zod"
+import { generateText } from "ai"
 import {
   detectCategory,
   type ImageLibrary,
@@ -506,72 +505,11 @@ Return ONLY a valid JSON array of 6 concepts:
 
 Make each concept unique, sophisticated, and based on the user's request. Use your full fashion expertise - do NOT use generic descriptions.`
 
-    // Web search tool for fashion research (as claimed in personality)
-    const webSearchTool = tool({
-      description: "Search the web for current fashion trends, Instagram aesthetics, brand information, and styling tips",
-      parameters: z.object({
-        query: z.string().describe("Search query for fashion trends, Instagram aesthetics, brands, or styling information"),
-      }),
-      execute: async ({ query }) => {
-        if (!process.env.BRAVE_SEARCH_API_KEY) {
-          return { 
-            results: "Web search is not configured. Using existing knowledge instead.",
-            error: "BRAVE_SEARCH_API_KEY not set"
-          }
-        }
-
-        try {
-          const response = await fetch(
-            `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}&count=5`,
-            {
-              method: "GET",
-              headers: {
-                Accept: "application/json",
-                "Accept-Encoding": "gzip",
-                "X-Subscription-Token": process.env.BRAVE_SEARCH_API_KEY,
-              },
-            }
-          )
-
-          if (!response.ok) {
-            return { 
-              results: "Unable to fetch search results. Using existing knowledge instead.",
-              error: `Search API returned ${response.status}`
-            }
-          }
-
-          const searchData = await response.json()
-          const results = searchData.web?.results || []
-          
-          const summary = results
-            .slice(0, 5)
-            .map((result: any, index: number) => {
-              return `${index + 1}. **${result.title}**\n${result.description}\n${result.url ? `Source: ${result.url}` : ''}\n`
-            })
-            .join("\n")
-
-          return { 
-            results: summary || "No results found. Using existing knowledge instead.",
-            count: results.length
-          }
-        } catch (error) {
-          console.error("[v0] [PRO MODE] Web search error:", error)
-          return { 
-            results: "Web search encountered an error. Using existing knowledge instead.",
-            error: error instanceof Error ? error.message : String(error)
-          }
-        }
-      },
-    })
-
     try {
       const { text } = await generateText({
         model: "anthropic/claude-sonnet-4-20250514",
         prompt: aiPrompt,
         temperature: 0.85,
-        tools: {
-          searchWeb: webSearchTool,
-        },
       })
 
       // Parse AI response

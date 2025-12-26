@@ -2,8 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
-import { streamText, tool } from "ai"
-import { z } from "zod"
+import { streamText } from "ai"
 import { getMayaPersonality } from "@/lib/maya/personality-enhanced"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getFluxPromptingPrinciples } from "@/lib/maya/flux-prompting-principles"
@@ -335,64 +334,6 @@ You may use the reference ONLY for general content ideas (e.g., "outdoor setting
 
 Reference (IGNORE FORMAT - GENERIC AND INCOMPLETE): ${cleanedReferencePrompt.substring(0, 200)}${cleanedReferencePrompt.length > 200 ? "..." : ""}` : ""}`
 
-    // Web search tool for fashion research (as claimed in personality)
-    const webSearchTool = tool({
-      description: "Search the web for current fashion trends, Instagram aesthetics, brand information, and styling tips",
-      parameters: z.object({
-        query: z.string().describe("Search query for fashion trends, Instagram aesthetics, brands, or styling information"),
-      }),
-      execute: async ({ query }: { query: string }) => {
-        if (!process.env.BRAVE_SEARCH_API_KEY) {
-          return { 
-            results: "Web search is not configured. Using existing knowledge instead.",
-            error: "BRAVE_SEARCH_API_KEY not set"
-          }
-        }
-
-        try {
-          const response = await fetch(
-            `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}&count=5`,
-            {
-              method: "GET",
-              headers: {
-                Accept: "application/json",
-                "Accept-Encoding": "gzip",
-                "X-Subscription-Token": process.env.BRAVE_SEARCH_API_KEY,
-              },
-            }
-          )
-
-          if (!response.ok) {
-            return { 
-              results: "Unable to fetch search results. Using existing knowledge instead.",
-              error: `Search API returned ${response.status}`
-            }
-          }
-
-          const searchData = await response.json()
-          const results = searchData.web?.results || []
-          
-          const summary = results
-            .slice(0, 5)
-            .map((result: any, index: number) => {
-              return `${index + 1}. **${result.title}**\n${result.description}\n${result.url ? `Source: ${result.url}` : ''}\n`
-            })
-            .join("\n")
-
-          return { 
-            results: summary || "No results found. Using existing knowledge instead.",
-            count: results.length
-          }
-        } catch (error) {
-          console.error("[v0] [FEED-PROMPT] Web search error:", error)
-          return { 
-            results: "Web search encountered an error. Using existing knowledge instead.",
-            error: error instanceof Error ? error.message : String(error)
-          }
-        }
-      },
-    })
-
     // Call AI to generate the prompt
     console.log("[v0] [FEED-PROMPT] Calling AI SDK with model: anthropic/claude-sonnet-4-20250514")
     let result
@@ -411,9 +352,6 @@ Reference (IGNORE FORMAT - GENERIC AND INCOMPLETE): ${cleanedReferencePrompt.sub
         ],
         temperature: 0.8,
         maxOutputTokens: 500,
-        tools: {
-          searchWeb: webSearchTool,
-        },
       })
       console.log("[v0] [FEED-PROMPT] AI SDK call successful")
     } catch (aiError: any) {
