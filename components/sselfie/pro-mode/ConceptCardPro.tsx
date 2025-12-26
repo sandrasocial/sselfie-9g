@@ -277,8 +277,30 @@ export default function ConceptCardPro({
       return
     }
     
-    setIsGeneratingState(true)
+    // CRITICAL FIX: Reset all generation state when generating again
+    // This ensures the old image is cleared and polling starts fresh
+    console.log('[ConceptCardPro] 🔄 Resetting state for new generation...')
+    setIsGenerated(false)
+    setGeneratedImageUrl(null)
     setError(null)
+    setIsGeneratingState(true)
+    
+    // Clear any existing polling intervals
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current)
+      pollingIntervalRef.current = null
+    }
+    
+    // Clear previous prediction/generation IDs (will be set by new generation)
+    setPredictionId(null)
+    setGenerationId(null)
+    predictionIdRef.current = null
+    generationIdRef.current = null
+    
+    // Clear localStorage entry for this concept to start fresh
+    const storageKey = `pro-generation-${concept.id}`
+    localStorage.removeItem(storageKey)
+    
     console.log('[ConceptCardPro] 📤 Calling onGenerate callback...')
     
     try {
