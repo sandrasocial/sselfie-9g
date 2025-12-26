@@ -1,3 +1,12 @@
+/**
+ * Instagram Location Intelligence (2025)
+ * 
+ * REFERENCE MATERIAL ONLY - Used as guidance/inspiration in system prompts
+ * Maya (Claude Sonnet 4) reads this for inspiration but generates diverse locations naturally
+ * based on context, user request, and her 2026 luxury influencer knowledge.
+ * 
+ * NOT used for random selection - this is comprehensive guidance (100+ locations), not a limited array.
+ */
 export const INSTAGRAM_LOCATION_INTELLIGENCE = `
 # Instagram Location Intelligence (2025)
 

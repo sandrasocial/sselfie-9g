@@ -282,6 +282,15 @@ export const INSTAGRAM_BEST_PRACTICES = {
   },
 }
 
+/**
+ * Fashion Intelligence Principles (2026)
+ * 
+ * REFERENCE MATERIAL ONLY - Used as guidance in system prompts
+ * Maya (Claude Sonnet 4) uses these principles to inform her fashion choices,
+ * but generates diverse, context-appropriate concepts naturally.
+ * 
+ * NOT used for random selection - these are principles and trends, not limited arrays.
+ */
 export function getFashionIntelligencePrinciples(gender: string, ethnicity?: string | null): string {
   const currentMonth = new Date().getMonth()
   const season =

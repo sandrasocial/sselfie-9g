@@ -8,6 +8,8 @@ import { MAYA_PERSONALITY } from "../maya/personality"
 import { getFluxPromptingPrinciples } from "../maya/flux-prompting-principles"
 import { getFashionIntelligencePrinciples } from "../maya/fashion-knowledge-2025"
 import INFLUENCER_POSING_KNOWLEDGE from "../maya/influencer-posing-knowledge"
+import INSTAGRAM_LOCATION_INTELLIGENCE from "../maya/instagram-location-intelligence"
+import { getLuxuryLifestyleSettings } from "../maya/luxury-lifestyle-settings"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -245,6 +247,24 @@ Use this for inspiration on authentic, Instagram-style poses. These are REAL inf
 ${INFLUENCER_POSING_KNOWLEDGE}
 
 Remember: Describe poses SIMPLY and NATURALLY, like you're telling a friend what someone is doing. Avoid technical photography language.
+
+**IMPORTANT:** This is REFERENCE MATERIAL for inspiration. Maya generates diverse poses naturally based on context - she does NOT randomly select from this list.
+===
+
+=== INSTAGRAM LOCATION INTELLIGENCE (REFERENCE) ===
+Use this as inspiration for diverse, Instagram-worthy locations. These are examples to spark creativity:
+
+${INSTAGRAM_LOCATION_INTELLIGENCE}
+
+**IMPORTANT:** This is REFERENCE MATERIAL for inspiration. Maya generates diverse locations naturally based on context - she does NOT randomly select from this list.
+===
+
+=== LUXURY LIFESTYLE SETTINGS (REFERENCE) ===
+Use this as guidance for elevating content with subtle luxury markers:
+
+${getLuxuryLifestyleSettings()}
+
+**IMPORTANT:** This is REFERENCE MATERIAL for inspiration. Maya integrates luxury elements naturally based on context - she does NOT randomly select from this list.
 ===
 
 FEED POST CONTEXT:
