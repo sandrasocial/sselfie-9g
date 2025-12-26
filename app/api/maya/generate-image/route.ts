@@ -202,13 +202,11 @@ export async function POST(request: NextRequest) {
       ? customSettings.extraLoraScale
       : customSettings?.realismStrength
     
-    // CRITICAL FIX: User's explicit generation settings should override enhancedAuthenticity toggle
-    // If user has set realismStrength/extraLoraScale in their generation settings, respect it
-    // Only disable extra_lora if:
-    // 1. Enhanced Authenticity toggle is ON AND user hasn't explicitly set a realism value
-    // 2. Prompt has authentic aesthetic keywords AND user hasn't explicitly set a realism value
+    // CRITICAL FIX: Enhanced Authenticity toggle is HIGHEST PRIORITY - it FORCES extra LoRA to 0
+    // The toggle explicitly overrides any user realismStrength setting
+    // Priority: 1. Enhanced Authenticity toggle (if ON → force 0), 2. User's realismStrength, 3. Preset default
     const hasUserSetRealism = manualExtraLoraScale !== undefined
-    const shouldDisableExtraLora = !hasUserSetRealism && (enhancedAuthenticity === true || hasAuthenticAesthetic)
+    const shouldDisableExtraLora = enhancedAuthenticity === true || hasAuthenticAesthetic
     
     const qualitySettings = {
       ...presetSettings,
@@ -222,13 +220,15 @@ export async function POST(request: NextRequest) {
       guidance_scale: customSettings?.promptAccuracy ?? presetSettings.guidance_scale,
       extra_lora: customSettings?.extraLora || presetSettings.extra_lora,
       // CRITICAL FIX: Handle extra_lora_scale with proper priority:
-      // 1. If user explicitly set realismStrength/extraLoraScale → use that value (HIGHEST PRIORITY)
-      // 2. If Enhanced Authenticity toggle is ON AND no user setting → force to 0
-      // 3. If prompt has authentic aesthetic keywords AND no user setting → force to 0
+      // 1. Enhanced Authenticity toggle is HIGHEST PRIORITY → if ON, force to 0 (overrides everything)
+      // 2. If prompt has authentic aesthetic keywords → force to 0
+      // 3. If user explicitly set realismStrength/extraLoraScale → use that value
       // 4. Otherwise → use preset default
-      extra_lora_scale: hasUserSetRealism
-        ? manualExtraLoraScale  // User's explicit setting takes priority
-        : (shouldDisableExtraLora ? 0 : presetSettings.extra_lora_scale),
+      extra_lora_scale: shouldDisableExtraLora
+        ? 0  // Enhanced Authenticity toggle or authentic keywords → force disable ✅
+        : (hasUserSetRealism
+          ? manualExtraLoraScale  // User's explicit setting (if toggle is OFF)
+          : presetSettings.extra_lora_scale), // Preset default
       num_inference_steps: presetSettings.num_inference_steps,
     }
     
@@ -270,13 +270,13 @@ export async function POST(request: NextRequest) {
       manualExtraLoraScale,
       shouldDisableExtraLora,
       finalExtraLoraScale: qualitySettings.extra_lora_scale,
-      reason: hasUserSetRealism
-        ? `Using user's explicit setting: ${manualExtraLoraScale} (overrides enhancedAuthenticity toggle)`
-        : shouldDisableExtraLora
-          ? enhancedAuthenticity 
-            ? "Disabled - Enhanced Authenticity toggle is ON (no user setting provided)" 
-            : "Disabled - conflicts with authentic iPhone aesthetic keywords in prompt (no user setting provided)"
-          : "Using preset/default scale"
+      reason: shouldDisableExtraLora
+        ? (enhancedAuthenticity 
+          ? "Disabled - Enhanced Authenticity toggle is ON (highest priority override)" 
+          : "Disabled - conflicts with authentic iPhone aesthetic keywords in prompt")
+        : (hasUserSetRealism
+          ? `Using user's explicit setting: ${manualExtraLoraScale}`
+          : "Using preset/default scale")
     })
 
     let replicate
