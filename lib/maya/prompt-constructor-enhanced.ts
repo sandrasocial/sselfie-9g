@@ -100,44 +100,15 @@ const DETAILED_LIGHTING_DESCRIPTIONS: Record<string, string[]> = {
 }
 
 // ============================================================================
-// DETAILED ENVIRONMENT DESCRIPTIONS
+// ENVIRONMENT DESCRIPTIONS REMOVED
 // ============================================================================
-
-const DETAILED_ENVIRONMENT_DESCRIPTIONS: Record<string, string[]> = {
-  'workout': [
-    `Modern and minimalist space, with minimalist black walls displaying the brand. She encounters the Pilates reformer using resistance cables. High-standard Pilates studio, professional reformer equipment. Visible resistance cables. Organized, modern and minimalist environment. Branding integrated elegantly into the space.`,
-    `Outdoor environment with retreat wellness atmosphere. Black water mirror and tranquility next to the model. Large brand logo embedded in the metallic silver design reflected in the water. Lush green vegetation with palm trees around. Tall trees in the background. Blue sky in the background.`,
-    `Clear sandy beach during golden hour, with clean, powerful and sophisticated aesthetic. Two high white surf boards positioned behind the model. Brand logo visible and sharp on the boards. Soft sea waves in the background. Sky in pastel sunset tones. Minimalist, elegant and cinematic environment.`,
-  ],
-  'casual': [
-    `Urban street with architectural details, natural city backdrop, with urban textures, natural city lighting, and authentic street atmosphere. Modern city street minimal background.`,
-    `Minimalist outdoor space surrounded by green. Clean blurred background.`,
-  ],
-  'luxury': [
-    `Luxury hotel lobby (golden tones, cream marble, tall white floral arrangements). Modern private lounge, marble + beige furniture.`,
-    `Five-star hotel room in Paris, with elegant and timeless architecture: dark upholstered headboard, classic moldings on the walls, tall French doors open in the background, tall mirrors and refined architectural details. In the background, the atmosphere suggests a sophisticated historic Parisian hotel, with real depth and sense of noble space.`,
-    `Luxury boutique interior, warm lighting, bag shelves in background. Minimalist shelves in background.`,
-  ],
-  'travel': [
-    `Minimalist airport lounge. Modern airport terminal with floor-to-ceiling windows, blurred travelers. Modern airport exterior, with smooth concrete floor and metallic pillars; glass doors blurred in background with real depth of field f/2.8.`,
-    `Airport terminal window during golden hour, with sunlight reflecting softly behind her through the glass. Wide window with view to terminal, background slightly blurred to maintain total face and hands sharpness.`,
-    `Modern airport lobby with glass skylights above. Wide windows, blurred airport terminal, modern architectural lines that create depth and sophistication.`,
-  ],
-  'cozy': [
-    `Cozy Christmas living room setting with fireplace, garland and warm yellow lights. Modern living room, wrapped presents in background, cozy minimalist aesthetic.`,
-    `Modern and minimalist environment with sophisticated bathtub in neutral tones. Elegant white bathtub with clean edges, water with light foam and organized. Light minimalist wood tray over bathtub with open book and discreet tea cup. Cozy yet clean scenario, with lit candle in background bringing cozy atmosphere without excess.`,
-    `Elegant setting with large super illuminated white tree with red bows, silver ornaments and warm lights creating bokeh. Model is seated on floor, leaning on sofa, holding mug with marshmallows and hot chocolate.`,
-    `Modern kitchen setting decorated for Christmas with red arrangements and warm ambient light.`,
-  ],
-  'coffee-run': [
-    `Cobblestone sidewalk in Brooklyn, outdoor cafe with wicker chairs. Modern coffee shop with plants, exposed brick or clean walls, other patrons blurred.`,
-    `Minimalist Scandi cafe with plants and natural wood. Vintage Italian espresso bar with marble counters.`,
-  ],
-  'street-style': [
-    `Urban street with architectural details, natural city backdrop, with urban textures, natural city lighting, and authentic street atmosphere. Modern city street minimal background.`,
-    `European stone architecture, modern city street minimal background, black architectural walls, outdoor cafe urban setting.`,
-  ],
-}
+// Maya (Claude Sonnet 4) now generates diverse environments naturally based on:
+// - User request context
+// - Category/vibe/location
+// - Her 2026 luxury influencer knowledge
+// - Natural diversity instinct
+// No need for hardcoded limited arrays that caused repetition
+// Removed hardcoded "couch + mug" scenario that appeared in 'cozy' category
 
 // ============================================================================
 // MAKEUP DESCRIPTIONS BY CATEGORY
@@ -287,12 +258,9 @@ export function buildEnhancedPrompt(params: EnhancedPromptParams): string {
   const accessories = accessoriesParts.join(', ')
   
   // Get detailed sections
-  // Pose is now generated naturally by Maya based on context - no hardcoded arrays
+  // Pose and environment are now generated naturally by Maya based on context - no hardcoded arrays
   const lightingOptions = DETAILED_LIGHTING_DESCRIPTIONS[categoryLower] || DETAILED_LIGHTING_DESCRIPTIONS['casual']
   const lighting = lightingOptions[Math.floor(Math.random() * lightingOptions.length)]
-  
-  const environmentOptions = DETAILED_ENVIRONMENT_DESCRIPTIONS[categoryLower] || DETAILED_ENVIRONMENT_DESCRIPTIONS['casual']
-  const environment = environmentOptions[Math.floor(Math.random() * environmentOptions.length)]
   
   const makeupOptions = MAKEUP_DESCRIPTIONS[categoryLower] || MAKEUP_DESCRIPTIONS['casual']
   const makeup = makeupOptions[Math.floor(Math.random() * makeupOptions.length)]
@@ -321,8 +289,8 @@ export function buildEnhancedPrompt(params: EnhancedPromptParams): string {
   const age = userAge || 'Woman in late twenties'
   
   // Build the enhanced prompt with detailed sections (matching production examples)
-  // Format: Identity instruction + Character + Detailed sections (STYLING, HAIR, MAKEUP, SCENARIO, LIGHTING, CAMERA)
-  // Note: Pose is now generated naturally by Maya based on context - no hardcoded constraints
+  // Format: Identity instruction + Character + Detailed sections (STYLING, HAIR, MAKEUP, LIGHTING, CAMERA)
+  // Note: Pose and environment/scenario are now generated naturally by Maya based on context - no hardcoded constraints
   
   // Add brand mentions if detected in outfit (for workout/athletic categories)
   let brandMention = ''
@@ -351,9 +319,6 @@ ${hair}
 
 MAKEUP:
 ${makeup}
-
-SCENARIO:
-${environment}
 
 LIGHTING:
 ${lighting}
