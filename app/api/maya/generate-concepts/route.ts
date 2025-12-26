@@ -19,11 +19,6 @@ import { minimalCleanup } from "@/lib/maya/post-processing/minimal-cleanup"
 import { SHARED_MAYA_PERSONALITY } from "@/lib/maya/personality/shared-personality"
 import { getMayaPersonality } from "@/lib/maya/personality-enhanced"
 import { MAYA_SYSTEM_PROMPT } from "@/lib/maya/personality"
-import { getComponentDatabase } from "@/lib/maya/prompt-components/component-database"
-import { DiversityEngine } from "@/lib/maya/prompt-components/diversity-engine"
-import { CompositionBuilder } from "@/lib/maya/prompt-components/composition-builder"
-import { getMetricsTracker } from "@/lib/maya/prompt-components/metrics-tracker"
-import type { ConceptComponents } from "@/lib/maya/prompt-components/types"
 import { generateCompleteOutfit } from "@/lib/maya/brand-library-2025"
 import { 
   buildPrompt, 
@@ -693,17 +688,6 @@ function mapComponentCategoryToMayaCategory(category: string): string {
   }
 
   return mapping[category] || 'Lifestyle'
-}
-
-/**
- * Helper: Derive fashion intelligence from components
- */
-function deriveFashionIntelligence(components: ConceptComponents): string {
-  // Derive fashion intelligence from components
-  const outfit = components.outfit.description
-  const styling = components.styling?.description || 'Natural styling'
-
-  return `${outfit}. ${styling}`
 }
 
 export async function POST(req: NextRequest) {
@@ -2560,31 +2544,6 @@ Same quality/luxury/styling as professional concepts, but with:
 - Only add B&W if user specifically asks for it or reference images clearly show B&W`
 }`
 
-    // 🔴 NEW: Use composition system instead of AI generation
-    // BUT: Check if database has enough components first
-    console.log("[v0] Checking if composition system can be used...")
-
-    // Initialize composition system
-    const componentDB = getComponentDatabase()
-    
-    // Check if database has enough components to use composition system
-    const allComponents = componentDB.filter({})
-    const hasEnoughComponents = allComponents.length >= 20 // Need at least 20 components to work
-    
-    if (!hasEnoughComponents) {
-      console.log(`[v0] [COMPOSITION] Database has only ${allComponents.length} components - not enough for composition. Falling back to AI generation.`)
-      console.log(`[v0] [COMPOSITION] To use composition system, populate universal-prompts-raw.ts with all 148 prompts`)
-    } else {
-      console.log(`[v0] [COMPOSITION] Database has ${allComponents.length} components - using composition system`)
-    }
-
-    const diversityEngine = new DiversityEngine({
-      minPoseDiversity: 0.6,
-      minLocationDiversity: 0.5,
-      maxComponentReuse: 2,
-    })
-    const compositionBuilder = new CompositionBuilder(componentDB, diversityEngine)
-
     // 🔴 CRITICAL: Include conversationContext for better context detection (like Classic Mode)
     // Classic Mode uses conversationContext throughout - Studio Pro Mode should too!
     const enrichedUserRequestForDetection = conversationContext 
@@ -2697,161 +2656,50 @@ Same quality/luxury/styling as professional concepts, but with:
       console.log('[v0] ✅ Christmas category detected! userRequest:', userRequest, 'aesthetic:', aesthetic, 'context:', context, 'conversationContext:', conversationContext?.substring(0, 200))
     }
 
-    // Generate concepts using composition OR AI fallback
-    const composedConcepts: MayaConcept[] = []
-    const composedComponents: ConceptComponents[] = []
-    let attempts = 0
-    const maxAttemptsPerConcept = 5
-    const targetCount = count
+    // Generate concepts using Maya's AI generation
+    console.log(`[v0] [AI-GENERATION] Generating ${count} concepts using Maya's AI generation`)
 
-    // Only use composition system if database has enough components
-    if (hasEnoughComponents) {
-      // If guide prompt provided, use it for concept #1
-      if (detectedGuidePrompt && detectedGuidePrompt.trim().length > 0) {
-        const guidePromptWithImages = mergeGuidePromptWithImages(
-          detectedGuidePrompt,
-          referenceImages,
-          studioProMode
-        )
-        const guidePromptConcept: MayaConcept = {
-          title: 'Your Custom Prompt',
-          description: 'Using your guide prompt exactly as specified',
-          category: mapComponentCategoryToMayaCategory(detectedCategory || 'casual-lifestyle'),
-          fashionIntelligence: '',
-          lighting: '',
-          location: '',
-          prompt: guidePromptWithImages,
-        }
-        composedConcepts.push(guidePromptConcept)
-        console.log('[v0] [COMPOSITION] Added guide prompt as concept #1')
+    // Generate all concepts using Maya's AI
+    const { text } = await generateText({
+      model: 'anthropic/claude-sonnet-4-20250514',
+      messages: [
+        {
+          role: 'user',
+          content: conceptPrompt,
+        },
+      ],
+      temperature: 0.85,
+    })
+
+    console.log('[v0] Generated concept text (first 300 chars):', text.substring(0, 300))
+
+    // Parse JSON response
+    let concepts: MayaConcept[] = []
+    const jsonMatch = text.match(/\[[\s\S]*\]/)
+    if (jsonMatch) {
+      concepts = JSON.parse(jsonMatch[0])
+      
+      // 🔴 CRITICAL: Update titles/descriptions with upload module category/concept if available
+      const uploadModuleCategoryForAI = (referenceImages as any)?.category
+      const uploadModuleConceptForAI = (referenceImages as any)?.concept
+      
+      if (uploadModuleCategoryForAI && uploadModuleConceptForAI) {
+        concepts.forEach((concept, index) => {
+          const categoryTitle = uploadModuleCategoryForAI.charAt(0).toUpperCase() + uploadModuleCategoryForAI.slice(1)
+          const conceptTitlePart = uploadModuleConceptForAI.charAt(0).toUpperCase() + uploadModuleConceptForAI.slice(1)
+          concept.title = `${categoryTitle} - ${conceptTitlePart} ${index + 1}`
+          concept.description = `${uploadModuleCategoryForAI} ${uploadModuleConceptForAI} concept with detailed specifications`
+          concept.category = uploadModuleCategoryForAI
+          console.log("[v0] [AI-GENERATION] ✅ Updated concept title with upload module category:", concept.title)
+        })
       }
-
-      // Generate remaining concepts using composition
-      const remainingCount = targetCount - composedConcepts.length
-      console.log(`[v0] [COMPOSITION] Generating ${remainingCount} concepts using composition system`)
-
-      while (composedConcepts.length < targetCount && attempts < targetCount * maxAttemptsPerConcept) {
-        attempts++
-
-        try {
-          // 🔴 FIX: If category is null, use user request directly for composition
-          const categoryForComposition = detectedCategory || 'casual-lifestyle' // Default to casual-lifestyle if null
-          const composed = compositionBuilder.composePrompt({
-            category: categoryForComposition,
-            userIntent: userRequest || context || aesthetic || '',
-            brand: detectedBrandValue,
-            count: composedConcepts.length,
-            previousConcepts: composedComponents, // Use actual components for diversity
-          })
-
-          // Check diversity (skip check for guide prompt concept)
-          // 🔴 FIX: Guide prompt is already added at line 2495, so length will be at least 1
-          // Skip diversity check when guide prompt exists and we're generating the first composed concept
-          if (composedConcepts.length === 1 && detectedGuidePrompt) {
-            // First concept is guide prompt (already in array), skip diversity check for it
-          } else {
-            const diversityCheck = diversityEngine.isDiverseEnough(composed.components)
-
-            if (!diversityCheck.diverse) {
-              console.log(
-                `[v0] [COMPOSITION] Rejected (${attempts}/${targetCount * maxAttemptsPerConcept}): ${diversityCheck.reason}`
-              )
-              continue
-            }
-
-            diversityEngine.addToHistory(composed.components)
-            composedComponents.push(composed.components) // Track for next iteration
-          }
-
-          // 🔴 CRITICAL: Use upload module category/concept for titles if available
-          const uploadModuleCategoryForComposition = (referenceImages as any)?.category
-          const uploadModuleConceptForComposition = (referenceImages as any)?.concept
-          
-          let conceptTitle = composed.title
-          let conceptDescription = composed.description
-          
-          if (uploadModuleCategoryForComposition && uploadModuleConceptForComposition) {
-            // Use upload module category/concept for titles (e.g., "Beauty Concept 1" or "Makeup Look Concept 1")
-            const categoryTitle = uploadModuleCategoryForComposition.charAt(0).toUpperCase() + uploadModuleCategoryForComposition.slice(1)
-            const conceptTitlePart = uploadModuleConceptForComposition.charAt(0).toUpperCase() + uploadModuleConceptForComposition.slice(1)
-            conceptTitle = `${categoryTitle} - ${conceptTitlePart} ${composedConcepts.length + 1}`
-            conceptDescription = `${uploadModuleCategoryForComposition} ${uploadModuleConceptForComposition} concept with detailed specifications`
-            console.log("[v0] [COMPOSITION] ✅ Using upload module category/concept for title:", conceptTitle)
-          }
-          
-          // Convert to MayaConcept format
-          const concept: MayaConcept = {
-            title: conceptTitle,
-            description: conceptDescription,
-            category: uploadModuleCategoryForComposition || mapComponentCategoryToMayaCategory(composed.category),
-            fashionIntelligence: deriveFashionIntelligence(composed.components),
-            lighting: composed.components.lighting.description,
-            location: composed.components.location.description,
-            prompt: composed.prompt,
-          }
-
-          composedConcepts.push(concept)
-          console.log(
-            `[v0] [COMPOSITION] Generated concept ${composedConcepts.length}/${targetCount}: ${concept.title}`
-          )
-        } catch (error) {
-          console.error(`[v0] [COMPOSITION] Error generating concept:`, error)
-          // If composition fails, break and fall back to AI
-          if (composedConcepts.length === 0) {
-            console.log(`[v0] [COMPOSITION] Composition failed completely - falling back to AI generation`)
-            break
-          }
-        }
-      }
+      
+      console.log(`[v0] [AI-GENERATION] ✅ Generated ${concepts.length} concepts using Maya's AI`)
+    } else {
+      console.error('[v0] [AI-GENERATION] ❌ Failed to parse JSON from AI response')
+      // Return empty array if parsing fails
+      concepts = []
     }
-
-    // Fallback to AI generation if composition didn't produce enough concepts
-    if (composedConcepts.length < targetCount) {
-      const needed = targetCount - composedConcepts.length
-      console.log(`[v0] [COMPOSITION] Only generated ${composedConcepts.length}/${targetCount} concepts`)
-      console.log(`[v0] [COMPOSITION] Falling back to AI for ${needed} remaining concepts`)
-
-      // Fallback to AI generation for remaining concepts
-      const { text } = await generateText({
-        model: 'anthropic/claude-sonnet-4-20250514',
-        messages: [
-          {
-            role: 'user',
-            content: conceptPrompt,
-          },
-        ],
-        temperature: 0.85,
-      })
-
-      console.log('[v0] Generated concept text (first 300 chars):', text.substring(0, 300))
-
-      // Parse JSON response
-      const jsonMatch = text.match(/\[[\s\S]*\]/)
-      if (jsonMatch) {
-        const aiConcepts: MayaConcept[] = JSON.parse(jsonMatch[0])
-        
-        // 🔴 CRITICAL: Update titles/descriptions with upload module category/concept if available
-        const uploadModuleCategoryForAI = (referenceImages as any)?.category
-        const uploadModuleConceptForAI = (referenceImages as any)?.concept
-        
-        if (uploadModuleCategoryForAI && uploadModuleConceptForAI) {
-          aiConcepts.forEach((concept, index) => {
-            const categoryTitle = uploadModuleCategoryForAI.charAt(0).toUpperCase() + uploadModuleCategoryForAI.slice(1)
-            const conceptTitlePart = uploadModuleConceptForAI.charAt(0).toUpperCase() + uploadModuleConceptForAI.slice(1)
-            concept.title = `${categoryTitle} - ${conceptTitlePart} ${composedConcepts.length + index + 1}`
-            concept.description = `${uploadModuleCategoryForAI} ${uploadModuleConceptForAI} concept with detailed specifications`
-            concept.category = uploadModuleCategoryForAI
-            console.log("[v0] [AI-GENERATION] ✅ Updated concept title with upload module category:", concept.title)
-          })
-        }
-        
-        // Add AI-generated concepts to fill remaining slots
-        composedConcepts.push(...aiConcepts.slice(0, needed))
-        console.log(`[v0] [COMPOSITION] Added ${Math.min(needed, aiConcepts.length)} AI-generated concepts as fallback`)
-      }
-    }
-
-    let concepts: MayaConcept[] = composedConcepts
 
     // 🔴 CRITICAL: Check for upload module category - some categories (beauty, tech, selfies) don't use prompt constructor
     const uploadModuleCategory = (referenceImages as any)?.category
@@ -3155,7 +3003,7 @@ Same quality/luxury/styling as professional concepts, but with:
         let promptConstructorFailed = false
         
         try {
-          for (let i = 0; i < targetCount; i++) {
+          for (let i = 0; i < count; i++) {
             // 🔴 CRITICAL: Studio Pro Mode (NanoBanana) does NOT use trigger words
             // Instead, it uses the mandatory identity preservation instruction
             // Do not pass triggerWord for Studio Pro Mode
@@ -3296,7 +3144,7 @@ Same quality/luxury/styling as professional concepts, but with:
           
           if (universalPromptCategory) {
             try {
-              const fallbackPrompts = getRandomPrompts(universalPromptCategory, targetCount)
+              const fallbackPrompts = getRandomPrompts(universalPromptCategory, count)
               
               if (fallbackPrompts.length > 0) {
                 const universalPromptConcepts: MayaConcept[] = fallbackPrompts.map((universalPrompt: UniversalPrompt) => ({
@@ -3332,65 +3180,8 @@ Same quality/luxury/styling as professional concepts, but with:
     // Maya's generated prompts should stand as-is without any post-processing injection or replacement
     // Brand library instructions in the AI prompt (for Pro Mode) are sufficient guidance
 
-    // Track metrics for this batch
-    // 🔴 CRITICAL FIX: Only track composed concepts (not guide prompts) for metrics
-    // Guide prompts don't have components, so we need to filter them out before mapping
-    if (composedConcepts.length > 0 && composedComponents.length > 0) {
-      const metricsTracker = getMetricsTracker()
-      const batchId = `batch-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-      
-      // Identify which concepts are guide prompts vs composed
-      const isGuidePromptConcept = (concept: MayaConcept) => 
-        concept.title === 'Your Custom Prompt' && 
-        concept.description === 'Using your guide prompt exactly as specified'
-      
-      // Filter out guide prompt concepts and map only composed concepts to their components
-      // composedComponents array only contains components for composed concepts (not guide prompts)
-      const composedPrompts = composedConcepts
-        .map((concept, index) => {
-          // Check if this is a guide prompt concept
-          if (isGuidePromptConcept(concept)) {
-            return null // Skip guide prompts - they don't have components
-          }
-          // Find the corresponding component index
-          // If guide prompt exists at index 0, composed concepts start at index 1
-          // So we need to adjust: composedComponents[0] maps to composedConcepts[1] (if guide prompt exists)
-          const guidePromptOffset = composedConcepts[0] && isGuidePromptConcept(composedConcepts[0]) ? 1 : 0
-          const componentIndex = index - guidePromptOffset
-          
-          // Only include if we have a matching component
-          if (componentIndex >= 0 && componentIndex < composedComponents.length) {
-            return {
-              prompt: concept.prompt,
-              components: composedComponents[componentIndex],
-              title: concept.title,
-              description: concept.description,
-              category: detectedCategory || 'casual-lifestyle',
-            }
-          }
-          return null
-        })
-        .filter((prompt): prompt is NonNullable<typeof prompt> => prompt !== null)
-
-      if (composedPrompts.length > 0) {
-        metricsTracker.trackBatch(
-          batchId,
-          detectedCategory || 'casual-lifestyle',
-          composedPrompts,
-          composedComponents
-        )
-        
-        console.log(`[v0] [METRICS] Tracked batch ${batchId} with ${composedPrompts.length} composed concepts (guide prompts excluded)`)
-      }
-    }
-
     // 🔴 CRITICAL: If guide prompt is provided (explicit or auto-detected), use it for concept #1 and create variations for 2-6
-    // NOTE: This is now handled in the composition system above, but we keep this for AI fallback cases
-    // Only run if we used AI fallback (check if first concept is NOT the guide prompt we added)
-    const firstConceptIsGuidePrompt = composedConcepts.length > 0 && 
-      composedConcepts[0].title === 'Your Custom Prompt' && 
-      composedConcepts[0].description === 'Using your guide prompt exactly as specified'
-    if (detectedGuidePrompt && detectedGuidePrompt.trim().length > 0 && concepts.length > 0 && !firstConceptIsGuidePrompt) {
+    if (detectedGuidePrompt && detectedGuidePrompt.trim().length > 0 && concepts.length > 0) {
       console.log("[v0] 📋 Using guide prompt for concept #1 (AI fallback), creating variations for concepts 2-6")
       
       // Direct generation: let Maya generate unique variations with guide prompt context
