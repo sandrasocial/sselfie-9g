@@ -2433,8 +2433,11 @@ DO NOT add "with visible pores" at the end - use "natural skin texture with visi
 - ✅ Show variety in activities and settings
 - ✅ Make each concept feel distinct
 
-**EXAMPLE PROMPT:**
-"${triggerWord}, ${userEthnicity ? userEthnicity + " " : ""}${userGender} in cream cashmere sweater and vintage denim, sitting cross-legged on ivory sofa holding ceramic mug, gazing at twinkling Christmas tree, soft morning light from floor-to-ceiling windows, warm fireplace glow, shot on iPhone 15 Pro portrait mode, candid photo, natural skin texture with pores visible, film grain, muted colors"
+**EXAMPLE PROMPT STRUCTURE:**
+"${triggerWord}, ${userEthnicity ? userEthnicity + " " : ""}${userGender} in [outfit description], [pose and action], [setting description], [lighting description], shot on iPhone 15 Pro portrait mode, candid photo, natural skin texture with pores visible, film grain, muted colors"
+
+**EXAMPLE OF COMPLETE PROMPT:**
+"${triggerWord}, ${userEthnicity ? userEthnicity + " " : ""}${userGender} in elegant black turtleneck and wide-leg trousers, standing by window holding notebook, modern minimalist apartment with natural light, afternoon sun streaming through sheer curtains, shot on iPhone 15 Pro portrait mode, candid photo, natural skin texture with pores visible, film grain, muted colors"
 
 **SELFIE HANDLING:**
 If the concept is a selfie (description mentions "selfie", "front camera", "mirror selfie"):
