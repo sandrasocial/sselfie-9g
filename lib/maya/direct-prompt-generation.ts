@@ -119,62 +119,34 @@ function buildClassicSystemPrompt(context: DirectPromptContext): string {
   
   const { triggerWord, gender, ethnicity, physicalPreferences } = context
   
-  return `You are generating a FINAL IMAGE GENERATION PROMPT for Flux (Classic Mode).
+  return `Generate a FINAL IMAGE GENERATION PROMPT for Flux (Classic Mode).
 
-🔴 CRITICAL REQUIREMENTS:
+**REQUIREMENTS:**
+- Format: Natural language, 30-60 words
+- Structure: [trigger], [person], [outfit], [pose/action], [location], [lighting], camera specs
+- Must start with "${triggerWord}" (first word)
+- Person: ${ethnicity ? ethnicity + ' ' : ''}${gender}${physicalPreferences ? ', ' + physicalPreferences : ''}
+- Always end with: "shot on iPhone 15 Pro portrait mode, candid photo, natural skin texture with pores visible, film grain, muted colors"
 
-**FORMAT:** Natural language, 30-60 words total
-**STRUCTURE:** [trigger], [person], [outfit], [pose/action], [location], [lighting], camera specs, authenticity markers
-**STYLE:** Simple, concise, natural language (NOT structured sections)
+**EXAMPLES:**
 
-**TRIGGER WORD:** Must start with "${triggerWord}" (FIRST WORD)
-**PERSON:** ${ethnicity ? ethnicity + ' ' : ''}${gender}${physicalPreferences ? ', ' + physicalPreferences : ''}
-
-**CAMERA (ALWAYS END WITH):** 
-"shot on iPhone 15 Pro portrait mode, candid photo, natural skin texture with pores visible, film grain, muted colors"
-
----
-
-📸 PERFECT EXAMPLES (30-60 words):
-
-Example 1 (Mountain Hiking - 45 words):
+Example 1 (45 words):
 "${triggerWord}, White woman, long dark hair in ponytail, cream tank top, black Lululemon belt bag, standing at mountain summit with valley view, natural hiking light, shot on iPhone 15 Pro portrait mode, candid photo, natural skin texture with pores visible, film grain, muted colors"
 
-Example 2 (Coffee Shop - 42 words):
+Example 2 (42 words):
 "${triggerWord}, Asian woman, shoulder-length black hair, oversized beige sweater, sitting at cafe table with latte, soft window lighting, shot on iPhone 15 Pro portrait mode, candid photo, natural skin texture with pores visible, film grain, muted colors"
 
-Example 3 (Yoga Studio - 38 words):
-"${triggerWord}, Latina woman, wavy brown hair, navy Alo yoga set, sitting cross-legged on mat in bright studio, natural window light, shot on iPhone 15 Pro portrait mode, candid photo, natural skin texture, film grain, muted colors"
+**AVOID:**
+- Structured sections (no "POSE:", "OUTFIT:", etc.)
+- Exceeding 60 words
+- Redundant descriptors
+- Forgetting the trigger word
 
-Example 4 (Street Style - 47 words):
-"${triggerWord}, Black woman, curly natural hair, oversized leather blazer with white tee and jeans, walking through SoHo street with coffee, overcast daylight, shot on iPhone 15 Pro portrait mode, candid photo, natural skin texture with pores visible, film grain, muted colors"
-
----
-
-🚫 WHAT NOT TO DO:
-
-❌ DON'T use structured sections (no "POSE:", "OUTFIT:", etc.)
-❌ DON'T exceed 60 words (count carefully!)
-❌ DON'T use redundant descriptors (ultra-realistic, influencer style, natural bokeh)
-❌ DON'T duplicate camera specs (say iPhone once only)
-❌ DON'T forget trigger word as FIRST WORD
-
----
-
-✅ YOUR TASK:
-
-Generate ONE prompt (30-60 words) following the examples above.
-Match the style: simple, natural language, all items included, concise.
-Count words before finalizing. If over 60, compress further.
-
-Start with: "${triggerWord}, ${ethnicity ? ethnicity + ' ' : ''}${gender}"`
+Generate ONE prompt (30-60 words) in the style above.`
 }
 
 /**
  * PRO MODE SYSTEM PROMPT
- * 
- * 🔴 CRITICAL: This prompt tells Maya to TRANSFORM the description into a structured prompt,
- * NOT to generate new content. The description is the PRIMARY INPUT.
  */
 function buildProSystemPrompt(context: DirectPromptContext): string {
   
@@ -182,121 +154,39 @@ function buildProSystemPrompt(context: DirectPromptContext): string {
   
   // Determine camera style
   const isEditorial = conceptIndex !== undefined && conceptIndex < 3
-  const cameraStyle = isEditorial ? 'professional DSLR' : 'authentic iPhone'
   
-  return `🔴🔴🔴 CRITICAL TRANSFORMATION TASK 🔴🔴🔴
+  return `Transform this DESCRIPTION into a structured prompt. Preserve EVERY specific detail.
 
-You are transforming a DESCRIPTION into a structured prompt.
+**CRITICAL RULES:**
+1. Copy brands/products EXACTLY (The Row → "The Row", not "luxury brand")
+2. No vague language ("elegant sweater" → "The Row cream cashmere turtleneck")
+3. No OR statements (if description says ONE item, write ONE item)
+4. Include ALL brands/items mentioned in description
+5. Complete sentences only (no fragments)
 
-RULE #1: PRESERVE EVERY SPECIFIC DETAIL
-- Brand names: COPY EXACTLY (The Row → "The Row", not "luxury brand")
-- Product descriptions: COPY EXACTLY (cashmere turtleneck → "cashmere turtleneck", not "sweater")
-- Colors + materials: COPY EXACTLY (cream silk → "cream silk", not "light-colored")
-- Decorative items: LIST ALL (Fraser fir tree, crystal ornaments, Hermès boxes, white orchids)
-
-RULE #2: NO VAGUE LANGUAGE
-❌ WRONG: "cream sweater or silk blouse"
-✅ RIGHT: "The Row cream cashmere turtleneck sweater"
-
-❌ WRONG: "trousers or skirt"
-✅ RIGHT: "Brunello Cucinelli camel wide-leg trousers"
-
-❌ WRONG: "delicate gold jewelry"  
-✅ RIGHT: "Cartier watch"
-
-❌ WRONG: "sophisticated Christmas decorations"
-✅ RIGHT: "Fraser fir Christmas tree with crystal ornaments and warm white lights"
-
-RULE #3: NO OR STATEMENTS
-If description says ONE item, write ONE item. Never add alternatives with "or".
-
-RULE #4: INCLUDE EVERY SPECIFIC BRAND/ITEM
-Count the brands in the description. ALL must appear in your prompt.
-- The Row → Must appear in Outfit
-- Brunello Cucinelli → Must appear in Outfit
-- Cartier → Must appear in Outfit
-- Hermès → Must appear in Setting
-- Fraser fir → Must appear in Setting
-- Crystal ornaments → Must appear in Setting
-- White orchids → Must appear in Setting
-
-RULE #5: COMPLETE SENTENCES ONLY
-No fragments like "with professional brush," or "in ,"
-Every section must have complete, grammatically correct sentences.
-
----
-
-**THE DESCRIPTION TO TRANSFORM:**
-
+**DESCRIPTION:**
 """
 ${userRequest || 'No description provided'}
 """
 
----
+**BAG RULES:**
+✅ Include bag if: person is walking/moving, traveling, shopping, or in editorial scene
+❌ Don't include bag if: person is sitting at home, relaxing, in domestic setting, or doing activities where bag would be awkward
 
-**EXTRACT THESE SPECIFICS (mandatory checklist):**
-
-From description, extract:
-
-**OUTFIT ITEMS (list EVERY piece mentioned with EXACT brands/descriptions):**
-- [ ] Top (exact brand, color, material, style)
-- [ ] Bottom (exact brand, color, material, style)
-- [ ] Shoes (exact brand/style if mentioned)
-- [ ] Accessories (watch, jewelry - ONLY if mentioned in description)
-- [ ] Bag (ONLY if contextually appropriate - see bag rules below)
-- [ ] Outerwear/layers (exact brand/style if mentioned)
-
-**🔴 CRITICAL BAG RULES:**
-Bags should ONLY be included when contextually appropriate:
-
-✅ APPROPRIATE (add bag):
-- Person is walking/moving (street style, travel, shopping)
-- Person is traveling (airport, train, carrying luggage)
-- Person is shopping or at a market
-- Person is out and about with purpose
-- Luxury/editorial scenes where bag is part of the outfit being showcased
-
-❌ INAPPROPRIATE (do NOT add bag):
-- Person is sitting at home (cozy scenes, lounging)
-- Person is in a domestic setting (kitchen, bedroom, living room)
-- Person is relaxing/resting
-- Scene is intimate/private
-- Person is doing activities where a bag would be awkward (cooking, reading, sleeping)
-
-**NEVER add bags to settings/descriptions as props** (like "bag resting on side table") - bags should only be part of the outfit description when the person is carrying them.
-
-**ACTION/POSE (exact activity mentioned):**
-- [ ] Primary action (sitting/standing/walking + WHERE + DOING WHAT)
-- [ ] Hand position/what holding (exact item: teacup, phone, etc.)
-- [ ] Facial expression/gaze direction
-
-**SETTING DETAILS (list EVERY item mentioned):**
-- [ ] Primary furniture (exact description: ivory velvet sofa, marble vanity, etc.)
-- [ ] Decorative items (ALL items: tree, ornaments, flowers, boxes, etc.)
-- [ ] Architectural features (windows, fireplace, doors, etc.)
-- [ ] Background elements (dress hanging, snow outside, etc.)
-
-**LIGHTING (exact description):**
-- [ ] Light source (natural, fireplace, bulbs, candlelight, etc.)
-- [ ] Quality (soft, warm, golden, bright, etc.)
-- [ ] Effect (creating what atmosphere)
-
----
-
-**NOW TRANSFORM INTO THIS EXACT FORMAT:**
+**FORMAT:**
 
 ${isEditorial 
   ? 'Professional photography. Pinterest-style editorial portrait.' 
   : 'Authentic influencer content. Pinterest-style portrait.'
 } Character consistency with provided reference images. Match the exact facial features, hair, skin tone, body type, and physical characteristics of the person in the reference images. This is the same person in a different scene. ${isEditorial ? 'Editorial quality, professional photography aesthetic.' : 'Natural, relatable iPhone aesthetic.'}
 
-**Outfit:** [Write EXACT outfit from description. Include EVERY brand name, EVERY piece, EVERY material. Example: "The Row cream cashmere turtleneck sweater, Brunello Cucinelli camel wide-leg trousers, Cartier watch" - NOT "luxurious sweater, elegant trousers, gold jewelry"]
+**Outfit:** [EXACT outfit from description - all brands, all pieces, all materials. Example: "The Row cream cashmere turtleneck sweater, Brunello Cucinelli camel wide-leg trousers, Cartier watch"]
 
-**Pose:** [Write EXACT action from description. Example: "Gracefully sitting on ivory velvet sofa beside towering Fraser fir Christmas tree, holding fine bone china teacup with both hands, gazing thoughtfully at flickering marble fireplace" - NOT "poised sitting position with elegant hand placement"]
+**Pose:** [EXACT action from description. Example: "Gracefully sitting on ivory velvet sofa beside Fraser fir Christmas tree, holding fine bone china teacup with both hands, gazing thoughtfully at fireplace"]
 
-**Setting:** [Write EVERY specific item from description. Example: "Living room with ivory velvet sofa, towering Fraser fir Christmas tree adorned with crystal ornaments and warm white lights, flickering marble fireplace, floor-to-ceiling windows with soft morning snow falling outside, wrapped Hermès boxes beneath tree, fresh white orchids on side table" - NOT "upscale interior with sophisticated decorations"]
+**Setting:** [ALL specific items from description. Example: "Living room with ivory velvet sofa, Fraser fir Christmas tree with crystal ornaments and warm white lights, floor-to-ceiling windows, wrapped Hermès boxes beneath tree, white orchids on side table"]
 
-**Lighting:** [Write EXACT lighting from description. Example: "Golden fireplace glow mixed with natural winter light from floor-to-ceiling windows, creating serene luxury atmosphere" - NOT "soft sophisticated lighting creating elegant ambiance"]
+**Lighting:** [EXACT lighting from description. Example: "Golden fireplace glow mixed with natural winter light from windows, creating serene luxury atmosphere"]
 
 **Camera Composition:** 
 ${isEditorial 
@@ -304,61 +194,18 @@ ${isEditorial
   : 'Authentic iPhone 15 Pro portrait mode, 77mm equivalent, natural bokeh effect, shot from 1.5m distance, portrait mode depth creating soft background blur, influencer content aesthetic.'
 }
 
-**Mood:** [Extract mood words from description. Example: "Serene, luxurious, elegant, sophisticated holiday morning, refined festive spirit" - NOT generic mood words not in description]
+**Mood:** [Mood words from description. Example: "Serene, luxurious, elegant holiday morning"]
 
-**Aesthetic:** [Extract aesthetic from description combined with Pinterest language. Example: "Luxurious holiday morning elegance, sophisticated Christmas styling, high-end festive living, aspirational holiday luxury"]
+**Aesthetic:** [Aesthetic from description with Pinterest language. Example: "Luxurious holiday morning elegance, sophisticated Christmas styling, aspirational holiday luxury"]
 
----
+**VERIFY BEFORE SUBMITTING:**
+✅ Every brand in description appears in prompt?
+✅ No vague words replacing specific items?
+✅ No OR statements?
+✅ All sentences complete?
+✅ Bag only if contextually appropriate?
 
-🔴 VERIFICATION CHECKLIST (you MUST verify before submitting):
-
-Before you finalize, check:
-✅ Every brand mentioned in description appears in prompt?
-✅ No vague words like "elegant", "sophisticated" replacing specific items?
-✅ No OR statements adding alternatives not in description?
-✅ Every decorative item from description listed in Setting?
-✅ Action in Pose matches description exactly?
-✅ All sentences complete (no fragments ending with commas)?
-
-If ANY box is unchecked, revise that section.
-
----
-
-🔴 WRONG vs RIGHT EXAMPLES:
-
-**DESCRIPTION:** "wearing The Row cream cashmere turtleneck sweater"
-
-❌ WRONG: "wearing luxurious cream cashmere sweater"
-❌ WRONG: "wearing cream sweater or silk blouse"  
-❌ WRONG: "wearing elegant knitwear"
-✅ RIGHT: "wearing The Row cream cashmere turtleneck sweater"
-
-**DESCRIPTION:** "Fraser fir Christmas tree with crystal ornaments, Hermès boxes, white orchids"
-
-❌ WRONG: "Christmas tree with elegant decorations"
-❌ WRONG: "sophisticated holiday styling with luxury accents"
-❌ WRONG: "beautifully decorated Christmas tree"
-✅ RIGHT: "Fraser fir Christmas tree with crystal ornaments and warm white lights, wrapped Hermès boxes beneath tree, fresh white orchids on side table"
-
-**DESCRIPTION:** "holding fine bone china teacup with both hands"
-
-❌ WRONG: "elegant hand positioning"
-❌ WRONG: "holding delicate cup"
-✅ RIGHT: "holding fine bone china teacup with both hands"
-
----
-
-NOW TRANSFORM THE DESCRIPTION INTO THE STRUCTURED FORMAT ABOVE.
-
-REMEMBER:
-🔴 EXACT brands
-🔴 EXACT items  
-🔴 EVERY detail
-🔴 NO vague language
-🔴 NO or statements
-🔴 COMPLETE sentences
-
-Generate the prompt now:`
+Transform the description above into the structured format.`
 }
 
 /**
