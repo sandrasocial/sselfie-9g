@@ -15,7 +15,6 @@ import {
   createVariationFromGuidePrompt,
   type ReferenceImages
 } from "@/lib/maya/prompt-builders/guide-prompt-handler"
-import { minimalCleanup } from "@/lib/maya/post-processing/minimal-cleanup"
 import { SHARED_MAYA_PERSONALITY } from "@/lib/maya/personality/shared-personality"
 import { getMayaPersonality } from "@/lib/maya/personality-enhanced"
 import { MAYA_SYSTEM_PROMPT } from "@/lib/maya/personality"
@@ -3773,434 +3772,39 @@ Same quality/luxury/styling as professional concepts, but with:
       concepts = []
     }
     
+    // =============================================================================
+    // MINIMAL SYNTAX CLEANUP
+    // =============================================================================
+    // Apply only essential syntax fixes - no content modifications
+    // Trust Maya's generated prompts - she knows what she's doing!
+
+    function minimalSyntaxCleanup(prompt: string, triggerWord: string): string {
+      let clean = prompt
+        .replace(/,\s*,/g, ',')  // Remove double commas
+        .replace(/\s+/g, ' ')     // Normalize whitespace
+        .trim()
+      
+      // Ensure trigger word is first (Classic Mode only)
+      if (triggerWord && !clean.toLowerCase().startsWith(triggerWord.toLowerCase())) {
+        clean = `${triggerWord}, ${clean}`
+      }
+      
+      return clean
+    }
+
+    // Apply minimal cleanup to all concepts
     concepts.forEach((concept, index) => {
-      // Safety check: ensure concept exists
-      if (!concept) {
-        console.warn(`[v0] Warning: concept at index ${index} is undefined, skipping`)
-        return
-      }
-      
-      let prompt = concept.prompt
-      
-      // Check if this is a guide prompt concept (concept #1 uses guide prompt, concepts 2-6 are variations)
-      // 🔴 FIX: Use the function to check each concept individually, not a boolean on all concepts
-      const isFromGuidePrompt = isGuidePromptConceptFnLocal(concept) || (hasGuidePromptLocal && index > 0 && index < 6)
-
-      // Helper function to count words
-      const wordCount = (text: string) => text.trim().split(/\s+/).length
-
-      // Remove instruction phrases that shouldn't be in FLUX prompts
-      // These are instructions FOR Maya, not part of the image generation prompt
-      const instructionPhrases = [
-        /\bAlways keep my\b/gi,
-        /\bAlways\s+keep\s+my\s+natural\s+features\b/gi,
-        /\bdont change\b/gi,
-        /\bdon't change\b/gi,
-        /\bdont\s+change\s+the\s+face\b/gi,
-        /\bdon't\s+change\s+the\s+face\b/gi,
-        /\bkeep my\b/gi,
-        /\bkeep\s+my\s+natural\s+features\b/gi,
-        /\bkeep\s+my\s+natural\s+hair\s+color\b/gi,
-        /\bkeep\s+my\s+natural\s+eye\s+color\b/gi,
-        /\bkeep\s+my\s+natural\s+hair\b/gi,
-        /\bkeep\s+my\s+natural\s+eyes\b/gi,
-        /\bpreserve my\b/gi,
-        /\bmaintain my\b/gi,
-        /\bdo not change\b/gi,
-        /\bdo\s+not\s+change\s+the\s+face\b/gi,
-      ]
-      
-      instructionPhrases.forEach((regex) => {
-        prompt = prompt.replace(regex, "")
-      })
-      
-      // Remove standalone instruction phrases that might be left as fragments
-      prompt = prompt.replace(/,\s*,/g, ",") // Remove double commas
-      prompt = prompt.replace(/,\s*,/g, ",") // Remove double commas again (in case of triple)
-      prompt = prompt.replace(/^,\s*/, "") // Remove leading comma
-      prompt = prompt.replace(/\s*,\s*$/, "") // Remove trailing comma
-      prompt = prompt.replace(/\s+/g, " ") // Normalize multiple spaces
-      prompt = prompt.trim() // Final trim
-
-      // Check for imperfection language BEFORE removing lighting phrases
-      const hasImperfectionLanguage = /uneven\s*lighting|mixed\s*color\s*temperatures|slight\s*uneven\s*illumination|visible\s*sensor\s*noise/i.test(prompt)
-
-      // Remove banned words (case-insensitive)
-      bannedWords.forEach((word) => {
-        const regex = new RegExp(`\\b${word}\\b`, "gi")
-        prompt = prompt.replace(regex, "")
-      })
-
-      // Conditionally remove "soft diffused natural lighting" only if no imperfection language exists
-      if (!hasImperfectionLanguage) {
-        const softDiffusedRegex = /\bsoft\s+diffused\s+natural\s+lighting\b/gi
-        prompt = prompt.replace(softDiffusedRegex, "")
-      }
-
-      // Hair descriptions are now allowed - Maya can describe hair when she knows it
-      // No removal of hair descriptions - Maya should only include hair if she knows it from:
-      // 1. User's physical preferences (model settings)
-      // 2. Previous conversations where user mentioned it
-      // 3. Reference images (for Studio Pro mode)
-      // Maya should NOT assume hair color/length if she doesn't know it
-
-      // Get current word count - we want to stay under 80 words (optimal for LoRA activation)
-      let currentWordCount = wordCount(prompt)
-      const MAX_WORDS = 60 // Hard limit - optimal length (30-60 words, target 40-55) for better LoRA activation and accurate character representation with safety net descriptions
-
-      // CRITICAL FIX: If prompt is over 80 words, trim intelligently
-      if (currentWordCount > MAX_WORDS) {
-        // Remove less critical elements first (in order of priority to keep)
-        // 1. Keep: trigger word, gender, outfit, pose, iPhone, skin texture, imperfections
-        // 2. Remove: overly detailed location descriptions
-        // 3. Remove: redundant technical terms
-        // 4. Remove: casual moment language (lowest priority)
+      if (concept.prompt) {
+        const originalPrompt = concept.prompt
+        concept.prompt = minimalSyntaxCleanup(concept.prompt, triggerWord || '')
         
-        // DO NOT remove authenticity keywords - they prevent plastic look
-        // These are now REQUIRED: "candid moment", "candid photo", "amateur cellphone photo", "cellphone photo"
-        // Only remove truly unnecessary phrases if over word limit
-        if (currentWordCount > MAX_WORDS) {
-          // Remove overly verbose phrases but keep authenticity keywords
-          prompt = prompt.replace(/,\s*(looks like a real phone camera photo|looks like real phone camera photo|Instagram-native)/gi, "")
-          currentWordCount = wordCount(prompt)
-        }
-        
-        // If still over, remove overly detailed location descriptions
-        if (currentWordCount > MAX_WORDS) {
-          // Simplify location descriptions (keep first part, remove details)
-          prompt = prompt.replace(/,\s*(modern architectural space with clean lines|architectural space with|with clean lines)/gi, ", modern space")
-          currentWordCount = wordCount(prompt)
-        }
-        
-        // If still over, remove old requirements that are no longer needed
-        // BUT: Keep "candid moment" and "candid photo" - these are REQUIRED for authenticity
-        if (currentWordCount > MAX_WORDS) {
-          // Remove old requirements but NOT candid/amateur keywords
-          prompt = prompt.replace(/,\s*(film\s+grain|muted\s+tones|natural\s+skin\s+texture|not\s+airbrushed|motion\s+blur)/gi, "")
-          currentWordCount = wordCount(prompt)
-        }
-        
-        // If still over 80 words, trim less critical elements
-        if (currentWordCount > MAX_WORDS) {
-          // Simplify overly detailed descriptions
-          prompt = prompt.replace(/,\s*with\s+soft\s+drape/gi, "")
-          prompt = prompt.replace(/,\s*weight\s+shifted\s+to\s+one\s+leg/gi, ", weight on one leg")
-          currentWordCount = wordCount(prompt)
-        }
-        
-        // If still over, remove overly detailed outfit descriptions
-        if (currentWordCount > MAX_WORDS) {
-          // Simplify "with soft drape" type phrases
-          prompt = prompt.replace(/,\s*with\s+soft\s+drape/gi, "")
-          prompt = prompt.replace(/,\s*weight\s+shifted\s+to\s+one\s+leg/gi, ", weight on one leg")
-          currentWordCount = wordCount(prompt)
-        }
-        
-        // Final cleanup
-        prompt = prompt.replace(/,\s*,/g, ",").replace(/\s+/g, " ").trim()
-        currentWordCount = wordCount(prompt)
-      }
-
-      // Check if user wants professional/magazine aesthetic (skip iPhone requirements)
-      // Keep studio detection explicit so we don't accidentally force studio lighting
-      const wantsProfessional = /magazine|cover|high.?end|high.?fashion|editorial|professional|luxury|fashion.?editorial|vogue|elle|runway/i.test(
-        `${userRequest || ""} ${aesthetic || ""} ${imageAnalysis || ""}`.toLowerCase(),
-      )
-      const userExplicitStudio = /\b(studio\s+lighting|studio\s+shot|studio\s+photo|studio\s+images?|in\s+studio|photo\s+studio|studio\s+backdrop|studio\s+set|studio\s+session)\b/i.test(
-        `${userRequest || ""} ${aesthetic || ""} ${context || ""}`.toLowerCase(),
-      )
-      const imageShowsStudio =
-        imageAnalysis &&
-        /\b(studio\s+lighting|studio\s+shot|studio\s+photo|photo\s+studio|controlled\s+studio\s+lighting|professional\s+studio\s+lighting)\b/i.test(
-          imageAnalysis.toLowerCase(),
-        )
-      
-      // 🔴 CRITICAL: Only add B&W if explicitly requested by user (NOT from image analysis)
-      // Do NOT add B&W based on image analysis - only user's explicit request
-      // BUT: Do NOT add B&W to guide prompt concepts (they should preserve the original guide prompt)
-      const userExplicitlyWantsBAndW = /(?:black\s+and\s+white|monochrome|b&w|grayscale|black\s+white)\b/i.test(userRequest || "")
-      const hasBAndWInPrompt = /black.?and.?white|monochrome|b&w|grayscale/i.test(prompt)
-
-      // CRITICAL FIX: Remove "muted colors" if B&W is explicitly requested by user or already in prompt
-      // BUT: Skip B&W modifications for guide prompt concepts (preserve original guide prompt)
-      if (!isFromGuidePrompt && (userExplicitlyWantsBAndW || hasBAndWInPrompt)) {
-        prompt = prompt.replace(/,\s*muted\s+colors?/gi, "")
-        prompt = prompt.replace(/muted\s+colors?,?\s*/gi, "")
-        console.log("[v0] Removed 'muted colors' because B&W/monochrome detected")
-        
-        // Only add B&W if user explicitly requested it and not already in prompt
-        // BUT: Never add B&W to guide prompt concepts
-        if (userExplicitlyWantsBAndW && !hasBAndWInPrompt) {
-          prompt += ", black and white"
-          currentWordCount = wordCount(prompt)
-          console.log("[v0] Added 'black and white' to prompt (explicitly requested by user)")
-        }
-      } else if (isFromGuidePrompt) {
-        // For guide prompt concepts, preserve B&W if it's in the original guide prompt
-        // But still remove muted colors if B&W is present
-        if (hasBAndWInPrompt || guidePromptHasBAndW) {
-          prompt = prompt.replace(/,\s*muted\s+colors?/gi, "")
-          prompt = prompt.replace(/muted\s+colors?,?\s*/gi, "")
-          console.log("[v0] Removed 'muted colors' from guide prompt concept (B&W detected)")
+        if (originalPrompt !== concept.prompt) {
+          console.log(`[v0] Concept ${index + 1}: Applied minimal syntax cleanup`)
         }
       }
-      
-      // CRITICAL FIX: Remove iPhone/cellphone references for Studio Pro mode
-      // BUT: Skip for guide prompt concepts (they should preserve the original guide prompt)
-      if (studioProMode && !isFromGuidePrompt) {
-        // Remove ALL iPhone/cellphone/amateur photo references for Studio Pro
-        prompt = prompt.replace(/,\s*shot\s+on\s+iPhone[^,]*/gi, "")
-        prompt = prompt.replace(/,\s*(amateur\s+cellphone\s+photo|cellphone\s+photo|amateur\s+photography|candid\s+photo|candid\s+moment)/gi, "")
-        prompt = prompt.replace(/authentic\s+iPhone\s+photo\s+aesthetic/gi, "")
-        console.log("[v0] Removed all iPhone/cellphone references for Studio Pro mode")
-        
-        // 🔴 CRITICAL: Ensure camera specs are included for Studio Pro mode
-        // BUT: Skip for guide prompt concepts (they already have camera specs from guide prompt)
-        if (!/professional\s+photography|85mm|f\/\d|f\s*\d/i.test(prompt)) {
-          console.log("[v0] Missing camera specs for Studio Pro - adding")
-          // Add before natural skin texture or at end
-          if (/natural\s+skin\s+texture/i.test(prompt)) {
-            prompt = prompt.replace(/(natural\s+skin\s+texture)/i, "professional photography, 85mm lens, f/2.0 depth of field, $1")
-          } else {
-            prompt += ", professional photography, 85mm lens, f/2.0 depth of field"
-          }
-        }
-        
-        // 🔴 CRITICAL: Ensure lighting description is included
-        // BUT: Skip for guide prompt concepts (they already have lighting from guide prompt)
-        // Note: Require "natural" to be part of lighting phrase (e.g., "natural light") to avoid matching "natural skin texture"
-        const hasLighting = /(?:soft|window|warm|ambient|mixed|color\s+temperatures|lighting|light|natural\s+(?:light|lighting|window\s+light))/i.test(prompt)
-        if (!hasLighting) {
-          console.log("[v0] Missing lighting description - adding")
-          // Add after location/environment or before camera specs
-          if (/professional\s+photography|85mm/i.test(prompt)) {
-            prompt = prompt.replace(/(professional\s+photography|85mm)/i, "soft natural lighting, $1")
-          } else {
-            prompt += ", soft natural lighting"
-          }
-        }
-      } else if (isFromGuidePrompt) {
-        console.log("[v0] Skipping iPhone/camera/lighting modifications for guide prompt concept #" + (index + 1) + " - preserving original guide prompt")
-      }
-      
-      // 🔴 CRITICAL: Clean up incorrectly placed "with visible pores" at the end
-      // Replace "with visible pores" at the end with "natural skin texture with visible pores" in proper location
-      // BUT: Only fix placement if skin texture should be included (from user prompt, guide prompt, or templates)
-      // AND: NEVER add in Studio Pro mode - Studio Pro uses professional photography without explicit skin texture mentions
-      const hasVisiblePoresAtEnd = /,\s*with\s+visible\s+pores\.?\s*$/i.test(prompt)
-      const hasNaturalSkinTexture = /natural\s+skin\s+texture/i.test(prompt)
-      const shouldIncludeSkin = shouldIncludeSkinTexture(userRequest, detectedGuidePrompt || undefined, templateExamples) && !studioProMode
-      
-      if (hasVisiblePoresAtEnd) {
-        // Remove "with visible pores" from the end
-        prompt = prompt.replace(/,\s*with\s+visible\s+pores\.?\s*$/i, "")
-        // Only add "natural skin texture with visible pores" if:
-        // 1. It's not already present, AND
-        // 2. It should be included (from user prompt, guide prompt, or templates), AND
-        // 3. NOT in Studio Pro mode
-        if (!hasNaturalSkinTexture && shouldIncludeSkin) {
-          // Add "natural skin texture with visible pores" before camera specs if they exist
-          if (/professional\s+photography|85mm|f\/\d|f\s*\d/i.test(prompt)) {
-            prompt = prompt.replace(/(professional\s+photography|85mm|f\/[\d.]+|depth of field)/i, "natural skin texture with visible pores, $1")
-          } else {
-            // Add at end if no camera specs
-            prompt += ", natural skin texture with visible pores"
-          }
-          console.log("[v0] ✅ Fixed 'with visible pores' placement - moved to proper location (classic mode only)")
-        } else if (!shouldIncludeSkin) {
-          if (studioProMode) {
-            console.log("[v0] ✅ Removed 'with visible pores' - Studio Pro mode (professional photography, no explicit skin texture)")
-          } else {
-            console.log("[v0] ✅ Removed 'with visible pores' - not in user prompt, guide prompt, or templates")
-          }
-        } else {
-          console.log("[v0] ✅ Fixed 'with visible pores' placement - already has natural skin texture")
-        }
-      }
-      prompt = prompt.replace(/with\s+visible\s+pores\.?\s*,\s*black\s+and\s+white/i, "black and white")
-      prompt = prompt.replace(/\.\s*with\s+visible\s+pores\.?\s*$/i, ".")
-      prompt = prompt.replace(/,\s*with\s+visible\s+pores\.?\s*,\s*black\s+and\s+white/i, ", black and white")
-      // Clean up any double commas or spacing issues
-      prompt = prompt.replace(/,\s*,/g, ",").replace(/\s+/g, " ").trim()
-      
-      // Final validation: Ensure Studio Pro prompts have required elements
-      if (studioProMode) {
-        // Check if lighting is present (should have lighting description)
-        // Note: Require "natural" to be part of lighting phrase (e.g., "natural light") to avoid matching "natural skin texture"
-        const hasLightingDescription = /(?:soft|window|warm|ambient|mixed|color\s+temperatures|lighting|light|natural\s+(?:light|lighting|window\s+light|ambient|illumination))/i.test(prompt)
-        if (!hasLightingDescription) {
-          console.log("[v0] ⚠️ WARNING: Prompt missing lighting description")
-        }
-        
-        // Check if camera specs are present
-        const hasCameraSpecs = /professional\s+photography|85mm|f\/\d|f\s*\d/i.test(prompt)
-        if (!hasCameraSpecs) {
-          console.log("[v0] ⚠️ WARNING: Prompt missing camera specs")
-        }
-      }
-      
-      // CRITICAL FIX: Lighting handling - only use studio lighting when explicitly requested
-      if (userExplicitStudio || imageShowsStudio) {
-        // Upgrade to studio lighting only when the user asks for studio or the reference is studio
-        prompt = prompt.replace(/uneven\s+(?:natural\s+)?lighting/gi, "studio lighting")
-        prompt = prompt.replace(/uneven\s+illumination/gi, "studio lighting")
-        console.log("[v0] Replaced 'uneven lighting' with 'studio lighting' due to explicit studio request/reference")
-      } else if (wantsProfessional) {
-        // Keep professional vibe but avoid forcing studio lighting
-        prompt = prompt.replace(/uneven\s+(?:natural\s+)?lighting/gi, "natural lighting with realistic shadows")
-        prompt = prompt.replace(/uneven\s+illumination/gi, "natural lighting with realistic shadows")
-        console.log("[v0] Kept professional vibe without studio lighting")
-      }
-
-      // Guardrail: strip any studio-lighting phrases when the user didn't ask for studio and reference isn't studio
-      if (!userExplicitStudio && !imageShowsStudio) {
-        const before = prompt
-        prompt = prompt.replace(/\b(?:professional\s+)?studio\s+lighting\b/gi, "natural lighting with realistic shadows")
-        prompt = prompt.replace(/\bstudio\s+light\b/gi, "natural light with gentle variation")
-        if (before !== prompt) {
-          console.log("[v0] Removed unintended studio lighting phrasing to protect authenticity")
-        }
-      }
-
-      // Guardrail: remove negative prompting phrases to avoid inverse effects
-      const negativeToPositiveMap: Array<{ regex: RegExp; replacement: string }> = [
-        { regex: /\bnot\s+airbrushed\b/gi, replacement: "unretouched skin texture" },
-        { regex: /\bnot\s+plastic-?looking\b/gi, replacement: "organic imperfections" },
-        { regex: /\bnot\s+smooth\b/gi, replacement: "matte skin texture" },
-        { regex: /\bnot\s+flawless\b/gi, replacement: "realistic skin detail" },
-      ]
-      negativeToPositiveMap.forEach(({ regex, replacement }) => {
-        prompt = prompt.replace(regex, replacement)
-      })
-
-      // CRITICAL FIX #1: Ensure basic iPhone specs at the end (new simplified format)
-      // Skip for professional/studio requests AND Studio Pro mode - allow professional camera specs instead
-      if (!studioProMode && !wantsProfessional) {
-        // Remove any duplicate iPhone mentions first
-        const iphoneMatches = prompt.match(/(shot on iPhone[^,]*)/gi)
-        if (iphoneMatches && iphoneMatches.length > 1) {
-          // Keep only the last one, remove others
-          prompt = prompt.replace(/(shot on iPhone[^,]*),/gi, "")
-          // Re-add at the end if we removed all
-          if (!/shot on iPhone/i.test(prompt)) {
-            prompt = `${prompt}, shot on iPhone 15 Pro portrait mode, shallow depth of field`
-          }
-        }
-        
-        const hasIPhone = /shot\s+on\s+iPhone/i.test(prompt)
-        const hasFocalLength = /\d+mm\s*(lens|focal)/i.test(prompt)
-
-        if (!hasIPhone && !hasFocalLength && currentWordCount < MAX_WORDS) {
-          // Add basic iPhone specs at the end (new format)
-          // Enhanced Authenticity mode: Use stronger iPhone quality descriptors
-          const iphoneSpecs = enhancedAuthenticity 
-            ? "shot on iPhone 15 Pro portrait mode, shallow depth of field, raw iPhone camera quality"
-            : "shot on iPhone 15 Pro portrait mode, shallow depth of field"
-          prompt = `${prompt}, ${iphoneSpecs}`
-          currentWordCount = wordCount(prompt)
-        } else if (hasFocalLength && !hasIPhone && currentWordCount < MAX_WORDS) {
-          // If focal length but no iPhone, replace with basic iPhone specs
-          // Enhanced Authenticity mode: Use stronger iPhone quality descriptors
-          const iphoneSpecs = enhancedAuthenticity 
-            ? "shot on iPhone 15 Pro portrait mode, shallow depth of field, raw iPhone camera quality"
-            : "shot on iPhone 15 Pro portrait mode, shallow depth of field"
-          prompt = prompt.replace(/\d+mm\s*(lens|focal)[^,]*/i, iphoneSpecs)
-          currentWordCount = wordCount(prompt)
-        } else if (hasIPhone) {
-          // Ensure it's in the new simplified format (at the end, basic specs only)
-          // Enhanced Authenticity mode: Upgrade to stronger iPhone quality if enabled
-          prompt = prompt.replace(/shot\s+on\s+iPhone\s*15\s*Pro[^,]*(?:,\s*[^,]+)*/gi, (match) => {
-            // If it has complex specs, simplify to basic format
-            if (/\d+mm|f\/\d+|ISO\s*\d+/i.test(match)) {
-              return enhancedAuthenticity 
-                ? "shot on iPhone 15 Pro portrait mode, shallow depth of field, raw iPhone camera quality"
-                : "shot on iPhone 15 Pro portrait mode, shallow depth of field"
-            }
-            // Enhanced Authenticity: Upgrade existing simple format
-            if (enhancedAuthenticity && !/raw\s+iPhone\s+camera\s+quality/i.test(match)) {
-              return match.replace(/shot\s+on\s+iPhone\s*15\s*Pro[^,]*/i, "shot on iPhone 15 Pro portrait mode, shallow depth of field, raw iPhone camera quality")
-            }
-            // If it's already simple, keep it but ensure it's at the end
-            return match
-          })
-          currentWordCount = wordCount(prompt)
-        }
-      } else {
-        console.log("[v0] Professional/studio request - skipping iPhone requirement, allowing professional camera specs")
-      }
-
-      // CRITICAL FIX #2: Ensure authenticity keywords are present (research-backed)
-      // These keywords prevent plastic look: "candid photo", "candid moment", "amateur cellphone photo", "cellphone photo"
-      // BUT: Skip for professional/studio/magazine requests AND Studio Pro mode
-      if (!studioProMode && !wantsProfessional) {
-        const hasCandid = /candid\s+(photo|moment)/i.test(prompt)
-        const hasAmateur = /(amateur\s+cellphone\s+photo|cellphone\s+photo|amateur\s+photography)/i.test(prompt)
-        
-        if (!hasCandid && currentWordCount < MAX_WORDS) {
-          // Add "candid photo" or "candid moment" before iPhone specs
-          // Enhanced Authenticity mode: Use stronger candid descriptions
-          const iphoneIndex = prompt.search(/shot\s+on\s+iPhone/i)
-          const candidText = enhancedAuthenticity ? "candid moment, raw photo" : "candid photo"
-          if (iphoneIndex > 0) {
-            prompt = prompt.slice(0, iphoneIndex).trim() + `, ${candidText}, ` + prompt.slice(iphoneIndex)
-          } else {
-            prompt = prompt + `, ${candidText}`
-          }
-          currentWordCount = wordCount(prompt)
-        }
-        
-        if (!hasAmateur && currentWordCount < MAX_WORDS) {
-          // Add "amateur cellphone photo" or "cellphone photo" before iPhone specs
-          // Enhanced Authenticity mode: Use stronger amateur descriptions
-          const iphoneIndex = prompt.search(/shot\s+on\s+iPhone/i)
-          const amateurText = enhancedAuthenticity ? "amateur cellphone photo, raw iPhone quality" : "amateur cellphone photo"
-          if (iphoneIndex > 0) {
-            prompt = prompt.slice(0, iphoneIndex).trim() + `, ${amateurText}, ` + prompt.slice(iphoneIndex)
-          } else {
-            prompt = prompt + `, ${amateurText}`
-          }
-          currentWordCount = wordCount(prompt)
-        }
-      } else if (studioProMode) {
-        console.log("[v0] Studio Pro mode - skipping candid/amateur keywords")
-      } else {
-        console.log("[v0] Professional/studio request - skipping candid/amateur keywords")
-      }
-
-      // Apply complete anti-plastic validation (with user request context AND image analysis for conditional requirements)
-      // Skip for Studio Pro mode - use professional quality instead
-      // ALSO skip for guide prompt concepts - they should preserve the original guide prompt structure
-      if (!studioProMode && !isFromGuidePrompt) {
-        prompt = ensureRequiredElements(prompt, currentWordCount, MAX_WORDS, userRequest, aesthetic, imageAnalysis, studioProMode, enhancedAuthenticity, detectedGuidePrompt || undefined, templateExamples)
-      } else if (isFromGuidePrompt) {
-        console.log("[v0] Skipping ensureRequiredElements for guide prompt concept #" + (index + 1) + " - preserving original guide prompt")
-      }
-      currentWordCount = wordCount(prompt)
-
-      console.log("[v0] Final prompt after all validation:", prompt)
-      console.log("[v0] Final word count:", currentWordCount)
-
-      // Final cleanup - use minimal cleanup for guide prompts, full cleanup for others
-      if (isFromGuidePrompt) {
-        // For guide prompts, only fix syntax errors - preserve user intent
-        prompt = minimalCleanup(prompt, true)
-      } else {
-        // For regular prompts, minimal cleanup (syntax + formatting only)
-        prompt = minimalCleanup(prompt, false)
-        // Additional cleanup for non-guide prompts
-        prompt = prompt.replace(/,\s*,/g, ",").replace(/\s+/g, " ").trim()
-      }
-
-      concept.prompt = prompt
-      
-      // 🔴 CRITICAL: Log final prompt for debugging (what gets saved to DB and sent to Replicate)
-      console.log(`[v0] 📝 FINAL PROMPT #${index + 1} (what will be saved/sent to Replicate):`, prompt.substring(0, 200) + (prompt.length > 200 ? "..." : ""))
-      console.log(`[v0] 📝 PROMPT #${index + 1} FULL LENGTH:`, prompt.length, "chars")
-      console.log(`[v0] 📝 PROMPT #${index + 1} contains 'visible pores':`, /visible\s+pores/i.test(prompt))
-      console.log(`[v0] 📝 PROMPT #${index + 1} contains location/scene:`, /(?:tree|sofa|fireplace|room|setting|scene|location|background|interior|illuminated|presents|Christmas)/i.test(prompt))
     })
 
-    console.log("[v0] Post-processed prompts to ensure authenticity requirements")
+    console.log('[v0] Minimal syntax cleanup complete for all concepts')
 
     // Add reference image URL if provided
     if (referenceImageUrl) {
