@@ -80,14 +80,6 @@ import {
   getPromptById,
   type UniversalPrompt 
 } from "@/lib/maya/universal-prompts"
-import { 
-  convertToSelfie, 
-  isSelfieConceptAlready, 
-  getRandomSelfieType,
-  getCategoryPreferredSelfieType,
-  validateSelfiePrompt,
-  type ConceptToConvert
-} from '@/lib/maya/pro/selfie-converter'
 import {
   generatePromptDirect,
   applyProgrammaticFixes,

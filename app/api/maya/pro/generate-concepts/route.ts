@@ -12,13 +12,6 @@ import {
 import { getCategoryByKey } from "@/lib/maya/pro/category-system"
 import { getMayaPersonality } from "@/lib/maya/personality-enhanced"
 import {
-  convertToSelfie,
-  isSelfieConceptAlready,
-  getRandomSelfieType,
-  getCategoryPreferredSelfieType,
-  validateSelfiePrompt,
-  type ConceptToConvert,
-} from "@/lib/maya/pro/selfie-converter"
 import {
   mergeGuidePromptWithImages,
   extractPromptElements,
