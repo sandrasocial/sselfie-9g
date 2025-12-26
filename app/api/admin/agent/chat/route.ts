@@ -3172,6 +3172,8 @@ This tool provides critical business intelligence to make data-driven decisions.
     if (useDirectAnthropic) {
       console.log('[v0] 🚀 Using createAnthropic provider (bypassing gateway)')
       console.log('[v0] 📊 About to create stream, activeChatId:', activeChatId)
+      console.log('[v0] 🔧 Tools count:', Object.keys(tools).length)
+      console.log('[v0] 🔧 Tool names:', Object.keys(tools).join(', '))
 
       // Create Anthropic provider using AI SDK
       // This bypasses the Vercel Gateway (avoiding Bedrock serialization issues)
@@ -3186,13 +3188,15 @@ This tool provides critical business intelligence to make data-driven decisions.
 
       // Use AI SDK's streamText with createAnthropic provider
       // This bypasses the gateway (no Bedrock issues) while handling tools automatically
-      const result = streamText({
-        model: anthropic('claude-sonnet-4-20250514'),  // Provider instance - direct to Anthropic API
-        system: systemPromptWithImages,
-        messages: modelMessagesToUse,
-        maxOutputTokens: 4000,
-        tools: tools,  // No conversion needed - AI SDK handles it!
-        onFinish: async ({ text, toolCalls, toolResults }) => {
+      try {
+        console.log('[v0] 📡 Calling streamText with createAnthropic provider...')
+        const result = streamText({
+          model: anthropic('claude-sonnet-4-20250514'),  // Provider instance - direct to Anthropic API
+          system: systemPromptWithImages,
+          messages: modelMessagesToUse,
+          maxOutputTokens: 4000,
+          tools: tools,  // No conversion needed - AI SDK handles it!
+          onFinish: async ({ text, toolCalls, toolResults }) => {
           // Capture email preview data from tool results
           if (toolResults && Array.isArray(toolResults)) {
             for (const toolResult of toolResults) {
@@ -3226,15 +3230,26 @@ This tool provides critical business intelligence to make data-driven decisions.
               console.error("[v0] ❌ Error saving assistant message:", error)
             }
           }
-        },
-      })
+          },
+        })
 
-      // Return AI SDK's streaming response - handles SSE formatting automatically
-      return result.toUIMessageStreamResponse({
-        headers: {
-          'X-Chat-Id': String(activeChatId),
-        },
-      })
+        console.log('[v0] ✅ streamText created successfully')
+
+        // Return AI SDK's streaming response - handles SSE formatting automatically
+        return result.toUIMessageStreamResponse({
+          headers: {
+            'X-Chat-Id': String(activeChatId),
+          },
+        })
+      } catch (error: any) {
+        console.error('[v0] ❌ Error creating streamText:', error)
+        console.error('[v0] ❌ Error details:', {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        })
+        throw error
+      }
     } else {
       // Fallback to AI SDK (for cases without tools or without ANTHROPIC_API_KEY)
       if (!hasAnthropicKey) {
