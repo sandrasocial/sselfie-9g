@@ -59,45 +59,14 @@ type Outfit = Record<string, string>
 // No need for hardcoded limited arrays that caused 25-33% repetition rate
 
 // ============================================================================
-// DETAILED LIGHTING DESCRIPTIONS
+// LIGHTING DESCRIPTIONS REMOVED
 // ============================================================================
-
-const DETAILED_LIGHTING_DESCRIPTIONS: Record<string, string[]> = {
-  'workout': [
-    `Natural golden hour light, coming laterally. No harsh shadows. Realistically highlighted on hair and body contours. Subtle and well-controlled shadows. Dramatic, clean and professional atmosphere.`,
-    `Soft yet directed light, highlight for muscle definition and body lines. Subtle and well-controlled shadows. Dramatic, clean and professional atmosphere.`,
-    `Natural daylight lighting, soft and diffused light. In the background, aligned yoga mats and large sculpture with brand logo integrated into the scene.`,
-  ],
-  'casual': [
-    `Soft golden hour lighting. Medium framing (waist up). Real, spontaneous and lifestyle atmosphere.`,
-    `Soft and diffused natural morning lighting. Clean blurred background. iPhone-style aesthetic, real UGC, without AI face.`,
-    `Natural late afternoon lighting, soft contrast. Blurred sports background. Active lifestyle aesthetic, premium UGC, clean and elegant branding.`,
-  ],
-  'luxury': [
-    `Natural golden hour light, soft contrast coming from the sunset. Light halo on hair contour and shoulders. Delicate and diffused shadows. Warm and harmonious atmosphere.`,
-    `Soft natural light filtered between the trees. Diffused and balanced lighting. Delicate highlight on body lines. Soft and natural shadows. Sense of calm and harmony.`,
-    `Warm firelight reflects softly on golden ring charm and delicate pendant resting on the collarbone. Warm and cozy firelight, creating soft shadows and real texture in fabrics and on skin.`,
-  ],
-  'travel': [
-    `Brilliant golden sunlight with light halo around jawbone, diffused reflections on glass panels behind her. Visible skin texture, loose hair strands shining in backlight, slight highlight on passport corner, light background blur.`,
-    `Soft natural light filtered through window shadows, highlighting real skin texture, natural shine in hair and material details. Natural blue light entering through wide terminal windows, creating soft shine on hair and realistic skin texture, without artificial smoothing.`,
-    `Natural golden light entering through airport floor-to-ceiling windows, creating realistic shine on face, soft highlights on skin and reflections on coffee cup. Soft and diffused shadows reinforce realism.`,
-  ],
-  'cozy': [
-    `Warm firelight from side, soft ambient room lighting, Christmas lights in background. Warm candlelight creating soft glow on face, ambient room lighting.`,
-    `Soft natural morning light streaming through window. Bright clean bathroom lighting, skin glowing.`,
-    `Warm and soft light, feminine and romantic atmosphere. 50mm lens, realistic skin texture.`,
-    `Warm cinematic lighting luxury Christmas portrait style. 35mm lens, focus on face and realistic texture.`,
-  ],
-  'coffee-run': [
-    `Soft afternoon sunlight. Natural daylight with warm glow.`,
-    `Golden hour lighting at 5pm. Soft natural window light mixing with ambient interior lighting, creating authentic cafe atmosphere.`,
-  ],
-  'street-style': [
-    `Natural late afternoon lighting, soft contrast. Blurred sports background. Active lifestyle aesthetic, premium UGC, clean and elegant branding.`,
-    `Soft and diffused natural morning lighting. Clean blurred background.`,
-  ],
-}
+// Maya (Claude Sonnet 4) now generates diverse lighting naturally based on:
+// - User request context
+// - Category/vibe/location
+// - Her 2026 luxury influencer knowledge
+// - Natural diversity instinct
+// No need for hardcoded limited arrays (2-4 options) that caused repetition
 
 // ============================================================================
 // ENVIRONMENT DESCRIPTIONS REMOVED
@@ -111,83 +80,26 @@ const DETAILED_LIGHTING_DESCRIPTIONS: Record<string, string[]> = {
 // Removed hardcoded "couch + mug" scenario that appeared in 'cozy' category
 
 // ============================================================================
-// MAKEUP DESCRIPTIONS BY CATEGORY
+// MAKEUP DESCRIPTIONS REMOVED
 // ============================================================================
-
-const MAKEUP_DESCRIPTIONS: Record<string, string[]> = {
-  'workout': [
-    `Natural glam makeup. Uniform and realistic skin. No contour exaggeration. Nude lips. Neutral eyes.`,
-    `Natural glam makeup. Uniform and illuminated skin. Neutral and defined eyes. Nude lips. Clean and sophisticated appearance.`,
-    `Natural glam makeup. Uniform skin with healthy glow. Extremely soft contour. Clean and natural eyes. Delicate nude lips.`,
-  ],
-  'casual': [
-    `Natural glam makeup, illuminated skin. Serene and natural expression.`,
-    `Natural glam makeup. Light and spontaneous expression.`,
-  ],
-  'luxury': [
-    `Natural glam makeup. Uniform skin with slight glow. Soft contour. Clean eyes, no exaggeration. Sophisticated nude lips.`,
-    `Makeup: intense red lipstick, long and well-defined lashes, elegant finish.`,
-    `Natural elegant makeup (soft contour + warm nude lipstick).`,
-  ],
-  'travel': [
-    `Natural makeup with sunkissed effect, natural shine on water bands creating brightness bands.`,
-    `Light makeup with tanned effect sunkissed.`,
-  ],
-  'cozy': [
-    `Natural makeup, fresh dewy skin, natural no-makeup expression.`,
-    `Soft glam with visible glow skin. Elegant closed smile, calm and feminine expression.`,
-    `Light glow clean girl style with soft glam finish. Real skin texture, visible pores, without artificial appearance.`,
-    `Natural makeup, fresh dewy skin, natural no-makeup expression. Soft expression with closed smile, natural and delicate gaze to camera.`,
-  ],
-  'coffee-run': [
-    `Natural glam makeup, illuminated skin. Serene and natural expression.`,
-    `Natural makeup, fresh dewy skin. Light and spontaneous expression.`,
-  ],
-  'street-style': [
-    `Natural glam makeup. Light and spontaneous expression.`,
-    `Natural makeup with sunkissed effect. Confident and natural expression.`,
-  ],
-}
+// Maya (Claude Sonnet 4) now generates diverse makeup naturally based on:
+// - User request context
+// - Category/vibe
+// - Her 2026 luxury influencer knowledge
+// - Natural diversity instinct
+// No need for hardcoded limited arrays (2-4 options) that caused repetition
 
 // ============================================================================
-// HAIR DESCRIPTIONS BY CATEGORY
+// HAIR DESCRIPTIONS REMOVED
 // ============================================================================
-
-const HAIR_DESCRIPTIONS: Record<string, string[]> = {
-  'workout': [
-    `Brown hair loose with volume and waves. Realistic polished finish.`,
-    `Brown lit. Long. Loose. Natural waves with soft volume. Realistic polished finish.`,
-    `Brown lit. Long. Loose or slightly controlled behind the shoulders. Natural movement. Polished and editorial finish.`,
-  ],
-  'casual': [
-    `Brown hair loose with waves and volume. Natural glam makeup.`,
-    `Brown hair loose, soft waves and volume.`,
-  ],
-  'luxury': [
-    `Hair is straight, sleek, and pulled back behind the ears.`,
-    `Hair parted in the middle, extremely polished and shiny, held in a low sleek bun.`,
-    `Polished brown hair is held in a low sleek bun (low chignon), reinforcing the clean sophistication of the visual.`,
-  ],
-  'travel': [
-    `Long voluminous wavy brown hair falling over shoulders.`,
-    `Long brown hair pulled into a casual low bun, with some loose natural strands around the face.`,
-    `Long brown hair loose, in long waves with natural volume.`,
-  ],
-  'cozy': [
-    `Illuminated brown hair, long, with soft waves and natural volume.`,
-    `Hair pulled in elegant bun decorated with large red velvet bow, with two soft strands framing face.`,
-    `Hair pulled in elegant and modern bun, with loose subtle strands framing face.`,
-    `Long brown hair with waves and volume.`,
-  ],
-  'coffee-run': [
-    `Brown hair loose with waves and volume. Natural glam makeup.`,
-    `Long brown hair loose, soft waves and volume.`,
-  ],
-  'street-style': [
-    `Brown hair loose with waves and volume. Natural glam makeup.`,
-    `Long brown hair loose, soft waves and volume.`,
-  ],
-}
+// Maya (Claude Sonnet 4) now generates diverse hair naturally based on:
+// - User request context
+// - Category/vibe
+// - Image analysis (if provided)
+// - User preferences (if provided)
+// - Her 2026 luxury influencer knowledge
+// - Natural diversity instinct
+// No need for hardcoded limited arrays (2-4 options) that caused repetition
 
 // ============================================================================
 // CAMERA SPECS AND FRAMING
@@ -258,15 +170,13 @@ export function buildEnhancedPrompt(params: EnhancedPromptParams): string {
   const accessories = accessoriesParts.join(', ')
   
   // Get detailed sections
-  // Pose and environment are now generated naturally by Maya based on context - no hardcoded arrays
-  const lightingOptions = DETAILED_LIGHTING_DESCRIPTIONS[categoryLower] || DETAILED_LIGHTING_DESCRIPTIONS['casual']
-  const lighting = lightingOptions[Math.floor(Math.random() * lightingOptions.length)]
-  
-  const makeupOptions = MAKEUP_DESCRIPTIONS[categoryLower] || MAKEUP_DESCRIPTIONS['casual']
-  const makeup = makeupOptions[Math.floor(Math.random() * makeupOptions.length)]
-  
-  // Get hair description (prioritize image analysis, then user preferences, then category default)
+  // Pose, environment, lighting, makeup, and hair are now generated naturally by Maya based on context - no hardcoded arrays or random selection
+  // Maya will generate appropriate lighting, makeup, and hair descriptions based on the category, vibe, and context
+  let lighting = ''
+  let makeup = ''
   let hair = ''
+  
+  // Get hair description (prioritize image analysis, then user preferences)
   if (imageAnalysis && /hair|hairstyle/i.test(imageAnalysis)) {
     // Extract hair from image analysis
     const hairMatch = imageAnalysis.match(/(?:hair|hairstyle)[^.]*?([^.]{20,100})/i)
@@ -277,10 +187,7 @@ export function buildEnhancedPrompt(params: EnhancedPromptParams): string {
   if (!hair && hairStyle) {
     hair = hairStyle
   }
-  if (!hair) {
-    const hairOptions = HAIR_DESCRIPTIONS[categoryLower] || HAIR_DESCRIPTIONS['casual']
-    hair = hairOptions[Math.floor(Math.random() * hairOptions.length)]
-  }
+  // If no hair specified, Maya will generate it naturally based on context
   
   // Get camera and framing
   const cameraInfo = CAMERA_AND_FRAMING[categoryLower] || CAMERA_AND_FRAMING['casual']
@@ -314,14 +221,7 @@ ${bodyType} wearing ${styling}${accessories ? `, ${accessories}` : ''}.
 STYLING:
 ${styling}${accessories ? `, ${accessories}` : ''}
 
-HAIR:
-${hair}
-
-MAKEUP:
-${makeup}
-
-LIGHTING:
-${lighting}
+${hair ? `HAIR:\n${hair}\n\n` : ''}${makeup ? `MAKEUP:\n${makeup}\n\n` : ''}${lighting ? `LIGHTING:\n${lighting}\n\n` : ''}
 
 CAMERA:
 ${cameraInfo.distance}

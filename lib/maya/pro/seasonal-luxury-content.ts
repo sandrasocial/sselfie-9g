@@ -468,94 +468,14 @@ export const SEASONAL_MOOD = {
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
-
-/**
- * Build complete Christmas setting
- */
-export function buildChristmasSetting(
-  room: 'living' | 'bedroom' | 'kitchen' | 'dining' | 'entryway',
-  style: 'minimal' | 'luxury' | 'cozy' = 'minimal',
-  timeOfDay: 'morning' | 'afternoon' | 'evening' = 'morning'
-): string {
-  const pick = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)]
-
-  // Select base interior
-  let interior = ''
-  switch (room) {
-    case 'living':
-      interior = pick(CHRISTMAS_INTERIORS.LIVING_ROOM_LUXURY)
-      break
-    case 'bedroom':
-      interior = pick(CHRISTMAS_INTERIORS.BEDROOM_SERENE)
-      break
-    case 'kitchen':
-      interior = pick(CHRISTMAS_INTERIORS.KITCHEN_MODERN)
-      break
-    case 'dining':
-      interior = pick(CHRISTMAS_INTERIORS.DINING_ELEGANT)
-      break
-    case 'entryway':
-      interior = pick(CHRISTMAS_INTERIORS.ENTRYWAY_WELCOME)
-      break
-  }
-
-  return interior
-}
-
-/**
- * Build Christmas outfit
- */
-export function buildChristmasOutfit(
-  type: 'loungewear' | 'casual' | 'formal',
-  colorTheme: 'neutral' | 'burgundy' | 'holiday' = 'neutral'
-): string {
-  const pick = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)]
-
-  if (type === 'loungewear') {
-    if (colorTheme === 'holiday') {
-      return pick(CHRISTMAS_OUTFITS.LOUNGEWEAR_LUXURY.PAJAMA_SETS.filter(o => 
-        o.includes('candy cane') || o.includes('plaid') || o.includes('burgundy')
-      ))
-    } else {
-      return pick(CHRISTMAS_OUTFITS.LOUNGEWEAR_LUXURY.PAJAMA_SETS.filter(o => 
-        o.includes('cream') || o.includes('ivory') || o.includes('champagne')
-      ))
-    }
-  }
-
-  if (type === 'casual') {
-    return pick(CHRISTMAS_OUTFITS.HOLIDAY_DRESSES.CASUAL_ELEVATED)
-  }
-
-  if (type === 'formal') {
-    if (colorTheme === 'burgundy') {
-      return pick(CHRISTMAS_OUTFITS.HOLIDAY_DRESSES.FORMAL_ELEGANT.filter(o => 
-        o.includes('burgundy') || o.includes('red')
-      ))
-    } else {
-      return pick(CHRISTMAS_OUTFITS.HOLIDAY_DRESSES.FORMAL_ELEGANT.filter(o => 
-        o.includes('champagne') || o.includes('ivory') || o.includes('cream')
-      ))
-    }
-  }
-
-  return pick(CHRISTMAS_OUTFITS.LOUNGEWEAR_LUXURY.PAJAMA_SETS)
-}
-
-/**
- * Build New Years setting
- */
-export function buildNewYearsSetting(
-  type: 'party' | 'dinner' = 'party'
-): string {
-  const pick = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)]
-
-  if (type === 'party') {
-    return pick(NEW_YEARS_CONTENT.INTERIORS.ELEGANT_PARTY)
-  } else {
-    return pick(NEW_YEARS_CONTENT.INTERIORS.INTIMATE_DINNER)
-  }
-}
+// RANDOM SELECTION FUNCTIONS REMOVED
+// ============================================================================
+// These functions used small arrays (1-11 options) with random selection,
+// causing repetition and limiting Maya's creativity.
+// Maya (Claude Sonnet 4) now generates diverse Christmas/New Years content
+// naturally based on context, user request, and her 2026 luxury influencer knowledge.
+// The arrays (CHRISTMAS_INTERIORS, CHRISTMAS_OUTFITS, NEW_YEARS_CONTENT) remain
+// as reference material but are no longer used for random selection.
 
 /**
  * Detect seasonal context

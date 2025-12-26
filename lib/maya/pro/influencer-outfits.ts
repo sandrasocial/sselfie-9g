@@ -1956,7 +1956,8 @@ export function selectOutfit(category: string): OutfitFormula {
     return LIFESTYLE_OUTFITS[0]
   }
   
-  return categoryOutfits[Math.floor(Math.random() * categoryOutfits.length)]
+  // Use first outfit (no random selection from arrays - Maya generates diverse outfits naturally)
+  return categoryOutfits[0]
 }
 
 /**
