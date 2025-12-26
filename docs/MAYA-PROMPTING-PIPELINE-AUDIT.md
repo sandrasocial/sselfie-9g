@@ -2,7 +2,8 @@
 ## Category System Breaking Dynamic Prompt Generation
 
 **Created:** 2025-12-20  
-**Status:** 🔴 CRITICAL ISSUE IDENTIFIED
+**Status:** 🔴 CRITICAL ISSUE IDENTIFIED  
+**Note:** This audit references the composition system, which was later removed in December 2024. See `COMPOSITION-SYSTEM-REMOVAL-SUMMARY.md` for details.
 
 ---
 
