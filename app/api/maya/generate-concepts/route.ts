@@ -2703,21 +2703,6 @@ Same quality/luxury/styling as professional concepts, but with:
     if (jsonMatch) {
       concepts = JSON.parse(jsonMatch[0])
       
-      // 🔴 CRITICAL: Update titles/descriptions with upload module category/concept if available
-      const uploadModuleCategoryForAI = (referenceImages as any)?.category
-      const uploadModuleConceptForAI = (referenceImages as any)?.concept
-      
-      if (uploadModuleCategoryForAI && uploadModuleConceptForAI) {
-        concepts.forEach((concept, index) => {
-          const categoryTitle = uploadModuleCategoryForAI.charAt(0).toUpperCase() + uploadModuleCategoryForAI.slice(1)
-          const conceptTitlePart = uploadModuleConceptForAI.charAt(0).toUpperCase() + uploadModuleConceptForAI.slice(1)
-          concept.title = `${categoryTitle} - ${conceptTitlePart} ${index + 1}`
-          concept.description = `${uploadModuleCategoryForAI} ${uploadModuleConceptForAI} concept with detailed specifications`
-          concept.category = uploadModuleCategoryForAI
-          console.log("[v0] [AI-GENERATION] ✅ Updated concept title with upload module category:", concept.title)
-        })
-      }
-      
       console.log(`[v0] [AI-GENERATION] ✅ Generated ${concepts.length} concepts using Maya's AI`)
     } else {
       console.error('[v0] [AI-GENERATION] ❌ Failed to parse JSON from AI response')
