@@ -49,59 +49,14 @@ export interface EnhancedPromptParams {
 type Outfit = Record<string, string>
 
 // ============================================================================
-// DETAILED POSE DESCRIPTIONS BY CATEGORY
+// POSE DESCRIPTIONS REMOVED
 // ============================================================================
-
-const DETAILED_POSE_DESCRIPTIONS: Record<string, string[]> = {
-  'workout': [
-    `Body supported slightly raised on three points, ONE arm extended diagonally, one leg slightly raised. Extended legs in front diagonally, one leg lightly folded over the other. Hip supported on the mat (no suspension). Torso in erect pose, without exaggerating. Aligned shoulders. Expression neutral, editorial (not sensual, not smiling).`,
-    `Standing or semi-kneeling on the reformer, extended arms pulling the resistance cables. Activated core, erect spine. Aligned shoulders. Focused and confident expression. Gaze directed slightly forward or off camera.`,
-    `Executing the Vrksasana yoga posture (tree posture). One foot firmly planted on the ground, the other placed on the inner part of the opposite thigh. Raised arms above the head. Hands joined in prayer position. Erect spine, perfect alignment. Eyes gently closed. Serene, centered and confident expression. Sculptural and elegant presence, without rigidity.`,
-    `Standing with confident and sculptural posture, body slightly inclined towards the sunset. Spine turned to the horizon. Eyes closed, serene and powerful expression. Relaxed arms along the body or slightly away. Editorial, contemplative attitude, not overly posed.`,
-    `Kneeling on a yoga mat at an outdoor event, holding a reusable water bottle with the brand logo clearly visible in the center of the bottle. Elegant posture, erect spine, natural gesture holding the bottle.`,
-    `Standing on a tennis court, holding a racket. A white towel is placed over her shoulder, with the brand logo clearly visible and well-defined. Confident posture, focused expression.`,
-    `In a minimalist outdoor space surrounded by green, doing a light stretch with arms raised above the head. Serene and natural expression.`,
-    `Sitting casually on a yoga mat, holding a cup of coffee after training. Relaxed posture, one crossed leg, body slightly inclined. Confident and natural expression, looking away from the camera.`,
-  ],
-  'casual': [
-    `Walking slowly through a modern and minimalist space, adjusting sunglasses during the walk. Relaxed posture, one crossed leg, body slightly inclined. Confident and natural expression, looking away from the camera.`,
-    `Seated casually on a yoga mat, holding a cup of coffee after training. Relaxed posture, one crossed leg, body slightly inclined. Confident and natural expression, looking away from the camera.`,
-    `Standing with weight on back leg, mid-stride walking. Leaning naturally. Relaxed, confident energy. One hand in pocket (casual confidence).`,
-    `Walking naturally with coffee in hand, relaxed expression. Standing with weight on one leg, casual stance, natural smile.`,
-    `Sitting comfortably, legs crossed, looking away naturally. One hand resting on table, other hand holding coffee cup.`,
-  ],
-  'luxury': [
-    `Standing with elegant posture, one hand resting discreetly inside the bag, while the body leans slightly in rotation, with gaze cast subtly over the shoulder in a contemplative manner. Expression is serene and assured, with relaxed lips and elegant posture.`,
-    `Seated gracefully in brown bouclé armchair, legs are bare and elegantly crossed. One arm resting on table, leaning elbow on table, holding passport and boarding card. Sophisticated evening expression.`,
-    `Walking confidently through modern airport lobby with glass skylights above. Captured mid-step. One hand pulling suitcase, other hand holding coffee. Subtle smirk, firm forward gaze — confident posture of someone already ready for next destination.`,
-    `Standing with couture mini dress look, structured bow detail. Straight elegant posture, sophisticated expression.`,
-    `Seated on the bed of a classic luxury Parisian hotel. One hand resting on mattress and other lightly on chest, displaying accessories (ring and watch). Elegant and timeless pose.`,
-    `Standing in front of luxury boutique, looking toward the camera in a medium body framing. One hand rests discreetly inside the bag, while the body leans slightly in rotation, with gaze cast subtly over the shoulder in a contemplative manner.`,
-  ],
-  'travel': [
-    `Seated in minimalist airport lounge, holding an iced latte with transparent lid while smiling softly at the camera. Legs elegantly crossed, one foot resting on her rigid light green suitcase. Looking directly at camera with soft and confident expression.`,
-    `Standing in front of airport terminal window during golden hour, with sunlight reflecting softly behind her through the glass. One hand holds a boarding pass and a folded passport close to her face, catching the light as an accessory. Expression: calm, carefree, lips parted with confidence.`,
-    `Walking confidently through modern airport lobby with glass skylights above. Captured mid-step. One hand pulling silver textured suitcase, other hand holding coffee. Subtle smirk, firm forward gaze.`,
-    `Seated in airport waiting area, with morning light entering through the tall terminal windows. Casually holding a travel coffee cup in one hand, with her wrist adorned by a gold watch and delicate rings. One casually folded leg, looking directly at camera with soft and confident expression.`,
-    `Standing confidently in front of airport terminal window during golden hour. One hand holds boarding pass and folded passport close to face, catching the light as an accessory. Calm, carefree expression, lips parted with confidence.`,
-    `Seated beside airport terminal window, holding an iced latte in one hand, while slides finger on phone with other hand. Looking up at camera, hands gently framing face or touching skin, serene beauty expression.`,
-  ],
-  'cozy': [
-    `Seated comfortably on sofa, relaxed pose, peaceful expression. Curled up with blanket, cozy pose, content expression. Legs tucked under, relaxed into chair, natural contemplative expression.`,
-    `Standing by window, gentle pose, serene expression. Looking outside, profile to 3/4 angle, peaceful contemplative expression.`,
-    `Kneeling near decorated Christmas tree, holding transparent ornament. Elegant posture, soft expression.`,
-    `Seated on floor beside decorated Christmas tree with warm golden lights, morning light streaming through window. Legs crossed, leaning against couch, natural relaxed expression with soft smile.`,
-  ],
-  'coffee-run': [
-    `Walking naturally with coffee in hand, relaxed expression. Standing with weight on one leg, casual stance, natural smile.`,
-    `Sitting comfortably at cafe table, legs crossed, looking away naturally. One hand resting on table, other hand holding coffee cup.`,
-    `Standing at coffee counter, holding latte, natural casual expression.`,
-  ],
-  'street-style': [
-    `Walking confidently down street, urban attitude, neutral expression. Standing with hand in pocket, street style pose, cool expression.`,
-    `Leaning against wall, casual street pose, relaxed expression. One hand in pocket, weight on back leg.`,
-  ],
-}
+// Maya (Claude Sonnet 4) now generates diverse poses naturally based on:
+// - User request context
+// - Category/vibe
+// - Her 2026 luxury influencer knowledge
+// - Natural diversity instinct
+// No need for hardcoded limited arrays that caused 25-33% repetition rate
 
 // ============================================================================
 // DETAILED LIGHTING DESCRIPTIONS
@@ -332,9 +287,7 @@ export function buildEnhancedPrompt(params: EnhancedPromptParams): string {
   const accessories = accessoriesParts.join(', ')
   
   // Get detailed sections
-  const poseOptions = DETAILED_POSE_DESCRIPTIONS[categoryLower] || DETAILED_POSE_DESCRIPTIONS['casual']
-  const pose = poseOptions[Math.floor(Math.random() * poseOptions.length)]
-  
+  // Pose is now generated naturally by Maya based on context - no hardcoded arrays
   const lightingOptions = DETAILED_LIGHTING_DESCRIPTIONS[categoryLower] || DETAILED_LIGHTING_DESCRIPTIONS['casual']
   const lighting = lightingOptions[Math.floor(Math.random() * lightingOptions.length)]
   
@@ -368,7 +321,8 @@ export function buildEnhancedPrompt(params: EnhancedPromptParams): string {
   const age = userAge || 'Woman in late twenties'
   
   // Build the enhanced prompt with detailed sections (matching production examples)
-  // Format: Identity instruction + Character + Detailed sections (POSE, STYLING, HAIR, MAKEUP, SCENARIO, LIGHTING, CAMERA)
+  // Format: Identity instruction + Character + Detailed sections (STYLING, HAIR, MAKEUP, SCENARIO, LIGHTING, CAMERA)
+  // Note: Pose is now generated naturally by Maya based on context - no hardcoded constraints
   
   // Add brand mentions if detected in outfit (for workout/athletic categories)
   let brandMention = ''
@@ -388,9 +342,6 @@ export function buildEnhancedPrompt(params: EnhancedPromptParams): string {
   const prompt = `${brandMention}Maintain exactly the characteristics of the person in the attachment (face, body, skin tone, hair and visual identity). Do not copy the original photo.
 
 ${bodyType} wearing ${styling}${accessories ? `, ${accessories}` : ''}.
-
-POSE:
-${pose}
 
 STYLING:
 ${styling}${accessories ? `, ${accessories}` : ''}
@@ -417,6 +368,7 @@ Hyper-realistic photo in vertical 2:3 portrait, ${vibe} aesthetic, premium ${cat
 
   return prompt
 }
+
 
 
 
