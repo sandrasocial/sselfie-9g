@@ -109,26 +109,26 @@ export function selectMixedBrands(
     // For luxury category, use luxury brand as foundation
     accessibleBrands = ['The Row', 'Toteme']
     
-    // Add second luxury as accent
+    // Add second luxury as accent (using first option - no random selection from small arrays)
     const luxuryOptions = ['Bottega Veneta', 'Chanel', 'Hermès']
-    luxuryAccent = luxuryOptions[Math.floor(Math.random() * luxuryOptions.length)]
+    luxuryAccent = luxuryOptions[0]
   }
   
   // LIFESTYLE CATEGORY
   else if (categoryLower.includes('lifestyle')) {
-    // Rotate through lifestyle brands instead of always Glossier
+    // Use first lifestyle brand option (no random selection from small arrays)
     const lifestyleOptions = [
       ['Everlane', 'COS'],
       ['Jenni Kayne', 'Free People'],
       ['COS', 'Toteme'],
       ['Madewell', 'Everlane'],
     ]
-    accessibleBrands = lifestyleOptions[Math.floor(Math.random() * lifestyleOptions.length)]
+    accessibleBrands = lifestyleOptions[0]
     
-    // Add luxury accent if theme suggests it
+    // Add luxury accent if theme suggests it (using first option - no random selection)
     if (themeLower.includes('luxury') || requestLower.includes('chic') || requestLower.includes('elevated')) {
       const luxuryOptions = ['Bottega Veneta', 'The Row']
-      luxuryAccent = luxuryOptions[Math.floor(Math.random() * luxuryOptions.length)]
+      luxuryAccent = luxuryOptions[0]
     }
   }
   
@@ -136,10 +136,10 @@ export function selectMixedBrands(
   else if (categoryLower.includes('fashion')) {
     accessibleBrands = ['Reformation', 'Aritzia']
     
-    // Fashion category often benefits from luxury accent
-    if (themeLower.includes('luxury') || themeLower.includes('editorial') || Math.random() > 0.5) {
+    // Fashion category often benefits from luxury accent (using first option - no random selection)
+    if (themeLower.includes('luxury') || themeLower.includes('editorial')) {
       const luxuryOptions = ['Chanel', 'Bottega Veneta', 'The Row']
-      luxuryAccent = luxuryOptions[Math.floor(Math.random() * luxuryOptions.length)]
+      luxuryAccent = luxuryOptions[0]
     }
   }
   
@@ -147,20 +147,20 @@ export function selectMixedBrands(
   else if (categoryLower.includes('travel')) {
     accessibleBrands = ['Zara', 'COS']
     
-    // Travel usually has a luxury touch
+    // Travel usually has a luxury touch (using first option - no random selection)
     const luxuryOptions = ['The Row', 'Bottega Veneta']
-    luxuryAccent = luxuryOptions[Math.floor(Math.random() * luxuryOptions.length)]
+    luxuryAccent = luxuryOptions[0]
   }
   
   // BEAUTY CATEGORY
   else if (categoryLower.includes('beauty')) {
-    // Rotate through beauty brands
+    // Use first beauty brand option (no random selection from small arrays)
     const beautyOptions = [
       ['Glossier', 'Rhode'],
       ['Rhode', 'The Ordinary'],
       ['Glossier'],
     ]
-    accessibleBrands = beautyOptions[Math.floor(Math.random() * beautyOptions.length)]
+    accessibleBrands = beautyOptions[0]
     
     // Beauty typically doesn't need luxury fashion accent
     luxuryAccent = undefined

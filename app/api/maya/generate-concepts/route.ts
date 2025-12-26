@@ -6,6 +6,8 @@ import { getFluxPromptingPrinciples } from "@/lib/maya/flux-prompting-principles
 import { getFashionIntelligencePrinciples } from "@/lib/maya/fashion-knowledge-2025"
 import { getLifestyleContextIntelligence } from "@/lib/maya/lifestyle-contexts"
 import INFLUENCER_POSING_KNOWLEDGE from "@/lib/maya/influencer-posing-knowledge"
+import INSTAGRAM_LOCATION_INTELLIGENCE from "@/lib/maya/instagram-location-intelligence"
+import { getLuxuryLifestyleSettings } from "@/lib/maya/luxury-lifestyle-settings"
 import { getNanoBananaPromptingPrinciples } from "@/lib/maya/nano-banana-prompt-builder"
 import { getConceptPrompt } from "@/lib/maya/concept-templates"
 import {
@@ -1349,6 +1351,24 @@ Use this for inspiration on authentic, Instagram-style poses. These are REAL inf
 ${INFLUENCER_POSING_KNOWLEDGE}
 
 Remember: Describe poses SIMPLY and NATURALLY, like you're telling a friend what someone is doing. Avoid technical photography language.
+
+**IMPORTANT:** This is REFERENCE MATERIAL for inspiration. Maya generates diverse poses naturally based on context - she does NOT randomly select from this list.
+===
+
+=== INSTAGRAM LOCATION INTELLIGENCE (REFERENCE) ===
+Use this as inspiration for diverse, Instagram-worthy locations. These are examples to spark creativity:
+
+${INSTAGRAM_LOCATION_INTELLIGENCE}
+
+**IMPORTANT:** This is REFERENCE MATERIAL for inspiration. Maya generates diverse locations naturally based on context - she does NOT randomly select from this list.
+===
+
+=== LUXURY LIFESTYLE SETTINGS (REFERENCE) ===
+Use this as guidance for elevating content with subtle luxury markers:
+
+${getLuxuryLifestyleSettings()}
+
+**IMPORTANT:** This is REFERENCE MATERIAL for inspiration. Maya integrates luxury elements naturally based on context - she does NOT randomly select from this list.
 ===
 
 ${
@@ -2391,6 +2411,27 @@ DO NOT add "with visible pores" at the end - use "natural skin texture with visi
 - NO structured sections (no "POSE:", "OUTFIT:", etc.)
 - Direct, natural language only
 - NO text overlays (this is a regular concept card)
+
+**DIVERSITY & VARIETY:**
+- Create naturally diverse concepts with varied settings, poses, and moments
+- Avoid repetitive scenarios (no "sitting on couch with mug" in multiple concepts)
+- Mix indoor/outdoor, static/active, cozy/energetic, casual/sophisticated
+- Include variety in:
+  * Settings: home, outdoor, urban, nature, work, social venues
+  * Poses: sitting, standing, walking, working, active, relaxed, social
+  * Moments: daily life, work, travel, wellness, social, creative pursuits
+  * Props: naturally varied (not just mugs/books/phones)
+  * Times: morning, afternoon, evening, golden hour, blue hour
+- Draw from your 2026 luxury influencer knowledge for current, fresh scenarios
+- Trust your creativity - no templates or forced patterns
+
+**AVOID REPETITION:**
+- ❌ Don't create multiple "sitting on sofa" concepts
+- ❌ Don't default to "holding mug/teacup" repeatedly  
+- ❌ Don't use "reading book" in multiple concepts
+- ✅ Create fresh, unique moments for each concept
+- ✅ Show variety in activities and settings
+- ✅ Make each concept feel distinct
 
 **EXAMPLE PROMPT:**
 "${triggerWord}, ${userEthnicity ? userEthnicity + " " : ""}${userGender} in cream cashmere sweater and vintage denim, sitting cross-legged on ivory sofa holding ceramic mug, gazing at twinkling Christmas tree, soft morning light from floor-to-ceiling windows, warm fireplace glow, shot on iPhone 15 Pro portrait mode, candid photo, natural skin texture with pores visible, film grain, muted colors"

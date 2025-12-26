@@ -1,3 +1,12 @@
+/**
+ * Natural Influencer Posing & Body Language (2025)
+ * 
+ * REFERENCE MATERIAL ONLY - Used as guidance/inspiration in system prompts
+ * Maya (Claude Sonnet 4) reads this for inspiration but generates diverse poses naturally
+ * based on context, user request, and her 2026 luxury influencer knowledge.
+ * 
+ * NOT used for random selection - this is comprehensive guidance, not a limited array.
+ */
 export const INFLUENCER_POSING_KNOWLEDGE = `
 # Natural Influencer Posing & Body Language (2025)
 

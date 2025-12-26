@@ -1,8 +1,12 @@
 /**
  * Brand Aesthetic Guide
  * 
- * Simple aesthetic descriptions for luxury brands.
- * These are REFERENCE ONLY - Maya uses them as inspiration, not rigid templates.
+ * REFERENCE MATERIAL ONLY - Simple aesthetic descriptions for luxury brands.
+ * Maya (Claude Sonnet 4) uses these as inspiration to understand brand vibes,
+ * but generates diverse brand-appropriate content naturally based on context.
+ * 
+ * NOT used for random selection - these are aesthetic descriptions, not limited arrays.
+ * Currently not imported in system prompts, but available for future reference.
  */
 
 export interface BrandAesthetic {

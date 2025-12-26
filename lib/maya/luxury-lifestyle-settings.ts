@@ -1,3 +1,12 @@
+/**
+ * Luxury Lifestyle Settings
+ * 
+ * REFERENCE MATERIAL ONLY - Used as guidance in system prompts
+ * Maya (Claude Sonnet 4) uses this to understand how to elevate content with luxury markers,
+ * but integrates these elements naturally based on context.
+ * 
+ * NOT used for random selection - this is guidance on luxury elements, not a limited array.
+ */
 export const LUXURY_LIFESTYLE_SETTINGS = `
 === LUXURY LIFESTYLE ELEVATION ===
 

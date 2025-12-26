@@ -353,20 +353,20 @@ export function buildCameraComposition(
   // Build composition description
   const parts = []
 
-  // Framing
-  const framingExample = framingData.examples[Math.floor(Math.random() * framingData.examples.length)]
+  // Framing (using first example - no random selection from small arrays)
+  const framingExample = framingData.examples[0]
   parts.push(framingExample)
 
-  // Camera position
-  const positionExample = positionData.examples[Math.floor(Math.random() * positionData.examples.length)]
+  // Camera position (using first example - no random selection)
+  const positionExample = positionData.examples[0]
   parts.push(positionExample)
 
-  // Camera angle
-  const angleExample = angleData.examples[Math.floor(Math.random() * angleData.examples.length)]
+  // Camera angle (using first example - no random selection)
+  const angleExample = angleData.examples[0]
   parts.push(angleExample)
 
-  // Composition rule
-  const compositionExample = compositionData.examples[Math.floor(Math.random() * compositionData.examples.length)]
+  // Composition rule (using first example - no random selection)
+  const compositionExample = compositionData.examples[0]
   parts.push(compositionExample)
 
   // Camera specs
