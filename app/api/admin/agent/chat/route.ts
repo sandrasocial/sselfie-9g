@@ -3156,11 +3156,12 @@ This tool provides critical business intelligence to make data-driven decisions.
       get_revenue_metrics: getRevenueMetricsTool,
     }
 
-    // Use Anthropic SDK directly to bypass gateway tool schema conversion issues
-    // This ensures tools work correctly with proper schema formatting
+    // TESTING: Force gateway path to see if tools work there
+    // createAnthropic is currently failing with "tools.0.custom.input_schema.type: Field required"
+    // Let's test if the gateway path works better
     const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY
     const hasTools = tools && Object.keys(tools).length > 0
-    const useDirectAnthropic = hasAnthropicKey && hasTools
+    const useDirectAnthropic = false  // TEMPORARY: Force gateway to test if tools work
     
     console.log('[v0] 🔍 Environment check:', {
       hasAnthropicKey,
