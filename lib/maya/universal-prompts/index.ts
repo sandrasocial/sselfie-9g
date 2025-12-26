@@ -504,48 +504,11 @@ Mood: outdoor cycling freedom, cardio dedication, active coastal lifestyle, athl
 ]
 
 // ============================================
-// CHRISTMAS / HOLIDAY PROMPTS (10 prompts)
+// CHRISTMAS / HOLIDAY PROMPTS (8 prompts)
 // ============================================
+// Note: Removed 2 hardcoded "couch + mug" scenarios to allow Maya to generate diverse Christmas content naturally
 
 export const CHRISTMAS_UNIVERSAL_PROMPTS: UniversalPrompt[] = [
-  {
-    id: 'christmas-tree-mug-1',
-    title: 'Christmas Tree Hot Chocolate',
-    description: 'Seated by illuminated Christmas tree holding hot chocolate mug, cozy red outfit',
-    category: 'seasonal-christmas',
-    tags: ['christmas', 'cozy', 'tree', 'hot-chocolate', 'indoor'],
-    useCases: ['holiday content', 'cozy season', 'christmas morning', 'festive lifestyle'],
-    prompt: `Cozy Christmas living room with warm golden lights woven through decorated tree and garland on fireplace mantel.
-
-Woman maintaining exact characteristics from Image 1 (skin tone, body proportions, hair and facial identity), without copying the original photo.
-
-**OUTFIT:**
-Red knit dress with fitted bodice and relaxed midi skirt, soft ribbed texture clearly visible, styled in comfort-luxury aesthetic that feels both cozy and visually elevated for the holidays. Over-the-knee knit socks in cream adding warmth and texture.
-
-**ACTIVITY & PROPS:**
-Ceramic mug of hot chocolate topped with marshmallows, visible steam and small cinnamon detail, held close to face with both hands wrapped around warmth. Gesture should feel natural—hands wrapped comfortably around the mug—never stiff or overly posed.
-
-**SETTING DETAILS:**
-Cozy living room with lit fireplace, garland on mantel with warm lights and greenery. Christmas tree with bokeh lights, red bows and silver ornaments creating soft magical blur behind model. Red floral arrangements and candles on surfaces, wrapped gifts subtly visible near tree base. Background remains softly out of focus but clearly festive.
-
-**POSE & EXPRESSION:**
-Woman seated on cream sofa or soft rug near tree, body turned toward camera with legs tucked comfortably to one side. Mug held close to face at chest level, creating iconic "cozy Christmas" composition. Expression is warm and gentle—soft closed smile, eyes conveying contentment and holiday peace. Natural relaxed energy, no tension.
-
-**HAIR STYLING:**
-Hair pulled into chic and sophisticated bun decorated with large red velvet bow. Two soft strands frame the face naturally, adding softness and romance.
-
-**MAKEUP & EXPRESSION:**
-Light glow clean girl style with soft glam finish—luminous skin, subtle highlight on cheekbones and nose, nude or soft pink lips. Elegant closed smile, calm and feminine expression with direct but gentle gaze to camera. Real skin texture with visible pores, no artificial smoothing.
-
-**LIGHTING:**
-Warm yellow and golden Christmas lights creating glow on face, mixed with soft natural window light filtered through sheer curtains. Fireplace adds warm orange undertones. Lighting feels magical and intimate, like a captured Pinterest Christmas editorial moment. Realistic skin texture clearly visible, natural shine on hair, visible steam from hot chocolate catching light.
-
-**CAMERA:**
-35mm lens for full scene or 50mm for focused portrait, f/2.0 depth of field, always with sharp focus on face and realistic texture. Framing centers the mug and face, using hot chocolate cup close to face as part of composition. Camera positioned at eye level or slightly above creating flattering angle.
-
-**MOOD:**
-Pinterest Christmas editorial—feminine, cozy luxury, highly shareable yet grounded in real textures and warmth. Aspirational but authentic, that perfect "Christmas morning at home" aesthetic. 4K resolution. Hyper-realistic quality with visible fabric weaves, realistic steam, authentic holiday lighting.`
-  },
   {
     id: 'christmas-fireplace-morning-1',
     title: 'Christmas Morning Fireplace',
@@ -660,29 +623,6 @@ Environment: formal dining room with beautifully set table for holiday dinner, f
 Camera: 85mm lens at f/2.0, camera positioned at table level across from subject creating intimate dinner perspective, sharp focus on face with beautiful candlelight bokeh on table settings and background, vertical framing creates elegant portrait emphasizing sophisticated setting, shallow depth keeps focus on subject while showing environment.
 
 Mood: sophisticated holiday elegance, gracious entertaining, formal Christmas dinner, refined celebration, hostess composure, timeless holiday sophistication, warm elegant gathering. 4K resolution. Hyper-realistic quality with visible candlelight flicker, realistic velvet texture, authentic formal table setting, natural elegant presence, real holiday dinner ambiance.`
-  },
-  {
-    id: 'christmas-reading-nook-1',
-    title: 'Christmas Reading Nook',
-    description: 'Curled up reading in cozy nook with hot cocoa, peaceful moment',
-    category: 'seasonal-christmas',
-    tags: ['christmas', 'cozy', 'reading', 'peaceful', 'hygge', 'relaxation'],
-    useCases: ['cozy content', 'quiet moments', 'self-care', 'peaceful holiday'],
-    prompt: `Maintain the characteristics of the person in attachment. Do not copy the photo in attachment.
-
-Ultra-realistic 2:3 portrait in peaceful hygge editorial style. The woman curls up in cozy window reading nook, holding open book in one hand and mug of hot chocolate in other, surrounded by soft pillows and throws, looking toward camera with peaceful content expression.
-
-She wears ultimate cozy outfit—oversized cream cable knit cardigan worn like robe over cream ribbed henley, matching cream lounge pants, thick knit socks in fair isle pattern, hair in effortless low braid with face-framing pieces, completely natural face with just lip balm showing morning beauty, no jewelry creating pure comfort, reading glasses resting on nose or pushed into hair.
-
-Curled comfortably in window seat with legs tucked to side, book open in lap with one hand holding pages, other hand wrapped around ceramic mug, body language completely relaxed, surrounded by throw pillows and chunky knit blanket partially draped over legs. She looks at camera with soft peaceful expression, eyes calm with quiet contentment, face completely relaxed showing serene comfort.
-
-Lighting: soft natural daylight from large window behind creating beautiful diffused glow, snowy day outside creating bright even light without harsh shadows, Christmas tree lights in room adding warm bokeh points, candlelight from nearby candles adding warmth, light streaming through window creating dreamy ethereal atmosphere, realistic skin with natural peaceful glow, visible steam from hot chocolate catching light.
-
-Environment: cozy built-in window seat with many soft pillows in cream and natural tones, chunky knit throws, wooden window frame with frosted glass showing snow falling outside, Christmas decorations visible—small tree with lights on side table, garland on bookshelf, candles creating warm glow, stack of books nearby, soft area rug on floor, perfect cozy reading sanctuary aesthetic.
-
-Camera: 50mm lens at f/1.8, camera positioned at reading nook level creating intimate perspective, sharp focus on face and book with window light creating soft bokeh, vertical framing captures cozy nook environment while emphasizing peaceful portrait, natural documentary style showing authentic quiet moment.
-
-Mood: peaceful hygge Christmas, quiet cozy moment, self-care holiday, simple holiday pleasures, warm comfortable solitude, Scandinavian cozy aesthetic, calm contentment. 4K resolution. Hyper-realistic quality with visible knit textures, realistic book pages, authentic cozy lighting, natural peaceful expression, real hygge atmosphere.`
   },
   {
     id: 'christmas-gift-wrapping-1',
@@ -874,29 +814,6 @@ Environment: beautiful modern kitchen with white counters, ingredients scattered
 Camera: 50mm lens at f/2.0, camera positioned across kitchen counter at counter height, sharp focus on face and cooking activity with kitchen in soft bokeh, vertical framing captures cooking portrait and warm kitchen environment, natural documentary style showing authentic dinner prep.
 
 Mood: domestic cooking calm, home-cooked meal satisfaction, cozy kitchen life, comfortable evening routine, simple everyday pleasure elevated. 4K resolution. Hyper-realistic quality with visible steam from cooking, realistic kitchen activity, authentic home lighting, natural domestic moment.`
-  },
-  {
-    id: 'casual-couch-reading-evening-1',
-    title: 'Evening Reading on Couch',
-    description: 'Curled up on couch reading with tea, cozy evening outfit',
-    category: 'casual-lifestyle',
-    tags: ['reading', 'evening', 'couch', 'cozy', 'relaxation', 'peaceful'],
-    useCases: ['evening routine', 'reading content', 'cozy lifestyle', 'relaxation moments'],
-    prompt: `Maintain the characteristics of the person in attachment. Do not copy the photo in attachment.
-
-Ultra-realistic 2:3 portrait in cozy lifestyle editorial style. The woman curls up on couch reading book, legs tucked comfortably under oversized blanket, mug of tea on side table, looking up from book toward camera with peaceful content expression, warm lamp light creating intimate evening atmosphere.
-
-She wears ultimate cozy evening outfit—oversized soft knit sweater in cream or grey, matching joggers, thick knit socks, hair down in natural relaxed waves or loose low bun, no makeup showing natural evening beauty, readers resting on nose if age appropriate, complete comfort aesthetic.
-
-Curled comfortably on couch with legs tucked to side under throw blanket, book open in lap with hands holding pages naturally, body language completely relaxed and at ease, slight lean into corner of couch showing comfort. She looks at camera with soft peaceful expression, eyes calm taking break from reading, face showing quiet evening contentment.
-
-Lighting: warm cozy lamp light from floor lamp beside couch creating primary intimate light source, soft golden glow on face and book creating moody evening atmosphere, light from lamp creating warm bokeh on background wall, realistic skin with natural evening glow, intimate cozy evening lighting.
-
-Environment: comfortable living room with overstuffed couch covered in throw pillows and soft blankets, side table with tea mug and candle, floor lamp providing warm reading light, bookshelves with books in background, soft area rug, plants adding life, minimal evening aesthetic creating peaceful sanctuary.
-
-Camera: 50mm lens at f/1.8, camera positioned at couch level creating intimate perspective, sharp focus on face and book with lamp creating soft bokeh, vertical framing captures cozy evening portrait, natural documentary feel showing authentic relaxation moment.
-
-Mood: peaceful evening ritual, reading sanctuary, quiet self-care, end-of-day satisfaction, cozy home life, simple evening pleasure, gentle unwinding. 4K resolution. Hyper-realistic quality with visible knit textures, realistic warm lamp lighting, authentic cozy atmosphere, natural evening peaceful expression.`
   },
   {
     id: 'casual-dog-walk-park-1',
