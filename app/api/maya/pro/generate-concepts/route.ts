@@ -12,7 +12,6 @@ import {
 import { getCategoryByKey } from "@/lib/maya/pro/category-system"
 import { getMayaPersonality } from "@/lib/maya/personality-enhanced"
 import {
-import {
   mergeGuidePromptWithImages,
   extractPromptElements,
   createVariationFromGuidePrompt,
