@@ -22,11 +22,13 @@ const routeFile = fs.readFileSync('app/api/admin/agent/chat/route.ts', 'utf8');
 const hasStreamTextImport = routeFile.includes('import { streamText') || routeFile.includes('import {streamText');
 const hasToolImport = routeFile.includes('tool') && routeFile.includes('from "ai"');
 const hasCreateAnthropicImport = routeFile.includes('createAnthropic');
+const hasCreateAnthropicFromCorrectPackage = routeFile.includes('from "@ai-sdk/anthropic"') && routeFile.includes('createAnthropic');
 const hasDirectAnthropicImport = routeFile.includes('import Anthropic from');
 const hasConverterImport = routeFile.includes('anthropic-tool-converter');
 
 console.log(`  ✅ streamText imported: ${hasStreamTextImport}`);
 console.log(`  ${hasCreateAnthropicImport ? '✅' : '⚠️'}  createAnthropic imported: ${hasCreateAnthropicImport}`);
+console.log(`  ${hasCreateAnthropicFromCorrectPackage ? '✅' : '❌'}  createAnthropic from @ai-sdk/anthropic: ${hasCreateAnthropicFromCorrectPackage}`);
 console.log(`  ${!hasDirectAnthropicImport ? '✅' : '⚠️'}  Direct Anthropic SDK removed: ${!hasDirectAnthropicImport}`);
 console.log(`  ${!hasConverterImport ? '✅' : '⚠️'}  Converter import removed: ${!hasConverterImport}`);
 
@@ -113,7 +115,7 @@ console.log('\n' + '='.repeat(60));
 console.log('📊 TEST SUMMARY');
 console.log('='.repeat(60));
 
-const phase1Complete = hasCreateAnthropicImport && hasCreateAnthropicCall && !hasProcessAnthropicStream;
+const phase1Complete = hasCreateAnthropicImport && hasCreateAnthropicFromCorrectPackage && hasCreateAnthropicCall && !hasProcessAnthropicStream;
 const phase2Complete = !unusedAlexRoute && !converterFile && !hasDirectAnthropicImport;
 
 console.log(`\nPhase 1 (createAnthropic implementation): ${phase1Complete ? '✅ COMPLETE' : '⚠️  IN PROGRESS'}`);
