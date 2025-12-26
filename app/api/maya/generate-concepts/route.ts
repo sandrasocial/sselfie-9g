@@ -7,48 +7,7 @@ import { getFashionIntelligencePrinciples } from "@/lib/maya/fashion-knowledge-2
 import { getLifestyleContextIntelligence } from "@/lib/maya/lifestyle-contexts"
 import INFLUENCER_POSING_KNOWLEDGE from "@/lib/maya/influencer-posing-knowledge"
 import { getNanoBananaPromptingPrinciples } from "@/lib/maya/nano-banana-prompt-builder"
-import { detectCategoryAndBrand, getAllTemplatesForCategory, getBrandTemplate, ALL_BRAND_TEMPLATES, SELFIES } from "@/lib/maya/prompt-templates/high-end-brands"
-import { BRAND_CATEGORIES } from "@/lib/maya/prompt-templates/high-end-brands/brand-registry"
-import type { PromptTemplate, PromptContext } from "@/lib/maya/prompt-templates/types"
 import { getConceptPrompt } from "@/lib/maya/concept-templates"
-import { 
-  AIRPORT_IT_GIRL, 
-  AIRPORT_EDITORIAL_WALK, 
-  AIRPORT_GOLDEN_HOUR, 
-  AIRPORT_FLOOR_SELFIE, 
-  AIRPORT_VOGUE_EDITORIAL,
-  LUXURY_DESTINATION_WATER,
-  LUXURY_DESTINATION_YACHT,
-  LUXURY_DESTINATION_BEACH,
-  LUXURY_DESTINATION_ROOFTOP,
-  LUXURY_DESTINATION_MARINA,
-  VENICE_HOTEL_ROOM,
-  VENICE_CANAL_GONDOLA,
-  VENICE_CAFE,
-  THAILAND_TEMPLE,
-  THAILAND_ELEPHANT,
-  THAILAND_BOAT,
-  THAILAND_INFINITY_POOL,
-  THAILAND_ISLANDS
-} from "@/lib/maya/prompt-templates/high-end-brands/travel-lifestyle"
-import {
-  CHRISTMAS_COZY_LUXURY,
-  CHRISTMAS_PINTEREST_EDITORIAL,
-  CHRISTMAS_ELEGANT_EVENING,
-  CHRISTMAS_WHITE_MINIMAL,
-  CHRISTMAS_MORNING_COZY,
-  CHRISTMAS_HOLIDAY_SHOPPING,
-  CHRISTMAS_ELEGANT_DINNER,
-  CHRISTMAS_WINTER_WHITE,
-  CHRISTMAS_FIRESIDE_READING,
-  CHRISTMAS_HOLIDAY_BAKING,
-  CHRISTMAS_NYE_ELEGANCE,
-  CHRISTMAS_WINTER_OUTDOOR,
-  CHRISTMAS_GIFT_WRAPPING,
-  CHRISTMAS_TRAVEL_READY,
-  CHRISTMAS_VELVET_ELEGANCE,
-  CHRISTMAS_SNOW_DAY
-} from "@/lib/maya/prompt-templates/high-end-brands/seasonal-christmas"
 import {
   shouldIncludeSkinTexture,
   mergeGuidePromptWithImages,
@@ -1114,415 +1073,11 @@ Keep it conversational and specific. I need to recreate this EXACT vibe.`
       console.log("[v0] User is requesting something different from selected concept. Prioritizing user request.")
     }
     
-    // Detect brand/category intent from user request + aesthetic + context.
-    // This is a best-effort enhancement; failures should never break concept generation.
-    let brandGuidance = ""
-    // ✅ Use provided templates if available (from admin prompt builder), otherwise load internally
+    // ✅ Use provided templates if available (from admin prompt builder) - these are optional examples for inspiration
     let templateExamples: string[] = Array.isArray(providedTemplateExamples) ? providedTemplateExamples : []
     
     if (templateExamples.length > 0) {
-      console.log("[v0] Using", templateExamples.length, "pre-loaded template examples from admin prompt builder")
-    }
-    
-    try {
-      const brandDetectionText = `${userRequest || ""} ${aesthetic || ""} ${context || ""} ${conversationContext || ""}`.trim()
-      const brandIntent = detectCategoryAndBrand(brandDetectionText)
-
-      // If high confidence brand match, enhance system prompt with brand-specific guidance
-      if (brandIntent.confidence >= 0.7 && brandIntent.suggestedBrands.length > 0) {
-        const brand = brandIntent.suggestedBrands[0] as any
-        const commonElements: string[] = brand?.visuals?.commonElements || []
-        const avoidElements: string[] = brand?.visuals?.avoid || []
-
-        brandGuidance = `
-
-=== 🔴 DETECTED BRAND STYLE: ${brand.name} ===
-
-**MANDATORY: You MUST include the brand name "${brand.name}" in EVERY prompt you generate.**
-
-**Brand Name Inclusion Examples:**
-- "Vertical 2:3 photo in UGC influencer style from ${brand.name} captured in movement..."
-- "${brand.name} brand outfit clearly visible with subtle logo integration."
-- "Official campaign of the ${brand.name} brand"
-- "Wearing ${brand.name} [outfit description]..."
-- "${brand.name} aesthetic" or "${brand.name} style"
-
-**Visual Aesthetic:**
-${JSON.stringify(brand.aesthetic, null, 2)}
-
-**Style Guide:**
-${JSON.stringify(brand.visuals, null, 2)}
-
-**Common Elements to Include:**
-${commonElements.join(", ")}
-
-**Elements to Avoid:**
-${avoidElements.join(", ")}
-
-**CRITICAL REQUIREMENTS:**
-1. **ALWAYS mention "${brand.name}" by name** in the opening line or early in the prompt
-2. Match this brand's photography style, composition, and mood exactly
-3. Each concept prompt should feel like official ${brand.name} content
-4. Include brand-specific elements (logos, styling, aesthetic markers)
-5. Use brand-appropriate language and terminology
-
-**Example Prompt Structure:**
-"Vertical 2:3 photo in UGC influencer style from ${brand.name} captured in movement. Woman, maintaining exactly the characteristics of the woman in the attachment (face, body, skin tone, hair and visual identity), without copying the photo. ${brand.name} brand outfit clearly visible with subtle logo integration..."
-`
-      }
-      
-      // Load templates and generate example prompts (Studio Pro mode only)
-      // 🔴 CRITICAL: Skip template loading when guide prompt is active - guide prompt takes absolute priority
-      // ✅ Also skip if templates were provided from admin prompt builder
-      if (studioProMode && !detectedGuidePrompt && templateExamples.length === 0) {
-        const relevantTemplates: PromptTemplate[] = []
-        
-        // 🔴 CRITICAL: Check if we have an explicit category from upload module
-        // referenceImages can be { selfies, products, styleRefs, userDescription, category, concept }
-        const uploadModuleCategory = (referenceImages as any)?.category
-        console.log("[v0] Upload module category:", uploadModuleCategory, "referenceImages keys:", referenceImages ? Object.keys(referenceImages) : "none")
-        
-        // Map upload module categories to template categories and load templates directly
-        if (uploadModuleCategory) {
-          // Map upload module categories to template loading logic
-          const categoryMap: Record<string, () => PromptTemplate[]> = {
-            "brand-content": () => {
-              // Load wellness/athletic brand templates
-              const templates: PromptTemplate[] = []
-              // Try to get Alo, Lululemon templates
-              const aloTemplate = getBrandTemplate("ALO")
-              const luluTemplate = getBrandTemplate("LULULEMON")
-              if (aloTemplate) templates.push(aloTemplate)
-              if (luluTemplate) templates.push(luluTemplate)
-              // Also get all wellness category templates
-              try {
-                const wellnessTemplates = getAllTemplatesForCategory(BRAND_CATEGORIES.wellness)
-                templates.push(...wellnessTemplates)
-              } catch (e) {
-                console.log("[v0] Could not load wellness templates:", e)
-              }
-              return templates
-            },
-            "beauty-self-care": () => {
-              const templates: PromptTemplate[] = []
-              // Get Glossier and beauty brand templates
-              const glossierTemplate = getBrandTemplate("GLOSSIER")
-              if (glossierTemplate) templates.push(glossierTemplate)
-              // Get all beauty category templates
-              try {
-                const beautyTemplates = getAllTemplatesForCategory(BRAND_CATEGORIES.beauty)
-                templates.push(...beautyTemplates)
-              } catch (e) {
-                console.log("[v0] Could not load beauty templates:", e)
-              }
-              return templates
-            },
-            "travel-lifestyle": () => {
-              // Load all travel-lifestyle templates
-              return [
-                AIRPORT_IT_GIRL,
-                AIRPORT_EDITORIAL_WALK,
-                AIRPORT_GOLDEN_HOUR,
-                AIRPORT_FLOOR_SELFIE,
-                AIRPORT_VOGUE_EDITORIAL,
-                LUXURY_DESTINATION_WATER,
-                LUXURY_DESTINATION_YACHT,
-                LUXURY_DESTINATION_BEACH,
-                LUXURY_DESTINATION_ROOFTOP,
-                LUXURY_DESTINATION_MARINA,
-                VENICE_HOTEL_ROOM,
-                VENICE_CANAL_GONDOLA,
-                VENICE_CAFE,
-                THAILAND_TEMPLE,
-                THAILAND_ELEPHANT,
-                THAILAND_BOAT,
-                THAILAND_INFINITY_POOL,
-                THAILAND_ISLANDS
-              ]
-            },
-            "luxury-travel": () => {
-              // Load luxury travel destination templates
-              return [
-                LUXURY_DESTINATION_WATER,
-                LUXURY_DESTINATION_YACHT,
-                LUXURY_DESTINATION_BEACH,
-                LUXURY_DESTINATION_ROOFTOP,
-                LUXURY_DESTINATION_MARINA,
-                VENICE_HOTEL_ROOM,
-                VENICE_CANAL_GONDOLA,
-                VENICE_CAFE,
-                THAILAND_TEMPLE,
-                THAILAND_ELEPHANT,
-                THAILAND_BOAT,
-                THAILAND_INFINITY_POOL,
-                THAILAND_ISLANDS
-              ]
-            },
-            "seasonal-holiday": () => {
-              // 🔴 NEW: Use Universal Prompts system instead of hardcoded templates
-              // Check if we have a specific concept value to map to a specific prompt
-              const conceptValue = (referenceImages as any)?.concept
-              if (conceptValue) {
-                const promptId = mapConceptToPromptId("seasonal-holiday", conceptValue)
-                if (promptId) {
-                  const specificPrompt = getPromptById(promptId)
-                  if (specificPrompt) {
-                    console.log("[v0] ✅ Mapped concept", conceptValue, "to universal prompt:", promptId)
-                    // Return empty array - we'll handle this differently below
-                    return []
-                  }
-                }
-              }
-              
-              // Fallback: Get all Christmas prompts from universal prompts library
-              const christmasPrompts = getPromptsForCategory('seasonal-christmas')
-              console.log("[v0] Loaded", christmasPrompts.length, "Christmas universal prompts")
-              // Return empty array - universal prompts need different handling than old templates
-              return []
-            },
-            "fashion-editorial": () => {
-              const templates: PromptTemplate[] = []
-              // Get Chanel and fashion brand templates
-              const chanelTemplate = getBrandTemplate("CHANEL")
-              if (chanelTemplate) templates.push(chanelTemplate)
-              // Get all fashion category templates
-              try {
-                const fashionTemplates = getAllTemplatesForCategory(BRAND_CATEGORIES.fashion)
-                templates.push(...fashionTemplates)
-              } catch (e) {
-                console.log("[v0] Could not load fashion templates:", e)
-              }
-              return templates
-            },
-            "tech-work": () => {
-              // Get tech category templates
-              try {
-                return getAllTemplatesForCategory(BRAND_CATEGORIES.tech)
-              } catch (e) {
-                console.log("[v0] Could not load tech templates:", e)
-                return []
-              }
-            },
-            "wellness-content": () => {
-              const templates: PromptTemplate[] = []
-              // Get Alo, Lululemon templates
-              const aloTemplate = getBrandTemplate("ALO")
-              const luluTemplate = getBrandTemplate("LULULEMON")
-              if (aloTemplate) templates.push(aloTemplate)
-              if (luluTemplate) templates.push(luluTemplate)
-              // Get all wellness category templates
-              try {
-                const wellnessTemplates = getAllTemplatesForCategory(BRAND_CATEGORIES.wellness)
-                templates.push(...wellnessTemplates)
-              } catch (e) {
-                console.log("[v0] Could not load wellness templates:", e)
-              }
-              return templates
-            },
-            "selfie-styles": () => {
-              // Get selfie templates - SELFIES is an object, convert to array
-              try {
-                const selfieTemplates = Object.values(SELFIES).filter((t): t is PromptTemplate => 
-                  t !== null && typeof t === 'object' && 'id' in t
-                )
-                return selfieTemplates
-              } catch (e) {
-                console.log("[v0] Could not load selfie templates:", e)
-                return []
-              }
-            },
-          }
-          
-          // 🔴 NEW: Check for Universal Prompts FIRST (takes priority over old templates)
-          const conceptValue = (referenceImages as any)?.concept
-          let foundUniversalPrompt = false
-          
-          if (conceptValue) {
-            // Map upload module category to universal prompt category
-            const universalCategory = mapToUniversalPromptCategory(uploadModuleCategory, conceptValue)
-            if (universalCategory) {
-              // Try to get specific prompt by mapping concept value to prompt ID
-              const promptId = mapConceptToPromptId(uploadModuleCategory, conceptValue)
-              if (promptId) {
-                const specificPrompt = getPromptById(promptId)
-                if (specificPrompt) {
-                  console.log("[v0] ✅ Using specific universal prompt for concept:", conceptValue, "→", promptId, "(", specificPrompt.title, ")")
-                  // Add the prompt directly to examples (it's already a complete prompt string)
-                  templateExamples.push(specificPrompt.prompt)
-                  foundUniversalPrompt = true
-                }
-              }
-              
-              // If no specific prompt found by ID, try keyword matching
-              if (!foundUniversalPrompt) {
-                const keywords = conceptValue.toLowerCase().split(/[\s-]+/)
-                const matchingPrompt = findMatchingPrompt(universalCategory, keywords)
-                if (matchingPrompt) {
-                  console.log("[v0] ✅ Found matching universal prompt for concept:", conceptValue, "→", matchingPrompt.id, "(", matchingPrompt.title, ")")
-                  templateExamples.push(matchingPrompt.prompt)
-                  foundUniversalPrompt = true
-                }
-              }
-            }
-          }
-          
-          // Only load old templates if we didn't find a universal prompt
-          if (!foundUniversalPrompt) {
-            const loadTemplates = categoryMap[uploadModuleCategory]
-            if (loadTemplates) {
-              const templates = loadTemplates()
-              relevantTemplates.push(...templates)
-              console.log("[v0] Loaded", templates.length, "templates for upload module category:", uploadModuleCategory)
-            }
-          } else {
-            console.log("[v0] Skipping old template loading - using universal prompt instead")
-          }
-        }
-        
-        // Fallback: Use brand detection if no explicit category from upload module
-        if (relevantTemplates.length === 0) {
-          // 1. Load brand-specific template if detected
-          if (brandIntent.confidence >= 0.7 && brandIntent.suggestedBrands.length > 0) {
-            const brand = brandIntent.suggestedBrands[0] as any
-            const brandTemplate = getBrandTemplate(brand.id)
-            if (brandTemplate) {
-              relevantTemplates.push(brandTemplate)
-            }
-          }
-          
-          // 2. Load category templates
-          try {
-            const categoryTemplates = getAllTemplatesForCategory(brandIntent.category)
-            relevantTemplates.push(...categoryTemplates)
-          } catch (categoryError) {
-            console.log("[v0] Could not load category templates:", categoryError)
-          }
-          
-          // 3. Load travel-lifestyle templates if travel-related
-          const isTravelRelated = /airport|travel|terminal|boarding|lounge|flight|suitcase|luggage|destination|venice|thailand|tropical|beach|yacht|marina|rooftop/i.test(brandDetectionText)
-          if (isTravelRelated || brandIntent.category.key === "travel_lifestyle") {
-            const travelTemplates: PromptTemplate[] = [
-              AIRPORT_IT_GIRL,
-              AIRPORT_EDITORIAL_WALK,
-              AIRPORT_GOLDEN_HOUR,
-              AIRPORT_FLOOR_SELFIE,
-              AIRPORT_VOGUE_EDITORIAL,
-              LUXURY_DESTINATION_WATER,
-              LUXURY_DESTINATION_YACHT,
-              LUXURY_DESTINATION_BEACH,
-              LUXURY_DESTINATION_ROOFTOP,
-              LUXURY_DESTINATION_MARINA,
-              VENICE_HOTEL_ROOM,
-              VENICE_CANAL_GONDOLA,
-              VENICE_CAFE,
-              THAILAND_TEMPLE,
-              THAILAND_ELEPHANT,
-              THAILAND_BOAT,
-              THAILAND_INFINITY_POOL,
-              THAILAND_ISLANDS
-            ]
-            relevantTemplates.push(...travelTemplates)
-          }
-          
-          // 4. Load seasonal Christmas prompts using Universal Prompts system
-          const isChristmasRelated = /christmas|holiday|santa|december|november|winter.*holiday|christmas.*tree|fireplace.*christmas|holiday.*cozy|christmas.*decor|gift.*wrapping|christmas.*baking|new.*year.*eve|nye|christmas.*eve/i.test(brandDetectionText)
-          if (isChristmasRelated) {
-            // Try to find matching universal prompt using keywords from brandDetectionText
-            const christmasKeywords = brandDetectionText.match(/(?:christmas|holiday|party|dinner|morning|market|baking|tree|gift|wrapping|walk|snow|fireplace|reading|cozy)/gi)?.map(k => k.toLowerCase()) || []
-            const matchingPrompt = findMatchingPrompt('seasonal-christmas', christmasKeywords)
-            if (matchingPrompt) {
-              console.log("[v0] ✅ Found matching universal Christmas prompt:", matchingPrompt.id, "(", matchingPrompt.title, ")")
-              templateExamples.push(matchingPrompt.prompt)
-            } else {
-              // Fallback: Get random Christmas prompts
-              const randomPrompts = getRandomPrompts('seasonal-christmas', 3)
-              if (randomPrompts.length > 0) {
-                console.log("[v0] Using", randomPrompts.length, "random Christmas universal prompts")
-                randomPrompts.forEach(p => templateExamples.push(p.prompt))
-              }
-            }
-          }
-        }
-        
-        // 5. Generate example prompts from templates (use more examples for better guidance)
-        // 🔴 CRITICAL: Use more templates (up to 20-30) to give Maya better guidance from the 140+ available templates
-        const maxExamples = Math.min(30, relevantTemplates.length) // Use up to 30 examples, or all available if less
-        const selectedTemplates = relevantTemplates.slice(0, maxExamples)
-        console.log("[v0] Using", selectedTemplates.length, "template examples out of", relevantTemplates.length, "available templates")
-        
-        for (const template of selectedTemplates) {
-          try {
-            const exampleContext: PromptContext = {
-              userImages: referenceImages ? [
-                ...(referenceImages.selfies || []).map((url: string) => ({ url, type: 'user_lora' as const })),
-                ...(referenceImages.products || []).map((url: string) => ({ url, type: 'product' as const })),
-                ...(referenceImages.styleRefs || []).map((url: string) => ({ url, type: 'inspiration' as const }))
-              ] : [],
-              contentType: "concept",
-              userIntent: userRequest || ""
-            }
-            
-            const examplePrompt = template.promptStructure(exampleContext)
-            templateExamples.push(examplePrompt)
-          } catch (templateError) {
-            console.log("[v0] Error generating example from template:", template.id, templateError)
-          }
-        }
-        
-        console.log("[v0] Template loading summary:", {
-          uploadModuleCategory,
-          templatesLoaded: relevantTemplates.length,
-          examplesGenerated: templateExamples.length,
-          templateIds: relevantTemplates.map(t => t.id).slice(0, 5)
-        })
-      }
-      
-    } catch (brandError) {
-      console.error("[v0] Error during brand detection and template loading:", brandError)
-      // Intentionally swallow errors here to avoid breaking concept generation.
-    }
-    
-    // Fallback: If no templates loaded but in Studio Pro mode, try to load generic templates
-    if (studioProMode && templateExamples.length === 0) {
-      try {
-        const brandDetectionText = `${userRequest || ""} ${aesthetic || ""} ${context || ""} ${conversationContext || ""}`.trim()
-        const brandIntent = detectCategoryAndBrand(brandDetectionText)
-        
-        // Try to load any available templates from the category
-        try {
-          const categoryTemplates = getAllTemplatesForCategory(brandIntent.category)
-          // 🔴 CRITICAL: Use more templates (up to 20) for fallback to give Maya better guidance
-          const fallbackTemplates = categoryTemplates.slice(0, Math.min(20, categoryTemplates.length))
-          console.log("[v0] Loaded", fallbackTemplates.length, "fallback templates from category:", brandIntent.category.key)
-          
-          for (const template of fallbackTemplates) {
-            try {
-              const exampleContext: PromptContext = {
-                userImages: referenceImages ? [
-                  ...(referenceImages.selfies || []).map((url: string) => ({ url, type: 'user_lora' as const })),
-                  ...(referenceImages.products || []).map((url: string) => ({ url, type: 'product' as const })),
-                  ...(referenceImages.styleRefs || []).map((url: string) => ({ url, type: 'inspiration' as const }))
-                ] : [],
-                contentType: "concept",
-                userIntent: userRequest || ""
-              }
-              
-              const examplePrompt = template.promptStructure(exampleContext)
-              templateExamples.push(examplePrompt)
-            } catch (templateError) {
-              console.log("[v0] Error generating fallback example from template:", template.id, templateError)
-            }
-          }
-          
-          if (templateExamples.length > 0) {
-            console.log("[v0] Loaded", templateExamples.length, "fallback template examples")
-          }
-        } catch (fallbackError) {
-          console.log("[v0] Could not load fallback templates:", fallbackError)
-        }
-      } catch (fallbackError) {
-        console.log("[v0] Fallback template loading failed:", fallbackError)
-      }
+      console.log("[v0] Using", templateExamples.length, "pre-loaded template examples from admin prompt builder (optional inspiration only)")
     }
 
     // PRIORITY 1 FIX #3: Make Scandinavian filter conditional - default but allow override
@@ -1790,7 +1345,6 @@ Vary ONLY: poses, angles, moments, expressions, and actions (what they're doing)
 ===\n\n` : ""}
 ${conversationContextSection}
 ${fashionIntelligence}
-${brandGuidance}
 
 ${
   lifestyleContext
@@ -2088,41 +1642,16 @@ Capture this EXACT vibe - the styling, mood, lighting, color treatment, and comp
 ${
   templateExamples.length > 0 && studioProMode && !detectedGuidePrompt
     ? `
-=== PROMPT TEMPLATE EXAMPLES ===
+=== OPTIONAL TEMPLATE EXAMPLES (FOR INSPIRATION ONLY) ===
 
-**These example prompts are your reference. Follow their structure, style, and format.**
+**These example prompts are provided as optional inspiration. Use them to understand style and format, but feel free to be creative and adapt based on the user's request.**
 
-**Rules:**
-1. Copy the structure - use the same sections, same organization, same headers as these examples
-2. Copy the style - match the tone, language, and level of detail
-3. Copy the format - same layout, same sections, same organization
-4. Do not add "black and white" unless the example explicitly includes it
-5. Do not change camera specs - use the same camera specs format as the examples (e.g., "50mm lens" not "85mm lens, f/2.0")
-6. Do not change outfit descriptions - match the style and detail level of outfit descriptions in examples
-7. Do not change lighting descriptions - match the lighting style and detail level
-8. These examples guide your prompts - follow their approach
-
-**EXAMPLE PROMPTS (${templateExamples.length} examples) - STUDY THESE CAREFULLY:**
-
-${templateExamples.map((ex, i) => `**Example ${i + 1} (FOLLOW THIS EXACT STRUCTURE):**
+**Template Examples (${templateExamples.length} examples):**
+${templateExamples.map((ex, i) => `**Example ${i + 1}:**
 ${ex}
-
 ---`).join('\n\n')}
 
-**🔴🔴🔴 ABSOLUTE REQUIREMENTS (NO EXCEPTIONS):**
-1. **Your prompts MUST have the SAME structure** as these examples (same sections, same headers, same organization)
-2. **Your prompts MUST use the SAME style** - copy the tone, language, and phrasing style
-3. **Your prompts MUST use the SAME level of detail** - don't make them shorter or longer
-4. **Your prompts MUST match the SAME format** - same layout, same section headers
-5. **DO NOT add "black and white"** unless the example shows it
-6. **DO NOT change camera specs** - use the same format as examples (e.g., "50mm lens" or "35-50mm lens")
-7. **DO NOT change outfit descriptions** - match the style and detail level
-8. **DO NOT change lighting descriptions** - match the style exactly
-9. **DO NOT deviate from these examples** - they override ALL other instructions in this prompt
-
-**If your generated prompts don't match these examples in structure, style, format, and content, they will be REJECTED.**
-
-**Remember: These examples are your TEMPLATE. Copy their structure and style exactly.**
+**Note:** These examples are for inspiration only. Your primary guide is the user's request above. Feel free to adapt, modify, or create something different if it better serves the user's needs.
 `
     : ""
 }
@@ -2144,12 +1673,10 @@ ${getNanoBananaPromptingPrinciples()}
 ${
   templateExamples.length > 0
     ? `
-**Template Examples:**
-- You have ${templateExamples.length} template examples above - use these as your reference
-- Follow the structure, style, format, camera specs, outfits, lighting from the template examples
-- Do not use "85mm lens, f/2.0" unless the template examples show it - use the camera specs format from examples
-- Do not add "black and white" unless the template examples show it
-- Follow the template examples - they guide your prompt structure
+**Optional Template Examples:**
+- You have ${templateExamples.length} template examples above (if provided) - use these as optional inspiration
+- The user's request is your primary guide - adapt examples to match user intent
+- Be creative and don't feel constrained by examples if the user wants something different
 `
     : ""
 }`
