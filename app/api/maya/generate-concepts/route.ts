@@ -3172,7 +3172,8 @@ Same quality/luxury/styling as professional concepts, but with:
             : userRequest || ''
           const detectedCategory = detectCategoryFromRequest(enrichedRequestForFallback, aesthetic, context, conversationContext)
           // 🔴 FIX: If detectedCategory is null, skip Universal Prompts and use AI generation
-          const universalPromptCategory = detectedCategory && ['travel-airport', 'alo-workout', 'seasonal-christmas', 'casual-lifestyle', 'luxury-fashion'].includes(detectedCategory)
+          // 🔴 CRITICAL: Removed 'seasonal-christmas' from fallback - trust Maya's generation for Christmas requests
+          const universalPromptCategory = detectedCategory && ['travel-airport', 'alo-workout', 'casual-lifestyle', 'luxury-fashion'].includes(detectedCategory)
             ? detectedCategory
             : (category ? mapToUniversalPromptCategory(category, userRequest) : null)
           
