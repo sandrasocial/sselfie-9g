@@ -248,75 +248,60 @@ async function callMayaForFinalPrompt(
 }
 
 /**
- * STEP 3: Apply programmatic fixes
- * 
- * ONLY fix things that MUST be programmatic
+ * Apply programmatic fixes
  */
 export function applyProgrammaticFixes(
   prompt: string,
   context: DirectPromptContext
 ): string {
   
-  let fixed = prompt
+  let fixed = prompt.trim()
   
-  // FIX 1: Ensure trigger word is first (Classic mode only)
+  // Ensure trigger word is first (Classic mode only)
   if (context.mode === 'classic') {
-    const promptLower = fixed.toLowerCase().trim()
+    const promptLower = fixed.toLowerCase()
     const triggerLower = context.triggerWord.toLowerCase()
     
     if (!promptLower.startsWith(triggerLower)) {
       fixed = `${context.triggerWord}, ${fixed}`
-      console.log('[DIRECT] Added missing trigger word')
     }
   }
   
-  // FIX 2: Enforce camera style based on conceptIndex (Pro mode)
+  // Enforce camera style based on conceptIndex (Pro mode)
   if (context.mode === 'pro' && context.conceptIndex !== undefined) {
     const shouldBeDSLR = context.conceptIndex < 3
-    const hasDSLR = /Canon EOS|Sony A7|85mm f\/1\.[24]|professional DSLR/i.test(fixed)
+    const hasDSLR = /professional DSLR|Canon EOS|Sony A7|85mm f\/1\.[24]/i.test(fixed)
     const hasIPhone = /iPhone.*Pro.*portrait mode/i.test(fixed)
     
     if (shouldBeDSLR && hasIPhone && !hasDSLR) {
-      // Replace iPhone with DSLR
-      fixed = fixed.replace(
-        /iPhone 15 Pro.*?portrait mode.*?(?=\.|$)/gi,
-        'professional DSLR, Canon EOS R5, 85mm f/1.4 lens'
-      )
-      console.log('[DIRECT] Replaced iPhone with DSLR (conceptIndex < 3)')
+      fixed = fixed.replace(/iPhone 15 Pro.*?portrait mode/gi, 'professional DSLR, Canon EOS R5, 85mm f/1.4 lens')
     } else if (!shouldBeDSLR && hasDSLR && !hasIPhone) {
-      // Replace DSLR with iPhone
-      fixed = fixed.replace(
-        /professional DSLR.*?(?:Canon|Sony).*?(?:85mm|50mm).*?(?=\.|$)/gi,
-        'iPhone 15 Pro portrait mode, authentic influencer aesthetic'
-      )
-      console.log('[DIRECT] Replaced DSLR with iPhone (conceptIndex >= 3)')
+      fixed = fixed.replace(/professional DSLR.*?(?:Canon|Sony).*?(?:85mm|50mm)/gi, 'iPhone 15 Pro portrait mode')
     }
   }
   
-  // FIX 3: Trim whitespace
-  fixed = fixed.trim()
+  // Normalize whitespace
+  fixed = fixed.replace(/\s+/g, ' ').trim()
   
   return fixed
 }
 
 /**
- * STEP 4: Lightweight validation
- * 
- * Only catch CRITICAL issues, not style preferences
+ * Lightweight validation
  */
 export function validatePromptLight(
   prompt: string,
   context: DirectPromptContext
 ): {
   valid: boolean
-  critical: string[]  // Must fix
-  warnings: string[]  // Nice to fix
+  critical: string[]
+  warnings: string[]
 } {
   
   const critical: string[] = []
   const warnings: string[] = []
   
-  // CRITICAL: Word count
+  // Word count check
   const wordCount = prompt.split(/\s+/).length
   
   if (context.mode === 'classic') {
@@ -324,71 +309,28 @@ export function validatePromptLight(
       critical.push(`Too short: ${wordCount} words (minimum 30)`)
     } else if (wordCount > 60) {
       critical.push(`Too long: ${wordCount} words (maximum 60)`)
-    } else if (wordCount > 55) {
-      warnings.push(`Slightly long: ${wordCount} words (target 30-60)`)
     }
   } else {
-    if (wordCount < 150) {
-      critical.push(`Too short: ${wordCount} words (minimum 150)`)
-    } else if (wordCount > 400) {
-      critical.push(`Too long: ${wordCount} words (maximum 400)`)
-    } else if (wordCount < 160 || wordCount > 380) {
-      warnings.push(`Outside target: ${wordCount} words (target 150-400)`)
+    if (wordCount < 50) {
+      critical.push(`Too short: ${wordCount} words (minimum 50)`)
+    } else if (wordCount > 80) {
+      critical.push(`Too long: ${wordCount} words (maximum 80)`)
     }
   }
   
-  // CRITICAL: Trigger word (Classic mode)
+  // Trigger word check (Classic mode only)
   if (context.mode === 'classic') {
-    const startsWithTrigger = prompt.toLowerCase().trim().startsWith(
-      context.triggerWord.toLowerCase()
-    )
-    
+    const startsWithTrigger = prompt.toLowerCase().trim().startsWith(context.triggerWord.toLowerCase())
     if (!startsWithTrigger) {
       critical.push('Missing trigger word at start')
     }
   }
   
-  // CRITICAL: Cut-off text detection
-  const cutOffPatterns = [
-    /\bthrougho\b/i,
-    /\bagains\b/i,
-    /\bdgy\b(?!\s+(?:edge|edgy))/i,
-    /\bist\b(?!\s+(?:ist|is|artist))/i
-  ]
-  
-  for (const pattern of cutOffPatterns) {
-    if (pattern.test(prompt)) {
-      critical.push(`Possible cut-off text: ${pattern.source}`)
-    }
+  return {
+    valid: critical.length === 0,
+    critical,
+    warnings
   }
-  
-  // WARNING: Contradictory camera
-  const hasDSLR = /Canon EOS|Sony A7|85mm f\/1\.[24]|professional DSLR/i.test(prompt)
-  const hasIPhone = /iPhone.*Pro.*portrait mode/i.test(prompt)
-  
-  if (hasDSLR && hasIPhone) {
-    warnings.push('Both DSLR and iPhone mentioned (may be intentional)')
-  }
-  
-  // WARNING: External observer language in selfies
-  if (context.mode === 'pro' && /selfie/i.test(context.userRequest)) {
-    const externalPhrases = [
-      /natural hand positioning holding phone/i,
-      /slight tilt for flattering angle/i,
-      /person taking selfie/i
-    ]
-    
-    for (const phrase of externalPhrases) {
-      if (phrase.test(prompt)) {
-        warnings.push('External observer language in selfie prompt')
-        break
-      }
-    }
-  }
-  
-  const valid = critical.length === 0
-  
-  return { valid, critical, warnings }
 }
 
 /**
