@@ -9,8 +9,6 @@ import {
   type ImageLibrary,
   type CategoryInfo,
 } from "@/lib/maya/pro/category-system"
-// buildProModePrompt removed - using direct generation only
-// type ConceptComponents no longer needed - using direct generation
 import { getCategoryByKey } from "@/lib/maya/pro/category-system"
 import { getMayaPersonality } from "@/lib/maya/personality-enhanced"
 import {
@@ -603,7 +601,6 @@ Make each concept unique, sophisticated, and based on the user's request. Use yo
             length: safeDescription.length
           })
 
-          // ConceptComponents type no longer needed - direct generation uses description directly
 
           // Build full prompt using prompt builder (with userRequest for personalization)
           // Use AI-determined category, or fallback to LIFESTYLE only if needed for prompt builder
@@ -611,7 +608,7 @@ Make each concept unique, sophisticated, and based on the user's request. Use yo
             ? safeCategory.toUpperCase() 
             : (categoryKey && typeof categoryKey === 'string' ? categoryKey : 'LIFESTYLE')
           
-          // 🔴 DEBUG: Log what we're passing to buildProModePrompt
+          // Log concept details for prompt generation
           console.log(`[v0] [PRO MODE] Building prompt for concept ${index + 1}:`, {
             title: safeTitle,
             description: safeDescription,
@@ -662,8 +659,7 @@ Make each concept unique, sophisticated, and based on the user's request. Use yo
             brandReferences: safeBrandReferences,
           }
 
-          // Link images to concept (use finalCategory from buildProModePrompt, ensure it's a valid string)
-          // finalCategory is set on line 629 from buildProModePrompt return value
+          // Link images to concept using final category from direct generation
           const categoryForLinking = (finalCategory && typeof finalCategory === 'string') ? finalCategory : (safeCategory && typeof safeCategory === 'string') ? safeCategory : 'LIFESTYLE'
           const linkedImages = linkImagesToConcept(mockUniversalPrompt, library, categoryForLinking)
 

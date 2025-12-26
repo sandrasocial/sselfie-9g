@@ -101,8 +101,7 @@ import { put } from '@vercel/blob'
 /**
  * Direct Prompt Generation
  * 
- * Maya generates final prompts directly without extraction/rebuilding.
- * This is the permanent system - direct generation always enabled.
+ * Maya generates final prompts directly for all concepts.
  */
 
 type MayaConcept = {
@@ -3367,8 +3366,7 @@ should celebrate the power of the selfie for visibility and economic freedom.
       referenceImagesKeys: referenceImages ? Object.keys(referenceImages) : "none"
     })
     
-    // Direct Prompt Generation - Always enabled
-    // Maya generates final prompts directly - no extraction/rebuilding needed
+    // Direct Prompt Generation - generate final prompts for all concepts
     if (concepts.length > 0) {
       for (let i = 0; i < concepts.length; i++) {
         const concept = concepts[i]
@@ -3392,21 +3390,14 @@ should celebrate the power of the selfie for visibility and economic freedom.
         } catch (error) {
           console.error(`[v0] [DIRECT] Error generating prompt for concept ${i + 1}:`, error)
           
-          // Fallback: Use description as prompt (better than broken extraction)
+          // Fallback: Use description as prompt if direct generation fails
           concept.prompt = `${triggerWord || ''}, ${concept.description || ''}`.trim()
         }
       }
     }
     
-    // 🔴 CRITICAL: Prompt constructor usage depends on mode
-    // Studio Pro Mode: Use detailed prompt constructor (250-500 words) for NanoBanana generation
-    // Classic Mode: Use classic Maya prompts (30-60 words) for Flux generation with trigger words
-    // The concept card prompt IS used directly for image generation, so it must match the generation system
-    // Skip prompt constructor for unsupported categories (they should use AI generation system)
-    // 🔴 FIX: Allow prompt constructor if upload module category exists, even without userRequest
-    // 🔴 NOTE: Prompt constructor is skipped - direct generation handles all prompts
-    const hasUserRequestForPromptConstructor = userRequest && userRequest.trim().length > 0
-    const usePromptConstructor = false // Always false - direct generation handles all prompts
+    // Prompt constructor is disabled - direct generation handles all prompts
+    const usePromptConstructor = false
     
     if (usePromptConstructor) {
       // 🔴 CRITICAL: Upload module category/concept already extracted above (line 2740, 2752)
