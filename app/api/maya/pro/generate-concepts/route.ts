@@ -422,6 +422,22 @@ ${libraryContext}
 
 **ESSENCE WORDS:** ${essenceWords || "None provided"}
 
+**CONSISTENCY GUIDANCE:**
+${consistencyMode === 'consistent'
+  ? `The user wants CONSISTENT concepts for video editing:
+- Use the SAME outfit across all 6 concepts (same brands, colors, style)
+- Use the SAME location/setting
+- Use the SAME lighting and mood
+- ONLY vary: poses, angles, expressions, camera framing
+- Think: "one photoshoot, different shots"
+Example: If you choose a cream cashmere sweater in concept 1, use that EXACT sweater in all 6 concepts`
+  : `The user wants VARIETY across concepts:
+- Create DIFFERENT outfits for each concept (different styles, brands, colors)
+- Create DIFFERENT locations and settings
+- Vary poses, angles, lighting, and moods
+- Think: "diverse portfolio of looks"
+Example: Concept 1 might be Alo athleisure at yoga studio, concept 2 might be The Row luxury at rooftop, etc.`}
+
 **YOUR TASK:**
 Create 6 diverse, creative concepts. Each concept must be:
 - Unique and different from the others
