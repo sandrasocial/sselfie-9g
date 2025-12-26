@@ -430,8 +430,6 @@ Create 6 diverse, creative concepts. Each concept must be:
 - Specific to their request (e.g., if they said "Christmas", use holiday outfits, festive settings, cozy holiday moments - NOT generic street style)
 - Use your fashion expertise to determine the most appropriate category for each concept
 
-**🔴 SELFIE VARIATION (Post-Processing):**
-Note: After you generate concepts, 1-2 of them will be automatically converted to authentic selfie variations (handheld, mirror, or elevated selfie setup). This maintains SSELFIE's core brand positioning - selfies are authentic, relatable, and aspirational. The selfie conversion preserves all outfit details, setting, and quality - just changes the camera perspective to front-facing iPhone selfie style. You don't need to create selfie concepts - focus on creating diverse professional concepts, and the system will handle selfie variations automatically.
 
 **🔴 CRITICAL: DESCRIPTION REQUIREMENTS**
 Your "description" field MUST include:
@@ -680,99 +678,13 @@ Make each concept unique, sophisticated, and based on the user's request. Use yo
         }
       }
       
-      // 🎯 SELFIE CONVERSION: Convert exactly 1 concept to selfie
-      // Target: Only ONE selfie per generation (out of 6 concepts)
-      const selfieTargetCount = 1
-      const selfieIndices: number[] = []
-      
-      // Select random indices for selfie conversion (avoid duplicates)
-      const availableIndices = conceptResults
-        .map((_, idx) => idx)
-        .filter(idx => {
-          const concept = conceptResults[idx]
-          // Skip if already a selfie
-          return !isSelfieConceptAlready(concept.fullPrompt || concept.prompt || '')
-        })
-      
-      // Shuffle and select indices
-      const shuffled = [...availableIndices].sort(() => Math.random() - 0.5)
-      for (let i = 0; i < Math.min(selfieTargetCount, shuffled.length); i++) {
-        selfieIndices.push(shuffled[i])
-      }
-      
-      console.log(`[SELFIE-CONVERTER] Converting ${selfieIndices.length} concepts to selfies:`, selfieIndices)
-      
-      // Convert selected concepts to selfies
-      for (const idx of selfieIndices) {
-        const concept = conceptResults[idx]
-        if (!concept) continue
-        
-        try {
-          // Determine selfie type (prefer category-appropriate, fallback to weighted random)
-          const categoryPreferred = getCategoryPreferredSelfieType(concept.category || '')
-          const selfieType = categoryPreferred || getRandomSelfieType()
-          
-          console.log(`[SELFIE-CONVERTER] Converting concept ${idx + 1} to ${selfieType} selfie:`, {
-            originalTitle: concept.title,
-            category: concept.category
-          })
-          
-          // Convert concept to selfie
-          const selfieConcept: ConceptToConvert = {
-            title: concept.title || '',
-            description: concept.description || '',
-            prompt: concept.fullPrompt || concept.prompt || '',
-            category: concept.category || '',
-            aesthetic: concept.aesthetic
-          }
-          
-          // Determine if reference images should be used
-          const hasRefImages = library.selfies && library.selfies.length > 0
-          
-          const converted = convertToSelfie(selfieConcept, selfieType, hasRefImages)
-          
-          // Validate the converted prompt
-          const validation = validateSelfiePrompt(converted.prompt)
-          if (!validation.valid) {
-            console.warn(`[SELFIE-CONVERTER] Validation warnings for concept ${idx + 1}:`, validation.warnings)
-          }
-          
-          // Update concept with selfie conversion
-          conceptResults[idx] = {
-            ...concept,
-            title: converted.title,
-            description: converted.description,
-            fullPrompt: converted.prompt,
-            prompt: converted.prompt, // Update both for compatibility
-          }
-          
-          console.log(`[SELFIE-CONVERTER] ✅ Successfully converted concept ${idx + 1} to ${selfieType} selfie`)
-        } catch (selfieError: any) {
-          console.error(`[SELFIE-CONVERTER] ❌ Error converting concept ${idx + 1} to selfie:`, selfieError)
-          // Continue with original concept if conversion fails
-        }
-      }
-      
-      console.log(`[SELFIE-CONVERTER] ✅ Selfie conversion complete: ${selfieIndices.length} concepts converted`)
-      
       generatedConcepts = conceptResults
-
-      // Count selfies in final concepts
-      const selfieCount = generatedConcepts.filter(c => 
-        isSelfieConceptAlready(c.fullPrompt || c.prompt || '')
-      ).length
       
       console.log("[v0] [PRO MODE] Generated", generatedConcepts.length, "concepts using AI")
-      console.log("[v0] [PRO MODE] Selfie conversion:", {
-        total: generatedConcepts.length,
-        selfies: selfieCount,
-        regular: generatedConcepts.length - selfieCount
-      })
       console.log("[v0] [PRO MODE] Concept details:", generatedConcepts.map((c: any) => ({
         id: c.id,
         title: c.title?.substring(0, 30),
         category: c.category,
-        isSelfie: isSelfieConceptAlready(c.fullPrompt || c.prompt || ''),
         linkedImagesCount: c.linkedImages?.length || 0,
         hasFullPrompt: !!c.fullPrompt,
       })))
