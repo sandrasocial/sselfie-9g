@@ -407,22 +407,26 @@ All migration tasks completed:
 ### Files That May Need Updates:
 
 1. **`docs/PROMPT-BUILDERS-ARCHITECTURE.md`**
-   - May reference old extraction system
-   - Should be updated to reflect direct generation
+   - ⚠️ **Still references old system** (`lib/maya/pro/prompt-builder.ts` which was deleted)
+   - Should be updated to reflect direct generation architecture
+   - **Status:** Historical documentation, can be archived or updated post-merge
 
-2. **`README.md`** (if it mentions prompting pipeline)
-   - Update to reflect new architecture
-   - Document Classic vs Pro Mode differences
+2. **`README.md`**
+   - ✅ Checked: No references to old extraction system found
+   - No updates needed
 
 3. **Inline documentation in route files**
-   - Already cleaned up during comment cleanup phase
+   - ✅ Already cleaned up during comment cleanup phase
    - All outdated references removed
 
 **Note:** Documentation in `docs/` folder is mostly historical/archive. New system is documented in:
-- `CLEANUP_SUMMARY.md` (this file)
-- `TEST_RESULTS.md`
-- `CODE_QUALITY_REPORT.md`
-- Inline code comments
+- `CLEANUP_SUMMARY.md` (this file) ✅
+- `TEST_RESULTS.md` ✅
+- `CODE_QUALITY_REPORT.md` ✅
+- `CLEANUP_AUDIT.md` ✅ (historical reference)
+- Inline code comments ✅
+
+**Recommendation:** Update `docs/PROMPT-BUILDERS-ARCHITECTURE.md` post-merge to reflect new direct generation system, or archive it as historical documentation.
 
 ---
 
