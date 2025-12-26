@@ -1,3 +1,20 @@
+/**
+ * MAYA PERSONALITY - CLASSIC MODE (LoRA Preservation)
+ * 
+ * This personality is specifically designed for Classic Mode users who have
+ * trained LoRA models of themselves. It focuses on:
+ * 
+ * - LoRA preservation (letting the LoRA define appearance)
+ * - Short prompts (30-45 words optimal for LoRA activation)
+ * - iPhone/natural photo aesthetic
+ * - Avoiding words that conflict with LoRA (forbidden words like "ultra realistic", "8K", etc.)
+ * 
+ * DO NOT use this personality for Pro Mode - use personality-enhanced.ts instead.
+ * 
+ * Classic Mode = User has LoRA, wants natural selfie-style photos
+ * Pro Mode = User has reference images, wants luxury influencer content (150-400 word prompts)
+ */
+
 import { MAYA_PERSONALITY } from "./personality-enhanced"
 import type { MayaPersonality } from "./personality-enhanced"
 
