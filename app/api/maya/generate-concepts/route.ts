@@ -2382,7 +2382,31 @@ DO NOT add "with visible pores" at the end - use "natural skin texture with visi
 - DO NOT include any TEXT OVERLAY section unless the user specifically requested carousel slides, reel covers, or text overlays
 - DO NOT add "with visible pores" at the end - use "natural skin texture with visible pores" in proper location`
           : `YOUR CRAFTED NANO BANANA PRO PROMPT - MUST start with attachment reference format. MUST mention brand name (e.g., "from Alo", "Alo brand outfit", "official campaign of the ALO brand") when brand is detected. Then describe scene, outfit (VARY outfits across concepts - each concept should have a DIFFERENT outfit), pose, lighting (MUST include lighting description). MUST include camera specs (e.g., "professional photography, 85mm lens, f/2.0 depth of field") and natural skin texture. Natural language scene description (50-80 words), NO trigger words, NO assumptions about hair color/ethnicity/body type, rich visual storytelling with brand context, professional quality. 🔴 CRITICAL: DO NOT include any TEXT OVERLAY section unless the user specifically requested carousel slides, reel covers, or text overlays. DO NOT add "black and white" unless user explicitly requested it. DO NOT add "with visible pores" at the end - use "natural skin texture with visible pores" in proper location.`
-        : `YOUR CRAFTED FLUX PROMPT - synthesized from principles, MUST start with ${triggerWord}, ${userEthnicity ? userEthnicity + " " : ""}${userGender}${physicalPreferences ? `, [converted physical preferences - descriptive only, NO instruction phrases like 'dont change' or 'keep my']` : ""}`
+        : `COMPLETE FINAL PROMPT for image generation (Classic Mode - LoRA/Flux)
+
+**PROMPT REQUIREMENTS (Classic Mode):**
+- Format: Natural language, 30-60 words (optimal 40-55 words)
+- Structure: [trigger], [person], [outfit], [pose/action], [location], [lighting], camera specs
+- MUST start with "${triggerWord}" (first word, required)
+- Person: ${userEthnicity ? userEthnicity + " " : ""}${userGender}${physicalPreferences ? `, ${physicalPreferences.replace(/\b(don't|do not|doesn't|keep my|maintain|preserve|keep the|the same)\s+/gi, '').trim()}` : ""}
+- Always end with: "shot on iPhone 15 Pro portrait mode, candid photo, natural skin texture with pores visible, film grain, muted colors"
+- NO structured sections (no "POSE:", "OUTFIT:", etc.)
+- Direct, natural language only
+- NO text overlays (this is a regular concept card)
+
+**EXAMPLE PROMPT:**
+"${triggerWord}, ${userEthnicity ? userEthnicity + " " : ""}${userGender} in cream cashmere sweater and vintage denim, sitting cross-legged on ivory sofa holding ceramic mug, gazing at twinkling Christmas tree, soft morning light from floor-to-ceiling windows, warm fireplace glow, shot on iPhone 15 Pro portrait mode, candid photo, natural skin texture with pores visible, film grain, muted colors"
+
+**SELFIE HANDLING:**
+If the concept is a selfie (description mentions "selfie", "front camera", "mirror selfie"):
+- Replace "shot on iPhone 15 Pro portrait mode" with "ultra-realistic iPhone 15 Pro front camera selfie" or "iPhone 15 Pro mirror selfie reflection"
+- Add selfie-specific details like "arm extended holding phone" or "mirror visible in frame"
+- Maintain same quality and authentic aesthetic
+
+**CRITICAL:**
+- This prompt field should be FINAL and ready for Replicate - no transformation needed
+- Generate the complete prompt directly - do not generate a description that needs to be transformed
+- The prompt must be usable as-is for image generation`
     }"
   }
 ]`
