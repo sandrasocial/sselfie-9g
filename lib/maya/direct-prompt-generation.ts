@@ -157,6 +157,8 @@ function buildProSystemPrompt(context: DirectPromptContext): string {
   
   return `Transform this DESCRIPTION into a structured prompt. Preserve EVERY specific detail.
 
+**WORD COUNT:** Target 100-200 words total (structured format with multiple sections)
+
 **CRITICAL RULES:**
 1. Copy brands/products EXACTLY (The Row → "The Row", not "luxury brand")
 2. No vague language ("elegant sweater" → "The Row cream cashmere turtleneck")
