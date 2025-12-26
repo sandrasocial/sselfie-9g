@@ -644,92 +644,22 @@ Make each concept unique, sophisticated, and based on the user's request. Use yo
             else safeCategory = 'LIFESTYLE' // Last resort fallback
           }
           
-          // 🔴 VALIDATION: Ensure description is detailed enough
-          const descriptionWordCount = safeDescription.split(/\s+/).length
-          const hasBrandMention = /alo|lululemon|glossier|chanel|dior|bottega|everlane|reformation|aritzia|the row|jenni kayne|levi|zara|cos|rhode|hermès/i.test(safeDescription)
-          const hasSpecificDetails = /wearing|sitting|standing|holding|looking|marble|fireplace|tree|light|sweater|denim|dress|blazer|coat|jacket|sofa|mug|room|interior|outfit|attire/i.test(safeDescription)
-
-          if (descriptionWordCount < 20 || !hasSpecificDetails) {
-            console.warn(`[v0] [VALIDATION] Description too vague for concept ${index + 1}:`, safeDescription)
-            console.warn(`[v0] [VALIDATION] Word count: ${descriptionWordCount}, Has brands: ${hasBrandMention}, Has details: ${hasSpecificDetails}`)
-            
-            // Try to enhance description from other available fields in aiConcept
-            const extractedDetails: string[] = []
-            
-            // Extract details from aesthetic field if available
-            if (safeAesthetic && safeAesthetic.length > 20) {
-              // Use aesthetic as additional context
-              extractedDetails.push(safeAesthetic)
-            }
-            
-            // Extract details from title if it's descriptive
-            if (safeTitle && safeTitle.length > 15 && /sitting|wearing|standing|holding|cozy|elegant|sophisticated/i.test(safeTitle)) {
-              extractedDetails.push(safeTitle)
-            }
-            
-            // Enhance description if we found additional details
-            if (extractedDetails.length > 0) {
-              const enhancedDescription = `${safeDescription} ${extractedDetails.join(', ')}.`
-              console.log(`[v0] [VALIDATION] Enhanced description for concept ${index + 1} with details from aesthetic/title`)
-              // Note: We'll use the enhanced description, but this is a fallback
-              // The AI should ideally generate detailed descriptions from the start
-            }
-          }
-
-          console.log(`[v0] [VALIDATION] Concept ${index + 1} description validation:`, {
-            wordCount: descriptionWordCount,
-            hasBrands: hasBrandMention,
-            hasDetails: hasSpecificDetails,
-            length: safeDescription.length
-          })
-
-
-          // Build full prompt using prompt builder (with userRequest for personalization)
-          // Use AI-determined category, or fallback to LIFESTYLE only if needed for prompt builder
+          // Use AI-determined category
           const promptCategory = (safeCategory && typeof safeCategory === 'string') 
             ? safeCategory.toUpperCase() 
             : (categoryKey && typeof categoryKey === 'string' ? categoryKey : 'LIFESTYLE')
           
-          // Log concept details for prompt generation
-          console.log(`[v0] [PRO MODE] Building prompt for concept ${index + 1}:`, {
-            title: safeTitle,
-            description: safeDescription,
-            category: promptCategory,
-            userRequest: userRequest?.substring(0, 100),
-            conceptCategory: safeCategory,
-          })
-          
-          // Direct Prompt Generation - Always enabled
-          let fullPrompt: string
+          // Use Maya's generated prompt directly
+          let fullPrompt: string = (aiConcept.prompt && typeof aiConcept.prompt === 'string') ? aiConcept.prompt : ''
           let finalCategory: string = promptCategory
           
-          try {
-            const { generatePromptDirect } = await import('@/lib/maya/direct-prompt-generation')
-            
-            // 🔴 CRITICAL: Pass the CONCEPT DESCRIPTION, not the original userRequest!
-            // The description contains all the specific details (brands, items, settings) that Maya needs
-            const directResult = await generatePromptDirect({
-              userRequest: safeDescription, // Use concept description with all specific details
-              category: safeCategory || undefined,
-              conceptIndex: index,
-              triggerWord: '', // Pro mode doesn't use trigger words
-              gender: 'woman', // TODO: Get from user profile
-              ethnicity: undefined,
-              physicalPreferences: undefined,
-              mode: 'pro'
-            })
-            
-            fullPrompt = directResult.prompt
-            finalCategory = promptCategory
-            
-            // 🔴 DEBUG: Log the generated prompt
-            console.log(`[v0] [PRO MODE] Generated prompt for concept ${index + 1} (first 200 chars):`, fullPrompt.substring(0, 200))
-            console.log(`[v0] [PRO MODE] Final category for concept ${index + 1}:`, finalCategory)
-          } catch (directError: any) {
-            console.error(`[v0] [PRO MODE] Error in direct generation for concept ${index + 1}:`, directError)
-            // Fallback to basic prompt if direct generation fails
+          // Simple fallback only if Maya didn't generate a prompt
+          if (!fullPrompt || fullPrompt.trim().length === 0) {
+            console.warn(`[v0] [PRO MODE] Concept ${index + 1} missing prompt, using fallback`)
             fullPrompt = `Professional photography. ${safeTitle}. ${safeDescription}. Shot on iPhone 15 Pro portrait mode, shallow depth of field, natural skin texture with pores visible, film grain, muted colors, authentic iPhone photo aesthetic.`
           }
+          
+          console.log(`[v0] [PRO MODE] Using Maya's prompt for concept ${index + 1} (${fullPrompt.length} chars)`)
 
           // Create a mock UniversalPrompt for image linking (using safe values)
           const mockUniversalPrompt = {
