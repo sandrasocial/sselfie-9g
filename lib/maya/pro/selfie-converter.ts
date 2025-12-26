@@ -130,7 +130,8 @@ function extractSceneFromDescription(description: string): SceneElements {
  */
 export function convertToSelfie(
   concept: ConceptToConvert,
-  type: SelfieType = 'handheld'
+  type: SelfieType = 'handheld',
+  hasReferenceImages: boolean = false
 ): ConceptToConvert {
   
   console.log(`[SELFIE-CONVERTER] Converting to ${type} selfie - FIRST-PERSON POV`)
@@ -147,19 +148,19 @@ export function convertToSelfie(
   
   switch (type) {
     case 'handheld':
-      selfiePrompt = buildHandheldSelfieFromScene(scene)
+      selfiePrompt = buildHandheldSelfieFromScene(scene, hasReferenceImages)
       selfieTitle = `${title} - Selfie`
       selfieDescription = `Authentic front camera selfie: ${description}`
       break
       
     case 'mirror':
-      selfiePrompt = buildMirrorSelfieFromScene(scene)
+      selfiePrompt = buildMirrorSelfieFromScene(scene, hasReferenceImages)
       selfieTitle = `${title} - Mirror Selfie`
       selfieDescription = `Mirror selfie reflection: ${description}`
       break
       
     case 'elevated':
-      selfiePrompt = buildElevatedSelfieFromScene(scene)
+      selfiePrompt = buildElevatedSelfieFromScene(scene, hasReferenceImages)
       selfieTitle = `${title} - Pro Selfie`
       selfieDescription = `Professional selfie setup: ${description}`
       break
@@ -578,8 +579,10 @@ function extractPromptElements(description: string, prompt: string): {
  * Build HANDHELD SELFIE - First-Person POV
  * 
  * CRITICAL: This is what the SELFIE shows, not describing taking it
+ * Authentic handheld selfie - think human taking the image themselves
+ * Do NOT mention iPhone being visible (creates meta-image of someone taking picture of user)
  */
-function buildHandheldSelfieFromScene(scene: SceneElements): string {
+function buildHandheldSelfieFromScene(scene: SceneElements, hasReferenceImages: boolean = false): string {
   
   // Build outfit description
   const outfitText = scene.brands.length > 0
@@ -591,15 +594,21 @@ function buildHandheldSelfieFromScene(scene: SceneElements): string {
     ? `${scene.setting}, ${scene.details.slice(0, 3).join(', ')} visible in background`
     : scene.setting
   
-  return `Ultra-realistic iPhone 15 Pro front camera selfie. Character consistency with provided reference images. Match the exact facial features, hair, skin tone, body type, and physical characteristics of the person in the reference images. This is the same person in a different scene. ${scene.action || 'Standing'} ${settingText ? 'in ' + settingText : ''}, arm extended holding phone at slight angle, ${outfitText}. Face and upper body visible in close-up to medium shot framing, showing personality and scene context. ${scene.lighting || 'Natural lighting'} creating soft flattering illumination ${scene.mood ? 'with ' + scene.mood : ''}. Looking at phone screen or directly at front camera lens with natural ${scene.mood || 'confident'} expression. Natural bokeh from iPhone portrait mode, slightly wide-angle front camera lens effect, authentic influencer selfie aesthetic. Arm holding phone visible in frame, natural selfie angle and composition.`.trim()
+  // Reference image text (only if reference images exist)
+  const referenceText = hasReferenceImages
+    ? 'Character consistency with provided reference images. Match the exact facial features, hair, skin tone, body type, and physical characteristics of the person in the reference images. This is the same person in a different scene. '
+    : ''
+  
+  return `${referenceText}Ultra-realistic iPhone 15 Pro front camera selfie. Authentic handheld iPhone selfie, ${scene.action || 'standing'} ${settingText ? 'in ' + settingText : ''}, ${outfitText}, arm extended naturally holding phone. Face and upper body visible in frame, close-up to medium shot framing showing personality and scene context. ${scene.lighting || 'Natural lighting'} creating soft flattering illumination ${scene.mood ? 'with ' + scene.mood : ''}. Looking directly at camera with natural ${scene.mood || 'confident'} expression. Natural bokeh, authentic influencer selfie aesthetic, shot on iPhone front camera. Natural selfie angle and composition, like a real person taking a photo of themselves.`.trim()
 }
 
 /**
  * Build MIRROR SELFIE - First-Person POV
  * 
  * CRITICAL: Shows reflection in mirror, not describing someone at mirror
+ * Authentic mirror selfie - NO ring light or tripod visible (think human taking the image)
  */
-function buildMirrorSelfieFromScene(scene: SceneElements): string {
+function buildMirrorSelfieFromScene(scene: SceneElements, hasReferenceImages: boolean = false): string {
   
   // Build outfit description
   const outfitText = scene.brands.length > 0
@@ -617,27 +626,40 @@ function buildMirrorSelfieFromScene(scene: SceneElements): string {
   if (scene.setting.includes('boutique')) mirrorType = 'boutique fitting room mirror'
   if (scene.setting.includes('bedroom')) mirrorType = 'bedroom full-length mirror'
   
-  return `Ultra-realistic iPhone 15 Pro mirror selfie reflection. Character consistency with provided reference images. Match the exact facial features, hair, skin tone, body type, and physical characteristics of the person in the reference images. This is the same person in a different scene. ${scene.posture || 'Standing'} in front of ${mirrorType}, ${outfitText}, holding phone at chest to waist level capturing full body or three-quarter reflection. Mirror clearly visible in frame showing complete outfit styling from head to toe, phone visible in reflection creating authentic mirror selfie composition. ${settingText ? settingText + ' visible through mirror.' : ''} ${scene.lighting || 'Natural overhead and side lighting'} creating balanced illumination across reflection ${scene.mood ? 'with ' + scene.mood : ''}. Looking at phone screen or glancing at mirror reflection, creating natural mirror selfie dynamic. Reflection shows complete scene: full outfit details visible, ${scene.action || 'natural pose'}, authentic influencer mirror selfie aesthetic. Clean mirror surface with realistic reflection quality, complete scene visible in background through mirror.`.trim()
+  // Reference image text (only if reference images exist)
+  const referenceText = hasReferenceImages
+    ? 'Character consistency with provided reference images. Match the exact facial features, hair, skin tone, body type, and physical characteristics of the person in the reference images. This is the same person in a different scene. '
+    : ''
+  
+  return `${referenceText}Ultra-realistic iPhone 15 Pro front camera selfie. Authentic mirror selfie, ${scene.posture || 'standing'} in front of ${mirrorType}, ${outfitText}, holding phone at chest to waist level capturing full body or three-quarter reflection. Mirror clearly visible in frame showing complete outfit styling from head to toe, full outfit visible in reflection. ${settingText ? settingText + ' visible through mirror.' : ''} ${scene.lighting || 'Natural overhead and side lighting'} creating balanced illumination ${scene.mood ? 'with ' + scene.mood : ''}. Looking at mirror reflection with natural ${scene.mood || 'confident'} expression, creating authentic mirror selfie dynamic. Reflection shows complete scene: full outfit details visible, ${scene.action || 'natural pose'}, authentic influencer mirror selfie aesthetic. Clean mirror surface with realistic reflection quality, like a real person taking a mirror selfie showing their full outfit.`.trim()
 }
 
 /**
- * Build ELEVATED SELFIE - First-Person POV
+ * Build ELEVATED SELFIE - First-Person POV (DEPRECATED - Use handheld or mirror instead)
  * 
- * CRITICAL: Phone on tripod with self-timer (still first-person view)
+ * CRITICAL: User doesn't want tripod or ring light visible
+ * This type is deprecated - use handheld or mirror for authentic selfies
+ * Keeping function for backward compatibility but should not be used
  */
-function buildElevatedSelfieFromScene(scene: SceneElements): string {
+function buildElevatedSelfieFromScene(scene: SceneElements, hasReferenceImages: boolean = false): string {
   
   // Build outfit description
   const outfitText = scene.brands.length > 0
     ? `wearing ${scene.brands.join(' and ')} ${scene.outfit}`
-    : scene.outfit ? `wearing ${scene.outfit}` : 'in polished styled outfit'
+    : scene.outfit ? `wearing ${scene.outfit}` : 'in styled outfit'
   
   // Build setting context
   const settingText = scene.details.length > 0
-    ? `${scene.setting}, ${scene.details.slice(0, 3).join(', ')} visible in frame`
+    ? `${scene.setting}, ${scene.details.slice(0, 3).join(', ')} visible in background`
     : scene.setting
   
-  return `Ultra-realistic iPhone 15 Pro elevated selfie setup. Character consistency with provided reference images. Match the exact facial features, hair, skin tone, body type, and physical characteristics of the person in the reference images. This is the same person in a different scene. ${scene.posture || 'Standing'} ${settingText ? 'in ' + settingText : ''}, ${outfitText}, phone positioned on tripod with self-timer capturing face to upper body or full body framing. Slightly elevated camera angle creating flattering perspective showing ${scene.action || 'confident pose'}. Ring light or natural lighting combined with ${scene.lighting || 'soft window light'} providing dimensional illumination ${scene.mood ? 'creating ' + scene.mood : ''}. Professional lighting setup with even, flattering exposure showing complete scene. Looking at camera with natural ${scene.mood || 'confident'} expression, slightly elevated angle perspective, polished influencer content aesthetic. Setup creates professional yet authentic iPhone selfie quality, not DSLR photography. Frame shows complete context: outfit details visible, scene setting clear, elevated selfie production quality maintaining iPhone aesthetic.`.trim()
+  // Reference image text (only if reference images exist)
+  const referenceText = hasReferenceImages
+    ? 'Character consistency with provided reference images. Match the exact facial features, hair, skin tone, body type, and physical characteristics of the person in the reference images. This is the same person in a different scene. '
+    : ''
+  
+  // Use handheld style instead (no tripod/ring light visible)
+  return `${referenceText}Ultra-realistic iPhone 15 Pro front camera selfie. Authentic handheld iPhone selfie, ${scene.action || 'standing'} ${settingText ? 'in ' + settingText : ''}, ${outfitText}, arm extended naturally holding phone. Face and upper body visible in frame, close-up to medium shot framing showing personality and scene context. ${scene.lighting || 'Natural lighting'} creating soft flattering illumination ${scene.mood ? 'with ' + scene.mood : ''}. Looking directly at camera with natural ${scene.mood || 'confident'} expression. Natural bokeh, authentic influencer selfie aesthetic, shot on iPhone front camera. Natural selfie angle and composition, like a real person taking a photo of themselves.`.trim()
 }
 
 /**
@@ -673,27 +695,22 @@ export function isSelfieConceptAlready(prompt: string): boolean {
  * Get random selfie type with weighted distribution
  * 
  * Distribution:
- * - 50% handheld (most common, most authentic)
- * - 30% mirror (popular for outfit showcase)
- * - 20% elevated (professional influencer content)
+ * - 60% handheld (most common, most authentic)
+ * - 40% mirror (popular for outfit showcase)
+ * - 0% elevated (deprecated - tripod/ring light not wanted)
  * 
  * @returns Random selfie type based on weighted distribution
  */
 export function getRandomSelfieType(): SelfieType {
   const random = Math.random()
   
-  if (random < 0.5) {
-    console.log('[SELFIE-CONVERTER] Selected: handheld (50% weight)')
+  if (random < 0.6) {
+    console.log('[SELFIE-CONVERTER] Selected: handheld (60% weight)')
     return 'handheld'
   }
   
-  if (random < 0.8) {
-    console.log('[SELFIE-CONVERTER] Selected: mirror (30% weight)')
-    return 'mirror'
-  }
-  
-  console.log('[SELFIE-CONVERTER] Selected: elevated (20% weight)')
-  return 'elevated'
+  console.log('[SELFIE-CONVERTER] Selected: mirror (40% weight)')
+  return 'mirror'
 }
 
 /**
@@ -716,12 +733,12 @@ export function getCategoryPreferredSelfieType(category: string): SelfieType | n
     return Math.random() < 0.6 ? 'mirror' : 'handheld'
   }
   
-  // Luxury can use elevated more often
+  // Luxury prefers mirror for outfit showcase
   if (upperCategory.includes('LUXURY') || upperCategory.includes('EDITORIAL')) {
-    return Math.random() < 0.4 ? 'elevated' : (Math.random() < 0.5 ? 'mirror' : 'handheld')
+    return Math.random() < 0.6 ? 'mirror' : 'handheld'
   }
   
-  // Default: use weighted random
+  // Default: use weighted random (handheld or mirror only)
   return null
 }
 

@@ -405,6 +405,39 @@ export function createVariationFromGuidePrompt(
     skinTextureText = "natural skin texture with visible pores"
   }
   
+  // Extract hair styling (preserved from guide prompt)
+  let hairText = ""
+  for (const chunk of sentences) {
+    const trimmedChunk = chunk.trim()
+    const hasHairKeywords = /(?:hair|bun|ponytail|braid|waves|curls|straight|wavy|curly|updo|chignon|bob|shoulder-length|long|short|blonde|brunette|dark|black|brown|red|auburn|hair\s+in|hair\s+with|hair\s+styled|hair\s+pulled|hair\s+down)/i.test(trimmedChunk)
+    const isOutfitChunk = /(?:wearing|dressed|outfit|clothing|garment|sweater|dress|blazer|pants|shirt|gloves|earrings|necklace)/i.test(trimmedChunk)
+    const isLocationChunk = /(?:tree|sofa|fireplace|room|background|setting|scene|location|beside|near|at|in)/i.test(trimmedChunk)
+    const isPoseChunk = /^(?:kneeling|standing|sitting|walking|leaning|holding|seated|looking|expression|posture)/i.test(trimmedChunk)
+    
+    if (hasHairKeywords && !isOutfitChunk && !isLocationChunk && !isPoseChunk) {
+      hairText = trimmedChunk.replace(/[.,]$/, "").trim()
+      if (hairText.length > 10) break
+    }
+  }
+  
+  // Fallback: Try to extract hair from the full prompt using regex
+  if (!hairText || hairText.length < 10) {
+    const hairPatterns = [
+      /(?:hair|bun|ponytail|braid)[^,.]*(?:hair|bun|ponytail|braid|waves|curls|styled|pulled|down|up)/i,
+      /(?:long|short|shoulder-length|wavy|curly|straight)\s+(?:hair|bun|ponytail|braid)/i,
+      /(?:blonde|brunette|dark|black|brown|red|auburn)\s+(?:hair|bun|ponytail|braid)/i,
+      /(?:hair\s+(?:in|with|styled|pulled|down|up)\s+[^,.]*)/i,
+    ]
+    
+    for (const pattern of hairPatterns) {
+      const match = workingPrompt.match(pattern)
+      if (match && match[0].length > 10) {
+        hairText = match[0].trim().replace(/[.,]$/, "").trim()
+        break
+      }
+    }
+  }
+  
   // Build the variation prompt
   const parts: string[] = []
   

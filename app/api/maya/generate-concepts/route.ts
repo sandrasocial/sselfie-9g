@@ -59,6 +59,7 @@ import {
 import { minimalCleanup } from "@/lib/maya/post-processing/minimal-cleanup"
 import { SHARED_MAYA_PERSONALITY } from "@/lib/maya/personality/shared-personality"
 import { getMayaPersonality } from "@/lib/maya/personality-enhanced"
+import { MAYA_SYSTEM_PROMPT } from "@/lib/maya/personality"
 import { getComponentDatabase } from "@/lib/maya/prompt-components/component-database"
 import { DiversityEngine } from "@/lib/maya/prompt-components/diversity-engine"
 import { CompositionBuilder } from "@/lib/maya/prompt-components/composition-builder"
@@ -94,6 +95,8 @@ import {
   validatePromptLight,
   type DirectPromptContext
 } from '@/lib/maya/direct-prompt-generation'
+import { generateWithNanoBanana, checkNanoBananaPrediction } from '@/lib/nano-banana-client'
+import { put } from '@vercel/blob'
 
 /**
  * FEATURE FLAG: Direct Prompt Generation
@@ -169,7 +172,17 @@ type MayaConcept = {
     seed?: number
   }
   referenceImageUrl?: string
+  imageUrl?: string // Optional: URL of generated image (for consistency mode with reference images)
+  predictionId?: string // Optional: Prediction ID for tracking generation status
+  referenceImages?: string[] // Optional: Array of reference image URLs used for generation
 }
+
+/**
+ * Consistency Mode for Concept Generation
+ * - variety: Each concept has different outfit/location/scene (default)
+ * - consistent: All concepts use same outfit/location/lighting, only vary poses/angles
+ */
+type ConsistencyMode = 'variety' | 'consistent'
 
 // Guide prompt handler functions are now imported from lib/maya/prompt-builders/guide-prompt-handler.ts
 
@@ -832,12 +845,14 @@ export async function POST(req: NextRequest) {
       enhancedAuthenticity = false, // Enhanced authenticity toggle - only for Classic mode
       guidePrompt, // NEW: Guide prompt from user (for concept #1, then variations for 2-6)
       templateExamples: providedTemplateExamples, // NEW: Pre-loaded template examples from admin prompt builder
+      consistencyMode, // Pro Mode only - not used in Classic Mode
+      aspectRatio = "1:1", // Aspect ratio for image generation (default to 1:1)
     } = body
 
     // 🔴 CRITICAL: Auto-detect detailed prompts as guide prompts if not explicitly provided
     // If user provides a detailed prompt (100+ chars with specific details), treat it as a guide prompt
     // PRIORITY: userRequest > guidePrompt (explicit) > conversationContext (old)
-    let detectedGuidePrompt = null
+    let detectedGuidePrompt: string | null = null
     let hasNewUserRequest = false
     
     // First, check if userRequest should be the guide prompt (highest priority)
@@ -851,7 +866,7 @@ export async function POST(req: NextRequest) {
       if (hasSpecificDetails) {
         detectedGuidePrompt = userRequest.trim()
         hasNewUserRequest = true
-        console.log("[v0] ✅ Auto-detected detailed prompt as guide prompt (length:", detectedGuidePrompt.length, "chars)")
+        console.log("[v0] ✅ Auto-detected detailed prompt as guide prompt (length:", detectedGuidePrompt?.length || 0, "chars)")
       } else if (userRequestLength > 20) {
         // User provided a substantial request (even if not detailed enough for guide prompt)
         // This indicates they want something NEW, not to continue with old guide prompt
@@ -874,7 +889,7 @@ export async function POST(req: NextRequest) {
       const guidePromptMatch = conversationContext.match(/\[GUIDE_PROMPT_TEXT:\s*([^\]]+)\]/i)
       if (guidePromptMatch && guidePromptMatch[1]) {
         detectedGuidePrompt = guidePromptMatch[1].trim()
-        console.log("[v0] ✅ Extracted guide prompt from conversation context (length:", detectedGuidePrompt.length, "chars)")
+        console.log("[v0] ✅ Extracted guide prompt from conversation context (length:", detectedGuidePrompt?.length || 0, "chars)")
       }
     } else if (conversationContext && hasNewUserRequest && !detectedGuidePrompt) {
       // User provided new request - check if they're asking to continue/refine the old guide prompt
@@ -910,6 +925,7 @@ export async function POST(req: NextRequest) {
       context,
       mode,
       count,
+      consistencyMode: studioProMode ? consistencyMode : undefined, // Only log if Pro Mode
       studioProMode,
       enhancedAuthenticity,
       hasConversationContext: !!conversationContext,
@@ -1618,7 +1634,6 @@ Keep it brief (2-3 paragraphs) and actionable for a fashion photographer creatin
             content: trendResearchPrompt,
           },
         ],
-        maxTokens: 500,
         temperature: 0.7,
       })
 
@@ -1723,12 +1738,10 @@ IMPORTANT:
     })
 
     // Use enhanced personality for Studio Pro Mode (with SSELFIE design system)
-    // Use shared personality for Classic Mode
+    // Use full MAYA_SYSTEM_PROMPT for Classic Mode (includes all fashion expertise, styling knowledge, location inspiration, etc.)
     const mayaPersonalitySection = studioProMode 
       ? getMayaPersonality()
-      : `${SHARED_MAYA_PERSONALITY.core}
-
-${SHARED_MAYA_PERSONALITY.languageRules}`
+      : MAYA_SYSTEM_PROMPT
 
     // Use shared personality from module
     const conceptPrompt = `${mayaPersonalitySection}
@@ -2321,7 +2334,7 @@ After writing each prompt, count the words. If over 60, compress until it's 30-6
 **System Rules:**
 - Include hair color/style as safety net guidance even if LoRA should know it - mention key features (hair color/style, distinctive traits) concisely as a safety net
 - User's physical preferences from settings are mandatory - never remove them. If user specified "keep my natural hair color", convert to "natural hair color" (preserve intent)
-${shouldIncludeSkinTexture(userRequest, detectedGuidePrompt, templateExamples) ? `- Natural, authentic skin texture is required - avoid anything that sounds plastic/smooth/airbrushed. Include natural skin texture with pores visible.` : `- Skin texture: Only include if specified in user prompt, guide prompt, or templates - do not add automatically.`}
+${shouldIncludeSkinTexture(userRequest, detectedGuidePrompt || undefined, templateExamples) ? `- Natural, authentic skin texture is required - avoid anything that sounds plastic/smooth/airbrushed. Include natural skin texture with pores visible.` : `- Skin texture: Only include if specified in user prompt, guide prompt, or templates - do not add automatically.`}
 
 TRIGGER WORD: "${triggerWord}"
 GENDER: "${userGender}"
@@ -2435,7 +2448,7 @@ ${
 
 4. **Natural Skin Texture (only if in user prompt, guide prompt, or templates, AND NOT in Studio Pro mode):** 
    ${
-     shouldIncludeSkinTexture(userRequest, detectedGuidePrompt, templateExamples) && !studioProMode
+     shouldIncludeSkinTexture(userRequest, detectedGuidePrompt || undefined, templateExamples) && !studioProMode
        ? `- Include "natural skin texture with pores visible, not smooth or airbrushed, not plastic-looking, realistic texture"
    - Include natural imperfection phrases: "visible pores", "natural skin texture", "subtle imperfections", "not airbrushed", "not plastic-looking", "realistic texture", "organic skin texture"
    - Include anti-plastic phrases: "not smooth", "not airbrushed", "not plastic-looking", "realistic texture", "natural imperfections"
@@ -2990,7 +3003,7 @@ Now create ${count} educational infographic concepts with clear, legible text an
 - Professional, lifestyle aesthetic
 - **MUST include:** Lighting description (e.g., "soft natural window light", "warm ambient lighting")
 - **MUST include:** Camera specs (e.g., "professional photography, 85mm lens, f/2.0 depth of field")
-${shouldIncludeSkinTexture(userRequest, detectedGuidePrompt, templateExamples) && !studioProMode ? `- **MUST include:** Natural skin texture (e.g., "natural skin texture with visible pores" - in proper location, not at end)` : studioProMode ? `- **Skin texture:** Studio Pro mode - do NOT explicitly mention skin texture (professional photography handles this naturally)` : `- **Skin texture:** Only include if specified in user prompt, guide prompt, or templates - do NOT add automatically`}
+${shouldIncludeSkinTexture(userRequest, detectedGuidePrompt || undefined, templateExamples) && !studioProMode ? `- **MUST include:** Natural skin texture (e.g., "natural skin texture with visible pores" - in proper location, not at end)` : studioProMode ? `- **Skin texture:** Studio Pro mode - do NOT explicitly mention skin texture (professional photography handles this naturally)` : `- **Skin texture:** Only include if specified in user prompt, guide prompt, or templates - do NOT add automatically`}
 - **🔴 CRITICAL: DO NOT include any TEXT OVERLAY instructions - this is a brand scene, not a carousel or reel cover**
 - **🔴 CRITICAL: DO NOT add "black and white" unless user explicitly requested it**
 - **🔴 CRITICAL: DO NOT add "with visible pores" at the end - format as "natural skin texture with visible pores"**
@@ -3006,7 +3019,7 @@ ${detectedGuidePrompt ? `**Outfit Consistency (Guide Prompt Mode):** Use the sam
 
 **Camera Specs:** Include camera specs in every prompt (e.g., "professional photography, 85mm lens, f/2.0 depth of field")
 
-${shouldIncludeSkinTexture(userRequest, detectedGuidePrompt, templateExamples) && !studioProMode ? `**Skin Texture:** Include "natural skin texture with visible pores" (in proper location, not "with visible pores" at the end)` : studioProMode ? `**Skin Texture:** Studio Pro mode - do NOT explicitly mention skin texture (professional photography handles this naturally)` : `**Skin Texture:** Only include if specified in user prompt, guide prompt, or templates - do not add automatically`}
+${shouldIncludeSkinTexture(userRequest, detectedGuidePrompt || undefined, templateExamples) && !studioProMode ? `**Skin Texture:** Include "natural skin texture with visible pores" (in proper location, not "with visible pores" at the end)` : studioProMode ? `**Skin Texture:** Studio Pro mode - do NOT explicitly mention skin texture (professional photography handles this naturally)` : `**Skin Texture:** Only include if specified in user prompt, guide prompt, or templates - do not add automatically`}
 
 **Text Overlay Rules:**
 - This is a regular concept card (not a carousel or reel cover)
@@ -3017,7 +3030,7 @@ ${shouldIncludeSkinTexture(userRequest, detectedGuidePrompt, templateExamples) &
 🤳 SELFIE REQUIREMENT (CRITICAL FOR SSELFIE STUDIO)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-MANDATORY: At least 1-2 concepts MUST be SELFIE concepts (out of ${count} total).
+MANDATORY: Exactly ONE concept MUST be a SELFIE concept (out of ${count} total).
 
 SELFIE = Same quality/luxury/styling as professional concepts, but with:
 - iPhone front camera (not DSLR)
@@ -3140,7 +3153,7 @@ should celebrate the power of the selfie for visibility and economic freedom.
     // 🔴 CRITICAL: Prioritize upload module category FIRST before pattern matching
     // Upload module sends explicit category (e.g., "beauty-self-care", "travel-lifestyle")
     // 🔴 FIX: Don't default to 'casual-lifestyle' - start with empty string and handle explicitly
-    let detectedCategory: string = ''
+    let detectedCategory: string | null = null
     
     if (shouldUseUploadModuleCategoryForAI && uploadModuleCategoryForAI) {
       console.log("[v0] [AI-GENERATION] 🔴 Using upload module category (no user request):", uploadModuleCategoryForAI)
@@ -3255,7 +3268,7 @@ should celebrate the power of the selfie for visibility and economic freedom.
         const guidePromptConcept: MayaConcept = {
           title: 'Your Custom Prompt',
           description: 'Using your guide prompt exactly as specified',
-          category: mapComponentCategoryToMayaCategory(detectedCategory),
+          category: mapComponentCategoryToMayaCategory(detectedCategory || 'casual-lifestyle'),
           fashionIntelligence: '',
           lighting: '',
           location: '',
@@ -3274,9 +3287,9 @@ should celebrate the power of the selfie for visibility and economic freedom.
 
         try {
           // 🔴 FIX: If category is null, use user request directly for composition
-          const categoryForComposition = detectedCategory || null // Allow null
+          const categoryForComposition = detectedCategory || 'casual-lifestyle' // Default to casual-lifestyle if null
           const composed = compositionBuilder.composePrompt({
-            category: categoryForComposition, // Can be null - composition builder should handle this
+            category: categoryForComposition,
             userIntent: userRequest || context || aesthetic || '',
             brand: detectedBrandValue,
             count: composedConcepts.length,
@@ -3359,7 +3372,6 @@ should celebrate the power of the selfie for visibility and economic freedom.
             content: conceptPrompt,
           },
         ],
-        maxTokens: 4096,
         temperature: 0.85,
       })
 
@@ -3427,9 +3439,9 @@ should celebrate the power of the selfie for visibility and economic freedom.
             category: concept.category,
             conceptIndex: i,
             triggerWord: triggerWord || '',
-            gender: gender || 'woman',
-            ethnicity: ethnicity,
-            physicalPreferences: physicalPreferences,
+            gender: userGender || 'woman',
+            ethnicity: userEthnicity || undefined,
+            physicalPreferences: physicalPreferences || undefined,
             mode: studioProMode ? 'pro' : 'classic',
             referenceImages: referenceImages,
             conversationContext: conversationContext
@@ -3437,13 +3449,11 @@ should celebrate the power of the selfie for visibility and economic freedom.
           
           // Set prompt
           concept.prompt = result.prompt
-          concept.fullPrompt = result.prompt
         } catch (error) {
           console.error(`[v0] [DIRECT] Error generating prompt for concept ${i + 1}:`, error)
           
           // Fallback: Use description as prompt (better than broken extraction)
           concept.prompt = `${triggerWord || ''}, ${concept.description || ''}`.trim()
-          concept.fullPrompt = concept.prompt
         }
       }
     }
@@ -3767,9 +3777,9 @@ should celebrate the power of the selfie for visibility and economic freedom.
             }
             
             const constructedPrompt = buildEnhancedPrompt({
-              category,
-              vibe,
-              location,
+              category: category || 'casual',
+              vibe: vibe || 'casual',
+              location: location || 'street',
               userAge: extractedAge,
               userFeatures: physicalPreferences,
               userGender: userGender || 'woman',
@@ -3923,7 +3933,7 @@ should celebrate the power of the selfie for visibility and economic freedom.
               components: composedComponents[componentIndex],
               title: concept.title,
               description: concept.description,
-              category: detectedCategory,
+              category: detectedCategory || 'casual-lifestyle',
             }
           }
           return null
@@ -3933,7 +3943,7 @@ should celebrate the power of the selfie for visibility and economic freedom.
       if (composedPrompts.length > 0) {
         metricsTracker.trackBatch(
           batchId,
-          detectedCategory,
+          detectedCategory || 'casual-lifestyle',
           composedPrompts,
           composedComponents
         )
@@ -3951,58 +3961,497 @@ should celebrate the power of the selfie for visibility and economic freedom.
     if (detectedGuidePrompt && detectedGuidePrompt.trim().length > 0 && concepts.length > 0 && !firstConceptIsGuidePrompt) {
       console.log("[v0] 📋 Using guide prompt for concept #1 (AI fallback), creating variations for concepts 2-6")
       
-      // Concept #1: Use guide prompt EXACTLY (but merge with user's image references)
-      const guidePromptWithImages = mergeGuidePromptWithImages(detectedGuidePrompt, referenceImages, studioProMode)
-      concepts[0].prompt = guidePromptWithImages
-      console.log("[v0] ✅ Concept #1 uses guide prompt (length:", guidePromptWithImages.length, "chars)")
+      // 🔴 CRITICAL FIX: When USE_DIRECT_PROMPT_GENERATION is enabled, let Maya generate unique variations
+      // instead of using hardcoded guide prompt variation system
+      if (USE_DIRECT_PROMPT_GENERATION) {
+        console.log("[v0] ✅ Direct generation enabled - letting Maya create unique variations with guide prompt context")
+        
+        // Concept #1: Use guide prompt EXACTLY (but merge with user's image references)
+        const guidePromptWithImages = mergeGuidePromptWithImages(detectedGuidePrompt, referenceImages, studioProMode)
+        concepts[0].prompt = guidePromptWithImages
+        console.log("[v0] ✅ Concept #1 uses guide prompt (length:", guidePromptWithImages.length, "chars)")
+        
+        // For concepts 2-6, let Maya generate unique variations using her intelligence
+        // The prompts will already be unique since they come from Maya's initial generation
+        // We just need to ensure they reference the guide prompt context
+        console.log("[v0] ✅ Concepts 2-6 will use Maya's unique titles/descriptions (already generated)")
+      } else {
+        // OLD SYSTEM: Use hardcoded guide prompt variation system
+        // Concept #1: Use guide prompt EXACTLY (but merge with user's image references)
+        const guidePromptWithImages = mergeGuidePromptWithImages(detectedGuidePrompt, referenceImages, studioProMode)
+        concepts[0].prompt = guidePromptWithImages
+        console.log("[v0] ✅ Concept #1 uses guide prompt (length:", guidePromptWithImages.length, "chars)")
+        
+        // Extract key elements from guide prompt for variations
+        const baseElements = extractPromptElements(detectedGuidePrompt)
+        
+        // Concepts 2-6: Create variations maintaining consistency
+        // 🔴 CRITICAL: Always override Maya's generated concepts with guide prompt variations
+        for (let i = 1; i < Math.min(concepts.length, 6); i++) {
+          const variationNumber = i + 1
+          const variationPrompt = createVariationFromGuidePrompt(
+            detectedGuidePrompt,
+            baseElements,
+            variationNumber,
+            referenceImages,
+            studioProMode
+          )
+          console.log("[v0] ✅ Concept #" + variationNumber + " created as variation")
+          console.log("[v0] 📝 Variation prompt (first 200 chars):", variationPrompt.substring(0, 200) + "...")
+          console.log("[v0] 📝 Variation prompt (full length):", variationPrompt.length, "chars")
+          
+          // 🔴 CRITICAL: Always override Maya's generated prompt with the variation
+          // This ensures consistency with the guide prompt
+          concepts[i].prompt = variationPrompt
+          
+          // Enhanced validation: Check for outfit, hair, and location preservation
+          const guidePromptOutfitKeywords = /(?:couture|mini|red|dress|structured|bow|black|satin|opera|gloves|heels|elegant|pajamas|striped|cashmere|silk|camisole|turtleneck|sweater|trousers)/i.test(detectedGuidePrompt)
+          const variationHasOutfit = /(?:wearing|dress|gloves|heels|outfit|clothing|pajamas|striped|cashmere|silk|camisole|turtleneck|sweater|trousers)/i.test(variationPrompt)
+          const guidePromptHairKeywords = /(?:hair|bun|bow|velvet|chic|framing|strands|chignon|ponytail)/i.test(detectedGuidePrompt)
+          const variationHasHair = /(?:hair|bun|bow|velvet|chic|framing|strands|chignon|ponytail)/i.test(variationPrompt)
+          const guidePromptLocationKeywords = /(?:sofa|tree|fireplace|room|setting|scene|location|background|Christmas|living|room)/i.test(detectedGuidePrompt)
+          const variationHasLocation = /(?:sofa|tree|fireplace|room|setting|scene|location|background|Christmas|living|room)/i.test(variationPrompt)
+          
+          if (guidePromptOutfitKeywords && !variationHasOutfit) {
+            console.log("[v0] ⚠️ WARNING: Variation prompt might not contain outfit from guide prompt!")
+          }
+          if (guidePromptHairKeywords && !variationHasHair) {
+            console.log("[v0] ⚠️ WARNING: Variation prompt might not contain hair styling from guide prompt!")
+          }
+          if (guidePromptLocationKeywords && !variationHasLocation) {
+            console.log("[v0] ⚠️ WARNING: Variation prompt might not contain location from guide prompt!")
+          }
+          
+          // Log the variation for debugging
+          console.log("[v0] 📋 Variation #" + variationNumber + " validation:", {
+            hasOutfit: variationHasOutfit,
+            hasHair: variationHasHair,
+            hasLocation: variationHasLocation,
+            promptLength: variationPrompt.length
+          })
+        }
+      }
+    }
+
+    /**
+     * Enhance prompt to explicitly reference image positions
+     * This tells Nanobanana Pro which images to use for face vs outfit/styling
+     */
+    function enhancePromptForReferences(
+      originalPrompt: string,
+      numUserSelfies: number
+    ): string {
+      // Always add reference image instructions if not present
+      const hasReferenceInstruction = /character consistency with provided reference images/i.test(originalPrompt)
       
-      // Extract key elements from guide prompt for variations
-      const baseElements = extractPromptElements(detectedGuidePrompt)
+      // Build specific image role instructions
+      let imageRoleInstructions = ''
       
-      // Concepts 2-6: Create variations maintaining consistency
-      // 🔴 CRITICAL: Always override Maya's generated concepts with guide prompt variations
-      for (let i = 1; i < Math.min(concepts.length, 6); i++) {
-        const variationNumber = i + 1
-        const variationPrompt = createVariationFromGuidePrompt(
-          detectedGuidePrompt,
-          baseElements,
-          variationNumber,
-          referenceImages,
-          studioProMode
+      if (numUserSelfies > 0) {
+        // We have user selfies + concept #1
+        const lastImageIndex = numUserSelfies + 1
+        imageRoleInstructions = `Character consistency with provided reference images. Match the exact facial features, skin tone, and physical characteristics from reference images 1-${numUserSelfies}. Match the exact outfit, styling, hair, and accessories from reference image ${lastImageIndex}. This is the same person in a different scene.`
+      } else {
+        // Only concept #1 (no user selfies)
+        imageRoleInstructions = `Character consistency with provided reference images. Match the exact facial features, outfit, styling, and characteristics from the reference image. This is the same person in a different scene.`
+      }
+      
+      if (hasReferenceInstruction) {
+        // Replace existing generic instruction with specific one
+        return originalPrompt.replace(
+          /Character consistency with provided reference images[^.]+\./i,
+          imageRoleInstructions
         )
-        console.log("[v0] ✅ Concept #" + variationNumber + " created as variation")
-        console.log("[v0] 📝 Variation prompt (first 200 chars):", variationPrompt.substring(0, 200) + "...")
-        console.log("[v0] 📝 Variation prompt (full length):", variationPrompt.length, "chars")
-        
-        // 🔴 CRITICAL: Always override Maya's generated prompt with the variation
-        // This ensures consistency with the guide prompt
-        concepts[i].prompt = variationPrompt
-        
-        // Enhanced validation: Check for outfit, hair, and location preservation
-        const guidePromptOutfitKeywords = /(?:couture|mini|red|dress|structured|bow|black|satin|opera|gloves|heels|elegant|pajamas|striped|cashmere|silk|camisole|turtleneck|sweater|trousers)/i.test(detectedGuidePrompt)
-        const variationHasOutfit = /(?:wearing|dress|gloves|heels|outfit|clothing|pajamas|striped|cashmere|silk|camisole|turtleneck|sweater|trousers)/i.test(variationPrompt)
-        const guidePromptHairKeywords = /(?:hair|bun|bow|velvet|chic|framing|strands|chignon|ponytail)/i.test(detectedGuidePrompt)
-        const variationHasHair = /(?:hair|bun|bow|velvet|chic|framing|strands|chignon|ponytail)/i.test(variationPrompt)
-        const guidePromptLocationKeywords = /(?:sofa|tree|fireplace|room|setting|scene|location|background|Christmas|living|room)/i.test(detectedGuidePrompt)
-        const variationHasLocation = /(?:sofa|tree|fireplace|room|setting|scene|location|background|Christmas|living|room)/i.test(variationPrompt)
-        
-        if (guidePromptOutfitKeywords && !variationHasOutfit) {
-          console.log("[v0] ⚠️ WARNING: Variation prompt might not contain outfit from guide prompt!")
+      } else {
+        // Add reference instruction at the beginning (after trigger/character description)
+        // Find where to insert (after first sentence or after character description)
+        const sentences = originalPrompt.split(/[.!?]\s+/)
+        if (sentences.length > 1) {
+          // Insert after first sentence
+          return sentences[0] + '. ' + imageRoleInstructions + ' ' + sentences.slice(1).join('. ')
+        } else {
+          // Add at beginning
+          return imageRoleInstructions + ' ' + originalPrompt
         }
-        if (guidePromptHairKeywords && !variationHasHair) {
-          console.log("[v0] ⚠️ WARNING: Variation prompt might not contain hair styling from guide prompt!")
-        }
-        if (guidePromptLocationKeywords && !variationHasLocation) {
-          console.log("[v0] ⚠️ WARNING: Variation prompt might not contain location from guide prompt!")
+      }
+    }
+
+    // ============================================
+    // 🎬 CONSISTENCY MODE (POST-PROCESSING) - PRO MODE ONLY
+    // ============================================
+    // Apply consistency mode if requested by user (Pro Mode only)
+    // This is POST-PROCESSING that happens after Maya generates concepts
+    // Uses the same guide prompt variation logic, but triggered by user preference
+    // Note: firstConceptIsGuidePrompt is already defined above, reuse it
+    
+    // Check if we should enable consistency mode (PRO MODE ONLY)
+    const shouldEnableConsistency = (
+      studioProMode && // Only in Pro Mode
+      consistencyMode === 'consistent' && 
+      concepts.length >= 2 && 
+      !detectedGuidePrompt && // Don't double-apply if guide prompt is already active
+      !firstConceptIsGuidePrompt
+    )
+
+    if (shouldEnableConsistency) {
+      console.log("[v0] 🎬 CONSISTENCY MODE: Regenerating concepts 2-6 with style preservation")
+      
+      // Safety check: ensure concept #1 exists and has a prompt
+      if (!concepts[0] || !concepts[0].prompt) {
+        console.warn("[v0] ⚠️ Cannot apply consistency mode: concept #1 is missing or has no prompt")
+      } else {
+        // Use concept #1 as the base prompt (already includes reference images from direct generation)
+        const basePrompt = concepts[0].prompt
+        
+        console.log("[v0] Base concept (preserving from concept #1):")
+        console.log("[v0] - Prompt length:", basePrompt.length, "chars")
+        console.log("[v0] - Preview:", basePrompt.substring(0, 250))
+        
+        // Define different poses/actions for each variation
+        const variationPoses = {
+          2: "standing near the window, looking out thoughtfully with contemplative expression",
+          3: "leaning against the wall, arms crossed confidently with slight smile",
+          4: "sitting on the edge of the desk or furniture, hands resting naturally with direct gaze",
+          5: "walking through the space casually, hand in pocket with natural smile",
+          6: "turned slightly away, looking over shoulder with playful glance"
         }
         
-        // Log the variation for debugging
-        console.log("[v0] 📋 Variation #" + variationNumber + " validation:", {
-          hasOutfit: variationHasOutfit,
-          hasHair: variationHasHair,
-          hasLocation: variationHasLocation,
-          promptLength: variationPrompt.length
-        })
+        // Regenerate concepts 2-6 with consistency instructions
+        for (let i = 1; i < Math.min(concepts.length, 6); i++) {
+          const variationNumber = i + 1
+          const newPose = variationPoses[variationNumber as keyof typeof variationPoses] || variationPoses[2]
+          
+          try {
+            console.log(`[v0] 🔄 Regenerating concept #${variationNumber} with consistency...`)
+            
+            // Create detailed consistency instruction for Maya
+            const consistencyInstruction = `Create a variation of this concept with EXACT consistency:
+
+BASE CONCEPT TO PRESERVE (from THIS GENERATION's concept #1):
+${basePrompt}
+
+🔴 CRITICAL CONSISTENCY RULES:
+1. PRESERVE EXACTLY - DO NOT CHANGE:
+   - EXACT same outfit (all brands, items, colors, materials, accessories)
+   - EXACT same setting/location (all furniture, decorations, architectural elements)
+   - EXACT same lighting (all light sources, qualities, effects, atmosphere)
+   - EXACT same camera specs (if Canon EOS R5 85mm, keep it; if iPhone 15 Pro, keep it)
+   - EXACT same mood/vibe
+
+2. ONLY CHANGE THIS:
+   - Pose/action: ${newPose}
+   - The framing can vary (close-up, medium, full-body) to show the new pose well
+
+3. MAINTAIN QUALITY:
+   - Keep same word count (~250-400 words for Pro mode)
+   - Keep same level of detail
+   - Keep same brand specificity
+   - Keep same sophisticated language
+
+IMPORTANT CONTEXT:
+You (Maya) CHOSE this outfit in concept #1 using your fashion expertise and brand knowledge.
+This consistency mode maintains that SAME outfit across concepts #2-6 for this "day in the life" series.
+(The next time the user requests concepts, you can choose a COMPLETELY NEW outfit based on their request!)
+
+Generate the variation prompt now:`
+
+            // Regenerate with Maya using direct generation
+            const variationResult = await generatePromptDirect({
+              userRequest: consistencyInstruction,
+              category: concepts[i].category,
+              conceptIndex: i,
+              triggerWord: triggerWord || '',
+              gender: userGender || 'woman',
+              ethnicity: userEthnicity || undefined,
+              physicalPreferences: physicalPreferences || undefined,
+              mode: studioProMode ? 'pro' : 'classic',
+              referenceImages: referenceImages,
+              conversationContext: conversationContext
+            })
+            
+            // Update the concept's prompt
+            concepts[i].prompt = variationResult.prompt
+            
+            // 🔴 CRITICAL FIX: When USE_DIRECT_PROMPT_GENERATION is enabled, DON'T override titles/descriptions
+            // Maya's originally generated titles/descriptions should stay as-is - they're already unique and creative
+            // Only override if direct generation is disabled (old system behavior)
+            if (!USE_DIRECT_PROMPT_GENERATION) {
+              // Update title and description to reflect consistency (OLD SYSTEM ONLY)
+              // Extract base title/description elements and create variation-specific versions
+              const baseTitle = concepts[0].title || ''
+              const baseDescription = concepts[0].description || ''
+              
+              // Create consistent title - append variation number if base title doesn't already indicate it
+              if (baseTitle && !baseTitle.match(/variation|#\d+/i)) {
+                concepts[i].title = `${baseTitle} (Variation ${variationNumber})`
+              } else {
+                // If base title already has variation info, create new consistent title
+                const baseTitleWithoutVariation = baseTitle.replace(/\s*\(.*variation.*\)/i, '').trim()
+                concepts[i].title = baseTitleWithoutVariation ? `${baseTitleWithoutVariation} (Variation ${variationNumber})` : baseTitle
+              }
+              
+              // Create consistent description - preserve base description but indicate pose variation
+              const poseDescriptions: Record<number, string> = {
+                2: "Standing near the window with contemplative expression",
+                3: "Leaning against the wall with confident posture",
+                4: "Sitting on edge of furniture with direct gaze",
+                5: "Walking casually through the space",
+                6: "Looking over shoulder with playful glance"
+              }
+              const poseDesc = poseDescriptions[variationNumber] || "Different pose and angle"
+              
+              // Update description to maintain consistency while indicating variation
+              if (baseDescription) {
+                // Try to preserve the base description structure, just update pose-related parts
+                concepts[i].description = baseDescription.replace(
+                  /(standing|sitting|leaning|walking|looking|posing|positioned)[^.]*/i,
+                  poseDesc.toLowerCase()
+                )
+                // If no pose was found/replaced, append pose info
+                if (concepts[i].description === baseDescription) {
+                  concepts[i].description = `${baseDescription} - ${poseDesc}`
+                }
+              } else {
+                concepts[i].description = poseDesc
+              }
+            } else {
+              // Direct generation enabled: Keep Maya's originally generated titles/descriptions
+              // They're already unique and creative - don't override with hardcoded variations
+              console.log(`[v0] ✅ Keeping Maya's original title/description for concept #${variationNumber} (direct generation enabled)`)
+            }
+            
+            console.log(`[v0] ✅ Concept #${variationNumber} regenerated with consistency`)
+            console.log(`[v0] - New prompt length: ${variationResult.prompt.length} chars (base was ${basePrompt.length})`)
+            console.log(`[v0] - Title: "${concepts[i].title}"`)
+            console.log(`[v0] - Description: "${concepts[i].description}"`)
+            console.log(`[v0] - Preview:`, variationResult.prompt.substring(0, 200))
+            
+            // Quality check: Compare lengths
+            const lengthRatio = variationResult.prompt.length / basePrompt.length
+            if (lengthRatio < 0.7 || lengthRatio > 1.3) {
+              console.warn(`[v0] ⚠️ Concept #${variationNumber} length variance: ${lengthRatio.toFixed(2)}x`)
+            }
+            
+            // Quality check: Verify key elements preserved
+            const hasOutfit = /wearing|outfit|dress|blazer|sweater|trousers/i.test(variationResult.prompt)
+            const hasSetting = /setting|location|room|space|scene/i.test(variationResult.prompt)
+            const hasLighting = /lighting|light|glow|illumination/i.test(variationResult.prompt)
+            const hasCamera = /camera|photography|85mm|iPhone|lens|f\//i.test(variationResult.prompt)
+            
+            if (!hasOutfit || !hasSetting || !hasLighting || !hasCamera) {
+              console.warn(`[v0] ⚠️ Concept #${variationNumber} missing elements:`, {
+                hasOutfit,
+                hasSetting,
+                hasLighting,
+                hasCamera
+              })
+            }
+            
+          } catch (error: any) {
+            console.error(`[v0] ❌ Error regenerating concept #${variationNumber}:`, error.message)
+            // Keep original prompt if regeneration fails
+            console.log(`[v0] Keeping original prompt for concept #${variationNumber}`)
+          }
+        }
+        
+        console.log("[v0] ✅ Consistency mode complete - all variations regenerated")
+        console.log("[v0] Final concept count:", concepts.length)
+      }
+    }
+
+    // ============================================
+    // 🎬 CONSISTENCY MODE WITH REFERENCE IMAGES
+    // ============================================
+    if (consistencyMode === 'consistent' && concepts.length >= 2 && studioProMode) {
+      console.log("[v0] 🎬 CONSISTENCY MODE: Using Nanobanana Pro reference images")
+      
+      // Get user selfies (if any)
+      const userSelfies = referenceImages?.selfies || []
+      console.log("[v0] User selfies available:", userSelfies.length)
+      
+      // 🔴 FIX: Allow flow to work even without selfies (just use concept #1 as reference)
+      // -----------------------------------------------
+      // STEP 1: Generate Concept #1 (base reference)
+      // -----------------------------------------------
+      console.log("[v0] Generating concept #1 as base reference...")
+      
+      try {
+        if (!concepts[0] || !concepts[0].prompt) {
+          console.warn("[v0] ⚠️ Cannot generate concept #1: missing prompt")
+        } else {
+          // Generate concept #1 with selfies (if available) or without
+          const concept1Generation = await generateWithNanoBanana({
+            prompt: concepts[0].prompt,
+            image_input: userSelfies.length > 0 ? userSelfies : undefined,
+            aspect_ratio: aspectRatio || "1:1",
+            resolution: "2K",
+            output_format: "png",
+            safety_filter_level: "block_only_high",
+          })
+          
+          console.log("[v0] Concept #1 prediction created:", concept1Generation.predictionId)
+          
+          // Wait for concept #1 to complete (with timeout)
+          let concept1Url: string | undefined
+          let attempts = 0
+          const maxAttempts = 30 // 30 seconds max
+          
+          while (attempts < maxAttempts) {
+            const status = await checkNanoBananaPrediction(concept1Generation.predictionId)
+            
+            if (status.status === 'succeeded' && status.output) {
+              concept1Url = status.output
+              console.log("[v0] ✅ Concept #1 completed:", concept1Url.substring(0, 100))
+              break
+            }
+            
+            if (status.status === 'failed') {
+              console.error("[v0] ❌ Concept #1 generation failed:", status.error)
+              break
+            }
+            
+            // Wait 1 second before checking again
+            await new Promise(resolve => setTimeout(resolve, 1000))
+            attempts++
+          }
+          
+          if (!concept1Url) {
+            console.warn("[v0] ⚠️ Concept #1 did not complete in time, falling back to prompt-based consistency")
+            // Fallback: Continue with existing prompt-based consistency
+          } else {
+            // -----------------------------------------------
+            // STEP 2: Download and store concept #1 image
+            // -----------------------------------------------
+            console.log("[v0] Downloading concept #1 image...")
+            
+            try {
+              const imageResponse = await fetch(concept1Url)
+              if (!imageResponse.ok) {
+                throw new Error(`Failed to download concept #1 image: ${imageResponse.statusText}`)
+              }
+              const imageBlob = await imageResponse.blob()
+              
+              const blob = await put(
+                `maya-concepts/concept-1-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.png`,
+                imageBlob,
+                {
+                  access: "public",
+                  contentType: "image/png",
+                }
+              )
+              
+              console.log("[v0] ✅ Concept #1 stored at:", blob.url)
+              
+              // Update concept #1 with the stored URL
+              concepts[0].imageUrl = blob.url
+              concepts[0].predictionId = concept1Generation.predictionId
+              
+              // -----------------------------------------------
+              // STEP 3: Build reference image array
+              // -----------------------------------------------
+              // Build array: [selfies (if any), concept #1]
+              const referenceImageArray: string[] = []
+              
+              // Add user selfies first (if available)
+              if (userSelfies.length > 0) {
+                // Validate selfie URLs
+                const validSelfies = userSelfies.filter((url: string) => url && typeof url === 'string' && url.startsWith('http'))
+                if (validSelfies.length !== userSelfies.length) {
+                  console.warn("[v0] ⚠️ Some selfie URLs are invalid, using only valid ones")
+                }
+                referenceImageArray.push(...validSelfies)
+              }
+              
+              // Add concept #1 image (always add, even if no selfies)
+              if (!blob.url || !blob.url.startsWith('http')) {
+                throw new Error("Invalid concept #1 blob URL")
+              }
+              referenceImageArray.push(blob.url)
+              
+              // Validate reference image array
+              if (referenceImageArray.length === 0) {
+                throw new Error("Reference image array is empty")
+              }
+              
+              const invalidUrls = referenceImageArray.filter((url: string) => !url || !url.startsWith('http'))
+              if (invalidUrls.length > 0) {
+                console.error("[v0] ❌ Invalid URLs in reference array:", invalidUrls)
+                throw new Error("Reference image array contains invalid URLs")
+              }
+              
+              console.log("[v0] Reference images for consistency:", {
+                userSelfies: userSelfies.length,
+                validSelfies: referenceImageArray.length - 1, // Subtract 1 for concept #1
+                concept1: blob.url ? "✅" : "❌",
+                total: referenceImageArray.length,
+                urls: referenceImageArray.map(url => url.substring(0, 50) + "...")
+              })
+              
+              // -----------------------------------------------
+              // STEP 4: Generate concepts #2-6 with full references
+              // -----------------------------------------------
+              console.log("[v0] Generating concepts #2-6 with reference images...")
+              
+              // 🔴 FIX: Generate each concept sequentially to ensure different variations
+              // Using Promise.all was causing all concepts to use the same prompt/variation
+              for (let i = 1; i < concepts.length; i++) {
+                const concept = concepts[i]
+                const conceptNumber = i + 1
+                
+                if (!concept || !concept.prompt) {
+                  console.warn(`[v0] ⚠️ Skipping concept #${conceptNumber}: missing prompt`)
+                  continue
+                }
+                
+                try {
+                  // Enhance prompt to reference images correctly
+                  const enhancedPrompt = enhancePromptForReferences(
+                    concept.prompt,
+                    referenceImageArray.length - 1 // Number of selfies (total - 1 for concept #1)
+                  )
+                  
+                  console.log(`[v0] Generating concept #${conceptNumber} with prompt:`, enhancedPrompt.substring(0, 150) + "...")
+                  console.log(`[v0] Using ${referenceImageArray.length} reference images`)
+                  
+                  const generation = await generateWithNanoBanana({
+                    prompt: enhancedPrompt,
+                    image_input: referenceImageArray, // 🔴 CRITICAL: Pass the reference array
+                    aspect_ratio: aspectRatio || "1:1",
+                    resolution: "2K",
+                    output_format: "png",
+                    safety_filter_level: "block_only_high",
+                  })
+                  
+                  console.log(`[v0] ✅ Concept #${conceptNumber} started:`, generation.predictionId)
+                  
+                  // Store prediction ID and reference images for later polling
+                  concept.predictionId = generation.predictionId
+                  concept.referenceImages = referenceImageArray
+                  
+                  // Small delay between generations to avoid rate limiting
+                  if (i < concepts.length - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 500))
+                  }
+                  
+                } catch (error: any) {
+                  console.error(`[v0] ❌ Error generating concept #${conceptNumber}:`, error)
+                  // Continue with other concepts
+                }
+              }
+              
+              console.log("[v0] ✅ All concepts generated with Nanobanana Pro reference consistency")
+            } catch (blobError: any) {
+              console.error("[v0] ❌ Error storing concept #1 image:", blobError)
+              // Continue without storing - use temporary URL
+              concepts[0].imageUrl = concept1Url
+              concepts[0].predictionId = concept1Generation.predictionId
+            }
+          }
+        }
+      } catch (error: any) {
+        console.error("[v0] ❌ Error in consistency mode with reference images:", error)
+        console.log("[v0] Falling back to prompt-based consistency")
+        // Continue with existing prompt-based consistency
       }
     }
 
@@ -4738,7 +5187,7 @@ should celebrate the power of the selfie for visibility and economic freedom.
       // AND: NEVER add in Studio Pro mode - Studio Pro uses professional photography without explicit skin texture mentions
       const hasVisiblePoresAtEnd = /,\s*with\s+visible\s+pores\.?\s*$/i.test(prompt)
       const hasNaturalSkinTexture = /natural\s+skin\s+texture/i.test(prompt)
-      const shouldIncludeSkin = shouldIncludeSkinTexture(userRequest, detectedGuidePrompt, templateExamples) && !studioProMode
+      const shouldIncludeSkin = shouldIncludeSkinTexture(userRequest, detectedGuidePrompt || undefined, templateExamples) && !studioProMode
       
       if (hasVisiblePoresAtEnd) {
         // Remove "with visible pores" from the end
@@ -4920,7 +5369,7 @@ should celebrate the power of the selfie for visibility and economic freedom.
       // Skip for Studio Pro mode - use professional quality instead
       // ALSO skip for guide prompt concepts - they should preserve the original guide prompt structure
       if (!studioProMode && !isFromGuidePrompt) {
-        prompt = ensureRequiredElements(prompt, currentWordCount, MAX_WORDS, userRequest, aesthetic, imageAnalysis, studioProMode, enhancedAuthenticity, detectedGuidePrompt, templateExamples)
+        prompt = ensureRequiredElements(prompt, currentWordCount, MAX_WORDS, userRequest, aesthetic, imageAnalysis, studioProMode, enhancedAuthenticity, detectedGuidePrompt || undefined, templateExamples)
       } else if (isFromGuidePrompt) {
         console.log("[v0] Skipping ensureRequiredElements for guide prompt concept #" + (index + 1) + " - preserving original guide prompt")
       }
@@ -5038,7 +5487,10 @@ should celebrate the power of the selfie for visibility and economic freedom.
         aesthetic: undefined
       }
       
-      const converted = convertToSelfie(conceptToConvert, selfieType)
+      // Determine if reference images should be used
+      const hasRefImages = referenceImages?.selfies && referenceImages.selfies.length > 0
+      
+      const converted = convertToSelfie(conceptToConvert, selfieType, hasRefImages)
       
       // Update the concept
       concepts[indexToConvert] = {
@@ -5059,64 +5511,8 @@ should celebrate the power of the selfie for visibility and economic freedom.
       selfieCount = 1
     }
 
-    // If we have 6 concepts and only 1 selfie, optionally add a second for variety
-    if (selfieCount === 1 && concepts.length >= 6) {
-      // 50% chance to add second selfie when we have 6+ concepts
-      const shouldAddSecond = Math.random() < 0.5
-      
-      if (shouldAddSecond) {
-        console.log('[MAYA-CONCEPTS] Adding second selfie for variety...')
-        
-        // Find non-selfie concepts
-        const nonSelfieIndices = concepts
-          .map((c, i) => ({ concept: c, index: i }))
-          .filter(({ concept }) => !isSelfieConceptAlready(concept.prompt))
-          .map(({ index }) => index)
-        
-        if (nonSelfieIndices.length > 0) {
-          const randomIndex = nonSelfieIndices[
-            Math.floor(Math.random() * nonSelfieIndices.length)
-          ]
-          
-          // Use different type than first selfie for variety
-          const firstSelfie = concepts.find(c => isSelfieConceptAlready(c.prompt))
-          const firstSelfieIsHandheld = firstSelfie?.prompt.includes('arm extended')
-          const firstSelfieIsMirror = firstSelfie?.prompt.includes('mirror')
-          
-          let newSelfieType: 'handheld' | 'mirror' | 'elevated'
-          
-          if (firstSelfieIsHandheld) {
-            newSelfieType = Math.random() < 0.6 ? 'mirror' : 'elevated'
-          } else if (firstSelfieIsMirror) {
-            newSelfieType = Math.random() < 0.7 ? 'handheld' : 'elevated'
-          } else {
-            // First was elevated, use handheld or mirror
-            newSelfieType = Math.random() < 0.6 ? 'handheld' : 'mirror'
-          }
-          
-          console.log(`[MAYA-CONCEPTS] Converting concept #${randomIndex} to ${newSelfieType} selfie (different from first)`)
-          
-          const conceptToConvert: ConceptToConvert = {
-            title: concepts[randomIndex].title,
-            description: concepts[randomIndex].description,
-            prompt: concepts[randomIndex].prompt,
-            category: concepts[randomIndex].category || 'LIFESTYLE',
-            aesthetic: undefined
-          }
-          
-          const converted = convertToSelfie(conceptToConvert, newSelfieType)
-          
-          concepts[randomIndex] = {
-            ...concepts[randomIndex],
-            title: converted.title,
-            description: converted.description,
-            prompt: converted.prompt,
-          }
-          
-          selfieCount = 2
-        }
-      }
-    }
+    // 🔴 FIX: Only ONE selfie per 6 concepts (removed logic that adds second selfie)
+    // User requirement: Maya should only create one selfie each 6 concept cards, not 2 or 3
 
     // Final count and log
     const finalSelfieCount = concepts.filter(c => 

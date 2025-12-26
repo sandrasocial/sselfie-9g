@@ -4,7 +4,7 @@ import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getCompleteAdminContext } from "@/lib/admin/get-complete-context"
 import { NextResponse } from "next/server"
-import { saveChatMessage, createNewChat, getOrCreateActiveChat } from "@/lib/data/admin-agent"
+import { saveChatMessage, createNewChat, getOrCreateActiveChat, getChatMessages } from "@/lib/data/admin-agent"
 import { neon } from "@neondatabase/serverless"
 import { Resend } from "resend"
 import Anthropic from '@anthropic-ai/sdk'
@@ -72,6 +72,7 @@ export async function POST(req: Request) {
     }
 
     // Process messages - preserve images and text content (like Alex route)
+    // CRITICAL: Preserve id property for deduplication
     const modelMessages = messages
       .filter((m: any) => m && (m.role === "user" || m.role === "assistant"))
       .map((m: any) => {
@@ -82,6 +83,7 @@ export async function POST(req: Request) {
           if (hasImages) {
             // Preserve full content array with images for Anthropic
             return {
+              id: m.id ? String(m.id) : undefined, // Normalize ID to string for consistent deduplication
               role: m.role as "user" | "assistant" | "system",
               content: m.content, // Keep full array with images
             }
@@ -110,6 +112,7 @@ export async function POST(req: Request) {
         }
 
         return {
+          id: m.id ? String(m.id) : undefined, // Normalize ID to string for consistent deduplication
           role: m.role as "user" | "assistant" | "system",
           content: content.trim(),
         }
@@ -168,8 +171,366 @@ export async function POST(req: Request) {
       }
     }
 
+    // MEMORY SYSTEM: Load chat history from database as fallback
+    // This ensures Alex always has access to conversation history even if frontend doesn't send it
+    let dbMessages: any[] = []
+    if (activeChatId) {
+      try {
+        console.log('[v0] 🧠 Loading chat history from database for chat:', activeChatId)
+        const loadedMessages = await getChatMessages(activeChatId)
+        console.log('[v0] 📚 Loaded', loadedMessages.length, 'messages from database')
+        
+        // Convert database messages to model format (same as frontend format)
+        dbMessages = loadedMessages.map((msg: any) => {
+          // Defensive check: ensure id exists before calling toString()
+          // Some fallback queries or edge cases might return messages without ids
+          const messageId = msg.id != null ? String(msg.id) : undefined
+          
+          const baseMessage: any = {
+            id: messageId,
+            role: msg.role,
+            createdAt: msg.created_at,
+          }
+          
+          // Check if message has email_preview_data (similar to load-chat route)
+          if (msg.email_preview_data && msg.role === 'assistant') {
+            try {
+              const emailData = typeof msg.email_preview_data === 'string' 
+                ? JSON.parse(msg.email_preview_data)
+                : msg.email_preview_data
+              
+              if (emailData && emailData.html && emailData.subjectLine) {
+                // Format with parts array (like frontend does)
+                const parts: any[] = []
+                
+                // Add text content if present (exclude HTML content)
+                const rawContent = msg.content?.trim() || ''
+                const isHtmlContent = rawContent.includes('<!DOCTYPE html') || rawContent.includes('<html')
+                let textContent = ''
+                
+                if (rawContent && !isHtmlContent) {
+                  // Valid text content - add to parts and use as content
+                  textContent = rawContent
+                  parts.push({
+                    type: "text",
+                    text: textContent,
+                  })
+                } else if (rawContent && isHtmlContent) {
+                  // HTML content detected - strip tags to get plain text, or use empty string
+                  // Since the HTML email is already in the tool-result part, we'll use empty string
+                  // to avoid duplicating HTML content in the content field
+                  textContent = ''
+                }
+                
+                // Add tool result part with email preview data
+                // Use messageId (defensively checked) instead of msg.id to prevent invalid tool call IDs
+                parts.push({
+                  type: "tool-result",
+                  toolName: "compose_email",
+                  toolCallId: messageId ? `tool_${messageId}` : `tool_${Date.now()}`,
+                  result: {
+                    html: emailData.html,
+                    subjectLine: emailData.subjectLine,
+                    preview: emailData.preview || emailData.html.replace(/<[^>]*>/g, '').substring(0, 200) + '...',
+                    readyToSend: emailData.readyToSend !== false
+                  }
+                })
+                
+                return {
+                  ...baseMessage,
+                  parts,
+                  content: textContent, // Use processed textContent (empty if HTML was detected)
+                }
+              }
+            } catch (parseError) {
+              console.warn('[v0] Failed to parse email_preview_data for message', msg.id, ':', parseError)
+            }
+          }
+          
+          // Regular message - format with parts array
+          return {
+            ...baseMessage,
+            parts: [
+              {
+                type: "text",
+                text: msg.content || '',
+              },
+            ],
+            content: msg.content || '',
+          }
+        })
+      } catch (error: any) {
+        console.warn('[v0] ⚠️ Failed to load chat history from database:', error.message)
+        // Continue without database messages - frontend messages will be used
+      }
+    }
+    
+    // MERGE: Combine frontend messages with database messages
+    // Deduplicate by message ID (prefer frontend messages if duplicate)
+    const messageMap = new Map<string, any>()
+    
+    // Helper function to generate a unique deduplication key for messages without IDs
+    const generateFallbackKey = (msg: any, index: number): string => {
+      // Include role, content preview, timestamp, and index to ensure uniqueness
+      const role = msg.role || 'unknown'
+      
+      // Extract content preview (handle both string and array content)
+      let contentPreview = ''
+      if (Array.isArray(msg.content)) {
+        const textParts = msg.content.filter((p: any) => p && p.type === "text")
+        const imageParts = msg.content.filter((p: any) => p && p.type === "image")
+        const textContent = textParts.map((p: any) => p.text || "").join("\n")
+        contentPreview = textContent ? textContent.substring(0, 100) : ''
+        // Include image count in preview for uniqueness
+        if (imageParts.length > 0) {
+          contentPreview += `[${imageParts.length}imgs]`
+        }
+      } else {
+        const contentStr = typeof msg.content === 'string' ? msg.content : String(msg.content || '')
+        contentPreview = contentStr.substring(0, 100)
+      }
+      
+      // Include timestamp if available (makes key unique even with same content)
+      const timestamp = msg.createdAt || msg.created_at || ''
+      const timestampStr = timestamp ? `-${new Date(timestamp).getTime()}` : ''
+      
+      // Include index as final fallback to ensure uniqueness
+      // This prevents two messages with identical role, content preview, and timestamp from colliding
+      return `${role}-${contentPreview}${timestampStr}-idx${index}`
+    }
+    
+    // First, add database messages (older messages)
+    dbMessages.forEach((msg: any, index: number) => {
+      // Normalize ID to string for consistent deduplication
+      // Use ID if available (most reliable), otherwise generate unique fallback key
+      const key = msg.id ? String(msg.id) : generateFallbackKey(msg, index)
+      
+      if (key) {
+        // Only add if key doesn't exist (prevent overwriting with duplicate)
+        // For messages without IDs, this ensures we don't lose distinct messages
+        if (!messageMap.has(key)) {
+          messageMap.set(key, msg)
+        } else {
+          // Log warning if we encounter a collision (shouldn't happen with proper keys)
+          console.warn(`[v0] ⚠️ Duplicate key detected for message without ID: ${key.substring(0, 50)}...`)
+        }
+      }
+    })
+    
+    // Helper function to compare message content (handles both array and string content)
+    const compareMessageContent = (msg1: any, msg2: any): boolean => {
+      // Both must have same role
+      if (msg1.role !== msg2.role) return false
+      
+      const content1 = msg1.content
+      const content2 = msg2.content
+      
+      // Both are arrays - compare structure
+      if (Array.isArray(content1) && Array.isArray(content2)) {
+        const textParts1 = content1.filter((p: any) => p && p.type === "text")
+        const textParts2 = content2.filter((p: any) => p && p.type === "text")
+        const imageParts1 = content1.filter((p: any) => p && p.type === "image")
+        const imageParts2 = content2.filter((p: any) => p && p.type === "image")
+        
+        // Compare text content
+        const text1 = textParts1.map((p: any) => p.text || "").join("\n")
+        const text2 = textParts2.map((p: any) => p.text || "").join("\n")
+        if (text1 !== text2) return false
+        
+        // Compare image count
+        if (imageParts1.length !== imageParts2.length) return false
+        
+        // Compare first image URL (if any) for quick matching
+        if (imageParts1.length > 0 && imageParts2.length > 0) {
+          const url1 = imageParts1[0]?.image || imageParts1[0]?.url || ""
+          const url2 = imageParts2[0]?.image || imageParts2[0]?.url || ""
+          if (url1 && url2 && url1 !== url2) return false
+        }
+        
+        return true
+      }
+      
+      // Both are strings - compare directly
+      if (typeof content1 === 'string' && typeof content2 === 'string') {
+        return content1 === content2
+      }
+      
+      // One is array, one is string - extract text from array and compare
+      if (Array.isArray(content1) && typeof content2 === 'string') {
+        const textParts1 = content1.filter((p: any) => p && p.type === "text")
+        const text1 = textParts1.map((p: any) => p.text || "").join("\n")
+        return text1 === content2
+      }
+      
+      if (typeof content1 === 'string' && Array.isArray(content2)) {
+        const textParts2 = content2.filter((p: any) => p && p.type === "text")
+        const text2 = textParts2.map((p: any) => p.text || "").join("\n")
+        return content1 === text2
+      }
+      
+      // Fallback: reference equality (for other types)
+      return content1 === content2
+    }
+    
+    // Then, add frontend messages (newer messages, will overwrite duplicates)
+    modelMessages.forEach((msg: any) => {
+      // Try to find ID from original messages array using proper content comparison
+      const originalMsg = messages.find((m: any) => {
+        return compareMessageContent(m, msg)
+      })
+      
+      // Generate deduplication key - handle both string and array content
+      // Normalize ID to string for consistent deduplication with database messages
+      // Since we now normalize id in modelMessages mapping to string, msg.id should be a string
+      // Use originalMsg?.id as fallback, but normalize it too
+      let key = msg.id || (originalMsg?.id ? String(originalMsg.id) : undefined)
+      if (!key) {
+        if (Array.isArray(msg.content)) {
+          // For array content (images), create stable key based on content structure
+          const textParts = msg.content.filter((p: any) => p && p.type === "text")
+          const imageParts = msg.content.filter((p: any) => p && p.type === "image")
+          const textContent = textParts.map((p: any) => p.text || "").join("\n")
+          const imageCount = imageParts.length
+          // Create stable key: role + text preview + image count + first image URL (if any)
+          const contentPreview = textContent ? textContent.substring(0, 30) : "images"
+          const firstImageUrl = imageParts.length > 0 && imageParts[0]?.image 
+            ? imageParts[0].image.substring(0, 50) 
+            : ""
+          // Use a hash-like approach: combine role, text preview, image count, and first image URL
+          key = `${msg.role}-${contentPreview}-${imageCount}imgs${firstImageUrl ? `-${firstImageUrl}` : ''}`
+        } else {
+          // For string content, use substring as before
+          const contentStr = typeof msg.content === 'string' ? msg.content : String(msg.content || '')
+          key = `${msg.role}-${contentStr.substring(0, 50)}`
+        }
+      }
+      
+      if (key) {
+        messageMap.set(key, msg)
+      }
+    })
+    
+    // Convert merged messages back to array and sort by creation time (if available)
+    let mergedMessages = Array.from(messageMap.values())
+    
+    // Sort by ID (which reflects creation order) if available, otherwise keep order
+    // FIX: Use !== 0 check instead of truthy check to properly handle ID=0 messages
+    mergedMessages.sort((a, b) => {
+      const aId = parseInt(a.id || '0', 10)
+      const bId = parseInt(b.id || '0', 10)
+      // Both have valid numeric IDs (including 0)
+      if (!isNaN(aId) && !isNaN(bId)) {
+        return aId - bId
+      }
+      // If one has ID and other doesn't, put the one with ID first (database messages before frontend)
+      if (!isNaN(aId) && isNaN(bId)) return -1
+      if (isNaN(aId) && !isNaN(bId)) return 1
+      // Neither has ID, maintain original order
+      return 0
+    })
+    
+    // TRUNCATION: Keep only last 50 messages to prevent token limit issues
+    const MAX_MESSAGES = 50
+    if (mergedMessages.length > MAX_MESSAGES) {
+      console.log(`[v0] ⚠️ Truncating messages from ${mergedMessages.length} to ${MAX_MESSAGES} (keeping most recent)`)
+      mergedMessages = mergedMessages.slice(-MAX_MESSAGES)
+    }
+    
+    // Update modelMessages with merged and truncated messages
+    // CRITICAL: Preserve tool-result parts that contain email preview data
+    // The parts array structure is preserved so frontend can extract email previews
+    // When converting to Anthropic format, only text/image parts are sent to the model
+    const finalModelMessages = mergedMessages.map((m: any) => {
+      // If message has parts array, preserve it but extract text for model
+      if (m.parts && Array.isArray(m.parts)) {
+        // Check if has images
+        const hasImages = m.parts.some((p: any) => p && p.type === "image")
+        // Check if has tool-result parts (email preview data)
+        const hasToolResults = m.parts.some((p: any) => p && p.type === "tool-result")
+        
+        if (hasImages) {
+          // For images, preserve parts structure but filter for model
+          return {
+            role: m.role,
+            // For model: only text and image parts
+            content: m.parts.filter((p: any) => p.type === "text" || p.type === "image").map((p: any) => {
+              if (p.type === "image") {
+                return { type: "image", image: p.image }
+              }
+              return { type: "text", text: p.text || "" }
+            }),
+            // CRITICAL: Preserve full parts array including tool-result parts
+            // This allows frontend to extract email preview data from historical messages
+            parts: m.parts,
+          }
+        }
+        
+        // If message has tool-result parts, preserve the full parts array
+        if (hasToolResults) {
+          // Extract text content for model (tool-result parts are not sent to model)
+          const textParts = m.parts.filter((p: any) => p.type === "text")
+          const textContent = textParts.map((p: any) => p.text || "").join("\n").trim()
+          
+          return {
+            role: m.role,
+            // For model: only text content (tool-result parts filtered out)
+            content: textContent,
+            // CRITICAL: Preserve full parts array including tool-result parts
+            // This ensures email preview data from database messages is not lost
+            // Frontend can extract email previews from message.parts array
+            parts: m.parts,
+          }
+        }
+        
+        // Text only - extract text but preserve parts structure
+        const textParts = m.parts.filter((p: any) => p.type === "text")
+        return {
+          role: m.role,
+          content: textParts.map((p: any) => p.text || "").join("\n").trim(),
+          // Preserve parts array for consistency
+          parts: m.parts,
+        }
+      }
+      return {
+        role: m.role,
+        content: m.content || '',
+      }
+    }).filter((m: any) => {
+      // Filter empty messages - don't send messages with only tool-result parts and empty text to the model
+      // Tool-result parts are preserved for frontend use but shouldn't create empty model messages
+      
+      // Check if message has parts array with tool-result entries
+      if (m.parts && Array.isArray(m.parts)) {
+        const hasToolResults = m.parts.some((p: any) => p && p.type === "tool-result")
+        if (hasToolResults) {
+          // For messages with tool-result parts, only include if they also have actual text content
+          // Tool-result parts are preserved in m.parts for frontend, but we shouldn't send empty text to model
+          const hasTextContent = m.content && (typeof m.content === 'string' ? m.content.trim().length > 0 : 
+            (Array.isArray(m.content) ? m.content.length > 0 : false))
+          return hasTextContent
+        }
+      }
+      
+      // For other messages, filter based on content
+      if (Array.isArray(m.content)) {
+        return m.content.length > 0
+      }
+      return m.content && m.content.length > 0
+    })
+    
+    console.log(
+      "[v0] 🧠 Memory system:",
+      `Frontend: ${modelMessages.length} messages,`,
+      `Database: ${dbMessages.length} messages,`,
+      `Merged: ${mergedMessages.length} messages,`,
+      `Final: ${finalModelMessages.length} messages`
+    )
+    
+    // Use final merged messages for processing
+    const modelMessagesToUse = finalModelMessages.length > 0 ? finalModelMessages : modelMessages
+
     // Save the last user message to database
-    const lastUserMessage = modelMessages.filter((m: any) => m.role === "user").pop()
+    const lastUserMessage = modelMessagesToUse.filter((m: any) => m.role === "user").pop()
     if (lastUserMessage && activeChatId) {
       try {
         // Extract text content for database storage
@@ -213,7 +574,7 @@ export async function POST(req: Request) {
     }
 
     // Collect all image URLs from recent user messages (last 5 messages)
-    const recentUserMessages = modelMessages
+    const recentUserMessages = modelMessagesToUse
       .filter((m: any) => m.role === 'user')
       .slice(-5)
     const availableImageUrls = recentUserMessages
@@ -285,7 +646,16 @@ export async function POST(req: Request) {
     })
 
     const composeEmailTool = tool({
-      description: `Create or refine email content. Returns formatted HTML email.
+      description: `Create or refine email content using SSELFIE's brand style. Returns formatted HTML email.
+  
+  **CRITICAL - SSELFIE Brand Requirements:**
+  - Use table-based layout (email client compatibility)
+  - SSELFIE colors: #1c1917 (dark), #0c0a09 (black), #fafaf9 (light), #57534e (gray), #78716c (muted)
+  - Logo/Headers: Times New Roman/Georgia, 32px, weight 200, letter-spacing 0.3em, uppercase
+  - Body font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif
+  - Buttons: background #1c1917, color #fafaf9, padding 14px 32px, border-radius 8px, uppercase
+  - Use inline styles ONLY (no external CSS)
+  - Return ONLY raw HTML (no markdown, no code blocks, no explanations)
   
   Use this when Sandra wants to:
   - Create a new email campaign
@@ -361,26 +731,26 @@ export async function POST(req: Request) {
     When including links in the email, you MUST use the correct product URLs with proper tracking:
     
     **Product Checkout Links (use campaign slug: "${campaignSlug}"):**
-    - Studio Membership: \`${siteUrl}/studio?checkout=studio_membership&utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=cta_button&campaign_id={campaign_id}\`
-    - One-Time Session: \`${siteUrl}/studio?checkout=one_time&utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=cta_button&campaign_id={campaign_id}\`
+    - Studio Membership: ${siteUrl}/studio?checkout=studio_membership&utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=cta_button&campaign_id={campaign_id}
+    - One-Time Session: ${siteUrl}/studio?checkout=one_time&utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=cta_button&campaign_id={campaign_id}
     
     **Landing Pages (use campaign slug: "${campaignSlug}"):**
-    - Why Studio: \`${siteUrl}/why-studio?utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=text_link&campaign_id={campaign_id}\`
-    - Homepage: \`${siteUrl}/?utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=text_link&campaign_id={campaign_id}\`
+    - Why Studio: ${siteUrl}/why-studio?utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=text_link&campaign_id={campaign_id}
+    - Homepage: ${siteUrl}/?utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=text_link&campaign_id={campaign_id}
     
     **Link Tracking Requirements:**
-    1. ALL links must include UTM parameters: \`utm_source=email\`, \`utm_medium=email\`, \`utm_campaign=${campaignSlug}\`, \`utm_content={link_type}\`
-    2. Use \`campaign_id={campaign_id}\` as placeholder (will be replaced with actual ID when campaign is scheduled)
-    3. Use the campaign slug "${campaignSlug}" for all \`utm_campaign\` parameters
-    4. Use appropriate \`utm_content\` values: \`cta_button\` (primary CTA), \`text_link\` (body links), \`footer_link\` (footer), \`image_link\` (image links)
+    1. ALL links must include UTM parameters: utm_source=email, utm_medium=email, utm_campaign=${campaignSlug}, utm_content={link_type}
+    2. Use campaign_id={campaign_id} as placeholder (will be replaced with actual ID when campaign is scheduled)
+    3. Use the campaign slug "${campaignSlug}" for all utm_campaign parameters
+    4. Use appropriate utm_content values: cta_button (primary CTA), text_link (body links), footer_link (footer), image_link (image links)
     
     **Link Examples (use these exact formats with campaign slug "${campaignSlug}"):**
-    - Primary CTA: \`<a href="${siteUrl}/studio?checkout=studio_membership&utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=cta_button&campaign_id={campaign_id}" style="display: inline-block; background-color: #1c1917; color: #fafaf9; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 500;">Join SSELFIE Studio</a>\`
-    - Secondary link: \`<a href="${siteUrl}/why-studio?utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=text_link&campaign_id={campaign_id}" style="color: #1c1917; text-decoration: underline;">Learn more</a>\`
+    - Primary CTA: <a href="${siteUrl}/studio?checkout=studio_membership&utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=cta_button&campaign_id={campaign_id}" style="display: inline-block; background-color: #1c1917; color: #fafaf9; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 500;">Join SSELFIE Studio</a>
+    - Secondary link: <a href="${siteUrl}/why-studio?utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=text_link&campaign_id={campaign_id}" style="color: #1c1917; text-decoration: underline;">Learn more</a>
     
     **When to Use Which Link:**
-    - Primary CTA → Use checkout links (\`checkout=studio_membership\` or \`checkout=one_time\`)
-    - Educational/nurturing content → Use landing pages (\`/why-studio\`, \`/\`)
+    - Primary CTA → Use checkout links (checkout=studio_membership or checkout=one_time)
+    - Educational/nurturing content → Use landing pages (/why-studio, /)
     - Always include full tracking parameters for conversion attribution
     
     **CRITICAL OUTPUT FORMAT:**
@@ -390,7 +760,24 @@ export async function POST(req: Request) {
     - Do NOT include triple backticks or markdown code block syntax anywhere in your response
     - Return pure HTML that can be directly used in email clients
     
-    Use proper HTML structure with DOCTYPE, inline styles, and responsive design. Include unsubscribe link: {{{RESEND_UNSUBSCRIBE_URL}}}`
+    **MANDATORY: Use Table-Based Layout**
+    - Email clients require table-based layouts for compatibility
+    - Use: <table role="presentation" style="width: 100%; border-collapse: collapse;">
+    - Structure with <tr> and <td> elements
+    - Max-width: 600px for main container
+    - Center using: <td align="center" style="padding: 20px;">
+    
+    **SSELFIE Brand Styling (MUST FOLLOW):**
+    - Colors: #1c1917 (dark), #0c0a09 (black), #fafaf9 (light), #57534e (gray), #78716c (muted)
+    - Logo: Times New Roman/Georgia, 32px, weight 200, letter-spacing 0.3em, uppercase, color #fafaf9 on dark or #1c1917 on light
+    - Body font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif
+    - Headings: Times New Roman/Georgia, 28px, weight 200-300, letter-spacing 0.2em, uppercase
+    - Body text: 15-16px, line-height 1.6-1.7, color #292524 or #44403c
+    - Buttons: background #1c1917, color #fafaf9, padding 14px 32px, border-radius 8px, uppercase, letter-spacing 0.1em
+    - Background: #fafaf9 for body, #ffffff for email container, #f5f5f4 for footer
+    - Use inline styles ONLY (no <style> tags in body)
+    
+    Include unsubscribe link: {{{RESEND_UNSUBSCRIBE_URL}}}`
           
           const userPrompt = `${intent}\n\n${keyPoints && keyPoints.length > 0 ? `Key points: ${keyPoints.join(', ')}\n\n` : ''}${imageUrls && imageUrls.length > 0 ? `\nImages to include:\n${imageUrls.map((url, idx) => `- Image ${idx + 1}: ${url}`).join('\n')}\n\n` : ''}${previousVersion || ''}`
           
@@ -433,14 +820,22 @@ export async function POST(req: Request) {
               const bodyMatch = emailHtml.match(/<body[^>]*>([\s\S]*?)<\/body>/i)
               if (bodyMatch) {
                 const bodyContent = bodyMatch[1]
-                // Find the first main table
+                // Find the first main table within bodyContent
                 const mainTableMatch = bodyContent.match(/(<table[^>]*role=["']presentation["'][^>]*>)/i)
                 if (mainTableMatch) {
-                  const tableStart = mainTableMatch.index! + mainTableMatch[0].length
+                  // Calculate correct positions:
+                  // - bodyMatch.index: position of <body> tag in emailHtml
+                  // - bodyMatch[0].indexOf('>') + 1: position after <body> tag (start of bodyContent)
+                  // - mainTableMatch.index: position of table tag within bodyContent
+                  // - mainTableMatch[0].length: length of table opening tag
+                  const bodyTagEndPos = bodyMatch.index! + bodyMatch[0].indexOf('>') + 1
+                  const tablePosInEmailHtml = bodyTagEndPos + mainTableMatch.index!
+                  const tableTagEndPos = tablePosInEmailHtml + mainTableMatch[0].length
+                  
                   // Insert images right after the opening table tag
-                  emailHtml = emailHtml.substring(0, bodyMatch.index! + bodyMatch[0].indexOf(mainTableMatch[0]) + mainTableMatch[0].length) + 
+                  emailHtml = emailHtml.substring(0, tableTagEndPos) + 
                     imageRows + 
-                    emailHtml.substring(bodyMatch.index! + bodyMatch[0].indexOf(mainTableMatch[0]) + mainTableMatch[0].length)
+                    emailHtml.substring(tableTagEndPos)
                 } else {
                   // No table found, prepend images wrapped in a table
                   const imageTable = `
@@ -811,6 +1206,30 @@ export async function POST(req: Request) {
               stats = logs[0] || { total: 0, sent: 0, failed: 0 }
             }
             
+            // Determine actual send date: prefer Resend created_at, then database sent_at, fallback to created_at for sent campaigns
+            // Note: scheduled_for is NOT used for sent campaigns as it represents scheduled time, not actual send time
+            let actualSentAt: string | null = null
+            if (resendStats && (resendStats.created_at || resendStats.sent_at)) {
+              actualSentAt = resendStats.created_at || resendStats.sent_at
+              console.log(`[v0] 📅 Using Resend send date: ${actualSentAt}`)
+            } else if (campaign.sent_at) {
+              actualSentAt = campaign.sent_at
+              console.log(`[v0] 📅 Using database sent_at: ${actualSentAt}`)
+            } else if (campaign.status === 'sent') {
+              // If status is sent but no sent_at, use created_at as fallback
+              // Do NOT use scheduled_for for sent campaigns - it's the scheduled time, not actual send time
+              actualSentAt = campaign.created_at
+              console.log(`[v0] 📅 Using created_at as fallback send date: ${actualSentAt}`)
+            }
+            
+            // Calculate days since sent (if we have a send date)
+            let daysSinceSent: number | null = null
+            if (actualSentAt) {
+              const sentDate = new Date(actualSentAt)
+              const now = new Date()
+              daysSinceSent = Math.floor((now.getTime() - sentDate.getTime()) / (1000 * 60 * 60 * 24))
+            }
+            
             results.push({
               id: campaign.id,
               name: campaign.campaign_name,
@@ -818,6 +1237,8 @@ export async function POST(req: Request) {
               subject: campaign.subject_line,
               createdAt: campaign.created_at,
               scheduledFor: campaign.scheduled_for,
+              sentAt: actualSentAt, // Actual send date (from Resend or database)
+              daysSinceSent: daysSinceSent, // Days since email was sent (null if not sent yet)
               broadcastId: campaign.resend_broadcast_id,
               stats: stats,
               source: resendStats ? 'resend_api' : 'database_logs' // Indicate data source
@@ -902,60 +1323,216 @@ export async function POST(req: Request) {
             }
           }
           
-          // Get audience details
-          const audience = await resend.audiences.get(audienceId)
+          // Get audience details - verify connection works
+          let audience: any
+          try {
+            console.log('[v0] 🔗 Testing Resend connection by fetching audience:', audienceId)
+            audience = await resend.audiences.get(audienceId)
+            console.log('[v0] ✅ Resend connection successful, audience:', audience.data?.name || audienceId)
+          } catch (audienceError: any) {
+            console.error('[v0] ❌ Failed to fetch audience from Resend:', audienceError.message)
+            throw new Error(`Resend API connection failed: ${audienceError.message}. Please verify RESEND_API_KEY and RESEND_AUDIENCE_ID are correct.`)
+          }
           
           // Get all contacts to calculate total
           // Use the helper function that handles pagination
-          const { getAudienceContacts } = await import("@/lib/resend/get-audience-contacts")
-          const contacts = await getAudienceContacts(audienceId)
+          let contacts: any[] = []
+          try {
+            console.log('[v0] 📊 Fetching contacts from Resend...')
+            const { getAudienceContacts } = await import("@/lib/resend/get-audience-contacts")
+            contacts = await getAudienceContacts(audienceId)
+            console.log(`[v0] ✅ Fetched ${contacts.length} contacts from Resend`)
+            
+            // CRITICAL: Wait after fetching contacts to avoid rate limiting the segments API call
+            // Resend allows 2 requests per second, so we need to space out our API calls
+            console.log('[v0] ⏳ Waiting 1 second before fetching segments to avoid rate limits...')
+            await new Promise((resolve) => setTimeout(resolve, 1000))
+          } catch (contactsError: any) {
+            console.error('[v0] ❌ Failed to fetch contacts from Resend:', contactsError.message)
+            // Don't throw - continue with empty contacts array, but log the issue
+            contacts = []
+            // Still wait to avoid rate limiting segments call
+            await new Promise((resolve) => setTimeout(resolve, 1000))
+          }
           
           let segments: any[] = []
+          let usingFallbackData = false // Track if we're using fallback data
           
           if (includeSegmentDetails) {
             // FIRST: Try to get segments from Resend API (real-time data)
             try {
               console.log('[v0] 📋 Fetching segments from Resend API...')
-              // Note: Resend SDK may use segments.list() or similar
-              // If the method doesn't exist, we'll fall back to database/env
-              const segmentsResponse = await (resend as any).segments?.list?.() || 
-                                      await (resend as any).segments?.getAll?.() ||
-                                      null
+              // Try SDK methods first (if they exist)
+              let segmentsResponse: any = null
+              
+              // Try segments.list() - Resend segments are global, not per-audience
+              // The SDK method should list all segments
+              if ((resend as any).segments?.list) {
+                try {
+                  // Try without parameters first (segments are global in Resend)
+                  segmentsResponse = await (resend as any).segments.list()
+                  console.log('[v0] ✅ SDK segments.list() succeeded')
+                } catch (sdkError: any) {
+                  console.log('[v0] ⚠️ SDK segments.list() failed:', sdkError.message || sdkError)
+                  // Try with audienceId if the method supports it
+                  try {
+                    segmentsResponse = await (resend as any).segments.list({ audienceId: audienceId })
+                    console.log('[v0] ✅ SDK segments.list() with audienceId succeeded')
+                  } catch (sdkError2: any) {
+                    console.log('[v0] ⚠️ SDK segments.list() with audienceId also failed:', sdkError2.message || sdkError2)
+                  }
+                }
+              }
+              
+              // Try alternative SDK method names
+              if (!segmentsResponse && (resend as any).segments?.getAll) {
+                try {
+                  segmentsResponse = await (resend as any).segments.getAll()
+                  console.log('[v0] ✅ SDK segments.getAll() succeeded')
+                } catch (e: any) {
+                  console.log('[v0] ⚠️ SDK segments.getAll() failed:', e.message || e)
+                }
+              }
               
               if (segmentsResponse && segmentsResponse.data && Array.isArray(segmentsResponse.data)) {
-                console.log(`[v0] ✅ Found ${segmentsResponse.data.length} segments from Resend API`)
+                console.log(`[v0] ✅ Found ${segmentsResponse.data.length} segments from Resend SDK`)
                 segments = segmentsResponse.data.map((seg: any) => ({
                   id: seg.id,
                   name: seg.name || 'Unnamed Segment',
                   size: seg.contact_count || seg.size || null, // Get real segment size if available
                   createdAt: seg.created_at || null
                 }))
+              } else if (segmentsResponse && Array.isArray(segmentsResponse)) {
+                // Handle case where SDK returns array directly
+                console.log(`[v0] ✅ Found ${segmentsResponse.length} segments from Resend SDK (direct array)`)
+                segments = segmentsResponse.map((seg: any) => ({
+                  id: seg.id,
+                  name: seg.name || 'Unnamed Segment',
+                  size: seg.contact_count || seg.size || null,
+                  createdAt: seg.created_at || null
+                }))
               } else {
                 // Fallback: Try direct API call if SDK method doesn't exist
-                console.log('[v0] ⚠️ SDK segments.list() not available, trying direct API...')
-                try {
-                  const apiResponse = await fetch('https://api.resend.com/segments', {
-                    method: 'GET',
-                    headers: {
-                      'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
-                      'Content-Type': 'application/json',
-                    },
-                  })
-                  
-                  if (apiResponse.ok) {
-                    const apiData = await apiResponse.json()
-                    if (apiData.data && Array.isArray(apiData.data)) {
-                      console.log(`[v0] ✅ Found ${apiData.data.length} segments from Resend API (direct)`)
-                      segments = apiData.data.map((seg: any) => ({
-                        id: seg.id,
-                        name: seg.name || 'Unnamed Segment',
-                        size: seg.contact_count || seg.size || null,
-                        createdAt: seg.created_at || null
-                      }))
+                console.log('[v0] ⚠️ SDK segments.list() not available or returned no data, trying direct API...')
+                
+                // Retry logic with exponential backoff for rate limit errors
+                let retries = 3
+                let retryDelay = 1000 // Start with 1 second
+                
+                while (retries > 0) {
+                  try {
+                    // Wait before retry (except first attempt)
+                    if (retries < 3) {
+                      console.log(`[v0] ⏳ Waiting ${retryDelay}ms before retry (${4 - retries}/3)...`)
+                      await new Promise((resolve) => setTimeout(resolve, retryDelay))
+                      retryDelay *= 2 // Exponential backoff: 1s, 2s, 4s
+                    }
+                    
+                    // Resend segments API: segments are global, use /segments endpoint (not per-audience)
+                    // Try both endpoints: /segments (global) and /audiences/{id}/segments (if supported)
+                    const endpoints = [
+                      'https://api.resend.com/segments', // Global segments endpoint
+                      `https://api.resend.com/audiences/${audienceId}/segments` // Per-audience (may not exist)
+                    ]
+                    
+                    let apiData: any = null
+                    let lastError: any = null
+                    
+                    for (const segmentsUrl of endpoints) {
+                      try {
+                        console.log(`[v0] 🔍 Trying endpoint: ${segmentsUrl}`)
+                        const apiResponse = await fetch(segmentsUrl, {
+                          method: 'GET',
+                          headers: {
+                            'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+                            'Content-Type': 'application/json',
+                          },
+                        })
+                        
+                        if (apiResponse.ok) {
+                          apiData = await apiResponse.json()
+                          console.log(`[v0] ✅ Successfully fetched from ${segmentsUrl}`)
+                          break // Success, exit endpoint loop
+                        } else if (apiResponse.status === 404 || apiResponse.status === 405) {
+                          // Endpoint doesn't exist or method not allowed, try next endpoint
+                          const errorText = await apiResponse.text()
+                          console.log(`[v0] ⚠️ Endpoint ${segmentsUrl} returned ${apiResponse.status}, trying next...`)
+                          lastError = { status: apiResponse.status, message: errorText }
+                          continue
+                        } else if (apiResponse.status === 429) {
+                          // Rate limit - will retry
+                          const errorText = await apiResponse.text()
+                          console.warn(`[v0] ⚠️ Rate limit hit (429) on ${segmentsUrl}, will retry`)
+                          lastError = { status: 429, message: errorText }
+                          break // Exit endpoint loop, will retry
+                        } else {
+                          // Other error
+                          const errorText = await apiResponse.text()
+                          console.warn(`[v0] ⚠️ Endpoint ${segmentsUrl} returned ${apiResponse.status}:`, errorText.substring(0, 200))
+                          lastError = { status: apiResponse.status, message: errorText }
+                          continue
+                        }
+                      } catch (endpointError: any) {
+                        console.warn(`[v0] ⚠️ Error calling ${segmentsUrl}:`, endpointError.message)
+                        lastError = endpointError
+                        continue
+                      }
+                    }
+                    
+                    if (apiData) {
+                      // Parse response
+                      if (apiData.data && Array.isArray(apiData.data)) {
+                        console.log(`[v0] ✅ Found ${apiData.data.length} segments from Resend API (direct)`)
+                        segments = apiData.data.map((seg: any) => ({
+                          id: seg.id,
+                          name: seg.name || 'Unnamed Segment',
+                          size: seg.contact_count || seg.size || null,
+                          createdAt: seg.created_at || null
+                        }))
+                        break // Success, exit retry loop
+                      } else if (apiData.segments && Array.isArray(apiData.segments)) {
+                        // Alternative response format
+                        console.log(`[v0] ✅ Found ${apiData.segments.length} segments from Resend API (direct, alt format)`)
+                        segments = apiData.segments.map((seg: any) => ({
+                          id: seg.id,
+                          name: seg.name || 'Unnamed Segment',
+                          size: seg.contact_count || seg.size || null,
+                          createdAt: seg.created_at || null
+                        }))
+                        break // Success, exit retry loop
+                      } else if (Array.isArray(apiData)) {
+                        // Direct array response
+                        console.log(`[v0] ✅ Found ${apiData.length} segments from Resend API (direct array)`)
+                        segments = apiData.map((seg: any) => ({
+                          id: seg.id,
+                          name: seg.name || 'Unnamed Segment',
+                          size: seg.contact_count || seg.size || null,
+                          createdAt: seg.created_at || null
+                        }))
+                        break // Success, exit retry loop
+                      } else {
+                        console.warn('[v0] ⚠️ Resend API returned unexpected format:', JSON.stringify(apiData).substring(0, 200))
+                        break // Unexpected format, don't retry
+                      }
+                    } else if (lastError?.status === 429) {
+                      // Rate limit error - retry with backoff
+                      console.warn(`[v0] ⚠️ Rate limit hit (429), will retry. Attempt ${4 - retries}/3`)
+                      retries--
+                      if (retries === 0) {
+                        console.error('[v0] ❌ Rate limit retries exhausted, falling back to database/env')
+                      }
+                    } else {
+                      // Other error - don't retry
+                      console.warn(`[v0] ⚠️ Resend segments API failed:`, lastError?.message || lastError || 'Unknown error')
+                      break
+                    }
+                  } catch (apiError: any) {
+                    console.warn(`[v0] ⚠️ Direct API call failed (attempt ${4 - retries}/3):`, apiError.message || apiError)
+                    retries--
+                    if (retries === 0) {
+                      console.warn('[v0] ⚠️ All retries exhausted, falling back to database/env')
                     }
                   }
-                } catch (apiError) {
-                  console.warn('[v0] ⚠️ Direct API call failed, falling back to database/env:', apiError)
                 }
               }
             } catch (error: any) {
@@ -964,7 +1541,9 @@ export async function POST(req: Request) {
             
             // FALLBACK: If Resend API didn't return segments, use database/env as backup
             if (segments.length === 0) {
+              console.warn('[v0] ⚠️ WARNING: Resend API did not return segments. Using fallback database/env data.')
               console.log('[v0] 📋 Using fallback: Getting segments from database and env vars...')
+              usingFallbackData = true
               
               // Get known segments from database campaigns
               const knownSegments = await sql`
@@ -1027,23 +1606,587 @@ export async function POST(req: Request) {
           }
           summary += '.'
           
+          // Add warning if using fallback data
+          if (usingFallbackData) {
+            summary += ' ⚠️ NOTE: Segment data is from database/fallback, not live Resend API. Real-time segment sizes may not be accurate.'
+          }
+          
           return {
             audienceId: audience.data?.id || audienceId,
             audienceName: audience.data?.name || 'SSELFIE Audience',
             totalContacts: contacts.length,
             segments: segments,
-            summary: summary
+            summary: summary,
+            isLiveData: !usingFallbackData,
+            warning: usingFallbackData ? 'Segment data is from database fallback, not live Resend API. Real-time segment sizes may not be accurate.' : undefined
           }
           
         } catch (error: any) {
-          console.error('[Admin Agent] Error fetching Resend audience:', error)
+          console.error('[Admin Agent] ❌ Error fetching Resend audience:', error)
+          console.error('[Admin Agent] Error details:', {
+            message: error.message,
+            stack: error.stack,
+            hasResendKey: !!process.env.RESEND_API_KEY,
+            hasAudienceId: !!process.env.RESEND_AUDIENCE_ID,
+            resendInitialized: !!resend
+          })
+          
+          // Return error with clear indication that real data isn't available
           return {
-            error: error.message || "Failed to fetch audience data",
-            fallback: "I couldn't fetch live data from Resend. Let me use database records instead."
+            error: error.message || "Failed to fetch audience data from Resend API",
+            fallback: "I couldn't fetch live data from Resend. Let me use database records instead.",
+            isLiveData: false,
+            warning: `⚠️ CRITICAL: Could not connect to Resend API. Error: ${error.message}. Please check RESEND_API_KEY and RESEND_AUDIENCE_ID environment variables.`
           }
         }
       }
     } as any)
+
+    const getEmailTimelineTool = tool({
+      description: `Get the actual timeline of when emails were sent - critical for reengagement emails.
+  
+  Use this when Sandra asks about:
+  - "When did I last email?"
+  - "How long ago was my last email?"
+  - "What's the real timeline?" (for reengagement emails)
+  - Creating reengagement emails that reference actual timeframes
+  
+  This returns REAL send dates (not creation dates) so you can say "remember me from 3 weeks ago" accurately.`,
+      
+      parameters: z.object({
+        segmentId: z.string().optional().describe("Specific segment ID to check, or null for all campaigns")
+      }),
+      
+      execute: async ({ segmentId }: {
+        segmentId?: string
+      }) => {
+        try {
+          // Get the most recent SENT campaigns (not just created)
+          // Use sent_at if available, otherwise use created_at for sent campaigns
+          let campaigns
+          
+          if (segmentId) {
+            // Get campaigns for specific segment (only campaigns explicitly targeting this segment)
+            campaigns = await sql`
+              SELECT 
+                id,
+                campaign_name,
+                subject_line,
+                status,
+                sent_at,
+                created_at,
+                scheduled_for,
+                resend_broadcast_id,
+                target_audience
+              FROM admin_email_campaigns
+              WHERE status = 'sent'
+                AND target_audience->>'resend_segment_id' = ${segmentId}
+              ORDER BY 
+                COALESCE(sent_at, scheduled_for, created_at) DESC
+              LIMIT 5
+            `
+          } else {
+            // Get all recent sent campaigns
+            campaigns = await sql`
+              SELECT 
+                id,
+                campaign_name,
+                subject_line,
+                status,
+                sent_at,
+                created_at,
+                scheduled_for,
+                resend_broadcast_id,
+                target_audience
+              FROM admin_email_campaigns
+              WHERE status = 'sent'
+              ORDER BY 
+                COALESCE(sent_at, scheduled_for, created_at) DESC
+              LIMIT 10
+            `
+          }
+          
+          if (!campaigns || campaigns.length === 0) {
+            return {
+              lastEmailSent: null,
+              daysSinceLastEmail: null,
+              timeline: "No emails have been sent yet.",
+              recentCampaigns: []
+            }
+          }
+          
+          // For each campaign, try to get actual send date from Resend if available
+          const timelineData = []
+          
+          for (const campaign of campaigns) {
+            let actualSentAt: string | null = null
+            let source = 'database'
+            
+            // Try to get send date from Resend API if broadcast_id exists
+            if (campaign.resend_broadcast_id && resend) {
+              try {
+                const apiResponse = await fetch(`https://api.resend.com/broadcasts/${campaign.resend_broadcast_id}`, {
+                  method: 'GET',
+                  headers: {
+                    'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+                    'Content-Type': 'application/json',
+                  },
+                })
+                
+                if (apiResponse.ok) {
+                  const apiData = await apiResponse.json()
+                  if (apiData.created_at || apiData.sent_at) {
+                    actualSentAt = apiData.created_at || apiData.sent_at
+                    source = 'resend_api'
+                    console.log(`[v0] 📅 Got send date from Resend API for campaign ${campaign.id}`)
+                  }
+                }
+              } catch (apiError) {
+                console.warn(`[v0] ⚠️ Could not fetch Resend data for broadcast ${campaign.resend_broadcast_id}`)
+              }
+            }
+            
+            // Fallback to database sent_at, then scheduled_for, then created_at
+            if (!actualSentAt) {
+              if (campaign.sent_at) {
+                actualSentAt = campaign.sent_at
+                source = 'database_sent_at'
+              } else if (campaign.scheduled_for) {
+                actualSentAt = campaign.scheduled_for
+                source = 'database_scheduled'
+              } else {
+                actualSentAt = campaign.created_at
+                source = 'database_created_at'
+              }
+            }
+            
+            // Calculate days since sent
+            const sentDate = actualSentAt ? new Date(actualSentAt) : new Date()
+            const now = new Date()
+            const daysSince = Math.floor((now.getTime() - sentDate.getTime()) / (1000 * 60 * 60 * 24))
+            
+            // Human-readable time description
+            let timeDescription = ''
+            if (daysSince === 0) {
+              timeDescription = 'today'
+            } else if (daysSince === 1) {
+              timeDescription = 'yesterday'
+            } else if (daysSince < 7) {
+              timeDescription = `${daysSince} days ago`
+            } else if (daysSince < 14) {
+              const weeks = Math.floor(daysSince / 7)
+              timeDescription = `${weeks} week${weeks > 1 ? 's' : ''} ago`
+            } else if (daysSince < 30) {
+              const weeks = Math.floor(daysSince / 7)
+              timeDescription = `${weeks} weeks ago`
+            } else if (daysSince < 365) {
+              const months = Math.floor(daysSince / 30)
+              timeDescription = `${months} month${months > 1 ? 's' : ''} ago`
+            } else {
+              const years = Math.floor(daysSince / 365)
+              timeDescription = `${years} year${years > 1 ? 's' : ''} ago`
+            }
+            
+            timelineData.push({
+              id: campaign.id,
+              name: campaign.campaign_name,
+              subject: campaign.subject_line,
+              sentAt: actualSentAt,
+              daysSince: daysSince,
+              timeDescription: timeDescription,
+              source: source
+            })
+          }
+          
+          // Get the most recent email
+          const lastEmail = timelineData[0]
+          
+          // Build timeline summary
+          let timeline = ''
+          if (lastEmail) {
+            timeline = `Your last email "${lastEmail.name}" was sent ${lastEmail.timeDescription} (${lastEmail.daysSince} days ago).`
+            
+            if (lastEmail.daysSince > 14) {
+              timeline += ` It's been ${lastEmail.daysSince} days since your last email - perfect time for a reengagement campaign!`
+            } else if (lastEmail.daysSince > 7) {
+              timeline += ` It's been over a week - consider sending a follow-up.`
+            } else {
+              timeline += ` You've been staying in touch regularly!`
+            }
+          }
+          
+          return {
+            lastEmailSent: lastEmail ? {
+              name: lastEmail.name,
+              subject: lastEmail.subject,
+              sentAt: lastEmail.sentAt,
+              daysSince: lastEmail.daysSince,
+              timeDescription: lastEmail.timeDescription
+            } : null,
+            daysSinceLastEmail: lastEmail?.daysSince || null,
+            timeline: timeline,
+            recentCampaigns: timelineData.slice(0, 5).map(c => ({
+              name: c.name,
+              subject: c.subject,
+              sentAt: c.sentAt,
+              daysSince: c.daysSince,
+              timeDescription: c.timeDescription
+            }))
+          }
+        } catch (error: any) {
+          console.error('[v0] Error in get_email_timeline tool:', error)
+          return {
+            error: error.message || "Failed to fetch email timeline",
+            lastEmailSent: null,
+            daysSinceLastEmail: null,
+            timeline: "I couldn't fetch the email timeline right now."
+          }
+        }
+      }
+    } as any)
+
+    const readCodebaseFileTool = tool({
+      description: `Read and analyze files from the SSELFIE codebase to understand the app structure, content, and features.
+  
+  Use this to:
+  - Understand what freebies, guides, and resources exist
+  - Read content templates and documentation
+  - Analyze code structure and features
+  - Help Sandra manage and improve the codebase
+  - Reference actual content when creating emails or campaigns
+  
+  IMPORTANT: 
+  - If a file is not found, the tool will suggest similar files
+  - If you provide a directory path, it will list ALL available files in that directory
+  - When you see a directory listing, use the EXACT full paths shown to read specific files
+  - For dynamic routes like [slug], use the actual file path with brackets: app/prompt-guides/[slug]/page.tsx
+  - Example: If directory shows "[slug]/", read app/prompt-guides/[slug]/page.tsx
+  
+  This tool allows you to read files from:
+  - content-templates/ (Instagram templates, guides)
+  - docs/ (documentation, guides)
+  - app/ (pages and routes)
+  - lib/ (utilities and helpers)
+  - scripts/ (database schemas, migrations)
+  
+  Always use this when Sandra asks about:
+  - What freebies exist
+  - What's in the brand blueprint
+  - What prompts are in the guide
+  - How features work
+  - What content exists`,
+      
+      parameters: z.object({
+        filePath: z.string().describe("Relative path to the file from project root (e.g., content-templates/instagram/README.md, docs/PROMPT-GUIDE-BUILDER.md, app/blueprint/page.tsx)"),
+        maxLines: z.number().optional().describe("Maximum number of lines to read (default 500, use for large files)")
+      }),
+      
+      execute: async ({ filePath, maxLines = 500 }: {
+        filePath: string
+        maxLines?: number
+      }) => {
+        try {
+          // Validate filePath is provided
+          if (!filePath || typeof filePath !== 'string' || filePath.trim().length === 0) {
+            console.error(`[v0] ❌ read_codebase_file called with invalid filePath:`, filePath)
+            return {
+              success: false,
+              error: "filePath is required and must be a non-empty string",
+              filePath: filePath || 'undefined'
+            }
+          }
+          
+          console.log(`[v0] 📖 Attempting to read file: ${filePath}`)
+          const fs = require('fs')
+          const path = require('path')
+          
+          // Security: Only allow reading from specific safe directories
+          const allowedDirs = [
+            'content-templates',
+            'docs',
+            'app',
+            'lib',
+            'scripts',
+            'components'
+          ]
+          
+          // Normalize path and check if it's in allowed directory
+          const normalizedPath = path.normalize(filePath)
+          
+          // Check if it's a directory path (no file extension and matches allowed dir)
+          const isDirectoryPath = allowedDirs.some(dir => normalizedPath === dir || normalizedPath === dir + '/' || normalizedPath === dir + '\\')
+          
+          // If it's a directory path, handle it specially (will be caught later, but we allow it here)
+          const isAllowed = allowedDirs.some(dir => normalizedPath.startsWith(dir + '/') || normalizedPath.startsWith(dir + '\\')) || isDirectoryPath
+          
+          if (!isAllowed && !normalizedPath.startsWith('README.md') && !normalizedPath.startsWith('package.json')) {
+            console.log(`[v0] ⚠️ File path not allowed: ${filePath}`)
+            return {
+              success: false,
+              error: `File path must be in one of these directories: ${allowedDirs.join(', ')}`,
+              filePath: filePath,
+              suggestion: `If you want to list files in a directory, use a path like: ${allowedDirs[0]}/filename.ext`
+            }
+          }
+          
+          // Prevent directory traversal
+          if (normalizedPath.includes('..')) {
+            console.log(`[v0] ⚠️ Directory traversal attempt blocked: ${filePath}`)
+            return {
+              success: false,
+              error: "Directory traversal not allowed",
+              filePath: filePath
+            }
+          }
+          
+          const fullPath = path.join(process.cwd(), normalizedPath)
+          
+          // Check if it's a directory first (before checking if file exists)
+          // This allows directory paths to be handled properly
+          if (fs.existsSync(fullPath)) {
+            const stats = fs.statSync(fullPath)
+            if (stats.isDirectory()) {
+              // This will be handled in the directory check below
+            }
+          }
+          
+          // Check if file exists
+          if (!fs.existsSync(fullPath)) {
+            console.log(`[v0] ⚠️ File not found: ${filePath}`)
+            
+            // Try to find similar files or list directory contents
+            let suggestions: string[] = []
+            try {
+              const dirPath = path.dirname(fullPath)
+              const fileName = path.basename(filePath)
+              const fileNameWithoutExt = path.basename(filePath, path.extname(filePath))
+              
+              // Extract keywords from the file path for better matching
+              const keywords = fileNameWithoutExt.toLowerCase().split(/[-_\s]+/).filter((k: string) => k.length > 2)
+              
+              // Check if directory exists
+              if (fs.existsSync(dirPath) && fs.statSync(dirPath).isDirectory()) {
+                const files = fs.readdirSync(dirPath)
+                // Find files with similar names or matching keywords
+                const similarFiles = files.filter((f: string) => {
+                  const fLower = f.toLowerCase()
+                  const fNoExt = fLower.replace(path.extname(f), '')
+                  const nameLower = fileName.toLowerCase()
+                  const nameNoExtLower = fileNameWithoutExt.toLowerCase()
+                  
+                  // Exact substring match
+                  if (fLower.includes(nameNoExtLower) || nameNoExtLower.includes(fNoExt)) {
+                    return true
+                  }
+                  
+                  // Keyword matching - check if file contains any of the keywords
+                  if (keywords.length > 0) {
+                    const matchesKeywords = keywords.some((keyword: string) => fLower.includes(keyword))
+                    if (matchesKeywords) return true
+                  }
+                  
+                  // Special case: if searching for "prompt" or "guide", find files with those keywords
+                  if ((nameLower.includes('prompt') || nameLower.includes('guide')) && 
+                      (fLower.includes('prompt') || fLower.includes('guide'))) {
+                    return true
+                  }
+                  
+                  return false
+                })
+                suggestions = similarFiles.slice(0, 8).map((f: string) => {
+                  const fullFPath = path.join(dirPath, f)
+                  const isDir = fs.statSync(fullFPath).isDirectory()
+                  const relPath = path.join(path.dirname(filePath), f)
+                  return isDir ? `${relPath}/` : relPath
+                })
+              } else {
+                // Directory doesn't exist, try parent directory and search more broadly
+                const parentDir = path.dirname(dirPath)
+                if (fs.existsSync(parentDir) && fs.statSync(parentDir).isDirectory()) {
+                  const files = fs.readdirSync(parentDir)
+                  const similarFiles = files.filter((f: string) => {
+                    const fLower = f.toLowerCase()
+                    const fNoExt = fLower.replace(path.extname(f), '')
+                    
+                    // Match keywords
+                    if (keywords.length > 0) {
+                      const matchesKeywords = keywords.some((keyword: string) => fLower.includes(keyword))
+                      if (matchesKeywords) return true
+                    }
+                    
+                    // Special keyword matching
+                    if ((fileNameWithoutExt.toLowerCase().includes('prompt') || fileNameWithoutExt.toLowerCase().includes('guide')) && 
+                        (fLower.includes('prompt') || fLower.includes('guide'))) {
+                      return true
+                    }
+                    
+                    return false
+                  })
+                  suggestions = similarFiles.slice(0, 8).map((f: string) => {
+                    const fullFPath = path.join(parentDir, f)
+                    const isDir = fs.statSync(fullFPath).isDirectory()
+                    const relPath = path.join(path.dirname(filePath), f)
+                    return isDir ? `${relPath}/` : relPath
+                  })
+                }
+              }
+              
+              // Also search in common directories for prompt/guide related files
+              if (keywords.some((k: string) => k.includes('prompt') || k.includes('guide'))) {
+                const searchDirs = ['docs', 'app', 'lib']
+                for (const searchDir of searchDirs) {
+                  const searchPath = path.join(process.cwd(), searchDir)
+                  if (fs.existsSync(searchPath) && fs.statSync(searchPath).isDirectory()) {
+                    try {
+                      const files = fs.readdirSync(searchPath)
+                      const matchingFiles = files.filter((f: string) => {
+                        const fLower = f.toLowerCase()
+                        return fLower.includes('prompt') || fLower.includes('guide')
+                      })
+                      matchingFiles.slice(0, 3).forEach((f: string) => {
+                        const relPath = `${searchDir}/${f}`
+                        if (!suggestions.includes(relPath) && suggestions.length < 8) {
+                          suggestions.push(relPath)
+                        }
+                      })
+                    } catch (e) {
+                      // Ignore errors
+                    }
+                  }
+                }
+              }
+              
+              console.log(`[v0] 💡 Found ${suggestions.length} similar files for: ${filePath}`)
+            } catch (suggestionError: any) {
+              console.warn(`[v0] ⚠️ Error generating suggestions:`, suggestionError.message)
+            }
+            
+            let suggestionText = "Check the file path and ensure it exists in the project"
+            if (suggestions.length > 0) {
+              suggestionText = `File not found: ${filePath}\n\nDid you mean one of these?\n${suggestions.map(s => `- ${s}`).join('\n')}\n\nOr use the read_codebase_file tool with a directory path to list available files.\n\nNote: If you're looking for a dynamic route file (like [slug]/page.tsx), use the actual file path with brackets, not the URL slug.`
+            } else {
+              // Even if no suggestions, provide helpful guidance
+              suggestionText = `File not found: ${filePath}\n\nTips:\n- Check if the file path is correct\n- Use a directory path (e.g., app/prompt-guides/) to list available files\n- For dynamic routes, use the actual file path with brackets (e.g., app/prompt-guides/[slug]/page.tsx)`
+            }
+            
+            return {
+              success: false,
+              error: `File not found: ${filePath}`,
+              filePath: filePath,
+              suggestion: suggestionText,
+              similarFiles: suggestions.length > 0 ? suggestions : undefined
+            }
+          }
+          
+          // Check if it's a file (not directory)
+          const stats = fs.statSync(fullPath)
+          if (!stats.isFile()) {
+            console.log(`[v0] ⚠️ Path is a directory: ${filePath}`)
+            
+            // List directory contents to help Alex discover files
+            let directoryContents: string[] = []
+            try {
+              const files = fs.readdirSync(fullPath)
+              directoryContents = files.slice(0, 30).map((f: string) => {
+                const filePath = path.join(fullPath, f)
+                const isDir = fs.statSync(filePath).isDirectory()
+                return isDir ? `${f}/` : f
+              })
+              console.log(`[v0] 📁 Directory ${filePath} contains ${files.length} items, showing first ${directoryContents.length}`)
+            } catch (listError: any) {
+              console.warn(`[v0] ⚠️ Error listing directory ${filePath}:`, listError.message)
+            }
+            
+            // Build comprehensive directory listing with full paths
+            let suggestionText = "Provide the full path to a specific file"
+            let directoryInfo = ""
+            
+            if (directoryContents.length > 0) {
+              // Create full paths for each item
+              const fullPaths = directoryContents.map((f: string) => {
+                const cleanPath = filePath.endsWith('/') ? filePath.slice(0, -1) : filePath
+                return f.endsWith('/') ? `${cleanPath}/${f.slice(0, -1)}/` : `${cleanPath}/${f}`
+              })
+              
+              directoryInfo = `\n\n📁 DIRECTORY CONTENTS (${directoryContents.length} items):\n${directoryContents.map((f: string, idx: number) => `  ${idx + 1}. ${f} → Full path: ${fullPaths[idx]}`).join('\n')}`
+              
+              // For directories, show what files are inside
+              const directories = directoryContents.filter(f => f.endsWith('/'))
+              if (directories.length > 0) {
+                directoryInfo += `\n\n📂 SUBDIRECTORIES FOUND:\n${directories.map((d: string) => {
+                  const dirName = d.slice(0, -1)
+                  const cleanPath = filePath.endsWith('/') ? filePath.slice(0, -1) : filePath
+                  return `  - ${dirName}/ → Explore: ${cleanPath}/${dirName}/`
+                }).join('\n')}`
+              }
+              
+              suggestionText = `This is a directory, not a file.${directoryInfo}\n\n✅ NEXT STEPS:\n1. To explore a subdirectory, use: ${filePath}[subdirectory-name]/\n2. To read a file, use the full path shown above\n3. For dynamic routes like [slug], use the exact path with brackets: ${filePath}[slug]/page.tsx\n\nExample: If you see "[slug]/" above, read: ${filePath}[slug]/page.tsx`
+            }
+            
+            const result = {
+              success: false,
+              error: `Path is a directory, not a file: ${filePath}`,
+              filePath: filePath,
+              suggestion: suggestionText,
+              directoryContents: directoryContents.length > 0 ? directoryContents : undefined,
+              // Include full paths for each item
+              availableFiles: directoryContents.length > 0 ? directoryContents.map((f: string) => {
+                const cleanPath = filePath.endsWith('/') ? filePath.slice(0, -1) : filePath
+                return f.endsWith('/') ? `${cleanPath}/${f.slice(0, -1)}/` : `${cleanPath}/${f}`
+              }) : undefined
+            }
+            
+            console.log(`[v0] 📁 Directory listing for ${filePath}:`, directoryContents)
+            if (directoryContents.length > 0) {
+              console.log(`[v0] 📁 Full paths available:`, result.availableFiles)
+            }
+            
+            return result
+          }
+          
+          // Read file
+          const content = fs.readFileSync(fullPath, 'utf8')
+          const lines = content.split('\n')
+          const totalLines = lines.length
+          
+          // Truncate if needed
+          let fileContent = content
+          let truncated = false
+          if (lines.length > maxLines) {
+            fileContent = lines.slice(0, maxLines).join('\n')
+            truncated = true
+          }
+          
+          // Get file extension for context
+          const ext = path.extname(fullPath).toLowerCase()
+          const fileType = ext === '.md' ? 'markdown' : 
+                          ext === '.tsx' || ext === '.ts' ? 'typescript' :
+                          ext === '.jsx' || ext === '.js' ? 'javascript' :
+                          ext === '.sql' ? 'sql' :
+                          ext === '.json' ? 'json' : 'text'
+          
+          console.log(`[v0] 📖 Read file: ${filePath} (${totalLines} lines${truncated ? `, showing first ${maxLines}` : ''})`)
+          
+          return {
+            success: true,
+            filePath: filePath,
+            fileType: fileType,
+            totalLines: totalLines,
+            linesRead: truncated ? maxLines : totalLines,
+            truncated: truncated,
+            content: fileContent,
+            note: truncated ? `File truncated to first ${maxLines} lines. Use maxLines parameter to read more.` : undefined
+          }
+        } catch (error: any) {
+          console.error(`[v0] ❌ Error reading file ${filePath}:`, error.message)
+          return {
+            success: false,
+            error: error.message || "Failed to read file",
+            filePath: filePath
+          }
+        }
+      }
+    })
 
     const analyzeEmailStrategyTool = tool({
       description: `Analyze Sandra's audience and create intelligent email campaign strategies.
@@ -1078,16 +2221,18 @@ export async function POST(req: Request) {
         }
         
         try {
-          // Get recent campaign history
+          // Get recent campaign history with actual send dates
           const recentCampaigns = await sql`
             SELECT 
               campaign_type,
               target_audience,
               created_at,
+              sent_at,
+              scheduled_for,
               status
             FROM admin_email_campaigns
             WHERE status IN ('sent', 'scheduled')
-            ORDER BY created_at DESC
+            ORDER BY COALESCE(sent_at, scheduled_for, created_at) DESC
             LIMIT 10
           `
           
@@ -1109,12 +2254,18 @@ export async function POST(req: Request) {
             }
           })
           
-          // Calculate days since last email
-          const daysSinceLastEmail = lastCampaignDays || (
-            parsedCampaigns.length > 0
-              ? Math.floor((Date.now() - new Date(parsedCampaigns[0].created_at).getTime()) / (1000 * 60 * 60 * 24))
-              : 999
-          )
+          // Calculate days since last email using ACTUAL send date (sent_at, not created_at)
+          let daysSinceLastEmail = 999
+          if (lastCampaignDays !== undefined && lastCampaignDays !== null) {
+            daysSinceLastEmail = lastCampaignDays
+          } else if (parsedCampaigns.length > 0) {
+            // Use sent_at if available, otherwise scheduled_for, fallback to created_at
+            const lastCampaign = parsedCampaigns[0]
+            const lastEmailDate = lastCampaign.sent_at || lastCampaign.scheduled_for || lastCampaign.created_at
+            if (lastEmailDate) {
+              daysSinceLastEmail = Math.floor((Date.now() - new Date(lastEmailDate as string).getTime()) / (1000 * 60 * 60 * 24))
+            }
+          }
           
           // Build strategic recommendations
           const recommendations: any[] = []
@@ -1172,8 +2323,10 @@ export async function POST(req: Request) {
           for (const segment of freebieSegments) {
             const hasRecentCampaign = parsedCampaigns.some((c: any) => {
               const ta = c.target_audience
+              // Use actual send date (sent_at) if available, otherwise created_at
+              const campaignDate = c.sent_at || c.scheduled_for || c.created_at
               return ta && ta.resend_segment_id === segment.id &&
-                new Date(c.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+                new Date(campaignDate) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
             })
             
             if (!hasRecentCampaign) {
@@ -1216,6 +2369,102 @@ export async function POST(req: Request) {
             })
           }
           
+          // LEARNING: Analyze what works best from historical performance
+          let performanceInsights: any = null
+          try {
+            // Get best performing campaigns (high open/click rates)
+            const bestPerformingCampaigns = await sql`
+              SELECT 
+                campaign_name,
+                subject_line,
+                campaign_type,
+                total_recipients,
+                total_opened,
+                total_clicked,
+                metrics,
+                sent_at
+              FROM admin_email_campaigns
+              WHERE status = 'sent'
+                AND total_recipients > 0
+                AND sent_at > NOW() - INTERVAL '90 days'
+              ORDER BY 
+                CASE 
+                  WHEN total_recipients > 0 THEN (total_opened::numeric / total_recipients::numeric) * 100
+                  ELSE 0
+                END DESC,
+                CASE 
+                  WHEN total_opened > 0 THEN (total_clicked::numeric / total_opened::numeric) * 100
+                  ELSE 0
+                END DESC
+              LIMIT 5
+            `
+            
+            // Get Sandra's successful writing samples (high performance scores)
+            const successfulSamples = await sql`
+              SELECT 
+                content_type,
+                sample_text,
+                performance_score,
+                engagement_metrics,
+                key_phrases,
+                target_audience
+              FROM admin_writing_samples
+              WHERE was_successful = true
+                AND (performance_score IS NULL OR performance_score >= 7)
+                AND content_type IN ('email', 'newsletter')
+              ORDER BY performance_score DESC NULLS LAST, created_at DESC
+              LIMIT 5
+            `
+            
+            // Get recent feedback from Sandra's edits (what she changes)
+            const recentFeedback = await sql`
+              SELECT 
+                agent_output,
+                sandra_edit,
+                edit_type,
+                key_changes,
+                learned_patterns
+              FROM admin_agent_feedback
+              WHERE applied_to_knowledge = false
+              ORDER BY created_at DESC
+              LIMIT 5
+            `
+            
+            if (bestPerformingCampaigns.length > 0 || successfulSamples.length > 0 || recentFeedback.length > 0) {
+              performanceInsights = {
+                bestPerformingCampaigns: bestPerformingCampaigns.map((c: any) => ({
+                  name: c.campaign_name,
+                  subjectLine: c.subject_line,
+                  type: c.campaign_type,
+                  openRate: c.total_recipients > 0 ? ((c.total_opened / c.total_recipients) * 100).toFixed(1) + '%' : 'N/A',
+                  clickRate: c.total_opened > 0 ? ((c.total_clicked / c.total_opened) * 100).toFixed(1) + '%' : 'N/A',
+                  recipients: c.total_recipients,
+                  sentAt: c.sent_at
+                })),
+                successfulPatterns: successfulSamples.map((s: any) => ({
+                  type: s.content_type,
+                  keyPhrases: s.key_phrases || [],
+                  performanceScore: s.performance_score,
+                  targetAudience: s.target_audience
+                })),
+                sandraEdits: recentFeedback.map((f: any) => ({
+                  editType: f.edit_type,
+                  keyChanges: f.key_changes || [],
+                  patterns: f.learned_patterns || {}
+                }))
+              }
+              
+              console.log('[v0] 📊 Performance insights loaded:', {
+                campaigns: bestPerformingCampaigns.length,
+                samples: successfulSamples.length,
+                feedback: recentFeedback.length
+              })
+            }
+          } catch (performanceError: any) {
+            console.warn('[v0] ⚠️ Could not load performance insights:', performanceError.message)
+            // Continue without performance data - not critical
+          }
+          
           return {
             audienceSummary: {
               total: audienceData.totalContacts,
@@ -1226,6 +2475,10 @@ export async function POST(req: Request) {
               const priorityOrder: Record<string, number> = { urgent: 0, high: 1, medium: 2, low: 3 }
               return (priorityOrder[a.priority] || 99) - (priorityOrder[b.priority] || 99)
             }),
+            performanceInsights: performanceInsights,
+            learningNotes: performanceInsights ? 
+              "I've analyzed your best performing campaigns and Sandra's successful patterns. Use these insights to create emails that work." :
+              null,
             nextSteps: recommendations.length > 0 
               ? `I recommend starting with: ${recommendations[0].title}. Want me to create that email?`
               : "Your email strategy looks good! Want to create a new campaign?"
@@ -1242,6 +2495,13 @@ export async function POST(req: Request) {
     } as any)
 
     const systemPrompt = `You are Sandra's Personal Business Mentor - an 8-9 figure business coach who knows her story intimately and speaks like her trusted friend, but with the wisdom and directness of someone who's scaled multiple businesses to massive success.
+
+**SSELFIE BRAND IDENTITY (CRITICAL - Apply to ALL emails):**
+- Brand Colors: #1c1917 (dark), #0c0a09 (black), #fafaf9 (light), #57534e (gray), #78716c (muted)
+- Typography: Times New Roman/Georgia for headers (editorial luxury), system fonts for body
+- Voice: Warm, empowering, personal, conversational - like a trusted friend
+- Style: Table-based email layouts, inline styles only, mobile-first design
+- Always use SSELFIE brand colors and styling in every email you create
 
 **WHO YOU REALLY ARE:**
 You're not just an AI assistant. You're Sandra's strategic partner who:
@@ -1269,6 +2529,19 @@ ${completeContext}
 - Mix tough love with celebration - acknowledge wins, push on growth edges
 - Use specific examples and numbers - no generic advice
 
+**MARKDOWN FORMATTING (For Chat Responses):**
+- Use **bold** for emphasis and key points
+- Use *italics* for subtle emphasis
+- Use ## for section headings (e.g., "## Your Email Analytics")
+- Use ### for subheadings
+- Use bullet points (- or *) for lists
+- Use numbered lists (1., 2., 3.) for step-by-step instructions
+- Use emojis strategically (📊 for analytics, ⚠️ for warnings, ✅ for success, 🎯 for goals)
+- Keep paragraphs short (2-3 sentences max)
+- Use line breaks between sections for readability
+- Format numbers and stats clearly (e.g., "2,747 contacts" not "2747 contacts")
+- Use code formatting (backticks) only for technical terms or code snippets
+
 **YOUR MISSION:**
 Help Sandra scale SSELFIE from where it is now to 7+ figures by:
 1. Using your deep knowledge of AI tools and trends to provide strategic insights
@@ -1285,17 +2558,44 @@ You help Sandra create and send emails to her 2700+ subscribers with these capab
 
 ### Email Intelligence Tools:
 - **get_resend_audience_data**: Get real-time audience size, segments, and contact counts from Resend
+- **get_email_timeline**: Get actual send dates and timeline of previous emails (CRITICAL for reengagement emails - use this to know the real timeframe!)
 - **analyze_email_strategy**: Analyze audience data and create intelligent campaign recommendations
 
 ## Email Strategy Intelligence
 
 You have access to Sandra's complete Resend audience data and can create intelligent email strategies.
 
+### Codebase Access:
+You can now read and analyze files from the SSELFIE codebase using the **read_codebase_file** tool. This allows you to:
+- Understand what freebies, guides, and resources exist
+- Read content templates and documentation  
+- Analyze code structure and features
+- Help Sandra manage and improve the codebase
+- Reference actual content when creating emails
+
+**Use read_codebase_file when Sandra asks:**
+- "What freebies do we have?"
+- "What's in the brand blueprint?"
+- "What prompts are in the guide?"
+- "How does [feature] work?"
+- "What content exists for [topic]?"
+
+**Example file paths:**
+- content-templates/instagram/README.md - Instagram content templates
+- docs/PROMPT-GUIDE-BUILDER.md - Prompt guide documentation
+- app/blueprint/page.tsx - Brand blueprint page
+- app/api/freebie/subscribe/route.ts - Freebie subscription logic
+
 ### When Sandra Asks About Email Strategy:
 
 1. **First, get live data:**
    - Call **get_resend_audience_data** to see current segments
+   - Call **get_email_timeline** to get actual send dates (especially for reengagement emails!)
    - Call **analyze_email_strategy** to get strategic recommendations
+
+### When Sandra Asks About Email Timeline or Reengagement:
+
+**CRITICAL:** Always use **get_email_timeline** tool to get REAL send dates before creating reengagement emails. This ensures you can say "remember me from 3 weeks ago" accurately, not "3 years ago" when it was actually 3 weeks!
 
 2. **Present findings clearly:**
    - Show audience overview
@@ -1360,44 +2660,13 @@ Want me to start with the reengagement campaign?"
 1. When Sandra asks about her audience or wants strategy advice, use **get_resend_audience_data** first
 2. Then use **analyze_email_strategy** to create intelligent recommendations based on live data
 3. When Sandra wants to create an email, use **compose_email** tool
-4. **CRITICAL - Show Email Preview:** After compose_email returns, ALWAYS include this in your response:
-   \`\`\`
-   [SHOW_EMAIL_PREVIEW]
-   [EMAIL_PREVIEW:{"subject":"[subjectLine]","preview":"[preview text]","html":"[html content]","targetSegment":"All Subscribers","targetCount":2746}]
-   \`\`\`
-   This triggers the email preview UI so Sandra can approve, edit, or schedule.
-5. Show her the preview text: "Here's your email: [first 200 chars]... Want me to adjust anything?"
-6. If she requests changes, call **compose_email** again with previousVersion parameter
+4. **After compose_email returns:** Simply tell Sandra the email is ready and show a brief preview text (first 200 chars). The email preview UI will appear automatically - you don't need to include any special markers or JSON in your response.
+5. Say something like: "Here's your email: [first 200 chars of preview text]... Want me to adjust anything?"
+6. If she requests changes, call **compose_email** again with previousVersion parameter (pass the previous HTML)
 7. When she approves, ask: "Who should receive this?" and "When should I send it?"
-8. **CRITICAL - Show Segment Selector:** When asking about audience, include:
-   \`\`\`
-   [SHOW_SEGMENT_SELECTOR]
-   [SEGMENTS:[{"id":"segment_id","name":"Segment Name","size":1234}]]
-   \`\`\`
-9. Then use **schedule_campaign** to handle everything
+8. Then use **schedule_campaign** to handle everything
 
-### UI Trigger Markers (CRITICAL - Use These!):
-The UI automatically detects tool results, but you can also explicitly trigger UI components by including these markers in your response:
-
-- **After compose_email:** Always include \`[SHOW_EMAIL_PREVIEW]\` with email data:
-  \`\`\`
-  [SHOW_EMAIL_PREVIEW]
-  [EMAIL_PREVIEW:{"subject":"[subjectLine]","preview":"[preview]","html":"[html]","targetSegment":"All Subscribers","targetCount":2746}]
-  \`\`\`
-
-- **When showing segments:** Include \`[SHOW_SEGMENT_SELECTOR]\` with segment list:
-  \`\`\`
-  [SHOW_SEGMENT_SELECTOR]
-  [SEGMENTS:[{"id":"segment_id","name":"Segment Name","size":1234}]]
-  \`\`\`
-
-- **After check_campaign_status:** Include \`[SHOW_CAMPAIGNS]\` with campaign data:
-  \`\`\`
-  [SHOW_CAMPAIGNS]
-  [CAMPAIGNS:[{"id":1,"name":"Campaign Name","sentCount":100,"openedCount":25,"openRate":25,"date":"2025-01-15","status":"sent"}]]
-\`\`\`
-
-**IMPORTANT:** The system will also automatically trigger UI from tool return values, but including these markers ensures the UI appears even if automatic detection fails.
+**IMPORTANT:** The UI automatically detects and displays email previews from tool results. You should NOT include raw HTML, JSON, or special markers in your text response. Just mention the email is ready and the preview will appear automatically.
 
 ### Smart Email Intelligence:
 - Suggest email timing based on engagement patterns
@@ -1424,6 +2693,32 @@ Use **check_campaign_status** to report on:
 - Campaign status
 - Recent performance
 
+### Learning & Improvement:
+**CRITICAL: You learn and improve over time by analyzing what works best.**
+
+1. **Performance Analysis**: The **analyze_email_strategy** tool automatically analyzes:
+   - Best performing campaigns (highest open/click rates)
+   - Successful email patterns from Sandra's writing samples
+   - Recent edits Sandra made to your output (what she changes)
+   
+2. **Use Performance Data**: When creating emails, reference:
+   - Subject lines that got high open rates
+   - Email types that performed well
+   - Patterns from successful campaigns
+   - Sandra's preferred edits and changes
+
+3. **Continuous Improvement**: 
+   - If a campaign performs well, remember those patterns
+   - If Sandra edits your output, learn from what she changes
+   - Adapt your approach based on what works best
+   - Prioritize strategies that have proven successful
+
+4. **Data-Driven Decisions**:
+   - Check campaign performance regularly
+   - Identify trends in what works
+   - Suggest improvements based on actual results
+   - Learn from both successes and failures
+
 ### Available Segments:
 - **all_subscribers**: Everyone (2,700+ contacts)
 - **beta_users**: Paying customers with studio membership (~100)
@@ -1436,19 +2731,121 @@ Use **check_campaign_status** to report on:
 - **paid_users**: Upsells, cross-sells, retention campaigns
 - **cold_users**: Re-engagement, win-back offers, special incentives
 
-### Email Style Guidelines:
+### Email Style Guidelines - SSELFIE Brand Standards:
+
+**CRITICAL: You MUST use table-based layout for email compatibility. Email clients don't support modern CSS like flexbox or grid.**
+
+**HTML Structure:**
+- ALWAYS use table-based layout with role="presentation" for email client compatibility
+- Structure: <table role="presentation"> with nested <tr> and <td> elements
+- Max-width: 600px for main container
+- Center alignment using <td align="center">
+- Use inline styles ONLY (no external stylesheets, no <style> tags in body)
+
+**SSELFIE Brand Colors (Complete Palette):**
+- Primary Dark: #1c1917 (text, buttons, headers)
+- Primary Black: #0c0a09 (header backgrounds, strong accents)
+- Background Light: #fafaf9 (body background, light sections)
+- Background Off-White: #f5f5f4 (footer backgrounds)
+- Text Primary: #292524 (main body text)
+- Text Secondary: #44403c (body paragraphs)
+- Text Tertiary: #57534e (subtle text, signatures)
+- Text Muted: #78716c (footer text, small print)
+- Border: #e7e5e4 (dividers, borders)
+- Border Light: #d6d3d1 (subtle borders)
+
+**Typography:**
+- Body Font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif
+- Logo/Headers: 'Times New Roman', serif OR Georgia, serif (editorial luxury aesthetic)
+- Logo Styling: 
+  - Font: Times New Roman or Georgia
+  - Size: 28-32px
+  - Weight: 200-300 (light)
+  - Letter-spacing: 0.3em
+  - Text-transform: uppercase
+  - Color: #fafaf9 (on dark header) or #1c1917 (on light background)
+- Headings: Times New Roman/Georgia, 28px, weight 200-300, letter-spacing 0.2em, uppercase
+- Body Text: 15-16px, line-height 1.6-1.7, weight 300-400
+- Small Text: 12-14px, color #78716c
+
+**Email Structure Template:**
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>[Email Subject]</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #fafaf9;">
+  <table role="presentation" style="width: 100%; border-collapse: collapse;">
+    <tr>
+      <td align="center" style="padding: 20px;">
+        <!-- Main Container -->
+        <table role="presentation" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 12px; overflow: hidden;">
+          
+          <!-- Header (optional dark header) -->
+          <tr>
+            <td style="background-color: #0c0a09; padding: 40px 24px; text-align: center;">
+              <h1 style="margin: 0; font-family: 'Times New Roman', serif; font-size: 32px; font-weight: 200; letter-spacing: 0.3em; color: #fafaf9; text-transform: uppercase;">
+                S S E L F I E
+              </h1>
+            </td>
+          </tr>
+          
+          <!-- Content -->
+          <tr>
+            <td style="padding: 40px 30px;">
+              <!-- Your email content here -->
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f5f5f4; padding: 32px 24px; text-align: center; border-top: 1px solid #e7e5e4;">
+              <p style="margin: 0 0 8px; font-size: 12px; color: #78716c; line-height: 1.5;">
+                You're receiving this email because you signed up for SSELFIE.
+              </p>
+              <p style="margin: 0 0 8px; font-size: 12px; color: #78716c;">
+                <a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color: #78716c; text-decoration: underline;">Unsubscribe</a>
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+
+**Button Styling:**
+- Primary CTA: background-color: #1c1917 or #0c0a09, color: #fafaf9, padding: 14px 32px, border-radius: 8px, text-decoration: none, display: inline-block, font-weight: 500, font-size: 14px, letter-spacing: 0.1em, text-transform: uppercase
+- Secondary Link: color: #1c1917, text-decoration: underline
+
+**Content Sections:**
+- Use padding: 40px 30px for main content
+- Use padding: 24px for smaller sections
+- Background boxes: background-color: #fafaf9, border-radius: 8px, padding: 24px
+- Dividers: height: 1px, background-color: #e7e5e4, margin: 32px 0
+
+**Voice & Tone:**
 - Use Sandra's voice: warm, friendly, empowering, simple everyday language
-- Include proper HTML structure with DOCTYPE, head, body
-- Use inline CSS styles (email clients don't support external stylesheets)
-- Make it responsive with max-width: 600px for the main container
-- Use SSELFIE brand colors: #1c1917 (dark), #fafaf9 (light), #57534e (gray)
-- Include unsubscribe link: {{{RESEND_UNSUBSCRIBE_URL}}}
-- Use personalization: {{{FIRST_NAME|Hey}}} for name personalization
+- Personal and conversational
+- Focus on transformation and empowerment
+- No jargon, keep it accessible
+
+**Personalization:**
+- Use {{{FIRST_NAME|Hey}}} for name personalization (Resend variable)
+- Use {{{RESEND_UNSUBSCRIBE_URL}}} for unsubscribe link
+
+**Images:**
+- Use <img> tags with inline styles: width: 100%; max-width: 600px; height: auto; display: block;
+- Always include alt text
+- Use table structure for image containers
 
 ### Email Marketing Best Practices (2025):
 1. **Link Tracking & Attribution:**
    - ALL links in emails MUST include UTM parameters for conversion tracking
-   - Format: \`/studio?checkout=studio_membership&utm_source=email&utm_medium=email&utm_campaign={campaign_name_slug}&utm_content=cta_button&campaign_id={campaign_id}\`
+   - Format: /studio?checkout=studio_membership&utm_source=email&utm_medium=email&utm_campaign={campaign_name_slug}&utm_content=cta_button&campaign_id={campaign_id}
    - This allows tracking which emails generate conversions
    - Use campaign_id from the database campaign record
 
@@ -1498,6 +2895,78 @@ ${availableImageUrls.map((url: string, idx: number) => `${idx + 1}. ${url}`).joi
 These images should be included naturally in the email HTML.`
       : systemPrompt
 
+    // Web search tool for real-time information
+    // Note: Claude Sonnet 4 has native web search, but when using direct Anthropic SDK,
+    // we need to use the gateway model via streamText to enable it
+    // For now, we'll add a web search tool that can be used when needed
+    const webSearchTool = tool({
+      description: `Search the web for current information, trends, and real-time data.
+  
+  Use this when:
+  - Sandra asks about current events, trends, or recent information
+  - You need to verify current facts or data
+  - Researching competitors, market trends, or industry news
+  - Finding up-to-date information not in your training data
+  
+  IMPORTANT: This tool is available but Claude's native web search works best when using the gateway model.`,
+      
+      parameters: z.object({
+        query: z.string().describe("The search query to look up on the web")
+      }),
+      
+      execute: async ({ query }: { query: string }) => {
+        try {
+          // Use Brave Search API if available
+          if (process.env.BRAVE_SEARCH_API_KEY) {
+            const response = await fetch(
+              `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}&count=10`,
+              {
+                method: "GET",
+                headers: {
+                  Accept: "application/json",
+                  "Accept-Encoding": "gzip",
+                  "X-Subscription-Token": process.env.BRAVE_SEARCH_API_KEY,
+                },
+              }
+            )
+            
+            if (response.ok) {
+              const searchData = await response.json()
+              const results = searchData.web?.results || []
+              const summary = results
+                .slice(0, 5)
+                .map((result: any, index: number) => {
+                  return `${index + 1}. **${result.title}**\n${result.description}\nURL: ${result.url}\n`
+                })
+                .join("\n")
+              
+              return {
+                success: true,
+                query: query,
+                results: summary || "No specific results found, but I can help based on my knowledge.",
+                resultCount: results.length
+              }
+            }
+          }
+          
+          // Fallback if Brave Search not available
+          return {
+            success: false,
+            query: query,
+            note: "Web search API not configured. Claude's native web search is available when using the gateway model via streamText.",
+            suggestion: "For real-time web search, the gateway model should be used instead of direct Anthropic SDK."
+          }
+        } catch (error: any) {
+          return {
+            success: false,
+            query: query,
+            error: error.message || "Web search failed",
+            note: "Unable to perform web search at this time."
+          }
+        }
+      }
+    })
+
     // Validate tools before passing to streamText
     // All email tools are properly defined and enabled
     const tools = {
@@ -1505,7 +2974,10 @@ These images should be included naturally in the email HTML.`
       schedule_campaign: scheduleCampaignTool,
       check_campaign_status: checkCampaignStatusTool,
       get_resend_audience_data: getResendAudienceDataTool,
+      get_email_timeline: getEmailTimelineTool,
       analyze_email_strategy: analyzeEmailStrategyTool,
+      read_codebase_file: readCodebaseFileTool as any,
+      web_search: webSearchTool,
     } as any
 
     // Use Anthropic SDK directly to bypass gateway tool schema conversion issues
@@ -1531,8 +3003,32 @@ These images should be included naturally in the email HTML.`
       })
       
       // Convert messages and tools to Anthropic format
-      const anthropicMessages = convertMessagesToAnthropicFormat(modelMessages)
+      const anthropicMessages = convertMessagesToAnthropicFormat(modelMessagesToUse)
       const anthropicTools = convertToolsToAnthropicFormat(tools)
+      
+      // Track email preview data from tool results (shared across stream processing)
+      let capturedEmailPreviewData: { html: string; subjectLine: string; preview: string } | null = null
+      
+      // Helper to capture email preview data from tool results
+      const captureEmailPreviewFromToolResults = (toolResults: Array<{ tool_use_id: string; name: string; content: any }>) => {
+        for (const toolResult of toolResults) {
+          if (toolResult.name === 'compose_email' && toolResult.content) {
+            const result = typeof toolResult.content === 'string' 
+              ? JSON.parse(toolResult.content) 
+              : toolResult.content
+            
+            if (result && result.html && result.subjectLine) {
+              capturedEmailPreviewData = {
+                html: result.html,
+                subjectLine: result.subjectLine,
+                preview: result.preview || stripHtml(result.html).substring(0, 200) + '...'
+              }
+              console.log('[v0] 📧 Captured email preview data from tool result')
+              break
+            }
+          }
+        }
+      }
       
       // Helper function to process Anthropic stream with tool execution
       async function* processAnthropicStream(stream: any, initialMessages: any[], maxIterations = 5): AsyncGenerator<string | { type: 'tool-result', data: any }> {
@@ -1581,17 +3077,21 @@ These images should be included naturally in the email HTML.`
                 // Parse tool input
                 let toolInput: any = {}
                 try {
-                  toolInput = JSON.parse(currentToolCall.input)
-                } catch (parseError) {
-                  console.error(`[v0] ❌ Failed to parse tool input for ${currentToolCall.name}:`, currentToolCall.input)
-                  toolCalls.push({ id: currentToolCall.id, name: currentToolCall.name, input: {} })
-                  toolResults.push({
-                    tool_use_id: currentToolCall.id,
-                    name: currentToolCall.name,
-                    content: { error: 'Invalid tool input format' },
+                  // Handle empty or invalid input gracefully
+                  if (currentToolCall.input && currentToolCall.input.trim()) {
+                    toolInput = JSON.parse(currentToolCall.input)
+                  } else {
+                    // Empty input is valid for tools with all optional parameters
+                    console.log(`[v0] ℹ️ Tool ${currentToolCall.name} called with empty input (using defaults)`)
+                    toolInput = {}
+                  }
+                } catch (parseError: any) {
+                  console.error(`[v0] ❌ Failed to parse tool input for ${currentToolCall.name}:`, {
+                    input: currentToolCall.input,
+                    error: parseError.message
                   })
-                  currentToolCall = null
-                  continue
+                  // Try to continue with empty input if all parameters are optional
+                  toolInput = {}
                 }
                 
                 // Store tool call info
@@ -1609,38 +3109,31 @@ These images should be included naturally in the email HTML.`
                 } else {
                   try {
                     const result = await tool.execute(toolInput)
+                    
+                    // Check if result indicates an error (for tools that return error objects instead of throwing)
+                    if (result && typeof result === 'object' && 'success' in result && result.success === false) {
+                      console.error(`[v0] ❌ Tool ${currentToolCall.name} returned error:`, result.error || 'Unknown error')
+                      if (result.filePath) {
+                        console.error(`[v0] ❌ Failed file path: ${result.filePath}`)
+                      }
+                    }
+                    
                     const toolResult = {
                       tool_use_id: currentToolCall.id,
                       name: currentToolCall.name,
                       content: result,
                     }
                     toolResults.push(toolResult)
-                    console.log(`[v0] ✅ Tool ${currentToolCall.name} executed successfully`)
                     
-                    // Emit tool-result event for compose_email so client can display preview immediately
-                    if (currentToolCall.name === 'compose_email' && result && result.html && result.subjectLine) {
-                      // Unescape HTML newlines if present
-                      let emailHtml = result.html
-                      if (typeof emailHtml === 'string') {
-                        emailHtml = emailHtml.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\'/g, "'")
-                      }
-                      
-                      // Yield tool-result event so client can detect and display email preview
-                      yield {
-                        type: 'tool-result' as const,
-                        data: {
-                          toolName: 'compose_email',
-                          toolCallId: currentToolCall.id,
-                          result: {
-                            html: emailHtml,
-                            subjectLine: result.subjectLine,
-                            preview: result.preview || stripHtml(emailHtml).substring(0, 200) + '...',
-                            readyToSend: result.readyToSend || true
-                          }
-                        }
-                      }
-                      console.log('[v0] 📧 Emitted tool-result event for compose_email')
+                    if (result && typeof result === 'object' && 'success' in result && result.success === false) {
+                      console.log(`[v0] ⚠️ Tool ${currentToolCall.name} executed but returned error result`)
+                    } else {
+                      console.log(`[v0] ✅ Tool ${currentToolCall.name} executed successfully`)
                     }
+                    
+                    // Note: Tool results are included in the message parts automatically
+                    // The frontend will extract them from message parts when the message is complete
+                    // We don't emit tool-result events in SSE as DefaultChatTransport doesn't recognize them
                   } catch (toolError: any) {
                     console.error(`[v0] ❌ Tool ${currentToolCall.name} execution error:`, toolError)
                     toolResults.push({
@@ -1719,6 +3212,9 @@ These images should be included naturally in the email HTML.`
                   },
                 ]
                 
+                // Capture email preview data from tool results before continuing
+                captureEmailPreviewFromToolResults(toolResults)
+                
                 // Create a new Anthropic request with tool results
                 const continuationResponse = await anthropic.messages.create({
                   model: 'claude-sonnet-4-20250514',
@@ -1729,21 +3225,31 @@ These images should be included naturally in the email HTML.`
                   stream: true,
                 })
                 
-                // Recursively process continuation stream
-                yield* processAnthropicStream(continuationResponse, messages, maxIterations - 1)
-                return // Exit after continuation
+                // Recursively process continuation stream - this will yield all text including final response
+                // Explicitly iterate to ensure all items are yielded
+                let continuationItemCount = 0
+                for await (const continuationItem of processAnthropicStream(continuationResponse, messages, maxIterations - 1)) {
+                  continuationItemCount++
+                  if (typeof continuationItem === 'string') {
+                    yield continuationItem
+                  }
+                }
+                console.log(`[v0] ✅ Continuation stream complete, yielded ${continuationItemCount} items`)
+                return // Exit after continuation is fully processed
               }
             }
           }
           
-          // If no tool results, we're done
-          if (toolResults.length === 0) {
-            break
-          }
+          // After processing all events, if we had tool results and continued, we're done
+          // If no tool results were generated, we're also done (text was already yielded)
+          break
         }
       }
       
       // Create Anthropic streaming response
+      // Note: Web search is enabled via Vercel AI Gateway when using the gateway model
+      // For direct Anthropic SDK, web search is not available in the current SDK version
+      // To enable web search, use the gateway model: "anthropic/claude-sonnet-4" via streamText
       const anthropicResponse = await anthropic.messages.create({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 4000,
@@ -1758,12 +3264,9 @@ These images should be included naturally in the email HTML.`
         console.log('[v0] 📡 Starting to process Anthropic stream events...')
         
         for await (const item of processAnthropicStream(anthropicResponse, anthropicMessages)) {
-          // Handle tool-result events
-          if (typeof item === 'object' && item !== null && 'type' in item && item.type === 'tool-result') {
-            yield item // Pass through tool-result events
-          }
-          // Handle text chunks
-          else if (typeof item === 'string' && item.length > 0) {
+          // Only yield text chunks - tool results are included in message parts automatically
+          // DefaultChatTransport doesn't recognize custom tool-result events
+          if (typeof item === 'string' && item.length > 0) {
             yield item
           }
         }
@@ -1787,6 +3290,9 @@ These images should be included naturally in the email HTML.`
           // Track accumulated text and email preview data for persistence
           let accumulatedText = ''
           let emailPreviewData: { html: string; subjectLine: string; preview: string } | null = null
+          
+          // Capture email preview data from tool results when stream completes
+          // We'll check capturedEmailPreviewData at the end
           
           // Helper to safely enqueue data
           const safeEnqueue = (data: Uint8Array) => {
@@ -1839,32 +3345,9 @@ These images should be included naturally in the email HTML.`
                 break
               }
               
-              // Handle tool-result events
-              if (typeof item === 'object' && item !== null && 'type' in item && item.type === 'tool-result') {
-                // Store email preview data if compose_email tool executed
-                if (item.data.toolName === 'compose_email' && item.data.result) {
-                  emailPreviewData = {
-                    html: item.data.result.html,
-                    subjectLine: item.data.result.subjectLine,
-                    preview: item.data.result.preview || ''
-                  }
-                  console.log('[v0] 📧 Captured email preview data from tool-result')
-                }
-                
-                // Emit tool-result event for client to detect
-                const toolResultMessage = {
-                  type: 'tool-result',
-                  id: messageId,
-                  toolName: item.data.toolName,
-                  toolCallId: item.data.toolCallId,
-                  result: item.data.result
-                }
-                const toolResultData = `data: ${JSON.stringify(toolResultMessage)}\n\n`
-                safeEnqueue(encoder.encode(toolResultData))
-                console.log(`[v0] 📧 Emitted tool-result event for ${item.data.toolName}`)
-              }
-              // Handle text chunks
-              else if (typeof item === 'string' && item.length > 0) {
+              // Handle text chunks only - tool results are included in message parts automatically
+              // DefaultChatTransport doesn't recognize custom tool-result events
+              if (typeof item === 'string' && item.length > 0) {
                 // Send text-start event before first chunk (DefaultChatTransport requirement)
                 if (chunkCount === 0) {
                   const startMessage = {
@@ -1925,11 +3408,14 @@ These images should be included naturally in the email HTML.`
             safeClose()
             console.log('[v0] ✅ UI message stream finished')
             
+            // Use captured email preview data if available (from tool results)
+            const finalEmailPreviewData = capturedEmailPreviewData || emailPreviewData
+            
             // Save message in finally block to ensure it runs even if stream is interrupted
             if (accumulatedText && activeChatId) {
               try {
-                await saveChatMessage(activeChatId, 'assistant', accumulatedText, emailPreviewData)
-                console.log('[v0] ✅ Saved assistant message to chat:', activeChatId, emailPreviewData ? 'with email preview data' : '')
+                await saveChatMessage(activeChatId, 'assistant', accumulatedText, finalEmailPreviewData)
+                console.log('[v0] ✅ Saved assistant message to chat:', activeChatId, finalEmailPreviewData ? 'with email preview data' : '')
               } catch (error) {
                 console.error("[v0] ❌ Error saving assistant message:", error)
               }
@@ -1959,17 +3445,45 @@ These images should be included naturally in the email HTML.`
         console.log('[v0] Using AI SDK (fallback mode)')
       }
       
+      // Track email preview data for streamText fallback path
+      let streamTextEmailPreviewData: { html: string; subjectLine: string; preview: string } | null = null
+      
       const result = streamText({
         model: "anthropic/claude-sonnet-4-20250514",
         system: systemPromptWithImages,
-        messages: modelMessages,
+        messages: modelMessagesToUse,
         maxOutputTokens: 4000,
         tools: tools,
-        onFinish: async ({ text }) => {
+        onFinish: async ({ text, toolCalls, toolResults }) => {
+          // Capture email preview data from tool results (same logic as direct Anthropic path)
+          if (toolResults && Array.isArray(toolResults)) {
+            for (const toolResult of toolResults) {
+              if (toolResult.toolName === 'compose_email') {
+                // Access result property with type assertion (AI SDK types may not be complete)
+                const toolResultData = (toolResult as any).result
+                if (toolResultData) {
+                  const result = typeof toolResultData === 'string' 
+                    ? JSON.parse(toolResultData) 
+                    : toolResultData
+                  
+                  if (result && result.html && result.subjectLine) {
+                    streamTextEmailPreviewData = {
+                      html: result.html,
+                      subjectLine: result.subjectLine,
+                      preview: result.preview || stripHtml(result.html).substring(0, 200) + '...'
+                    }
+                    console.log('[v0] 📧 Captured email preview data from streamText tool result')
+                    break
+                  }
+                }
+              }
+            }
+          }
+          
           if (text && activeChatId) {
             try {
-              await saveChatMessage(activeChatId, "assistant", text)
-              console.log('[v0] ✅ Saved assistant message to chat:', activeChatId)
+              await saveChatMessage(activeChatId, "assistant", text, streamTextEmailPreviewData)
+              console.log('[v0] ✅ Saved assistant message to chat:', activeChatId, streamTextEmailPreviewData ? 'with email preview data' : '')
             } catch (error) {
               console.error("[v0] ❌ Error saving assistant message:", error)
             }

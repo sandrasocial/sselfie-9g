@@ -23,8 +23,21 @@ import {
   validateSelfiePrompt,
   type ConceptToConvert,
 } from "@/lib/maya/pro/selfie-converter"
+import {
+  mergeGuidePromptWithImages,
+  extractPromptElements,
+  createVariationFromGuidePrompt,
+  type ReferenceImages,
+} from "@/lib/maya/prompt-builders/guide-prompt-handler"
 
 export const maxDuration = 120 // Increased to 2 minutes to handle slow AI responses
+
+/**
+ * Consistency Mode for Concept Generation
+ * - variety: Each concept has different outfit/location/scene (default)
+ * - consistent: All concepts use same outfit/location/lighting, only vary poses/angles
+ */
+type ConsistencyMode = 'variety' | 'consistent'
 
 /**
  * Link images to concept based on category and concept type
@@ -291,7 +304,7 @@ export async function POST(req: NextRequest) {
 
     // Parse request body
     const body = await req.json()
-    const { userRequest, imageLibrary, category, essenceWords, concepts } = body
+    const { userRequest, imageLibrary, category, essenceWords, concepts, consistencyMode = 'variety' } = body
 
     if (!userRequest || typeof userRequest !== "string") {
       return NextResponse.json({ error: "userRequest is required" }, { status: 400 })
@@ -361,6 +374,7 @@ export async function POST(req: NextRequest) {
       userRequestLength: userRequest.length,
       categoryHint: (categoryInfo && categoryInfo.name) ? categoryInfo.name : (categoryKey || "none - Maya will determine dynamically"),
       essenceWords: essenceWords || "none",
+      consistencyMode: consistencyMode, // NEW: Log consistency mode
       hasConcepts: !!concepts,
       conceptsCount: Array.isArray(concepts) ? concepts.length : 0,
       imageLibraryCounts: {
@@ -495,7 +509,6 @@ Make each concept unique, sophisticated, and based on the user's request. Use yo
       const { text } = await generateText({
         model: "anthropic/claude-sonnet-4-20250514",
         prompt: aiPrompt,
-        maxTokens: 4000,
         temperature: 0.85,
       })
 
@@ -660,13 +673,17 @@ Make each concept unique, sophisticated, and based on the user's request. Use yo
                 // Concept 4: three-quarter + low-angle + front-facing + centered
                 // Concept 5: medium + slightly-above + three-quarter + frame-within-frame
                 // User preferences (if detected) override framing/angle/composition, but positions still vary
+                // Determine if reference images should be used
+                const hasRefImages = library.selfies && library.selfies.length > 0
+                
                 const { fullPrompt: generatedPrompt, category: promptCategoryResult } = await buildProModePrompt(
                   promptCategory,
                   conceptComponents,
                   library,
                   userRequest,
                   undefined,
-                  index
+                  index,
+                  hasRefImages
                 )
                 fullPrompt = generatedPrompt
                 finalCategory = promptCategoryResult || promptCategory
@@ -692,13 +709,17 @@ Make each concept unique, sophisticated, and based on the user's request. Use yo
               // Concept 4: three-quarter + low-angle + front-facing + centered
               // Concept 5: medium + slightly-above + three-quarter + frame-within-frame
               // User preferences (if detected) override framing/angle/composition, but positions still vary
+              // Determine if reference images should be used
+              const hasRefImages = library.selfies && library.selfies.length > 0
+              
               const { fullPrompt: generatedPrompt, category: promptCategoryResult } = await buildProModePrompt(
                 promptCategory,
                 conceptComponents,
                 library,
                 userRequest,
                 undefined,
-                index
+                index,
+                hasRefImages
               )
               fullPrompt = generatedPrompt
               finalCategory = promptCategoryResult || promptCategory
@@ -753,9 +774,9 @@ Make each concept unique, sophisticated, and based on the user's request. Use yo
         }
       }
       
-      // 🎯 SELFIE CONVERSION: Convert 1-2 concepts to selfies
-      // Target: 1-2 selfies per generation (out of 6 concepts)
-      const selfieTargetCount = Math.min(2, conceptResults.length)
+      // 🎯 SELFIE CONVERSION: Convert exactly 1 concept to selfie
+      // Target: Only ONE selfie per generation (out of 6 concepts)
+      const selfieTargetCount = 1
       const selfieIndices: number[] = []
       
       // Select random indices for selfie conversion (avoid duplicates)
@@ -799,7 +820,10 @@ Make each concept unique, sophisticated, and based on the user's request. Use yo
             aesthetic: concept.aesthetic
           }
           
-          const converted = convertToSelfie(selfieConcept, selfieType)
+          // Determine if reference images should be used
+          const hasRefImages = library.selfies && library.selfies.length > 0
+          
+          const converted = convertToSelfie(selfieConcept, selfieType, hasRefImages)
           
           // Validate the converted prompt
           const validation = validateSelfiePrompt(converted.prompt)
@@ -871,6 +895,173 @@ Make each concept unique, sophisticated, and based on the user's request. Use yo
         error: "Failed to generate concepts",
         details: "No concepts were generated. Please try again.",
       }, { status: 500 })
+    }
+
+    // ============================================
+    // 🎬 CONSISTENCY MODE (POST-PROCESSING)
+    // ============================================
+    // Apply consistency mode if requested by user
+    // This is POST-PROCESSING that happens after Maya generates concepts
+    // Uses the same guide prompt variation logic, but triggered by user preference
+    
+    // Check if first concept appears to be from a guide prompt (similar to non-PRO mode check)
+    // This prevents double-application if consistency mode was already applied or guide prompt is active
+    const firstConceptIsGuidePrompt = generatedConcepts.length > 0 && 
+      generatedConcepts[0].title === 'Your Custom Prompt' && 
+      generatedConcepts[0].description === 'Using your guide prompt exactly as specified'
+    
+    // PRO mode doesn't use detectedGuidePrompt like non-PRO mode, but we still need guard conditions
+    // to prevent double-application if the first concept is already from a guide prompt
+    const shouldEnableConsistency = (
+      consistencyMode === 'consistent' &&
+      generatedConcepts.length >= 2 &&
+      !firstConceptIsGuidePrompt // Don't double-apply if guide prompt is already active
+    )
+
+    if (shouldEnableConsistency) {
+      console.log("[v0] [PRO MODE] 🎬 Applying CONSISTENCY MODE for video editing workflow")
+      console.log("[v0] [PRO MODE] Using concept #1 as style guide, creating variations for concepts #2-" + Math.min(generatedConcepts.length, 6))
+      
+      // Safety check: ensure concept #1 exists and has a prompt
+      if (!generatedConcepts[0]) {
+        console.warn("[v0] [PRO MODE] ⚠️ Cannot apply consistency mode: concept #1 is missing")
+      } else {
+        // Get the prompt from concept #1 (check both fullPrompt and prompt for compatibility)
+        const firstConceptPrompt = generatedConcepts[0].fullPrompt || generatedConcepts[0].prompt
+        if (!firstConceptPrompt) {
+          console.warn("[v0] [PRO MODE] ⚠️ Cannot apply consistency mode: concept #1 has no prompt")
+        } else {
+          // Use concept #1 as the guide prompt
+          const autoGuidePrompt = firstConceptPrompt
+          
+          // Create reference images object from library for mergeGuidePromptWithImages
+          const referenceImages: ReferenceImages = {
+            selfies: library.selfies,
+            products: library.products,
+            styleRefs: library.vibes,
+            userDescription: library.intent || undefined,
+          }
+          
+          // Merge with reference images if available
+          const guidePromptWithImages = mergeGuidePromptWithImages(
+            autoGuidePrompt,
+            referenceImages,
+            true // studioProMode = true for Pro Mode
+          )
+          
+          // Update concept #1 with image references (update both fullPrompt and prompt for compatibility)
+          generatedConcepts[0].fullPrompt = guidePromptWithImages
+          generatedConcepts[0].prompt = guidePromptWithImages
+          console.log("[v0] [PRO MODE] ✅ Concept #1 set as style guide (length:", guidePromptWithImages.length, "chars)")
+          
+          // Create variations for concepts #2-6 by calling generatePromptDirect() again
+          // This preserves Maya's full dynamic prompt quality while only changing poses/angles
+          for (let i = 1; i < Math.min(generatedConcepts.length, 6); i++) {
+            const variationNumber = i + 1
+            
+            // Build consistency instruction to preserve everything except pose/angle/expression
+            const consistencyInstruction = `
+🎯 CONSISTENCY MODE: Use this base prompt but ONLY change the pose/angle/expression.
+
+PRESERVE EXACTLY (from THIS GENERATION's concept #1):
+- Same outfit (brands, items, colors, materials - everything)
+- Same location/setting/scene
+- Same lighting conditions
+- Same camera specs
+- Same aesthetic details
+
+ONLY CHANGE:
+- Pose/action (standing, sitting, leaning, walking, etc.)
+- Camera angle (front-facing, side profile, three-quarter, etc.)
+- Expression (confident smile, thoughtful gaze, etc.)
+
+BASE PROMPT TO PRESERVE:
+"${autoGuidePrompt}"
+
+IMPORTANT CONTEXT:
+You (Maya) CHOSE this outfit in concept #1 using your fashion expertise and brand knowledge.
+This consistency mode maintains that SAME outfit across concepts #2-6 for this "day in the life" series.
+(The next time the user requests concepts, you can choose a COMPLETELY NEW outfit based on their request!)
+
+Generate variation #${variationNumber} with a DIFFERENT pose/angle/expression, but keep everything else identical.`
+
+            try {
+              // Import generatePromptDirect for PRO mode
+              const { generatePromptDirect } = await import('@/lib/maya/direct-prompt-generation')
+              
+              // Call generatePromptDirect() again with consistency instructions
+              const variationResult = await generatePromptDirect({
+                userRequest: consistencyInstruction,
+                category: generatedConcepts[i].category || category || undefined,
+                conceptIndex: i,
+                triggerWord: '', // Pro mode doesn't use trigger words
+                gender: 'woman', // TODO: Get from user profile
+                ethnicity: undefined,
+                physicalPreferences: undefined,
+                mode: 'pro',
+                referenceImages: referenceImages
+              })
+              
+              const variationPrompt = variationResult.prompt
+              
+              // Apply the variation prompt (update both fullPrompt and prompt for compatibility)
+              generatedConcepts[i].fullPrompt = variationPrompt
+              generatedConcepts[i].prompt = variationPrompt
+              
+              // Update title and description to reflect consistency
+              // Extract base title/description elements and create variation-specific versions
+              const baseTitle = generatedConcepts[0].title || ''
+              const baseDescription = generatedConcepts[0].description || ''
+              
+              // Create consistent title - append variation number if base title doesn't already indicate it
+              if (baseTitle && !baseTitle.match(/variation|#\d+/i)) {
+                generatedConcepts[i].title = `${baseTitle} (Variation ${variationNumber})`
+              } else {
+                // If base title already has variation info, create new consistent title
+                const baseTitleWithoutVariation = baseTitle.replace(/\s*\(.*variation.*\)/i, '').trim()
+                generatedConcepts[i].title = baseTitleWithoutVariation ? `${baseTitleWithoutVariation} (Variation ${variationNumber})` : baseTitle
+              }
+              
+              // Create consistent description - preserve base description but indicate pose variation
+              const poseDescriptions: Record<number, string> = {
+                2: "Standing near the window with contemplative expression",
+                3: "Leaning against the wall with confident posture",
+                4: "Sitting on edge of furniture with direct gaze",
+                5: "Walking casually through the space",
+                6: "Looking over shoulder with playful glance"
+              }
+              const poseDesc = poseDescriptions[variationNumber] || "Different pose and angle"
+              
+              // Update description to maintain consistency while indicating variation
+              if (baseDescription) {
+                // Try to preserve the base description structure, just update pose-related parts
+                generatedConcepts[i].description = baseDescription.replace(
+                  /(standing|sitting|leaning|walking|looking|posing|positioned)[^.]*/i,
+                  poseDesc.toLowerCase()
+                )
+                // If no pose was found/replaced, append pose info
+                if (generatedConcepts[i].description === baseDescription) {
+                  generatedConcepts[i].description = `${baseDescription} - ${poseDesc}`
+                }
+              } else {
+                generatedConcepts[i].description = poseDesc
+              }
+              
+              console.log("[v0] [PRO MODE] ✅ Concept #" + variationNumber + " created as variation (consistency mode - regenerated with Maya)")
+              console.log("[v0] [PRO MODE] - Title: \"" + generatedConcepts[i].title + "\"")
+              console.log("[v0] [PRO MODE] - Description: \"" + generatedConcepts[i].description + "\"")
+              console.log("[v0] [PRO MODE] 📝 Variation prompt preview:", variationPrompt.substring(0, 150) + "...")
+            } catch (error) {
+              console.error(`[v0] [PRO MODE] ⚠️ Error generating consistency variation #${variationNumber}, using base prompt:`, error)
+              // Fallback: use base prompt if generation fails
+              generatedConcepts[i].fullPrompt = autoGuidePrompt
+              generatedConcepts[i].prompt = autoGuidePrompt
+            }
+          }
+          
+          console.log("[v0] [PRO MODE] ✅ Consistency mode applied successfully to " + Math.min(generatedConcepts.length, 6) + " concepts")
+        }
+      }
     }
 
     // If concepts were provided (from hook), enhance them

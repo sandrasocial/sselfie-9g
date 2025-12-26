@@ -9,8 +9,10 @@ import EmailQuickActions from './email-quick-actions'
 import SegmentSelector from './segment-selector'
 import EmailPreviewCard from './email-preview-card'
 import CampaignStatusCards from './campaign-status-cards'
+import { EmailDraftsLibrary } from './email-drafts-library'
 import Image from 'next/image'
 import ReactMarkdown from 'react-markdown'
+import { Textarea } from '@/components/ui/textarea'
 
 interface AdminAgentChatProps {
   userId: string
@@ -123,14 +125,17 @@ export default function AdminAgentChatNew({
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const hasLoadedChatRef = useRef(false)
   const lastLoadedChatIdRef = useRef<number | null>(null) // Track last loaded chatId to prevent infinite loops
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
   const { toast } = useToast()
   
   // Email UI state
   const [showQuickActions, setShowQuickActions] = useState(true)
   const [showSegmentSelector, setShowSegmentSelector] = useState(false)
   const [emailPreview, setEmailPreview] = useState<any>(null)
+  const [currentDraftId, setCurrentDraftId] = useState<number | null>(null) // Track current draft ID
   const [recentCampaigns, setRecentCampaigns] = useState<any[]>([])
   const [availableSegments, setAvailableSegments] = useState<any[]>([])
+  const [showEmailLibrary, setShowEmailLibrary] = useState(false) // Show/hide email library
   
   // Loading and error states
   const [toolLoading, setToolLoading] = useState<string | null>(null) // Track which tool is loading
@@ -571,37 +576,108 @@ export default function AdminAgentChatNew({
 
   // Parse agent response for UI triggers from tool results (simplified)
   useEffect(() => {
-    if (!messages.length) return
+    if (!messages.length) {
+      // Clear email preview if no messages
+      if (emailPreview) {
+        setEmailPreview(null)
+      }
+      return
+    }
     
     // Check most recent assistant message for tool results
     const lastAssistantMsg = messages
       .filter(m => m.role === 'assistant')
       .pop()
     
-    if (!lastAssistantMsg) return
+    if (!lastAssistantMsg) {
+      // Clear email preview if no assistant messages
+      if (emailPreview) {
+        setEmailPreview(null)
+      }
+      return
+    }
+    
+    // Track if we found a valid email preview in this check
+    let foundValidEmailPreview = false
+    
+    // Helper function to extract and validate email preview
+    const extractEmailPreview = (result: any, source: string) => {
+      // Validate that result is an object with html property (not a string message)
+      if (!result || typeof result !== 'object' || Array.isArray(result)) {
+        return null
+      }
+      
+      // Ensure html is actually HTML (starts with < or <!DOCTYPE), not plain text
+      const htmlValue = result.html
+      if (!htmlValue || typeof htmlValue !== 'string') {
+        console.warn(`[v0] ⚠️ Invalid email preview data in ${source}: html is not a string`, {
+          htmlType: typeof htmlValue,
+          hasHtml: !!htmlValue
+        })
+        return null
+      }
+      
+      const trimmedHtml = htmlValue.trim()
+      if (!trimmedHtml.startsWith('<') && !trimmedHtml.startsWith('<!DOCTYPE')) {
+        console.warn(`[v0] ⚠️ Invalid email preview data in ${source}: html does not start with < or <!DOCTYPE`, {
+          htmlStartsWith: trimmedHtml.substring(0, 50),
+          htmlLength: trimmedHtml.length,
+          isPlainText: !trimmedHtml.includes('<')
+        })
+        return null
+      }
+      
+      if (!result.subjectLine || typeof result.subjectLine !== 'string') {
+        console.warn(`[v0] ⚠️ Invalid email preview data in ${source}: subjectLine is missing or not a string`)
+        return null
+      }
+      
+      if (result.error) {
+        console.warn(`[v0] ⚠️ Email preview has error in ${source}:`, result.error)
+        return null
+      }
+      
+      // Valid email preview data
+      return {
+        subject: result.subjectLine,
+        preview: result.preview || htmlValue.replace(/<[^>]*>/g, '').substring(0, 200) + '...',
+        html: htmlValue, // Use validated HTML
+        targetSegment: 'All Subscribers',
+        targetCount: 2746
+      }
+    }
     
     // AI SDK stores tool results in toolInvocations array or in parts array
-    // Check both locations for compatibility
+    // Check both locations for compatibility, but only extract once
     const toolInvocations = (lastAssistantMsg as any).toolInvocations
     const parts = (lastAssistantMsg as any).parts
     
-    // Process toolInvocations (AI SDK format)
-    if (toolInvocations && Array.isArray(toolInvocations)) {
+    // Process toolInvocations (AI SDK format) - PRIORITY 1
+    if (toolInvocations && Array.isArray(toolInvocations) && !foundValidEmailPreview) {
       for (const invocation of toolInvocations) {
         // Check for compose_email tool
         if (invocation.toolName === 'compose_email' && invocation.result) {
-          const result = invocation.result
+          const emailPreviewData = extractEmailPreview(invocation.result, 'toolInvocations')
           
-          if (result.html && result.subjectLine && !result.error) {
-            console.log('[v0] ✅ Email preview found in toolInvocations')
-            setEmailPreview({
-              subject: result.subjectLine,
-              preview: result.preview || result.html.replace(/<[^>]*>/g, '').substring(0, 200) + '...',
-              html: result.html,
-              targetSegment: 'All Subscribers',
-              targetCount: 2746
+          if (emailPreviewData) {
+            console.log('[v0] ✅ Email preview found in toolInvocations', {
+              htmlLength: emailPreviewData.html.length,
+              htmlPreview: emailPreviewData.html.substring(0, 100),
+              htmlStartsWith: emailPreviewData.html.substring(0, 20),
+              subjectLine: emailPreviewData.subject,
+              hasPreview: !!emailPreviewData.preview
             })
-            return // Stop after first email found
+            
+            console.log('[v0] 📧 Setting email preview with data:', {
+              subject: emailPreviewData.subject,
+              htmlLength: emailPreviewData.html.length,
+              htmlStartsWith: emailPreviewData.html.substring(0, 50),
+              previewLength: emailPreviewData.preview.length
+            })
+            
+            setEmailPreview(emailPreviewData)
+            foundValidEmailPreview = true
+            // Don't continue - process all tool results in this iteration (audience data, campaign status, etc.)
           }
         }
         
@@ -638,38 +714,48 @@ export default function AdminAgentChatNew({
       }
     }
     
-    // Fallback: Check parts array (alternative format)
-    if (parts && Array.isArray(parts)) {
+    // Fallback: Check parts array (alternative format) - PRIORITY 2 (only if not found in toolInvocations)
+    if (parts && Array.isArray(parts) && !foundValidEmailPreview) {
       for (const part of parts) {
         const partAny = part as any
           
-          // Check for compose_email tool result
+        // Check for compose_email tool result
         if (partAny.type === 'tool-result' && partAny.toolName === 'compose_email' && partAny.result) {
-          const result = partAny.result
+          let result = partAny.result
           
           // Handle stringified JSON
-            let parsedResult = result
-            if (typeof result === 'string') {
-              try {
-                parsedResult = JSON.parse(result)
-              } catch (e) {
-                console.warn('[v0] ⚠️ Could not parse result as JSON:', e)
+          if (typeof result === 'string') {
+            try {
+              result = JSON.parse(result)
+            } catch (e) {
+              console.warn('[v0] ⚠️ Could not parse result as JSON:', e)
               continue
-              }
-            }
-            
-            if (parsedResult && parsedResult.html && parsedResult.subjectLine && !parsedResult.error) {
-            console.log('[v0] ✅ Email preview found in parts')
-              setEmailPreview({
-                subject: parsedResult.subjectLine,
-              preview: parsedResult.preview || parsedResult.html.replace(/<[^>]*>/g, '').substring(0, 200) + '...',
-              html: parsedResult.html,
-              targetSegment: 'All Subscribers',
-              targetCount: 2746
-              })
-              return
             }
           }
+          
+          const emailPreviewData = extractEmailPreview(result, 'parts')
+          
+          if (emailPreviewData) {
+            console.log('[v0] ✅ Email preview found in parts', {
+              htmlLength: emailPreviewData.html.length,
+              htmlPreview: emailPreviewData.html.substring(0, 100),
+              htmlStartsWith: emailPreviewData.html.substring(0, 20),
+              subjectLine: emailPreviewData.subject,
+              hasPreview: !!emailPreviewData.preview
+            })
+            
+            console.log('[v0] 📧 Setting email preview with data:', {
+              subject: emailPreviewData.subject,
+              htmlLength: emailPreviewData.html.length,
+              htmlStartsWith: emailPreviewData.html.substring(0, 50),
+              previewLength: emailPreviewData.preview.length
+            })
+            
+            setEmailPreview(emailPreviewData)
+            foundValidEmailPreview = true
+            // Don't continue - process all tool results in this iteration (audience data, campaign status, etc.)
+          }
+        }
           
           // Check for get_resend_audience_data tool result
         if (partAny.type === 'tool-result' && partAny.toolName === 'get_resend_audience_data' && partAny.result) {
@@ -703,7 +789,71 @@ export default function AdminAgentChatNew({
         }
       }
     }
+    
+    // If we didn't find a valid email preview in the latest message, but we have one set,
+    // check if it's still valid (not from an old message)
+    // Note: We check emailPreview but don't include it in deps to avoid infinite loops
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (!foundValidEmailPreview && emailPreview) {
+      // Validate current email preview HTML is still valid
+      if (emailPreview.html && typeof emailPreview.html === 'string') {
+        const html = emailPreview.html.trim()
+        if (!html.startsWith('<') && !html.startsWith('<!DOCTYPE')) {
+          console.warn('[v0] ⚠️ Current email preview has invalid HTML, clearing it')
+          setEmailPreview(null)
+        }
+      } else {
+        console.warn('[v0] ⚠️ Current email preview has no HTML, clearing it')
+        setEmailPreview(null)
+      }
+    }
   }, [messages])
+
+  // Auto-save email draft to database when preview is created/updated
+  // FIX: Use ref to capture currentDraftId without causing re-triggers
+  const currentDraftIdRef = useRef<number | null>(currentDraftId)
+  useEffect(() => {
+    currentDraftIdRef.current = currentDraftId
+  }, [currentDraftId])
+
+  useEffect(() => {
+    if (!emailPreview || !emailPreview.html) return
+
+    const saveEmailDraft = async () => {
+      try {
+        const response = await fetch('/api/admin/agent/email-drafts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chatId: chatId || null,
+            draftName: emailPreview.subject || 'Untitled Email',
+            subjectLine: emailPreview.subject,
+            previewText: emailPreview.preview,
+            bodyHtml: emailPreview.html,
+            emailType: 'newsletter',
+            targetSegment: emailPreview.targetSegment || 'All Subscribers',
+            imageUrls: [], // TODO: Extract from HTML if needed
+            parentDraftId: currentDraftIdRef.current || undefined, // Use ref to avoid dependency
+          }),
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          if (data.draft?.id) {
+            setCurrentDraftId(data.draft.id)
+            console.log('[EmailDrafts] ✅ Draft saved:', data.draft.id)
+          }
+        }
+      } catch (error) {
+        console.error('[EmailDrafts] Error saving draft:', error)
+        // Don't show error to user - this is background save
+      }
+    }
+
+    // Debounce saves to avoid too many requests
+    const timeoutId = setTimeout(saveEmailDraft, 1000)
+    return () => clearTimeout(timeoutId)
+  }, [emailPreview, chatId]) // Removed currentDraftId from dependencies
 
   const handleNewChat = async () => {
     try {
@@ -875,6 +1025,11 @@ export default function AdminAgentChatNew({
     setInputValue("")
     setSelectedGalleryImages(new Set())
     setShowGallery(false)
+    
+    // Reset textarea height
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto'
+    }
 
     // Send message using useChat
     // sendMessage accepts { text: string } or message object with parts
@@ -922,12 +1077,20 @@ export default function AdminAgentChatNew({
   }, {})
 
   return (
-    <div className="flex h-screen bg-stone-50 overflow-hidden">
+    <div className="flex h-screen bg-stone-50 overflow-hidden relative">
+      {/* Mobile Overlay */}
+      {showHistory && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => setShowHistory(false)}
+        />
+      )}
+      
       {/* Sidebar */}
-      <div className={`w-80 bg-white border-r border-stone-200 flex flex-col transition-all ${showHistory ? '' : '-ml-80 md:ml-0'} shrink-0`}>
-        <div className="p-4 border-b border-stone-200">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-stone-900">Chat History</h2>
+      <div className={`w-80 bg-white border-r border-stone-200 flex flex-col transition-all ${showHistory ? '' : '-ml-80 md:ml-0'} shrink-0 fixed md:relative h-full z-50 md:z-auto`}>
+        <div className="p-3 sm:p-4 border-b border-stone-200">
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <h2 className="text-base sm:text-lg font-semibold text-stone-900">Chat History</h2>
             <button
               onClick={() => setShowHistory(false)}
               className="md:hidden p-2 hover:bg-stone-100 rounded-lg"
@@ -937,30 +1100,30 @@ export default function AdminAgentChatNew({
           </div>
           <button
             onClick={handleNewChat}
-            className="w-full flex items-center gap-2 px-4 py-2 bg-stone-950 text-white rounded-lg hover:bg-stone-800 transition-colors"
+            className="w-full flex items-center gap-2 px-3 sm:px-4 py-2 bg-stone-950 text-white rounded-lg hover:bg-stone-800 transition-colors text-sm sm:text-base"
           >
             <Plus className="w-4 h-4" />
             New Chat
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4">
           {Object.entries(groupedChats).map(([groupKey, groupChats]: [string, any]) => (
-            <div key={groupKey} className="mb-6">
+            <div key={groupKey} className="mb-4 sm:mb-6">
               <h3 className="text-xs uppercase text-stone-500 mb-2 tracking-wider">{groupKey}</h3>
               <div className="space-y-1">
                 {(groupChats as any[]).map((chat) => (
                   <button
                     key={chat.id}
                     onClick={() => handleSelectChat(chat.id, chat.chat_title)}
-                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                    className={`w-full text-left px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm transition-colors ${
                       chat.id === chatId
                         ? 'bg-stone-950 text-white'
                         : 'hover:bg-stone-100 text-stone-700'
                     }`}
                   >
                     <div className="truncate">{chat.chat_title || 'New Chat'}</div>
-                    <div className="text-xs opacity-70 mt-1">
+                    <div className="text-xs opacity-70 mt-0.5 sm:mt-1">
                       {new Date(chat.last_activity).toLocaleDateString()}
                     </div>
                   </button>
@@ -972,44 +1135,75 @@ export default function AdminAgentChatNew({
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col w-full md:w-auto">
         {/* Header */}
-        <div className="bg-white border-b border-stone-200 p-4">
+        <div className="bg-white border-b border-stone-200 p-3 sm:p-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
               <button
                 onClick={() => setShowHistory(true)}
-                className="md:hidden p-2 hover:bg-stone-100 rounded-lg"
+                className="md:hidden p-2 hover:bg-stone-100 rounded-lg shrink-0"
               >
                 <Menu className="w-5 h-5" />
               </button>
-              <h1 className="text-xl font-semibold text-stone-900">{chatTitle}</h1>
+              <h1 className="text-base sm:text-xl font-semibold text-stone-900 truncate">{chatTitle}</h1>
             </div>
-            <button
-              onClick={handleNewChat}
-              className="flex items-center gap-2 px-4 py-2 bg-stone-100 text-stone-900 rounded-lg hover:bg-stone-200 transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              New Chat
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowEmailLibrary(!showEmailLibrary)}
+                className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg transition-colors text-xs sm:text-sm shrink-0 ${
+                  showEmailLibrary
+                    ? 'bg-stone-900 text-white hover:bg-stone-800'
+                    : 'bg-stone-100 text-stone-900 hover:bg-stone-200'
+                }`}
+                title="Email Library"
+              >
+                <Mail className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Email Library</span>
+                <span className="sm:hidden">Library</span>
+              </button>
+              <button
+                onClick={handleNewChat}
+                className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-stone-100 text-stone-900 rounded-lg hover:bg-stone-200 transition-colors text-xs sm:text-sm shrink-0"
+              >
+                <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">New Chat</span>
+                <span className="sm:hidden">New</span>
+              </button>
+            </div>
           </div>
         </div>
 
+        {/* Email Library */}
+        {showEmailLibrary && (
+          <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
+            <EmailDraftsLibrary
+              onEditDraft={async (draft) => {
+                setShowEmailLibrary(false)
+                // Load the draft HTML into the chat for editing
+                const editPrompt = `Please edit this email. Here's the current version:\n\nSubject: ${draft.subject_line}\n\nHTML:\n${draft.body_html}`
+                await sendMessage({ text: editPrompt })
+              }}
+            />
+          </div>
+        )}
+
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-6">
-          {isLoadingChat ? (
+        {!showEmailLibrary && (
+          <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
+            {isLoadingChat ? (
             <div className="flex items-center justify-center h-full">
-              <div className="text-stone-500">Loading chat...</div>
+              <div className="text-sm sm:text-base text-stone-500">Loading chat...</div>
             </div>
           ) : (
             <>
               {/* Tool Execution Loading Indicator */}
               {executingTool && (
-                <div className="max-w-4xl mx-auto mb-4">
-                  <div className="bg-stone-50 border border-stone-200 rounded-lg p-4 flex items-center gap-3">
-                    <div className="w-5 h-5 border-2 border-stone-900 border-t-transparent rounded-full animate-spin"></div>
-                    <div>
-                      <p className="text-sm font-medium text-stone-900">
+                <div className="max-w-4xl mx-auto mb-3 sm:mb-4">
+                  <div className="bg-stone-50 border border-stone-200 rounded-lg p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
+                    <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-stone-900 border-t-transparent rounded-full animate-spin shrink-0"></div>
+                    <div className="min-w-0">
+                      <p className="text-xs sm:text-sm font-medium text-stone-900 truncate">
                         {executingTool === 'compose_email' && 'Creating your email...'}
                         {executingTool === 'schedule_campaign' && 'Scheduling campaign...'}
                         {executingTool === 'get_resend_audience_data' && 'Fetching audience data...'}
@@ -1022,13 +1216,13 @@ export default function AdminAgentChatNew({
               
               {messages.length === 0 ? (
             <div className="flex items-center justify-center h-full">
-              <div className="text-center text-stone-500">
-                <p className="text-lg mb-2">Start a conversation</p>
-                <p className="text-sm">Ask me anything about your business, strategy, or growth!</p>
+              <div className="text-center text-stone-500 px-4">
+                <p className="text-base sm:text-lg mb-2">Start a conversation</p>
+                <p className="text-xs sm:text-sm">Ask me anything about your business, strategy, or growth!</p>
               </div>
             </div>
           ) : (
-            <div className="space-y-4 max-w-4xl mx-auto">
+            <div className="space-y-3 sm:space-y-4 max-w-4xl mx-auto">
               {(() => {
                 console.log('[v0] 📋 Rendering messages:', {
                   count: messages.length,
@@ -1051,13 +1245,13 @@ export default function AdminAgentChatNew({
                   className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
                 >
                   <div
-                    className={`max-w-[85%] rounded-2xl px-6 py-4 ${
+                    className={`max-w-[90%] sm:max-w-[85%] rounded-xl sm:rounded-2xl px-3 sm:px-4 md:px-6 py-2.5 sm:py-3 md:py-4 ${
                       message.role === "user"
                         ? "bg-stone-950 text-white"
                         : "bg-stone-100 text-stone-900"
                     }`}
                   >
-                    <div className="text-sm leading-relaxed">
+                    <div className="text-xs sm:text-sm leading-relaxed">
                       {message.role === "assistant" ? (
                         (() => {
                           const content = getMessageContent(message)
@@ -1072,8 +1266,24 @@ export default function AdminAgentChatNew({
                             return <div className="text-stone-500 italic">Empty message</div>
                           }
                           return (
-                            <div className="prose prose-sm max-w-none text-stone-900">
-                              <ReactMarkdown>{content}</ReactMarkdown>
+                            <div className="prose prose-sm sm:prose-base max-w-none text-stone-900 prose-headings:font-semibold prose-headings:text-stone-900 prose-p:text-stone-700 prose-p:leading-relaxed prose-ul:list-disc prose-ul:pl-4 sm:prose-ul:pl-6 prose-ol:list-decimal prose-ol:pl-4 sm:prose-ol:pl-6 prose-li:text-stone-700 prose-strong:text-stone-900 prose-strong:font-semibold prose-a:text-stone-900 prose-a:underline prose-code:text-stone-900 prose-code:bg-stone-100 prose-code:px-1 prose-code:rounded prose-pre:bg-stone-100 prose-pre:border prose-pre:border-stone-200 prose-blockquote:border-l-stone-300 prose-blockquote:text-stone-600">
+                              <ReactMarkdown
+                                components={{
+                                  p: ({ children }) => <p className="mb-3 sm:mb-4 last:mb-0 text-xs sm:text-sm">{children}</p>,
+                                  ul: ({ children }) => <ul className="mb-3 sm:mb-4 space-y-1">{children}</ul>,
+                                  ol: ({ children }) => <ol className="mb-3 sm:mb-4 space-y-1">{children}</ol>,
+                                  li: ({ children }) => <li className="ml-3 sm:ml-4 text-xs sm:text-sm">{children}</li>,
+                                  h1: ({ children }) => <h1 className="text-lg sm:text-xl md:text-2xl font-semibold mb-2 sm:mb-3 mt-4 sm:mt-6 first:mt-0">{children}</h1>,
+                                  h2: ({ children }) => <h2 className="text-base sm:text-lg md:text-xl font-semibold mb-2 mt-3 sm:mt-5 first:mt-0">{children}</h2>,
+                                  h3: ({ children }) => <h3 className="text-sm sm:text-base md:text-lg font-semibold mb-1.5 sm:mb-2 mt-3 sm:mt-4 first:mt-0">{children}</h3>,
+                                  strong: ({ children }) => <strong className="font-semibold text-stone-900">{children}</strong>,
+                                  em: ({ children }) => <em className="italic">{children}</em>,
+                                  code: ({ children }) => <code className="bg-stone-100 text-stone-900 px-1 sm:px-1.5 py-0.5 rounded text-xs sm:text-sm font-mono break-all">{children}</code>,
+                                  blockquote: ({ children }) => <blockquote className="border-l-4 border-stone-300 pl-2 sm:pl-4 italic text-stone-600 my-3 sm:my-4 text-xs sm:text-sm">{children}</blockquote>,
+                                }}
+                              >
+                                {content}
+                              </ReactMarkdown>
                             </div>
                           )
                         })()
@@ -1095,7 +1305,7 @@ export default function AdminAgentChatNew({
 
               {isLoading && (
                 <div className="flex justify-start">
-                  <div className="bg-stone-100 rounded-2xl px-6 py-4">
+                  <div className="bg-stone-100 rounded-xl sm:rounded-2xl px-4 sm:px-6 py-3 sm:py-4">
                     <div className="flex gap-1">
                       <div className="w-2 h-2 rounded-full bg-stone-700 animate-bounce"></div>
                       <div
@@ -1118,11 +1328,11 @@ export default function AdminAgentChatNew({
 
           {/* Tool Loading Indicator */}
           {toolLoading && (
-            <div className="max-w-4xl mx-auto mb-4">
-              <div className="bg-stone-50 border border-stone-200 rounded-lg p-4 flex items-center gap-3">
-                <div className="w-5 h-5 border-2 border-stone-900 border-t-transparent rounded-full animate-spin"></div>
-                <div>
-                  <p className="text-sm font-medium text-stone-900">
+            <div className="max-w-4xl mx-auto mb-3 sm:mb-4 px-3 sm:px-0">
+              <div className="bg-stone-50 border border-stone-200 rounded-lg p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
+                <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-stone-900 border-t-transparent rounded-full animate-spin shrink-0"></div>
+                <div className="min-w-0">
+                  <p className="text-xs sm:text-sm font-medium text-stone-900 truncate">
                     {toolLoading === 'compose_email' && 'Creating your email...'}
                     {toolLoading === 'schedule_campaign' && 'Scheduling campaign...'}
                     {toolLoading === 'check_campaign_status' && 'Checking campaign status...'}
@@ -1130,7 +1340,7 @@ export default function AdminAgentChatNew({
                     {toolLoading === 'analyze_email_strategy' && 'Analyzing email strategy...'}
                     {!toolLoading.includes('_') && `Running ${toolLoading}...`}
                   </p>
-                  <p className="text-xs text-stone-600">This may take a few seconds</p>
+                  <p className="text-xs text-stone-600 hidden sm:block">This may take a few seconds</p>
                 </div>
               </div>
             </div>
@@ -1138,16 +1348,16 @@ export default function AdminAgentChatNew({
 
           {/* Tool Error Display */}
           {Object.keys(toolErrors).length > 0 && (
-            <div className="max-w-4xl mx-auto mb-4">
+            <div className="max-w-4xl mx-auto mb-3 sm:mb-4 px-3 sm:px-0">
               {Object.entries(toolErrors).map(([toolName, error]) => {
                 // Filter out Next.js error page HTML from error messages
                 const filteredError = filterErrorPageHTML(error)
                 return (
-                  <div key={toolName} className="bg-red-50 border border-red-200 rounded-lg p-4 mb-2">
-                    <p className="text-sm font-medium text-red-900 mb-1">
+                  <div key={toolName} className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4 mb-2">
+                    <p className="text-xs sm:text-sm font-medium text-red-900 mb-1">
                       {toolName === 'general' ? 'Chat Error' : `${toolName} Error`}
                     </p>
-                    <p className="text-xs text-red-700">{filteredError}</p>
+                    <p className="text-xs text-red-700 break-words">{filteredError}</p>
                     <button
                       onClick={() => setToolErrors(prev => {
                         const newErrors = { ...prev }
@@ -1166,7 +1376,7 @@ export default function AdminAgentChatNew({
 
           {/* Quick Actions - Show when chat is empty or suggested by agent */}
           {showQuickActions && messages.length === 0 && !toolLoading && (
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-4xl mx-auto px-3 sm:px-0">
               <EmailQuickActions
                 onAction={async (category, prompt) => {
                   setShowQuickActions(false)
@@ -1179,7 +1389,7 @@ export default function AdminAgentChatNew({
 
           {/* Segment Selector - Show when agent requests segment selection */}
           {showSegmentSelector && (
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-4xl mx-auto px-3 sm:px-0">
               <SegmentSelector
                 segments={availableSegments}
                 onSelect={async (segmentId, segmentName) => {
@@ -1195,7 +1405,7 @@ export default function AdminAgentChatNew({
 
           {/* Email Preview - Show when agent creates email */}
           {emailPreview && (
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-4xl mx-auto px-3 sm:px-0">
               <EmailPreviewCard
                 subject={emailPreview.subject}
                 preview={emailPreview.preview}
@@ -1203,9 +1413,18 @@ export default function AdminAgentChatNew({
                 targetSegment={emailPreview.targetSegment}
                 targetCount={emailPreview.targetCount}
                 onEdit={async () => {
-                  setEmailPreview(null)
+                  // Don't clear preview - keep it visible so Alex can see the current version
+                  // Pass the FULL email HTML to Alex so he can edit it properly
+                  // Use previousVersion parameter in compose_email tool
+                  const editPrompt = `Please make edits to this email. Keep the overall structure and style, just make the specific changes I requested.
+
+Current email HTML:
+${emailPreview.html}
+
+Subject: ${emailPreview.subject}`
+                  
                   await sendMessage({ 
-                    text: 'Make changes to this email' 
+                    text: editPrompt
                   })
                 }}
                 onApprove={async () => {
@@ -1258,8 +1477,8 @@ export default function AdminAgentChatNew({
 
           {/* Recent Campaigns - Show when agent provides status */}
           {recentCampaigns.length > 0 && (
-            <div className="max-w-4xl mx-auto mb-4">
-              <h3 className="text-sm font-semibold text-stone-900 mb-3">
+            <div className="max-w-4xl mx-auto mb-3 sm:mb-4 px-3 sm:px-0">
+              <h3 className="text-xs sm:text-sm font-semibold text-stone-900 mb-2 sm:mb-3">
                 Recent Campaigns
               </h3>
               <CampaignStatusCards
@@ -1277,14 +1496,15 @@ export default function AdminAgentChatNew({
               />
             </div>
           )}
-        </div>
+          </div>
+        )}
 
         {/* Gallery Selector */}
         {showGallery && (
-          <div className="bg-stone-50 border-t border-stone-200 p-4 sm:p-6 max-h-96 overflow-y-auto">
-            <div className="max-w-4xl mx-auto space-y-4">
+          <div className="bg-stone-50 border-t border-stone-200 p-3 sm:p-4 md:p-6 max-h-96 overflow-y-auto">
+            <div className="max-w-4xl mx-auto space-y-3 sm:space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm uppercase tracking-wider text-stone-900 font-serif">
+                <h3 className="text-xs sm:text-sm uppercase tracking-wider text-stone-900 font-serif">
                   Select Images from Gallery
                 </h3>
                 <button
@@ -1294,17 +1514,17 @@ export default function AdminAgentChatNew({
                   }}
                   className="text-stone-500 hover:text-stone-700 p-1"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-4 h-4 sm:w-5 sm:h-5" />
                 </button>
               </div>
 
               {/* Category Filter */}
-              <div className="flex gap-2 flex-wrap">
+              <div className="flex gap-1.5 sm:gap-2 flex-wrap">
                 {["all", "lifestyle", "product", "portrait", "fashion", "editorial"].map((cat) => (
                   <button
                     key={cat}
                     onClick={() => setSelectedCategory(cat)}
-                    className={`px-3 sm:px-4 py-2 text-xs uppercase tracking-wider transition-colors rounded-lg ${
+                    className={`px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 text-xs uppercase tracking-wider transition-colors rounded-lg ${
                       selectedCategory === cat
                         ? "bg-stone-900 text-stone-50"
                         : "bg-stone-200 text-stone-700 hover:bg-stone-300"
@@ -1317,16 +1537,16 @@ export default function AdminAgentChatNew({
 
               {/* Selected Count */}
               {selectedGalleryImages.size > 0 && (
-                <div className="text-sm text-stone-600">
+                <div className="text-xs sm:text-sm text-stone-600">
                   {selectedGalleryImages.size} image{selectedGalleryImages.size > 1 ? 's' : ''} selected
                 </div>
               )}
 
               {/* Gallery Grid */}
               {galleryLoading ? (
-                <div className="text-center py-8 text-stone-500 text-sm">Loading images...</div>
+                <div className="text-center py-6 sm:py-8 text-stone-500 text-xs sm:text-sm">Loading images...</div>
               ) : (
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 sm:gap-4">
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-1.5 sm:gap-2 md:gap-4">
                   {galleryImages.map((image) => {
                     const isSelected = selectedGalleryImages.has(image.image_url)
                     return (
@@ -1376,7 +1596,7 @@ export default function AdminAgentChatNew({
               )}
 
               {!galleryLoading && galleryImages.length === 0 && (
-                <div className="text-center py-8 text-stone-500 text-sm">No images found in this category</div>
+                <div className="text-center py-6 sm:py-8 text-stone-500 text-xs sm:text-sm">No images found in this category</div>
               )}
 
               {/* Load More Button */}
@@ -1385,16 +1605,18 @@ export default function AdminAgentChatNew({
                   <button
                     onClick={loadMoreImages}
                     disabled={galleryLoadingMore}
-                    className="px-4 sm:px-6 py-2 bg-stone-200 hover:bg-stone-300 text-stone-700 rounded-lg text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    className="px-3 sm:px-4 md:px-6 py-1.5 sm:py-2 bg-stone-200 hover:bg-stone-300 text-stone-700 rounded-lg text-xs sm:text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 sm:gap-2"
                   >
                     {galleryLoadingMore ? (
                       <>
-                        <div className="w-4 h-4 border-2 border-stone-400 border-t-transparent rounded-full animate-spin" />
+                        <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 border-2 border-stone-400 border-t-transparent rounded-full animate-spin" />
                         <span className="hidden sm:inline">Loading...</span>
+                        <span className="sm:hidden">...</span>
                       </>
                     ) : (
                       <>
-                        Load More ({galleryImages.length} shown)
+                        <span className="hidden sm:inline">Load More ({galleryImages.length} shown)</span>
+                        <span className="sm:hidden">More ({galleryImages.length})</span>
                       </>
                     )}
                   </button>
@@ -1402,7 +1624,7 @@ export default function AdminAgentChatNew({
               )}
 
               {!galleryLoading && galleryImages.length > 0 && !hasMoreImages && (
-                <div className="text-center py-2 text-stone-500 text-sm">
+                <div className="text-center py-2 text-stone-500 text-xs sm:text-sm">
                   All {galleryImages.length} images loaded
                 </div>
               )}
@@ -1458,44 +1680,61 @@ export default function AdminAgentChatNew({
         )}
 
         {/* Input */}
-        <div className="bg-white border-t border-stone-200 p-4">
+        <div className="bg-white border-t border-stone-200 p-3 sm:p-4">
           <div className="max-w-4xl mx-auto">
             <form
               onSubmit={(e) => {
                 e.preventDefault()
                 handleSendMessage()
               }}
-              className="flex gap-3"
+              className="flex gap-2 sm:gap-3"
             >
               <button
                 type="button"
                 onClick={() => setShowGallery(!showGallery)}
                 disabled={isLoading}
-                className={`px-4 py-3 border rounded-lg transition-colors flex items-center gap-2 shrink-0 ${
+                className={`px-2 sm:px-4 py-2 sm:py-3 border rounded-lg transition-colors flex items-center gap-1.5 sm:gap-2 shrink-0 text-xs sm:text-sm ${
                   showGallery
                     ? 'bg-stone-900 text-white border-stone-900'
                     : 'bg-white text-stone-700 border-stone-300 hover:bg-stone-50'
                 } disabled:opacity-50 disabled:cursor-not-allowed`}
                 title="Select images from gallery"
               >
-                <ImageIcon className="w-4 h-4" />
-                <span>Gallery</span>
+                <ImageIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Gallery</span>
               </button>
-              <input
-                type="text"
+              <Textarea
+                ref={textareaRef}
                 value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                placeholder="Ask me anything..."
-                className="flex-1 px-4 py-3 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-950 text-base"
+                onChange={(e) => {
+                  setInputValue(e.target.value)
+                  // Auto-resize on change
+                  const textarea = e.target
+                  textarea.style.height = 'auto'
+                  textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`
+                }}
+                onKeyDown={(e) => {
+                  // Submit on Enter (without Shift), prevent default to avoid new line
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault()
+                    if (inputValue.trim() || selectedGalleryImages.size > 0) {
+                      handleSendMessage()
+                    }
+                  }
+                  // Shift+Enter allows new line (default behavior)
+                }}
+                placeholder="Ask me anything... (Press Enter to send, Shift+Enter for new line)"
+                className="flex-1 px-3 sm:px-4 py-2 sm:py-3 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-950 text-sm sm:text-base resize-none min-h-[44px] max-h-[200px] overflow-y-auto"
                 disabled={isLoading}
+                rows={1}
               />
               <button
                 type="submit"
                 disabled={(!inputValue.trim() && selectedGalleryImages.size === 0) || isLoading}
-                className="px-6 py-3 bg-stone-950 text-white rounded-lg hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shrink-0"
+                className="px-3 sm:px-6 py-2 sm:py-3 bg-stone-950 text-white rounded-lg hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 sm:gap-2 shrink-0 text-xs sm:text-sm"
               >
-                <Send className="w-4 h-4" />
-                <span>Send</span>
+                <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Send</span>
               </button>
             </form>
           </div>

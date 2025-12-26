@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { X, Copy, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import PromptEmailCapture from "./prompt-email-capture"
+import { trackEvent } from "@/lib/analytics"
 
 interface PromptGuidePageClientProps {
   page: {
@@ -62,6 +63,7 @@ export default function PromptGuidePageClient({
           onClose={() => setShowEmailModal(false)}
           emailListTag={emailListTag}
           pageId={page.id}
+          guideTitle={page.title}
         />
       )}
 
@@ -102,7 +104,18 @@ export default function PromptGuidePageClient({
               asChild
               className="bg-white text-stone-950 hover:bg-stone-100 whitespace-nowrap"
             >
-              <a href={page.upsell_link} target="_blank" rel="noopener noreferrer">
+              <a 
+                href={page.upsell_link} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                onClick={() => {
+                  trackEvent("prompt_guide_studio_click", {
+                    guide_id: page.id,
+                    guide_title: page.title,
+                    source: "prompt_guide_upsell",
+                  })
+                }}
+              >
                 Get SSELFIE Studio
               </a>
             </Button>

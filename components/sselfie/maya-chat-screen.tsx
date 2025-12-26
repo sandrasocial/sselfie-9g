@@ -23,6 +23,7 @@ import {
   Sparkles,
   Image,
   Menu,
+  ChevronDown,
 } from "lucide-react"
 import { useState, useEffect, useRef, useCallback } from "react"
 import { createPortal } from "react-dom"
@@ -30,12 +31,13 @@ import ConceptCard from "./concept-card"
 import MayaChatHistory from "./maya-chat-history"
 import UnifiedLoading from "./unified-loading"
 import { useRouter } from "next/navigation"
-import type { SessionUser } from "next-auth" // Assuming SessionUser type is available
+// SessionUser type removed - not exported from next-auth
 import { PromptSuggestionCard as NewPromptSuggestionCard } from "./prompt-suggestion-card"
 import type { PromptSuggestion } from "@/lib/maya/prompt-generator"
 import ImageUploadFlow from "./pro-mode/ImageUploadFlow"
 import { getConceptPrompt } from "@/lib/maya/concept-templates"
 import BuyCreditsModal from "./buy-credits-modal"
+import { ConceptConsistencyToggle } from './concept-consistency-toggle'
 import { useImageLibrary } from "./pro-mode/hooks/useImageLibrary"
 // Pro Mode Components
 import ProModeChat from "./pro-mode/ProModeChat"
@@ -49,7 +51,7 @@ import { useToast } from "@/hooks/use-toast"
 
 interface MayaChatScreenProps {
   onImageGenerated?: () => void
-  user: SessionUser | null // Assuming user object is passed down
+  user: any | null // User object passed down (type from parent component)
   setActiveTab?: (tab: string) => void // Navigation handler from parent
   userId?: string // User ID (optional, can be derived from user, also used for admin guide controls)
   initialChatId?: number // Initial chat ID to load
@@ -126,6 +128,21 @@ export default function MayaChatScreen({
   const [messagesWithUploadModule, setMessagesWithUploadModule] = useState<Set<string>>(new Set())
   
   const [selectedPrompt, setSelectedPrompt] = useState<string>("")
+  
+  // Concept consistency mode state - persist user preference in localStorage
+  // Smart default: Only apply when no saved preference exists, and only based on concept count
+  const [consistencyMode, setConsistencyMode] = useState<'variety' | 'consistent'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('mayaConsistencyMode')
+      if (saved === 'variety' || saved === 'consistent') {
+        return saved // Use saved preference if it exists
+      }
+    }
+    return 'variety' // Default to variety if no saved preference
+  })
+  
+  // Collapsible section state for quick prompts and concept style
+  const [isOptionsExpanded, setIsOptionsExpanded] = useState(false)
   
   // Track if user has used Maya before (has any chat history)
   // Default to false (show welcome screen) until we know otherwise
@@ -265,22 +282,31 @@ export default function MayaChatScreen({
     }
   }, [enhancedAuthenticity])
 
+  // Helper function to extract text content from UIMessage
+  const getMessageText = useCallback((message: any): string => {
+    // UIMessage uses parts array, not content property
+    if (message.parts && Array.isArray(message.parts)) {
+      return message.parts
+        .filter((p: any) => p && p.type === "text" && p.text)
+        .map((p: any) => p.text)
+        .join("") || ""
+    }
+    // Fallback for legacy format (content property)
+    if (typeof message.content === "string") {
+      return message.content
+    }
+    return ""
+  }, [])
+
   const { messages, sendMessage, status, setMessages } = useChat({
     transport: new DefaultChatTransport({ 
       api: "/api/maya/chat",
       headers: {
         "x-studio-pro-mode": studioProMode ? "true" : "false",
       },
-    }),
-    initialMessages: [],
-    body: {
-      chatId: chatId,
-      studioProMode: studioProMode,
-      // Include image library in Pro Mode
-      ...(studioProMode && {
-        imageLibrary: imageLibrary,
-      }),
-    },
+    }) as any, // Type assertion to handle AI SDK version mismatch (v5 vs v6)
+    // initialMessages and body removed - use body parameter in sendMessage instead
+    // Custom body parameters are passed via sendMessage calls, not useChat options
     onError: (error) => {
       // Simplified error handling - just extract message safely
       let errorMessage = "An error occurred while chatting with Maya. Please try again."
@@ -461,6 +487,15 @@ export default function MayaChatScreen({
 
     checkChatHistory()
   }, [user, studioProMode]) // Added studioProMode to dependencies
+
+  // Save consistency mode to localStorage when user changes it
+  const handleConsistencyModeChange = useCallback((mode: 'variety' | 'consistent') => {
+    setConsistencyMode(mode)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('mayaConsistencyMode', mode)
+      console.log('[v0] User set consistency mode to:', mode, '(saved to localStorage)')
+    }
+  }, [])
 
   useEffect(() => {
     // Skip if user is not available - don't do anything
@@ -717,8 +752,8 @@ export default function MayaChatScreen({
         }
 
         setMessages((prev) => {
-          const updated = [...prev, reelCoverMessage]
-          return updated
+          const updated = [...prev, reelCoverMessage as any]
+          return updated as any
         })
 
         // Refresh gallery
@@ -793,21 +828,15 @@ export default function MayaChatScreen({
       return
     }
 
-    const textContent =
-      typeof lastAssistantMessage.content === "string"
-        ? lastAssistantMessage.content
-        : lastAssistantMessage.parts
-            ?.filter((p): p is { type: "text"; text: string } => p.type === "text")
-            .map((p) => p.text)
-            .join("") || ""
+    const textContent = getMessageText(lastAssistantMessage)
 
     // 🔴 CRITICAL: Since status is NOT "streaming", the message is complete
     // Process the trigger immediately - the status check above ensures we only get here when streaming is done
 
     console.log("[CAROUSEL-DEBUG] Checking message for triggers:", {
       messageId,
-      hasContent: !!lastAssistantMessage.content,
-      contentType: typeof lastAssistantMessage.content,
+      hasContent: !!textContent,
+      contentType: typeof textContent,
       hasParts: !!lastAssistantMessage.parts,
       partsLength: lastAssistantMessage.parts?.length,
       textContentLength: textContent.length,
@@ -951,7 +980,7 @@ export default function MayaChatScreen({
             if (!alreadyHasCard) {
               updated[lastIndex] = {
                 ...lastMsg,
-                parts: [...msgParts, carouselCardPart],
+                parts: [...msgParts, carouselCardPart as any], // Type assertion for custom tool part
               }
             }
           }
@@ -998,7 +1027,7 @@ export default function MayaChatScreen({
         const userMessages = messages.filter((m) => m.role === "user").reverse() // Most recent first
         
         console.log("[v0] 🔍 Searching for reference image in", userMessages.length, "user messages")
-        console.log("[v0] 📋 Message structure sample:", JSON.stringify(userMessages[0]?.parts?.slice(0, 2) || userMessages[0]?.content?.substring(0, 100), null, 2))
+        console.log("[v0] 📋 Message structure sample:", JSON.stringify(userMessages[0]?.parts?.slice(0, 2) || getMessageText(userMessages[0])?.substring(0, 100), null, 2))
         
         for (const userMessage of userMessages) {
           // Check if message has image in parts
@@ -1023,8 +1052,9 @@ export default function MayaChatScreen({
             })
             
             if (imagePart) {
-              // Try multiple possible property names
-              referenceImageUrl = imagePart.image || imagePart.url || imagePart.src || imagePart.data
+              // Try multiple possible property names (type assertion needed for image parts)
+              const imagePartAny = imagePart as any
+              referenceImageUrl = imagePartAny.image || imagePartAny.url || imagePartAny.src || imagePartAny.data
               if (referenceImageUrl) {
                 console.log("[v0] ✅ Extracted reference image from message parts:", referenceImageUrl.substring(0, 100) + "...")
                 break // Found it, stop searching
@@ -1036,13 +1066,7 @@ export default function MayaChatScreen({
           
           // Also check for text marker (backward compatibility)
           if (!referenceImageUrl) {
-            let textContent = ""
-            if (typeof userMessage.content === "string") {
-              textContent = userMessage.content
-            } else if (userMessage.parts && Array.isArray(userMessage.parts)) {
-              const textParts = userMessage.parts.filter((p: any) => p && p.type === "text")
-              textContent = textParts.map((p: any) => p.text || "").join("\n")
-            }
+            const textContent = getMessageText(userMessage)
             
             const inspirationImageMatch = textContent.match(/\[Inspiration Image: (https?:\/\/[^\]]+)\]/)
             if (inspirationImageMatch) {
@@ -1058,8 +1082,7 @@ export default function MayaChatScreen({
           console.log("[v0] 📋 All user messages:", userMessages.map(m => ({
             hasParts: !!m.parts,
             partsCount: m.parts?.length || 0,
-            hasContent: !!m.content,
-            contentType: typeof m.content
+            hasText: !!getMessageText(m),
           })))
         }
 
@@ -1075,14 +1098,7 @@ export default function MayaChatScreen({
               let messageText = ""
               
               try {
-                if (typeof m.content === "string") {
-                  messageText = m.content
-                } else if (m.parts && Array.isArray(m.parts)) {
-                  messageText = m.parts
-                    .filter((p: any) => p && p.type === "text")
-                    .map((p: any) => p.text || "")
-                    .join(" ")
-                }
+                messageText = getMessageText(m)
               } catch (textError) {
                 // Skip this message if we can't extract text
                 continue
@@ -1158,15 +1174,7 @@ export default function MayaChatScreen({
           .filter((m) => m.role === "user" || m.role === "assistant")
           .slice(-10)
           .map((m) => {
-            let content = ""
-            if (typeof m.content === "string") {
-              content = m.content
-            } else if (m.parts) {
-              content = m.parts
-                .filter((p: any) => p.type === "text")
-                .map((p: any) => p.text)
-                .join(" ")
-            }
+            const content = getMessageText(m)
             const cleanContent = content.replace(/\[GENERATE_CONCEPTS\][^\n]*/g, "").trim()
             const cleanContent2 = cleanContent.replace(/\[USE_GUIDE_PROMPT\]/gi, "").trim()
             if (!cleanContent2) return null
@@ -1205,19 +1213,21 @@ export default function MayaChatScreen({
                 imageLibrary: imageLibrary, // Required for Pro Mode
                 category: null, // Let Maya determine dynamically
                 essenceWords: pendingConceptRequest?.split(' ').slice(0, 5).join(' ') || undefined, // Extract essence words from request
+                consistencyMode: consistencyMode, // NEW: Send consistency mode to backend
               }
             : {
                 userRequest: pendingConceptRequest,
                 count: 6, // Changed from hardcoded 3 to 6, allowing Maya to create more concepts
+                // consistencyMode is Pro Mode only - not sent in Classic Mode
                 conversationContext: conversationContext || undefined,
                 referenceImageUrl: allImages.length > 0 ? allImages[0] : referenceImageUrl, // Primary image
                 studioProMode: studioProMode, // Pass Studio Pro mode to use Nano Banana prompting
                 enhancedAuthenticity: !studioProMode && enhancedAuthenticity, // Only pass if Classic mode and toggle is ON
                 guidePrompt: guidePromptActive && extractedGuidePrompt ? extractedGuidePrompt : undefined, // Pass guide prompt if active
                 // Include full image library in Pro Mode
-                ...(studioProMode && {
+                ...(studioProMode && imageLibrary ? {
                   imageLibrary: imageLibrary,
-                }),
+                } : {}),
               }
           
           response = await fetch(apiEndpoint, {
@@ -1405,13 +1415,7 @@ export default function MayaChatScreen({
 
     // Check if this message has a [GENERATE_CONCEPTS] trigger but no concepts yet
     // If so, don't save yet - wait for concept generation
-    const textContent =
-      typeof lastAssistantMessage.content === "string"
-        ? lastAssistantMessage.content
-        : lastAssistantMessage.parts
-            ?.filter((p): p is { type: "text"; text: string } => p.type === "text")
-            .map((p) => p.text)
-            .join("") || ""
+    const textContent = getMessageText(lastAssistantMessage)
 
     const hasConceptTrigger = /\[GENERATE_CONCEPTS\]/i.test(textContent)
     const hasConceptCards = lastAssistantMessage.parts?.some(
@@ -1523,8 +1527,8 @@ export default function MayaChatScreen({
           .map((p: any) => p.text)
           .join("\n")
           .trim()
-      } else if (typeof userMsg.content === "string") {
-        textContent = userMsg.content
+      } else {
+        textContent = getMessageText(userMsg)
       }
 
       if (!textContent) continue
@@ -2006,7 +2010,7 @@ export default function MayaChatScreen({
           userIntent: userMessage,
           previousMessages: messages.slice(-5).map((msg) => ({
             role: msg.role,
-            content: msg.parts?.find((p: any) => p.type === "text")?.text || "",
+            content: (msg.parts?.find((p: any) => p && p.type === "text") as any)?.text || "",
           })),
           contentType: "custom",
         }),
@@ -2113,14 +2117,7 @@ export default function MayaChatScreen({
         sendMessage({
           role: "user",
           parts: [{ type: "text", text: messageContent }],
-          experimental_providerMetadata: {
-            customSettings: {
-              styleStrength,
-              promptAccuracy,
-              aspectRatio,
-              realismStrength, // Include realism strength in customSettings
-            },
-          },
+          // experimental_providerMetadata removed - not supported in AI SDK
         })
       } else {
         // Array format for messages with images - convert to parts format
@@ -2133,15 +2130,8 @@ export default function MayaChatScreen({
               return { type: "image", image: part.image || "" }
             }
             return part
-          }),
-          experimental_providerMetadata: {
-            customSettings: {
-              styleStrength,
-              promptAccuracy,
-              aspectRatio,
-              realismStrength,
-            },
-          },
+          }) as any, // Type assertion for parts array
+          // experimental_providerMetadata removed - not supported in AI SDK
         })
       }
       setInputValue("")
@@ -2317,7 +2307,7 @@ export default function MayaChatScreen({
     // Added selectedChatTitle
     loadChat(selectedChatId)
     setShowHistory(false)
-    setChatTitle(selectedChatTitle) // Set the title of the selected chat
+    setChatTitle(selectedChatTitle || "") // Set the title of the selected chat
       promptGenerationTriggeredRef.current.clear() // Clear prompt generation tracking
 
     localStorage.setItem("mayaCurrentChatId", selectedChatId.toString())
@@ -3037,6 +3027,7 @@ export default function MayaChatScreen({
             onLogout={handleLogout}
             isLoggingOut={isLoggingOut}
             onSwitchToClassic={() => handleModeSwitch(false)}
+            onSettings={() => setShowSettings(true)}
           />
         </div>
       ) : (
@@ -3272,13 +3263,13 @@ export default function MayaChatScreen({
       {showSettings && (
         <>
           <div
-            className="fixed inset-0 bg-stone-950/20 backdrop-blur-sm z-40 animate-in fade-in duration-200"
+            className="fixed inset-0 bg-stone-950/20 backdrop-blur-sm z-[100] animate-in fade-in duration-200"
             onClick={() => setShowSettings(false)}
           />
 
-          <div className="fixed inset-x-4 top-20 bg-white/95 backdrop-blur-3xl border border-stone-200 rounded-2xl p-6 shadow-xl shadow-stone-950/10 animate-in slide-in-from-top-2 duration-300 z-50 max-w-md mx-auto">
+          <div className="fixed inset-x-4 top-20 bottom-4 sm:bottom-auto sm:max-h-[85vh] bg-white/95 backdrop-blur-3xl border border-stone-200 rounded-2xl shadow-xl shadow-stone-950/10 animate-in slide-in-from-top-2 duration-300 z-[101] max-w-md mx-auto flex flex-col">
             {/* Close button */}
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-4 p-6 pb-4 flex-shrink-0">
               <h3 className="text-sm font-serif font-extralight tracking-[0.2em] uppercase text-stone-950">
                 Generation Settings
               </h3>
@@ -3291,7 +3282,8 @@ export default function MayaChatScreen({
               </button>
             </div>
 
-            <div className="space-y-6">
+            <div className="flex-1 overflow-y-auto px-6 pb-6 min-h-0">
+              <div className="space-y-6">
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-xs tracking-wider uppercase text-stone-600">Style Strength</label>
@@ -3384,6 +3376,8 @@ export default function MayaChatScreen({
                   </div>
                 </div>
               )}
+
+              </div>
             </div>
           </div>
         </>
@@ -3456,7 +3450,7 @@ export default function MayaChatScreen({
                         
                         sendMessage({
                           role: "user",
-                          parts: messageParts,
+                          parts: messageParts as any, // Type assertion for parts array
                         })
                       }
                     }}
@@ -3495,7 +3489,7 @@ export default function MayaChatScreen({
                         
                         sendMessage({
                           role: "user",
-                          parts: messageParts,
+                          parts: messageParts as any, // Type assertion for parts array
                         })
                       }
                     }}
@@ -3660,9 +3654,9 @@ export default function MayaChatScreen({
                     Array.isArray(msg.parts) &&
                     (() => {
                       // Group parts by type to handle text + image together
-                      const textParts = msg.parts.filter((p) => p.type === "text")
-                      const imageParts = msg.parts.filter((p) => p.type === "image")
-                      const otherParts = msg.parts.filter((p) => p.type !== "text" && p.type !== "image")
+                      const textParts = msg.parts.filter((p) => p && p.type === "text")
+                      const imageParts = msg.parts.filter((p) => p && (p as any).type === "image") // Type assertion for image parts (not in standard UIMessagePart type)
+                      const otherParts = msg.parts.filter((p) => p && p.type !== "text" && (p as any).type !== "image")
 
                       return (
                         <>
@@ -3677,7 +3671,7 @@ export default function MayaChatScreen({
                               role={msg.role === "assistant" ? "article" : undefined}
                             >
                               {textParts.map((part, idx) => {
-                                const text = part.text || ''
+                                const text = (part as any)?.text || ''
                                 
                                 // Check for prompt suggestions in workbench mode (parsed from text)
                                 const parsedPromptSuggestions = parsePromptSuggestions(text)
@@ -3728,17 +3722,9 @@ export default function MayaChatScreen({
                                   .trim()
                                 }
                                 
-                                // Remove API-generated prompts from display text if they appear in cards
-                                // Check if we have carousel slides from API
-                                const carouselSlides = promptSuggestions.filter(s => s.label.includes('Slide'))
-                                const otherPrompts = promptSuggestions.filter(s => !s.label.includes('Slide'))
-                                
-                                if (carouselSlides.length > 0) {
-                                  displayText = removeCarouselSlidesFromText(displayText, carouselSlides)
-                                }
-                                if (otherPrompts.length > 0) {
-                                  displayText = removePromptsFromText(displayText, otherPrompts)
-                                }
+                // Remove API-generated prompts from display text if they appear in cards
+                // Note: API promptSuggestions don't have label property, so we skip this removal
+                // Only parsed suggestions from text have labels
                                 
                                 // Get original message text for category extraction
                                 const originalMessageText = textParts.map((p: any) => p.text).join(' ')
@@ -3769,6 +3755,8 @@ export default function MayaChatScreen({
                                           <NewPromptSuggestionCard
                                             key={`api-suggestion-${suggestion.id}`}
                                             suggestion={suggestion}
+                                            onCopyToWorkbench={() => {}}
+                                            onUseInWorkbench={() => {}}
                                           />
                                         ))}
                                       </div>
@@ -3820,6 +3808,8 @@ export default function MayaChatScreen({
                                                   <NewPromptSuggestionCard
                                                     key={`parsed-suggestion-${msg.id}-${sugIdx}`}
                                                     suggestion={fullSuggestion}
+                                                    onCopyToWorkbench={() => {}}
+                                                    onUseInWorkbench={() => {}}
                                                   />
                                                 )
                                               })}
@@ -3951,8 +3941,8 @@ export default function MayaChatScreen({
                                                 // Get the current concept from messages to ensure we use the latest prompt (including edits)
                                                 const currentMessage = messages.find(m => m.id === msg.id)
                                                 const currentConceptPart = currentMessage?.parts?.find((p: any) => 
-                                                  p.type === 'tool-generateConcepts' && p.output?.concepts
-                                                )
+                                                  p && p.type === 'tool-generateConcepts' && (p as any).output?.concepts
+                                                ) as any
                                                 const currentConcepts = currentConceptPart?.output?.concepts || []
                                                 const currentConcept = currentConcepts.find((c: any) => {
                                                   const cId = c.id || `concept-${msg.id}-${conceptIndex}`
@@ -4050,13 +4040,11 @@ export default function MayaChatScreen({
                                             selfies={[]}
                                             products={[]}
                                             styleRefs={[]}
-                                            isFirstCard={conceptIndex === 0}
                                             isAdmin={isAdmin}
                                             selectedGuideId={selectedGuideId}
                                             adminUserId={user?.id?.toString()}
                                             onSaveToGuide={handleSaveToGuide}
-                                            sharedImages={sharedConceptImages}
-                                            onSharedImagesChange={conceptIndex === 0 ? setSharedConceptImages : undefined}
+                                            // sharedImages and onSharedImagesChange removed - not in ConceptCardProps interface
                                           />
                                         )
                                       })}
@@ -4154,7 +4142,7 @@ export default function MayaChatScreen({
                             }
 
                             // Studio Pro result display
-                            if (part.type === "studio-pro-result") {
+                            if ((part as any).type === "studio-pro-result") {
                               const output = (part as any).output
 
                               if (output && output.state === "ready" && output.imageUrl) {
@@ -4366,31 +4354,94 @@ export default function MayaChatScreen({
         {/* Input Area - Pro Mode or Classic Mode */}
         {studioProMode ? (
           <>
-            {/* Pro Mode Quick Suggestions - Category-based prompts */}
-            {!isEmpty && !uploadedImage && currentPrompts.length > 0 && (
-              <div className="mb-2 mt-2">
-                <div className="flex gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide pb-1 -mx-2 px-2 sm:mx-0 sm:px-0">
-                  {currentPrompts.map((item, index) => (
-                    <button
-                      key={`pro-mode-prompt-${index}-${item.label}`}
-                      onClick={() => {
-                        handleSendMessage(item.prompt)
-                      }}
-                      disabled={isTyping || isGeneratingConcepts}
-                      className="shrink-0 px-3 py-2 bg-white border border-stone-300 rounded-lg hover:bg-stone-50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation active:scale-95 min-h-[44px]"
-                      style={{
-                        fontFamily: Typography.ui.fontFamily,
-                        fontSize: Typography.ui.sizes.sm,
-                        fontWeight: Typography.ui.weights.regular,
-                        color: Colors.textSecondary,
-                      }}
-                    >
-                      <span className="whitespace-nowrap">{item.label}</span>
-                    </button>
-                  ))}
-                </div>
+            {/* Collapsible Options Section - Quick Prompts & Concept Style */}
+            <div 
+              className="w-full border-b"
+              style={{
+                borderColor: Colors.border,
+                backgroundColor: Colors.surface,
+              }}
+            >
+              <div className="max-w-[1200px] mx-auto">
+                {/* Collapsible Header */}
+                <button
+                  onClick={() => setIsOptionsExpanded(!isOptionsExpanded)}
+                  className="w-full flex items-center justify-between px-4 sm:px-6 py-3 hover:bg-stone-50/50 transition-colors touch-manipulation"
+                  style={{
+                    paddingLeft: 'clamp(12px, 3vw, 24px)',
+                    paddingRight: 'clamp(12px, 3vw, 24px)',
+                  }}
+                >
+                  <span
+                    style={{
+                      fontFamily: Typography.ui.fontFamily,
+                      fontSize: Typography.ui.sizes.sm,
+                      fontWeight: Typography.ui.weights.medium,
+                      color: Colors.textSecondary,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                    }}
+                  >
+                    Generation Options
+                  </span>
+                  <ChevronDown
+                    size={18}
+                    className="text-stone-500 transition-transform duration-200"
+                    style={{
+                      transform: isOptionsExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                    }}
+                  />
+                </button>
+
+                {/* Collapsible Content */}
+                {isOptionsExpanded && (
+                  <div 
+                    className="px-4 sm:px-6 pb-4 space-y-4"
+                    style={{
+                      paddingLeft: 'clamp(12px, 3vw, 24px)',
+                      paddingRight: 'clamp(12px, 3vw, 24px)',
+                      paddingBottom: 'clamp(12px, 3vw, 16px)',
+                    }}
+                  >
+                    {/* Quick Suggestions */}
+                    {!isEmpty && !uploadedImage && currentPrompts.length > 0 && (
+                      <div>
+                        <div className="flex gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide pb-1">
+                          {currentPrompts.map((item, index) => (
+                            <button
+                              key={`pro-mode-prompt-${index}-${item.label}`}
+                              onClick={() => {
+                                handleSendMessage(item.prompt)
+                              }}
+                              disabled={isTyping || isGeneratingConcepts}
+                              className="shrink-0 px-3 py-2 bg-white border border-stone-300 rounded-lg hover:bg-stone-50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation active:scale-95 min-h-[44px]"
+                              style={{
+                                fontFamily: Typography.ui.fontFamily,
+                                fontSize: Typography.ui.sizes.sm,
+                                fontWeight: Typography.ui.weights.regular,
+                                color: Colors.textSecondary,
+                              }}
+                            >
+                              <span className="whitespace-nowrap">{item.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Concept Consistency Toggle */}
+                    <div className="border-t border-stone-200/50 pt-4">
+                      <ConceptConsistencyToggle
+                        value={consistencyMode}
+                        onChange={handleConsistencyModeChange}
+                        count={6}
+                        className=""
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
 
             <ProModeInput
               onSend={(message, imageUrl) => {
@@ -4838,7 +4889,7 @@ export default function MayaChatScreen({
                     
                     sendMessage({
                       role: "user",
-                      parts: messageParts,
+                      parts: messageParts as any, // Type assertion for parts array
                     })
                     
                     // Close the upload flow modal

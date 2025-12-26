@@ -437,8 +437,9 @@ function buildCameraSection(
     // Professional DSLR
     return `Camera Composition: Editorial portrait from mid-thigh upward, frontal camera position, symmetrical centered framing, professional DSLR, Canon EOS R5 or Sony A7R IV, 85mm f/1.4 lens, camera distance 1.5-2m from subject, shallow depth of field (f/2.0-f/2.8).`
   } else {
-    // Authentic iPhone
-    return `Camera Composition: Authentic iPhone 15 Pro portrait mode, 77mm equivalent, natural bokeh, shot from 1-1.5m distance, portrait mode depth effect, influencer selfie style.`
+    // Authentic iPhone (removed "influencer selfie style" to avoid false selfie detection)
+    // This is regular iPhone portrait mode, not a selfie (selfies use front camera)
+    return `Camera Composition: Authentic iPhone 15 Pro portrait mode, 77mm equivalent, natural bokeh, shot from 1-1.5m distance, portrait mode depth effect, influencer aesthetic.`
   }
 }
 
@@ -476,7 +477,8 @@ export async function buildProModePrompt(
   userImages: ImageLibrary,
   userRequest?: string,
   userPhotographyStyle?: PhotographyStyle,
-  conceptIndex?: number
+  conceptIndex?: number,
+  hasReferenceImages?: boolean
 ): Promise<{ fullPrompt: string; category: string }> {
   
   console.log('[buildProModePrompt] ========== STARTING COORDINATED BUILD ==========')
@@ -532,9 +534,17 @@ export async function buildProModePrompt(
   // STEP 4: BUILD INTRODUCTION
   // ============================================
   
+  // Determine if reference images are available
+  const hasRefImages = hasReferenceImages ?? (userImages?.selfies && userImages.selfies.length > 0)
+  
+  // Reference image text (only if reference images exist)
+  const referenceText = hasRefImages
+    ? 'Character consistency with provided reference images. Match the exact facial features, hair, skin tone, body type, and physical characteristics of the person in the reference images. This is the same person in a different scene. '
+    : ''
+  
   const introduction = photographyStyle === 'editorial'
-    ? 'Professional photography. Pinterest-style editorial portrait. Character consistency with provided reference images. Match the exact facial features, hair, skin tone, body type, and physical characteristics of the person in the reference images. This is the same person in a different scene. Editorial quality, professional photography aesthetic.'
-    : 'Authentic influencer content. Pinterest-style portrait. Character consistency with provided reference images. Match the exact facial features, hair, skin tone, body type, and physical characteristics of the person in the reference images. This is the same person in a different scene. Natural, relatable iPhone aesthetic.'
+    ? `Professional photography. Pinterest-style editorial portrait. ${referenceText}Editorial quality, professional photography aesthetic.`
+    : `Authentic influencer content. Pinterest-style portrait. ${referenceText}Natural, relatable iPhone aesthetic.`
   
   // ============================================
   // STEP 5: ASSEMBLE FINAL PROMPT

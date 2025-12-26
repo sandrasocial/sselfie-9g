@@ -97,7 +97,21 @@ export default function EmailPreviewCard({
   // Handle cases where HTML might be escaped or contain literal \n characters
   const cleanHtmlContent = useMemo(() => {
     let cleaned = htmlContent
+    
+    // CRITICAL: Validate that htmlContent is actually HTML, not plain text
     if (typeof cleaned === 'string') {
+      const trimmed = cleaned.trim()
+      
+      // If content doesn't start with HTML tags, it's likely not HTML
+      if (!trimmed.startsWith('<') && !trimmed.startsWith('<!DOCTYPE')) {
+        console.error('[EmailPreviewCard] ❌ Invalid HTML content - does not start with < or <!DOCTYPE', {
+          contentPreview: trimmed.substring(0, 100),
+          contentLength: trimmed.length
+        })
+        // Return empty string to prevent rendering invalid content
+        return ''
+      }
+      
       // Check if HTML contains literal \n characters (should be actual newlines in HTML)
       if (cleaned.includes('\\n')) {
         console.log('[EmailPreviewCard] 🔧 HTML contains literal \\n, converting to actual newlines...')
@@ -116,13 +130,35 @@ export default function EmailPreviewCard({
           .replace(/&#39;/g, "'")
           .replace(/&#x27;/g, "'")
       }
+    } else {
+      console.error('[EmailPreviewCard] ❌ htmlContent is not a string:', typeof cleaned)
+      return ''
     }
+    
     return cleaned
   }, [htmlContent])
 
-  const processedHtml = useMemo(() => processHtmlForPreview(cleanHtmlContent), [cleanHtmlContent])
-  const imageUrls = useMemo(() => extractImageUrls(cleanHtmlContent), [cleanHtmlContent])
+  // Only process HTML if we have valid HTML content
+  const processedHtml = useMemo(() => {
+    if (!cleanHtmlContent || cleanHtmlContent.trim().length === 0) {
+      console.warn('[EmailPreviewCard] ⚠️ No valid HTML content to process')
+      return ''
+    }
+    return processHtmlForPreview(cleanHtmlContent)
+  }, [cleanHtmlContent])
+  
+  const imageUrls = useMemo(() => {
+    if (!cleanHtmlContent || cleanHtmlContent.trim().length === 0) {
+      return []
+    }
+    return extractImageUrls(cleanHtmlContent)
+  }, [cleanHtmlContent])
+  
   const previewContainerRef = useRef<HTMLDivElement>(null)
+  
+  // Don't render if we don't have valid HTML
+  const hasValidHtml = cleanHtmlContent && cleanHtmlContent.trim().length > 0 && 
+                       (cleanHtmlContent.trim().startsWith('<') || cleanHtmlContent.trim().startsWith('<!DOCTYPE'))
   
   // Debug: Log HTML content for debugging (only depend on htmlContent to avoid dependency array issues)
   useEffect(() => {
@@ -209,7 +245,10 @@ export default function EmailPreviewCard({
   }, [showFullEmail, processedHtml])
 
   return (
-    <div className="bg-white border border-stone-300 rounded-xl overflow-hidden shadow-lg my-4">
+    <div 
+      className="bg-white border border-stone-300 rounded-xl overflow-hidden shadow-lg my-4"
+      onClick={(e) => e.stopPropagation()}
+    >
       {/* Header */}
       <div className="bg-stone-50 border-b border-stone-200 px-4 sm:px-6 py-3 sm:py-4">
         <div className="flex items-center gap-2 mb-2">
@@ -273,17 +312,24 @@ export default function EmailPreviewCard({
               <h4 className="text-xs uppercase tracking-wider text-stone-600">Full Email Preview</h4>
             </div>
             <div className="p-2 sm:p-4 bg-white max-h-[400px] sm:max-h-[600px] overflow-y-auto">
-              {/* Email Preview Container - styled like email client */}
-              <div 
-                ref={previewContainerRef}
-                className="email-preview-container"
-                style={{
-                  maxWidth: '100%',
-                  margin: '0 auto',
-                  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-                }}
-                dangerouslySetInnerHTML={{ __html: processedHtml }}
-              />
+              {hasValidHtml && processedHtml ? (
+                /* Email Preview Container - styled like email client */
+                <div 
+                  ref={previewContainerRef}
+                  className="email-preview-container"
+                  style={{
+                    maxWidth: '100%',
+                    margin: '0 auto',
+                    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                  }}
+                  dangerouslySetInnerHTML={{ __html: processedHtml }}
+                />
+              ) : (
+                <div className="p-4 text-center text-stone-500">
+                  <p className="text-sm">Unable to display email preview. Invalid HTML content.</p>
+                  <p className="text-xs mt-2">Please check the console for details.</p>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -333,7 +379,8 @@ export default function EmailPreviewCard({
 
         <div className="flex flex-wrap gap-2 sm:gap-3 mb-4">
           <button
-            onClick={() => {
+            onClick={(e) => {
+              e.stopPropagation()
               setShowFullEmail(!showFullEmail)
               setShowHTMLCode(false)
             }}
@@ -345,7 +392,8 @@ export default function EmailPreviewCard({
           </button>
           
           <button
-            onClick={() => {
+            onClick={(e) => {
+              e.stopPropagation()
               setShowHTMLCode(!showHTMLCode)
               setShowFullEmail(false)
             }}
@@ -360,7 +408,7 @@ export default function EmailPreviewCard({
 
       {/* Actions */}
       <div className="bg-stone-50 border-t border-stone-200 px-3 sm:px-6 py-3 sm:py-4">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
           <button
             onClick={onEdit}
             className="flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-2 sm:py-2.5 bg-white border border-stone-300 text-stone-700 rounded-lg hover:bg-stone-50 transition-colors"
@@ -370,7 +418,8 @@ export default function EmailPreviewCard({
           </button>
           
           <button
-            onClick={() => {
+            onClick={(e) => {
+              e.stopPropagation()
               setShowFullEmail(!showFullEmail)
               setShowHTMLCode(false)
             }}

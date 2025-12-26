@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Typography, Colors, BorderRadius, Spacing, UILabels, ButtonLabels } from '@/lib/maya/pro/design-system'
-import { ChevronDown, MoreVertical, X, LogOut, FolderOpen, Plus, Eye } from 'lucide-react'
+import { ChevronDown, MoreVertical, X, LogOut, FolderOpen, Plus, Eye, Sliders } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
 /**
@@ -51,6 +51,7 @@ interface ProModeHeaderProps {
   onLogout?: () => void
   isLoggingOut?: boolean
   onSwitchToClassic?: () => void
+  onSettings?: () => void // NEW: Callback to open settings
   // Admin guide controls (only visible when isAdmin is true)
   isAdmin?: boolean
   selectedGuideId?: number | null
@@ -70,6 +71,7 @@ export default function ProModeHeader({
   onLogout,
   isLoggingOut = false,
   onSwitchToClassic,
+  onSettings,
   isAdmin = false,
   selectedGuideId = null,
   selectedGuideCategory = null,
@@ -769,6 +771,26 @@ export default function ProModeHeader({
                 >
                   Profile
                 </button>
+                
+                {/* Generation Settings - opens settings modal */}
+                {onSettings && (
+                  <button
+                    onClick={() => {
+                      onSettings()
+                      setShowNavMenu(false)
+                    }}
+                    className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-stone-50"
+                    style={{
+                      fontFamily: Typography.ui.fontFamily,
+                      fontSize: Typography.ui.sizes.md,
+                      fontWeight: Typography.ui.weights.medium,
+                      color: Colors.textPrimary,
+                    }}
+                  >
+                    Generation Settings
+                  </button>
+                )}
+                
                 <button
                   onClick={() => {
                     onNavigation("settings")

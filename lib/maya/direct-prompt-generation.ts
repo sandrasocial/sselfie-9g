@@ -138,7 +138,7 @@ function buildClassicSystemPrompt(context: DirectPromptContext): string {
 📸 PERFECT EXAMPLES (30-60 words):
 
 Example 1 (Mountain Hiking - 45 words):
-"${triggerWord}, White woman, long dark hair in ponytail, cream tank top, black Lululemon belt bag, arm extended selfie at mountain summit with valley view, natural hiking light, shot on iPhone 15 Pro portrait mode, candid photo, natural skin texture with pores visible, film grain, muted colors"
+"${triggerWord}, White woman, long dark hair in ponytail, cream tank top, black Lululemon belt bag, standing at mountain summit with valley view, natural hiking light, shot on iPhone 15 Pro portrait mode, candid photo, natural skin texture with pores visible, film grain, muted colors"
 
 Example 2 (Coffee Shop - 42 words):
 "${triggerWord}, Asian woman, shoulder-length black hair, oversized beige sweater, sitting at cafe table with latte, soft window lighting, shot on iPhone 15 Pro portrait mode, candid photo, natural skin texture with pores visible, film grain, muted colors"
@@ -242,8 +242,28 @@ From description, extract:
 - [ ] Top (exact brand, color, material, style)
 - [ ] Bottom (exact brand, color, material, style)
 - [ ] Shoes (exact brand/style if mentioned)
-- [ ] Accessories (EVERY item: watch, jewelry, bag, etc. with brands)
+- [ ] Accessories (watch, jewelry - ONLY if mentioned in description)
+- [ ] Bag (ONLY if contextually appropriate - see bag rules below)
 - [ ] Outerwear/layers (exact brand/style if mentioned)
+
+**🔴 CRITICAL BAG RULES:**
+Bags should ONLY be included when contextually appropriate:
+
+✅ APPROPRIATE (add bag):
+- Person is walking/moving (street style, travel, shopping)
+- Person is traveling (airport, train, carrying luggage)
+- Person is shopping or at a market
+- Person is out and about with purpose
+- Luxury/editorial scenes where bag is part of the outfit being showcased
+
+❌ INAPPROPRIATE (do NOT add bag):
+- Person is sitting at home (cozy scenes, lounging)
+- Person is in a domestic setting (kitchen, bedroom, living room)
+- Person is relaxing/resting
+- Scene is intimate/private
+- Person is doing activities where a bag would be awkward (cooking, reading, sleeping)
+
+**NEVER add bags to settings/descriptions as props** (like "bag resting on side table") - bags should only be part of the outfit description when the person is carrying them.
 
 **ACTION/POSE (exact activity mentioned):**
 - [ ] Primary action (sitting/standing/walking + WHERE + DOING WHAT)
@@ -698,9 +718,36 @@ function buildConceptGenerationSystemPrompt(options: {
   
   return `You are generating ${count} concept cards. For EACH concept, provide:
 
-1. **title**: Creative, descriptive title
-2. **description**: User-facing description (what the concept is about)
+1. **title**: Creative, narrative-driven title that paints a picture (NOT generic like "Morning Coffee" - be specific like "First Sip at the Corner Bistro")
+2. **description**: Story-rich description that tells what's happening in this moment, what the scene shows, and why it matters (NOT generic like "woman in outfit at location" - tell the story)
 3. **prompt**: FINAL IMAGE GENERATION PROMPT (ready to use directly)
+
+**🔴 CRITICAL: TITLES & DESCRIPTIONS MUST TELL A STORY**
+
+Each concept tells a unique moment in a story. The title and description should paint a vivid picture:
+
+**❌ BAD (Generic, repetitive):**
+- Title: "Morning Coffee"
+- Description: "Woman wearing sweater sitting at cafe with coffee"
+
+**✅ GOOD (Story-driven, unique):**
+- Title: "First Sip at the Corner Bistro"
+- Description: "Savoring that first perfect espresso as morning light streams through the window, lost in the quiet moment before the city wakes up"
+
+**❌ BAD (Generic, repetitive):**
+- Title: "Street Style"
+- Description: "Woman walking down street in outfit"
+
+**✅ GOOD (Story-driven, unique):**
+- Title: "Mid-Stride Through SoHo"
+- Description: "Caught mid-step between boutiques, glancing at phone with a knowing smile, heading somewhere exciting with confident energy"
+
+**KEY PRINCIPLES:**
+- Each title should be UNIQUE and paint a specific moment
+- Each description should tell what's HAPPENING, not just what's visible
+- Focus on the STORY and MOMENT, not generic outfit/location lists
+- Use vivid, specific language that creates a scene
+- Think: "What story does this image tell?" not "What items are in the frame?"
 
 ${basePrompt}
 
@@ -715,8 +762,13 @@ Generate in this JSON format:
 {
   "concepts": [
     {
-      "title": "Industrial Christmas Loft",
-      "description": "Sophisticated urban Christmas scene...",
+      "title": "First Sip at the Corner Bistro",
+      "description": "Savoring that first perfect espresso as morning light streams through the window, lost in the quiet moment before the city wakes up, wrapped in cozy cashmere",
+      "prompt": "${mode === 'pro' ? 'Professional photography. Pinterest-style editorial portrait...' : `${triggerWord}, ${gender}...`}"
+    },
+    {
+      "title": "Mid-Stride Through SoHo",
+      "description": "Caught mid-step between boutiques, glancing at phone with a knowing smile, designer bag swinging at your side, heading somewhere exciting with confident energy",
       "prompt": "${mode === 'pro' ? 'Professional photography. Pinterest-style editorial portrait...' : `${triggerWord}, ${gender}...`}"
     },
     ...

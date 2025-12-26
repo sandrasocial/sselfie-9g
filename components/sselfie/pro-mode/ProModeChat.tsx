@@ -49,6 +49,7 @@ interface ProModeChatProps {
   onStartFresh?: () => void
   onEditIntent?: () => void
   onImageGenerated?: () => void
+  consistencyMode?: 'variety' | 'consistent' // Consistency mode for concept generation
 }
 
 export default function ProModeChat({
@@ -65,6 +66,7 @@ export default function ProModeChat({
   onStartFresh,
   onEditIntent,
   onImageGenerated,
+  consistencyMode = 'variety',
 }: ProModeChatProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
@@ -144,7 +146,7 @@ export default function ProModeChat({
         .pop()
       const userRequest = lastUserMessage?.content || library.intent || 'Create concepts for me'
       
-      generateConcepts(userRequest, library, lastTrigger.essenceWords)
+      generateConcepts(userRequest, library, lastTrigger.essenceWords, consistencyMode)
       resetTrigger()
     }
   }, [lastTrigger, chatMessages, library, generateConcepts, resetTrigger])

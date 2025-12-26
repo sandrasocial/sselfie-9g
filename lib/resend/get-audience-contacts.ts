@@ -84,8 +84,9 @@ export async function getAudienceContacts(audienceId: string) {
       
       pageNumber++
       
-      // Small delay between requests
-      await new Promise((resolve) => setTimeout(resolve, 500))
+      // Rate limiting: Resend allows 2 requests per second (500ms minimum between requests)
+      // Use 600ms to be safe and avoid hitting rate limits
+      await new Promise((resolve) => setTimeout(resolve, 600))
     }
     
     if (allContacts.length > 0) {

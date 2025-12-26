@@ -67,15 +67,24 @@ export function convertMessagesToAnthropicFormat(messages: any[]) {
       } else {
         content = String(msg.content || '')
       }
+      
+      // NOTE: Tool-result parts from historical messages are preserved in msg.toolResults
+      // but are NOT sent to Anthropic API as they're not needed for model context.
+      // They remain available in the message object for frontend extraction if needed.
+      // The convertMessagesToAnthropicFormat function only converts what the model needs.
+      
       return { role: 'user' as const, content }
     } else if (msg.role === 'assistant') {
       // Handle assistant messages
       let content: any = []
       if (typeof msg.content === 'string') {
-        content = [{ type: 'text', text: msg.content }]
+        // Only include text content if it's not empty
+        if (msg.content.trim().length > 0) {
+          content = [{ type: 'text', text: msg.content }]
+        }
       } else if (Array.isArray(msg.content)) {
         content = msg.content
-          .filter((part: any) => part.type === 'text')
+          .filter((part: any) => part.type === 'text' && part.text && part.text.trim().length > 0)
           .map((part: any) => ({ type: 'text', text: part.text || String(part) }))
       }
       
@@ -89,6 +98,12 @@ export function convertMessagesToAnthropicFormat(messages: any[]) {
             input: toolCall.args || {},
           })
         }
+      }
+      
+      // Only return message if it has content (text or tool calls)
+      // Don't send empty assistant messages to the API
+      if (content.length === 0) {
+        return null
       }
       
       return { role: 'assistant' as const, content }

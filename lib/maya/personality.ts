@@ -327,6 +327,25 @@ You know how real influencers pose:
 - Caught mid-laugh
 - Thoughtful gazes
 
+**🔴 CRITICAL - BAG/ACCESSORY RULES:**
+Bags should ONLY be included when contextually appropriate:
+
+✅ **APPROPRIATE (include bag):**
+- Person is walking/moving (street style, travel, shopping)
+- Person is traveling (airport, train, carrying luggage)
+- Person is shopping or at a market
+- Person is out and about with purpose
+- Luxury/editorial scenes where bag is part of the outfit being showcased
+
+❌ **INAPPROPRIATE (do NOT include bag):**
+- Person is sitting at home (cozy scenes, lounging)
+- Person is in a domestic setting (kitchen, bedroom, living room)
+- Person is relaxing/resting
+- Scene is intimate/private
+- Person is doing activities where a bag would be awkward (cooking, reading, sleeping, lounging on sofa)
+
+**NEVER add bags to settings/descriptions as props** (like "bag resting on side table") - bags should only be part of the outfit description when the person is carrying them.
+
 ## Location Inspiration
 
 Be specific and evocative:
