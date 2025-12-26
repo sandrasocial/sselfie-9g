@@ -1,4 +1,4 @@
-import { tool, streamText } from "ai"
+import { tool, streamText, generateText } from "ai"
 import { z } from "zod"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
@@ -141,7 +141,11 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json()
-    const { messages, chatId } = body
+    const { messages, chatId, data } = body
+    
+    // CRITICAL: Extract chatId from data object if provided (for explicit chatId passing)
+    // This ensures chatId is always captured correctly even if useChat body is stale
+    const explicitChatId = data?.chatId || chatId
 
     if (!messages) {
       console.error("[v0] Messages is null or undefined")
@@ -223,12 +227,24 @@ export async function POST(req: Request) {
       modelMessages.length,
       "messages (filtered from",
       messages.length,
-      "), chatId:",
+      "), body.chatId:",
       chatId,
+      "data?.chatId:",
+      data?.chatId,
+      "explicitChatId:",
+      explicitChatId
     )
 
-    // Get or create chat - ALWAYS prioritize provided chatId
-    let activeChatId = chatId
+    // Get or create chat - ALWAYS prioritize explicit chatId (from data object) over body chatId
+    // This ensures we use the correct chatId even if useChat body is stale
+    let activeChatId = explicitChatId
+    
+    console.log('[v0] 🔍 Chat ID resolution:', {
+      bodyChatId: chatId,
+      dataChatId: data?.chatId,
+      explicitChatId: explicitChatId,
+      finalActiveChatId: activeChatId
+    })
     // Use explicit null/undefined check to handle chatId === 0 correctly
     if (activeChatId === null || activeChatId === undefined) {
       // ✅ Check for existing active chat first (prevents creating new chat every time)
@@ -635,7 +651,12 @@ export async function POST(req: Request) {
         
         if (contentToSave) {
           await saveChatMessage(activeChatId, "user", contentToSave)
-          console.log("[v0] 💾 Saved user message to chat:", activeChatId)
+          console.log("[v0] 💾 Saved user message to chat:", {
+            chatId: activeChatId,
+            messageLength: contentToSave.length,
+            explicitChatId: explicitChatId,
+            bodyChatId: chatId
+          })
         }
       } catch (error) {
         console.error("[v0] Error saving user message:", error)
@@ -767,6 +788,15 @@ export async function POST(req: Request) {
         imageUrls?: string[]
         campaignName?: string
       }) => {
+        console.log('[v0] 📧 compose_email called:', {
+          intent: intent?.substring(0, 100),
+          emailType,
+          hasPreviousVersion: !!previousVersion,
+          previousVersionLength: previousVersion?.length || 0,
+          hasImageUrls: !!(imageUrls && imageUrls.length > 0),
+          imageCount: imageUrls?.length || 0
+        })
+        
         try {
           // 1. Get email templates for this type
           const templates = await sql`
@@ -797,7 +827,12 @@ export async function POST(req: Request) {
     - Core message: Visibility = Financial Freedom
     - Audience: Women entrepreneurs, solopreneurs, coaches
     
-    ${previousVersion ? 'Refine the previous version based on Sandra\'s request.' : 'Create a compelling email.'}
+    ${previousVersion ? `CRITICAL: You are REFINING an existing email. The previous version HTML is provided below. You MUST make the changes Sandra requested while preserving the overall structure and brand styling. Do NOT return the exact same HTML - you must actually modify it based on her request.
+
+Previous Email HTML:
+${previousVersion.substring(0, 5000)}${previousVersion.length > 5000 ? '\n\n[... HTML truncated for length ...]' : ''}
+
+Now refine this email based on Sandra's request.` : 'Create a compelling email.'}
     
     ${templates[0]?.body_html ? `Template reference: ${templates[0].body_html.substring(0, 500)}` : 'Create from scratch'}
     
@@ -866,17 +901,62 @@ export async function POST(req: Request) {
     
     Include unsubscribe link: {{{RESEND_UNSUBSCRIBE_URL}}}`
           
-          const userPrompt = `${intent}\n\n${keyPoints && keyPoints.length > 0 ? `Key points: ${keyPoints.join(', ')}\n\n` : ''}${imageUrls && imageUrls.length > 0 ? `\nImages to include:\n${imageUrls.map((url, idx) => `- Image ${idx + 1}: ${url}`).join('\n')}\n\n` : ''}${previousVersion || ''}`
+          // Build user prompt - if previousVersion exists, make it clear this is an edit
+          const userPrompt = previousVersion 
+            ? `${intent}\n\n${keyPoints && keyPoints.length > 0 ? `Key points: ${keyPoints.join(', ')}\n\n` : ''}${imageUrls && imageUrls.length > 0 ? `\nImages to include:\n${imageUrls.map((url, idx) => `- Image ${idx + 1}: ${url}`).join('\n')}\n\n` : ''}\n\nIMPORTANT: The previous email HTML was provided in the system prompt above. Make the specific changes requested in the intent while keeping the same structure and styling.`
+            : `${intent}\n\n${keyPoints && keyPoints.length > 0 ? `Key points: ${keyPoints.join(', ')}\n\n` : ''}${imageUrls && imageUrls.length > 0 ? `\nImages to include:\n${imageUrls.map((url, idx) => `- Image ${idx + 1}: ${url}`).join('\n')}\n\n` : ''}`
           
-          const { text: emailHtmlRaw } = await generateText({
-            model: "anthropic/claude-sonnet-4-20250514",
-            system: systemPrompt,
-            prompt: userPrompt,
-            maxOutputTokens: 2000,
-          })
+          // Generate email HTML with timeout protection
+          let emailHtmlRaw: string
+          let timeoutId: NodeJS.Timeout | null = null
+          try {
+            // Create a timeout promise that can be cancelled
+            const timeoutPromise = new Promise<never>((_, reject) => {
+              timeoutId = setTimeout(() => {
+                reject(new Error('Email generation timed out after 30 seconds'))
+              }, 30000)
+            })
+            
+            // Race between generateText and timeout
+            const result = await Promise.race([
+              generateText({
+                model: "anthropic/claude-sonnet-4-20250514",
+                system: systemPrompt,
+                prompt: userPrompt,
+                maxOutputTokens: 2000,
+              }),
+              timeoutPromise
+            ])
+            
+            // Clear timeout regardless of which promise won (success or failure)
+            if (timeoutId) {
+              clearTimeout(timeoutId)
+              timeoutId = null
+            }
+            
+            emailHtmlRaw = result.text
+          } catch (genError: any) {
+            // Clear timeout on error to prevent unhandled promise rejection
+            if (timeoutId) {
+              clearTimeout(timeoutId)
+              timeoutId = null
+            }
+            console.error("[v0] ❌ Email generation failed:", genError)
+            throw new Error(`Failed to generate email content: ${genError.message || 'Unknown error'}`)
+          }
+          
+          // Validate that we got HTML content
+          if (!emailHtmlRaw || typeof emailHtmlRaw !== 'string') {
+            throw new Error('Email generation returned invalid content')
+          }
           
           // Clean up the HTML response - remove markdown code blocks if present
           let emailHtml = emailHtmlRaw.trim()
+          
+          // Validate HTML structure
+          if (!emailHtml || emailHtml.length < 50) {
+            throw new Error('Generated email HTML is too short or empty')
+          }
           
           // Remove markdown code blocks (```html ... ``` or ``` ... ```)
           emailHtml = emailHtml.replace(/^```html\s*/i, '')
@@ -955,13 +1035,34 @@ export async function POST(req: Request) {
             readyToSend: true
           }
         } catch (error: any) {
-          console.error("[v0] Error in compose_email tool:", error)
+          console.error("[v0] ❌ Error in compose_email tool:", error)
+          console.error("[v0] ❌ Error details:", {
+            message: error.message,
+            stack: error.stack,
+            name: error.name,
+            intent: intent,
+            emailType: emailType,
+            hasImageUrls: !!(imageUrls && imageUrls.length > 0),
+            imageCount: imageUrls?.length || 0
+          })
+          
+          // Provide more helpful error message
+          let errorMessage = "Failed to compose email"
+          if (error.message?.includes('timeout') || error.message?.includes('time')) {
+            errorMessage = "Email generation timed out. Please try again with a shorter request."
+          } else if (error.message?.includes('token') || error.message?.includes('limit')) {
+            errorMessage = "Email content too long. Please simplify your request or split into multiple emails."
+          } else if (error.message) {
+            errorMessage = `Email generation failed: ${error.message}`
+          }
+          
           return {
-            error: error.message || "Failed to compose email",
+            error: errorMessage,
             html: "",
-            subjectLine: "",
+            subjectLine: subjectLine || "Email Subject",
             preview: "",
-            readyToSend: false
+            readyToSend: false,
+            errorDetails: process.env.NODE_ENV === 'development' ? error.stack : undefined
           }
         }
       }
@@ -3308,7 +3409,19 @@ Want me to start with the reengagement campaign?"
 3. When Sandra wants to create an email, use **compose_email** tool
 4. **After compose_email returns:** Simply tell Sandra the email is ready and show a brief preview text (first 200 chars). The email preview UI will appear automatically - you don't need to include any special markers or JSON in your response.
 5. Say something like: "Here's your email: [first 200 chars of preview text]... Want me to adjust anything?"
-6. If she requests changes, call **compose_email** again with previousVersion parameter (pass the previous HTML)
+6. **CRITICAL - When Editing Emails:** If Sandra requests changes to an existing email, you MUST:
+   - **YOU MUST ACTUALLY CALL THE compose_email TOOL** - Do NOT just describe what you would change. You MUST execute the tool.
+   - **HOW TO GET THE PREVIOUS EMAIL HTML:**
+     - Option 1 (PREFERRED): Extract the HTML from your PREVIOUS compose_email tool result (the html field from the tool result). Look in the conversation history for the most recent compose_email tool result.
+     - Option 2: If Sandra's message includes "Current email HTML to use as previousVersion:" followed by HTML, extract ALL the HTML from that section (it may be very long, extract it all)
+     - Option 3: If Sandra's message contains HTML that starts with <!DOCTYPE html or <html, extract that entire HTML block (from <!DOCTYPE or <html to </html>)
+     - **IMPORTANT:** The HTML might be very long. Extract the ENTIRE HTML block, not just a portion. Look for the complete HTML document.
+   - Call **compose_email** again with the **previousVersion** parameter set to the extracted HTML
+   - Include the specific changes Sandra requested in the intent parameter
+   - **NEVER claim to have edited the email without actually calling compose_email with previousVersion**
+   - **VERIFICATION:** After calling compose_email, you will see a tool result. If you don't see a tool result, the tool was not executed and you must try again.
+   - **IF YOU DON'T CALL THE TOOL, THE EMAIL WILL NOT BE UPDATED AND SANDRA WILL SEE NO EMAIL CARD**
+   - **IF THE PAGE REFRESHED:** Look in the conversation history for the most recent compose_email tool result, or extract HTML from Sandra's message if she included it.
 7. When she approves, ask: "Who should receive this?" and "When should I send it?"
 8. Then use **schedule_campaign** to handle everything
 
@@ -3668,7 +3781,7 @@ This tool provides critical business intelligence to make data-driven decisions.
               COUNT(*) FILTER (WHERE plan != 'free' AND created_at >= ${startDate.toISOString()})::int as new_paid_users
             FROM users
           `
-          
+
           if (!userMetricsResult || userMetricsResult.length === 0) {
             return {
               success: false,
@@ -3903,13 +4016,67 @@ This tool provides critical business intelligence to make data-driven decisions.
 
     // Track accumulated text and email preview for saving to database
     let accumulatedText = ''
-    let emailPreviewData: { html: string; subjectLine: string; preview: string } | null = null
+      let emailPreviewData: { html: string; subjectLine: string; preview: string } | null = null
 
     // Convert messages to Anthropic format
-    const anthropicMessages = modelMessagesToUse.map((msg: any) => ({
-      role: msg.role,
-      content: Array.isArray(msg.content) ? msg.content : msg.content || '',
-    }))
+    // CRITICAL: Handle both content and parts arrays to preserve tool results
+    // Tool results in parts arrays need to be converted to Anthropic's tool_result format
+    const anthropicMessages = modelMessagesToUse.map((msg: any) => {
+      // If message has parts array (from database or frontend), convert it to Anthropic format
+      if (msg.parts && Array.isArray(msg.parts)) {
+        const content: any[] = []
+        
+        // Process each part
+        for (const part of msg.parts) {
+          if (part.type === 'text') {
+            // Text parts go directly to content
+            content.push({
+              type: 'text',
+              text: part.text || ''
+            })
+          } else if (part.type === 'tool-result' && part.toolName === 'compose_email') {
+            // Tool results need to be formatted for Anthropic
+            // Anthropic expects tool_result with tool_use_id, but we'll format it as text
+            // so Alex can see the email HTML in the conversation
+            const toolResult = part.result || {}
+            const emailHtml = toolResult.html || ''
+            const subjectLine = toolResult.subjectLine || ''
+            
+            // Format as text so Alex can easily extract the HTML
+            // This makes it clear to Alex that this is a previous compose_email result
+            const formattedResult = `[PREVIOUS compose_email TOOL RESULT]
+Subject: ${subjectLine}
+HTML:
+${emailHtml}
+[END OF PREVIOUS EMAIL HTML]`
+            
+            content.push({
+              type: 'text',
+              text: formattedResult
+            })
+          }
+        }
+        
+        // If no content was added from parts, fall back to msg.content
+        if (content.length === 0) {
+          return {
+            role: msg.role,
+            content: Array.isArray(msg.content) ? msg.content : (msg.content || '')
+          }
+        }
+        
+        return {
+          role: msg.role,
+          content: content
+        }
+      }
+      
+      // No parts array, use content directly
+      return {
+        role: msg.role,
+        content: Array.isArray(msg.content) ? msg.content : (msg.content || '')
+      }
+    })
 
     // Create SSE stream compatible with DefaultChatTransport
     // while manually calling Anthropic API to avoid schema bugs
@@ -3974,7 +4141,7 @@ This tool provides critical business intelligence to make data-driven decisions.
             // Call Anthropic API directly
             const response = await fetch('https://api.anthropic.com/v1/messages', {
               method: 'POST',
-              headers: {
+        headers: {
                 'Content-Type': 'application/json',
                 'X-API-Key': process.env.ANTHROPIC_API_KEY!,
                 'anthropic-version': '2023-06-01',
@@ -4151,11 +4318,29 @@ This tool provides critical business intelligence to make data-driven decisions.
                         console.log('[v0] 📊 Tool result:', JSON.stringify(result, null, 2).substring(0, 500))
 
                         // Capture email preview if it's compose_email
-                        if (currentToolCall.name === 'compose_email' && result?.html && result?.subjectLine) {
-                          emailPreviewData = {
-                            html: result.html,
-                            subjectLine: result.subjectLine,
-                            preview: result.preview || stripHtml(result.html).substring(0, 200) + '...'
+                        if (currentToolCall.name === 'compose_email') {
+                          console.log('[v0] 📧 compose_email tool executed:', {
+                            hasResult: !!result,
+                            hasHtml: !!(result?.html),
+                            hasSubjectLine: !!(result?.subjectLine),
+                            resultKeys: result ? Object.keys(result) : [],
+                            resultPreview: result ? JSON.stringify(result).substring(0, 200) : 'no result'
+                          })
+                          
+                          if (result?.html && result?.subjectLine) {
+                            emailPreviewData = {
+                              html: result.html,
+                              subjectLine: result.subjectLine,
+                              preview: result.preview || stripHtml(result.html).substring(0, 200) + '...'
+                            }
+                            console.log('[v0] ✅ Email preview data captured:', {
+                              htmlLength: emailPreviewData.html.length,
+                              subject: emailPreviewData.subjectLine
+                            })
+                          } else {
+                            console.warn('[v0] ⚠️ compose_email tool executed but result missing html or subjectLine:', {
+                              result: result
+                            })
                           }
                         }
 
@@ -4273,8 +4458,21 @@ This tool provides critical business intelligence to make data-driven decisions.
           // Save accumulated message to database
           if (accumulatedText && activeChatId) {
             try {
+              console.log('[v0] 💾 Saving assistant message:', {
+                chatId: activeChatId,
+                textLength: accumulatedText.length,
+                hasEmailPreview: !!emailPreviewData,
+                emailPreviewSubject: emailPreviewData?.subjectLine
+              })
               await saveChatMessage(activeChatId, "assistant", accumulatedText, emailPreviewData)
-              console.log('[v0] ✅ Saved assistant message to chat')
+              console.log('[v0] ✅ Saved assistant message to chat', {
+                chatId: activeChatId,
+                messageLength: accumulatedText.length,
+                hasEmailPreview: !!emailPreviewData,
+                emailPreviewSaved: !!emailPreviewData,
+                explicitChatId: explicitChatId,
+                bodyChatId: chatId
+              })
             } catch (error) {
               console.error("[v0] ❌ Error saving message:", error)
             }
@@ -4291,18 +4489,18 @@ This tool provides critical business intelligence to make data-driven decisions.
           }
         } finally {
           safeClose()
-        }
-      },
-    })
-
+          }
+        },
+      })
+      
     return new Response(stream, {
-      headers: {
+        headers: {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
         'Connection': 'keep-alive',
-        'X-Chat-Id': String(activeChatId),
+          'X-Chat-Id': String(activeChatId),
       },
-    })
+      })
   } catch (error: any) {
     console.error("[v0] Admin agent chat error:", error)
     return NextResponse.json({ error: "Failed to process chat", details: error.message }, { status: 500 })

@@ -50,7 +50,7 @@ export default function BioPage() {
       <section ref={heroContainer} className="h-screen overflow-hidden bg-white relative">
         <motion.div style={{ y }} className="relative h-full">
           <Image
-            src="/professional-woman-entrepreneur-in-stylish-outfit-.jpg"
+            src="https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/maya-pro-generations/mf79hwcsn9rmw0cvbcdvepnb6w-j2UoUcVyshmamoN1ot2ZFtuPdPKrNt.png"
             fill
             alt="Sandra, founder of SSELFIE"
             style={{ objectFit: "cover", objectPosition: "50% 30%" }}

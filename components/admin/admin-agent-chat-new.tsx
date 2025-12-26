@@ -494,6 +494,108 @@ export default function AdminAgentChatNew({
     [setMessages, toast, loadChatEndpoint],
   )
 
+  // Auto-reload chat when compose_email tool completes to show email preview
+  // Similar to how concept cards work - reload after tool completes to get data from database
+  const lastStatusRef = useRef(status)
+  const lastReloadTimeRef = useRef(0)
+  const lastMessageCountRef = useRef(messages.length)
+  const reloadScheduledRef = useRef(false)
+  const lastComposeEmailHashRef = useRef<string>('')
+  const timeoutIdsRef = useRef<NodeJS.Timeout[]>([]) // Track all timeout IDs for cleanup
+  
+  useEffect(() => {
+    // Detect when streaming completes
+    const wasStreaming = lastStatusRef.current === 'streaming' || lastStatusRef.current === 'submitted'
+    const isNowIdle = (status === 'awaiting_message' || status === 'ready') && !isLoading
+    
+    // Check ALL assistant messages for compose_email results (like concept cards check for tool-generateConcepts)
+    const assistantMessages = messages.filter(m => m.role === 'assistant')
+    
+    // Create a hash of all compose_email results to detect changes
+    const composeEmailHash = assistantMessages.map(msg => {
+      const parts = (msg as any).parts || []
+      const toolInvocations = (msg as any).toolInvocations || []
+      
+      const partsResults = parts
+        .filter((p: any) => p.type === 'tool-result' && p.toolName === 'compose_email' && p.result?.html)
+        .map((p: any) => `${p.result.html.substring(0, 50)}-${p.result.subjectLine}`)
+        .join('|')
+      
+      const invocationsResults = toolInvocations
+        .filter((inv: any) => inv.toolName === 'compose_email' && inv.result?.html)
+        .map((inv: any) => `${inv.result.html.substring(0, 50)}-${inv.result.subjectLine}`)
+        .join('|')
+      
+      return partsResults + invocationsResults
+    }).join('||')
+    
+    // Only check if we're transitioning from streaming to idle AND compose_email result exists
+    if (wasStreaming && isNowIdle && composeEmailHash && composeEmailHash !== lastComposeEmailHashRef.current) {
+      const messageCountIncreased = messages.length > lastMessageCountRef.current
+      const now = Date.now()
+      const timeSinceLastReload = now - lastReloadTimeRef.current
+      
+      // Reload if compose_email result exists and we haven't reloaded recently
+      if (chatId && timeSinceLastReload > 3000 && !reloadScheduledRef.current) {
+        reloadScheduledRef.current = true
+        lastReloadTimeRef.current = now
+        lastMessageCountRef.current = messages.length
+        lastComposeEmailHashRef.current = composeEmailHash
+        
+        // Capture chatId value at the time of scheduling to prevent stale closure
+        const chatIdToReload = chatId
+        console.log('[v0] 📧 compose_email completed, reloading chat to show email preview...', {
+          chatId: chatIdToReload,
+          composeEmailHash: composeEmailHash.substring(0, 100)
+        })
+        
+        // Wait a bit for message to be saved to database, then reload
+        const reloadTimeoutId = setTimeout(() => {
+          // Use captured chatId value, not the closure variable
+          if (chatIdToReload) {
+            loadChat(chatIdToReload).finally(() => {
+              // Reset the flag after reload completes
+              const resetTimeoutId = setTimeout(() => {
+                reloadScheduledRef.current = false
+                // Remove this timeout ID from tracking array
+                timeoutIdsRef.current = timeoutIdsRef.current.filter(id => id !== resetTimeoutId)
+              }, 1000)
+              // Track the reset timeout ID
+              timeoutIdsRef.current.push(resetTimeoutId)
+            })
+          } else {
+            reloadScheduledRef.current = false
+          }
+          // Remove this timeout ID from tracking array
+          timeoutIdsRef.current = timeoutIdsRef.current.filter(id => id !== reloadTimeoutId)
+        }, 2500) // 2.5 second delay to ensure message is saved to database
+        
+        // Track the reload timeout ID
+        timeoutIdsRef.current.push(reloadTimeoutId)
+      }
+    }
+    
+    lastStatusRef.current = status
+    lastMessageCountRef.current = messages.length
+    if (composeEmailHash) {
+      lastComposeEmailHashRef.current = composeEmailHash
+    }
+    
+    // Cleanup function: clear all scheduled timeouts when effect re-runs or component unmounts
+    return () => {
+      timeoutIdsRef.current.forEach(timeoutId => {
+        clearTimeout(timeoutId)
+      })
+      timeoutIdsRef.current = []
+      // CRITICAL: Reset the reload scheduled flag when timeouts are cleared
+      // This prevents the flag from blocking future reloads if the effect re-runs
+      // before the timeout fires
+      if (reloadScheduledRef.current) {
+        reloadScheduledRef.current = false
+      }
+    }
+  }, [status, messages, chatId, loadChat, isLoading]) // Watch messages array to catch streaming updates
+
   useEffect(() => {
     if (!hasLoadedChatRef.current) {
       hasLoadedChatRef.current = true
@@ -665,30 +767,41 @@ export default function AdminAgentChatNew({
   }, [messages, isLoading])
 
   // Parse agent response for UI triggers from tool results (simplified)
+  // Check ALL assistant messages to find the most recent compose_email result
+  // Use a ref to track the last email preview we found to detect changes
+  // This works like concept cards - extracts directly from message parts in real-time
+  const lastEmailPreviewHashRef = useRef<string | null>(null)
+  
   useEffect(() => {
+    // Extract email preview from messages in real-time (like concept cards do)
+    // This runs whenever messages change, so it catches streaming updates immediately
+    
     if (!messages.length) {
       // Clear email preview if no messages
       if (emailPreview) {
         setEmailPreview(null)
+        lastEmailPreviewHashRef.current = null
       }
       return
     }
     
-    // Check most recent assistant message for tool results
-    const lastAssistantMsg = messages
+    // Get ALL assistant messages (most recent first)
+    const assistantMessages = messages
       .filter(m => m.role === 'assistant')
-      .pop()
+      .reverse() // Reverse to check most recent first
     
-    if (!lastAssistantMsg) {
+    if (!assistantMessages.length) {
       // Clear email preview if no assistant messages
       if (emailPreview) {
         setEmailPreview(null)
+        lastEmailPreviewHashRef.current = null
       }
       return
     }
     
     // Track if we found a valid email preview in this check
     let foundValidEmailPreview = false
+    let latestEmailPreview: any = null
     
     // Helper function to extract and validate email preview
     const extractEmailPreview = (result: any, source: string) => {
@@ -737,120 +850,125 @@ export default function AdminAgentChatNew({
       }
     }
     
-    // AI SDK stores tool results in toolInvocations array or in parts array
-    // Check both locations for compatibility, but only extract once
-    const toolInvocations = (lastAssistantMsg as any).toolInvocations
-    const parts = (lastAssistantMsg as any).parts
-    
-    // Process toolInvocations (AI SDK format) - PRIORITY 1
-    if (toolInvocations && Array.isArray(toolInvocations) && !foundValidEmailPreview) {
-      for (const invocation of toolInvocations) {
-        // Check for compose_email tool
-        if (invocation.toolName === 'compose_email' && invocation.result) {
-          const emailPreviewData = extractEmailPreview(invocation.result, 'toolInvocations')
-          
-          if (emailPreviewData) {
-            console.log('[v0] ✅ Email preview found in toolInvocations', {
-              htmlLength: emailPreviewData.html.length,
-              htmlPreview: emailPreviewData.html.substring(0, 100),
-              htmlStartsWith: emailPreviewData.html.substring(0, 20),
-              subjectLine: emailPreviewData.subject,
-              hasPreview: !!emailPreviewData.preview
-            })
+    // Check ALL assistant messages (most recent first) to find the latest compose_email result
+    // This ensures we get the most recent email even if Alex edited it
+    for (const assistantMsg of assistantMessages) {
+      if (foundValidEmailPreview) break // Stop once we find a valid preview
+      
+      // AI SDK stores tool results in toolInvocations array or in parts array
+      // Check both locations for compatibility
+      const toolInvocations = (assistantMsg as any).toolInvocations
+      const parts = (assistantMsg as any).parts
+      
+      // Process toolInvocations (AI SDK format) - PRIORITY 1
+      if (toolInvocations && Array.isArray(toolInvocations) && !foundValidEmailPreview) {
+        for (const invocation of toolInvocations) {
+          // Check for compose_email tool
+          if (invocation.toolName === 'compose_email' && invocation.result) {
+            const emailPreviewData = extractEmailPreview(invocation.result, 'toolInvocations')
             
-            console.log('[v0] 📧 Setting email preview with data:', {
-              subject: emailPreviewData.subject,
-              htmlLength: emailPreviewData.html.length,
-              htmlStartsWith: emailPreviewData.html.substring(0, 50),
-              previewLength: emailPreviewData.preview.length
-            })
-            
-            setEmailPreview(emailPreviewData)
-            foundValidEmailPreview = true
-            // Don't continue - process all tool results in this iteration (audience data, campaign status, etc.)
+            if (emailPreviewData) {
+              console.log('[v0] ✅ Email preview found in toolInvocations', {
+                htmlLength: emailPreviewData.html.length,
+                htmlPreview: emailPreviewData.html.substring(0, 100),
+                htmlStartsWith: emailPreviewData.html.substring(0, 20),
+                subjectLine: emailPreviewData.subject,
+                hasPreview: !!emailPreviewData.preview
+              })
+              
+              console.log('[v0] 📧 Setting email preview with data:', {
+                subject: emailPreviewData.subject,
+                htmlLength: emailPreviewData.html.length,
+                htmlStartsWith: emailPreviewData.html.substring(0, 50),
+                previewLength: emailPreviewData.preview.length
+              })
+              
+              latestEmailPreview = emailPreviewData
+              foundValidEmailPreview = true
+              break // Found valid preview, stop searching
+            }
           }
-        }
         
-        // Check for audience data tool
-        if (invocation.toolName === 'get_resend_audience_data' && invocation.result) {
-          const result = invocation.result
-          if (result.segments && Array.isArray(result.segments)) {
-            const formattedSegments = result.segments.map((s: any) => ({
-              id: s.id || 'all',
-              name: s.name || 'Unknown Segment',
-              size: s.size || 0,
-              description: s.description
-            }))
-            setAvailableSegments(formattedSegments)
-          }
-        }
-        
-        // Check for campaign status tool
-        if (invocation.toolName === 'check_campaign_status' && invocation.result) {
-          const result = invocation.result
-          if (result.campaigns && Array.isArray(result.campaigns) && result.campaigns.length > 0) {
-            const formattedCampaigns = result.campaigns.map((c: any) => ({
-              id: c.id,
-              name: c.name,
-              sentCount: c.stats?.sent || c.stats?.total || 0,
-              openedCount: 0,
-              openRate: 0,
-              date: new Date(c.createdAt).toLocaleDateString(),
-              status: c.status || 'sent'
-            }))
-            setRecentCampaigns(formattedCampaigns)
-          }
-        }
-      }
-    }
-    
-    // Fallback: Check parts array (alternative format) - PRIORITY 2 (only if not found in toolInvocations)
-    if (parts && Array.isArray(parts) && !foundValidEmailPreview) {
-      for (const part of parts) {
-        const partAny = part as any
-          
-        // Check for compose_email tool result
-        if (partAny.type === 'tool-result' && partAny.toolName === 'compose_email' && partAny.result) {
-          let result = partAny.result
-          
-          // Handle stringified JSON
-          if (typeof result === 'string') {
-            try {
-              result = JSON.parse(result)
-            } catch (e) {
-              console.warn('[v0] ⚠️ Could not parse result as JSON:', e)
-              continue
+          // Check for audience data tool
+          if (invocation.toolName === 'get_resend_audience_data' && invocation.result) {
+            const result = invocation.result
+            if (result.segments && Array.isArray(result.segments)) {
+              const formattedSegments = result.segments.map((s: any) => ({
+                id: s.id || 'all',
+                name: s.name || 'Unknown Segment',
+                size: s.size || 0,
+                description: s.description
+              }))
+              setAvailableSegments(formattedSegments)
             }
           }
           
-          const emailPreviewData = extractEmailPreview(result, 'parts')
-          
-          if (emailPreviewData) {
-            console.log('[v0] ✅ Email preview found in parts', {
-              htmlLength: emailPreviewData.html.length,
-              htmlPreview: emailPreviewData.html.substring(0, 100),
-              htmlStartsWith: emailPreviewData.html.substring(0, 20),
-              subjectLine: emailPreviewData.subject,
-              hasPreview: !!emailPreviewData.preview
-            })
-            
-            console.log('[v0] 📧 Setting email preview with data:', {
-              subject: emailPreviewData.subject,
-              htmlLength: emailPreviewData.html.length,
-              htmlStartsWith: emailPreviewData.html.substring(0, 50),
-              previewLength: emailPreviewData.preview.length
-            })
-            
-            setEmailPreview(emailPreviewData)
-            foundValidEmailPreview = true
-            // Don't continue - process all tool results in this iteration (audience data, campaign status, etc.)
+          // Check for campaign status tool
+          if (invocation.toolName === 'check_campaign_status' && invocation.result) {
+            const result = invocation.result
+            if (result.campaigns && Array.isArray(result.campaigns) && result.campaigns.length > 0) {
+              const formattedCampaigns = result.campaigns.map((c: any) => ({
+                id: c.id,
+                name: c.name,
+                sentCount: c.stats?.sent || c.stats?.total || 0,
+                openedCount: 0,
+                openRate: 0,
+                date: new Date(c.createdAt).toLocaleDateString(),
+                status: c.status || 'sent'
+              }))
+              setRecentCampaigns(formattedCampaigns)
+            }
           }
         }
+      }
+      
+      // Fallback: Check parts array (alternative format) - PRIORITY 2 (only if not found in toolInvocations)
+      if (parts && Array.isArray(parts) && !foundValidEmailPreview) {
+        for (const part of parts) {
+          const partAny = part as any
+            
+          // Check for compose_email tool result
+          if (partAny.type === 'tool-result' && partAny.toolName === 'compose_email' && partAny.result) {
+            let result = partAny.result
+            
+            // Handle stringified JSON
+            if (typeof result === 'string') {
+              try {
+                result = JSON.parse(result)
+              } catch (e) {
+                console.warn('[v0] ⚠️ Could not parse result as JSON:', e)
+                continue
+              }
+            }
+            
+            const emailPreviewData = extractEmailPreview(result, 'parts')
+            
+            if (emailPreviewData) {
+              console.log('[v0] ✅ Email preview found in parts', {
+                htmlLength: emailPreviewData.html.length,
+                htmlPreview: emailPreviewData.html.substring(0, 100),
+                htmlStartsWith: emailPreviewData.html.substring(0, 20),
+                subjectLine: emailPreviewData.subject,
+                hasPreview: !!emailPreviewData.preview
+              })
+              
+              console.log('[v0] 📧 Setting email preview with data:', {
+                subject: emailPreviewData.subject,
+                htmlLength: emailPreviewData.html.length,
+                htmlStartsWith: emailPreviewData.html.substring(0, 50),
+                previewLength: emailPreviewData.preview.length
+              })
+              
+              latestEmailPreview = emailPreviewData
+              foundValidEmailPreview = true
+              break // Found valid preview, stop searching
+            }
+          }
           
           // Check for get_resend_audience_data tool result
-        if (partAny.type === 'tool-result' && partAny.toolName === 'get_resend_audience_data' && partAny.result) {
-          const result = partAny.result
-          if (result.segments && Array.isArray(result.segments)) {
+          if (partAny.type === 'tool-result' && partAny.toolName === 'get_resend_audience_data' && partAny.result) {
+            const result = partAny.result
+            if (result.segments && Array.isArray(result.segments)) {
               const formattedSegments = result.segments.map((s: any) => ({
                 id: s.id || 'all',
                 name: s.name || 'Unknown Segment',
@@ -862,42 +980,60 @@ export default function AdminAgentChatNew({
           }
           
           // Check for check_campaign_status tool result
-        if (partAny.type === 'tool-result' && partAny.toolName === 'check_campaign_status' && partAny.result) {
-          const result = partAny.result
+          if (partAny.type === 'tool-result' && partAny.toolName === 'check_campaign_status' && partAny.result) {
+            const result = partAny.result
             if (result.campaigns && Array.isArray(result.campaigns) && result.campaigns.length > 0) {
               const formattedCampaigns = result.campaigns.map((c: any) => ({
                 id: c.id,
                 name: c.name,
                 sentCount: c.stats?.sent || c.stats?.total || 0,
-              openedCount: 0,
-              openRate: 0,
+                openedCount: 0,
+                openRate: 0,
                 date: new Date(c.createdAt).toLocaleDateString(),
                 status: c.status || 'sent'
               }))
               setRecentCampaigns(formattedCampaigns)
+            }
           }
         }
       }
     }
     
-    // If we didn't find a valid email preview in the latest message, but we have one set,
-    // check if it's still valid (not from an old message)
-    // Note: We check emailPreview but don't include it in deps to avoid infinite loops
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    if (!foundValidEmailPreview && emailPreview) {
+    // If we found a valid email preview, check if it's different from what we have
+    if (foundValidEmailPreview && latestEmailPreview) {
+      // Create a hash of the email preview to detect changes
+      const previewHash = `${latestEmailPreview.subject}-${latestEmailPreview.html.substring(0, 100)}-${latestEmailPreview.html.length}`
+      
+      // Only update if the preview has changed
+      if (previewHash !== lastEmailPreviewHashRef.current) {
+        console.log('[v0] 📧 Email preview changed, updating...', {
+          oldHash: lastEmailPreviewHashRef.current,
+          newHash: previewHash,
+          subject: latestEmailPreview.subject
+        })
+        setEmailPreview(latestEmailPreview)
+        lastEmailPreviewHashRef.current = previewHash
+      } else {
+        console.log('[v0] 📧 Email preview unchanged, skipping update')
+      }
+    } else if (!foundValidEmailPreview && emailPreview) {
+      // If we didn't find a valid email preview in any message, but we have one set,
+      // check if it's still valid (not from an old message)
       // Validate current email preview HTML is still valid
       if (emailPreview.html && typeof emailPreview.html === 'string') {
         const html = emailPreview.html.trim()
         if (!html.startsWith('<') && !html.startsWith('<!DOCTYPE')) {
           console.warn('[v0] ⚠️ Current email preview has invalid HTML, clearing it')
           setEmailPreview(null)
+          lastEmailPreviewHashRef.current = null
         }
       } else {
         console.warn('[v0] ⚠️ Current email preview has no HTML, clearing it')
         setEmailPreview(null)
+        lastEmailPreviewHashRef.current = null
       }
     }
-  }, [messages])
+  }, [messages, status]) // Watch messages array directly to catch changes immediately (like concept cards)
 
   // Auto-save email draft to database when preview is created/updated
   // FIX: Use ref to capture currentDraftId without causing re-triggers
@@ -947,6 +1083,9 @@ export default function AdminAgentChatNew({
 
   const handleNewChat = async () => {
     try {
+      // CRITICAL: Clear messages immediately to prevent mixing with previous chat
+      setMessages([])
+      
       const response = await fetch(newChatEndpoint, {
         method: "POST",
       })
@@ -954,10 +1093,14 @@ export default function AdminAgentChatNew({
       if (!response.ok) throw new Error("Failed to create new chat")
 
       const data = await response.json()
+      
+      // CRITICAL: Set chatId BEFORE loading chat to ensure correct chatId is used
       setChatId(data.chatId)
       setChatTitle("New Chat")
-      setMessages([])
       setShowHistory(false)
+      
+      // Load the new chat (will load empty messages since it's a new chat)
+      await loadChat(data.chatId)
       await loadChats()
 
       console.log("[v0] New chat created:", data.chatId)
@@ -972,9 +1115,13 @@ export default function AdminAgentChatNew({
   }
 
   const handleSelectChat = (selectedChatId: number, selectedChatTitle: string) => {
-    loadChat(selectedChatId)
+    // CRITICAL: Clear messages immediately when switching chats to prevent mixing
+    setMessages([])
+    setChatId(selectedChatId)
     setChatTitle(selectedChatTitle)
     setShowHistory(false)
+    // Load the selected chat's messages
+    loadChat(selectedChatId)
   }
 
   // Load gallery images (initial load or category change)
@@ -1124,16 +1271,34 @@ export default function AdminAgentChatNew({
       textareaRef.current.style.height = 'auto'
     }
 
+    // CRITICAL: Ensure we have a valid chatId before sending
+    // Double-check chatId is set (in case state hasn't updated yet)
+    if (!currentChatId) {
+      toast({
+        title: "Error",
+        description: "No chat selected. Please try again.",
+        variant: "destructive"
+      })
+      return
+    }
+    
     // Send message using useChat
     // sendMessage accepts { text: string } or message object with parts
+    // CRITICAL: Pass chatId explicitly in the message to ensure it's sent correctly
+    // The useChat body parameter might be stale, so we pass it explicitly
     try {
       if (typeof messageContent === 'string') {
-        await sendMessage({ text: messageContent })
+        // Use sendMessage with explicit body override to ensure correct chatId
+        await sendMessage({ 
+          text: messageContent,
+          data: { chatId: currentChatId } // Explicitly pass chatId to override stale body
+        } as any)
       } else {
         // For multi-part messages, sendMessage expects a message object
         await sendMessage({ 
           role: 'user',
-          content: messageContent as any
+          content: messageContent as any,
+          data: { chatId: currentChatId } // Explicitly pass chatId to override stale body
         } as any)
       }
     } catch (error: any) {
@@ -1512,12 +1677,20 @@ export default function AdminAgentChatNew({
                   // Don't clear preview - keep it visible so Alex can see the current version
                   // Pass the FULL email HTML to Alex so he can edit it properly
                   // Use previousVersion parameter in compose_email tool
-                  const editPrompt = `Please make edits to this email. Keep the overall structure and style, just make the specific changes I requested.
+                  // CRITICAL: Make it very explicit that Alex must use the compose_email tool with previousVersion
+                  const editPrompt = `I want to edit this email. Please use the compose_email tool with the previousVersion parameter.
 
-Current email HTML:
+CRITICAL INSTRUCTIONS:
+1. You MUST call the compose_email tool (do not just describe changes)
+2. Use the previousVersion parameter and pass the HTML below
+3. Make the specific changes I request while keeping the overall structure and style
+
+Current email HTML to use as previousVersion:
 ${emailPreview.html}
 
-Subject: ${emailPreview.subject}`
+Current subject: ${emailPreview.subject}
+
+Please make the edits I request using the compose_email tool.`
                   
                   await sendMessage({ 
                     text: editPrompt

@@ -6,6 +6,12 @@ const nextConfig = {
   images: {
     unoptimized: true,
     qualities: [75, 80, 85], // Configure quality values to suppress warnings
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'kcnmiu7u3eszdkja.public.blob.vercel-storage.com',
+      },
+    ],
   },
   experimental: {
     serverActions: {

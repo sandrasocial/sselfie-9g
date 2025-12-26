@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Sandra's Links | SSELFIE",
     description: "Professional AI photos for personal brands. Built from selfies. Built from nothing.",
-    images: ['/professional-woman-entrepreneur-in-stylish-outfit-.jpg'],
+    images: ['https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/maya-pro-generations/mf79hwcsn9rmw0cvbcdvepnb6w-j2UoUcVyshmamoN1ot2ZFtuPdPKrNt.png'],
   },
   twitter: {
     card: 'summary_large_image',
