@@ -2,13 +2,14 @@ import { neon } from "@neondatabase/serverless"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 import { getPersonalStoryContext } from "./get-personal-context"
+import { getProductKnowledge } from "./get-product-knowledge"
 import { getCache, setCache, CACHE_TTL } from "@/lib/cache"
 
 const sql = neon(process.env.DATABASE_URL!)
 
 export async function getCompleteAdminContext(targetUserId?: string): Promise<string> {
   try {
-    const cacheKey = `admin_context:${targetUserId || 'general'}:v2`
+    const cacheKey = `admin_context:${targetUserId || 'general'}:v3`
     
     let cached: string | null = null
     try {
@@ -25,6 +26,12 @@ export async function getCompleteAdminContext(targetUserId?: string): Promise<st
     console.log('[v0] 💾 Admin context cache MISS - loading from database')
 
     const contextParts: string[] = []
+
+    // Add product knowledge (CRITICAL for sales and marketing)
+    const productKnowledge = await getProductKnowledge()
+    if (productKnowledge) {
+      contextParts.push(productKnowledge)
+    }
 
     const personalContext = await getPersonalStoryContext()
     if (personalContext) {

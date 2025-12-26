@@ -2966,6 +2966,182 @@ These images should be included naturally in the email HTML.`
       }
     })
 
+    // Revenue & Business Metrics Tool
+    const getRevenueMetricsTool = tool({
+      description: `Get revenue, conversion, and business metrics to understand why the app is/isn't selling.
+
+Use this when Sandra asks:
+- "How much revenue did we make?"
+- "Why isn't the app selling?"
+- "What's our conversion rate?"
+- "How many paid vs free users?"
+- "Show me business metrics"
+
+This tool provides critical business intelligence to make data-driven decisions.`,
+
+      parameters: z.object({
+        timeRange: z.enum(['today', 'yesterday', 'week', 'month', 'all_time']).optional().describe("Time range for metrics (defaults to 'week')"),
+        includeConversionFunnel: z.boolean().optional().describe("Include detailed conversion funnel analysis (defaults to true)")
+      }),
+
+      execute: async ({ timeRange = 'week', includeConversionFunnel = true }: {
+        timeRange?: string
+        includeConversionFunnel?: boolean
+      }) => {
+        try {
+          // Calculate date range
+          let startDate = new Date()
+          switch (timeRange) {
+            case 'today':
+              startDate.setHours(0, 0, 0, 0)
+              break
+            case 'yesterday':
+              startDate.setDate(startDate.getDate() - 1)
+              startDate.setHours(0, 0, 0, 0)
+              break
+            case 'week':
+              startDate.setDate(startDate.getDate() - 7)
+              break
+            case 'month':
+              startDate.setMonth(startDate.getMonth() - 1)
+              break
+            case 'all_time':
+              startDate = new Date('2020-01-01')
+              break
+          }
+
+          // Get user signups and plan distribution
+          const [userMetrics] = await sql`
+            SELECT
+              COUNT(*)::int as total_users,
+              COUNT(*) FILTER (WHERE plan = 'free')::int as free_users,
+              COUNT(*) FILTER (WHERE plan = 'studio_membership')::int as studio_members,
+              COUNT(*) FILTER (WHERE plan = 'one_time')::int as one_time_users,
+              COUNT(*) FILTER (WHERE created_at >= ${startDate.toISOString()})::int as new_signups,
+              COUNT(*) FILTER (WHERE plan != 'free' AND created_at >= ${startDate.toISOString()})::int as new_paid_users
+            FROM users
+          `
+
+          // Get conversion metrics
+          const freeToStudioConversion = userMetrics.studio_members / userMetrics.free_users * 100
+          const freeToOneTimeConversion = userMetrics.one_time_users / userMetrics.free_users * 100
+          const overallConversion = (userMetrics.studio_members + userMetrics.one_time_users) / userMetrics.total_users * 100
+
+          // Get generation activity (engagement metric)
+          const [activityMetrics] = await sql`
+            SELECT
+              COUNT(*)::int as total_generations,
+              COUNT(DISTINCT user_id)::int as active_users,
+              COUNT(*) FILTER (WHERE created_at >= ${startDate.toISOString()})::int as recent_generations
+            FROM generated_images
+          `
+
+          // Get recent paid users for churn analysis
+          const [churnMetrics] = await sql`
+            SELECT
+              COUNT(*)::int as total_paid_users,
+              COUNT(*) FILTER (WHERE last_login_at < NOW() - INTERVAL '7 days')::int as inactive_7_days,
+              COUNT(*) FILTER (WHERE last_login_at < NOW() - INTERVAL '30 days')::int as inactive_30_days
+            FROM users
+            WHERE plan != 'free'
+          `
+
+          const result: any = {
+            time_range: timeRange,
+            generated_at: new Date().toISOString(),
+
+            user_metrics: {
+              total_users: userMetrics.total_users,
+              free_users: userMetrics.free_users,
+              studio_members: userMetrics.studio_members,
+              one_time_users: userMetrics.one_time_users,
+              new_signups_this_period: userMetrics.new_signups,
+              new_paid_users_this_period: userMetrics.new_paid_users
+            },
+
+            conversion_metrics: {
+              overall_conversion_rate: `${overallConversion.toFixed(1)}%`,
+              free_to_studio_conversion: `${freeToStudioConversion.toFixed(1)}%`,
+              free_to_one_time_conversion: `${freeToOneTimeConversion.toFixed(1)}%`,
+              paid_user_percentage: `${((userMetrics.studio_members + userMetrics.one_time_users) / userMetrics.total_users * 100).toFixed(1)}%`
+            },
+
+            engagement_metrics: {
+              total_generations: activityMetrics.total_generations,
+              active_users: activityMetrics.active_users,
+              recent_generations: activityMetrics.recent_generations,
+              avg_generations_per_user: (activityMetrics.total_generations / activityMetrics.active_users).toFixed(1)
+            },
+
+            retention_metrics: {
+              total_paid_users: churnMetrics.total_paid_users,
+              inactive_7_days: churnMetrics.inactive_7_days,
+              inactive_30_days: churnMetrics.inactive_30_days,
+              retention_rate_7_days: `${((churnMetrics.total_paid_users - churnMetrics.inactive_7_days) / churnMetrics.total_paid_users * 100).toFixed(1)}%`,
+              retention_rate_30_days: `${((churnMetrics.total_paid_users - churnMetrics.inactive_30_days) / churnMetrics.total_paid_users * 100).toFixed(1)}%`
+            }
+          }
+
+          // Add conversion funnel analysis if requested
+          if (includeConversionFunnel) {
+            // Analyze signup → first generation → paid conversion
+            const [funnelMetrics] = await sql`
+              SELECT
+                COUNT(DISTINCT u.id)::int as signed_up,
+                COUNT(DISTINCT gi.user_id)::int as generated_at_least_once,
+                COUNT(DISTINCT CASE WHEN u.plan != 'free' THEN u.id END)::int as converted_to_paid
+              FROM users u
+              LEFT JOIN generated_images gi ON gi.user_id = u.id
+              WHERE u.created_at >= ${startDate.toISOString()}
+            `
+
+            result.conversion_funnel = {
+              signed_up: funnelMetrics.signed_up,
+              tried_generation: funnelMetrics.generated_at_least_once,
+              converted_to_paid: funnelMetrics.converted_to_paid,
+              signup_to_trial_rate: `${(funnelMetrics.generated_at_least_once / funnelMetrics.signed_up * 100).toFixed(1)}%`,
+              trial_to_paid_rate: `${(funnelMetrics.converted_to_paid / funnelMetrics.generated_at_least_once * 100).toFixed(1)}%`,
+              signup_to_paid_rate: `${(funnelMetrics.converted_to_paid / funnelMetrics.signed_up * 100).toFixed(1)}%`,
+
+              insights: [
+                funnelMetrics.generated_at_least_once / funnelMetrics.signed_up < 0.5
+                  ? "⚠️ Less than 50% of signups try generation - onboarding issue?"
+                  : "✅ Good activation rate",
+
+                funnelMetrics.converted_to_paid / funnelMetrics.generated_at_least_once < 0.1
+                  ? "⚠️ Less than 10% convert after trying - pricing or value prop issue?"
+                  : "✅ Healthy trial-to-paid conversion",
+
+                userMetrics.new_signups < 10
+                  ? "⚠️ Low signup volume - need more traffic"
+                  : "✅ Steady signup volume"
+              ]
+            }
+          }
+
+          // Add revenue estimate (Note: Requires Stripe integration for actual revenue)
+          result.revenue_estimate = {
+            note: "Actual revenue requires Stripe API integration",
+            estimated_mrr: `$${(userMetrics.studio_members * 29).toFixed(2)}`,
+            estimated_one_time_revenue: `$${(userMetrics.one_time_users * 12).toFixed(2)}`,
+            total_estimated: `$${((userMetrics.studio_members * 29) + (userMetrics.one_time_users * 12)).toFixed(2)}`
+          }
+
+          return {
+            success: true,
+            metrics: result
+          }
+        } catch (error: any) {
+          console.error("[v0] Error in get_revenue_metrics tool:", error)
+          return {
+            success: false,
+            error: error.message || "Failed to get revenue metrics",
+            suggestion: "Check database connection and ensure tables exist"
+          }
+        }
+      }
+    })
+
     // Validate tools before passing to streamText
     // All email tools are properly defined and enabled
     const tools = {
@@ -2977,6 +3153,7 @@ These images should be included naturally in the email HTML.`
       analyze_email_strategy: analyzeEmailStrategyTool,
       read_codebase_file: readCodebaseFileTool as any,
       web_search: webSearchTool,
+      get_revenue_metrics: getRevenueMetricsTool,
     } as any
 
     // Use Anthropic SDK directly to bypass gateway tool schema conversion issues
