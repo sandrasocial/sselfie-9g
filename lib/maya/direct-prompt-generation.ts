@@ -311,10 +311,11 @@ export function validatePromptLight(
       critical.push(`Too long: ${wordCount} words (maximum 60)`)
     }
   } else {
-    if (wordCount < 50) {
-      critical.push(`Too short: ${wordCount} words (minimum 50)`)
-    } else if (wordCount > 80) {
-      critical.push(`Too long: ${wordCount} words (maximum 80)`)
+    // Pro mode uses structured format (Outfit, Pose, Setting, etc.) which requires more words
+    if (wordCount < 100) {
+      critical.push(`Too short: ${wordCount} words (minimum 100)`)
+    } else if (wordCount > 200) {
+      critical.push(`Too long: ${wordCount} words (maximum 200)`)
     }
   }
   
