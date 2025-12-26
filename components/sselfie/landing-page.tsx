@@ -321,7 +321,7 @@ export default function LandingPage() {
       <section ref={heroContainer} className="h-screen overflow-hidden bg-white">
         <motion.div style={{ y }} className="relative h-full">
           <Image
-            src="/images/luxury-portrait.png"
+            src="https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/maya-pro-generations/mf79hwcsn9rmw0cvbcdvepnb6w-j2UoUcVyshmamoN1ot2ZFtuPdPKrNt.png"
             fill
             alt="Professional brand photography"
             style={{ objectFit: "cover", objectPosition: "center" }}
