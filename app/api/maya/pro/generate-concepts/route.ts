@@ -548,36 +548,36 @@ The "prompt" field must be a COMPLETE, STRUCTURED PROMPT ready for Nano Banana P
 For concepts 0-2 (Editorial - first 3 concepts):
 Professional photography. Pinterest-style editorial portrait. Character consistency with provided reference images. Match the exact facial features, hair, skin tone, body type, and physical characteristics of the person in the reference images. This is the same person in a different scene. Editorial quality, professional photography aesthetic.
 
-**Outfit:** [Complete outfit with ALL brands, materials, and specific pieces. Example: "The Row cream cashmere turtleneck sweater, Brunello Cucinelli camel wide-leg trousers, Cartier watch, Bottega Veneta crossbody bag"]
+**Outfit:** [Complete outfit with ALL brands, materials, and specific pieces. Example: "Brand-appropriate sophisticated outfit with complete styling details including all pieces, materials, and accessories"]
 
-**Pose:** [Exact action and body position. Example: "Gracefully sitting on ivory velvet sofa beside Fraser fir Christmas tree, holding fine bone china teacup with both hands, gazing thoughtfully at fireplace"]
+**Pose:** [Exact action and body position. Example: "Natural pose and action matching the setting and mood of the concept, with specific body language and positioning"]
 
-**Setting:** [ALL specific items and environment details. Example: "Living room with ivory velvet sofa, Fraser fir Christmas tree with crystal ornaments and warm white lights, floor-to-ceiling windows, wrapped Hermès boxes beneath tree, white orchids on side table"]
+**Setting:** [ALL specific items and environment details. Example: "Detailed environment description with specific elements that create the desired atmosphere and context"]
 
-**Lighting:** [Exact lighting description. Example: "Golden fireplace glow mixed with natural winter light from windows, creating serene luxury atmosphere"]
+**Lighting:** [Exact lighting description. Example: "Specific lighting conditions that match the time of day and mood, with detailed light sources and quality"]
 
 **Camera Composition:** Editorial portrait from mid-thigh upward, frontal camera position, symmetrical centered framing, professional DSLR, Canon EOS R5 or Sony A7R IV, 85mm f/1.4 lens, camera distance 1.5-2m from subject, shallow depth of field (f/2.0-f/2.8).
 
-**Mood:** [Mood words from description. Example: "Serene, luxurious, elegant holiday morning"]
+**Mood:** [Mood words from description. Example: "Mood words that capture the emotional tone and atmosphere of the concept"]
 
-**Aesthetic:** [Aesthetic from description with Pinterest language. Example: "Luxurious holiday morning elegance, sophisticated Christmas styling, aspirational holiday luxury"]
+**Aesthetic:** [Aesthetic from description with Pinterest language. Example: "Aesthetic description using Pinterest-style language that captures the visual style and aspirational quality"]
 
 For concepts 3-5 (Authentic iPhone - last 3 concepts):
 Authentic influencer content. Pinterest-style portrait. Character consistency with provided reference images. Match the exact facial features, hair, skin tone, body type, and physical characteristics of the person in the reference images. This is the same person in a different scene. Natural, relatable iPhone aesthetic.
 
-**Outfit:** [Complete outfit with ALL brands and materials. Example: "Jenni Kayne cashmere sweater in warm cream, Levi's high-waisted denim, Bottega Veneta crossbody bag"]
+**Outfit:** [Complete outfit with ALL brands and materials. Example: "Complete outfit description with all brands, materials, and styling details appropriate to the concept"]
 
-**Pose:** [Exact action. Example: "Sitting cross-legged on cream sofa, holding ceramic mug with both hands, looking peacefully at decorated Christmas tree"]
+**Pose:** [Exact action. Example: "Natural pose and action that matches the concept's setting and mood"]
 
-**Setting:** [Environment details. Example: "Living room with cream sofa, Fraser fir Christmas tree with twinkling lights, floor-to-ceiling windows, wrapped presents beneath tree"]
+**Setting:** [Environment details. Example: "Detailed environment description with specific elements that create the desired atmosphere"]
 
-**Lighting:** [Lighting description. Example: "Soft morning light streaming through windows, warm fireplace glow"]
+**Lighting:** [Lighting description. Example: "Specific lighting conditions that match the time of day and mood of the concept"]
 
 **Camera Composition:** Authentic iPhone 15 Pro portrait mode, 77mm equivalent, natural bokeh effect, shot from 1.5m distance, portrait mode depth creating soft background blur, influencer content aesthetic.
 
-**Mood:** [Mood. Example: "Peaceful, joyful holiday morning"]
+**Mood:** [Mood. Example: "Mood words that capture the emotional tone of the concept"]
 
-**Aesthetic:** [Aesthetic. Example: "Cozy holiday morning elegance, quiet luxury aesthetic"]
+**Aesthetic:** [Aesthetic. Example: "Aesthetic description using Pinterest-style language that captures the visual style"]
 
 **SELFIE HANDLING:**
 If the concept is a selfie (description mentions "selfie", "front camera", "mirror selfie"):
