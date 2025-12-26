@@ -6,7 +6,6 @@ import { createServerClient } from "@/lib/supabase/server"
 import { getUserIdFromSupabase } from "@/lib/user-mapping"
 import { neon } from "@neondatabase/serverless"
 import { generateWithNanoBanana, getStudioProCreditCost } from "@/lib/nano-banana-client"
-import { buildNanoBananaPrompt } from "@/lib/maya/nano-banana-prompt-builder"
 import { getUserCredits, deductCredits, addCredits } from "@/lib/credits"
 import { put } from "@vercel/blob"
 import { guardProModeRoute } from "@/lib/maya/type-guards"
@@ -52,35 +51,31 @@ export async function POST(req: NextRequest) {
       imageCount: inputImages?.baseImages?.length || 0,
     })
 
-    // BUILD optimized Nano Banana prompt
-    let optimizedPrompt: string
-    let sceneDescription: string
-    try {
-      const result = await buildNanoBananaPrompt({
-        userId: neonUserId,
-        mode: mode as any,
-        userRequest,
-        inputImages: inputImages || {},
-      })
-      optimizedPrompt = result.optimizedPrompt
-      sceneDescription = result.sceneDescription
-      console.log("[STUDIO-PRO] Prompt built successfully:", {
-        promptLength: optimizedPrompt.length,
-        sceneDescription
-      })
-    } catch (promptError) {
-      console.error("[STUDIO-PRO] Failed to build prompt:", promptError)
-      const errorDetails = promptError instanceof Error ? promptError.message : String(promptError)
-      const errorStack = promptError instanceof Error ? promptError.stack : undefined
-      console.error("[STUDIO-PRO] Error details:", { errorDetails, errorStack })
-      return NextResponse.json(
-        { 
-          error: "Failed to build generation prompt",
-          details: errorDetails
-        },
-        { status: 500 }
-      )
+    // =============================================================================
+    // USE MAYA'S STRUCTURED PROMPT DIRECTLY
+    // =============================================================================
+    // Trust Maya's generated prompt - it's already optimized for Nano Banana!
+    
+    // Helper to extract scene description from Maya's structured prompt
+    function extractSceneDescription(prompt: string): string {
+      // Extract Setting section if present
+      const settingMatch = prompt.match(/\*\*Setting:\*\*\s*([^*]+)/i)
+      if (settingMatch) {
+        return settingMatch[1].trim()
+      }
+      
+      // Fallback: extract from first 200 chars
+      return prompt.substring(0, 200).replace(/\*\*[^*]+\*\*/g, '').trim()
     }
+    
+    const optimizedPrompt = userRequest.trim() // Maya's complete structured prompt
+    const sceneDescription = extractSceneDescription(optimizedPrompt)
+    
+    console.log("[STUDIO-PRO] Using Maya's structured prompt directly:", {
+      promptLength: optimizedPrompt.length,
+      sceneDescription: sceneDescription.substring(0, 100) + (sceneDescription.length > 100 ? '...' : ''),
+      hasStructuredSections: /\*\*Outfit:\*\*|\*\*Pose:\*\*|\*\*Setting:\*\*/i.test(optimizedPrompt)
+    })
 
     // CALCULATE credits
     const creditsRequired = getStudioProCreditCost(resolution as "1K" | "2K" | "4K")
