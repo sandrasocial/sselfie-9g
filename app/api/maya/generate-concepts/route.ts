@@ -99,63 +99,11 @@ import { generateWithNanoBanana, checkNanoBananaPrediction } from '@/lib/nano-ba
 import { put } from '@vercel/blob'
 
 /**
- * FEATURE FLAG: Direct Prompt Generation
+ * Direct Prompt Generation
  * 
- * When enabled, Maya generates final prompts directly (no extraction/rebuilding)
- * When disabled, uses old system (Maya generates descriptions → system rebuilds prompts)
- * 
- * Set to true to use new simplified system, false to use old system
- * 
- * To enable: Set environment variable USE_DIRECT_PROMPT_GENERATION=true
- * 
- * Migration path:
- * 1. Old system generates concepts with descriptions
- * 2. If flag enabled, replace prompts with direct generation
- * 3. Apply programmatic fixes (trigger word, camera style)
- * 4. Validate (catch critical issues only)
- * 
- * 🧪 TESTING: Currently disabled by default
- * To enable: Set USE_DIRECT_PROMPT_GENERATION=true in environment
+ * Maya generates final prompts directly without extraction/rebuilding.
+ * This is the permanent system - direct generation always enabled.
  */
-
-/**
- * Helper function to check feature flag at runtime
- * More reliable than checking at module load time
- */
-function isDirectPromptGenerationEnabled(): boolean {
-  const envValue = process.env.USE_DIRECT_PROMPT_GENERATION
-  const isEnabled = envValue === 'true' || envValue === '1' || envValue === 'True' || envValue === 'TRUE'
-  
-  // Log for debugging
-  if (!isEnabled) {
-    console.log('[v0] [FEATURE-FLAG] [HELPER] Direct generation disabled:', {
-      envValue,
-      envValueType: typeof envValue,
-      isEnabled
-    })
-  }
-  
-  return isEnabled
-}
-
-// 🔴 CRITICAL: Check feature flag at module load AND at runtime
-// Next.js may cache env vars, so we check both times
-const USE_DIRECT_PROMPT_GENERATION_MODULE = isDirectPromptGenerationEnabled()
-
-console.log('[v0] [FEATURE-FLAG] [MODULE-LOAD] Environment check:', {
-  envVar: process.env.USE_DIRECT_PROMPT_GENERATION,
-  envVarType: typeof process.env.USE_DIRECT_PROMPT_GENERATION,
-  envVarLength: process.env.USE_DIRECT_PROMPT_GENERATION?.length,
-  enabled: USE_DIRECT_PROMPT_GENERATION_MODULE,
-  allEnvKeys: Object.keys(process.env).filter(k => k.includes('DIRECT') || k.includes('PROMPT')).join(', ')
-})
-
-if (USE_DIRECT_PROMPT_GENERATION_MODULE) {
-  console.log('[v0] [FEATURE-FLAG] [MODULE-LOAD] ✅ Direct Prompt Generation ENABLED - using new simplified system')
-} else {
-  console.log('[v0] [FEATURE-FLAG] [MODULE-LOAD] ⚙️ Direct Prompt Generation DISABLED - using old extraction/rebuild system')
-  console.log('[v0] [FEATURE-FLAG] [MODULE-LOAD] ⚠️ To enable: Set USE_DIRECT_PROMPT_GENERATION=true in .env.local and restart server')
-}
 
 type MayaConcept = {
   title: string
@@ -3419,17 +3367,9 @@ should celebrate the power of the selfie for visibility and economic freedom.
       referenceImagesKeys: referenceImages ? Object.keys(referenceImages) : "none"
     })
     
-    // 🔴 NEW: Direct Prompt Generation (Feature Flag)
-    // When enabled, Maya generates final prompts directly - no extraction/rebuilding needed
-    
-    // 🔴 CRITICAL: Check feature flag at RUNTIME (not just module load)
-    // This ensures we pick up env vars even if Next.js cached them
-    const USE_DIRECT_PROMPT_GENERATION_RUNTIME = isDirectPromptGenerationEnabled()
-    const USE_DIRECT_PROMPT_GENERATION = USE_DIRECT_PROMPT_GENERATION_RUNTIME || USE_DIRECT_PROMPT_GENERATION_MODULE
-    
-    
-    // Direct Prompt Generation (Feature Flag)
-    if (USE_DIRECT_PROMPT_GENERATION && concepts.length > 0) {
+    // Direct Prompt Generation - Always enabled
+    // Maya generates final prompts directly - no extraction/rebuilding needed
+    if (concepts.length > 0) {
       for (let i = 0; i < concepts.length; i++) {
         const concept = concepts[i]
         
@@ -3464,9 +3404,9 @@ should celebrate the power of the selfie for visibility and economic freedom.
     // The concept card prompt IS used directly for image generation, so it must match the generation system
     // Skip prompt constructor for unsupported categories (they should use AI generation system)
     // 🔴 FIX: Allow prompt constructor if upload module category exists, even without userRequest
-    // 🔴 NEW: Skip prompt constructor if direct generation was used
+    // 🔴 NOTE: Prompt constructor is skipped - direct generation handles all prompts
     const hasUserRequestForPromptConstructor = userRequest && userRequest.trim().length > 0
-    const usePromptConstructor = !USE_DIRECT_PROMPT_GENERATION && studioProMode && !detectedGuidePrompt && (hasUserRequestForPromptConstructor || uploadModuleCategory) && !isUnsupportedCategory
+    const usePromptConstructor = false // Always false - direct generation handles all prompts
     
     if (usePromptConstructor) {
       // 🔴 CRITICAL: Upload module category/concept already extracted above (line 2740, 2752)
@@ -3961,34 +3901,27 @@ should celebrate the power of the selfie for visibility and economic freedom.
     if (detectedGuidePrompt && detectedGuidePrompt.trim().length > 0 && concepts.length > 0 && !firstConceptIsGuidePrompt) {
       console.log("[v0] 📋 Using guide prompt for concept #1 (AI fallback), creating variations for concepts 2-6")
       
-      // 🔴 CRITICAL FIX: When USE_DIRECT_PROMPT_GENERATION is enabled, let Maya generate unique variations
-      // instead of using hardcoded guide prompt variation system
-      if (USE_DIRECT_PROMPT_GENERATION) {
-        console.log("[v0] ✅ Direct generation enabled - letting Maya create unique variations with guide prompt context")
-        
-        // Concept #1: Use guide prompt EXACTLY (but merge with user's image references)
-        const guidePromptWithImages = mergeGuidePromptWithImages(detectedGuidePrompt, referenceImages, studioProMode)
-        concepts[0].prompt = guidePromptWithImages
-        console.log("[v0] ✅ Concept #1 uses guide prompt (length:", guidePromptWithImages.length, "chars)")
-        
-        // For concepts 2-6, let Maya generate unique variations using her intelligence
-        // The prompts will already be unique since they come from Maya's initial generation
-        // We just need to ensure they reference the guide prompt context
-        console.log("[v0] ✅ Concepts 2-6 will use Maya's unique titles/descriptions (already generated)")
-      } else {
-        // OLD SYSTEM: Use hardcoded guide prompt variation system
-        // Concept #1: Use guide prompt EXACTLY (but merge with user's image references)
-        const guidePromptWithImages = mergeGuidePromptWithImages(detectedGuidePrompt, referenceImages, studioProMode)
-        concepts[0].prompt = guidePromptWithImages
-        console.log("[v0] ✅ Concept #1 uses guide prompt (length:", guidePromptWithImages.length, "chars)")
-        
-        // Extract key elements from guide prompt for variations
-        const baseElements = extractPromptElements(detectedGuidePrompt)
-        
-        // Concepts 2-6: Create variations maintaining consistency
-        // 🔴 CRITICAL: Always override Maya's generated concepts with guide prompt variations
-        for (let i = 1; i < Math.min(concepts.length, 6); i++) {
-          const variationNumber = i + 1
+      // Direct generation: let Maya generate unique variations with guide prompt context
+      console.log("[v0] ✅ Direct generation - letting Maya create unique variations with guide prompt context")
+      
+      // Concept #1: Use guide prompt EXACTLY (but merge with user's image references)
+      const guidePromptWithImages = mergeGuidePromptWithImages(detectedGuidePrompt, referenceImages, studioProMode)
+      concepts[0].prompt = guidePromptWithImages
+      console.log("[v0] ✅ Concept #1 uses guide prompt (length:", guidePromptWithImages.length, "chars)")
+      
+      // For concepts 2-6, let Maya generate unique variations using her intelligence
+      // The prompts will already be unique since they come from Maya's initial generation
+      // We just need to ensure they reference the guide prompt context
+      console.log("[v0] ✅ Concepts 2-6 will use Maya's unique titles/descriptions (already generated)")
+      
+      // Extract key elements from guide prompt for variations (if needed for fallback)
+      const baseElements = extractPromptElements(detectedGuidePrompt)
+      
+      // Concepts 2-6: Create variations maintaining consistency (fallback only if direct generation failed)
+      for (let i = 1; i < Math.min(concepts.length, 6); i++) {
+        const variationNumber = i + 1
+        // Only create variation if prompt wasn't set by direct generation above
+        if (!concepts[i].prompt || concepts[i].prompt.length < 50) {
           const variationPrompt = createVariationFromGuidePrompt(
             detectedGuidePrompt,
             baseElements,
@@ -3996,39 +3929,10 @@ should celebrate the power of the selfie for visibility and economic freedom.
             referenceImages,
             studioProMode
           )
-          console.log("[v0] ✅ Concept #" + variationNumber + " created as variation")
-          console.log("[v0] 📝 Variation prompt (first 200 chars):", variationPrompt.substring(0, 200) + "...")
-          console.log("[v0] 📝 Variation prompt (full length):", variationPrompt.length, "chars")
-          
-          // 🔴 CRITICAL: Always override Maya's generated prompt with the variation
-          // This ensures consistency with the guide prompt
           concepts[i].prompt = variationPrompt
-          
-          // Enhanced validation: Check for outfit, hair, and location preservation
-          const guidePromptOutfitKeywords = /(?:couture|mini|red|dress|structured|bow|black|satin|opera|gloves|heels|elegant|pajamas|striped|cashmere|silk|camisole|turtleneck|sweater|trousers)/i.test(detectedGuidePrompt)
-          const variationHasOutfit = /(?:wearing|dress|gloves|heels|outfit|clothing|pajamas|striped|cashmere|silk|camisole|turtleneck|sweater|trousers)/i.test(variationPrompt)
-          const guidePromptHairKeywords = /(?:hair|bun|bow|velvet|chic|framing|strands|chignon|ponytail)/i.test(detectedGuidePrompt)
-          const variationHasHair = /(?:hair|bun|bow|velvet|chic|framing|strands|chignon|ponytail)/i.test(variationPrompt)
-          const guidePromptLocationKeywords = /(?:sofa|tree|fireplace|room|setting|scene|location|background|Christmas|living|room)/i.test(detectedGuidePrompt)
-          const variationHasLocation = /(?:sofa|tree|fireplace|room|setting|scene|location|background|Christmas|living|room)/i.test(variationPrompt)
-          
-          if (guidePromptOutfitKeywords && !variationHasOutfit) {
-            console.log("[v0] ⚠️ WARNING: Variation prompt might not contain outfit from guide prompt!")
-          }
-          if (guidePromptHairKeywords && !variationHasHair) {
-            console.log("[v0] ⚠️ WARNING: Variation prompt might not contain hair styling from guide prompt!")
-          }
-          if (guidePromptLocationKeywords && !variationHasLocation) {
-            console.log("[v0] ⚠️ WARNING: Variation prompt might not contain location from guide prompt!")
-          }
-          
-          // Log the variation for debugging
-          console.log("[v0] 📋 Variation #" + variationNumber + " validation:", {
-            hasOutfit: variationHasOutfit,
-            hasHair: variationHasHair,
-            hasLocation: variationHasLocation,
-            promptLength: variationPrompt.length
-          })
+          console.log("[v0] ✅ Concept #" + variationNumber + " created as variation (fallback)")
+        } else {
+          console.log("[v0] ✅ Concept #" + variationNumber + " already has prompt from direct generation")
         }
       }
     }
@@ -4172,53 +4076,9 @@ Generate the variation prompt now:`
             // Update the concept's prompt
             concepts[i].prompt = variationResult.prompt
             
-            // 🔴 CRITICAL FIX: When USE_DIRECT_PROMPT_GENERATION is enabled, DON'T override titles/descriptions
-            // Maya's originally generated titles/descriptions should stay as-is - they're already unique and creative
-            // Only override if direct generation is disabled (old system behavior)
-            if (!USE_DIRECT_PROMPT_GENERATION) {
-              // Update title and description to reflect consistency (OLD SYSTEM ONLY)
-              // Extract base title/description elements and create variation-specific versions
-              const baseTitle = concepts[0].title || ''
-              const baseDescription = concepts[0].description || ''
-              
-              // Create consistent title - append variation number if base title doesn't already indicate it
-              if (baseTitle && !baseTitle.match(/variation|#\d+/i)) {
-                concepts[i].title = `${baseTitle} (Variation ${variationNumber})`
-              } else {
-                // If base title already has variation info, create new consistent title
-                const baseTitleWithoutVariation = baseTitle.replace(/\s*\(.*variation.*\)/i, '').trim()
-                concepts[i].title = baseTitleWithoutVariation ? `${baseTitleWithoutVariation} (Variation ${variationNumber})` : baseTitle
-              }
-              
-              // Create consistent description - preserve base description but indicate pose variation
-              const poseDescriptions: Record<number, string> = {
-                2: "Standing near the window with contemplative expression",
-                3: "Leaning against the wall with confident posture",
-                4: "Sitting on edge of furniture with direct gaze",
-                5: "Walking casually through the space",
-                6: "Looking over shoulder with playful glance"
-              }
-              const poseDesc = poseDescriptions[variationNumber] || "Different pose and angle"
-              
-              // Update description to maintain consistency while indicating variation
-              if (baseDescription) {
-                // Try to preserve the base description structure, just update pose-related parts
-                concepts[i].description = baseDescription.replace(
-                  /(standing|sitting|leaning|walking|looking|posing|positioned)[^.]*/i,
-                  poseDesc.toLowerCase()
-                )
-                // If no pose was found/replaced, append pose info
-                if (concepts[i].description === baseDescription) {
-                  concepts[i].description = `${baseDescription} - ${poseDesc}`
-                }
-              } else {
-                concepts[i].description = poseDesc
-              }
-            } else {
-              // Direct generation enabled: Keep Maya's originally generated titles/descriptions
-              // They're already unique and creative - don't override with hardcoded variations
-              console.log(`[v0] ✅ Keeping Maya's original title/description for concept #${variationNumber} (direct generation enabled)`)
-            }
+            // Direct generation: Keep Maya's originally generated titles/descriptions
+            // They're already unique and creative - don't override with hardcoded variations
+            console.log(`[v0] ✅ Keeping Maya's original title/description for concept #${variationNumber} (direct generation)`)
             
             console.log(`[v0] ✅ Concept #${variationNumber} regenerated with consistency`)
             console.log(`[v0] - New prompt length: ${variationResult.prompt.length} chars (base was ${basePrompt.length})`)
