@@ -5,6 +5,8 @@ import { checkNanoBananaPrediction } from "@/lib/nano-banana-client"
 import { neon } from "@neondatabase/serverless"
 import { put } from "@vercel/blob"
 
+export const maxDuration = 60 // 1 minute for status checks
+
 const sql = neon(process.env.DATABASE_URL!)
 
 /**
@@ -59,7 +61,22 @@ export async function GET(req: NextRequest) {
     console.log("[v0] [PRO MODE] No completed generation in database, checking Replicate...")
 
     // Check prediction status with Replicate
-    const status = await checkNanoBananaPrediction(predictionId)
+    // Add timeout handling to prevent 499 errors (client closed request)
+    let status
+    try {
+      status = await Promise.race([
+        checkNanoBananaPrediction(predictionId),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Status check timeout')), 45000) // 45 second timeout
+        )
+      ]) as Awaited<ReturnType<typeof checkNanoBananaPrediction>>
+    } catch (timeoutError: any) {
+      console.error("[v0] [PRO MODE] Status check timeout or error:", timeoutError)
+      // Return processing status instead of failing - allows polling to continue
+      return NextResponse.json({
+        status: "processing", // Continue polling
+      })
+    }
 
     console.log("[v0] [PRO MODE] 📊 Prediction status:", {
       status: status.status,

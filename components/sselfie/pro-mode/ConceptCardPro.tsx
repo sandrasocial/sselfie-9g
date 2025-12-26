@@ -409,6 +409,11 @@ export default function ConceptCardPro({
         )
         
         if (!response.ok) {
+          // Handle 499 (Client Closed Request) gracefully - continue polling
+          if (response.status === 499) {
+            console.warn('[ConceptCardPro] ⚠️ Client closed request (499), continuing to poll...')
+            return // Continue polling - this is a timeout/connection issue, not a failure
+          }
           console.error('[ConceptCardPro] ❌ Polling response not OK:', response.status, response.statusText)
           const errorText = await response.text().catch(() => 'Unknown error')
           console.error('[ConceptCardPro] Error response:', errorText.substring(0, 200))
@@ -483,8 +488,14 @@ export default function ConceptCardPro({
           // Still processing
           console.log('[ConceptCardPro] ⏳ Still processing, status:', data.status)
         }
-      } catch (err) {
-        // Match Classic Mode: Set error and stop polling on catch
+      } catch (err: any) {
+        // Handle network errors and 499 errors gracefully - continue polling
+        const errorMessage = err?.message || String(err)
+        if (errorMessage.includes('499') || errorMessage.includes('Client Closed Request') || errorMessage.includes('fetch')) {
+          console.warn('[ConceptCardPro] ⚠️ Network/timeout error during polling, continuing...', errorMessage)
+          return // Continue polling - don't stop on network errors
+        }
+        // Match Classic Mode: Set error and stop polling on catch for other errors
         console.error('[ConceptCardPro] ❌ Error polling generation:', err)
         setError('Failed to check generation status')
         setIsGeneratingState(false)
