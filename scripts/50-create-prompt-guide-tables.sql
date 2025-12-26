@@ -48,6 +48,7 @@ CREATE TABLE IF NOT EXISTS prompt_pages (
   view_count INTEGER DEFAULT 0,
   email_capture_count INTEGER DEFAULT 0,
   created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   published_at TIMESTAMP
 );
 

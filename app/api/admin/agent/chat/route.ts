@@ -1,4 +1,4 @@
-import { tool, createDataStreamResponse, streamText } from "ai"
+import { tool, streamText } from "ai"
 import { z } from "zod"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
@@ -2275,6 +2275,565 @@ export async function POST(req: Request) {
       }
     })
 
+    const getPromptGuidesTool = tool({
+      description: `Get information about prompt guides stored in the database.
+  
+  Prompt guides are collections of prompts that Sandra creates for her users.
+  Use this to:
+  - List all available prompt guides
+  - Get details about a specific guide (by ID or search term like "Christmas")
+  - Get all prompts from a guide
+  - Find guides by category or status
+  
+  This is CRITICAL for creating emails about prompt guides, understanding what content exists, and helping Sandra market her guides.`,
+      
+      parameters: z.object({
+        guideId: z.number().optional().describe("Specific guide ID to get details for"),
+        searchTerm: z.string().optional().describe("Search for guides by title or category (e.g., 'Christmas', 'holiday', 'luxury')"),
+        includePrompts: z.boolean().optional().default(false).describe("Whether to include all prompts from the guide(s)"),
+        status: z.enum(['draft', 'published', 'all']).optional().default('all').describe("Filter by guide status")
+      }),
+      
+      execute: async ({ guideId, searchTerm, includePrompts = false, status = 'all' }: {
+        guideId?: number
+        searchTerm?: string
+        includePrompts?: boolean
+        status?: 'draft' | 'published' | 'all'
+      }) => {
+        try {
+          console.log(`[v0] 📚 Getting prompt guides:`, { guideId, searchTerm, includePrompts, status })
+          
+          if (guideId) {
+            // Get specific guide with all details
+            const [guide] = await sql`
+              SELECT 
+                pg.id,
+                pg.title,
+                pg.description,
+                pg.category,
+                pg.status,
+                pg.total_prompts,
+                pg.total_approved,
+                pg.created_at,
+                pg.published_at,
+                pp.slug AS page_slug,
+                pp.welcome_message,
+                pp.email_capture_type,
+                pp.email_list_tag,
+                pp.view_count,
+                pp.email_capture_count
+              FROM prompt_guides pg
+              LEFT JOIN prompt_pages pp ON pp.guide_id = pg.id
+              WHERE pg.id = ${guideId}
+            `
+            
+            if (!guide) {
+              return {
+                success: false,
+                error: `Guide with ID ${guideId} not found`
+              }
+            }
+            
+            let prompts: any[] = []
+            if (includePrompts) {
+              prompts = await sql`
+                SELECT 
+                  id,
+                  prompt_text,
+                  concept_title,
+                  concept_description,
+                  category,
+                  image_url,
+                  status,
+                  sort_order
+                FROM prompt_guide_items
+                WHERE guide_id = ${guideId}
+                ORDER BY sort_order ASC, created_at ASC
+              `
+            }
+            
+            return {
+              success: true,
+              guide: {
+                id: guide.id,
+                title: guide.title,
+                description: guide.description,
+                category: guide.category,
+                status: guide.status,
+                totalPrompts: guide.total_prompts,
+                totalApproved: guide.total_approved,
+                createdAt: guide.created_at,
+                publishedAt: guide.published_at,
+                pageSlug: guide.page_slug,
+                welcomeMessage: guide.welcome_message,
+                emailCaptureType: guide.email_capture_type,
+                emailListTag: guide.email_list_tag,
+                viewCount: guide.view_count,
+                emailCaptureCount: guide.email_capture_count,
+                publicUrl: guide.page_slug ? `https://sselfie.ai/prompt-guides/${guide.page_slug}` : null
+              },
+              prompts: includePrompts ? prompts.map(p => ({
+                id: p.id,
+                promptText: p.prompt_text,
+                conceptTitle: p.concept_title,
+                conceptDescription: p.concept_description,
+                category: p.category,
+                imageUrl: p.image_url,
+                status: p.status,
+                sortOrder: p.sort_order
+              })) : undefined
+            }
+          } else {
+            // List guides with optional search
+            let guides: any[]
+            
+            const searchPattern = searchTerm ? `%${searchTerm}%` : null
+            
+            if (searchPattern && status !== 'all') {
+              guides = await sql`
+                SELECT 
+                  pg.id,
+                  pg.title,
+                  pg.description,
+                  pg.category,
+                  pg.status,
+                  pg.total_prompts,
+                  pg.total_approved,
+                  pg.created_at,
+                  pg.published_at,
+                  pp.slug AS page_slug
+                FROM prompt_guides pg
+                LEFT JOIN prompt_pages pp ON pp.guide_id = pg.id AND pp.status = 'published'
+                WHERE pg.status = ${status}
+                  AND (pg.title ILIKE ${searchPattern} 
+                    OR pg.category ILIKE ${searchPattern} 
+                    OR pg.description ILIKE ${searchPattern})
+                ORDER BY pg.created_at DESC
+              `
+            } else if (searchPattern) {
+              guides = await sql`
+                SELECT 
+                  pg.id,
+                  pg.title,
+                  pg.description,
+                  pg.category,
+                  pg.status,
+                  pg.total_prompts,
+                  pg.total_approved,
+                  pg.created_at,
+                  pg.published_at,
+                  pp.slug AS page_slug
+                FROM prompt_guides pg
+                LEFT JOIN prompt_pages pp ON pp.guide_id = pg.id AND pp.status = 'published'
+                WHERE pg.title ILIKE ${searchPattern} 
+                  OR pg.category ILIKE ${searchPattern} 
+                  OR pg.description ILIKE ${searchPattern}
+                ORDER BY pg.created_at DESC
+              `
+            } else if (status !== 'all') {
+              guides = await sql`
+                SELECT 
+                  pg.id,
+                  pg.title,
+                  pg.description,
+                  pg.category,
+                  pg.status,
+                  pg.total_prompts,
+                  pg.total_approved,
+                  pg.created_at,
+                  pg.published_at,
+                  pp.slug AS page_slug
+                FROM prompt_guides pg
+                LEFT JOIN prompt_pages pp ON pp.guide_id = pg.id AND pp.status = 'published'
+                WHERE pg.status = ${status}
+                ORDER BY pg.created_at DESC
+              `
+            } else {
+              guides = await sql`
+                SELECT 
+                  pg.id,
+                  pg.title,
+                  pg.description,
+                  pg.category,
+                  pg.status,
+                  pg.total_prompts,
+                  pg.total_approved,
+                  pg.created_at,
+                  pg.published_at,
+                  pp.slug AS page_slug
+                FROM prompt_guides pg
+                LEFT JOIN prompt_pages pp ON pp.guide_id = pg.id AND pp.status = 'published'
+                ORDER BY pg.created_at DESC
+              `
+            }
+            
+            // If includePrompts is true, get prompts for all guides
+            let allPrompts: Record<number, any[]> = {}
+            if (includePrompts && guides.length > 0) {
+              const guideIds = guides.map((g: any) => g.id)
+              const prompts = await sql`
+                SELECT 
+                  guide_id,
+                  id,
+                  prompt_text,
+                  concept_title,
+                  concept_description,
+                  category,
+                  image_url,
+                  status,
+                  sort_order
+                FROM prompt_guide_items
+                WHERE guide_id = ANY(${guideIds})
+                ORDER BY guide_id, sort_order ASC, created_at ASC
+              `
+              
+              for (const prompt of prompts) {
+                if (!allPrompts[prompt.guide_id]) {
+                  allPrompts[prompt.guide_id] = []
+                }
+                allPrompts[prompt.guide_id].push({
+                  id: prompt.id,
+                  promptText: prompt.prompt_text,
+                  conceptTitle: prompt.concept_title,
+                  conceptDescription: prompt.concept_description,
+                  category: prompt.category,
+                  imageUrl: prompt.image_url,
+                  status: prompt.status,
+                  sortOrder: prompt.sort_order
+                })
+              }
+            }
+            
+            return {
+              success: true,
+              guides: guides.map((g: any) => ({
+                id: g.id,
+                title: g.title,
+                description: g.description,
+                category: g.category,
+                status: g.status,
+                totalPrompts: g.total_prompts,
+                totalApproved: g.total_approved,
+                createdAt: g.created_at,
+                publishedAt: g.published_at,
+                pageSlug: g.page_slug,
+                publicUrl: g.page_slug ? `https://sselfie.ai/prompt-guides/${g.page_slug}` : null,
+                prompts: includePrompts ? (allPrompts[g.id] || []) : undefined
+              })),
+              count: guides.length
+            }
+          }
+        } catch (error: any) {
+          console.error("[v0] Error getting prompt guides:", error)
+          return {
+            success: false,
+            error: error.message || "Failed to get prompt guides",
+            suggestion: "Check database connection and ensure prompt_guides table exists"
+          }
+        }
+      }
+    })
+
+    const updatePromptGuideTool = tool({
+      description: `Update prompt guide settings including UI, style, CTA, links, and content.
+  
+  Use this to edit:
+  - Guide metadata: title, description, category
+  - Page settings: welcome message, email capture type, upsell links/text
+  - Public page: slug, status (draft/published)
+  
+  This allows Alex to optimize guide pages for conversions, update CTAs, and improve the user experience.`,
+      
+      parameters: z.object({
+        guideId: z.number().describe("ID of the guide to update"),
+        guideUpdates: z.object({
+          title: z.string().optional().describe("Update guide title"),
+          description: z.string().optional().describe("Update guide description"),
+          category: z.string().optional().describe("Update guide category"),
+          status: z.enum(['draft', 'published']).optional().describe("Update guide status")
+        }).optional().describe("Updates to the guide itself"),
+        pageUpdates: z.object({
+          slug: z.string().optional().describe("Update URL slug (must be unique)"),
+          title: z.string().optional().describe("Update page title"),
+          welcomeMessage: z.string().optional().describe("Update welcome/intro message shown to users"),
+          emailCaptureType: z.enum(['modal', 'inline', 'top']).optional().describe("How email capture is displayed"),
+          emailListTag: z.string().optional().describe("Resend tag for this guide's email list"),
+          upsellLink: z.string().optional().describe("CTA link (e.g., checkout URL or landing page)"),
+          upsellText: z.string().optional().describe("CTA button/text copy"),
+          status: z.enum(['draft', 'published']).optional().describe("Update page status")
+        }).optional().describe("Updates to the public page settings")
+      }),
+      
+      execute: async ({ guideId, guideUpdates, pageUpdates }: {
+        guideId: number
+        guideUpdates?: {
+          title?: string
+          description?: string
+          category?: string
+          status?: 'draft' | 'published'
+        }
+        pageUpdates?: {
+          slug?: string
+          title?: string
+          welcomeMessage?: string
+          emailCaptureType?: 'modal' | 'inline' | 'top'
+          emailListTag?: string
+          upsellLink?: string
+          upsellText?: string
+          status?: 'draft' | 'published'
+        }
+      }) => {
+        try {
+          console.log(`[v0] 📝 Updating prompt guide ${guideId}`)
+          console.log(`[v0] 📝 Guide updates:`, JSON.stringify(guideUpdates, null, 2))
+          console.log(`[v0] 📝 Page updates:`, JSON.stringify(pageUpdates, null, 2))
+          
+          // Verify guide exists
+          const [guide] = await sql`
+            SELECT id FROM prompt_guides WHERE id = ${guideId}
+          `
+          
+          if (!guide) {
+            return {
+              success: false,
+              error: `Guide with ID ${guideId} not found`
+            }
+          }
+          
+          // Update guide fields using safe parameterized queries
+          if (guideUpdates) {
+            const hasUpdates = guideUpdates.title !== undefined || guideUpdates.description !== undefined || 
+                              guideUpdates.category !== undefined || guideUpdates.status !== undefined
+            
+            if (hasUpdates) {
+              // Use COALESCE pattern with template literal syntax for safe parameterization
+              // Column names are hardcoded (whitelisted), all values are properly parameterized by Neon
+              // This is safe because: 1) column names never come from user input, 2) all values use ${} parameterization
+              await sql`
+                UPDATE prompt_guides
+                SET 
+                  title = COALESCE(${guideUpdates.title ?? null}, title),
+                  description = COALESCE(${guideUpdates.description ?? null}, description),
+                  category = COALESCE(${guideUpdates.category ?? null}, category),
+                  status = COALESCE(${guideUpdates.status ?? null}, status),
+                  published_at = CASE 
+                    WHEN ${guideUpdates.status === 'published'} THEN NOW()
+                    WHEN ${guideUpdates.status === 'draft'} THEN NULL
+                    ELSE published_at
+                  END,
+                  updated_at = NOW()
+                WHERE id = ${guideId}
+              `
+              console.log(`[v0] ✅ Updated guide ${guideId}`)
+            }
+          }
+          
+          // Update page fields
+          if (pageUpdates) {
+            // Check if page exists
+            const [existingPage] = await sql`
+              SELECT id FROM prompt_pages WHERE guide_id = ${guideId}
+            `
+            
+            const pageUpdateFields: any = {}
+            
+            if (pageUpdates.slug !== undefined) {
+              // Check if slug is already taken by another page
+              const [slugCheck] = await sql`
+                SELECT id FROM prompt_pages WHERE slug = ${pageUpdates.slug} AND guide_id != ${guideId}
+              `
+              if (slugCheck) {
+                return {
+                  success: false,
+                  error: `Slug "${pageUpdates.slug}" is already taken by another guide`
+                }
+              }
+              pageUpdateFields.slug = pageUpdates.slug
+            }
+            if (pageUpdates.title !== undefined) {
+              pageUpdateFields.title = pageUpdates.title
+            }
+            if (pageUpdates.welcomeMessage !== undefined) {
+              pageUpdateFields.welcome_message = pageUpdates.welcomeMessage
+            }
+            if (pageUpdates.emailCaptureType !== undefined) {
+              pageUpdateFields.email_capture_type = pageUpdates.emailCaptureType
+            }
+            if (pageUpdates.emailListTag !== undefined) {
+              pageUpdateFields.email_list_tag = pageUpdates.emailListTag
+            }
+            if (pageUpdates.upsellLink !== undefined) {
+              pageUpdateFields.upsell_link = pageUpdates.upsellLink
+            }
+            if (pageUpdates.upsellText !== undefined) {
+              pageUpdateFields.upsell_text = pageUpdates.upsellText
+            }
+            if (pageUpdates.status !== undefined) {
+              pageUpdateFields.status = pageUpdates.status
+              if (pageUpdates.status === 'published') {
+                pageUpdateFields.published_at = new Date()
+              }
+            }
+            
+            if (Object.keys(pageUpdateFields).length > 0) {
+              if (existingPage) {
+                // Update existing page - build a single UPDATE with only provided fields
+                // This pattern is safe: column names are hardcoded, values are parameterized
+                console.log(`[v0] 🔧 Page update fields received:`, JSON.stringify(pageUpdateFields, null, 2))
+                
+                // Execute individual UPDATE statements for each provided field
+                // This is safe: column names are hardcoded, values are parameterized via template literals
+                // Each UPDATE only runs if the field is explicitly provided (not undefined)
+                if (pageUpdateFields.slug !== undefined) {
+                  await sql`UPDATE prompt_pages SET slug = ${pageUpdateFields.slug}, updated_at = NOW() WHERE guide_id = ${guideId}`
+                  console.log(`[v0] 🔧 Updated slug: ${pageUpdateFields.slug}`)
+                }
+                if (pageUpdateFields.title !== undefined) {
+                  await sql`UPDATE prompt_pages SET title = ${pageUpdateFields.title}, updated_at = NOW() WHERE guide_id = ${guideId}`
+                  console.log(`[v0] 🔧 Updated title: ${pageUpdateFields.title}`)
+                }
+                if (pageUpdateFields.welcome_message !== undefined) {
+                  await sql`UPDATE prompt_pages SET welcome_message = ${pageUpdateFields.welcome_message}, updated_at = NOW() WHERE guide_id = ${guideId}`
+                  console.log(`[v0] 🔧 Updated welcome_message`)
+                }
+                if (pageUpdateFields.email_capture_type !== undefined) {
+                  await sql`UPDATE prompt_pages SET email_capture_type = ${pageUpdateFields.email_capture_type}, updated_at = NOW() WHERE guide_id = ${guideId}`
+                  console.log(`[v0] 🔧 Updated email_capture_type: ${pageUpdateFields.email_capture_type}`)
+                }
+                if (pageUpdateFields.email_list_tag !== undefined) {
+                  await sql`UPDATE prompt_pages SET email_list_tag = ${pageUpdateFields.email_list_tag}, updated_at = NOW() WHERE guide_id = ${guideId}`
+                  console.log(`[v0] 🔧 Updated email_list_tag: ${pageUpdateFields.email_list_tag}`)
+                }
+                if (pageUpdateFields.upsell_link !== undefined) {
+                  await sql`UPDATE prompt_pages SET upsell_link = ${pageUpdateFields.upsell_link}, updated_at = NOW() WHERE guide_id = ${guideId}`
+                  console.log(`[v0] 🔧 Updated upsell_link: ${pageUpdateFields.upsell_link}`)
+                }
+                if (pageUpdateFields.upsell_text !== undefined) {
+                  await sql`UPDATE prompt_pages SET upsell_text = ${pageUpdateFields.upsell_text}, updated_at = NOW() WHERE guide_id = ${guideId}`
+                  console.log(`[v0] 🔧 Updated upsell_text: ${pageUpdateFields.upsell_text.substring(0, 50)}...`)
+                }
+                if (pageUpdateFields.status !== undefined) {
+                  if (pageUpdateFields.status === 'published') {
+                    await sql`UPDATE prompt_pages SET status = ${pageUpdateFields.status}, published_at = NOW(), updated_at = NOW() WHERE guide_id = ${guideId}`
+                  } else if (pageUpdateFields.status === 'draft') {
+                    await sql`UPDATE prompt_pages SET status = ${pageUpdateFields.status}, published_at = NULL, updated_at = NOW() WHERE guide_id = ${guideId}`
+                  } else {
+                    await sql`UPDATE prompt_pages SET status = ${pageUpdateFields.status}, updated_at = NOW() WHERE guide_id = ${guideId}`
+                  }
+                  console.log(`[v0] 🔧 Updated status: ${pageUpdateFields.status}`)
+                }
+                
+                console.log(`[v0] ✅ Updated page for guide ${guideId}`)
+                console.log(`[v0] 🔧 Updated fields:`, Object.keys(pageUpdateFields).join(', '))
+              } else {
+                // Create new page if it doesn't exist
+                // Need guide title for page title
+                const [guideData] = await sql`
+                  SELECT title FROM prompt_guides WHERE id = ${guideId}
+                `
+                
+                await sql`
+                  INSERT INTO prompt_pages (
+                    guide_id,
+                    slug,
+                    title,
+                    welcome_message,
+                    email_capture_type,
+                    email_list_tag,
+                    upsell_link,
+                    upsell_text,
+                    status
+                  ) VALUES (
+                    ${guideId},
+                    ${pageUpdateFields.slug || `guide-${guideId}`},
+                    ${pageUpdateFields.title || guideData?.title || 'Untitled Guide'},
+                    ${pageUpdateFields.welcome_message || null},
+                    ${pageUpdateFields.email_capture_type || 'modal'},
+                    ${pageUpdateFields.email_list_tag || null},
+                    ${pageUpdateFields.upsell_link || null},
+                    ${pageUpdateFields.upsell_text || null},
+                    ${pageUpdateFields.status || 'draft'}
+                  )
+                `
+                console.log(`[v0] ✅ Created new page for guide ${guideId}`)
+              }
+            }
+          }
+          
+          // Get updated guide and page data (with a small delay to ensure DB consistency)
+          // Wait a moment to ensure the UPDATE has fully committed
+          await new Promise(resolve => setTimeout(resolve, 100))
+          
+          const [updatedGuide] = await sql`
+            SELECT 
+              pg.id,
+              pg.title,
+              pg.description,
+              pg.category,
+              pg.status,
+              pg.total_prompts,
+              pg.total_approved,
+              pg.created_at,
+              pg.published_at,
+              pp.slug AS page_slug,
+              pp.welcome_message,
+              pp.email_capture_type,
+              pp.email_list_tag,
+              pp.upsell_link,
+              pp.upsell_text,
+              pp.status AS page_status,
+              pp.view_count,
+              pp.email_capture_count
+            FROM prompt_guides pg
+            LEFT JOIN prompt_pages pp ON pp.guide_id = pg.id
+            WHERE pg.id = ${guideId}
+          `
+          
+          console.log(`[v0] 📊 Retrieved updated guide data:`, {
+            id: updatedGuide?.id,
+            emailListTag: updatedGuide?.email_list_tag,
+            upsellLink: updatedGuide?.upsell_link,
+            upsellText: updatedGuide?.upsell_text
+          })
+          
+          return {
+            success: true,
+            message: "Prompt guide updated successfully",
+            guide: {
+              id: updatedGuide.id,
+              title: updatedGuide.title,
+              description: updatedGuide.description,
+              category: updatedGuide.category,
+              status: updatedGuide.status,
+              totalPrompts: updatedGuide.total_prompts,
+              totalApproved: updatedGuide.total_approved,
+              createdAt: updatedGuide.created_at,
+              publishedAt: updatedGuide.published_at,
+              page: updatedGuide.page_slug ? {
+                slug: updatedGuide.page_slug,
+                welcomeMessage: updatedGuide.welcome_message,
+                emailCaptureType: updatedGuide.email_capture_type,
+                emailListTag: updatedGuide.email_list_tag,
+                upsellLink: updatedGuide.upsell_link,
+                upsellText: updatedGuide.upsell_text,
+                status: updatedGuide.page_status,
+                viewCount: updatedGuide.view_count,
+                emailCaptureCount: updatedGuide.email_capture_count,
+                publicUrl: `https://sselfie.ai/prompt-guides/${updatedGuide.page_slug}`
+              } : null
+            }
+          }
+        } catch (error: any) {
+          console.error("[v0] Error updating prompt guide:", error)
+          return {
+            success: false,
+            error: error.message || "Failed to update prompt guide",
+            suggestion: "Check that the guide exists and all required fields are provided"
+          }
+        }
+      }
+    })
+
     const analyzeEmailStrategyTool = tool({
       description: `Analyze Sandra's audience and create intelligent email campaign strategies.
   
@@ -3099,7 +3658,7 @@ This tool provides critical business intelligence to make data-driven decisions.
           }
 
           // Get user signups and plan distribution
-          const [userMetrics] = await sql`
+          const userMetricsResult = await sql`
             SELECT
               COUNT(*)::int as total_users,
               COUNT(*) FILTER (WHERE plan = 'free')::int as free_users,
@@ -3109,23 +3668,54 @@ This tool provides critical business intelligence to make data-driven decisions.
               COUNT(*) FILTER (WHERE plan != 'free' AND created_at >= ${startDate.toISOString()})::int as new_paid_users
             FROM users
           `
+          
+          if (!userMetricsResult || userMetricsResult.length === 0) {
+            return {
+              success: false,
+              error: "Failed to retrieve user metrics from database"
+            }
+          }
+          
+          const userMetrics = userMetricsResult[0]
+          
+          // Validate numeric values
+          const totalUsers = Number(userMetrics.total_users) || 0
+          const freeUsers = Number(userMetrics.free_users) || 0
+          const studioMembers = Number(userMetrics.studio_members) || 0
+          const oneTimeUsers = Number(userMetrics.one_time_users) || 0
+          const newSignups = Number(userMetrics.new_signups) || 0
+          const newPaidUsers = Number(userMetrics.new_paid_users) || 0
 
-          // Get conversion metrics
-          const freeToStudioConversion = userMetrics.studio_members / userMetrics.free_users * 100
-          const freeToOneTimeConversion = userMetrics.one_time_users / userMetrics.free_users * 100
-          const overallConversion = (userMetrics.studio_members + userMetrics.one_time_users) / userMetrics.total_users * 100
+          // Get conversion metrics with zero-division protection
+          const freeToStudioConversion = freeUsers > 0 ? (studioMembers / freeUsers * 100) : 0
+          const freeToOneTimeConversion = freeUsers > 0 ? (oneTimeUsers / freeUsers * 100) : 0
+          const overallConversion = totalUsers > 0 ? ((studioMembers + oneTimeUsers) / totalUsers * 100) : 0
 
           // Get generation activity (engagement metric)
-          const [activityMetrics] = await sql`
+          const activityMetricsResult = await sql`
             SELECT
               COUNT(*)::int as total_generations,
               COUNT(DISTINCT user_id)::int as active_users,
               COUNT(*) FILTER (WHERE created_at >= ${startDate.toISOString()})::int as recent_generations
             FROM generated_images
           `
+          
+          if (!activityMetricsResult || activityMetricsResult.length === 0) {
+            return {
+              success: false,
+              error: "Failed to retrieve activity metrics from database"
+            }
+          }
+          
+          const activityMetrics = activityMetricsResult[0]
+          
+          // Validate numeric values
+          const totalGenerations = Number(activityMetrics.total_generations) || 0
+          const activeUsers = Number(activityMetrics.active_users) || 0
+          const recentGenerations = Number(activityMetrics.recent_generations) || 0
 
           // Get recent paid users for churn analysis
-          const [churnMetrics] = await sql`
+          const churnMetricsResult = await sql`
             SELECT
               COUNT(*)::int as total_paid_users,
               COUNT(*) FILTER (WHERE last_login_at < NOW() - INTERVAL '7 days')::int as inactive_7_days,
@@ -3133,47 +3723,71 @@ This tool provides critical business intelligence to make data-driven decisions.
             FROM users
             WHERE plan != 'free'
           `
+          
+          if (!churnMetricsResult || churnMetricsResult.length === 0) {
+            return {
+              success: false,
+              error: "Failed to retrieve churn metrics from database"
+            }
+          }
+          
+          const churnMetrics = churnMetricsResult[0]
+          
+          // Validate numeric values
+          const totalPaidUsers = Number(churnMetrics.total_paid_users) || 0
+          const inactive7Days = Number(churnMetrics.inactive_7_days) || 0
+          const inactive30Days = Number(churnMetrics.inactive_30_days) || 0
+
+          // Calculate safe division for paid user percentage
+          const paidUserPercentage = totalUsers > 0 ? ((studioMembers + oneTimeUsers) / totalUsers * 100) : 0
+          
+          // Calculate safe division for avg generations per user
+          const avgGenerationsPerUser = activeUsers > 0 ? (totalGenerations / activeUsers) : 0
+          
+          // Calculate safe division for retention rates
+          const retentionRate7Days = totalPaidUsers > 0 ? ((totalPaidUsers - inactive7Days) / totalPaidUsers * 100) : 0
+          const retentionRate30Days = totalPaidUsers > 0 ? ((totalPaidUsers - inactive30Days) / totalPaidUsers * 100) : 0
 
           const result: any = {
             time_range: timeRange,
             generated_at: new Date().toISOString(),
 
             user_metrics: {
-              total_users: userMetrics.total_users,
-              free_users: userMetrics.free_users,
-              studio_members: userMetrics.studio_members,
-              one_time_users: userMetrics.one_time_users,
-              new_signups_this_period: userMetrics.new_signups,
-              new_paid_users_this_period: userMetrics.new_paid_users
+              total_users: totalUsers,
+              free_users: freeUsers,
+              studio_members: studioMembers,
+              one_time_users: oneTimeUsers,
+              new_signups_this_period: newSignups,
+              new_paid_users_this_period: newPaidUsers
             },
 
             conversion_metrics: {
               overall_conversion_rate: `${overallConversion.toFixed(1)}%`,
               free_to_studio_conversion: `${freeToStudioConversion.toFixed(1)}%`,
               free_to_one_time_conversion: `${freeToOneTimeConversion.toFixed(1)}%`,
-              paid_user_percentage: `${((userMetrics.studio_members + userMetrics.one_time_users) / userMetrics.total_users * 100).toFixed(1)}%`
+              paid_user_percentage: `${paidUserPercentage.toFixed(1)}%`
             },
 
             engagement_metrics: {
-              total_generations: activityMetrics.total_generations,
-              active_users: activityMetrics.active_users,
-              recent_generations: activityMetrics.recent_generations,
-              avg_generations_per_user: (activityMetrics.total_generations / activityMetrics.active_users).toFixed(1)
+              total_generations: totalGenerations,
+              active_users: activeUsers,
+              recent_generations: recentGenerations,
+              avg_generations_per_user: avgGenerationsPerUser.toFixed(1)
             },
 
             retention_metrics: {
-              total_paid_users: churnMetrics.total_paid_users,
-              inactive_7_days: churnMetrics.inactive_7_days,
-              inactive_30_days: churnMetrics.inactive_30_days,
-              retention_rate_7_days: `${((churnMetrics.total_paid_users - churnMetrics.inactive_7_days) / churnMetrics.total_paid_users * 100).toFixed(1)}%`,
-              retention_rate_30_days: `${((churnMetrics.total_paid_users - churnMetrics.inactive_30_days) / churnMetrics.total_paid_users * 100).toFixed(1)}%`
+              total_paid_users: totalPaidUsers,
+              inactive_7_days: inactive7Days,
+              inactive_30_days: inactive30Days,
+              retention_rate_7_days: `${retentionRate7Days.toFixed(1)}%`,
+              retention_rate_30_days: `${retentionRate30Days.toFixed(1)}%`
             }
           }
 
           // Add conversion funnel analysis if requested
           if (includeConversionFunnel) {
             // Analyze signup → first generation → paid conversion
-            const [funnelMetrics] = await sql`
+            const funnelMetricsResult = await sql`
               SELECT
                 COUNT(DISTINCT u.id)::int as signed_up,
                 COUNT(DISTINCT gi.user_id)::int as generated_at_least_once,
@@ -3182,25 +3796,44 @@ This tool provides critical business intelligence to make data-driven decisions.
               LEFT JOIN generated_images gi ON gi.user_id = u.id
               WHERE u.created_at >= ${startDate.toISOString()}
             `
+            
+            if (!funnelMetricsResult || funnelMetricsResult.length === 0) {
+              return {
+                success: false,
+                error: "Failed to retrieve funnel metrics from database"
+              }
+            }
+            
+            const funnelMetrics = funnelMetricsResult[0]
+            
+            // Validate numeric values
+            const signedUp = Number(funnelMetrics.signed_up) || 0
+            const generatedAtLeastOnce = Number(funnelMetrics.generated_at_least_once) || 0
+            const convertedToPaid = Number(funnelMetrics.converted_to_paid) || 0
+            
+            // Calculate safe division for funnel rates
+            const signupToTrialRate = signedUp > 0 ? (generatedAtLeastOnce / signedUp * 100) : 0
+            const trialToPaidRate = generatedAtLeastOnce > 0 ? (convertedToPaid / generatedAtLeastOnce * 100) : 0
+            const signupToPaidRate = signedUp > 0 ? (convertedToPaid / signedUp * 100) : 0
 
             result.conversion_funnel = {
-              signed_up: funnelMetrics.signed_up,
-              tried_generation: funnelMetrics.generated_at_least_once,
-              converted_to_paid: funnelMetrics.converted_to_paid,
-              signup_to_trial_rate: `${(funnelMetrics.generated_at_least_once / funnelMetrics.signed_up * 100).toFixed(1)}%`,
-              trial_to_paid_rate: `${(funnelMetrics.converted_to_paid / funnelMetrics.generated_at_least_once * 100).toFixed(1)}%`,
-              signup_to_paid_rate: `${(funnelMetrics.converted_to_paid / funnelMetrics.signed_up * 100).toFixed(1)}%`,
+              signed_up: signedUp,
+              tried_generation: generatedAtLeastOnce,
+              converted_to_paid: convertedToPaid,
+              signup_to_trial_rate: `${signupToTrialRate.toFixed(1)}%`,
+              trial_to_paid_rate: `${trialToPaidRate.toFixed(1)}%`,
+              signup_to_paid_rate: `${signupToPaidRate.toFixed(1)}%`,
 
               insights: [
-                funnelMetrics.generated_at_least_once / funnelMetrics.signed_up < 0.5
+                signedUp > 0 && (generatedAtLeastOnce / signedUp) < 0.5
                   ? "⚠️ Less than 50% of signups try generation - onboarding issue?"
                   : "✅ Good activation rate",
 
-                funnelMetrics.converted_to_paid / funnelMetrics.generated_at_least_once < 0.1
+                generatedAtLeastOnce > 0 && (convertedToPaid / generatedAtLeastOnce) < 0.1
                   ? "⚠️ Less than 10% convert after trying - pricing or value prop issue?"
                   : "✅ Healthy trial-to-paid conversion",
 
-                userMetrics.new_signups < 10
+                newSignups < 10
                   ? "⚠️ Low signup volume - need more traffic"
                   : "✅ Steady signup volume"
               ]
@@ -3210,9 +3843,9 @@ This tool provides critical business intelligence to make data-driven decisions.
           // Add revenue estimate (Note: Requires Stripe integration for actual revenue)
           result.revenue_estimate = {
             note: "Actual revenue requires Stripe API integration",
-            estimated_mrr: `$${(userMetrics.studio_members * 29).toFixed(2)}`,
-            estimated_one_time_revenue: `$${(userMetrics.one_time_users * 12).toFixed(2)}`,
-            total_estimated: `$${((userMetrics.studio_members * 29) + (userMetrics.one_time_users * 12)).toFixed(2)}`
+            estimated_mrr: `$${(studioMembers * 29).toFixed(2)}`,
+            estimated_one_time_revenue: `$${(oneTimeUsers * 12).toFixed(2)}`,
+            total_estimated: `$${((studioMembers * 29) + (oneTimeUsers * 12)).toFixed(2)}`
           }
 
           return {
@@ -3242,6 +3875,8 @@ This tool provides critical business intelligence to make data-driven decisions.
       read_codebase_file: readCodebaseFileTool,
       web_search: webSearchTool,
       get_revenue_metrics: getRevenueMetricsTool,
+      get_prompt_guides: getPromptGuidesTool,
+      update_prompt_guide: updatePromptGuideTool,
     }
 
     // Convert AI SDK tools to Anthropic format with proper schemas
@@ -3276,17 +3911,65 @@ This tool provides critical business intelligence to make data-driven decisions.
       content: Array.isArray(msg.content) ? msg.content : msg.content || '',
     }))
 
-    // Use AI SDK's data stream response for proper formatting
+    // Create SSE stream compatible with DefaultChatTransport
     // while manually calling Anthropic API to avoid schema bugs
-    return createDataStreamResponse({
-      execute: async (dataStream) => {
+    const encoder = new TextEncoder()
+    const stream = new ReadableStream({
+      async start(controller) {
+        const safeEnqueue = (data: Uint8Array) => {
+          try {
+            controller.enqueue(data)
+          } catch (error) {
+            console.error('[v0] ❌ Error enqueueing data:', error)
+          }
+        }
+
+        const messageId = `msg-${Date.now()}`
+        let isClosed = false
+
+        const safeClose = () => {
+          if (!isClosed) {
+            isClosed = true
+            try {
+              controller.close()
+            } catch (error) {
+              console.error('[v0] ❌ Error closing stream:', error)
+            }
+          }
+        }
+
         try {
           let messages = anthropicMessages
           let iteration = 0
           const MAX_ITERATIONS = 5
+          let hasSentTextStart = false
 
           while (iteration < MAX_ITERATIONS) {
             iteration++
+
+            // Don't send text-start here - only send it when we first receive a text delta
+            // This prevents sending text-start/text-end pairs when only tools are executed
+
+            // Ensure messages are in correct Anthropic format
+            const formattedMessages = messages.map((msg: any) => {
+              // If content is already an array (with tool_use/tool_result), use it as-is
+              if (Array.isArray(msg.content)) {
+                return {
+                  role: msg.role,
+                  content: msg.content,
+                }
+              }
+              // Otherwise, convert to string
+              return {
+                role: msg.role,
+                content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content) || '',
+              }
+            })
+
+            console.log('[v0] 📤 Making API call with', formattedMessages.length, 'messages')
+            if (iteration > 1) {
+              console.log('[v0] 📤 Continuation - last message type:', formattedMessages[formattedMessages.length - 1]?.content?.[0]?.type || 'text')
+            }
 
             // Call Anthropic API directly
             const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -3300,7 +3983,7 @@ This tool provides critical business intelligence to make data-driven decisions.
                 model: 'claude-sonnet-4-20250514',
                 max_tokens: 4000,
                 system: systemPromptWithImages,
-                messages,
+                messages: formattedMessages,
                 tools: anthropicTools,
                 stream: true,
               }),
@@ -3309,7 +3992,25 @@ This tool provides critical business intelligence to make data-driven decisions.
             if (!response.ok) {
               const error = await response.text()
               console.error('[v0] ❌ Anthropic API error:', error)
-              throw new Error('API request failed')
+              console.error('[v0] ❌ Response status:', response.status)
+              console.error('[v0] ❌ Response headers:', Object.fromEntries(response.headers.entries()))
+              
+              // If it's a 400 error, log the request body for debugging
+              if (response.status === 400) {
+                try {
+                  const requestBody = JSON.parse(JSON.stringify({
+                    model: 'claude-sonnet-4-20250514',
+                    max_tokens: 4000,
+                    messages: formattedMessages,
+                    tools: anthropicTools.length,
+                  }))
+                  console.error('[v0] ❌ Request summary:', JSON.stringify(requestBody, null, 2))
+                } catch (e) {
+                  // Ignore
+                }
+              }
+              
+              throw new Error(`API request failed: ${response.status} - ${error}`)
             }
 
             // Process SSE stream from Anthropic
@@ -3322,6 +4023,8 @@ This tool provides critical business intelligence to make data-driven decisions.
             let buffer = ''
             let currentToolCall: { id: string; name: string; input: string } | null = null
             const toolCalls: Array<{ id: string; name: string; input: any }> = []
+            let hasTextInThisIteration = false
+            let messageComplete = false
 
             while (true) {
               const { done, value } = await reader.read()
@@ -3341,12 +4044,43 @@ This tool provides critical business intelligence to make data-driven decisions.
                 try {
                   const event = JSON.parse(data)
 
-                  // Handle text deltas - write to data stream
-                  if (event.type === 'content_block_delta' && event.delta?.type === 'text_delta') {
+                  // Handle message_stop - message is complete
+                  if (event.type === 'message_stop') {
+                    messageComplete = true
+                    console.log('[v0] 📨 Message complete')
+                    // If we had text in this iteration, send text-end before continuing
+                    if (hasTextInThisIteration && toolCalls.length > 0) {
+                      const endMessage = {
+                        type: 'text-end',
+                        id: messageId
+                      }
+                      safeEnqueue(encoder.encode(`data: ${JSON.stringify(endMessage)}\n\n`))
+                      hasTextInThisIteration = false
+                    }
+                  }
+
+                  // Handle text deltas - send as text-delta events
+                  else if (event.type === 'content_block_delta' && event.delta?.type === 'text_delta') {
                     const text = event.delta.text
                     if (text) {
+                      // Send text-start only when we first receive a text delta
+                      if (!hasSentTextStart) {
+                        const startMessage = {
+                          type: 'text-start',
+                          id: messageId
+                        }
+                        safeEnqueue(encoder.encode(`data: ${JSON.stringify(startMessage)}\n\n`))
+                        hasSentTextStart = true
+                      }
+                      
                       accumulatedText += text
-                      dataStream.writeData(text)
+                      hasTextInThisIteration = true
+                      const deltaMessage = {
+                        type: 'text-delta',
+                        id: messageId,
+                        delta: text
+                      }
+                      safeEnqueue(encoder.encode(`data: ${JSON.stringify(deltaMessage)}\n\n`))
                     }
                   }
 
@@ -3367,16 +4101,54 @@ This tool provides critical business intelligence to make data-driven decisions.
 
                   // Handle tool use complete - execute it
                   else if (event.type === 'content_block_stop' && currentToolCall) {
-                    const toolInput = currentToolCall.input ? JSON.parse(currentToolCall.input) : {}
+                    // Parse tool input with error handling for malformed JSON
+                    let toolInput: any = {}
+                    if (currentToolCall.input) {
+                      try {
+                        toolInput = JSON.parse(currentToolCall.input)
+                      } catch (parseError: any) {
+                        console.error(`[v0] ❌ Failed to parse tool input JSON for ${currentToolCall.name}:`, parseError.message)
+                        console.error(`[v0] ❌ Raw input (first 200 chars):`, currentToolCall.input.substring(0, 200))
+                        // Use empty object as fallback - tool execution will handle missing/invalid input
+                        toolInput = {}
+                      }
+                    }
                     toolCalls.push({ ...currentToolCall, input: toolInput })
+
+                    // Always add tool_use to messages (required by Anthropic API)
+                    // We'll add tool_result after execution (success or failure)
+                    messages = [
+                      ...messages,
+                      {
+                        role: 'assistant',
+                        content: [{
+                          type: 'tool_use',
+                          id: currentToolCall.id,
+                          name: currentToolCall.name,
+                          input: toolInput,
+                        }],
+                      },
+                    ]
 
                     // Execute the tool
                     const toolDef = tools[currentToolCall.name as keyof typeof tools]
-                    if (toolDef?.execute) {
+                    let toolResultContent: string
+                    
+                    if (!toolDef?.execute) {
+                      // Tool not found - add error result
+                      console.error(`[v0] ❌ Tool not found: ${currentToolCall.name}`)
+                      toolResultContent = JSON.stringify({
+                        success: false,
+                        error: `Tool "${currentToolCall.name}" not found or not executable`,
+                        suggestion: "Check that the tool exists and is properly defined"
+                      })
+                    } else {
                       try {
+                        console.log(`[v0] 🔧 Executing tool: ${currentToolCall.name}`, { input: toolInput })
                         // @ts-ignore
                         const result = await toolDef.execute(toolInput)
                         console.log('[v0] ✅ Tool executed:', currentToolCall.name)
+                        console.log('[v0] 📊 Tool result:', JSON.stringify(result, null, 2).substring(0, 500))
 
                         // Capture email preview if it's compose_email
                         if (currentToolCall.name === 'compose_email' && result?.html && result?.subjectLine) {
@@ -3387,31 +4159,44 @@ This tool provides critical business intelligence to make data-driven decisions.
                           }
                         }
 
-                        // Add tool result to messages for continuation
-                        messages = [
-                          ...messages,
-                          {
-                            role: 'assistant',
-                            content: [{
-                              type: 'tool_use',
-                              id: currentToolCall.id,
-                              name: currentToolCall.name,
-                              input: toolInput,
-                            }],
-                          },
-                          {
-                            role: 'user',
-                            content: [{
-                              type: 'tool_result',
-                              tool_use_id: currentToolCall.id,
-                              content: JSON.stringify(result),
-                            }],
-                          },
-                        ]
+                        // Format tool result content
+                        toolResultContent = JSON.stringify(result)
+                        
+                        // Truncate very large tool results to avoid API limits
+                        // Anthropic has a limit on message content size
+                        const MAX_TOOL_RESULT_SIZE = 100000 // ~100KB
+                        if (toolResultContent.length > MAX_TOOL_RESULT_SIZE) {
+                          console.log(`[v0] ⚠️ Tool result is large (${toolResultContent.length} chars), truncating...`)
+                          const truncated = toolResultContent.substring(0, MAX_TOOL_RESULT_SIZE)
+                          toolResultContent = truncated + '\n\n[Content truncated due to size limits. Use read_codebase_file with specific file paths for full content.]'
+                        }
                       } catch (toolError: any) {
+                        // Tool execution failed - add error result
                         console.error('[v0] ❌ Tool execution error:', toolError)
+                        toolResultContent = JSON.stringify({
+                          success: false,
+                          error: toolError.message || 'Tool execution failed',
+                          errorType: toolError.name || 'ExecutionError',
+                          suggestion: "Check tool input parameters and try again"
+                        })
                       }
                     }
+
+                    // Always add tool_result to messages (required by Anthropic API)
+                    // Every tool_use must have a corresponding tool_result
+                    messages = [
+                      ...messages,
+                      {
+                        role: 'user',
+                        content: [{
+                          type: 'tool_result',
+                          tool_use_id: currentToolCall.id,
+                          content: toolResultContent,
+                        }],
+                      },
+                    ]
+                    
+                    console.log(`[v0] ✅ Added tool result to messages (${toolResultContent.length} chars)`)
 
                     currentToolCall = null
                   }
@@ -3419,16 +4204,70 @@ This tool provides critical business intelligence to make data-driven decisions.
                   // Ignore parse errors
                 }
               }
+              
+              // Break if message is complete
+              if (messageComplete) break
             }
 
             // If we executed tools, continue the conversation
             if (toolCalls.length > 0) {
               console.log('[v0] 🔄 Continuing with', toolCalls.length, 'tool results')
+              console.log('[v0] 📊 Messages count before continuation:', messages.length)
+              console.log('[v0] 📊 Last message role:', messages[messages.length - 1]?.role)
+              console.log('[v0] 📊 Last message content type:', 
+                Array.isArray(messages[messages.length - 1]?.content) 
+                  ? messages[messages.length - 1]?.content?.[0]?.type 
+                  : typeof messages[messages.length - 1]?.content)
+              // Log the tool results that were added
+              const toolResultMessages = messages.filter((m: any) => 
+                Array.isArray(m.content) && 
+                m.content.some((c: any) => c.type === 'tool_result')
+              )
+              console.log('[v0] 📊 Tool result messages in conversation:', toolResultMessages.length)
+              if (toolResultMessages.length > 0) {
+                const lastToolResult = toolResultMessages[toolResultMessages.length - 1]
+                const toolResultContent = lastToolResult.content.find((c: any) => c.type === 'tool_result')
+                if (toolResultContent) {
+                  console.log('[v0] 📊 Last tool result preview:', 
+                    typeof toolResultContent.content === 'string' 
+                      ? toolResultContent.content.substring(0, 200) 
+                      : JSON.stringify(toolResultContent.content).substring(0, 200))
+                }
+              }
+              
+              // If we had text in this iteration, send text-end before continuing
+              // (This allows the client to process the text before the continuation)
+              if (hasTextInThisIteration) {
+                const endMessage = {
+                  type: 'text-end',
+                  id: messageId
+                }
+                safeEnqueue(encoder.encode(`data: ${JSON.stringify(endMessage)}\n\n`))
+                hasTextInThisIteration = false
+                console.log('[v0] ✅ Sent text-end before continuation')
+              }
+              
+              // Reset flag so we send text-start for the next iteration
+              hasSentTextStart = false
+              
+              // Reset toolCalls array for next iteration
+              toolCalls.length = 0
+              
+              console.log('[v0] 🔄 Starting next iteration...')
               continue // Loop back to make another API call
             }
 
             // No tools used, we're done
             break
+          }
+
+          // Send text-end event only if we sent text-start (i.e., there was actual text content)
+          if (hasSentTextStart) {
+            const endMessage = {
+              type: 'text-end',
+              id: messageId
+            }
+            safeEnqueue(encoder.encode(`data: ${JSON.stringify(endMessage)}\n\n`))
           }
 
           // Save accumulated message to database
@@ -3442,14 +4281,25 @@ This tool provides critical business intelligence to make data-driven decisions.
           }
         } catch (error: any) {
           console.error('[v0] ❌ Stream error:', error)
-          throw error
+          if (!isClosed) {
+            const errorMessage = {
+              type: 'error',
+              id: messageId,
+              errorText: error.message || 'Stream error'
+            }
+            safeEnqueue(encoder.encode(`data: ${JSON.stringify(errorMessage)}\n\n`))
+          }
+        } finally {
+          safeClose()
         }
       },
-      onError: (error) => {
-        console.error('[v0] ❌ Data stream error:', error)
-        return error.message
-      },
+    })
+
+    return new Response(stream, {
       headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
         'X-Chat-Id': String(activeChatId),
       },
     })

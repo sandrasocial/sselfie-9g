@@ -42,7 +42,10 @@ const toolNames = [
   'get_email_timeline',
   'analyze_email_strategy',
   'read_codebase_file',
-  'web_search'
+  'web_search',
+  'get_revenue_metrics',
+  'get_prompt_guides',
+  'update_prompt_guide'
 ];
 
 let toolsCorrect = 0;
@@ -69,17 +72,17 @@ console.log(`  ${!hasProcessAnthropicStream ? '✅' : '❌'} processAnthropicStr
 console.log(`  ${!hasManualSSE ? '✅' : '⚠️'}  Manual SSE encoding removed: ${!hasManualSSE}`);
 console.log(`  ${!hasToolConverter ? '✅' : '⚠️'}  Tool converter usage removed: ${!hasToolConverter}`);
 
-// Test 4: Check for createAnthropic usage
-console.log('\nTest 4: Checking createAnthropic implementation...');
-const hasCreateAnthropicCall = routeFile.includes('createAnthropic({') || routeFile.includes('createAnthropic( {');
-const hasProviderModelCall = routeFile.includes('anthropic(\'claude') || routeFile.includes('anthropic("claude');
-const hasStreamTextCall = routeFile.includes('streamText({');
-const hasToUIResponse = routeFile.includes('toUIMessageStreamResponse');
+// Test 4: Check for direct Anthropic API implementation (current approach)
+console.log('\nTest 4: Checking direct Anthropic API implementation...');
+const hasDirectFetch = routeFile.includes('fetch(\'https://api.anthropic.com/v1/messages\'');
+const hasManualSSE = routeFile.includes('ReadableStream') && routeFile.includes('text-start') && routeFile.includes('text-delta');
+const hasZodToAnthropicSchema = routeFile.includes('zodToAnthropicSchema') || routeFile.includes('convertZodField');
+const hasToolExecution = routeFile.includes('toolDef.execute') || routeFile.includes('tools[');
 
-console.log(`  ${hasCreateAnthropicCall ? '✅' : '❌'} createAnthropic() used: ${hasCreateAnthropicCall}`);
-console.log(`  ${hasProviderModelCall ? '✅' : '❌'} Provider model pattern used: ${hasProviderModelCall}`);
-console.log(`  ${hasStreamTextCall ? '✅' : '⚠️'}  streamText() used: ${hasStreamTextCall}`);
-console.log(`  ${hasToUIResponse ? '✅' : '❌'} toUIMessageStreamResponse() used: ${hasToUIResponse}`);
+console.log(`  ${hasDirectFetch ? '✅' : '❌'} Direct Anthropic API fetch() used: ${hasDirectFetch}`);
+console.log(`  ${hasManualSSE ? '✅' : '❌'} Manual SSE stream handling: ${hasManualSSE}`);
+console.log(`  ${hasZodToAnthropicSchema ? '✅' : '⚠️'}  Zod-to-Anthropic schema converter: ${hasZodToAnthropicSchema}`);
+console.log(`  ${hasToolExecution ? '✅' : '❌'} Tool execution logic present: ${hasToolExecution}`);
 
 // Test 5: Check file size
 console.log('\nTest 5: Checking file size...');

@@ -52,3 +52,4 @@ COMMENT ON COLUMN admin_email_drafts.is_current_version IS 'True for the latest 
 
 
 
+

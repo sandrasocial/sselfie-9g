@@ -114,15 +114,25 @@ export default function AdminAgentChatNew({
   const [chatTitle, setChatTitle] = useState<string>("Admin Agent")
   const [isMounted, setIsMounted] = useState(false)
   
+  // Track if component is mounted to prevent state updates after unmount
+  // This prevents "Cannot set properties of undefined" errors
+  const isMountedRef = useRef(true)
+  
   // Ensure component is mounted before applying responsive classes
   useEffect(() => {
     setIsMounted(true)
+    isMountedRef.current = true
+    return () => {
+      isMountedRef.current = false
+    }
   }, [])
   const [inputValue, setInputValue] = useState("")
   const [isLoadingChat, setIsLoadingChat] = useState(true)
   const [showHistory, setShowHistory] = useState(false)
   const [chats, setChats] = useState<any[]>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
+  const shouldAutoScrollRef = useRef(true) // Track if we should auto-scroll
   const hasLoadedChatRef = useRef(false)
   const lastLoadedChatIdRef = useRef<number | null>(null) // Track last loaded chatId to prevent infinite loops
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -289,45 +299,92 @@ export default function AdminAgentChatNew({
   const finalApiEndpoint = apiEndpoint || "/api/admin/agent/chat"
   console.log('[v0] 🔗 useChat configured with apiEndpoint:', finalApiEndpoint)
 
+  // Memoize transport to prevent recreation on every render (fixes "Cannot set properties of undefined" error)
+  const transportInstance = useMemo(() => {
+    try {
+      return new DefaultChatTransport({ 
+        api: finalApiEndpoint,
+      }) as any
+    } catch (error) {
+      console.error('[v0] ❌ Error creating DefaultChatTransport:', error)
+      return null
+    }
+  }, [finalApiEndpoint])
+
+  // Use DefaultChatTransport with as any to handle AI SDK version mismatches (like Maya chat does)
+  // Our route returns custom SSE format compatible with DefaultChatTransport
+  // Memoize transport to prevent recreation issues
   const { messages, sendMessage, status, setMessages, error } = useChat({
-    transport: new DefaultChatTransport({ api: finalApiEndpoint }),
+    transport: transportInstance,
     body: { chatId },
     onResponse: async (response: any) => {
-      // DEBUG: Check if body is consumed (should be false!)
-      console.log('[v0] 🔍 Response received:', {
-        status: response.status,
-        headers: Object.fromEntries(response.headers.entries()),
-        bodyUsed: response.bodyUsed  // Should be false!
-      })
-      
-      // Only read headers, do NOT consume body
-      const chatIdHeader = response.headers.get('X-Chat-Id')
-      if (chatIdHeader) {
-        const newChatId = parseInt(chatIdHeader)
-        if (chatId !== newChatId) {
-          setChatId(newChatId)
-          await loadChats()
-        }
+      // Safety check: don't update state if component is unmounted
+      if (!isMountedRef.current) {
+        console.warn('[v0] ⚠️ Component unmounted, skipping onResponse')
+        return
       }
       
-      // Verify body is still not consumed after header reading
-      if (response.bodyUsed) {
-        console.error('[v0] ❌ ERROR: Response body was consumed in onResponse!')
+      try {
+        // DEBUG: Check if body is consumed (should be false!)
+        console.log('[v0] 🔍 Response received:', {
+          status: response.status,
+          headers: Object.fromEntries(response.headers.entries()),
+          bodyUsed: response.bodyUsed  // Should be false!
+        })
+        
+        // Only read headers, do NOT consume body
+        const chatIdHeader = response.headers.get('X-Chat-Id')
+        if (chatIdHeader && isMountedRef.current) {
+          const newChatId = parseInt(chatIdHeader)
+          if (chatId !== newChatId) {
+            setChatId(newChatId)
+            await loadChats()
+          }
+        }
+        
+        // Verify body is still not consumed after header reading
+        if (response.bodyUsed) {
+          console.error('[v0] ❌ ERROR: Response body was consumed in onResponse!')
+        }
+      } catch (error: any) {
+        console.error('[v0] ❌ Error in onResponse:', error)
+        // Don't crash the component if onResponse fails
       }
     },
     onFinish: (message: any) => {
-      console.log('[v0] ✅ Message finished:', message)
+      // Safety check: don't update state if component is unmounted
+      if (!isMountedRef.current) {
+        console.warn('[v0] ⚠️ Component unmounted, skipping onFinish')
+        return
+      }
+      
+      try {
+        console.log('[v0] ✅ Message finished:', message)
+      } catch (error: any) {
+        console.error('[v0] ❌ Error in onFinish:', error)
+      }
     },
     onError: (error: any) => {
-      console.error("[v0] ❌ Chat error:", error)
-      setToolLoading(null)
-      setExecutingTool(null)
+      // Safety check: don't update state if component is unmounted
+      if (!isMountedRef.current) {
+        console.warn('[v0] ⚠️ Component unmounted, skipping onError')
+        return
+      }
       
-      // Filter out Next.js error page HTML from error messages
-      let errorMessage = error.message || "An error occurred"
-      errorMessage = filterErrorPageHTML(errorMessage)
-      
-      setToolErrors(prev => ({ ...prev, general: errorMessage }))
+      try {
+        console.error("[v0] ❌ Chat error:", error)
+        setToolLoading(null)
+        setExecutingTool(null)
+        
+        // Filter out Next.js error page HTML from error messages
+        let errorMessage = error.message || "An error occurred"
+        errorMessage = filterErrorPageHTML(errorMessage)
+        
+        setToolErrors(prev => ({ ...prev, general: errorMessage }))
+      } catch (err: any) {
+        console.error('[v0] ❌ Error in onError handler:', err)
+        // Don't crash the component if error handler fails
+      }
     },
   } as any)
 
@@ -471,9 +528,42 @@ export default function AdminAgentChatNew({
     }
   }, [chatId, isLoadingChat, loadChat]) // Removed messages.length to prevent infinite loops
 
+  // Smooth scroll to bottom - only if user is already near bottom
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+    const container = messagesContainerRef.current
+    if (!container) return
+
+    // Check if user is near the bottom (within 100px)
+    const isNearBottom = 
+      container.scrollHeight - container.scrollTop - container.clientHeight < 100
+
+    // Only auto-scroll if user is near bottom OR if shouldAutoScrollRef is true
+    if (shouldAutoScrollRef.current || isNearBottom) {
+      // Use requestAnimationFrame + direct scrollTop for smoother scrolling during streaming
+      // This prevents the "jumping" effect that scrollIntoView can cause
+      requestAnimationFrame(() => {
+        if (container) {
+          // Direct scrollTop manipulation is smoother than scrollIntoView during rapid updates
+          container.scrollTop = container.scrollHeight
+        }
+      })
+    }
   }, [messages])
+
+  // Track scroll position to detect manual scrolling
+  useEffect(() => {
+    const container = messagesContainerRef.current
+    if (!container) return
+
+    const handleScroll = () => {
+      const isNearBottom = 
+        container.scrollHeight - container.scrollTop - container.clientHeight < 100
+      shouldAutoScrollRef.current = isNearBottom
+    }
+
+    container.addEventListener('scroll', handleScroll, { passive: true })
+    return () => container.removeEventListener('scroll', handleScroll)
+  }, [])
 
   // Track tool loading and errors from messages
   useEffect(() => {
@@ -980,6 +1070,9 @@ export default function AdminAgentChatNew({
     
     if ((!hasText && !hasImages) || isLoading) return
 
+    // Reset auto-scroll when sending a new message
+    shouldAutoScrollRef.current = true
+
     // Ensure chat exists
     let currentChatId = chatId
     if (currentChatId === null || currentChatId === undefined) {
@@ -1190,7 +1283,10 @@ export default function AdminAgentChatNew({
 
         {/* Messages */}
         {!showEmailLibrary && (
-          <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
+          <div 
+            ref={messagesContainerRef}
+            className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6"
+          >
             {isLoadingChat ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-sm sm:text-base text-stone-500">Loading chat...</div>
