@@ -1,4 +1,4 @@
-import { streamText, tool, generateText } from "ai"
+import { streamText, tool, generateText, createAnthropic } from "ai"
 import { z } from "zod"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
@@ -7,8 +7,6 @@ import { NextResponse } from "next/server"
 import { saveChatMessage, createNewChat, getOrCreateActiveChat, getChatMessages } from "@/lib/data/admin-agent"
 import { neon } from "@neondatabase/serverless"
 import { Resend } from "resend"
-import Anthropic from '@anthropic-ai/sdk'
-import { convertToolsToAnthropicFormat, convertMessagesToAnthropicFormat } from "@/lib/admin/anthropic-tool-converter"
 
 // HTML stripping function - uses regex fallback (works without html-to-text package)
 // If html-to-text package is installed later, it can be enhanced, but this works fine for now
@@ -2994,444 +2992,68 @@ These images should be included naturally in the email HTML.`
     })
     
     if (useDirectAnthropic) {
-      console.log('[v0] 🚀 Using Anthropic SDK directly (bypassing gateway)')
+      console.log('[v0] 🚀 Using createAnthropic provider (bypassing gateway)')
       console.log('[v0] 📊 About to create stream, activeChatId:', activeChatId)
-      
-      // Create Anthropic client
-      const anthropic = new Anthropic({
+
+      // Create Anthropic provider using AI SDK
+      // This bypasses the Vercel Gateway (avoiding Bedrock serialization issues)
+      // while still using AI SDK's automatic tool handling
+      const anthropic = createAnthropic({
         apiKey: process.env.ANTHROPIC_API_KEY,
       })
-      
-      // Convert messages and tools to Anthropic format
-      const anthropicMessages = convertMessagesToAnthropicFormat(modelMessagesToUse)
-      const anthropicTools = convertToolsToAnthropicFormat(tools)
-      
-      // Track email preview data from tool results (shared across stream processing)
-      let capturedEmailPreviewData: { html: string; subjectLine: string; preview: string } | null = null
-      
-      // Helper to capture email preview data from tool results
-      const captureEmailPreviewFromToolResults = (toolResults: Array<{ tool_use_id: string; name: string; content: any }>) => {
-        for (const toolResult of toolResults) {
-          if (toolResult.name === 'compose_email' && toolResult.content) {
-            const result = typeof toolResult.content === 'string' 
-              ? JSON.parse(toolResult.content) 
-              : toolResult.content
-            
-            if (result && result.html && result.subjectLine) {
-              capturedEmailPreviewData = {
-                html: result.html,
-                subjectLine: result.subjectLine,
-                preview: result.preview || stripHtml(result.html).substring(0, 200) + '...'
-              }
-              console.log('[v0] 📧 Captured email preview data from tool result')
-              break
-            }
-          }
-        }
-      }
-      
-      // Helper function to process Anthropic stream with tool execution
-      async function* processAnthropicStream(stream: any, initialMessages: any[], maxIterations = 5): AsyncGenerator<string | { type: 'tool-result', data: any }> {
-        let messages = initialMessages
-        let iteration = 0
-        
-        while (iteration < maxIterations) {
-          iteration++
-          let currentToolCall: { id: string; name: string; input: string } | null = null
-          const toolCalls: Array<{ id: string; name: string; input: any }> = []
-          const toolResults: Array<{ tool_use_id: string; name: string; content: any }> = []
-          
-          let eventCount = 0
-          let hasYieldedText = false
-          
-          for await (const event of stream) {
-            eventCount++
-            
-            // Log first few events to debug
-            if (eventCount <= 3) {
-              console.log(`[v0] 📨 Event ${eventCount}:`, event.type, event.delta?.type || 'no delta')
-            }
-            
-            // Handle tool use start
-            if (event.type === 'content_block_start' && 'content_block' in event && event.content_block && 'type' in event.content_block && event.content_block.type === 'tool_use') {
-              const toolUse = event.content_block as any
-              currentToolCall = {
-                id: toolUse.id,
-                name: toolUse.name,
-                input: '',
-              }
-              console.log(`[v0] 🔧 Tool use started: ${toolUse.name} (${toolUse.id})`)
-            }
-            
-            // Handle tool input JSON deltas
-            else if (event.type === 'content_block_delta' && 'delta' in event && event.delta && 'type' in event.delta && event.delta.type === 'input_json_delta' && currentToolCall) {
-              const delta = event.delta as any
-              currentToolCall.input += delta.partial_json || ''
-            }
-            
-            // Handle tool use stop - execute the tool
-            else if (event.type === 'content_block_stop' && currentToolCall) {
-              try {
-                console.log(`[v0] 🔧 Tool use complete: ${currentToolCall.name}, executing...`)
-                
-                // Parse tool input
-                let toolInput: any = {}
-                try {
-                  // Handle empty or invalid input gracefully
-                  if (currentToolCall.input && currentToolCall.input.trim()) {
-                    toolInput = JSON.parse(currentToolCall.input)
-                  } else {
-                    // Empty input is valid for tools with all optional parameters
-                    console.log(`[v0] ℹ️ Tool ${currentToolCall.name} called with empty input (using defaults)`)
-                    toolInput = {}
-                  }
-                } catch (parseError: any) {
-                  console.error(`[v0] ❌ Failed to parse tool input for ${currentToolCall.name}:`, {
-                    input: currentToolCall.input,
-                    error: parseError.message
-                  })
-                  // Try to continue with empty input if all parameters are optional
-                  toolInput = {}
-                }
-                
-                // Store tool call info
-                toolCalls.push({ id: currentToolCall.id, name: currentToolCall.name, input: toolInput })
-                
-                // Find and execute the tool
-                const tool = tools[currentToolCall.name as keyof typeof tools]
-                if (!tool || !tool.execute) {
-                  console.error(`[v0] ❌ Tool not found: ${currentToolCall.name}`)
-                  toolResults.push({
-                    tool_use_id: currentToolCall.id,
-                    name: currentToolCall.name,
-                    content: { error: `Tool ${currentToolCall.name} not found` },
-                  })
-                } else {
-                  try {
-                    const result = await tool.execute(toolInput)
-                    
-                    // Check if result indicates an error (for tools that return error objects instead of throwing)
-                    if (result && typeof result === 'object' && 'success' in result && result.success === false) {
-                      console.error(`[v0] ❌ Tool ${currentToolCall.name} returned error:`, result.error || 'Unknown error')
-                      if (result.filePath) {
-                        console.error(`[v0] ❌ Failed file path: ${result.filePath}`)
-                      }
-                    }
-                    
-                    const toolResult = {
-                      tool_use_id: currentToolCall.id,
-                      name: currentToolCall.name,
-                      content: result,
-                    }
-                    toolResults.push(toolResult)
-                    
-                    if (result && typeof result === 'object' && 'success' in result && result.success === false) {
-                      console.log(`[v0] ⚠️ Tool ${currentToolCall.name} executed but returned error result`)
-                    } else {
-                      console.log(`[v0] ✅ Tool ${currentToolCall.name} executed successfully`)
-                    }
-                    
-                    // Note: Tool results are included in the message parts automatically
-                    // The frontend will extract them from message parts when the message is complete
-                    // We don't emit tool-result events in SSE as DefaultChatTransport doesn't recognize them
-                  } catch (toolError: any) {
-                    console.error(`[v0] ❌ Tool ${currentToolCall.name} execution error:`, toolError)
-                    toolResults.push({
-                      tool_use_id: currentToolCall.id,
-                      name: currentToolCall.name,
-                      content: { error: toolError.message || 'Tool execution failed' },
-                    })
-                  }
-                }
-              } catch (error: any) {
-                console.error(`[v0] ❌ Error processing tool call:`, error)
-                if (currentToolCall) {
-                  toolCalls.push({ id: currentToolCall.id, name: currentToolCall.name, input: {} })
-                  toolResults.push({
-                    tool_use_id: currentToolCall.id,
-                    name: currentToolCall.name,
-                    content: { error: error.message || 'Tool processing failed' },
-                  })
-                }
-              } finally {
-                currentToolCall = null
-              }
-            }
-            
-            // Handle content_block_start for text blocks (may come before deltas)
-            else if (event.type === 'content_block_start' && 'content_block' in event && event.content_block && 'type' in event.content_block && event.content_block.type === 'text') {
-              // Text block started - this is just informational, we'll get deltas next
-              console.log(`[v0] 📝 Text content block started (event ${eventCount})`)
-            }
-            
-            // Handle text deltas - yield text directly
-            else if (event.type === 'content_block_delta' && 'delta' in event && event.delta && 'type' in event.delta && event.delta.type === 'text_delta') {
-              const text = event.delta?.text
-              if (text !== undefined && text !== null && typeof text === 'string' && text.length > 0) {
-                if (!hasYieldedText) {
-                  hasYieldedText = true
-                  console.log(`[v0] ✅ First text delta yielded (event ${eventCount}): "${text.substring(0, 50)}..."`)
-                }
-                yield text
-              }
-            }
-            
-            // Handle message stop - check if we need to continue with tool results
-            else if (event.type === 'message_stop') {
-              console.log(`[v0] 🏁 Message complete (iteration ${iteration})`)
-              
-              // If we have tool results, continue the conversation
-              if (toolResults.length > 0) {
-                console.log(`[v0] 🔄 Continuing conversation with ${toolResults.length} tool result(s)`)
-                
-                // Build assistant message with tool uses
-                const assistantContent = toolCalls.map(tc => ({
-                  type: 'tool_use' as const,
-                  id: tc.id,
-                  name: tc.name,
-                  input: tc.input,
-                }))
-                
-                // Build user message with tool results
-                const userContent = toolResults.map(tr => ({
-                  type: 'tool_result' as const,
-                  tool_use_id: tr.tool_use_id,
-                  content: JSON.stringify(tr.content),
-                }))
-                
-                // Add messages for continuation
-                messages = [
-                  ...messages,
-                  {
-                    role: 'assistant' as const,
-                    content: assistantContent,
-                  },
-                  {
-                    role: 'user' as const,
-                    content: userContent,
-                  },
-                ]
-                
-                // Capture email preview data from tool results before continuing
-                captureEmailPreviewFromToolResults(toolResults)
-                
-                // Create a new Anthropic request with tool results
-                const continuationResponse = await anthropic.messages.create({
-                  model: 'claude-sonnet-4-20250514',
-                  max_tokens: 4000,
-                  system: systemPromptWithImages,
-                  messages: messages as any,
-                  tools: anthropicTools.length > 0 ? anthropicTools : undefined,
-                  stream: true,
-                })
-                
-                // Recursively process continuation stream - this will yield all text including final response
-                // Explicitly iterate to ensure all items are yielded
-                let continuationItemCount = 0
-                for await (const continuationItem of processAnthropicStream(continuationResponse, messages, maxIterations - 1)) {
-                  continuationItemCount++
-                  if (typeof continuationItem === 'string') {
-                    yield continuationItem
-                  }
-                }
-                console.log(`[v0] ✅ Continuation stream complete, yielded ${continuationItemCount} items`)
-                return // Exit after continuation is fully processed
-              }
-            }
-          }
-          
-          // After processing all events, if we had tool results and continued, we're done
-          // If no tool results were generated, we're also done (text was already yielded)
-          break
-        }
-      }
-      
-      // Create Anthropic streaming response
-      // Note: Web search is enabled via Vercel AI Gateway when using the gateway model
-      // For direct Anthropic SDK, web search is not available in the current SDK version
-      // To enable web search, use the gateway model: "anthropic/claude-sonnet-4" via streamText
-      const anthropicResponse = await anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 4000,
+
+
+      // Track email preview data for message saving
+      let emailPreviewData: { html: string; subjectLine: string; preview: string } | null = null
+
+      // Use AI SDK's streamText with createAnthropic provider
+      // This bypasses the gateway (no Bedrock issues) while handling tools automatically
+      const result = streamText({
+        model: anthropic('claude-sonnet-4-20250514'),  // Provider instance - direct to Anthropic API
         system: systemPromptWithImages,
-        messages: anthropicMessages as any,
-        tools: anthropicTools.length > 0 ? anthropicTools : undefined,
-        stream: true,
-      })
-      
-      // Create async generator that yields text chunks and handles tool execution
-      async function* generateTextStream() {
-        console.log('[v0] 📡 Starting to process Anthropic stream events...')
-        
-        for await (const item of processAnthropicStream(anthropicResponse, anthropicMessages)) {
-          // Only yield text chunks - tool results are included in message parts automatically
-          // DefaultChatTransport doesn't recognize custom tool-result events
-          if (typeof item === 'string' && item.length > 0) {
-            yield item
-          }
-        }
-        
-        console.log('[v0] 📊 Generator iteration complete')
-      }
-      
-      // Create a ReadableStream that emits Server-Sent Events format
-      // This is what DefaultChatTransport expects
-      console.log('[v0] Creating SSE stream...')
-      
-      const stream = new ReadableStream({
-        async start(controller) {
-          const encoder = new TextEncoder()
-          let messageId = 'msg-' + Date.now()
-          let chunkCount = 0
-          let isClosed = false
-          let hasYieldedData = false
-          let streamStartTime = Date.now()
-          
-          // Track accumulated text and email preview data for persistence
-          let accumulatedText = ''
-          let emailPreviewData: { html: string; subjectLine: string; preview: string } | null = null
-          
-          // Capture email preview data from tool results when stream completes
-          // We'll check capturedEmailPreviewData at the end
-          
-          // Helper to safely enqueue data
-          const safeEnqueue = (data: Uint8Array) => {
-            if (!isClosed) {
-              try {
-                controller.enqueue(data)
-                if (!hasYieldedData) {
-                  hasYieldedData = true
-                  const timeToFirstChunk = Date.now() - streamStartTime
-                  console.log(`[v0] ✅ First chunk sent after ${timeToFirstChunk}ms`)
-                }
-              } catch (e: any) {
-                if (e.message?.includes('closed') || e.name === 'TypeError') {
-                  isClosed = true
-                  const timeToClose = Date.now() - streamStartTime
-                  console.warn(`[v0] ⚠️ Controller already closed after ${timeToClose}ms, skipping enqueue`)
-                } else {
-                  throw e
-                }
-              }
-            }
-          }
-          
-          // Helper to safely close controller
-          const safeClose = () => {
-            if (!isClosed) {
-              try {
-                controller.close()
-                isClosed = true
-                const streamDuration = Date.now() - streamStartTime
-                console.log(`[v0] 🔒 Stream closed after ${streamDuration}ms, yielded ${chunkCount} chunks`)
-              } catch (e) {
-                // Ignore errors when closing
-              }
-            }
-          }
-          
-          // Note: ReadableStreamDefaultController doesn't have a signal property
-          // We'll detect closure through the enqueue error instead
-          
-          try {
-            console.log('[v0] 🔄 Starting to iterate over generateTextStream()...')
-            let itemsProcessed = 0
-            
-            for await (const item of generateTextStream()) {
-              itemsProcessed++
-              if (isClosed) {
-                const timeToClose = Date.now() - streamStartTime
-                console.warn(`[v0] ⚠️ Stream already closed after ${timeToClose}ms, stopping iteration (processed ${itemsProcessed} items)`)
-                break
-              }
-              
-              // Handle text chunks only - tool results are included in message parts automatically
-              // DefaultChatTransport doesn't recognize custom tool-result events
-              if (typeof item === 'string' && item.length > 0) {
-                // Send text-start event before first chunk (DefaultChatTransport requirement)
-                if (chunkCount === 0) {
-                  const startMessage = {
-                    type: 'text-start',
-                    id: messageId
+        messages: modelMessagesToUse,
+        maxOutputTokens: 4000,
+        tools: tools,  // No conversion needed - AI SDK handles it!
+        onFinish: async ({ text, toolCalls, toolResults }) => {
+          // Capture email preview data from tool results
+          if (toolResults && Array.isArray(toolResults)) {
+            for (const toolResult of toolResults) {
+              if (toolResult.toolName === 'compose_email') {
+                const toolResultData = (toolResult as any).result
+                if (toolResultData) {
+                  const result = typeof toolResultData === 'string'
+                    ? JSON.parse(toolResultData)
+                    : toolResultData
+
+                  if (result && result.html && result.subjectLine) {
+                    emailPreviewData = {
+                      html: result.html,
+                      subjectLine: result.subjectLine,
+                      preview: result.preview || stripHtml(result.html).substring(0, 200) + '...'
+                    }
+                    console.log('[v0] 📧 Captured email preview data from tool result')
+                    break
                   }
-                  const startData = `data: ${JSON.stringify(startMessage)}\n\n`
-                  safeEnqueue(encoder.encode(startData))
-                  console.log('[v0] 📝 Sent text-start event')
-                }
-                
-                accumulatedText += item
-                chunkCount++
-                
-                // Format as SSE event - DefaultChatTransport expects this format
-                // Must include 'id' field and 'delta' property (not 'text')
-                const message = {
-                  type: 'text-delta',
-                  id: messageId,
-                  delta: item
-                }
-                
-                // SSE format: data: <json>\n\n
-                const data = `data: ${JSON.stringify(message)}\n\n`
-                safeEnqueue(encoder.encode(data))
-                
-                if (chunkCount % 10 === 0) {
-                  console.log(`[v0] 📝 Sent ${chunkCount} chunks so far, total text length: ${accumulatedText.length}`)
                 }
               }
-            }
-            
-            // Send text-end event if we sent any text chunks (DefaultChatTransport requirement)
-            if (chunkCount > 0 && !isClosed) {
-              const endMessage = {
-                type: 'text-end',
-                id: messageId
-              }
-              safeEnqueue(encoder.encode(`data: ${JSON.stringify(endMessage)}\n\n`))
-              console.log('[v0] 📝 Sent text-end event')
-            }
-            
-            // Note: DefaultChatTransport doesn't need a 'finish' event - it handles completion automatically
-            // The stream closing is sufficient to signal completion
-            console.log(`[v0] ✅ Sent ${chunkCount} chunks, closing stream`)
-          } catch (error: any) {
-            console.error('[v0] ❌ Stream error:', error)
-            // Send error message (only if not closed)
-            if (!isClosed) {
-              const errorMessage = {
-                type: 'error',
-                id: messageId,
-                errorText: error.message || 'Stream error'
-              }
-              safeEnqueue(encoder.encode(`data: ${JSON.stringify(errorMessage)}\n\n`))
-            }
-          } finally {
-            safeClose()
-            console.log('[v0] ✅ UI message stream finished')
-            
-            // Use captured email preview data if available (from tool results)
-            const finalEmailPreviewData = capturedEmailPreviewData || emailPreviewData
-            
-            // Save message in finally block to ensure it runs even if stream is interrupted
-            if (accumulatedText && activeChatId) {
-              try {
-                await saveChatMessage(activeChatId, 'assistant', accumulatedText, finalEmailPreviewData)
-                console.log('[v0] ✅ Saved assistant message to chat:', activeChatId, finalEmailPreviewData ? 'with email preview data' : '')
-              } catch (error) {
-                console.error("[v0] ❌ Error saving assistant message:", error)
-              }
-            } else if (accumulatedText) {
-              console.log('[v0] ⚠️ Message not saved: no activeChatId or empty text')
             }
           }
-        }
+
+          // Save message to database
+          if (text && activeChatId) {
+            try {
+              await saveChatMessage(activeChatId, "assistant", text, emailPreviewData)
+              console.log('[v0] ✅ Saved assistant message to chat:', activeChatId, emailPreviewData ? 'with email preview data' : '')
+            } catch (error) {
+              console.error("[v0] ❌ Error saving assistant message:", error)
+            }
+          }
+        },
       })
-      
-      // Return SSE response with proper headers
-      return new Response(stream, {
+
+      // Return AI SDK's streaming response - handles SSE formatting automatically
+      return result.toUIMessageStreamResponse({
         headers: {
-          'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache',
-          'Connection': 'keep-alive',
           'X-Chat-Id': String(activeChatId),
         },
       })
