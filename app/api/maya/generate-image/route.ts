@@ -168,12 +168,20 @@ export async function POST(request: NextRequest) {
     
     console.log("[v0] Using Maya's prompt directly:", {
       promptLength: finalPrompt.length,
-      startsWithTrigger: finalPrompt.toLowerCase().startsWith(triggerWord.toLowerCase())
+      startsWithTrigger: finalPrompt.toLowerCase().startsWith(triggerWord.toLowerCase()),
+      enhancedAuthenticity: enhancedAuthenticity,
     })
     
     // Apply highlight modifications if needed
     if (isHighlight) {
       finalPrompt = `${finalPrompt}, professional Instagram story highlight aesthetic, elegant and minimalistic design, soft lighting, high-end editorial quality, perfect for text overlay, circular crop friendly, trending Instagram aesthetic 2025`
+    }
+
+    // Apply Enhanced Authenticity modifications if toggle is ON
+    // This adds: muted colors, iPhone quality, film grain for authentic look
+    if (enhancedAuthenticity === true) {
+      finalPrompt = `${finalPrompt}, muted colors, iPhone quality, film grain, authentic cellphone photo aesthetic, natural skin texture with visible pores, amateur cellphone quality, visible sensor noise, heavy HDR glow, blown-out highlights, crushed shadows, authentic moment, unfiltered, real life texture`
+      console.log("[v0] ✅ Enhanced Authenticity: Added authentic iPhone aesthetic keywords to prompt")
     }
 
     const { MAYA_QUALITY_PRESETS } = await import("@/lib/maya/quality-settings")
@@ -205,9 +213,12 @@ export async function POST(request: NextRequest) {
     const qualitySettings = {
       ...presetSettings,
       aspect_ratio: customSettings?.aspectRatio || presetSettings.aspect_ratio,
-      // CRITICAL: Use user's LoRA scale from database first, then fall back to settings/preset
-      // This ensures the trained model's optimal scale is used
-      lora_scale: userLoraScale ?? customSettings?.styleStrength ?? presetSettings.lora_scale,
+      // CRITICAL FIX: User's manual styleStrength setting should override database value
+      // Priority: 1. User's manual styleStrength (if set), 2. Database lora_scale, 3. Preset default
+      // This allows users to adjust style strength even if database has a value
+      lora_scale: customSettings?.styleStrength !== undefined
+        ? customSettings.styleStrength  // User's manual adjustment takes priority ✅
+        : (userLoraScale ?? presetSettings.lora_scale), // Fall back to DB or preset
       guidance_scale: customSettings?.promptAccuracy ?? presetSettings.guidance_scale,
       extra_lora: customSettings?.extraLora || presetSettings.extra_lora,
       // CRITICAL FIX: Handle extra_lora_scale with proper priority:
@@ -239,6 +250,9 @@ export async function POST(request: NextRequest) {
         fromSettings: customSettings?.styleStrength,
         fromPreset: presetSettings.lora_scale,
         final: qualitySettings.lora_scale,
+        priority: customSettings?.styleStrength !== undefined 
+          ? "User's manual styleStrength (highest priority)" 
+          : (userLoraScale ? "Database lora_scale (fallback)" : "Preset default"),
       },
     })
     
