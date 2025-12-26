@@ -136,6 +136,12 @@ Example 1 (45 words):
 Example 2 (42 words):
 "${triggerWord}, Asian woman, shoulder-length black hair, oversized beige sweater, sitting at cafe table with latte, soft window lighting, shot on iPhone 15 Pro portrait mode, candid photo, natural skin texture with pores visible, film grain, muted colors"
 
+**SELFIE HANDLING:**
+If the description mentions "selfie", "front camera selfie", "mirror selfie", or selfie-related framing:
+- Replace "shot on iPhone 15 Pro portrait mode" with "ultra-realistic iPhone 15 Pro front camera selfie" or "iPhone 15 Pro mirror selfie reflection"
+- Add selfie-specific details like "arm extended holding phone" or "mirror visible in frame"
+- Maintain same quality and authentic aesthetic
+
 **AVOID:**
 - Structured sections (no "POSE:", "OUTFIT:", etc.)
 - Exceeding 60 words
@@ -200,12 +206,20 @@ ${isEditorial
 
 **Aesthetic:** [Aesthetic from description with Pinterest language. Example: "Luxurious holiday morning elegance, sophisticated Christmas styling, aspirational holiday luxury"]
 
+**SELFIE HANDLING:**
+If the description mentions "selfie", "front camera selfie", "mirror selfie", or similar selfie framing:
+- Use iPhone front camera specifications (not DSLR)
+- Include selfie-specific framing details (arm extended, mirror reflection, etc.)
+- Maintain same quality and luxury as professional concepts
+- Use "iPhone 15 Pro front camera selfie" or "iPhone 15 Pro mirror selfie" in Camera Composition section
+
 **VERIFY BEFORE SUBMITTING:**
 ✅ Every brand in description appears in prompt?
 ✅ No vague words replacing specific items?
 ✅ No OR statements?
 ✅ All sentences complete?
 ✅ Bag only if contextually appropriate?
+✅ Selfie descriptions use iPhone front camera (not DSLR)?
 
 Transform the description above into the structured format.`
 }

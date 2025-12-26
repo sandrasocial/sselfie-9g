@@ -2965,82 +2965,49 @@ ${shouldIncludeSkinTexture(userRequest, detectedGuidePrompt || undefined, templa
 - Do not include: "TEXT OVERLAY:", "text placement:", "font size:", "text color:", or any text-related instructions
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🤳 SELFIE REQUIREMENT (CRITICAL FOR SSELFIE STUDIO)
+🤳 SELFIE CONCEPTS (When Appropriate)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-MANDATORY: Exactly ONE concept MUST be a SELFIE concept (out of ${count} total).
+SSELFIE Studio celebrates authentic selfie content. Consider including selfie concepts when they naturally fit the user's request or when creating diverse, relatable content.
 
-SELFIE = Same quality/luxury/styling as professional concepts, but with:
+**WHEN TO INCLUDE SELFIES:**
+- User explicitly requests selfies ("selfie", "front camera", "mirror selfie")
+- Creating wellness/fitness content (post-workout selfies, gym mirror selfies)
+- Fashion/outfit showcase (mirror selfies, fitting room selfies)
+- Beauty/self-care content (skincare routine, makeup application)
+- Lifestyle content that benefits from intimate, first-person perspective
+- When variety would benefit from mixing professional shots with authentic selfie moments
+
+**WHEN TO SKIP SELFIES:**
+- User requests professional/editorial style only
+- Brand scenes or product-focused concepts
+- Carousel/cohesive story concepts where selfies don't fit
+- User explicitly prefers professional photography aesthetic
+
+**SELFIE FORMAT (when creating selfie concepts):**
+
+Same quality/luxury/styling as professional concepts, but with:
 - iPhone front camera (not DSLR)
 - Selfie framing (arm extended, mirror reflection, or tripod setup)
 - Authentic influencer aesthetic
 - Natural bokeh and iPhone camera characteristics
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-SELFIE TYPE EXAMPLES (Use these formats):
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+**SELFIE TYPES:**
 
-TYPE 1: HANDHELD SELFIE (Most common - 50%)
-Camera: "ultra-realistic iPhone 15 Pro front camera selfie"
-Pose: "arm extended holding phone at slight angle"
-Framing: "close-up to medium shot, face and upper body"
-Style: "natural bokeh, influencer selfie style, front-facing camera aesthetic"
+1. HANDHELD SELFIE: "ultra-realistic iPhone 15 Pro front camera selfie, arm extended holding phone, close-up to medium shot, natural bokeh, influencer selfie style"
 
-Example: "Ultra-realistic iPhone 15 Pro front camera selfie of influencer in Alo Yoga set, arm extended holding phone showing post-workout glow, sitting on yoga mat, bright studio with natural window lighting creating soft bokeh, authentic influencer selfie style"
+2. MIRROR SELFIE: "ultra-realistic iPhone 15 Pro mirror selfie reflection, standing before mirror holding phone at chest level, full body reflection, mirror visible in frame, authentic selfie aesthetic"
 
-TYPE 2: MIRROR SELFIE (Popular - 30%)
-Camera: "ultra-realistic iPhone 15 Pro mirror selfie reflection"
-Pose: "standing in front of mirror holding phone at chest level"
-Framing: "full body or three-quarter reflection"
-Style: "mirror visible in frame, authentic selfie aesthetic"
+3. ELEVATED SELFIE: "ultra-realistic iPhone 15 Pro elevated selfie setup, phone on tripod with ring light, face to upper body, professional influencer content quality"
 
-Example: "Ultra-realistic iPhone 15 Pro mirror selfie reflection of influencer in Toteme blazer and tailored pants, standing before boutique fitting room mirror, full body reflection showing complete outfit, marble floors visible, polished yet authentic mirror selfie"
+**SELFIE RULES:**
+✅ Maintain same outfit quality and setting quality
+✅ Use "iPhone 15 Pro front camera selfie" or "iPhone 15 Pro mirror selfie"
+✅ Add selfie-specific details (arm extended, holding phone, mirror visible)
+❌ Don't use DSLR or professional camera specs for selfies
+❌ Don't lower quality/luxury for selfie concepts
 
-TYPE 3: ELEVATED SELFIE (Polished - 20%)
-Camera: "ultra-realistic iPhone 15 Pro elevated selfie setup"
-Pose: "phone on tripod with ring light, professional setup"
-Framing: "face to upper body, slightly elevated angle"
-Style: "ring light illumination, professional influencer content quality"
-
-Example: "Ultra-realistic iPhone 15 Pro elevated selfie setup of influencer in silk robe, phone on tripod with ring light providing soft illumination, face and upper body framing, luxury bathroom with marble surfaces, professional influencer content aesthetic"
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-CRITICAL SELFIE RULES:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-✅ DO:
-- Maintain SAME outfit quality (designer brands, luxury pieces)
-- Maintain SAME setting quality (luxury hotel, designer boutique, elegant home)
-- Use "iPhone 15 Pro front camera selfie" OR "iPhone 15 Pro mirror selfie"
-- Include "influencer" maintaining physical characteristics
-- Add selfie-specific details (arm extended, holding phone, mirror visible)
-- Make prompts 200-300 words (same length as professional concepts)
-- Use natural, authentic language
-
-❌ DON'T:
-- Use "DSLR" or "professional camera" in selfie concepts
-- Use "professional photography" language for selfies
-- Lower the quality/luxury for selfie concepts
-- Make selfie prompts shorter than other prompts
-- Forget the iPhone camera specification
-- Use technical camera specs (85mm f/1.4, etc.) for selfies
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-CATEGORY-SPECIFIC SELFIE GUIDANCE:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-WELLNESS: Handheld selfies showing post-workout glow, gym mirror selfies
-FASHION: Mirror selfies showcasing outfit, boutique fitting room selfies
-LUXURY: Elevated selfies with ring light, luxury hotel bathroom mirror selfies
-HOLIDAY: Handheld selfies with festive elements, cozy morning selfies
-LIFESTYLE: Coffee shop handheld selfies, morning routine mirror selfies
-BEAUTY: Skincare routine mirror selfies, makeup application elevated selfies
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-REMEMBER: SSELFIE Studio is built for selfie content! Selfies are not
-an afterthought - they're central to the brand positioning. Every generation
-should celebrate the power of the selfie for visibility and economic freedom.
+**Trust your judgment** - include selfies when they enhance the concept mix, but focus on what best serves the user's request.
 - This should be a pure lifestyle/brand photo with no text
 - Only include text overlays if workflowType is explicitly "carousel-slides", "reel-cover", or "text-overlay" (which it is not in this case)
 - The prompt should end after camera specs and natural skin texture - no text overlay section

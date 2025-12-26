@@ -430,6 +430,18 @@ Create 6 diverse, creative concepts. Each concept must be:
 - Specific to their request (e.g., if they said "Christmas", use holiday outfits, festive settings, cozy holiday moments - NOT generic street style)
 - Use your fashion expertise to determine the most appropriate category for each concept
 
+**SELFIE CONCEPTS (When Appropriate):**
+SSELFIE Studio celebrates authentic selfie content. Consider including selfie concepts when they naturally fit the user's request:
+- If user requests selfies, create selfie concepts with iPhone front camera framing
+- For wellness/fitness: post-workout selfies, gym mirror selfies
+- For fashion: mirror selfies showcasing outfits, fitting room selfies
+- For beauty: skincare routine mirror selfies, makeup application selfies
+- For lifestyle: coffee shop selfies, morning routine mirror selfies
+- Mix professional shots with authentic selfie moments for variety when appropriate
+- If user prefers professional/editorial only, focus on DSLR/editorial concepts
+
+When creating selfie concepts, describe them naturally: "iPhone front camera selfie", "mirror selfie reflection", "handheld selfie", etc. Maintain same quality and luxury as professional concepts.
+
 
 **🔴 CRITICAL: DESCRIPTION REQUIREMENTS**
 Your "description" field MUST include:
