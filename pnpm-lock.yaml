@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@ai-sdk/anthropic':
-        specifier: 2.0.47
-        version: 2.0.47(zod@3.25.76)
+        specifier: latest
+        version: 3.0.1(zod@3.25.76)
       '@ai-sdk/openai':
         specifier: latest
         version: 2.0.77(zod@3.25.76)
@@ -303,8 +303,8 @@ importers:
 
 packages:
 
-  '@ai-sdk/anthropic@2.0.47':
-    resolution: {integrity: sha512-YioBDTTQ6z2fijcOByG6Gj7me0ITqaJACprHROis7fXFzYIBzyAwxhsCnOrXO+oXv+9Ixddgy/Cahdmu84uRvQ==}
+  '@ai-sdk/anthropic@3.0.1':
+    resolution: {integrity: sha512-MOiwKs76ilEmau/WRMnGWlheTUoB+cbvXCse+SAtpW5ATLreInsuYlspLABn12Dxu3w1Xzke1dT+tmEnxhy9SA==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -4179,10 +4179,10 @@ packages:
 
 snapshots:
 
-  '@ai-sdk/anthropic@2.0.47(zod@3.25.76)':
+  '@ai-sdk/anthropic@3.0.1(zod@3.25.76)':
     dependencies:
-      '@ai-sdk/provider': 2.0.0
-      '@ai-sdk/provider-utils': 3.0.17(zod@3.25.76)
+      '@ai-sdk/provider': 3.0.0
+      '@ai-sdk/provider-utils': 4.0.1(zod@3.25.76)
       zod: 3.25.76
 
   '@ai-sdk/gateway@2.0.18(zod@3.25.76)':
@@ -5903,7 +5903,7 @@ snapshots:
 
   '@reduxjs/toolkit@2.11.0(react-redux@9.2.0(@types/react@19.0.0)(react@19.2.0)(redux@5.0.1))(react@19.2.0)':
     dependencies:
-      '@standard-schema/spec': 1.0.0
+      '@standard-schema/spec': 1.1.0
       '@standard-schema/utils': 0.3.0
       immer: 11.0.1
       redux: 5.0.1
