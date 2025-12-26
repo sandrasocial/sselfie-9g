@@ -888,6 +888,41 @@ export default function AdminAgentChatNew({
               break // Found valid preview, stop searching
             }
           }
+          
+          // Check for create_email_sequence tool
+          if (invocation.toolName === 'create_email_sequence' && invocation.result) {
+            const result = invocation.result
+            // Sequence tool returns an array of emails - show the last successful one
+            if (result.emails && Array.isArray(result.emails) && result.emails.length > 0) {
+              // Find the last successful email (most recent in sequence)
+              const lastSuccessfulEmail = [...result.emails].reverse().find((e: any) => e.readyToSend && e.html && e.subjectLine)
+              
+              if (lastSuccessfulEmail) {
+                const emailPreviewData = extractEmailPreview(lastSuccessfulEmail, 'create_email_sequence')
+                
+                if (emailPreviewData) {
+                  // Add sequence metadata
+                  emailPreviewData.sequenceName = result.sequenceName
+                  emailPreviewData.sequenceEmails = result.emails
+                  emailPreviewData.isSequence = true
+                  emailPreviewData.sequenceIndex = result.emails.indexOf(lastSuccessfulEmail)
+                  emailPreviewData.sequenceTotal = result.emails.length
+                  
+                  console.log('[v0] ✅ Email sequence preview found in toolInvocations', {
+                    sequenceName: result.sequenceName,
+                    totalEmails: result.emails.length,
+                    showingEmail: emailPreviewData.sequenceIndex + 1,
+                    htmlLength: emailPreviewData.html.length,
+                    subjectLine: emailPreviewData.subject
+                  })
+                  
+                  latestEmailPreview = emailPreviewData
+                  foundValidEmailPreview = true
+                  break // Found valid preview, stop searching
+                }
+              }
+            }
+          }
         
           // Check for audience data tool
           if (invocation.toolName === 'get_resend_audience_data' && invocation.result) {
@@ -962,6 +997,52 @@ export default function AdminAgentChatNew({
               latestEmailPreview = emailPreviewData
               foundValidEmailPreview = true
               break // Found valid preview, stop searching
+            }
+          }
+          
+          // Check for create_email_sequence tool result
+          if (partAny.type === 'tool-result' && partAny.toolName === 'create_email_sequence' && partAny.result) {
+            let result = partAny.result
+            
+            // Handle stringified JSON
+            if (typeof result === 'string') {
+              try {
+                result = JSON.parse(result)
+              } catch (e) {
+                console.warn('[v0] ⚠️ Could not parse sequence result as JSON:', e)
+                continue
+              }
+            }
+            
+            // Sequence tool returns an array of emails - show the last successful one
+            if (result.emails && Array.isArray(result.emails) && result.emails.length > 0) {
+              // Find the last successful email (most recent in sequence)
+              const lastSuccessfulEmail = [...result.emails].reverse().find((e: any) => e.readyToSend && e.html && e.subjectLine)
+              
+              if (lastSuccessfulEmail) {
+                const emailPreviewData = extractEmailPreview(lastSuccessfulEmail, 'create_email_sequence')
+                
+                if (emailPreviewData) {
+                  // Add sequence metadata
+                  emailPreviewData.sequenceName = result.sequenceName
+                  emailPreviewData.sequenceEmails = result.emails
+                  emailPreviewData.isSequence = true
+                  emailPreviewData.sequenceIndex = result.emails.indexOf(lastSuccessfulEmail)
+                  emailPreviewData.sequenceTotal = result.emails.length
+                  
+                  console.log('[v0] ✅ Email sequence preview found in parts', {
+                    sequenceName: result.sequenceName,
+                    totalEmails: result.emails.length,
+                    showingEmail: emailPreviewData.sequenceIndex + 1,
+                    htmlLength: emailPreviewData.html.length,
+                    subjectLine: emailPreviewData.subject
+                  })
+                  
+                  latestEmailPreview = emailPreviewData
+                  foundValidEmailPreview = true
+                  break // Found valid preview, stop searching
+                }
+              }
             }
           }
           
@@ -1284,22 +1365,25 @@ export default function AdminAgentChatNew({
     
     // Send message using useChat
     // sendMessage accepts { text: string } or message object with parts
-    // CRITICAL: Pass chatId explicitly in the message to ensure it's sent correctly
-    // The useChat body parameter might be stale, so we pass it explicitly
+    // CRITICAL: Pass chatId explicitly in the options body to ensure it's sent correctly
+    // The useChat body parameter might be stale, so we override it per-call
     try {
       if (typeof messageContent === 'string') {
-        // Use sendMessage with explicit body override to ensure correct chatId
-        await sendMessage({ 
-          text: messageContent,
-          data: { chatId: currentChatId } // Explicitly pass chatId to override stale body
-        } as any)
+        // Use sendMessage with explicit body override in options (second parameter)
+        // This overrides the stale body from useChat hook
+        await sendMessage(
+          { text: messageContent },
+          { body: { chatId: currentChatId } } // Pass chatId in options.body to override stale useChat body
+        )
       } else {
         // For multi-part messages, sendMessage expects a message object
-        await sendMessage({ 
-          role: 'user',
-          content: messageContent as any,
-          data: { chatId: currentChatId } // Explicitly pass chatId to override stale body
-        } as any)
+        await sendMessage(
+          { 
+            role: 'user',
+            content: messageContent as any
+          },
+          { body: { chatId: currentChatId } } // Pass chatId in options.body to override stale useChat body
+        )
       }
     } catch (error: any) {
       toast({
@@ -1595,6 +1679,7 @@ export default function AdminAgentChatNew({
                 <div className="min-w-0">
                   <p className="text-xs sm:text-sm font-medium text-stone-900 truncate">
                     {toolLoading === 'compose_email' && 'Creating your email...'}
+                    {toolLoading === 'create_email_sequence' && 'Creating email sequence...'}
                     {toolLoading === 'schedule_campaign' && 'Scheduling campaign...'}
                     {toolLoading === 'check_campaign_status' && 'Checking campaign status...'}
                     {toolLoading === 'get_resend_audience_data' && 'Fetching audience data...'}
@@ -1673,6 +1758,11 @@ export default function AdminAgentChatNew({
                 htmlContent={emailPreview.html}
                 targetSegment={emailPreview.targetSegment}
                 targetCount={emailPreview.targetCount}
+                isSequence={emailPreview.isSequence || false}
+                sequenceName={emailPreview.sequenceName}
+                sequenceEmails={emailPreview.sequenceEmails}
+                sequenceIndex={emailPreview.sequenceIndex}
+                sequenceTotal={emailPreview.sequenceTotal}
                 onEdit={async () => {
                   // Don't clear preview - keep it visible so Alex can see the current version
                   // Pass the FULL email HTML to Alex so he can edit it properly
@@ -1694,6 +1784,28 @@ Please make the edits I request using the compose_email tool.`
                   
                   await sendMessage({ 
                     text: editPrompt
+                  })
+                }}
+                onManualEdit={async (editedHtml: string) => {
+                  // When user manually edits HTML, send it to Alex with explicit instructions
+                  // to use it as previousVersion for further refinements
+                  const manualEditPrompt = `I've manually edited the email HTML. Please use this edited version as the previousVersion and apply any additional refinements I request.
+
+Here's the manually edited email HTML to use as previousVersion:
+${editedHtml}
+
+Current subject: ${emailPreview.subject}
+
+Please acknowledge you've received the edited HTML and are ready to make further refinements if needed.`
+                  
+                  // Update the email preview with the edited HTML
+                  setEmailPreview({
+                    ...emailPreview,
+                    html: editedHtml
+                  })
+                  
+                  await sendMessage({ 
+                    text: manualEditPrompt
                   })
                 }}
                 onApprove={async () => {

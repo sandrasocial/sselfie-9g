@@ -1,11 +1,14 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
 import { Resend } from "resend"
-import { addOrUpdateResendContact } from "@/lib/resend/manage-contact"
+import { addOrUpdateResendContact, addContactToSegment } from "@/lib/resend/manage-contact"
 import { cookies } from "next/headers"
 
 const resend = new Resend(process.env.RESEND_API_KEY!)
 const sql = neon(process.env.DATABASE_URL!)
+
+// Free Prompt Guide segment ID (hardcoded for reliability)
+const FREE_PROMPT_GUIDE_SEGMENT_ID = "b25764ce-1f17-4869-9859-546cf9729355"
 
 export async function POST(request: NextRequest) {
   try {
@@ -66,11 +69,28 @@ export async function POST(request: NextRequest) {
       // Add to Resend contact list if tag provided
       if (emailListTag && process.env.RESEND_API_KEY) {
         try {
-          await addOrUpdateResendContact({
-            email,
-            name,
-            tags: [emailListTag, "prompt-guide-subscriber"],
+          const firstName = name.split(" ")[0] || name
+          const result = await addOrUpdateResendContact(email, firstName, {
+            source: "prompt-guide-subscriber",
+            status: "lead",
+            product: emailListTag,
+            journey: "nurture",
           })
+
+          // If contact was added successfully, add to the Free Prompt Guide segment
+          if (result.success) {
+            try {
+              const segmentResult = await addContactToSegment(email, FREE_PROMPT_GUIDE_SEGMENT_ID)
+              if (segmentResult.success) {
+                console.log(`[PromptGuide] ✅ Added ${email} to Free Prompt Guide segment (${FREE_PROMPT_GUIDE_SEGMENT_ID})`)
+              } else {
+                console.warn(`[PromptGuide] ⚠️ Failed to add ${email} to segment: ${segmentResult.error}`)
+              }
+            } catch (segmentError) {
+              console.error("[PromptGuide] Error adding to segment:", segmentError)
+              // Don't fail the request if segment addition fails
+            }
+          }
         } catch (error) {
           console.error("[PromptGuide] Error adding to Resend:", error)
           // Don't fail the request if Resend fails

@@ -14,6 +14,12 @@ interface EmailPreviewCardProps {
   onApprove: () => void
   onSchedule: () => void
   onSendTest?: (testEmail?: string) => Promise<void> // Optional test email handler
+  onManualEdit?: (editedHtml: string) => Promise<void> // Optional manual HTML edit handler
+  isSequence?: boolean // Whether this is part of an email sequence
+  sequenceName?: string // Name of the sequence
+  sequenceEmails?: Array<any> // All emails in the sequence
+  sequenceIndex?: number // Index of this email in the sequence (0-based)
+  sequenceTotal?: number // Total number of emails in sequence
 }
 
 export default function EmailPreviewCard({
@@ -26,12 +32,26 @@ export default function EmailPreviewCard({
   onEdit,
   onApprove,
   onSchedule,
-  onSendTest
+  onSendTest,
+  onManualEdit,
+  isSequence = false,
+  sequenceName,
+  sequenceEmails,
+  sequenceIndex,
+  sequenceTotal
 }: EmailPreviewCardProps) {
   const [showFullEmail, setShowFullEmail] = useState(false)
   const [showHTMLCode, setShowHTMLCode] = useState(false)
+  const [showManualEditor, setShowManualEditor] = useState(false)
+  const [editedHtml, setEditedHtml] = useState(htmlContent)
+  const [isSaving, setIsSaving] = useState(false)
   const [testEmail, setTestEmail] = useState("")
   const [sendingTest, setSendingTest] = useState(false)
+  
+  // Update editedHtml when htmlContent changes
+  useEffect(() => {
+    setEditedHtml(htmlContent)
+  }, [htmlContent])
 
   // Extract image URLs from HTML for preview
   const extractImageUrls = (html: string): string[] => {
@@ -253,8 +273,20 @@ export default function EmailPreviewCard({
       <div className="bg-stone-50 border-b border-stone-200 px-4 sm:px-6 py-3 sm:py-4">
         <div className="flex items-center gap-2 mb-2">
           <Mail className="w-4 h-4 sm:w-5 sm:h-5 text-stone-700" />
-          <h3 className="text-sm sm:text-base font-semibold text-stone-900">✨ EMAIL PREVIEW ✨</h3>
+          <h3 className="text-sm sm:text-base font-semibold text-stone-900">
+            {isSequence ? '📧 EMAIL SEQUENCE PREVIEW' : '✨ EMAIL PREVIEW ✨'}
+          </h3>
         </div>
+        {isSequence && sequenceName && (
+          <div className="mb-2 text-xs text-stone-600">
+            <span className="font-medium">Sequence:</span> {sequenceName}
+            {sequenceTotal !== undefined && sequenceIndex !== undefined && (
+              <span className="ml-2">
+                (Email {sequenceIndex + 1} of {sequenceTotal})
+              </span>
+            )}
+          </div>
+        )}
         <div className="text-xs sm:text-sm text-stone-600 space-y-1">
           <div className="wrap-break-word"><span className="font-medium">From:</span> Sandra @ SSELFIE Studio</div>
           <div className="wrap-break-word"><span className="font-medium">To:</span> {targetSegment} ({targetCount.toLocaleString()} contacts)</div>
@@ -337,12 +369,73 @@ export default function EmailPreviewCard({
         {/* HTML Code View */}
         {showHTMLCode && (
           <div className="mb-4 border border-stone-200 rounded-lg overflow-hidden">
-            <div className="bg-stone-50 border-b border-stone-200 px-3 sm:px-4 py-2">
+            <div className="bg-stone-50 border-b border-stone-200 px-3 sm:px-4 py-2 flex items-center justify-between">
               <h4 className="text-xs uppercase tracking-wider text-stone-600">HTML Code</h4>
+              {onManualEdit && (
+                <button
+                  onClick={() => {
+                    setShowManualEditor(true)
+                    setShowHTMLCode(false)
+                  }}
+                  className="text-xs text-stone-700 hover:text-stone-900 px-2 py-1 rounded hover:bg-stone-200 transition-colors"
+                >
+                  Edit HTML
+                </button>
+              )}
             </div>
             <pre className="p-2 sm:p-4 bg-stone-900 text-stone-100 text-xs overflow-x-auto max-h-64 sm:max-h-96 overflow-y-auto">
               <code>{htmlContent}</code>
             </pre>
+          </div>
+        )}
+
+        {/* Manual HTML Editor */}
+        {showManualEditor && onManualEdit && (
+          <div className="mb-4 border-2 border-stone-400 rounded-lg overflow-hidden">
+            <div className="bg-stone-100 border-b border-stone-300 px-3 sm:px-4 py-2 flex items-center justify-between">
+              <h4 className="text-xs uppercase tracking-wider text-stone-700 font-medium">Manual HTML Editor</h4>
+              <div className="flex gap-2">
+                <button
+                  onClick={async () => {
+                    setIsSaving(true)
+                    try {
+                      await onManualEdit(editedHtml)
+                      setShowManualEditor(false)
+                    } catch (error) {
+                      console.error('Error saving edited HTML:', error)
+                      alert('Failed to save edited HTML. Please try again.')
+                    } finally {
+                      setIsSaving(false)
+                    }
+                  }}
+                  disabled={isSaving}
+                  className="text-xs bg-stone-900 text-white px-3 py-1.5 rounded hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSaving ? 'Saving...' : 'Save Changes'}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowManualEditor(false)
+                    setEditedHtml(htmlContent) // Reset to original
+                  }}
+                  className="text-xs bg-stone-200 text-stone-700 px-3 py-1.5 rounded hover:bg-stone-300 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+            <textarea
+              value={editedHtml}
+              onChange={(e) => setEditedHtml(e.target.value)}
+              className="w-full p-3 sm:p-4 bg-stone-900 text-stone-100 text-xs font-mono min-h-[400px] sm:min-h-[500px] focus:outline-none focus:ring-2 focus:ring-stone-400"
+              spellCheck={false}
+              placeholder="Edit HTML here..."
+            />
+            <div className="bg-stone-50 border-t border-stone-300 px-3 sm:px-4 py-2">
+              <p className="text-xs text-stone-600">
+                💡 Tip: After saving, ask Alex to use this edited version as the previousVersion for further refinements.
+              </p>
+            </div>
           </div>
         )}
 

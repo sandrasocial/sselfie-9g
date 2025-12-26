@@ -141,11 +141,13 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json()
-    const { messages, chatId, data } = body
+    const { messages, chatId } = body
     
-    // CRITICAL: Extract chatId from data object if provided (for explicit chatId passing)
-    // This ensures chatId is always captured correctly even if useChat body is stale
-    const explicitChatId = data?.chatId || chatId
+    // CRITICAL: Extract chatId from body.chatId (which can be overridden per-call via sendMessage options)
+    // The useChat hook sets body: { chatId } initially, but sendMessage can override it with options.body
+    // When sendMessage is called with { body: { chatId: currentChatId } }, it merges/replaces the chatId
+    // So we check body.chatId directly - it will be the most recent value from sendMessage options
+    const explicitChatId = chatId
 
     if (!messages) {
       console.error("[v0] Messages is null or undefined")
@@ -228,21 +230,17 @@ export async function POST(req: Request) {
       "messages (filtered from",
       messages.length,
       "), body.chatId:",
-      chatId,
-      "data?.chatId:",
-      data?.chatId,
-      "explicitChatId:",
-      explicitChatId
+      chatId
     )
 
-    // Get or create chat - ALWAYS prioritize explicit chatId (from data object) over body chatId
+    // Get or create chat - Use chatId from request body
+    // The chatId in body.chatId is set by useChat hook initially, but can be overridden
+    // per-call via sendMessage options: sendMessage(message, { body: { chatId: currentChatId } })
     // This ensures we use the correct chatId even if useChat body is stale
     let activeChatId = explicitChatId
     
     console.log('[v0] 🔍 Chat ID resolution:', {
       bodyChatId: chatId,
-      dataChatId: data?.chatId,
-      explicitChatId: explicitChatId,
       finalActiveChatId: activeChatId
     })
     // Use explicit null/undefined check to handle chatId === 0 correctly
@@ -654,7 +652,6 @@ export async function POST(req: Request) {
           console.log("[v0] 💾 Saved user message to chat:", {
             chatId: activeChatId,
             messageLength: contentToSave.length,
-            explicitChatId: explicitChatId,
             bodyChatId: chatId
           })
         }
@@ -793,9 +790,19 @@ export async function POST(req: Request) {
           emailType,
           hasPreviousVersion: !!previousVersion,
           previousVersionLength: previousVersion?.length || 0,
+          previousVersionPreview: previousVersion ? `${previousVersion.substring(0, 100)}...` : null,
+          previousVersionStartsWithHtml: previousVersion?.trim().startsWith('<!DOCTYPE') || previousVersion?.trim().startsWith('<html'),
           hasImageUrls: !!(imageUrls && imageUrls.length > 0),
           imageCount: imageUrls?.length || 0
         })
+        
+        // Log warning if previousVersion is provided but doesn't look like HTML
+        if (previousVersion && !previousVersion.trim().startsWith('<!DOCTYPE') && !previousVersion.trim().startsWith('<html')) {
+          console.warn('[v0] ⚠️ WARNING: previousVersion provided but does not start with <!DOCTYPE or <html. This might not be valid HTML:', {
+            preview: previousVersion.substring(0, 200),
+            length: previousVersion.length
+          })
+        }
         
         try {
           // 1. Get email templates for this type
@@ -1250,6 +1257,429 @@ Now refine this email based on Sandra's request.` : 'Create a compelling email.'
             error: error.message || "Failed to schedule campaign",
             campaignId: null,
             broadcastId: null,
+          }
+        }
+      }
+    } as any)
+
+    // Helper function to generate a single email (extracted from compose_email for reuse)
+    const generateEmailContent = async ({
+      intent,
+      emailType,
+      subjectLine,
+      keyPoints,
+      tone = 'warm',
+      previousVersion,
+      imageUrls,
+      campaignName
+    }: {
+      intent: string
+      emailType: string
+      subjectLine?: string
+      keyPoints?: string[]
+      tone?: string
+      previousVersion?: string
+      imageUrls?: string[]
+      campaignName?: string
+    }): Promise<{ html: string; subjectLine: string; preview: string; readyToSend: boolean }> => {
+      try {
+        // 1. Get email templates for this type
+        const templates = await sql`
+          SELECT body_html, subject_line 
+          FROM email_template_library 
+          WHERE category = ${emailType} AND is_active = true
+          LIMIT 1
+        `
+        
+        // 2. Get campaign context for link generation (if available)
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://sselfie.ai'
+        
+        // Generate campaign slug from campaign name (if provided)
+        const campaignSlug = campaignName
+          ? campaignName
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, '-')
+              .replace(/^-+|-+$/g, '')
+          : 'email-campaign'
+        
+        // 3. Use Claude to generate/refine email content
+        const systemPrompt = `You are Sandra's email marketing assistant for SSELFIE Studio.
+    
+    Brand Voice: ${tone}, empowering, personal
+    
+    Context: 
+    - SSELFIE Studio helps women entrepreneurs create professional photos with AI
+    - Core message: Visibility = Financial Freedom
+    - Audience: Women entrepreneurs, solopreneurs, coaches
+    
+    ${previousVersion ? `CRITICAL: You are REFINING an existing email. The previous version HTML is provided below. You MUST make the changes Sandra requested while preserving the overall structure and brand styling. Do NOT return the exact same HTML - you must actually modify it based on her request.
+
+Previous Email HTML:
+${previousVersion.substring(0, 5000)}${previousVersion.length > 5000 ? '\n\n[... HTML truncated for length ...]' : ''}
+
+Now refine this email based on Sandra's request.` : 'Create a compelling email.'}
+    
+    ${templates[0]?.body_html ? `Template reference: ${templates[0].body_html.substring(0, 500)}` : 'Create from scratch'}
+    
+    ${imageUrls && imageUrls.length > 0 ? `IMPORTANT: Include these images in the email HTML:
+    ${imageUrls.map((url, idx) => `${idx + 1}. ${url}`).join('\n    ')}
+    
+    Use proper <img> tags with inline styles:
+    - width: 100% (or max-width: 600px for container)
+    - height: auto
+    - display: block
+    - style="width: 100%; height: auto; display: block;"
+    - Include alt text describing the image
+    - Place images naturally in the email flow (hero image at top, supporting images in content)
+    - Use table-based layout for email compatibility` : ''}
+    
+    **CRITICAL: Product Links & Tracking**
+    
+    When including links in the email, you MUST use the correct product URLs with proper tracking:
+    
+    **Product Checkout Links (use campaign slug: "${campaignSlug}"):**
+    - Studio Membership: ${siteUrl}/studio?checkout=studio_membership&utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=cta_button&campaign_id={campaign_id}
+    - One-Time Session: ${siteUrl}/studio?checkout=one_time&utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=cta_button&campaign_id={campaign_id}
+    
+    **Landing Pages (use campaign slug: "${campaignSlug}"):**
+    - Why Studio: ${siteUrl}/why-studio?utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=text_link&campaign_id={campaign_id}
+    - Homepage: ${siteUrl}/?utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=text_link&campaign_id={campaign_id}
+    
+    **Link Tracking Requirements:**
+    1. ALL links must include UTM parameters: utm_source=email, utm_medium=email, utm_campaign=${campaignSlug}, utm_content={link_type}
+    2. Use campaign_id={campaign_id} as placeholder (will be replaced with actual ID when campaign is scheduled)
+    3. Use the campaign slug "${campaignSlug}" for all utm_campaign parameters
+    4. Use appropriate utm_content values: cta_button (primary CTA), text_link (body links), footer_link (footer), image_link (image links)
+    
+    **Link Examples (use these exact formats with campaign slug "${campaignSlug}"):**
+    - Primary CTA: <a href="${siteUrl}/studio?checkout=studio_membership&utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=cta_button&campaign_id={campaign_id}" style="display: inline-block; background-color: #1c1917; color: #fafaf9; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 500;">Join SSELFIE Studio</a>
+    - Secondary link: <a href="${siteUrl}/why-studio?utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=text_link&campaign_id={campaign_id}" style="color: #1c1917; text-decoration: underline;">Learn more</a>
+    
+    **When to Use Which Link:**
+    - Primary CTA → Use checkout links (checkout=studio_membership or checkout=one_time)
+    - Educational/nurturing content → Use landing pages (/why-studio, /)
+    - Always include full tracking parameters for conversion attribution
+    
+    **CRITICAL OUTPUT FORMAT:**
+    - Return ONLY raw HTML code (no markdown code blocks, no triple backticks with html, no explanations)
+    - Start directly with <!DOCTYPE html> or <html>
+    - Do NOT wrap the HTML in markdown code blocks
+    - Do NOT include triple backticks or markdown code block syntax anywhere in your response
+    - Return pure HTML that can be directly used in email clients
+    
+    **MANDATORY: Use Table-Based Layout**
+    - Email clients require table-based layouts for compatibility
+    - Use: <table role="presentation" style="width: 100%; border-collapse: collapse;">
+    - Structure with <tr> and <td> elements
+    - Max-width: 600px for main container
+    - Center using: <td align="center" style="padding: 20px;">
+    
+    **SSELFIE Brand Styling (MUST FOLLOW):**
+    - Colors: #1c1917 (dark), #0c0a09 (black), #fafaf9 (light), #57534e (gray), #78716c (muted)
+    - Logo: Times New Roman/Georgia, 32px, weight 200, letter-spacing 0.3em, uppercase, color #fafaf9 on dark or #1c1917 on light
+    - Body font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif
+    - Headings: Times New Roman/Georgia, 28px, weight 200-300, letter-spacing 0.2em, uppercase
+    - Body text: 15-16px, line-height 1.6-1.7, color #292524 or #44403c
+    - Buttons: background #1c1917, color #fafaf9, padding 14px 32px, border-radius 8px, uppercase, letter-spacing 0.1em
+    - Background: #fafaf9 for body, #ffffff for email container, #f5f5f4 for footer
+    - Use inline styles ONLY (no <style> tags in body)
+    
+    Include unsubscribe link: {{{RESEND_UNSUBSCRIBE_URL}}}`
+          
+        // Build user prompt - if previousVersion exists, make it clear this is an edit
+        const userPrompt = previousVersion 
+          ? `${intent}\n\n${keyPoints && keyPoints.length > 0 ? `Key points: ${keyPoints.join(', ')}\n\n` : ''}${imageUrls && imageUrls.length > 0 ? `\nImages to include:\n${imageUrls.map((url, idx) => `- Image ${idx + 1}: ${url}`).join('\n')}\n\n` : ''}\n\nIMPORTANT: The previous email HTML was provided in the system prompt above. Make the specific changes requested in the intent while keeping the same structure and styling.`
+          : `${intent}\n\n${keyPoints && keyPoints.length > 0 ? `Key points: ${keyPoints.join(', ')}\n\n` : ''}${imageUrls && imageUrls.length > 0 ? `\nImages to include:\n${imageUrls.map((url, idx) => `- Image ${idx + 1}: ${url}`).join('\n')}\n\n` : ''}`
+        
+        // Generate email HTML with timeout protection
+        let emailHtmlRaw: string
+        let timeoutId: NodeJS.Timeout | null = null
+        try {
+          // Create a timeout promise that can be cancelled
+          const timeoutPromise = new Promise<never>((_, reject) => {
+            timeoutId = setTimeout(() => {
+              reject(new Error('Email generation timed out after 30 seconds'))
+            }, 30000)
+          })
+          
+          // Race between generateText and timeout
+          const result = await Promise.race([
+            generateText({
+              model: "anthropic/claude-sonnet-4-20250514",
+              system: systemPrompt,
+              prompt: userPrompt,
+              maxOutputTokens: 2000,
+            }),
+            timeoutPromise
+          ])
+          
+          // Clear timeout regardless of which promise won (success or failure)
+          if (timeoutId) {
+            clearTimeout(timeoutId)
+            timeoutId = null
+          }
+          
+          emailHtmlRaw = result.text
+        } catch (genError: any) {
+          // Clear timeout on error to prevent unhandled promise rejection
+          if (timeoutId) {
+            clearTimeout(timeoutId)
+            timeoutId = null
+          }
+          console.error("[v0] ❌ Email generation failed:", genError)
+          throw new Error(`Failed to generate email content: ${genError.message || 'Unknown error'}`)
+        }
+        
+        // Validate that we got HTML content
+        if (!emailHtmlRaw || typeof emailHtmlRaw !== 'string') {
+          throw new Error('Email generation returned invalid content')
+        }
+        
+        // Clean up the HTML response - remove markdown code blocks if present
+        let emailHtml = emailHtmlRaw.trim()
+        
+        // Validate HTML structure
+        if (!emailHtml || emailHtml.length < 50) {
+          throw new Error('Generated email HTML is too short or empty')
+        }
+        
+        // Remove markdown code blocks (```html ... ``` or ``` ... ```)
+        emailHtml = emailHtml.replace(/^```html\s*/i, '')
+        emailHtml = emailHtml.replace(/^```\s*/, '')
+        emailHtml = emailHtml.replace(/\s*```$/g, '')
+        emailHtml = emailHtml.trim()
+        
+        // Ensure images are properly included if imageUrls were provided
+        if (imageUrls && imageUrls.length > 0) {
+          // Check if images are already in the HTML
+          const missingImages = imageUrls.filter(url => !emailHtml.includes(url))
+          
+          // If some images are missing, add them at the top as hero images
+          if (missingImages.length > 0) {
+            console.log(`[v0] Adding ${missingImages.length} missing images to email HTML`)
+            
+            // Create simple image HTML for missing images (email-compatible table structure)
+            const imageRows = missingImages.map((url, idx) => {
+              return `
+          <tr>
+            <td style="padding: ${idx === 0 ? '0' : '10px'} 0;">
+              <img src="${url}" alt="Email image ${idx + 1}" style="width: 100%; max-width: 600px; height: auto; display: block;" />
+            </td>
+          </tr>`
+            }).join('\n')
+            
+            // Try to insert images into the first table after <body>
+            const bodyMatch = emailHtml.match(/<body[^>]*>([\s\S]*?)<\/body>/i)
+            if (bodyMatch) {
+              const bodyContent = bodyMatch[1]
+              // Find the first main table within bodyContent
+              const mainTableMatch = bodyContent.match(/(<table[^>]*role=["']presentation["'][^>]*>)/i)
+              if (mainTableMatch) {
+                // Calculate correct positions:
+                // - bodyMatch.index: position of <body> tag in emailHtml
+                // - bodyMatch[0].indexOf('>') + 1: position after <body> tag (start of bodyContent)
+                // - mainTableMatch.index: position of table tag within bodyContent
+                // - mainTableMatch[0].length: length of table opening tag
+                const bodyTagEndPos = bodyMatch.index! + bodyMatch[0].indexOf('>') + 1
+                const tablePosInEmailHtml = bodyTagEndPos + mainTableMatch.index!
+                const tableTagEndPos = tablePosInEmailHtml + mainTableMatch[0].length
+                
+                // Insert images right after the opening table tag
+                emailHtml = emailHtml.substring(0, tableTagEndPos) + 
+                  imageRows + 
+                  emailHtml.substring(tableTagEndPos)
+              } else {
+                // No table found, prepend images wrapped in a table
+                const imageTable = `
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+          ${imageRows}
+        </table>`
+                emailHtml = emailHtml.replace(/<body[^>]*>/i, (match) => match + imageTable)
+              }
+            } else {
+              // No body tag found, prepend images at the very start
+              const imageTable = `
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+          ${imageRows}
+        </table>`
+              emailHtml = imageTable + emailHtml
+            }
+          }
+        }
+        
+        // Generate subject line if not provided
+        const finalSubjectLine = subjectLine || await generateSubjectLine(intent, emailType)
+        
+        // Generate preview text (strip HTML for preview)
+        const previewText = stripHtml(emailHtml).substring(0, 200)
+        
+        return {
+          html: emailHtml,
+          subjectLine: finalSubjectLine,
+          preview: previewText,
+          readyToSend: true
+        }
+      } catch (error: any) {
+        console.error("[v0] ❌ Error generating email content:", error)
+        throw error
+      }
+    }
+
+    // Now update compose_email to use the helper function
+    // (We'll keep the existing compose_email tool but refactor it to use generateEmailContent)
+    // Actually, let's keep compose_email as-is for now and create the sequence tool
+
+    const createEmailSequenceTool = tool({
+      description: `Create multiple emails in a sequence (e.g., nurture sequence, welcome series). 
+  
+  Use this when Sandra wants to create a series of related emails that will be sent over time (e.g., Day 1, Day 3, Day 7 nurture sequence).
+  
+  This tool creates all emails in the sequence at once, so Sandra can review and edit each one before scheduling.
+  
+  Examples:
+  - "Create a 3-email nurture sequence for new freebie signups: Day 1 welcome, Day 3 value, Day 7 upsell"
+  - "Create a welcome sequence: Day 1 intro, Day 3 tips, Day 7 offer"
+  - "Create a 5-email onboarding sequence for new Studio members"`,
+      
+      parameters: z.object({
+        sequenceName: z.string().describe("Name for this email sequence (e.g., 'New Freebie Nurture Sequence')"),
+        emails: z.array(z.object({
+          day: z.number().optional().describe("Day number in sequence (e.g., 1, 3, 7) - optional but helpful for tracking"),
+          intent: z.string().describe("What this specific email should accomplish"),
+          emailType: z.enum([
+            'welcome',
+            'newsletter', 
+            'promotional',
+            'announcement',
+            'nurture',
+            'reengagement'
+          ]).describe("Type of email"),
+          subjectLine: z.string().optional().describe("Subject line (generate if not provided)"),
+          keyPoints: z.array(z.string()).optional().describe("Main points to include in this email"),
+          tone: z.enum(['warm', 'professional', 'excited', 'urgent']).optional().describe("Tone for this email (defaults to warm)"),
+          imageUrls: z.array(z.string()).optional().describe("Array of image URLs to include in this email"),
+        })).min(1).max(10).describe("Array of email configurations for the sequence"),
+        campaignName: z.string().optional().describe("Campaign name for generating tracked links (will be used for all emails in sequence)"),
+        overallTone: z.enum(['warm', 'professional', 'excited', 'urgent']).optional().describe("Overall tone for the sequence (individual emails can override)"),
+      }),
+      
+      execute: async ({ sequenceName, emails, campaignName, overallTone = 'warm' }: {
+        sequenceName: string
+        emails: Array<{
+          day?: number
+          intent: string
+          emailType: string
+          subjectLine?: string
+          keyPoints?: string[]
+          tone?: string
+          imageUrls?: string[]
+        }>
+        campaignName?: string
+        overallTone?: string
+      }) => {
+        console.log('[v0] 📧 create_email_sequence called:', {
+          sequenceName,
+          emailCount: emails.length,
+          campaignName,
+          overallTone
+        })
+        
+        try {
+          const results: Array<{
+            day?: number
+            html: string
+            subjectLine: string
+            preview: string
+            readyToSend: boolean
+            intent: string
+            emailType: string
+            error?: string
+          }> = []
+          
+          // Generate each email in the sequence
+          for (let i = 0; i < emails.length; i++) {
+            const emailConfig = emails[i]
+            console.log(`[v0] 📧 Generating email ${i + 1}/${emails.length} for sequence "${sequenceName}"...`, {
+              day: emailConfig.day,
+              intent: emailConfig.intent.substring(0, 100),
+              emailType: emailConfig.emailType
+            })
+            
+            try {
+              // Use the helper function to generate email content
+              const emailResult = await generateEmailContent({
+                intent: emailConfig.intent,
+                emailType: emailConfig.emailType,
+                subjectLine: emailConfig.subjectLine,
+                keyPoints: emailConfig.keyPoints,
+                tone: emailConfig.tone || overallTone,
+                imageUrls: emailConfig.imageUrls,
+                campaignName: campaignName || sequenceName
+              })
+              
+              results.push({
+                day: emailConfig.day,
+                html: emailResult.html,
+                subjectLine: emailResult.subjectLine,
+                preview: emailResult.preview,
+                readyToSend: emailResult.readyToSend,
+                intent: emailConfig.intent,
+                emailType: emailConfig.emailType
+              })
+              
+              console.log(`[v0] ✅ Generated email ${i + 1}/${emails.length}:`, {
+                day: emailConfig.day,
+                subjectLine: emailResult.subjectLine,
+                htmlLength: emailResult.html.length
+              })
+            } catch (emailError: any) {
+              console.error(`[v0] ❌ Error generating email ${i + 1}/${emails.length}:`, emailError)
+              results.push({
+                day: emailConfig.day,
+                html: "",
+                subjectLine: emailConfig.subjectLine || "Email Subject",
+                preview: "",
+                readyToSend: false,
+                intent: emailConfig.intent,
+                emailType: emailConfig.emailType,
+                error: emailError.message || "Failed to generate email"
+              })
+            }
+          }
+          
+          // Check if all emails were generated successfully
+          const successCount = results.filter(r => r.readyToSend).length
+          const failureCount = results.filter(r => !r.readyToSend).length
+          
+          console.log('[v0] 📧 Sequence generation complete:', {
+            sequenceName,
+            total: emails.length,
+            success: successCount,
+            failed: failureCount
+          })
+          
+          return {
+            sequenceName,
+            emails: results,
+            totalEmails: emails.length,
+            successCount,
+            failureCount,
+            allSuccessful: failureCount === 0,
+            message: failureCount === 0
+              ? `Successfully created ${successCount} emails for sequence "${sequenceName}"`
+              : `Created ${successCount} emails successfully, ${failureCount} failed for sequence "${sequenceName}"`
+          }
+        } catch (error: any) {
+          console.error("[v0] ❌ Error in create_email_sequence tool:", error)
+          return {
+            sequenceName,
+            emails: [],
+            totalEmails: emails.length,
+            successCount: 0,
+            failureCount: emails.length,
+            allSuccessful: false,
+            error: error.message || "Failed to create email sequence",
+            message: `Failed to create email sequence: ${error.message || 'Unknown error'}`
           }
         }
       }
@@ -3406,22 +3836,25 @@ Want me to start with the reengagement campaign?"
 ### Email Creation Workflow:
 1. When Sandra asks about her audience or wants strategy advice, use **get_resend_audience_data** first
 2. Then use **analyze_email_strategy** to create intelligent recommendations based on live data
-3. When Sandra wants to create an email, use **compose_email** tool
-4. **After compose_email returns:** Simply tell Sandra the email is ready and show a brief preview text (first 200 chars). The email preview UI will appear automatically - you don't need to include any special markers or JSON in your response.
-5. Say something like: "Here's your email: [first 200 chars of preview text]... Want me to adjust anything?"
+3. When Sandra wants to create a single email, use **compose_email** tool
+4. When Sandra wants to create multiple emails in a sequence (e.g., "Create a 3-email nurture sequence"), use **create_email_sequence** tool. This creates all emails at once so Sandra can review and edit each one.
+5. **After compose_email or create_email_sequence returns:** Simply tell Sandra the email(s) are ready and show a brief preview text (first 200 chars). The email preview UI will appear automatically - you don't need to include any special markers or JSON in your response.
+6. For sequences, say something like: "I've created your 3-email nurture sequence! Here's the Day 1 email: [preview text]... Want me to adjust any of the emails?"
+7. For single emails, say something like: "Here's your email: [first 200 chars of preview text]... Want me to adjust anything?"
 6. **CRITICAL - When Editing Emails:** If Sandra requests changes to an existing email, you MUST:
    - **YOU MUST ACTUALLY CALL THE compose_email TOOL** - Do NOT just describe what you would change. You MUST execute the tool.
-   - **HOW TO GET THE PREVIOUS EMAIL HTML:**
-     - Option 1 (PREFERRED): Extract the HTML from your PREVIOUS compose_email tool result (the html field from the tool result). Look in the conversation history for the most recent compose_email tool result.
-     - Option 2: If Sandra's message includes "Current email HTML to use as previousVersion:" followed by HTML, extract ALL the HTML from that section (it may be very long, extract it all)
-     - Option 3: If Sandra's message contains HTML that starts with <!DOCTYPE html or <html, extract that entire HTML block (from <!DOCTYPE or <html to </html>)
-     - **IMPORTANT:** The HTML might be very long. Extract the ENTIRE HTML block, not just a portion. Look for the complete HTML document.
-   - Call **compose_email** again with the **previousVersion** parameter set to the extracted HTML
-   - Include the specific changes Sandra requested in the intent parameter
+   - **HOW TO GET THE PREVIOUS EMAIL HTML (IN ORDER OF PRIORITY):**
+     - **Option 1 (HIGHEST PRIORITY):** If Sandra's message says "Current email HTML to use as previousVersion:" or "Here's the manually edited email HTML to use as previousVersion:", extract ALL the HTML that follows. This HTML might be thousands of characters long - extract EVERYTHING from the start of the HTML (<!DOCTYPE or <html) to the end (</html>).
+     - **Option 2:** Look in the conversation history for messages containing the text "PREVIOUS compose_email TOOL RESULT" (in square brackets). Extract the HTML between "HTML:" and "END OF PREVIOUS EMAIL HTML" markers (also in square brackets). This is the complete HTML from your previous compose_email call.
+     - **Option 3:** If Sandra's message contains HTML that starts with <!DOCTYPE html or <html, extract that entire HTML block (from <!DOCTYPE or <html to </html>). Make sure you get the COMPLETE HTML document.
+     - **CRITICAL:** The HTML might be 5000-10000+ characters long. You MUST extract the ENTIRE HTML block, not just a portion. The HTML should start with <!DOCTYPE html> or <html and end with </html>. If it doesn't, you didn't extract it correctly.
+   - Call **compose_email** again with the **previousVersion** parameter set to the extracted HTML (the complete HTML document)
+   - Include the specific changes Sandra requested in the intent parameter (e.g., "Make the email warmer", "Add more storytelling about the bathroom studio")
    - **NEVER claim to have edited the email without actually calling compose_email with previousVersion**
-   - **VERIFICATION:** After calling compose_email, you will see a tool result. If you don't see a tool result, the tool was not executed and you must try again.
+   - **VERIFICATION:** After calling compose_email, you will see a tool result with html and subjectLine fields. If you don't see a tool result, the tool was not executed and you must try again.
    - **IF YOU DON'T CALL THE TOOL, THE EMAIL WILL NOT BE UPDATED AND SANDRA WILL SEE NO EMAIL CARD**
-   - **IF THE PAGE REFRESHED:** Look in the conversation history for the most recent compose_email tool result, or extract HTML from Sandra's message if she included it.
+   - **IF THE PAGE REFRESHED:** Look in the conversation history for the most recent compose_email tool result (marked with [PREVIOUS compose_email TOOL RESULT]), or extract HTML from Sandra's message if she included it.
+   - **IF YOU CAN'T FIND THE HTML:** Ask Sandra to click "Edit" on the email preview card, which will send you the HTML again.
 7. When she approves, ask: "Who should receive this?" and "When should I send it?"
 8. Then use **schedule_campaign** to handle everything
 
@@ -3980,6 +4413,7 @@ This tool provides critical business intelligence to make data-driven decisions.
     // All email tools are properly defined and enabled
     const tools = {
       compose_email: composeEmailTool,
+      create_email_sequence: createEmailSequenceTool,
       schedule_campaign: scheduleCampaignTool,
       check_campaign_status: checkCampaignStatusTool,
       get_resend_audience_data: getResendAudienceDataTool,
@@ -4048,7 +4482,16 @@ This tool provides critical business intelligence to make data-driven decisions.
 Subject: ${subjectLine}
 HTML:
 ${emailHtml}
-[END OF PREVIOUS EMAIL HTML]`
+[END OF PREVIOUS EMAIL HTML]
+
+IMPORTANT: The HTML above is the complete email HTML. When editing, extract ALL of it (from HTML: to [END OF PREVIOUS EMAIL HTML]) and use it as the previousVersion parameter in compose_email.`
+            
+            console.log('[v0] 📧 Formatted previous email for Alex:', {
+              subjectLine,
+              htmlLength: emailHtml.length,
+              htmlStartsWith: emailHtml.substring(0, 50),
+              formattedResultLength: formattedResult.length
+            })
             
             content.push({
               type: 'text',
@@ -4317,7 +4760,7 @@ ${emailHtml}
                         console.log('[v0] ✅ Tool executed:', currentToolCall.name)
                         console.log('[v0] 📊 Tool result:', JSON.stringify(result, null, 2).substring(0, 500))
 
-                        // Capture email preview if it's compose_email
+                        // Capture email preview if it's compose_email or create_email_sequence
                         if (currentToolCall.name === 'compose_email') {
                           console.log('[v0] 📧 compose_email tool executed:', {
                             hasResult: !!result,
@@ -4341,6 +4784,38 @@ ${emailHtml}
                             console.warn('[v0] ⚠️ compose_email tool executed but result missing html or subjectLine:', {
                               result: result
                             })
+                          }
+                        } else if (currentToolCall.name === 'create_email_sequence') {
+                          console.log('[v0] 📧 create_email_sequence tool executed:', {
+                            hasResult: !!result,
+                            sequenceName: result?.sequenceName,
+                            emailCount: result?.emails?.length,
+                            successCount: result?.successCount,
+                            failureCount: result?.failureCount
+                          })
+                          
+                          // For sequences, capture the LAST successfully generated email for preview
+                          // (User can edit individual emails later)
+                          if (result?.emails && Array.isArray(result.emails) && result.emails.length > 0) {
+                            // Find the last successful email
+                            const lastSuccessfulEmail = [...result.emails].reverse().find((e: any) => e.readyToSend && e.html && e.subjectLine)
+                            
+                            if (lastSuccessfulEmail) {
+                              emailPreviewData = {
+                                html: lastSuccessfulEmail.html,
+                                subjectLine: lastSuccessfulEmail.subjectLine,
+                                preview: lastSuccessfulEmail.preview || stripHtml(lastSuccessfulEmail.html).substring(0, 200) + '...',
+                                sequenceName: result.sequenceName,
+                                sequenceEmails: result.emails, // Store all emails for sequence management
+                                isSequence: true
+                              }
+                              console.log('[v0] ✅ Email sequence preview data captured (showing last email):', {
+                                sequenceName: result.sequenceName,
+                                totalEmails: result.emails.length,
+                                htmlLength: emailPreviewData.html.length,
+                                subject: emailPreviewData.subjectLine
+                              })
+                            }
                           }
                         }
 
@@ -4470,7 +4945,6 @@ ${emailHtml}
                 messageLength: accumulatedText.length,
                 hasEmailPreview: !!emailPreviewData,
                 emailPreviewSaved: !!emailPreviewData,
-                explicitChatId: explicitChatId,
                 bodyChatId: chatId
               })
             } catch (error) {
