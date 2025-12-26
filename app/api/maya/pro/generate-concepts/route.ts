@@ -522,6 +522,27 @@ Return ONLY a valid JSON array of 6 concepts:
 
 The "prompt" field must be a COMPLETE, STRUCTURED PROMPT ready for Nano Banana Pro. Generate this directly - do not generate a description that needs transformation.
 
+**DIVERSITY & VARIETY:**
+- Create naturally diverse concepts with varied settings, poses, and moments
+- Avoid repetitive scenarios (no "sitting on couch with mug" in multiple concepts)
+- Mix indoor/outdoor, static/active, cozy/energetic, casual/sophisticated
+- Include variety in:
+  * Settings: home, outdoor, urban, nature, work, social venues
+  * Poses: sitting, standing, walking, working, active, relaxed, social
+  * Moments: daily life, work, travel, wellness, social, creative pursuits
+  * Props: naturally varied (not just mugs/books/phones)
+  * Times: morning, afternoon, evening, golden hour, blue hour
+- Draw from your 2026 luxury influencer knowledge for current, fresh scenarios
+- Trust your creativity - no templates or forced patterns
+
+**AVOID REPETITION:**
+- ❌ Don't create multiple "sitting on sofa" concepts
+- ❌ Don't default to "holding mug/teacup" repeatedly  
+- ❌ Don't use "reading book" in multiple concepts
+- ✅ Create fresh, unique moments for each concept
+- ✅ Show variety in activities and settings
+- ✅ Make each concept feel distinct
+
 **PROMPT FORMAT (Pro Mode - Editorial Quality):**
 
 For concepts 0-2 (Editorial - first 3 concepts):

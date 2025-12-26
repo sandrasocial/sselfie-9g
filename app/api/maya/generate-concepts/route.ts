@@ -2392,6 +2392,27 @@ DO NOT add "with visible pores" at the end - use "natural skin texture with visi
 - Direct, natural language only
 - NO text overlays (this is a regular concept card)
 
+**DIVERSITY & VARIETY:**
+- Create naturally diverse concepts with varied settings, poses, and moments
+- Avoid repetitive scenarios (no "sitting on couch with mug" in multiple concepts)
+- Mix indoor/outdoor, static/active, cozy/energetic, casual/sophisticated
+- Include variety in:
+  * Settings: home, outdoor, urban, nature, work, social venues
+  * Poses: sitting, standing, walking, working, active, relaxed, social
+  * Moments: daily life, work, travel, wellness, social, creative pursuits
+  * Props: naturally varied (not just mugs/books/phones)
+  * Times: morning, afternoon, evening, golden hour, blue hour
+- Draw from your 2026 luxury influencer knowledge for current, fresh scenarios
+- Trust your creativity - no templates or forced patterns
+
+**AVOID REPETITION:**
+- ❌ Don't create multiple "sitting on sofa" concepts
+- ❌ Don't default to "holding mug/teacup" repeatedly  
+- ❌ Don't use "reading book" in multiple concepts
+- ✅ Create fresh, unique moments for each concept
+- ✅ Show variety in activities and settings
+- ✅ Make each concept feel distinct
+
 **EXAMPLE PROMPT:**
 "${triggerWord}, ${userEthnicity ? userEthnicity + " " : ""}${userGender} in cream cashmere sweater and vintage denim, sitting cross-legged on ivory sofa holding ceramic mug, gazing at twinkling Christmas tree, soft morning light from floor-to-ceiling windows, warm fireplace glow, shot on iPhone 15 Pro portrait mode, candid photo, natural skin texture with pores visible, film grain, muted colors"
 
