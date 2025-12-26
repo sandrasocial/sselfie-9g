@@ -16,8 +16,7 @@
  */
 
 import { getUserContextForMaya } from './get-user-context'
-import type { PromptContext } from './prompt-templates/types'
-import { detectCategoryAndBrand, getBrandTemplate } from './prompt-templates/high-end-brands'
+import { detectCategoryAndBrand } from './prompt-templates/high-end-brands'
 
 /**
  * Studio Pro Mode Types
@@ -401,15 +400,6 @@ export async function buildNanoBananaPrompt(params: {
     ...(preferencesInput || {}),
   }
 
-  // Preferred high-end brand templates for each known brand id
-  const BRAND_DEFAULT_TEMPLATE_IDS: Record<string, string> = {
-    ALO: 'alo_yoga_lifestyle',
-    LULULEMON: 'lululemon_lifestyle',
-    GLOSSIER: 'glossier_clean_girl',
-    CHANEL: 'chanel_editorial',
-    DIOR: 'dior_romantic',
-    FREE_PEOPLE: 'free_people_bohemian',
-  }
 
   // Convert inputImages into NanoBananaInputImages format
   // If type is not specified, assume it's a user photo (selfie) for backward compatibility
@@ -587,56 +577,38 @@ export async function buildNanoBananaPrompt(params: {
       break
     
     case 'brand-scene': {
-      // Try to detect a specific high-end brand and use its template
+      // Detect brand for context (guidance only, not replacement)
       const brandIntent = detectCategoryAndBrand(userRequest)
-      let usedBrandTemplate = false
+      let brandContext: { name?: string; aesthetic?: any; visuals?: any } | null = null
 
       if (brandIntent.confidence >= 0.7 && brandIntent.suggestedBrands.length > 0) {
-        const detectedBrand = brandIntent.suggestedBrands[0] as { id: string; name: string }
-        const templateId = BRAND_DEFAULT_TEMPLATE_IDS[detectedBrand.id]
-        const template = templateId ? getBrandTemplate(templateId) : null
-
-        if (template) {
-          const context: PromptContext = {
-            userIntent: userRequest,
-            contentType: 'lifestyle',
-            userImages: nanoInputs.baseImages.map((img, index) => ({
-              url: img.url,
-              type: img.type === 'user-photo' ? 'user_lora' : 'inspiration',
-              description:
-                img.type === 'user-photo'
-                  ? `User reference image ${index + 1}`
-                  : `Inspiration image ${index + 1}`,
-            })),
-          }
-
-          optimizedPrompt = template.promptStructure(context)
-          sceneDescription = `${detectedBrand.name} brand scene`
-          usedBrandTemplate = true
-
-          console.log('[PROMPT-BUILDER] Using high-end brand template for', {
-            brandId: detectedBrand.id,
-            templateId,
-          })
+        const detectedBrand = brandIntent.suggestedBrands[0] as { id: string; name: string; aesthetic?: any; visuals?: any }
+        brandContext = {
+          name: detectedBrand.name,
+          aesthetic: detectedBrand.aesthetic,
+          visuals: detectedBrand.visuals,
         }
+        console.log('[PROMPT-BUILDER] Detected brand for context:', {
+          brandId: detectedBrand.id,
+          brandName: detectedBrand.name,
+        })
       }
 
-      if (!usedBrandTemplate) {
-        // ============================================
-        // BRAND-SCENE MODE: Maya-generated prompts (concept cards)
-        // ============================================
-        // Concept cards use Maya's generated prompts (from concept.prompt)
-        // These prompts go through full AI transformation with brand context
-        // This is different from workbench which uses user-written prompts directly
-        optimizedPrompt = buildBrandScenePrompt({
-          userRequest, // This is Maya's generated prompt from concept generation
-          inputImages: nanoInputs,
-          brandKit,
-          preferences,
-          platformFormat: workflowMeta?.platformFormat ?? '4:5',
-        })
-        sceneDescription = `Brand scene`
-      }
+      // ============================================
+      // BRAND-SCENE MODE: Maya-generated prompts (concept cards)
+      // ============================================
+      // Concept cards use Maya's generated prompts (from concept.prompt)
+      // These prompts go through full AI transformation with brand context
+      // This is different from workbench which uses user-written prompts directly
+      optimizedPrompt = buildBrandScenePrompt({
+        userRequest, // This is Maya's generated prompt from concept generation
+        inputImages: nanoInputs,
+        brandKit,
+        preferences,
+        brandContext, // Pass brand context as guidance, not replacement
+        platformFormat: workflowMeta?.platformFormat ?? '4:5',
+      })
+      sceneDescription = brandContext ? `${brandContext.name} brand scene` : `Brand scene`
       break
     }
 
@@ -691,9 +663,10 @@ function buildBrandScenePrompt(params: {
   inputImages: NanoBananaInputImages
   brandKit?: BrandKit
   preferences?: ProPreferences
+  brandContext?: { name?: string; aesthetic?: any; visuals?: any } | null
   platformFormat?: '1:1' | '4:5' | '9:16' | '16:9'
 }): string {
-  const { userRequest, inputImages, platformFormat } = params
+  const { userRequest, inputImages, platformFormat, brandContext } = params
   
   // CRITICAL: Check if userRequest is already a detailed prompt from Maya (concept cards)
   // Maya's prompts contain specific markers like:
@@ -751,6 +724,21 @@ function buildBrandScenePrompt(params: {
     
     // Clean the prompt to remove headlines and formatting
     let cleanedPrompt = cleanStudioProPrompt(userRequest, userRequest)
+    
+    // Add brand context as guidance if detected (not replacement, just context)
+    if (brandContext?.name) {
+      const brandGuidance = []
+      brandGuidance.push(`Brand context: ${brandContext.name}`)
+      if (brandContext.aesthetic) {
+        brandGuidance.push(`Brand aesthetic: ${JSON.stringify(brandContext.aesthetic)}`)
+      }
+      if (brandContext.visuals?.commonElements) {
+        brandGuidance.push(`Brand elements to consider: ${brandContext.visuals.commonElements.join(', ')}`)
+      }
+      if (brandGuidance.length > 0) {
+        cleanedPrompt = `${cleanedPrompt}\n\nBrand guidance (for reference only, adapt to user's request): ${brandGuidance.join('. ')}`
+      }
+    }
     
     // Only add multi-image instruction if there are style references mixed with selfies
     // When all images are selfies of the user, they should ALL be used for identity preservation
@@ -840,12 +828,29 @@ function buildBrandScenePrompt(params: {
   }
   // If all are style references, no guidance needed
 
+  // Add brand context as guidance if detected (not replacement, just context)
+  let brandGuidance = ''
+  if (brandContext?.name) {
+    const guidanceParts = []
+    guidanceParts.push(`Brand: ${brandContext.name}`)
+    if (brandContext.aesthetic) {
+      guidanceParts.push(`Aesthetic: ${JSON.stringify(brandContext.aesthetic)}`)
+    }
+    if (brandContext.visuals?.commonElements) {
+      guidanceParts.push(`Consider: ${brandContext.visuals.commonElements.join(', ')}`)
+    }
+    if (brandContext.visuals?.avoid) {
+      guidanceParts.push(`Avoid: ${brandContext.visuals.avoid.join(', ')}`)
+    }
+    brandGuidance = `\n\nBrand context (for reference, adapt to user's request): ${guidanceParts.join('. ')}`
+  }
+
   return `
 Create a natural lifestyle brand scene for social media (${platformFormat || '4:5'}).
 Scene: ${scene}. Mood: ${mood}. Lighting: ${lighting}.
 
 ${productLine}
-${multiImageNote}
+${multiImageNote}${brandGuidance}
 
 Composition requirements:
 - The person is the primary subject.
@@ -854,8 +859,8 @@ Composition requirements:
 - iPhone-like authenticity: candid framing, slight imperfection, not over-polished.
 
 Avoid:
-- “AI keywords” like masterpiece/8K.
-- Overly commercial “ad” look.
+- "AI keywords" like masterpiece/8K.
+- Overly commercial "ad" look.
 `.trim()
 }
 
