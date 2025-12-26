@@ -1,4 +1,4 @@
-import { tool } from "ai"
+import { tool, createDataStreamResponse, streamText } from "ai"
 import { z } from "zod"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
@@ -3276,33 +3276,10 @@ This tool provides critical business intelligence to make data-driven decisions.
       content: Array.isArray(msg.content) ? msg.content : msg.content || '',
     }))
 
-    // Create SSE stream that calls Anthropic API directly
-    const stream = new ReadableStream({
-      async start(controller) {
-        const encoder = new TextEncoder()
-        let isClosed = false
-
-        const safeEnqueue = (data: string) => {
-          if (!isClosed) {
-            try {
-              controller.enqueue(encoder.encode(data))
-            } catch (e) {
-              isClosed = true
-            }
-          }
-        }
-
-        const safeClose = () => {
-          if (!isClosed) {
-            try {
-              controller.close()
-              isClosed = true
-            } catch (e) {
-              // Ignore
-            }
-          }
-        }
-
+    // Use AI SDK's data stream response for proper formatting
+    // while manually calling Anthropic API to avoid schema bugs
+    return createDataStreamResponse({
+      execute: async (dataStream) => {
         try {
           let messages = anthropicMessages
           let iteration = 0
@@ -3311,7 +3288,7 @@ This tool provides critical business intelligence to make data-driven decisions.
           while (iteration < MAX_ITERATIONS) {
             iteration++
 
-            // Call Anthropic API
+            // Call Anthropic API directly
             const response = await fetch('https://api.anthropic.com/v1/messages', {
               method: 'POST',
               headers: {
@@ -3332,16 +3309,13 @@ This tool provides critical business intelligence to make data-driven decisions.
             if (!response.ok) {
               const error = await response.text()
               console.error('[v0] ❌ Anthropic API error:', error)
-              safeEnqueue(`data: ${JSON.stringify({ error: 'API request failed' })}\n\n`)
-              safeClose()
-              return
+              throw new Error('API request failed')
             }
 
-            // Process SSE stream
+            // Process SSE stream from Anthropic
             const reader = response.body?.getReader()
             if (!reader) {
-              safeClose()
-              return
+              throw new Error('No response body')
             }
 
             const decoder = new TextDecoder()
@@ -3367,13 +3341,12 @@ This tool provides critical business intelligence to make data-driven decisions.
                 try {
                   const event = JSON.parse(data)
 
-                  // Handle text deltas
+                  // Handle text deltas - write to data stream
                   if (event.type === 'content_block_delta' && event.delta?.type === 'text_delta') {
                     const text = event.delta.text
                     if (text) {
                       accumulatedText += text
-                      // Send text chunk to client
-                      safeEnqueue(`0:"${text.replace(/"/g, '\\"').replace(/\n/g, '\\n')}"\n`)
+                      dataStream.writeData(text)
                     }
                   }
 
@@ -3467,21 +3440,16 @@ This tool provides critical business intelligence to make data-driven decisions.
               console.error("[v0] ❌ Error saving message:", error)
             }
           }
-
-          safeClose()
         } catch (error: any) {
           console.error('[v0] ❌ Stream error:', error)
-          safeEnqueue(`data: ${JSON.stringify({ error: error.message })}\n\n`)
-          safeClose()
+          throw error
         }
       },
-    })
-
-    return new Response(stream, {
+      onError: (error) => {
+        console.error('[v0] ❌ Data stream error:', error)
+        return error.message
+      },
       headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
         'X-Chat-Id': String(activeChatId),
       },
     })
