@@ -603,14 +603,20 @@ export default function ConceptCard({
       const customSettings = parsedSettings
         ? {
             ...parsedSettings,
-            extraLoraScale: parsedSettings.realismStrength ?? 0.2,
+            // CRITICAL FIX: Use !== undefined check to preserve 0 values
+            // If user sets realismStrength to 0, it should stay 0, not become 0.2
+            extraLoraScale: parsedSettings.realismStrength !== undefined 
+              ? parsedSettings.realismStrength 
+              : 0.2,
           }
         : null
 
+      // CRITICAL FIX: User's manual settings should override concept defaults
+      // Merge order: concept defaults first, then user settings override
       const finalSettings = customSettings
         ? {
-            ...customSettings,
-            ...(concept.customSettings || {}),
+            ...(concept.customSettings || {}), // Concept defaults first
+            ...customSettings, // User's manual settings override concept defaults ✅
           }
         : concept.customSettings
 

@@ -189,7 +189,10 @@ export async function POST(request: NextRequest) {
     
     // CRITICAL FIX: Map realismStrength to extraLoraScale if provided
     // Frontend sends realismStrength, but API expects extraLoraScale
-    const manualExtraLoraScale = customSettings?.extraLoraScale ?? customSettings?.realismStrength
+    // Use !== undefined to preserve 0 values (0 is a valid setting)
+    const manualExtraLoraScale = customSettings?.extraLoraScale !== undefined
+      ? customSettings.extraLoraScale
+      : customSettings?.realismStrength
     
     // CRITICAL FIX: User's explicit generation settings should override enhancedAuthenticity toggle
     // If user has set realismStrength/extraLoraScale in their generation settings, respect it
@@ -217,6 +220,27 @@ export async function POST(request: NextRequest) {
         : (shouldDisableExtraLora ? 0 : presetSettings.extra_lora_scale),
       num_inference_steps: presetSettings.num_inference_steps,
     }
+    
+    console.log("[v0] Generation Settings Applied:", {
+      customSettingsProvided: !!customSettings,
+      customSettingsKeys: customSettings ? Object.keys(customSettings) : [],
+      aspectRatio: {
+        fromSettings: customSettings?.aspectRatio,
+        fromPreset: presetSettings.aspect_ratio,
+        final: qualitySettings.aspect_ratio,
+      },
+      guidanceScale: {
+        fromSettings: customSettings?.promptAccuracy,
+        fromPreset: presetSettings.guidance_scale,
+        final: qualitySettings.guidance_scale,
+      },
+      loraScale: {
+        fromDB: userLoraScale,
+        fromSettings: customSettings?.styleStrength,
+        fromPreset: presetSettings.lora_scale,
+        final: qualitySettings.lora_scale,
+      },
+    })
     
     console.log("[v0] LoRA Scale Priority:", {
       userLoraScaleFromDB: userLoraScale,
