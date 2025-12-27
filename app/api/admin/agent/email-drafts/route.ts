@@ -251,3 +251,45 @@ export async function DELETE(request: NextRequest) {
   }
 }
 
+// PATCH: Update draft status (approve, reject, etc.)
+export async function PATCH(request: NextRequest) {
+  try {
+    const isAdmin = await checkAdminAccess()
+    if (!isAdmin) {
+      return NextResponse.json({ error: "Admin access required" }, { status: 403 })
+    }
+
+    const body = await request.json()
+    const { draftId, status } = body
+
+    if (!draftId) {
+      return NextResponse.json({ error: "Draft ID is required" }, { status: 400 })
+    }
+
+    if (!status) {
+      return NextResponse.json({ error: "Status is required" }, { status: 400 })
+    }
+
+    const validStatuses = ['draft', 'approved', 'sent', 'archived']
+    if (!validStatuses.includes(status)) {
+      return NextResponse.json({ error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` }, { status: 400 })
+    }
+
+    const [updated] = await sql`
+      UPDATE admin_email_drafts
+      SET status = ${status}, updated_at = NOW()
+      WHERE id = ${parseInt(draftId)}
+      RETURNING *
+    `
+
+    if (!updated) {
+      return NextResponse.json({ error: "Draft not found" }, { status: 404 })
+    }
+
+    return NextResponse.json({ draft: updated, success: true })
+  } catch (error: any) {
+    console.error("[EmailDrafts] Error updating draft:", error)
+    return NextResponse.json({ error: error.message || "Failed to update draft" }, { status: 500 })
+  }
+}
+

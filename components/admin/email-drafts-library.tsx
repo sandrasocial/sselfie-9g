@@ -254,12 +254,36 @@ export function EmailDraftsLibrary({ onSelectDraft, onEditDraft }: EmailDraftsLi
             })
           }}
           onApprove={async () => {
-            // Handle approve
-            toast({
-              title: "Approved",
-              description: "Draft approved",
-            })
-            loadDrafts()
+            try {
+              const response = await fetch("/api/admin/agent/email-drafts", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                  draftId: selectedDraft.id, 
+                  status: "approved" 
+                }),
+              })
+
+              const result = await response.json()
+              
+              if (response.ok && result.success) {
+                toast({
+                  title: "Approved",
+                  description: "Email draft approved successfully",
+                })
+                setSelectedDraft(null)
+                loadDrafts()
+              } else {
+                throw new Error(result.error || "Failed to approve draft")
+              }
+            } catch (error: any) {
+              console.error("[EmailDraftsLibrary] Error approving draft:", error)
+              toast({
+                title: "Error",
+                description: error.message || "Failed to approve email draft",
+                variant: "destructive",
+              })
+            }
           }}
           onReject={async () => {
             // Handle reject
