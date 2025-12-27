@@ -1107,7 +1107,7 @@ export default function AdminAgentChatNew({
         setEmailPreview(latestEmailPreview)
         lastEmailPreviewHashRef.current = previewHash
       } else {
-        console.log('[Alex] 📧 Email preview hash unchanged, but checking if it's from a different message...')
+        console.log('[Alex] 📧 Email preview hash unchanged, but checking if it\'s from a different message...')
         // Even if hash is same, if HTML content differs, we should still update
         // This handles the case where Alex makes a small edit that doesn't change the hash
         // but we still want to show the latest version
