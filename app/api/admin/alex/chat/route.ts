@@ -3634,6 +3634,143 @@ IMPORTANT: Always use get_prompt_guides first to get the guide ID.`,
       }
     }
 
+    const getTestimonialsTool = {
+      name: "get_testimonials",
+      description: `Fetch published customer testimonials from the database.
+
+Use this when Sandra:
+- Wants to include testimonials in emails
+- Asks for social proof or user stories
+- Needs customer quotes
+- Wants to showcase results
+- Creates marketing emails
+
+Returns testimonials with:
+- Customer name and quote
+- Star rating
+- Image URLs (up to 4 per testimonial)
+- Featured status
+
+Only returns PUBLISHED testimonials (is_published = true).`,
+      
+      input_schema: {
+        type: "object",
+        properties: {
+          limit: {
+            type: "number",
+            description: "Number of testimonials to return (1-10, default: 3)"
+          },
+          featuredOnly: {
+            type: "boolean",
+            description: "Only return featured testimonials (default: false)"
+          },
+          minRating: {
+            type: "number",
+            description: "Minimum star rating (1-5, default: 4)"
+          },
+          withImages: {
+            type: "boolean",
+            description: "Only return testimonials that have images (default: false)"
+          }
+        }
+      },
+      
+      execute: async ({ 
+        limit = 3, 
+        featuredOnly = false, 
+        minRating = 4,
+        withImages = false 
+      }) => {
+        try {
+          console.log('[Alex] 📣 Fetching testimonials:', { limit, featuredOnly, minRating, withImages })
+          
+          // Build query conditions
+          let query = `
+            SELECT 
+              id,
+              customer_name,
+              testimonial_text,
+              rating,
+              screenshot_url,
+              image_url_2,
+              image_url_3,
+              image_url_4,
+              is_featured,
+              collected_at
+            FROM testimonials
+            WHERE is_published = true
+              AND rating >= ${minRating}
+          `
+          
+          if (featuredOnly) {
+            query += ` AND is_featured = true`
+          }
+          
+          if (withImages) {
+            query += ` AND screenshot_url IS NOT NULL`
+          }
+          
+          query += `
+            ORDER BY 
+              is_featured DESC,
+              rating DESC,
+              collected_at DESC
+            LIMIT ${Math.min(limit, 10)}
+          `
+          
+          const testimonials = await sql(query)
+          
+          if (testimonials.length === 0) {
+            return {
+              success: true,
+              testimonials: [],
+              count: 0,
+              message: "No testimonials found matching criteria"
+            }
+          }
+          
+          // Format testimonials for easy use
+          const formattedTestimonials = testimonials.map(t => {
+            const images = [
+              t.screenshot_url,
+              t.image_url_2,
+              t.image_url_3,
+              t.image_url_4
+            ].filter(Boolean)
+            
+            return {
+              id: t.id,
+              customerName: t.customer_name,
+              quote: t.testimonial_text,
+              rating: t.rating,
+              stars: '⭐'.repeat(t.rating),
+              images: images,
+              imageCount: images.length,
+              isFeatured: t.is_featured,
+              collectedAt: t.collected_at
+            }
+          })
+          
+          console.log('[Alex] ✅ Found', testimonials.length, 'testimonials')
+          
+          return {
+            success: true,
+            testimonials: formattedTestimonials,
+            count: testimonials.length,
+            message: `Found ${testimonials.length} testimonial${testimonials.length > 1 ? 's' : ''}`
+          }
+          
+        } catch (error: any) {
+          console.error('[Alex] ❌ Error fetching testimonials:', error)
+          return {
+            success: false,
+            error: error.message || 'Failed to fetch testimonials',
+            testimonials: []
+          }
+        }
+      }
+    }
+
     const systemPrompt = `You are Sandra's Personal Business Mentor - an 8-9 figure business coach who knows her story intimately and speaks like her trusted friend, but with the wisdom and directness of someone who's scaled multiple businesses to massive success.
 
 **SSELFIE BRAND IDENTITY (CRITICAL - Apply to ALL emails):**
@@ -4841,6 +4978,7 @@ Keep it practical and data-driven.`
       get_resend_audience_data: getResendAudienceDataTool,
       get_email_timeline: getEmailTimelineTool,
       analyze_email_strategy: analyzeEmailStrategyTool,
+      get_testimonials: getTestimonialsTool,
       read_codebase_file: readCodebaseFileTool,
       web_search: webSearchTool,
       get_revenue_metrics: getRevenueMetricsTool,
