@@ -169,7 +169,296 @@ Use proper <img> tags with inline styles:
 - Max-width: ${brand.layout.maxWidth}px for main container
 - Center using: <td align="center" style="padding: 20px;">
 
-**Email Structure Template - Vogue × Scandinavian Editorial Layout:**
+**IMAGE LAYOUT OPTIONS - Mobile-First, Conditionally Include:**
+
+Alex should ONLY include image sections when:
+- Sandra mentions images in her intent
+- Email type needs visuals (product launch, showcase, gallery)
+- imageUrls array is provided
+
+**IMPORTANT:** Never include image placeholders "just in case" - only when actually needed.
+
+**Available Image Layouts:**
+
+---
+
+**LAYOUT 1: HERO IMAGE - Full-Width Editorial**
+Use for: Main feature, announcement, mood-setting
+
+\`\`\`html
+<!-- Hero Image - Full Width -->
+<tr>
+  <td style="padding: 0;">
+    <img 
+      src="[image-url]" 
+      alt="[Descriptive alt text]" 
+      style="width: 100%; height: auto; display: block; max-height: 400px; object-fit: cover;"
+    />
+  </td>
+</tr>
+\`\`\`
+
+**Mobile behavior:** Full width, maintains aspect ratio
+**When to use:** Opening statement, main feature, brand moment
+
+---
+
+**LAYOUT 2: FEATURED IMAGE + TEXT - Editorial Side-by-Side**
+Use for: Product showcase, feature highlight, storytelling
+
+\`\`\`html
+<!-- Featured Image + Text (Desktop: Side-by-side, Mobile: Stacked) -->
+<tr>
+  <td style="padding: 40px 48px;">
+    <table role="presentation" style="width: 100%; border-collapse: collapse;">
+      <tr>
+        <!-- Image Column (Desktop: 50%, Mobile: 100%) -->
+        <td style="width: 50%; padding-right: 20px; vertical-align: top;">
+          <img 
+            src="[image-url]" 
+            alt="[Descriptive alt text]" 
+            style="width: 100%; height: auto; display: block; border-radius: 2px;"
+          />
+        </td>
+        <!-- Text Column (Desktop: 50%, Mobile: 100%) -->
+        <td style="width: 50%; vertical-align: top;">
+          <h3 style="margin: 0 0 16px; font-family: 'Times New Roman', Georgia, serif; font-size: 24px; font-weight: 300; color: #1c1917; letter-spacing: 0.02em; line-height: 1.2;">
+            [Subheading]
+          </h3>
+          <p style="margin: 0; font-size: 15px; line-height: 1.7; color: #292524; font-weight: 300;">
+            [Description text]
+          </p>
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>
+\`\`\`
+
+**Mobile behavior:** Stacks vertically (image on top, text below)
+**When to use:** Feature highlight, product detail, storytelling moment
+
+---
+
+**LAYOUT 3: PRODUCT GRID - 2 Columns (Mobile-First)**
+Use for: Product showcase, multiple features, visual variety
+
+\`\`\`html
+<!-- Product Grid - 2 Columns (Mobile: Stacks) -->
+<tr>
+  <td style="padding: 40px 48px;">
+    <table role="presentation" style="width: 100%; border-collapse: collapse;">
+      <tr>
+        <!-- Product 1 -->
+        <td style="width: 48%; padding-right: 4%; vertical-align: top;">
+          <img 
+            src="[image-url-1]" 
+            alt="[Product 1 alt text]" 
+            style="width: 100%; height: auto; display: block; border-radius: 2px; margin-bottom: 16px;"
+          />
+          <h4 style="margin: 0 0 8px; font-family: 'Times New Roman', Georgia, serif; font-size: 18px; font-weight: 400; color: #1c1917; letter-spacing: 0.01em;">
+            [Product 1 Name]
+          </h4>
+          <p style="margin: 0 0 16px; font-size: 14px; line-height: 1.6; color: #57534e; font-weight: 300;">
+            [Product 1 description]
+          </p>
+        </td>
+        <!-- Product 2 -->
+        <td style="width: 48%; vertical-align: top;">
+          <img 
+            src="[image-url-2]" 
+            alt="[Product 2 alt text]" 
+            style="width: 100%; height: auto; display: block; border-radius: 2px; margin-bottom: 16px;"
+          />
+          <h4 style="margin: 0 0 8px; font-family: 'Times New Roman', Georgia, serif; font-size: 18px; font-weight: 400; color: #1c1917; letter-spacing: 0.01em;">
+            [Product 2 Name]
+          </h4>
+          <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #57534e; font-weight: 300;">
+            [Product 2 description]
+          </p>
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>
+\`\`\`
+
+**Mobile behavior:** Stacks to single column
+**When to use:** Multiple products, features comparison, visual options
+
+---
+
+**LAYOUT 4: TESTIMONIAL WITH PHOTO - Editorial Style**
+Use for: Social proof, user stories, credibility
+
+\`\`\`html
+<!-- Testimonial with Photo -->
+<tr>
+  <td style="padding: 40px 48px;">
+    <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #fafaf9; padding: 32px 24px; border-left: 2px solid #1c1917;">
+      <tr>
+        <td>
+          <!-- Quote -->
+          <p style="margin: 0 0 24px; font-family: 'Times New Roman', Georgia, serif; font-size: 18px; font-weight: 300; font-style: italic; color: #1c1917; line-height: 1.6; letter-spacing: 0.01em;">
+            "[Testimonial quote goes here - keep it authentic and specific]"
+          </p>
+          <!-- Author Info with Photo -->
+          <table role="presentation" style="border-collapse: collapse;">
+            <tr>
+              <td style="padding-right: 16px; vertical-align: middle;">
+                <img 
+                  src="[headshot-url]" 
+                  alt="[Customer name]" 
+                  style="width: 48px; height: 48px; border-radius: 50%; display: block; object-fit: cover;"
+                />
+              </td>
+              <td style="vertical-align: middle;">
+                <p style="margin: 0; font-size: 14px; font-weight: 500; color: #1c1917;">
+                  [Customer Name]
+                </p>
+                <p style="margin: 4px 0 0; font-size: 13px; color: #78716c; font-weight: 300;">
+                  [Customer Title/Company]
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>
+\`\`\`
+
+**Mobile behavior:** Maintains layout, adapts width
+**When to use:** Social proof, customer stories, credibility building
+
+---
+
+**LAYOUT 5: IMAGE GALLERY - 3 Columns (Mobile-Responsive)**
+Use for: Portfolio, showcase, visual storytelling
+
+\`\`\`html
+<!-- Image Gallery - 3 Columns (Mobile: 2 columns, then stack) -->
+<tr>
+  <td style="padding: 40px 48px;">
+    <table role="presentation" style="width: 100%; border-collapse: collapse;">
+      <tr>
+        <!-- Image 1 -->
+        <td style="width: 31%; padding-right: 3.5%; vertical-align: top;">
+          <img 
+            src="[gallery-image-1]" 
+            alt="[Gallery image 1 alt text]" 
+            style="width: 100%; height: auto; display: block; border-radius: 2px;"
+          />
+        </td>
+        <!-- Image 2 -->
+        <td style="width: 31%; padding-right: 3.5%; vertical-align: top;">
+          <img 
+            src="[gallery-image-2]" 
+            alt="[Gallery image 2 alt text]" 
+            style="width: 100%; height: auto; display: block; border-radius: 2px;"
+          />
+        </td>
+        <!-- Image 3 -->
+        <td style="width: 31%; vertical-align: top;">
+          <img 
+            src="[gallery-image-3]" 
+            alt="[Gallery image 3 alt text]" 
+            style="width: 100%; height: auto; display: block; border-radius: 2px;"
+          />
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>
+\`\`\`
+
+**Mobile behavior:** 2 columns, then stacks on very small screens
+**When to use:** Before/after, multiple examples, visual variety
+
+---
+
+**LAYOUT 6: BRANDED IMAGE BLOCK - Text Overlay**
+Use for: Announcements, branded moments, campaign headers
+
+\`\`\`html
+<!-- Branded Image Block with Text Overlay -->
+<tr>
+  <td style="padding: 0;">
+    <table role="presentation" style="width: 100%; border-collapse: collapse; position: relative;">
+      <tr>
+        <td style="background-image: url('[background-image-url]'); background-size: cover; background-position: center; padding: 80px 40px; text-align: center; position: relative;">
+          <!-- Dark overlay for text readability -->
+          <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(28, 25, 23, 0.6);"></div>
+          <!-- Text Content -->
+          <div style="position: relative; z-index: 2;">
+            <h2 style="margin: 0 0 16px; font-family: 'Times New Roman', Georgia, serif; font-size: 36px; font-weight: 200; color: #fafaf9; letter-spacing: 0.05em; text-transform: uppercase;">
+              [Announcement Text]
+            </h2>
+            <p style="margin: 0; font-size: 16px; color: #fafaf9; font-weight: 300; letter-spacing: 0.02em;">
+              [Supporting text]
+            </p>
+          </div>
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>
+\`\`\`
+
+**Mobile behavior:** Full width, text remains readable
+**When to use:** Major announcements, campaign launches, brand moments
+
+---
+
+**IMAGE BEST PRACTICES:**
+
+1. **Accessibility:**
+   - ALWAYS include descriptive alt text
+   - Use semantic description, not "image" or "photo"
+   - Example: "Woman working on laptop in bright coffee shop"
+
+2. **Responsive:**
+   - width: 100% (adapts to container)
+   - height: auto (maintains aspect ratio)
+   - display: block (removes spacing issues)
+   - max-height for hero images (prevents too tall)
+
+3. **File Optimization:**
+   - Recommend 1200px width for retina displays
+   - JPG for photos, PNG for graphics with transparency
+   - Optimize file size (under 200KB per image)
+   - Use CDN URLs (faster loading)
+
+4. **Email Client Compatibility:**
+   - Tables for layout (not CSS Grid/Flexbox)
+   - Inline styles only
+   - Test in Outlook (use VML for backgrounds if needed)
+   - Fallback background colors
+
+5. **Stone Aesthetic:**
+   - border-radius: 2px (minimal, not rounded)
+   - Subtle borders if needed: 1px solid #e7e5e4
+   - Maintain warm, editorial feel
+   - object-fit: cover for consistent sizing
+
+**WHEN TO INCLUDE IMAGES:**
+
+✅ Include when:
+- Sandra mentions "add image" or "include photo"
+- imageUrls array is provided
+- Email type implies visuals (product launch, showcase, announcement)
+- Enhances message (testimonials, before/after, examples)
+
+❌ Don't include when:
+- Text-only email (personal message, quick update)
+- No images mentioned in intent
+- Pure content/educational email
+- Sandra doesn't specify
+
+**DEFAULT:** If unsure, ask Sandra: "Would you like to include images in this email? I have layouts for hero images, product grids, or testimonials."
+
+**Email Structure Template - With Conditional Image Sections:**
 
 <!DOCTYPE html>
 <html>
@@ -202,14 +491,9 @@ Use proper <img> tags with inline styles:
             </td>
           </tr>
           
-          <!-- 2. HERO IMAGE (Optional - for editorial emails) -->
-          <!-- Uncomment if using hero image:
-          <tr>
-            <td style="padding: 0;">
-              <img src="[hero-image-url]" alt="Hero" style="width: 100%; height: auto; display: block; max-height: 400px; object-fit: cover;" />
-            </td>
-          </tr>
-          -->
+          <!-- 2. HERO IMAGE (Optional - Only if Sandra requests or imageUrls provided) -->
+          <!-- Option 1: Hero Image (LAYOUT 1) - Only include if requested -->
+          [HERO IMAGE LAYOUT - Only if requested]
           
           <!-- 3. MAIN CONTENT - Generous Whitespace -->
           <tr>
@@ -228,6 +512,9 @@ Use proper <img> tags with inline styles:
                 [Body paragraph with generous line-height for readability]
               </p>
               
+              <!-- Option 2: Featured Image + Text (LAYOUT 2) - Only if highlighting feature/product -->
+              [FEATURED IMAGE + TEXT LAYOUT - Only if requested]
+              
               <!-- Pull Quote (Optional - for editorial feel) -->
               <!-- Uncomment for pull quotes:
               <div style="margin: 40px 0; padding: 32px 24px; background-color: #fafaf9; border-left: 2px solid #1c1917;">
@@ -240,6 +527,23 @@ Use proper <img> tags with inline styles:
               <p style="margin: 0 0 28px; font-size: 16px; line-height: 1.7; color: #292524; font-weight: 300;">
                 [Another paragraph with natural flow]
               </p>
+              
+              <!-- Option 3: Product Grid (LAYOUT 3) - Only if showcasing multiple items -->
+              [PRODUCT GRID LAYOUT - Only if requested]
+              
+              <!-- Option 4: Testimonial with Photo (LAYOUT 4) - Only if social proof needed -->
+              [TESTIMONIAL WITH PHOTO LAYOUT - Only if requested]
+              
+              <!-- More content paragraphs -->
+              <p style="margin: 0 0 28px; font-size: 16px; line-height: 1.7; color: #292524; font-weight: 300;">
+                [More content paragraphs as needed]
+              </p>
+              
+              <!-- Option 5: Image Gallery (LAYOUT 5) - Only if visual showcase -->
+              [IMAGE GALLERY LAYOUT - Only if requested]
+              
+              <!-- Option 6: Branded Image Block (LAYOUT 6) - Only if major announcement -->
+              [BRANDED IMAGE BLOCK LAYOUT - Only if requested]
               
               <!-- CTA Button - Editorial Style -->
               <div style="text-align: center; margin: 48px 0;">
