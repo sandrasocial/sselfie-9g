@@ -7,6 +7,7 @@ import { NextResponse } from "next/server"
 import { saveChatMessage, createNewChat, getOrCreateActiveChat, getChatMessages } from "@/lib/data/admin-agent"
 import { neon } from "@neondatabase/serverless"
 import { Resend } from "resend"
+import { buildEmailSystemPrompt } from "@/lib/admin/email-brand-guidelines"
 
 // HTML stripping function - uses regex fallback (works without html-to-text package)
 // If html-to-text package is installed later, it can be enhanced, but this works fine for now
@@ -28,7 +29,8 @@ const ADMIN_EMAIL = "ssa@ssasocial.com"
 export const maxDuration = 60
 
 // Helper: Convert Zod schema to Anthropic JSON Schema format
-// This properly sets type: "object" which AI SDK fails to do
+// This properly sets type: "object" which AI SDK may fail to do in some versions
+// TESTED: Stub converter caused tools to receive empty/missing parameters - full converter is required
 function zodToAnthropicSchema(zodSchema: z.ZodType<any>): any {
   const schema = zodSchema._def
 
@@ -751,18 +753,12 @@ export async function POST(req: Request) {
     })
 
     const composeEmailTool = tool({
-      description: `Create or refine email content using SSELFIE's brand style. Returns formatted HTML email.
+      description: `Create or refine email content in Sandra's voice.
   
-  **CRITICAL - SSELFIE Brand Requirements:**
-  - Use table-based layout (email client compatibility)
-  - SSELFIE colors: #1c1917 (dark), #0c0a09 (black), #fafaf9 (light), #57534e (gray), #78716c (muted)
-  - Logo/Headers: Times New Roman/Georgia, 32px, weight 200, letter-spacing 0.3em, uppercase
-  - Body font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif
-  - Buttons: background #1c1917, color #fafaf9, padding 14px 32px, border-radius 8px, uppercase
-  - Use inline styles ONLY (no external CSS)
-  - Return ONLY raw HTML (no markdown, no code blocks, no explanations)
+  Brand requirements: Use SSELFIE design system (table-based layout, dark theme, inline styles only).
+  For editing: Use previousVersion parameter to refine existing emails while preserving structure.
   
-  Use this when Sandra wants to:
+  Use when Sandra wants to:
   - Create a new email campaign
   - Edit/refine existing email content
   - Generate subject lines
@@ -825,88 +821,15 @@ export async function POST(req: Request) {
             : 'email-campaign'
           
           // 3. Use Claude to generate/refine email content
-          const systemPrompt = `You are Sandra's email marketing assistant for SSELFIE Studio.
-    
-    Brand Voice: ${tone}, empowering, personal
-    
-    Context: 
-    - SSELFIE Studio helps women entrepreneurs create professional photos with AI
-    - Core message: Visibility = Financial Freedom
-    - Audience: Women entrepreneurs, solopreneurs, coaches
-    
-    ${previousVersion ? `CRITICAL: You are REFINING an existing email. The previous version HTML is provided below. You MUST make the changes Sandra requested while preserving the overall structure and brand styling. Do NOT return the exact same HTML - you must actually modify it based on her request.
-
-Previous Email HTML:
-${previousVersion.substring(0, 5000)}${previousVersion.length > 5000 ? '\n\n[... HTML truncated for length ...]' : ''}
-
-Now refine this email based on Sandra's request.` : 'Create a compelling email.'}
-    
-    ${templates[0]?.body_html ? `Template reference: ${templates[0].body_html.substring(0, 500)}` : 'Create from scratch'}
-    
-    ${imageUrls && imageUrls.length > 0 ? `IMPORTANT: Include these images in the email HTML:
-    ${imageUrls.map((url, idx) => `${idx + 1}. ${url}`).join('\n    ')}
-    
-    Use proper <img> tags with inline styles:
-    - width: 100% (or max-width: 600px for container)
-    - height: auto
-    - display: block
-    - style="width: 100%; height: auto; display: block;"
-    - Include alt text describing the image
-    - Place images naturally in the email flow (hero image at top, supporting images in content)
-    - Use table-based layout for email compatibility` : ''}
-    
-    **CRITICAL: Product Links & Tracking**
-    
-    When including links in the email, you MUST use the correct product URLs with proper tracking:
-    
-    **Product Checkout Links (use campaign slug: "${campaignSlug}"):**
-    - Studio Membership: ${siteUrl}/studio?checkout=studio_membership&utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=cta_button&campaign_id={campaign_id}
-    - One-Time Session: ${siteUrl}/studio?checkout=one_time&utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=cta_button&campaign_id={campaign_id}
-    
-    **Landing Pages (use campaign slug: "${campaignSlug}"):**
-    - Why Studio: ${siteUrl}/why-studio?utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=text_link&campaign_id={campaign_id}
-    - Homepage: ${siteUrl}/?utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=text_link&campaign_id={campaign_id}
-    
-    **Link Tracking Requirements:**
-    1. ALL links must include UTM parameters: utm_source=email, utm_medium=email, utm_campaign=${campaignSlug}, utm_content={link_type}
-    2. Use campaign_id={campaign_id} as placeholder (will be replaced with actual ID when campaign is scheduled)
-    3. Use the campaign slug "${campaignSlug}" for all utm_campaign parameters
-    4. Use appropriate utm_content values: cta_button (primary CTA), text_link (body links), footer_link (footer), image_link (image links)
-    
-    **Link Examples (use these exact formats with campaign slug "${campaignSlug}"):**
-    - Primary CTA: <a href="${siteUrl}/studio?checkout=studio_membership&utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=cta_button&campaign_id={campaign_id}" style="display: inline-block; background-color: #1c1917; color: #fafaf9; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 500;">Join SSELFIE Studio</a>
-    - Secondary link: <a href="${siteUrl}/why-studio?utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=text_link&campaign_id={campaign_id}" style="color: #1c1917; text-decoration: underline;">Learn more</a>
-    
-    **When to Use Which Link:**
-    - Primary CTA → Use checkout links (checkout=studio_membership or checkout=one_time)
-    - Educational/nurturing content → Use landing pages (/why-studio, /)
-    - Always include full tracking parameters for conversion attribution
-    
-    **CRITICAL OUTPUT FORMAT:**
-    - Return ONLY raw HTML code (no markdown code blocks, no triple backticks with html, no explanations)
-    - Start directly with <!DOCTYPE html> or <html>
-    - Do NOT wrap the HTML in markdown code blocks
-    - Do NOT include triple backticks or markdown code block syntax anywhere in your response
-    - Return pure HTML that can be directly used in email clients
-    
-    **MANDATORY: Use Table-Based Layout**
-    - Email clients require table-based layouts for compatibility
-    - Use: <table role="presentation" style="width: 100%; border-collapse: collapse;">
-    - Structure with <tr> and <td> elements
-    - Max-width: 600px for main container
-    - Center using: <td align="center" style="padding: 20px;">
-    
-    **SSELFIE Brand Styling (MUST FOLLOW):**
-    - Colors: #1c1917 (dark), #0c0a09 (black), #fafaf9 (light), #57534e (gray), #78716c (muted)
-    - Logo: Times New Roman/Georgia, 32px, weight 200, letter-spacing 0.3em, uppercase, color #fafaf9 on dark or #1c1917 on light
-    - Body font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif
-    - Headings: Times New Roman/Georgia, 28px, weight 200-300, letter-spacing 0.2em, uppercase
-    - Body text: 15-16px, line-height 1.6-1.7, color #292524 or #44403c
-    - Buttons: background #1c1917, color #fafaf9, padding 14px 32px, border-radius 8px, uppercase, letter-spacing 0.1em
-    - Background: #fafaf9 for body, #ffffff for email container, #f5f5f4 for footer
-    - Use inline styles ONLY (no <style> tags in body)
-    
-    Include unsubscribe link: {{{RESEND_UNSUBSCRIBE_URL}}}`
+          // Build system prompt using shared brand guidelines
+          const systemPrompt = buildEmailSystemPrompt({
+            tone,
+            previousVersion,
+            campaignSlug,
+            siteUrl,
+            imageUrls: imageUrls || [],
+            templates: templates.length > 0 ? templates : [],
+          })
           
           // Build user prompt - if previousVersion exists, make it clear this is an edit
           const userPrompt = previousVersion 

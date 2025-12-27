@@ -101,6 +101,108 @@ const getMessageContent = (message: any): string => {
   return ""
 }
 
+// Helper function to extract email preview data from a message (similar to extractEmailPreview in useEffect)
+const getEmailPreviewFromMessage = (message: any): any | null => {
+  if (!message || message.role !== 'assistant') return null
+  
+  const extractEmailPreview = (result: any): any | null => {
+    if (!result || typeof result !== 'object' || Array.isArray(result)) return null
+    
+    const htmlValue = result.html
+    if (!htmlValue || typeof htmlValue !== 'string') return null
+    
+    const trimmedHtml = htmlValue.trim()
+    if (!trimmedHtml.startsWith('<') && !trimmedHtml.startsWith('<!DOCTYPE')) return null
+    if (!result.subjectLine || typeof result.subjectLine !== 'string') return null
+    if (result.error) return null
+    
+    return {
+      subject: result.subjectLine,
+      preview: result.preview || htmlValue.replace(/<[^>]*>/g, '').substring(0, 200) + '...',
+      html: htmlValue,
+      targetSegment: 'All Subscribers',
+      targetCount: 2746
+    }
+  }
+  
+  // Check toolInvocations first
+  const toolInvocations = (message as any).toolInvocations
+  if (toolInvocations && Array.isArray(toolInvocations)) {
+    for (const invocation of toolInvocations) {
+      if (invocation.toolName === 'compose_email' && invocation.result) {
+        const emailPreview = extractEmailPreview(invocation.result)
+        if (emailPreview) return emailPreview
+      }
+      
+      if (invocation.toolName === 'create_email_sequence' && invocation.result) {
+        const result = invocation.result
+        if (result.emails && Array.isArray(result.emails) && result.emails.length > 0) {
+          const lastSuccessfulEmail = [...result.emails].reverse().find((e: any) => e.readyToSend && e.html && e.subjectLine)
+          if (lastSuccessfulEmail) {
+            const emailPreview = extractEmailPreview(lastSuccessfulEmail)
+            if (emailPreview) {
+              emailPreview.sequenceName = result.sequenceName
+              emailPreview.sequenceEmails = result.emails
+              emailPreview.isSequence = true
+              emailPreview.sequenceIndex = result.emails.indexOf(lastSuccessfulEmail)
+              emailPreview.sequenceTotal = result.emails.length
+              return emailPreview
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  // Check parts array
+  const parts = (message as any).parts
+  if (parts && Array.isArray(parts)) {
+    for (const part of parts) {
+      const partAny = part as any
+      
+      if (partAny.type === 'tool-result' && partAny.toolName === 'compose_email' && partAny.result) {
+        let result = partAny.result
+        if (typeof result === 'string') {
+          try {
+            result = JSON.parse(result)
+          } catch (e) {
+            continue
+          }
+        }
+        const emailPreview = extractEmailPreview(result)
+        if (emailPreview) return emailPreview
+      }
+      
+      if (partAny.type === 'tool-result' && partAny.toolName === 'create_email_sequence' && partAny.result) {
+        let result = partAny.result
+        if (typeof result === 'string') {
+          try {
+            result = JSON.parse(result)
+          } catch (e) {
+            continue
+          }
+        }
+        if (result.emails && Array.isArray(result.emails) && result.emails.length > 0) {
+          const lastSuccessfulEmail = [...result.emails].reverse().find((e: any) => e.readyToSend && e.html && e.subjectLine)
+          if (lastSuccessfulEmail) {
+            const emailPreview = extractEmailPreview(lastSuccessfulEmail)
+            if (emailPreview) {
+              emailPreview.sequenceName = result.sequenceName
+              emailPreview.sequenceEmails = result.emails
+              emailPreview.isSequence = true
+              emailPreview.sequenceIndex = result.emails.indexOf(lastSuccessfulEmail)
+              emailPreview.sequenceTotal = result.emails.length
+              return emailPreview
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  return null
+}
+
 export default function AdminAgentChatNew({ 
   userId, 
   userName, 
@@ -143,6 +245,7 @@ export default function AdminAgentChatNew({
   const [showSegmentSelector, setShowSegmentSelector] = useState(false)
   const [emailPreview, setEmailPreview] = useState<any>(null)
   const [currentDraftId, setCurrentDraftId] = useState<number | null>(null) // Track current draft ID
+  const [manualEdits, setManualEdits] = useState<Record<string, string>>({}) // Track manual HTML edits per message ID
   const [recentCampaigns, setRecentCampaigns] = useState<any[]>([])
   const [availableSegments, setAvailableSegments] = useState<any[]>([])
   const [showEmailLibrary, setShowEmailLibrary] = useState(false) // Show/hide email library
@@ -1167,8 +1270,15 @@ export default function AdminAgentChatNew({
       // CRITICAL: Clear messages immediately to prevent mixing with previous chat
       setMessages([])
       
-      const response = await fetch(newChatEndpoint, {
+      // Use /chats POST endpoint for consistency (will default to "New Chat" since no firstMessage)
+      const response = await fetch(chatsEndpoint, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId,
+          mode: null
+          // No firstMessage - will default to "New Chat"
+        })
       })
 
       if (!response.ok) throw new Error("Failed to create new chat")
@@ -1312,8 +1422,18 @@ export default function AdminAgentChatNew({
             currentChatId = data.chatId
             setChatId(data.chatId)
           } else {
-          // Create new chat
-          const newChatResponse = await fetch(newChatEndpoint, { method: "POST" })
+          // Create new chat with title generated from first message
+          // Use /chats POST endpoint which generates titles from firstMessage
+          const firstMessageText = inputValue.trim()
+          const newChatResponse = await fetch(chatsEndpoint, { 
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              userId,
+              mode: null,
+              firstMessage: firstMessageText
+            })
+          })
               const newChatData = await newChatResponse.json()
                 currentChatId = newChatData.chatId
                 setChatId(newChatData.chatId)
@@ -1536,143 +1656,275 @@ export default function AdminAgentChatNew({
             ref={messagesContainerRef}
             className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6"
           >
-            {isLoadingChat ? (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-sm sm:text-base text-stone-500">Loading chat...</div>
-            </div>
-          ) : (
-            <>
-              {/* Tool Execution Loading Indicator */}
-              {executingTool && (
-                <div className="max-w-4xl mx-auto mb-3 sm:mb-4">
-                  <div className="bg-stone-50 border border-stone-200 rounded-lg p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
-                    <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-stone-900 border-t-transparent rounded-full animate-spin shrink-0"></div>
-                    <div className="min-w-0">
-                      <p className="text-xs sm:text-sm font-medium text-stone-900 truncate">
-                        {executingTool === 'compose_email' && 'Creating your email...'}
-                        {executingTool === 'schedule_campaign' && 'Scheduling campaign...'}
-                        {executingTool === 'get_resend_audience_data' && 'Fetching audience data...'}
-                        {!['compose_email', 'schedule_campaign', 'get_resend_audience_data'].includes(executingTool) && `Executing ${executingTool}...`}
-                      </p>
-                    </div>
+              {isLoadingChat ? (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-sm sm:text-base text-stone-500">Loading chat...</div>
+              </div>
+            ) : (
+              <>
+                {/* Tool Execution Loading Indicator */}
+                {executingTool && (
+                  <div className="max-w-4xl mx-auto mb-3 sm:mb-4">
+                    <div className="bg-stone-50 border border-stone-200 rounded-lg p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
+                      <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-stone-900 border-t-transparent rounded-full animate-spin shrink-0"></div>
+                      <div className="min-w-0">
+                        <p className="text-xs sm:text-sm font-medium text-stone-900 truncate">
+                          {executingTool === 'compose_email' && 'Creating your email...'}
+                          {executingTool === 'schedule_campaign' && 'Scheduling campaign...'}
+                          {executingTool === 'get_resend_audience_data' && 'Fetching audience data...'}
+                          {!['compose_email', 'schedule_campaign', 'get_resend_audience_data'].includes(executingTool) && `Executing ${executingTool}...`}
+                        </p>
+                      </div>
                   </div>
                 </div>
               )}
               
               {messages.length === 0 ? (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-center text-stone-500 px-4">
-                <p className="text-base sm:text-lg mb-2">Start a conversation</p>
-                <p className="text-xs sm:text-sm">Ask me anything about your business, strategy, or growth!</p>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-3 sm:space-y-4 max-w-4xl mx-auto">
-              {(() => {
-                console.log('[v0] 📋 Rendering messages:', {
-                  count: messages.length,
-                  messages: messages.map((m: any) => ({
-                    id: m.id,
-                    role: m.role,
-                    hasContent: !!m.content,
-                    contentType: typeof m.content,
-                    hasParts: !!m.parts,
-                    contentPreview: typeof m.content === 'string' 
-                      ? m.content.substring(0, 50) 
-                      : 'not a string'
-                  }))
-                })
-                return null
-              })()}
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
-                >
-                  <div
-                    className={`max-w-[90%] sm:max-w-[85%] rounded-xl sm:rounded-2xl px-3 sm:px-4 md:px-6 py-2.5 sm:py-3 md:py-4 ${
-                      message.role === "user"
-                        ? "bg-stone-950 text-white"
-                        : "bg-stone-100 text-stone-900"
-                    }`}
-                  >
-                    <div className="text-xs sm:text-sm leading-relaxed">
-                      {message.role === "assistant" ? (
-                        (() => {
-                          const content = getMessageContent(message)
-                          console.log('[v0] 📝 Rendering assistant message content:', {
-                            messageId: message.id,
-                            contentLength: content.length,
-                            contentPreview: content.substring(0, 100),
-                            isEmpty: !content.trim()
-                          })
-                          // Fallback to plain text if content is very short or ReactMarkdown fails
-                          if (!content.trim()) {
-                            return <div className="text-stone-500 italic">Empty message</div>
-                          }
-                          return (
-                            <div className="prose prose-sm sm:prose-base max-w-none text-stone-900 prose-headings:font-semibold prose-headings:text-stone-900 prose-p:text-stone-700 prose-p:leading-relaxed prose-ul:list-disc prose-ul:pl-4 sm:prose-ul:pl-6 prose-ol:list-decimal prose-ol:pl-4 sm:prose-ol:pl-6 prose-li:text-stone-700 prose-strong:text-stone-900 prose-strong:font-semibold prose-a:text-stone-900 prose-a:underline prose-code:text-stone-900 prose-code:bg-stone-100 prose-code:px-1 prose-code:rounded prose-pre:bg-stone-100 prose-pre:border prose-pre:border-stone-200 prose-blockquote:border-l-stone-300 prose-blockquote:text-stone-600">
-                              <ReactMarkdown
-                                components={{
-                                  p: ({ children }) => <p className="mb-3 sm:mb-4 last:mb-0 text-xs sm:text-sm">{children}</p>,
-                                  ul: ({ children }) => <ul className="mb-3 sm:mb-4 space-y-1">{children}</ul>,
-                                  ol: ({ children }) => <ol className="mb-3 sm:mb-4 space-y-1">{children}</ol>,
-                                  li: ({ children }) => <li className="ml-3 sm:ml-4 text-xs sm:text-sm">{children}</li>,
-                                  h1: ({ children }) => <h1 className="text-lg sm:text-xl md:text-2xl font-semibold mb-2 sm:mb-3 mt-4 sm:mt-6 first:mt-0">{children}</h1>,
-                                  h2: ({ children }) => <h2 className="text-base sm:text-lg md:text-xl font-semibold mb-2 mt-3 sm:mt-5 first:mt-0">{children}</h2>,
-                                  h3: ({ children }) => <h3 className="text-sm sm:text-base md:text-lg font-semibold mb-1.5 sm:mb-2 mt-3 sm:mt-4 first:mt-0">{children}</h3>,
-                                  strong: ({ children }) => <strong className="font-semibold text-stone-900">{children}</strong>,
-                                  em: ({ children }) => <em className="italic">{children}</em>,
-                                  code: ({ children }) => <code className="bg-stone-100 text-stone-900 px-1 sm:px-1.5 py-0.5 rounded text-xs sm:text-sm font-mono break-all">{children}</code>,
-                                  blockquote: ({ children }) => <blockquote className="border-l-4 border-stone-300 pl-2 sm:pl-4 italic text-stone-600 my-3 sm:my-4 text-xs sm:text-sm">{children}</blockquote>,
-                                }}
-                              >
-                                {content}
-                              </ReactMarkdown>
-                            </div>
-                          )
-                        })()
-                      ) : (
-                        (() => {
-                          const content = getMessageContent(message)
-                          console.log('[v0] 📝 Rendering user message content:', {
-                            messageId: message.id,
-                            contentLength: content.length,
-                            contentPreview: content.substring(0, 100)
-                          })
-                          return <div className="whitespace-pre-wrap">{content || '(empty)'}</div>
-                        })()
-                      )}
-                    </div>
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center text-stone-500 px-4">
+                    <p className="text-base sm:text-lg mb-2">Start a conversation</p>
+                    <p className="text-xs sm:text-sm">Ask me anything about your business, strategy, or growth!</p>
                   </div>
                 </div>
-              ))}
+              ) : (
+                <div className="space-y-3 sm:space-y-4 max-w-4xl mx-auto">
+                  {(() => {
+                    console.log('[v0] 📋 Rendering messages:', {
+                      count: messages.length,
+                      messages: messages.map((m: any) => ({
+                        id: m.id,
+                        role: m.role,
+                        hasContent: !!m.content,
+                        contentType: typeof m.content,
+                        hasParts: !!m.parts,
+                        contentPreview: typeof m.content === 'string' 
+                          ? m.content.substring(0, 50) 
+                          : 'not a string'
+                      }))
+                    })
+                    return null
+                  })()}
+                  {messages.map((message) => (
+                    <div
+                      key={message.id}
+                      className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+                    >
+                      <div
+                        className={`max-w-[90%] sm:max-w-[85%] rounded-xl sm:rounded-2xl px-3 sm:px-4 md:px-6 py-2.5 sm:py-3 md:py-4 ${
+                          message.role === "user"
+                            ? "bg-stone-950 text-white"
+                            : "bg-stone-100 text-stone-900"
+                        }`}
+                      >
+                        <div className="text-xs sm:text-sm leading-relaxed">
+                          {message.role === "assistant" ? (
+                            (() => {
+                              const content = getMessageContent(message)
+                              let messageEmailPreview = getEmailPreviewFromMessage(message)
+                              
+                              // Merge manual edits if they exist for this message
+                              if (messageEmailPreview && manualEdits[message.id]) {
+                                messageEmailPreview = {
+                                  ...messageEmailPreview,
+                                  html: manualEdits[message.id],
+                                  preview: manualEdits[message.id].replace(/<[^>]*>/g, '').substring(0, 200) + '...'
+                                }
+                              }
+                              
+                              console.log('[v0] 📝 Rendering assistant message content:', {
+                                messageId: message.id,
+                                contentLength: content.length,
+                                contentPreview: content.substring(0, 100),
+                                isEmpty: !content.trim(),
+                                hasEmailPreview: !!messageEmailPreview,
+                                hasManualEdit: !!manualEdits[message.id]
+                              })
+                              // Fallback to plain text if content is very short or ReactMarkdown fails
+                              if (!content.trim() && !messageEmailPreview) {
+                                return <div className="text-stone-500 italic">Empty message</div>
+                              }
+                              return (
+                                <>
+                                  {content.trim() && (
+                                    <div className="prose prose-sm sm:prose-base max-w-none text-stone-900 prose-headings:font-semibold prose-headings:text-stone-900 prose-p:text-stone-700 prose-p:leading-relaxed prose-ul:list-disc prose-ul:pl-4 sm:prose-ul:pl-6 prose-ol:list-decimal prose-ol:pl-4 sm:prose-ol:pl-6 prose-li:text-stone-700 prose-strong:text-stone-900 prose-strong:font-semibold prose-a:text-stone-900 prose-a:underline prose-code:text-stone-900 prose-code:bg-stone-100 prose-code:px-1 prose-code:rounded prose-pre:bg-stone-100 prose-pre:border prose-pre:border-stone-200 prose-blockquote:border-l-stone-300 prose-blockquote:text-stone-600">
+                                      <ReactMarkdown
+                                        components={{
+                                          p: ({ children }) => <p className="mb-3 sm:mb-4 last:mb-0 text-xs sm:text-sm">{children}</p>,
+                                          ul: ({ children }) => <ul className="mb-3 sm:mb-4 space-y-1">{children}</ul>,
+                                          ol: ({ children }) => <ol className="mb-3 sm:mb-4 space-y-1">{children}</ol>,
+                                          li: ({ children }) => <li className="ml-3 sm:ml-4 text-xs sm:text-sm">{children}</li>,
+                                          h1: ({ children }) => <h1 className="text-lg sm:text-xl md:text-2xl font-semibold mb-2 sm:mb-3 mt-4 sm:mt-6 first:mt-0">{children}</h1>,
+                                          h2: ({ children }) => <h2 className="text-base sm:text-lg md:text-xl font-semibold mb-2 mt-3 sm:mt-5 first:mt-0">{children}</h2>,
+                                          h3: ({ children }) => <h3 className="text-sm sm:text-base md:text-lg font-semibold mb-1.5 sm:mb-2 mt-3 sm:mt-4 first:mt-0">{children}</h3>,
+                                          strong: ({ children }) => <strong className="font-semibold text-stone-900">{children}</strong>,
+                                          em: ({ children }) => <em className="italic">{children}</em>,
+                                          code: ({ children }) => <code className="bg-stone-100 text-stone-900 px-1 sm:px-1.5 py-0.5 rounded text-xs sm:text-sm font-mono break-all">{children}</code>,
+                                          blockquote: ({ children }) => <blockquote className="border-l-4 border-stone-300 pl-2 sm:pl-4 italic text-stone-600 my-3 sm:my-4 text-xs sm:text-sm">{children}</blockquote>,
+                                        }}
+                                      >
+                                        {content}
+                                      </ReactMarkdown>
+                                    </div>
+                                  )}
+                                  {messageEmailPreview && (
+                                    <div className="mt-4">
+                                      <EmailPreviewCard
+                                        subject={messageEmailPreview.subject}
+                                        preview={messageEmailPreview.preview}
+                                        htmlContent={messageEmailPreview.html}
+                                        targetSegment={messageEmailPreview.targetSegment}
+                                        targetCount={messageEmailPreview.targetCount}
+                                        isSequence={messageEmailPreview.isSequence || false}
+                                        sequenceName={messageEmailPreview.sequenceName}
+                                        sequenceEmails={messageEmailPreview.sequenceEmails}
+                                        sequenceIndex={messageEmailPreview.sequenceIndex}
+                                        sequenceTotal={messageEmailPreview.sequenceTotal}
+                                        onEdit={async () => {
+                                          if (!messageEmailPreview) {
+                                            toast({
+                                              title: "Error",
+                                              description: "Email preview is no longer available",
+                                              variant: "destructive"
+                                            })
+                                            return
+                                          }
+                                          const editPrompt = `I want to edit this email. Please use the compose_email tool with the previousVersion parameter.
 
-              {isLoading && (
-                <div className="flex justify-start">
-                  <div className="bg-stone-100 rounded-xl sm:rounded-2xl px-4 sm:px-6 py-3 sm:py-4">
-                    <div className="flex gap-1">
-                      <div className="w-2 h-2 rounded-full bg-stone-700 animate-bounce"></div>
-                      <div
-                        className="w-2 h-2 rounded-full bg-stone-700 animate-bounce"
-                        style={{ animationDelay: "0.2s" }}
-                      ></div>
-                      <div
-                        className="w-2 h-2 rounded-full bg-stone-700 animate-bounce"
-                        style={{ animationDelay: "0.4s" }}
-                      ></div>
+CRITICAL INSTRUCTIONS:
+1. You MUST call the compose_email tool (do not just describe changes)
+2. Use the previousVersion parameter and pass the HTML below
+3. Make the specific changes I request while keeping the overall structure and style
+
+Current email HTML to use as previousVersion:
+${messageEmailPreview.html || ''}
+
+Current subject: ${messageEmailPreview.subject || ''}
+
+Please make the edits I request using the compose_email tool.`
+                                          await sendMessage({ text: editPrompt })
+                                        }}
+                                        onManualEdit={async (editedHtml: string) => {
+                                          if (!messageEmailPreview) {
+                                            toast({
+                                              title: "Error",
+                                              description: "Email preview is no longer available",
+                                              variant: "destructive"
+                                            })
+                                            return
+                                          }
+                                          // Update the manual edit state immediately for UI feedback
+                                          setManualEdits(prev => ({
+                                            ...prev,
+                                            [message.id]: editedHtml
+                                          }))
+                                          
+                                          const manualEditPrompt = `I've manually edited the email HTML. Please use this edited version as the previousVersion and apply any additional refinements I request.
+
+Here's the manually edited email HTML to use as previousVersion:
+${editedHtml}
+
+Current subject: ${messageEmailPreview.subject || ''}
+
+Please acknowledge you've received the edited HTML and are ready to make further refinements if needed.`
+                                          await sendMessage({ text: manualEditPrompt })
+                                        }}
+                                        onApprove={async () => {
+                                          await sendMessage({ text: 'Approve and send this email now' })
+                                        }}
+                                        onSchedule={async () => {
+                                          await sendMessage({ text: 'Schedule this email for later' })
+                                        }}
+                                        onSendTest={async (testEmail?: string) => {
+                                          if (!messageEmailPreview) {
+                                            toast({
+                                              title: "Error",
+                                              description: "Email preview is no longer available",
+                                              variant: "destructive"
+                                            })
+                                            return
+                                          }
+                                          // Use manually edited HTML if available, otherwise use original
+                                          const htmlToSend = manualEdits[message.id] || messageEmailPreview.html
+                                          try {
+                                            const response = await fetch('/api/admin/agent/send-test-email', {
+                                              method: 'POST',
+                                              headers: { 'Content-Type': 'application/json' },
+                                              body: JSON.stringify({
+                                                subject: messageEmailPreview.subject || '',
+                                                html: htmlToSend || '',
+                                                testEmail: testEmail
+                                              })
+                                            })
+                                            const result = await response.json()
+                                            if (result.success) {
+                                              toast({
+                                                title: "Test Email Sent!",
+                                                description: result.message || `Test email sent to ${testEmail || 'your admin email'}`,
+                                              })
+                                            } else {
+                                              toast({
+                                                title: "Error",
+                                                description: result.error || "Failed to send test email",
+                                                variant: "destructive"
+                                              })
+                                            }
+                                          } catch (error: any) {
+                                            toast({
+                                              title: "Error",
+                                              description: error.message || "Failed to send test email",
+                                              variant: "destructive"
+                                            })
+                                          }
+                                        }}
+                                      />
+                                    </div>
+                                  )}
+                                </>
+                              )
+                            })()
+                          ) : (
+                            (() => {
+                              const content = getMessageContent(message)
+                              console.log('[v0] 📝 Rendering user message content:', {
+                                messageId: message.id,
+                                contentLength: content.length,
+                                contentPreview: content.substring(0, 100)
+                              })
+                              return <div className="whitespace-pre-wrap">{content || '(empty)'}</div>
+                            })()
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  ))}
+
+                  {isLoading && (
+                    <div className="flex justify-start">
+                      <div className="bg-stone-100 rounded-xl sm:rounded-2xl px-4 sm:px-6 py-3 sm:py-4">
+                        <div className="flex gap-1">
+                          <div className="w-2 h-2 rounded-full bg-stone-700 animate-bounce"></div>
+                          <div
+                            className="w-2 h-2 rounded-full bg-stone-700 animate-bounce"
+                            style={{ animationDelay: "0.2s" }}
+                          ></div>
+                          <div
+                            className="w-2 h-2 rounded-full bg-stone-700 animate-bounce"
+                            style={{ animationDelay: "0.4s" }}
+                          ></div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <div ref={messagesEndRef} />
                 </div>
               )}
-              <div ref={messagesEndRef} />
+              </>
+            )}
             </div>
           )}
-            </>
-          )}
 
-          {/* Tool Loading Indicator */}
-          {toolLoading && (
+        {/* Tool Loading Indicator */}
+        {toolLoading && (
             <div className="max-w-4xl mx-auto mb-3 sm:mb-4 px-3 sm:px-0">
               <div className="bg-stone-50 border border-stone-200 rounded-lg p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
                 <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-stone-900 border-t-transparent rounded-full animate-spin shrink-0"></div>
@@ -1749,113 +2001,6 @@ export default function AdminAgentChatNew({
             </div>
           )}
 
-          {/* Email Preview - Show when agent creates email */}
-          {emailPreview && (
-            <div className="max-w-4xl mx-auto px-3 sm:px-0">
-              <EmailPreviewCard
-                subject={emailPreview.subject}
-                preview={emailPreview.preview}
-                htmlContent={emailPreview.html}
-                targetSegment={emailPreview.targetSegment}
-                targetCount={emailPreview.targetCount}
-                isSequence={emailPreview.isSequence || false}
-                sequenceName={emailPreview.sequenceName}
-                sequenceEmails={emailPreview.sequenceEmails}
-                sequenceIndex={emailPreview.sequenceIndex}
-                sequenceTotal={emailPreview.sequenceTotal}
-                onEdit={async () => {
-                  // Don't clear preview - keep it visible so Alex can see the current version
-                  // Pass the FULL email HTML to Alex so he can edit it properly
-                  // Use previousVersion parameter in compose_email tool
-                  // CRITICAL: Make it very explicit that Alex must use the compose_email tool with previousVersion
-                  const editPrompt = `I want to edit this email. Please use the compose_email tool with the previousVersion parameter.
-
-CRITICAL INSTRUCTIONS:
-1. You MUST call the compose_email tool (do not just describe changes)
-2. Use the previousVersion parameter and pass the HTML below
-3. Make the specific changes I request while keeping the overall structure and style
-
-Current email HTML to use as previousVersion:
-${emailPreview.html}
-
-Current subject: ${emailPreview.subject}
-
-Please make the edits I request using the compose_email tool.`
-                  
-                  await sendMessage({ 
-                    text: editPrompt
-                  })
-                }}
-                onManualEdit={async (editedHtml: string) => {
-                  // When user manually edits HTML, send it to Alex with explicit instructions
-                  // to use it as previousVersion for further refinements
-                  const manualEditPrompt = `I've manually edited the email HTML. Please use this edited version as the previousVersion and apply any additional refinements I request.
-
-Here's the manually edited email HTML to use as previousVersion:
-${editedHtml}
-
-Current subject: ${emailPreview.subject}
-
-Please acknowledge you've received the edited HTML and are ready to make further refinements if needed.`
-                  
-                  // Update the email preview with the edited HTML
-                  setEmailPreview({
-                    ...emailPreview,
-                    html: editedHtml
-                  })
-                  
-                  await sendMessage({ 
-                    text: manualEditPrompt
-                  })
-                }}
-                onApprove={async () => {
-                  setEmailPreview(null)
-                  await sendMessage({ 
-                    text: 'Approve and send this email now' 
-                  })
-                }}
-                onSchedule={async () => {
-                  setEmailPreview(null)
-                  await sendMessage({ 
-                    text: 'Schedule this email for later' 
-                  })
-                }}
-                onSendTest={async (testEmail?: string) => {
-                  try {
-                    const response = await fetch('/api/admin/agent/send-test-email', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({
-                        subject: emailPreview.subject,
-                        html: emailPreview.html,
-                        testEmail: testEmail
-                      })
-                    })
-                    const result = await response.json()
-                    if (result.success) {
-                      toast({
-                        title: "Test Email Sent!",
-                        description: result.message || `Test email sent to ${testEmail || 'your admin email'}`,
-                      })
-                    } else {
-                      toast({
-                        title: "Error",
-                        description: result.error || "Failed to send test email",
-                        variant: "destructive"
-                      })
-                    }
-                  } catch (error: any) {
-                    toast({
-                      title: "Error",
-                      description: error.message || "Failed to send test email",
-                      variant: "destructive"
-                    })
-                  }
-                }}
-              />
-            </div>
-          )}
-
           {/* Recent Campaigns - Show when agent provides status */}
           {recentCampaigns.length > 0 && (
             <div className="max-w-4xl mx-auto mb-3 sm:mb-4 px-3 sm:px-0">
@@ -1877,8 +2022,6 @@ Please acknowledge you've received the edited HTML and are ready to make further
               />
             </div>
           )}
-          </div>
-        )}
 
         {/* Gallery Selector */}
         {showGallery && (
