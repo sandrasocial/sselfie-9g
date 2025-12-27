@@ -1085,20 +1085,39 @@ export default function AdminAgentChatNew({
     
     // If we found a valid email preview, check if it's different from what we have
     if (foundValidEmailPreview && latestEmailPreview) {
-      // Create a hash of the email preview to detect changes
-      const previewHash = `${latestEmailPreview.subject}-${latestEmailPreview.html.substring(0, 100)}-${latestEmailPreview.html.length}`
+      // Create a more robust hash that includes more of the HTML to detect edits
+      // Use first 200 chars + middle 200 chars + last 200 chars + length for better change detection
+      const htmlStart = latestEmailPreview.html.substring(0, 200)
+      const htmlMiddle = latestEmailPreview.html.substring(
+        Math.floor(latestEmailPreview.html.length / 2) - 100,
+        Math.floor(latestEmailPreview.html.length / 2) + 100
+      )
+      const htmlEnd = latestEmailPreview.html.substring(Math.max(0, latestEmailPreview.html.length - 200))
+      const previewHash = `${latestEmailPreview.subject}-${htmlStart}-${htmlMiddle}-${htmlEnd}-${latestEmailPreview.html.length}`
       
       // Only update if the preview has changed
       if (previewHash !== lastEmailPreviewHashRef.current) {
         console.log('[Alex] 📧 Email preview changed, updating...', {
-          oldHash: lastEmailPreviewHashRef.current,
-          newHash: previewHash,
-          subject: latestEmailPreview.subject
+          oldHash: lastEmailPreviewHashRef.current?.substring(0, 50),
+          newHash: previewHash.substring(0, 50),
+          subject: latestEmailPreview.subject,
+          htmlLength: latestEmailPreview.html.length,
+          htmlStart: latestEmailPreview.html.substring(0, 50)
         })
         setEmailPreview(latestEmailPreview)
         lastEmailPreviewHashRef.current = previewHash
       } else {
-        console.log('[Alex] 📧 Email preview unchanged, skipping update')
+        console.log('[Alex] 📧 Email preview hash unchanged, but checking if it's from a different message...')
+        // Even if hash is same, if HTML content differs, we should still update
+        // This handles the case where Alex makes a small edit that doesn't change the hash
+        // but we still want to show the latest version
+        if (emailPreview && emailPreview.html !== latestEmailPreview.html) {
+          console.log('[Alex] 📧 HTML content differs even though hash is same - updating anyway')
+          setEmailPreview(latestEmailPreview)
+          lastEmailPreviewHashRef.current = previewHash
+        } else {
+          console.log('[Alex] 📧 Email preview unchanged, skipping update')
+        }
       }
     } else if (!foundValidEmailPreview && emailPreview) {
       // If we didn't find a valid email preview in any message, but we have one set,
@@ -1637,7 +1656,12 @@ export default function AdminAgentChatNew({
                                 contentPreview: content.substring(0, 100),
                                 isEmpty: !content.trim(),
                                 hasEmailPreview: !!messageEmailPreview,
-                                hasManualEdit: !!manualEdits[message.id]
+                                hasManualEdit: !!manualEdits[message.id],
+                                hasToolInvocations: !!(message as any).toolInvocations,
+                                toolInvocationsCount: (message as any).toolInvocations?.length || 0,
+                                toolNames: (message as any).toolInvocations?.map((inv: any) => inv.toolName) || [],
+                                emailPreviewSubject: messageEmailPreview?.subject,
+                                emailPreviewHtmlLength: messageEmailPreview?.html?.length
                               })
                               // Fallback to plain text if content is very short or ReactMarkdown fails
                               if (!content.trim() && !messageEmailPreview) {
