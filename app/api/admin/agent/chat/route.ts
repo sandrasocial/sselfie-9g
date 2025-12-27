@@ -822,18 +822,39 @@ export async function POST(req: Request) {
           
           // 3. Use Claude to generate/refine email content
           // Build system prompt using shared brand guidelines
+          // Note: previousVersion is NOT passed to buildEmailSystemPrompt - it's included in user prompt below
+          // to avoid truncation and ensure full HTML context
           const systemPrompt = buildEmailSystemPrompt({
             tone,
-            previousVersion,
+            // Don't pass previousVersion here - it's included in user prompt below for full HTML
             campaignSlug,
             siteUrl,
             imageUrls: imageUrls || [],
             templates: templates.length > 0 ? templates : [],
           })
           
-          // Build user prompt - if previousVersion exists, make it clear this is an edit
-          const userPrompt = previousVersion 
-            ? `${intent}\n\n${keyPoints && keyPoints.length > 0 ? `Key points: ${keyPoints.join(', ')}\n\n` : ''}${imageUrls && imageUrls.length > 0 ? `\nImages to include:\n${imageUrls.map((url, idx) => `- Image ${idx + 1}: ${url}`).join('\n')}\n\n` : ''}\n\nIMPORTANT: The previous email HTML was provided in the system prompt above. Make the specific changes requested in the intent while keeping the same structure and styling.`
+          // Add editing instructions to system prompt if we're editing
+          const editingInstructions = previousVersion ? `CRITICAL: You are EDITING an existing email. The complete previous version HTML is provided in the user prompt below.
+
+Your task: Make ONLY the specific changes Sandra requested while keeping everything else EXACTLY the same:
+- Same structure and layout
+- Same brand styling and colors
+- Same content (unless specifically asked to change it)
+- Same images and links (unless specifically asked to change them)
+
+For small edits (like "add a link" or "change a few words"), make MINIMAL targeted changes. Do NOT rewrite the entire email. Only modify what was explicitly requested.` : ''
+          
+          const finalSystemPrompt = editingInstructions ? `${systemPrompt}\n\n${editingInstructions}` : systemPrompt
+          
+          // Build user prompt - if previousVersion exists, include the FULL HTML here
+          const userPrompt = previousVersion
+            ? `Edit request: ${intent}
+
+${keyPoints && keyPoints.length > 0 ? `Key points: ${keyPoints.join(', ')}\n\n` : ''}${imageUrls && imageUrls.length > 0 ? `Images to include:\n${imageUrls.map((url, idx) => `- Image ${idx + 1}: ${url}`).join('\n')}\n\n` : ''}
+PREVIOUS EMAIL HTML (make the requested changes to this):
+${previousVersion}
+
+Remember: Make ONLY the changes I requested. Keep everything else exactly the same.`
             : `${intent}\n\n${keyPoints && keyPoints.length > 0 ? `Key points: ${keyPoints.join(', ')}\n\n` : ''}${imageUrls && imageUrls.length > 0 ? `\nImages to include:\n${imageUrls.map((url, idx) => `- Image ${idx + 1}: ${url}`).join('\n')}\n\n` : ''}`
           
           // Generate email HTML with timeout protection
@@ -853,7 +874,7 @@ export async function POST(req: Request) {
                 model: "anthropic/claude-sonnet-4-20250514",
                 system: systemPrompt,
                 prompt: userPrompt,
-                maxOutputTokens: 2000,
+                maxOutputTokens: 4096,
               }),
               timeoutPromise
             ])
@@ -1226,92 +1247,40 @@ export async function POST(req: Request) {
           : 'email-campaign'
         
         // 3. Use Claude to generate/refine email content
-        const systemPrompt = `You are Sandra's email marketing assistant for SSELFIE Studio.
-    
-    Brand Voice: ${tone}, empowering, personal
-    
-    Context: 
-    - SSELFIE Studio helps women entrepreneurs create professional photos with AI
-    - Core message: Visibility = Financial Freedom
-    - Audience: Women entrepreneurs, solopreneurs, coaches
-    
-    ${previousVersion ? `CRITICAL: You are REFINING an existing email. The previous version HTML is provided below. You MUST make the changes Sandra requested while preserving the overall structure and brand styling. Do NOT return the exact same HTML - you must actually modify it based on her request.
+        // Build system prompt using shared brand guidelines
+        // Note: previousVersion is NOT passed to buildEmailSystemPrompt - it's included in user prompt below
+        // to avoid truncation and ensure full HTML context
+        const systemPrompt = buildEmailSystemPrompt({
+          tone,
+          // Don't pass previousVersion here - it's included in user prompt below for full HTML
+          campaignSlug,
+          siteUrl,
+          imageUrls: imageUrls || [],
+          templates: templates.length > 0 ? templates : [],
+        })
+        
+        // Add editing instructions to system prompt if we're editing
+        const editingInstructions = previousVersion ? `CRITICAL: You are EDITING an existing email. The complete previous version HTML is provided in the user prompt below.
 
-Previous Email HTML:
-${previousVersion.substring(0, 5000)}${previousVersion.length > 5000 ? '\n\n[... HTML truncated for length ...]' : ''}
+Your task: Make ONLY the specific changes Sandra requested while keeping everything else EXACTLY the same:
+- Same structure and layout
+- Same brand styling and colors
+- Same content (unless specifically asked to change it)
+- Same images and links (unless specifically asked to change them)
 
-Now refine this email based on Sandra's request.` : 'Create a compelling email.'}
-    
-    ${templates[0]?.body_html ? `Template reference: ${templates[0].body_html.substring(0, 500)}` : 'Create from scratch'}
-    
-    ${imageUrls && imageUrls.length > 0 ? `IMPORTANT: Include these images in the email HTML:
-    ${imageUrls.map((url, idx) => `${idx + 1}. ${url}`).join('\n    ')}
-    
-    Use proper <img> tags with inline styles:
-    - width: 100% (or max-width: 600px for container)
-    - height: auto
-    - display: block
-    - style="width: 100%; height: auto; display: block;"
-    - Include alt text describing the image
-    - Place images naturally in the email flow (hero image at top, supporting images in content)
-    - Use table-based layout for email compatibility` : ''}
-    
-    **CRITICAL: Product Links & Tracking**
-    
-    When including links in the email, you MUST use the correct product URLs with proper tracking:
-    
-    **Product Checkout Links (use campaign slug: "${campaignSlug}"):**
-    - Studio Membership: ${siteUrl}/studio?checkout=studio_membership&utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=cta_button&campaign_id={campaign_id}
-    - One-Time Session: ${siteUrl}/studio?checkout=one_time&utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=cta_button&campaign_id={campaign_id}
-    
-    **Landing Pages (use campaign slug: "${campaignSlug}"):**
-    - Why Studio: ${siteUrl}/why-studio?utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=text_link&campaign_id={campaign_id}
-    - Homepage: ${siteUrl}/?utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=text_link&campaign_id={campaign_id}
-    
-    **Link Tracking Requirements:**
-    1. ALL links must include UTM parameters: utm_source=email, utm_medium=email, utm_campaign=${campaignSlug}, utm_content={link_type}
-    2. Use campaign_id={campaign_id} as placeholder (will be replaced with actual ID when campaign is scheduled)
-    3. Use the campaign slug "${campaignSlug}" for all utm_campaign parameters
-    4. Use appropriate utm_content values: cta_button (primary CTA), text_link (body links), footer_link (footer), image_link (image links)
-    
-    **Link Examples (use these exact formats with campaign slug "${campaignSlug}"):**
-    - Primary CTA: <a href="${siteUrl}/studio?checkout=studio_membership&utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=cta_button&campaign_id={campaign_id}" style="display: inline-block; background-color: #1c1917; color: #fafaf9; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 500;">Join SSELFIE Studio</a>
-    - Secondary link: <a href="${siteUrl}/why-studio?utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=text_link&campaign_id={campaign_id}" style="color: #1c1917; text-decoration: underline;">Learn more</a>
-    
-    **When to Use Which Link:**
-    - Primary CTA → Use checkout links (checkout=studio_membership or checkout=one_time)
-    - Educational/nurturing content → Use landing pages (/why-studio, /)
-    - Always include full tracking parameters for conversion attribution
-    
-    **CRITICAL OUTPUT FORMAT:**
-    - Return ONLY raw HTML code (no markdown code blocks, no triple backticks with html, no explanations)
-    - Start directly with <!DOCTYPE html> or <html>
-    - Do NOT wrap the HTML in markdown code blocks
-    - Do NOT include triple backticks or markdown code block syntax anywhere in your response
-    - Return pure HTML that can be directly used in email clients
-    
-    **MANDATORY: Use Table-Based Layout**
-    - Email clients require table-based layouts for compatibility
-    - Use: <table role="presentation" style="width: 100%; border-collapse: collapse;">
-    - Structure with <tr> and <td> elements
-    - Max-width: 600px for main container
-    - Center using: <td align="center" style="padding: 20px;">
-    
-    **SSELFIE Brand Styling (MUST FOLLOW):**
-    - Colors: #1c1917 (dark), #0c0a09 (black), #fafaf9 (light), #57534e (gray), #78716c (muted)
-    - Logo: Times New Roman/Georgia, 32px, weight 200, letter-spacing 0.3em, uppercase, color #fafaf9 on dark or #1c1917 on light
-    - Body font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif
-    - Headings: Times New Roman/Georgia, 28px, weight 200-300, letter-spacing 0.2em, uppercase
-    - Body text: 15-16px, line-height 1.6-1.7, color #292524 or #44403c
-    - Buttons: background #1c1917, color #fafaf9, padding 14px 32px, border-radius 8px, uppercase, letter-spacing 0.1em
-    - Background: #fafaf9 for body, #ffffff for email container, #f5f5f4 for footer
-    - Use inline styles ONLY (no <style> tags in body)
-    
-    Include unsubscribe link: {{{RESEND_UNSUBSCRIBE_URL}}}`
+For small edits (like "add a link" or "change a few words"), make MINIMAL targeted changes. Do NOT rewrite the entire email. Only modify what was explicitly requested.` : ''
+        
+        const finalSystemPrompt = editingInstructions ? `${systemPrompt}\n\n${editingInstructions}` : systemPrompt
           
-        // Build user prompt - if previousVersion exists, make it clear this is an edit
-        const userPrompt = previousVersion 
-          ? `${intent}\n\n${keyPoints && keyPoints.length > 0 ? `Key points: ${keyPoints.join(', ')}\n\n` : ''}${imageUrls && imageUrls.length > 0 ? `\nImages to include:\n${imageUrls.map((url, idx) => `- Image ${idx + 1}: ${url}`).join('\n')}\n\n` : ''}\n\nIMPORTANT: The previous email HTML was provided in the system prompt above. Make the specific changes requested in the intent while keeping the same structure and styling.`
+        // Build user prompt - if previousVersion exists, include the FULL HTML here
+        const userPrompt = previousVersion
+          ? `Edit request: ${intent}
+
+${keyPoints && keyPoints.length > 0 ? `Key points: ${keyPoints.join(', ')}\n\n` : ''}${imageUrls && imageUrls.length > 0 ? `Images to include:\n${imageUrls.map((url, idx) => `- Image ${idx + 1}: ${url}`).join('\n')}\n\n` : ''}
+PREVIOUS EMAIL HTML (make the requested changes to this):
+${previousVersion}
+
+Remember: Make ONLY the changes I requested. Keep everything else exactly the same.`
           : `${intent}\n\n${keyPoints && keyPoints.length > 0 ? `Key points: ${keyPoints.join(', ')}\n\n` : ''}${imageUrls && imageUrls.length > 0 ? `\nImages to include:\n${imageUrls.map((url, idx) => `- Image ${idx + 1}: ${url}`).join('\n')}\n\n` : ''}`
         
         // Generate email HTML with timeout protection
@@ -1325,14 +1294,14 @@ Now refine this email based on Sandra's request.` : 'Create a compelling email.'
             }, 30000)
           })
           
-          // Race between generateText and timeout
-          const result = await Promise.race([
-            generateText({
-              model: "anthropic/claude-sonnet-4-20250514",
-              system: systemPrompt,
-              prompt: userPrompt,
-              maxOutputTokens: 2000,
-            }),
+            // Race between generateText and timeout
+            const result = await Promise.race([
+              generateText({
+                model: "anthropic/claude-sonnet-4-20250514",
+                system: finalSystemPrompt,
+                prompt: userPrompt,
+                maxOutputTokens: 4096,
+              }),
             timeoutPromise
           ])
           
