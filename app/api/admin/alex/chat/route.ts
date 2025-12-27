@@ -4822,6 +4822,7 @@ IMPORTANT: The HTML above is the complete email HTML. When editing, extract ALL 
             })
 
             const toolCalls: Array<{ id: string; name: string; input: any }> = []
+            const pendingToolUses = new Map<string, any>() // Track tools that started but haven't completed
             let hasTextInThisIteration = false
             let messageComplete = false
 
@@ -4851,15 +4852,22 @@ IMPORTANT: The HTML above is the complete email HTML. When editing, extract ALL 
                     }
                   }
 
-                  // Handle tool use start
+                  // Handle tool use start - track it
               if (event.type === 'content_block_start' && event.content_block?.type === 'tool_use') {
-                console.log('[Alex] 🔧 Tool use started:', event.content_block.name)
+                const toolUse = event.content_block
+                console.log('[Alex] 🔧 Tool use started:', toolUse.name, 'id:', toolUse.id)
+                pendingToolUses.set(toolUse.id, toolUse)
                   }
 
                   // Handle tool use complete - execute it
               if (event.type === 'content_block_stop' && event.content_block?.type === 'tool_use') {
                 const toolUse = event.content_block
                 const toolInput = toolUse.input || {}
+                console.log('[Alex] 🔧 Tool use complete:', toolUse.name, 'id:', toolUse.id)
+                
+                // Remove from pending
+                pendingToolUses.delete(toolUse.id)
+                
                 toolCalls.push({ id: toolUse.id, name: toolUse.name, input: toolInput })
 
                 // Add tool_use to messages
@@ -4877,6 +4885,7 @@ IMPORTANT: The HTML above is the complete email HTML. When editing, extract ALL 
                     ]
 
                 // Execute the tool using handler
+                console.log('[Alex] ⚙️ Executing tool:', toolUse.name)
                 const result = await executeTool(toolUse.name, toolInput)
                 let toolResultContent = JSON.stringify(result)
                 
@@ -4904,13 +4913,22 @@ IMPORTANT: The HTML above is the complete email HTML. When editing, extract ALL 
                 console.log(`[Alex] ✅ Added tool result to messages (${toolResultContent.length} chars)`)
               }
 
-              // Handle message stop
+              // Handle message stop - only break if no pending tools
               if (event.type === 'message_stop') {
                 messageComplete = true
                 console.log('[Alex] 📨 Message complete', {
                   toolCallsCount: toolCalls.length,
+                  pendingToolsCount: pendingToolUses.size,
                   hasText: hasTextInThisIteration
                 })
+                
+                // If there are pending tools, wait for them to complete
+                if (pendingToolUses.size > 0) {
+                  console.log('[Alex] ⏳ Waiting for', pendingToolUses.size, 'pending tools to complete...')
+                  // Don't break yet - continue processing events
+                  continue
+                }
+                
                 if (hasTextInThisIteration && toolCalls.length > 0) {
                   const endMessage = {
                     type: 'text-end',
@@ -4919,7 +4937,7 @@ IMPORTANT: The HTML above is the complete email HTML. When editing, extract ALL 
                   safeEnqueue(encoder.encode(`data: ${JSON.stringify(endMessage)}\n\n`))
                   hasTextInThisIteration = false
                 }
-                // Break out of event loop when message is complete
+                // Break out of event loop when message is complete and all tools are done
                 break
               }
             }
