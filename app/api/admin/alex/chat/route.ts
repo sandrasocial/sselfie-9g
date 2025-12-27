@@ -102,14 +102,14 @@ export async function POST(req: Request) {
         // Format 1: parts array (from useChat)
         if (m.parts && Array.isArray(m.parts)) {
           const textParts = m.parts.filter((p: any) => p && p.type === "text")
-          content = textParts.map((p: any) => p.text || "").join("\n")
+            content = textParts.map((p: any) => p.text || "").join("\n")
         }
-        
+
         // Format 2: content array
         if (!content && m.content && Array.isArray(m.content)) {
-          const textParts = m.content.filter((p: any) => p && p.type === "text")
-          content = textParts.map((p: any) => p.text || "").join("\n")
-        }
+            const textParts = m.content.filter((p: any) => p && p.type === "text")
+            content = textParts.map((p: any) => p.text || "").join("\n")
+          }
         
         // Format 3: content string
         if (!content && m.content) {
@@ -293,14 +293,14 @@ export async function POST(req: Request) {
       description: `Create or refine email content. Returns formatted HTML email.
 
 Use this when Sandra wants to:
-- Create a new email campaign
+  - Create a new email campaign
 - Edit/refine existing email content
-- Generate subject lines
-- Use email templates
-
-Examples:
-- "Create a welcome email for new Studio members"
-- "Write a newsletter about the new Maya features"
+  - Generate subject lines
+  - Use email templates
+  
+  Examples:
+  - "Create a welcome email for new Studio members"
+  - "Write a newsletter about the new Maya features"
 - "Make that email warmer and add a PS"`,
       
       input_schema: {
@@ -2145,34 +2145,34 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
     const readCodebaseFileTool = {
       name: "read_codebase_file",
       description: `Read and analyze files from the SSELFIE codebase to understand the app structure, content, and features.
-
-Use this to:
-- Understand what freebies, guides, and resources exist
-- Read content templates and documentation
-- Analyze code structure and features
-- Help Sandra manage and improve the codebase
-- Reference actual content when creating emails or campaigns
-
-IMPORTANT: 
-- If a file is not found, the tool will suggest similar files
-- If you provide a directory path, it will list ALL available files in that directory
-- When you see a directory listing, use the EXACT full paths shown to read specific files
-- For dynamic routes like [slug], use the actual file path with brackets: app/prompt-guides/[slug]/page.tsx
-- Example: If directory shows "[slug]/", read app/prompt-guides/[slug]/page.tsx
-
-This tool allows you to read files from:
-- content-templates/ (Instagram templates, guides)
-- docs/ (documentation, guides)
-- app/ (pages and routes)
-- lib/ (utilities and helpers)
-- scripts/ (database schemas, migrations)
-
-Always use this when Sandra asks about:
-- What freebies exist
-- What's in the brand blueprint
-- What prompts are in the guide
-- How features work
-- What content exists`,
+  
+  Use this to:
+  - Understand what freebies, guides, and resources exist
+  - Read content templates and documentation
+  - Analyze code structure and features
+  - Help Sandra manage and improve the codebase
+  - Reference actual content when creating emails or campaigns
+  
+  IMPORTANT: 
+  - If a file is not found, the tool will suggest similar files
+  - If you provide a directory path, it will list ALL available files in that directory
+  - When you see a directory listing, use the EXACT full paths shown to read specific files
+  - For dynamic routes like [slug], use the actual file path with brackets: app/prompt-guides/[slug]/page.tsx
+  - Example: If directory shows "[slug]/", read app/prompt-guides/[slug]/page.tsx
+  
+  This tool allows you to read files from:
+  - content-templates/ (Instagram templates, guides)
+  - docs/ (documentation, guides)
+  - app/ (pages and routes)
+  - lib/ (utilities and helpers)
+  - scripts/ (database schemas, migrations)
+  
+  Always use this when Sandra asks about:
+  - What freebies exist
+  - What's in the brand blueprint
+  - What prompts are in the guide
+  - How features work
+  - What content exists`,
       
       input_schema: {
         type: "object",
@@ -2494,7 +2494,7 @@ Always use this when Sandra asks about:
           }
         }
       }
-    })
+    }
 
     const getPromptGuidesTool = tool({
       description: `Get information about prompt guides stored in the database.
@@ -4590,7 +4590,7 @@ Keep it practical and data-driven.`
 
     // Track accumulated text and email preview for saving to database
     let accumulatedText = ''
-    let emailPreviewData: { html: string; subjectLine: string; preview: string } | null = null
+      let emailPreviewData: { html: string; subjectLine: string; preview: string } | null = null
 
     // Convert messages to Anthropic format
     // CRITICAL: Handle both content and parts arrays to preserve tool results
@@ -4794,10 +4794,10 @@ IMPORTANT: The HTML above is the complete email HTML. When editing, extract ALL 
 
             // Use SDK's streaming
             const sdkStream = await anthropic.messages.stream({
-              model: 'claude-sonnet-4-20250514',
-              max_tokens: 4000,
-              system: systemPromptWithImages,
-              messages: formattedMessages,
+                model: 'claude-sonnet-4-20250514',
+                max_tokens: 4000,
+                system: systemPromptWithImages,
+                messages: formattedMessages,
               tools: nativeAnthropicTools.length > 0 ? nativeAnthropicTools : undefined, // Only pass native tools
             })
 
@@ -4809,52 +4809,52 @@ IMPORTANT: The HTML above is the complete email HTML. When editing, extract ALL 
             for await (const event of sdkStream) {
               // Handle text deltas
               if (event.type === 'content_block_delta' && event.delta?.type === 'text_delta') {
-                const text = event.delta.text
-                if (text) {
-                  if (!hasSentTextStart) {
-                    const startMessage = {
-                      type: 'text-start',
-                      id: messageId
+                    const text = event.delta.text
+                    if (text) {
+                      if (!hasSentTextStart) {
+                        const startMessage = {
+                          type: 'text-start',
+                          id: messageId
+                        }
+                        safeEnqueue(encoder.encode(`data: ${JSON.stringify(startMessage)}\n\n`))
+                        hasSentTextStart = true
+                      }
+                      
+                      accumulatedText += text
+                      hasTextInThisIteration = true
+                      const deltaMessage = {
+                        type: 'text-delta',
+                        id: messageId,
+                        delta: text
+                      }
+                      safeEnqueue(encoder.encode(`data: ${JSON.stringify(deltaMessage)}\n\n`))
                     }
-                    safeEnqueue(encoder.encode(`data: ${JSON.stringify(startMessage)}\n\n`))
-                    hasSentTextStart = true
                   }
-                  
-                  accumulatedText += text
-                  hasTextInThisIteration = true
-                  const deltaMessage = {
-                    type: 'text-delta',
-                    id: messageId,
-                    delta: text
-                  }
-                  safeEnqueue(encoder.encode(`data: ${JSON.stringify(deltaMessage)}\n\n`))
-                }
-              }
 
-              // Handle tool use start
+                  // Handle tool use start
               if (event.type === 'content_block_start' && event.content_block?.type === 'tool_use') {
                 console.log('[Alex] 🔧 Tool use started:', event.content_block.name)
-              }
+                  }
 
-              // Handle tool use complete - execute it
+                  // Handle tool use complete - execute it
               if (event.type === 'content_block_stop' && event.content_block?.type === 'tool_use') {
                 const toolUse = event.content_block
                 const toolInput = toolUse.input || {}
                 toolCalls.push({ id: toolUse.id, name: toolUse.name, input: toolInput })
 
                 // Add tool_use to messages
-                messages = [
-                  ...messages,
-                  {
-                    role: 'assistant',
-                    content: [{
-                      type: 'tool_use',
+                    messages = [
+                      ...messages,
+                      {
+                        role: 'assistant',
+                        content: [{
+                          type: 'tool_use',
                       id: toolUse.id,
                       name: toolUse.name,
-                      input: toolInput,
-                    }],
-                  },
-                ]
+                          input: toolInput,
+                        }],
+                      },
+                    ]
 
                 // Execute the tool using handler
                 const result = await executeTool(toolUse.name, toolInput)
@@ -4862,25 +4862,25 @@ IMPORTANT: The HTML above is the complete email HTML. When editing, extract ALL 
                 
                 // Truncate very large tool results
                 const MAX_TOOL_RESULT_SIZE = 100000
-                if (toolResultContent.length > MAX_TOOL_RESULT_SIZE) {
+                        if (toolResultContent.length > MAX_TOOL_RESULT_SIZE) {
                   console.log(`[Alex] ⚠️ Tool result is large (${toolResultContent.length} chars), truncating...`)
-                  const truncated = toolResultContent.substring(0, MAX_TOOL_RESULT_SIZE)
-                  toolResultContent = truncated + '\n\n[Content truncated due to size limits. Use read_codebase_file with specific file paths for full content.]'
+                          const truncated = toolResultContent.substring(0, MAX_TOOL_RESULT_SIZE)
+                          toolResultContent = truncated + '\n\n[Content truncated due to size limits. Use read_codebase_file with specific file paths for full content.]'
                 }
 
                 // Add tool_result to messages
-                messages = [
-                  ...messages,
-                  {
-                    role: 'user',
-                    content: [{
-                      type: 'tool_result',
+                    messages = [
+                      ...messages,
+                      {
+                        role: 'user',
+                        content: [{
+                          type: 'tool_result',
                       tool_use_id: toolUse.id,
-                      content: toolResultContent,
-                    }],
-                  },
-                ]
-                
+                          content: toolResultContent,
+                        }],
+                      },
+                    ]
+                    
                 console.log(`[Alex] ✅ Added tool result to messages (${toolResultContent.length} chars)`)
               }
 
@@ -4954,18 +4954,18 @@ IMPORTANT: The HTML above is the complete email HTML. When editing, extract ALL 
           }
         } finally {
           safeClose()
-        }
-      },
-    })
+          }
+        },
+      })
       
     return new Response(stream, {
-      headers: {
+        headers: {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
         'Connection': 'keep-alive',
-        'X-Chat-Id': String(activeChatId),
+          'X-Chat-Id': String(activeChatId),
       },
-    })
+      })
   } catch (error: any) {
     console.error("[Alex] Admin agent chat error:", error)
     return NextResponse.json({ error: "Failed to process chat", details: error.message }, { status: 500 })
