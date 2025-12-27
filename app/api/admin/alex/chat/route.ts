@@ -84,14 +84,43 @@ export async function POST(req: Request) {
     // CRITICAL: Preserve id property for deduplication
     const modelMessages = messages
       .filter((m: any) => m && (m.role === "user" || m.role === "assistant"))
-      .map((m: any) => ({
-        role: m.role,
-        content: typeof m.content === 'string' 
-          ? m.content 
-          : Array.isArray(m.content)
-            ? m.content // Keep array for images
-            : String(m.content || '')
-      }))
+      .map((m: any) => {
+        // Handle images - preserve full content structure
+        if (m.content && Array.isArray(m.content)) {
+          const hasImages = m.content.some((p: any) => p && p.type === "image")
+          if (hasImages) {
+            return {
+              role: m.role,
+              content: m.content, // Keep full array with images
+            }
+          }
+        }
+
+        // Extract text content from various formats
+        let content = ""
+
+        // Format 1: parts array (from useChat)
+        if (m.parts && Array.isArray(m.parts)) {
+          const textParts = m.parts.filter((p: any) => p && p.type === "text")
+          content = textParts.map((p: any) => p.text || "").join("\n")
+        }
+        
+        // Format 2: content array
+        if (!content && m.content && Array.isArray(m.content)) {
+          const textParts = m.content.filter((p: any) => p && p.type === "text")
+          content = textParts.map((p: any) => p.text || "").join("\n")
+        }
+        
+        // Format 3: content string
+        if (!content && m.content) {
+          content = typeof m.content === 'string' ? m.content : String(m.content)
+        }
+
+        return {
+          role: m.role,
+          content: content.trim(),
+        }
+      })
       .filter((m: any) => m.content && m.content.length > 0)
 
     if (modelMessages.length === 0) {
