@@ -4548,8 +4548,34 @@ Keep it practical and data-driven.`
       get_brand_strategy: getBrandStrategyTool,
     }
 
-    // Tools are already in native Anthropic format - just extract them
-    const anthropicTools = Object.values(tools)
+    // Separate native Anthropic tools from AI SDK tools
+    // Only native Anthropic format tools can be sent to Anthropic API
+    // Native format: { name: "...", description: "...", input_schema: {...}, execute: ... }
+    // AI SDK format: tool({ parameters: z.object({...}), execute: ... })
+    const nativeAnthropicTools = Object.entries(tools)
+      .filter(([name, toolDef]) => {
+        // Check if tool has native Anthropic format
+        // Native tools have: name, description, input_schema
+        // AI SDK tools have: parameters (Zod schema)
+        const hasNativeFormat = toolDef &&
+          typeof toolDef === 'object' &&
+          'name' in toolDef &&
+          'input_schema' in toolDef
+
+        if (!hasNativeFormat) {
+          console.log(`[Alex] ⚠️ Skipping tool ${name} - not in native Anthropic format`)
+        }
+
+        return hasNativeFormat
+      })
+      .map(([_, toolDef]) => ({
+        name: toolDef.name,
+        description: toolDef.description,
+        input_schema: toolDef.input_schema
+      }))
+
+    console.log('[Alex] 🔧 Using', nativeAnthropicTools.length, 'native Anthropic tools')
+    console.log('[Alex] 🔧 Tool names:', nativeAnthropicTools.map(t => t.name).join(', '))
 
     // Track accumulated text and email preview for saving to database
     let accumulatedText = ''
@@ -4761,7 +4787,7 @@ IMPORTANT: The HTML above is the complete email HTML. When editing, extract ALL 
               max_tokens: 4000,
               system: systemPromptWithImages,
               messages: formattedMessages,
-              tools: anthropicTools,
+              tools: nativeAnthropicTools.length > 0 ? nativeAnthropicTools : undefined, // Only pass native tools
             })
 
             const toolCalls: Array<{ id: string; name: string; input: any }> = []
