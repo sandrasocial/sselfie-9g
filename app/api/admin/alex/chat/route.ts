@@ -572,15 +572,43 @@ For small edits (like "add a link" or "change a few words"), make MINIMAL target
           
           const finalSystemPrompt = editingInstructions ? `${systemPrompt}\n\n${editingInstructions}` : systemPrompt
           
-          // Build user prompt - if previousVersion exists, include the FULL HTML here
+          // Build user prompt - if previousVersion exists, EDIT it rather than create new
           const userPrompt = previousVersion
-            ? `Edit request: ${intent}
+            ? (() => {
+                // Extract key elements from previous version for reference
+                const hasImages = previousVersion.includes('<img')
+                const hasGradient = previousVersion.includes('gradient')
+                const hasTable = previousVersion.includes('<table')
+                
+                return `You are EDITING an existing email. Make ONLY the requested changes.
 
-${keyPoints && keyPoints.length > 0 ? `Key points: ${keyPoints.join(', ')}\n\n` : ''}${imageUrls && imageUrls.length > 0 ? `Images to include:\n${imageUrls.map((url, idx) => `- Image ${idx + 1}: ${url}`).join('\n')}\n\n` : ''}
-PREVIOUS EMAIL HTML (make the requested changes to this):
+**PREVIOUS EMAIL HTML (FULL):**
+\`\`\`html
 ${previousVersion}
+\`\`\`
 
-Remember: Make ONLY the changes I requested. Keep everything else exactly the same.`
+**REQUESTED CHANGES:** ${intent}
+
+${keyPoints && keyPoints.length > 0 ? `**Key points:** ${keyPoints.join(', ')}\n\n` : ''}${imageUrls && imageUrls.length > 0 ? `**Images to include:**\n${imageUrls.map((url, idx) => `- Image ${idx + 1}: ${url}`).join('\n')}\n\n` : ''}
+**EDITING RULES:**
+1. Start with the EXACT previous HTML above
+2. Make ONLY the changes described in "Requested Changes"
+3. Keep ALL other content, styling, and structure identical
+4. Preserve all working links, images, and formatting
+5. Return the COMPLETE updated HTML (not just the changed parts)
+6. Do NOT regenerate from scratch
+7. Do NOT change things that weren't requested
+
+**What to preserve:**
+- All existing paragraphs and sections (unless specifically changing them)
+- Color scheme and styling
+- Table structure
+- Existing links (unless specifically changing them)
+- Emojis (unless specifically removing them)
+- Image placements
+
+Return ONLY the updated HTML, nothing else.`
+              })()
             : `${intent}\n\n${keyPoints && keyPoints.length > 0 ? `Key points: ${keyPoints.join(', ')}\n\n` : ''}${imageUrls && imageUrls.length > 0 ? `\nImages to include:\n${imageUrls.map((url, idx) => `- Image ${idx + 1}: ${url}`).join('\n')}\n\n` : ''}`
           
           // Generate email HTML with timeout protection
