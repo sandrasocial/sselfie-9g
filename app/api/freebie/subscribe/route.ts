@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
 import { Resend } from "resend"
 import { addOrUpdateResendContact } from "@/lib/resend/manage-contact"
+import { syncContactToLoops } from '@/lib/loops/manage-contact'
 import { generateFreebieGuideEmail } from "@/lib/email/templates/freebie-guide-email"
 import { sendEmail } from "@/lib/email/send-email"
 
@@ -168,6 +169,41 @@ export async function POST(request: NextRequest) {
       `
     } else {
       console.error(`[v0] Failed to add to Resend audience: ${resendResult.error}`)
+    }
+
+    // NEW: Add to Loops (dual-sync)
+    try {
+      const loopsResult = await syncContactToLoops({
+        email,
+        name,
+        source: 'freebie-subscriber',
+        tags: ['freebie-guide', 'lead'],
+        customFields: {
+          status: 'lead',
+          product: 'sselfie-guide',
+          journey: 'nurture',
+          signupDate: new Date().toISOString().split('T')[0]
+        }
+      })
+      
+      if (loopsResult.success) {
+        console.log(`[v0] ✅ Added to Loops: ${email}`)
+        
+        await sql`
+          UPDATE freebie_subscribers 
+          SET loops_contact_id = ${loopsResult.contactId || email},
+              synced_to_loops = true,
+              loops_synced_at = NOW(),
+              updated_at = NOW()
+          WHERE id = ${newSubscriber.id}
+        `
+      } else {
+        console.warn(`[v0] ⚠️ Loops sync failed (non-critical): ${loopsResult.error}`)
+        // Don't fail the request - Loops sync is secondary
+      }
+    } catch (loopsError: any) {
+      console.warn(`[v0] ⚠️ Loops sync error (non-critical):`, loopsError)
+      // Don't fail the request - continue without Loops
     }
 
     let emailSent = false

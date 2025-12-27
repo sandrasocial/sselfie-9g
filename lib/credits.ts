@@ -361,8 +361,16 @@ export async function grantMonthlyCredits(
  * Grant one-time session credits
  * New function for one-time session purchases
  */
-export async function grantOneTimeSessionCredits(userId: string, isTestMode = false) {
+export async function grantOneTimeSessionCredits(
+  userId: string,
+  stripePaymentId?: string,
+  isTestMode = false
+) {
   const credits = SUBSCRIPTION_CREDITS.one_time_session
 
-  return await addCredits(userId, credits, "purchase", "One-Time SSELFIE Session purchase", undefined, isTestMode)
+  if (!stripePaymentId) {
+    console.warn('[Credits] ⚠️ grantOneTimeSessionCredits called without stripe_payment_id')
+  }
+
+  return await addCredits(userId, credits, "purchase", "One-Time SSELFIE Session purchase", stripePaymentId, isTestMode)
 }

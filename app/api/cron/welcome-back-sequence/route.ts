@@ -1,22 +1,29 @@
 import { NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
-import { sendEmail } from "@/lib/email/send-email"
-import { generateNurtureDay7Email } from "@/lib/email/templates/nurture-day-7"
-import { generateWinBackOfferEmail } from "@/lib/email/templates/win-back-offer"
+import { addLoopsContactTags } from '@/lib/loops/manage-contact'
 
 const sql = neon(process.env.DATABASE_URL!)
 
 /**
- * Cron Job Route: Welcome Back Email Sequence
+ * Welcome Back Sequence - Loops Integration
  * 
- * Sends automated follow-up emails to users who received the initial "Welcome Back" campaign:
- * - Day 7: Follow-up check-in
- * - Day 14: Final offer with discount
+ * This cron job triggers Loops sequences by adding tags to contacts.
+ * The actual emails are sent by Loops automations.
  * 
  * GET /api/cron/welcome-back-sequence
  * 
  * Protected by CRON_SECRET environment variable
  * Runs daily at 11 AM UTC
+ * 
+ * Setup required in Loops:
+ * 1. Create "Welcome Back Day 7" automation triggered by tag "welcome-back-day-7"
+ *    - Email subject: "One Week In"
+ * 2. Create "Welcome Back Day 14" automation triggered by tag "welcome-back-day-14"
+ *    - Email subject: "We Miss You - Here's Something Special"
+ * 
+ * Email templates available in:
+ * - @/lib/email/templates/nurture-day-7
+ * - @/lib/email/templates/win-back-offer
  */
 export async function GET(request: Request) {
   try {
@@ -76,31 +83,23 @@ export async function GET(request: Request) {
       if (daysSinceSent >= 7 && !seq.day_7_email_sent) {
         results.day7.found++
         try {
-          const emailContent = generateNurtureDay7Email({
-            firstName,
-            recipientEmail: seq.user_email,
-            campaignId: 0,
-            campaignName: "welcome-back-day-7",
-          })
+          // Add user to Loops sequence by tagging them
+          // This triggers the "Welcome Back Day 7" automation in Loops
+          const loopsResult = await addLoopsContactTags(
+            seq.user_email,
+            ['welcome-back', 'welcome-back-day-7']
+          )
 
-          const result = await sendEmail({
-            to: seq.user_email,
-            subject: "One Week In",
-            html: emailContent.html,
-            text: emailContent.text,
-            emailType: "welcome_back_day_7",
-          })
-
-          if (result.success) {
+          if (loopsResult.success) {
             await sql`
               UPDATE welcome_back_sequence
               SET day_7_email_sent = true, day_7_email_sent_at = NOW(), updated_at = NOW()
               WHERE id = ${seq.id}
             `
             results.day7.sent++
-            console.log(`[v0] [Welcome Back Sequence] ✅ Sent Day 7 email to ${seq.user_email}`)
+            console.log(`[v0] [Welcome Back Sequence] ✅ Tagged in Loops for Day 7 sequence: ${seq.user_email}`)
           } else {
-            throw new Error(result.error || "Failed to send email")
+            throw new Error(loopsResult.error || "Failed to add Loops tags")
           }
         } catch (error: any) {
           results.day7.failed++
@@ -109,7 +108,7 @@ export async function GET(request: Request) {
             day: 7,
             error: error.message || "Unknown error",
           })
-          console.error(`[v0] [Welcome Back Sequence] ❌ Failed to send Day 7 to ${seq.user_email}:`, error)
+          console.error(`[v0] [Welcome Back Sequence] ❌ Failed to tag Day 7 in Loops for ${seq.user_email}:`, error)
         }
       }
 
@@ -117,34 +116,23 @@ export async function GET(request: Request) {
       if (daysSinceSent >= 14 && !seq.day_14_email_sent) {
         results.day14.found++
         try {
-          const emailContent = generateWinBackOfferEmail({
-            firstName,
-            recipientEmail: seq.user_email,
-            campaignId: 0,
-            campaignName: "welcome-back-day-14",
-            offerAmount: 15, // $15 off (dollar amount)
-            offerCode: "WELCOMEBACK15",
-            offerExpiry: "48 hours",
-          })
+          // Add user to Loops sequence by tagging them
+          // This triggers the "Welcome Back Day 14" automation in Loops
+          const loopsResult = await addLoopsContactTags(
+            seq.user_email,
+            ['welcome-back', 'welcome-back-day-14', 'discount']
+          )
 
-          const result = await sendEmail({
-            to: seq.user_email,
-            subject: "We Miss You - Here's Something Special",
-            html: emailContent.html,
-            text: emailContent.text,
-            emailType: "welcome_back_day_14",
-          })
-
-          if (result.success) {
+          if (loopsResult.success) {
             await sql`
               UPDATE welcome_back_sequence
               SET day_14_email_sent = true, day_14_email_sent_at = NOW(), updated_at = NOW()
               WHERE id = ${seq.id}
             `
             results.day14.sent++
-            console.log(`[v0] [Welcome Back Sequence] ✅ Sent Day 14 email to ${seq.user_email}`)
+            console.log(`[v0] [Welcome Back Sequence] ✅ Tagged in Loops for Day 14 sequence: ${seq.user_email}`)
           } else {
-            throw new Error(result.error || "Failed to send email")
+            throw new Error(loopsResult.error || "Failed to add Loops tags")
           }
         } catch (error: any) {
           results.day14.failed++
@@ -153,7 +141,7 @@ export async function GET(request: Request) {
             day: 14,
             error: error.message || "Unknown error",
           })
-          console.error(`[v0] [Welcome Back Sequence] ❌ Failed to send Day 14 to ${seq.user_email}:`, error)
+          console.error(`[v0] [Welcome Back Sequence] ❌ Failed to tag Day 14 in Loops for ${seq.user_email}:`, error)
         }
       }
     }
@@ -162,7 +150,7 @@ export async function GET(request: Request) {
     const totalFailed = results.day7.failed + results.day14.failed
 
     console.log("[v0] [Welcome Back Sequence] Results:", results)
-    console.log(`[v0] [Welcome Back Sequence] Total: ${totalSent} sent, ${totalFailed} failed`)
+    console.log(`[v0] [Welcome Back Sequence] Total: ${totalSent} triggered, ${totalFailed} failed`)
 
     return NextResponse.json({
       success: true,

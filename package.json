@@ -6,7 +6,13 @@
     "build": "next build",
     "dev": "next dev",
     "lint": "eslint .",
-    "start": "next start"
+    "start": "next start",
+    "sync-to-loops": "npx tsx scripts/sync-existing-to-loops.ts",
+    "tag-engagement": "npx tsx scripts/add-engagement-tags.ts",
+    "audit-subscriptions": "npx tsx scripts/audit-subscription-data.ts",
+    "audit-revenue": "npx tsx scripts/audit-revenue-sources.ts",
+    "backfill-payment-ids": "npx tsx scripts/backfill-payment-ids.ts",
+    "migrate-015": "npx tsx scripts/run-migration-015.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "latest",
@@ -70,6 +76,7 @@
     "fs": "0.0.1-security",
     "input-otp": "1.4.1",
     "jszip": "latest",
+    "loops": "latest",
     "lucide-react": "^0.454.0",
     "neon": "2.0.0",
     "next": "16.0.7",

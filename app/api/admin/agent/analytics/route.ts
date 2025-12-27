@@ -31,11 +31,32 @@ export async function GET(request: Request) {
         SELECT 
           COUNT(*) as total_users,
           COUNT(CASE WHEN last_login_at > NOW() - INTERVAL '30 days' THEN 1 END) as active_users,
-          COUNT(CASE WHEN created_at > NOW() - INTERVAL '7 days' THEN 1 END) as new_users_this_week,
-          COUNT(CASE WHEN plan != 'free' AND plan IS NOT NULL THEN 1 END) as paid_users
+          COUNT(CASE WHEN created_at > NOW() - INTERVAL '7 days' THEN 1 END) as new_users_this_week
         FROM users
         WHERE email IS NOT NULL
       `
+      
+      // Separate query for paid users - counts ALL paying customers
+      const paidUsersResult = await sql`
+        SELECT COUNT(DISTINCT user_id) as paid_users
+        FROM (
+          -- Active subscription customers
+          SELECT DISTINCT user_id
+          FROM subscriptions
+          WHERE status = 'active'
+            AND (is_test_mode = FALSE OR is_test_mode IS NULL)
+          
+          UNION
+          
+          -- One-time purchase customers (sessions + top-ups)
+          SELECT DISTINCT user_id
+          FROM credit_transactions
+          WHERE transaction_type = 'purchase'
+            AND stripe_payment_id IS NOT NULL  -- Only verified payments
+            AND (is_test_mode = FALSE OR is_test_mode IS NULL)
+        ) as all_paying_customers
+      `
+      const paid_users = Number(paidUsersResult[0]?.paid_users || 0)
 
       // Generation Stats
       const [generationStats] = await sql`
@@ -121,7 +142,7 @@ export async function GET(request: Request) {
           totalUsers: Number(userStats?.total_users || 0),
           activeUsers: Number(userStats?.active_users || 0),
           newUsersThisWeek: Number(userStats?.new_users_this_week || 0),
-          paidUsers: Number(userStats?.paid_users || 0),
+          paidUsers: paid_users,
           
           totalGenerations: Number(generationStats?.total_generations || 0),
           generationsThisMonth: Number(generationStats?.generations_this_month || 0),

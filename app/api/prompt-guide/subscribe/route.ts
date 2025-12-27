@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
 import { Resend } from "resend"
 import { addOrUpdateResendContact, addContactToSegment } from "@/lib/resend/manage-contact"
+import { syncContactToLoops } from '@/lib/loops/manage-contact'
 import { cookies } from "next/headers"
 
 const resend = new Resend(process.env.RESEND_API_KEY!)
@@ -39,13 +40,15 @@ export async function POST(request: NextRequest) {
 
     let accessToken: string
 
+    let newSubscriberId: number | null = null
+
     if (existingSubscriber.length > 0) {
       accessToken = existingSubscriber[0].access_token
     } else {
       // Create new subscriber
       accessToken = crypto.randomUUID()
 
-      await sql`
+      const insertResult = await sql`
         INSERT INTO freebie_subscribers (
           email, name, source, access_token, utm_source, utm_medium,
           utm_campaign, referrer, user_agent, email_tags, created_at, updated_at
@@ -64,7 +67,12 @@ export async function POST(request: NextRequest) {
           NOW(),
           NOW()
         )
+        RETURNING id
       `
+
+      if (insertResult && insertResult.length > 0) {
+        newSubscriberId = insertResult[0].id
+      }
 
       // Add to Resend contact list if tag provided
       if (emailListTag && process.env.RESEND_API_KEY) {
@@ -94,6 +102,37 @@ export async function POST(request: NextRequest) {
         } catch (error) {
           console.error("[PromptGuide] Error adding to Resend:", error)
           // Don't fail the request if Resend fails
+        }
+      }
+
+      // NEW: Add to Loops
+      if (newSubscriberId) {
+        try {
+          const loopsResult = await syncContactToLoops({
+            email,
+            name,
+            source: 'prompt-guide-subscriber',
+            tags: ['prompt-guide', emailListTag || 'prompt-guide'],
+            customFields: {
+              status: 'lead',
+              product: emailListTag,
+              journey: 'nurture'
+            }
+          })
+          
+          if (loopsResult.success) {
+            console.log(`[PromptGuide] ✅ Added to Loops: ${email}`)
+            
+            await sql`
+              UPDATE freebie_subscribers 
+              SET loops_contact_id = ${loopsResult.contactId || email},
+                  synced_to_loops = true,
+                  loops_synced_at = NOW()
+              WHERE id = ${newSubscriberId}
+            `
+          }
+        } catch (loopsError: any) {
+          console.warn(`[PromptGuide] ⚠️ Loops sync error:`, loopsError)
         }
       }
     }

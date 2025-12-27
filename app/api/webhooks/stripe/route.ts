@@ -13,6 +13,7 @@ import {
   updateContactTags as updateTags,
   addContactToSegment,
 } from "@/lib/resend/manage-contact"
+import { syncContactToLoops } from '@/lib/loops/manage-contact'
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -220,6 +221,64 @@ export async function POST(request: NextRequest) {
               }
             } else {
               console.error(`[v0] Failed to add paying customer to Resend: ${resendResult.error}`)
+            }
+
+            // NEW: Add paying customer to Loops
+            try {
+              console.log(`[v0] Adding paying customer to Loops: ${customerEmail}`)
+              
+              // Build tags - include beta-customer if beta segment exists
+              const loopsTags = ['customer', 'paid', productTag]
+              if (process.env.RESEND_BETA_SEGMENT_ID) {
+                loopsTags.push('beta-customer')
+              }
+              
+              const loopsResult = await syncContactToLoops({
+                email: customerEmail,
+                name: firstName,
+                source: 'stripe-checkout',
+                tags: loopsTags,
+                userGroup: 'paid',
+                customFields: {
+                  status: 'customer',
+                  product: productTag,
+                  journey: 'onboarding',
+                  converted: 'true',
+                  purchaseDate: new Date().toISOString().split('T')[0],
+                  ...(process.env.RESEND_BETA_SEGMENT_ID && { betaCustomer: 'true' })
+                }
+              })
+              
+              if (loopsResult.success) {
+                console.log(`[v0] ✅ Added paying customer to Loops: ${customerEmail}`)
+                
+                // Update freebie_subscribers with Loops contact ID
+                await sql`
+                  UPDATE freebie_subscribers 
+                  SET loops_contact_id = ${loopsResult.contactId || customerEmail},
+                      synced_to_loops = true,
+                      loops_synced_at = NOW(),
+                      updated_at = NOW()
+                  WHERE email = ${customerEmail}
+                `
+                console.log(`[v0] ✅ Updated freebie_subscribers with Loops contact ID`)
+                
+                // Update blueprint_subscribers with Loops contact ID (if exists)
+                await sql`
+                  UPDATE blueprint_subscribers 
+                  SET loops_contact_id = ${loopsResult.contactId || customerEmail},
+                      synced_to_loops = true,
+                      loops_synced_at = NOW(),
+                      updated_at = NOW()
+                  WHERE email = ${customerEmail}
+                `
+                console.log(`[v0] ✅ Updated blueprint_subscribers with Loops contact ID`)
+              } else {
+                console.warn(`[v0] ⚠️ Loops sync failed for paying customer: ${loopsResult.error}`)
+              }
+            } catch (loopsError: any) {
+              console.warn(`[v0] ⚠️ Loops sync error (non-critical):`, loopsError)
+              // Don't fail webhook if Loops sync fails
             }
 
             await sql`
@@ -629,13 +688,66 @@ export async function POST(request: NextRequest) {
             )
           } else if (productType === "one_time_session") {
             console.log(`[v0] One-time session purchase for user ${userId} (test mode: ${!event.livemode})`)
-            await grantOneTimeSessionCredits(userId)
-            console.log(`[v0] One-time session credits granted for user ${userId}`)
+            
+            // Get payment intent ID from session
+            const paymentIntentId = typeof session.payment_intent === 'string'
+              ? session.payment_intent
+              : session.payment_intent?.id
+            
+            if (!paymentIntentId) {
+              console.error('[v0] ⚠️ No payment intent ID found for one-time session')
+            }
+            
+            const isTestMode = !event.livemode
+            
+            // Pass payment ID to track the purchase
+            await grantOneTimeSessionCredits(userId, paymentIntentId, isTestMode)
+            console.log(`[v0] ✅ Granted one-time session credits with payment ID: ${paymentIntentId}`)
+            
+            // Update the credit_transaction record to store product_type
+            if (paymentIntentId) {
+              await sql`
+                UPDATE credit_transactions
+                SET product_type = 'one_time_session'
+                WHERE user_id = ${userId}
+                  AND stripe_payment_id = ${paymentIntentId}
+                  AND product_type IS NULL
+              `
+            }
           } else if (productType === "credit_topup") {
             const isTestMode = !event.livemode
             console.log(`[v0] Credit top-up: ${credits} credits for user ${userId} (test mode: ${isTestMode})`)
-            await addCredits(userId, credits, "purchase", `Credit top-up purchase`, undefined, isTestMode)
-            console.log(`[v0] Successfully added ${credits} credits to user ${userId} (test mode: ${isTestMode})`)
+            
+            // Get payment intent ID
+            const paymentIntentId = typeof session.payment_intent === 'string'
+              ? session.payment_intent
+              : session.payment_intent?.id
+            
+            if (!paymentIntentId) {
+              console.error('[v0] ⚠️ No payment intent ID found for credit top-up')
+            }
+            
+            // Pass payment ID to track the purchase
+            await addCredits(
+              userId,
+              credits,
+              "purchase",
+              `Credit top-up purchase (${credits} credits)`,
+              paymentIntentId,
+              isTestMode
+            )
+            console.log(`[v0] ✅ Granted top-up credits with payment ID: ${paymentIntentId}`)
+            
+            // Update to store product_type
+            if (paymentIntentId) {
+              await sql`
+                UPDATE credit_transactions
+                SET product_type = 'credit_topup'
+                WHERE user_id = ${userId}
+                  AND stripe_payment_id = ${paymentIntentId}
+                  AND product_type IS NULL
+              `
+            }
           }
         } else if (session.mode === "subscription") {
           let userId = session.metadata.user_id

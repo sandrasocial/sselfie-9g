@@ -3,6 +3,31 @@
  * Centralized brand requirements for email generation
  */
 
+/**
+ * EMAIL PLATFORM STRATEGY
+ * 
+ * We use TWO email platforms:
+ * 
+ * RESEND - Transactional emails only
+ * - Login/magic links
+ * - Password resets
+ * - Purchase receipts
+ * - Account notifications
+ * - System alerts
+ * 
+ * LOOPS - Marketing emails only
+ * - Newsletters
+ * - Product launches
+ * - Welcome sequences
+ * - Nurture campaigns
+ * - Promotional emails
+ * - Re-engagement campaigns
+ * 
+ * When creating emails, ALWAYS use the correct platform:
+ * - User action triggered it? → Resend
+ * - Marketing/promotional content? → Loops
+ */
+
 export const EMAIL_BRAND_GUIDELINES = {
   layout: {
     type: 'table-based', // Required for email client compatibility

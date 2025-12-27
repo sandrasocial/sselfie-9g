@@ -1,26 +1,35 @@
 import { NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
-import { sendEmail } from "@/lib/email/send-email"
-import { generateUpsellFreebieMembershipEmail } from "@/lib/email/templates/upsell-freebie-membership"
-import { generateNurtureDay7Email } from "@/lib/email/templates/nurture-day-7"
-import { generateUpsellDay10Email } from "@/lib/email/templates/upsell-day-10"
-import { generateWinBackOfferEmail } from "@/lib/email/templates/win-back-offer"
+import { addLoopsContactTags } from '@/lib/loops/manage-contact'
 
 const sql = neon(process.env.DATABASE_URL!)
 
 /**
- * Cron Job Route: Blueprint Email Sequence
+ * Blueprint Email Sequence - Loops Integration
  * 
- * Sends automated follow-up emails to Blueprint subscribers:
- * - Day 3: Upsell to Studio Membership
- * - Day 7: Nurture check-in
- * - Day 10: Extended upsell
- * - Day 14: Final offer with discount
+ * This cron job triggers Loops sequences by adding tags to contacts.
+ * The actual emails are sent by Loops automations.
  * 
  * GET /api/cron/blueprint-email-sequence
  * 
  * Protected by CRON_SECRET environment variable
  * Runs daily at 10 AM UTC
+ * 
+ * Setup required in Loops:
+ * 1. Create "Blueprint Upsell Day 3" automation triggered by tag "blueprint-upsell-day-3"
+ *    - Email subject: "Ready for the Next Level?"
+ * 2. Create "Blueprint Nurture Day 7" automation triggered by tag "blueprint-upsell-day-7"
+ *    - Email subject: "One Week In"
+ * 3. Create "Blueprint Upsell Day 10" automation triggered by tag "blueprint-upsell-day-10"
+ *    - Email subject: "Ready for the Next Level?"
+ * 4. Create "Blueprint Win Back Day 14" automation triggered by tag "blueprint-upsell-day-14"
+ *    - Email subject: "We Miss You - Here's Something Special"
+ * 
+ * Email templates available in:
+ * - @/lib/email/templates/upsell-freebie-membership
+ * - @/lib/email/templates/nurture-day-7
+ * - @/lib/email/templates/upsell-day-10
+ * - @/lib/email/templates/win-back-offer
  */
 export async function GET(request: Request) {
   try {
@@ -86,31 +95,23 @@ export async function GET(request: Request) {
       if (daysSinceSignup >= 3 && !subscriber.day_3_email_sent) {
         results.day3.found++
         try {
-          const emailContent = generateUpsellFreebieMembershipEmail({
-            firstName,
-            recipientEmail: subscriber.email,
-            campaignId: 0, // Will be set when campaign is created
-            campaignName: "blueprint-day-3-upsell",
-          })
+          // Add user to Loops sequence by tagging them
+          // This triggers the "Blueprint Upsell Day 3" automation in Loops
+          const loopsResult = await addLoopsContactTags(
+            subscriber.email,
+            ['blueprint-subscriber', 'blueprint-upsell-day-3']
+          )
 
-          const result = await sendEmail({
-            to: subscriber.email,
-            subject: "Ready for the Next Level?",
-            html: emailContent.html,
-            text: emailContent.text,
-            emailType: "blueprint_day_3",
-          })
-
-          if (result.success) {
+          if (loopsResult.success) {
             await sql`
               UPDATE blueprint_subscribers
               SET day_3_email_sent = true, day_3_email_sent_at = NOW(), updated_at = NOW()
               WHERE id = ${subscriber.id}
             `
             results.day3.sent++
-            console.log(`[v0] [Blueprint Sequence] ✅ Sent Day 3 email to ${subscriber.email}`)
+            console.log(`[v0] [Blueprint Sequence] ✅ Tagged in Loops for Day 3 sequence: ${subscriber.email}`)
           } else {
-            throw new Error(result.error || "Failed to send email")
+            throw new Error(loopsResult.error || "Failed to add Loops tags")
           }
         } catch (error: any) {
           results.day3.failed++
@@ -119,7 +120,7 @@ export async function GET(request: Request) {
             day: 3,
             error: error.message || "Unknown error",
           })
-          console.error(`[v0] [Blueprint Sequence] ❌ Failed to send Day 3 to ${subscriber.email}:`, error)
+          console.error(`[v0] [Blueprint Sequence] ❌ Failed to tag Day 3 in Loops for ${subscriber.email}:`, error)
         }
       }
 
@@ -127,31 +128,23 @@ export async function GET(request: Request) {
       if (daysSinceSignup >= 7 && !subscriber.day_7_email_sent) {
         results.day7.found++
         try {
-          const emailContent = generateNurtureDay7Email({
-            firstName,
-            recipientEmail: subscriber.email,
-            campaignId: 0,
-            campaignName: "blueprint-day-7-nurture",
-          })
+          // Add user to Loops sequence by tagging them
+          // This triggers the "Blueprint Nurture Day 7" automation in Loops
+          const loopsResult = await addLoopsContactTags(
+            subscriber.email,
+            ['blueprint-subscriber', 'blueprint-upsell-day-7']
+          )
 
-          const result = await sendEmail({
-            to: subscriber.email,
-            subject: "One Week In",
-            html: emailContent.html,
-            text: emailContent.text,
-            emailType: "blueprint_day_7",
-          })
-
-          if (result.success) {
+          if (loopsResult.success) {
             await sql`
               UPDATE blueprint_subscribers
               SET day_7_email_sent = true, day_7_email_sent_at = NOW(), updated_at = NOW()
               WHERE id = ${subscriber.id}
             `
             results.day7.sent++
-            console.log(`[v0] [Blueprint Sequence] ✅ Sent Day 7 email to ${subscriber.email}`)
+            console.log(`[v0] [Blueprint Sequence] ✅ Tagged in Loops for Day 7 sequence: ${subscriber.email}`)
           } else {
-            throw new Error(result.error || "Failed to send email")
+            throw new Error(loopsResult.error || "Failed to add Loops tags")
           }
         } catch (error: any) {
           results.day7.failed++
@@ -160,7 +153,7 @@ export async function GET(request: Request) {
             day: 7,
             error: error.message || "Unknown error",
           })
-          console.error(`[v0] [Blueprint Sequence] ❌ Failed to send Day 7 to ${subscriber.email}:`, error)
+          console.error(`[v0] [Blueprint Sequence] ❌ Failed to tag Day 7 in Loops for ${subscriber.email}:`, error)
         }
       }
 
@@ -168,31 +161,23 @@ export async function GET(request: Request) {
       if (daysSinceSignup >= 10 && !subscriber.day_10_email_sent) {
         results.day10.found++
         try {
-          const emailContent = generateUpsellDay10Email({
-            firstName,
-            recipientEmail: subscriber.email,
-            campaignId: 0,
-            campaignName: "blueprint-day-10-upsell",
-          })
+          // Add user to Loops sequence by tagging them
+          // This triggers the "Blueprint Upsell Day 10" automation in Loops
+          const loopsResult = await addLoopsContactTags(
+            subscriber.email,
+            ['blueprint-subscriber', 'blueprint-upsell-day-10']
+          )
 
-          const result = await sendEmail({
-            to: subscriber.email,
-            subject: "Ready for the Next Level?",
-            html: emailContent.html,
-            text: emailContent.text,
-            emailType: "blueprint_day_10",
-          })
-
-          if (result.success) {
+          if (loopsResult.success) {
             await sql`
               UPDATE blueprint_subscribers
               SET day_10_email_sent = true, day_10_email_sent_at = NOW(), updated_at = NOW()
               WHERE id = ${subscriber.id}
             `
             results.day10.sent++
-            console.log(`[v0] [Blueprint Sequence] ✅ Sent Day 10 email to ${subscriber.email}`)
+            console.log(`[v0] [Blueprint Sequence] ✅ Tagged in Loops for Day 10 sequence: ${subscriber.email}`)
           } else {
-            throw new Error(result.error || "Failed to send email")
+            throw new Error(loopsResult.error || "Failed to add Loops tags")
           }
         } catch (error: any) {
           results.day10.failed++
@@ -201,7 +186,7 @@ export async function GET(request: Request) {
             day: 10,
             error: error.message || "Unknown error",
           })
-          console.error(`[v0] [Blueprint Sequence] ❌ Failed to send Day 10 to ${subscriber.email}:`, error)
+          console.error(`[v0] [Blueprint Sequence] ❌ Failed to tag Day 10 in Loops for ${subscriber.email}:`, error)
         }
       }
 
@@ -209,34 +194,23 @@ export async function GET(request: Request) {
       if (daysSinceSignup >= 14 && !subscriber.day_14_email_sent) {
         results.day14.found++
         try {
-          const emailContent = generateWinBackOfferEmail({
-            firstName,
-            recipientEmail: subscriber.email,
-            campaignId: 0,
-            campaignName: "blueprint-day-14-offer",
-            offerAmount: 10, // $10 off (dollar amount)
-            offerCode: "BLUEPRINT10",
-            offerExpiry: "48 hours",
-          })
+          // Add user to Loops sequence by tagging them
+          // This triggers the "Blueprint Win Back Day 14" automation in Loops
+          const loopsResult = await addLoopsContactTags(
+            subscriber.email,
+            ['blueprint-subscriber', 'blueprint-upsell-day-14', 'discount']
+          )
 
-          const result = await sendEmail({
-            to: subscriber.email,
-            subject: "We Miss You - Here's Something Special",
-            html: emailContent.html,
-            text: emailContent.text,
-            emailType: "blueprint_day_14",
-          })
-
-          if (result.success) {
+          if (loopsResult.success) {
             await sql`
               UPDATE blueprint_subscribers
               SET day_14_email_sent = true, day_14_email_sent_at = NOW(), updated_at = NOW()
               WHERE id = ${subscriber.id}
             `
             results.day14.sent++
-            console.log(`[v0] [Blueprint Sequence] ✅ Sent Day 14 email to ${subscriber.email}`)
+            console.log(`[v0] [Blueprint Sequence] ✅ Tagged in Loops for Day 14 sequence: ${subscriber.email}`)
           } else {
-            throw new Error(result.error || "Failed to send email")
+            throw new Error(loopsResult.error || "Failed to add Loops tags")
           }
         } catch (error: any) {
           results.day14.failed++
@@ -245,7 +219,7 @@ export async function GET(request: Request) {
             day: 14,
             error: error.message || "Unknown error",
           })
-          console.error(`[v0] [Blueprint Sequence] ❌ Failed to send Day 14 to ${subscriber.email}:`, error)
+          console.error(`[v0] [Blueprint Sequence] ❌ Failed to tag Day 14 in Loops for ${subscriber.email}:`, error)
         }
       }
     }
@@ -254,7 +228,7 @@ export async function GET(request: Request) {
     const totalFailed = results.day3.failed + results.day7.failed + results.day10.failed + results.day14.failed
 
     console.log("[v0] [Blueprint Sequence] Results:", results)
-    console.log(`[v0] [Blueprint Sequence] Total: ${totalSent} sent, ${totalFailed} failed`)
+    console.log(`[v0] [Blueprint Sequence] Total: ${totalSent} triggered, ${totalFailed} failed`)
 
     return NextResponse.json({
       success: true,

@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
 import { Resend } from "resend"
 import { addOrUpdateResendContact } from "@/lib/resend/manage-contact"
+import { syncContactToLoops } from '@/lib/loops/manage-contact'
 
 const resend = new Resend(process.env.RESEND_API_KEY!)
 const sql = neon(process.env.DATABASE_URL!)
@@ -139,6 +140,42 @@ export async function POST(request: NextRequest) {
         `[v0] Resend integration unavailable, continuing without it:`,
         resendError instanceof Error ? resendError.message : "Unknown error",
       )
+    }
+
+    // NEW: Add to Loops (dual-sync)
+    try {
+      const loopsResult = await syncContactToLoops({
+        email,
+        name,
+        source: 'blueprint-subscriber',
+        tags: ['brand-blueprint', 'lead'],
+        customFields: {
+          status: 'lead',
+          product: 'sselfie-brand-blueprint',
+          journey: 'nurture',
+          signupDate: new Date().toISOString().split('T')[0],
+          business: formData?.business,
+          dreamClient: formData?.dreamClient,
+          struggle: formData?.struggle
+        }
+      })
+      
+      if (loopsResult.success) {
+        console.log(`[v0] ✅ Added to Loops: ${email}`)
+        
+        await sql`
+          UPDATE blueprint_subscribers 
+          SET loops_contact_id = ${loopsResult.contactId || email},
+              synced_to_loops = true,
+              loops_synced_at = NOW(),
+              updated_at = NOW()
+          WHERE id = ${newSubscriber.id}
+        `
+      } else {
+        console.warn(`[v0] ⚠️ Loops sync failed: ${loopsResult.error}`)
+      }
+    } catch (loopsError: any) {
+      console.warn(`[v0] ⚠️ Loops sync error:`, loopsError)
     }
 
     console.log("[v0] Returning success response")

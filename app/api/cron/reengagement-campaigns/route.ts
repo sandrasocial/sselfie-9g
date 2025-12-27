@@ -1,16 +1,25 @@
 import { NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
 import { getSegmentMembers } from "@/lib/email/segmentation"
-import { sendEmail } from "@/lib/email/send-email"
-import { generateWinBackOfferEmail } from "@/lib/email/templates/win-back-offer"
+import { addLoopsContactTags } from '@/lib/loops/manage-contact'
 
 const sql = neon(process.env.DATABASE_URL!)
 
 /**
- * Cron Job: Re-Engagement Campaigns
+ * Re-Engagement Campaigns - Loops Integration
  * 
- * Automatically sends re-engagement emails to inactive subscribers
+ * This cron job triggers Loops re-engagement sequences by adding tags to contacts.
+ * The actual emails are sent by Loops automations.
+ * 
  * Runs daily at 12 PM UTC
+ * 
+ * Setup required in Loops:
+ * 1. Create re-engagement automations triggered by tags matching campaign names
+ * 2. Tag format: "reengagement-{campaign_id}" or use campaign-specific tags
+ * 3. Email content should match templates in reengagement_campaigns table
+ * 
+ * Note: Each campaign in reengagement_campaigns table should have a corresponding
+ * Loops automation that triggers when the tag is added.
  */
 export async function GET(request: Request) {
   try {
@@ -79,56 +88,36 @@ export async function GET(request: Request) {
           `[v0] [Re-Engagement] Campaign ${campaign.id}: ${eligibleMembers.length} eligible members`,
         )
 
-        // Send emails
+        // Trigger Loops sequences by tagging users
         let sent = 0
         let failed = 0
 
+        // Create tag for this campaign (use campaign ID or name-based tag)
+        const campaignTag = `reengagement-${campaign.id}`
+
         for (const email of eligibleMembers) {
           try {
-            // Generate email content based on template type
-            let emailContent: { html: string; text: string }
-            let subject = campaign.subject_line
+            // Add user to Loops sequence by tagging them
+            // This triggers the re-engagement automation in Loops
+            const loopsResult = await addLoopsContactTags(
+              email,
+              ['reengagement', campaignTag]
+            )
 
-            if (campaign.email_template_type === "win_back") {
-              emailContent = generateWinBackOfferEmail({
-                firstName: email.split("@")[0],
-                recipientEmail: email,
-                offerAmount: campaign.offer_amount,
-                offerCode: campaign.offer_code,
-                offerExpiry: "7 days",
-                campaignId: campaign.id,
-                campaignName: campaign.campaign_name,
-              })
-            } else {
-              // Default template
-              emailContent = {
-                html: campaign.body_html || "",
-                text: campaign.body_text || "",
-              }
-            }
-
-            const result = await sendEmail({
-              to: email,
-              subject,
-              html: emailContent.html,
-              text: emailContent.text,
-              emailType: `reengagement_${campaign.id}`,
-              campaignId: campaign.id,
-            })
-
-            if (result.success) {
-              // Track send
+            if (loopsResult.success) {
+              // Track send (sequence triggered)
               await sql`
                 INSERT INTO reengagement_sends (campaign_id, user_email, sent_at)
                 VALUES (${campaign.id}, ${email}, NOW())
                 ON CONFLICT (campaign_id, user_email) DO NOTHING
               `
               sent++
+              console.log(`[v0] [Re-Engagement] ✅ Tagged in Loops for campaign ${campaign.id}: ${email}`)
             } else {
-              failed++
+              throw new Error(loopsResult.error || "Failed to add Loops tags")
             }
           } catch (error: any) {
-            console.error(`[v0] [Re-Engagement] Failed to send to ${email}:`, error)
+            console.error(`[v0] [Re-Engagement] Failed to tag ${email} in Loops:`, error)
             failed++
           }
         }

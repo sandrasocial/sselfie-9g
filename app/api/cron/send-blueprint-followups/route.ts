@@ -1,23 +1,32 @@
 import { NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
-import { Resend } from "resend"
-import { generateBlueprintFollowupDay3Email } from "@/lib/email/templates/blueprint-followup-day-3"
-import { generateBlueprintFollowupDay7Email } from "@/lib/email/templates/blueprint-followup-day-7"
-import { generateBlueprintFollowupDay14Email } from "@/lib/email/templates/blueprint-followup-day-14"
+import { addLoopsContactTags } from '@/lib/loops/manage-contact'
 
 const sql = neon(process.env.DATABASE_URL!)
-const resend = new Resend(process.env.RESEND_API_KEY!)
 
 /**
- * Cron Job Route for Sending Blueprint Follow-up Emails
+ * Blueprint Followup Sequence - Loops Integration
  * 
- * This route is called by Vercel Cron Jobs to automatically send
- * follow-up emails to blueprint subscribers at days 3, 7, and 14.
+ * This cron job triggers Loops sequences by adding tags to contacts.
+ * The actual emails are sent by Loops automations.
  * 
  * GET /api/cron/send-blueprint-followups
  * 
  * Protected by CRON_SECRET environment variable
  * Runs daily at 10 AM UTC
+ * 
+ * Setup required in Loops:
+ * 1. Create "Blueprint Day 3" automation triggered by tag "blueprint-day-3"
+ *    - Email subject: "3 Ways to Use Your Blueprint This Week"
+ * 2. Create "Blueprint Day 7" automation triggered by tag "blueprint-day-7"
+ *    - Email subject: "[Name] went from 5K to 25K followers using this system"
+ * 3. Create "Blueprint Day 14" automation triggered by tag "blueprint-day-14"
+ *    - Email subject: "Still thinking about it? Here's $10 off 💕"
+ * 
+ * Email templates available in:
+ * - @/lib/email/templates/blueprint-followup-day-3
+ * - @/lib/email/templates/blueprint-followup-day-7
+ * - @/lib/email/templates/blueprint-followup-day-14
  */
 export async function GET(request: Request) {
   try {
@@ -63,55 +72,45 @@ export async function GET(request: Request) {
 
     for (const subscriber of day3Subscribers) {
       try {
-        const formData = subscriber.form_data ? JSON.parse(subscriber.form_data as string) : {}
-        const emailContent = generateBlueprintFollowupDay3Email({
-          firstName: subscriber.name,
-          email: subscriber.email,
-        })
+        // Add user to Loops sequence by tagging them
+        // This triggers the "Blueprint Day 3" automation in Loops
+        const loopsResult = await addLoopsContactTags(
+          subscriber.email,
+          ['blueprint-subscriber', 'blueprint-day-3']
+        )
 
-        const emailResult = await resend.emails.send({
-          from: "Sandra from SSELFIE <hello@sselfie.ai>",
-          to: subscriber.email,
-          subject: "3 Ways to Use Your Blueprint This Week",
-          html: emailContent.html,
-          text: emailContent.text,
-          tags: ["blueprint-followup", "day-3"],
-        })
+        if (loopsResult.success) {
+          // Mark as sent (sequence triggered)
+          await sql`
+            UPDATE blueprint_subscribers
+            SET 
+              day_3_email_sent = TRUE,
+              day_3_email_sent_at = NOW(),
+              updated_at = NOW()
+            WHERE id = ${subscriber.id}
+          `
 
-        if (emailResult.error) {
-          throw new Error(emailResult.error.message)
+          // Log to email_logs
+          await sql`
+            INSERT INTO email_logs (
+              user_email,
+              email_type,
+              status,
+              sent_at
+            )
+            VALUES (
+              ${subscriber.email},
+              'blueprint_followup_day3_loops',
+              'triggered',
+              NOW()
+            )
+          `
+
+          results.day3.sent++
+          console.log(`[v0] [CRON] ✅ Tagged in Loops for Day 3 sequence: ${subscriber.email}`)
+        } else {
+          throw new Error(loopsResult.error || 'Failed to add Loops tags')
         }
-
-        // Mark as sent
-        await sql`
-          UPDATE blueprint_subscribers
-          SET 
-            day_3_email_sent = TRUE,
-            day_3_email_sent_at = NOW(),
-            updated_at = NOW()
-          WHERE id = ${subscriber.id}
-        `
-
-        // Log to email_logs
-        await sql`
-          INSERT INTO email_logs (
-            user_email,
-            email_type,
-            resend_message_id,
-            status,
-            sent_at
-          )
-          VALUES (
-            ${subscriber.email},
-            'blueprint_followup_day3',
-            ${emailResult.data?.id || null},
-            'sent',
-            NOW()
-          )
-        `
-
-        results.day3.sent++
-        console.log(`[v0] [CRON] ✅ Sent Day 3 email to ${subscriber.email}`)
       } catch (error: any) {
         results.day3.failed++
         results.errors.push({
@@ -119,7 +118,7 @@ export async function GET(request: Request) {
           day: 3,
           error: error.message || "Unknown error",
         })
-        console.error(`[v0] [CRON] ❌ Failed to send Day 3 email to ${subscriber.email}:`, error)
+        console.error(`[v0] [CRON] ❌ Failed to tag Day 3 in Loops for ${subscriber.email}:`, error)
       }
     }
 
@@ -139,55 +138,45 @@ export async function GET(request: Request) {
 
     for (const subscriber of day7Subscribers) {
       try {
-        const formData = subscriber.form_data ? JSON.parse(subscriber.form_data as string) : {}
-        const emailContent = generateBlueprintFollowupDay7Email({
-          firstName: subscriber.name,
-          email: subscriber.email,
-        })
+        // Add user to Loops sequence by tagging them
+        // This triggers the "Blueprint Day 7" automation in Loops
+        const loopsResult = await addLoopsContactTags(
+          subscriber.email,
+          ['blueprint-subscriber', 'blueprint-day-7']
+        )
 
-        const emailResult = await resend.emails.send({
-          from: "Sandra from SSELFIE <hello@sselfie.ai>",
-          to: subscriber.email,
-          subject: `${subscriber.name || "Someone"} went from 5K to 25K followers using this system`,
-          html: emailContent.html,
-          text: emailContent.text,
-          tags: ["blueprint-followup", "day-7"],
-        })
+        if (loopsResult.success) {
+          // Mark as sent (sequence triggered)
+          await sql`
+            UPDATE blueprint_subscribers
+            SET 
+              day_7_email_sent = TRUE,
+              day_7_email_sent_at = NOW(),
+              updated_at = NOW()
+            WHERE id = ${subscriber.id}
+          `
 
-        if (emailResult.error) {
-          throw new Error(emailResult.error.message)
+          // Log to email_logs
+          await sql`
+            INSERT INTO email_logs (
+              user_email,
+              email_type,
+              status,
+              sent_at
+            )
+            VALUES (
+              ${subscriber.email},
+              'blueprint_followup_day7_loops',
+              'triggered',
+              NOW()
+            )
+          `
+
+          results.day7.sent++
+          console.log(`[v0] [CRON] ✅ Tagged in Loops for Day 7 sequence: ${subscriber.email}`)
+        } else {
+          throw new Error(loopsResult.error || 'Failed to add Loops tags')
         }
-
-        // Mark as sent
-        await sql`
-          UPDATE blueprint_subscribers
-          SET 
-            day_7_email_sent = TRUE,
-            day_7_email_sent_at = NOW(),
-            updated_at = NOW()
-          WHERE id = ${subscriber.id}
-        `
-
-        // Log to email_logs
-        await sql`
-          INSERT INTO email_logs (
-            user_email,
-            email_type,
-            resend_message_id,
-            status,
-            sent_at
-          )
-          VALUES (
-            ${subscriber.email},
-            'blueprint_followup_day7',
-            ${emailResult.data?.id || null},
-            'sent',
-            NOW()
-          )
-        `
-
-        results.day7.sent++
-        console.log(`[v0] [CRON] ✅ Sent Day 7 email to ${subscriber.email}`)
       } catch (error: any) {
         results.day7.failed++
         results.errors.push({
@@ -195,7 +184,7 @@ export async function GET(request: Request) {
           day: 7,
           error: error.message || "Unknown error",
         })
-        console.error(`[v0] [CRON] ❌ Failed to send Day 7 email to ${subscriber.email}:`, error)
+        console.error(`[v0] [CRON] ❌ Failed to tag Day 7 in Loops for ${subscriber.email}:`, error)
       }
     }
 
@@ -215,55 +204,45 @@ export async function GET(request: Request) {
 
     for (const subscriber of day14Subscribers) {
       try {
-        const formData = subscriber.form_data ? JSON.parse(subscriber.form_data as string) : {}
-        const emailContent = generateBlueprintFollowupDay14Email({
-          firstName: subscriber.name,
-          email: subscriber.email,
-        })
+        // Add user to Loops sequence by tagging them
+        // This triggers the "Blueprint Day 14" automation in Loops
+        const loopsResult = await addLoopsContactTags(
+          subscriber.email,
+          ['blueprint-subscriber', 'blueprint-day-14', 'discount']
+        )
 
-        const emailResult = await resend.emails.send({
-          from: "Sandra from SSELFIE <hello@sselfie.ai>",
-          to: subscriber.email,
-          subject: "Still thinking about it? Here's $10 off 💕",
-          html: emailContent.html,
-          text: emailContent.text,
-          tags: ["blueprint-followup", "day-14", "discount"],
-        })
+        if (loopsResult.success) {
+          // Mark as sent (sequence triggered)
+          await sql`
+            UPDATE blueprint_subscribers
+            SET 
+              day_14_email_sent = TRUE,
+              day_14_email_sent_at = NOW(),
+              updated_at = NOW()
+            WHERE id = ${subscriber.id}
+          `
 
-        if (emailResult.error) {
-          throw new Error(emailResult.error.message)
+          // Log to email_logs
+          await sql`
+            INSERT INTO email_logs (
+              user_email,
+              email_type,
+              status,
+              sent_at
+            )
+            VALUES (
+              ${subscriber.email},
+              'blueprint_followup_day14_loops',
+              'triggered',
+              NOW()
+            )
+          `
+
+          results.day14.sent++
+          console.log(`[v0] [CRON] ✅ Tagged in Loops for Day 14 sequence: ${subscriber.email}`)
+        } else {
+          throw new Error(loopsResult.error || 'Failed to add Loops tags')
         }
-
-        // Mark as sent
-        await sql`
-          UPDATE blueprint_subscribers
-          SET 
-            day_14_email_sent = TRUE,
-            day_14_email_sent_at = NOW(),
-            updated_at = NOW()
-          WHERE id = ${subscriber.id}
-        `
-
-        // Log to email_logs
-        await sql`
-          INSERT INTO email_logs (
-            user_email,
-            email_type,
-            resend_message_id,
-            status,
-            sent_at
-          )
-          VALUES (
-            ${subscriber.email},
-            'blueprint_followup_day14',
-            ${emailResult.data?.id || null},
-            'sent',
-            NOW()
-          )
-        `
-
-        results.day14.sent++
-        console.log(`[v0] [CRON] ✅ Sent Day 14 email to ${subscriber.email}`)
       } catch (error: any) {
         results.day14.failed++
         results.errors.push({
@@ -271,7 +250,7 @@ export async function GET(request: Request) {
           day: 14,
           error: error.message || "Unknown error",
         })
-        console.error(`[v0] [CRON] ❌ Failed to send Day 14 email to ${subscriber.email}:`, error)
+        console.error(`[v0] [CRON] ❌ Failed to tag Day 14 in Loops for ${subscriber.email}:`, error)
       }
     }
 
@@ -279,12 +258,12 @@ export async function GET(request: Request) {
     const totalFailed = results.day3.failed + results.day7.failed + results.day14.failed
 
     console.log(
-      `[v0] [CRON] Follow-up sequence completed: ${totalSent} sent, ${totalFailed} failed`,
+      `[v0] [CRON] Follow-up sequence completed: ${totalSent} triggered, ${totalFailed} failed`,
     )
 
     return NextResponse.json({
       success: true,
-      message: `Blueprint follow-ups sent: ${totalSent} successful, ${totalFailed} failed`,
+      message: `Blueprint follow-ups triggered: ${totalSent} successful, ${totalFailed} failed`,
       summary: {
         day3: results.day3,
         day7: results.day7,

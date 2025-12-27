@@ -5734,39 +5734,82 @@ This provides real-time data from the database.`,
               break
           }
 
-          // Get user signups and plan distribution
-          const userMetricsResult = await sql`
+          // Get total users count
+          const userCounts = await sql`
             SELECT
               COUNT(*)::int as total_users,
-              COUNT(*) FILTER (WHERE plan = 'free')::int as free_users,
-              COUNT(*) FILTER (WHERE plan = 'studio_membership')::int as studio_members,
-              COUNT(*) FILTER (WHERE plan = 'one_time')::int as one_time_users,
-              COUNT(*) FILTER (WHERE created_at >= ${startDate.toISOString()})::int as new_signups,
-              COUNT(*) FILTER (WHERE plan != 'free' AND created_at >= ${startDate.toISOString()})::int as new_paid_users
+              COUNT(*) FILTER (WHERE created_at >= ${startDate.toISOString()})::int as new_signups
             FROM users
+            WHERE (is_test_mode = FALSE OR is_test_mode IS NULL)
+          `
+          
+          // Active subscribers count (fixed - uses subscriptions table)
+          const subscriberCounts = await sql`
+            SELECT 
+              COUNT(DISTINCT user_id)::int as active_subscribers,
+              COUNT(CASE WHEN product_type = 'sselfie_studio_membership' THEN 1 END)::int as studio_members
+            FROM subscriptions
+            WHERE status = 'active'
+              AND (is_test_mode = FALSE OR is_test_mode IS NULL)
+          `
+          
+          // One-time purchase counts
+          const oneTimeCounts = await sql`
+            SELECT 
+              COUNT(DISTINCT user_id)::int as one_time_buyers,
+              COUNT(*)::int as total_purchases,
+              COUNT(CASE WHEN product_type = 'one_time_session' THEN 1 END)::int as session_purchases,
+              COUNT(CASE WHEN product_type = 'credit_topup' THEN 1 END)::int as topup_purchases
+            FROM credit_transactions
+            WHERE transaction_type = 'purchase'
+              AND stripe_payment_id IS NOT NULL
+              AND (is_test_mode = FALSE OR is_test_mode IS NULL)
+              AND created_at >= ${startDate.toISOString()}
+          `
+          
+          // One-time buyers (all time, not just this period)
+          const oneTimeBuyersAllTimeResult = await sql`
+            SELECT COUNT(DISTINCT user_id)::int as one_time_buyers_all_time
+            FROM credit_transactions
+            WHERE transaction_type = 'purchase'
+              AND stripe_payment_id IS NOT NULL
+              AND (is_test_mode = FALSE OR is_test_mode IS NULL)
+          `
+          
+          // Monthly Recurring Revenue (MRR)
+          const mrrCalc = await sql`
+            SELECT 
+              COUNT(*) * 29 as mrr  -- $29/month per subscription
+            FROM subscriptions
+            WHERE status = 'active'
+              AND (is_test_mode = FALSE OR is_test_mode IS NULL)
           `
 
-          if (!userMetricsResult || userMetricsResult.length === 0) {
+          if (!userCounts || userCounts.length === 0) {
             return {
               success: false,
               error: "Failed to retrieve user metrics from database"
             }
           }
           
-          const userMetrics = userMetricsResult[0]
-          
           // Validate numeric values
-          const totalUsers = Number(userMetrics.total_users) || 0
-          const freeUsers = Number(userMetrics.free_users) || 0
-          const studioMembers = Number(userMetrics.studio_members) || 0
-          const oneTimeUsers = Number(userMetrics.one_time_users) || 0
-          const newSignups = Number(userMetrics.new_signups) || 0
-          const newPaidUsers = Number(userMetrics.new_paid_users) || 0
-
+          const totalUsers = Number(userCounts[0]?.total_users || 0)
+          const newSignups = Number(userCounts[0]?.new_signups || 0)
+          const activeSubscribers = Number(subscriberCounts[0]?.active_subscribers || 0)
+          const studioMembers = Number(subscriberCounts[0]?.studio_members || 0)
+          const oneTimeBuyers = Number(oneTimeCounts[0]?.one_time_buyers || 0)
+          const oneTimeBuyersAllTime = Number(oneTimeBuyersAllTimeResult[0]?.one_time_buyers_all_time || 0)
+          const totalPurchases = Number(oneTimeCounts[0]?.total_purchases || 0)
+          const sessionPurchases = Number(oneTimeCounts[0]?.session_purchases || 0)
+          const topupPurchases = Number(oneTimeCounts[0]?.topup_purchases || 0)
+          const mrr = Number(mrrCalc[0]?.mrr || 0)
+          
+          // Calculate total paying customers (with overlap handling)
+          // Users can be both subscribers and one-time buyers
+          const totalPayingCustomers = activeSubscribers + oneTimeBuyersAllTime
+          
           // Get conversion metrics with zero-division protection
-          const freeToStudioConversion = freeUsers > 0 ? (studioMembers / freeUsers * 100) : 0
-          const freeToOneTimeConversion = freeUsers > 0 ? (oneTimeUsers / freeUsers * 100) : 0
-          const overallConversion = totalUsers > 0 ? ((studioMembers + oneTimeUsers) / totalUsers * 100) : 0
+          const overallConversion = totalUsers > 0 ? ((activeSubscribers + oneTimeBuyersAllTime) / totalUsers * 100) : 0
 
           // Get generation activity (engagement metric)
           const activityMetricsResult = await sql`
@@ -5816,7 +5859,7 @@ This provides real-time data from the database.`,
           const inactive30Days = Number(churnMetrics.inactive_30_days) || 0
 
           // Calculate safe division for paid user percentage
-          const paidUserPercentage = totalUsers > 0 ? ((studioMembers + oneTimeUsers) / totalUsers * 100) : 0
+          const paidUserPercentage = totalUsers > 0 ? (totalPayingCustomers / totalUsers * 100) : 0
           
           // Calculate safe division for avg generations per user
           const avgGenerationsPerUser = activeUsers > 0 ? (totalGenerations / activeUsers) : 0
@@ -5831,18 +5874,30 @@ This provides real-time data from the database.`,
 
             user_metrics: {
               total_users: totalUsers,
-              free_users: freeUsers,
+              active_subscribers: activeSubscribers,
               studio_members: studioMembers,
-              one_time_users: oneTimeUsers,
+              one_time_buyers: oneTimeBuyersAllTime,
               new_signups_this_period: newSignups,
-              new_paid_users_this_period: newPaidUsers
+              new_paid_users_this_period: activeSubscribers + oneTimeBuyers  // New subscribers + new one-time buyers in period
             },
 
             conversion_metrics: {
               overall_conversion_rate: `${overallConversion.toFixed(1)}%`,
-              free_to_studio_conversion: `${freeToStudioConversion.toFixed(1)}%`,
-              free_to_one_time_conversion: `${freeToOneTimeConversion.toFixed(1)}%`,
-              paid_user_percentage: `${paidUserPercentage.toFixed(1)}%`
+              paid_user_percentage: `${paidUserPercentage.toFixed(1)}%`,
+              subscription_conversion: totalUsers > 0 ? `${(activeSubscribers / totalUsers * 100).toFixed(1)}%` : '0%',
+              one_time_conversion: totalUsers > 0 ? `${(oneTimeBuyersAllTime / totalUsers * 100).toFixed(1)}%` : '0%'
+            },
+            
+            revenue_metrics: {
+              monthly_recurring_revenue: `$${mrr.toFixed(2)}`,
+              active_subscribers: activeSubscribers,
+              one_time_revenue_note: "One-time revenue total available via revenue dashboard endpoint (uses Stripe API)",
+              purchase_breakdown: {
+                total_one_time_purchases: totalPurchases,
+                session_purchases: sessionPurchases,
+                topup_purchases: topupPurchases,
+                one_time_buyers: oneTimeBuyersAllTime
+              }
             },
 
             engagement_metrics: {
@@ -5853,11 +5908,18 @@ This provides real-time data from the database.`,
             },
 
             retention_metrics: {
-              total_paid_users: totalPaidUsers,
+              total_paid_users: totalPayingCustomers,
+              total_subscribers: activeSubscribers,
               inactive_7_days: inactive7Days,
               inactive_30_days: inactive30Days,
               retention_rate_7_days: `${retentionRate7Days.toFixed(1)}%`,
               retention_rate_30_days: `${retentionRate30Days.toFixed(1)}%`
+            },
+            
+            customer_breakdown: {
+              active_subscribers: activeSubscribers,
+              one_time_buyers: oneTimeBuyersAllTime,
+              total_paying_customers: totalPayingCustomers
             }
           }
 
@@ -5917,12 +5979,12 @@ This provides real-time data from the database.`,
             }
           }
 
-          // Add revenue estimate (Note: Requires Stripe integration for actual revenue)
-          result.revenue_estimate = {
-            note: "Actual revenue requires Stripe API integration",
-            estimated_mrr: `$${(studioMembers * 29).toFixed(2)}`,
-            estimated_one_time_revenue: `$${(oneTimeUsers * 12).toFixed(2)}`,
-            total_estimated: `$${((studioMembers * 29) + (oneTimeUsers * 12)).toFixed(2)}`
+          // Revenue summary (MRR is accurate, one-time requires Stripe API)
+          result.revenue_summary = {
+            monthly_recurring_revenue: `$${mrr.toFixed(2)}`,
+            note: "One-time revenue total available via /api/admin/dashboard/revenue endpoint (uses Stripe API)",
+            active_subscribers_count: activeSubscribers,
+            one_time_buyers_count: oneTimeBuyersAllTime
           }
 
           return {
@@ -5970,10 +6032,54 @@ This provides real-time data from the database.`,
               SELECT 
                 COUNT(*) as total_users,
                 COUNT(CASE WHEN last_login_at > NOW() - INTERVAL '30 days' THEN 1 END) as active_users,
-                COUNT(CASE WHEN created_at > NOW() - INTERVAL '7 days' THEN 1 END) as new_users_this_week,
-                COUNT(CASE WHEN plan != 'free' AND plan IS NOT NULL THEN 1 END) as paid_users
+                COUNT(CASE WHEN created_at > NOW() - INTERVAL '7 days' THEN 1 END) as new_users_this_week
               FROM users
               WHERE email IS NOT NULL
+            `
+            
+            // Separate query for paid users - counts ALL paying customers
+            const paidUsersResult = await sql`
+              SELECT COUNT(DISTINCT user_id) as paid_users
+              FROM (
+                -- Active subscription customers
+                SELECT DISTINCT user_id
+                FROM subscriptions
+                WHERE status = 'active'
+                  AND (is_test_mode = FALSE OR is_test_mode IS NULL)
+                
+                UNION
+                
+                -- One-time purchase customers (sessions + top-ups)
+                SELECT DISTINCT user_id
+                FROM credit_transactions
+                WHERE transaction_type = 'purchase'
+                  AND stripe_payment_id IS NOT NULL  -- Only verified payments
+                  AND (is_test_mode = FALSE OR is_test_mode IS NULL)
+              ) as all_paying_customers
+            `
+            const paid_users = Number(paidUsersResult[0]?.paid_users || 0)
+            
+            // Get customer type breakdown
+            const customerBreakdown = await sql`
+              WITH subscription_customers AS (
+                SELECT DISTINCT user_id
+                FROM subscriptions
+                WHERE status = 'active'
+                  AND (is_test_mode = FALSE OR is_test_mode IS NULL)
+              ),
+              one_time_customers AS (
+                SELECT DISTINCT user_id
+                FROM credit_transactions
+                WHERE transaction_type = 'purchase'
+                  AND stripe_payment_id IS NOT NULL
+                  AND (is_test_mode = FALSE OR is_test_mode IS NULL)
+                  AND user_id NOT IN (SELECT user_id FROM subscription_customers)
+              )
+              SELECT 
+                (SELECT COUNT(*) FROM subscription_customers) as active_subscribers,
+                (SELECT COUNT(*) FROM one_time_customers) as one_time_buyers,
+                (SELECT COUNT(*) FROM subscription_customers) + 
+                (SELECT COUNT(*) FROM one_time_customers) as total_paying
             `
 
             // Generation Stats
@@ -6015,7 +6121,12 @@ This provides real-time data from the database.`,
                 totalUsers: Number(userStats?.total_users || 0),
                 activeUsers: Number(userStats?.active_users || 0),
                 newUsersThisWeek: Number(userStats?.new_users_this_week || 0),
-                paidUsers: Number(userStats?.paid_users || 0),
+                paidUsers: paid_users,
+                customerBreakdown: {
+                  activeSubscribers: Number(customerBreakdown[0]?.active_subscribers || 0),
+                  oneTimeBuyers: Number(customerBreakdown[0]?.one_time_buyers || 0),
+                  totalPayingCustomers: Number(customerBreakdown[0]?.total_paying || 0),
+                },
                 totalGenerations: Number(generationStats?.total_generations || 0),
                 generationsThisMonth: Number(generationStats?.generations_this_month || 0),
                 generationsThisWeek: Number(generationStats?.generations_this_week || 0),
@@ -6469,7 +6580,14 @@ Keep it practical and data-driven.`
           'input_schema' in toolDef
 
         if (!hasNativeFormat) {
-          console.log(`[Alex] ⚠️ Skipping tool ${name} - not in native Anthropic format`)
+          console.log(`[Alex] ⚠️ Skipping tool ${name} - not in native Anthropic format`, {
+            toolDef: toolDef ? {
+              type: typeof toolDef,
+              hasName: 'name' in (toolDef as any),
+              hasInputSchema: 'input_schema' in (toolDef as any),
+              keys: Object.keys(toolDef as any)
+            } : 'null/undefined'
+          })
         }
 
         return hasNativeFormat

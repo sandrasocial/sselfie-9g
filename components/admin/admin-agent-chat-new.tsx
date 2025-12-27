@@ -1594,8 +1594,8 @@ export default function AdminAgentChatNew({
         </div>
 
         {/* Tabs for Chat and Libraries */}
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="flex-1 flex flex-col">
-          <div className="border-b border-stone-200 bg-white">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="flex-1 flex flex-col min-h-0 gap-0">
+          <div className="border-b border-stone-200 bg-white shrink-0">
             <TabsList className="w-full justify-start h-auto p-0 bg-transparent">
               <TabsTrigger 
                 value="chat" 
@@ -1631,11 +1631,11 @@ export default function AdminAgentChatNew({
           </div>
 
           {/* Chat Tab */}
-          <TabsContent value="chat" className="flex-1 flex flex-col m-0">
+          <TabsContent value="chat" className="flex-1 flex flex-col m-0 min-h-0 overflow-hidden">
             {/* Messages */}
             <div 
               ref={messagesContainerRef}
-              className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6"
+              className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 min-h-0"
             >
               {isLoadingChat ? (
               <div className="flex items-center justify-center h-full">
@@ -1945,11 +1945,192 @@ Please acknowledge you've received the edited HTML and are ready to make further
               </>
             )}
             </div>
+
+            {/* Gallery Selector - Inside chat tab */}
+            {showGallery && (
+              <div className="bg-stone-50 border-t border-stone-200 p-3 sm:p-4 md:p-6 max-h-96 overflow-y-auto shrink-0">
+                <div className="max-w-4xl mx-auto space-y-3 sm:space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs sm:text-sm uppercase tracking-wider text-stone-900 font-serif">
+                      Select Images from Gallery
+                    </h3>
+                    <button
+                      onClick={() => {
+                        setShowGallery(false)
+                        setSelectedGalleryImages(new Set())
+                      }}
+                      className="text-stone-500 hover:text-stone-700 p-1"
+                    >
+                      <X className="w-4 h-4 sm:w-5 sm:h-5" />
+                    </button>
+                  </div>
+
+                  {/* Category Filter */}
+                  <div className="flex gap-1.5 sm:gap-2 flex-wrap">
+                    {["all", "lifestyle", "product", "portrait", "fashion", "editorial"].map((cat) => (
+                      <button
+                        key={cat}
+                        onClick={() => setSelectedCategory(cat)}
+                        className={`px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 text-xs uppercase tracking-wider transition-colors rounded-lg ${
+                          selectedCategory === cat
+                            ? "bg-stone-900 text-stone-50"
+                            : "bg-stone-200 text-stone-700 hover:bg-stone-300"
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Selected Count */}
+                  {selectedGalleryImages.size > 0 && (
+                    <div className="text-xs sm:text-sm text-stone-600">
+                      {selectedGalleryImages.size} image{selectedGalleryImages.size > 1 ? 's' : ''} selected
+                    </div>
+                  )}
+
+                  {/* Gallery Grid */}
+                  {galleryLoading ? (
+                    <div className="text-center py-6 sm:py-8 text-stone-500 text-xs sm:text-sm">Loading images...</div>
+                  ) : (
+                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-1.5 sm:gap-2 md:gap-4">
+                      {galleryImages.map((image) => {
+                        const isSelected = selectedGalleryImages.has(image.image_url)
+                        return (
+                          <div
+                            key={image.id}
+                            onClick={() => handleGalleryImageClick(image.image_url)}
+                            className={`relative aspect-square bg-stone-200 cursor-pointer transition-all group rounded-lg overflow-hidden ${
+                              isSelected ? 'ring-2 sm:ring-4 ring-stone-900' : 'hover:ring-2 hover:ring-stone-400'
+                            }`}
+                          >
+                            {image.image_url && typeof image.image_url === 'string' && image.image_url.startsWith('http') ? (
+                              <Image
+                                src={image.image_url}
+                                alt={image.prompt || "Gallery image"}
+                                fill
+                                className="object-cover"
+                                unoptimized
+                                onError={(e) => {
+                                  console.error('[Alex] Image load error:', {
+                                    id: image.id,
+                                    url: image.image_url?.substring(0, 100),
+                                    error: e
+                                  })
+                                }}
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-stone-400 text-xs">
+                                No image
+                              </div>
+                            )}
+                            {isSelected && (
+                              <div className="absolute inset-0 bg-stone-900/40 flex items-center justify-center">
+                                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-stone-900 rounded-full flex items-center justify-center">
+                                  <span className="text-white text-xs sm:text-sm font-bold">✓</span>
+                                </div>
+                              </div>
+                            )}
+                            <div className="absolute inset-0 bg-stone-900/0 group-hover:bg-stone-900/20 transition-colors flex items-center justify-center">
+                              <span className="text-white text-xs uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block">
+                                {isSelected ? 'SELECTED' : 'SELECT'}
+                              </span>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+
+                  {!galleryLoading && galleryImages.length === 0 && (
+                    <div className="text-center py-6 sm:py-8 text-stone-500 text-xs sm:text-sm">No images found in this category</div>
+                  )}
+
+                  {/* Load More Button */}
+                  {!galleryLoading && galleryImages.length > 0 && hasMoreImages && (
+                    <div className="flex justify-center pt-2">
+                      <button
+                        onClick={loadMoreImages}
+                        disabled={galleryLoadingMore}
+                        className="px-3 sm:px-4 md:px-6 py-1.5 sm:py-2 bg-stone-200 hover:bg-stone-300 text-stone-700 rounded-lg text-xs sm:text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 sm:gap-2"
+                      >
+                        {galleryLoadingMore ? (
+                          <>
+                            <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 border-2 border-stone-400 border-t-transparent rounded-full animate-spin" />
+                            <span className="hidden sm:inline">Loading...</span>
+                            <span className="sm:hidden">...</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="hidden sm:inline">Load More ({galleryImages.length} shown)</span>
+                            <span className="sm:hidden">More ({galleryImages.length})</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
+
+                  {!galleryLoading && galleryImages.length > 0 && !hasMoreImages && (
+                    <div className="text-center py-2 text-stone-500 text-xs sm:text-sm">
+                      All {galleryImages.length} images loaded
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Selected Images Preview - Inside chat tab */}
+            {selectedGalleryImages.size > 0 && !showGallery && (
+              <div className="bg-stone-50 border-t border-stone-200 p-3 sm:p-4 shrink-0">
+                <div className="max-w-4xl mx-auto">
+                  <div className="flex items-center justify-between mb-2 sm:mb-3">
+                    <span className="text-xs sm:text-sm text-stone-600">
+                      {selectedGalleryImages.size} image{selectedGalleryImages.size > 1 ? 's' : ''} selected
+                    </span>
+                    <button
+                      onClick={() => setSelectedGalleryImages(new Set())}
+                      className="text-xs text-stone-500 hover:text-stone-700"
+                    >
+                      Clear all
+                    </button>
+                  </div>
+                  <div className="flex gap-2 flex-wrap">
+                    {Array.from(selectedGalleryImages).map((imageUrl, index) => (
+                      <div key={index} className="relative group">
+                        <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden bg-stone-200">
+                          <Image
+                            src={imageUrl}
+                            alt={`Selected ${index + 1}`}
+                            width={64}
+                            height={64}
+                            className="object-cover w-full h-full"
+                            unoptimized
+                          />
+                        </div>
+                        <button
+                          onClick={() => {
+                            setSelectedGalleryImages((prev) => {
+                              const newSet = new Set(prev)
+                              newSet.delete(imageUrl)
+                              return newSet
+                            })
+                          }}
+                          className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
           </TabsContent>
 
           {/* Email Drafts Tab */}
-          <TabsContent value="email-drafts" className="flex-1 flex flex-col m-0">
-            <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
+          <TabsContent value="email-drafts" className="flex-1 flex flex-col m-0 min-h-0 overflow-hidden">
+            <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 min-h-0">
               <EmailDraftsLibrary
                 onEditDraft={async (draft) => {
                   setActiveTab('chat')
@@ -1962,8 +2143,8 @@ Please acknowledge you've received the edited HTML and are ready to make further
           </TabsContent>
 
           {/* Captions Library Tab */}
-          <TabsContent value="captions" className="flex-1 flex flex-col m-0">
-            <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
+          <TabsContent value="captions" className="flex-1 flex flex-col m-0 min-h-0 overflow-hidden">
+            <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 min-h-0">
               <div className="mb-6">
                 <h2 className="text-2xl font-serif font-light tracking-wider text-stone-900 mb-2">
                   Instagram Captions
@@ -1999,8 +2180,8 @@ Please acknowledge you've received the edited HTML and are ready to make further
           </TabsContent>
 
           {/* Calendars Library Tab */}
-          <TabsContent value="calendars" className="flex-1 flex flex-col m-0">
-            <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
+          <TabsContent value="calendars" className="flex-1 flex flex-col m-0 min-h-0 overflow-hidden">
+            <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 min-h-0">
               <div className="mb-6">
                 <h2 className="text-2xl font-serif font-light tracking-wider text-stone-900 mb-2">
                   Content Calendars
@@ -2036,8 +2217,8 @@ Please acknowledge you've received the edited HTML and are ready to make further
           </TabsContent>
 
           {/* Prompts Library Tab */}
-          <TabsContent value="prompts" className="flex-1 flex flex-col m-0">
-            <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
+          <TabsContent value="prompts" className="flex-1 flex flex-col m-0 min-h-0 overflow-hidden">
+            <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 min-h-0">
               <div className="mb-6">
                 <h2 className="text-2xl font-serif font-light tracking-wider text-stone-900 mb-2">
                   Maya Prompt Ideas
@@ -2072,6 +2253,69 @@ Please acknowledge you've received the edited HTML and are ready to make further
             </div>
           </TabsContent>
         </Tabs>
+
+        {/* Chat Input - Always visible when chat tab is active */}
+        {isMounted && activeTab === 'chat' && (
+          <div className="bg-white border-t border-stone-200 p-2 sm:p-4 pb-safe shrink-0">
+            <div className="max-w-4xl mx-auto">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  handleSendMessage()
+                }}
+                className="flex items-end gap-2 sm:gap-3"
+              >
+                <button
+                  type="button"
+                  onClick={() => setShowGallery(!showGallery)}
+                  disabled={isLoading}
+                  className={`min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 px-2.5 sm:px-4 py-2.5 sm:py-3 border rounded-lg transition-colors flex items-center justify-center gap-1.5 sm:gap-2 shrink-0 text-xs sm:text-sm ${
+                    showGallery
+                      ? 'bg-stone-900 text-white border-stone-900'
+                      : 'bg-white text-stone-700 border-stone-300 active:bg-stone-100 sm:hover:bg-stone-50'
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  title="Select images from gallery"
+                >
+                  <ImageIcon className="w-5 h-5 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">Gallery</span>
+                </button>
+                <Textarea
+                  ref={textareaRef}
+                  value={inputValue}
+                  onChange={(e) => {
+                    setInputValue(e.target.value)
+                    // Auto-resize on change
+                    const textarea = e.target
+                    textarea.style.height = 'auto'
+                    textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`
+                  }}
+                  onKeyDown={(e) => {
+                    // Submit on Enter (without Shift), prevent default to avoid new line
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault()
+                      if (inputValue.trim() || selectedGalleryImages.size > 0) {
+                        handleSendMessage()
+                      }
+                    }
+                    // Shift+Enter allows new line (default behavior)
+                  }}
+                  placeholder="Ask me anything..."
+                  className="flex-1 px-3 sm:px-4 py-3 sm:py-3 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-950 text-base sm:text-base resize-none min-h-[44px] sm:min-h-[44px] max-h-[200px] overflow-y-auto leading-relaxed"
+                  disabled={isLoading}
+                  rows={1}
+                />
+                <button
+                  type="submit"
+                  disabled={(!inputValue.trim() && selectedGalleryImages.size === 0) || isLoading}
+                  className="min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 px-3 sm:px-6 py-2.5 sm:py-3 bg-stone-950 text-white rounded-lg active:bg-stone-800 sm:hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 sm:gap-2 shrink-0 text-xs sm:text-sm"
+                >
+                  <Send className="w-5 h-5 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">Send</span>
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
 
         {/* Tool Loading Indicator */}
         {toolLoading && (
@@ -2173,8 +2417,8 @@ Please acknowledge you've received the edited HTML and are ready to make further
             </div>
           )}
 
-        {/* Gallery Selector */}
-        {showGallery && (
+        {/* Gallery Selector - Removed, now inside chat TabsContent */}
+        {false && showGallery && (
           <div className="bg-stone-50 border-t border-stone-200 p-3 sm:p-4 md:p-6 max-h-96 overflow-y-auto">
             <div className="max-w-4xl mx-auto space-y-3 sm:space-y-4">
               <div className="flex items-center justify-between">
@@ -2306,8 +2550,8 @@ Please acknowledge you've received the edited HTML and are ready to make further
           </div>
         )}
 
-        {/* Selected Images Preview */}
-        {selectedGalleryImages.size > 0 && !showGallery && (
+        {/* Selected Images Preview - Removed, now inside chat TabsContent */}
+        {false && selectedGalleryImages.size > 0 && !showGallery && (
           <div className="bg-stone-50 border-t border-stone-200 p-3 sm:p-4">
             <div className="max-w-4xl mx-auto">
               <div className="flex items-center justify-between mb-2 sm:mb-3">
@@ -2353,68 +2597,6 @@ Please acknowledge you've received the edited HTML and are ready to make further
           </div>
         )}
 
-        {/* Input - Only show in chat tab */}
-        {activeTab === 'chat' && (
-        <div className="bg-white border-t border-stone-200 p-3 sm:p-4">
-          <div className="max-w-4xl mx-auto">
-            <form
-              onSubmit={(e) => {
-                e.preventDefault()
-                handleSendMessage()
-              }}
-              className="flex gap-2 sm:gap-3"
-            >
-              <button
-                type="button"
-                onClick={() => setShowGallery(!showGallery)}
-                disabled={isLoading}
-                className={`px-2 sm:px-4 py-2 sm:py-3 border rounded-lg transition-colors flex items-center gap-1.5 sm:gap-2 shrink-0 text-xs sm:text-sm ${
-                  showGallery
-                    ? 'bg-stone-900 text-white border-stone-900'
-                    : 'bg-white text-stone-700 border-stone-300 hover:bg-stone-50'
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
-                title="Select images from gallery"
-              >
-                <ImageIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">Gallery</span>
-              </button>
-              <Textarea
-                ref={textareaRef}
-                value={inputValue}
-                onChange={(e) => {
-                  setInputValue(e.target.value)
-                  // Auto-resize on change
-                  const textarea = e.target
-                  textarea.style.height = 'auto'
-                  textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`
-                }}
-                onKeyDown={(e) => {
-                  // Submit on Enter (without Shift), prevent default to avoid new line
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault()
-                    if (inputValue.trim() || selectedGalleryImages.size > 0) {
-                      handleSendMessage()
-                    }
-                  }
-                  // Shift+Enter allows new line (default behavior)
-                }}
-                placeholder="Ask me anything... (Press Enter to send, Shift+Enter for new line)"
-                className="flex-1 px-3 sm:px-4 py-2 sm:py-3 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-950 text-sm sm:text-base resize-none min-h-[44px] max-h-[200px] overflow-y-auto"
-                disabled={isLoading}
-                rows={1}
-              />
-              <button
-                type="submit"
-                disabled={(!inputValue.trim() && selectedGalleryImages.size === 0) || isLoading}
-                className="px-3 sm:px-6 py-2 sm:py-3 bg-stone-950 text-white rounded-lg hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 sm:gap-2 shrink-0 text-xs sm:text-sm"
-              >
-                <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">Send</span>
-              </button>
-            </form>
-          </div>
-        </div>
-        )}
       </div>
     </div>
   )
