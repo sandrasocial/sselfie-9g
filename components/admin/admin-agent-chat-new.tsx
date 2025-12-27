@@ -35,7 +35,7 @@ const filterErrorPageHTML = (text: string): string => {
                        text.includes('/_next/static/chunks'))
   
   if (hasErrorPage) {
-    console.error('[v0] ❌ Detected Next.js error page HTML in error message, filtering out')
+    console.error('[Alex] ❌ Detected Next.js error page HTML in error message, filtering out')
     return 'The chat API route was not found. Please check that the route exists and refresh the page.'
   }
   
@@ -45,12 +45,12 @@ const filterErrorPageHTML = (text: string): string => {
 const getMessageContent = (message: any): string => {
   // Defensive check - ensure message exists
   if (!message || typeof message !== 'object') {
-    console.warn('[v0] ⚠️ getMessageContent called with invalid message:', message)
+    console.warn('[Alex] ⚠️ getMessageContent called with invalid message:', message)
     return ""
   }
   
   // Debug logging
-  console.log('[v0] 🔍 getMessageContent called with message:', {
+  console.log('[Alex] 🔍 getMessageContent called with message:', {
     id: message.id,
     role: message.role,
     hasContent: !!message.content,
@@ -66,7 +66,7 @@ const getMessageContent = (message: any): string => {
   if (typeof message.content === "string") {
     const content = message.content.trim()
     if (content) {
-      console.log('[v0] ✅ Returning string content, length:', content.length)
+      console.log('[Alex] ✅ Returning string content, length:', content.length)
       return content
     }
   }
@@ -79,7 +79,7 @@ const getMessageContent = (message: any): string => {
       .filter((text: any) => text != null && text !== '')
     const result = textParts.join("\n").trim()
     if (result) {
-      console.log('[v0] ✅ Returning content array, length:', result.length)
+      console.log('[Alex] ✅ Returning content array, length:', result.length)
       return result
     }
   }
@@ -92,12 +92,12 @@ const getMessageContent = (message: any): string => {
       .filter((text: any) => text != null && text !== '')
     const result = textParts.join("\n").trim()
     if (result) {
-      console.log('[v0] ✅ Returning parts array, length:', result.length)
+      console.log('[Alex] ✅ Returning parts array, length:', result.length)
       return result
     }
   }
 
-  console.warn('[v0] ⚠️ getMessageContent returning empty string for message:', message.id)
+  console.warn('[Alex] ⚠️ getMessageContent returning empty string for message:', message.id)
   return ""
 }
 
@@ -400,7 +400,7 @@ export default function AdminAgentChatNew({
 
   // Ensure apiEndpoint is set correctly
   const finalApiEndpoint = apiEndpoint || "/api/admin/agent/chat"
-  console.log('[v0] 🔗 useChat configured with apiEndpoint:', finalApiEndpoint)
+  console.log('[Alex] 🔗 useChat configured with apiEndpoint:', finalApiEndpoint)
 
   // Memoize transport to prevent recreation on every render (fixes "Cannot set properties of undefined" error)
   const transportInstance = useMemo(() => {
@@ -409,7 +409,7 @@ export default function AdminAgentChatNew({
         api: finalApiEndpoint,
       }) as any
     } catch (error) {
-      console.error('[v0] ❌ Error creating DefaultChatTransport:', error)
+      console.error('[Alex] ❌ Error creating DefaultChatTransport:', error)
       return null
     }
   }, [finalApiEndpoint])
@@ -423,13 +423,13 @@ export default function AdminAgentChatNew({
     onResponse: async (response: any) => {
       // Safety check: don't update state if component is unmounted
       if (!isMountedRef.current) {
-        console.warn('[v0] ⚠️ Component unmounted, skipping onResponse')
+        console.warn('[Alex] ⚠️ Component unmounted, skipping onResponse')
         return
       }
       
       try {
         // DEBUG: Check if body is consumed (should be false!)
-        console.log('[v0] 🔍 Response received:', {
+        console.log('[Alex] 🔍 Response received:', {
           status: response.status,
           headers: Object.fromEntries(response.headers.entries()),
           bodyUsed: response.bodyUsed  // Should be false!
@@ -447,35 +447,35 @@ export default function AdminAgentChatNew({
         
         // Verify body is still not consumed after header reading
         if (response.bodyUsed) {
-          console.error('[v0] ❌ ERROR: Response body was consumed in onResponse!')
+          console.error('[Alex] ❌ ERROR: Response body was consumed in onResponse!')
         }
       } catch (error: any) {
-        console.error('[v0] ❌ Error in onResponse:', error)
+        console.error('[Alex] ❌ Error in onResponse:', error)
         // Don't crash the component if onResponse fails
       }
     },
     onFinish: (message: any) => {
       // Safety check: don't update state if component is unmounted
       if (!isMountedRef.current) {
-        console.warn('[v0] ⚠️ Component unmounted, skipping onFinish')
+        console.warn('[Alex] ⚠️ Component unmounted, skipping onFinish')
         return
       }
       
       try {
-        console.log('[v0] ✅ Message finished:', message)
+        console.log('[Alex] ✅ Message finished:', message)
       } catch (error: any) {
-        console.error('[v0] ❌ Error in onFinish:', error)
+        console.error('[Alex] ❌ Error in onFinish:', error)
       }
     },
     onError: (error: any) => {
       // Safety check: don't update state if component is unmounted
       if (!isMountedRef.current) {
-        console.warn('[v0] ⚠️ Component unmounted, skipping onError')
+        console.warn('[Alex] ⚠️ Component unmounted, skipping onError')
         return
       }
       
       try {
-        console.error("[v0] ❌ Chat error:", error)
+        console.error("[Alex] ❌ Chat error:", error)
         setToolLoading(null)
         setExecutingTool(null)
         
@@ -485,7 +485,7 @@ export default function AdminAgentChatNew({
         
         setToolErrors(prev => ({ ...prev, general: errorMessage }))
       } catch (err: any) {
-        console.error('[v0] ❌ Error in onError handler:', err)
+        console.error('[Alex] ❌ Error in onError handler:', err)
         // Don't crash the component if error handler fails
       }
     },
@@ -495,7 +495,7 @@ export default function AdminAgentChatNew({
 
   // Add status logging
   useEffect(() => {
-    console.log('[v0] 🔄 Status changed to:', status, {
+    console.log('[Alex] 🔄 Status changed to:', status, {
       messageCount: messages.length,
       isLoading,
       chatId
@@ -523,7 +523,7 @@ export default function AdminAgentChatNew({
           ? `${loadChatEndpoint}?chatId=${specificChatId}`
           : loadChatEndpoint
 
-        console.log("[v0] Loading chat from URL:", url)
+        console.log("[Alex] Loading chat from URL:", url)
 
         const response = await fetch(url)
 
@@ -532,7 +532,7 @@ export default function AdminAgentChatNew({
         }
 
         const data = await response.json()
-        console.log("[v0] Loaded chat ID:", data.chatId, "Messages:", data.messages?.length, "Title:", data.chatTitle)
+        console.log("[Alex] Loaded chat ID:", data.chatId, "Messages:", data.messages?.length, "Title:", data.chatTitle)
 
         // Set chatId first
         // Use explicit null/undefined check to handle chatId === 0 correctly
@@ -575,16 +575,16 @@ export default function AdminAgentChatNew({
             }
             return msg
           })
-          console.log("[v0] Setting messages:", formattedMessages.length)
+          console.log("[Alex] Setting messages:", formattedMessages.length)
           setMessages(formattedMessages)
         } else {
-          console.log("[v0] No messages to load, setting empty array")
+          console.log("[Alex] No messages to load, setting empty array")
           setMessages([])
         }
 
         setShowHistory(false)
       } catch (error) {
-        console.error("[v0] Error loading chat:", error)
+        console.error("[Alex] Error loading chat:", error)
         toast({
           title: "Error Loading Chat",
           description: error instanceof Error ? error.message : "Failed to load chat",
@@ -626,7 +626,7 @@ export default function AdminAgentChatNew({
       // This prevents infinite loops
       lastLoadedChatIdRef.current = chatId
       const timer = setTimeout(() => {
-        console.log("[v0] ChatId set but no messages detected, reloading chat...")
+        console.log("[Alex] ChatId set but no messages detected, reloading chat...")
         loadChat(chatId)
       }, 200)
       return () => clearTimeout(timer)
@@ -736,7 +736,7 @@ export default function AdminAgentChatNew({
   // Error boundary for tool execution
   useEffect(() => {
     if (error) {
-      console.error('[v0] Chat error:', error)
+      console.error('[Alex] Chat error:', error)
       
       // Filter out Next.js error page HTML from error messages
       let errorMessage = error.message || "Something went wrong"
@@ -816,7 +816,7 @@ export default function AdminAgentChatNew({
       // Ensure html is actually HTML (starts with < or <!DOCTYPE), not plain text
       const htmlValue = result.html
       if (!htmlValue || typeof htmlValue !== 'string') {
-        console.warn(`[v0] ⚠️ Invalid email preview data in ${source}: html is not a string`, {
+        console.warn(`[Alex] ⚠️ Invalid email preview data in ${source}: html is not a string`, {
           htmlType: typeof htmlValue,
           hasHtml: !!htmlValue
         })
@@ -825,7 +825,7 @@ export default function AdminAgentChatNew({
       
       const trimmedHtml = htmlValue.trim()
       if (!trimmedHtml.startsWith('<') && !trimmedHtml.startsWith('<!DOCTYPE')) {
-        console.warn(`[v0] ⚠️ Invalid email preview data in ${source}: html does not start with < or <!DOCTYPE`, {
+        console.warn(`[Alex] ⚠️ Invalid email preview data in ${source}: html does not start with < or <!DOCTYPE`, {
           htmlStartsWith: trimmedHtml.substring(0, 50),
           htmlLength: trimmedHtml.length,
           isPlainText: !trimmedHtml.includes('<')
@@ -834,12 +834,12 @@ export default function AdminAgentChatNew({
       }
       
       if (!result.subjectLine || typeof result.subjectLine !== 'string') {
-        console.warn(`[v0] ⚠️ Invalid email preview data in ${source}: subjectLine is missing or not a string`)
+        console.warn(`[Alex] ⚠️ Invalid email preview data in ${source}: subjectLine is missing or not a string`)
         return null
       }
       
       if (result.error) {
-        console.warn(`[v0] ⚠️ Email preview has error in ${source}:`, result.error)
+        console.warn(`[Alex] ⚠️ Email preview has error in ${source}:`, result.error)
         return null
       }
       
@@ -871,7 +871,7 @@ export default function AdminAgentChatNew({
             const emailPreviewData = extractEmailPreview(invocation.result, 'toolInvocations')
             
             if (emailPreviewData) {
-              console.log('[v0] ✅ Email preview found in toolInvocations', {
+              console.log('[Alex] ✅ Email preview found in toolInvocations', {
                 htmlLength: emailPreviewData.html.length,
                 htmlPreview: emailPreviewData.html.substring(0, 100),
                 htmlStartsWith: emailPreviewData.html.substring(0, 20),
@@ -879,7 +879,7 @@ export default function AdminAgentChatNew({
                 hasPreview: !!emailPreviewData.preview
               })
               
-              console.log('[v0] 📧 Setting email preview with data:', {
+              console.log('[Alex] 📧 Setting email preview with data:', {
                 subject: emailPreviewData.subject,
                 htmlLength: emailPreviewData.html.length,
                 htmlStartsWith: emailPreviewData.html.substring(0, 50),
@@ -911,7 +911,7 @@ export default function AdminAgentChatNew({
                   emailPreviewData.sequenceIndex = result.emails.indexOf(lastSuccessfulEmail)
                   emailPreviewData.sequenceTotal = result.emails.length
                   
-                  console.log('[v0] ✅ Email sequence preview found in toolInvocations', {
+                  console.log('[Alex] ✅ Email sequence preview found in toolInvocations', {
                     sequenceName: result.sequenceName,
                     totalEmails: result.emails.length,
                     showingEmail: emailPreviewData.sequenceIndex + 1,
@@ -974,7 +974,7 @@ export default function AdminAgentChatNew({
               try {
                 result = JSON.parse(result)
               } catch (e) {
-                console.warn('[v0] ⚠️ Could not parse result as JSON:', e)
+                console.warn('[Alex] ⚠️ Could not parse result as JSON:', e)
                 continue
               }
             }
@@ -982,7 +982,7 @@ export default function AdminAgentChatNew({
             const emailPreviewData = extractEmailPreview(result, 'parts')
             
             if (emailPreviewData) {
-              console.log('[v0] ✅ Email preview found in parts', {
+              console.log('[Alex] ✅ Email preview found in parts', {
                 htmlLength: emailPreviewData.html.length,
                 htmlPreview: emailPreviewData.html.substring(0, 100),
                 htmlStartsWith: emailPreviewData.html.substring(0, 20),
@@ -990,7 +990,7 @@ export default function AdminAgentChatNew({
                 hasPreview: !!emailPreviewData.preview
               })
               
-              console.log('[v0] 📧 Setting email preview with data:', {
+              console.log('[Alex] 📧 Setting email preview with data:', {
                 subject: emailPreviewData.subject,
                 htmlLength: emailPreviewData.html.length,
                 htmlStartsWith: emailPreviewData.html.substring(0, 50),
@@ -1012,7 +1012,7 @@ export default function AdminAgentChatNew({
               try {
                 result = JSON.parse(result)
               } catch (e) {
-                console.warn('[v0] ⚠️ Could not parse sequence result as JSON:', e)
+                console.warn('[Alex] ⚠️ Could not parse sequence result as JSON:', e)
                 continue
               }
             }
@@ -1033,7 +1033,7 @@ export default function AdminAgentChatNew({
                   emailPreviewData.sequenceIndex = result.emails.indexOf(lastSuccessfulEmail)
                   emailPreviewData.sequenceTotal = result.emails.length
                   
-                  console.log('[v0] ✅ Email sequence preview found in parts', {
+                  console.log('[Alex] ✅ Email sequence preview found in parts', {
                     sequenceName: result.sequenceName,
                     totalEmails: result.emails.length,
                     showingEmail: emailPreviewData.sequenceIndex + 1,
@@ -1090,7 +1090,7 @@ export default function AdminAgentChatNew({
       
       // Only update if the preview has changed
       if (previewHash !== lastEmailPreviewHashRef.current) {
-        console.log('[v0] 📧 Email preview changed, updating...', {
+        console.log('[Alex] 📧 Email preview changed, updating...', {
           oldHash: lastEmailPreviewHashRef.current,
           newHash: previewHash,
           subject: latestEmailPreview.subject
@@ -1098,7 +1098,7 @@ export default function AdminAgentChatNew({
         setEmailPreview(latestEmailPreview)
         lastEmailPreviewHashRef.current = previewHash
       } else {
-        console.log('[v0] 📧 Email preview unchanged, skipping update')
+        console.log('[Alex] 📧 Email preview unchanged, skipping update')
       }
     } else if (!foundValidEmailPreview && emailPreview) {
       // If we didn't find a valid email preview in any message, but we have one set,
@@ -1107,12 +1107,12 @@ export default function AdminAgentChatNew({
       if (emailPreview.html && typeof emailPreview.html === 'string') {
         const html = emailPreview.html.trim()
         if (!html.startsWith('<') && !html.startsWith('<!DOCTYPE')) {
-          console.warn('[v0] ⚠️ Current email preview has invalid HTML, clearing it')
+          console.warn('[Alex] ⚠️ Current email preview has invalid HTML, clearing it')
           setEmailPreview(null)
           lastEmailPreviewHashRef.current = null
         }
       } else {
-        console.warn('[v0] ⚠️ Current email preview has no HTML, clearing it')
+        console.warn('[Alex] ⚠️ Current email preview has no HTML, clearing it')
         setEmailPreview(null)
         lastEmailPreviewHashRef.current = null
       }
@@ -1194,9 +1194,9 @@ export default function AdminAgentChatNew({
       await loadChat(data.chatId)
       await loadChats()
 
-      console.log("[v0] New chat created:", data.chatId)
+      console.log("[Alex] New chat created:", data.chatId)
     } catch (error) {
-      console.error("[v0] Error creating new chat:", error)
+      console.error("[Alex] Error creating new chat:", error)
       toast({
         title: "Error",
         description: "Failed to create new chat",
@@ -1269,7 +1269,7 @@ export default function AdminAgentChatNew({
       // Also check if we got fewer valid images than requested (indicates we've exhausted valid records)
       setHasMoreImages(rawDatabaseCount >= 50 && fetchedImages.length >= 50)
     } catch (error) {
-      console.error('[v0] Failed to fetch gallery images:', error)
+      console.error('[Alex] Failed to fetch gallery images:', error)
     } finally {
       setGalleryLoading(false)
       setGalleryLoadingMore(false)
@@ -1589,7 +1589,7 @@ export default function AdminAgentChatNew({
               ) : (
                 <div className="space-y-3 sm:space-y-4 max-w-4xl mx-auto">
                   {(() => {
-                    console.log('[v0] 📋 Rendering messages:', {
+                    console.log('[Alex] 📋 Rendering messages:', {
                       count: messages.length,
                       messages: messages.map((m: any) => ({
                         id: m.id,
@@ -1631,7 +1631,7 @@ export default function AdminAgentChatNew({
                                 }
                               }
                               
-                              console.log('[v0] 📝 Rendering assistant message content:', {
+                              console.log('[Alex] 📝 Rendering assistant message content:', {
                                 messageId: message.id,
                                 contentLength: content.length,
                                 contentPreview: content.substring(0, 100),
@@ -1785,7 +1785,7 @@ Please acknowledge you've received the edited HTML and are ready to make further
                           ) : (
                             (() => {
                               const content = getMessageContent(message)
-                              console.log('[v0] 📝 Rendering user message content:', {
+                              console.log('[Alex] 📝 Rendering user message content:', {
                                 messageId: message.id,
                                 contentLength: content.length,
                                 contentPreview: content.substring(0, 100)
@@ -1989,7 +1989,7 @@ Please acknowledge you've received the edited HTML and are ready to make further
                             className="object-cover"
                             unoptimized
                             onError={(e) => {
-                              console.error('[v0] Image load error:', {
+                              console.error('[Alex] Image load error:', {
                                 id: image.id,
                                 url: image.image_url?.substring(0, 100),
                                 error: e

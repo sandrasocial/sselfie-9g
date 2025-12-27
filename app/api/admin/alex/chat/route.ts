@@ -22,18 +22,18 @@ try {
     resend = new Resend(process.env.RESEND_API_KEY)
   }
 } catch (error) {
-  console.error("[v0] ⚠️ Failed to initialize Resend client:", error)
+  console.error("[Alex] ⚠️ Failed to initialize Resend client:", error)
 }
 
 const ADMIN_EMAIL = "ssa@ssasocial.com"
 
 export const maxDuration = 60
 
-// TODO: Replace with native Anthropic format
-// Removed Zod converter functions - tools will be converted to native format
+// Email-related tools use native Anthropic format
+// Other tools (codebase, analytics, etc.) still use AI SDK format with Zod
 
 export async function POST(req: Request) {
-  console.log("[v0] Admin agent chat API called")
+  console.log("[Alex] Admin agent chat API called")
 
   try {
     const supabase = await createServerClient()
@@ -42,7 +42,7 @@ export async function POST(req: Request) {
     } = await supabase.auth.getUser()
 
     if (!authUser) {
-      console.error("[v0] Authentication failed: No user")
+      console.error("[Alex] Authentication failed: No user")
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
@@ -66,17 +66,17 @@ export async function POST(req: Request) {
     const explicitChatId = chatId
 
     if (!messages) {
-      console.error("[v0] Messages is null or undefined")
+      console.error("[Alex] Messages is null or undefined")
       return NextResponse.json({ error: "Messages is required" }, { status: 400 })
     }
 
     if (!Array.isArray(messages)) {
-      console.error("[v0] Messages is not an array:", typeof messages)
+      console.error("[Alex] Messages is not an array:", typeof messages)
       return NextResponse.json({ error: "Messages must be an array" }, { status: 400 })
     }
 
     if (messages.length === 0) {
-      console.error("[v0] Messages array is empty")
+      console.error("[Alex] Messages array is empty")
       return NextResponse.json({ error: "Messages cannot be empty" }, { status: 400 })
     }
 
@@ -95,12 +95,12 @@ export async function POST(req: Request) {
       .filter((m: any) => m.content && m.content.length > 0)
 
     if (modelMessages.length === 0) {
-      console.error("[v0] No valid messages after filtering")
+      console.error("[Alex] No valid messages after filtering")
       return NextResponse.json({ error: "No valid messages to process" }, { status: 400 })
     }
 
     console.log(
-      "[v0] Admin agent chat API called with",
+      "[Alex] Admin agent chat API called with",
       modelMessages.length,
       "messages (filtered from",
       messages.length,
@@ -114,7 +114,7 @@ export async function POST(req: Request) {
     // This ensures we use the correct chatId even if useChat body is stale
     let activeChatId = explicitChatId
     
-    console.log('[v0] 🔍 Chat ID resolution:', {
+    console.log('[Alex] 🔍 Chat ID resolution:', {
       bodyChatId: chatId,
       finalActiveChatId: activeChatId
     })
@@ -122,14 +122,14 @@ export async function POST(req: Request) {
     if (activeChatId === null || activeChatId === undefined) {
       // ✅ Check for existing active chat first (prevents creating new chat every time)
       // Only use getOrCreateActiveChat if chatId is explicitly not provided
-      console.log('[v0] 🔍 No chatId provided in request body, checking for existing active chat...')
+      console.log('[Alex] 🔍 No chatId provided in request body, checking for existing active chat...')
       const existingChat = await getOrCreateActiveChat(user.id)
       activeChatId = existingChat.id
-      console.log('[v0] 🔄 Using existing active chat:', activeChatId, '(title:', existingChat.chat_title, ')')
+      console.log('[Alex] 🔄 Using existing active chat:', activeChatId, '(title:', existingChat.chat_title, ')')
     } else {
       // ✅ CRITICAL: If chatId is provided, use it - don't call getOrCreateActiveChat
       // This ensures we use the exact chat the user selected, not the "most recent"
-      console.log('[v0] ✅ Using provided chat ID from request body:', activeChatId)
+      console.log('[Alex] ✅ Using provided chat ID from request body:', activeChatId)
       
       // Verify the chat exists and belongs to this user
       // Reuse existing sql connection (initialized at top of file) instead of creating new one
@@ -140,10 +140,10 @@ export async function POST(req: Request) {
       `
       
       if (chatExists.length === 0) {
-        console.log('[v0] ⚠️ Provided chatId does not exist or does not belong to user, falling back to active chat')
+        console.log('[Alex] ⚠️ Provided chatId does not exist or does not belong to user, falling back to active chat')
         const existingChat = await getOrCreateActiveChat(user.id)
         activeChatId = existingChat.id
-        console.log('[v0] 🔄 Using fallback active chat:', activeChatId)
+        console.log('[Alex] 🔄 Using fallback active chat:', activeChatId)
       }
     }
 
@@ -176,14 +176,14 @@ export async function POST(req: Request) {
         
         if (contentToSave) {
           await saveChatMessage(activeChatId, "user", contentToSave)
-          console.log("[v0] 💾 Saved user message to chat:", {
+          console.log("[Alex] 💾 Saved user message to chat:", {
             chatId: activeChatId,
             messageLength: contentToSave.length,
             bodyChatId: chatId
           })
         }
       } catch (error) {
-        console.error("[v0] Error saving user message:", error)
+        console.error("[Alex] Error saving user message:", error)
         // Continue even if save fails
       }
     }
@@ -215,11 +215,11 @@ export async function POST(req: Request) {
 
     // Get admin context
     const completeContext = await getCompleteAdminContext()
-    console.log('[v0] 📚 Knowledge base loaded:', completeContext.length, 'chars')
+    console.log('[Alex] 📚 Knowledge base loaded:', completeContext.length, 'chars')
     
     // Log available images for debugging
     if (availableImageUrls.length > 0) {
-      console.log('[v0] 🖼️ Available image URLs from user messages:', availableImageUrls.length)
+      console.log('[Alex] 🖼️ Available image URLs from user messages:', availableImageUrls.length)
     }
 
     // Helper function to strip HTML tags for plain text version
@@ -252,7 +252,7 @@ export async function POST(req: Request) {
         })
         return text.trim().replace(/^["']|["']$/g, '')
       } catch (error) {
-        console.error("[v0] Error generating subject line:", error)
+        console.error("[Alex] Error generating subject line:", error)
         return `Update from SSELFIE`
       }
     }
@@ -332,7 +332,7 @@ Examples:
         campaignName?: string
         campaignId?: number
       }) => {
-        console.log('[v0] 📧 compose_email called:', {
+        console.log('[Alex] 📧 compose_email called:', {
           intent: intent?.substring(0, 100),
           emailType,
           hasPreviousVersion: !!previousVersion,
@@ -345,7 +345,7 @@ Examples:
         
         // Log warning if previousVersion is provided but doesn't look like HTML
         if (previousVersion && !previousVersion.trim().startsWith('<!DOCTYPE') && !previousVersion.trim().startsWith('<html')) {
-          console.warn('[v0] ⚠️ WARNING: previousVersion provided but does not start with <!DOCTYPE or <html. This might not be valid HTML:', {
+          console.warn('[Alex] ⚠️ WARNING: previousVersion provided but does not start with <!DOCTYPE or <html. This might not be valid HTML:', {
             preview: previousVersion.substring(0, 200),
             length: previousVersion.length
           })
@@ -443,7 +443,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
               clearTimeout(timeoutId)
               timeoutId = null
             }
-            console.error("[v0] ❌ Email generation failed:", genError)
+            console.error("[Alex] ❌ Email generation failed:", genError)
             throw new Error(`Failed to generate email content: ${genError.message || 'Unknown error'}`)
           }
           
@@ -473,7 +473,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
             
             // If some images are missing, add them at the top as hero images
             if (missingImages.length > 0) {
-              console.log(`[v0] Adding ${missingImages.length} missing images to email HTML`)
+              console.log(`[Alex] Adding ${missingImages.length} missing images to email HTML`)
               
               // Create simple image HTML for missing images (email-compatible table structure)
               const imageRows = missingImages.map((url, idx) => {
@@ -549,7 +549,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
                 WHERE id = ${campaignId}
               `
               finalCampaignId = campaignId
-              console.log('[v0] 📧 Updated existing draft campaign:', campaignId)
+              console.log('[Alex] 📧 Updated existing draft campaign:', campaignId)
             } else {
               // Create new draft campaign
               const campaignResult = await sql`
@@ -566,15 +566,15 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
               `
               
               if (!campaignResult || campaignResult.length === 0 || !campaignResult[0]?.id) {
-                console.error('[v0] Failed to create draft campaign, continuing without campaignId')
+                console.error('[Alex] Failed to create draft campaign, continuing without campaignId')
                 finalCampaignId = 0 // Use 0 to indicate failure (won't break ID-based editing)
               } else {
                 finalCampaignId = campaignResult[0].id
-                console.log('[v0] 📧 Created new draft campaign:', finalCampaignId)
+                console.log('[Alex] 📧 Created new draft campaign:', finalCampaignId)
               }
             }
           } catch (campaignError: any) {
-            console.error('[v0] Error creating/updating draft campaign:', campaignError)
+            console.error('[Alex] Error creating/updating draft campaign:', campaignError)
             // Continue even if campaign creation fails - email generation succeeded
             finalCampaignId = 0
           }
@@ -587,8 +587,8 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
             campaignId: finalCampaignId > 0 ? finalCampaignId : undefined
           }
         } catch (error: any) {
-          console.error("[v0] ❌ Error in compose_email tool:", error)
-          console.error("[v0] ❌ Error details:", {
+          console.error("[Alex] ❌ Error in compose_email tool:", error)
+          console.error("[Alex] ❌ Error details:", {
             message: error.message,
             stack: error.stack,
             name: error.name,
@@ -628,7 +628,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
       }),
       
       execute: async ({ campaignId }: { campaignId: number }) => {
-        console.log('[v0] 📧 get_email_campaign called:', { campaignId })
+        console.log('[Alex] 📧 get_email_campaign called:', { campaignId })
         
         try {
           const [campaign] = await sql`
@@ -647,7 +647,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
             }
           }
           
-          console.log('[v0] ✅ Found campaign:', {
+          console.log('[Alex] ✅ Found campaign:', {
             id: campaign.id,
             name: campaign.campaign_name,
             hasHtml: !!campaign.body_html,
@@ -663,7 +663,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
             status: campaign.status
           }
         } catch (error: any) {
-          console.error('[v0] ❌ Error fetching campaign:', error)
+          console.error('[Alex] ❌ Error fetching campaign:', error)
           return {
             error: `Failed to fetch campaign: ${error.message || 'Unknown error'}`,
             campaignId: null,
@@ -777,7 +777,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
           
           // Validate campaign was created
           if (!campaignResult || campaignResult.length === 0 || !campaignResult[0]) {
-            console.error("[v0] Failed to create campaign in database")
+            console.error("[Alex] Failed to create campaign in database")
             return {
               success: false,
               error: "Failed to create campaign in database. Please try again.",
@@ -802,7 +802,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
               WHERE id = ${campaign.id}
             `
           } catch (updateError: any) {
-            console.error("[v0] Failed to update campaign with final HTML, rolling back:", updateError)
+            console.error("[Alex] Failed to update campaign with final HTML, rolling back:", updateError)
             // Rollback: delete the campaign to prevent broken data
             await sql`
               DELETE FROM admin_email_campaigns 
@@ -843,9 +843,9 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
             
             // Log which audience/segment is being targeted for debugging
             if (targetAudience?.resend_segment_id) {
-              console.log(`[v0] Creating broadcast for segment: ${targetAudience.resend_segment_id}`)
+              console.log(`[Alex] Creating broadcast for segment: ${targetAudience.resend_segment_id}`)
             } else {
-              console.log(`[v0] Creating broadcast for full audience: ${targetAudienceId}`)
+              console.log(`[Alex] Creating broadcast for full audience: ${targetAudienceId}`)
             }
             
             try {
@@ -865,7 +865,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
                 WHERE id = ${campaign.id}
               `
             } catch (resendError: any) {
-              console.error("[v0] Error creating Resend broadcast:", resendError)
+              console.error("[Alex] Error creating Resend broadcast:", resendError)
               return {
                 success: false,
                 error: `Campaign saved but Resend broadcast failed: ${resendError.message}`,
@@ -884,7 +884,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
             resendUrl: broadcastId ? `https://resend.com/broadcasts/${broadcastId}` : null
           }
         } catch (error: any) {
-          console.error("[v0] Error in schedule_campaign tool:", error)
+          console.error("[Alex] Error in schedule_campaign tool:", error)
           return {
             success: false,
             error: error.message || "Failed to schedule campaign",
@@ -1007,7 +1007,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
             clearTimeout(timeoutId)
             timeoutId = null
           }
-          console.error("[v0] ❌ Email generation failed:", genError)
+          console.error("[Alex] ❌ Email generation failed:", genError)
           throw new Error(`Failed to generate email content: ${genError.message || 'Unknown error'}`)
         }
         
@@ -1037,7 +1037,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
           
           // If some images are missing, add them at the top as hero images
           if (missingImages.length > 0) {
-            console.log(`[v0] Adding ${missingImages.length} missing images to email HTML`)
+            console.log(`[Alex] Adding ${missingImages.length} missing images to email HTML`)
             
             // Create simple image HTML for missing images (email-compatible table structure)
             const imageRows = missingImages.map((url, idx) => {
@@ -1101,7 +1101,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
           readyToSend: true
         }
       } catch (error: any) {
-        console.error("[v0] ❌ Error generating email content:", error)
+        console.error("[Alex] ❌ Error generating email content:", error)
         throw error
       }
     }
@@ -1199,7 +1199,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
         campaignName?: string
         overallTone?: string
       }) => {
-        console.log('[v0] 📧 create_email_sequence called:', {
+        console.log('[Alex] 📧 create_email_sequence called:', {
           sequenceName,
           emailCount: emails.length,
           campaignName,
@@ -1221,7 +1221,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
           // Generate each email in the sequence
           for (let i = 0; i < emails.length; i++) {
             const emailConfig = emails[i]
-            console.log(`[v0] 📧 Generating email ${i + 1}/${emails.length} for sequence "${sequenceName}"...`, {
+            console.log(`[Alex] 📧 Generating email ${i + 1}/${emails.length} for sequence "${sequenceName}"...`, {
               day: emailConfig.day,
               intent: emailConfig.intent.substring(0, 100),
               emailType: emailConfig.emailType
@@ -1249,13 +1249,13 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
                 emailType: emailConfig.emailType
               })
               
-              console.log(`[v0] ✅ Generated email ${i + 1}/${emails.length}:`, {
+              console.log(`[Alex] ✅ Generated email ${i + 1}/${emails.length}:`, {
                 day: emailConfig.day,
                 subjectLine: emailResult.subjectLine,
                 htmlLength: emailResult.html.length
               })
             } catch (emailError: any) {
-              console.error(`[v0] ❌ Error generating email ${i + 1}/${emails.length}:`, emailError)
+              console.error(`[Alex] ❌ Error generating email ${i + 1}/${emails.length}:`, emailError)
               results.push({
                 day: emailConfig.day,
                 html: "",
@@ -1273,7 +1273,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
           const successCount = results.filter(r => r.readyToSend).length
           const failureCount = results.filter(r => !r.readyToSend).length
           
-          console.log('[v0] 📧 Sequence generation complete:', {
+          console.log('[Alex] 📧 Sequence generation complete:', {
             sequenceName,
             total: emails.length,
             success: successCount,
@@ -1292,7 +1292,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
               : `Created ${successCount} emails successfully, ${failureCount} failed for sequence "${sequenceName}"`
           }
         } catch (error: any) {
-          console.error("[v0] ❌ Error in create_email_sequence tool:", error)
+          console.error("[Alex] ❌ Error in create_email_sequence tool:", error)
           return {
             sequenceName,
             emails: [],
@@ -1383,7 +1383,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
             // If we have a Resend broadcast ID, fetch real stats from Resend API
             if (campaign.resend_broadcast_id && resend) {
               try {
-                console.log(`[v0] 📊 Fetching Resend stats for broadcast: ${campaign.resend_broadcast_id}`)
+                console.log(`[Alex] 📊 Fetching Resend stats for broadcast: ${campaign.resend_broadcast_id}`)
                 
                 // Try to get broadcast stats from Resend API
                 // Note: Resend SDK may use broadcasts.get() or similar
@@ -1393,7 +1393,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
                 
                 if (broadcastResponse && broadcastResponse.data) {
                   resendStats = broadcastResponse.data
-                  console.log(`[v0] ✅ Got Resend stats for broadcast ${campaign.resend_broadcast_id}`)
+                  console.log(`[Alex] ✅ Got Resend stats for broadcast ${campaign.resend_broadcast_id}`)
                 } else {
                   // Fallback: Try direct API call
                   try {
@@ -1408,10 +1408,10 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
                     if (apiResponse.ok) {
                       const apiData = await apiResponse.json()
                       resendStats = apiData
-                      console.log(`[v0] ✅ Got Resend stats via direct API`)
+                      console.log(`[Alex] ✅ Got Resend stats via direct API`)
                     }
                   } catch (apiError) {
-                    console.warn(`[v0] ⚠️ Direct API call failed for broadcast ${campaign.resend_broadcast_id}:`, apiError)
+                    console.warn(`[Alex] ⚠️ Direct API call failed for broadcast ${campaign.resend_broadcast_id}:`, apiError)
                   }
                 }
                 
@@ -1438,7 +1438,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
                   }
                 }
               } catch (resendError: any) {
-                console.warn(`[v0] ⚠️ Failed to fetch Resend stats for broadcast ${campaign.resend_broadcast_id}:`, resendError.message)
+                console.warn(`[Alex] ⚠️ Failed to fetch Resend stats for broadcast ${campaign.resend_broadcast_id}:`, resendError.message)
                 // Fall through to database logs
               }
             }
@@ -1463,15 +1463,15 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
             let actualSentAt: string | null = null
             if (resendStats && (resendStats.created_at || resendStats.sent_at)) {
               actualSentAt = resendStats.created_at || resendStats.sent_at
-              console.log(`[v0] 📅 Using Resend send date: ${actualSentAt}`)
+              console.log(`[Alex] 📅 Using Resend send date: ${actualSentAt}`)
             } else if (campaign.sent_at) {
               actualSentAt = campaign.sent_at
-              console.log(`[v0] 📅 Using database sent_at: ${actualSentAt}`)
+              console.log(`[Alex] 📅 Using database sent_at: ${actualSentAt}`)
             } else if (campaign.status === 'sent') {
               // If status is sent but no sent_at, use created_at as fallback
               // Do NOT use scheduled_for for sent campaigns - it's the scheduled time, not actual send time
               actualSentAt = campaign.created_at
-              console.log(`[v0] 📅 Using created_at as fallback send date: ${actualSentAt}`)
+              console.log(`[Alex] 📅 Using created_at as fallback send date: ${actualSentAt}`)
             }
             
             // Calculate days since sent (if we have a send date)
@@ -1530,7 +1530,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
             }
           }
         } catch (error: any) {
-          console.error("[v0] Error in check_campaign_status tool:", error)
+          console.error("[Alex] Error in check_campaign_status tool:", error)
           return {
             error: error.message || "Failed to check campaign status",
             campaigns: [],
@@ -1586,11 +1586,11 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
           // Get audience details - verify connection works
           let audience: any
           try {
-            console.log('[v0] 🔗 Testing Resend connection by fetching audience:', audienceId)
+            console.log('[Alex] 🔗 Testing Resend connection by fetching audience:', audienceId)
             audience = await resend.audiences.get(audienceId)
-            console.log('[v0] ✅ Resend connection successful, audience:', audience.data?.name || audienceId)
+            console.log('[Alex] ✅ Resend connection successful, audience:', audience.data?.name || audienceId)
           } catch (audienceError: any) {
-            console.error('[v0] ❌ Failed to fetch audience from Resend:', audienceError.message)
+            console.error('[Alex] ❌ Failed to fetch audience from Resend:', audienceError.message)
             throw new Error(`Resend API connection failed: ${audienceError.message}. Please verify RESEND_API_KEY and RESEND_AUDIENCE_ID are correct.`)
           }
           
@@ -1598,17 +1598,17 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
           // Use the helper function that handles pagination
           let contacts: any[] = []
           try {
-            console.log('[v0] 📊 Fetching contacts from Resend...')
+            console.log('[Alex] 📊 Fetching contacts from Resend...')
             const { getAudienceContacts } = await import("@/lib/resend/get-audience-contacts")
             contacts = await getAudienceContacts(audienceId)
-            console.log(`[v0] ✅ Fetched ${contacts.length} contacts from Resend`)
+            console.log(`[Alex] ✅ Fetched ${contacts.length} contacts from Resend`)
             
             // CRITICAL: Wait after fetching contacts to avoid rate limiting the segments API call
             // Resend allows 2 requests per second, so we need to space out our API calls
-            console.log('[v0] ⏳ Waiting 1 second before fetching segments to avoid rate limits...')
+            console.log('[Alex] ⏳ Waiting 1 second before fetching segments to avoid rate limits...')
             await new Promise((resolve) => setTimeout(resolve, 1000))
           } catch (contactsError: any) {
-            console.error('[v0] ❌ Failed to fetch contacts from Resend:', contactsError.message)
+            console.error('[Alex] ❌ Failed to fetch contacts from Resend:', contactsError.message)
             // Don't throw - continue with empty contacts array, but log the issue
             contacts = []
             // Still wait to avoid rate limiting segments call
@@ -1621,7 +1621,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
           if (includeSegmentDetails) {
             // FIRST: Try to get segments from Resend API (real-time data)
             try {
-              console.log('[v0] 📋 Fetching segments from Resend API...')
+              console.log('[Alex] 📋 Fetching segments from Resend API...')
               // Try SDK methods first (if they exist)
               let segmentsResponse: any = null
               
@@ -1631,15 +1631,15 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
                 try {
                   // Try without parameters first (segments are global in Resend)
                   segmentsResponse = await (resend as any).segments.list()
-                  console.log('[v0] ✅ SDK segments.list() succeeded')
+                  console.log('[Alex] ✅ SDK segments.list() succeeded')
                 } catch (sdkError: any) {
-                  console.log('[v0] ⚠️ SDK segments.list() failed:', sdkError.message || sdkError)
+                  console.log('[Alex] ⚠️ SDK segments.list() failed:', sdkError.message || sdkError)
                   // Try with audienceId if the method supports it
                   try {
                     segmentsResponse = await (resend as any).segments.list({ audienceId: audienceId })
-                    console.log('[v0] ✅ SDK segments.list() with audienceId succeeded')
+                    console.log('[Alex] ✅ SDK segments.list() with audienceId succeeded')
                   } catch (sdkError2: any) {
-                    console.log('[v0] ⚠️ SDK segments.list() with audienceId also failed:', sdkError2.message || sdkError2)
+                    console.log('[Alex] ⚠️ SDK segments.list() with audienceId also failed:', sdkError2.message || sdkError2)
                   }
                 }
               }
@@ -1648,14 +1648,14 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
               if (!segmentsResponse && (resend as any).segments?.getAll) {
                 try {
                   segmentsResponse = await (resend as any).segments.getAll()
-                  console.log('[v0] ✅ SDK segments.getAll() succeeded')
+                  console.log('[Alex] ✅ SDK segments.getAll() succeeded')
                 } catch (e: any) {
-                  console.log('[v0] ⚠️ SDK segments.getAll() failed:', e.message || e)
+                  console.log('[Alex] ⚠️ SDK segments.getAll() failed:', e.message || e)
                 }
               }
               
               if (segmentsResponse && segmentsResponse.data && Array.isArray(segmentsResponse.data)) {
-                console.log(`[v0] ✅ Found ${segmentsResponse.data.length} segments from Resend SDK`)
+                console.log(`[Alex] ✅ Found ${segmentsResponse.data.length} segments from Resend SDK`)
                 segments = segmentsResponse.data.map((seg: any) => ({
                   id: seg.id,
                   name: seg.name || 'Unnamed Segment',
@@ -1664,7 +1664,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
                 }))
               } else if (segmentsResponse && Array.isArray(segmentsResponse)) {
                 // Handle case where SDK returns array directly
-                console.log(`[v0] ✅ Found ${segmentsResponse.length} segments from Resend SDK (direct array)`)
+                console.log(`[Alex] ✅ Found ${segmentsResponse.length} segments from Resend SDK (direct array)`)
                 segments = segmentsResponse.map((seg: any) => ({
                   id: seg.id,
                   name: seg.name || 'Unnamed Segment',
@@ -1673,7 +1673,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
                 }))
               } else {
                 // Fallback: Try direct API call if SDK method doesn't exist
-                console.log('[v0] ⚠️ SDK segments.list() not available or returned no data, trying direct API...')
+                console.log('[Alex] ⚠️ SDK segments.list() not available or returned no data, trying direct API...')
                 
                 // Retry logic with exponential backoff for rate limit errors
                 let retries = 3
@@ -1683,7 +1683,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
                   try {
                     // Wait before retry (except first attempt)
                     if (retries < 3) {
-                      console.log(`[v0] ⏳ Waiting ${retryDelay}ms before retry (${4 - retries}/3)...`)
+                      console.log(`[Alex] ⏳ Waiting ${retryDelay}ms before retry (${4 - retries}/3)...`)
                       await new Promise((resolve) => setTimeout(resolve, retryDelay))
                       retryDelay *= 2 // Exponential backoff: 1s, 2s, 4s
                     }
@@ -1700,7 +1700,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
                     
                     for (const segmentsUrl of endpoints) {
                       try {
-                        console.log(`[v0] 🔍 Trying endpoint: ${segmentsUrl}`)
+                        console.log(`[Alex] 🔍 Trying endpoint: ${segmentsUrl}`)
                         const apiResponse = await fetch(segmentsUrl, {
                           method: 'GET',
                           headers: {
@@ -1711,29 +1711,29 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
                         
                         if (apiResponse.ok) {
                           apiData = await apiResponse.json()
-                          console.log(`[v0] ✅ Successfully fetched from ${segmentsUrl}`)
+                          console.log(`[Alex] ✅ Successfully fetched from ${segmentsUrl}`)
                           break // Success, exit endpoint loop
                         } else if (apiResponse.status === 404 || apiResponse.status === 405) {
                           // Endpoint doesn't exist or method not allowed, try next endpoint
                           const errorText = await apiResponse.text()
-                          console.log(`[v0] ⚠️ Endpoint ${segmentsUrl} returned ${apiResponse.status}, trying next...`)
+                          console.log(`[Alex] ⚠️ Endpoint ${segmentsUrl} returned ${apiResponse.status}, trying next...`)
                           lastError = { status: apiResponse.status, message: errorText }
                           continue
                         } else if (apiResponse.status === 429) {
                           // Rate limit - will retry
                           const errorText = await apiResponse.text()
-                          console.warn(`[v0] ⚠️ Rate limit hit (429) on ${segmentsUrl}, will retry`)
+                          console.warn(`[Alex] ⚠️ Rate limit hit (429) on ${segmentsUrl}, will retry`)
                           lastError = { status: 429, message: errorText }
                           break // Exit endpoint loop, will retry
                         } else {
                           // Other error
                           const errorText = await apiResponse.text()
-                          console.warn(`[v0] ⚠️ Endpoint ${segmentsUrl} returned ${apiResponse.status}:`, errorText.substring(0, 200))
+                          console.warn(`[Alex] ⚠️ Endpoint ${segmentsUrl} returned ${apiResponse.status}:`, errorText.substring(0, 200))
                           lastError = { status: apiResponse.status, message: errorText }
                           continue
                         }
                       } catch (endpointError: any) {
-                        console.warn(`[v0] ⚠️ Error calling ${segmentsUrl}:`, endpointError.message)
+                        console.warn(`[Alex] ⚠️ Error calling ${segmentsUrl}:`, endpointError.message)
                         lastError = endpointError
                         continue
                       }
@@ -1742,7 +1742,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
                     if (apiData) {
                       // Parse response
                       if (apiData.data && Array.isArray(apiData.data)) {
-                        console.log(`[v0] ✅ Found ${apiData.data.length} segments from Resend API (direct)`)
+                        console.log(`[Alex] ✅ Found ${apiData.data.length} segments from Resend API (direct)`)
                         segments = apiData.data.map((seg: any) => ({
                           id: seg.id,
                           name: seg.name || 'Unnamed Segment',
@@ -1752,7 +1752,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
                         break // Success, exit retry loop
                       } else if (apiData.segments && Array.isArray(apiData.segments)) {
                         // Alternative response format
-                        console.log(`[v0] ✅ Found ${apiData.segments.length} segments from Resend API (direct, alt format)`)
+                        console.log(`[Alex] ✅ Found ${apiData.segments.length} segments from Resend API (direct, alt format)`)
                         segments = apiData.segments.map((seg: any) => ({
                           id: seg.id,
                           name: seg.name || 'Unnamed Segment',
@@ -1762,7 +1762,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
                         break // Success, exit retry loop
                       } else if (Array.isArray(apiData)) {
                         // Direct array response
-                        console.log(`[v0] ✅ Found ${apiData.length} segments from Resend API (direct array)`)
+                        console.log(`[Alex] ✅ Found ${apiData.length} segments from Resend API (direct array)`)
                         segments = apiData.map((seg: any) => ({
                           id: seg.id,
                           name: seg.name || 'Unnamed Segment',
@@ -1771,38 +1771,38 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
                         }))
                         break // Success, exit retry loop
                       } else {
-                        console.warn('[v0] ⚠️ Resend API returned unexpected format:', JSON.stringify(apiData).substring(0, 200))
+                        console.warn('[Alex] ⚠️ Resend API returned unexpected format:', JSON.stringify(apiData).substring(0, 200))
                         break // Unexpected format, don't retry
                       }
                     } else if (lastError?.status === 429) {
                       // Rate limit error - retry with backoff
-                      console.warn(`[v0] ⚠️ Rate limit hit (429), will retry. Attempt ${4 - retries}/3`)
+                      console.warn(`[Alex] ⚠️ Rate limit hit (429), will retry. Attempt ${4 - retries}/3`)
                       retries--
                       if (retries === 0) {
-                        console.error('[v0] ❌ Rate limit retries exhausted, falling back to database/env')
+                        console.error('[Alex] ❌ Rate limit retries exhausted, falling back to database/env')
                       }
                     } else {
                       // Other error - don't retry
-                      console.warn(`[v0] ⚠️ Resend segments API failed:`, lastError?.message || lastError || 'Unknown error')
+                      console.warn(`[Alex] ⚠️ Resend segments API failed:`, lastError?.message || lastError || 'Unknown error')
                       break
                     }
                   } catch (apiError: any) {
-                    console.warn(`[v0] ⚠️ Direct API call failed (attempt ${4 - retries}/3):`, apiError.message || apiError)
+                    console.warn(`[Alex] ⚠️ Direct API call failed (attempt ${4 - retries}/3):`, apiError.message || apiError)
                     retries--
                     if (retries === 0) {
-                      console.warn('[v0] ⚠️ All retries exhausted, falling back to database/env')
+                      console.warn('[Alex] ⚠️ All retries exhausted, falling back to database/env')
                     }
                   }
                 }
               }
             } catch (error: any) {
-              console.warn('[v0] ⚠️ Failed to fetch segments from Resend API, falling back to database/env:', error.message)
+              console.warn('[Alex] ⚠️ Failed to fetch segments from Resend API, falling back to database/env:', error.message)
             }
             
             // FALLBACK: If Resend API didn't return segments, use database/env as backup
             if (segments.length === 0) {
-              console.warn('[v0] ⚠️ WARNING: Resend API did not return segments. Using fallback database/env data.')
-              console.log('[v0] 📋 Using fallback: Getting segments from database and env vars...')
+              console.warn('[Alex] ⚠️ WARNING: Resend API did not return segments. Using fallback database/env data.')
+              console.log('[Alex] 📋 Using fallback: Getting segments from database and env vars...')
               usingFallbackData = true
               
               // Get known segments from database campaigns
@@ -1850,7 +1850,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
             // For segments without size, try to get contact count from Resend
             // Note: This might require filtering contacts by segment, which Resend may not support directly
             // We'll leave size as null if we can't get it
-            console.log(`[v0] 📊 Final segments list: ${segments.length} segments`)
+            console.log(`[Alex] 📊 Final segments list: ${segments.length} segments`)
           }
           
           // Build summary with segment details
@@ -2006,11 +2006,11 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
                   if (apiData.created_at || apiData.sent_at) {
                     actualSentAt = apiData.created_at || apiData.sent_at
                     source = 'resend_api'
-                    console.log(`[v0] 📅 Got send date from Resend API for campaign ${campaign.id}`)
+                    console.log(`[Alex] 📅 Got send date from Resend API for campaign ${campaign.id}`)
                   }
                 }
               } catch (apiError) {
-                console.warn(`[v0] ⚠️ Could not fetch Resend data for broadcast ${campaign.resend_broadcast_id}`)
+                console.warn(`[Alex] ⚠️ Could not fetch Resend data for broadcast ${campaign.resend_broadcast_id}`)
               }
             }
             
@@ -2102,7 +2102,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
             }))
           }
         } catch (error: any) {
-          console.error('[v0] Error in get_email_timeline tool:', error)
+          console.error('[Alex] Error in get_email_timeline tool:', error)
           return {
             error: error.message || "Failed to fetch email timeline",
             lastEmailSent: null,
@@ -2156,7 +2156,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
         try {
           // Validate filePath is provided
           if (!filePath || typeof filePath !== 'string' || filePath.trim().length === 0) {
-            console.error(`[v0] ❌ read_codebase_file called with invalid filePath:`, filePath)
+            console.error(`[Alex] ❌ read_codebase_file called with invalid filePath:`, filePath)
             return {
               success: false,
               error: "filePath is required and must be a non-empty string",
@@ -2164,7 +2164,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
             }
           }
           
-          console.log(`[v0] 📖 Attempting to read file: ${filePath}`)
+          console.log(`[Alex] 📖 Attempting to read file: ${filePath}`)
           const fs = require('fs')
           const path = require('path')
           
@@ -2188,7 +2188,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
           const isAllowed = allowedDirs.some(dir => normalizedPath.startsWith(dir + '/') || normalizedPath.startsWith(dir + '\\')) || isDirectoryPath
           
           if (!isAllowed && !normalizedPath.startsWith('README.md') && !normalizedPath.startsWith('package.json')) {
-            console.log(`[v0] ⚠️ File path not allowed: ${filePath}`)
+            console.log(`[Alex] ⚠️ File path not allowed: ${filePath}`)
             return {
               success: false,
               error: `File path must be in one of these directories: ${allowedDirs.join(', ')}`,
@@ -2199,7 +2199,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
           
           // Prevent directory traversal
           if (normalizedPath.includes('..')) {
-            console.log(`[v0] ⚠️ Directory traversal attempt blocked: ${filePath}`)
+            console.log(`[Alex] ⚠️ Directory traversal attempt blocked: ${filePath}`)
             return {
               success: false,
               error: "Directory traversal not allowed",
@@ -2220,7 +2220,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
           
           // Check if file exists
           if (!fs.existsSync(fullPath)) {
-            console.log(`[v0] ⚠️ File not found: ${filePath}`)
+            console.log(`[Alex] ⚠️ File not found: ${filePath}`)
             
             // Try to find similar files or list directory contents
             let suggestions: string[] = []
@@ -2324,9 +2324,9 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
                 }
               }
               
-              console.log(`[v0] 💡 Found ${suggestions.length} similar files for: ${filePath}`)
+              console.log(`[Alex] 💡 Found ${suggestions.length} similar files for: ${filePath}`)
             } catch (suggestionError: any) {
-              console.warn(`[v0] ⚠️ Error generating suggestions:`, suggestionError.message)
+              console.warn(`[Alex] ⚠️ Error generating suggestions:`, suggestionError.message)
             }
             
             let suggestionText = "Check the file path and ensure it exists in the project"
@@ -2349,7 +2349,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
           // Check if it's a file (not directory)
           const stats = fs.statSync(fullPath)
           if (!stats.isFile()) {
-            console.log(`[v0] ⚠️ Path is a directory: ${filePath}`)
+            console.log(`[Alex] ⚠️ Path is a directory: ${filePath}`)
             
             // List directory contents to help Alex discover files
             let directoryContents: string[] = []
@@ -2360,9 +2360,9 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
                 const isDir = fs.statSync(filePath).isDirectory()
                 return isDir ? `${f}/` : f
               })
-              console.log(`[v0] 📁 Directory ${filePath} contains ${files.length} items, showing first ${directoryContents.length}`)
+              console.log(`[Alex] 📁 Directory ${filePath} contains ${files.length} items, showing first ${directoryContents.length}`)
             } catch (listError: any) {
-              console.warn(`[v0] ⚠️ Error listing directory ${filePath}:`, listError.message)
+              console.warn(`[Alex] ⚠️ Error listing directory ${filePath}:`, listError.message)
             }
             
             // Build comprehensive directory listing with full paths
@@ -2404,9 +2404,9 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
               }) : undefined
             }
             
-            console.log(`[v0] 📁 Directory listing for ${filePath}:`, directoryContents)
+            console.log(`[Alex] 📁 Directory listing for ${filePath}:`, directoryContents)
             if (directoryContents.length > 0) {
-              console.log(`[v0] 📁 Full paths available:`, result.availableFiles)
+              console.log(`[Alex] 📁 Full paths available:`, result.availableFiles)
             }
             
             return result
@@ -2433,7 +2433,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
                           ext === '.sql' ? 'sql' :
                           ext === '.json' ? 'json' : 'text'
           
-          console.log(`[v0] 📖 Read file: ${filePath} (${totalLines} lines${truncated ? `, showing first ${maxLines}` : ''})`)
+          console.log(`[Alex] 📖 Read file: ${filePath} (${totalLines} lines${truncated ? `, showing first ${maxLines}` : ''})`)
           
           return {
             success: true,
@@ -2446,7 +2446,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
             note: truncated ? `File truncated to first ${maxLines} lines. Use maxLines parameter to read more.` : undefined
           }
         } catch (error: any) {
-          console.error(`[v0] ❌ Error reading file ${filePath}:`, error.message)
+          console.error(`[Alex] ❌ Error reading file ${filePath}:`, error.message)
           return {
             success: false,
             error: error.message || "Failed to read file",
@@ -2482,7 +2482,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
         status?: 'draft' | 'published' | 'all'
       }) => {
         try {
-          console.log(`[v0] 📚 Getting prompt guides:`, { guideId, searchTerm, includePrompts, status })
+          console.log(`[Alex] 📚 Getting prompt guides:`, { guideId, searchTerm, includePrompts, status })
           
           if (guideId) {
             // Get specific guide with all details
@@ -2705,7 +2705,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
             }
           }
         } catch (error: any) {
-          console.error("[v0] Error getting prompt guides:", error)
+          console.error("[Alex] Error getting prompt guides:", error)
           return {
             success: false,
             error: error.message || "Failed to get prompt guides",
@@ -2765,9 +2765,9 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
         }
       }) => {
         try {
-          console.log(`[v0] 📝 Updating prompt guide ${guideId}`)
-          console.log(`[v0] 📝 Guide updates:`, JSON.stringify(guideUpdates, null, 2))
-          console.log(`[v0] 📝 Page updates:`, JSON.stringify(pageUpdates, null, 2))
+          console.log(`[Alex] 📝 Updating prompt guide ${guideId}`)
+          console.log(`[Alex] 📝 Guide updates:`, JSON.stringify(guideUpdates, null, 2))
+          console.log(`[Alex] 📝 Page updates:`, JSON.stringify(pageUpdates, null, 2))
           
           // Verify guide exists
           const [guide] = await sql`
@@ -2805,7 +2805,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
                   updated_at = NOW()
                 WHERE id = ${guideId}
               `
-              console.log(`[v0] ✅ Updated guide ${guideId}`)
+              console.log(`[Alex] ✅ Updated guide ${guideId}`)
             }
           }
           
@@ -2860,38 +2860,38 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
               if (existingPage) {
                 // Update existing page - build a single UPDATE with only provided fields
                 // This pattern is safe: column names are hardcoded, values are parameterized
-                console.log(`[v0] 🔧 Page update fields received:`, JSON.stringify(pageUpdateFields, null, 2))
+                console.log(`[Alex] 🔧 Page update fields received:`, JSON.stringify(pageUpdateFields, null, 2))
                 
                 // Execute individual UPDATE statements for each provided field
                 // This is safe: column names are hardcoded, values are parameterized via template literals
                 // Each UPDATE only runs if the field is explicitly provided (not undefined)
                 if (pageUpdateFields.slug !== undefined) {
                   await sql`UPDATE prompt_pages SET slug = ${pageUpdateFields.slug}, updated_at = NOW() WHERE guide_id = ${guideId}`
-                  console.log(`[v0] 🔧 Updated slug: ${pageUpdateFields.slug}`)
+                  console.log(`[Alex] 🔧 Updated slug: ${pageUpdateFields.slug}`)
                 }
                 if (pageUpdateFields.title !== undefined) {
                   await sql`UPDATE prompt_pages SET title = ${pageUpdateFields.title}, updated_at = NOW() WHERE guide_id = ${guideId}`
-                  console.log(`[v0] 🔧 Updated title: ${pageUpdateFields.title}`)
+                  console.log(`[Alex] 🔧 Updated title: ${pageUpdateFields.title}`)
                 }
                 if (pageUpdateFields.welcome_message !== undefined) {
                   await sql`UPDATE prompt_pages SET welcome_message = ${pageUpdateFields.welcome_message}, updated_at = NOW() WHERE guide_id = ${guideId}`
-                  console.log(`[v0] 🔧 Updated welcome_message`)
+                  console.log(`[Alex] 🔧 Updated welcome_message`)
                 }
                 if (pageUpdateFields.email_capture_type !== undefined) {
                   await sql`UPDATE prompt_pages SET email_capture_type = ${pageUpdateFields.email_capture_type}, updated_at = NOW() WHERE guide_id = ${guideId}`
-                  console.log(`[v0] 🔧 Updated email_capture_type: ${pageUpdateFields.email_capture_type}`)
+                  console.log(`[Alex] 🔧 Updated email_capture_type: ${pageUpdateFields.email_capture_type}`)
                 }
                 if (pageUpdateFields.email_list_tag !== undefined) {
                   await sql`UPDATE prompt_pages SET email_list_tag = ${pageUpdateFields.email_list_tag}, updated_at = NOW() WHERE guide_id = ${guideId}`
-                  console.log(`[v0] 🔧 Updated email_list_tag: ${pageUpdateFields.email_list_tag}`)
+                  console.log(`[Alex] 🔧 Updated email_list_tag: ${pageUpdateFields.email_list_tag}`)
                 }
                 if (pageUpdateFields.upsell_link !== undefined) {
                   await sql`UPDATE prompt_pages SET upsell_link = ${pageUpdateFields.upsell_link}, updated_at = NOW() WHERE guide_id = ${guideId}`
-                  console.log(`[v0] 🔧 Updated upsell_link: ${pageUpdateFields.upsell_link}`)
+                  console.log(`[Alex] 🔧 Updated upsell_link: ${pageUpdateFields.upsell_link}`)
                 }
                 if (pageUpdateFields.upsell_text !== undefined) {
                   await sql`UPDATE prompt_pages SET upsell_text = ${pageUpdateFields.upsell_text}, updated_at = NOW() WHERE guide_id = ${guideId}`
-                  console.log(`[v0] 🔧 Updated upsell_text: ${pageUpdateFields.upsell_text.substring(0, 50)}...`)
+                  console.log(`[Alex] 🔧 Updated upsell_text: ${pageUpdateFields.upsell_text.substring(0, 50)}...`)
                 }
                 if (pageUpdateFields.status !== undefined) {
                   if (pageUpdateFields.status === 'published') {
@@ -2901,11 +2901,11 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
                   } else {
                     await sql`UPDATE prompt_pages SET status = ${pageUpdateFields.status}, updated_at = NOW() WHERE guide_id = ${guideId}`
                   }
-                  console.log(`[v0] 🔧 Updated status: ${pageUpdateFields.status}`)
+                  console.log(`[Alex] 🔧 Updated status: ${pageUpdateFields.status}`)
                 }
                 
-                console.log(`[v0] ✅ Updated page for guide ${guideId}`)
-                console.log(`[v0] 🔧 Updated fields:`, Object.keys(pageUpdateFields).join(', '))
+                console.log(`[Alex] ✅ Updated page for guide ${guideId}`)
+                console.log(`[Alex] 🔧 Updated fields:`, Object.keys(pageUpdateFields).join(', '))
               } else {
                 // Create new page if it doesn't exist
                 // Need guide title for page title
@@ -2936,7 +2936,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
                     ${pageUpdateFields.status || 'draft'}
                   )
                 `
-                console.log(`[v0] ✅ Created new page for guide ${guideId}`)
+                console.log(`[Alex] ✅ Created new page for guide ${guideId}`)
               }
             }
           }
@@ -2970,7 +2970,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
             WHERE pg.id = ${guideId}
           `
           
-          console.log(`[v0] 📊 Retrieved updated guide data:`, {
+          console.log(`[Alex] 📊 Retrieved updated guide data:`, {
             id: updatedGuide?.id,
             emailListTag: updatedGuide?.email_list_tag,
             upsellLink: updatedGuide?.upsell_link,
@@ -3005,7 +3005,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
             }
           }
         } catch (error: any) {
-          console.error("[v0] Error updating prompt guide:", error)
+          console.error("[Alex] Error updating prompt guide:", error)
           return {
             success: false,
             error: error.message || "Failed to update prompt guide",
@@ -3090,7 +3090,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
               try {
                 targetAudience = JSON.parse(targetAudience)
               } catch (e) {
-                console.error("[v0] Error parsing target_audience:", e)
+                console.error("[Alex] Error parsing target_audience:", e)
                 targetAudience = null
               }
             }
@@ -3300,14 +3300,14 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
                 }))
               }
               
-              console.log('[v0] 📊 Performance insights loaded:', {
+              console.log('[Alex] 📊 Performance insights loaded:', {
                 campaigns: bestPerformingCampaigns.length,
                 samples: successfulSamples.length,
                 feedback: recentFeedback.length
               })
             }
           } catch (performanceError: any) {
-            console.warn('[v0] ⚠️ Could not load performance insights:', performanceError.message)
+            console.warn('[Alex] ⚠️ Could not load performance insights:', performanceError.message)
             // Continue without performance data - not critical
           }
           
@@ -3330,7 +3330,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
               : "Your email strategy looks good! Want to create a new campaign?"
           }
         } catch (error: any) {
-          console.error("[v0] Error in analyze_email_strategy tool:", error)
+          console.error("[Alex] Error in analyze_email_strategy tool:", error)
           return {
             error: error.message || "Failed to analyze email strategy",
             recommendations: [],
@@ -4075,7 +4075,7 @@ This tool provides critical business intelligence to make data-driven decisions.
             metrics: result
           }
         } catch (error: any) {
-          console.error("[v0] Error in get_revenue_metrics tool:", error)
+          console.error("[Alex] Error in get_revenue_metrics tool:", error)
           return {
             success: false,
             error: error.message || "Failed to get revenue metrics",
@@ -4194,7 +4194,7 @@ This tool provides critical business intelligence to make data-driven decisions.
 
           return { success: false, error: 'Invalid scope or missing userId' }
         } catch (error: any) {
-          console.error('[v0] ❌ Error fetching platform analytics:', error)
+          console.error('[Alex] ❌ Error fetching platform analytics:', error)
           return { success: false, error: `Failed to fetch analytics: ${error.message}` }
         }
       }
@@ -4250,7 +4250,7 @@ This tool provides critical business intelligence to make data-driven decisions.
             performance: performance || []
           }
         } catch (error: any) {
-          console.error('[v0] ❌ Error fetching business insights:', error)
+          console.error('[Alex] ❌ Error fetching business insights:', error)
           return { success: false, error: `Failed to fetch insights: ${error.message}` }
         }
       }
@@ -4321,7 +4321,7 @@ This tool provides critical business intelligence to make data-driven decisions.
             }
           }
         } catch (error: any) {
-          console.error('[v0] ❌ Error fetching content performance:', error)
+          console.error('[Alex] ❌ Error fetching content performance:', error)
           return { success: false, error: `Failed to fetch performance: ${error.message}` }
         }
       }
@@ -4345,7 +4345,7 @@ This tool provides critical business intelligence to make data-driven decisions.
             recommendations: recommendations || []
           }
         } catch (error: any) {
-          console.error('[v0] ❌ Error getting email recommendations:', error)
+          console.error('[Alex] ❌ Error getting email recommendations:', error)
           return { success: false, error: `Failed to get recommendations: ${error.message}` }
         }
       }
@@ -4401,7 +4401,7 @@ Keep it practical and data-driven.`
             note: "Use web_search tool with this research prompt to get current data, then analyze the results to provide strategic recommendations."
           }
         } catch (error: any) {
-          console.error('[v0] ❌ Error researching content strategy:', error)
+          console.error('[Alex] ❌ Error researching content strategy:', error)
           return { success: false, error: `Failed to research: ${error.message}` }
         }
       }
@@ -4490,7 +4490,7 @@ Keep it practical and data-driven.`
             note: "Use web_search to get current Instagram algorithm insights and best practices, then provide specific recommendations based on this brand profile."
           }
         } catch (error: any) {
-          console.error('[v0] ❌ Error getting brand strategy:', error)
+          console.error('[Alex] ❌ Error getting brand strategy:', error)
           return { success: false, error: `Failed to get strategy: ${error.message}` }
         }
       }
@@ -4566,7 +4566,7 @@ ${emailHtml}
 
 IMPORTANT: The HTML above is the complete email HTML. When editing, extract ALL of it (from HTML: to [END OF PREVIOUS EMAIL HTML]) and use it as the previousVersion parameter in compose_email.`
             
-            console.log('[v0] 📧 Formatted previous email for Alex:', {
+            console.log('[Alex] 📧 Formatted previous email for Alex:', {
               subjectLine,
               campaignId: campaignId || 'none',
               htmlLength: emailHtml.length,
@@ -4680,7 +4680,7 @@ IMPORTANT: The HTML above is the complete email HTML. When editing, extract ALL 
             controller.enqueue(data)
           } catch (error: any) {
             if (error?.code !== 'ERR_INVALID_STATE' && !error?.message?.includes('closed')) {
-              console.error('[v0] ❌ Error enqueueing data:', error)
+              console.error('[Alex] ❌ Error enqueueing data:', error)
             }
             if (error?.code === 'ERR_INVALID_STATE' || error?.message?.includes('closed')) {
               isClosed = true
@@ -4694,7 +4694,7 @@ IMPORTANT: The HTML above is the complete email HTML. When editing, extract ALL 
             try {
               controller.close()
             } catch (error) {
-              console.error('[v0] ❌ Error closing stream:', error)
+              console.error('[Alex] ❌ Error closing stream:', error)
             }
           }
         }
@@ -4721,9 +4721,9 @@ IMPORTANT: The HTML above is the complete email HTML. When editing, extract ALL 
               }
             })
 
-            console.log('[v0] 📤 Making API call with', formattedMessages.length, 'messages')
+            console.log('[Alex] 📤 Making API call with', formattedMessages.length, 'messages')
             if (iteration > 1) {
-              console.log('[v0] 📤 Continuation - last message type:', formattedMessages[formattedMessages.length - 1]?.content?.[0]?.type || 'text')
+              console.log('[Alex] 📤 Continuation - last message type:', formattedMessages[formattedMessages.length - 1]?.content?.[0]?.type || 'text')
             }
 
             // Use SDK's streaming
@@ -4767,7 +4767,7 @@ IMPORTANT: The HTML above is the complete email HTML. When editing, extract ALL 
 
               // Handle tool use start
               if (event.type === 'content_block_start' && event.content_block?.type === 'tool_use') {
-                console.log('[v0] 🔧 Tool use started:', event.content_block.name)
+                console.log('[Alex] 🔧 Tool use started:', event.content_block.name)
               }
 
               // Handle tool use complete - execute it
@@ -4797,7 +4797,7 @@ IMPORTANT: The HTML above is the complete email HTML. When editing, extract ALL 
                 // Truncate very large tool results
                 const MAX_TOOL_RESULT_SIZE = 100000
                 if (toolResultContent.length > MAX_TOOL_RESULT_SIZE) {
-                  console.log(`[v0] ⚠️ Tool result is large (${toolResultContent.length} chars), truncating...`)
+                  console.log(`[Alex] ⚠️ Tool result is large (${toolResultContent.length} chars), truncating...`)
                   const truncated = toolResultContent.substring(0, MAX_TOOL_RESULT_SIZE)
                   toolResultContent = truncated + '\n\n[Content truncated due to size limits. Use read_codebase_file with specific file paths for full content.]'
                 }
@@ -4815,13 +4815,13 @@ IMPORTANT: The HTML above is the complete email HTML. When editing, extract ALL 
                   },
                 ]
                 
-                console.log(`[v0] ✅ Added tool result to messages (${toolResultContent.length} chars)`)
+                console.log(`[Alex] ✅ Added tool result to messages (${toolResultContent.length} chars)`)
               }
 
               // Handle message stop
               if (event.type === 'message_stop') {
                 messageComplete = true
-                console.log('[v0] 📨 Message complete')
+                console.log('[Alex] 📨 Message complete')
                 if (hasTextInThisIteration && toolCalls.length > 0) {
                   const endMessage = {
                     type: 'text-end',
@@ -4835,7 +4835,7 @@ IMPORTANT: The HTML above is the complete email HTML. When editing, extract ALL 
 
             // If we executed tools, continue the conversation
             if (toolCalls.length > 0) {
-              console.log('[v0] 🔄 Continuing with', toolCalls.length, 'tool results')
+              console.log('[Alex] 🔄 Continuing with', toolCalls.length, 'tool results')
               if (hasTextInThisIteration) {
                 const endMessage = {
                   type: 'text-end',
@@ -4864,20 +4864,20 @@ IMPORTANT: The HTML above is the complete email HTML. When editing, extract ALL 
           // Save accumulated message to database
           if (accumulatedText && activeChatId) {
             try {
-              console.log('[v0] 💾 Saving assistant message:', {
+              console.log('[Alex] 💾 Saving assistant message:', {
                 chatId: activeChatId,
                 textLength: accumulatedText.length,
                 hasEmailPreview: !!emailPreviewData,
                 emailPreviewSubject: emailPreviewData?.subjectLine
               })
               await saveChatMessage(activeChatId, "assistant", accumulatedText, emailPreviewData)
-              console.log('[v0] ✅ Saved assistant message to chat')
+              console.log('[Alex] ✅ Saved assistant message to chat')
             } catch (error) {
-              console.error("[v0] ❌ Error saving message:", error)
+              console.error("[Alex] ❌ Error saving message:", error)
             }
           }
         } catch (error: any) {
-          console.error('[v0] ❌ Stream error:', error)
+          console.error('[Alex] ❌ Stream error:', error)
           if (!isClosed) {
             const errorMessage = {
               type: 'error',
@@ -4901,7 +4901,7 @@ IMPORTANT: The HTML above is the complete email HTML. When editing, extract ALL 
       },
     })
   } catch (error: any) {
-    console.error("[v0] Admin agent chat error:", error)
+    console.error("[Alex] Admin agent chat error:", error)
     return NextResponse.json({ error: "Failed to process chat", details: error.message }, { status: 500 })
   }
 }
