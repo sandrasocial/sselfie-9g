@@ -131,32 +131,29 @@ Use proper <img> tags with inline styles:
 - Place images naturally in the email flow (hero image at top, supporting images in content)
 - Use table-based layout for email compatibility` : ''}
 
-**Product Links & Tracking**
+**Links:**
+- Use the links specified by the user in their intent
+- If no link specified, ask the user where the CTA should go
+- NEVER use placeholder or default links
+- Always include proper UTM parameters for tracking
 
-When including links in the email, use these URLs with tracking parameters:
-
-**Product Checkout Links (use campaign slug: "${campaignSlug}"):**
-- Studio Membership: ${siteUrl}/studio?checkout=studio_membership&utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=cta_button&campaign_id={campaign_id}
-- One-Time Session: ${siteUrl}/studio?checkout=one_time&utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=cta_button&campaign_id={campaign_id}
-
-**Landing Pages (use campaign slug: "${campaignSlug}"):**
-- Why Studio: ${siteUrl}/why-studio?utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=text_link&campaign_id={campaign_id}
-- Homepage: ${siteUrl}/?utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=text_link&campaign_id={campaign_id}
-
-**Link Tracking:**
+**Link Tracking Requirements:**
 1. ALL links must include UTM parameters: utm_source=email, utm_medium=email, utm_campaign=${campaignSlug}, utm_content={link_type}
 2. Use campaign_id={campaign_id} as placeholder (will be replaced with actual ID when campaign is scheduled)
 3. Use campaign slug "${campaignSlug}" for all utm_campaign parameters
 4. Use appropriate utm_content values: cta_button (primary CTA), text_link (body links), footer_link (footer), image_link (image links)
 
-**Link Examples (use these exact formats with campaign slug "${campaignSlug}"):**
+**Available Link Options (only use if user specifies):**
+- Studio Membership checkout: ${siteUrl}/studio?checkout=studio_membership&utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=cta_button&campaign_id={campaign_id}
+- One-Time Session checkout: ${siteUrl}/studio?checkout=one_time&utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=cta_button&campaign_id={campaign_id}
+- Why Studio page: ${siteUrl}/why-studio?utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=text_link&campaign_id={campaign_id}
+- Homepage: ${siteUrl}/?utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=text_link&campaign_id={campaign_id}
+
+**Link Format Examples (with tracking):**
 - Primary CTA: <a href="${siteUrl}/studio?checkout=studio_membership&utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=cta_button&campaign_id={campaign_id}" style="display: inline-block; background-color: ${brand.colors.dark}; color: ${brand.colors.light}; padding: ${brand.buttons.padding}; text-decoration: none; border-radius: ${brand.buttons.borderRadius}; font-size: ${brand.buttons.fontSize}; font-weight: ${brand.buttons.fontWeight};">Join SSELFIE Studio</a>
 - Secondary link: <a href="${siteUrl}/why-studio?utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=text_link&campaign_id={campaign_id}" style="color: ${brand.colors.dark}; text-decoration: underline;">Learn more</a>
 
-**When to Use Which Link:**
-- Primary CTA → Use checkout links (checkout=studio_membership or checkout=one_time)
-- Educational/nurturing content → Use landing pages (/why-studio, /)
-- Always include full tracking parameters for conversion attribution
+**Important:** If Sandra specifies a different URL in her intent, use that URL instead. Always add UTM tracking parameters to any link.
 
 **Output Format:**
 - Return ONLY raw HTML code (no markdown code blocks, no triple backticks with html, no explanations)
