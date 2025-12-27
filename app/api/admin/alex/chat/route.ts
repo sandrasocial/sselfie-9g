@@ -3807,20 +3807,40 @@ These images should be included naturally in the email HTML.`
     // Note: Claude Sonnet 4 has native web search, but when using direct Anthropic SDK,
     // we need to use the gateway model via streamText to enable it
     // For now, we'll add a web search tool that can be used when needed
-    const webSearchTool = tool({
-      description: `Search the web for current information, trends, and real-time data.
-  
-  Use this when:
-  - Sandra asks about current events, trends, or recent information
-  - You need to verify current facts or data
-  - Researching competitors, market trends, or industry news
-  - Finding up-to-date information not in your training data
-  
-  IMPORTANT: This tool is available but Claude's native web search works best when using the gateway model.`,
+    const webSearchTool = {
+      name: "web_search",
+      description: `Search the web for current information, trends, competitor analysis, and research.
+
+Use this to:
+- Research trending topics in personal branding, AI, or entrepreneurship
+- Check competitor strategies and content
+- Find real-time data and statistics
+- Verify current information beyond your knowledge cutoff
+- Get inspiration for content ideas
+
+Examples:
+- "What's trending in personal branding?"
+- "Research competitor Instagram strategies"
+- "Find statistics about AI adoption"
+- "What are popular AI tools for entrepreneurs?"
+
+Always use this when Sandra asks about:
+- Current trends
+- Competitor analysis
+- Real-time data
+- Content inspiration
+- Market research`,
       
-      parameters: z.object({
-        query: z.string().describe("The search query to look up on the web")
-      }),
+      input_schema: {
+        type: "object",
+        properties: {
+          query: {
+            type: "string",
+            description: "Search query (1-6 words for best results, be specific and concise)"
+          }
+        },
+        required: ["query"]
+      },
       
       execute: async ({ query }: { query: string }) => {
         try {
@@ -3873,7 +3893,7 @@ These images should be included naturally in the email HTML.`
           }
         }
       }
-    })
+    }
 
     // Revenue & Business Metrics Tool
     const getRevenueMetricsTool = tool({
