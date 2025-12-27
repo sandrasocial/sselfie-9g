@@ -1691,8 +1691,9 @@ export default function AdminAgentChatNew({
                                     </div>
                                   )}
                                   {messageEmailPreview && (
-                                    <div className="mt-4">
+                                    <div className="mt-4" key={`email-preview-${message.id}`}>
                                       <EmailPreviewCard
+                                        key={`email-card-${message.id}-${messageEmailPreview.html.substring(0, 50)}`}
                                         subject={messageEmailPreview.subject}
                                         preview={messageEmailPreview.preview}
                                         htmlContent={messageEmailPreview.html}
