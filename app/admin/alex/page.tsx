@@ -61,10 +61,10 @@ export default async function AlexPage() {
       userId={String(neonUser.id)}
       userName={neonUser.display_name || undefined}
       userEmail={neonUser.email}
-      apiEndpoint="/api/admin/agent/chat"
-      loadChatEndpoint="/api/admin/agent/load-chat"
-      chatsEndpoint="/api/admin/agent/chats"
-      newChatEndpoint="/api/admin/agent/new-chat"
+      apiEndpoint="/api/admin/alex/chat"
+      loadChatEndpoint="/api/admin/alex/load-chat"
+      chatsEndpoint="/api/admin/alex/chats"
+      newChatEndpoint="/api/admin/alex/new-chat"
     />
   )
 }
