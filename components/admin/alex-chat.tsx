@@ -24,9 +24,8 @@ interface GalleryImage {
 export default function AlexChat({ userId, userName, userEmail }: AlexChatProps) {
   const [view, setView] = useState<'chat' | 'analytics' | 'calendar'>('chat')
   const [inputValue, setInputValue] = useState('')
-  const [currentChatId, setCurrentChatId] = useState<number | null>(null)
+  const [chatId, setChatId] = useState<number | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const currentChatIdRef = useRef<number | null>(null) // Track current chat ID to avoid race conditions
   
   // Gallery state
   const [showGallery, setShowGallery] = useState(false)
@@ -38,16 +37,10 @@ export default function AlexChat({ userId, userName, userEmail }: AlexChatProps)
   const [galleryOffset, setGalleryOffset] = useState(0)
   const [hasMoreImages, setHasMoreImages] = useState(true)
   
-  // ✅ Ensure body updates when currentChatId changes
-  const chatBody = useMemo(() => ({
-    chatId: currentChatId, // ✅ This will be included in all requests when currentChatId is set
-    userId,
-  }), [currentChatId, userId])
-  
   const { messages, sendMessage, status, setMessages, isLoading: useChatIsLoading } = useChat({
-    id: currentChatId ? String(currentChatId) : undefined,
-    transport: new DefaultChatTransport({ api: '/api/admin/agent/chat' }) as any,
-    body: chatBody as any,
+    id: chatId ? String(chatId) : undefined,
+    transport: new DefaultChatTransport({ api: '/api/admin/alex/chat' }) as any,
+    body: { chatId, userId },
     onResponse: async (response: Response) => {
       console.log('[Alex] 📥 Response received, status:', response.status)
       const chatIdHeader = response.headers.get('X-Chat-Id')
@@ -55,8 +48,7 @@ export default function AlexChat({ userId, userName, userEmail }: AlexChatProps)
         const newChatId = parseInt(chatIdHeader)
         // ✅ Always update if we get a chat ID
         console.log('[Alex] 🔄 Setting chat ID to:', newChatId)
-        currentChatIdRef.current = newChatId
-        setCurrentChatId(newChatId)
+        setChatId(newChatId)
       }
     },
     onError: (error: any) => {
@@ -87,10 +79,10 @@ export default function AlexChat({ userId, userName, userEmail }: AlexChatProps)
     console.log('[Alex] 🔄 Status changed to:', status, {
       messageCount: messages.length,
       isLoading,
-      currentChatId,
+      chatId,
       useChatIsLoading,
     })
-  }, [status, isLoading, messages.length, currentChatId, useChatIsLoading])
+  }, [status, isLoading, messages.length, chatId, useChatIsLoading])
 
   // Load existing chat on mount
   useEffect(() => {
@@ -114,8 +106,7 @@ export default function AlexChat({ userId, userName, userEmail }: AlexChatProps)
           // Use explicit null/undefined check to handle chatId === 0 correctly
           if (data.chatId !== null && data.chatId !== undefined) {
             console.log('[Alex] 🆔 Setting initial chat ID:', data.chatId)
-            currentChatIdRef.current = data.chatId
-            setCurrentChatId(data.chatId)
+            setChatId(data.chatId)
           }
           
           // ✅ Then load messages
