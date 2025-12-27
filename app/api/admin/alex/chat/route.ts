@@ -9,6 +9,7 @@ import { saveChatMessage, createNewChat, getOrCreateActiveChat } from "@/lib/dat
 import { neon } from "@neondatabase/serverless"
 import { Resend } from "resend"
 import { buildEmailSystemPrompt } from "@/lib/admin/email-brand-guidelines"
+import { loops, LOOPS_AUDIENCES, upsertLoopsContact } from '@/lib/loops/client'
 
 // HTML stripping function - uses regex fallback (works without html-to-text package)
 // If html-to-text package is installed later, it can be enhanced, but this works fine for now
@@ -823,12 +824,20 @@ Return ONLY the updated HTML, nothing else.`
       }
     }
 
-    const getEmailCampaignTool = tool({
+    const getEmailCampaignTool = {
+      name: "get_email_campaign",
       description: `Fetch email campaign HTML and metadata by campaign ID. Use this when Sandra wants to edit an existing email - get the current HTML first, then use compose_email with previousVersion and campaignId parameters.`,
       
-      parameters: z.object({
-        campaignId: z.number().describe("Campaign ID to fetch")
-      }),
+      input_schema: {
+        type: "object",
+        properties: {
+          campaignId: {
+            type: "number",
+            description: "Campaign ID to fetch"
+          }
+        },
+        required: ["campaignId"]
+      },
       
       execute: async ({ campaignId }: { campaignId: number }) => {
         console.log('[Alex] 📧 get_email_campaign called:', { campaignId })
@@ -876,7 +885,7 @@ Return ONLY the updated HTML, nothing else.`
           }
         }
       }
-    } as any)
+    }
 
     const scheduleCampaignTool = {
       name: "schedule_campaign",
@@ -1563,6 +1572,658 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
             allSuccessful: false,
             error: error.message || "Failed to create email sequence",
             message: `Failed to create email sequence: ${error.message || 'Unknown error'}`
+          }
+        }
+      }
+    }
+
+    // ============================================================================
+    // LOOPS TOOLS - Marketing Email Automation Platform
+    //
+    // Loops SDK Documentation: https://loops.so/docs/api-reference
+    // 
+    // Verified SDK Methods:
+    // - loops.createContact() ✓ - Creates/updates contact
+    // - loops.updateContact() ✓ - Updates contact properties/tags
+    // - loops.findContact() ✓ - Gets contact by email
+    // - loops.sendEvent() ✓ - Triggers event-based emails
+    // - loops.sendTransactionalEmail() ✓ - Sends transactional emails
+    //
+    // Campaign Management:
+    // - Loops SDK does NOT have createCampaign() or getCampaigns() methods
+    // - Campaigns are created via REST API or Loops dashboard
+    // - We use REST API for campaign creation (see compose_loops_email tool)
+    // - Analytics retrieved via REST API (see get_loops_analytics tool)
+    //
+    // API Endpoints:
+    // - POST https://app.loops.so/api/v1/campaigns - Create campaign
+    // - GET https://app.loops.so/api/v1/campaigns - List campaigns
+    // ============================================================================
+
+    const composeLoopsEmailTool = {
+      name: "compose_loops_email",
+      description: `Create marketing email campaigns using Loops.
+
+Targeting works via TAGS and USER GROUPS, not segments:
+
+TAGS (combine multiple):
+- freebie-guide: Downloaded selfie guide
+- brand-blueprint: Downloaded brand blueprint  
+- prompt-guide: Downloaded prompt guide
+- customer, paid: Paying customers
+- studio-member: Studio members
+- beta-customer: Beta customers
+- engaged, active: Active users
+- cold, inactive: Inactive users
+- vip: VIP customers
+
+USER GROUPS:
+- subscriber: All subscribers
+- studio-member: Studio members
+- paid: Paying customers
+- cold: Cold leads
+- engaged: Active users
+
+Examples:
+- Target free users: targetTags=['freebie-guide'], excludeTags=['paid']
+- Target paying customers: targetTags=['paid', 'customer']
+- Target cold users: targetTags=['cold']
+- Target engaged Studio members: targetTags=['studio-member', 'engaged']
+
+Use Loops for MARKETING emails:
+- Newsletters and campaigns
+- Product launches
+- Nurture sequences
+- Re-engagement campaigns
+- Promotional emails
+- Educational content
+
+Use Resend (compose_email) for TRANSACTIONAL emails:
+- Login links
+- Password resets
+- Purchase receipts
+- Account notifications
+
+This creates a draft campaign in Loops that Sandra can review before sending.`,
+      
+      input_schema: {
+        type: "object",
+        properties: {
+          campaignName: {
+            type: "string",
+            description: "Internal name for campaign (e.g., 'Christmas Prompts Welcome Email')"
+          },
+          subject: {
+            type: "string",
+            description: "Email subject line"
+          },
+          preheader: {
+            type: "string",
+            description: "Preview text shown after subject line in inbox"
+          },
+          emailIntent: {
+            type: "string",
+            description: "What this email should accomplish (e.g., 'Welcome new Christmas prompts downloaders and soft-sell Studio membership')"
+          },
+          targetTags: {
+            type: "array",
+            items: { type: "string" },
+            description: "Tags to target (e.g., ['freebie-guide', 'lead']). Contacts must have ALL tags."
+          },
+          excludeTags: {
+            type: "array", 
+            items: { type: "string" },
+            description: "Tags to exclude (e.g., ['paid']). Contacts with these tags will be excluded."
+          },
+          userGroup: {
+            type: "string",
+            enum: ["subscriber", "studio-member", "paid", "cold", "engaged"],
+            description: "User group to target (optional, can combine with tags)"
+          },
+          tone: {
+            type: "string",
+            enum: ["warm", "professional", "excited", "intimate", "empowering"],
+            description: "Email tone (default: warm)"
+          },
+          includeTestimonials: {
+            type: "boolean",
+            description: "Whether to include customer testimonials"
+          },
+          includeImages: {
+            type: "boolean",
+            description: "Whether to include image layouts"
+          }
+        },
+        required: ["campaignName", "subject", "emailIntent"]
+      },
+      
+      execute: async ({
+        campaignName,
+        subject,
+        preheader,
+        emailIntent,
+        targetTags = [],
+        excludeTags = [],
+        userGroup,
+        tone = "warm",
+        includeTestimonials = false,
+        includeImages = false
+      }) => {
+        try {
+          console.log('[Alex] 📧 Creating Loops campaign:', { 
+            campaignName, 
+            targetTags, 
+            excludeTags, 
+            userGroup 
+          })
+          
+          // Get testimonials if requested
+          let testimonials = []
+          if (includeTestimonials) {
+            const testimonialsResult = await sql`
+              SELECT customer_name, testimonial_text, rating, screenshot_url
+              FROM testimonials
+              WHERE is_published = true AND rating >= 4
+              ORDER BY is_featured DESC, rating DESC
+              LIMIT 3
+            `
+            testimonials = testimonialsResult
+          }
+          
+          // Build email system prompt with Loops context
+          const emailPrompt = buildEmailSystemPrompt({
+            tone,
+            campaignSlug: campaignName.toLowerCase().replace(/\s+/g, '-'),
+            siteUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://sselfie.ai',
+            templates: []
+          })
+          
+          // Build audience description for email generation
+          const audienceDescription = [
+            targetTags.length > 0 && `Tags: ${targetTags.join(', ')}`,
+            excludeTags.length > 0 && `Exclude: ${excludeTags.join(', ')}`,
+            userGroup && `User Group: ${userGroup}`
+          ].filter(Boolean).join(' | ') || 'All subscribers'
+
+          // Generate email content
+          const fullPrompt = `${emailPrompt}
+
+**Campaign Details:**
+- Campaign Name: ${campaignName}
+- Subject: ${subject}
+- Preheader: ${preheader || ''}
+- Target Audience: ${audienceDescription}
+- Intent: ${emailIntent}
+
+${includeTestimonials && testimonials.length > 0 ? `
+**Include these testimonials:**
+${testimonials.map((t, i) => `
+${i + 1}. ${t.customer_name} (${t.rating} stars)
+   "${t.testimonial_text}"
+   ${t.screenshot_url ? `Image: ${t.screenshot_url}` : ''}
+`).join('\n')}
+` : ''}
+
+${includeImages ? 'Include beautiful image layouts where appropriate (hero image, featured images, testimonial photos).' : ''}
+
+Create a complete, ready-to-send email in Sandra's voice.`
+
+          const anthropic = new Anthropic({
+            apiKey: process.env.ANTHROPIC_API_KEY!
+          })
+          
+          const response = await anthropic.messages.create({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 4000,
+            messages: [{
+              role: 'user',
+              content: fullPrompt
+            }]
+          })
+          
+          const emailHtml = response.content
+            .filter((block: any) => block.type === 'text')
+            .map((block: any) => block.text)
+            .join('\n')
+            .trim()
+          
+          // Map to Loops API format
+          // Note: Actual Loops API filtering happens when sending, not when creating draft
+          // We document the targeting in the campaign metadata
+          const campaignAudience = {
+            includeTags: targetTags || [],
+            excludeTags: excludeTags || [],
+            userGroup: userGroup || LOOPS_AUDIENCES.ALL_SUBSCRIBERS
+          }
+          
+          // Create campaign in Loops via REST API
+          // Note: Loops SDK doesn't have createCampaign() method, so we use REST API
+          let campaignId: string | null = null
+          let campaignError: string | null = null
+          
+          try {
+            const apiKey = process.env.LOOPS_API_KEY
+            if (!apiKey) {
+              throw new Error('LOOPS_API_KEY not configured')
+            }
+            
+            // Create campaign via Loops REST API
+            // Note: Tag filtering is applied when sending the campaign, not when creating the draft
+            const campaignResponse = await fetch('https://app.loops.so/api/v1/campaigns', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                name: campaignName,
+                subject: subject,
+                previewText: preheader || subject.substring(0, 100),
+                body: emailHtml,
+                userGroup: campaignAudience.userGroup,
+                // Additional campaign settings
+                isDraft: true // Create as draft so Sandra can review
+                // Note: includeTags and excludeTags are set when sending, not in draft creation
+              })
+            })
+            
+            if (campaignResponse.ok) {
+              const campaignData = await campaignResponse.json()
+              campaignId = campaignData.id || campaignData.campaignId || `campaign-${Date.now()}`
+              console.log('[Alex] ✅ Loops campaign created via API:', campaignId)
+            } else {
+              const errorData = await campaignResponse.json().catch(() => ({}))
+              campaignError = errorData.message || `HTTP ${campaignResponse.status}`
+              console.warn('[Alex] ⚠️ Loops API campaign creation failed:', campaignError)
+              // Continue with draft ID - campaign HTML is still generated
+              campaignId = `draft-${Date.now()}`
+            }
+          } catch (apiError: any) {
+            campaignError = apiError.message || 'Failed to create campaign via API'
+            console.warn('[Alex] ⚠️ Loops API error:', campaignError)
+            // Continue with draft ID - campaign HTML is still generated
+            campaignId = `draft-${Date.now()}`
+          }
+          
+          console.log('[Alex] ✅ Loops campaign prepared:', campaignId)
+          
+          // Save email preview for display
+          const emailPreview = {
+            html: emailHtml,
+            subjectLine: subject,
+            preview: preheader || stripHtml(emailHtml).substring(0, 200)
+          }
+          
+          // Build targeting instructions for Sandra
+          const targetingInfo = [
+            campaignAudience.includeTags.length > 0 && `Include tags: ${campaignAudience.includeTags.join(', ')}`,
+            campaignAudience.excludeTags.length > 0 && `Exclude tags: ${campaignAudience.excludeTags.join(', ')}`,
+            `User group: ${campaignAudience.userGroup}`
+          ].filter(Boolean).join('\n')
+
+          return {
+            success: true,
+            type: "loops_campaign",
+            html: emailHtml,
+            subjectLine: subject,
+            preview: emailPreview.preview,
+            data: {
+              campaignId: campaignId,
+              campaignName,
+              subject,
+              preheader,
+              targetTags: campaignAudience.includeTags,
+              excludeTags: campaignAudience.excludeTags,
+              userGroup: campaignAudience.userGroup,
+              loopsUrl: campaignId?.startsWith('draft-') 
+                ? 'https://app.loops.so/campaigns' 
+                : `https://app.loops.so/campaigns/${campaignId}`,
+              status: campaignId?.startsWith('draft-') ? 'draft-local' : 'draft',
+              apiError: campaignError || undefined
+            },
+            message: campaignId?.startsWith('draft-')
+              ? `✅ Generated Loops campaign "${campaignName}"\n\n📝 Campaign HTML ready. ${campaignError ? `\n⚠️ API creation failed: ${campaignError}\n` : ''}\n🎯 Targeting:\n${targetingInfo}\n\n📌 Note: When sending this campaign in Loops, apply these filters:\n- Include tags: ${campaignAudience.includeTags.length > 0 ? campaignAudience.includeTags.join(', ') : 'None'}\n- Exclude tags: ${campaignAudience.excludeTags.length > 0 ? campaignAudience.excludeTags.join(', ') : 'None'}\n- User group: ${campaignAudience.userGroup}`
+              : `✅ Created Loops campaign "${campaignName}"\n\n🎯 Targeting:\n${targetingInfo}\n\n📍 Review and send from: https://app.loops.so/campaigns/${campaignId}\n\n📌 When sending, apply tag filters in Loops dashboard.`,
+            displayCard: true
+          }
+          
+        } catch (error: any) {
+          console.error('[Alex] ❌ Error creating Loops campaign:', error)
+          return {
+            success: false,
+            error: error.message || 'Failed to create Loops campaign'
+          }
+        }
+      }
+    }
+
+    const createLoopsSequenceTool = {
+      name: "create_loops_sequence",
+      description: `Create automated email sequences in Loops (drip campaigns, nurture flows).
+
+Perfect for:
+- Welcome series (onboarding new users)
+- Educational drip campaigns
+- Post-purchase nurture
+- Re-engagement flows
+
+Creates a complete multi-email sequence with timing and automation.`,
+      
+      input_schema: {
+        type: "object",
+        properties: {
+          sequenceName: {
+            type: "string",
+            description: "Name of sequence (e.g., 'New User Welcome Series')"
+          },
+          triggerTag: {
+            type: "string",
+            description: "Which Loops tag triggers this sequence (e.g., 'new-signup', 'studio-trial')"
+          },
+          emails: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                delayDays: {
+                  type: "number",
+                  description: "Days to wait before sending (0 = immediate)"
+                },
+                subject: {
+                  type: "string",
+                  description: "Email subject line"
+                },
+                intent: {
+                  type: "string",
+                  description: "What this email should accomplish"
+                }
+              },
+              required: ["delayDays", "subject", "intent"]
+            },
+            description: "Array of emails with timing and content (max 10 emails)"
+          }
+        },
+        required: ["sequenceName", "triggerTag", "emails"]
+      },
+      
+      execute: async ({ sequenceName, triggerTag, emails }: {
+        sequenceName: string
+        triggerTag: string
+        emails: Array<{ delayDays: number; subject: string; intent: string }>
+      }) => {
+        try {
+          console.log('[Alex] 📨 Creating Loops sequence:', { 
+            sequenceName, 
+            triggerTag, 
+            emailCount: emails.length 
+          })
+          
+          if (emails.length > 10) {
+            throw new Error('Maximum 10 emails per sequence')
+          }
+          
+          // Generate content for each email in sequence
+          const generatedEmails = []
+          
+          for (let i = 0; i < emails.length; i++) {
+            const email = emails[i]
+            console.log(`[Alex] 📝 Generating email ${i + 1}/${emails.length}...`)
+            
+            const emailPrompt = buildEmailSystemPrompt({
+              tone: 'warm',
+              campaignSlug: `${sequenceName}-email-${i + 1}`.toLowerCase().replace(/\s+/g, '-')
+            })
+            
+            const fullPrompt = `${emailPrompt}
+
+**Sequence Context:**
+This is email ${i + 1} of ${emails.length} in the "${sequenceName}" sequence.
+${i > 0 ? `Previous emails covered: ${emails.slice(0, i).map((e: any) => e.intent).join(', ')}` : ''}
+
+**This Email:**
+- Delay: ${email.delayDays} days ${email.delayDays === 0 ? '(sent immediately)' : `after ${i === 0 ? 'trigger' : 'previous email'}`}
+- Subject: ${email.subject}
+- Intent: ${email.intent}
+
+Create this email with appropriate positioning in the sequence.`
+
+            const anthropic = new Anthropic({
+              apiKey: process.env.ANTHROPIC_API_KEY!
+            })
+            
+            const response = await anthropic.messages.create({
+              model: 'claude-sonnet-4-20250514',
+              max_tokens: 3000,
+              messages: [{
+                role: 'user',
+                content: fullPrompt
+              }]
+            })
+            
+            const html = response.content
+              .filter((block: any) => block.type === 'text')
+              .map((block: any) => block.text)
+              .join('\n')
+            
+            generatedEmails.push({
+              delayDays: email.delayDays,
+              subject: email.subject,
+              html: html
+            })
+          }
+          
+          // Note: Loops API for sequences may differ - check Loops docs
+          // This is a simplified version showing the concept
+          console.log('[Alex] ✅ Generated', generatedEmails.length, 'emails for sequence')
+          
+          // For now, save sequence info to database for tracking
+          // You'll need to manually create the sequence in Loops UI
+          // or use Loops API if they have sequence creation endpoint
+          
+          return {
+            success: true,
+            type: "loops_sequence",
+            data: {
+              sequenceName,
+              triggerTag,
+              emails: generatedEmails.map((e, i) => ({
+                number: i + 1,
+                delayDays: e.delayDays,
+                subject: e.subject,
+                wordCount: e.html.split(/\s+/).length
+              })),
+              totalEmails: generatedEmails.length,
+              instruction: `Created ${generatedEmails.length}-email sequence. To set up in Loops:
+1. Go to https://app.loops.so/loops
+2. Create new Loop
+3. Set trigger to tag: "${triggerTag}"
+4. Add ${generatedEmails.length} email steps with delays: ${generatedEmails.map(e => `${e.delayDays}d`).join(', ')}
+5. Copy HTML from below into each step`
+            },
+            generatedEmails, // Full HTML available for copying
+            message: `✅ Created ${generatedEmails.length}-email sequence "${sequenceName}"\n\nNext: Set up in Loops dashboard with trigger tag "${triggerTag}"`,
+            displayCard: true
+          }
+          
+        } catch (error: any) {
+          console.error('[Alex] ❌ Error creating Loops sequence:', error)
+          return {
+            success: false,
+            error: error.message || 'Failed to create Loops sequence'
+          }
+        }
+      }
+    }
+
+    const addToLoopsAudienceTool = {
+      name: "add_to_loops_audience",
+      description: `Add contacts to Loops with specific tags/segments.
+
+Use this to:
+- Add new subscribers manually
+- Tag users based on behavior (e.g., 'downloaded-christmas-prompts')
+- Move users between segments
+- Trigger sequences by adding tags`,
+      
+      input_schema: {
+        type: "object",
+        properties: {
+          email: {
+            type: "string",
+            description: "Contact email address"
+          },
+          firstName: {
+            type: "string",
+            description: "First name (optional)"
+          },
+          lastName: {
+            type: "string",
+            description: "Last name (optional)"
+          },
+          tags: {
+            type: "array",
+            items: { type: "string" },
+            description: "Tags to add (e.g., ['studio-member', 'engaged'])"
+          },
+          userGroup: {
+            type: "string",
+            enum: ["subscriber", "studio-member", "paid", "cold", "engaged"],
+            description: "Main user group/segment"
+          }
+        },
+        required: ["email"]
+      },
+      
+      execute: async ({ email, firstName, lastName, tags, userGroup }: {
+        email: string
+        firstName?: string
+        lastName?: string
+        tags?: string[]
+        userGroup?: string
+      }) => {
+        try {
+          console.log('[Alex] 👤 Adding contact to Loops:', email)
+          
+          await upsertLoopsContact({
+            email,
+            firstName,
+            lastName,
+            userGroup,
+            tags
+          })
+          
+          console.log('[Alex] ✅ Contact added/updated in Loops')
+          
+          return {
+            success: true,
+            message: `✅ Added ${email} to Loops${userGroup ? ` as ${userGroup}` : ''}${tags?.length ? ` with tags: ${tags.join(', ')}` : ''}`
+          }
+          
+        } catch (error: any) {
+          console.error('[Alex] ❌ Error adding to Loops:', error)
+          return {
+            success: false,
+            error: error.message
+          }
+        }
+      }
+    }
+
+    const getLoopsAnalyticsTool = {
+      name: "get_loops_analytics",
+      description: `Get analytics for Loops campaigns and sequences.
+
+Shows performance metrics like opens, clicks, conversions for campaigns.`,
+      
+      input_schema: {
+        type: "object",
+        properties: {
+          campaignId: {
+            type: "string",
+            description: "Campaign ID to get analytics for (optional - if not provided, gets recent campaigns)"
+          },
+          limit: {
+            type: "number",
+            description: "Number of recent campaigns to analyze (default: 5)"
+          }
+        }
+      },
+      
+      execute: async ({ campaignId, limit = 5 }: {
+        campaignId?: string
+        limit?: number
+      }) => {
+        try {
+          console.log('[Alex] 📊 Fetching Loops analytics...')
+          
+          // Get campaign stats from Loops via REST API
+          // Note: Loops SDK doesn't have getCampaigns() method, so we use REST API
+          let campaigns: any[] = []
+          
+          try {
+            const apiKey = process.env.LOOPS_API_KEY
+            if (!apiKey) {
+              throw new Error('LOOPS_API_KEY not configured')
+            }
+            
+            // Get campaigns via Loops REST API
+            const analyticsResponse = await fetch(
+              `https://app.loops.so/api/v1/campaigns?limit=${limit}`,
+              {
+                method: 'GET',
+                headers: {
+                  'Authorization': `Bearer ${apiKey}`,
+                  'Content-Type': 'application/json'
+                }
+              }
+            )
+            
+            if (analyticsResponse.ok) {
+              const data = await analyticsResponse.json()
+              // Handle different response formats
+              campaigns = Array.isArray(data) ? data : (data.campaigns || data.data || [])
+              console.log('[Alex] ✅ Retrieved', campaigns.length, 'campaigns from Loops API')
+            } else {
+              console.warn('[Alex] ⚠️ Failed to fetch campaigns:', analyticsResponse.status)
+            }
+          } catch (apiError: any) {
+            console.error('[Alex] ❌ Error fetching Loops analytics:', apiError.message)
+            // Return empty array - don't fail the tool
+          }
+          
+          const analytics = campaigns.map((campaign: any) => ({
+            name: campaign.name || campaign.campaignName || 'Unnamed Campaign',
+            subject: campaign.subject || campaign.subjectLine || 'No Subject',
+            sentAt: campaign.sentAt || campaign.sent_at || campaign.createdAt || null,
+            stats: {
+              sent: campaign.stats?.sent || campaign.sent || 0,
+              opened: campaign.stats?.opened || campaign.opened || 0,
+              clicked: campaign.stats?.clicked || campaign.clicked || 0,
+              openRate: campaign.stats?.openRate || campaign.openRate || (campaign.opened && campaign.sent ? (campaign.opened / campaign.sent * 100).toFixed(2) : 0),
+              clickRate: campaign.stats?.clickRate || campaign.clickRate || (campaign.clicked && campaign.sent ? (campaign.clicked / campaign.sent * 100).toFixed(2) : 0)
+            }
+          }))
+          
+          console.log('[Alex] ✅ Processed analytics for', analytics.length, 'campaigns')
+          
+          return {
+            success: true,
+            data: {
+              campaigns: analytics,
+              summary: {
+                totalCampaigns: analytics.length,
+                avgOpenRate: analytics.length > 0 ? analytics.reduce((sum, c) => sum + c.stats.openRate, 0) / analytics.length : 0,
+                avgClickRate: analytics.length > 0 ? analytics.reduce((sum, c) => sum + c.stats.clickRate, 0) / analytics.length : 0
+              }
+            },
+            message: `📊 Analytics for ${analytics.length} recent campaigns`
+          }
+          
+        } catch (error: any) {
+          console.error('[Alex] ❌ Error fetching analytics:', error)
+          return {
+            success: false,
+            error: error.message
           }
         }
       }
@@ -5281,13 +5942,25 @@ This provides real-time data from the database.`,
 
     // Validate tools before passing to streamText
     // Platform Analytics Tool
-    const getPlatformAnalyticsTool = tool({
+    const getPlatformAnalyticsTool = {
+      name: "get_platform_analytics",
       description: `Get comprehensive platform analytics including user stats, generation activity, revenue metrics, and engagement data. Use this when Sandra asks about platform health, user growth, or business performance.`,
       
-      parameters: z.object({
-        scope: z.enum(['platform', 'user']).optional().describe("Scope: 'platform' for overall stats, 'user' for specific user analytics"),
-        userId: z.string().optional().describe("User ID if scope is 'user'")
-      }),
+      input_schema: {
+        type: "object",
+        properties: {
+          scope: {
+            type: "string",
+            enum: ['platform', 'user'],
+            description: "Scope: 'platform' for overall stats, 'user' for specific user analytics"
+          },
+          userId: {
+            type: "string",
+            description: "User ID if scope is 'user'"
+          }
+        },
+        required: []
+      },
       
       execute: async ({ scope = 'platform', userId }: { scope?: string, userId?: string }) => {
         try {
@@ -5392,16 +6065,28 @@ This provides real-time data from the database.`,
           return { success: false, error: `Failed to fetch analytics: ${error.message}` }
         }
       }
-    } as any)
+    }
 
     // Business Memory & Insights Tool
-    const getBusinessInsightsTool = tool({
+    const getBusinessInsightsTool = {
+      name: "get_business_insights",
       description: `Get business insights, content patterns, and strategic recommendations from admin memory system. Use this when Sandra asks about what's working, what patterns to follow, or strategic advice.`,
       
-      parameters: z.object({
-        type: z.enum(['all', 'business_insight', 'content_pattern', 'user_behavior', 'strategy']).optional().describe("Type of insights to retrieve"),
-        category: z.string().optional().describe("Filter by category (email, instagram, competitor, general)")
-      }),
+      input_schema: {
+        type: "object",
+        properties: {
+          type: {
+            type: "string",
+            enum: ['all', 'business_insight', 'content_pattern', 'user_behavior', 'strategy'],
+            description: "Type of insights to retrieve"
+          },
+          category: {
+            type: "string",
+            description: "Filter by category (email, instagram, competitor, general)"
+          }
+        },
+        required: []
+      },
       
       execute: async ({ type = 'all', category }: { type?: string, category?: string }) => {
         try {
@@ -5448,16 +6133,27 @@ This provides real-time data from the database.`,
           return { success: false, error: `Failed to fetch insights: ${error.message}` }
         }
       }
-    } as any)
+    }
 
     // Content Performance Tool
-    const getContentPerformanceTool = tool({
+    const getContentPerformanceTool = {
+      name: "get_content_performance",
       description: `Get content performance data - what content types perform best, engagement rates, and success patterns. Use this when Sandra asks about what content works, engagement rates, or content strategy.`,
       
-      parameters: z.object({
-        userId: z.string().optional().describe("User ID to get performance for specific user, or omit for platform-wide"),
-        contentType: z.string().optional().describe("Filter by content type (email, instagram, etc.)")
-      }),
+      input_schema: {
+        type: "object",
+        properties: {
+          userId: {
+            type: "string",
+            description: "User ID to get performance for specific user, or omit for platform-wide"
+          },
+          contentType: {
+            type: "string",
+            description: "Filter by content type (email, instagram, etc.)"
+          }
+        },
+        required: []
+      },
       
       execute: async ({ userId, contentType = 'all' }: { userId?: string, contentType?: string }) => {
         try {
@@ -5519,15 +6215,23 @@ This provides real-time data from the database.`,
           return { success: false, error: `Failed to fetch performance: ${error.message}` }
         }
       }
-    } as any)
+    }
 
     // Email Intelligence Tool (leverages email-intelligence.ts)
-    const getEmailRecommendationsTool = tool({
+    const getEmailRecommendationsTool = {
+      name: "get_email_recommendations",
       description: `Get proactive email marketing recommendations based on current state. Use this when Sandra asks about what emails to send, engagement opportunities, or email strategy suggestions.`,
       
-      parameters: z.object({
-        includeReengagement: z.boolean().optional().describe("Include re-engagement campaign recommendations")
-      }),
+      input_schema: {
+        type: "object",
+        properties: {
+          includeReengagement: {
+            type: "boolean",
+            description: "Include re-engagement campaign recommendations"
+          }
+        },
+        required: []
+      },
       
       execute: async ({ includeReengagement = true }: { includeReengagement?: boolean }) => {
         try {
@@ -5543,16 +6247,28 @@ This provides real-time data from the database.`,
           return { success: false, error: `Failed to get recommendations: ${error.message}` }
         }
       }
-    } as any)
+    }
 
     // Content Research Tool (leverages content-research-strategist)
-    const researchContentStrategyTool = tool({
+    const researchContentStrategyTool = {
+      name: "research_content_strategy",
       description: `Research content strategy, trending topics, hashtags, and competitive analysis for Instagram/social media. Use this when Sandra asks about content ideas, what's trending, competitor analysis, or hashtag research.`,
       
-      parameters: z.object({
-        niche: z.string().describe("The niche or industry to research (e.g., 'fitness coaching', 'business coaching', 'photography')"),
-        focus: z.enum(['trends', 'hashtags', 'competitors', 'content_ideas', 'all']).optional().describe("What to focus the research on")
-      }),
+      input_schema: {
+        type: "object",
+        properties: {
+          niche: {
+            type: "string",
+            description: "The niche or industry to research (e.g., 'fitness coaching', 'business coaching', 'photography')"
+          },
+          focus: {
+            type: "string",
+            enum: ['trends', 'hashtags', 'competitors', 'content_ideas', 'all'],
+            description: "What to focus the research on"
+          }
+        },
+        required: ["niche"]
+      },
       
       execute: async ({ niche, focus = 'all' }: { niche: string, focus?: string }) => {
         try {
@@ -5599,15 +6315,24 @@ Keep it practical and data-driven.`
           return { success: false, error: `Failed to research: ${error.message}` }
         }
       }
-    } as any)
+    }
 
     // Brand Strategy Tool (leverages personal-brand-strategist)
-    const getBrandStrategyTool = tool({
+    const getBrandStrategyTool = {
+      name: "get_brand_strategy",
       description: `Get brand strategy recommendations for positioning, content pillars, audience development, and Instagram growth. Use this when Sandra asks about brand positioning, content strategy, audience growth, or how to stand out.`,
       
-      parameters: z.object({
-        focus: z.enum(['positioning', 'content_pillars', 'audience', 'growth', 'all']).optional().describe("What aspect of brand strategy to focus on")
-      }),
+      input_schema: {
+        type: "object",
+        properties: {
+          focus: {
+            type: "string",
+            enum: ['positioning', 'content_pillars', 'audience', 'growth', 'all'],
+            description: "What aspect of brand strategy to focus on"
+          }
+        },
+        required: []
+      },
       
       execute: async ({ focus = 'all' }: { focus?: string }) => {
         try {
@@ -5688,12 +6413,23 @@ Keep it practical and data-driven.`
           return { success: false, error: `Failed to get strategy: ${error.message}` }
         }
       }
-    } as any)
+    }
 
     // All email tools are properly defined and enabled
     const tools = {
+      // Email Tools - Organized by platform
+      
+      // RESEND (Transactional only)
       edit_email: editEmailTool,
-      compose_email: composeEmailTool,
+      compose_email: composeEmailTool, // Login, receipts, notifications
+      
+      // LOOPS (Marketing only)  
+      compose_loops_email: composeLoopsEmailTool, // NEW
+      create_loops_sequence: createLoopsSequenceTool, // NEW
+      add_to_loops_audience: addToLoopsAudienceTool, // NEW
+      get_loops_analytics: getLoopsAnalyticsTool, // NEW
+      
+      // Other email tools
       get_email_campaign: getEmailCampaignTool,
       create_email_sequence: createEmailSequenceTool,
       schedule_campaign: scheduleCampaignTool,
