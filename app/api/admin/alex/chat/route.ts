@@ -2496,31 +2496,54 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
       }
     }
 
-    const getPromptGuidesTool = tool({
-      description: `Get information about prompt guides stored in the database.
-  
-  Prompt guides are collections of prompts that Sandra creates for her users.
-  Use this to:
-  - List all available prompt guides
-  - Get details about a specific guide (by ID or search term like "Christmas")
-  - Get all prompts from a guide
-  - Find guides by category or status
-  
-  This is CRITICAL for creating emails about prompt guides, understanding what content exists, and helping Sandra market her guides.`,
+    const getPromptGuidesTool = {
+      name: "get_prompt_guides",
+      description: `Get all prompt guides with their settings, prompts, and metadata.
+
+Returns comprehensive guide data including:
+- Guide metadata (ID, title, description, category, status)
+- All prompts within each guide
+- Page settings (welcome message, email capture, CTAs)
+- Public page info (slug, status, links)
+
+Use this when Sandra asks:
+- "What prompt guides do we have?"
+- "Show me the [category] guides"
+- "What's in the [guide name]?"
+- "List all guides"
+
+Always call this FIRST before using update_prompt_guide to get the guide ID.`,
       
-      parameters: z.object({
-        guideId: z.number().optional().describe("Specific guide ID to get details for"),
-        searchTerm: z.string().optional().describe("Search for guides by title or category (e.g., 'Christmas', 'holiday', 'luxury')"),
-        includePrompts: z.boolean().optional().default(false).describe("Whether to include all prompts from the guide(s)"),
-        status: z.enum(['draft', 'published', 'all']).optional().default('all').describe("Filter by guide status")
-      }),
+      input_schema: {
+        type: "object",
+        properties: {
+          guideId: {
+            type: "number",
+            description: "Specific guide ID to get details for"
+          },
+          searchTerm: {
+            type: "string",
+            description: "Search for guides by title or category (e.g., 'Christmas', 'holiday', 'luxury')"
+          },
+          includePrompts: {
+            type: "boolean",
+            description: "Whether to include all prompts from the guide(s) (defaults to false)"
+          },
+          status: {
+            type: "string",
+            enum: ["draft", "published", "all"],
+            description: "Filter by guide status (defaults to 'all')"
+          }
+        },
+        required: []
+      },
       
       execute: async ({ guideId, searchTerm, includePrompts = false, status = 'all' }: {
         guideId?: number
         searchTerm?: string
         includePrompts?: boolean
         status?: 'draft' | 'published' | 'all'
-      }) => {
+      } = {}) => {
         try {
           console.log(`[Alex] 📚 Getting prompt guides:`, { guideId, searchTerm, includePrompts, status })
           
@@ -2753,7 +2776,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
           }
         }
       }
-    })
+    }
 
     const updatePromptGuideTool = tool({
       description: `Update prompt guide settings including UI, style, CTA, links, and content.
