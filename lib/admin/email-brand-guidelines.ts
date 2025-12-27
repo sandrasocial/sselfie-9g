@@ -131,10 +131,14 @@ Use proper <img> tags with inline styles:
 - Place images naturally in the email flow (hero image at top, supporting images in content)
 - Use table-based layout for email compatibility` : ''}
 
-**Links:**
+**Links - CRITICAL: Use Public Pages Only:**
+- **ALWAYS use public pages that don't require login** (see "Available Public Links" section below)
 - Use the links specified by the user in their intent
 - If no link specified, ask the user where the CTA should go
 - NEVER use placeholder or default links
+- **NEVER use /studio links** - they require login and will send users to login page
+- **For checkout CTAs:** Use /checkout/membership or /checkout/one-time (public, no login required)
+- **For learning more:** Use /why-studio, /blueprint, or /whats-new (public landing pages)
 - Always include proper UTM parameters for tracking
 
 **Link Tracking Requirements:**
@@ -143,15 +147,34 @@ Use proper <img> tags with inline styles:
 3. Use campaign slug "${campaignSlug}" for all utm_campaign parameters
 4. Use appropriate utm_content values: cta_button (primary CTA), text_link (body links), footer_link (footer), image_link (image links)
 
-**Available Link Options (only use if user specifies):**
-- Studio Membership checkout: ${siteUrl}/studio?checkout=studio_membership&utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=cta_button&campaign_id={campaign_id}
-- One-Time Session checkout: ${siteUrl}/studio?checkout=one_time&utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=cta_button&campaign_id={campaign_id}
+**Available Public Links (NO LOGIN REQUIRED - Use these for email CTAs):**
+
+**Checkout Pages (Public - No login required):**
+- Studio Membership checkout: ${siteUrl}/checkout/membership?utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=cta_button&campaign_id={campaign_id}
+- One-Time Session checkout: ${siteUrl}/checkout/one-time?utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=cta_button&campaign_id={campaign_id}
+
+**Public Landing Pages (No login required):**
 - Why Studio page: ${siteUrl}/why-studio?utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=text_link&campaign_id={campaign_id}
+- Brand Blueprint: ${siteUrl}/blueprint?utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=text_link&campaign_id={campaign_id}
+- What's New: ${siteUrl}/whats-new?utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=text_link&campaign_id={campaign_id}
 - Homepage: ${siteUrl}/?utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=text_link&campaign_id={campaign_id}
 
-**Link Format Examples (with tracking):**
-- Primary CTA: <a href="${siteUrl}/studio?checkout=studio_membership&utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=cta_button&campaign_id={campaign_id}" style="display: inline-block; background-color: ${brand.colors.dark}; color: ${brand.colors.light}; padding: ${brand.buttons.padding}; text-decoration: none; border-radius: ${brand.buttons.borderRadius}; font-size: ${brand.buttons.fontSize}; font-weight: ${brand.buttons.fontWeight};">Join SSELFIE Studio</a>
-- Secondary link: <a href="${siteUrl}/why-studio?utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=text_link&campaign_id={campaign_id}" style="color: ${brand.colors.dark}; text-decoration: underline;">Learn more</a>
+**IMPORTANT - DO NOT USE THESE (Require login):**
+- ❌ ${siteUrl}/studio?checkout=studio_membership (requires login - sends users to login page)
+- ❌ ${siteUrl}/studio?checkout=one_time (requires login - sends users to login page)
+- ❌ ${siteUrl}/studio (requires login - sends users to login page)
+
+**Link Selection Rules:**
+1. For checkout/purchase CTAs: Use /checkout/membership or /checkout/one-time (public, no login)
+2. For learning more: Use /why-studio or /blueprint (public landing pages)
+3. For general navigation: Use homepage / or /whats-new
+4. NEVER use /studio links in emails (they require login and will frustrate users)
+
+**Link Format Examples (with tracking - PUBLIC LINKS ONLY):**
+- Primary CTA (Studio Membership): <a href="${siteUrl}/checkout/membership?utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=cta_button&campaign_id={campaign_id}" style="display: inline-block; background-color: ${brand.colors.dark}; color: ${brand.colors.light}; padding: ${brand.buttons.padding}; text-decoration: none; border-radius: ${brand.buttons.borderRadius}; font-size: ${brand.buttons.fontSize}; font-weight: ${brand.buttons.fontWeight};">Join SSELFIE Studio</a>
+- Primary CTA (One-Time Session): <a href="${siteUrl}/checkout/one-time?utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=cta_button&campaign_id={campaign_id}" style="display: inline-block; background-color: ${brand.colors.dark}; color: ${brand.colors.light}; padding: ${brand.buttons.padding}; text-decoration: none; border-radius: ${brand.buttons.borderRadius}; font-size: ${brand.buttons.fontSize}; font-weight: ${brand.buttons.fontWeight};">Try Once</a>
+- Secondary link (Learn More): <a href="${siteUrl}/why-studio?utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=text_link&campaign_id={campaign_id}" style="color: ${brand.colors.dark}; text-decoration: underline;">Learn more</a>
+- Secondary link (Brand Blueprint): <a href="${siteUrl}/blueprint?utm_source=email&utm_medium=email&utm_campaign=${campaignSlug}&utm_content=text_link&campaign_id={campaign_id}" style="color: ${brand.colors.dark}; text-decoration: underline;">Get Your Brand Blueprint</a>
 
 **Important:** If Sandra specifies a different URL in her intent, use that URL instead. Always add UTM tracking parameters to any link.
 
