@@ -13,6 +13,7 @@ import { EmailDraftsLibrary } from './email-drafts-library'
 import CaptionCard from '@/components/admin/caption-card'
 import CalendarCard from '@/components/admin/calendar-card'
 import PromptCard from '@/components/admin/prompt-card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import Image from 'next/image'
 import ReactMarkdown from 'react-markdown'
 import { Textarea } from '@/components/ui/textarea'
@@ -252,11 +253,58 @@ export default function AdminAgentChatNew({
   const [recentCampaigns, setRecentCampaigns] = useState<any[]>([])
   const [availableSegments, setAvailableSegments] = useState<any[]>([])
   const [showEmailLibrary, setShowEmailLibrary] = useState(false) // Show/hide email library
+  const [activeTab, setActiveTab] = useState<'chat' | 'email-drafts' | 'captions' | 'calendars' | 'prompts'>('chat')
+  
+  // Creative content library state
+  const [captions, setCaptions] = useState<any[]>([])
+  const [calendars, setCalendars] = useState<any[]>([])
+  const [prompts, setPrompts] = useState<any[]>([])
+  const [loadingLibrary, setLoadingLibrary] = useState(false)
   
   // Loading and error states
   const [toolLoading, setToolLoading] = useState<string | null>(null) // Track which tool is loading
   const [toolErrors, setToolErrors] = useState<Record<string, string>>({}) // Track tool errors
   const [executingTool, setExecutingTool] = useState<string | null>(null) // Track tool execution from toolInvocations
+  
+  // Fetch functions for creative content library
+  const fetchCaptions = async () => {
+    try {
+      setLoadingLibrary(true)
+      const res = await fetch('/api/admin/creative-content/captions')
+      const data = await res.json()
+      setCaptions(data.captions || [])
+    } catch (error) {
+      console.error('Error fetching captions:', error)
+    } finally {
+      setLoadingLibrary(false)
+    }
+  }
+
+  const fetchCalendars = async () => {
+    try {
+      setLoadingLibrary(true)
+      const res = await fetch('/api/admin/creative-content/calendars')
+      const data = await res.json()
+      setCalendars(data.calendars || [])
+    } catch (error) {
+      console.error('Error fetching calendars:', error)
+    } finally {
+      setLoadingLibrary(false)
+    }
+  }
+
+  const fetchPrompts = async () => {
+    try {
+      setLoadingLibrary(true)
+      const res = await fetch('/api/admin/creative-content/prompts')
+      const data = await res.json()
+      setPrompts(data.prompts || [])
+    } catch (error) {
+      console.error('Error fetching prompts:', error)
+    } finally {
+      setLoadingLibrary(false)
+    }
+  }
   
   // Gallery state
   interface GalleryImage {
@@ -1534,19 +1582,6 @@ export default function AdminAgentChatNew({
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setShowEmailLibrary(!showEmailLibrary)}
-                className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg transition-colors text-xs sm:text-sm shrink-0 ${
-                  showEmailLibrary
-                    ? 'bg-stone-900 text-white hover:bg-stone-800'
-                    : 'bg-stone-100 text-stone-900 hover:bg-stone-200'
-                }`}
-                title="Email Library"
-              >
-                <Mail className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">Email Library</span>
-                <span className="sm:hidden">Library</span>
-              </button>
-              <button
                 onClick={handleNewChat}
                 className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-stone-100 text-stone-900 rounded-lg hover:bg-stone-200 transition-colors text-xs sm:text-sm shrink-0"
               >
@@ -1558,26 +1593,50 @@ export default function AdminAgentChatNew({
           </div>
         </div>
 
-        {/* Email Library */}
-        {showEmailLibrary && (
-          <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
-            <EmailDraftsLibrary
-              onEditDraft={async (draft) => {
-                setShowEmailLibrary(false)
-                // Load the draft HTML into the chat for editing
-                const editPrompt = `Please edit this email. Here's the current version:\n\nSubject: ${draft.subject_line}\n\nHTML:\n${draft.body_html}`
-                await sendMessage({ text: editPrompt })
-              }}
-            />
+        {/* Tabs for Chat and Libraries */}
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="flex-1 flex flex-col">
+          <div className="border-b border-stone-200 bg-white">
+            <TabsList className="w-full justify-start h-auto p-0 bg-transparent">
+              <TabsTrigger 
+                value="chat" 
+                className="px-4 py-3 text-sm data-[state=active]:border-b-2 data-[state=active]:border-stone-900 rounded-none"
+              >
+                Chat
+              </TabsTrigger>
+              <TabsTrigger 
+                value="email-drafts" 
+                className="px-4 py-3 text-sm data-[state=active]:border-b-2 data-[state=active]:border-stone-900 rounded-none"
+              >
+                Email Drafts
+              </TabsTrigger>
+              <TabsTrigger 
+                value="captions" 
+                className="px-4 py-3 text-sm data-[state=active]:border-b-2 data-[state=active]:border-stone-900 rounded-none"
+              >
+                Captions ({captions.length})
+              </TabsTrigger>
+              <TabsTrigger 
+                value="calendars" 
+                className="px-4 py-3 text-sm data-[state=active]:border-b-2 data-[state=active]:border-stone-900 rounded-none"
+              >
+                Calendars ({calendars.length})
+              </TabsTrigger>
+              <TabsTrigger 
+                value="prompts" 
+                className="px-4 py-3 text-sm data-[state=active]:border-b-2 data-[state=active]:border-stone-900 rounded-none"
+              >
+                Prompts ({prompts.length})
+              </TabsTrigger>
+            </TabsList>
           </div>
-        )}
 
-        {/* Messages */}
-        {!showEmailLibrary && (
-          <div 
-            ref={messagesContainerRef}
-            className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6"
-          >
+          {/* Chat Tab */}
+          <TabsContent value="chat" className="flex-1 flex flex-col m-0">
+            {/* Messages */}
+            <div 
+              ref={messagesContainerRef}
+              className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6"
+            >
               {isLoadingChat ? (
               <div className="flex items-center justify-center h-full">
                 <div className="text-sm sm:text-base text-stone-500">Loading chat...</div>
@@ -1886,7 +1945,133 @@ Please acknowledge you've received the edited HTML and are ready to make further
               </>
             )}
             </div>
-          )}
+          </TabsContent>
+
+          {/* Email Drafts Tab */}
+          <TabsContent value="email-drafts" className="flex-1 flex flex-col m-0">
+            <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
+              <EmailDraftsLibrary
+                onEditDraft={async (draft) => {
+                  setActiveTab('chat')
+                  // Load the draft HTML into the chat for editing
+                  const editPrompt = `Please edit this email. Here's the current version:\n\nSubject: ${draft.subject_line}\n\nHTML:\n${draft.body_html}`
+                  await sendMessage({ text: editPrompt })
+                }}
+              />
+            </div>
+          </TabsContent>
+
+          {/* Captions Library Tab */}
+          <TabsContent value="captions" className="flex-1 flex flex-col m-0">
+            <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
+              <div className="mb-6">
+                <h2 className="text-2xl font-serif font-light tracking-wider text-stone-900 mb-2">
+                  Instagram Captions
+                </h2>
+                <p className="text-sm text-stone-600">
+                  All your saved Instagram captions
+                </p>
+              </div>
+              
+              {loadingLibrary ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-900"></div>
+                </div>
+              ) : captions.length === 0 ? (
+                <div className="text-center py-12 text-stone-500">
+                  No captions yet. Ask Alex to create one!
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {captions.map((caption: any) => (
+                    <CaptionCard 
+                      key={caption.id} 
+                      caption={caption}
+                      onDelete={async (id) => {
+                        await fetch(`/api/admin/creative-content/captions/${id}`, { method: 'DELETE' })
+                        fetchCaptions()
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          {/* Calendars Library Tab */}
+          <TabsContent value="calendars" className="flex-1 flex flex-col m-0">
+            <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
+              <div className="mb-6">
+                <h2 className="text-2xl font-serif font-light tracking-wider text-stone-900 mb-2">
+                  Content Calendars
+                </h2>
+                <p className="text-sm text-stone-600">
+                  All your content planning calendars
+                </p>
+              </div>
+              
+              {loadingLibrary ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-900"></div>
+                </div>
+              ) : calendars.length === 0 ? (
+                <div className="text-center py-12 text-stone-500">
+                  No calendars yet. Ask Alex to create one!
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {calendars.map((calendar: any) => (
+                    <CalendarCard 
+                      key={calendar.id} 
+                      calendar={calendar}
+                      onDelete={async (id) => {
+                        await fetch(`/api/admin/creative-content/calendars/${id}`, { method: 'DELETE' })
+                        fetchCalendars()
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          {/* Prompts Library Tab */}
+          <TabsContent value="prompts" className="flex-1 flex flex-col m-0">
+            <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
+              <div className="mb-6">
+                <h2 className="text-2xl font-serif font-light tracking-wider text-stone-900 mb-2">
+                  Maya Prompt Ideas
+                </h2>
+                <p className="text-sm text-stone-600">
+                  Professional photography prompts for Maya
+                </p>
+              </div>
+              
+              {loadingLibrary ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-900"></div>
+                </div>
+              ) : prompts.length === 0 ? (
+                <div className="text-center py-12 text-stone-500">
+                  No prompts yet. Ask Alex to suggest some!
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {prompts.map((prompt: any) => (
+                    <PromptCard 
+                      key={prompt.id} 
+                      prompt={prompt}
+                      onDelete={async (id) => {
+                        await fetch(`/api/admin/creative-content/prompts/${id}`, { method: 'DELETE' })
+                        fetchPrompts()
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
 
         {/* Tool Loading Indicator */}
         {toolLoading && (
@@ -2168,7 +2353,8 @@ Please acknowledge you've received the edited HTML and are ready to make further
           </div>
         )}
 
-        {/* Input */}
+        {/* Input - Only show in chat tab */}
+        {activeTab === 'chat' && (
         <div className="bg-white border-t border-stone-200 p-3 sm:p-4">
           <div className="max-w-4xl mx-auto">
             <form
@@ -2228,6 +2414,7 @@ Please acknowledge you've received the edited HTML and are ready to make further
             </form>
           </div>
         </div>
+        )}
       </div>
     </div>
   )
