@@ -826,21 +826,24 @@ export async function POST(req: Request) {
           
           // 3. Use Claude to generate/refine email content
           const systemPrompt = `You are Sandra's email marketing assistant for SSELFIE Studio.
-    
+
     Brand Voice: ${tone}, empowering, personal
-    
-    Context: 
+
+    Context:
     - SSELFIE Studio helps women entrepreneurs create professional photos with AI
     - Core message: Visibility = Financial Freedom
     - Audience: Women entrepreneurs, solopreneurs, coaches
-    
-    ${previousVersion ? `CRITICAL: You are REFINING an existing email. The previous version HTML is provided below. You MUST make the changes Sandra requested while preserving the overall structure and brand styling. Do NOT return the exact same HTML - you must actually modify it based on her request.
 
-Previous Email HTML:
-${previousVersion.substring(0, 5000)}${previousVersion.length > 5000 ? '\n\n[... HTML truncated for length ...]' : ''}
+    ${previousVersion ? `CRITICAL: You are EDITING an existing email. The complete previous version HTML is provided in the user prompt below.
 
-Now refine this email based on Sandra's request.` : 'Create a compelling email.'}
-    
+Your task: Make ONLY the specific changes Sandra requested while keeping everything else EXACTLY the same:
+- Same structure and layout
+- Same brand styling and colors
+- Same content (unless specifically asked to change it)
+- Same images and links (unless specifically asked to change them)
+
+For small edits (like "add a link" or "change a few words"), make MINIMAL targeted changes. Do NOT rewrite the entire email. Only modify what was explicitly requested.` : 'Create a compelling email.'}
+
     ${templates[0]?.body_html ? `Template reference: ${templates[0].body_html.substring(0, 500)}` : 'Create from scratch'}
     
     ${imageUrls && imageUrls.length > 0 ? `IMPORTANT: Include these images in the email HTML:
@@ -908,9 +911,15 @@ Now refine this email based on Sandra's request.` : 'Create a compelling email.'
     
     Include unsubscribe link: {{{RESEND_UNSUBSCRIBE_URL}}}`
           
-          // Build user prompt - if previousVersion exists, make it clear this is an edit
-          const userPrompt = previousVersion 
-            ? `${intent}\n\n${keyPoints && keyPoints.length > 0 ? `Key points: ${keyPoints.join(', ')}\n\n` : ''}${imageUrls && imageUrls.length > 0 ? `\nImages to include:\n${imageUrls.map((url, idx) => `- Image ${idx + 1}: ${url}`).join('\n')}\n\n` : ''}\n\nIMPORTANT: The previous email HTML was provided in the system prompt above. Make the specific changes requested in the intent while keeping the same structure and styling.`
+          // Build user prompt - if previousVersion exists, include the FULL HTML here
+          const userPrompt = previousVersion
+            ? `Edit request: ${intent}
+
+${keyPoints && keyPoints.length > 0 ? `Key points: ${keyPoints.join(', ')}\n\n` : ''}${imageUrls && imageUrls.length > 0 ? `Images to include:\n${imageUrls.map((url, idx) => `- Image ${idx + 1}: ${url}`).join('\n')}\n\n` : ''}
+PREVIOUS EMAIL HTML (make the requested changes to this):
+${previousVersion}
+
+Remember: Make ONLY the changes I requested. Keep everything else exactly the same.`
             : `${intent}\n\n${keyPoints && keyPoints.length > 0 ? `Key points: ${keyPoints.join(', ')}\n\n` : ''}${imageUrls && imageUrls.length > 0 ? `\nImages to include:\n${imageUrls.map((url, idx) => `- Image ${idx + 1}: ${url}`).join('\n')}\n\n` : ''}`
           
           // Generate email HTML with timeout protection
@@ -930,7 +939,7 @@ Now refine this email based on Sandra's request.` : 'Create a compelling email.'
                 model: "anthropic/claude-sonnet-4-20250514",
                 system: systemPrompt,
                 prompt: userPrompt,
-                maxOutputTokens: 2000,
+                maxOutputTokens: 4096,
               }),
               timeoutPromise
             ])
@@ -1304,21 +1313,24 @@ Now refine this email based on Sandra's request.` : 'Create a compelling email.'
         
         // 3. Use Claude to generate/refine email content
         const systemPrompt = `You are Sandra's email marketing assistant for SSELFIE Studio.
-    
+
     Brand Voice: ${tone}, empowering, personal
-    
-    Context: 
+
+    Context:
     - SSELFIE Studio helps women entrepreneurs create professional photos with AI
     - Core message: Visibility = Financial Freedom
     - Audience: Women entrepreneurs, solopreneurs, coaches
-    
-    ${previousVersion ? `CRITICAL: You are REFINING an existing email. The previous version HTML is provided below. You MUST make the changes Sandra requested while preserving the overall structure and brand styling. Do NOT return the exact same HTML - you must actually modify it based on her request.
 
-Previous Email HTML:
-${previousVersion.substring(0, 5000)}${previousVersion.length > 5000 ? '\n\n[... HTML truncated for length ...]' : ''}
+    ${previousVersion ? `CRITICAL: You are EDITING an existing email. The complete previous version HTML is provided in the user prompt below.
 
-Now refine this email based on Sandra's request.` : 'Create a compelling email.'}
-    
+Your task: Make ONLY the specific changes Sandra requested while keeping everything else EXACTLY the same:
+- Same structure and layout
+- Same brand styling and colors
+- Same content (unless specifically asked to change it)
+- Same images and links (unless specifically asked to change them)
+
+For small edits (like "add a link" or "change a few words"), make MINIMAL targeted changes. Do NOT rewrite the entire email. Only modify what was explicitly requested.` : 'Create a compelling email.'}
+
     ${templates[0]?.body_html ? `Template reference: ${templates[0].body_html.substring(0, 500)}` : 'Create from scratch'}
     
     ${imageUrls && imageUrls.length > 0 ? `IMPORTANT: Include these images in the email HTML:
@@ -1386,9 +1398,15 @@ Now refine this email based on Sandra's request.` : 'Create a compelling email.'
     
     Include unsubscribe link: {{{RESEND_UNSUBSCRIBE_URL}}}`
           
-        // Build user prompt - if previousVersion exists, make it clear this is an edit
-        const userPrompt = previousVersion 
-          ? `${intent}\n\n${keyPoints && keyPoints.length > 0 ? `Key points: ${keyPoints.join(', ')}\n\n` : ''}${imageUrls && imageUrls.length > 0 ? `\nImages to include:\n${imageUrls.map((url, idx) => `- Image ${idx + 1}: ${url}`).join('\n')}\n\n` : ''}\n\nIMPORTANT: The previous email HTML was provided in the system prompt above. Make the specific changes requested in the intent while keeping the same structure and styling.`
+        // Build user prompt - if previousVersion exists, include the FULL HTML here
+        const userPrompt = previousVersion
+          ? `Edit request: ${intent}
+
+${keyPoints && keyPoints.length > 0 ? `Key points: ${keyPoints.join(', ')}\n\n` : ''}${imageUrls && imageUrls.length > 0 ? `Images to include:\n${imageUrls.map((url, idx) => `- Image ${idx + 1}: ${url}`).join('\n')}\n\n` : ''}
+PREVIOUS EMAIL HTML (make the requested changes to this):
+${previousVersion}
+
+Remember: Make ONLY the changes I requested. Keep everything else exactly the same.`
           : `${intent}\n\n${keyPoints && keyPoints.length > 0 ? `Key points: ${keyPoints.join(', ')}\n\n` : ''}${imageUrls && imageUrls.length > 0 ? `\nImages to include:\n${imageUrls.map((url, idx) => `- Image ${idx + 1}: ${url}`).join('\n')}\n\n` : ''}`
         
         // Generate email HTML with timeout protection
