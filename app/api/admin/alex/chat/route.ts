@@ -1052,6 +1052,12 @@ Return ONLY the updated HTML, nothing else.`
             }
             
             try {
+              console.log('[Alex] 📧 Creating Resend broadcast with:', {
+                audienceId: targetAudienceId,
+                subject: subjectLine,
+                htmlLength: finalEmailHtml.length
+              })
+              
               const broadcast = await resend.broadcasts.create({
                 audienceId: targetAudienceId,
                 from: 'Sandra from SSELFIE <hello@sselfie.ai>',
@@ -1059,7 +1065,34 @@ Return ONLY the updated HTML, nothing else.`
                 html: finalEmailHtml
               })
               
+              // Check for Resend API errors (they return error in response, not throw)
+              if (broadcast.error) {
+                console.error('[Alex] ❌ Resend API error:', broadcast.error)
+                return {
+                  success: false,
+                  error: `Resend broadcast failed: ${broadcast.error.message || JSON.stringify(broadcast.error)}`,
+                  campaignId: campaign.id,
+                  resendError: broadcast.error
+                }
+              }
+              
               broadcastId = broadcast.data?.id || null
+              
+              if (!broadcastId) {
+                console.error('[Alex] ❌ No broadcast ID returned from Resend:', broadcast)
+                return {
+                  success: false,
+                  error: 'Resend broadcast created but no ID returned. Check Resend dashboard.',
+                  campaignId: campaign.id,
+                  broadcastResponse: broadcast
+                }
+              }
+              
+              console.log('[Alex] ✅ Broadcast created successfully:', {
+                broadcastId,
+                audienceId: targetAudienceId,
+                resendUrl: `https://resend.com/broadcasts/${broadcastId}`
+              })
               
               // Update campaign with broadcast ID and status (body_html already updated above)
               await sql`
@@ -1068,11 +1101,16 @@ Return ONLY the updated HTML, nothing else.`
                 WHERE id = ${campaign.id}
               `
             } catch (resendError: any) {
-              console.error("[Alex] Error creating Resend broadcast:", resendError)
+              console.error("[Alex] ❌ Exception creating Resend broadcast:", {
+                error: resendError.message,
+                stack: resendError.stack,
+                name: resendError.name
+              })
               return {
                 success: false,
                 error: `Campaign saved but Resend broadcast failed: ${resendError.message}`,
                 campaignId: campaign.id,
+                exception: resendError.message
               }
             }
           }
