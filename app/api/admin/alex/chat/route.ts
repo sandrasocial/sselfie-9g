@@ -2778,7 +2778,8 @@ Always call this FIRST before using update_prompt_guide to get the guide ID.`,
       }
     }
 
-    const updatePromptGuideTool = tool({
+    const updatePromptGuideTool = {
+      name: "update_prompt_guide",
       description: `Update prompt guide settings including UI, style, CTA, links, and content.
   
   Use this to edit:
@@ -2786,27 +2787,83 @@ Always call this FIRST before using update_prompt_guide to get the guide ID.`,
   - Page settings: welcome message, email capture type, upsell links/text
   - Public page: slug, status (draft/published)
   
-  This allows Alex to optimize guide pages for conversions, update CTAs, and improve the user experience.`,
+This allows Alex to optimize guide pages for conversions, update CTAs, and improve the user experience.
+
+IMPORTANT: Always use get_prompt_guides first to get the guide ID.`,
       
-      parameters: z.object({
-        guideId: z.number().describe("ID of the guide to update"),
-        guideUpdates: z.object({
-          title: z.string().optional().describe("Update guide title"),
-          description: z.string().optional().describe("Update guide description"),
-          category: z.string().optional().describe("Update guide category"),
-          status: z.enum(['draft', 'published']).optional().describe("Update guide status")
-        }).optional().describe("Updates to the guide itself"),
-        pageUpdates: z.object({
-          slug: z.string().optional().describe("Update URL slug (must be unique)"),
-          title: z.string().optional().describe("Update page title"),
-          welcomeMessage: z.string().optional().describe("Update welcome/intro message shown to users"),
-          emailCaptureType: z.enum(['modal', 'inline', 'top']).optional().describe("How email capture is displayed"),
-          emailListTag: z.string().optional().describe("Resend tag for this guide's email list"),
-          upsellLink: z.string().optional().describe("CTA link (e.g., checkout URL or landing page)"),
-          upsellText: z.string().optional().describe("CTA button/text copy"),
-          status: z.enum(['draft', 'published']).optional().describe("Update page status")
-        }).optional().describe("Updates to the public page settings")
-      }),
+      input_schema: {
+        type: "object",
+        properties: {
+          guideId: {
+            type: "number",
+            description: "ID of the guide to update (get from get_prompt_guides tool first)"
+          },
+          guideUpdates: {
+            type: "object",
+            properties: {
+              title: {
+                type: "string",
+                description: "Update guide title"
+              },
+              description: {
+                type: "string",
+                description: "Update guide description"
+              },
+              category: {
+                type: "string",
+                description: "Update guide category"
+              },
+              status: {
+                type: "string",
+                enum: ["draft", "published"],
+                description: "Update guide status"
+              }
+            },
+            description: "Updates to the guide itself"
+          },
+          pageUpdates: {
+            type: "object",
+            properties: {
+              slug: {
+                type: "string",
+                description: "Update URL slug (must be unique)"
+              },
+              title: {
+                type: "string",
+                description: "Update page title"
+              },
+              welcomeMessage: {
+                type: "string",
+                description: "Update welcome/intro message shown to users"
+              },
+              emailCaptureType: {
+                type: "string",
+                enum: ["modal", "inline", "top"],
+                description: "How email capture is displayed"
+              },
+              emailListTag: {
+                type: "string",
+                description: "Resend tag for this guide's email list"
+              },
+              upsellLink: {
+                type: "string",
+                description: "CTA link (e.g., checkout URL or landing page)"
+              },
+              upsellText: {
+                type: "string",
+                description: "CTA button/text copy"
+              },
+              status: {
+                type: "string",
+                enum: ["draft", "published"],
+                description: "Update page status"
+              }
+            },
+            description: "Updates to the public page settings"
+          }
+        },
+        required: ["guideId"]
+      },
       
       execute: async ({ guideId, guideUpdates, pageUpdates }: {
         guideId: number
@@ -3076,7 +3133,7 @@ Always call this FIRST before using update_prompt_guide to get the guide ID.`,
           }
         }
       }
-    })
+    }
 
     const analyzeEmailStrategyTool = {
       name: "analyze_email_strategy",
@@ -3955,7 +4012,7 @@ This provides real-time data from the database.`,
         },
         required: []
       },
-      
+
       execute: async ({ timeRange = 'week', includeConversionFunnel = true }: {
         timeRange?: string
         includeConversionFunnel?: boolean
@@ -4849,7 +4906,7 @@ IMPORTANT: The HTML above is the complete email HTML. When editing, extract ALL 
             // Call Anthropic API
             const response = await fetch('https://api.anthropic.com/v1/messages', {
               method: 'POST',
-              headers: {
+        headers: {
                 'Content-Type': 'application/json',
                 'X-API-Key': process.env.ANTHROPIC_API_KEY!,
                 'anthropic-version': '2023-06-01',
@@ -4892,7 +4949,7 @@ IMPORTANT: The HTML above is the complete email HTML. When editing, extract ALL 
               for (const line of lines) {
                 if (!line.startsWith('data: ')) continue
                 if (line === 'data: [DONE]') {
-                  messageComplete = true
+                    messageComplete = true
                   break
                 }
 
@@ -4936,7 +4993,7 @@ IMPORTANT: The HTML above is the complete email HTML. When editing, extract ALL 
                   // Tool input accumulation
                   if (event.type === 'content_block_delta' && event.delta?.type === 'input_json_delta') {
                     if (currentToolCall) {
-                      currentToolCall.input += event.delta.partial_json || ''
+                    currentToolCall.input += event.delta.partial_json || ''
                     }
                   }
 
@@ -4947,15 +5004,15 @@ IMPORTANT: The HTML above is the complete email HTML. When editing, extract ALL 
                       console.log('[Alex] 🔧 Executing tool:', currentToolCall.name)
 
                       // Execute tool
-                      const toolDef = tools[currentToolCall.name as keyof typeof tools]
+                    const toolDef = tools[currentToolCall.name as keyof typeof tools]
                       let toolResult: any
-
-                      if (!toolDef?.execute) {
+                    
+                    if (!toolDef?.execute) {
                         console.error('[Alex] ❌ Tool not found:', currentToolCall.name)
                         toolResult = { error: `Tool ${currentToolCall.name} not found` }
-                      } else {
-                        try {
-                          // @ts-ignore
+                    } else {
+                      try {
+                        // @ts-ignore
                           toolResult = await toolDef.execute(toolInput)
                           console.log('[Alex] ✅ Tool executed:', currentToolCall.name)
 
@@ -4967,18 +5024,18 @@ IMPORTANT: The HTML above is the complete email HTML. When editing, extract ALL 
                               preview: toolResult.preview || stripHtml(toolResult.html).substring(0, 200) + '...'
                             }
                             console.log('[Alex] 📧 Captured email preview')
-                          } else if (currentToolCall.name === 'create_email_sequence') {
+                        } else if (currentToolCall.name === 'create_email_sequence') {
                             if (toolResult?.emails && Array.isArray(toolResult.emails) && toolResult.emails.length > 0) {
                               const lastSuccessfulEmail = [...toolResult.emails].reverse().find((e: any) => e.readyToSend && e.html && e.subjectLine)
-                              if (lastSuccessfulEmail) {
-                                emailPreviewData = {
-                                  html: lastSuccessfulEmail.html,
-                                  subjectLine: lastSuccessfulEmail.subjectLine,
-                                  preview: lastSuccessfulEmail.preview || stripHtml(lastSuccessfulEmail.html).substring(0, 200) + '...',
+                            if (lastSuccessfulEmail) {
+                              emailPreviewData = {
+                                html: lastSuccessfulEmail.html,
+                                subjectLine: lastSuccessfulEmail.subjectLine,
+                                preview: lastSuccessfulEmail.preview || stripHtml(lastSuccessfulEmail.html).substring(0, 200) + '...',
                                   sequenceName: toolResult.sequenceName,
                                   sequenceEmails: toolResult.emails,
-                                  isSequence: true
-                                }
+                                isSequence: true
+                              }
                                 console.log('[Alex] 📧 Captured email sequence preview')
                               }
                             }
@@ -4992,9 +5049,9 @@ IMPORTANT: The HTML above is the complete email HTML. When editing, extract ALL 
                       // Truncate large results
                       let toolResultContent = JSON.stringify(toolResult)
                       const MAX_TOOL_RESULT_SIZE = 100000
-                      if (toolResultContent.length > MAX_TOOL_RESULT_SIZE) {
+                        if (toolResultContent.length > MAX_TOOL_RESULT_SIZE) {
                         console.log(`[Alex] ⚠️ Tool result is large (${toolResultContent.length} chars), truncating...`)
-                        const truncated = toolResultContent.substring(0, MAX_TOOL_RESULT_SIZE)
+                          const truncated = toolResultContent.substring(0, MAX_TOOL_RESULT_SIZE)
                         toolResultContent = truncated + '\n\n[Content truncated due to size limits.]'
                       }
 
@@ -5006,8 +5063,8 @@ IMPORTANT: The HTML above is the complete email HTML. When editing, extract ALL 
                         result: toolResult
                       })
 
-                      messages = [
-                        ...messages,
+                    messages = [
+                      ...messages,
                         {
                           role: 'assistant',
                           content: [{
@@ -5017,11 +5074,11 @@ IMPORTANT: The HTML above is the complete email HTML. When editing, extract ALL 
                             input: toolInput
                           }]
                         },
-                        {
-                          role: 'user',
-                          content: [{
-                            type: 'tool_result',
-                            tool_use_id: currentToolCall.id,
+                      {
+                        role: 'user',
+                        content: [{
+                          type: 'tool_result',
+                          tool_use_id: currentToolCall.id,
                             content: toolResultContent
                           }]
                         }
@@ -5031,8 +5088,8 @@ IMPORTANT: The HTML above is the complete email HTML. When editing, extract ALL 
                       currentToolCall = null
                     } catch (error: any) {
                       console.error('[Alex] ❌ Tool parse error:', error)
-                      currentToolCall = null
-                    }
+                    currentToolCall = null
+                  }
                   }
 
                   // Message stop
@@ -5048,7 +5105,7 @@ IMPORTANT: The HTML above is the complete email HTML. When editing, extract ALL 
                   // Ignore parse errors
                 }
               }
-
+              
               if (messageComplete) break
             }
 
@@ -5060,7 +5117,7 @@ IMPORTANT: The HTML above is the complete email HTML. When editing, extract ALL 
 
             console.log('[Alex] 🔄 Continuing with', toolCalls.length, 'tool results')
             // Reset for next iteration
-            hasSentTextStart = false
+              hasSentTextStart = false
           }
 
           // Send text-end event if we sent text-start
