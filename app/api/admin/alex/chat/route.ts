@@ -4995,6 +4995,65 @@ IMPORTANT: The HTML above is the complete email HTML. When editing, extract ALL 
       apiKey: process.env.ANTHROPIC_API_KEY!,
     })
 
+    // Tool execution handler
+    const executeTool = async (toolName: string, toolInput: any) => {
+      console.log('[Alex] 🔧 Tool called:', toolName)
+      
+      // Find tool definition
+      const toolDef = tools[toolName as keyof typeof tools]
+      if (!toolDef || !toolDef.execute) {
+        console.error('[Alex] ❌ Tool not found:', toolName)
+        return {
+          success: false,
+          error: `Tool "${toolName}" not found or not executable`,
+          suggestion: "Check that the tool exists and is properly defined"
+        }
+      }
+      
+      try {
+        // Execute tool
+        // @ts-ignore
+        const result = await toolDef.execute(toolInput)
+        console.log('[Alex] ✅ Tool executed:', toolName)
+        
+        // Capture email preview if compose_email
+        if (toolName === 'compose_email' && result?.html && result?.subjectLine) {
+          emailPreviewData = {
+            html: result.html,
+            subjectLine: result.subjectLine,
+            preview: result.preview || stripHtml(result.html).substring(0, 200) + '...'
+          }
+          console.log('[Alex] 📧 Captured email preview')
+        } else if (toolName === 'create_email_sequence') {
+          // Capture email preview for sequences
+          if (result?.emails && Array.isArray(result.emails) && result.emails.length > 0) {
+            const lastSuccessfulEmail = [...result.emails].reverse().find((e: any) => e.readyToSend && e.html && e.subjectLine)
+            if (lastSuccessfulEmail) {
+              emailPreviewData = {
+                html: lastSuccessfulEmail.html,
+                subjectLine: lastSuccessfulEmail.subjectLine,
+                preview: lastSuccessfulEmail.preview || stripHtml(lastSuccessfulEmail.html).substring(0, 200) + '...',
+                sequenceName: result.sequenceName,
+                sequenceEmails: result.emails,
+                isSequence: true
+              }
+              console.log('[Alex] 📧 Captured email sequence preview')
+            }
+          }
+        }
+        
+        return result
+      } catch (error: any) {
+        console.error('[Alex] ❌ Tool execution error:', error)
+        return {
+          success: false,
+          error: error.message || 'Tool execution failed',
+          errorType: error.name || 'ExecutionError',
+          suggestion: "Check tool input parameters and try again"
+        }
+      }
+    }
+
     // Create SSE stream compatible with DefaultChatTransport
     const encoder = new TextEncoder()
     const messageId = `msg-${Date.now()}`
@@ -5120,71 +5179,16 @@ IMPORTANT: The HTML above is the complete email HTML. When editing, extract ALL 
                   },
                 ]
 
-                // Execute the tool
-                const toolDef = tools[toolUse.name as keyof typeof tools]
-                let toolResultContent: string
+                // Execute the tool using handler
+                const result = await executeTool(toolUse.name, toolInput)
+                let toolResultContent = JSON.stringify(result)
                 
-                if (!toolDef?.execute) {
-                  console.error(`[v0] ❌ Tool not found: ${toolUse.name}`)
-                  toolResultContent = JSON.stringify({
-                    success: false,
-                    error: `Tool "${toolUse.name}" not found or not executable`,
-                    suggestion: "Check that the tool exists and is properly defined"
-                  })
-                } else {
-                  try {
-                    console.log(`[v0] 🔧 Executing tool: ${toolUse.name}`, { input: toolInput })
-                    // @ts-ignore
-                    const result = await toolDef.execute(toolInput)
-                    console.log('[v0] ✅ Tool executed:', toolUse.name)
-
-                    // Capture email preview if it's compose_email or create_email_sequence
-                    if (toolUse.name === 'compose_email') {
-                      if (result?.html && result?.subjectLine) {
-                        emailPreviewData = {
-                          html: result.html,
-                          subjectLine: result.subjectLine,
-                          preview: result.preview || stripHtml(result.html).substring(0, 200) + '...'
-                        }
-                        console.log('[v0] ✅ Email preview data captured:', {
-                          htmlLength: emailPreviewData.html.length,
-                          subject: emailPreviewData.subjectLine
-                        })
-                      }
-                    } else if (toolUse.name === 'create_email_sequence') {
-                      if (result?.emails && Array.isArray(result.emails) && result.emails.length > 0) {
-                        const lastSuccessfulEmail = [...result.emails].reverse().find((e: any) => e.readyToSend && e.html && e.subjectLine)
-                        if (lastSuccessfulEmail) {
-                          emailPreviewData = {
-                            html: lastSuccessfulEmail.html,
-                            subjectLine: lastSuccessfulEmail.subjectLine,
-                            preview: lastSuccessfulEmail.preview || stripHtml(lastSuccessfulEmail.html).substring(0, 200) + '...',
-                            sequenceName: result.sequenceName,
-                            sequenceEmails: result.emails,
-                            isSequence: true
-                          }
-                        }
-                      }
-                    }
-
-                    toolResultContent = JSON.stringify(result)
-                    
-                    // Truncate very large tool results
-                    const MAX_TOOL_RESULT_SIZE = 100000
-                    if (toolResultContent.length > MAX_TOOL_RESULT_SIZE) {
-                      console.log(`[v0] ⚠️ Tool result is large (${toolResultContent.length} chars), truncating...`)
-                      const truncated = toolResultContent.substring(0, MAX_TOOL_RESULT_SIZE)
-                      toolResultContent = truncated + '\n\n[Content truncated due to size limits. Use read_codebase_file with specific file paths for full content.]'
-                    }
-                  } catch (toolError: any) {
-                    console.error('[v0] ❌ Tool execution error:', toolError)
-                    toolResultContent = JSON.stringify({
-                      success: false,
-                      error: toolError.message || 'Tool execution failed',
-                      errorType: toolError.name || 'ExecutionError',
-                      suggestion: "Check tool input parameters and try again"
-                    })
-                  }
+                // Truncate very large tool results
+                const MAX_TOOL_RESULT_SIZE = 100000
+                if (toolResultContent.length > MAX_TOOL_RESULT_SIZE) {
+                  console.log(`[v0] ⚠️ Tool result is large (${toolResultContent.length} chars), truncating...`)
+                  const truncated = toolResultContent.substring(0, MAX_TOOL_RESULT_SIZE)
+                  toolResultContent = truncated + '\n\n[Content truncated due to size limits. Use read_codebase_file with specific file paths for full content.]'
                 }
 
                 // Add tool_result to messages
