@@ -169,6 +169,151 @@ Use proper <img> tags with inline styles:
 - Max-width: ${brand.layout.maxWidth}px for main container
 - Center using: <td align="center" style="padding: 20px;">
 
+**Email Structure Template - Vogue × Scandinavian Editorial Layout:**
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>[Email Subject]</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #fafaf9;">
+  
+  <!-- Outer Wrapper -->
+  <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #fafaf9;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        
+        <!-- Main Container - Editorial Width -->
+        <table role="presentation" style="max-width: 600px; width: 100%; background-color: #ffffff; border: 1px solid #e7e5e4;">
+          
+          <!-- 1. ELEGANT HEADER - Minimal, Sophisticated -->
+          <tr>
+            <td style="background-color: #0c0a09; padding: 60px 40px; text-align: center;">
+              <!-- Logo - Canela-inspired spacing -->
+              <h1 style="margin: 0; font-family: 'Times New Roman', Georgia, serif; font-size: 36px; font-weight: 200; letter-spacing: 0.25em; color: #fafaf9; text-transform: uppercase; line-height: 1;">
+                S&nbsp;&nbsp;S&nbsp;&nbsp;E&nbsp;&nbsp;L&nbsp;&nbsp;F&nbsp;&nbsp;I&nbsp;&nbsp;E
+              </h1>
+              <!-- Subtitle - Elegant spacing -->
+              <p style="margin: 16px 0 0; font-size: 11px; color: #78716c; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 300;">
+                Studio
+              </p>
+            </td>
+          </tr>
+          
+          <!-- 2. HERO IMAGE (Optional - for editorial emails) -->
+          <!-- Uncomment if using hero image:
+          <tr>
+            <td style="padding: 0;">
+              <img src="[hero-image-url]" alt="Hero" style="width: 100%; height: auto; display: block; max-height: 400px; object-fit: cover;" />
+            </td>
+          </tr>
+          -->
+          
+          <!-- 3. MAIN CONTENT - Generous Whitespace -->
+          <tr>
+            <td style="padding: 56px 48px;">
+              
+              <!-- Editorial Headline - Vogue Style -->
+              <h2 style="margin: 0 0 24px; font-family: 'Times New Roman', Georgia, serif; font-size: 32px; font-weight: 300; color: #1c1917; letter-spacing: 0.02em; line-height: 1.2; text-align: center;">
+                [Main Headline]
+              </h2>
+              
+              <!-- Optional: Short Accent Line (Vogue-inspired) -->
+              <div style="width: 60px; height: 1px; background-color: #d6d3d1; margin: 0 auto 40px;"></div>
+              
+              <!-- Body Content - Breathing Room -->
+              <p style="margin: 0 0 28px; font-size: 16px; line-height: 1.7; color: #292524; font-weight: 300;">
+                [Body paragraph with generous line-height for readability]
+              </p>
+              
+              <!-- Pull Quote (Optional - for editorial feel) -->
+              <!-- Uncomment for pull quotes:
+              <div style="margin: 40px 0; padding: 32px 24px; background-color: #fafaf9; border-left: 2px solid #1c1917;">
+                <p style="margin: 0; font-family: 'Times New Roman', Georgia, serif; font-size: 20px; font-weight: 300; font-style: italic; color: #1c1917; line-height: 1.5; letter-spacing: 0.01em;">
+                  "[Your inspiring pull quote here]"
+                </p>
+              </div>
+              -->
+              
+              <p style="margin: 0 0 28px; font-size: 16px; line-height: 1.7; color: #292524; font-weight: 300;">
+                [Another paragraph with natural flow]
+              </p>
+              
+              <!-- CTA Button - Editorial Style -->
+              <div style="text-align: center; margin: 48px 0;">
+                <a href="[cta-url]" style="display: inline-block; background-color: #1c1917; color: #fafaf9; padding: 18px 48px; text-decoration: none; font-size: 12px; font-weight: 500; letter-spacing: 0.15em; text-transform: uppercase; border-radius: 2px; transition: background-color 0.2s;">
+                  [CTA Text]
+                </a>
+              </div>
+              
+              <!-- Closing Signature - Personal Touch -->
+              <p style="margin: 40px 0 0; font-size: 16px; line-height: 1.7; color: #57534e; font-weight: 300;">
+                [Closing message]
+              </p>
+              
+              <p style="margin: 16px 0 0; font-size: 16px; color: #1c1917; font-weight: 400;">
+                XoXo Sandra 💋<br>
+                <span style="font-size: 13px; color: #78716c; font-weight: 300; letter-spacing: 0.05em; text-transform: uppercase;">Founder, SSELFIE Studio</span>
+              </p>
+              
+            </td>
+          </tr>
+          
+          <!-- 4. ELEGANT FOOTER - Minimal -->
+          <tr>
+            <td style="background-color: #f5f5f4; padding: 40px 48px; text-align: center; border-top: 1px solid #e7e5e4;">
+              <p style="margin: 0 0 12px; font-size: 12px; color: #78716c; line-height: 1.6; font-weight: 300;">
+                You're receiving this email because you signed up for SSELFIE Studio
+              </p>
+              <p style="margin: 0; font-size: 12px; color: #78716c; font-weight: 300;">
+                <a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color: #78716c; text-decoration: underline;">Unsubscribe</a>
+              </p>
+            </td>
+          </tr>
+          
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+
+**KEY EDITORIAL LAYOUT PRINCIPLES:**
+
+1. **Generous Padding:**
+   - Header: 60px vertical (not cramped 40px)
+   - Content: 56px vertical, 48px horizontal (breathing room)
+   - Footer: 40px vertical (comfortable)
+
+2. **Typography Hierarchy:**
+   - Headlines: 32px, weight 300, subtle tracking
+   - Body: 16px, line-height 1.7 (easy reading)
+   - Captions: 11-13px, uppercase, tracked
+
+3. **Scandinavian Whitespace:**
+   - Paragraph spacing: 28px (not 16px)
+   - Section spacing: 40-48px (generous)
+   - CTA isolation: 48px margins
+
+4. **Vogue Elements:**
+   - Accent line: 60px width, 1px height, centered
+   - Pull quotes: Italic serif, larger size, bordered
+   - Minimal border-radius: 2px (not rounded)
+
+5. **Stone Palette:**
+   - Keep all your existing stone colors
+   - Warm off-white backgrounds (#fafaf9)
+   - Subtle borders (#e7e5e4, #d6d3d1)
+
+6. **NO Changes to:**
+   - Color values (perfect as-is)
+   - Font fallbacks (Times New Roman for email compatibility)
+   - Core brand identity
+
+This template gives you the Vogue × Scandinavian editorial feel while keeping your perfect stone color palette intact.
+
 **SSELFIE Brand Styling:**
 - Colors: ${brand.colors.dark} (dark), ${brand.colors.black} (black), ${brand.colors.light} (light), ${brand.colors.gray} (gray), ${brand.colors.muted} (muted)
 - Logo: ${brand.typography.logo.fontFamily}, ${brand.typography.logo.fontSize}, weight ${brand.typography.logo.fontWeight}, letter-spacing ${brand.typography.logo.letterSpacing}, uppercase, color ${brand.typography.logo.colorLight} on dark or ${brand.typography.logo.colorDark} on light
