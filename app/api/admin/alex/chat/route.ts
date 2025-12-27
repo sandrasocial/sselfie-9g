@@ -4907,16 +4907,8 @@ Keep it practical and data-driven.`
       get_brand_strategy: getBrandStrategyTool,
     }
 
-    // Native Anthropic format tools
-    const anthropicTools: any[] = [
-      composeEmailTool,
-      scheduleCampaignTool,
-      createEmailSequenceTool,
-      checkCampaignStatusTool,
-      getResendAudienceDataTool,
-      getEmailTimelineTool,
-      analyzeEmailStrategyTool
-    ]
+    // Tools are already in native Anthropic format - just extract them
+    const anthropicTools = Object.values(tools)
 
     // Track accumulated text and email preview for saving to database
     let accumulatedText = ''
