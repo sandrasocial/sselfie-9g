@@ -3896,27 +3896,47 @@ Always use this when Sandra asks about:
     }
 
     // Revenue & Business Metrics Tool
-    const getRevenueMetricsTool = tool({
-      description: `Get revenue, conversion, and business metrics to understand why the app is/isn't selling.
+    const getRevenueMetricsTool = {
+      name: "get_revenue_metrics",
+      description: `Get comprehensive business metrics including users, revenue, conversions, and platform analytics.
 
-Use this when Sandra asks:
-- "How much revenue did we make?"
-- "Why isn't the app selling?"
-- "What's our conversion rate?"
-- "How many paid vs free users?"
+Returns:
+- User counts (total, Studio members, free users)
+- Revenue estimates (MRR, one-time revenue)
+- Conversion metrics (trial-to-paid rates)
+- Platform usage (generations, active users)
+- Growth trends (new signups, activation rates)
+- Business health indicators
+
+Use this when Sandra asks about:
+- "How many users do we have?"
+- "What's our revenue?"
+- "How many Studio members?"
 - "Show me business metrics"
+- "How is the platform performing?"
 
-This tool provides critical business intelligence to make data-driven decisions.`,
-
-      parameters: z.object({
-        timeRange: z.enum(['today', 'yesterday', 'week', 'month', 'all_time']).optional().describe("Time range for metrics (defaults to 'week')"),
-        includeConversionFunnel: z.boolean().optional().describe("Include detailed conversion funnel analysis (defaults to true)")
-      }),
-
+This provides real-time data from the database.`,
+      
+      input_schema: {
+        type: "object",
+        properties: {
+          timeRange: {
+            type: "string",
+            enum: ["today", "yesterday", "week", "month", "all_time"],
+            description: "Time range for metrics (defaults to 'week')"
+          },
+          includeConversionFunnel: {
+            type: "boolean",
+            description: "Include detailed conversion funnel analysis (defaults to true)"
+          }
+        },
+        required: []
+      },
+      
       execute: async ({ timeRange = 'week', includeConversionFunnel = true }: {
         timeRange?: string
         includeConversionFunnel?: boolean
-      }) => {
+      } = {}) => {
         try {
           // Calculate date range
           let startDate = new Date()
@@ -4143,7 +4163,7 @@ This tool provides critical business intelligence to make data-driven decisions.
           }
         }
       }
-    })
+    }
 
     // Validate tools before passing to streamText
     // Platform Analytics Tool
