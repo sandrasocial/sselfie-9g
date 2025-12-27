@@ -4907,7 +4907,10 @@ IMPORTANT: The HTML above is the complete email HTML. When editing, extract ALL 
               // Handle message stop
               if (event.type === 'message_stop') {
                 messageComplete = true
-                console.log('[Alex] 📨 Message complete')
+                console.log('[Alex] 📨 Message complete', {
+                  toolCallsCount: toolCalls.length,
+                  hasText: hasTextInThisIteration
+                })
                 if (hasTextInThisIteration && toolCalls.length > 0) {
                   const endMessage = {
                     type: 'text-end',
@@ -4916,12 +4919,20 @@ IMPORTANT: The HTML above is the complete email HTML. When editing, extract ALL 
                   safeEnqueue(encoder.encode(`data: ${JSON.stringify(endMessage)}\n\n`))
                   hasTextInThisIteration = false
                 }
+                // Break out of event loop when message is complete
+                break
               }
             }
 
             // If we executed tools, continue the conversation
             if (toolCalls.length > 0) {
-              console.log('[Alex] 🔄 Continuing with', toolCalls.length, 'tool results')
+              console.log('[Alex] 🔄 Continuing with', toolCalls.length, 'tool results', {
+                messagesCount: messages.length,
+                lastMessageRole: messages[messages.length - 1]?.role,
+                lastMessageContentType: Array.isArray(messages[messages.length - 1]?.content) 
+                  ? messages[messages.length - 1]?.content?.[0]?.type 
+                  : typeof messages[messages.length - 1]?.content
+              })
               if (hasTextInThisIteration) {
                 const endMessage = {
                   type: 'text-end',
@@ -4931,6 +4942,8 @@ IMPORTANT: The HTML above is the complete email HTML. When editing, extract ALL 
                 hasTextInThisIteration = false
               }
               hasSentTextStart = false
+              // Reset toolCalls for next iteration
+              toolCalls.length = 0
               continue
             }
 
