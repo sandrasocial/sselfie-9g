@@ -668,7 +668,7 @@ Alex has access to real customer testimonials via the get_testimonials tool.
             </td>
           </tr>
           
-          <!-- 4. ELEGANT FOOTER - Minimal -->
+          <!-- 4. ELEGANT FOOTER - Minimal (REQUIRED - ALWAYS INCLUDE) -->
           <tr>
             <td style="background-color: #f5f5f4; padding: 40px 48px; text-align: center; border-top: 1px solid #e7e5e4;">
               <p style="margin: 0 0 12px; font-size: 12px; color: #78716c; line-height: 1.6; font-weight: 300;">
@@ -679,6 +679,12 @@ Alex has access to real customer testimonials via the get_testimonials tool.
               </p>
             </td>
           </tr>
+          
+**CRITICAL: UNSUBSCRIBE LINK IS REQUIRED**
+- The footer section above MUST be included in EVERY email
+- The unsubscribe link {{{RESEND_UNSUBSCRIBE_URL}}} is REQUIRED for compliance and deliverability
+- NEVER remove or modify the unsubscribe link
+- This is a legal requirement and improves email deliverability
           
         </table>
       </td>
@@ -731,7 +737,15 @@ This template gives you the Vogue × Scandinavian editorial feel while keeping y
 - Background: ${brand.colors.bodyBg} for body, ${brand.colors.containerBg} for email container, ${brand.colors.footerBg} for footer
 - Use inline styles ONLY (no <style> tags in body)
 
-Include unsubscribe link: {{{RESEND_UNSUBSCRIBE_URL}}}`
+**REQUIRED FOOTER WITH UNSUBSCRIBE LINK:**
+Every email MUST include the footer section with the unsubscribe link. This is:
+- Required by law (CAN-SPAM, GDPR compliance)
+- Critical for email deliverability
+- Required by Resend for all broadcasts
+
+The unsubscribe link MUST be: {{{RESEND_UNSUBSCRIBE_URL}}}
+
+NEVER create an email without the footer and unsubscribe link.`
 
   return prompt
 }

@@ -1050,9 +1050,11 @@ Return ONLY the updated HTML, nothing else.`
             
             // Log which audience/segment is being targeted for debugging
             if (segmentId) {
-              console.log(`[Alex] 📧 Creating broadcast for segment: ${segmentId}`)
+              console.log(`[Alex] 📧 Creating broadcast for segment ID: ${segmentId}`)
+              console.log(`[Alex] 📋 Segment details from targetAudience:`, JSON.stringify(targetAudience, null, 2))
               console.log(`[Alex] ⚠️  Note: Using main audience ID ${mainAudienceId} (Resend broadcasts require audience ID, not segment ID)`)
               console.log(`[Alex] ℹ️  Segment filtering should be configured in Resend dashboard for this broadcast`)
+              console.log(`[Alex] ✅ Segment ID ${segmentId} will be stored in campaign.target_audience.resend_segment_id`)
             } else {
               console.log(`[Alex] 📧 Creating broadcast for full audience: ${targetAudienceId}`)
             }
@@ -2130,11 +2132,23 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
             summary += ' ⚠️ NOTE: Segment data is from database/fallback, not live Resend API. Real-time segment sizes may not be accurate.'
           }
           
+          // Log segments with IDs for debugging
+          console.log(`[Alex] 📋 Segments found:`, segments.map(s => ({
+            id: s.id,
+            name: s.name,
+            size: s.size
+          })))
+          
           return {
             audienceId: audience.data?.id || audienceId,
             audienceName: audience.data?.name || 'SSELFIE Audience',
             totalContacts: contacts.length,
-            segments: segments,
+            segments: segments.map(s => ({
+              id: s.id, // CRITICAL: Use this exact ID when scheduling campaigns
+              name: s.name,
+              size: s.size,
+              description: `Segment ID: ${s.id} - Use this EXACT ID in targetAudienceResendSegmentId parameter`
+            })),
             summary: summary,
             isLiveData: !usingFallbackData,
             warning: usingFallbackData ? 'Segment data is from database fallback, not live Resend API. Real-time segment sizes may not be accurate.' : undefined
@@ -4387,14 +4401,31 @@ You can now read and analyze files from the SSELFIE codebase using the **read_co
    - Recommend timing based on best practices
    - Think like a growth strategist
 
-### Audience Segments (Reference):
-Based on Resend data, Sandra typically has:
-- Main Audience: ~2,746 (all contacts)
-- Cold Users: ~2,670 (haven't engaged recently)
-- Paid Users: ~66 (Studio members)
-- Beta Customers: ~59
-- Brand Blueprint Freebie: ~121
-- Free Prompt Guide: ~0
+### Audience Segments (CRITICAL - Always Use get_resend_audience_data First):
+
+**IMPORTANT:** Segment IDs change and must be fetched from Resend API. NEVER use hardcoded segment IDs.
+
+**Before scheduling any campaign:**
+1. ALWAYS call **get_resend_audience_data** first to get current segments
+2. Use the EXACT segment ID from the response (segments[].id)
+3. Pass that exact ID to schedule_campaign's targetAudienceResendSegmentId parameter
+4. Verify the segment name matches what Sandra requested
+
+**Example workflow:**
+1. Sandra: "Send to Beta Users segment"
+2. You: Call get_resend_audience_data()
+3. You: Find segment with name matching "Beta Users" or similar
+4. You: Use that segment's EXACT id (e.g., "8da5ee08-60cf-47a5-bdaa-9419c7eb5aa5")
+5. You: Call schedule_campaign with targetAudienceResendSegmentId = that exact ID
+
+**Common Segments (names may vary - always verify with get_resend_audience_data):**
+- Beta Users / Beta Customers
+- Paid Users / Studio Members
+- Brand Blueprint Freebie
+- Free Prompt Guide
+- Cold Users / Inactive Users
+
+**CRITICAL:** If you can't find a matching segment, ask Sandra to confirm the segment name or create it in Resend first.
 
 ### Strategy Principles:
 - Cold users need reengagement (value-first, no hard sell)
