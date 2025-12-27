@@ -2142,41 +2142,52 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
       }
     }
 
-    const readCodebaseFileTool = tool({
+    const readCodebaseFileTool = {
+      name: "read_codebase_file",
       description: `Read and analyze files from the SSELFIE codebase to understand the app structure, content, and features.
-  
-  Use this to:
-  - Understand what freebies, guides, and resources exist
-  - Read content templates and documentation
-  - Analyze code structure and features
-  - Help Sandra manage and improve the codebase
-  - Reference actual content when creating emails or campaigns
-  
-  IMPORTANT: 
-  - If a file is not found, the tool will suggest similar files
-  - If you provide a directory path, it will list ALL available files in that directory
-  - When you see a directory listing, use the EXACT full paths shown to read specific files
-  - For dynamic routes like [slug], use the actual file path with brackets: app/prompt-guides/[slug]/page.tsx
-  - Example: If directory shows "[slug]/", read app/prompt-guides/[slug]/page.tsx
-  
-  This tool allows you to read files from:
-  - content-templates/ (Instagram templates, guides)
-  - docs/ (documentation, guides)
-  - app/ (pages and routes)
-  - lib/ (utilities and helpers)
-  - scripts/ (database schemas, migrations)
-  
-  Always use this when Sandra asks about:
-  - What freebies exist
-  - What's in the brand blueprint
-  - What prompts are in the guide
-  - How features work
-  - What content exists`,
+
+Use this to:
+- Understand what freebies, guides, and resources exist
+- Read content templates and documentation
+- Analyze code structure and features
+- Help Sandra manage and improve the codebase
+- Reference actual content when creating emails or campaigns
+
+IMPORTANT: 
+- If a file is not found, the tool will suggest similar files
+- If you provide a directory path, it will list ALL available files in that directory
+- When you see a directory listing, use the EXACT full paths shown to read specific files
+- For dynamic routes like [slug], use the actual file path with brackets: app/prompt-guides/[slug]/page.tsx
+- Example: If directory shows "[slug]/", read app/prompt-guides/[slug]/page.tsx
+
+This tool allows you to read files from:
+- content-templates/ (Instagram templates, guides)
+- docs/ (documentation, guides)
+- app/ (pages and routes)
+- lib/ (utilities and helpers)
+- scripts/ (database schemas, migrations)
+
+Always use this when Sandra asks about:
+- What freebies exist
+- What's in the brand blueprint
+- What prompts are in the guide
+- How features work
+- What content exists`,
       
-      parameters: z.object({
-        filePath: z.string().describe("Relative path to the file from project root (e.g., content-templates/instagram/README.md, docs/PROMPT-GUIDE-BUILDER.md, app/blueprint/page.tsx)"),
-        maxLines: z.number().optional().describe("Maximum number of lines to read (default 500, use for large files)")
-      }),
+      input_schema: {
+        type: "object",
+        properties: {
+          filePath: {
+            type: "string",
+            description: "Relative path to the file from project root (e.g., content-templates/instagram/README.md, docs/PROMPT-GUIDE-BUILDER.md, app/blueprint/page.tsx)"
+          },
+          maxLines: {
+            type: "number",
+            description: "Maximum number of lines to read (default 500, use for large files)"
+          }
+        },
+        required: ["filePath"]
+      },
       
       execute: async ({ filePath, maxLines = 500 }: {
         filePath: string
