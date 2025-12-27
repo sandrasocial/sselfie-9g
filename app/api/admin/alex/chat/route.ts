@@ -28,95 +28,8 @@ const ADMIN_EMAIL = "ssa@ssasocial.com"
 
 export const maxDuration = 60
 
-// Helper: Convert Zod schema to Anthropic JSON Schema format
-// This properly sets type: "object" which AI SDK may fail to do in some versions
-// TESTED: Stub converter caused tools to receive empty/missing parameters - full converter is required
-function zodToAnthropicSchema(zodSchema: z.ZodType<any>): any {
-  const schema = zodSchema._def
-
-  if (schema.typeName === "ZodObject") {
-    const shape = schema.shape()
-    const properties: Record<string, any> = {}
-    const required: string[] = []
-
-    for (const [key, value] of Object.entries(shape)) {
-      const fieldSchema = value as z.ZodType<any>
-      properties[key] = convertZodField(fieldSchema)
-
-      // Check if field is required (not optional)
-      if (!fieldSchema.isOptional()) {
-        required.push(key)
-      }
-    }
-
-    return {
-      type: "object",  // CRITICAL: AI SDK forgets this!
-      properties,
-      required: required.length > 0 ? required : undefined,
-    }
-  }
-
-  return convertZodField(zodSchema)
-}
-
-function convertZodField(field: z.ZodType<any>): any {
-  const def = field._def
-
-  // Handle optional fields
-  if (def.typeName === "ZodOptional") {
-    return convertZodField(def.innerType)
-  }
-
-  // Handle string
-  if (def.typeName === "ZodString") {
-    return {
-      type: "string",
-      description: def.description,
-    }
-  }
-
-  // Handle enum
-  if (def.typeName === "ZodEnum") {
-    return {
-      type: "string",
-      enum: def.values,
-      description: def.description,
-    }
-  }
-
-  // Handle array
-  if (def.typeName === "ZodArray") {
-    return {
-      type: "array",
-      items: convertZodField(def.type),
-      description: def.description,
-    }
-  }
-
-  // Handle boolean
-  if (def.typeName === "ZodBoolean") {
-    return {
-      type: "boolean",
-      description: def.description,
-    }
-  }
-
-  // Handle number
-  if (def.typeName === "ZodNumber") {
-    return {
-      type: "number",
-      description: def.description,
-    }
-  }
-
-  // Handle object
-  if (def.typeName === "ZodObject") {
-    return zodToAnthropicSchema(field)
-  }
-
-  // Default fallback
-  return { type: "string" }
-}
+// TODO: Replace with native Anthropic format
+// Removed Zod converter functions - tools will be converted to native format
 
 export async function POST(req: Request) {
   console.log("[v0] Admin agent chat API called")
@@ -4853,27 +4766,11 @@ Keep it practical and data-driven.`
       get_brand_strategy: getBrandStrategyTool,
     }
 
+    // TODO: Replace with native Anthropic format
     // Convert AI SDK tools to Anthropic format with proper schemas
     // This bypasses AI SDK's broken Zod-to-JSON-Schema conversion
-    const anthropicTools = Object.entries(tools).map(([name, toolDef]) => {
-      // @ts-ignore - accessing internal properties
-      const parameters = toolDef.parameters
-      // @ts-ignore
-      const description = toolDef.description || `Tool: ${name}`
-
-      return {
-        name,
-        description,
-        input_schema: zodToAnthropicSchema(parameters),
-      }
-    })
-
-    console.log('[v0] 🔧 Converted', anthropicTools.length, 'tools to Anthropic format')
-    console.log('[v0] 🔍 First tool schema check:', {
-      name: anthropicTools[0]?.name,
-      hasType: !!anthropicTools[0]?.input_schema?.type,
-      type: anthropicTools[0]?.input_schema?.type,
-    })
+    // Temporarily using empty array - tools will be converted to native format in Phase 2.2
+    const anthropicTools: any[] = []
 
     // Track accumulated text and email preview for saving to database
     let accumulatedText = ''
