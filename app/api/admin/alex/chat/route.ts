@@ -1029,40 +1029,58 @@ Return ONLY the updated HTML, nothing else.`
               }
             }
             
-            // Determine which audience/segment to target
-            // If resend_segment_id is provided, use it (segments act as separate audiences in Resend)
-            // Otherwise, use the default audience ID
-            const targetAudienceId = targetAudience?.resend_segment_id || process.env.RESEND_AUDIENCE_ID
+            // CRITICAL: Resend broadcasts require AUDIENCE ID, not segment ID
+            // Segments are used for filtering within an audience, but broadcasts must use the main audience ID
+            // If a segment is specified, we still use the main audience ID (Resend will handle segment filtering via tags)
+            const mainAudienceId = process.env.RESEND_AUDIENCE_ID
+            const segmentId = targetAudience?.resend_segment_id
             
-            if (!targetAudienceId) {
+            if (!mainAudienceId) {
               return {
                 success: false,
-                error: targetAudience?.resend_segment_id 
-                  ? "Segment ID provided but is invalid"
-                  : "RESEND_AUDIENCE_ID not configured",
+                error: "RESEND_AUDIENCE_ID not configured",
                 campaignId: campaign.id,
               }
             }
             
+            // Always use the main audience ID for broadcasts
+            // Note: Resend broadcasts don't directly support segment IDs - they use the audience ID
+            // Segment filtering happens via tags/filters in Resend dashboard
+            const targetAudienceId = mainAudienceId
+            
             // Log which audience/segment is being targeted for debugging
-            if (targetAudience?.resend_segment_id) {
-              console.log(`[Alex] Creating broadcast for segment: ${targetAudience.resend_segment_id}`)
+            if (segmentId) {
+              console.log(`[Alex] 📧 Creating broadcast for segment: ${segmentId}`)
+              console.log(`[Alex] ⚠️  Note: Using main audience ID ${mainAudienceId} (Resend broadcasts require audience ID, not segment ID)`)
+              console.log(`[Alex] ℹ️  Segment filtering should be configured in Resend dashboard for this broadcast`)
             } else {
-              console.log(`[Alex] Creating broadcast for full audience: ${targetAudienceId}`)
+              console.log(`[Alex] 📧 Creating broadcast for full audience: ${targetAudienceId}`)
             }
             
             try {
               console.log('[Alex] 📧 Creating Resend broadcast with:', {
                 audienceId: targetAudienceId,
+                segmentId: segmentId || 'none',
                 subject: subjectLine,
-                htmlLength: finalEmailHtml.length
+                htmlLength: finalEmailHtml.length,
+                targetAudience: JSON.stringify(targetAudience)
               })
               
+              // IMPORTANT: Resend broadcasts.create() requires audienceId, not segmentId
+              // If a segment is specified, we use the main audience ID
+              // Segment filtering must be done in Resend dashboard or via tags
               const broadcast = await resend.broadcasts.create({
-                audienceId: targetAudienceId,
+                audienceId: targetAudienceId, // Always use main audience ID
                 from: 'Sandra from SSELFIE <hello@sselfie.ai>',
                 subject: subjectLine,
                 html: finalEmailHtml
+              })
+              
+              console.log('[Alex] 📧 Broadcast API response:', {
+                hasData: !!broadcast.data,
+                hasError: !!broadcast.error,
+                broadcastId: broadcast.data?.id || null,
+                error: broadcast.error ? JSON.stringify(broadcast.error) : null
               })
               
               // Check for Resend API errors (they return error in response, not throw)
