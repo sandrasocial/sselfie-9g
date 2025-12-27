@@ -25,9 +25,7 @@ export default function AlexChat({ userId, userName, userEmail }: AlexChatProps)
   const [view, setView] = useState<'chat' | 'analytics' | 'calendar'>('chat')
   const [inputValue, setInputValue] = useState('')
   const [currentChatId, setCurrentChatId] = useState<number | null>(null)
-  const [isLoadingInitialChat, setIsLoadingInitialChat] = useState(true) // Prevent messages until chat is loaded
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const hasLoadedInitialChat = useRef(false)
   const currentChatIdRef = useRef<number | null>(null) // Track current chat ID to avoid race conditions
   
   // Gallery state
@@ -78,7 +76,7 @@ export default function AlexChat({ userId, userName, userEmail }: AlexChatProps)
     initialMessages: [],
   } as any)
 
-  const isLoading = status === 'submitted' || status === 'streaming' || isLoadingInitialChat || useChatIsLoading
+  const isLoading = status === 'submitted' || status === 'streaming' || useChatIsLoading
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -94,12 +92,9 @@ export default function AlexChat({ userId, userName, userEmail }: AlexChatProps)
     })
   }, [status, isLoading, messages.length, currentChatId, useChatIsLoading])
 
-  // Load existing chat on mount (only once)
+  // Load existing chat on mount
   useEffect(() => {
-    if (hasLoadedInitialChat.current) return
-    hasLoadedInitialChat.current = true
-    
-    const loadChat = async () => {
+    const loadInitialChat = async () => {
       console.log('[Alex] 🔍 Loading initial chat...')
       try {
         const response = await fetch(`/api/admin/agent/load-chat`, {
@@ -161,14 +156,11 @@ export default function AlexChat({ userId, userName, userEmail }: AlexChatProps)
       } catch (error) {
         console.error('[Alex] ❌ Error loading chat:', error)
         // ✅ Still allow chat to work even if load fails
-        setIsLoadingInitialChat(false)
-      } finally {
-        setIsLoadingInitialChat(false)
       }
     }
     
-    loadChat()
-  }, [setMessages])
+    loadInitialChat()
+  }, [setMessages]) // Runs once on mount
 
 
   // Load gallery images (initial load or category change)
