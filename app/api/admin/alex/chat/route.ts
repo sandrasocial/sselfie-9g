@@ -646,48 +646,68 @@ export async function POST(req: Request) {
     }
 
     // Define email tools
-    // Define schema separately to ensure proper serialization
-    const composeEmailSchema = z.object({
-      intent: z.string().describe("What Sandra wants to accomplish with this email"),
-      emailType: z.enum([
-        'welcome',
-        'newsletter', 
-        'promotional',
-        'announcement',
-        'nurture',
-        'reengagement'
-      ]).describe("Type of email to create"),
-      subjectLine: z.string().optional().describe("Subject line (generate if not provided)"),
-      keyPoints: z.array(z.string()).optional().describe("Main points to include"),
-      tone: z.enum(['warm', 'professional', 'excited', 'urgent']).optional().describe("Tone for the email (defaults to warm if not specified)"),
-      previousVersion: z.string().optional().describe("Previous email HTML if refining"),
-      imageUrls: z.array(z.string()).optional().describe("Array of image URLs to include in the email. These are gallery images Sandra selected. Include them naturally in the email HTML using <img> tags with proper styling."),
-      campaignName: z.string().optional().describe("Optional campaign name for generating tracked links. If provided, will be used to create URL-safe campaign slug for UTM parameters."),
-      campaignId: z.number().optional().describe("Optional campaign ID to update existing draft campaign. If provided, updates the existing campaign instead of creating a new one.")
-    })
+    // Native Anthropic format (no Zod)
+    const composeEmailTool = {
+      name: "compose_email",
+      description: `Create or refine email content. Returns formatted HTML email.
 
-    const composeEmailTool = tool({
-      description: `Create or refine email content in Sandra's voice.
-  
-  Brand requirements: Use SSELFIE design system (table-based layout, dark theme, inline styles only).
-  
-  For editing existing emails:
-  - Use get_email_campaign tool first to fetch the current HTML by campaign ID
-  - Then use previousVersion parameter with the fetched HTML
-  - Include campaignId parameter to update the existing campaign (prevents duplicates)
-  
-  Use when Sandra wants to:
-  - Create a new email campaign
-  - Edit/refine existing email content (use get_email_campaign first if campaign ID is mentioned)
-  - Generate subject lines
-  - Use email templates
-  
-  Examples:
-  - "Create a welcome email for new Studio members"
-  - "Write a newsletter about the new Maya features"
-  - "Edit email campaign ID 123: make it warmer and add a PS"`,
+Use this when Sandra wants to:
+- Create a new email campaign
+- Edit/refine existing email content
+- Generate subject lines
+- Use email templates
+
+Examples:
+- "Create a welcome email for new Studio members"
+- "Write a newsletter about the new Maya features"
+- "Make that email warmer and add a PS"`,
       
-      parameters: composeEmailSchema,
+      input_schema: {
+        type: "object",
+        properties: {
+          intent: {
+            type: "string",
+            description: "What Sandra wants to accomplish with this email"
+          },
+          emailType: {
+            type: "string",
+            enum: ["welcome", "newsletter", "promotional", "announcement", "nurture", "reengagement"],
+            description: "Type of email to create"
+          },
+          subjectLine: {
+            type: "string",
+            description: "Subject line (generate if not provided)"
+          },
+          keyPoints: {
+            type: "array",
+            items: { type: "string" },
+            description: "Main points to include"
+          },
+          tone: {
+            type: "string",
+            enum: ["warm", "professional", "excited", "urgent"],
+            description: "Tone for the email (defaults to warm if not specified)"
+          },
+          previousVersion: {
+            type: "string",
+            description: "Previous email HTML if refining"
+          },
+          imageUrls: {
+            type: "array",
+            items: { type: "string" },
+            description: "Array of image URLs to include in the email"
+          },
+          campaignName: {
+            type: "string",
+            description: "Optional campaign name for generating tracked links"
+          },
+          campaignId: {
+            type: "number",
+            description: "Optional campaign ID to update existing draft campaign"
+          }
+        },
+        required: ["intent", "emailType"]
+      },
       
       execute: async ({ intent, emailType, subjectLine, keyPoints, tone = 'warm', previousVersion, imageUrls, campaignName, campaignId }: {
         intent: string
@@ -986,7 +1006,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
           }
         }
       }
-    } as any)
+    }
 
     const getEmailCampaignTool = tool({
       description: `Fetch email campaign HTML and metadata by campaign ID. Use this when Sandra wants to edit an existing email - get the current HTML first, then use compose_email with previousVersion and campaignId parameters.`,
@@ -4766,11 +4786,11 @@ Keep it practical and data-driven.`
       get_brand_strategy: getBrandStrategyTool,
     }
 
-    // TODO: Replace with native Anthropic format
-    // Convert AI SDK tools to Anthropic format with proper schemas
-    // This bypasses AI SDK's broken Zod-to-JSON-Schema conversion
-    // Temporarily using empty array - tools will be converted to native format in Phase 2.2
-    const anthropicTools: any[] = []
+    // Native Anthropic format tools
+    // compose_email is already in native format, others will be converted later
+    const anthropicTools: any[] = [
+      composeEmailTool
+    ]
 
     // Track accumulated text and email preview for saving to database
     let accumulatedText = ''
