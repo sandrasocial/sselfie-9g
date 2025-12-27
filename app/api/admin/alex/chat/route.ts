@@ -4891,6 +4891,47 @@ Keep it practical and data-driven.`
     // CRITICAL: Handle both content and parts arrays to preserve tool results
     // Tool results in parts arrays need to be converted to Anthropic's tool_result format
     const anthropicMessages = modelMessagesToUse.map((msg: any) => {
+      // Check if message has email_preview_data from database (for editing)
+      if (msg.email_preview_data && msg.role === 'assistant') {
+        try {
+          const emailData = typeof msg.email_preview_data === 'string' 
+            ? JSON.parse(msg.email_preview_data) 
+            : msg.email_preview_data
+          
+          if (emailData && emailData.html && emailData.subjectLine) {
+            // Include FULL HTML so Alex can extract it for editing
+            const emailContext = `[PREVIOUS EMAIL]
+Subject: ${emailData.subjectLine}
+
+FULL HTML (for editing):
+\`\`\`html
+${emailData.html}
+\`\`\`
+
+IMPORTANT: When user asks to edit this email:
+1. Use the FULL HTML above as previousVersion
+2. Extract it exactly as shown between the \`\`\`html tags
+3. Make ONLY the requested changes
+4. Return complete updated HTML
+[END PREVIOUS EMAIL]`
+            
+            // Return message with email context
+            return {
+              role: msg.role,
+              content: [
+                {
+                  type: 'text',
+                  text: emailContext
+                }
+              ]
+            }
+          }
+        } catch (error) {
+          console.error('[Alex] ❌ Failed to parse email_preview_data:', error)
+          // Fall through to normal processing
+        }
+      }
+      
       // If message has parts array (from database or frontend), convert it to Anthropic format
       if (msg.parts && Array.isArray(msg.parts)) {
         const content: any[] = []
@@ -4912,20 +4953,22 @@ Keep it practical and data-driven.`
             const subjectLine = toolResult.subjectLine || ''
             const campaignId = toolResult.campaignId
             
-            // Format as text - prefer ID-based editing if campaignId available, otherwise include HTML for backward compatibility
-            const formattedResult = campaignId 
-              ? `[PREVIOUS compose_email TOOL RESULT]
+            // Always include FULL HTML so Alex can extract it for editing
+            const formattedResult = `[PREVIOUS EMAIL]
 Subject: ${subjectLine}
-Campaign ID: ${campaignId}
-
-To edit this email, use get_email_campaign(${campaignId}) to fetch the HTML, then compose_email with previousVersion and campaignId=${campaignId}.`
-              : `[PREVIOUS compose_email TOOL RESULT]
-Subject: ${subjectLine}
-HTML:
+${campaignId ? `Campaign ID: ${campaignId}\n\n` : ''}
+FULL HTML (for editing):
+\`\`\`html
 ${emailHtml}
-[END OF PREVIOUS EMAIL HTML]
+\`\`\`
 
-IMPORTANT: The HTML above is the complete email HTML. When editing, extract ALL of it (from HTML: to [END OF PREVIOUS EMAIL HTML]) and use it as the previousVersion parameter in compose_email.`
+IMPORTANT: When user asks to edit this email:
+1. Use the FULL HTML above as previousVersion
+2. Extract it exactly as shown between the \`\`\`html tags
+3. Make ONLY the requested changes
+4. Return complete updated HTML
+${campaignId ? `\nTo update in database, use campaignId=${campaignId} when calling compose_email.` : ''}
+[END PREVIOUS EMAIL]`
             
             console.log('[Alex] 📧 Formatted previous email for Alex:', {
               subjectLine,
