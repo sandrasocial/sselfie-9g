@@ -1166,20 +1166,26 @@ export default function AdminAgentChatNew({
     try {
       // CRITICAL: Clear messages immediately to prevent mixing with previous chat
       setMessages([])
-      
-      const response = await fetch(newChatEndpoint, {
+
+      const response = await fetch(chatsEndpoint, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: userId,
+          mode: "research",
+          firstMessage: "New Chat"
+        })
       })
 
       if (!response.ok) throw new Error("Failed to create new chat")
 
       const data = await response.json()
-      
+
       // CRITICAL: Set chatId BEFORE loading chat to ensure correct chatId is used
       setChatId(data.chatId)
       setChatTitle("New Chat")
       setShowHistory(false)
-      
+
       // Load the new chat (will load empty messages since it's a new chat)
       await loadChat(data.chatId)
       await loadChats()
@@ -1306,17 +1312,26 @@ export default function AdminAgentChatNew({
     if (currentChatId === null || currentChatId === undefined) {
       try {
         const response = await fetch(loadChatEndpoint)
-          const data = await response.json()
-        
-          if (data.chatId !== null && data.chatId !== undefined) {
-            currentChatId = data.chatId
-            setChatId(data.chatId)
-          } else {
-          // Create new chat
-          const newChatResponse = await fetch(newChatEndpoint, { method: "POST" })
-              const newChatData = await newChatResponse.json()
-                currentChatId = newChatData.chatId
-                setChatId(newChatData.chatId)
+        const data = await response.json()
+
+        if (data.chatId !== null && data.chatId !== undefined) {
+          currentChatId = data.chatId
+          setChatId(data.chatId)
+        } else {
+          // Create new chat with first message as title
+          const newChatResponse = await fetch(chatsEndpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              userId: userId,
+              mode: "research",
+              firstMessage: inputValue.trim() // Use actual first message for title!
+            })
+          })
+          const newChatData = await newChatResponse.json()
+          currentChatId = newChatData.chatId
+          setChatId(newChatData.chatId)
+          setChatTitle(inputValue.trim().substring(0, 50) + (inputValue.trim().length > 50 ? "..." : ""))
         }
       } catch (error) {
         toast({
