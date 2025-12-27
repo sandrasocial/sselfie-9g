@@ -1063,7 +1063,8 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
       }
     } as any)
 
-    const scheduleCampaignTool = tool({
+    const scheduleCampaignTool = {
+      name: "schedule_campaign",
       description: `Schedule or send an email campaign. Creates campaign in database and Resend.
   
   Use this when Sandra approves the email and wants to send it.
@@ -1074,17 +1075,49 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
   
   Before calling this tool.`,
       
-      parameters: z.object({
-        campaignName: z.string().describe("Name for this campaign"),
-        subjectLine: z.string(),
-        emailHtml: z.string().describe("The approved email HTML"),
-        targetAudienceAllUsers: z.boolean().optional().describe("Send to all users"),
-        targetAudiencePlan: z.string().optional().describe("Target specific plan"),
-        targetAudienceResendSegmentId: z.string().optional().describe("Resend segment ID"),
-        targetAudienceRecipients: z.array(z.string()).optional().describe("Specific recipient emails"),
-        scheduledFor: z.string().optional().describe("ISO datetime to send, or null for immediate"),
-        campaignType: z.string()
-      }),
+      input_schema: {
+        type: "object",
+        properties: {
+          campaignName: {
+            type: "string",
+            description: "Name for this campaign"
+          },
+          subjectLine: {
+            type: "string",
+            description: "Email subject line"
+          },
+          emailHtml: {
+            type: "string",
+            description: "The approved email HTML"
+          },
+          targetAudienceAllUsers: {
+            type: "boolean",
+            description: "Send to all users"
+          },
+          targetAudiencePlan: {
+            type: "string",
+            description: "Target specific plan"
+          },
+          targetAudienceResendSegmentId: {
+            type: "string",
+            description: "Resend segment ID"
+          },
+          targetAudienceRecipients: {
+            type: "array",
+            items: { type: "string" },
+            description: "Specific recipient emails"
+          },
+          scheduledFor: {
+            type: "string",
+            description: "ISO datetime to send, or null for immediate"
+          },
+          campaignType: {
+            type: "string",
+            description: "Type of campaign"
+          }
+        },
+        required: ["campaignName", "subjectLine", "emailHtml", "campaignType"]
+      },
       
       execute: async ({ campaignName, subjectLine, emailHtml, targetAudienceAllUsers, targetAudiencePlan, targetAudienceResendSegmentId, targetAudienceRecipients, scheduledFor, campaignType }: {
         campaignName: string
@@ -1248,7 +1281,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
           }
         }
       }
-    } as any)
+    }
 
     // Helper function to generate a single email (extracted from compose_email for reuse)
     const generateEmailContent = async ({
@@ -1465,7 +1498,8 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
     // (We'll keep the existing compose_email tool but refactor it to use generateEmailContent)
     // Actually, let's keep compose_email as-is for now and create the sequence tool
 
-    const createEmailSequenceTool = tool({
+    const createEmailSequenceTool = {
+      name: "create_email_sequence",
       description: `Create multiple emails in a sequence (e.g., nurture sequence, welcome series). 
   
   Use this when Sandra wants to create a series of related emails that will be sent over time (e.g., Day 1, Day 3, Day 7 nurture sequence).
@@ -1477,27 +1511,67 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
   - "Create a welcome sequence: Day 1 intro, Day 3 tips, Day 7 offer"
   - "Create a 5-email onboarding sequence for new Studio members"`,
       
-      parameters: z.object({
-        sequenceName: z.string().describe("Name for this email sequence (e.g., 'New Freebie Nurture Sequence')"),
-        emails: z.array(z.object({
-          day: z.number().optional().describe("Day number in sequence (e.g., 1, 3, 7) - optional but helpful for tracking"),
-          intent: z.string().describe("What this specific email should accomplish"),
-          emailType: z.enum([
-            'welcome',
-            'newsletter', 
-            'promotional',
-            'announcement',
-            'nurture',
-            'reengagement'
-          ]).describe("Type of email"),
-          subjectLine: z.string().optional().describe("Subject line (generate if not provided)"),
-          keyPoints: z.array(z.string()).optional().describe("Main points to include in this email"),
-          tone: z.enum(['warm', 'professional', 'excited', 'urgent']).optional().describe("Tone for this email (defaults to warm)"),
-          imageUrls: z.array(z.string()).optional().describe("Array of image URLs to include in this email"),
-        })).min(1).max(10).describe("Array of email configurations for the sequence"),
-        campaignName: z.string().optional().describe("Campaign name for generating tracked links (will be used for all emails in sequence)"),
-        overallTone: z.enum(['warm', 'professional', 'excited', 'urgent']).optional().describe("Overall tone for the sequence (individual emails can override)"),
-      }),
+      input_schema: {
+        type: "object",
+        properties: {
+          sequenceName: {
+            type: "string",
+            description: "Name for this email sequence (e.g., 'New Freebie Nurture Sequence')"
+          },
+          emails: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                day: {
+                  type: "number",
+                  description: "Day number in sequence (e.g., 1, 3, 7) - optional but helpful for tracking"
+                },
+                intent: {
+                  type: "string",
+                  description: "What this specific email should accomplish"
+                },
+                emailType: {
+                  type: "string",
+                  enum: ["welcome", "newsletter", "promotional", "announcement", "nurture", "reengagement"],
+                  description: "Type of email"
+                },
+                subjectLine: {
+                  type: "string",
+                  description: "Subject line (generate if not provided)"
+                },
+                keyPoints: {
+                  type: "array",
+                  items: { type: "string" },
+                  description: "Main points to include in this email"
+                },
+                tone: {
+                  type: "string",
+                  enum: ["warm", "professional", "excited", "urgent"],
+                  description: "Tone for this email (defaults to warm)"
+                },
+                imageUrls: {
+                  type: "array",
+                  items: { type: "string" },
+                  description: "Array of image URLs to include in this email"
+                }
+              },
+              required: ["intent", "emailType"]
+            },
+            description: "Array of email configurations for the sequence (1-10 emails)"
+          },
+          campaignName: {
+            type: "string",
+            description: "Campaign name for generating tracked links (will be used for all emails in sequence)"
+          },
+          overallTone: {
+            type: "string",
+            enum: ["warm", "professional", "excited", "urgent"],
+            description: "Overall tone for the sequence (individual emails can override)"
+          }
+        },
+        required: ["sequenceName", "emails"]
+      },
       
       execute: async ({ sequenceName, emails, campaignName, overallTone = 'warm' }: {
         sequenceName: string
@@ -1619,17 +1693,29 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
           }
         }
       }
-    } as any)
+    }
 
-    const checkCampaignStatusTool = tool({
+    const checkCampaignStatusTool = {
+      name: "check_campaign_status",
       description: `Check status of email campaigns and get delivery metrics.
   
   Use this when Sandra asks about email performance or delivery status.`,
       
-      parameters: z.object({
-        campaignId: z.number().optional().describe("Specific campaign ID, or null for recent campaigns"),
-        timeframe: z.enum(['today', 'week', 'month', 'all']).optional().describe("Timeframe for campaigns (defaults to week if not specified)")
-      }),
+      input_schema: {
+        type: "object",
+        properties: {
+          campaignId: {
+            type: "number",
+            description: "Specific campaign ID, or null for recent campaigns"
+          },
+          timeframe: {
+            type: "string",
+            enum: ["today", "week", "month", "all"],
+            description: "Timeframe for campaigns (defaults to week if not specified)"
+          }
+        },
+        required: []
+      },
       
       execute: async ({ campaignId, timeframe = 'week' }: {
         campaignId?: number
@@ -1840,9 +1926,10 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
           }
         }
       }
-    } as any)
+    }
 
-    const getResendAudienceDataTool = tool({
+    const getResendAudienceDataTool = {
+      name: "get_resend_audience_data",
       description: `Get real-time audience data from Resend including all segments and contact counts.
   
   Use this when Sandra asks about:
@@ -1853,9 +1940,16 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
   
   This gives you live data to make intelligent recommendations.`,
       
-      parameters: z.object({
-        includeSegmentDetails: z.boolean().optional().describe("Include detailed segment information (defaults to true if not specified)")
-      }),
+      input_schema: {
+        type: "object",
+        properties: {
+          includeSegmentDetails: {
+            type: "boolean",
+            description: "Include detailed segment information (defaults to true if not specified)"
+          }
+        },
+        required: []
+      },
       
       execute: async ({ includeSegmentDetails = true }: {
         includeSegmentDetails?: boolean
@@ -2194,9 +2288,10 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
           }
         }
       }
-    } as any)
+    }
 
-    const getEmailTimelineTool = tool({
+    const getEmailTimelineTool = {
+      name: "get_email_timeline",
       description: `Get the actual timeline of when emails were sent - critical for reengagement emails.
   
   Use this when Sandra asks about:
@@ -2207,9 +2302,16 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
   
   This returns REAL send dates (not creation dates) so you can say "remember me from 3 weeks ago" accurately.`,
       
-      parameters: z.object({
-        segmentId: z.string().optional().describe("Specific segment ID to check, or null for all campaigns")
-      }),
+      input_schema: {
+        type: "object",
+        properties: {
+          segmentId: {
+            type: "string",
+            description: "Specific segment ID to check, or null for all campaigns"
+          }
+        },
+        required: []
+      },
       
       execute: async ({ segmentId }: {
         segmentId?: string
@@ -2397,7 +2499,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
           }
         }
       }
-    } as any)
+    }
 
     const readCodebaseFileTool = tool({
       description: `Read and analyze files from the SSELFIE codebase to understand the app structure, content, and features.
@@ -3301,7 +3403,8 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
       }
     })
 
-    const analyzeEmailStrategyTool = tool({
+    const analyzeEmailStrategyTool = {
+      name: "analyze_email_strategy",
       description: `Analyze Sandra's audience and create intelligent email campaign strategies.
   
   Use this after getting audience data to recommend:
@@ -3312,15 +3415,33 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
   
   Be proactive and strategic - Sandra wants AI to help her scale.`,
       
-      parameters: z.object({
-        totalContacts: z.number().describe("Total number of contacts in the audience"),
-        segments: z.array(z.object({
-          id: z.string().optional(),
-          name: z.string().optional(),
-          size: z.number().optional()
-        })).describe("Array of audience segments"),
-        lastCampaignDays: z.number().optional().describe("Days since last campaign (fetch from database)")
-      }),
+      input_schema: {
+        type: "object",
+        properties: {
+          totalContacts: {
+            type: "number",
+            description: "Total number of contacts in the audience"
+          },
+          segments: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                id: { type: "string" },
+                name: { type: "string" },
+                size: { type: "number" }
+              },
+              required: []
+            },
+            description: "Array of audience segments"
+          },
+          lastCampaignDays: {
+            type: "number",
+            description: "Days since last campaign (fetch from database)"
+          }
+        },
+        required: ["totalContacts", "segments"]
+      },
       
       execute: async ({ totalContacts, segments, lastCampaignDays }: {
         totalContacts: number
@@ -3605,7 +3726,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
           }
         }
       }
-    } as any)
+    }
 
     const systemPrompt = `You are Sandra's Personal Business Mentor - an 8-9 figure business coach who knows her story intimately and speaks like her trusted friend, but with the wisdom and directness of someone who's scaled multiple businesses to massive success.
 
@@ -4787,9 +4908,14 @@ Keep it practical and data-driven.`
     }
 
     // Native Anthropic format tools
-    // compose_email is already in native format, others will be converted later
     const anthropicTools: any[] = [
-      composeEmailTool
+      composeEmailTool,
+      scheduleCampaignTool,
+      createEmailSequenceTool,
+      checkCampaignStatusTool,
+      getResendAudienceDataTool,
+      getEmailTimelineTool,
+      analyzeEmailStrategyTool
     ]
 
     // Track accumulated text and email preview for saving to database
