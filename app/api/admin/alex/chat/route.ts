@@ -4760,10 +4760,11 @@ IMPORTANT: The HTML above is the complete email HTML. When editing, extract ALL 
       async start(controller) {
         let isClosed = false
 
-        const safeEnqueue = (data: Uint8Array) => {
+        const safeEnqueue = (data: string | Uint8Array) => {
           try {
             if (isClosed) return
-            controller.enqueue(data)
+            const encoded = typeof data === 'string' ? encoder.encode(data) : data
+            controller.enqueue(encoded)
           } catch (error: any) {
             if (error?.code !== 'ERR_INVALID_STATE' && !error?.message?.includes('closed')) {
               console.error('[Alex] ❌ Error enqueueing data:', error)
@@ -4786,50 +4787,77 @@ IMPORTANT: The HTML above is the complete email HTML. When editing, extract ALL 
         }
 
         try {
+          // Manual tool execution loop - required for tools to work properly
+          // Anthropic API requires: call → tool_use → execute → call again with tool_result
           let messages = anthropicMessages
           let iteration = 0
           const MAX_ITERATIONS = 5
 
           while (iteration < MAX_ITERATIONS) {
             iteration++
+            console.log('[Alex] 🔄 Iteration', iteration)
 
-            // Ensure messages are in correct Anthropic format
-            const formattedMessages = messages.map((msg: any) => {
-              if (Array.isArray(msg.content)) {
-                return {
-                  role: msg.role,
-                  content: msg.content,
-                }
-              }
-              return {
-                role: msg.role,
-                content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content) || '',
-              }
-            })
+            // Format messages for API
+            const formattedMessages = messages.map((m: any) => ({
+              role: m.role,
+              content: Array.isArray(m.content) ? m.content : String(m.content || '')
+            }))
 
-            console.log('[Alex] 📤 Making API call with', formattedMessages.length, 'messages')
-            if (iteration > 1) {
-              console.log('[Alex] 📤 Continuation - last message type:', formattedMessages[formattedMessages.length - 1]?.content?.[0]?.type || 'text')
-            }
-
-            // Use SDK's streaming
-            const sdkStream = await anthropic.messages.stream({
+            // Call Anthropic API
+            const response = await fetch('https://api.anthropic.com/v1/messages', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-API-Key': process.env.ANTHROPIC_API_KEY!,
+                'anthropic-version': '2023-06-01',
+              },
+              body: JSON.stringify({
                 model: 'claude-sonnet-4-20250514',
                 max_tokens: 4000,
                 system: systemPromptWithImages,
                 messages: formattedMessages,
-              tools: nativeAnthropicTools.length > 0 ? nativeAnthropicTools : undefined, // Only pass native tools
+                tools: nativeAnthropicTools.length > 0 ? nativeAnthropicTools : undefined,
+                stream: true,
+              }),
             })
 
-            const toolCalls: Array<{ id: string; name: string; input: any }> = []
-            const pendingToolUses = new Map<string, any>() // Track tools that started but haven't completed
-            let hasTextInThisIteration = false
-            let messageComplete = false
+            if (!response.ok) {
+              const error = await response.text()
+              console.error('[Alex] ❌ API error:', error)
+              throw new Error(`API error: ${response.status}`)
+            }
 
-            // Process SDK stream events
-            for await (const event of sdkStream) {
-              // Handle text deltas
-              if (event.type === 'content_block_delta' && event.delta?.type === 'text_delta') {
+            // Process SSE stream
+            const reader = response.body?.getReader()
+            if (!reader) throw new Error('No response body')
+
+            const decoder = new TextDecoder()
+            let buffer = ''
+            let toolCalls: any[] = []
+            let currentToolCall: any = null
+            let messageComplete = false
+            let hasTextInThisIteration = false
+
+            while (true) {
+              const { done, value } = await reader.read()
+              if (done) break
+
+              buffer += decoder.decode(value, { stream: true })
+              const lines = buffer.split('\n')
+              buffer = lines.pop() || ''
+
+              for (const line of lines) {
+                if (!line.startsWith('data: ')) continue
+                if (line === 'data: [DONE]') {
+                  messageComplete = true
+                  break
+                }
+
+                try {
+                  const event = JSON.parse(line.slice(6))
+
+                  // Text delta - stream to frontend
+                  if (event.type === 'content_block_delta' && event.delta?.type === 'text_delta') {
                     const text = event.delta.text
                     if (text) {
                       if (!hasSentTextStart) {
@@ -4852,121 +4880,144 @@ IMPORTANT: The HTML above is the complete email HTML. When editing, extract ALL 
                     }
                   }
 
-                  // Handle tool use start - track it
-              if (event.type === 'content_block_start' && event.content_block?.type === 'tool_use') {
-                const toolUse = event.content_block
-                console.log('[Alex] 🔧 Tool use started:', toolUse.name, 'id:', toolUse.id)
-                pendingToolUses.set(toolUse.id, toolUse)
+                  // Tool use started
+                  if (event.type === 'content_block_start' && event.content_block?.type === 'tool_use') {
+                    currentToolCall = {
+                      id: event.content_block.id,
+                      name: event.content_block.name,
+                      input: ''
+                    }
+                    console.log('[Alex] 🔧 Tool started:', currentToolCall.name)
                   }
 
-                  // Handle tool use complete - execute it
-              if (event.type === 'content_block_stop' && event.content_block?.type === 'tool_use') {
-                const toolUse = event.content_block
-                const toolInput = toolUse.input || {}
-                console.log('[Alex] 🔧 Tool use complete:', toolUse.name, 'id:', toolUse.id)
-                
-                // Remove from pending
-                pendingToolUses.delete(toolUse.id)
-                
-                toolCalls.push({ id: toolUse.id, name: toolUse.name, input: toolInput })
-
-                // Add tool_use to messages
-                    messages = [
-                      ...messages,
-                      {
-                        role: 'assistant',
-                        content: [{
-                          type: 'tool_use',
-                      id: toolUse.id,
-                      name: toolUse.name,
-                          input: toolInput,
-                        }],
-                      },
-                    ]
-
-                // Execute the tool using handler
-                console.log('[Alex] ⚙️ Executing tool:', toolUse.name)
-                const result = await executeTool(toolUse.name, toolInput)
-                let toolResultContent = JSON.stringify(result)
-                
-                // Truncate very large tool results
-                const MAX_TOOL_RESULT_SIZE = 100000
-                        if (toolResultContent.length > MAX_TOOL_RESULT_SIZE) {
-                  console.log(`[Alex] ⚠️ Tool result is large (${toolResultContent.length} chars), truncating...`)
-                          const truncated = toolResultContent.substring(0, MAX_TOOL_RESULT_SIZE)
-                          toolResultContent = truncated + '\n\n[Content truncated due to size limits. Use read_codebase_file with specific file paths for full content.]'
-                }
-
-                // Add tool_result to messages
-                    messages = [
-                      ...messages,
-                      {
-                        role: 'user',
-                        content: [{
-                          type: 'tool_result',
-                      tool_use_id: toolUse.id,
-                          content: toolResultContent,
-                        }],
-                      },
-                    ]
-                    
-                console.log(`[Alex] ✅ Added tool result to messages (${toolResultContent.length} chars)`)
-              }
-
-              // Handle message stop - only break if no pending tools
-              if (event.type === 'message_stop') {
-                messageComplete = true
-                console.log('[Alex] 📨 Message complete', {
-                  toolCallsCount: toolCalls.length,
-                  pendingToolsCount: pendingToolUses.size,
-                  hasText: hasTextInThisIteration
-                })
-                
-                // If there are pending tools, wait for them to complete
-                if (pendingToolUses.size > 0) {
-                  console.log('[Alex] ⏳ Waiting for', pendingToolUses.size, 'pending tools to complete...')
-                  // Don't break yet - continue processing events
-                  continue
-                }
-                
-                if (hasTextInThisIteration && toolCalls.length > 0) {
-                  const endMessage = {
-                    type: 'text-end',
-                    id: messageId
+                  // Tool input accumulation
+                  if (event.type === 'content_block_delta' && event.delta?.type === 'input_json_delta') {
+                    if (currentToolCall) {
+                      currentToolCall.input += event.delta.partial_json || ''
+                    }
                   }
-                  safeEnqueue(encoder.encode(`data: ${JSON.stringify(endMessage)}\n\n`))
-                  hasTextInThisIteration = false
+
+                  // Tool use complete
+                  if (event.type === 'content_block_stop' && currentToolCall) {
+                    try {
+                      const toolInput = JSON.parse(currentToolCall.input)
+                      console.log('[Alex] 🔧 Executing tool:', currentToolCall.name)
+
+                      // Execute tool
+                      const toolDef = tools[currentToolCall.name as keyof typeof tools]
+                      let toolResult: any
+
+                      if (!toolDef?.execute) {
+                        console.error('[Alex] ❌ Tool not found:', currentToolCall.name)
+                        toolResult = { error: `Tool ${currentToolCall.name} not found` }
+                      } else {
+                        try {
+                          // @ts-ignore
+                          toolResult = await toolDef.execute(toolInput)
+                          console.log('[Alex] ✅ Tool executed:', currentToolCall.name)
+
+                          // Capture email preview
+                          if (currentToolCall.name === 'compose_email' && toolResult?.html && toolResult?.subjectLine) {
+                            emailPreviewData = {
+                              html: toolResult.html,
+                              subjectLine: toolResult.subjectLine,
+                              preview: toolResult.preview || stripHtml(toolResult.html).substring(0, 200) + '...'
+                            }
+                            console.log('[Alex] 📧 Captured email preview')
+                          } else if (currentToolCall.name === 'create_email_sequence') {
+                            if (toolResult?.emails && Array.isArray(toolResult.emails) && toolResult.emails.length > 0) {
+                              const lastSuccessfulEmail = [...toolResult.emails].reverse().find((e: any) => e.readyToSend && e.html && e.subjectLine)
+                              if (lastSuccessfulEmail) {
+                                emailPreviewData = {
+                                  html: lastSuccessfulEmail.html,
+                                  subjectLine: lastSuccessfulEmail.subjectLine,
+                                  preview: lastSuccessfulEmail.preview || stripHtml(lastSuccessfulEmail.html).substring(0, 200) + '...',
+                                  sequenceName: toolResult.sequenceName,
+                                  sequenceEmails: toolResult.emails,
+                                  isSequence: true
+                                }
+                                console.log('[Alex] 📧 Captured email sequence preview')
+                              }
+                            }
+                          }
+                        } catch (error: any) {
+                          console.error('[Alex] ❌ Tool error:', error)
+                          toolResult = { error: error.message || 'Tool execution failed' }
+                        }
+                      }
+
+                      // Truncate large results
+                      let toolResultContent = JSON.stringify(toolResult)
+                      const MAX_TOOL_RESULT_SIZE = 100000
+                      if (toolResultContent.length > MAX_TOOL_RESULT_SIZE) {
+                        console.log(`[Alex] ⚠️ Tool result is large (${toolResultContent.length} chars), truncating...`)
+                        const truncated = toolResultContent.substring(0, MAX_TOOL_RESULT_SIZE)
+                        toolResultContent = truncated + '\n\n[Content truncated due to size limits.]'
+                      }
+
+                      // Add tool_use and tool_result to messages for next iteration
+                      toolCalls.push({
+                        id: currentToolCall.id,
+                        name: currentToolCall.name,
+                        input: toolInput,
+                        result: toolResult
+                      })
+
+                      messages = [
+                        ...messages,
+                        {
+                          role: 'assistant',
+                          content: [{
+                            type: 'tool_use',
+                            id: currentToolCall.id,
+                            name: currentToolCall.name,
+                            input: toolInput
+                          }]
+                        },
+                        {
+                          role: 'user',
+                          content: [{
+                            type: 'tool_result',
+                            tool_use_id: currentToolCall.id,
+                            content: toolResultContent
+                          }]
+                        }
+                      ]
+
+                      console.log(`[Alex] ✅ Added tool result to messages (${toolResultContent.length} chars)`)
+                      currentToolCall = null
+                    } catch (error: any) {
+                      console.error('[Alex] ❌ Tool parse error:', error)
+                      currentToolCall = null
+                    }
+                  }
+
+                  // Message stop
+                  if (event.type === 'message_stop') {
+                    messageComplete = true
+                    console.log('[Alex] 📨 Message complete', {
+                      toolCallsCount: toolCalls.length,
+                      hasText: hasTextInThisIteration
+                    })
+                    break
+                  }
+                } catch (error) {
+                  // Ignore parse errors
                 }
-                // Break out of event loop when message is complete and all tools are done
-                break
               }
+
+              if (messageComplete) break
             }
 
-            // If we executed tools, continue the conversation
-            if (toolCalls.length > 0) {
-              console.log('[Alex] 🔄 Continuing with', toolCalls.length, 'tool results', {
-                messagesCount: messages.length,
-                lastMessageRole: messages[messages.length - 1]?.role,
-                lastMessageContentType: Array.isArray(messages[messages.length - 1]?.content) 
-                  ? messages[messages.length - 1]?.content?.[0]?.type 
-                  : typeof messages[messages.length - 1]?.content
-              })
-              if (hasTextInThisIteration) {
-                const endMessage = {
-                  type: 'text-end',
-                  id: messageId
-                }
-                safeEnqueue(encoder.encode(`data: ${JSON.stringify(endMessage)}\n\n`))
-                hasTextInThisIteration = false
-              }
-              hasSentTextStart = false
-              // Reset toolCalls for next iteration
-              toolCalls.length = 0
-              continue
+            // If no tools were called, we're done
+            if (toolCalls.length === 0) {
+              console.log('[Alex] ✅ Response complete (no tools)')
+              break
             }
 
-            // No tools used, we're done
-            break
+            console.log('[Alex] 🔄 Continuing with', toolCalls.length, 'tool results')
+            // Reset for next iteration
+            hasSentTextStart = false
           }
 
           // Send text-end event if we sent text-start
