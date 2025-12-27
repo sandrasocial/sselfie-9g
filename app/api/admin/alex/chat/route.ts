@@ -84,56 +84,15 @@ export async function POST(req: Request) {
     // CRITICAL: Preserve id property for deduplication
     const modelMessages = messages
       .filter((m: any) => m && (m.role === "user" || m.role === "assistant"))
-      .map((m: any) => {
-        // Preserve full content structure for images
-        if (m.content && Array.isArray(m.content)) {
-          // Check if message has images
-          const hasImages = m.content.some((p: any) => p && p.type === "image")
-          if (hasImages) {
-            // Preserve full content array with images for Anthropic
-            return {
-              id: m.id ? String(m.id) : undefined, // Normalize ID to string for consistent deduplication
-              role: m.role as "user" | "assistant" | "system",
-              content: m.content, // Keep full array with images
-            }
-          }
-        }
-
-        // For text-only messages, extract text content
-        let content = ""
-
-        // Extract text from parts if available
-        if (m.parts && Array.isArray(m.parts)) {
-          const textParts = m.parts.filter((p: any) => p && p.type === "text")
-          if (textParts.length > 0) {
-            content = textParts.map((p: any) => p.text || "").join("\n")
-          }
-        }
-
-        // Fallback to content string
-        if (!content && m.content) {
-          if (Array.isArray(m.content)) {
-            const textParts = m.content.filter((p: any) => p && p.type === "text")
-            content = textParts.map((p: any) => p.text || "").join("\n")
-          } else {
-            content = typeof m.content === "string" ? m.content : String(m.content)
-          }
-        }
-
-        return {
-          id: m.id ? String(m.id) : undefined, // Normalize ID to string for consistent deduplication
-          role: m.role as "user" | "assistant" | "system",
-          content: content.trim(),
-        }
-      })
-      .filter((m: any) => {
-        // Filter: keep messages with content (text or images)
-        if (Array.isArray(m.content)) {
-          // Has images or text parts
-          return m.content.length > 0
-        }
-        return m.content && m.content.length > 0
-      })
+      .map((m: any) => ({
+        role: m.role,
+        content: typeof m.content === 'string' 
+          ? m.content 
+          : Array.isArray(m.content)
+            ? m.content // Keep array for images
+            : String(m.content || '')
+      }))
+      .filter((m: any) => m.content && m.content.length > 0)
 
     if (modelMessages.length === 0) {
       console.error("[v0] No valid messages after filtering")
