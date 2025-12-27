@@ -1,5 +1,6 @@
 import { tool, streamText, generateText } from "ai"
 import { z } from "zod"
+import Anthropic from '@anthropic-ai/sdk'
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getCompleteAdminContext } from "@/lib/admin/get-complete-context"
@@ -4912,7 +4913,7 @@ Keep it practical and data-driven.`
 
     // Track accumulated text and email preview for saving to database
     let accumulatedText = ''
-      let emailPreviewData: { html: string; subjectLine: string; preview: string } | null = null
+    let emailPreviewData: { html: string; subjectLine: string; preview: string } | null = null
 
     // Convert messages to Anthropic format
     // CRITICAL: Handle both content and parts arrays to preserve tool results
@@ -4989,27 +4990,28 @@ IMPORTANT: The HTML above is the complete email HTML. When editing, extract ALL 
       }
     })
 
+    // Create Anthropic client
+    const anthropic = new Anthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY!,
+    })
+
     // Create SSE stream compatible with DefaultChatTransport
-    // while manually calling Anthropic API to avoid schema bugs
     const encoder = new TextEncoder()
+    const messageId = `msg-${Date.now()}`
+    let hasSentTextStart = false
+    
     const stream = new ReadableStream({
       async start(controller) {
-        const messageId = `msg-${Date.now()}`
         let isClosed = false
 
         const safeEnqueue = (data: Uint8Array) => {
           try {
-            // Check if stream is already closed before enqueueing
-            if (isClosed) {
-              return // Silently skip if stream is closed
-            }
+            if (isClosed) return
             controller.enqueue(data)
           } catch (error: any) {
-            // Only log if it's not a "controller closed" error
             if (error?.code !== 'ERR_INVALID_STATE' && !error?.message?.includes('closed')) {
               console.error('[v0] ❌ Error enqueueing data:', error)
             }
-            // Mark as closed if we get this error
             if (error?.code === 'ERR_INVALID_STATE' || error?.message?.includes('closed')) {
               isClosed = true
             }
@@ -5031,24 +5033,18 @@ IMPORTANT: The HTML above is the complete email HTML. When editing, extract ALL 
           let messages = anthropicMessages
           let iteration = 0
           const MAX_ITERATIONS = 5
-          let hasSentTextStart = false
 
           while (iteration < MAX_ITERATIONS) {
             iteration++
 
-            // Don't send text-start here - only send it when we first receive a text delta
-            // This prevents sending text-start/text-end pairs when only tools are executed
-
             // Ensure messages are in correct Anthropic format
             const formattedMessages = messages.map((msg: any) => {
-              // If content is already an array (with tool_use/tool_result), use it as-is
               if (Array.isArray(msg.content)) {
                 return {
                   role: msg.role,
                   content: msg.content,
                 }
               }
-              // Otherwise, convert to string
               return {
                 role: msg.role,
                 content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content) || '',
@@ -5060,322 +5056,171 @@ IMPORTANT: The HTML above is the complete email HTML. When editing, extract ALL 
               console.log('[v0] 📤 Continuation - last message type:', formattedMessages[formattedMessages.length - 1]?.content?.[0]?.type || 'text')
             }
 
-            // Call Anthropic API directly
-            const response = await fetch('https://api.anthropic.com/v1/messages', {
-              method: 'POST',
-        headers: {
-                'Content-Type': 'application/json',
-                'X-API-Key': process.env.ANTHROPIC_API_KEY!,
-                'anthropic-version': '2023-06-01',
-              },
-              body: JSON.stringify({
-                model: 'claude-sonnet-4-20250514',
-                max_tokens: 4000,
-                system: systemPromptWithImages,
-                messages: formattedMessages,
-                tools: anthropicTools,
-                stream: true,
-              }),
+            // Use SDK's streaming
+            const sdkStream = await anthropic.messages.stream({
+              model: 'claude-sonnet-4-20250514',
+              max_tokens: 4000,
+              system: systemPromptWithImages,
+              messages: formattedMessages,
+              tools: anthropicTools,
             })
 
-            if (!response.ok) {
-              const error = await response.text()
-              console.error('[v0] ❌ Anthropic API error:', error)
-              console.error('[v0] ❌ Response status:', response.status)
-              console.error('[v0] ❌ Response headers:', Object.fromEntries(response.headers.entries()))
-              
-              // If it's a 400 error, log the request body for debugging
-              if (response.status === 400) {
-                try {
-                  const requestBody = JSON.parse(JSON.stringify({
-                    model: 'claude-sonnet-4-20250514',
-                    max_tokens: 4000,
-                    messages: formattedMessages,
-                    tools: anthropicTools.length,
-                  }))
-                  console.error('[v0] ❌ Request summary:', JSON.stringify(requestBody, null, 2))
-                } catch (e) {
-                  // Ignore
-                }
-              }
-              
-              throw new Error(`API request failed: ${response.status} - ${error}`)
-            }
-
-            // Process SSE stream from Anthropic
-            const reader = response.body?.getReader()
-            if (!reader) {
-              throw new Error('No response body')
-            }
-
-            const decoder = new TextDecoder()
-            let buffer = ''
-            let currentToolCall: { id: string; name: string; input: string } | null = null
             const toolCalls: Array<{ id: string; name: string; input: any }> = []
             let hasTextInThisIteration = false
             let messageComplete = false
 
-            while (true) {
-              const { done, value } = await reader.read()
-              if (done) break
-
-              buffer += decoder.decode(value, { stream: true })
-              const lines = buffer.split('\n')
-              buffer = lines.pop() || ''
-
-              for (const line of lines) {
-                if (!line.startsWith('data: ')) continue
-                if (line === 'data: [DONE]') continue
-
-                const data = line.slice(6)
-                if (!data.trim()) continue
-
-                try {
-                  const event = JSON.parse(data)
-
-                  // Handle message_stop - message is complete
-                  if (event.type === 'message_stop') {
-                    messageComplete = true
-                    console.log('[v0] 📨 Message complete')
-                    // If we had text in this iteration, send text-end before continuing
-                    if (hasTextInThisIteration && toolCalls.length > 0) {
-                      const endMessage = {
-                        type: 'text-end',
-                        id: messageId
-                      }
-                      safeEnqueue(encoder.encode(`data: ${JSON.stringify(endMessage)}\n\n`))
-                      hasTextInThisIteration = false
+            // Process SDK stream events
+            for await (const event of sdkStream) {
+              // Handle text deltas
+              if (event.type === 'content_block_delta' && event.delta?.type === 'text_delta') {
+                const text = event.delta.text
+                if (text) {
+                  if (!hasSentTextStart) {
+                    const startMessage = {
+                      type: 'text-start',
+                      id: messageId
                     }
+                    safeEnqueue(encoder.encode(`data: ${JSON.stringify(startMessage)}\n\n`))
+                    hasSentTextStart = true
                   }
-
-                  // Handle text deltas - send as text-delta events
-                  else if (event.type === 'content_block_delta' && event.delta?.type === 'text_delta') {
-                    const text = event.delta.text
-                    if (text) {
-                      // Send text-start only when we first receive a text delta
-                      if (!hasSentTextStart) {
-                        const startMessage = {
-                          type: 'text-start',
-                          id: messageId
-                        }
-                        safeEnqueue(encoder.encode(`data: ${JSON.stringify(startMessage)}\n\n`))
-                        hasSentTextStart = true
-                      }
-                      
-                      accumulatedText += text
-                      hasTextInThisIteration = true
-                      const deltaMessage = {
-                        type: 'text-delta',
-                        id: messageId,
-                        delta: text
-                      }
-                      safeEnqueue(encoder.encode(`data: ${JSON.stringify(deltaMessage)}\n\n`))
-                    }
+                  
+                  accumulatedText += text
+                  hasTextInThisIteration = true
+                  const deltaMessage = {
+                    type: 'text-delta',
+                    id: messageId,
+                    delta: text
                   }
-
-                  // Handle tool use start
-                  else if (event.type === 'content_block_start' && event.content_block?.type === 'tool_use') {
-                    currentToolCall = {
-                      id: event.content_block.id,
-                      name: event.content_block.name,
-                      input: '',
-                    }
-                    console.log('[v0] 🔧 Tool use started:', currentToolCall.name)
-                  }
-
-                  // Handle tool input deltas
-                  else if (event.type === 'content_block_delta' && event.delta?.type === 'input_json_delta' && currentToolCall) {
-                    currentToolCall.input += event.delta.partial_json || ''
-                  }
-
-                  // Handle tool use complete - execute it
-                  else if (event.type === 'content_block_stop' && currentToolCall) {
-                    // Parse tool input with error handling for malformed JSON
-                    let toolInput: any = {}
-                    if (currentToolCall.input) {
-                      try {
-                        toolInput = JSON.parse(currentToolCall.input)
-                      } catch (parseError: any) {
-                        console.error(`[v0] ❌ Failed to parse tool input JSON for ${currentToolCall.name}:`, parseError.message)
-                        console.error(`[v0] ❌ Raw input (first 200 chars):`, currentToolCall.input.substring(0, 200))
-                        // Use empty object as fallback - tool execution will handle missing/invalid input
-                        toolInput = {}
-                      }
-                    }
-                    toolCalls.push({ ...currentToolCall, input: toolInput })
-
-                    // Always add tool_use to messages (required by Anthropic API)
-                    // We'll add tool_result after execution (success or failure)
-                    messages = [
-                      ...messages,
-                      {
-                        role: 'assistant',
-                        content: [{
-                          type: 'tool_use',
-                          id: currentToolCall.id,
-                          name: currentToolCall.name,
-                          input: toolInput,
-                        }],
-                      },
-                    ]
-
-                    // Execute the tool
-                    const toolDef = tools[currentToolCall.name as keyof typeof tools]
-                    let toolResultContent: string
-                    
-                    if (!toolDef?.execute) {
-                      // Tool not found - add error result
-                      console.error(`[v0] ❌ Tool not found: ${currentToolCall.name}`)
-                      toolResultContent = JSON.stringify({
-                        success: false,
-                        error: `Tool "${currentToolCall.name}" not found or not executable`,
-                        suggestion: "Check that the tool exists and is properly defined"
-                      })
-                    } else {
-                      try {
-                        console.log(`[v0] 🔧 Executing tool: ${currentToolCall.name}`, { input: toolInput })
-                        // @ts-ignore
-                        const result = await toolDef.execute(toolInput)
-                        console.log('[v0] ✅ Tool executed:', currentToolCall.name)
-                        console.log('[v0] 📊 Tool result:', JSON.stringify(result, null, 2).substring(0, 500))
-
-                        // Capture email preview if it's compose_email or create_email_sequence
-                        if (currentToolCall.name === 'compose_email') {
-                          console.log('[v0] 📧 compose_email tool executed:', {
-                            hasResult: !!result,
-                            hasHtml: !!(result?.html),
-                            hasSubjectLine: !!(result?.subjectLine),
-                            resultKeys: result ? Object.keys(result) : [],
-                            resultPreview: result ? JSON.stringify(result).substring(0, 200) : 'no result'
-                          })
-                          
-                          if (result?.html && result?.subjectLine) {
-                            emailPreviewData = {
-                              html: result.html,
-                              subjectLine: result.subjectLine,
-                              preview: result.preview || stripHtml(result.html).substring(0, 200) + '...'
-                            }
-                            console.log('[v0] ✅ Email preview data captured:', {
-                              htmlLength: emailPreviewData.html.length,
-                              subject: emailPreviewData.subjectLine
-                            })
-                          } else {
-                            console.warn('[v0] ⚠️ compose_email tool executed but result missing html or subjectLine:', {
-                              result: result
-                            })
-                          }
-                        } else if (currentToolCall.name === 'create_email_sequence') {
-                          console.log('[v0] 📧 create_email_sequence tool executed:', {
-                            hasResult: !!result,
-                            sequenceName: result?.sequenceName,
-                            emailCount: result?.emails?.length,
-                            successCount: result?.successCount,
-                            failureCount: result?.failureCount
-                          })
-                          
-                          // For sequences, capture the LAST successfully generated email for preview
-                          // (User can edit individual emails later)
-                          if (result?.emails && Array.isArray(result.emails) && result.emails.length > 0) {
-                            // Find the last successful email
-                            const lastSuccessfulEmail = [...result.emails].reverse().find((e: any) => e.readyToSend && e.html && e.subjectLine)
-                            
-                            if (lastSuccessfulEmail) {
-                              emailPreviewData = {
-                                html: lastSuccessfulEmail.html,
-                                subjectLine: lastSuccessfulEmail.subjectLine,
-                                preview: lastSuccessfulEmail.preview || stripHtml(lastSuccessfulEmail.html).substring(0, 200) + '...',
-                                sequenceName: result.sequenceName,
-                                sequenceEmails: result.emails, // Store all emails for sequence management
-                                isSequence: true
-                              }
-                              console.log('[v0] ✅ Email sequence preview data captured (showing last email):', {
-                                sequenceName: result.sequenceName,
-                                totalEmails: result.emails.length,
-                                htmlLength: emailPreviewData.html.length,
-                                subject: emailPreviewData.subjectLine
-                              })
-                            }
-                          }
-                        }
-
-                        // Format tool result content
-                        toolResultContent = JSON.stringify(result)
-                        
-                        // Truncate very large tool results to avoid API limits
-                        // Anthropic has a limit on message content size
-                        const MAX_TOOL_RESULT_SIZE = 100000 // ~100KB
-                        if (toolResultContent.length > MAX_TOOL_RESULT_SIZE) {
-                          console.log(`[v0] ⚠️ Tool result is large (${toolResultContent.length} chars), truncating...`)
-                          const truncated = toolResultContent.substring(0, MAX_TOOL_RESULT_SIZE)
-                          toolResultContent = truncated + '\n\n[Content truncated due to size limits. Use read_codebase_file with specific file paths for full content.]'
-                        }
-                      } catch (toolError: any) {
-                        // Tool execution failed - add error result
-                        console.error('[v0] ❌ Tool execution error:', toolError)
-                        toolResultContent = JSON.stringify({
-                          success: false,
-                          error: toolError.message || 'Tool execution failed',
-                          errorType: toolError.name || 'ExecutionError',
-                          suggestion: "Check tool input parameters and try again"
-                        })
-                      }
-                    }
-
-                    // Always add tool_result to messages (required by Anthropic API)
-                    // Every tool_use must have a corresponding tool_result
-                    messages = [
-                      ...messages,
-                      {
-                        role: 'user',
-                        content: [{
-                          type: 'tool_result',
-                          tool_use_id: currentToolCall.id,
-                          content: toolResultContent,
-                        }],
-                      },
-                    ]
-                    
-                    console.log(`[v0] ✅ Added tool result to messages (${toolResultContent.length} chars)`)
-
-                    currentToolCall = null
-                  }
-                } catch (parseError) {
-                  // Ignore parse errors
+                  safeEnqueue(encoder.encode(`data: ${JSON.stringify(deltaMessage)}\n\n`))
                 }
               }
-              
-              // Break if message is complete
-              if (messageComplete) break
+
+              // Handle tool use start
+              if (event.type === 'content_block_start' && event.content_block?.type === 'tool_use') {
+                console.log('[v0] 🔧 Tool use started:', event.content_block.name)
+              }
+
+              // Handle tool use complete - execute it
+              if (event.type === 'content_block_stop' && event.content_block?.type === 'tool_use') {
+                const toolUse = event.content_block
+                const toolInput = toolUse.input || {}
+                toolCalls.push({ id: toolUse.id, name: toolUse.name, input: toolInput })
+
+                // Add tool_use to messages
+                messages = [
+                  ...messages,
+                  {
+                    role: 'assistant',
+                    content: [{
+                      type: 'tool_use',
+                      id: toolUse.id,
+                      name: toolUse.name,
+                      input: toolInput,
+                    }],
+                  },
+                ]
+
+                // Execute the tool
+                const toolDef = tools[toolUse.name as keyof typeof tools]
+                let toolResultContent: string
+                
+                if (!toolDef?.execute) {
+                  console.error(`[v0] ❌ Tool not found: ${toolUse.name}`)
+                  toolResultContent = JSON.stringify({
+                    success: false,
+                    error: `Tool "${toolUse.name}" not found or not executable`,
+                    suggestion: "Check that the tool exists and is properly defined"
+                  })
+                } else {
+                  try {
+                    console.log(`[v0] 🔧 Executing tool: ${toolUse.name}`, { input: toolInput })
+                    // @ts-ignore
+                    const result = await toolDef.execute(toolInput)
+                    console.log('[v0] ✅ Tool executed:', toolUse.name)
+
+                    // Capture email preview if it's compose_email or create_email_sequence
+                    if (toolUse.name === 'compose_email') {
+                      if (result?.html && result?.subjectLine) {
+                        emailPreviewData = {
+                          html: result.html,
+                          subjectLine: result.subjectLine,
+                          preview: result.preview || stripHtml(result.html).substring(0, 200) + '...'
+                        }
+                        console.log('[v0] ✅ Email preview data captured:', {
+                          htmlLength: emailPreviewData.html.length,
+                          subject: emailPreviewData.subjectLine
+                        })
+                      }
+                    } else if (toolUse.name === 'create_email_sequence') {
+                      if (result?.emails && Array.isArray(result.emails) && result.emails.length > 0) {
+                        const lastSuccessfulEmail = [...result.emails].reverse().find((e: any) => e.readyToSend && e.html && e.subjectLine)
+                        if (lastSuccessfulEmail) {
+                          emailPreviewData = {
+                            html: lastSuccessfulEmail.html,
+                            subjectLine: lastSuccessfulEmail.subjectLine,
+                            preview: lastSuccessfulEmail.preview || stripHtml(lastSuccessfulEmail.html).substring(0, 200) + '...',
+                            sequenceName: result.sequenceName,
+                            sequenceEmails: result.emails,
+                            isSequence: true
+                          }
+                        }
+                      }
+                    }
+
+                    toolResultContent = JSON.stringify(result)
+                    
+                    // Truncate very large tool results
+                    const MAX_TOOL_RESULT_SIZE = 100000
+                    if (toolResultContent.length > MAX_TOOL_RESULT_SIZE) {
+                      console.log(`[v0] ⚠️ Tool result is large (${toolResultContent.length} chars), truncating...`)
+                      const truncated = toolResultContent.substring(0, MAX_TOOL_RESULT_SIZE)
+                      toolResultContent = truncated + '\n\n[Content truncated due to size limits. Use read_codebase_file with specific file paths for full content.]'
+                    }
+                  } catch (toolError: any) {
+                    console.error('[v0] ❌ Tool execution error:', toolError)
+                    toolResultContent = JSON.stringify({
+                      success: false,
+                      error: toolError.message || 'Tool execution failed',
+                      errorType: toolError.name || 'ExecutionError',
+                      suggestion: "Check tool input parameters and try again"
+                    })
+                  }
+                }
+
+                // Add tool_result to messages
+                messages = [
+                  ...messages,
+                  {
+                    role: 'user',
+                    content: [{
+                      type: 'tool_result',
+                      tool_use_id: toolUse.id,
+                      content: toolResultContent,
+                    }],
+                  },
+                ]
+                
+                console.log(`[v0] ✅ Added tool result to messages (${toolResultContent.length} chars)`)
+              }
+
+              // Handle message stop
+              if (event.type === 'message_stop') {
+                messageComplete = true
+                console.log('[v0] 📨 Message complete')
+                if (hasTextInThisIteration && toolCalls.length > 0) {
+                  const endMessage = {
+                    type: 'text-end',
+                    id: messageId
+                  }
+                  safeEnqueue(encoder.encode(`data: ${JSON.stringify(endMessage)}\n\n`))
+                  hasTextInThisIteration = false
+                }
+              }
             }
 
             // If we executed tools, continue the conversation
             if (toolCalls.length > 0) {
               console.log('[v0] 🔄 Continuing with', toolCalls.length, 'tool results')
-              console.log('[v0] 📊 Messages count before continuation:', messages.length)
-              console.log('[v0] 📊 Last message role:', messages[messages.length - 1]?.role)
-              console.log('[v0] 📊 Last message content type:', 
-                Array.isArray(messages[messages.length - 1]?.content) 
-                  ? messages[messages.length - 1]?.content?.[0]?.type 
-                  : typeof messages[messages.length - 1]?.content)
-              // Log the tool results that were added
-              const toolResultMessages = messages.filter((m: any) => 
-                Array.isArray(m.content) && 
-                m.content.some((c: any) => c.type === 'tool_result')
-              )
-              console.log('[v0] 📊 Tool result messages in conversation:', toolResultMessages.length)
-              if (toolResultMessages.length > 0) {
-                const lastToolResult = toolResultMessages[toolResultMessages.length - 1]
-                const toolResultContent = lastToolResult.content.find((c: any) => c.type === 'tool_result')
-                if (toolResultContent) {
-                  console.log('[v0] 📊 Last tool result preview:', 
-                    typeof toolResultContent.content === 'string' 
-                      ? toolResultContent.content.substring(0, 200) 
-                      : JSON.stringify(toolResultContent.content).substring(0, 200))
-                }
-              }
-              
-              // If we had text in this iteration, send text-end before continuing
-              // (This allows the client to process the text before the continuation)
               if (hasTextInThisIteration) {
                 const endMessage = {
                   type: 'text-end',
@@ -5383,24 +5228,16 @@ IMPORTANT: The HTML above is the complete email HTML. When editing, extract ALL 
                 }
                 safeEnqueue(encoder.encode(`data: ${JSON.stringify(endMessage)}\n\n`))
                 hasTextInThisIteration = false
-                console.log('[v0] ✅ Sent text-end before continuation')
               }
-              
-              // Reset flag so we send text-start for the next iteration
               hasSentTextStart = false
-              
-              // Reset toolCalls array for next iteration
-              toolCalls.length = 0
-              
-              console.log('[v0] 🔄 Starting next iteration...')
-              continue // Loop back to make another API call
+              continue
             }
 
             // No tools used, we're done
             break
           }
 
-          // Send text-end event only if we sent text-start (i.e., there was actual text content)
+          // Send text-end event if we sent text-start
           if (hasSentTextStart) {
             const endMessage = {
               type: 'text-end',
@@ -5419,13 +5256,7 @@ IMPORTANT: The HTML above is the complete email HTML. When editing, extract ALL 
                 emailPreviewSubject: emailPreviewData?.subjectLine
               })
               await saveChatMessage(activeChatId, "assistant", accumulatedText, emailPreviewData)
-              console.log('[v0] ✅ Saved assistant message to chat', {
-                chatId: activeChatId,
-                messageLength: accumulatedText.length,
-                hasEmailPreview: !!emailPreviewData,
-                emailPreviewSaved: !!emailPreviewData,
-                bodyChatId: chatId
-              })
+              console.log('[v0] ✅ Saved assistant message to chat')
             } catch (error) {
               console.error("[v0] ❌ Error saving message:", error)
             }
@@ -5442,18 +5273,18 @@ IMPORTANT: The HTML above is the complete email HTML. When editing, extract ALL 
           }
         } finally {
           safeClose()
-          }
-        },
-      })
+        }
+      },
+    })
       
     return new Response(stream, {
-        headers: {
+      headers: {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
         'Connection': 'keep-alive',
-          'X-Chat-Id': String(activeChatId),
+        'X-Chat-Id': String(activeChatId),
       },
-      })
+    })
   } catch (error: any) {
     console.error("[v0] Admin agent chat error:", error)
     return NextResponse.json({ error: "Failed to process chat", details: error.message }, { status: 500 })
