@@ -1,4 +1,4 @@
-import { tool, streamText, generateText } from "ai"
+import { tool, generateText } from "ai"
 import { z } from "zod"
 import Anthropic from '@anthropic-ai/sdk'
 import { createServerClient } from "@/lib/supabase/server"
