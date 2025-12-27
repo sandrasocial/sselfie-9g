@@ -10,6 +10,9 @@ import SegmentSelector from './segment-selector'
 import EmailPreviewCard from './email-preview-card'
 import CampaignStatusCards from './campaign-status-cards'
 import { EmailDraftsLibrary } from './email-drafts-library'
+import CaptionCard from '@/components/admin/caption-card'
+import CalendarCard from '@/components/admin/calendar-card'
+import PromptCard from '@/components/admin/prompt-card'
 import Image from 'next/image'
 import ReactMarkdown from 'react-markdown'
 import { Textarea } from '@/components/ui/textarea'
@@ -1802,6 +1805,43 @@ Please acknowledge you've received the edited HTML and are ready to make further
                                           }
                                         }}
                                       />
+                                    </div>
+                                  )}
+                                  {/* Creative Content Cards */}
+                                  {(message as any).toolInvocations && Array.isArray((message as any).toolInvocations) && (
+                                    <div className="mt-4 space-y-4">
+                                      {(message as any).toolInvocations.map((inv: any) => {
+                                        // Instagram Caption cards
+                                        if (inv.toolName === 'create_instagram_caption' && inv.result?.data) {
+                                          return (
+                                            <div key={inv.toolCallId || `caption-${message.id}`}>
+                                              <CaptionCard caption={inv.result.data} />
+                                            </div>
+                                          )
+                                        }
+                                        
+                                        // Content Calendar cards
+                                        if (inv.toolName === 'create_content_calendar' && inv.result?.data) {
+                                          return (
+                                            <div key={inv.toolCallId || `calendar-${message.id}`}>
+                                              <CalendarCard calendar={inv.result.data} />
+                                            </div>
+                                          )
+                                        }
+                                        
+                                        // Maya Prompts cards
+                                        if (inv.toolName === 'suggest_maya_prompts' && inv.result?.data?.prompts) {
+                                          return (
+                                            <div key={inv.toolCallId || `prompts-${message.id}`} className="space-y-4">
+                                              {inv.result.data.prompts.map((prompt: any) => (
+                                                <PromptCard key={prompt.id} prompt={prompt} />
+                                              ))}
+                                            </div>
+                                          )
+                                        }
+                                        
+                                        return null
+                                      })}
                                     </div>
                                   )}
                                 </>
