@@ -1,13 +1,9 @@
 import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import Anthropic from '@anthropic-ai/sdk'
+import { generateText } from "ai"
 
 const ADMIN_EMAIL = "ssa@ssasocial.com"
-
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-})
 
 export async function POST(req: Request) {
   try {
@@ -27,81 +23,82 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json()
-    const { 
+    const {
       features_built,
       personal_story,
       struggles,
       wins,
-      future_self_vision
+      fun_activities
     } = body
 
+    // Enhance each section with AI
     const enhanced: any = {}
 
-    // Enhance each field that has content
+    // Enhance features built
     if (features_built) {
-      const response = await anthropic.messages.create({
-        model: "claude-3-5-sonnet-20241022",
-        max_tokens: 1024,
-        messages: [{
-          role: "user",
-          content: `Enhance this text about features built. Keep it authentic and in Sandra's voice - don't make it too polished or corporate. Just make it flow better while keeping the raw, honest tone:\n\n${features_built}`
-        }]
+      const { text } = await generateText({
+        model: "anthropic/claude-sonnet-4-20250514",
+        prompt: `Transform these product update bullet points into a compelling narrative in Sandra's voice.
+
+Sandra's voice: Warm, empowering, friendly, real. Norwegian English patterns. Mixes vulnerability with strength.
+
+Bullet points:
+${features_built}
+
+Transform into 2-3 sentence narrative that's authentic, excited, and shows the work. Keep it conversational and real.`,
       })
-      enhanced.features_built_enhanced = response.content[0].type === 'text' ? response.content[0].text : features_built
+      enhanced.features_built_enhanced = text
     }
 
+    // Enhance personal story
     if (personal_story) {
-      const response = await anthropic.messages.create({
-        model: "claude-3-5-sonnet-20241022",
-        max_tokens: 1024,
-        messages: [{
-          role: "user",
-          content: `Enhance this personal story. Keep Sandra's authentic, raw, honest voice. Don't polish away the emotion or realness. Just make it flow better and be more engaging:\n\n${personal_story}`
-        }]
+      const { text } = await generateText({
+        model: "anthropic/claude-sonnet-4-20250514",
+        prompt: `Transform this into a compelling personal story in Sandra's authentic voice.
+
+Sandra's voice: Warm, empowering, raw, real. Single mom in Norway building AI platform. "Visibility = Financial Freedom" philosophy. Mixes struggle with triumph.
+
+Raw notes:
+${personal_story}
+
+Transform into a powerful 3-5 sentence story that's vulnerable, inspiring, and real. Show the messy middle, the breakthrough moment, the human element. This should feel like Sandra talking to a friend.`,
       })
-      enhanced.personal_story_enhanced = response.content[0].type === 'text' ? response.content[0].text : personal_story
+      enhanced.personal_story_enhanced = text
     }
 
+    // Enhance struggles
     if (struggles) {
-      const response = await anthropic.messages.create({
-        model: "claude-3-5-sonnet-20241022",
-        max_tokens: 1024,
-        messages: [{
-          role: "user",
-          content: `Enhance this list of struggles. Keep it authentic and vulnerable - don't make it too polished. Just make it flow better while maintaining the raw honesty:\n\n${struggles}`
-        }]
+      const { text } = await generateText({
+        model: "anthropic/claude-sonnet-4-20250514",
+        prompt: `Transform these struggles into authentic, relatable narrative.
+
+Sandra's voice: Honest about challenges, doesn't hide imperfection, but empowering.
+
+Struggles:
+${struggles}
+
+Transform into 2-3 sentences that normalize the struggle while showing resilience. Make it relatable for other women entrepreneurs. Don't sugar-coat, but don't wallow - show the real human experience.`,
       })
-      enhanced.struggles_enhanced = response.content[0].type === 'text' ? response.content[0].text : struggles
+      enhanced.struggles_enhanced = text
     }
 
+    // Enhance wins
     if (wins) {
-      const response = await anthropic.messages.create({
-        model: "claude-3-5-sonnet-20241022",
-        max_tokens: 1024,
-        messages: [{
-          role: "user",
-          content: `Enhance this list of wins. Keep it celebratory and authentic - don't make it too corporate or polished. Just make it flow better and be more engaging:\n\n${wins}`
-        }]
+      const { text } = await generateText({
+        model: "anthropic/claude-sonnet-4-20250514",
+        prompt: `Transform these wins into celebratory but grounded narrative.
+
+Sandra's voice: Celebrates wins without arrogance. Shows excitement. Makes it relatable.
+
+Wins:
+${wins}
+
+Transform into 2-3 sentences that celebrate authentically. Show the achievement but connect it to the journey. Make others feel "if she can do it, so can I".`,
       })
-      enhanced.wins_enhanced = response.content[0].type === 'text' ? response.content[0].text : wins
+      enhanced.wins_enhanced = text
     }
 
-    if (future_self_vision) {
-      const response = await anthropic.messages.create({
-        model: "claude-3-5-sonnet-20241022",
-        max_tokens: 1024,
-        messages: [{
-          role: "user",
-          content: `Enhance this future vision. Keep it inspiring and authentic to Sandra's voice. Don't make it too corporate or polished. Just make it flow better and be more compelling:\n\n${future_self_vision}`
-        }]
-      })
-      enhanced.future_self_vision_enhanced = response.content[0].type === 'text' ? response.content[0].text : future_self_vision
-    }
-
-    return NextResponse.json({ 
-      success: true, 
-      enhanced 
-    })
+    return NextResponse.json({ enhanced })
   } catch (error: any) {
     console.error('[Journal] Error enhancing:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
