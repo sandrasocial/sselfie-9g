@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
 import { Resend } from "resend"
 import { addOrUpdateResendContact } from "@/lib/resend/manage-contact"
-import { syncContactToLoops } from '@/lib/loops/manage-contact'
+import { syncContactToFlodesk } from '@/lib/flodesk'
 
 const resend = new Resend(process.env.RESEND_API_KEY!)
 const sql = neon(process.env.DATABASE_URL!)
@@ -142,9 +142,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // NEW: Add to Loops (dual-sync)
+    // NEW: Add to Flodesk (marketing contacts)
     try {
-      const loopsResult = await syncContactToLoops({
+      const flodeskResult = await syncContactToFlodesk({
         email,
         name,
         source: 'blueprint-subscriber',

@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
 import { Resend } from "resend"
 import { addOrUpdateResendContact } from "@/lib/resend/manage-contact"
-import { syncContactToLoops } from '@/lib/loops/manage-contact'
+import { syncContactToFlodesk } from '@/lib/flodesk'
 import { generateFreebieGuideEmail } from "@/lib/email/templates/freebie-guide-email"
 import { sendEmail } from "@/lib/email/send-email"
 
@@ -171,9 +171,9 @@ export async function POST(request: NextRequest) {
       console.error(`[v0] Failed to add to Resend audience: ${resendResult.error}`)
     }
 
-    // NEW: Add to Loops (dual-sync)
+    // NEW: Add to Flodesk (marketing contacts)
     try {
-      const loopsResult = await syncContactToLoops({
+      const flodeskResult = await syncContactToFlodesk({
         email,
         name,
         source: 'freebie-subscriber',
@@ -186,24 +186,24 @@ export async function POST(request: NextRequest) {
         }
       })
       
-      if (loopsResult.success) {
-        console.log(`[v0] ✅ Added to Loops: ${email}`)
+      if (flodeskResult.success) {
+        console.log(`[v0] ✅ Added to Flodesk: ${email}`)
         
         await sql`
           UPDATE freebie_subscribers 
-          SET loops_contact_id = ${loopsResult.contactId || email},
-              synced_to_loops = true,
-              loops_synced_at = NOW(),
+          SET flodesk_contact_id = ${flodeskResult.contactId || email},
+              synced_to_flodesk = true,
+              flodesk_synced_at = NOW(),
               updated_at = NOW()
           WHERE id = ${newSubscriber.id}
         `
       } else {
-        console.warn(`[v0] ⚠️ Loops sync failed (non-critical): ${loopsResult.error}`)
-        // Don't fail the request - Loops sync is secondary
+        console.warn(`[v0] ⚠️ Flodesk sync failed (non-critical): ${flodeskResult.error}`)
+        // Don't fail the request - Flodesk sync is secondary
       }
-    } catch (loopsError: any) {
-      console.warn(`[v0] ⚠️ Loops sync error (non-critical):`, loopsError)
-      // Don't fail the request - continue without Loops
+    } catch (flodeskError: any) {
+      console.warn(`[v0] ⚠️ Flodesk sync error (non-critical):`, flodeskError)
+      // Don't fail the request - continue without Flodesk
     }
 
     let emailSent = false

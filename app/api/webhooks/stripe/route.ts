@@ -13,7 +13,7 @@ import {
   updateContactTags as updateTags,
   addContactToSegment,
 } from "@/lib/resend/manage-contact"
-import { syncContactToLoops } from '@/lib/loops/manage-contact'
+import { syncContactToFlodesk, tagFlodeskContact } from '@/lib/flodesk'
 
 const sql = neon(process.env.DATABASE_URL!)
 

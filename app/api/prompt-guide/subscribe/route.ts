@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
 import { Resend } from "resend"
 import { addOrUpdateResendContact, addContactToSegment } from "@/lib/resend/manage-contact"
-import { syncContactToLoops } from '@/lib/loops/manage-contact'
+import { syncContactToFlodesk } from '@/lib/flodesk'
 import { cookies } from "next/headers"
 
 const resend = new Resend(process.env.RESEND_API_KEY!)
@@ -105,10 +105,10 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // NEW: Add to Loops
+      // NEW: Add to Flodesk (marketing contacts)
       if (newSubscriberId) {
         try {
-          const loopsResult = await syncContactToLoops({
+          const flodeskResult = await syncContactToFlodesk({
             email,
             name,
             source: 'prompt-guide-subscriber',
@@ -120,19 +120,19 @@ export async function POST(request: NextRequest) {
             }
           })
           
-          if (loopsResult.success) {
-            console.log(`[PromptGuide] ✅ Added to Loops: ${email}`)
+          if (flodeskResult.success) {
+            console.log(`[PromptGuide] ✅ Added to Flodesk: ${email}`)
             
             await sql`
               UPDATE freebie_subscribers 
-              SET loops_contact_id = ${loopsResult.contactId || email},
-                  synced_to_loops = true,
-                  loops_synced_at = NOW()
+              SET flodesk_contact_id = ${flodeskResult.contactId || email},
+                  synced_to_flodesk = true,
+                  flodesk_synced_at = NOW()
               WHERE id = ${newSubscriberId}
             `
           }
-        } catch (loopsError: any) {
-          console.warn(`[PromptGuide] ⚠️ Loops sync error:`, loopsError)
+        } catch (flodeskError: any) {
+          console.warn(`[PromptGuide] ⚠️ Flodesk sync error:`, flodeskError)
         }
       }
     }
