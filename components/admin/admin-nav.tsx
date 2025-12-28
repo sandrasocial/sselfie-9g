@@ -17,8 +17,8 @@ export function AdminNav() {
   ]
   
   return (
-    <nav className="border-b border-stone-200 bg-white sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+    <nav className="border-b border-stone-200 bg-white sticky top-0 z-50" suppressHydrationWarning>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6" suppressHydrationWarning>
         {/* Mobile/Desktop Header */}
         <div className="flex items-center justify-between h-14 sm:h-16">
           {/* Logo/Brand */}
