@@ -223,22 +223,21 @@ export async function POST(request: NextRequest) {
               console.error(`[v0] Failed to add paying customer to Resend: ${resendResult.error}`)
             }
 
-            // NEW: Add paying customer to Loops
+            // NEW: Add paying customer to Flodesk (marketing contacts)
             try {
-              console.log(`[v0] Adding paying customer to Loops: ${customerEmail}`)
+              console.log(`[v0] Adding paying customer to Flodesk: ${customerEmail}`)
               
               // Build tags - include beta-customer if beta segment exists
-              const loopsTags = ['customer', 'paid', productTag]
+              const flodeskTags = ['customer', 'paid', productTag]
               if (process.env.RESEND_BETA_SEGMENT_ID) {
-                loopsTags.push('beta-customer')
+                flodeskTags.push('beta-customer')
               }
               
-              const loopsResult = await syncContactToLoops({
+              const flodeskResult = await syncContactToFlodesk({
                 email: customerEmail,
                 name: firstName,
                 source: 'stripe-checkout',
-                tags: loopsTags,
-                userGroup: 'paid',
+                tags: flodeskTags,
                 customFields: {
                   status: 'customer',
                   product: productTag,
@@ -249,36 +248,36 @@ export async function POST(request: NextRequest) {
                 }
               })
               
-              if (loopsResult.success) {
-                console.log(`[v0] ✅ Added paying customer to Loops: ${customerEmail}`)
+              if (flodeskResult.success) {
+                console.log(`[v0] ✅ Added paying customer to Flodesk: ${customerEmail}`)
                 
-                // Update freebie_subscribers with Loops contact ID
+                // Update freebie_subscribers with Flodesk contact ID
                 await sql`
                   UPDATE freebie_subscribers 
-                  SET loops_contact_id = ${loopsResult.contactId || customerEmail},
-                      synced_to_loops = true,
-                      loops_synced_at = NOW(),
+                  SET flodesk_contact_id = ${flodeskResult.contactId || customerEmail},
+                      synced_to_flodesk = true,
+                      flodesk_synced_at = NOW(),
                       updated_at = NOW()
                   WHERE email = ${customerEmail}
                 `
-                console.log(`[v0] ✅ Updated freebie_subscribers with Loops contact ID`)
+                console.log(`[v0] ✅ Updated freebie_subscribers with Flodesk contact ID`)
                 
-                // Update blueprint_subscribers with Loops contact ID (if exists)
+                // Update blueprint_subscribers with Flodesk contact ID (if exists)
                 await sql`
                   UPDATE blueprint_subscribers 
-                  SET loops_contact_id = ${loopsResult.contactId || customerEmail},
-                      synced_to_loops = true,
-                      loops_synced_at = NOW(),
+                  SET flodesk_contact_id = ${flodeskResult.contactId || customerEmail},
+                      synced_to_flodesk = true,
+                      flodesk_synced_at = NOW(),
                       updated_at = NOW()
                   WHERE email = ${customerEmail}
                 `
-                console.log(`[v0] ✅ Updated blueprint_subscribers with Loops contact ID`)
+                console.log(`[v0] ✅ Updated blueprint_subscribers with Flodesk contact ID`)
               } else {
-                console.warn(`[v0] ⚠️ Loops sync failed for paying customer: ${loopsResult.error}`)
+                console.warn(`[v0] ⚠️ Flodesk sync failed for paying customer: ${flodeskResult.error}`)
               }
-            } catch (loopsError: any) {
-              console.warn(`[v0] ⚠️ Loops sync error (non-critical):`, loopsError)
-              // Don't fail webhook if Loops sync fails
+            } catch (flodeskError: any) {
+              console.warn(`[v0] ⚠️ Flodesk sync error (non-critical):`, flodeskError)
+              // Don't fail webhook if Flodesk sync fails
             }
 
             await sql`

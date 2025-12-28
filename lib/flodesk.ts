@@ -6,8 +6,11 @@
  * Authentication: Bearer token (API key)
  */
 
+import { neon } from '@neondatabase/serverless'
+
 const FLODESK_API_KEY = process.env.FLODESK_API_KEY
 const FLODESK_API_BASE = 'https://api.flodesk.com/v1'
+const sql = neon(process.env.DATABASE_URL!)
 
 export interface FlodeskContact {
   email: string
@@ -226,7 +229,7 @@ export async function tagFlodeskContact(email: string, tags: string[]): Promise<
     }
 
     // Merge tags (avoid duplicates)
-    const mergedTags = [...new Set([...existingTags, ...tags])]
+    const mergedTags = Array.from(new Set([...existingTags, ...tags]))
 
     // Update contact with merged tags
     const response = await fetch(`${FLODESK_API_BASE}/subscribers/${encodeURIComponent(email.toLowerCase().trim())}`, {
