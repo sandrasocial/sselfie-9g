@@ -1628,6 +1628,352 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
 
     // compose_loops_email tool removed - user sends emails via Flodesk manually
 
+    // ============================================================================
+    // EMAIL STATUS MANAGEMENT TOOLS - Flodesk Workflow
+    // ============================================================================
+
+    const markEmailSentTool = {
+      name: "mark_email_sent",
+      description: `Mark an email draft as sent in Flodesk. Use this when Sandra confirms she has sent an email.
+      
+Examples:
+- "I sent the beta customer email" → mark_email_sent with that email's subject
+- "I sent the welcome email to new members" → mark_email_sent with that subject
+
+This updates the email status from 'draft' to 'sent_flodesk' and records when it was sent.`,
+      
+      input_schema: {
+        type: "object",
+        properties: {
+          emailSubject: {
+            type: "string",
+            description: "Subject line of the email that was sent"
+          },
+          flodeskCampaignName: {
+            type: "string",
+            description: "Campaign name in Flodesk (optional, if Sandra provides it)"
+          },
+          sentDate: {
+            type: "string",
+            description: "Date sent in ISO format (optional, defaults to now)"
+          }
+        },
+        required: ["emailSubject"]
+      },
+      
+      execute: async ({
+        emailSubject,
+        flodeskCampaignName,
+        sentDate
+      }: {
+        emailSubject: string
+        flodeskCampaignName?: string
+        sentDate?: string
+      }) => {
+        try {
+          console.log('[Alex] 📧 Marking email as sent:', { emailSubject, flodeskCampaignName })
+          
+          // Find email in database by subject (look in email_preview_data JSON)
+          const emails = await sql`
+            SELECT id, chat_id, email_preview_data
+            FROM admin_agent_messages
+            WHERE email_preview_data IS NOT NULL
+              AND email_preview_data->>'subjectLine' = ${emailSubject}
+              AND (email_preview_data->>'status' = 'draft' OR email_preview_data->>'status' IS NULL)
+            ORDER BY created_at DESC
+            LIMIT 1
+          `
+          
+          if (emails.length === 0) {
+            // Try matching by subject (without Line suffix)
+            const emailsAlt = await sql`
+              SELECT id, chat_id, email_preview_data
+              FROM admin_agent_messages
+              WHERE email_preview_data IS NOT NULL
+                AND (email_preview_data->>'subject' = ${emailSubject} OR email_preview_data->>'subjectLine' = ${emailSubject})
+                AND (email_preview_data->>'status' = 'draft' OR email_preview_data->>'status' IS NULL)
+              ORDER BY created_at DESC
+              LIMIT 1
+            `
+            
+            if (emailsAlt.length === 0) {
+              return {
+                success: false,
+                error: `No draft email found with subject: "${emailSubject}"`
+              }
+            }
+            
+            // Update status to sent
+            const currentData = emailsAlt[0].email_preview_data as any
+            const updatedData = {
+              ...currentData,
+              status: 'sent_flodesk',
+              sentDate: sentDate || new Date().toISOString(),
+              flodeskCampaignName: flodeskCampaignName || currentData.flodeskCampaignName || null
+            }
+            
+            await sql`
+              UPDATE admin_agent_messages
+              SET email_preview_data = ${JSON.stringify(updatedData)}::jsonb
+              WHERE id = ${emailsAlt[0].id}
+            `
+            
+            return {
+              success: true,
+              message: `✅ Marked "${emailSubject}" as sent in Flodesk`,
+              sentDate: updatedData.sentDate
+            }
+          }
+          
+          // Update status to sent
+          const currentData = emails[0].email_preview_data as any
+          const updatedData = {
+            ...currentData,
+            status: 'sent_flodesk',
+            sentDate: sentDate || new Date().toISOString(),
+            flodeskCampaignName: flodeskCampaignName || currentData.flodeskCampaignName || null
+          }
+          
+          await sql`
+            UPDATE admin_agent_messages
+            SET email_preview_data = ${JSON.stringify(updatedData)}::jsonb
+            WHERE id = ${emails[0].id}
+          `
+          
+          console.log('[Alex] ✅ Email marked as sent:', emailSubject)
+          
+          return {
+            success: true,
+            message: `✅ Marked "${emailSubject}" as sent in Flodesk`,
+            sentDate: updatedData.sentDate,
+            flodeskCampaignName: updatedData.flodeskCampaignName
+          }
+        } catch (error: any) {
+          console.error('[Alex] ❌ Error marking email as sent:', error)
+          return {
+            success: false,
+            error: error.message || 'Failed to mark email as sent'
+          }
+        }
+      }
+    }
+
+    const recordEmailAnalyticsTool = {
+      name: "record_email_analytics",
+      description: `Record analytics for an email sent in Flodesk. Use this when Sandra reports performance metrics from Flodesk.
+      
+Examples:
+- "The beta customer email got 24 opens out of 50 sent" → record_email_analytics with sent=50, opened=24
+- "The welcome email had 150 sent, 75 opens, 20 clicks" → record_email_analytics with all metrics
+
+This updates the analytics in the email_preview_data.`,
+      
+      input_schema: {
+        type: "object",
+        properties: {
+          emailSubject: {
+            type: "string",
+            description: "Subject line of the email"
+          },
+          sent: {
+            type: "number",
+            description: "Number of emails sent"
+          },
+          opened: {
+            type: "number",
+            description: "Number of opens (default: 0)"
+          },
+          clicked: {
+            type: "number",
+            description: "Number of clicks (default: 0)"
+          }
+        },
+        required: ["emailSubject", "sent"]
+      },
+      
+      execute: async ({
+        emailSubject,
+        sent,
+        opened = 0,
+        clicked = 0
+      }: {
+        emailSubject: string
+        sent: number
+        opened?: number
+        clicked?: number
+      }) => {
+        try {
+          console.log('[Alex] 📊 Recording email analytics:', { emailSubject, sent, opened, clicked })
+          
+          // Calculate rates
+          const openRate = sent > 0 ? parseFloat(((opened / sent) * 100).toFixed(1)) : 0
+          const clickRate = sent > 0 ? parseFloat(((clicked / sent) * 100).toFixed(1)) : 0
+          
+          // Find email by subject
+          const emails = await sql`
+            SELECT id, email_preview_data
+            FROM admin_agent_messages
+            WHERE email_preview_data IS NOT NULL
+              AND (email_preview_data->>'subject' = ${emailSubject} OR email_preview_data->>'subjectLine' = ${emailSubject})
+            ORDER BY created_at DESC
+            LIMIT 1
+          `
+          
+          if (emails.length === 0) {
+            return {
+              success: false,
+              error: `Email not found with subject: "${emailSubject}"`
+            }
+          }
+          
+          // Update analytics in email_preview_data
+          const currentData = emails[0].email_preview_data as any
+          const updatedData = {
+            ...currentData,
+            analytics: {
+              sent,
+              opened,
+              clicked,
+              openRate,
+              clickRate,
+              recordedAt: new Date().toISOString()
+            }
+          }
+          
+          await sql`
+            UPDATE admin_agent_messages
+            SET email_preview_data = ${JSON.stringify(updatedData)}::jsonb
+            WHERE id = ${emails[0].id}
+          `
+          
+          console.log('[Alex] ✅ Analytics recorded:', { emailSubject, openRate, clickRate })
+          
+          return {
+            success: true,
+            message: `✅ Analytics recorded for "${emailSubject}"`,
+            analytics: {
+              sent,
+              opened,
+              clicked,
+              openRate: `${openRate}%`,
+              clickRate: `${clickRate}%`
+            }
+          }
+        } catch (error: any) {
+          console.error('[Alex] ❌ Error recording analytics:', error)
+          return {
+            success: false,
+            error: error.message || 'Failed to record analytics'
+          }
+        }
+      }
+    }
+
+    const listEmailDraftsTool = {
+      name: "list_email_drafts",
+      description: `List all email drafts and their status. Use this when Sandra wants to see what emails have been drafted, sent, or archived.
+      
+Examples:
+- "Show me all draft emails" → list_email_drafts with status='draft'
+- "What emails have I sent?" → list_email_drafts with status='sent_flodesk'
+- "List all my emails" → list_email_drafts with status='all'
+
+Returns emails with their subject, status, sent date, campaign name, and analytics.`,
+      
+      input_schema: {
+        type: "object",
+        properties: {
+          status: {
+            type: "string",
+            enum: ["draft", "sent_flodesk", "archived", "all"],
+            description: "Filter by status (default: all)"
+          },
+          limit: {
+            type: "number",
+            description: "Number of emails to return (default: 10, max: 50)"
+          }
+        },
+        required: []
+      },
+      
+      execute: async ({
+        status = "all",
+        limit = 10
+      }: {
+        status?: "draft" | "sent_flodesk" | "archived" | "all"
+        limit?: number
+      }) => {
+        try {
+          const safeLimit = Math.min(Math.max(limit, 1), 50) // Clamp between 1 and 50
+          console.log('[Alex] 📋 Listing email drafts:', { status, limit: safeLimit })
+          
+          let emails: any[]
+          
+          if (status === "all") {
+            emails = await sql`
+              SELECT 
+                id,
+                email_preview_data->>'subjectLine' as subject,
+                email_preview_data->>'subject' as subject_alt,
+                email_preview_data->>'status' as status,
+                email_preview_data->>'sentDate' as sent_date,
+                email_preview_data->>'flodeskCampaignName' as campaign_name,
+                email_preview_data->'analytics' as analytics,
+                created_at
+              FROM admin_agent_messages
+              WHERE email_preview_data IS NOT NULL
+                AND (email_preview_data->>'subjectLine' IS NOT NULL OR email_preview_data->>'subject' IS NOT NULL)
+              ORDER BY created_at DESC
+              LIMIT ${safeLimit}
+            `
+          } else {
+            emails = await sql`
+              SELECT 
+                id,
+                email_preview_data->>'subjectLine' as subject,
+                email_preview_data->>'subject' as subject_alt,
+                email_preview_data->>'status' as status,
+                email_preview_data->>'sentDate' as sent_date,
+                email_preview_data->>'flodeskCampaignName' as campaign_name,
+                email_preview_data->'analytics' as analytics,
+                created_at
+              FROM admin_agent_messages
+              WHERE email_preview_data IS NOT NULL
+                AND email_preview_data->>'status' = ${status}
+                AND (email_preview_data->>'subjectLine' IS NOT NULL OR email_preview_data->>'subject' IS NOT NULL)
+              ORDER BY created_at DESC
+              LIMIT ${safeLimit}
+            `
+          }
+          
+          const formattedEmails = emails.map(e => ({
+            subject: e.subject || e.subject_alt,
+            status: e.status || 'draft',
+            sentDate: e.sent_date,
+            campaignName: e.campaign_name,
+            analytics: e.analytics,
+            createdAt: e.created_at
+          }))
+          
+          console.log('[Alex] ✅ Found', formattedEmails.length, 'emails')
+          
+          return {
+            success: true,
+            count: formattedEmails.length,
+            status: status,
+            emails: formattedEmails
+          }
+        } catch (error: any) {
+          console.error('[Alex] ❌ Error listing email drafts:', error)
+          return {
+            success: false,
+            error: error.message || 'Failed to list email drafts',
+            emails: []
+          }
+        }
+      }
+    }
+
     const createLoopsSequenceTool = {
       name: "create_loops_sequence",
       description: `Create automated email sequences in Loops (drip campaigns, nurture flows).
