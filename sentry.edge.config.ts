@@ -5,7 +5,10 @@
 import * as Sentry from "@sentry/nextjs";
 
 Sentry.init({
-  dsn: process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN,
+  dsn: process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN || "https://480992b7a8c1a943853c3454f6447a97@o4510612788346880.ingest.us.sentry.io/4510612838744064",
+  
+  // Enable logging to Sentry
+  enableLogs: true,
   
   // Adjust this value in production, or use tracesSampler for greater control
   tracesSampleRate: 1,
