@@ -24,6 +24,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
+  // Skip middleware for Sentry monitoring tunnel route
+  if (request.nextUrl.pathname === "/monitoring") {
+    return NextResponse.next()
+  }
+
   const response = await updateSession(request)
 
   const referer = request.headers.get("referer")
@@ -37,7 +42,7 @@ export async function middleware(request: NextRequest) {
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' blob: data: https:",
     "font-src 'self' data:",
-    "connect-src 'self' https://api.v0.app https://va.vercel-scripts.com https://vercel.live https://*.pusher.com wss://*.pusher.com https://blob.vercel-storage.com https://*.blob.vercel-storage.com https://ai-gateway.vercel.sh https://*.vercel.sh https://gateway.ai.cloudflare.com https://api.anthropic.com https://api.openai.com https://*.vercel-ai.com https://*.vercel.app https://replicate.com https://*.replicate.com https://replicate.delivery https://api.replicate.com https://*.anthropic.com https://*.supabase.co https://api.stripe.com https://js.stripe.com https://*.stripe.com https://*.upstash.io https://*.neon.tech",
+    "connect-src 'self' https://api.v0.app https://va.vercel-scripts.com https://vercel.live https://*.pusher.com wss://*.pusher.com https://blob.vercel-storage.com https://*.blob.vercel-storage.com https://ai-gateway.vercel.sh https://*.vercel.sh https://gateway.ai.cloudflare.com https://api.anthropic.com https://api.openai.com https://*.vercel-ai.com https://*.vercel.app https://replicate.com https://*.replicate.com https://replicate.delivery https://api.replicate.com https://*.anthropic.com https://*.supabase.co https://api.stripe.com https://js.stripe.com https://*.stripe.com https://*.upstash.io https://*.neon.tech https://*.sentry.io https://o4510612788346880.ingest.us.sentry.io",
     "frame-src 'self' https://vercel.live https://js.stripe.com https://*.stripe.com https://player.vimeo.com https://*.vimeo.com https://www.youtube.com https://*.youtube.com",
     "media-src 'self' blob: data: https://blob.vercel-storage.com https://*.blob.vercel-storage.com https://replicate.delivery https:",
   ].join("; ")
