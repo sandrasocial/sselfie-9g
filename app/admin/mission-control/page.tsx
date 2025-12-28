@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { AdminNav } from '@/components/admin/admin-nav'
 
 interface Task {
   id: number
@@ -140,6 +141,7 @@ export default function MissionControlPage() {
   
   return (
     <div className="min-h-screen bg-stone-50">
+      <AdminNav />
       <div className="max-w-7xl mx-auto p-8">
         {/* Header */}
         <div className="mb-8">
