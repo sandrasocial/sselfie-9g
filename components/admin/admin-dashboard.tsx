@@ -232,11 +232,11 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-stone-950/80 via-stone-950/20 to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-8">
-                  <h3 className="font-['Times_New_Roman'] text-3xl font-extralight tracking-[0.3em] uppercase text-white mb-2">
+                <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 lg:p-8">
+                  <h3 className="font-['Times_New_Roman'] text-xl sm:text-2xl lg:text-3xl font-extralight tracking-[0.2em] sm:tracking-[0.3em] uppercase text-white mb-1 sm:mb-2">
                     MISSION CONTROL
                   </h3>
-                  <p className="text-xs text-white/80 tracking-wide">
+                  <p className="text-[10px] sm:text-xs text-white/80 tracking-wide">
                     AI team intelligence
                   </p>
                 </div>
@@ -252,11 +252,11 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-stone-950/80 via-stone-950/20 to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-8">
-                  <h3 className="font-['Times_New_Roman'] text-3xl font-extralight tracking-[0.3em] uppercase text-white mb-2">
+                <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 lg:p-8">
+                  <h3 className="font-['Times_New_Roman'] text-xl sm:text-2xl lg:text-3xl font-extralight tracking-[0.2em] sm:tracking-[0.3em] uppercase text-white mb-1 sm:mb-2">
                     JOURNAL
                   </h3>
-                  <p className="text-xs text-white/80 tracking-wide">
+                  <p className="text-[10px] sm:text-xs text-white/80 tracking-wide">
                     Weekly updates & stories
                   </p>
                 </div>
@@ -272,11 +272,11 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-stone-950/80 via-stone-950/20 to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-8">
-                  <h3 className="font-['Times_New_Roman'] text-3xl font-extralight tracking-[0.3em] uppercase text-white mb-2">
+                <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 lg:p-8">
+                  <h3 className="font-['Times_New_Roman'] text-xl sm:text-2xl lg:text-3xl font-extralight tracking-[0.2em] sm:tracking-[0.3em] uppercase text-white mb-1 sm:mb-2">
                     MAYA STUDIO
                   </h3>
-                  <p className="text-xs text-white/80 tracking-wide">
+                  <p className="text-[10px] sm:text-xs text-white/80 tracking-wide">
                     Create brand photos
                   </p>
                 </div>
@@ -296,11 +296,11 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
                   }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-stone-950/80 via-stone-950/20 to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-8">
-                  <h3 className="font-['Times_New_Roman'] text-3xl font-extralight tracking-[0.3em] uppercase text-white mb-2">
+                <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 lg:p-8">
+                  <h3 className="font-['Times_New_Roman'] text-xl sm:text-2xl lg:text-3xl font-extralight tracking-[0.2em] sm:tracking-[0.3em] uppercase text-white mb-1 sm:mb-2">
                     CREDITS
                   </h3>
-                  <p className="text-xs text-white/80 tracking-wide">
+                  <p className="text-[10px] sm:text-xs text-white/80 tracking-wide">
                     Manage user credits
                   </p>
                 </div>
@@ -316,11 +316,11 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-stone-950/80 via-stone-950/20 to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-8">
-                  <h3 className="font-['Times_New_Roman'] text-3xl font-extralight tracking-[0.3em] uppercase text-white mb-2">
+                <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 lg:p-8">
+                  <h3 className="font-['Times_New_Roman'] text-xl sm:text-2xl lg:text-3xl font-extralight tracking-[0.2em] sm:tracking-[0.3em] uppercase text-white mb-1 sm:mb-2">
                     ANALYTICS
                   </h3>
-                  <p className="text-xs text-white/80 tracking-wide">
+                  <p className="text-[10px] sm:text-xs text-white/80 tracking-wide">
                     Revenue & metrics
                   </p>
                 </div>
