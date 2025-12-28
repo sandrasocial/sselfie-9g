@@ -147,7 +147,7 @@ export default function MissionControlPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-4xl font-bold mb-2">Mission Control 🚀</h1>
+              <h1 className="text-4xl font-bold mb-2">MISSION CONTROL</h1>
               <p className="text-gray-600">Your AI team's daily intelligence report</p>
             </div>
             <Button onClick={runDailyChecks} size="lg" disabled={loading}>
@@ -188,7 +188,7 @@ export default function MissionControlPage() {
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <h2 className="text-2xl font-bold">
-                      {getAgentEmoji(check.agent)} {check.agent}
+                      {check.agent}
                     </h2>
                     <Badge variant={getStatusVariant(check.status)}>
                       {check.status}
@@ -243,7 +243,7 @@ export default function MissionControlPage() {
                                 onClick={() => copyCursorPrompt(issue.cursor_prompt!)}
                                 variant="outline"
                               >
-                                📋 Copy Cursor Prompt
+                                Copy Cursor Prompt
                               </Button>
                             )}
                             {issue.action_type === 'alex' && (
@@ -252,7 +252,7 @@ export default function MissionControlPage() {
                                 onClick={() => window.location.href = '/admin/alex'}
                                 variant="outline"
                               >
-                                🤖 Ask Alex
+                                Ask Alex
                               </Button>
                             )}
                             {issue.action_type === 'manual' && (
@@ -264,7 +264,7 @@ export default function MissionControlPage() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-500 text-center py-4">✅ All clear! No issues found.</p>
+                  <p className="text-gray-500 text-center py-4">All clear! No issues found.</p>
                 )}
               </Card>
             ))}
@@ -275,17 +275,6 @@ export default function MissionControlPage() {
   )
 }
 
-function getAgentEmoji(agent: string): string {
-  const emojis: Record<string, string> = {
-    'Revenue Monitor': '💰',
-    'Customer Success': '💬',
-    'Email Strategy': '📧',
-    'User Journey': '👤',
-    'Code Health': '🔧',
-    'Landing Page': '🌐'
-  }
-  return emojis[agent] || '🤖'
-}
 
 function getStatusVariant(status: string): "default" | "secondary" | "destructive" | "outline" {
   if (status === 'healthy') return 'default'
