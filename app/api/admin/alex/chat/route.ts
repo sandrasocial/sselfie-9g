@@ -1974,6 +1974,331 @@ Returns emails with their subject, status, sent date, campaign name, and analyti
       }
     }
 
+    // ============================================================================
+    // EMAIL SEQUENCE PLANNING & TIMING STRATEGY TOOLS
+    // ============================================================================
+
+    const createEmailSequencePlanTool = {
+      name: "create_email_sequence_plan",
+      description: `Create a strategic plan for an email sequence with timing recommendations. Use this when Sandra wants to plan a multi-email campaign but needs guidance on timing and sequence structure.
+
+Examples:
+- "Plan a 3-email re-engagement sequence for beta customers"
+- "Create a 5-email onboarding sequence for new Studio members"
+- "Plan an upsell sequence to convert free users"
+
+This tool provides:
+- Recommended days between each email
+- Suggested topics for each email based on the goal
+- Strategic timing that follows email marketing best practices`,
+      
+      input_schema: {
+        type: "object",
+        properties: {
+          sequenceName: {
+            type: "string",
+            description: "Name of the sequence (e.g., 'Beta Customer Re-engagement', 'New Studio Member Onboarding')"
+          },
+          targetAudience: {
+            type: "string",
+            description: "Who this sequence is for (e.g., 'beta customers', 'new Studio members', 'free users')"
+          },
+          emailCount: {
+            type: "number",
+            description: "How many emails in the sequence (typically 3-5)"
+          },
+          sequenceGoal: {
+            type: "string",
+            description: "What we're trying to achieve (e.g., 're-engage inactive users', 'onboard new members', 'convert free to paid')"
+          }
+        },
+        required: ["sequenceName", "targetAudience", "emailCount", "sequenceGoal"]
+      },
+      
+      execute: async ({
+        sequenceName,
+        targetAudience,
+        emailCount,
+        sequenceGoal
+      }: {
+        sequenceName: string
+        targetAudience: string
+        emailCount: number
+        sequenceGoal: string
+      }) => {
+        try {
+          console.log('[Alex] 📅 Creating email sequence plan:', { sequenceName, emailCount, sequenceGoal })
+          
+          // Strategic timing templates based on email marketing best practices
+          const timingTemplates: { [key: string]: number[] } = {
+            're-engagement': [0, 3, 7, 14],  // Days between emails - start immediate, then gentle reminders
+            'nurture': [0, 2, 5, 10, 21],     // Regular nurturing - more frequent early, then spacing out
+            'onboarding': [0, 1, 3, 7, 14],   // Welcome series - very frequent at first, then weekly
+            'upsell': [0, 4, 10]              // Conversion sequence - give time to consider, then follow up
+          }
+          
+          // Determine sequence type based on goal
+          const goalLower = sequenceGoal.toLowerCase()
+          let timing = timingTemplates['nurture']  // Default to nurture
+          let sequenceType = 'nurture'
+          
+          if (goalLower.includes('re-engage') || goalLower.includes('reactivate') || goalLower.includes('win back')) {
+            timing = timingTemplates['re-engagement']
+            sequenceType = 're-engagement'
+          } else if (goalLower.includes('onboard') || goalLower.includes('welcome') || goalLower.includes('new member')) {
+            timing = timingTemplates['onboarding']
+            sequenceType = 'onboarding'
+          } else if (goalLower.includes('upsell') || goalLower.includes('convert') || goalLower.includes('upgrade')) {
+            timing = timingTemplates['upsell']
+            sequenceType = 'upsell'
+          }
+          
+          // Generate email plan with suggested topics
+          const emails: any[] = []
+          for (let i = 0; i < emailCount; i++) {
+            const daysSinceStart = timing[i] !== undefined 
+              ? timing[i] 
+              : (timing[timing.length - 1] + (i - timing.length + 1) * 7) // Extend pattern by 7 days if more emails
+            
+            // Generate suggested topic based on sequence type and position
+            let suggestedTopic = ''
+            if (sequenceType === 'onboarding') {
+              const topics = [
+                'Welcome and getting started',
+                'Key features walkthrough',
+                'Tips for success',
+                'Advanced features',
+                'Community and support'
+              ]
+              suggestedTopic = topics[i] || `Onboarding Email ${i + 1}`
+            } else if (sequenceType === 're-engagement') {
+              const topics = [
+                'We miss you + what\'s new',
+                'Success stories from similar customers',
+                'Special offer or incentive',
+                'Final check-in'
+              ]
+              suggestedTopic = topics[i] || `Re-engagement Email ${i + 1}`
+            } else if (sequenceType === 'upsell') {
+              const topics = [
+                'Introduce premium benefits',
+                'Social proof and testimonials',
+                'Limited time offer'
+              ]
+              suggestedTopic = topics[i] || `Upsell Email ${i + 1}`
+            } else {
+              // Nurture sequence
+              const topics = [
+                'Educational content related to goal',
+                'Value-add resources',
+                'Case studies',
+                'Community highlights',
+                'Expert tips'
+              ]
+              suggestedTopic = topics[i] || `Nurture Email ${i + 1}`
+            }
+            
+            emails.push({
+              emailNumber: i + 1,
+              daysSinceStart: daysSinceStart,
+              suggestedTopic: suggestedTopic,
+              status: 'not_created'
+            })
+          }
+          
+          const plan = {
+            sequenceName,
+            targetAudience,
+            goal: sequenceGoal,
+            sequenceType,
+            emails
+          }
+          
+          // Build next steps message
+          const timingBreakdown = emails.map((e, idx) => {
+            if (idx === 0) {
+              return `Email ${e.emailNumber}: Send immediately (Day ${e.daysSinceStart})\n   Topic: ${e.suggestedTopic}`
+            } else {
+              const daysBetween = e.daysSinceStart - emails[idx - 1].daysSinceStart
+              return `Email ${e.emailNumber}: Send ${daysBetween} days after Email ${idx} (Day ${e.daysSinceStart})\n   Topic: ${e.suggestedTopic}`
+            }
+          }).join('\n\n')
+          
+          const nextSteps = `📧 EMAIL SEQUENCE PLAN: ${sequenceName}
+
+🎯 Target Audience: ${targetAudience}
+🎯 Goal: ${sequenceGoal}
+📊 Sequence Type: ${sequenceType}
+📨 Total Emails: ${emailCount}
+
+⏰ RECOMMENDED SCHEDULE:
+
+${timingBreakdown}
+
+📌 NEXT STEPS:
+
+1. Create Email 1 content using compose_email tool
+2. Set up sequence in Flodesk with automation delays:
+   ${emails.slice(1).map((e, idx) => `   - Email ${e.emailNumber}: ${e.daysSinceStart - emails[idx].daysSinceStart} days after Email ${idx + 1}`).join('\n   ')}
+3. Build each email in Flodesk following the topic suggestions above
+4. Test the sequence before activating
+
+💡 TIP: Use recommend_send_timing tool to get optimal send times for each email based on day of week.`
+          
+          console.log('[Alex] ✅ Created sequence plan:', { sequenceName, emailCount: emails.length })
+
+          return {
+            success: true,
+            plan,
+            message: nextSteps
+          }
+        } catch (error: any) {
+          console.error('[Alex] ❌ Error creating sequence plan:', error)
+          return {
+            success: false,
+            error: error.message || 'Failed to create sequence plan'
+          }
+        }
+      }
+    }
+
+    const recommendSendTimingTool = {
+      name: "recommend_send_timing",
+      description: `Recommend optimal send time for an email based on audience and content type. Use this when Sandra wants to know the best time to send an email for maximum engagement.
+
+Best practices are tailored for B2B women entrepreneurs who typically:
+- Check email early morning (6-8 AM)
+- Are most engaged mid-week (Tue-Thu)
+- Prefer personal/nurture emails early, business emails mid-day
+
+Examples:
+- "When should I send this announcement email?"
+- "What's the best time to send nurture emails to Studio members?"
+- "When do promotional emails perform best?"`,
+      
+      input_schema: {
+        type: "object",
+        properties: {
+          emailType: {
+            type: "string",
+            enum: ["announcement", "nurture", "promotional", "educational", "engagement"],
+            description: "Type of email being sent"
+          },
+          targetAudience: {
+            type: "string",
+            description: "Who will receive this email (e.g., 'Studio members', 'beta customers', 'all subscribers')"
+          },
+          dayOfWeek: {
+            type: "string",
+            enum: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday", "any"],
+            description: "Preferred day of week (optional, defaults to best performing days for this email type)"
+          }
+        },
+        required: ["emailType", "targetAudience"]
+      },
+      
+      execute: async ({
+        emailType,
+        targetAudience,
+        dayOfWeek = "any"
+      }: {
+        emailType: "announcement" | "nurture" | "promotional" | "educational" | "engagement"
+        targetAudience: string
+        dayOfWeek?: string
+      }) => {
+        try {
+          console.log('[Alex] ⏰ Recommending send timing:', { emailType, targetAudience, dayOfWeek })
+          
+          // Best practices for B2B women entrepreneurs based on email marketing data
+          const recommendations: { [key: string]: { bestDays: string[], bestTime: string, reason: string } } = {
+            announcement: {
+              bestDays: ["tuesday", "wednesday", "thursday"],
+              bestTime: "9:00 AM - 10:00 AM EST",
+              reason: "Catching people at start of workday when checking email. Mid-week has highest engagement."
+            },
+            nurture: {
+              bestDays: ["monday", "thursday"],
+              bestTime: "7:00 AM - 8:00 AM EST",
+              reason: "Personal/nurture emails perform better early morning before work rush. Monday for fresh start, Thursday for end-of-week engagement."
+            },
+            promotional: {
+              bestDays: ["tuesday", "wednesday"],
+              bestTime: "10:00 AM - 11:00 AM EST",
+              reason: "Mid-morning when people are settled and ready to engage with offers. Avoid Monday (too busy) and Friday (weekend mindset)."
+            },
+            educational: {
+              bestDays: ["tuesday", "thursday"],
+              bestTime: "2:00 PM - 3:00 PM EST",
+              reason: "Afternoon when people have time to read longer content. Tuesday/Thursday have higher open rates than Monday/Friday."
+            },
+            engagement: {
+              bestDays: ["wednesday", "friday"],
+              bestTime: "6:00 AM - 7:00 AM EST",
+              reason: "Early morning for high open rates with entrepreneurs who check email first thing. Wednesday for mid-week boost, Friday for weekend engagement."
+            }
+          }
+          
+          const rec = recommendations[emailType] || recommendations.nurture
+          
+          // If specific day requested, validate and adjust if needed
+          let recommendedDays = rec.bestDays
+          if (dayOfWeek !== "any" && rec.bestDays.includes(dayOfWeek)) {
+            recommendedDays = [dayOfWeek, ...rec.bestDays.filter(d => d !== dayOfWeek)]
+          } else if (dayOfWeek !== "any") {
+            // Requested day not in best days, but include it as first option with note
+            recommendedDays = [dayOfWeek, ...rec.bestDays]
+          }
+          
+          const recommendation = {
+            emailType,
+            targetAudience,
+            bestDays: recommendedDays,
+            bestTime: rec.bestTime,
+            reason: rec.reason,
+            alternativeDays: dayOfWeek !== "any" && !rec.bestDays.includes(dayOfWeek) 
+              ? `Note: ${dayOfWeek} isn't optimal for ${emailType} emails, but ${rec.bestDays[0]} or ${rec.bestDays[1]} would perform better.`
+              : null
+          }
+          
+          const message = `🕐 SEND TIME RECOMMENDATION
+
+Email Type: ${emailType}
+Target Audience: ${targetAudience}
+
+📅 BEST DAYS: ${recommendedDays.join(', ').toUpperCase()}
+⏰ BEST TIME: ${rec.bestTime}
+
+💡 WHY: ${rec.reason}
+${recommendation.alternativeDays ? `\n⚠️ ${recommendation.alternativeDays}` : ''}
+
+📋 FLODESK SETUP INSTRUCTIONS:
+
+1. Go to your campaign in Flodesk
+2. Click "Schedule" or "Send Time"
+3. Choose one of these days: ${recommendedDays.slice(0, 2).join(' or ')}
+4. Set time to: ${rec.bestTime.split(' - ')[0]} (or within the ${rec.bestTime} window)
+5. Confirm timezone is set to EST/EDT (Eastern Time)
+6. Review and schedule
+
+💡 PRO TIP: If sending to a global audience, use 9 AM EST as it hits both US coasts at good times.`
+          
+          console.log('[Alex] ✅ Recommended timing:', { emailType, bestDays: recommendedDays })
+          
+          return {
+            success: true,
+            recommendation,
+            message
+          }
+        } catch (error: any) {
+          console.error('[Alex] ❌ Error recommending send timing:', error)
+          return {
+            success: false,
+            error: error.message || 'Failed to recommend send timing'
+          }
+        }
+      }
+    }
+
     const createLoopsSequenceTool = {
       name: "create_loops_sequence",
       description: `Create automated email sequences in Loops (drip campaigns, nurture flows).
@@ -6604,6 +6929,10 @@ Keep it practical and data-driven.`
       mark_email_sent: markEmailSentTool,
       record_email_analytics: recordEmailAnalyticsTool,
       list_email_drafts: listEmailDraftsTool,
+      
+      // EMAIL SEQUENCE PLANNING & TIMING STRATEGY
+      create_email_sequence_plan: createEmailSequencePlanTool,
+      recommend_send_timing: recommendSendTimingTool,
       
       // LOOPS (Contact management only - no campaign creation)
       create_loops_sequence: createLoopsSequenceTool, // NEW
