@@ -21,11 +21,12 @@ async function backfillFlodeskContacts() {
   
   try {
     // Get all users not yet synced to Flodesk
+    // Note: Using COALESCE to handle cases where columns might not exist or be NULL
     const users = await sql`
       SELECT 
         id,
         email,
-        name,
+        COALESCE(name, display_name) as name,
         plan,
         created_at
       FROM users
