@@ -178,16 +178,16 @@ export default function WeeklyJournalPage() {
             Alex will use this to create authentic content in your voice.
           </p>
           {saving && (
-            <p className="text-sm text-gray-500 mt-2">💾 Auto-saving...</p>
+            <p className="text-sm text-gray-500 mt-2">Auto-saving...</p>
           )}
           {published && (
-            <p className="text-sm text-green-600 mt-2">✅ Published to Alex's knowledge!</p>
+            <p className="text-sm text-green-600 mt-2">Published to Alex's knowledge!</p>
           )}
         </div>
         
         {/* Product Updates */}
         <Card className="p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-3">🚀 What I Built This Week</h2>
+          <h2 className="text-xl font-semibold mb-3 tracking-[0.2em] uppercase">WHAT I BUILT THIS WEEK</h2>
           <p className="text-sm text-gray-600 mb-3">
             Quick notes or bullets about features, updates, improvements
           </p>
@@ -200,7 +200,7 @@ export default function WeeklyJournalPage() {
           />
           {enhanced?.features_built_enhanced && (
             <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-              <p className="text-sm font-semibold mb-2">✨ AI Enhanced:</p>
+              <p className="text-sm font-semibold mb-2">AI Enhanced:</p>
               <p className="text-sm whitespace-pre-wrap">{enhanced.features_built_enhanced}</p>
             </div>
           )}
@@ -208,7 +208,7 @@ export default function WeeklyJournalPage() {
         
         {/* Personal Story */}
         <Card className="p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-3">💫 My Story This Week</h2>
+          <h2 className="text-xl font-semibold mb-3 tracking-[0.2em] uppercase">MY STORY THIS WEEK</h2>
           <p className="text-sm text-gray-600 mb-3">
             What happened? Challenges? Breakthroughs? Be real and raw.
           </p>
@@ -221,7 +221,7 @@ export default function WeeklyJournalPage() {
           />
           {enhanced?.personal_story_enhanced && (
             <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-              <p className="text-sm font-semibold mb-2">✨ AI Enhanced:</p>
+              <p className="text-sm font-semibold mb-2">AI Enhanced:</p>
               <p className="text-sm whitespace-pre-wrap">{enhanced.personal_story_enhanced}</p>
             </div>
           )}
@@ -229,7 +229,7 @@ export default function WeeklyJournalPage() {
         
         {/* Struggles */}
         <Card className="p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-3">😓 This Week's Struggles</h2>
+          <h2 className="text-xl font-semibold mb-3 tracking-[0.2em] uppercase">THIS WEEK'S STRUGGLES</h2>
           <Textarea
             value={journal.struggles}
             onChange={(e) => setJournal({...journal, struggles: e.target.value})}
@@ -238,7 +238,7 @@ export default function WeeklyJournalPage() {
           />
           {enhanced?.struggles_enhanced && (
             <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-              <p className="text-sm font-semibold mb-2">✨ AI Enhanced:</p>
+              <p className="text-sm font-semibold mb-2">AI Enhanced:</p>
               <p className="text-sm whitespace-pre-wrap">{enhanced.struggles_enhanced}</p>
             </div>
           )}
@@ -246,7 +246,7 @@ export default function WeeklyJournalPage() {
         
         {/* Wins */}
         <Card className="p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-3">🎉 This Week's Wins</h2>
+          <h2 className="text-xl font-semibold mb-3 tracking-[0.2em] uppercase">THIS WEEK'S WINS</h2>
           <Textarea
             value={journal.wins}
             onChange={(e) => setJournal({...journal, wins: e.target.value})}
@@ -255,7 +255,7 @@ export default function WeeklyJournalPage() {
           />
           {enhanced?.wins_enhanced && (
             <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-              <p className="text-sm font-semibold mb-2">✨ AI Enhanced:</p>
+              <p className="text-sm font-semibold mb-2">AI Enhanced:</p>
               <p className="text-sm whitespace-pre-wrap">{enhanced.wins_enhanced}</p>
             </div>
           )}
@@ -263,7 +263,7 @@ export default function WeeklyJournalPage() {
         
         {/* Fun */}
         <Card className="p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-3">✨ What I Did For Fun</h2>
+          <h2 className="text-xl font-semibold mb-3 tracking-[0.2em] uppercase">WHAT I DID FOR FUN</h2>
           <Textarea
             value={journal.fun_activities}
             onChange={(e) => setJournal({...journal, fun_activities: e.target.value})}
@@ -274,7 +274,7 @@ export default function WeeklyJournalPage() {
         
         {/* Goals */}
         <Card className="p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-3">🎯 Goals & Vision</h2>
+          <h2 className="text-xl font-semibold mb-3 tracking-[0.2em] uppercase">GOALS & VISION</h2>
           <Textarea
             value={journal.weekly_goals}
             onChange={(e) => setJournal({...journal, weekly_goals: e.target.value})}
@@ -290,7 +290,7 @@ export default function WeeklyJournalPage() {
           />
           {enhanced?.future_self_vision_enhanced && (
             <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-              <p className="text-sm font-semibold mb-2">✨ AI Enhanced:</p>
+              <p className="text-sm font-semibold mb-2">AI Enhanced:</p>
               <p className="text-sm whitespace-pre-wrap">{enhanced.future_self_vision_enhanced}</p>
             </div>
           )}
@@ -304,7 +304,7 @@ export default function WeeklyJournalPage() {
             size="lg"
             className="flex-1"
           >
-            {enhancing ? 'Enhancing...' : '✨ Enhance with AI'}
+            {enhancing ? 'Enhancing...' : 'Enhance with AI'}
           </Button>
           
           {enhanced && (
@@ -315,7 +315,7 @@ export default function WeeklyJournalPage() {
               variant="default"
               className="flex-1"
             >
-              📝 Publish to Alex's Knowledge
+              Publish to Alex's Knowledge
             </Button>
           )}
         </div>
