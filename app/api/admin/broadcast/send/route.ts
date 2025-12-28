@@ -83,8 +83,10 @@ export async function POST(request: Request) {
     }
 
     // Create broadcast
+    // CRITICAL: Resend API requires segmentId parameter for segment broadcasts
+    console.log('📝 Creating broadcast with segmentId:', segmentId)
     const broadcast = await resend.broadcasts.create({
-      segmentId,
+      segmentId: segmentId,  // Resend API expects segmentId parameter
       from: 'Sandra from SSELFIE <hello@sselfie.ai>',
       subject: subjectLine,
       html: finalEmailHtml

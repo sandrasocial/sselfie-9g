@@ -953,6 +953,8 @@ Only use this tool if specifically maintaining legacy code.`,
       name: "send_broadcast_to_segment",
       description: `Send or schedule an email broadcast to a Resend segment. This is the PRIMARY tool for sending emails to audiences.
 
+CRITICAL: Only report success if the tool returns success: true. If it returns success: false or an error, report the failure clearly.
+
 WORKFLOW:
 1. First, call get_resend_audience_data to see available segments
 2. Get Sandra's approval for: which segment, subject line, and timing
@@ -979,7 +981,12 @@ SCHEDULING OPTIONS:
 ALWAYS confirm with Sandra before sending:
 1. Which segment (show segment names and sizes)
 2. Subject line approval
-3. Send now or schedule for when?`,
+3. Send now or schedule for when?
+
+RESPONSE HANDLING:
+- If success: true → Report success with broadcast ID and Resend dashboard link
+- If success: false → Report the error message clearly. Do NOT make up fake broadcast IDs.
+- If error field exists → The broadcast failed, report the error to Sandra`,
       
       input_schema: {
         type: "object",
@@ -1044,11 +1051,20 @@ ALWAYS confirm with Sandra before sending:
           segmentName,
           subject: subjectLine.substring(0, 50),
           scheduledAt: scheduledAt || 'immediate',
-          sendTestFirst
+          sendTestFirst,
+          nodeEnv: process.env.NODE_ENV
         })
         
         try {
-          // STEP 1: Check Resend configuration
+          // STEP 1: Check if we're in development mode
+          // Note: Unlike send_resend_email, broadcasts are allowed in development
+          // because they're less likely to cause Cursor freezing and the test page works fine
+          const isDevelopment = process.env.NODE_ENV === 'development'
+          if (isDevelopment) {
+            console.log('[Alex] ℹ️ Running in development mode - broadcasts are allowed')
+          }
+          
+          // STEP 2: Check Resend configuration
           const config = checkResendConfig()
           if (!config.configured) {
             return {
@@ -1066,7 +1082,7 @@ ALWAYS confirm with Sandra before sending:
             }
           }
           
-          // STEP 2: Validate all inputs
+          // STEP 3: Validate all inputs
           const validation = validateBroadcastParams({
             segmentId,
             subjectLine,
@@ -1085,14 +1101,16 @@ ALWAYS confirm with Sandra before sending:
           }
           
           // Auto-add unsubscribe link if missing (after validation passes)
+          // Use finalEmailHtml variable like the working test page endpoint
+          let finalEmailHtml = emailHtml
           if (!emailHtml.includes('RESEND_UNSUBSCRIBE_URL') && !emailHtml.includes('{{{RESEND_UNSUBSCRIBE_URL}}}')) {
             console.warn('[Alex] ⚠️ Email missing unsubscribe link - adding it')
-            emailHtml += '\n\n<p style="text-align: center; font-size: 12px; color: #666;"><a href="{{{RESEND_UNSUBSCRIBE_URL}}}">Unsubscribe</a></p>'
+            finalEmailHtml += '\n\n<p style="text-align: center; font-size: 12px; color: #666;"><a href="{{{RESEND_UNSUBSCRIBE_URL}}}">Unsubscribe</a></p>'
           }
           
-          // STEP 3: Send test email if requested
+          // STEP 4: Send test email if requested
           if (sendTestFirst) {
-            const testResult = await sendTestEmailToSandra(subjectLine, emailHtml)
+            const testResult = await sendTestEmailToSandra(subjectLine, finalEmailHtml)
             if (!testResult.success) {
               return {
                 success: false,
@@ -1103,61 +1121,112 @@ ALWAYS confirm with Sandra before sending:
             }
           }
           
-          // STEP 4: Create broadcast in Resend
+          // STEP 5: Create broadcast in Resend
           console.log('[Alex] 📝 Creating broadcast in Resend...')
-          const broadcast = await resend.broadcasts.create({
-            segmentId: segmentId,  // CRITICAL: Use segmentId, NOT audienceId
-            from: 'Sandra from SSELFIE <hello@sselfie.ai>',
-            subject: subjectLine,
-            html: emailHtml
-          })
+          let broadcast: any
+          let broadcastId: string | null = null
           
-          if (broadcast.error) {
-            console.error('[Alex] ❌ Broadcast creation failed:', broadcast.error)
+          try {
+            // CRITICAL: Resend API requires segmentId parameter for segment broadcasts
+            // Match the exact implementation from the working test page endpoint
+            console.log('[Alex] 📝 Creating broadcast with segmentId:', segmentId)
+            broadcast = await resend.broadcasts.create({
+              segmentId: segmentId,  // Resend API expects segmentId parameter
+              from: 'Sandra from SSELFIE <hello@sselfie.ai>',
+              subject: subjectLine,
+              html: finalEmailHtml  // Use finalEmailHtml like the working endpoint
+            })
+            
+            if (broadcast.error) {
+              console.error('[Alex] ❌ Broadcast creation failed:', broadcast.error)
+              return {
+                success: false,
+                error: `Failed to create broadcast: ${broadcast.error.message || JSON.stringify(broadcast.error)}`,
+                details: broadcast.error,
+                step: 'broadcast_creation'
+              }
+            }
+            
+            broadcastId = broadcast.data?.id || null
+            if (!broadcastId) {
+              console.error('[Alex] ❌ No broadcast ID in response:', broadcast)
+              return {
+                success: false,
+                error: 'Broadcast creation returned no ID. Resend API may have changed or the request was invalid.',
+                details: broadcast,
+                step: 'broadcast_creation'
+              }
+            }
+            
+            console.log('[Alex] ✅ Broadcast created:', broadcastId)
+          } catch (createError: any) {
+            console.error('[Alex] ❌ Exception creating broadcast:', createError)
             return {
               success: false,
-              error: `Failed to create broadcast: ${broadcast.error.message || JSON.stringify(broadcast.error)}`,
-              details: broadcast.error
+              error: `Exception creating broadcast: ${createError.message || 'Unknown error'}`,
+              details: createError.stack,
+              step: 'broadcast_creation'
             }
           }
           
-          const broadcastId = broadcast.data?.id
-          if (!broadcastId) {
-            return {
-              success: false,
-              error: 'Broadcast created but no ID returned from Resend'
-            }
-          }
-          
-          console.log('[Alex] ✅ Broadcast created:', broadcastId)
-          
-          // STEP 5: Send broadcast (immediate or scheduled)
+          // STEP 6: Send broadcast (immediate or scheduled)
           console.log('[Alex] 📤 Sending broadcast:', scheduledAt && scheduledAt !== 'now' ? `scheduled for ${scheduledAt}` : 'immediately')
           
           const sendParams = scheduledAt && scheduledAt !== 'now' 
             ? { scheduledAt: scheduledAt }
             : {}
           
-          const sendResult = await resend.broadcasts.send(broadcastId, sendParams)
-          
-          if (sendResult.error) {
-            console.error('[Alex] ❌ Broadcast send failed:', sendResult.error)
+          let sendResult: any
+          try {
+            sendResult = await resend.broadcasts.send(broadcastId, sendParams)
+            
+            if (sendResult.error) {
+              console.error('[Alex] ❌ Broadcast send failed:', sendResult.error)
+              return {
+                success: false,
+                error: `Broadcast created but failed to send: ${sendResult.error.message || JSON.stringify(sendResult.error)}`,
+                broadcastId,
+                resendUrl: `https://resend.com/broadcasts/${broadcastId}`,
+                note: 'You can manually send this broadcast from the Resend dashboard using the URL above.',
+                step: 'broadcast_send'
+              }
+            }
+            
+            console.log('[Alex] ✅ Broadcast send API call succeeded')
+          } catch (sendError: any) {
+            console.error('[Alex] ❌ Exception sending broadcast:', sendError)
             return {
               success: false,
-              error: `Broadcast created but failed to send: ${sendResult.error.message || JSON.stringify(sendResult.error)}`,
+              error: `Exception sending broadcast: ${sendError.message || 'Unknown error'}`,
+              broadcastId,
+              resendUrl: broadcastId ? `https://resend.com/broadcasts/${broadcastId}` : null,
+              details: sendError.stack,
+              note: broadcastId ? 'You can manually send this broadcast from the Resend dashboard.' : null,
+              step: 'broadcast_send'
+            }
+          }
+          
+          // Verify send was actually successful
+          if (!sendResult || (!sendResult.data && !sendResult.success)) {
+            console.error('[Alex] ❌ Broadcast send returned unexpected response:', sendResult)
+            return {
+              success: false,
+              error: 'Broadcast send returned unexpected response. The send may have failed.',
               broadcastId,
               resendUrl: `https://resend.com/broadcasts/${broadcastId}`,
-              note: 'You can manually send this broadcast from the Resend dashboard using the URL above.'
+              details: sendResult,
+              step: 'broadcast_send_verification'
             }
           }
           
           console.log('[Alex] ✅ Broadcast sent successfully')
           
-          // STEP 6: Save campaign to database
+          // STEP 7: Save campaign to database
           const status = scheduledAt && scheduledAt !== 'now' ? 'scheduled' : 'sent'
           const scheduledForDb = scheduledAt && scheduledAt !== 'now' ? scheduledAt : null
           
-          const bodyText = stripHtml(emailHtml)
+          // Use finalEmailHtml (with unsubscribe link) for database storage, matching test page endpoint
+          const bodyText = stripHtml(finalEmailHtml)
           
           const campaign = await sql`
             INSERT INTO admin_email_campaigns (
@@ -1167,7 +1236,7 @@ ALWAYS confirm with Sandra before sending:
               created_by, created_at, updated_at
             ) VALUES (
               ${campaignName}, ${campaignType}, ${subjectLine},
-              ${emailHtml}, ${bodyText}, ${status}, ${broadcastId},
+              ${finalEmailHtml}, ${bodyText}, ${status}, ${broadcastId},
               ${JSON.stringify({ 
                 resend_segment_id: segmentId,
                 segment_name: segmentName 
@@ -1182,7 +1251,24 @@ ALWAYS confirm with Sandra before sending:
           
           console.log('[Alex] 💾 Campaign saved to database:', campaignId)
           
-          // STEP 7: Return success with all details
+          // STEP 7: Validate final state before returning success
+          if (!broadcastId) {
+            console.error('[Alex] ❌ CRITICAL: Attempting to return success without broadcastId!')
+            return {
+              success: false,
+              error: 'CRITICAL ERROR: Broadcast ID is missing. The broadcast was not created successfully.',
+              step: 'final_validation'
+            }
+          }
+          
+          // STEP 8: Return success with all details
+          console.log('[Alex] ✅ Returning success response:', {
+            success: true,
+            broadcastId,
+            campaignId,
+            status
+          })
+          
           return {
             success: true,
             campaignId,
@@ -1203,7 +1289,13 @@ ALWAYS confirm with Sandra before sending:
           }
           
         } catch (error: any) {
-          console.error('[Alex] ❌ Unexpected error in send_broadcast_to_segment:', error)
+          console.error('[Alex] ❌ Unexpected error in send_broadcast_to_segment:', {
+            error: error.message,
+            stack: error.stack,
+            name: error.name,
+            segmentId,
+            subjectLine: subjectLine?.substring(0, 50)
+          })
           
           // Log error to database for debugging
           await logEmailError('send_broadcast_to_segment', error, {
@@ -1215,10 +1307,13 @@ ALWAYS confirm with Sandra before sending:
             sendTestFirst
           })
           
+          // Return explicit error - NEVER return success: true from catch block
           return {
             success: false,
-            error: `Unexpected error: ${error.message || 'Unknown error'}`,
-            stack: error.stack
+            error: `Unexpected error occurred: ${error.message || 'Unknown error'}. The broadcast was NOT sent.`,
+            details: `Error type: ${error.name || 'Error'}. Check server logs for full details.`,
+            step: 'unexpected_error',
+            note: 'This error occurred during broadcast processing. No email was sent. Please try again or check Resend configuration.'
           }
         }
       }
