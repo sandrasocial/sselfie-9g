@@ -143,7 +143,7 @@ export async function GET() {
       for (const adminEmail of ADMIN_EMAILS) {
         try {
           await resend.emails.send({
-            from: "sselfie Admin <notifications@sselfie.ai>",
+            from: "sselfie Admin <hello@sselfie.ai>",
             to: adminEmail,
             subject: `[sselfie Admin] ${alertsToSend.length} Critical Alert${alertsToSend.length > 1 ? 's' : ''}`,
             html: `

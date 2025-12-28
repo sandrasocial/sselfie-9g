@@ -389,6 +389,7 @@ export default function AlexChat({ userId, userName, userEmail }: AlexChatProps)
                 // Extract content from message (text and images)
                 let textContent = ''
                 let imageUrls: string[] = []
+                let emailPreview: any = null
                 
                 if (typeof message.content === 'string') {
                   textContent = message.content
@@ -398,6 +399,16 @@ export default function AlexChat({ userId, userName, userEmail }: AlexChatProps)
                       textContent += (textContent ? '\n' : '') + (part.text || '')
                     } else if (part.type === 'image') {
                       imageUrls.push(part.image || part.url || '')
+                    } else if (part.type === 'tool-result' && part.content) {
+                      // Check for email preview data in tool results
+                      try {
+                        const toolContent = typeof part.content === 'string' ? JSON.parse(part.content) : part.content
+                        if (toolContent.email_preview_data) {
+                          emailPreview = toolContent.email_preview_data
+                        }
+                      } catch (e) {
+                        // Not JSON, ignore
+                      }
                     }
                   })
                 } else if (message.parts && Array.isArray(message.parts)) {
@@ -406,63 +417,147 @@ export default function AlexChat({ userId, userName, userEmail }: AlexChatProps)
                       textContent += (textContent ? '\n' : '') + (part.text || '')
                     } else if (part.type === 'image') {
                       imageUrls.push(part.image || part.url || '')
+                    } else if (part.type === 'tool-result' && part.result) {
+                      // Check for email preview data in tool results
+                      if (part.result.email_preview_data) {
+                        emailPreview = part.result.email_preview_data
+                      }
                     }
                   })
                 }
+                
+                // Also check message.data for email preview (from database)
+                if (!emailPreview && message.data?.email_preview_data) {
+                  emailPreview = typeof message.data.email_preview_data === 'string' 
+                    ? JSON.parse(message.data.email_preview_data)
+                    : message.data.email_preview_data
+                }
 
                 return (
-                  <div
-                    key={message.id}
-                    className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
+                  <div key={message.id} className="space-y-4">
                     <div
-                      className={`max-w-[85%] rounded-2xl px-6 py-4 ${
-                        message.role === 'user'
-                          ? 'bg-stone-900 text-white'
-                          : 'bg-white border border-stone-200 text-stone-900'
-                      }`}
+                      className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                     >
-                      {/* Display images if present */}
-                      {imageUrls.length > 0 && (
-                        <div className="mb-3 grid grid-cols-2 gap-2">
-                          {imageUrls.map((url, idx) => (
-                            <div key={idx} className="relative aspect-square rounded-lg overflow-hidden bg-stone-100">
-                              <Image
-                                src={url}
-                                alt={`Image ${idx + 1}`}
-                                fill
-                                className="object-cover"
-                                unoptimized
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      
-                      {/* Display text content */}
-                      {textContent && (
-                        <div className="text-sm leading-relaxed prose prose-sm max-w-none">
-                          <ReactMarkdown
-                            components={{
-                              p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p>,
-                              strong: ({ children }) => <strong className="font-semibold text-stone-900">{children}</strong>,
-                              em: ({ children }) => <em className="italic">{children}</em>,
-                              ul: ({ children }) => <ul className="list-disc list-inside mb-3 space-y-1">{children}</ul>,
-                              ol: ({ children }) => <ol className="list-decimal list-inside mb-3 space-y-1">{children}</ol>,
-                              li: ({ children }) => <li className="ml-2">{children}</li>,
-                              h1: ({ children }) => <h1 className="text-lg font-bold mb-2 mt-4 first:mt-0">{children}</h1>,
-                              h2: ({ children }) => <h2 className="text-base font-semibold mb-2 mt-3 first:mt-0">{children}</h2>,
-                              h3: ({ children }) => <h3 className="text-sm font-semibold mb-1 mt-2 first:mt-0">{children}</h3>,
-                              code: ({ children }) => <code className="bg-stone-100 px-1.5 py-0.5 rounded text-xs font-mono">{children}</code>,
-                              pre: ({ children }) => <pre className="bg-stone-100 p-3 rounded-lg overflow-x-auto mb-3">{children}</pre>,
-                              blockquote: ({ children }) => <blockquote className="border-l-4 border-stone-300 pl-3 italic my-2">{children}</blockquote>,
-                            }}
-                          >
-                            {textContent}
-                          </ReactMarkdown>
-                        </div>
-                      )}
+                      <div
+                        className={`max-w-[85%] rounded-2xl px-6 py-4 ${
+                          message.role === 'user'
+                            ? 'bg-stone-900 text-white'
+                            : 'bg-white border border-stone-200 text-stone-900'
+                        }`}
+                      >
+                        {/* Display images if present */}
+                        {imageUrls.length > 0 && (
+                          <div className="mb-3 grid grid-cols-2 gap-2">
+                            {imageUrls.map((url, idx) => (
+                              <div key={idx} className="relative aspect-square rounded-lg overflow-hidden bg-stone-100">
+                                <Image
+                                  src={url}
+                                  alt={`Image ${idx + 1}`}
+                                  fill
+                                  className="object-cover"
+                                  unoptimized
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        
+                        {/* Display text content */}
+                        {textContent && (
+                          <div className="text-sm leading-relaxed prose prose-sm max-w-none">
+                            <ReactMarkdown
+                              components={{
+                                p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p>,
+                                strong: ({ children }) => <strong className="font-semibold text-stone-900">{children}</strong>,
+                                em: ({ children }) => <em className="italic">{children}</em>,
+                                ul: ({ children }) => <ul className="list-disc list-inside mb-3 space-y-1">{children}</ul>,
+                                ol: ({ children }) => <ol className="list-decimal list-inside mb-3 space-y-1">{children}</ol>,
+                                li: ({ children }) => <li className="ml-2">{children}</li>,
+                                h1: ({ children }) => <h1 className="text-lg font-bold mb-2 mt-4 first:mt-0">{children}</h1>,
+                                h2: ({ children }) => <h2 className="text-base font-semibold mb-2 mt-3 first:mt-0">{children}</h2>,
+                                h3: ({ children }) => <h3 className="text-sm font-semibold mb-1 mt-2 first:mt-0">{children}</h3>,
+                                code: ({ children }) => <code className="bg-stone-100 px-1.5 py-0.5 rounded text-xs font-mono">{children}</code>,
+                                pre: ({ children }) => <pre className="bg-stone-100 p-3 rounded-lg overflow-x-auto mb-3">{children}</pre>,
+                                blockquote: ({ children }) => <blockquote className="border-l-4 border-stone-300 pl-3 italic my-2">{children}</blockquote>,
+                              }}
+                            >
+                              {textContent}
+                            </ReactMarkdown>
+                          </div>
+                        )}
+                      </div>
                     </div>
+                    
+                    {/* Email Preview Card */}
+                    {emailPreview && message.role === 'assistant' && (
+                      <div className="flex justify-start">
+                        <div className="max-w-[85%] border border-stone-200 rounded-lg overflow-hidden bg-white">
+                          {/* Email Header */}
+                          <div className="bg-stone-50 px-6 py-4 border-b border-stone-200">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-xs tracking-[0.2em] uppercase text-stone-400">
+                                Email Preview
+                              </span>
+                              {emailPreview.purpose && (
+                                <span className="text-xs text-stone-500">
+                                  {emailPreview.purpose}
+                                </span>
+                              )}
+                            </div>
+                            <div className="space-y-1 text-sm">
+                              <div>
+                                <span className="text-stone-500">From:</span>{' '}
+                                <span className="text-stone-950">{emailPreview.from || emailPreview.from_name}</span>
+                              </div>
+                              <div>
+                                <span className="text-stone-500">To:</span>{' '}
+                                <span className="text-stone-950">{emailPreview.to || emailPreview.to_description}</span>
+                              </div>
+                              <div>
+                                <span className="text-stone-500">Subject:</span>{' '}
+                                <span className="text-stone-950 font-semibold">{emailPreview.subject || emailPreview.subjectLine}</span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Email Preview */}
+                          <div className="p-6">
+                            <div 
+                              className="prose prose-stone max-w-none text-sm"
+                              dangerouslySetInnerHTML={{ __html: emailPreview.html || emailPreview.html_preview || emailPreview.content }}
+                            />
+                          </div>
+                          
+                          {/* Actions */}
+                          <div className="bg-stone-50 px-6 py-4 border-t border-stone-200">
+                            <div className="flex gap-3">
+                              <button
+                                onClick={() => {
+                                  navigator.clipboard.writeText(emailPreview.html || emailPreview.html_preview || emailPreview.content)
+                                }}
+                                className="px-4 py-2 text-xs tracking-[0.2em] uppercase border border-stone-300 hover:border-stone-400 transition-colors rounded"
+                              >
+                                Copy HTML
+                              </button>
+                              <button
+                                onClick={() => {
+                                  const win = window.open('', '_blank')
+                                  if (win) {
+                                    win.document.write(emailPreview.html || emailPreview.html_preview || emailPreview.content)
+                                  }
+                                }}
+                                className="px-4 py-2 text-xs tracking-[0.2em] uppercase border border-stone-300 hover:border-stone-400 transition-colors rounded"
+                              >
+                                Open Preview
+                              </button>
+                            </div>
+                            <p className="text-xs text-stone-500 mt-3">
+                              This is a preview only. No email has been sent.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )
               })}

@@ -10,6 +10,8 @@ import { neon } from "@neondatabase/serverless"
 import { Resend } from "resend"
 import { buildEmailSystemPrompt } from "@/lib/admin/email-brand-guidelines"
 import { loops, LOOPS_AUDIENCES, upsertLoopsContact } from '@/lib/loops/client'
+import { promises as fs } from 'fs'
+import { join, dirname } from 'path'
 
 // HTML stripping function - uses regex fallback (works without html-to-text package)
 // If html-to-text package is installed later, it can be enhanced, but this works fine for now
@@ -218,7 +220,7 @@ export async function POST(req: Request) {
       }
     }
 
-    // Extract image URLs from user messages (for compose_email tool)
+    // Extract image URLs from user messages (for email tools)
     const extractImageUrls = (message: any): string[] => {
       const urls: string[] = []
       if (Array.isArray(message.content)) {
@@ -301,8 +303,7 @@ Use this for quick changes like:
 - Change button text
 - Update pricing/dates
 
-This preserves the existing email and makes ONLY the requested changes.
-For major rewrites, use compose_email with previousVersion instead.`,
+This preserves the existing email and makes ONLY the requested changes.`,
       
       input_schema: {
         type: "object",
@@ -435,427 +436,9 @@ For major rewrites, use compose_email with previousVersion instead.`,
       }
     }
 
-    const composeEmailTool = {
-      name: "compose_email",
-      description: `Create or refine email drafts. Returns formatted HTML email ready to copy into Flodesk.
-
-This tool ONLY generates email drafts - it does NOT send emails. Sandra will copy the HTML and paste it into Flodesk manually.
-
-Use this when Sandra wants to:
-  - Create a new email campaign draft
-- Edit/refine existing email content
-  - Generate subject lines
-  - Use email templates
-  
-  Examples:
-  - "Create a welcome email for new Studio members"
-  - "Write a newsletter about the new Maya features"
-  - "Make that email warmer and add a PS"
-
-The email preview card will display the HTML for Sandra to copy into Flodesk.`,
-      
-      input_schema: {
-        type: "object",
-        properties: {
-          intent: {
-            type: "string",
-            description: "What Sandra wants to accomplish with this email"
-          },
-          emailType: {
-            type: "string",
-            enum: ["welcome", "newsletter", "promotional", "announcement", "nurture", "reengagement"],
-            description: "Type of email to create"
-          },
-          subjectLine: {
-            type: "string",
-            description: "Subject line (generate if not provided)"
-          },
-          keyPoints: {
-            type: "array",
-            items: { type: "string" },
-            description: "Main points to include"
-          },
-          tone: {
-            type: "string",
-            enum: ["warm", "professional", "excited", "urgent"],
-            description: "Tone for the email (defaults to warm if not specified)"
-          },
-          previousVersion: {
-            type: "string",
-            description: "Previous email HTML if refining"
-          },
-          imageUrls: {
-            type: "array",
-            items: { type: "string" },
-            description: "Array of image URLs to include in the email"
-          },
-          campaignName: {
-            type: "string",
-            description: "Optional campaign name for generating tracked links"
-          },
-          campaignId: {
-            type: "number",
-            description: "Optional campaign ID to update existing draft campaign"
-          }
-        },
-        required: ["intent", "emailType"]
-      },
-      
-      execute: async ({ intent, emailType, subjectLine, keyPoints, tone = 'warm', previousVersion, imageUrls, campaignName, campaignId }: {
-        intent: string
-        emailType: string
-        subjectLine?: string
-        keyPoints?: string[]
-        tone?: string
-        previousVersion?: string
-        imageUrls?: string[]
-        campaignName?: string
-        campaignId?: number
-      }) => {
-        console.log('[Alex] 📧 compose_email called:', {
-          intent: intent?.substring(0, 100),
-          emailType,
-          hasPreviousVersion: !!previousVersion,
-          previousVersionLength: previousVersion?.length || 0,
-          previousVersionPreview: previousVersion ? `${previousVersion.substring(0, 100)}...` : null,
-          previousVersionStartsWithHtml: previousVersion?.trim().startsWith('<!DOCTYPE') || previousVersion?.trim().startsWith('<html'),
-          hasImageUrls: !!(imageUrls && imageUrls.length > 0),
-          imageCount: imageUrls?.length || 0
-        })
-        
-        // Log warning if previousVersion is provided but doesn't look like HTML
-        if (previousVersion && !previousVersion.trim().startsWith('<!DOCTYPE') && !previousVersion.trim().startsWith('<html')) {
-          console.warn('[Alex] ⚠️ WARNING: previousVersion provided but does not start with <!DOCTYPE or <html. This might not be valid HTML:', {
-            preview: previousVersion.substring(0, 200),
-            length: previousVersion.length
-          })
-        }
-        
-        try {
-          // 1. Get email templates for this type
-          const templates = await sql`
-            SELECT body_html, subject_line 
-            FROM email_template_library 
-            WHERE category = ${emailType} AND is_active = true
-            LIMIT 1
-          `
-          
-          // 2. Get campaign context for link generation (if available)
-          const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://sselfie.ai'
-          
-          // Generate campaign slug from campaign name (if provided)
-          const campaignSlug = campaignName
-            ? campaignName
-                .toLowerCase()
-                .replace(/[^a-z0-9]+/g, '-')
-                .replace(/^-+|-+$/g, '')
-            : 'email-campaign'
-          
-          // 3. Use Claude to generate/refine email content
-          // Build system prompt using shared brand guidelines
-          // Note: previousVersion is NOT passed to buildEmailSystemPrompt - it's included in user prompt below
-          // to avoid truncation and ensure full HTML context
-          const systemPrompt = buildEmailSystemPrompt({
-            tone,
-            // Don't pass previousVersion here - it's included in user prompt below for full HTML
-            campaignSlug,
-            siteUrl,
-            imageUrls: imageUrls || [],
-            templates: templates.length > 0 ? templates : [],
-          })
-          
-          // Add editing instructions to system prompt if we're editing
-          const editingInstructions = previousVersion ? `CRITICAL: You are EDITING an existing email. The complete previous version HTML is provided in the user prompt below.
-
-Your task: Make ONLY the specific changes Sandra requested while keeping everything else EXACTLY the same:
-- Same structure and layout
-- Same brand styling and colors
-- Same content (unless specifically asked to change it)
-- Same images and links (unless specifically asked to change them)
-
-For small edits (like "add a link" or "change a few words"), make MINIMAL targeted changes. Do NOT rewrite the entire email. Only modify what was explicitly requested.` : ''
-          
-          const finalSystemPrompt = editingInstructions ? `${systemPrompt}\n\n${editingInstructions}` : systemPrompt
-          
-          // Build user prompt - if previousVersion exists, EDIT it rather than create new
-          const userPrompt = previousVersion
-            ? (() => {
-                // Extract key elements from previous version for reference
-                const hasImages = previousVersion.includes('<img')
-                const hasGradient = previousVersion.includes('gradient')
-                const hasTable = previousVersion.includes('<table')
-                
-                return `You are EDITING an existing email. Make ONLY the requested changes.
-
-**PREVIOUS EMAIL HTML (FULL):**
-\`\`\`html
-${previousVersion}
-\`\`\`
-
-**REQUESTED CHANGES:** ${intent}
-
-${keyPoints && keyPoints.length > 0 ? `**Key points:** ${keyPoints.join(', ')}\n\n` : ''}${imageUrls && imageUrls.length > 0 ? `**Images to include:**\n${imageUrls.map((url, idx) => `- Image ${idx + 1}: ${url}`).join('\n')}\n\n` : ''}
-**EDITING RULES:**
-1. Start with the EXACT previous HTML above
-2. Make ONLY the changes described in "Requested Changes"
-3. Keep ALL other content, styling, and structure identical
-4. Preserve all working links, images, and formatting
-5. Return the COMPLETE updated HTML (not just the changed parts)
-6. Do NOT regenerate from scratch
-7. Do NOT change things that weren't requested
-
-**What to preserve:**
-- All existing paragraphs and sections (unless specifically changing them)
-- Color scheme and styling
-- Table structure
-- Existing links (unless specifically changing them)
-- Emojis (unless specifically removing them)
-- Image placements
-
-Return ONLY the updated HTML, nothing else.`
-              })()
-            : `${intent}\n\n${keyPoints && keyPoints.length > 0 ? `Key points: ${keyPoints.join(', ')}\n\n` : ''}${imageUrls && imageUrls.length > 0 ? `\nImages to include:\n${imageUrls.map((url, idx) => `- Image ${idx + 1}: ${url}`).join('\n')}\n\n` : ''}`
-          
-          // Generate email HTML with timeout protection
-          let emailHtmlRaw: string
-          let timeoutId: NodeJS.Timeout | null = null
-          try {
-            // Create a timeout promise that can be cancelled
-            const timeoutPromise = new Promise<never>((_, reject) => {
-              timeoutId = setTimeout(() => {
-                reject(new Error('Email generation timed out after 30 seconds'))
-              }, 30000)
-            })
-            
-            // Race between generateText and timeout
-            const result = await Promise.race([
-              generateText({
-                model: "anthropic/claude-sonnet-4-20250514",
-                system: finalSystemPrompt,
-                prompt: userPrompt,
-                maxOutputTokens: 4096,
-              }),
-              timeoutPromise
-            ])
-            
-            // Clear timeout regardless of which promise won (success or failure)
-            if (timeoutId) {
-              clearTimeout(timeoutId)
-              timeoutId = null
-            }
-            
-            emailHtmlRaw = result.text
-          } catch (genError: any) {
-            // Clear timeout on error to prevent unhandled promise rejection
-            if (timeoutId) {
-              clearTimeout(timeoutId)
-              timeoutId = null
-            }
-            console.error("[Alex] ❌ Email generation failed:", genError)
-            throw new Error(`Failed to generate email content: ${genError.message || 'Unknown error'}`)
-          }
-          
-          // Validate that we got HTML content
-          if (!emailHtmlRaw || typeof emailHtmlRaw !== 'string') {
-            throw new Error('Email generation returned invalid content')
-          }
-          
-          // Clean up the HTML response - remove markdown code blocks if present
-          let emailHtml = emailHtmlRaw.trim()
-          
-          // Validate HTML structure
-          if (!emailHtml || emailHtml.length < 50) {
-            throw new Error('Generated email HTML is too short or empty')
-          }
-          
-          // Remove markdown code blocks (```html ... ``` or ``` ... ```)
-          emailHtml = emailHtml.replace(/^```html\s*/i, '')
-          emailHtml = emailHtml.replace(/^```\s*/, '')
-          emailHtml = emailHtml.replace(/\s*```$/g, '')
-          emailHtml = emailHtml.trim()
-          
-          // Ensure images are properly included if imageUrls were provided
-          if (imageUrls && imageUrls.length > 0) {
-            // Check if images are already in the HTML
-            const missingImages = imageUrls.filter(url => !emailHtml.includes(url))
-            
-            // If some images are missing, add them at the top as hero images
-            if (missingImages.length > 0) {
-              console.log(`[Alex] Adding ${missingImages.length} missing images to email HTML`)
-              
-              // Create simple image HTML for missing images (email-compatible table structure)
-              const imageRows = missingImages.map((url, idx) => {
-                return `
-          <tr>
-            <td style="padding: ${idx === 0 ? '0' : '10px'} 0;">
-              <img src="${url}" alt="Email image ${idx + 1}" style="width: 100%; max-width: 600px; height: auto; display: block;" />
-            </td>
-          </tr>`
-              }).join('\n')
-              
-              // Try to insert images into the first table after <body>
-              const bodyMatch = emailHtml.match(/<body[^>]*>([\s\S]*?)<\/body>/i)
-              if (bodyMatch) {
-                const bodyContent = bodyMatch[1]
-                // Find the first main table within bodyContent
-                const mainTableMatch = bodyContent.match(/(<table[^>]*role=["']presentation["'][^>]*>)/i)
-                if (mainTableMatch) {
-                  // Calculate correct positions:
-                  // - bodyMatch.index: position of <body> tag in emailHtml
-                  // - bodyMatch[0].indexOf('>') + 1: position after <body> tag (start of bodyContent)
-                  // - mainTableMatch.index: position of table tag within bodyContent
-                  // - mainTableMatch[0].length: length of table opening tag
-                  const bodyTagEndPos = bodyMatch.index! + bodyMatch[0].indexOf('>') + 1
-                  const tablePosInEmailHtml = bodyTagEndPos + mainTableMatch.index!
-                  const tableTagEndPos = tablePosInEmailHtml + mainTableMatch[0].length
-                  
-                  // Insert images right after the opening table tag
-                  emailHtml = emailHtml.substring(0, tableTagEndPos) + 
-                    imageRows + 
-                    emailHtml.substring(tableTagEndPos)
-                } else {
-                  // No table found, prepend images wrapped in a table
-                  const imageTable = `
-        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
-          ${imageRows}
-        </table>`
-                  emailHtml = emailHtml.replace(/<body[^>]*>/i, (match) => match + imageTable)
-                }
-              } else {
-                // No body tag found, prepend images at the very start
-                const imageTable = `
-        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
-          ${imageRows}
-        </table>`
-                emailHtml = imageTable + emailHtml
-              }
-            }
-          }
-          
-          // 3. Generate subject line if not provided
-          const finalSubjectLine = subjectLine || await generateSubjectLine(intent, emailType)
-          
-          // Generate preview text (strip HTML for preview)
-          const previewText = stripHtml(emailHtml).substring(0, 200)
-          
-          // 4. Create or update draft campaign in database
-          let finalCampaignId: number
-          const bodyText = stripHtml(emailHtml)
-          const draftCampaignName = campaignName || `${emailType} - ${finalSubjectLine.substring(0, 50)}`
-          
-          try {
-            if (campaignId) {
-              // Update existing campaign
-              await sql`
-                UPDATE admin_email_campaigns
-                SET 
-                  subject_line = ${finalSubjectLine},
-                  body_html = ${emailHtml},
-                  body_text = ${bodyText},
-                  campaign_name = ${draftCampaignName},
-                  updated_at = NOW()
-                WHERE id = ${campaignId}
-              `
-              finalCampaignId = campaignId
-              console.log('[Alex] 📧 Updated existing draft campaign:', campaignId)
-            } else {
-              // Create new draft campaign
-              const campaignResult = await sql`
-                INSERT INTO admin_email_campaigns (
-                  campaign_name, campaign_type, subject_line,
-                  body_html, body_text, status, approval_status,
-                  created_by, created_at, updated_at
-                ) VALUES (
-                  ${draftCampaignName}, ${emailType}, ${finalSubjectLine},
-                  ${emailHtml}, ${bodyText}, 'draft', 'draft',
-                  ${ADMIN_EMAIL}, NOW(), NOW()
-                )
-                RETURNING id
-              `
-              
-              if (!campaignResult || campaignResult.length === 0 || !campaignResult[0]?.id) {
-                console.error('[Alex] Failed to create draft campaign, continuing without campaignId')
-                finalCampaignId = 0 // Use 0 to indicate failure (won't break ID-based editing)
-              } else {
-                finalCampaignId = campaignResult[0].id
-                console.log('[Alex] 📧 Created new draft campaign:', finalCampaignId)
-              }
-            }
-          } catch (campaignError: any) {
-            console.error('[Alex] Error creating/updating draft campaign:', campaignError)
-            // Continue even if campaign creation fails - email generation succeeded
-            finalCampaignId = 0
-          }
-          
-          // Generate plain text version for Flodesk
-          const emailText = stripHtml(emailHtml)
-          
-          return {
-            html: emailHtml,
-            emailText: emailText,
-            subject: finalSubjectLine,
-            subjectLine: finalSubjectLine, // Keep for backward compatibility
-            preview: previewText,
-            readyToSend: true,
-            campaignId: finalCampaignId > 0 ? finalCampaignId : undefined,
-            emailPreview: {
-              subject: finalSubjectLine,
-              html: emailHtml,
-              text: emailText,
-              platform: 'flodesk',
-              status: 'draft', // Always starts as draft
-              createdAt: new Date().toISOString(),
-              sentDate: null,
-              flodeskCampaignName: null,
-              analytics: {
-                sent: 0,
-                opened: 0,
-                clicked: 0,
-                openRate: 0,
-                clickRate: 0
-              }
-            }
-          }
-        } catch (error: any) {
-          console.error("[Alex] ❌ Error in compose_email tool:", error)
-          console.error("[Alex] ❌ Error details:", {
-            message: error.message,
-            stack: error.stack,
-            name: error.name,
-            intent: intent,
-            emailType: emailType,
-            hasImageUrls: !!(imageUrls && imageUrls.length > 0),
-            imageCount: imageUrls?.length || 0
-          })
-          
-          // Provide more helpful error message
-          let errorMessage = "Failed to compose email"
-          if (error.message?.includes('timeout') || error.message?.includes('time')) {
-            errorMessage = "Email generation timed out. Please try again with a shorter request."
-          } else if (error.message?.includes('token') || error.message?.includes('limit')) {
-            errorMessage = "Email content too long. Please simplify your request or split into multiple emails."
-          } else if (error.message) {
-            errorMessage = `Email generation failed: ${error.message}`
-          }
-          
-          return {
-            error: errorMessage,
-            html: "",
-            emailText: "",
-            subject: subjectLine || "Email Subject",
-            subjectLine: subjectLine || "Email Subject", // Keep for backward compatibility
-            preview: "",
-            readyToSend: false,
-            errorDetails: process.env.NODE_ENV === 'development' ? error.stack : undefined,
-            emailPreview: null // No preview on error
-          }
-        }
-      }
-    }
-
     const getEmailCampaignTool = {
       name: "get_email_campaign",
-      description: `Fetch email campaign HTML and metadata by campaign ID. Use this when Sandra wants to edit an existing email - get the current HTML first, then use compose_email with previousVersion and campaignId parameters.`,
+      description: `Fetch email campaign HTML and metadata by campaign ID. Use this when Sandra wants to edit an existing email - get the current HTML first, then use edit_email with previousEmailHtml and campaignId parameters.`,
       
       input_schema: {
         type: "object",
@@ -1194,6 +777,213 @@ Return ONLY the updated HTML, nothing else.`
       }
     }
 
+    const sendResendEmailTool = {
+      name: "send_resend_email",
+      description: `Send an email immediately via Resend API. ⚠️ WARNING: This actually sends real emails! Use compose_email_draft first to preview in development. Only use this in production (claude.ai) or when Sandra explicitly approves sending.
+
+For automated sequences, use create_automation instead.`,
+      
+      input_schema: {
+        type: "object",
+        properties: {
+          to: {
+            type: "string",
+            description: "Recipient email address"
+          },
+          subject: {
+            type: "string",
+            description: "Email subject line"
+          },
+          content: {
+            type: "string",
+            description: "Email body content (can be plain text or HTML)"
+          },
+          from_name: {
+            type: "string",
+            description: "Sender name (defaults to 'Sandra @ SSELFIE Studio')"
+          },
+          is_html: {
+            type: "boolean",
+            description: "Whether content is HTML (true) or plain text (false). Defaults to true."
+          }
+        },
+        required: ["to", "subject", "content"]
+      },
+      
+      execute: async ({ to, subject, content, from_name = 'Sandra @ SSELFIE Studio', is_html = true }: {
+        to: string
+        subject: string
+        content: string
+        from_name?: string
+        is_html?: boolean
+      }) => {
+        console.log('[Alex] 📧 send_resend_email called:', {
+          to,
+          subject: subject.substring(0, 50),
+          contentLength: content.length,
+          is_html,
+          from_name,
+          nodeEnv: process.env.NODE_ENV
+        })
+        
+        // Safety check - block sending in development to prevent Cursor freezing
+        const isDevelopment = process.env.NODE_ENV === 'development'
+        
+        if (isDevelopment) {
+          console.warn('[Alex] ⚠️ Blocking email send in development mode to prevent Cursor freezing')
+          return {
+            success: false,
+            warning: 'Sending blocked in development mode to prevent Cursor freezing',
+            message: 'Use compose_email_draft to preview emails in development. To actually send, use production environment or ask me to generate automation code.',
+            email_would_send_to: to,
+            subject: subject,
+            suggestion: 'Ask me to create a draft preview instead, or use this in production.'
+          }
+        }
+        
+        try {
+          if (!resend) {
+            return {
+              success: false,
+              error: "Resend client not initialized. RESEND_API_KEY not configured.",
+              message: "Failed to send email - Resend API key is missing."
+            }
+          }
+          
+          // Send email via Resend
+          // Use hello@sselfie.ai (verified domain) instead of ssa@sselfie.studio
+          const { data, error } = await resend.emails.send({
+            from: `${from_name} <hello@sselfie.ai>`,
+            to: to,
+            subject: subject,
+            [is_html ? 'html' : 'text']: content
+          })
+          
+          // Check for Resend API errors (they return error in response, not throw)
+          if (error) {
+            console.error('[Alex] ❌ Resend API error:', error)
+            return {
+              success: false,
+              error: error.message || 'Failed to send email via Resend',
+              resendError: error,
+              message: `Resend API error: ${error.message || 'Unknown error'}`
+            }
+          }
+          
+          if (!data?.id) {
+            console.error('[Alex] ❌ No email ID returned from Resend:', { data, error })
+            return {
+              success: false,
+              error: 'Resend API returned no email ID',
+              message: 'Email may not have been sent. Check Resend dashboard.'
+            }
+          }
+          
+          console.log('[Alex] ✅ Email sent via Resend:', {
+            emailId: data.id,
+            to,
+            subject
+          })
+          
+          return {
+            success: true,
+            email_id: data.id,
+            to,
+            subject,
+            sent_at: new Date().toISOString(),
+            message: 'Email sent successfully via Resend'
+          }
+        } catch (error: any) {
+          console.error('[Alex] ❌ Resend send error:', error)
+          
+          return {
+            success: false,
+            error: error.message || 'Failed to send email via Resend',
+            message: 'Failed to send email via Resend'
+          }
+        }
+      }
+    }
+
+    const composeEmailDraftTool = {
+      name: "compose_email_draft",
+      description: `Compose an email draft and show preview to Sandra WITHOUT sending. Use this in development/Cursor to let Sandra review emails before sending. Returns email preview card that displays in the UI.
+
+⚠️ IMPORTANT: This tool does NOT send emails - it only creates a preview. Use this when working in Cursor/development to prevent freezing.`,
+      
+      input_schema: {
+        type: "object",
+        properties: {
+          purpose: {
+            type: "string",
+            description: "What this email is for (e.g., 'welcome sequence day 1', 'upsell campaign', 'test email')"
+          },
+          to_description: {
+            type: "string",
+            description: "Who will receive this (e.g., 'new users', 'inactive subscribers', 'one-time buyers')"
+          },
+          subject: {
+            type: "string",
+            description: "Email subject line"
+          },
+          content: {
+            type: "string",
+            description: "Email body content in HTML format"
+          },
+          from_name: {
+            type: "string",
+            description: "Sender name (defaults to 'Sandra @ SSELFIE Studio')"
+          }
+        },
+        required: ["purpose", "to_description", "subject", "content"]
+      },
+      
+      execute: async ({ purpose, to_description, subject, content, from_name = 'Sandra @ SSELFIE Studio' }: {
+        purpose: string
+        to_description: string
+        subject: string
+        content: string
+        from_name?: string
+      }) => {
+        console.log('[Alex] 📧 compose_email_draft called:', {
+          purpose,
+          to_description,
+          subject: subject.substring(0, 50),
+          contentLength: content.length,
+          from_name
+        })
+        
+        // Strip HTML for preview text
+        const previewText = content.replace(/<[^>]*>/g, '').substring(0, 200)
+        
+        // Create preview data structure (NO ACTUAL SENDING)
+        const emailPreview = {
+          purpose,
+          from: `${from_name} <hello@sselfie.ai>`,
+          to: to_description,
+          subject,
+          html: content,
+          preview: previewText + (content.replace(/<[^>]*>/g, '').length > 200 ? '...' : ''),
+          created_at: new Date().toISOString(),
+          status: 'draft',
+          platform: 'resend'
+        }
+        
+        console.log('[Alex] ✅ Email draft created (preview only):', {
+          subject,
+          purpose,
+          hasHtml: !!content
+        })
+        
+        return {
+          success: true,
+          email_preview_data: emailPreview,
+          message: 'Email draft created. Review the preview below. To send this email, use production environment or ask me to generate automation code.',
+          preview: emailPreview
+        }
+      }
+    }
+
     // Helper function to generate a single email (extracted from compose_email for reuse)
     const generateEmailContent = async ({
       intent,
@@ -1404,10 +1194,6 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
         throw error
       }
     }
-
-    // Now update compose_email to use the helper function
-    // (We'll keep the existing compose_email tool but refactor it to use generateEmailContent)
-    // Actually, let's keep compose_email as-is for now and create the sequence tool
 
     const createEmailSequenceTool = {
       name: "create_email_sequence",
@@ -1626,15 +1412,15 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
     // - GET https://app.loops.so/api/v1/campaigns - List campaigns
     // ============================================================================
 
-    // compose_loops_email tool removed - user sends emails via Flodesk manually
+    // compose_loops_email tool removed - now using Resend API directly
 
     // ============================================================================
-    // EMAIL STATUS MANAGEMENT TOOLS - Flodesk Workflow
+    // EMAIL STATUS MANAGEMENT TOOLS - Legacy Flodesk tracking (for historical emails)
     // ============================================================================
 
     const markEmailSentTool = {
       name: "mark_email_sent",
-      description: `Mark an email draft as sent in Flodesk. Use this when Sandra confirms she has sent an email.
+      description: `Mark an email draft as sent (legacy Flodesk tracking). Use this when Sandra confirms she has manually sent an email via another platform.
 
 Examples:
 - "I sent the beta customer email" → mark_email_sent with that email's subject
@@ -1760,7 +1546,7 @@ This updates the email status from 'draft' to 'sent_flodesk' and records when it
 
     const recordEmailAnalyticsTool = {
       name: "record_email_analytics",
-      description: `Record analytics for an email sent in Flodesk. Use this when Sandra reports performance metrics from Flodesk.
+      description: `Record analytics for an email sent via another platform (legacy Flodesk tracking). Use this when Sandra reports performance metrics from external email platforms.
       
 Examples:
 - "The beta customer email got 24 opens out of 50 sent" → record_email_analytics with sent=50, opened=24
@@ -2137,10 +1923,10 @@ ${timingBreakdown}
 
 📌 NEXT STEPS:
 
-1. Create Email 1 content using compose_email tool
-2. Set up sequence in Flodesk with automation delays:
+1. Create Email 1 content using create_email_sequence tool
+2. Set up sequence in Resend with automation delays:
    ${emails.slice(1).map((e, idx) => `   - Email ${e.emailNumber}: ${e.daysSinceStart - emails[idx].daysSinceStart} days after Email ${idx + 1}`).join('\n   ')}
-3. Build each email in Flodesk following the topic suggestions above
+3. Build each email in your email platform following the topic suggestions above
 4. Test the sequence before activating
 
 💡 TIP: Use recommend_send_timing tool to get optimal send times for each email based on day of week.`
@@ -2271,9 +2057,9 @@ Target Audience: ${targetAudience}
 💡 WHY: ${rec.reason}
 ${recommendation.alternativeDays ? `\n⚠️ ${recommendation.alternativeDays}` : ''}
 
-📋 FLODESK SETUP INSTRUCTIONS:
+📋 EMAIL PLATFORM SETUP INSTRUCTIONS:
 
-1. Go to your campaign in Flodesk
+1. Go to your campaign in your email platform
 2. Click "Schedule" or "Send Time"
 3. Choose one of these days: ${recommendedDays.slice(0, 2).join(' or ')}
 4. Set time to: ${rec.bestTime.split(' - ')[0]} (or within the ${rec.bestTime} window)
@@ -5873,34 +5659,27 @@ Want me to start with the reengagement campaign?"
 ### Email Creation Workflow:
 1. When Sandra asks about her audience or wants strategy advice, use **get_resend_audience_data** first
 2. Then use **analyze_email_strategy** to create intelligent recommendations based on live data
-3. When Sandra wants to create a single email, use **compose_email** tool
-4. When Sandra wants to create multiple emails in a sequence (e.g., "Create a 3-email nurture sequence"), use **create_email_sequence** tool. This creates all emails at once so Sandra can review and edit each one.
-5. **After compose_email or create_email_sequence returns:** Simply tell Sandra the email(s) are ready and show a brief preview text (first 200 chars). The email preview UI will appear automatically - you don't need to include any special markers or JSON in your response.
-6. For sequences, say something like: "I've created your 3-email nurture sequence! Here's the Day 1 email: [preview text]... Want me to adjust any of the emails?"
-7. For single emails, say something like: "Here's your email: [first 200 chars of preview text]... Want me to adjust anything?"
-6. **CRITICAL - When Editing Emails:** If Sandra requests changes to an existing email, you MUST:
-   - **YOU MUST ACTUALLY CALL THE compose_email TOOL** - Do NOT just describe what you would change. You MUST execute the tool.
-   - **HOW TO EDIT AN EMAIL (IN ORDER OF PRIORITY):**
-     - **Option 1 (HIGHEST PRIORITY - ID-Based Editing):** If Sandra's message says "Edit email campaign ID X" or contains a campaign ID, use the **get_email_campaign** tool to fetch the current HTML, then call **compose_email** with:
-       - previousVersion parameter: the HTML from get_email_campaign result
-       - campaignId parameter: the campaign ID (to update the existing campaign instead of creating a new one)
-       - intent parameter: the specific changes Sandra requested
-     - **Option 1b (Extract Campaign ID from Context):** If Sandra says "edit this email" or "edit the email" without mentioning a campaign ID, look in the conversation history for the most recent compose_email tool result. Check for:
-       - Messages containing "[PREVIOUS compose_email TOOL RESULT]" with "Campaign ID: X"
-       - Tool results with campaignId field in the result object
-       - Extract the campaign ID number and use Option 1 workflow above
-     - **Option 2 (Manual HTML Edit):** If Sandra's message says "Here's the manually edited email HTML" or contains HTML in the message, extract ALL the HTML that follows and use it as previousVersion parameter in compose_email. If a campaign ID is mentioned or found in context, also include it in the campaignId parameter.
-     - **Option 3 (Fallback):** If Sandra mentions editing an email but no campaign ID is provided and you can't find one in context, check if her message contains HTML that starts with <!DOCTYPE html or <html. Extract that entire HTML block and use it as previousVersion parameter. This is a fallback for backward compatibility.
-   - **Workflow for ID-Based Editing:**
-     1. Extract campaign ID from Sandra's message OR from previous compose_email tool results in conversation history
-     2. Call get_email_campaign tool with the campaignId to fetch the current email HTML
-     3. Call compose_email tool with previousVersion set to the fetched HTML, campaignId set to the campaign ID, and intent describing the requested changes
-     4. This updates the existing campaign in the database instead of creating a duplicate
-   - **Include the specific changes** Sandra requested in the intent parameter (e.g., "Make the email warmer", "Add more storytelling")
-   - **NEVER claim to have edited the email without actually calling compose_email**
-   - **VERIFICATION:** After calling compose_email, you will see a tool result with html, subjectLine, and campaignId fields. If you don't see a tool result, the tool was not executed and you must try again.
-7. When she approves, ask: "Who should receive this?" and "When should I send it?"
-8. Then use **schedule_campaign** to handle everything
+3. When Sandra wants to create multiple emails in a sequence (e.g., "Create a 3-email nurture sequence"), use **create_email_sequence** tool. This creates all emails at once so Sandra can review and edit each one.
+4. **After create_email_sequence returns:** Simply tell Sandra the email(s) are ready and show a brief preview text (first 200 chars). The email preview UI will appear automatically - you don't need to include any special markers or JSON in your response.
+5. For sequences, say something like: "I've created your 3-email nurture sequence! Here's the Day 1 email: [preview text]... Want me to adjust any of the emails?"
+6. **CRITICAL - When Editing Emails:** If Sandra requests changes to an existing email, use the **edit_email** tool:
+   - **Option 1 (ID-Based Editing):** If Sandra's message says "Edit email campaign ID X" or contains a campaign ID, use the **get_email_campaign** tool to fetch the current HTML, then call **edit_email** with:
+     - previousEmailHtml parameter: the HTML from get_email_campaign result
+     - campaignId parameter: the campaign ID (to update the existing campaign instead of creating a new one)
+     - editIntent parameter: the specific changes Sandra requested
+   - **Option 2 (Extract Campaign ID from Context):** If Sandra says "edit this email" without mentioning a campaign ID, look in the conversation history for the most recent email campaign ID
+   - **Include the specific changes** Sandra requested in the editIntent parameter (e.g., "Make the email warmer", "Add more storytelling")
+   - **NEVER claim to have edited the email without actually calling edit_email**
+7. **Sending Emails:**
+   - **⚠️ CRITICAL - Development vs Production:**
+     - **In development/Cursor:** ALWAYS use **compose_email_draft** to show previews. NEVER use send_resend_email (it will crash Cursor). Show Sandra the preview, let her review, then if she approves, generate automation code or tell her to send from production.
+     - **In production (claude.ai or deployed):** Can use **send_resend_email** safely, but preview is still recommended first.
+   - **For one-off emails or testing:** 
+     - Development: Use **compose_email_draft** to show preview
+     - Production: Use **send_resend_email** tool (only after preview if in development)
+   - **For campaigns to segments/audiences:** When Sandra approves an email and wants to send it to a segment, ask: "Who should receive this?" and "When should I send it?" Then use **schedule_campaign** to handle everything
+   - **For automated sequences:** Use **create_automation** to build automated email sequences
+   - **Always prefer showing previews before sending** - use compose_email_draft first, then send if approved
 
 **IMPORTANT:** The UI automatically detects and displays email previews from tool results. You should NOT include raw HTML, JSON, or special markers in your text response. Just mention the email is ready and the preview will appear automatically.
 
@@ -6081,7 +5860,8 @@ Use **check_campaign_status** to report on:
 ### Email Marketing Best Practices (2025):
 1. **Link Tracking & Attribution:**
    - ALL links in emails MUST include UTM parameters for conversion tracking
-   - Format: /studio?checkout=studio_membership&utm_source=email&utm_medium=email&utm_campaign={campaign_name_slug}&utm_content=cta_button&campaign_id={campaign_id}
+   - Format: /checkout/membership?utm_source=email&utm_medium=email&utm_campaign={campaign_name_slug}&utm_content=cta_button&campaign_id={campaign_id} (for membership) or /checkout/one-time?utm_source=email&utm_medium=email&utm_campaign={campaign_name_slug}&utm_content=cta_button&campaign_id={campaign_id} (for one-time session)
+   - **CRITICAL:** Always use /checkout/membership or /checkout/one-time (public pages), NEVER /studio links
    - This allows tracking which emails generate conversions
    - Use campaign_id from the database campaign record
 
@@ -6120,12 +5900,93 @@ Use **check_campaign_status** to report on:
    - Risk reversal (guarantees, free trials)
    - Single, clear CTA above the fold
 
-**CRITICAL:** Never create/send emails without Sandra's explicit approval. Always show preview first and confirm before scheduling or sending.`
+**CRITICAL:** Never create/send emails without Sandra's explicit approval. Always show preview first and confirm before scheduling or sending.
+
+### Maya - AI Creative Director (Pro Mode vs Classic Mode):
+
+SSELFIE Studio has two distinct Maya modes that serve different user needs:
+
+**MAYA CLASSIC MODE (LoRA-Based):**
+- **Purpose:** For users who have trained a LoRA (custom AI model) of themselves
+- **Target Aesthetic:** Natural, candid, iPhone-style selfie photos - looks like a friend took it
+- **Technology:** 
+  - Uses FLUX.1-dev model via Replicate
+  - Requires user to have completed LoRA training (uploaded 20+ photos)
+  - Uses trigger words specific to the user's trained model
+- **Prompt Style:**
+  - **Length:** 30-60 words (optimal for LoRA activation)
+  - **Focus:** Short, natural language prompts
+  - **Format:** [Trigger word] + [Outfit] + [Location] + [Lighting] + [iPhone specs] + [Natural pose]
+  - **Example:** "user42585527, woman, brown hair, in oversized brown leather blazer, walking through SoHo, uneven natural lighting, shot on iPhone 15 Pro portrait mode, candid photo, natural skin texture with pores visible, film grain, muted colors"
+- **Aesthetic Requirements:**
+  - **MUST include:** "shot on iPhone 15 Pro", "candid photo" or "candid moment", "amateur cellphone photo", "natural skin texture with pores visible", "film grain, muted colors", "uneven natural lighting"
+  - **FORBIDDEN words:** "ultra realistic", "photorealistic", "8K", "perfect", "flawless", "professional photography", "editorial", "cinematic", "studio lighting" (these cause plastic/generic faces)
+  - **Lighting:** Uneven natural lighting, mixed color temperatures, natural window light (realistic, not idealized)
+  - **Camera specs:** iPhone 15 Pro portrait mode, shallow depth of field (authentic phone camera feel)
+- **User Experience:**
+  - Users with trained LoRA see their own face in generated images
+  - Best for personal brand content, lifestyle photos, authentic moments
+  - Content feels like real phone photos, not professional shoots
+  - Natural poses and expressions only (no "striking poses")
+
+**MAYA PRO MODE (Reference Image-Based):**
+- **Purpose:** For users who want luxury influencer content without LoRA training
+- **Target Aesthetic:** Editorial, professional photography quality - Vogue/Elle magazine aesthetic
+- **Technology:**
+  - Uses Nano Banana model (specialized for reference images)
+  - Does NOT require LoRA training
+  - Uses reference images uploaded by the user (selfies, products, style references)
+- **Prompt Style:**
+  - **Length:** 150-400 words (detailed, production-quality prompts)
+  - **Focus:** Comprehensive, structured prompts with specific sections
+  - **Format:** Detailed sections for POSE, STYLING (brand names, fabrics, fits), HAIR, MAKEUP, SCENARIO (detailed environments), LIGHTING (specific descriptions), CAMERA (35mm, 50mm, 85mm, f/2.8, etc.)
+  - **Example:** "Woman in oversized chocolate brown cashmere turtleneck, sleeves pushed to elbows, tucked into high-waisted cream linen trousers... [detailed 200+ word description with brand names, specific lighting, camera specs, pose details]"
+- **Aesthetic Requirements:**
+  - Professional photography terminology allowed (and encouraged)
+  - Brand names and specific product details
+  - Detailed lighting descriptions (golden hour, soft diffused, rim lighting)
+  - Professional camera specs (35mm, 50mm, 85mm, f/2.8, etc.)
+  - Editorial-quality scene descriptions
+  - Dynamic poses and expressions
+- **User Experience:**
+  - Users upload reference images (their photos, products, style inspiration)
+  - Best for luxury content, brand campaigns, professional influencer content
+  - Content feels like high-end editorial photography
+  - Supports sophisticated styling and detailed creative direction
+
+**KEY DIFFERENCES SUMMARY:**
+
+| Feature | Classic Mode | Pro Mode |
+|---------|-------------|----------|
+| **User Requirement** | Trained LoRA (20+ photos) | Reference images (no training needed) |
+| **Model** | FLUX.1-dev | Nano Banana |
+| **Prompt Length** | 30-60 words (short) | 150-400 words (detailed) |
+| **Aesthetic** | Natural iPhone photos | Professional editorial photography |
+| **Image Quality** | Candid, authentic, phone-like | Luxury, sophisticated, magazine-quality |
+| **Lighting** | Uneven natural (realistic) | Specific professional lighting descriptions |
+| **Camera Specs** | iPhone 15 Pro only | 35mm, 50mm, 85mm, f/2.8 (professional) |
+| **Brand Names** | Not included | Included in prompts |
+| **Forbidden Words** | "ultra realistic", "professional", "8K", etc. | Professional terminology encouraged |
+| **Use Case** | Personal brand, lifestyle, authentic moments | Luxury influencer content, brand campaigns, editorial |
+
+**WHEN TO MENTION EACH MODE:**
+- When discussing Maya features or capabilities, clarify which mode you're referring to
+- Classic Mode = users with trained LoRAs who want natural selfie-style photos
+- Pro Mode = users who want luxury editorial content without LoRA training
+- In marketing/emails, explain both options so users understand their choices
+- Pro Mode is newer and premium - emphasize it as the luxury option for users who want professional-quality content
+
+**TECHNICAL NOTES FOR EMAILS/MARKETING:**
+- Classic Mode uses SSELFIE's proprietary LoRA training (20+ photos needed)
+- Pro Mode is instant (just upload reference images, no training wait)
+- Classic Mode = authentic personal brand photos
+- Pro Mode = luxury influencer content, brand campaigns, professional photography quality
+- Both modes are available to Studio members, but serve different creative needs`
 
     // Add image context to system prompt if images are available
     const systemPromptWithImages = availableImageUrls.length > 0
       ? systemPrompt + `\n\n**IMPORTANT: Image Context**
-Sandra has shared ${availableImageUrls.length} image(s) in this conversation. When creating emails using the compose_email tool, you MUST include these image URLs in the imageUrls parameter:
+Sandra has shared ${availableImageUrls.length} image(s) in this conversation. When creating emails using the create_email_sequence or edit_email tools, you MUST include these image URLs in the imageUrls parameter:
 ${availableImageUrls.map((url: string, idx: number) => `${idx + 1}. ${url}`).join('\n')}
 
 These images should be included naturally in the email HTML.`
@@ -7163,13 +7024,275 @@ Keep it practical and data-driven.`
       }
     }
 
+    // ============================================================================
+    // AUTOMATION CREATION TOOL - Generate and optionally implement automation code
+    // ============================================================================
+
+    const createAutomationTool = {
+      name: "create_automation",
+      description: `Generate AND optionally implement automation code directly. Can create cron jobs, webhooks, email sequences, etc. By default, implements the code directly into the codebase. Sandra can request 'generate only' mode if she wants to review in Cursor first.
+
+Examples:
+- "Alex, create a weekly report cron job" → Alex implements it
+- "Alex, generate a payment recovery system but let me review first" → Alex provides code`,
+      
+      input_schema: {
+        type: "object",
+        properties: {
+          automation_type: {
+            type: "string",
+            enum: [
+              "cron_job",
+              "webhook_handler", 
+              "email_sequence",
+              "database_cleanup",
+              "analytics_reporter",
+              "customer_lifecycle",
+              "re_engagement",
+              "payment_recovery",
+              "testimonial_collection",
+              "slack_notification",
+              "backup_system"
+            ],
+            description: "Type of automation to create"
+          },
+          description: {
+            type: "string",
+            description: "What the automation should do"
+          },
+          schedule: {
+            type: "string",
+            description: "When it should run (for cron jobs). Examples: 'daily at 9am', 'every Monday at 6pm', 'every hour'"
+          },
+          implement_directly: {
+            type: "boolean",
+            default: true,
+            description: "If true, Alex implements the code directly. If false, Alex just generates code for Sandra to review in Cursor."
+          }
+        },
+        required: ["automation_type", "description"]
+      },
+      
+      execute: async ({ 
+        automation_type, 
+        description, 
+        schedule, 
+        implement_directly = true 
+      }: {
+        automation_type: string
+        description: string
+        schedule?: string
+        implement_directly?: boolean
+      }) => {
+        console.log('[Alex] 🤖 create_automation called:', {
+          automation_type,
+          description,
+          schedule,
+          implement_directly
+        })
+
+        try {
+          // Step 1: Generate the code using Claude
+          const anthropic = new Anthropic({
+            apiKey: process.env.ANTHROPIC_API_KEY!,
+          })
+
+          const codeGeneration = await anthropic.messages.create({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 8000,
+            system: `You are generating production-ready automation code for SSELFIE Studio.
+
+Tech stack:
+- Next.js 14 App Router
+- Neon PostgreSQL (@vercel/postgres)
+- Resend for transactional emails
+- Resend for email sending  
+- Stripe for payments
+- Vercel hosting
+
+Return a JSON object with:
+{
+  "file_path": "app/api/cron/example/route.ts",
+  "code": "... complete TypeScript code ...",
+  "migration_sql": "... SQL if database changes needed ... OR null",
+  "vercel_config": { "crons": [{ "path": "/api/cron/example", "schedule": "0 9 * * *" }] } OR null,
+  "env_vars": ["VAR_NAME=description", ...] OR [],
+  "next_steps": ["Step 1", "Step 2", ...]
+}
+
+Code requirements:
+- Complete, runnable code
+- Proper error handling
+- Auth checks (CRON_SECRET for crons)
+- Optimized queries
+- Clear comments
+- Environment variable usage
+- Logging
+
+For cron jobs:
+- GET handler with Bearer token auth
+- Return JSON with results
+- Include in vercel.json crons array
+
+For webhooks:  
+- POST handler with signature verification
+- Parse payload safely
+- Handle errors gracefully`,
+            
+            messages: [{
+              role: 'user',
+              content: `Create ${automation_type} automation.
+
+Description: ${description}
+Schedule: ${schedule || 'N/A'}
+
+Generate complete, production-ready code.`
+            }]
+          })
+
+          // Extract text from response
+          const responseText = codeGeneration.content
+            .filter((block: any) => block.type === 'text')
+            .map((block: any) => block.text)
+            .join('\n')
+
+          // Parse JSON from response (might be wrapped in markdown code blocks)
+          let automation: any
+          try {
+            // Try to extract JSON from markdown code blocks
+            const jsonMatch = responseText.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/)
+            if (jsonMatch) {
+              automation = JSON.parse(jsonMatch[1])
+            } else {
+              // Try parsing the whole response as JSON
+              automation = JSON.parse(responseText)
+            }
+          } catch (parseError: any) {
+            console.error('[Alex] ❌ Failed to parse automation JSON:', parseError)
+            return {
+              success: false,
+              error: `Failed to parse generated code: ${parseError.message}`,
+              raw_response: responseText.substring(0, 500)
+            }
+          }
+
+          if (implement_directly) {
+            // Step 2: Implement directly
+            const results = {
+              files_created: [] as string[],
+              files_updated: [] as string[],
+              migrations_created: [] as string[],
+              next_steps: [] as string[]
+            }
+
+            try {
+              // Create the main file
+              const workspaceRoot = process.cwd()
+              const filePath = join(workspaceRoot, automation.file_path)
+              
+              // Ensure directory exists
+              const dirPath = dirname(filePath)
+              await fs.mkdir(dirPath, { recursive: true })
+              
+              // Write the file
+              await fs.writeFile(filePath, automation.code, 'utf8')
+              results.files_created.push(automation.file_path)
+              console.log('[Alex] ✅ Created file:', automation.file_path)
+
+              // Create migration if needed
+              if (automation.migration_sql) {
+                const timestamp = new Date().toISOString().split('T')[0].replace(/-/g, '')
+                const migrationPath = `scripts/migrations/${timestamp}_${automation_type}.sql`
+                const fullMigrationPath = join(workspaceRoot, migrationPath)
+                
+                // Ensure migrations directory exists
+                const migrationDirPath = dirname(fullMigrationPath)
+                await fs.mkdir(migrationDirPath, { recursive: true })
+                
+                await fs.writeFile(fullMigrationPath, automation.migration_sql, 'utf8')
+                results.migrations_created.push(migrationPath)
+                results.next_steps.push(`Run migration: psql $DATABASE_URL -f ${migrationPath}`)
+                console.log('[Alex] ✅ Created migration:', migrationPath)
+              }
+
+              // Update vercel.json if needed
+              if (automation.vercel_config && automation.vercel_config.crons) {
+                const vercelJsonPath = join(workspaceRoot, 'vercel.json')
+                const vercelJsonContent = await fs.readFile(vercelJsonPath, 'utf8')
+                const currentConfig = JSON.parse(vercelJsonContent)
+                
+                // Merge cron configs
+                if (!currentConfig.crons) {
+                  currentConfig.crons = []
+                }
+                currentConfig.crons.push(...automation.vercel_config.crons)
+                
+                // Write back
+                await fs.writeFile(vercelJsonPath, JSON.stringify(currentConfig, null, 2) + '\n', 'utf8')
+                results.files_updated.push('vercel.json')
+                console.log('[Alex] ✅ Updated vercel.json')
+              }
+
+              // Prepare response
+              return {
+                success: true,
+                mode: 'implemented',
+                automation_type,
+                results,
+                env_vars_needed: automation.env_vars || [],
+                next_steps: [
+                  ...(automation.next_steps || []),
+                  "git add .",
+                  `git commit -m 'Add: ${automation_type} automation'`,
+                  "git push",
+                  "Deploy to Vercel"
+                ]
+              }
+
+            } catch (error: any) {
+              // If implementation fails, fall back to generate-only mode
+              console.error('[Alex] ❌ Implementation failed:', error)
+              return {
+                success: false,
+                error: error.message,
+                mode: 'generated_only',
+                automation: automation,
+                message: "Couldn't implement directly. Here's the code to review in Cursor."
+              }
+            }
+
+          } else {
+            // Generate-only mode
+            return {
+              success: true,
+              mode: 'generated_only',
+              automation_type,
+              automation,
+              message: "Code generated. Send to Cursor to implement."
+            }
+          }
+
+        } catch (error: any) {
+          console.error('[Alex] ❌ Error in create_automation tool:', error)
+          return {
+            success: false,
+            error: error.message || 'Failed to create automation',
+            automation_type
+          }
+        }
+      }
+    }
+
     // All email tools are properly defined and enabled
     const tools = {
       // Email Tools - Organized by platform
       
       // EMAIL COMPOSITION
       edit_email: editEmailTool,
-      compose_email: composeEmailTool, // Draft emails for Flodesk (marketing + transactional)
+      
+      // EMAIL SENDING (Resend API)
+      compose_email_draft: composeEmailDraftTool, // Preview-only emails (safe for development)
+      send_resend_email: sendResendEmailTool, // Send one-off emails via Resend API (production only)
       
       // EMAIL STATUS MANAGEMENT (Flodesk workflow)
       mark_email_sent: markEmailSentTool,
@@ -7188,7 +7311,7 @@ Keep it practical and data-driven.`
       // Other email tools
       get_email_campaign: getEmailCampaignTool,
       create_email_sequence: createEmailSequenceTool,
-      schedule_campaign: scheduleCampaignTool,
+      schedule_campaign: scheduleCampaignTool, // Sends campaigns via Resend broadcasts
       check_campaign_status: checkCampaignStatusTool,
       get_resend_audience_data: getResendAudienceDataTool,
       get_email_timeline: getEmailTimelineTool,
@@ -7209,6 +7332,7 @@ Keep it practical and data-driven.`
       research_content_strategy: researchContentStrategyTool,
       get_brand_strategy: getBrandStrategyTool,
       get_sandra_journal: getSandraJournalTool,
+      create_automation: createAutomationTool,
     }
 
     // Separate native Anthropic tools from AI SDK tools
@@ -7308,43 +7432,6 @@ IMPORTANT: When user asks to edit this email:
               type: 'text',
               text: part.text || ''
             })
-          } else if (part.type === 'tool-result' && part.toolName === 'compose_email') {
-            // Tool results need to be formatted for Anthropic
-            // Anthropic expects tool_result with tool_use_id, but we'll format it as text
-            // so Alex can see the email HTML in the conversation
-            const toolResult = part.result || {}
-            const emailHtml = toolResult.html || ''
-            const subjectLine = toolResult.subjectLine || ''
-            const campaignId = toolResult.campaignId
-            
-            // Always include FULL HTML so Alex can extract it for editing
-            const formattedResult = `[PREVIOUS EMAIL]
-Subject: ${subjectLine}
-${campaignId ? `Campaign ID: ${campaignId}\n\n` : ''}
-FULL HTML (for editing):
-\`\`\`html
-${emailHtml}
-\`\`\`
-
-IMPORTANT: When user asks to edit this email:
-1. Use the FULL HTML above as previousVersion
-2. Extract it exactly as shown between the \`\`\`html tags
-3. Make ONLY the requested changes
-4. Return complete updated HTML
-${campaignId ? `\nTo update in database, use campaignId=${campaignId} when calling compose_email.` : ''}
-[END PREVIOUS EMAIL]`
-            
-            console.log('[Alex] 📧 Formatted previous email for Alex:', {
-              subjectLine,
-              campaignId: campaignId || 'none',
-              htmlLength: emailHtml.length,
-              formattedResultLength: formattedResult.length
-            })
-            
-            content.push({
-              type: 'text',
-              text: formattedResult
-            })
           }
         }
         
@@ -7395,19 +7482,25 @@ ${campaignId ? `\nTo update in database, use campaignId=${campaignId} when calli
         const result = await toolDef.execute(toolInput)
         console.log('[Alex] ✅ Tool executed:', toolName)
         
-        // Capture email preview if compose_email
-        if (toolName === 'compose_email' && result?.html && result?.subjectLine) {
+        // Capture email preview from compose_email_draft
+        if (toolName === 'compose_email_draft' && result?.email_preview_data) {
           emailPreviewData = {
-            html: result.html,
-            subjectLine: result.subjectLine,
-            preview: result.preview || stripHtml(result.html).substring(0, 200) + '...',
-            platform: result.emailPreview?.platform || 'flodesk',
-            status: result.emailPreview?.status || 'draft',
-            sentDate: result.emailPreview?.sentDate || null,
-            flodeskCampaignName: result.emailPreview?.flodeskCampaignName || null,
-            analytics: result.emailPreview?.analytics || null
+            html: result.email_preview_data.html,
+            subjectLine: result.email_preview_data.subject,
+            preview: result.email_preview_data.preview,
+            purpose: result.email_preview_data.purpose,
+            to: result.email_preview_data.to,
+            from: result.email_preview_data.from
           }
-          console.log('[Alex] 📧 Captured email preview from', toolName, 'status:', emailPreviewData.status)
+          console.log('[Alex] 📧 Captured email draft preview')
+        } else if (toolName === 'send_resend_email' && result?.success) {
+          // Email was sent, no preview needed
+          emailPreviewData = null
+          console.log('[Alex] 📧 Email sent via Resend, no preview needed')
+        } else if (toolName === 'send_resend_email' && result?.warning) {
+          // Blocked in development - suggest using draft instead
+          emailPreviewData = null
+          console.log('[Alex] ⚠️ Email send blocked in development mode')
         } else if (toolName === 'create_email_sequence') {
           // Capture email preview for sequences
           if (result?.emails && Array.isArray(result.emails) && result.emails.length > 0) {
@@ -7641,19 +7734,25 @@ ${campaignId ? `\nTo update in database, use campaignId=${campaignId} when calli
                           toolResult = await toolDef.execute(toolInput)
                           console.log('[Alex] ✅ Tool executed:', currentToolCall.name)
 
-                          // Capture email preview
-                          if (currentToolCall.name === 'compose_email' && toolResult?.html && toolResult?.subjectLine) {
+                          // Capture email preview from compose_email_draft
+                          if (currentToolCall.name === 'compose_email_draft' && toolResult?.email_preview_data) {
                             emailPreviewData = {
-                              html: toolResult.html,
-                              subjectLine: toolResult.subjectLine,
-                              preview: toolResult.preview || stripHtml(toolResult.html).substring(0, 200) + '...',
-                              platform: toolResult.emailPreview?.platform || 'flodesk',
-                              status: toolResult.emailPreview?.status || 'draft',
-                              sentDate: toolResult.emailPreview?.sentDate || null,
-                              flodeskCampaignName: toolResult.emailPreview?.flodeskCampaignName || null,
-                              analytics: toolResult.emailPreview?.analytics || null
+                              html: toolResult.email_preview_data.html,
+                              subjectLine: toolResult.email_preview_data.subject,
+                              preview: toolResult.email_preview_data.preview,
+                              purpose: toolResult.email_preview_data.purpose,
+                              to: toolResult.email_preview_data.to,
+                              from: toolResult.email_preview_data.from
                             }
-                            console.log('[Alex] 📧 Captured email preview from', currentToolCall.name, 'status:', emailPreviewData.status)
+                            console.log('[Alex] 📧 Captured email draft preview')
+                          } else if (currentToolCall.name === 'send_resend_email' && toolResult?.success) {
+                            // Email was sent, no preview needed
+                            emailPreviewData = null
+                            console.log('[Alex] 📧 Email sent via Resend, no preview needed')
+                          } else if (currentToolCall.name === 'send_resend_email' && toolResult?.warning) {
+                            // Blocked in development - suggest using draft instead
+                            emailPreviewData = null
+                            console.log('[Alex] ⚠️ Email send blocked in development mode')
                         } else if (currentToolCall.name === 'create_email_sequence') {
                             if (toolResult?.emails && Array.isArray(toolResult.emails) && toolResult.emails.length > 0) {
                               const lastSuccessfulEmail = [...toolResult.emails].reverse().find((e: any) => e.readyToSend && e.html && e.subjectLine)
