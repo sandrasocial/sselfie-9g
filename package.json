@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "backfill-flodesk": "tsx scripts/backfill-flodesk-contacts.ts",
     "build": "next build",
     "dev": "next dev",
     "lint": "eslint .",
