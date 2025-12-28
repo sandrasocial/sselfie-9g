@@ -60,11 +60,29 @@ export async function addFlodeskContact(contact: FlodeskContact): Promise<{ succ
     }
 
     const data = await response.json()
+    const subscriberId = data.id || contact.email // Use email as ID if API doesn't return ID
     console.log('[Flodesk] ✅ Contact added/updated:', contact.email)
+
+    // Update database with Flodesk subscriber ID (if users table exists)
+    try {
+      await sql`
+        UPDATE users 
+        SET 
+          flodesk_subscriber_id = ${subscriberId},
+          synced_to_flodesk = TRUE,
+          flodesk_synced_at = NOW()
+        WHERE email = ${contact.email.toLowerCase().trim()}
+      `
+      console.log('[Flodesk] ✅ Updated users table with Flodesk subscriber ID')
+    } catch (dbError: any) {
+      // Don't fail if users table doesn't have these columns yet (migration not run)
+      // This allows the code to work before the migration is executed
+      console.warn('[Flodesk] ⚠️ Could not update users table (migration may not be run yet):', dbError.message)
+    }
 
     return { 
       success: true,
-      contactId: data.id || contact.email // Use email as ID if API doesn't return ID
+      contactId: subscriberId
     }
 
   } catch (error: any) {
@@ -105,10 +123,28 @@ async function updateFlodeskContact(contact: FlodeskContact): Promise<{ success:
       return { success: false, error: `Flodesk API error: ${response.status}` }
     }
 
+    const subscriberId = contact.email // Use email as ID for updates
     console.log('[Flodesk] ✅ Contact updated:', contact.email)
+
+    // Update database with Flodesk subscriber ID (if users table exists)
+    try {
+      await sql`
+        UPDATE users 
+        SET 
+          flodesk_subscriber_id = ${subscriberId},
+          synced_to_flodesk = TRUE,
+          flodesk_synced_at = NOW()
+        WHERE email = ${contact.email.toLowerCase().trim()}
+      `
+      console.log('[Flodesk] ✅ Updated users table with Flodesk subscriber ID')
+    } catch (dbError: any) {
+      // Don't fail if users table doesn't have these columns yet (migration not run)
+      console.warn('[Flodesk] ⚠️ Could not update users table (migration may not be run yet):', dbError.message)
+    }
+
     return { 
       success: true,
-      contactId: contact.email
+      contactId: subscriberId
     }
 
   } catch (error: any) {
