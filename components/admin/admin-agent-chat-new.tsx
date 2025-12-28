@@ -127,7 +127,12 @@ const getEmailPreviewFromMessage = (message: any): any | null => {
       targetSegment: result.data?.targetSegment || result.targetSegment || 'All Subscribers',
       targetCount: result.data?.targetCount || result.targetCount || 2746,
       campaignType: result.type || 'resend', // 'loops_campaign' or 'resend'
-      campaignData: result.data || null // Store full campaign data for Loops campaigns
+      campaignData: result.data || null, // Store full campaign data for Loops campaigns
+      // Flodesk workflow fields
+      status: result.status || result.emailPreview?.status || 'draft',
+      sentDate: result.sentDate || result.emailPreview?.sentDate || null,
+      flodeskCampaignName: result.flodeskCampaignName || result.emailPreview?.flodeskCampaignName || null,
+      analytics: result.analytics || result.emailPreview?.analytics || null
     }
   }
   
@@ -904,7 +909,12 @@ export default function AdminAgentChatNew({
         targetSegment: result.data?.targetSegment || result.targetSegment || 'All Subscribers',
         targetCount: result.data?.targetCount || result.targetCount || 2746,
         campaignType: result.type || 'resend', // 'loops_campaign' or 'resend'
-        campaignData: result.data || null // Store full campaign data for Loops campaigns
+        campaignData: result.data || null, // Store full campaign data for Loops campaigns
+        // Flodesk workflow fields
+        status: result.status || result.emailPreview?.status || 'draft',
+        sentDate: result.sentDate || result.emailPreview?.sentDate || null,
+        flodeskCampaignName: result.flodeskCampaignName || result.emailPreview?.flodeskCampaignName || null,
+        analytics: result.analytics || result.emailPreview?.analytics || null
       }
     }
     
@@ -1771,6 +1781,11 @@ export default function AdminAgentChatNew({
                                         sequenceEmails={messageEmailPreview.sequenceEmails}
                                         sequenceIndex={messageEmailPreview.sequenceIndex}
                                         sequenceTotal={messageEmailPreview.sequenceTotal}
+                                        status={messageEmailPreview.status || 'draft'}
+                                        sentDate={messageEmailPreview.sentDate}
+                                        flodeskCampaignName={messageEmailPreview.flodeskCampaignName}
+                                        analytics={messageEmailPreview.analytics}
+                                        createdAt={message.createdAt}
                                         onEdit={async () => {
                                           if (!messageEmailPreview) {
                                             toast({

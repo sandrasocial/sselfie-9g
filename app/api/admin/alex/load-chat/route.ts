@@ -77,7 +77,12 @@ export async function GET(request: NextRequest) {
                 html: emailData.html,
                 subjectLine: emailData.subjectLine,
                 preview: emailData.preview || emailData.html.replace(/<[^>]*>/g, '').substring(0, 200) + '...',
-                readyToSend: emailData.readyToSend !== false
+                readyToSend: emailData.readyToSend !== false,
+                // Include Flodesk workflow fields
+                status: emailData.status || 'draft',
+                sentDate: emailData.sentDate || null,
+                flodeskCampaignName: emailData.flodeskCampaignName || null,
+                analytics: emailData.analytics || null
               }
             })
             

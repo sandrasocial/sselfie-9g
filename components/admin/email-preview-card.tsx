@@ -10,6 +10,7 @@ interface EmailPreviewCardProps {
   targetSegment: string
   targetCount: number
   campaignId?: number // Optional campaign ID if campaign already exists
+  campaignType?: 'loops_campaign' | 'resend' | 'resend_campaign' // Type of email campaign
   onEdit: () => void
   onApprove: () => void
   onSchedule: () => void
@@ -20,6 +21,18 @@ interface EmailPreviewCardProps {
   sequenceEmails?: Array<any> // All emails in the sequence
   sequenceIndex?: number // Index of this email in the sequence (0-based)
   sequenceTotal?: number // Total number of emails in sequence
+  // Flodesk workflow status tracking
+  status?: 'draft' | 'sent_flodesk' | 'archived' // Email status
+  sentDate?: string | null // ISO date string when email was sent
+  flodeskCampaignName?: string | null // Campaign name in Flodesk
+  analytics?: {
+    sent?: number
+    opened?: number
+    clicked?: number
+    openRate?: number
+    clickRate?: number
+  } | null // Analytics data from Flodesk
+  createdAt?: string | Date // When email was created
 }
 
 export default function EmailPreviewCard({
@@ -29,6 +42,7 @@ export default function EmailPreviewCard({
   targetSegment,
   targetCount,
   campaignId,
+  campaignType = 'resend',
   onEdit,
   onApprove,
   onSchedule,
@@ -38,7 +52,12 @@ export default function EmailPreviewCard({
   sequenceName,
   sequenceEmails,
   sequenceIndex,
-  sequenceTotal
+  sequenceTotal,
+  status = 'draft',
+  sentDate,
+  flodeskCampaignName,
+  analytics,
+  createdAt
 }: EmailPreviewCardProps) {
   const [showFullEmail, setShowFullEmail] = useState(false)
   const [showHTMLCode, setShowHTMLCode] = useState(false)
@@ -214,10 +233,13 @@ export default function EmailPreviewCard({
   }
 
   const handleApprove = async () => {
+    const platformName = campaignType === 'loops_campaign' ? 'Loops' : 'Resend'
     const confirmed = window.confirm(
       `Are you sure you want to send this email to ${targetCount.toLocaleString()} recipients in "${targetSegment}"?\n\n` +
       `Subject: ${subject}\n\n` +
-      `This will create a broadcast in Resend and send immediately.`
+      `${campaignType === 'loops_campaign' 
+        ? 'This email will be sent via Loops. Make sure to review and send from the Loops dashboard.' 
+        : 'This will create a broadcast in Resend and send immediately.'}`
     )
     if (!confirmed) return
     onApprove()
@@ -271,11 +293,23 @@ export default function EmailPreviewCard({
     >
       {/* Header */}
       <div className="bg-stone-50 border-b border-stone-200 px-4 sm:px-6 py-3 sm:py-4">
-        <div className="flex items-center gap-2 mb-2">
-          <Mail className="w-4 h-4 sm:w-5 sm:h-5 text-stone-700" />
-          <h3 className="text-sm sm:text-base font-semibold text-stone-900">
-            {isSequence ? '📧 EMAIL SEQUENCE PREVIEW' : '✨ EMAIL PREVIEW ✨'}
-          </h3>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <Mail className="w-4 h-4 sm:w-5 sm:h-5 text-stone-700" />
+            <h3 className="text-sm sm:text-base font-semibold text-stone-900">
+              {isSequence ? '📧 EMAIL SEQUENCE PREVIEW' : '✨ EMAIL PREVIEW ✨'}
+            </h3>
+          </div>
+          {/* Status Badge */}
+          <div className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+            status === 'sent_flodesk' 
+              ? 'bg-green-100 text-green-800 border border-green-200' 
+              : status === 'archived'
+              ? 'bg-yellow-100 text-yellow-800 border border-yellow-200'
+              : 'bg-stone-200 text-stone-700 border border-stone-300'
+          }`}>
+            {status === 'sent_flodesk' ? '✓ Sent' : status === 'archived' ? 'Archived' : 'Draft'}
+          </div>
         </div>
         {isSequence && sequenceName && (
           <div className="mb-2 text-xs text-stone-600">
@@ -291,7 +325,72 @@ export default function EmailPreviewCard({
           <div className="wrap-break-word"><span className="font-medium">From:</span> Sandra @ SSELFIE Studio</div>
           <div className="wrap-break-word"><span className="font-medium">To:</span> {targetSegment} ({targetCount.toLocaleString()} contacts)</div>
           <div className="wrap-break-word"><span className="font-medium">Subject:</span> {subject}</div>
+          {createdAt && (
+            <div className="text-xs text-stone-500">
+              <span className="font-medium">Created:</span> {new Date(createdAt).toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric', 
+                year: 'numeric' 
+              })}
+            </div>
+          )}
+          {sentDate && (
+            <div className="text-xs text-green-700 font-medium">
+              <span className="font-medium">Sent:</span> {new Date(sentDate).toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric', 
+                year: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit'
+              })}
+            </div>
+          )}
+          {flodeskCampaignName && (
+            <div className="text-xs text-stone-600">
+              <span className="font-medium">Campaign:</span> {flodeskCampaignName}
+            </div>
+          )}
         </div>
+        {/* Analytics Section */}
+        {analytics && analytics.sent && analytics.sent > 0 && (
+          <div className="mt-3 pt-3 border-t border-stone-200">
+            <div className="text-xs font-medium text-stone-700 mb-2">📊 Analytics</div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+              <div>
+                <div className="text-stone-500">Sent</div>
+                <div className="font-semibold text-stone-900">{analytics.sent.toLocaleString()}</div>
+              </div>
+              {analytics.opened !== undefined && (
+                <div>
+                  <div className="text-stone-500">Opened</div>
+                  <div className="font-semibold text-stone-900">
+                    {analytics.opened.toLocaleString()}
+                    {analytics.openRate !== undefined && (
+                      <span className="text-stone-500 ml-1">({analytics.openRate.toFixed(1)}%)</span>
+                    )}
+                  </div>
+                </div>
+              )}
+              {analytics.clicked !== undefined && (
+                <div>
+                  <div className="text-stone-500">Clicked</div>
+                  <div className="font-semibold text-stone-900">
+                    {analytics.clicked.toLocaleString()}
+                    {analytics.clickRate !== undefined && (
+                      <span className="text-stone-500 ml-1">({analytics.clickRate.toFixed(1)}%)</span>
+                    )}
+                  </div>
+                </div>
+              )}
+              {analytics.openRate !== undefined && (
+                <div>
+                  <div className="text-stone-500">Open Rate</div>
+                  <div className="font-semibold text-stone-900">{analytics.openRate.toFixed(1)}%</div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Content */}
