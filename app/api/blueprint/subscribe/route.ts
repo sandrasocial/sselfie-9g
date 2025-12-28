@@ -160,22 +160,22 @@ export async function POST(request: NextRequest) {
         }
       })
       
-      if (loopsResult.success) {
-        console.log(`[v0] ✅ Added to Loops: ${email}`)
+      if (flodeskResult.success) {
+        console.log(`[v0] ✅ Added to Flodesk: ${email}`)
         
         await sql`
           UPDATE blueprint_subscribers 
-          SET loops_contact_id = ${loopsResult.contactId || email},
-              synced_to_loops = true,
-              loops_synced_at = NOW(),
+          SET flodesk_contact_id = ${flodeskResult.contactId || email},
+              synced_to_flodesk = true,
+              flodesk_synced_at = NOW(),
               updated_at = NOW()
           WHERE id = ${newSubscriber.id}
         `
       } else {
-        console.warn(`[v0] ⚠️ Loops sync failed: ${loopsResult.error}`)
+        console.warn(`[v0] ⚠️ Flodesk sync failed: ${flodeskResult.error}`)
       }
-    } catch (loopsError: any) {
-      console.warn(`[v0] ⚠️ Loops sync error:`, loopsError)
+    } catch (flodeskError: any) {
+      console.warn(`[v0] ⚠️ Flodesk sync error:`, flodeskError)
     }
 
     console.log("[v0] Returning success response")
