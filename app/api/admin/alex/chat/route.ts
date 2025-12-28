@@ -437,18 +437,22 @@ For major rewrites, use compose_email with previousVersion instead.`,
 
     const composeEmailTool = {
       name: "compose_email",
-      description: `Create or refine email content. Returns formatted HTML email.
+      description: `Create or refine email drafts. Returns formatted HTML email ready to copy into Flodesk.
+
+This tool ONLY generates email drafts - it does NOT send emails. Sandra will copy the HTML and paste it into Flodesk manually.
 
 Use this when Sandra wants to:
-  - Create a new email campaign
-- Edit/refine existing email content
+  - Create a new email campaign draft
+  - Edit/refine existing email content
   - Generate subject lines
   - Use email templates
   
   Examples:
   - "Create a welcome email for new Studio members"
   - "Write a newsletter about the new Maya features"
-- "Make that email warmer and add a PS"`,
+  - "Make that email warmer and add a PS"
+
+The email preview card will display the HTML for Sandra to copy into Flodesk.`,
       
       input_schema: {
         type: "object",
@@ -783,12 +787,34 @@ Return ONLY the updated HTML, nothing else.`
             finalCampaignId = 0
           }
           
+          // Generate plain text version for Flodesk
+          const emailText = stripHtml(emailHtml)
+          
           return {
             html: emailHtml,
-            subjectLine: finalSubjectLine,
+            emailText: emailText,
+            subject: finalSubjectLine,
+            subjectLine: finalSubjectLine, // Keep for backward compatibility
             preview: previewText,
             readyToSend: true,
-            campaignId: finalCampaignId > 0 ? finalCampaignId : undefined
+            campaignId: finalCampaignId > 0 ? finalCampaignId : undefined,
+            emailPreview: {
+              subject: finalSubjectLine,
+              html: emailHtml,
+              text: emailText,
+              platform: 'flodesk',
+              status: 'draft', // Always starts as draft
+              createdAt: new Date().toISOString(),
+              sentDate: null,
+              flodeskCampaignName: null,
+              analytics: {
+                sent: 0,
+                opened: 0,
+                clicked: 0,
+                openRate: 0,
+                clickRate: 0
+              }
+            }
           }
         } catch (error: any) {
           console.error("[Alex] ❌ Error in compose_email tool:", error)
@@ -815,10 +841,13 @@ Return ONLY the updated HTML, nothing else.`
           return {
             error: errorMessage,
             html: "",
-            subjectLine: subjectLine || "Email Subject",
+            emailText: "",
+            subject: subjectLine || "Email Subject",
+            subjectLine: subjectLine || "Email Subject", // Keep for backward compatibility
             preview: "",
             readyToSend: false,
-            errorDetails: process.env.NODE_ENV === 'development' ? error.stack : undefined
+            errorDetails: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+            emailPreview: null // No preview on error
           }
         }
       }
@@ -1591,311 +1620,13 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
     //
     // Campaign Management:
     // - Loops SDK does NOT have createCampaign() or getCampaigns() methods
-    // - Campaigns are created via REST API or Loops dashboard
-    // - We use REST API for campaign creation (see compose_loops_email tool)
     // - Analytics retrieved via REST API (see get_loops_analytics tool)
     //
     // API Endpoints:
-    // - POST https://app.loops.so/api/v1/campaigns - Create campaign
     // - GET https://app.loops.so/api/v1/campaigns - List campaigns
     // ============================================================================
 
-    const composeLoopsEmailTool = {
-      name: "compose_loops_email",
-      description: `Create marketing email campaigns using Loops.
-
-Targeting works via TAGS and USER GROUPS, not segments:
-
-TAGS (combine multiple):
-- freebie-guide: Downloaded selfie guide
-- brand-blueprint: Downloaded brand blueprint  
-- prompt-guide: Downloaded prompt guide
-- customer, paid: Paying customers
-- studio-member: Studio members
-- beta-customer: Beta customers
-- engaged, active: Active users
-- cold, inactive: Inactive users
-- vip: VIP customers
-
-USER GROUPS:
-- subscriber: All subscribers
-- studio-member: Studio members
-- paid: Paying customers
-- cold: Cold leads
-- engaged: Active users
-
-Examples:
-- Target free users: targetTags=['freebie-guide'], excludeTags=['paid']
-- Target paying customers: targetTags=['paid', 'customer']
-- Target cold users: targetTags=['cold']
-- Target engaged Studio members: targetTags=['studio-member', 'engaged']
-
-Use Loops for MARKETING emails:
-- Newsletters and campaigns
-- Product launches
-- Nurture sequences
-- Re-engagement campaigns
-- Promotional emails
-- Educational content
-
-Use Resend (compose_email) for TRANSACTIONAL emails:
-- Login links
-- Password resets
-- Purchase receipts
-- Account notifications
-
-This creates a draft campaign in Loops that Sandra can review before sending.`,
-      
-      input_schema: {
-        type: "object",
-        properties: {
-          campaignName: {
-            type: "string",
-            description: "Internal name for campaign (e.g., 'Christmas Prompts Welcome Email')"
-          },
-          subject: {
-            type: "string",
-            description: "Email subject line"
-          },
-          preheader: {
-            type: "string",
-            description: "Preview text shown after subject line in inbox"
-          },
-          emailIntent: {
-            type: "string",
-            description: "What this email should accomplish (e.g., 'Welcome new Christmas prompts downloaders and soft-sell Studio membership')"
-          },
-          targetTags: {
-            type: "array",
-            items: { type: "string" },
-            description: "Tags to target (e.g., ['freebie-guide', 'lead']). Contacts must have ALL tags."
-          },
-          excludeTags: {
-            type: "array", 
-            items: { type: "string" },
-            description: "Tags to exclude (e.g., ['paid']). Contacts with these tags will be excluded."
-          },
-          userGroup: {
-            type: "string",
-            enum: ["subscriber", "studio-member", "paid", "cold", "engaged"],
-            description: "User group to target (optional, can combine with tags)"
-          },
-          tone: {
-            type: "string",
-            enum: ["warm", "professional", "excited", "intimate", "empowering"],
-            description: "Email tone (default: warm)"
-          },
-          includeTestimonials: {
-            type: "boolean",
-            description: "Whether to include customer testimonials"
-          },
-          includeImages: {
-            type: "boolean",
-            description: "Whether to include image layouts"
-          }
-        },
-        required: ["campaignName", "subject", "emailIntent"]
-      },
-      
-      execute: async ({
-        campaignName,
-        subject,
-        preheader,
-        emailIntent,
-        targetTags = [],
-        excludeTags = [],
-        userGroup,
-        tone = "warm",
-        includeTestimonials = false,
-        includeImages = false
-      }) => {
-        try {
-          console.log('[Alex] 📧 Creating Loops campaign:', { 
-            campaignName, 
-            targetTags, 
-            excludeTags, 
-            userGroup 
-          })
-          
-          // Get testimonials if requested
-          let testimonials = []
-          if (includeTestimonials) {
-            const testimonialsResult = await sql`
-              SELECT customer_name, testimonial_text, rating, screenshot_url
-              FROM testimonials
-              WHERE is_published = true AND rating >= 4
-              ORDER BY is_featured DESC, rating DESC
-              LIMIT 3
-            `
-            testimonials = testimonialsResult
-          }
-          
-          // Build email system prompt with Loops context
-          const emailPrompt = buildEmailSystemPrompt({
-            tone,
-            campaignSlug: campaignName.toLowerCase().replace(/\s+/g, '-'),
-            siteUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://sselfie.ai',
-            templates: []
-          })
-          
-          // Build audience description for email generation
-          const audienceDescription = [
-            targetTags.length > 0 && `Tags: ${targetTags.join(', ')}`,
-            excludeTags.length > 0 && `Exclude: ${excludeTags.join(', ')}`,
-            userGroup && `User Group: ${userGroup}`
-          ].filter(Boolean).join(' | ') || 'All subscribers'
-
-          // Generate email content
-          const fullPrompt = `${emailPrompt}
-
-**Campaign Details:**
-- Campaign Name: ${campaignName}
-- Subject: ${subject}
-- Preheader: ${preheader || ''}
-- Target Audience: ${audienceDescription}
-- Intent: ${emailIntent}
-
-${includeTestimonials && testimonials.length > 0 ? `
-**Include these testimonials:**
-${testimonials.map((t, i) => `
-${i + 1}. ${t.customer_name} (${t.rating} stars)
-   "${t.testimonial_text}"
-   ${t.screenshot_url ? `Image: ${t.screenshot_url}` : ''}
-`).join('\n')}
-` : ''}
-
-${includeImages ? 'Include beautiful image layouts where appropriate (hero image, featured images, testimonial photos).' : ''}
-
-Create a complete, ready-to-send email in Sandra's voice.`
-
-          const anthropic = new Anthropic({
-            apiKey: process.env.ANTHROPIC_API_KEY!
-          })
-          
-          const response = await anthropic.messages.create({
-            model: 'claude-sonnet-4-20250514',
-            max_tokens: 4000,
-            messages: [{
-              role: 'user',
-              content: fullPrompt
-            }]
-          })
-          
-          const emailHtml = response.content
-            .filter((block: any) => block.type === 'text')
-            .map((block: any) => block.text)
-            .join('\n')
-            .trim()
-          
-          // Map to Loops API format
-          // Note: Actual Loops API filtering happens when sending, not when creating draft
-          // We document the targeting in the campaign metadata
-          const campaignAudience = {
-            includeTags: targetTags || [],
-            excludeTags: excludeTags || [],
-            userGroup: userGroup || LOOPS_AUDIENCES.ALL_SUBSCRIBERS
-          }
-          
-          // Create campaign in Loops via REST API
-          // Note: Loops SDK doesn't have createCampaign() method, so we use REST API
-          let campaignId: string | null = null
-          let campaignError: string | null = null
-          
-          try {
-            const apiKey = process.env.LOOPS_API_KEY
-            if (!apiKey) {
-              throw new Error('LOOPS_API_KEY not configured')
-            }
-            
-            // Create campaign via Loops REST API
-            // Note: Tag filtering is applied when sending the campaign, not when creating the draft
-            const campaignResponse = await fetch('https://app.loops.so/api/v1/campaigns', {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${apiKey}`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                name: campaignName,
-                subject: subject,
-                previewText: preheader || subject.substring(0, 100),
-                body: emailHtml,
-                userGroup: campaignAudience.userGroup,
-                // Additional campaign settings
-                isDraft: true // Create as draft so Sandra can review
-                // Note: includeTags and excludeTags are set when sending, not in draft creation
-              })
-            })
-            
-            if (campaignResponse.ok) {
-              const campaignData = await campaignResponse.json()
-              campaignId = campaignData.id || campaignData.campaignId || `campaign-${Date.now()}`
-              console.log('[Alex] ✅ Loops campaign created via API:', campaignId)
-            } else {
-              const errorData = await campaignResponse.json().catch(() => ({}))
-              campaignError = errorData.message || `HTTP ${campaignResponse.status}`
-              console.warn('[Alex] ⚠️ Loops API campaign creation failed:', campaignError)
-              // Continue with draft ID - campaign HTML is still generated
-              campaignId = `draft-${Date.now()}`
-            }
-          } catch (apiError: any) {
-            campaignError = apiError.message || 'Failed to create campaign via API'
-            console.warn('[Alex] ⚠️ Loops API error:', campaignError)
-            // Continue with draft ID - campaign HTML is still generated
-            campaignId = `draft-${Date.now()}`
-          }
-          
-          console.log('[Alex] ✅ Loops campaign prepared:', campaignId)
-          
-          // Save email preview for display
-          const emailPreview = {
-            html: emailHtml,
-            subjectLine: subject,
-            preview: preheader || stripHtml(emailHtml).substring(0, 200)
-          }
-          
-          // Build targeting instructions for Sandra
-          const targetingInfo = [
-            campaignAudience.includeTags.length > 0 && `Include tags: ${campaignAudience.includeTags.join(', ')}`,
-            campaignAudience.excludeTags.length > 0 && `Exclude tags: ${campaignAudience.excludeTags.join(', ')}`,
-            `User group: ${campaignAudience.userGroup}`
-          ].filter(Boolean).join('\n')
-
-          return {
-            success: true,
-            type: "loops_campaign",
-            html: emailHtml,
-            subjectLine: subject,
-            preview: emailPreview.preview,
-            data: {
-              campaignId: campaignId,
-              campaignName,
-              subject,
-              preheader,
-              targetTags: campaignAudience.includeTags,
-              excludeTags: campaignAudience.excludeTags,
-              userGroup: campaignAudience.userGroup,
-              loopsUrl: campaignId?.startsWith('draft-') 
-                ? 'https://app.loops.so/campaigns' 
-                : `https://app.loops.so/campaigns/${campaignId}`,
-              status: campaignId?.startsWith('draft-') ? 'draft-local' : 'draft',
-              apiError: campaignError || undefined
-            },
-            message: campaignId?.startsWith('draft-')
-              ? `✅ Generated Loops campaign "${campaignName}"\n\n📝 Campaign HTML ready. ${campaignError ? `\n⚠️ API creation failed: ${campaignError}\n` : ''}\n🎯 Targeting:\n${targetingInfo}\n\n📌 Note: When sending this campaign in Loops, apply these filters:\n- Include tags: ${campaignAudience.includeTags.length > 0 ? campaignAudience.includeTags.join(', ') : 'None'}\n- Exclude tags: ${campaignAudience.excludeTags.length > 0 ? campaignAudience.excludeTags.join(', ') : 'None'}\n- User group: ${campaignAudience.userGroup}`
-              : `✅ Created Loops campaign "${campaignName}"\n\n🎯 Targeting:\n${targetingInfo}\n\n📍 Review and send from: https://app.loops.so/campaigns/${campaignId}\n\n📌 When sending, apply tag filters in Loops dashboard.`,
-            displayCard: true
-          }
-          
-        } catch (error: any) {
-          console.error('[Alex] ❌ Error creating Loops campaign:', error)
-          return {
-            success: false,
-            error: error.message || 'Failed to create Loops campaign'
-          }
-        }
-      }
-    }
+    // compose_loops_email tool removed - user sends emails via Flodesk manually
 
     const createLoopsSequenceTool = {
       name: "create_loops_sequence",
@@ -4415,8 +4146,8 @@ Only returns PUBLISHED testimonials (is_published = true).`,
         try {
           console.log('[Alex] 📣 Fetching testimonials:', { limit, featuredOnly, minRating, withImages })
           
-          // Build query conditions
-          let query = `
+          // Build query using tagged template syntax
+          const testimonials = await sql`
             SELECT 
               id,
               customer_name,
@@ -4431,25 +4162,14 @@ Only returns PUBLISHED testimonials (is_published = true).`,
             FROM testimonials
             WHERE is_published = true
               AND rating >= ${minRating}
-          `
-          
-          if (featuredOnly) {
-            query += ` AND is_featured = true`
-          }
-          
-          if (withImages) {
-            query += ` AND screenshot_url IS NOT NULL`
-          }
-          
-          query += `
+              ${featuredOnly ? sql`AND is_featured = true` : sql``}
+              ${withImages ? sql`AND screenshot_url IS NOT NULL` : sql``}
             ORDER BY 
               is_featured DESC,
               rating DESC,
               collected_at DESC
             LIMIT ${Math.min(limit, 10)}
           `
-          
-          const testimonials = await sql(query)
           
           if (testimonials.length === 0) {
             return {
@@ -5708,10 +5428,10 @@ This provides real-time data from the database.`,
         required: []
       },
 
-      execute: async ({ timeRange = 'week', includeConversionFunnel = true }: {
-        timeRange?: string
-        includeConversionFunnel?: boolean
-      } = {}) => {
+      execute: async (params: any = {}) => {
+        // Set defaults for optional parameters
+        const timeRange = params?.timeRange || 'week'
+        const includeConversionFunnel = params?.includeConversionFunnel !== false  // Default true
         try {
           // Calculate date range
           let startDate = new Date()
@@ -5740,7 +5460,7 @@ This provides real-time data from the database.`,
               COUNT(*)::int as total_users,
               COUNT(*) FILTER (WHERE created_at >= ${startDate.toISOString()})::int as new_signups
             FROM users
-            WHERE (is_test_mode = FALSE OR is_test_mode IS NULL)
+            WHERE email IS NOT NULL
           `
           
           // Active subscribers count (fixed - uses subscriptions table)
@@ -6530,12 +6250,11 @@ Keep it practical and data-driven.`
     const tools = {
       // Email Tools - Organized by platform
       
-      // RESEND (Transactional only)
+      // EMAIL COMPOSITION
       edit_email: editEmailTool,
-      compose_email: composeEmailTool, // Login, receipts, notifications
+      compose_email: composeEmailTool, // Draft emails for Flodesk (marketing + transactional)
       
-      // LOOPS (Marketing only)  
-      compose_loops_email: composeLoopsEmailTool, // NEW
+      // LOOPS (Contact management only - no campaign creation)
       create_loops_sequence: createLoopsSequenceTool, // NEW
       add_to_loops_audience: addToLoopsAudienceTool, // NEW
       get_loops_analytics: getLoopsAnalyticsTool, // NEW
@@ -6754,9 +6473,14 @@ ${campaignId ? `\nTo update in database, use campaignId=${campaignId} when calli
           emailPreviewData = {
             html: result.html,
             subjectLine: result.subjectLine,
-            preview: result.preview || stripHtml(result.html).substring(0, 200) + '...'
+            preview: result.preview || stripHtml(result.html).substring(0, 200) + '...',
+            platform: result.emailPreview?.platform || 'flodesk',
+            status: result.emailPreview?.status || 'draft',
+            sentDate: result.emailPreview?.sentDate || null,
+            flodeskCampaignName: result.emailPreview?.flodeskCampaignName || null,
+            analytics: result.emailPreview?.analytics || null
           }
-          console.log('[Alex] 📧 Captured email preview')
+          console.log('[Alex] 📧 Captured email preview from', toolName, 'status:', emailPreviewData.status)
         } else if (toolName === 'create_email_sequence') {
           // Capture email preview for sequences
           if (result?.emails && Array.isArray(result.emails) && result.emails.length > 0) {
@@ -6928,16 +6652,54 @@ ${campaignId ? `\nTo update in database, use campaignId=${campaignId} when calli
 
                   // Tool input accumulation
                   if (event.type === 'content_block_delta' && event.delta?.type === 'input_json_delta') {
-                    if (currentToolCall) {
-                    currentToolCall.input += event.delta.partial_json || ''
+                    if (!currentToolCall) {
+                      console.error('[Alex] ❌ Received input_json_delta without currentToolCall')
+                      continue
+                    }
+                    // Initialize input if not already initialized
+                    if (!currentToolCall.input) {
+                      currentToolCall.input = ''
+                    }
+                    const delta = event.delta.partial_json || ''
+                    currentToolCall.input += delta
+                    // Debug logging for input accumulation
+                    if (delta.length > 0) {
+                      console.log('[Alex] 📝 Accumulated input delta, current length:', currentToolCall.input.length)
                     }
                   }
 
                   // Tool use complete
                   if (event.type === 'content_block_stop' && currentToolCall) {
                     try {
-                      const toolInput = JSON.parse(currentToolCall.input)
-                      console.log('[Alex] 🔧 Executing tool:', currentToolCall.name)
+                      // Validate input is not empty and is valid JSON before parsing
+                      if (!currentToolCall.input || currentToolCall.input.trim() === '') {
+                        console.warn('[Alex] ⚠️ Tool input is empty for:', currentToolCall.name)
+                        currentToolCall = null
+                        continue
+                      }
+                      
+                      // Try to parse
+                      let toolInput
+                      try {
+                        toolInput = JSON.parse(currentToolCall.input)
+                      } catch (parseError: any) {
+                        console.error('[Alex] ❌ Invalid JSON in tool input:', {
+                          tool: currentToolCall.name,
+                          input: currentToolCall.input,
+                          error: parseError.message
+                        })
+                        currentToolCall = null
+                        continue
+                      }
+                      
+                      // Validate parsed input is a valid object
+                      if (!toolInput || typeof toolInput !== 'object') {
+                        console.error('[Alex] ❌ Tool input is not a valid object:', toolInput)
+                        currentToolCall = null
+                        continue
+                      }
+                      
+                      console.log('[Alex] 🔧 Executing tool:', currentToolCall.name, 'with input:', toolInput)
 
                       // Execute tool
                     const toolDef = tools[currentToolCall.name as keyof typeof tools]
@@ -6957,9 +6719,14 @@ ${campaignId ? `\nTo update in database, use campaignId=${campaignId} when calli
                             emailPreviewData = {
                               html: toolResult.html,
                               subjectLine: toolResult.subjectLine,
-                              preview: toolResult.preview || stripHtml(toolResult.html).substring(0, 200) + '...'
+                              preview: toolResult.preview || stripHtml(toolResult.html).substring(0, 200) + '...',
+                              platform: toolResult.emailPreview?.platform || 'flodesk',
+                              status: toolResult.emailPreview?.status || 'draft',
+                              sentDate: toolResult.emailPreview?.sentDate || null,
+                              flodeskCampaignName: toolResult.emailPreview?.flodeskCampaignName || null,
+                              analytics: toolResult.emailPreview?.analytics || null
                             }
-                            console.log('[Alex] 📧 Captured email preview')
+                            console.log('[Alex] 📧 Captured email preview from', currentToolCall.name, 'status:', emailPreviewData.status)
                         } else if (currentToolCall.name === 'create_email_sequence') {
                             if (toolResult?.emails && Array.isArray(toolResult.emails) && toolResult.emails.length > 0) {
                               const lastSuccessfulEmail = [...toolResult.emails].reverse().find((e: any) => e.readyToSend && e.html && e.subjectLine)

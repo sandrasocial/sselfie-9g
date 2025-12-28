@@ -124,8 +124,10 @@ const getEmailPreviewFromMessage = (message: any): any | null => {
       subject: result.subjectLine,
       preview: result.preview || htmlValue.replace(/<[^>]*>/g, '').substring(0, 200) + '...',
       html: htmlValue,
-      targetSegment: 'All Subscribers',
-      targetCount: 2746
+      targetSegment: result.data?.targetSegment || result.targetSegment || 'All Subscribers',
+      targetCount: result.data?.targetCount || result.targetCount || 2746,
+      campaignType: result.type || 'resend', // 'loops_campaign' or 'resend'
+      campaignData: result.data || null // Store full campaign data for Loops campaigns
     }
   }
   
@@ -899,8 +901,10 @@ export default function AdminAgentChatNew({
         subject: result.subjectLine,
         preview: result.preview || htmlValue.replace(/<[^>]*>/g, '').substring(0, 200) + '...',
         html: htmlValue, // Use validated HTML
-        targetSegment: 'All Subscribers',
-        targetCount: 2746
+        targetSegment: result.data?.targetSegment || result.targetSegment || 'All Subscribers',
+        targetCount: result.data?.targetCount || result.targetCount || 2746,
+        campaignType: result.type || 'resend', // 'loops_campaign' or 'resend'
+        campaignData: result.data || null // Store full campaign data for Loops campaigns
       }
     }
     
@@ -1759,8 +1763,9 @@ export default function AdminAgentChatNew({
                                         subject={messageEmailPreview.subject}
                                         preview={messageEmailPreview.preview}
                                         htmlContent={messageEmailPreview.html}
-                                        targetSegment={messageEmailPreview.targetSegment}
-                                        targetCount={messageEmailPreview.targetCount}
+                                        targetSegment={messageEmailPreview.targetSegment || 'All Subscribers'}
+                                        targetCount={messageEmailPreview.targetCount || 2746}
+                                        campaignType={messageEmailPreview.campaignType || 'resend'}
                                         isSequence={messageEmailPreview.isSequence || false}
                                         sequenceName={messageEmailPreview.sequenceName}
                                         sequenceEmails={messageEmailPreview.sequenceEmails}
@@ -1775,10 +1780,12 @@ export default function AdminAgentChatNew({
                                             })
                                             return
                                           }
-                                          const editPrompt = `I want to edit this email. Please use the compose_email tool with the previousVersion parameter.
+                                          // Always use compose_email tool
+                                          const toolName = 'compose_email'
+                                          const editPrompt = `I want to edit this email. Please use the ${toolName} tool with the previousVersion parameter.
 
 CRITICAL INSTRUCTIONS:
-1. You MUST call the compose_email tool (do not just describe changes)
+1. You MUST call the ${toolName} tool (do not just describe changes)
 2. Use the previousVersion parameter and pass the HTML below
 3. Make the specific changes I request while keeping the overall structure and style
 
@@ -1787,7 +1794,7 @@ ${messageEmailPreview.html || ''}
 
 Current subject: ${messageEmailPreview.subject || ''}
 
-Please make the edits I request using the compose_email tool.`
+Please make the edits I request using the ${toolName} tool.`
                                           await sendMessage({ text: editPrompt })
                                         }}
                                         onManualEdit={async (editedHtml: string) => {
