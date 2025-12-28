@@ -20,6 +20,47 @@ export default function WeeklyJournalPage() {
   const [enhanced, setEnhanced] = useState<any>(null)
   const [saving, setSaving] = useState(false)
   const [published, setPublished] = useState(false)
+  const [loading, setLoading] = useState(true)
+  
+  const loadJournal = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/admin/journal/current')
+      const data = await response.json()
+      
+      if (data.success && data.journal) {
+        setJournal({
+          features_built: data.journal.features_built || '',
+          personal_story: data.journal.personal_story || '',
+          struggles: data.journal.struggles || '',
+          wins: data.journal.wins || '',
+          fun_activities: data.journal.fun_activities || '',
+          weekly_goals: data.journal.weekly_goals || '',
+          future_self_vision: data.journal.future_self_vision || ''
+        })
+        
+        // If enhanced versions exist, set those too
+        if (data.journal.features_built_enhanced || data.journal.personal_story_enhanced) {
+          setEnhanced({
+            features_built_enhanced: data.journal.features_built_enhanced || null,
+            personal_story_enhanced: data.journal.personal_story_enhanced || null,
+            struggles_enhanced: data.journal.struggles_enhanced || null,
+            wins_enhanced: data.journal.wins_enhanced || null,
+            future_self_vision_enhanced: data.journal.future_self_vision_enhanced || null
+          })
+        }
+      }
+    } catch (error) {
+      console.error('Error loading journal:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+  
+  // Load existing journal entry on mount
+  useEffect(() => {
+    loadJournal()
+  }, [])
   
   // Auto-save draft every 30 seconds
   useEffect(() => {
@@ -110,6 +151,18 @@ export default function WeeklyJournalPage() {
     } finally {
       setSaving(false)
     }
+  }
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-stone-50">
+        <div className="max-w-4xl mx-auto p-8">
+          <p className="text-sm tracking-[0.2em] uppercase text-stone-400 text-center">
+            Loading journal...
+          </p>
+        </div>
+      </div>
+    )
   }
   
   return (
