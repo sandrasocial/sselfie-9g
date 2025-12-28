@@ -1537,6 +1537,24 @@ export async function POST(request: NextRequest) {
 
         console.log(`[v0] Subscription cancelled: ${subscription.id}`)
 
+        // Get customer email for Flodesk sync
+        let customerEmail: string | null = null
+        try {
+          const subRecord = await sql`
+            SELECT user_id FROM subscriptions WHERE stripe_subscription_id = ${subscription.id}
+          `
+          if (subRecord.length > 0) {
+            const userRecord = await sql`
+              SELECT email FROM users WHERE id = ${subRecord[0].user_id}
+            `
+            if (userRecord.length > 0) {
+              customerEmail = userRecord[0].email
+            }
+          }
+        } catch (emailError) {
+          console.warn(`[v0] Could not get customer email for subscription cancellation:`, emailError)
+        }
+
         await sql`
           UPDATE subscriptions
           SET status = 'cancelled', updated_at = NOW()
@@ -1544,6 +1562,17 @@ export async function POST(request: NextRequest) {
         `
 
         console.log(`[v0] ✅ Subscription ${subscription.id} marked as cancelled`)
+
+        // Tag customer as cancelled in Flodesk
+        if (customerEmail) {
+          try {
+            await tagFlodeskContact(customerEmail, ['cancelled'])
+            console.log(`[v0] ✅ Tagged cancelled customer in Flodesk: ${customerEmail}`)
+          } catch (flodeskError) {
+            console.warn(`[v0] ⚠️ Flodesk sync error (non-critical):`, flodeskError)
+          }
+        }
+
         break
       }
 
@@ -1570,6 +1599,24 @@ export async function POST(request: NextRequest) {
         const stripeStatus = sub.status // active, trialing, past_due, unpaid, canceled
         const currentPeriodEnd = sub.current_period_end ? new Date(sub.current_period_end * 1000) : null
 
+        // Get customer email for Flodesk sync
+        let customerEmail: string | null = null
+        try {
+          const subRecord = await sql`
+            SELECT user_id FROM subscriptions WHERE stripe_subscription_id = ${sub.id}
+          `
+          if (subRecord.length > 0) {
+            const userRecord = await sql`
+              SELECT email FROM users WHERE id = ${subRecord[0].user_id}
+            `
+            if (userRecord.length > 0) {
+              customerEmail = userRecord[0].email
+            }
+          }
+        } catch (emailError) {
+          console.warn(`[v0] Could not get customer email for subscription update:`, emailError)
+        }
+
         await sql`
           UPDATE subscriptions
           SET 
@@ -1579,6 +1626,25 @@ export async function POST(request: NextRequest) {
         `
 
         console.log(`[v0] 📝 Subscription ${sub.id} updated to status: ${stripeStatus}`)
+
+        // Update subscription status in Flodesk custom fields
+        if (customerEmail) {
+          try {
+            await syncContactToFlodesk({
+              email: customerEmail,
+              name: '', // Name not needed for update
+              source: 'stripe-webhook',
+              tags: [],
+              customFields: {
+                subscription_status: stripeStatus
+              }
+            })
+            console.log(`[v0] ✅ Updated subscription status in Flodesk: ${customerEmail} -> ${stripeStatus}`)
+          } catch (flodeskError) {
+            console.warn(`[v0] ⚠️ Flodesk sync error (non-critical):`, flodeskError)
+          }
+        }
+
         break
       }
 
