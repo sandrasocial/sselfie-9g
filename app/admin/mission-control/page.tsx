@@ -130,10 +130,13 @@ export default function MissionControlPage() {
   
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <p className="text-lg font-semibold mb-2">Running daily checks...</p>
-          <p className="text-sm text-gray-600">Analyzing your business health</p>
+      <div className="min-h-screen bg-stone-50">
+        <AdminNav />
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center px-4">
+            <p className="text-base sm:text-lg font-semibold mb-2">Running daily checks...</p>
+            <p className="text-xs sm:text-sm text-stone-600">Analyzing your business health</p>
+          </div>
         </div>
       </div>
     )
@@ -142,32 +145,36 @@ export default function MissionControlPage() {
   return (
     <div className="min-h-screen bg-stone-50">
       <AdminNav />
-      <div className="max-w-7xl mx-auto p-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
+        <div className="mb-8 sm:mb-12 lg:mb-16">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8">
             <div>
-              <h1 className="text-4xl font-bold mb-2">MISSION CONTROL</h1>
-              <p className="text-gray-600">Your AI team's daily intelligence report</p>
+              <h1 className="font-['Times_New_Roman'] text-3xl sm:text-4xl lg:text-5xl font-extralight tracking-[0.2em] sm:tracking-[0.3em] uppercase text-stone-950 mb-2 sm:mb-4">
+                MISSION CONTROL
+              </h1>
+              <p className="text-xs sm:text-sm text-stone-500 tracking-[0.1em] uppercase">
+                Your AI team's daily intelligence report
+              </p>
             </div>
-            <Button onClick={runDailyChecks} size="lg" disabled={loading}>
+            <Button onClick={runDailyChecks} size="lg" disabled={loading} className="w-full sm:w-auto min-h-[44px]">
               {loading ? 'Running...' : 'Refresh Checks'}
             </Button>
           </div>
           
           {/* Summary Stats */}
-          <div className="grid grid-cols-3 gap-4">
-            <Card className="p-4">
-              <p className="text-sm text-gray-600">Total Issues</p>
-              <p className="text-3xl font-bold">{getTotalIssues()}</p>
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            <Card className="p-4 sm:p-6 rounded-none">
+              <p className="text-xs sm:text-sm text-stone-600 mb-1">Total Issues</p>
+              <p className="text-2xl sm:text-3xl font-bold">{getTotalIssues()}</p>
             </Card>
-            <Card className="p-4">
-              <p className="text-sm text-gray-600">High Priority</p>
-              <p className="text-3xl font-bold text-red-600">{getHighPriorityCount()}</p>
+            <Card className="p-4 sm:p-6 rounded-none">
+              <p className="text-xs sm:text-sm text-stone-600 mb-1">High Priority</p>
+              <p className="text-2xl sm:text-3xl font-bold text-red-600">{getHighPriorityCount()}</p>
             </Card>
-            <Card className="p-4">
-              <p className="text-sm text-gray-600">Last Check</p>
-              <p className="text-lg font-semibold">
+            <Card className="col-span-2 lg:col-span-1 p-4 sm:p-6 rounded-none">
+              <p className="text-xs sm:text-sm text-stone-600 mb-1">Last Check</p>
+              <p className="text-sm sm:text-base lg:text-lg font-semibold">
                 {lastRun ? new Date(lastRun).toLocaleString() : 'Never'}
               </p>
             </Card>
@@ -176,25 +183,25 @@ export default function MissionControlPage() {
         
         {/* Agent Reports */}
         {checks.length === 0 ? (
-          <Card className="p-8 text-center">
-            <p className="text-lg text-gray-600 mb-4">No checks run yet</p>
-            <Button onClick={runDailyChecks}>Run Daily Checks</Button>
+          <Card className="p-6 sm:p-8 text-center rounded-none">
+            <p className="text-base sm:text-lg text-stone-600 mb-4">No checks run yet</p>
+            <Button onClick={runDailyChecks} className="min-h-[44px]">Run Daily Checks</Button>
           </Card>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {checks.map((check, checkIdx) => (
-              <Card key={check.agent} className="p-6">
+              <Card key={check.agent} className="p-4 sm:p-6 rounded-none">
                 {/* Agent Header */}
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <h2 className="text-2xl font-bold">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <h2 className="font-['Times_New_Roman'] text-xl sm:text-2xl font-extralight tracking-[0.2em] uppercase text-stone-950">
                       {check.agent}
                     </h2>
-                    <Badge variant={getStatusVariant(check.status)}>
+                    <Badge variant={getStatusVariant(check.status)} className="text-[10px] sm:text-xs">
                       {check.status}
                     </Badge>
                   </div>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-xs sm:text-sm text-stone-500">
                     {check.issues.filter(i => !i.completed).length} active items
                   </p>
                 </div>
@@ -205,21 +212,21 @@ export default function MissionControlPage() {
                     {check.issues.map((issue, issueIdx) => (
                       <div 
                         key={issue.id}
-                        className={`p-4 border rounded-lg ${
+                        className={`p-3 sm:p-4 border rounded-none ${
                           issue.completed 
                             ? 'bg-green-50 border-green-200' 
                             : issue.priority === 'high'
                             ? 'bg-red-50 border-red-200'
-                            : 'bg-white border-gray-200'
+                            : 'bg-white border-stone-200'
                         }`}
                       >
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <Badge variant={getPriorityVariant(issue.priority)}>
+                        <div className="flex flex-col sm:flex-row sm:items-start gap-3 mb-2">
+                          <div className="flex items-center gap-2 flex-1 flex-wrap">
+                            <Badge variant={getPriorityVariant(issue.priority)} className="text-[10px]">
                               {issue.priority}
                             </Badge>
-                            <h3 className={`font-semibold ${
-                              issue.completed ? 'line-through text-gray-500' : ''
+                            <h3 className={`text-sm sm:text-base font-semibold ${
+                              issue.completed ? 'line-through text-stone-500' : ''
                             }`}>
                               {issue.title}
                             </h3>
@@ -228,20 +235,21 @@ export default function MissionControlPage() {
                             type="checkbox"
                             checked={issue.completed}
                             onChange={() => markCompleted(issue.id, checkIdx, issueIdx)}
-                            className="w-5 h-5 cursor-pointer"
+                            className="w-5 h-5 flex-shrink-0 mt-0.5 cursor-pointer touch-manipulation"
                           />
                         </div>
                         
-                        <p className="text-sm text-gray-600 mb-3">{issue.description}</p>
+                        <p className="text-xs sm:text-sm text-stone-600 mb-3">{issue.description}</p>
                         
                         {/* Action Buttons */}
                         {!issue.completed && (
-                          <div className="flex gap-2">
+                          <div className="flex flex-col sm:flex-row gap-2">
                             {issue.action_type === 'cursor' && issue.cursor_prompt && (
                               <Button
                                 size="sm"
                                 onClick={() => copyCursorPrompt(issue.cursor_prompt!)}
                                 variant="outline"
+                                className="w-full sm:w-auto text-xs min-h-[44px]"
                               >
                                 Copy Cursor Prompt
                               </Button>
@@ -251,12 +259,13 @@ export default function MissionControlPage() {
                                 size="sm"
                                 onClick={() => window.location.href = '/admin/alex'}
                                 variant="outline"
+                                className="w-full sm:w-auto text-xs min-h-[44px]"
                               >
                                 Ask Alex
                               </Button>
                             )}
                             {issue.action_type === 'manual' && (
-                              <Badge variant="secondary">Manual Action Required</Badge>
+                              <Badge variant="secondary" className="text-xs">Manual Action Required</Badge>
                             )}
                           </div>
                         )}
@@ -264,7 +273,7 @@ export default function MissionControlPage() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-500 text-center py-4">All clear! No issues found.</p>
+                  <p className="text-stone-500 text-center py-4 text-sm">All clear! No issues found.</p>
                 )}
               </Card>
             ))}
