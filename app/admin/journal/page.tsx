@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Card } from '@/components/ui/card'
+import { AdminNav } from '@/components/admin/admin-nav'
 
 export default function WeeklyJournalPage() {
   const [journal, setJournal] = useState({
@@ -156,6 +157,7 @@ export default function WeeklyJournalPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-stone-50">
+        <AdminNav />
         <div className="max-w-4xl mx-auto p-8">
           <p className="text-sm tracking-[0.2em] uppercase text-stone-400 text-center">
             Loading journal...
@@ -167,6 +169,7 @@ export default function WeeklyJournalPage() {
   
   return (
     <div className="min-h-screen bg-stone-50">
+      <AdminNav />
       <div className="max-w-4xl mx-auto p-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Weekly Journal</h1>
