@@ -289,6 +289,170 @@ export async function POST(req: Request) {
       }
     }
 
+    /**
+     * Validates email broadcast parameters before sending
+     * Returns { valid: boolean, errors: string[] }
+     */
+    function validateBroadcastParams(params: {
+      segmentId?: string
+      subjectLine?: string
+      emailHtml?: string
+      campaignName?: string
+    }): { valid: boolean; errors: string[] } {
+      const errors: string[] = []
+      
+      // Validate segment ID format (UUID format)
+      if (!params.segmentId) {
+        errors.push('Segment ID is required')
+      } else if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(params.segmentId)) {
+        errors.push('Segment ID must be a valid UUID format')
+      }
+      
+      // Validate subject line
+      if (!params.subjectLine || params.subjectLine.trim() === '') {
+        errors.push('Subject line is required')
+      } else if (params.subjectLine.length > 200) {
+        errors.push('Subject line too long (max 200 characters)')
+      }
+      
+      // Validate email HTML
+      if (!params.emailHtml || params.emailHtml.trim() === '') {
+        errors.push('Email HTML content is required')
+      } else {
+        // Check for unsubscribe link
+        if (!params.emailHtml.includes('RESEND_UNSUBSCRIBE_URL') && !params.emailHtml.includes('{{{RESEND_UNSUBSCRIBE_URL}}}')) {
+          errors.push('Email must include {{{RESEND_UNSUBSCRIBE_URL}}} unsubscribe link')
+        }
+        
+        // Check for basic HTML structure
+        if (!params.emailHtml.includes('<') || !params.emailHtml.includes('>')) {
+          errors.push('Email content should be HTML format')
+        }
+      }
+      
+      // Validate campaign name
+      if (!params.campaignName || params.campaignName.trim() === '') {
+        errors.push('Campaign name is required')
+      }
+      
+      return {
+        valid: errors.length === 0,
+        errors
+      }
+    }
+
+    /**
+     * Sends a test email to Sandra for approval
+     * Returns { success: boolean, error?: string }
+     */
+    async function sendTestEmailToSandra(
+      subject: string,
+      html: string
+    ): Promise<{ success: boolean; error?: string }> {
+      try {
+        console.log('[Alex] 📧 Sending test email to Sandra...')
+        
+        if (!resend) {
+          return {
+            success: false,
+            error: 'Resend client not initialized'
+          }
+        }
+        
+        const result = await resend.emails.send({
+          from: 'Sandra from SSELFIE <hello@sselfie.ai>',
+          to: ADMIN_EMAIL,
+          subject: `[TEST] ${subject}`,
+          html: html,
+          tags: [
+            { name: 'type', value: 'test' },
+            { name: 'environment', value: process.env.NODE_ENV || 'unknown' }
+          ]
+        })
+        
+        if (result.error) {
+          console.error('[Alex] ❌ Test email failed:', result.error)
+          return {
+            success: false,
+            error: result.error.message || 'Failed to send test email'
+          }
+        }
+        
+        console.log('[Alex] ✅ Test email sent:', result.data?.id)
+        return { success: true }
+        
+      } catch (error: any) {
+        console.error('[Alex] ❌ Test email exception:', error)
+        return {
+          success: false,
+          error: error.message || 'Unknown error sending test email'
+        }
+      }
+    }
+
+    /**
+     * Checks if Resend is properly configured
+     */
+    function checkResendConfig(): { configured: boolean; missing: string[] } {
+      const missing: string[] = []
+      
+      if (!process.env.RESEND_API_KEY) {
+        missing.push('RESEND_API_KEY')
+      }
+      
+      if (!process.env.RESEND_AUDIENCE_ID) {
+        missing.push('RESEND_AUDIENCE_ID')
+      }
+      
+      return {
+        configured: missing.length === 0,
+        missing
+      }
+    }
+
+    /**
+     * Logs errors to database for debugging
+     */
+    async function logEmailError(
+      toolName: string,
+      error: any,
+      context: Record<string, any>
+    ): Promise<void> {
+      try {
+        // Check if admin_email_errors table exists, if not, just log to console
+        await sql`
+          INSERT INTO admin_email_errors (
+            tool_name, error_message, error_stack,
+            context, created_at
+          ) VALUES (
+            ${toolName},
+            ${error.message || 'Unknown error'},
+            ${error.stack || null},
+            ${JSON.stringify(context)},
+            NOW()
+          )
+        `.catch((dbError: any) => {
+          // If table doesn't exist, just log to console
+          console.error('[Alex] Could not log error to database (table may not exist):', dbError.message)
+          console.error('[Alex] Error context:', {
+            toolName,
+            error: error.message,
+            stack: error.stack,
+            context
+          })
+        })
+      } catch (logError: any) {
+        console.error('[Alex] Failed to log error:', logError)
+        // Fallback: log to console
+        console.error('[Alex] Error context:', {
+          toolName,
+          error: error.message,
+          stack: error.stack,
+          context
+        })
+      }
+    }
+
     // Define email tools
     // Native Anthropic format (no Zod)
     const editEmailTool = {
@@ -501,15 +665,17 @@ This preserves the existing email and makes ONLY the requested changes.`,
 
     const scheduleCampaignTool = {
       name: "schedule_campaign",
-      description: `Schedule or send an email campaign. Creates campaign in database and Resend.
-  
-  Use this when Sandra approves the email and wants to send it.
-  
-  CRITICAL: Always ask Sandra to confirm:
-  1. Who should receive it (segment/audience)
-  2. When to send (now or scheduled time)
-  
-  Before calling this tool.`,
+      description: `⚠️ LEGACY TOOL - Use send_broadcast_to_segment instead for better reliability.
+
+This tool creates and sends broadcast campaigns but has been superseded by send_broadcast_to_segment.
+
+Use send_broadcast_to_segment for:
+- Sending to segments
+- Better error handling
+- Clearer workflow
+- Test email option
+
+Only use this tool if specifically maintaining legacy code.`,
       
       input_schema: {
         type: "object",
@@ -650,50 +816,31 @@ This preserves the existing email and makes ONLY the requested changes.`,
               }
             }
             
-            // CRITICAL: Resend broadcasts require AUDIENCE ID, not segment ID
-            // Segments are used for filtering within an audience, but broadcasts must use the main audience ID
-            // If a segment is specified, we still use the main audience ID (Resend will handle segment filtering via tags)
-            const mainAudienceId = process.env.RESEND_AUDIENCE_ID
+            // Validate segmentId exists before creating broadcast
             const segmentId = targetAudience?.resend_segment_id
-            
-            if (!mainAudienceId) {
+            if (!segmentId) {
               return {
                 success: false,
-                error: "RESEND_AUDIENCE_ID not configured",
+                error: "No segment ID specified. Use get_resend_audience_data to find available segments.",
                 campaignId: campaign.id,
+                broadcastId: null,
               }
             }
             
-            // Always use the main audience ID for broadcasts
-            // Note: Resend broadcasts don't directly support segment IDs - they use the audience ID
-            // Segment filtering happens via tags/filters in Resend dashboard
-            const targetAudienceId = mainAudienceId
-            
-            // Log which audience/segment is being targeted for debugging
-            if (segmentId) {
-              console.log(`[Alex] 📧 Creating broadcast for segment ID: ${segmentId}`)
-              console.log(`[Alex] 📋 Segment details from targetAudience:`, JSON.stringify(targetAudience, null, 2))
-              console.log(`[Alex] ⚠️  Note: Using main audience ID ${mainAudienceId} (Resend broadcasts require audience ID, not segment ID)`)
-              console.log(`[Alex] ℹ️  Segment filtering should be configured in Resend dashboard for this broadcast`)
-              console.log(`[Alex] ✅ Segment ID ${segmentId} will be stored in campaign.target_audience.resend_segment_id`)
-            } else {
-              console.log(`[Alex] 📧 Creating broadcast for full audience: ${targetAudienceId}`)
-            }
+            console.log('[Alex] 📧 Creating broadcast for segment:', segmentId)
+            console.log('[Alex] 📋 Target audience details:', JSON.stringify(targetAudience, null, 2))
             
             try {
               console.log('[Alex] 📧 Creating Resend broadcast with:', {
-                audienceId: targetAudienceId,
-                segmentId: segmentId || 'none',
+                segmentId: segmentId,
                 subject: subjectLine,
                 htmlLength: finalEmailHtml.length,
                 targetAudience: JSON.stringify(targetAudience)
               })
               
-              // IMPORTANT: Resend broadcasts.create() requires audienceId, not segmentId
-              // If a segment is specified, we use the main audience ID
-              // Segment filtering must be done in Resend dashboard or via tags
+              // Resend broadcasts.create() requires segmentId parameter
               const broadcast = await resend.broadcasts.create({
-                audienceId: targetAudienceId, // Always use main audience ID
+                segmentId: segmentId,
                 from: 'Sandra from SSELFIE <hello@sselfie.ai>',
                 subject: subjectLine,
                 html: finalEmailHtml
@@ -731,14 +878,39 @@ This preserves the existing email and makes ONLY the requested changes.`,
               
               console.log('[Alex] ✅ Broadcast created successfully:', {
                 broadcastId,
-                audienceId: targetAudienceId,
+                segmentId: segmentId,
                 resendUrl: `https://resend.com/broadcasts/${broadcastId}`
               })
               
+              // Actually send the broadcast (immediate or scheduled)
+              console.log('[Alex] 📤 Sending broadcast:', broadcastId, scheduledFor ? `scheduled for ${scheduledFor}` : 'immediately')
+              
+              const sendResult = await resend.broadcasts.send(broadcastId, 
+                scheduledFor ? { scheduledAt: scheduledFor } : {}
+              )
+              
+              if (sendResult.error) {
+                console.error('[Alex] ❌ Failed to send broadcast:', sendResult.error)
+                return {
+                  success: false,
+                  error: `Broadcast created but failed to send: ${sendResult.error.message || JSON.stringify(sendResult.error)}`,
+                  broadcastId,
+                  campaignId: campaign.id,
+                  resendUrl: `https://resend.com/broadcasts/${broadcastId}`
+                }
+              }
+              
+              console.log('[Alex] ✅ Broadcast sent successfully:', {
+                broadcastId,
+                scheduledFor: scheduledFor || 'immediate',
+                sendResult: sendResult.data
+              })
+              
               // Update campaign with broadcast ID and status (body_html already updated above)
+              // Status should be 'sent' for immediate sends, 'scheduled' for scheduled sends
               await sql`
                 UPDATE admin_email_campaigns 
-                SET resend_broadcast_id = ${broadcastId}, status = 'sent'
+                SET resend_broadcast_id = ${broadcastId}, status = ${scheduledFor ? 'scheduled' : 'sent'}
                 WHERE id = ${campaign.id}
               `
             } catch (resendError: any) {
@@ -777,11 +949,299 @@ This preserves the existing email and makes ONLY the requested changes.`,
       }
     }
 
+    const sendBroadcastToSegmentTool = {
+      name: "send_broadcast_to_segment",
+      description: `Send or schedule an email broadcast to a Resend segment. This is the PRIMARY tool for sending emails to audiences.
+
+WORKFLOW:
+1. First, call get_resend_audience_data to see available segments
+2. Get Sandra's approval for: which segment, subject line, and timing
+3. Call this tool to send or schedule the broadcast
+
+This tool handles EVERYTHING in one call:
+- Creates broadcast in Resend with correct segmentId
+- Sends immediately OR schedules for later
+- Saves campaign record to database
+- Returns Resend dashboard link for tracking
+
+USE THIS WHEN SANDRA SAYS:
+- "Send this to paying customers"
+- "Schedule this email for tomorrow at 9am"
+- "Blast this to everyone who joined this month"
+- "Send to [segment name] now"
+
+SCHEDULING OPTIONS:
+- Immediate: Leave scheduledAt empty or use "now"
+- Natural language: "in 1 hour", "tomorrow at 9am EST", "Friday at 3pm"
+- ISO format: "2025-01-15T14:00:00Z"
+- Can schedule up to 30 days in advance
+
+ALWAYS confirm with Sandra before sending:
+1. Which segment (show segment names and sizes)
+2. Subject line approval
+3. Send now or schedule for when?`,
+      
+      input_schema: {
+        type: "object",
+        properties: {
+          segmentId: {
+            type: "string",
+            description: "Resend segment ID from get_resend_audience_data. REQUIRED."
+          },
+          segmentName: {
+            type: "string",
+            description: "Human-readable segment name for logging (e.g., 'Paying Customers')"
+          },
+          subjectLine: {
+            type: "string",
+            description: "Email subject line"
+          },
+          emailHtml: {
+            type: "string",
+            description: "Complete email HTML content (must include unsubscribe link)"
+          },
+          campaignName: {
+            type: "string",
+            description: "Internal campaign name for tracking"
+          },
+          campaignType: {
+            type: "string",
+            description: "Type of campaign: newsletter, announcement, reengagement, etc."
+          },
+          scheduledAt: {
+            type: "string",
+            description: "When to send: leave empty for immediate, or use natural language like 'tomorrow at 9am' or ISO timestamp"
+          },
+          sendTestFirst: {
+            type: "boolean",
+            description: "If true, send test email to Sandra before sending to segment. Default: false."
+          }
+        },
+        required: ["segmentId", "subjectLine", "emailHtml", "campaignName"]
+      },
+      
+      execute: async ({ 
+        segmentId, 
+        segmentName, 
+        subjectLine, 
+        emailHtml, 
+        campaignName, 
+        campaignType = 'broadcast',
+        scheduledAt, 
+        sendTestFirst = false 
+      }: {
+        segmentId: string
+        segmentName?: string
+        subjectLine: string
+        emailHtml: string
+        campaignName: string
+        campaignType?: string
+        scheduledAt?: string
+        sendTestFirst?: boolean
+      }) => {
+        console.log('[Alex] 🎯 send_broadcast_to_segment called:', {
+          segmentId,
+          segmentName,
+          subject: subjectLine.substring(0, 50),
+          scheduledAt: scheduledAt || 'immediate',
+          sendTestFirst
+        })
+        
+        try {
+          // STEP 1: Check Resend configuration
+          const config = checkResendConfig()
+          if (!config.configured) {
+            return {
+              success: false,
+              error: 'Resend not properly configured',
+              missingEnvVars: config.missing,
+              message: `Missing environment variables: ${config.missing.join(', ')}`
+            }
+          }
+          
+          if (!resend) {
+            return {
+              success: false,
+              error: "Resend client not initialized. RESEND_API_KEY not configured."
+            }
+          }
+          
+          // STEP 2: Validate all inputs
+          const validation = validateBroadcastParams({
+            segmentId,
+            subjectLine,
+            emailHtml,
+            campaignName
+          })
+          
+          if (!validation.valid) {
+            console.error('[Alex] ❌ Validation failed:', validation.errors)
+            return {
+              success: false,
+              error: 'Validation failed',
+              validationErrors: validation.errors,
+              message: `Cannot send broadcast: ${validation.errors.join(', ')}`
+            }
+          }
+          
+          // Auto-add unsubscribe link if missing (after validation passes)
+          if (!emailHtml.includes('RESEND_UNSUBSCRIBE_URL') && !emailHtml.includes('{{{RESEND_UNSUBSCRIBE_URL}}}')) {
+            console.warn('[Alex] ⚠️ Email missing unsubscribe link - adding it')
+            emailHtml += '\n\n<p style="text-align: center; font-size: 12px; color: #666;"><a href="{{{RESEND_UNSUBSCRIBE_URL}}}">Unsubscribe</a></p>'
+          }
+          
+          // STEP 3: Send test email if requested
+          if (sendTestFirst) {
+            const testResult = await sendTestEmailToSandra(subjectLine, emailHtml)
+            if (!testResult.success) {
+              return {
+                success: false,
+                error: 'Test email failed',
+                details: testResult.error,
+                message: 'Could not send test email. Fix issues before broadcasting.'
+              }
+            }
+          }
+          
+          // STEP 4: Create broadcast in Resend
+          console.log('[Alex] 📝 Creating broadcast in Resend...')
+          const broadcast = await resend.broadcasts.create({
+            segmentId: segmentId,  // CRITICAL: Use segmentId, NOT audienceId
+            from: 'Sandra from SSELFIE <hello@sselfie.ai>',
+            subject: subjectLine,
+            html: emailHtml
+          })
+          
+          if (broadcast.error) {
+            console.error('[Alex] ❌ Broadcast creation failed:', broadcast.error)
+            return {
+              success: false,
+              error: `Failed to create broadcast: ${broadcast.error.message || JSON.stringify(broadcast.error)}`,
+              details: broadcast.error
+            }
+          }
+          
+          const broadcastId = broadcast.data?.id
+          if (!broadcastId) {
+            return {
+              success: false,
+              error: 'Broadcast created but no ID returned from Resend'
+            }
+          }
+          
+          console.log('[Alex] ✅ Broadcast created:', broadcastId)
+          
+          // STEP 5: Send broadcast (immediate or scheduled)
+          console.log('[Alex] 📤 Sending broadcast:', scheduledAt && scheduledAt !== 'now' ? `scheduled for ${scheduledAt}` : 'immediately')
+          
+          const sendParams = scheduledAt && scheduledAt !== 'now' 
+            ? { scheduledAt: scheduledAt }
+            : {}
+          
+          const sendResult = await resend.broadcasts.send(broadcastId, sendParams)
+          
+          if (sendResult.error) {
+            console.error('[Alex] ❌ Broadcast send failed:', sendResult.error)
+            return {
+              success: false,
+              error: `Broadcast created but failed to send: ${sendResult.error.message || JSON.stringify(sendResult.error)}`,
+              broadcastId,
+              resendUrl: `https://resend.com/broadcasts/${broadcastId}`,
+              note: 'You can manually send this broadcast from the Resend dashboard using the URL above.'
+            }
+          }
+          
+          console.log('[Alex] ✅ Broadcast sent successfully')
+          
+          // STEP 6: Save campaign to database
+          const status = scheduledAt && scheduledAt !== 'now' ? 'scheduled' : 'sent'
+          const scheduledForDb = scheduledAt && scheduledAt !== 'now' ? scheduledAt : null
+          
+          const bodyText = stripHtml(emailHtml)
+          
+          const campaign = await sql`
+            INSERT INTO admin_email_campaigns (
+              campaign_name, campaign_type, subject_line,
+              body_html, body_text, status, resend_broadcast_id,
+              target_audience, scheduled_for,
+              created_by, created_at, updated_at
+            ) VALUES (
+              ${campaignName}, ${campaignType}, ${subjectLine},
+              ${emailHtml}, ${bodyText}, ${status}, ${broadcastId},
+              ${JSON.stringify({ 
+                resend_segment_id: segmentId,
+                segment_name: segmentName 
+              })}::jsonb,
+              ${scheduledForDb},
+              ${ADMIN_EMAIL}, NOW(), NOW()
+            )
+            RETURNING id
+          `
+          
+          const campaignId = campaign[0]?.id
+          
+          console.log('[Alex] 💾 Campaign saved to database:', campaignId)
+          
+          // STEP 7: Return success with all details
+          return {
+            success: true,
+            campaignId,
+            broadcastId,
+            status,
+            message: scheduledAt && scheduledAt !== 'now'
+              ? `✅ Campaign scheduled for ${scheduledAt}! Broadcast will be sent automatically.`
+              : `✅ Campaign sent immediately! Check Resend dashboard for delivery status.`,
+            resendUrl: `https://resend.com/broadcasts/${broadcastId}`,
+            details: {
+              segmentId,
+              segmentName,
+              subject: subjectLine,
+              campaignName,
+              scheduledFor: scheduledForDb,
+              testSent: sendTestFirst
+            }
+          }
+          
+        } catch (error: any) {
+          console.error('[Alex] ❌ Unexpected error in send_broadcast_to_segment:', error)
+          
+          // Log error to database for debugging
+          await logEmailError('send_broadcast_to_segment', error, {
+            segmentId,
+            segmentName,
+            subjectLine,
+            campaignName,
+            scheduledAt,
+            sendTestFirst
+          })
+          
+          return {
+            success: false,
+            error: `Unexpected error: ${error.message || 'Unknown error'}`,
+            stack: error.stack
+          }
+        }
+      }
+    }
+
     const sendResendEmailTool = {
       name: "send_resend_email",
-      description: `Send an email immediately via Resend API. ⚠️ WARNING: This actually sends real emails! Use compose_email_draft first to preview in development. Only use this in production (claude.ai) or when Sandra explicitly approves sending.
+      description: `Send a single transactional email to ONE recipient via Resend.
 
-For automated sequences, use create_automation instead.`,
+⚠️ NOT for broadcasts or segments! Use send_broadcast_to_segment for those.
+
+USE THIS FOR:
+- Test emails to Sandra
+- One-off emails to specific users
+- Transactional notifications
+- Welcome emails to single users
+
+DO NOT USE FOR:
+- Sending to segments (use send_broadcast_to_segment)
+- Bulk emails (use send_broadcast_to_segment)
+- Scheduled campaigns (use send_broadcast_to_segment)
+
+This tool sends immediately to a single recipient only.`,
       
       input_schema: {
         type: "object",
@@ -2652,15 +3112,26 @@ Shows performance metrics like opens, clicks, conversions for campaigns.`,
 
     const getResendAudienceDataTool = {
       name: "get_resend_audience_data",
-      description: `Get real-time audience data from Resend including all segments and contact counts.
-  
-  Use this when Sandra asks about:
-  - Her audience size
-  - Available segments
-  - Who to target
-  - Email strategy planning
-  
-  This gives you live data to make intelligent recommendations.`,
+      description: `Get live audience data from Resend including all segments and contact counts.
+
+ALWAYS call this BEFORE using send_broadcast_to_segment to:
+1. See available segments and their IDs
+2. Check how many contacts are in each segment
+3. Help Sandra choose the right audience
+
+Returns:
+- Total audience size
+- List of all segments with IDs and sizes
+- Live data from Resend API
+
+The segment IDs returned here are what you'll use in send_broadcast_to_segment.
+
+WORKFLOW:
+1. Sandra asks to send email
+2. Call this tool to get segments
+3. Show Sandra the options
+4. Get approval on which segment
+5. Use send_broadcast_to_segment with the segmentId`,
       
       input_schema: {
         type: "object",
@@ -5535,9 +6006,40 @@ Help Sandra scale SSELFIE from where it is now to 7+ figures by:
 
 NOW - BE THE COACH SANDRA NEEDS TO BUILD AN 8-FIGURE BUSINESS. Let's scale this thing.
 
-## Email Marketing Agent
+## Email Marketing - Your PRIMARY Tools
 
-You help Sandra create and send emails to her 2700+ subscribers with these capabilities:
+For sending emails to Sandra's audience, use these tools in order:
+
+**STEP 1: Check Available Segments**
+- Tool: get_resend_audience_data
+- Shows all segments, sizes, and IDs
+- Always call this first to know your options
+
+**STEP 2: Send or Schedule Broadcast**  
+- Tool: send_broadcast_to_segment (PRIMARY TOOL - use this!)
+- Handles everything: create, send/schedule, save to database
+- Supports immediate send or scheduling
+- Can send test email first
+
+**STEP 3: Test Emails Only**
+- Tool: send_resend_email
+- ONLY for single test emails to Sandra
+- NOT for broadcasts or segments
+
+**WORKFLOW EXAMPLE:**
+Sandra: "Send this email to paying customers tomorrow at 9am"
+
+You:
+1. Call get_resend_audience_data to see segments
+2. Confirm with Sandra: "I found 'Paying Customers' segment with 96 contacts. Send tomorrow at 9am EST?"
+3. Call send_broadcast_to_segment with segmentId, scheduledAt: "tomorrow at 9am EST"
+4. Report success with Resend dashboard link
+
+CRITICAL RULES:
+- ALWAYS get segments first with get_resend_audience_data
+- ALWAYS confirm segment, subject, and timing with Sandra
+- USE send_broadcast_to_segment for all broadcasts (don't use schedule_campaign)
+- Test emails go to hello@sselfie.ai only
 
 ### Email Intelligence Tools:
 - **get_resend_audience_data**: Get real-time audience size, segments, and contact counts from Resend
@@ -5596,18 +6098,11 @@ You can now read and analyze files from the SSELFIE codebase using the **read_co
 
 **IMPORTANT:** Segment IDs change and must be fetched from Resend API. NEVER use hardcoded segment IDs.
 
-**Before scheduling any campaign:**
+**Before sending any broadcast:**
 1. ALWAYS call **get_resend_audience_data** first to get current segments
 2. Use the EXACT segment ID from the response (segments[].id)
-3. Pass that exact ID to schedule_campaign's targetAudienceResendSegmentId parameter
+3. Pass that exact ID to send_broadcast_to_segment's segmentId parameter
 4. Verify the segment name matches what Sandra requested
-
-**Example workflow:**
-1. Sandra: "Send to Beta Users segment"
-2. You: Call get_resend_audience_data()
-3. You: Find segment with name matching "Beta Users" or similar
-4. You: Use that segment's EXACT id (e.g., "8da5ee08-60cf-47a5-bdaa-9419c7eb5aa5")
-5. You: Call schedule_campaign with targetAudienceResendSegmentId = that exact ID
 
 **Common Segments (names may vary - always verify with get_resend_audience_data):**
 - Beta Users / Beta Customers
@@ -7311,7 +7806,8 @@ Generate complete, production-ready code.`
       // Other email tools
       get_email_campaign: getEmailCampaignTool,
       create_email_sequence: createEmailSequenceTool,
-      schedule_campaign: scheduleCampaignTool, // Sends campaigns via Resend broadcasts
+      send_broadcast_to_segment: sendBroadcastToSegmentTool, // NEW - Primary broadcast tool (simplified, unified)
+      schedule_campaign: scheduleCampaignTool, // Legacy - kept for backward compatibility
       check_campaign_status: checkCampaignStatusTool,
       get_resend_audience_data: getResendAudienceDataTool,
       get_email_timeline: getEmailTimelineTool,
