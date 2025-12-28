@@ -255,6 +255,61 @@ async function checkCodeHealth(today: string) {
     
     metrics['Env Vars'] = `${requiredEnvVars.length - missing.length}/${requiredEnvVars.length}`
     
+    // Check Sentry for recent errors
+    if (process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN) {
+      try {
+        const sentryOrg = process.env.SENTRY_ORG
+        const sentryProject = process.env.SENTRY_PROJECT
+        const sentryAuthToken = process.env.SENTRY_AUTH_TOKEN
+        
+        if (sentryOrg && sentryProject && sentryAuthToken) {
+          // Query Sentry API for errors in last 24h
+          const sentryResponse = await fetch(
+            `https://sentry.io/api/0/projects/${sentryOrg}/${sentryProject}/issues/?statsPeriod=24h&query=is:unresolved`,
+            {
+              headers: {
+                'Authorization': `Bearer ${sentryAuthToken}`,
+                'Content-Type': 'application/json'
+              }
+            }
+          )
+          
+          if (sentryResponse.ok) {
+            const errors = await sentryResponse.json()
+            const recentErrors = errors.filter((e: any) => {
+              if (!e.lastSeen) return false
+              const lastSeen = new Date(e.lastSeen)
+              const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000)
+              return lastSeen > yesterday
+            })
+            
+            if (recentErrors.length > 0) {
+              const topError = recentErrors[0]
+              issues.push({
+                priority: 'high' as const,
+                title: `${recentErrors.length} error(s) detected in last 24h`,
+                description: topError.title || topError.culprit || 'Recent error detected',
+                cursorPrompt: `Fix error: ${topError.title || topError.culprit || 'Recent error'} in ${topError.culprit || 'application'}`,
+                actionType: 'cursor' as const,
+                completed: false
+              })
+              
+              metrics['Sentry Errors (24h)'] = recentErrors.length
+            } else {
+              metrics['Sentry Errors (24h)'] = 0
+            }
+          } else {
+            console.warn('[Mission Control] Sentry API check failed:', sentryResponse.status)
+          }
+        } else {
+          console.log('[Mission Control] Sentry configured but missing org/project/auth token')
+        }
+      } catch (error: any) {
+        console.error('[Mission Control] Sentry check failed:', error.message)
+        // Don't fail the whole check if Sentry query fails
+      }
+    }
+    
     return {
       agent: 'Code Health',
       status: issues.length === 0 ? 'healthy' as const : 'warning' as const,

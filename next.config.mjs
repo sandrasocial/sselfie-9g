@@ -3,6 +3,14 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  // Enable Sentry instrumentation
+  experimental: {
+    instrumentationHook: true,
+    serverActions: {
+      bodySizeLimit: '100mb',
+    },
+    proxyClientMaxBodySize: '100mb',
+  },
   images: {
     unoptimized: true,
     qualities: [75, 80, 85], // Configure quality values to suppress warnings
@@ -12,12 +20,6 @@ const nextConfig = {
         hostname: 'kcnmiu7u3eszdkja.public.blob.vercel-storage.com',
       },
     ],
-  },
-  experimental: {
-    serverActions: {
-      bodySizeLimit: '100mb',
-    },
-    proxyClientMaxBodySize: '100mb',
   },
   serverExternalPackages: ['prettier', 'prettier/plugins/html', 'prettier/standalone'],
   async headers() {
