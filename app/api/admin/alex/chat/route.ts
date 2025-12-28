@@ -443,7 +443,7 @@ This tool ONLY generates email drafts - it does NOT send emails. Sandra will cop
 
 Use this when Sandra wants to:
   - Create a new email campaign draft
-  - Edit/refine existing email content
+- Edit/refine existing email content
   - Generate subject lines
   - Use email templates
   
@@ -1635,7 +1635,7 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
     const markEmailSentTool = {
       name: "mark_email_sent",
       description: `Mark an email draft as sent in Flodesk. Use this when Sandra confirms she has sent an email.
-      
+
 Examples:
 - "I sent the beta customer email" → mark_email_sent with that email's subject
 - "I sent the welcome email to new members" → mark_email_sent with that subject
@@ -1847,7 +1847,7 @@ This updates the analytics in the email_preview_data.`,
           `
           
           console.log('[Alex] ✅ Analytics recorded:', { emailSubject, openRate, clickRate })
-          
+
           return {
             success: true,
             message: `✅ Analytics recorded for "${emailSubject}"`,
@@ -5873,7 +5873,7 @@ This provides real-time data from the database.`,
           // Calculate total paying customers (with overlap handling)
           // Users can be both subscribers and one-time buyers
           const totalPayingCustomers = activeSubscribers + oneTimeBuyersAllTime
-          
+
           // Get conversion metrics with zero-division protection
           const overallConversion = totalUsers > 0 ? ((activeSubscribers + oneTimeBuyersAllTime) / totalUsers * 100) : 0
 
@@ -6599,6 +6599,11 @@ Keep it practical and data-driven.`
       // EMAIL COMPOSITION
       edit_email: editEmailTool,
       compose_email: composeEmailTool, // Draft emails for Flodesk (marketing + transactional)
+      
+      // EMAIL STATUS MANAGEMENT (Flodesk workflow)
+      mark_email_sent: markEmailSentTool,
+      record_email_analytics: recordEmailAnalyticsTool,
+      list_email_drafts: listEmailDraftsTool,
       
       // LOOPS (Contact management only - no campaign creation)
       create_loops_sequence: createLoopsSequenceTool, // NEW
