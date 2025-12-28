@@ -13,10 +13,5 @@ CREATE INDEX IF NOT EXISTS idx_users_flodesk_subscriber_id
 ON users(flodesk_subscriber_id) 
 WHERE flodesk_subscriber_id IS NOT NULL;
 
--- Verify
-SELECT 
-  COUNT(*) as total_users,
-  COUNT(flodesk_subscriber_id) as synced_to_flodesk,
-  COUNT(loops_contact_id) as synced_to_loops
-FROM users;
-
+-- Note: Verification query is run in the TypeScript migration script
+-- to ensure columns exist before querying them
