@@ -77,10 +77,13 @@ export async function POST(request: NextRequest) {
           await sql`
             UPDATE email_logs
             SET resend_message_id = ${messageId}, status = 'sent'
-            WHERE user_email = ${recipientEmail}
-            AND resend_message_id IS NULL
-            ORDER BY sent_at DESC
-            LIMIT 1
+            WHERE id IN (
+              SELECT id FROM email_logs
+              WHERE user_email = ${recipientEmail}
+              AND resend_message_id IS NULL
+              ORDER BY sent_at DESC
+              LIMIT 1
+            )
           `
           console.log(`[v0] [Resend Webhook] ✅ Updated email_logs for sent: ${recipientEmail}`)
         }
@@ -119,11 +122,14 @@ export async function POST(request: NextRequest) {
               emailLog = await sql`
                 UPDATE email_logs
                 SET opened = true, opened_at = ${openedAt}, resend_message_id = ${messageId}
-                WHERE user_email = ${recipientEmail}
-                AND resend_message_id IS NULL
-                AND opened = false
-                ORDER BY sent_at DESC
-                LIMIT 1
+                WHERE id IN (
+                  SELECT id FROM email_logs
+                  WHERE user_email = ${recipientEmail}
+                  AND resend_message_id IS NULL
+                  AND opened = false
+                  ORDER BY sent_at DESC
+                  LIMIT 1
+                )
                 RETURNING id, user_email, email_type, campaign_id
               `
             }
@@ -176,11 +182,14 @@ export async function POST(request: NextRequest) {
               emailLog = await sql`
                 UPDATE email_logs
                 SET clicked = true, clicked_at = ${clickedAt}, resend_message_id = ${messageId}
-                WHERE user_email = ${recipientEmail}
-                AND resend_message_id IS NULL
-                AND clicked = false
-                ORDER BY sent_at DESC
-                LIMIT 1
+                WHERE id IN (
+                  SELECT id FROM email_logs
+                  WHERE user_email = ${recipientEmail}
+                  AND resend_message_id IS NULL
+                  AND clicked = false
+                  ORDER BY sent_at DESC
+                  LIMIT 1
+                )
                 RETURNING id, user_email, email_type, campaign_id
               `
             }

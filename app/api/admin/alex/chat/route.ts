@@ -1512,6 +1512,10 @@ This tool sends immediately to a single recipient only.`,
         const previewText = content.replace(/<[^>]*>/g, '').substring(0, 200)
         
         // Create preview data structure (NO ACTUAL SENDING)
+        // CRITICAL: Return structure must match what extractEmailPreview expects:
+        // - html: string (at top level)
+        // - subjectLine: string (at top level, NOT subject)
+        // - preview: string (optional, will be auto-generated if missing)
         const emailPreview = {
           purpose,
           from: `${from_name} <hello@sselfie.ai>`,
@@ -1530,11 +1534,19 @@ This tool sends immediately to a single recipient only.`,
           hasHtml: !!content
         })
         
+        // Return structure that extractEmailPreview can parse
+        // It expects: html, subjectLine (not subject), preview
         return {
           success: true,
-          email_preview_data: emailPreview,
+          html: content, // Top-level html for extractEmailPreview
+          subjectLine: subject, // Top-level subjectLine (extractEmailPreview expects this, not "subject")
+          preview: previewText + (content.replace(/<[^>]*>/g, '').length > 200 ? '...' : ''),
+          email_preview_data: emailPreview, // Keep for backward compatibility
           message: 'Email draft created. Review the preview below. To send this email, use production environment or ask me to generate automation code.',
-          preview: emailPreview
+          targetSegment: to_description,
+          targetCount: 0, // Will be set when actually sending
+          campaignType: 'resend',
+          status: 'draft'
         }
       }
     }

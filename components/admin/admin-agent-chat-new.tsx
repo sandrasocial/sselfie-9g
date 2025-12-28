@@ -145,6 +145,11 @@ const getEmailPreviewFromMessage = (message: any): any | null => {
         if (emailPreview) return emailPreview
       }
       
+      if (invocation.toolName === 'compose_email_draft' && invocation.result) {
+        const emailPreview = extractEmailPreview(invocation.result)
+        if (emailPreview) return emailPreview
+      }
+      
       if (invocation.toolName === 'create_email_sequence' && invocation.result) {
         const result = invocation.result
         if (result.emails && Array.isArray(result.emails) && result.emails.length > 0) {
@@ -172,6 +177,19 @@ const getEmailPreviewFromMessage = (message: any): any | null => {
       const partAny = part as any
       
       if (partAny.type === 'tool-result' && partAny.toolName === 'compose_email' && partAny.result) {
+        let result = partAny.result
+        if (typeof result === 'string') {
+          try {
+            result = JSON.parse(result)
+          } catch (e) {
+            continue
+          }
+        }
+        const emailPreview = extractEmailPreview(result)
+        if (emailPreview) return emailPreview
+      }
+      
+      if (partAny.type === 'tool-result' && partAny.toolName === 'compose_email_draft' && partAny.result) {
         let result = partAny.result
         if (typeof result === 'string') {
           try {
@@ -957,6 +975,25 @@ export default function AdminAgentChatNew({
             }
           }
           
+          // Check for compose_email_draft tool
+          if (invocation.toolName === 'compose_email_draft' && invocation.result) {
+            const emailPreviewData = extractEmailPreview(invocation.result, 'toolInvocations')
+            
+            if (emailPreviewData) {
+              console.log('[Alex] ✅ Email draft preview found in toolInvocations', {
+                htmlLength: emailPreviewData.html.length,
+                htmlPreview: emailPreviewData.html.substring(0, 100),
+                htmlStartsWith: emailPreviewData.html.substring(0, 20),
+                subjectLine: emailPreviewData.subject,
+                hasPreview: !!emailPreviewData.preview
+              })
+              
+              latestEmailPreview = emailPreviewData
+              foundValidEmailPreview = true
+              break // Found valid preview, stop searching
+            }
+          }
+          
           // Check for create_email_sequence tool
           if (invocation.toolName === 'create_email_sequence' && invocation.result) {
             const result = invocation.result
@@ -1060,6 +1097,37 @@ export default function AdminAgentChatNew({
                 htmlLength: emailPreviewData.html.length,
                 htmlStartsWith: emailPreviewData.html.substring(0, 50),
                 previewLength: emailPreviewData.preview.length
+              })
+              
+              latestEmailPreview = emailPreviewData
+              foundValidEmailPreview = true
+              break // Found valid preview, stop searching
+            }
+          }
+          
+          // Check for compose_email_draft tool result
+          if (partAny.type === 'tool-result' && partAny.toolName === 'compose_email_draft' && partAny.result) {
+            let result = partAny.result
+            
+            // Handle stringified JSON
+            if (typeof result === 'string') {
+              try {
+                result = JSON.parse(result)
+              } catch (e) {
+                console.warn('[Alex] ⚠️ Could not parse draft result as JSON:', e)
+                continue
+              }
+            }
+            
+            const emailPreviewData = extractEmailPreview(result, 'parts')
+            
+            if (emailPreviewData) {
+              console.log('[Alex] ✅ Email draft preview found in parts', {
+                htmlLength: emailPreviewData.html.length,
+                htmlPreview: emailPreviewData.html.substring(0, 100),
+                htmlStartsWith: emailPreviewData.html.substring(0, 20),
+                subjectLine: emailPreviewData.subject,
+                hasPreview: !!emailPreviewData.preview
               })
               
               latestEmailPreview = emailPreviewData
