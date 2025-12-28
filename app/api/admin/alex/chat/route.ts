@@ -3459,6 +3459,8 @@ Shows performance metrics like opens, clicks, conversions for campaigns.`,
   - Analyze code structure and features
   - Help Sandra manage and improve the codebase
   - Reference actual content when creating emails or campaigns
+  - Find recently modified files
+  - Search for files by keyword
   
   IMPORTANT: 
   - If a file is not found, the tool will suggest similar files
@@ -3467,26 +3469,35 @@ Shows performance metrics like opens, clicks, conversions for campaigns.`,
   - For dynamic routes like [slug], use the actual file path with brackets: app/prompt-guides/[slug]/page.tsx
   - Example: If directory shows "[slug]/", read app/prompt-guides/[slug]/page.tsx
   
+  SEARCH CAPABILITIES:
+  - Exact file paths: 'app/api/route.ts'
+  - Directory browsing: 'app/api'
+  - Smart keyword search: Use keywords to find relevant files (e.g., 'maya', 'studio', 'prompt')
+  - Recent changes: Use 'recent' to see files modified in last 7 days
+  
   This tool allows you to read files from:
   - content-templates/ (Instagram templates, guides)
   - docs/ (documentation, guides)
   - app/ (pages and routes)
   - lib/ (utilities and helpers)
   - scripts/ (database schemas, migrations)
+  - components/ (React components)
   
   Always use this when Sandra asks about:
   - What freebies exist
   - What's in the brand blueprint
   - What prompts are in the guide
   - How features work
-  - What content exists`,
+  - What content exists
+  - What files were recently changed
+  - Finding files by feature name`,
       
       input_schema: {
         type: "object",
         properties: {
           filePath: {
             type: "string",
-            description: "Relative path to the file from project root (e.g., content-templates/instagram/README.md, docs/PROMPT-GUIDE-BUILDER.md, app/blueprint/page.tsx)"
+            description: "File path, directory, keyword search, or 'recent' for recent changes. Examples: 'app/api/route.ts' (exact path), 'app/api' (directory), 'maya' (keyword search), 'recent' (recent changes)"
           },
           maxLines: {
             type: "number",
@@ -3514,6 +3525,7 @@ Shows performance metrics like opens, clicks, conversions for campaigns.`,
           console.log(`[Alex] 📖 Attempting to read file: ${filePath}`)
           const fs = require('fs')
           const path = require('path')
+          const { execSync } = require('child_process')
           
           // Security: Only allow reading from specific safe directories
           const allowedDirs = [
@@ -3525,8 +3537,158 @@ Shows performance metrics like opens, clicks, conversions for campaigns.`,
             'components'
           ]
           
-          // Normalize path and check if it's in allowed directory
-          const normalizedPath = path.normalize(filePath)
+          const trimmedPath = filePath.trim()
+          
+          // Special handling for "recent" keyword
+          if (trimmedPath.toLowerCase() === 'recent') {
+            console.log(`[Alex] 🔍 Finding recently modified files...`)
+            try {
+              // Use git to find recently modified files (last 7 days)
+              // Get files changed in commits from last 7 days
+              const gitOutput = execSync(
+                'git log --name-only --pretty=format: --since="7 days ago"',
+                { encoding: 'utf-8', cwd: process.cwd(), maxBuffer: 10 * 1024 * 1024 }
+              )
+              
+              // Filter for relevant file types and normalize paths
+              const recentFiles = gitOutput
+                .split('\n')
+                .map((line: string) => line.trim())
+                .filter((line: string) => {
+                  // Only include files in allowed directories with relevant extensions
+                  const hasAllowedExt = /\.(ts|tsx|js|jsx|md)$/i.test(line)
+                  const inAllowedDir = allowedDirs.some(dir => line.startsWith(dir + '/'))
+                  return hasAllowedExt && (inAllowedDir || line === 'README.md' || line === 'package.json')
+                })
+                .filter((line: string, index: number, self: string[]) => self.indexOf(line) === index) // Remove duplicates
+                .slice(0, 20) // Limit to 20 files
+              
+              if (recentFiles.length > 0) {
+                console.log(`[Alex] 📝 Found ${recentFiles.length} recently modified files`)
+                return {
+                  success: true,
+                  type: 'recent_changes',
+                  files: recentFiles,
+                  message: `Files modified in last 7 days (${recentFiles.length} files):\n\n${recentFiles.map((f: string) => `- ${f}`).join('\n')}\n\n💡 Use read_codebase_file with a specific file path to read any of these files.`
+                }
+              } else {
+                return {
+                  success: true,
+                  type: 'recent_changes',
+                  files: [],
+                  message: 'No files modified in the last 7 days. Use read_codebase_file with a file path, directory, or keyword to search the codebase.'
+                }
+              }
+            } catch (error: any) {
+              console.error('[Alex] ⚠️ Error finding recent files:', error.message)
+              // If git fails, continue to normal file reading
+              return {
+                success: false,
+                error: "Could not retrieve recent changes. Git may not be available or initialized.",
+                suggestion: "Try using a file path, directory, or keyword search instead."
+              }
+            }
+          }
+          
+          // If filePath looks like a keyword search (no slashes, no extension, and not a special keyword)
+          // Check if it's a simple keyword that doesn't look like a file path
+          const hasNoSlashes = !trimmedPath.includes('/') && !trimmedPath.includes('\\')
+          const hasNoExtension = !trimmedPath.includes('.')
+          const isNotSpecial = trimmedPath.toLowerCase() !== 'recent'
+          
+          if (hasNoSlashes && hasNoExtension && isNotSpecial && trimmedPath.length > 1) {
+            console.log(`[Alex] 🔍 Performing keyword search for: ${trimmedPath}`)
+            const keyword = trimmedPath.toLowerCase()
+            const searchResults: string[] = []
+            
+            try {
+              // Search in allowed directories for files matching the keyword
+              const allowedDirs = [
+                'content-templates',
+                'docs',
+                'app',
+                'lib',
+                'scripts',
+                'components'
+              ]
+              
+              for (const dir of allowedDirs) {
+                const dirPath = path.join(process.cwd(), dir)
+                if (fs.existsSync(dirPath)) {
+                  try {
+                    // Use find command for better cross-platform compatibility
+                    const files = execSync(
+                      `find "${dir}" -type f \\( -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" -o -name "*.md" \\) -iname "*${keyword}*" 2>/dev/null | head -15`,
+                      { encoding: 'utf-8', cwd: process.cwd() }
+                    ).split('\n').filter((f: string) => f.trim().length > 0)
+                    
+                    searchResults.push(...files)
+                  } catch (searchError: any) {
+                    // If find fails, try a manual recursive search
+                    try {
+                      const searchInDir = (dirPath: string, baseDir: string): void => {
+                        if (searchResults.length >= 20) return // Limit results
+                        
+                        try {
+                          const entries = fs.readdirSync(dirPath, { withFileTypes: true })
+                          for (const entry of entries) {
+                            if (searchResults.length >= 20) break
+                            
+                            const fullPath = path.join(dirPath, entry.name)
+                            const relPath = path.relative(process.cwd(), fullPath)
+                            
+                            // Skip node_modules and other ignored directories
+                            if (relPath.includes('node_modules') || relPath.includes('.next')) continue
+                            
+                            if (entry.isDirectory()) {
+                              searchInDir(fullPath, baseDir)
+                            } else if (entry.isFile()) {
+                              const ext = path.extname(entry.name).toLowerCase()
+                              if (['.ts', '.tsx', '.js', '.jsx', '.md'].includes(ext)) {
+                                const nameLower = entry.name.toLowerCase()
+                                if (nameLower.includes(keyword)) {
+                                  if (!searchResults.includes(relPath)) {
+                                    searchResults.push(relPath)
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        } catch (e) {
+                          // Skip directories we can't read
+                        }
+                      }
+                      
+                      searchInDir(dirPath, dir)
+                    } catch (manualError) {
+                      // Continue to next directory
+                    }
+                  }
+                }
+              }
+              
+              if (searchResults.length > 0) {
+                const uniqueResults = Array.from(new Set(searchResults)).slice(0, 20)
+                console.log(`[Alex] 🔍 Found ${uniqueResults.length} files matching "${keyword}"`)
+                return {
+                  success: true,
+                  type: 'search_results',
+                  keyword: keyword,
+                  files: uniqueResults,
+                  message: `Files matching "${keyword}" (${uniqueResults.length} found):\n\n${uniqueResults.map((f: string) => `- ${f}`).join('\n')}\n\n💡 Use read_codebase_file with a specific file path to read any of these files.`
+                }
+              } else {
+                // No results found, continue to normal file reading flow (which will show better error messages)
+                console.log(`[Alex] 🔍 No files found matching "${keyword}", continuing with normal file path resolution`)
+              }
+            } catch (error: any) {
+              console.warn(`[Alex] ⚠️ Error in keyword search:`, error.message)
+              // Continue to normal file reading if search fails
+            }
+          }
+          
+          // Normalize path and check if it's in allowed directory (use trimmedPath for consistency)
+          const normalizedPath = path.normalize(trimmedPath)
           
           // Check if it's a directory path (no file extension and matches allowed dir)
           const isDirectoryPath = allowedDirs.some(dir => normalizedPath === dir || normalizedPath === dir + '/' || normalizedPath === dir + '\\')
