@@ -14,6 +14,7 @@ import {
   addContactToSegment,
 } from "@/lib/resend/manage-contact"
 import { syncContactToFlodesk, tagFlodeskContact } from '@/lib/flodesk'
+import { hasStudioMembership } from "@/lib/subscription"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -712,6 +713,36 @@ export async function POST(request: NextRequest) {
                   AND stripe_payment_id = ${paymentIntentId}
                   AND product_type IS NULL
               `
+            }
+
+            // 🎯 AUTOMATION: Add to "Instagram Photoshoot Buyers" segment if not a Studio member
+            // This segment is for one-time buyers who haven't upgraded to membership
+            if (process.env.RESEND_PHOTOSHOOT_BUYERS_SEGMENT_ID && customerEmail) {
+              try {
+                console.log(`[v0] Checking if user ${userId} has Studio membership for segment automation...`)
+                const hasActiveMembership = await hasStudioMembership(userId)
+                
+                if (!hasActiveMembership) {
+                  console.log(`[v0] ✅ User ${userId} does NOT have Studio membership - adding to Instagram Photoshoot Buyers segment`)
+                  const segmentResult = await addContactToSegment(
+                    customerEmail,
+                    process.env.RESEND_PHOTOSHOOT_BUYERS_SEGMENT_ID
+                  )
+                  
+                  if (segmentResult.success) {
+                    console.log(`[v0] ✅ Added ${customerEmail} to Instagram Photoshoot Buyers segment`)
+                  } else {
+                    console.error(`[v0] ⚠️ Failed to add to Photoshoot Buyers segment: ${segmentResult.error}`)
+                  }
+                } else {
+                  console.log(`[v0] ⏭️ User ${userId} has active Studio membership - skipping Photoshoot Buyers segment (excluded)`)
+                }
+              } catch (segmentError) {
+                console.error(`[v0] ⚠️ Error in Photoshoot Buyers segment automation:`, segmentError)
+                // Don't fail the webhook if segment addition fails
+              }
+            } else if (!process.env.RESEND_PHOTOSHOOT_BUYERS_SEGMENT_ID) {
+              console.log(`[v0] ℹ️ RESEND_PHOTOSHOOT_BUYERS_SEGMENT_ID not configured - skipping segment automation`)
             }
           } else if (productType === "credit_topup") {
             const isTestMode = !event.livemode
