@@ -4,6 +4,7 @@
  */
 
 import type { Tool, ToolResult, EmailPreview } from '../../types'
+import { sql } from '../../shared/dependencies'
 
 interface ComposeEmailDraftInput {
   purpose: string
@@ -73,6 +74,46 @@ export const composeEmailDraftTool: Tool<ComposeEmailDraftInput, EmailPreview> =
         preview: previewText + (content.replace(/<[^>]*>/g, '').length > 200 ? '...' : ''),
         created_at: new Date().toISOString(),
         status: 'draft'
+      }
+
+      // Save to database - BUT CHECK FOR DUPLICATES FIRST
+      try {
+        const existingDraft = await sql`
+          SELECT id FROM admin_email_campaigns
+          WHERE subject_line = ${subject}
+            AND email_content = ${content}
+            AND created_at > NOW() - INTERVAL '5 minutes'
+          LIMIT 1
+        `
+        
+        if (existingDraft.length === 0) {
+          // Only save if no duplicate found in last 5 minutes
+          await sql`
+            INSERT INTO admin_email_campaigns (
+              campaign_name,
+              campaign_type,
+              subject_line,
+              email_content,
+              status,
+              created_at,
+              updated_at
+            ) VALUES (
+              ${purpose},
+              'newsletter',
+              ${subject},
+              ${content},
+              'draft',
+              NOW(),
+              NOW()
+            )
+          `
+          console.log('[Alex] ✅ Email draft saved to database')
+        } else {
+          console.log('[Alex] ⚠️ Duplicate email draft detected (within 5 minutes), skipping save')
+        }
+      } catch (saveError: any) {
+        // Don't fail the tool if save fails - still return preview
+        console.error('[Alex] ⚠️ Failed to save email draft to database:', saveError)
       }
 
       console.log('[Alex] ✅ Email draft created (preview only):', {

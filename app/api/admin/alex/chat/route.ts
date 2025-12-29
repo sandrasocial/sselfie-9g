@@ -1217,7 +1217,17 @@ IMPORTANT: When user asks to edit this email:
                       
                       // Send tool invocation event to frontend so it can display cards immediately
                       // The AI SDK will also parse this from the tool_result content, but we send it explicitly for immediate display
-                      if (currentToolCall.name === 'create_instagram_caption' || currentToolCall.name === 'suggest_maya_prompts' || currentToolCall.name === 'create_content_calendar') {
+                      // Include ALL tools that return preview data (email, caption, prompts, calendar, sequence)
+                      const toolsWithPreviewCards = [
+                        'compose_email_draft',
+                        'compose_email',
+                        'create_email_sequence',
+                        'create_instagram_caption',
+                        'suggest_maya_prompts',
+                        'create_content_calendar'
+                      ]
+                      
+                      if (toolsWithPreviewCards.includes(currentToolCall.name)) {
                         const toolInvocationEvent = {
                           type: 'tool-call',
                           id: messageId,
@@ -1227,7 +1237,11 @@ IMPORTANT: When user asks to edit this email:
                           result: toolResult
                         }
                         safeEnqueue(encoder.encode(`data: ${JSON.stringify(toolInvocationEvent)}\n\n`))
-                        console.log(`[Alex] 📤 Sent tool invocation event for ${currentToolCall.name}`)
+                        console.log(`[Alex] 📤 Sent tool invocation event for ${currentToolCall.name}`, {
+                          hasEmailPreview: !!toolResult?.email_preview_data,
+                          hasCaptionData: !!toolResult?.data?.captionText,
+                          hasSequenceData: !!toolResult?.emails
+                        })
                       }
                       
                       currentToolCall = null

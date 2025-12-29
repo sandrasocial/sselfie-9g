@@ -194,34 +194,54 @@ Generate ONLY the JSON array, nothing else.`
         ? `${specialFocus} - ${duration.charAt(0).toUpperCase() + duration.slice(1)} Plan`
         : `${duration.charAt(0).toUpperCase() + duration.slice(1)} Content Calendar`
 
-      // Save to database
-      const saved = await sql`
-        INSERT INTO content_calendars (
-          title, description, duration, start_date, end_date,
-          platform, calendar_data, content_pillars, total_posts,
-          created_by, created_at
-        ) VALUES (
-          ${title},
-          ${specialFocus || `${platform} content plan for ${duration}`},
-          ${duration},
-          ${start.toISOString().split('T')[0]},
-          ${end.toISOString().split('T')[0]},
-          ${platform},
-          ${JSON.stringify({ days: calendarData })},
-          ${pillars},
-          ${calendarData.length},
-          ${ALEX_CONSTANTS.ADMIN_EMAIL},
-          NOW()
-        )
-        RETURNING id, title, duration, start_date, end_date, total_posts, created_at
+      // Check for duplicates before saving
+      const existingCalendar = await sql`
+        SELECT id FROM content_calendars
+        WHERE title = ${title}
+          AND start_date = ${start.toISOString().split('T')[0]}
+          AND created_at > NOW() - INTERVAL '5 minutes'
+        LIMIT 1
       `
+      
+      let calendarInfo
+      if (existingCalendar.length === 0) {
+        // Save to database - only if no duplicate found
+        const saved = await sql`
+          INSERT INTO content_calendars (
+            title, description, duration, start_date, end_date,
+            platform, calendar_data, content_pillars, total_posts,
+            created_by, created_at
+          ) VALUES (
+            ${title},
+            ${specialFocus || `${platform} content plan for ${duration}`},
+            ${duration},
+            ${start.toISOString().split('T')[0]},
+            ${end.toISOString().split('T')[0]},
+            ${platform},
+            ${JSON.stringify({ days: calendarData })},
+            ${pillars},
+            ${calendarData.length},
+            ${ALEX_CONSTANTS.ADMIN_EMAIL},
+            NOW()
+          )
+          RETURNING id, title, duration, start_date, end_date, total_posts, created_at
+        `
+        calendarInfo = saved[0]
+        console.log('[Alex] ✅ Content calendar saved:', { 
+          id: calendarInfo.id, 
+          posts: calendarInfo.total_posts 
+        })
+      } else {
+        // Use existing calendar
+        const existing = await sql`
+          SELECT id, title, duration, start_date, end_date, total_posts, created_at
+          FROM content_calendars
+          WHERE id = ${existingCalendar[0].id}
+        `
+        calendarInfo = existing[0]
+        console.log('[Alex] ⚠️ Duplicate calendar detected (within 5 minutes), using existing:', { id: calendarInfo.id })
+      }
 
-      const calendarInfo = saved[0]
-
-      console.log('[Alex] ✅ Content calendar saved:', { 
-        id: calendarInfo.id, 
-        posts: calendarInfo.total_posts 
-      })
 
       return {
         success: true,

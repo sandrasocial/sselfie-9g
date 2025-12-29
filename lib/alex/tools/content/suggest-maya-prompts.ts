@@ -139,30 +139,48 @@ Generate ${count} prompts. Return ONLY the JSON array, nothing else.`
 
       const generatedPrompts = JSON.parse(jsonMatch[0])
 
-      // Save each prompt to database
+      // Save each prompt to database (with duplicate prevention)
       const savedPrompts = []
 
       for (const prompt of generatedPrompts) {
-        const saved = await sql`
-          INSERT INTO maya_prompt_suggestions (
-            prompt_title, prompt_text, category, season, style,
-            mood, tags, use_case, created_by, created_at
-          ) VALUES (
-            ${prompt.title},
-            ${prompt.prompt},
-            ${category},
-            ${season},
-            ${style},
-            ${prompt.mood},
-            ${prompt.tags},
-            ${prompt.useCase},
-            ${ALEX_CONSTANTS.ADMIN_EMAIL},
-            NOW()
-          )
-          RETURNING id, prompt_title, prompt_text, category, season, style, mood, tags, use_case, created_at
+        // Check for duplicates
+        const existing = await sql`
+          SELECT id FROM maya_prompt_suggestions
+          WHERE prompt_text = ${prompt.prompt}
+            AND created_at > NOW() - INTERVAL '5 minutes'
+          LIMIT 1
         `
-
-        savedPrompts.push(saved[0])
+        
+        if (existing.length === 0) {
+          // Only save if no duplicate found
+          const saved = await sql`
+            INSERT INTO maya_prompt_suggestions (
+              prompt_title, prompt_text, category, season, style,
+              mood, tags, use_case, created_by, created_at
+            ) VALUES (
+              ${prompt.title},
+              ${prompt.prompt},
+              ${category},
+              ${season},
+              ${style},
+              ${prompt.mood},
+              ${prompt.tags},
+              ${prompt.useCase},
+              ${ALEX_CONSTANTS.ADMIN_EMAIL},
+              NOW()
+            )
+            RETURNING id, prompt_title, prompt_text, category, season, style, mood, tags, use_case, created_at
+          `
+          savedPrompts.push(saved[0])
+        } else {
+          // Use existing prompt
+          const existingPrompt = await sql`
+            SELECT id, prompt_title, prompt_text, category, season, style, mood, tags, use_case, created_at
+            FROM maya_prompt_suggestions
+            WHERE id = ${existing[0].id}
+          `
+          savedPrompts.push(existingPrompt[0])
+        }
       }
 
       console.log('[Alex] ✅ Maya prompts saved:', { count: savedPrompts.length })

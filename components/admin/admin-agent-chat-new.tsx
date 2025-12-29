@@ -496,6 +496,74 @@ export default function AdminAgentChatNew({
   const { messages, sendMessage, status, setMessages, error } = useChat({
     transport: transportInstance,
     body: { chatId },
+    onToolCall: async (toolCall: any) => {
+      // Log when tool is called
+      console.log('[Alex] 🔧 Tool call started:', toolCall.toolName)
+      setExecutingTool(toolCall.toolName)
+      setToolLoading(toolCall.toolName)
+    },
+    onToolResult: async (toolResult: any) => {
+      // Log when tool result arrives
+      console.log('[Alex] 🎯 Tool result received:', {
+        toolName: toolResult.toolName,
+        hasResult: !!toolResult.result,
+        hasEmailPreview: !!toolResult.result?.email_preview_data,
+        hasCaptionData: !!toolResult.result?.data?.captionText,
+        hasSequenceData: !!toolResult.result?.emails,
+        resultKeys: toolResult.result ? Object.keys(toolResult.result) : []
+      })
+      
+      // Update streaming message with tool result for immediate card rendering
+      setStreamingMessage((prev: any) => {
+        if (!prev) {
+          // Create new streaming message if none exists
+          return {
+            id: `streaming-${Date.now()}`,
+            role: 'assistant',
+            content: '',
+            toolInvocations: [{
+              toolName: toolResult.toolName,
+              result: toolResult.result
+            }]
+          }
+        }
+        
+        // Add tool result to existing streaming message
+        const existingInvocation = prev.toolInvocations?.find((inv: any) => inv.toolName === toolResult.toolName)
+        if (existingInvocation) {
+          // Update existing invocation
+          return {
+            ...prev,
+            toolInvocations: prev.toolInvocations.map((inv: any) =>
+              inv.toolName === toolResult.toolName
+                ? { ...inv, result: toolResult.result }
+                : inv
+            )
+          }
+        } else {
+          // Add new invocation
+          return {
+            ...prev,
+            toolInvocations: [...(prev.toolInvocations || []), {
+              toolName: toolResult.toolName,
+              result: toolResult.result
+            }]
+          }
+        }
+      })
+      
+      // Clear loading state
+      setExecutingTool(null)
+      setToolLoading(null)
+      
+      // Force immediate re-render by updating toolResultsVersion
+      // This ensures cards appear as soon as tool results arrive
+      setToolResultsVersion(prev => {
+        const newVersion = prev + 1
+        console.log('[Alex] 🔄 Forcing immediate re-render for tool result (version:', newVersion, ')')
+        return newVersion
+      })
+    },
     onResponse: async (response: any) => {
       // Safety check: don't update state if component is unmounted
       if (!isMountedRef.current) {
@@ -539,6 +607,9 @@ export default function AdminAgentChatNew({
       
       try {
         console.log('[Alex] ✅ Message finished:', message)
+        // Clear streaming message when message is finished
+        // The completed message will be in the messages array
+        setStreamingMessage(null)
       } catch (error: any) {
         console.error('[Alex] ❌ Error in onFinish:', error)
       }
@@ -588,6 +659,86 @@ export default function AdminAgentChatNew({
       }
     })
   }, [messages])
+
+  // Track streaming message with tool results for real-time card rendering
+  const [streamingMessage, setStreamingMessage] = useState<any>(null)
+  
+  // Combine completed messages + streaming message for real-time card rendering
+  const displayMessages = useMemo(() => {
+    if (streamingMessage && status === 'streaming') {
+      // Check if streaming message is already in messages (to avoid duplicates)
+      const isInMessages = messages.some((m: any) => 
+        m.id === streamingMessage.id || 
+        (m.role === 'assistant' && m.toolInvocations?.some((inv: any) => 
+          streamingMessage.toolInvocations?.some((sInv: any) => 
+            inv.toolName === sInv.toolName && inv.result === sInv.result
+          )
+        ))
+      )
+      
+      if (!isInMessages) {
+        return [...messages, streamingMessage]
+      }
+    }
+    return messages
+  }, [messages, streamingMessage, status])
+  
+  // Force re-render when tool invocations complete to show preview cards immediately
+  // This ensures cards appear as soon as tool results arrive, not waiting for message completion
+  const [toolResultsVersion, setToolResultsVersion] = useState(0)
+  const lastToolResultsHash = useRef<string>('')
+  
+  useEffect(() => {
+    // Create a hash of all tool results to detect changes
+    const toolResultsHash = messages
+      .filter((msg: any) => msg.role === 'assistant' && msg.toolInvocations)
+      .map((msg: any) => {
+        const invocations = msg.toolInvocations || []
+        return invocations
+          .filter((inv: any) => inv.result)
+          .map((inv: any) => {
+            // Create a stable hash of the tool result
+            const resultStr = typeof inv.result === 'string' 
+              ? inv.result.substring(0, 200)
+              : JSON.stringify(inv.result).substring(0, 200)
+            return `${inv.toolName}-${resultStr.length}-${resultStr.slice(0, 50)}`
+          })
+          .join('|')
+      })
+      .join('||')
+    
+    // Only update if hash changed (new tool results arrived)
+    if (toolResultsHash !== lastToolResultsHash.current && toolResultsHash.length > 0) {
+      const previousHash = lastToolResultsHash.current
+      lastToolResultsHash.current = toolResultsHash
+      
+      // Log tool result arrival for debugging
+      messages.forEach((msg: any) => {
+        if (msg.role === 'assistant' && msg.toolInvocations) {
+          msg.toolInvocations.forEach((inv: any) => {
+            if (inv.result) {
+              console.log('[Alex] 🎯 Tool result detected:', {
+                toolName: inv.toolName,
+                hasResult: !!inv.result,
+                resultType: typeof inv.result,
+                messageId: msg.id,
+                resultPreview: typeof inv.result === 'object' 
+                  ? Object.keys(inv.result).join(', ')
+                  : String(inv.result).substring(0, 50)
+              })
+            }
+          })
+        }
+      })
+      
+      // Increment version to force re-render
+      setToolResultsVersion(prev => {
+        const newVersion = prev + 1
+        console.log('[Alex] 🔄 Forcing re-render for tool results (version:', newVersion, ')')
+        return newVersion
+      })
+    }
+  }, [messages]) // Only depend on messages, not toolResultsVersion
 
   // Add status logging
   useEffect(() => {
@@ -1785,22 +1936,29 @@ export default function AdminAgentChatNew({
               ) : (
                 <div className="space-y-3 sm:space-y-4 max-w-4xl mx-auto">
                   {(() => {
-                    console.log('[Alex] 📋 Rendering messages:', {
-                      count: messages.length,
-                      messages: messages.map((m: any) => ({
-                        id: m.id,
-                        role: m.role,
-                        hasContent: !!m.content,
-                        contentType: typeof m.content,
-                        hasParts: !!m.parts,
-                        contentPreview: typeof m.content === 'string' 
-                          ? m.content.substring(0, 50) 
-                          : 'not a string'
-                      }))
-                    })
+                    // Only log on client to avoid hydration mismatches
+                    if (typeof window !== 'undefined') {
+                      console.log('[Alex] 📋 Rendering messages:', {
+                        count: messages.length,
+                        toolResultsVersion,
+                        messages: messages.map((m: any) => ({
+                          id: m.id,
+                          role: m.role,
+                          hasContent: !!m.content,
+                          contentType: typeof m.content,
+                          hasParts: !!m.parts,
+                          hasToolInvocations: !!(m as any).toolInvocations,
+                          toolInvocationsCount: (m as any).toolInvocations?.length || 0,
+                          toolInvocationsWithResults: (m as any).toolInvocations?.filter((inv: any) => inv.result)?.length || 0,
+                          contentPreview: typeof m.content === 'string' 
+                            ? m.content.substring(0, 50) 
+                            : 'not a string'
+                        }))
+                      })
+                    }
                     return null
                   })()}
-                  {messages.map((message) => (
+                  {displayMessages.map((message) => (
                     <div
                       key={message.id}
                       className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
@@ -2018,11 +2176,40 @@ Please acknowledge you've received the edited HTML and are ready to make further
                                             }
                                           }
                                           
-                                          if (result?.data || result?.success) {
-                                            const captionData = result.data || result
+                                          // Check for caption data in various formats
+                                          let captionData = null
+                                          if (result?.type === 'instagram_caption' && result?.data) {
+                                            captionData = result.data
+                                          } else if (result?.data) {
+                                            captionData = result.data
+                                          } else if (result?.caption_data) {
+                                            captionData = result.caption_data
+                                          } else if (result?.success && result?.data) {
+                                            captionData = result.data
+                                          } else if (result && !result.error) {
+                                            // Fallback: use result directly if it has caption-like structure
+                                            captionData = result
+                                          }
+                                          
+                                          if (captionData && (captionData.captionText || captionData.caption || captionData.fullCaption)) {
+                                            // Map the data structure to what CaptionCard expects
+                                            const mappedCaption = {
+                                              id: captionData.id || 0,
+                                              captionText: captionData.captionText || captionData.body || captionData.caption || '',
+                                              captionType: captionData.captionType || 'storytelling',
+                                              hashtags: captionData.hashtags || [],
+                                              hook: captionData.hook || '',
+                                              imageDescription: captionData.imageDescription || captionData.photoDescription || '',
+                                              tone: captionData.tone || 'warm',
+                                              wordCount: captionData.wordCount || 0,
+                                              cta: captionData.cta || null,
+                                              createdAt: captionData.createdAt || new Date().toISOString(),
+                                              fullCaption: captionData.fullCaption || captionData.caption || captionData.captionText || ''
+                                            }
+                                            
                                             return (
-                                              <div key={inv.toolCallId || `caption-${message.id}`}>
-                                                <CaptionCard caption={captionData} />
+                                              <div key={inv.toolCallId || `caption-${message.id}`} className="mt-4">
+                                                <CaptionCard caption={mappedCaption} />
                                               </div>
                                             )
                                           }
@@ -2077,6 +2264,459 @@ Please acknowledge you've received the edited HTML and are ready to make further
                                       })}
                                     </div>
                                   )}
+                                  
+                                  {/* Check message.parts and message.content for caption data (from streaming responses) */}
+                                  {(() => {
+                                    // Check message.parts array
+                                    const parts = (message as any).parts
+                                    if (parts && Array.isArray(parts)) {
+                                      for (const part of parts) {
+                                        if (part.type === 'tool-result' && part.result) {
+                                          let result = part.result
+                                          if (typeof result === 'string') {
+                                            try {
+                                              result = JSON.parse(result)
+                                            } catch (e) {
+                                              continue
+                                            }
+                                          }
+                                          
+                                          // Check for caption data
+                                          if (result?.type === 'instagram_caption' || 
+                                              (result?.data && (result.data.captionText || result.data.caption || result.data.fullCaption)) ||
+                                              result?.caption_data) {
+                                            let captionData = null
+                                            if (result?.type === 'instagram_caption' && result?.data) {
+                                              captionData = result.data
+                                            } else if (result?.data) {
+                                              captionData = result.data
+                                            } else if (result?.caption_data) {
+                                              captionData = result.caption_data
+                                            }
+                                            
+                                            if (captionData) {
+                                              const mappedCaption = {
+                                                id: captionData.id || 0,
+                                                captionText: captionData.captionText || captionData.body || captionData.caption || '',
+                                                captionType: captionData.captionType || 'storytelling',
+                                                hashtags: captionData.hashtags || [],
+                                                hook: captionData.hook || '',
+                                                imageDescription: captionData.imageDescription || captionData.photoDescription || '',
+                                                tone: captionData.tone || 'warm',
+                                                wordCount: captionData.wordCount || 0,
+                                                cta: captionData.cta || null,
+                                                createdAt: captionData.createdAt || new Date().toISOString(),
+                                                fullCaption: captionData.fullCaption || captionData.caption || captionData.captionText || ''
+                                              }
+                                              
+                                              return (
+                                                <div key={`parts-caption-${message.id}`} className="mt-4">
+                                                  <CaptionCard caption={mappedCaption} />
+                                                </div>
+                                              )
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                    
+                                    // Check message.content array
+                                    if (Array.isArray(message.content)) {
+                                      for (const part of message.content) {
+                                        if (part.type === 'tool-result' && part.content) {
+                                          let result = part.content
+                                          if (typeof result === 'string') {
+                                            try {
+                                              result = JSON.parse(result)
+                                            } catch (e) {
+                                              continue
+                                            }
+                                          }
+                                          
+                                          // Check for caption data
+                                          if (result?.type === 'instagram_caption' || 
+                                              (result?.data && (result.data.captionText || result.data.caption || result.data.fullCaption)) ||
+                                              result?.caption_data) {
+                                            let captionData = null
+                                            if (result?.type === 'instagram_caption' && result?.data) {
+                                              captionData = result.data
+                                            } else if (result?.data) {
+                                              captionData = result.data
+                                            } else if (result?.caption_data) {
+                                              captionData = result.caption_data
+                                            }
+                                            
+                                            if (captionData) {
+                                              const mappedCaption = {
+                                                id: captionData.id || 0,
+                                                captionText: captionData.captionText || captionData.body || captionData.caption || '',
+                                                captionType: captionData.captionType || 'storytelling',
+                                                hashtags: captionData.hashtags || [],
+                                                hook: captionData.hook || '',
+                                                imageDescription: captionData.imageDescription || captionData.photoDescription || '',
+                                                tone: captionData.tone || 'warm',
+                                                wordCount: captionData.wordCount || 0,
+                                                cta: captionData.cta || null,
+                                                createdAt: captionData.createdAt || new Date().toISOString(),
+                                                fullCaption: captionData.fullCaption || captionData.caption || captionData.captionText || ''
+                                              }
+                                              
+                                              return (
+                                                <div key={`content-caption-${message.id}`} className="mt-4">
+                                                  <CaptionCard caption={mappedCaption} />
+                                                </div>
+                                              )
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                    
+                                    return null
+                                  })()}
+                                  
+                                  {/* Email Sequence Preview Card */}
+                                  {(() => {
+                                    // Check toolInvocations for sequence data
+                                    const toolInvocations = (message as any).toolInvocations
+                                    if (toolInvocations && Array.isArray(toolInvocations)) {
+                                      for (const inv of toolInvocations) {
+                                        if (inv.toolName === 'create_email_sequence' && inv.result) {
+                                          let result = inv.result
+                                          if (typeof result === 'string') {
+                                            try {
+                                              result = JSON.parse(result)
+                                            } catch (e) {
+                                              continue
+                                            }
+                                          }
+                                          
+                                          // Check for sequence data
+                                          const sequenceData = result.data || result
+                                          const emails = sequenceData?.emails || result?.emails || []
+                                          
+                                          if (emails && Array.isArray(emails) && emails.length > 0) {
+                                            return (
+                                              <div key={`sequence-${message.id}`} className="mt-4 space-y-4">
+                                                <div className="border border-stone-200 rounded-lg overflow-hidden bg-white">
+                                                  {/* Sequence Header */}
+                                                  <div className="bg-stone-50 px-6 py-4 border-b border-stone-200">
+                                                    <div className="flex items-center justify-between mb-2">
+                                                      <span className="text-xs tracking-[0.2em] uppercase text-stone-400">
+                                                        Email Sequence
+                                                      </span>
+                                                      <span className="text-xs text-stone-500">
+                                                        {emails.length} {emails.length === 1 ? 'Email' : 'Emails'}
+                                                      </span>
+                                                    </div>
+                                                    <h3 className="font-serif text-lg text-stone-950">
+                                                      {sequenceData.sequence_name || sequenceData.sequenceName || 'Untitled Sequence'}
+                                                    </h3>
+                                                    {sequenceData.trigger && (
+                                                      <p className="text-sm text-stone-600 mt-1">
+                                                        Trigger: {sequenceData.trigger}
+                                                      </p>
+                                                    )}
+                                                  </div>
+                                                  
+                                                  {/* Email List */}
+                                                  <div className="divide-y divide-stone-200">
+                                                    {emails.map((email: any, emailIdx: number) => {
+                                                      // Handle different email data formats
+                                                      const emailContent = email.content || email.html || ''
+                                                      const emailSubject = email.subject || email.subjectLine || 'Untitled'
+                                                      const dayOffset = email.day_offset || email.day || emailIdx + 1
+                                                      
+                                                      return (
+                                                        <div key={emailIdx} className="p-6">
+                                                          {/* Email Header */}
+                                                          <div className="flex items-start justify-between mb-4">
+                                                            <div>
+                                                              <div className="flex items-center gap-3 mb-2">
+                                                                <span className="text-xs tracking-[0.2em] uppercase text-stone-400">
+                                                                  Email {emailIdx + 1}
+                                                                </span>
+                                                                <span className="text-xs text-stone-500">
+                                                                  Day {dayOffset}
+                                                                </span>
+                                                              </div>
+                                                              <h4 className="font-semibold text-stone-950">
+                                                                {emailSubject}
+                                                              </h4>
+                                                            </div>
+                                                            <button
+                                                              onClick={() => {
+                                                                if (!emailContent) return
+                                                                const win = window.open('', '_blank')
+                                                                if (win) {
+                                                                  // Wrap email HTML in a proper HTML document structure
+                                                                  const fullHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Preview - ${emailSubject}</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: #fafaf9;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .email-container {
+      max-width: 600px;
+      width: 100%;
+      background-color: white;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      margin: 0 auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="email-container">
+    ${emailContent}
+  </div>
+</body>
+</html>`
+                                                                  win.document.write(fullHtml)
+                                                                  win.document.close()
+                                                                }
+                                                              }}
+                                                              className="px-3 py-1 text-xs tracking-[0.2em] uppercase border border-stone-300 hover:border-stone-400 transition-colors rounded"
+                                                              disabled={!emailContent}
+                                                            >
+                                                              Preview
+                                                            </button>
+                                                          </div>
+                                                          
+                                                          {/* Email Preview (collapsed) */}
+                                                          {emailContent && (
+                                                            <details className="group" open={false}>
+                                                              <summary className="cursor-pointer text-sm text-stone-600 hover:text-stone-950 transition-colors">
+                                                                Show content
+                                                              </summary>
+                                                              <div className="mt-3 p-4 bg-stone-50 rounded border border-stone-200">
+                                                                <div 
+                                                                  className="prose prose-sm prose-stone max-w-none"
+                                                                  dangerouslySetInnerHTML={{ __html: emailContent }}
+                                                                />
+                                                              </div>
+                                                            </details>
+                                                          )}
+                                                          
+                                                          {/* Email Actions */}
+                                                          <div className="flex gap-2 mt-4">
+                                                            <button
+                                                              onClick={() => {
+                                                                navigator.clipboard.writeText(emailContent)
+                                                              }}
+                                                              className="px-3 py-1 text-xs tracking-[0.2em] uppercase border border-stone-300 hover:border-stone-400 transition-colors rounded"
+                                                              disabled={!emailContent}
+                                                            >
+                                                              Copy HTML
+                                                            </button>
+                                                            <button
+                                                              onClick={() => {
+                                                                // Copy subject and content as text
+                                                                const text = `Subject: ${emailSubject}\n\n${emailContent.replace(/<[^>]*>/g, '')}`
+                                                                navigator.clipboard.writeText(text)
+                                                              }}
+                                                              className="px-3 py-1 text-xs tracking-[0.2em] uppercase border border-stone-300 hover:border-stone-400 transition-colors rounded"
+                                                              disabled={!emailContent}
+                                                            >
+                                                              Copy as Text
+                                                            </button>
+                                                          </div>
+                                                        </div>
+                                                      )
+                                                    })}
+                                                  </div>
+                                                  
+                                                  {/* Sequence Actions */}
+                                                  <div className="bg-stone-50 px-6 py-4 border-t border-stone-200">
+                                                    <div className="flex items-center justify-between">
+                                                      <p className="text-xs text-stone-600">
+                                                        Review each email before proceeding
+                                                      </p>
+                                                      <div className="flex gap-3">
+                                                        <button
+                                                          onClick={() => {
+                                                            // Copy entire sequence as JSON for automation
+                                                            navigator.clipboard.writeText(JSON.stringify(sequenceData, null, 2))
+                                                          }}
+                                                          className="px-4 py-2 text-xs tracking-[0.2em] uppercase border border-stone-300 hover:border-stone-400 transition-colors rounded"
+                                                        >
+                                                          Copy Sequence Data
+                                                        </button>
+                                                      </div>
+                                                    </div>
+                                                    <p className="text-xs text-stone-500 mt-3">
+                                                      💡 Once approved, ask Alex to "create the automation code for this sequence"
+                                                    </p>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            )
+                                          }
+                                        }
+                                      }
+                                    }
+                                    
+                                    // Check message.parts for sequence data
+                                    const parts = (message as any).parts
+                                    if (parts && Array.isArray(parts)) {
+                                      for (const part of parts) {
+                                        if (part.type === 'tool-result' && part.result) {
+                                          let result = part.result
+                                          if (typeof result === 'string') {
+                                            try {
+                                              result = JSON.parse(result)
+                                            } catch (e) {
+                                              continue
+                                            }
+                                          }
+                                          
+                                          if (result?.data?.emails || result?.emails) {
+                                            const sequenceData = result.data || result
+                                            const emails = sequenceData.emails || result.emails || []
+                                            
+                                            if (emails && Array.isArray(emails) && emails.length > 0) {
+                                              return (
+                                                <div key={`parts-sequence-${message.id}`} className="mt-4 space-y-4">
+                                                  <div className="border border-stone-200 rounded-lg overflow-hidden bg-white">
+                                                    {/* Sequence Header */}
+                                                    <div className="bg-stone-50 px-6 py-4 border-b border-stone-200">
+                                                      <div className="flex items-center justify-between mb-2">
+                                                        <span className="text-xs tracking-[0.2em] uppercase text-stone-400">
+                                                          Email Sequence
+                                                        </span>
+                                                        <span className="text-xs text-stone-500">
+                                                          {emails.length} {emails.length === 1 ? 'Email' : 'Emails'}
+                                                        </span>
+                                                      </div>
+                                                      <h3 className="font-serif text-lg text-stone-950">
+                                                        {sequenceData.sequence_name || sequenceData.sequenceName || 'Untitled Sequence'}
+                                                      </h3>
+                                                      {sequenceData.trigger && (
+                                                        <p className="text-sm text-stone-600 mt-1">
+                                                          Trigger: {sequenceData.trigger}
+                                                        </p>
+                                                      )}
+                                                    </div>
+                                                    
+                                                    {/* Email List */}
+                                                    <div className="divide-y divide-stone-200">
+                                                      {emails.map((email: any, emailIdx: number) => {
+                                                        const emailContent = email.content || email.html || ''
+                                                        const emailSubject = email.subject || email.subjectLine || 'Untitled'
+                                                        const dayOffset = email.day_offset || email.day || emailIdx + 1
+                                                        
+                                                        return (
+                                                          <div key={emailIdx} className="p-6">
+                                                            <div className="flex items-start justify-between mb-4">
+                                                              <div>
+                                                                <div className="flex items-center gap-3 mb-2">
+                                                                  <span className="text-xs tracking-[0.2em] uppercase text-stone-400">
+                                                                    Email {emailIdx + 1}
+                                                                  </span>
+                                                                  <span className="text-xs text-stone-500">
+                                                                    Day {dayOffset}
+                                                                  </span>
+                                                                </div>
+                                                                <h4 className="font-semibold text-stone-950">
+                                                                  {emailSubject}
+                                                                </h4>
+                                                              </div>
+                                                              <button
+                                                                onClick={() => {
+                                                                  const win = window.open('', '_blank')
+                                                                  if (win && emailContent) {
+                                                                    win.document.write(emailContent)
+                                                                    win.document.close()
+                                                                  }
+                                                                }}
+                                                                className="px-3 py-1 text-xs tracking-[0.2em] uppercase border border-stone-300 hover:border-stone-400 transition-colors rounded"
+                                                                disabled={!emailContent}
+                                                              >
+                                                                Preview
+                                                              </button>
+                                                            </div>
+                                                            
+                                                            {emailContent && (
+                                                              <details className="group" open={false}>
+                                                                <summary className="cursor-pointer text-sm text-stone-600 hover:text-stone-950 transition-colors">
+                                                                  Show content
+                                                                </summary>
+                                                                <div className="mt-3 p-4 bg-stone-50 rounded border border-stone-200">
+                                                                  <div 
+                                                                    className="prose prose-sm prose-stone max-w-none"
+                                                                    dangerouslySetInnerHTML={{ __html: emailContent }}
+                                                                  />
+                                                                </div>
+                                                              </details>
+                                                            )}
+                                                            
+                                                            <div className="flex gap-2 mt-4">
+                                                              <button
+                                                                onClick={() => {
+                                                                  navigator.clipboard.writeText(emailContent)
+                                                                }}
+                                                                className="px-3 py-1 text-xs tracking-[0.2em] uppercase border border-stone-300 hover:border-stone-400 transition-colors rounded"
+                                                                disabled={!emailContent}
+                                                              >
+                                                                Copy HTML
+                                                              </button>
+                                                              <button
+                                                                onClick={() => {
+                                                                  const text = `Subject: ${emailSubject}\n\n${emailContent.replace(/<[^>]*>/g, '')}`
+                                                                  navigator.clipboard.writeText(text)
+                                                                }}
+                                                                className="px-3 py-1 text-xs tracking-[0.2em] uppercase border border-stone-300 hover:border-stone-400 transition-colors rounded"
+                                                                disabled={!emailContent}
+                                                              >
+                                                                Copy as Text
+                                                              </button>
+                                                            </div>
+                                                          </div>
+                                                        )
+                                                      })}
+                                                    </div>
+                                                    
+                                                    <div className="bg-stone-50 px-6 py-4 border-t border-stone-200">
+                                                      <div className="flex items-center justify-between">
+                                                        <p className="text-xs text-stone-600">
+                                                          Review each email before proceeding
+                                                        </p>
+                                                        <div className="flex gap-3">
+                                                          <button
+                                                            onClick={() => {
+                                                              navigator.clipboard.writeText(JSON.stringify(sequenceData, null, 2))
+                                                            }}
+                                                            className="px-4 py-2 text-xs tracking-[0.2em] uppercase border border-stone-300 hover:border-stone-400 transition-colors rounded"
+                                                          >
+                                                            Copy Sequence Data
+                                                          </button>
+                                                        </div>
+                                                      </div>
+                                                      <p className="text-xs text-stone-500 mt-3">
+                                                        💡 Once approved, ask Alex to "create the automation code for this sequence"
+                                                      </p>
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                              )
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                    
+                                    return null
+                                  })()}
                                   
                                   {/* Check email_preview_data for saved caption/prompt data (loaded from database) */}
                                   {(() => {

@@ -600,7 +600,7 @@ export default function EmailPreviewCard({
 
       {/* Actions */}
       <div className="bg-stone-50 border-t border-stone-200 px-3 sm:px-6 py-3 sm:py-4">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-3">
           <button
             onClick={onEdit}
             className="flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-2 sm:py-2.5 bg-white border border-stone-300 text-stone-700 rounded-lg hover:bg-stone-50 transition-colors"
@@ -638,6 +638,68 @@ export default function EmailPreviewCard({
             <span className="text-xs sm:hidden truncate">Send</span>
           </button>
         </div>
+        
+        {/* Copy HTML and Open Preview buttons */}
+        <div className="flex gap-3">
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              navigator.clipboard.writeText(htmlContent)
+            }}
+            className="px-4 py-2 text-xs tracking-[0.2em] uppercase border border-stone-300 hover:border-stone-400 transition-colors rounded"
+          >
+            Copy HTML
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              const win = window.open('', '_blank')
+              if (win) {
+                // Wrap email HTML in a proper HTML document structure
+                const fullHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Preview</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: #fafaf9;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .email-container {
+      max-width: 600px;
+      width: 100%;
+      background-color: white;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      margin: 0 auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="email-container">
+    ${htmlContent}
+  </div>
+</body>
+</html>`
+                win.document.write(fullHtml)
+                win.document.close()
+              }
+            }}
+            className="px-4 py-2 text-xs tracking-[0.2em] uppercase border border-stone-300 hover:border-stone-400 transition-colors rounded"
+          >
+            Open Preview
+          </button>
+        </div>
+        <p className="text-xs text-stone-500 mt-3">
+          This is a preview only. No email has been sent.
+        </p>
       </div>
 
       {/* Add styles for email preview */}

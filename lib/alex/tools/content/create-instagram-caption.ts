@@ -160,30 +160,48 @@ Generate ONLY the caption text, nothing else. No preamble, no explanations.`
       // Calculate word count
       const wordCount = captionWithoutHashtags.split(/\s+/).length
 
-      // Save to database
-      const saved = await sql`
-        INSERT INTO instagram_captions (
-          caption_text, caption_type, hashtags, cta,
-          image_description, tone, word_count, hook,
-          created_by, created_at
-        ) VALUES (
-          ${captionWithoutHashtags},
-          ${captionType},
-          ${hashtags},
-          ${cta},
-          ${photoDescription},
-          ${tone},
-          ${wordCount},
-          ${hook},
-          ${ALEX_CONSTANTS.ADMIN_EMAIL},
-          NOW()
-        )
-        RETURNING id, caption_text, caption_type, hashtags, hook, word_count, created_at
+      // Check for duplicates before saving
+      const existingCaption = await sql`
+        SELECT id FROM instagram_captions
+        WHERE caption_text = ${captionWithoutHashtags}
+          AND created_at > NOW() - INTERVAL '5 minutes'
+        LIMIT 1
       `
-
-      const captionData = saved[0]
-
-      console.log('[Alex] ✅ Instagram caption saved:', { id: captionData.id, wordCount })
+      
+      let captionData
+      if (existingCaption.length === 0) {
+        // Save to database - only if no duplicate found
+        const saved = await sql`
+          INSERT INTO instagram_captions (
+            caption_text, caption_type, hashtags, cta,
+            image_description, tone, word_count, hook,
+            created_by, created_at
+          ) VALUES (
+            ${captionWithoutHashtags},
+            ${captionType},
+            ${hashtags},
+            ${cta},
+            ${photoDescription},
+            ${tone},
+            ${wordCount},
+            ${hook},
+            ${ALEX_CONSTANTS.ADMIN_EMAIL},
+            NOW()
+          )
+          RETURNING id, caption_text, caption_type, hashtags, hook, word_count, created_at
+        `
+        captionData = saved[0]
+        console.log('[Alex] ✅ Instagram caption saved:', { id: captionData.id, wordCount })
+      } else {
+        // Use existing caption
+        const existing = await sql`
+          SELECT id, caption_text, caption_type, hashtags, hook, word_count, created_at
+          FROM instagram_captions
+          WHERE id = ${existingCaption[0].id}
+        `
+        captionData = existing[0]
+        console.log('[Alex] ⚠️ Duplicate caption detected (within 5 minutes), using existing:', { id: captionData.id })
+      }
 
       return {
         success: true,
