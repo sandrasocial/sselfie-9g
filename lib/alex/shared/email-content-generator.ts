@@ -90,8 +90,8 @@ Remember: Make ONLY the changes I requested. Keep everything else exactly the sa
     try {
       const timeoutPromise = new Promise<never>((_, reject) => {
         timeoutId = setTimeout(() => {
-          reject(new Error('Email generation timed out after 30 seconds'))
-        }, 30000)
+          reject(new Error('Email generation timed out after 120 seconds'))
+        }, 120000) // Increased to 120 seconds (2 minutes) to handle complex email generation
       })
 
       const result = await Promise.race([

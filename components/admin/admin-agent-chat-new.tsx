@@ -3,7 +3,8 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport } from "ai"
-import { Send, Plus, Menu, X, Mail, CheckCircle, Image as ImageIcon, MoreVertical, Trash2, Edit2, Check, X as XIcon } from 'lucide-react'
+import { Send, Plus, Menu, X, Mail, CheckCircle, Image as ImageIcon, MoreVertical, Trash2, Edit2, Check, X as XIcon, Eye } from 'lucide-react'
+import Link from 'next/link'
 import { useToast } from "@/hooks/use-toast"
 import EmailQuickActions from './email-quick-actions'
 import SegmentSelector from './segment-selector'
@@ -285,6 +286,12 @@ export default function AdminAgentChatNew({
   const [manualEdits, setManualEdits] = useState<Record<string, string>>({}) // Track manual HTML edits per message ID
   const [recentCampaigns, setRecentCampaigns] = useState<any[]>([])
   const [availableSegments, setAvailableSegments] = useState<any[]>([])
+  const [latestAutomationSequence, setLatestAutomationSequence] = useState<{
+    id: number
+    name: string
+    emailCount: number
+    status: string
+  } | null>(null)
   const [showEmailLibrary, setShowEmailLibrary] = useState(false) // Show/hide email library
   const [activeTab, setActiveTab] = useState<'chat' | 'email-drafts' | 'captions' | 'calendars' | 'prompts'>('chat')
   
@@ -531,6 +538,7 @@ export default function AdminAgentChatNew({
       setToolLoading(toolCall.toolName)
     },
     onToolResult: async (toolResult: any) => {
+      // Handle tool results BEFORE any validation - this prevents "expected text-start, got tool-call" errors
       // Log when tool result arrives
       console.log('[Alex] 🎯 Tool result received:', {
         toolName: toolResult.toolName,
@@ -541,22 +549,62 @@ export default function AdminAgentChatNew({
         resultKeys: toolResult.result ? Object.keys(toolResult.result) : []
       })
 
-      // Auto-refresh libraries when relevant tools complete
-      if (toolResult.toolName === 'create_instagram_caption') {
-        // Refresh captions library if on captions tab, or always update count
-        fetchCaptions()
-      } else if (toolResult.toolName === 'create_content_calendar') {
-        // Refresh calendars library
-        fetchCalendars()
-      } else if (toolResult.toolName === 'suggest_maya_prompts') {
-        // Refresh prompts library
-        fetchPrompts()
-      } else if (toolResult.toolName === 'compose_email_draft') {
-        // Email library handles its own refresh, but we could trigger it here if needed
-        // The EmailDraftsLibrary component has its own refresh mechanism
-      }
-      
-      // Update streaming message with tool result for immediate card rendering
+      // Immediately update messages array with tool result to render preview cards
+      // This bypasses validation errors by adding tool results directly to the last assistant message
+      setMessages((prev: any[]) => {
+        const lastMessage = prev[prev.length - 1]
+        if (lastMessage?.role === 'assistant') {
+          // Update the last assistant message with tool result
+          const existingToolInvocations = lastMessage.toolInvocations || []
+          const existingInvocationIndex = existingToolInvocations.findIndex(
+            (inv: any) => inv.toolName === toolResult.toolName
+          )
+
+          let updatedToolInvocations: any[]
+          if (existingInvocationIndex >= 0) {
+            // Update existing invocation
+            updatedToolInvocations = existingToolInvocations.map((inv: any, idx: number) =>
+              idx === existingInvocationIndex
+                ? { ...inv, result: toolResult.result }
+                : inv
+            )
+          } else {
+            // Add new invocation
+            updatedToolInvocations = [
+              ...existingToolInvocations,
+              {
+                toolCallId: toolResult.toolCallId || `tool-${toolResult.toolName}-${Date.now()}`,
+                toolName: toolResult.toolName,
+                result: toolResult.result
+              }
+            ]
+          }
+
+          return [
+            ...prev.slice(0, -1),
+            {
+              ...lastMessage,
+              toolInvocations: updatedToolInvocations
+            }
+          ]
+        }
+        // If no assistant message exists, create one with the tool result
+        return [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            role: 'assistant',
+            content: '',
+            toolInvocations: [{
+              toolCallId: toolResult.toolCallId || `tool-${toolResult.toolName}-${Date.now()}`,
+              toolName: toolResult.toolName,
+              result: toolResult.result
+            }]
+          }
+        ]
+      })
+
+      // Also update streaming message for immediate card rendering
       setStreamingMessage((prev: any) => {
         if (!prev) {
           // Create new streaming message if none exists
@@ -594,25 +642,25 @@ export default function AdminAgentChatNew({
           }
         }
       })
+
+      // Auto-refresh libraries when relevant tools complete
+      if (toolResult.toolName === 'create_instagram_caption') {
+        // Refresh captions library if on captions tab, or always update count
+        fetchCaptions()
+      } else if (toolResult.toolName === 'create_content_calendar') {
+        // Refresh calendars library
+        fetchCalendars()
+      } else if (toolResult.toolName === 'suggest_maya_prompts') {
+        // Refresh prompts library
+        fetchPrompts()
+      } else if (toolResult.toolName === 'compose_email_draft') {
+        // Email library handles its own refresh, but we could trigger it here if needed
+        // The EmailDraftsLibrary component has its own refresh mechanism
+      }
       
       // Clear loading state
       setExecutingTool(null)
       setToolLoading(null)
-      
-      // Auto-refresh libraries when relevant tools complete
-      if (toolResult.toolName === 'create_instagram_caption') {
-        // Refresh captions library to show new caption
-        fetchCaptions()
-      } else if (toolResult.toolName === 'create_content_calendar') {
-        // Refresh calendars library to show new calendar
-        fetchCalendars()
-      } else if (toolResult.toolName === 'suggest_maya_prompts') {
-        // Refresh prompts library to show new prompts
-        fetchPrompts()
-      } else if (toolResult.toolName === 'compose_email_draft') {
-        // Email library handles its own refresh via its component
-        // The EmailDraftsLibrary component has its own refresh mechanism
-      }
       
       // Force immediate re-render by updating toolResultsVersion
       // This ensures cards appear as soon as tool results arrive
@@ -731,9 +779,24 @@ export default function AdminAgentChatNew({
   
   // Combine completed messages + streaming message for real-time card rendering
   const displayMessages = useMemo(() => {
+    // Filter out invalid messages (like tool-call messages that aren't proper message objects)
+    const validMessages = messages.filter((m: any) => {
+      // Exclude messages that are tool-call objects (not proper messages)
+      if (m.type === 'tool-call' && !m.role) {
+        console.warn('[Alex] ⚠️ Filtering out invalid tool-call message:', m.id)
+        return false
+      }
+      // Ensure message has required fields
+      if (!m.role || (!m.content && !m.parts && !(m as any).toolInvocations)) {
+        console.warn('[Alex] ⚠️ Filtering out message without required fields:', m.id)
+        return false
+      }
+      return true
+    })
+
     if (streamingMessage && status === 'streaming') {
       // Check if streaming message is already in messages (to avoid duplicates)
-      const isInMessages = messages.some((m: any) => 
+      const isInMessages = validMessages.some((m: any) => 
         m.id === streamingMessage.id || 
         (m.role === 'assistant' && m.toolInvocations?.some((inv: any) => 
           streamingMessage.toolInvocations?.some((sInv: any) => 
@@ -743,10 +806,10 @@ export default function AdminAgentChatNew({
       )
       
       if (!isInMessages) {
-        return [...messages, streamingMessage]
+        return [...validMessages, streamingMessage]
       }
     }
-    return messages
+    return validMessages
   }, [messages, streamingMessage, status])
   
   // Force re-render when tool invocations complete to show preview cards immediately
@@ -1419,6 +1482,38 @@ export default function AdminAgentChatNew({
             }
           }
           
+          // Check for create_resend_automation_sequence tool result
+          if (partAny.type === 'tool-result' && partAny.toolName === 'create_resend_automation_sequence' && partAny.result) {
+            let result = partAny.result
+            
+            // Handle stringified JSON
+            if (typeof result === 'string') {
+              try {
+                result = JSON.parse(result)
+              } catch (e) {
+                console.warn('[Alex] ⚠️ Could not parse automation sequence result as JSON:', e)
+                continue
+              }
+            }
+            
+            // Check if automation was created successfully
+            if (result.success && result.data && result.data.sequenceId) {
+              console.log('[Alex] ✅ Automation sequence created:', {
+                sequenceId: result.data.sequenceId,
+                sequenceName: result.data.sequenceName,
+                totalEmails: result.data.totalEmails
+              })
+              
+              // Store automation sequence ID for linking
+              setLatestAutomationSequence({
+                id: result.data.sequenceId,
+                name: result.data.sequenceName,
+                emailCount: result.data.totalEmails,
+                status: result.data.status || 'draft'
+              })
+            }
+          }
+          
           // Check for get_resend_audience_data tool result
           if (partAny.type === 'tool-result' && partAny.toolName === 'get_resend_audience_data' && partAny.result) {
             const result = partAny.result
@@ -1515,11 +1610,45 @@ export default function AdminAgentChatNew({
     currentDraftIdRef.current = currentDraftId
   }, [currentDraftId])
 
+  // Track if we've already saved this email to prevent duplicates
+  const savedEmailHashRef = useRef<string>('')
+  
   useEffect(() => {
     if (!emailPreview || !emailPreview.html) return
 
+    // Create a hash of the email content to detect duplicates
+    const emailHash = `${emailPreview.subject}-${emailPreview.html.substring(0, 100)}`
+    
+    // Skip if we've already saved this exact email
+    if (savedEmailHashRef.current === emailHash) {
+      console.log('[EmailDrafts] ⚠️ Duplicate email detected, skipping save')
+      return
+    }
+
     const saveEmailDraft = async () => {
       try {
+        // Check for existing duplicate in database before saving
+        const checkResponse = await fetch(`/api/admin/agent/email-drafts?checkDuplicate=true`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            subjectLine: emailPreview.subject,
+            bodyHtml: emailPreview.html,
+          }),
+        })
+
+        if (checkResponse.ok) {
+          const checkData = await checkResponse.json()
+          if (checkData.isDuplicate) {
+            console.log('[EmailDrafts] ⚠️ Duplicate email found in database, skipping save')
+            savedEmailHashRef.current = emailHash
+            if (checkData.existingDraftId) {
+              setCurrentDraftId(checkData.existingDraftId)
+            }
+            return
+          }
+        }
+
         const response = await fetch('/api/admin/agent/email-drafts', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1540,6 +1669,7 @@ export default function AdminAgentChatNew({
           const data = await response.json()
           if (data.draft?.id) {
             setCurrentDraftId(data.draft.id)
+            savedEmailHashRef.current = emailHash // Mark as saved
             console.log('[EmailDrafts] ✅ Draft saved:', data.draft.id)
           }
         }
@@ -3080,6 +3210,136 @@ Please acknowledge you've received the edited HTML and are ready to make further
                                         </div>
                                       )
                                     }
+                                    return null
+                                  })()}
+                                  
+                                  {/* Automation Sequence Preview Link - Check message parts for automation sequences */}
+                                  {(() => {
+                                    // Check if this message has an automation sequence tool result
+                                    const messageParts = (message as any).parts || []
+                                    const toolInvocations = (message as any).toolInvocations || []
+                                    
+                                    console.log('[Alex] Checking message for automation:', {
+                                      messageId: message.id,
+                                      hasParts: messageParts.length > 0,
+                                      hasToolInvocations: toolInvocations.length > 0,
+                                      partsCount: messageParts.length
+                                    })
+                                    
+                                    // Check parts array
+                                    for (const part of messageParts) {
+                                      if (part.type === 'tool-result' && 
+                                          part.toolName === 'create_resend_automation_sequence' && 
+                                          part.result) {
+                                        let result = part.result
+                                        
+                                        // Handle stringified JSON
+                                        if (typeof result === 'string') {
+                                          try {
+                                            result = JSON.parse(result)
+                                          } catch (e) {
+                                            console.warn('[Alex] Failed to parse automation result:', e)
+                                            continue
+                                          }
+                                        }
+                                        
+                                        // Check if automation was created successfully
+                                        if (result.success && result.data && result.data.sequenceId) {
+                                          const automationData = result.data
+                                          
+                                          console.log('[Alex] ✅ Found automation in message parts:', {
+                                            messageId: message.id,
+                                            sequenceId: automationData.sequenceId,
+                                            sequenceName: automationData.sequenceName
+                                          })
+                                          
+                                          return (
+                                            <div key={`automation-${automationData.sequenceId}-${message.id}`} className="mt-4">
+                                              <div className="bg-gradient-to-r from-stone-50 to-stone-100 border border-stone-300 rounded-lg p-6">
+                                                <div className="flex items-start justify-between gap-4">
+                                                  <div className="flex-1">
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                      <CheckCircle className="w-5 h-5 text-green-600" />
+                                                      <h3 className="font-serif text-lg font-medium text-stone-900">
+                                                        Automation Sequence Created! ✨
+                                                      </h3>
+                                                    </div>
+                                                    <p className="text-sm text-stone-700 mb-3">
+                                                      <strong>{automationData.sequenceName}</strong> with {automationData.totalEmails} email{automationData.totalEmails !== 1 ? 's' : ''} is ready for review.
+                                                    </p>
+                                                    <p className="text-xs text-stone-600 mb-4">
+                                                      Preview all emails, review the sequence, and activate when ready.
+                                                    </p>
+                                                    <Link
+                                                      href={`/admin/automations/${automationData.sequenceId}`}
+                                                      className="inline-flex items-center gap-2 px-6 py-3 bg-stone-900 text-stone-50 rounded-lg hover:bg-stone-800 transition-colors font-medium text-sm"
+                                                    >
+                                                      <Eye className="w-4 h-4" />
+                                                      Preview & Activate Automation
+                                                    </Link>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          )
+                                        }
+                                      }
+                                    }
+                                    
+                                    // Also check toolInvocations (alternative format)
+                                    for (const invocation of toolInvocations) {
+                                      if (invocation.toolName === 'create_resend_automation_sequence' && invocation.result) {
+                                        let result = invocation.result
+                                        
+                                        if (typeof result === 'string') {
+                                          try {
+                                            result = JSON.parse(result)
+                                          } catch (e) {
+                                            continue
+                                          }
+                                        }
+                                        
+                                        if (result.success && result.data && result.data.sequenceId) {
+                                          const automationData = result.data
+                                          
+                                          console.log('[Alex] ✅ Found automation in toolInvocations:', {
+                                            messageId: message.id,
+                                            sequenceId: automationData.sequenceId
+                                          })
+                                          
+                                          return (
+                                            <div key={`automation-${automationData.sequenceId}-${message.id}`} className="mt-4">
+                                              <div className="bg-gradient-to-r from-stone-50 to-stone-100 border border-stone-300 rounded-lg p-6">
+                                                <div className="flex items-start justify-between gap-4">
+                                                  <div className="flex-1">
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                      <CheckCircle className="w-5 h-5 text-green-600" />
+                                                      <h3 className="font-serif text-lg font-medium text-stone-900">
+                                                        Automation Sequence Created! ✨
+                                                      </h3>
+                                                    </div>
+                                                    <p className="text-sm text-stone-700 mb-3">
+                                                      <strong>{automationData.sequenceName}</strong> with {automationData.totalEmails} email{automationData.totalEmails !== 1 ? 's' : ''} is ready for review.
+                                                    </p>
+                                                    <p className="text-xs text-stone-600 mb-4">
+                                                      Preview all emails, review the sequence, and activate when ready.
+                                                    </p>
+                                                    <Link
+                                                      href={`/admin/automations/${automationData.sequenceId}`}
+                                                      className="inline-flex items-center gap-2 px-6 py-3 bg-stone-900 text-stone-50 rounded-lg hover:bg-stone-800 transition-colors font-medium text-sm"
+                                                    >
+                                                      <Eye className="w-4 h-4" />
+                                                      Preview & Activate Automation
+                                                    </Link>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          )
+                                        }
+                                      }
+                                    }
+                                    
                                     return null
                                   })()}
                                 </>

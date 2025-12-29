@@ -1,9 +1,10 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { Eye, Trash2, Edit2, Mail } from "lucide-react"
+import { Eye, Trash2, Edit2, Mail, Send, Link as LinkIcon } from "lucide-react"
 import { EmailPreviewModal } from "./email-preview-modal"
 import { toast } from "@/hooks/use-toast"
+import Link from "next/link"
 
 interface EmailDraft {
   id: number
@@ -24,11 +25,25 @@ interface EmailDraftsLibraryProps {
   onEditDraft?: (draft: EmailDraft) => void
 }
 
+interface AutomationSequence {
+  id: number
+  name: string
+  type: 'automation_sequence'
+  status: string
+  emailCount: number
+  segmentName: string
+  createdAt: string
+  updatedAt: string
+  sequenceData: any
+}
+
 export function EmailDraftsLibrary({ onSelectDraft, onEditDraft }: EmailDraftsLibraryProps) {
   const [drafts, setDrafts] = useState<EmailDraft[]>([])
+  const [automationSequences, setAutomationSequences] = useState<AutomationSequence[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedDraft, setSelectedDraft] = useState<EmailDraft | null>(null)
   const [filterStatus, setFilterStatus] = useState<string>("all") // all, draft, approved, sent, archived
+  const [showAutomations, setShowAutomations] = useState(true)
 
   const loadDrafts = useCallback(async () => {
     try {
@@ -39,6 +54,13 @@ export function EmailDraftsLibrary({ onSelectDraft, onEditDraft }: EmailDraftsLi
       const response = await fetch(url)
       const data = await response.json()
       setDrafts(data.drafts || [])
+
+      // Also load automation sequences
+      const sequencesResponse = await fetch("/api/admin/email/get-automation-sequences")
+      const sequencesData = await sequencesResponse.json()
+      if (sequencesData.success) {
+        setAutomationSequences(sequencesData.sequences || [])
+      }
     } catch (error) {
       console.error("[EmailDraftsLibrary] Error loading drafts:", error)
       toast({
@@ -137,7 +159,7 @@ export function EmailDraftsLibrary({ onSelectDraft, onEditDraft }: EmailDraftsLi
         </div>
 
         {/* Status Filters */}
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 items-center">
           {[
             { key: "all", label: "All" },
             { key: "draft", label: "Drafts" },
@@ -157,8 +179,69 @@ export function EmailDraftsLibrary({ onSelectDraft, onEditDraft }: EmailDraftsLi
               {filter.label} ({statusCounts[filter.key as keyof typeof statusCounts] || 0})
             </button>
           ))}
+          <div className="ml-auto">
+            <button
+              onClick={() => setShowAutomations(!showAutomations)}
+              className={`px-3 py-1.5 text-xs rounded-lg uppercase tracking-wider transition-colors ${
+                showAutomations
+                  ? "bg-stone-900 text-white"
+                  : "bg-white text-stone-600 border border-stone-200 hover:bg-stone-100"
+              }`}
+            >
+              {showAutomations ? "Hide" : "Show"} Automations ({automationSequences.length})
+            </button>
+          </div>
         </div>
 
+        {/* Automation Sequences */}
+        {showAutomations && automationSequences.length > 0 && (
+          <div className="mb-6">
+            <h4 className="text-sm font-semibold text-stone-700 mb-3 uppercase tracking-wider">
+              Automation Sequences ({automationSequences.length})
+            </h4>
+            <div className="flex flex-col gap-3">
+              {automationSequences.map((sequence) => (
+                <div key={sequence.id} className="bg-gradient-to-r from-stone-50 to-stone-100 p-4 rounded-lg border border-stone-300">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h4 className="font-medium text-stone-900">{sequence.name}</h4>
+                        <span className={`px-2 py-1 text-xs rounded-full uppercase tracking-wider ${
+                          sequence.status === 'active' 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-stone-100 text-stone-600'
+                        }`}>
+                          {sequence.status}
+                        </span>
+                        <span className="px-2 py-1 text-xs rounded-full bg-stone-100 text-stone-600">
+                          {sequence.emailCount} emails
+                        </span>
+                        <span className="px-2 py-1 text-xs rounded-full bg-stone-100 text-stone-600">
+                          {sequence.segmentName}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-4 text-xs text-stone-500">
+                        <span>Created: {new Date(sequence.createdAt).toLocaleDateString()}</span>
+                        <span>Updated: {new Date(sequence.updatedAt).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Link
+                        href={`/admin/automations/${sequence.id}`}
+                        className="px-4 py-2 bg-stone-900 text-white text-sm rounded-lg hover:bg-stone-800 transition-colors flex items-center gap-2 uppercase tracking-wider"
+                      >
+                        <Eye className="w-4 h-4" />
+                        <span className="hidden sm:inline">Preview</span>
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Email Drafts */}
         {drafts.length === 0 ? (
           <div className="text-center py-8 text-sm text-stone-500">
             No email drafts yet. Create one in the chat!

@@ -43,6 +43,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const includeVersions = searchParams.get("includeVersions") === "true"
     const draftId = searchParams.get("draftId")
+    const checkDuplicate = searchParams.get("checkDuplicate") === "true"
 
     // Get specific draft with version history
     if (draftId) {
@@ -120,6 +121,49 @@ export async function POST(request: NextRequest) {
 
     if (!subjectLine || !bodyHtml) {
       return NextResponse.json({ error: "Subject line and HTML body are required" }, { status: 400 })
+    }
+
+    // If checkDuplicate is requested, just check and return
+    if (checkDuplicate) {
+      const duplicate = await sql`
+        SELECT id FROM admin_email_drafts
+        WHERE subject_line = ${subjectLine}
+          AND (
+            body_html = ${bodyHtml}
+            OR body_html LIKE ${bodyHtml.substring(0, 500) + '%'}
+          )
+          AND created_at > NOW() - INTERVAL '10 minutes'
+          AND is_current_version = true
+        LIMIT 1
+      `
+      
+      return NextResponse.json({
+        isDuplicate: duplicate.length > 0,
+        existingDraftId: duplicate.length > 0 ? duplicate[0].id : null
+      })
+    }
+
+    // Check for duplicates before saving (unless this is an edit)
+    if (!parentDraftId) {
+      const duplicate = await sql`
+        SELECT id FROM admin_email_drafts
+        WHERE subject_line = ${subjectLine}
+          AND (
+            body_html = ${bodyHtml}
+            OR body_html LIKE ${bodyHtml.substring(0, 500) + '%'}
+          )
+          AND created_at > NOW() - INTERVAL '10 minutes'
+          AND is_current_version = true
+        LIMIT 1
+      `
+      
+      if (duplicate.length > 0) {
+        console.log('[EmailDrafts] ⚠️ Duplicate draft detected, returning existing:', duplicate[0].id)
+        const existingDraft = await sql`
+          SELECT * FROM admin_email_drafts WHERE id = ${duplicate[0].id}
+        `
+        return NextResponse.json({ draft: existingDraft[0], isEdit: false, isDuplicate: true })
+      }
     }
 
     // If this is an edit (has parentDraftId), mark previous version as not current

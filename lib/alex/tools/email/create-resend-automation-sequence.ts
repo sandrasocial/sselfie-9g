@@ -179,28 +179,45 @@ Create this email with appropriate positioning in the sequence.`
         status: 'draft'
       }
 
-      const sequenceRecord = await sql`
-        INSERT INTO admin_email_campaigns (
-          campaign_name, campaign_type, subject_line,
-          body_html, body_text, status,
-          target_audience, created_by, created_at, updated_at
-        ) VALUES (
-          ${sequenceName}, 'resend_automation_sequence', ${emails[0]?.subject || sequenceName},
-          ${JSON.stringify(sequenceData)}::text, '', 'draft',
-          ${JSON.stringify({ 
-            resend_segment_id: segmentId,
-            segment_name: segmentName,
-            sequence_emails: sequenceData.emails,
-            trigger_type: triggerType
-          })}::jsonb,
-          ${ALEX_CONSTANTS.ADMIN_EMAIL}, NOW(), NOW()
-        )
-        RETURNING id
+      // Check for duplicate sequence before saving
+      const sequenceDataString = JSON.stringify(sequenceData)
+      const existingSequence = await sql`
+        SELECT id FROM admin_email_campaigns
+        WHERE campaign_name = ${sequenceName}
+          AND campaign_type = 'resend_automation_sequence'
+          AND body_html = ${sequenceDataString}::text
+          AND created_at > NOW() - INTERVAL '10 minutes'
+          AND status = 'draft'
+        LIMIT 1
       `
-
-      const sequenceId = sequenceRecord[0]?.id
-
-      console.log('[Alex] ✅ Resend automation sequence created:', sequenceId)
+      
+      let sequenceId: number
+      if (existingSequence.length > 0) {
+        console.log('[Alex] ⚠️ Duplicate automation sequence detected (within 10 minutes), using existing ID:', existingSequence[0].id)
+        sequenceId = existingSequence[0].id
+      } else {
+        // Only save if no duplicate found
+        const sequenceRecord = await sql`
+          INSERT INTO admin_email_campaigns (
+            campaign_name, campaign_type, subject_line,
+            body_html, body_text, status,
+            target_audience, created_by, created_at, updated_at
+          ) VALUES (
+            ${sequenceName}, 'resend_automation_sequence', ${emails[0]?.subject || sequenceName},
+            ${sequenceDataString}::text, '', 'draft',
+            ${JSON.stringify({ 
+              resend_segment_id: segmentId,
+              segment_name: segmentName,
+              sequence_emails: sequenceData.emails,
+              trigger_type: triggerType
+            })}::jsonb,
+            ${ALEX_CONSTANTS.ADMIN_EMAIL}, NOW(), NOW()
+          )
+          RETURNING id
+        `
+        sequenceId = sequenceRecord[0]?.id
+        console.log('[Alex] ✅ Resend automation sequence created:', sequenceId)
+      }
 
       return {
         success: true,

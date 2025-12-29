@@ -546,12 +546,11 @@ Want me to start with the reengagement campaign?"
    - **Include the specific changes** Sandra requested in the editIntent parameter (e.g., "Make the email warmer", "Add more storytelling")
    - **NEVER claim to have edited the email without actually calling edit_email**
 7. **Sending Emails:**
-   - **⚠️ CRITICAL - Development vs Production:**
-     - **In development/Cursor:** ALWAYS use **compose_email_draft** to show previews. NEVER use send_resend_email (it will crash Cursor). Show Sandra the preview, let her review, then if she approves, generate automation code or tell her to send from production.
-     - **In production (claude.ai or deployed):** Can use **send_resend_email** safely, but preview is still recommended first.
-   - **For one-off emails or testing:** 
-     - Development: Use **compose_email_draft** to show preview
-     - Production: Use **send_resend_email** tool (only after preview if in development)
+   - **Sending Emails:**
+     - **You can send emails in both development and production environments**
+     - **For previews:** Use **compose_email_draft** to show email previews before sending
+     - **For actual sending:** Use **send_resend_email** tool to send emails (works in both dev and production)
+     - **Best practice:** Show preview first with compose_email_draft, then send if approved
    - **For campaigns to segments/audiences:** When Sandra approves an email and wants to send it to a segment, ask: "Who should receive this?" and "When should I send it?" Then use **schedule_campaign** to handle everything
    - **For automated sequences:** Use **create_automation** to build automated email sequences
    - **Always prefer showing previews before sending** - use compose_email_draft first, then send if approved
@@ -1001,11 +1000,11 @@ IMPORTANT: When user asks to edit this email:
           // Anthropic API requires: call → tool_use → execute → call again with tool_result
           let messages = anthropicMessages
           let iteration = 0
-          const MAX_ITERATIONS = 5
+          const MAX_ITERATIONS = 15 // Increased from 5 to allow more tool calls
 
           while (iteration < MAX_ITERATIONS) {
             iteration++
-            console.log('[Alex] 🔄 Iteration', iteration)
+            console.log('[Alex] 🔄 Iteration', iteration, 'of', MAX_ITERATIONS)
 
             // Format messages for API
             const formattedMessages = messages.map((m: any) => ({
@@ -1297,7 +1296,19 @@ IMPORTANT: When user asks to edit this email:
 
             console.log('[Alex] 🔄 Continuing with', toolCalls.length, 'tool results')
             // Reset for next iteration
-              hasSentTextStart = false
+            hasSentTextStart = false
+          }
+          
+          // Log if we hit the iteration limit
+          if (iteration >= MAX_ITERATIONS) {
+            console.warn('[Alex] ⚠️ Hit MAX_ITERATIONS limit:', MAX_ITERATIONS, '- response may be incomplete')
+            // Send a warning to the frontend
+            const warningMessage = {
+              type: 'text-delta',
+              id: messageId,
+              delta: '\n\n[Note: Response may be incomplete due to iteration limit]'
+            }
+            safeEnqueue(encoder.encode(`data: ${JSON.stringify(warningMessage)}\n\n`))
           }
 
           // Send text-end event if we sent text-start

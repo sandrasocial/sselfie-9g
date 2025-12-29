@@ -60,6 +60,15 @@ export async function getProactiveSuggestions(
             }
           }
           
+          // Convert priority string to integer (urgent=4, high=3, medium=2, low=1)
+          const priorityMap: Record<string, number> = {
+            urgent: 4,
+            high: 3,
+            medium: 2,
+            low: 1
+          }
+          const priorityValue = priorityMap[suggestion.priority] || 2 // Default to medium
+          
           // Save suggestion to history
           const saved = await sql`
             INSERT INTO alex_suggestion_history (
@@ -67,7 +76,7 @@ export async function getProactiveSuggestions(
               reasoning, priority
             ) VALUES (
               ${userId}, ${suggestion.type}, ${suggestion.text},
-              ${suggestion.reasoning}, ${suggestion.priority}
+              ${suggestion.reasoning}, ${priorityValue}
             )
             RETURNING id, created_at
           `
@@ -161,12 +170,20 @@ export async function getSuggestionHistory(
       LIMIT ${limit}
     `
     
+    // Convert priority integer back to string (4=urgent, 3=high, 2=medium, 1=low)
+    const priorityReverseMap: Record<number, 'urgent' | 'high' | 'medium' | 'low'> = {
+      4: 'urgent',
+      3: 'high',
+      2: 'medium',
+      1: 'low'
+    }
+    
     return history.map((row: any) => ({
       id: row.id,
       type: row.suggestion_type,
       text: row.suggestion_text,
       reasoning: row.reasoning,
-      priority: row.priority,
+      priority: priorityReverseMap[row.priority] || 'medium',
       dismissed: row.dismissed,
       acted_upon: row.acted_upon,
       created_at: row.created_at

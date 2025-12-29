@@ -116,55 +116,70 @@ Examples:
         error?: string
       }> = []
 
-      // Generate each email in the sequence
-      for (let i = 0; i < emails.length; i++) {
-        const emailConfig = emails[i]
-        console.log(`[Alex] 📧 Generating email ${i + 1}/${emails.length} for sequence "${sequenceName}"...`, {
-          day: emailConfig.day,
-          intent: emailConfig.intent.substring(0, 100),
-          emailType: emailConfig.emailType
-        })
-
-        try {
-          const emailResult = await generateEmailContent({
-            intent: emailConfig.intent,
-            emailType: emailConfig.emailType,
-            subjectLine: emailConfig.subjectLine,
-            keyPoints: emailConfig.keyPoints,
-            tone: emailConfig.tone || overallTone,
-            imageUrls: emailConfig.imageUrls,
-            campaignName: campaignName || sequenceName
-          })
-
-          results.push({
+      // Generate emails in parallel for faster execution (3x speed improvement)
+      // Each email generation can take 20-60 seconds, so parallelizing saves significant time
+      console.log(`[Alex] 📧 Generating ${emails.length} emails in parallel for sequence "${sequenceName}"...`)
+      
+      const generationPromises = emails.map((emailConfig, i) => {
+        return (async () => {
+          console.log(`[Alex] 📧 Starting generation for email ${i + 1}/${emails.length}...`, {
             day: emailConfig.day,
-            html: emailResult.html,
-            subjectLine: emailResult.subjectLine,
-            preview: emailResult.preview,
-            readyToSend: emailResult.readyToSend,
-            intent: emailConfig.intent,
+            intent: emailConfig.intent.substring(0, 100),
             emailType: emailConfig.emailType
           })
 
-          console.log(`[Alex] ✅ Generated email ${i + 1}/${emails.length}:`, {
-            day: emailConfig.day,
-            subjectLine: emailResult.subjectLine,
-            htmlLength: emailResult.html.length
-          })
-        } catch (emailError: any) {
-          console.error(`[Alex] ❌ Error generating email ${i + 1}/${emails.length}:`, emailError)
-          results.push({
-            day: emailConfig.day,
-            html: "",
-            subjectLine: emailConfig.subjectLine || "Email Subject",
-            preview: "",
-            readyToSend: false,
-            intent: emailConfig.intent,
-            emailType: emailConfig.emailType,
-            error: emailError.message || "Failed to generate email"
-          })
-        }
-      }
+          try {
+            const emailResult = await generateEmailContent({
+              intent: emailConfig.intent,
+              emailType: emailConfig.emailType,
+              subjectLine: emailConfig.subjectLine,
+              keyPoints: emailConfig.keyPoints,
+              tone: emailConfig.tone || overallTone,
+              imageUrls: emailConfig.imageUrls,
+              campaignName: campaignName || sequenceName
+            })
+
+            console.log(`[Alex] ✅ Generated email ${i + 1}/${emails.length}:`, {
+              day: emailConfig.day,
+              subjectLine: emailResult.subjectLine,
+              htmlLength: emailResult.html.length
+            })
+
+            return {
+              day: emailConfig.day,
+              html: emailResult.html,
+              subjectLine: emailResult.subjectLine,
+              preview: emailResult.preview,
+              readyToSend: emailResult.readyToSend,
+              intent: emailConfig.intent,
+              emailType: emailConfig.emailType,
+              index: i // Preserve original order
+            }
+          } catch (emailError: any) {
+            console.error(`[Alex] ❌ Error generating email ${i + 1}/${emails.length}:`, emailError)
+            return {
+              day: emailConfig.day,
+              html: "",
+              subjectLine: emailConfig.subjectLine || "Email Subject",
+              preview: "",
+              readyToSend: false,
+              intent: emailConfig.intent,
+              emailType: emailConfig.emailType,
+              error: emailError.message || "Failed to generate email",
+              index: i // Preserve original order
+            }
+          }
+        })()
+      })
+
+      // Wait for all emails to generate in parallel
+      const emailResults = await Promise.all(generationPromises)
+      
+      // Sort by original index to maintain sequence order
+      emailResults.sort((a, b) => (a.index || 0) - (b.index || 0))
+      
+      // Add results in order
+      results.push(...emailResults.map(({ index, ...rest }) => rest))
 
       const successCount = results.filter(r => r.readyToSend).length
       const failureCount = results.filter(r => !r.readyToSend).length

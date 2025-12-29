@@ -7,8 +7,8 @@ import type Stripe from "stripe" // Declare the Stripe variable
 
 const ENABLE_BETA_DISCOUNT = false
 
-export async function createLandingCheckoutSession(productId: string) {
-  console.log("[v0] Creating checkout session for product:", productId)
+export async function createLandingCheckoutSession(productId: string, promoCode?: string) {
+  console.log("[v0] Creating checkout session for product:", productId, promoCode ? `with promo: ${promoCode}` : "")
 
   const product = getProductById(productId)
   if (!product) {
@@ -56,6 +56,53 @@ export async function createLandingCheckoutSession(productId: string) {
 
   console.log("[v0] Using Stripe Price ID:", stripePriceId)
 
+  // Validate and apply promo code if provided
+  let validatedPromoCode: string | null = null
+  let validatedCoupon: string | null = null
+  
+  if (promoCode) {
+    const codeUpper = promoCode.toUpperCase()
+    console.log(`[v0] Validating promo code: ${codeUpper}`)
+    
+    try {
+      // First, try to find it as a promotion code (customer-facing code)
+      const promotionCodes = await stripe.promotionCodes.list({
+        code: codeUpper,
+        active: true,
+        limit: 1,
+      })
+      
+      if (promotionCodes.data.length > 0) {
+        const promoCodeObj = promotionCodes.data[0]
+        if (promoCodeObj.active && (!promoCodeObj.max_redemptions || promoCodeObj.times_redeemed < promoCodeObj.max_redemptions)) {
+          validatedPromoCode = promoCodeObj.id
+          console.log(`[v0] ✅ Valid promotion code found: ${codeUpper}`)
+        }
+      }
+    } catch (error: any) {
+      console.log(`[v0] Promotion code lookup failed: ${error.message}`)
+    }
+    
+    // If not found as promotion code, try as coupon ID
+    if (!validatedPromoCode) {
+      try {
+        const coupon = await stripe.coupons.retrieve(codeUpper)
+        if (coupon.valid) {
+          const now = Math.floor(Date.now() / 1000)
+          const isExpired = coupon.redeem_by && coupon.redeem_by < now
+          const maxReached = coupon.max_redemptions && coupon.times_redeemed >= coupon.max_redemptions
+          
+          if (!isExpired && !maxReached) {
+            validatedCoupon = coupon.id
+            console.log(`[v0] ✅ Valid coupon found: ${codeUpper}`)
+          }
+        }
+      } catch (error: any) {
+        console.log(`[v0] Coupon lookup failed: ${error.message}`)
+      }
+    }
+  }
+
   const sessionConfig: Stripe.Checkout.SessionCreateParams = {
     ui_mode: "embedded",
     mode: isSubscription ? "subscription" : "payment",
@@ -66,7 +113,17 @@ export async function createLandingCheckoutSession(productId: string) {
         quantity: 1,
       },
     ],
-    allow_promotion_codes: true,
+    // Apply discount if we found a valid promotion code or coupon
+    ...(validatedPromoCode && {
+      discounts: [{ promotion_code: validatedPromoCode }],
+    }),
+    ...(validatedCoupon && {
+      discounts: [{ coupon: validatedCoupon }],
+    }),
+    // Only allow promotion codes if no discount is pre-applied
+    ...(!validatedPromoCode && !validatedCoupon && {
+      allow_promotion_codes: true,
+    }),
     ...(isSubscription && {
       subscription_data: {
         metadata: {
@@ -82,6 +139,7 @@ export async function createLandingCheckoutSession(productId: string) {
       product_type: product.type,
       credits: product.credits?.toString() || "0",
       source: "landing_page",
+      ...(promoCode && { promo_code: promoCode }),
     },
   }
 

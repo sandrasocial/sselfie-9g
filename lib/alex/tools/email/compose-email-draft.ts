@@ -82,17 +82,23 @@ export const composeEmailDraftTool: Tool<ComposeEmailDraftInput, EmailPreview> =
         // Strip HTML for plain text version
         const bodyText = content.replace(/<[^>]*>/g, '').trim()
         
+        // Check for duplicates more strictly - same subject AND same content hash
+        // Use content hash to avoid exact match issues with whitespace/formatting
+        const contentHash = content.substring(0, 500) // Use first 500 chars as hash
         const existingDraft = await sql`
           SELECT id FROM admin_email_drafts
           WHERE subject_line = ${subject}
-            AND body_html = ${content}
-            AND created_at > NOW() - INTERVAL '5 minutes'
+            AND (
+              body_html = ${content}
+              OR body_html LIKE ${contentHash + '%'}
+            )
+            AND created_at > NOW() - INTERVAL '10 minutes'
             AND is_current_version = true
           LIMIT 1
         `
         
         if (existingDraft.length === 0) {
-          // Only save if no duplicate found in last 5 minutes
+          // Only save if no duplicate found in last 10 minutes
           await sql`
             INSERT INTO admin_email_drafts (
               draft_name,
@@ -122,7 +128,7 @@ export const composeEmailDraftTool: Tool<ComposeEmailDraftInput, EmailPreview> =
           `
           console.log('[Alex] ✅ Email draft saved to admin_email_drafts')
         } else {
-          console.log('[Alex] ⚠️ Duplicate email draft detected (within 5 minutes), skipping save')
+          console.log('[Alex] ⚠️ Duplicate email draft detected (within 10 minutes), skipping save. Existing ID:', existingDraft[0].id)
         }
       } catch (saveError: any) {
         // Don't fail the tool if save fails - still return preview

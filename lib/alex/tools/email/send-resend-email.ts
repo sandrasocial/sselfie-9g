@@ -70,20 +70,9 @@ This tool sends immediately to a single recipient only.`,
       nodeEnv: process.env.NODE_ENV
     })
 
-    // Safety check - block sending in development to prevent Cursor freezing
-    const isDevelopment = process.env.NODE_ENV === 'development'
-
-    if (isDevelopment) {
-      console.warn('[Alex] ⚠️ Blocking email send in development mode to prevent Cursor freezing')
-      return {
-        success: false,
-        warning: 'Sending blocked in development mode to prevent Cursor freezing',
-        message: 'Use compose_email_draft to preview emails in development. To actually send, use production environment or ask me to generate automation code.',
-        email_would_send_to: to,
-        subject: subject,
-        suggestion: 'Ask me to create a draft preview instead, or use this in production.'
-      }
-    }
+    // Allow sending in both development and production
+    // Note: In development, emails will still be sent via Resend API
+    console.log('[Alex] 📧 Email send allowed in', process.env.NODE_ENV || 'unknown', 'environment')
 
     try {
       if (!resend) {

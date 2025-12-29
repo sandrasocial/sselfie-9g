@@ -13,6 +13,7 @@ export function AdminNav() {
     { label: 'MISSION CONTROL', href: '/admin/mission-control' },
     { label: 'JOURNAL', href: '/admin/journal' },
     { label: 'ALEX', href: '/admin/alex' },
+    { label: 'EMAIL SEQUENCES', href: '/admin/email-sequences' },
     { label: 'ANALYTICS', href: '/admin/conversions' }
   ]
   
