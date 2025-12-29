@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport } from "ai"
-import { Send, Plus, Menu, X, Mail, CheckCircle, Image as ImageIcon } from 'lucide-react'
+import { Send, Plus, Menu, X, Mail, CheckCircle, Image as ImageIcon, MoreVertical, Trash2, Edit2, Check, X as XIcon } from 'lucide-react'
 import { useToast } from "@/hooks/use-toast"
 import EmailQuickActions from './email-quick-actions'
 import SegmentSelector from './segment-selector'
@@ -261,6 +261,14 @@ export default function AdminAgentChatNew({
   const [isLoadingChat, setIsLoadingChat] = useState(true)
   const [showHistory, setShowHistory] = useState(false)
   const [chats, setChats] = useState<any[]>([])
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [showMenuForChat, setShowMenuForChat] = useState<number | null>(null)
+  const [editingChatId, setEditingChatId] = useState<number | null>(null)
+  const [editingTitle, setEditingTitle] = useState<string>("")
+  const [isUpdatingTitle, setIsUpdatingTitle] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const titleInputRef = useRef<HTMLInputElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const shouldAutoScrollRef = useRef(true) // Track if we should auto-scroll
@@ -631,10 +639,14 @@ export default function AdminAgentChatNew({
         
         // Only read headers, do NOT consume body
         const chatIdHeader = response.headers.get('X-Chat-Id')
+        const titleUpdated = response.headers.get('X-Chat-Title-Updated')
         if (chatIdHeader && isMountedRef.current) {
           const newChatId = parseInt(chatIdHeader)
           if (chatId !== newChatId) {
             setChatId(newChatId)
+            await loadChats()
+          } else if (titleUpdated === 'true') {
+            // Title was updated, refresh chat list to show new title
             await loadChats()
           }
         }
@@ -648,7 +660,7 @@ export default function AdminAgentChatNew({
         // Don't crash the component if onResponse fails
       }
     },
-    onFinish: (message: any) => {
+    onFinish: async (message: any) => {
       // Safety check: don't update state if component is unmounted
       if (!isMountedRef.current) {
         console.warn('[Alex] ⚠️ Component unmounted, skipping onFinish')
@@ -660,6 +672,10 @@ export default function AdminAgentChatNew({
         // Clear streaming message when message is finished
         // The completed message will be in the messages array
         setStreamingMessage(null)
+        
+        // Refresh chat list after message finishes (in case title was updated)
+        // This ensures the sidebar shows updated titles
+        await loadChats()
       } catch (error: any) {
         console.error('[Alex] ❌ Error in onFinish:', error)
       }
@@ -1588,6 +1604,130 @@ export default function AdminAgentChatNew({
     loadChat(selectedChatId)
   }
 
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenuForChat(null)
+      }
+    }
+
+    if (showMenuForChat !== null) {
+      document.addEventListener("mousedown", handleClickOutside)
+      return () => document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [showMenuForChat])
+
+  const handleDeleteChat = async (chatIdToDelete: number) => {
+    if (isDeleting) return
+
+    setIsDeleting(true)
+    try {
+      const response = await fetch(`/api/admin/alex/chats/${chatIdToDelete}`, {
+        method: "DELETE",
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to delete chat")
+      }
+
+      // If deleted chat is currently active, clear it
+      if (chatId === chatIdToDelete) {
+        setChatId(null)
+        setChatTitle("Admin Agent")
+        setMessages([])
+      }
+
+      // Refresh chat list
+      await loadChats()
+      setShowDeleteConfirm(null)
+      setShowMenuForChat(null)
+
+      toast({
+        title: "Chat Deleted",
+        description: "The chat has been deleted successfully",
+      })
+    } catch (error) {
+      console.error("[Alex] Error deleting chat:", error)
+      toast({
+        title: "Error",
+        description: "Failed to delete chat",
+        variant: "destructive",
+      })
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const handleMenuClick = (e: React.MouseEvent, chatId: number) => {
+    e.stopPropagation()
+    setShowMenuForChat(showMenuForChat === chatId ? null : chatId)
+  }
+
+  const handleStartEditTitle = (e: React.MouseEvent, chat: any) => {
+    e.stopPropagation()
+    setEditingChatId(chat.id)
+    setEditingTitle(chat.chat_title || 'New Chat')
+    setShowMenuForChat(null)
+    // Focus input after state update
+    setTimeout(() => {
+      titleInputRef.current?.focus()
+      titleInputRef.current?.select()
+    }, 0)
+  }
+
+  const handleCancelEdit = () => {
+    setEditingChatId(null)
+    setEditingTitle("")
+  }
+
+  const handleSaveTitle = async (chatId: number) => {
+    if (isUpdatingTitle || !editingTitle.trim()) return
+
+    setIsUpdatingTitle(true)
+    try {
+      const response = await fetch(`/api/admin/alex/chats/${chatId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: editingTitle.trim() }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to update title")
+      }
+
+      // Update local state
+      setChats((prev) =>
+        prev.map((chat) =>
+          chat.id === chatId ? { ...chat, chat_title: editingTitle.trim() } : chat
+        )
+      )
+
+      // If this is the active chat, update the title in header
+      const currentChatId = chatId
+      if (chatId === currentChatId) {
+        setChatTitle(editingTitle.trim())
+      }
+
+      setEditingChatId(null)
+      setEditingTitle("")
+
+      toast({
+        title: "Title Updated",
+        description: "Chat title has been updated successfully",
+      })
+    } catch (error) {
+      console.error("[Alex] Error updating chat title:", error)
+      toast({
+        title: "Error",
+        description: "Failed to update chat title",
+        variant: "destructive",
+      })
+    } finally {
+      setIsUpdatingTitle(false)
+    }
+  }
+
   // Load gallery images (initial load or category change)
   const loadGalleryImages = useCallback(async (reset = true) => {
     if (reset) {
@@ -1848,26 +1988,164 @@ export default function AdminAgentChatNew({
               <h3 className="text-xs uppercase text-stone-500 mb-2 tracking-wider">{groupKey}</h3>
               <div className="space-y-1">
                 {(groupChats as any[]).map((chat) => (
-                  <button
+                  <div
                     key={chat.id}
-                    onClick={() => handleSelectChat(chat.id, chat.chat_title)}
-                    className={`w-full text-left px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm transition-colors ${
+                    className={`relative group ${
                       chat.id === chatId
-                        ? 'bg-stone-950 text-white'
-                        : 'hover:bg-stone-100 text-stone-700'
+                        ? 'bg-stone-950 text-white rounded-lg'
+                        : 'hover:bg-stone-100 rounded-lg'
                     }`}
                   >
-                    <div className="truncate">{chat.chat_title || 'New Chat'}</div>
-                    <div className="text-xs opacity-70 mt-0.5 sm:mt-1">
-                      {new Date(chat.last_activity).toLocaleDateString()}
-                    </div>
-                  </button>
+                    {editingChatId === chat.id ? (
+                      <div className="px-2 sm:px-3 py-1.5 sm:py-2">
+                        <input
+                          ref={titleInputRef}
+                          type="text"
+                          value={editingTitle}
+                          onChange={(e) => setEditingTitle(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault()
+                              handleSaveTitle(chat.id)
+                            } else if (e.key === 'Escape') {
+                              e.preventDefault()
+                              handleCancelEdit()
+                            }
+                          }}
+                          className={`w-full px-2 py-1 text-xs sm:text-sm rounded border ${
+                            chat.id === chatId
+                              ? 'bg-white text-stone-900 border-stone-300'
+                              : 'bg-white text-stone-900 border-stone-300'
+                          }`}
+                          disabled={isUpdatingTitle}
+                        />
+                        <div className="flex gap-1 mt-1.5">
+                          <button
+                            onClick={() => handleSaveTitle(chat.id)}
+                            disabled={isUpdatingTitle || !editingTitle.trim()}
+                            className={`p-1 rounded ${
+                              chat.id === chatId
+                                ? 'hover:bg-white/20 text-white'
+                                : 'hover:bg-stone-200 text-stone-700'
+                            } disabled:opacity-50`}
+                            aria-label="Save title"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={handleCancelEdit}
+                            disabled={isUpdatingTitle}
+                            className={`p-1 rounded ${
+                              chat.id === chatId
+                                ? 'hover:bg-white/20 text-white'
+                                : 'hover:bg-stone-200 text-stone-700'
+                            } disabled:opacity-50`}
+                            aria-label="Cancel edit"
+                          >
+                            <XIcon className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => handleSelectChat(chat.id, chat.chat_title)}
+                          className={`w-full text-left px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm transition-colors ${
+                            chat.id === chatId
+                              ? 'text-white'
+                              : 'text-stone-700'
+                          }`}
+                        >
+                          <div className="truncate pr-6">{chat.chat_title || 'New Chat'}</div>
+                          <div className={`text-xs mt-0.5 sm:mt-1 ${chat.id === chatId ? 'opacity-70' : 'opacity-70'}`}>
+                            {new Date(chat.last_activity).toLocaleDateString()}
+                          </div>
+                        </button>
+                        <div className="absolute right-1 top-1/2 -translate-y-1/2">
+                          <button
+                            onClick={(e) => handleMenuClick(e, chat.id)}
+                            className={`p-1 rounded hover:bg-opacity-20 ${
+                              chat.id === chatId
+                                ? 'hover:bg-white text-white'
+                                : 'hover:bg-stone-200 text-stone-500'
+                            }`}
+                            aria-label="Chat options"
+                          >
+                            <MoreVertical className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                        {showMenuForChat === chat.id && (
+                          <div
+                            ref={menuRef}
+                            className="absolute right-0 top-8 z-50 bg-white border border-stone-200 rounded-lg shadow-lg min-w-[120px]"
+                          >
+                            <button
+                              onClick={(e) => handleStartEditTitle(e, chat)}
+                              className="w-full text-left px-3 py-2 text-xs text-stone-700 hover:bg-stone-50 flex items-center gap-2"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                              Edit Title
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setShowDeleteConfirm(chat.id)
+                                setShowMenuForChat(null)
+                              }}
+                              className="w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-red-50 flex items-center gap-2"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              Delete
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
                 ))}
               </div>
             </div>
           ))}
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg p-6 max-w-sm w-full">
+            <h3 className="text-lg font-semibold text-stone-900 mb-2">Delete Chat</h3>
+            <p className="text-sm text-stone-600 mb-4">
+              Are you sure you want to delete this chat? This action cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowDeleteConfirm(null)}
+                disabled={isDeleting}
+                className="px-4 py-2 text-sm text-stone-700 hover:bg-stone-100 rounded-lg transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDeleteChat(showDeleteConfirm)}
+                disabled={isDeleting}
+                className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                {isDeleting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    Delete
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col w-full md:w-auto">

@@ -7,7 +7,7 @@ import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getCompleteAdminContext } from "@/lib/admin/get-complete-context"
-import { saveChatMessage, getOrCreateActiveChat } from "@/lib/data/admin-agent"
+import { saveChatMessage, getOrCreateActiveChat, generateChatTitle, updateChatTitle } from "@/lib/data/admin-agent"
 import { neon } from "@neondatabase/serverless"
 
 const sql = neon(process.env.DATABASE_URL!)
@@ -177,6 +177,9 @@ export async function POST(req: Request) {
 
     const modelMessagesToUse = modelMessages
 
+    // Track if title was updated (for response header)
+    let titleWasUpdated = false
+
     // Save the last user message to database
     const lastUserMessage = modelMessagesToUse.filter((m: any) => m.role === "user").pop()
     if (lastUserMessage && activeChatId) {
@@ -201,6 +204,24 @@ export async function POST(req: Request) {
             messageLength: contentToSave.length,
             bodyChatId: chatId
           })
+
+          // If chat title is still "New Chat", generate title from first message
+          try {
+            const chatCheck = await sql`
+              SELECT chat_title FROM admin_agent_chats
+              WHERE id = ${activeChatId}
+              LIMIT 1
+            `
+            if (chatCheck.length > 0 && (chatCheck[0].chat_title === 'New Chat' || !chatCheck[0].chat_title)) {
+              const generatedTitle = await generateChatTitle(contentToSave)
+              await updateChatTitle(activeChatId, user.id, generatedTitle)
+              titleWasUpdated = true
+              console.log("[Alex] 📝 Generated and updated chat title:", generatedTitle)
+            }
+          } catch (titleError) {
+            console.error("[Alex] ⚠️ Error generating chat title (non-critical):", titleError)
+            // Don't fail the request if title generation fails
+          }
         }
       } catch (error) {
         console.error("[Alex] Error saving user message:", error)
@@ -1319,14 +1340,22 @@ IMPORTANT: When user asks to edit this email:
         },
       })
       
+    // Build headers
+    const responseHeaders: Record<string, string> = {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      'X-Chat-Id': String(activeChatId),
+    }
+    
+    // Add header if title was updated
+    if (titleWasUpdated) {
+      responseHeaders['X-Chat-Title-Updated'] = 'true'
+    }
+
     return new Response(stream, {
-        headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
-          'X-Chat-Id': String(activeChatId),
-      },
-      })
+      headers: responseHeaders,
+    })
   } catch (error: any) {
     console.error("[Alex] Admin agent chat error:", error)
     return NextResponse.json({ error: "Failed to process chat", details: error.message }, { status: 500 })

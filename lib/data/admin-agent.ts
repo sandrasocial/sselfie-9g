@@ -191,41 +191,96 @@ export async function createNewChat(userId: string, title: string, mode: string 
   return result[0] as AdminAgentChat
 }
 
+// Update chat title
+export async function updateChatTitle(chatId: number, userId: string, title: string): Promise<void> {
+  await sql`
+    UPDATE admin_agent_chats
+    SET chat_title = ${title}, updated_at = NOW()
+    WHERE id = ${chatId} AND admin_user_id = ${userId}
+  `
+}
 
+// Delete a chat and all its messages (cascade delete)
+export async function deleteChat(chatId: number, userId: string): Promise<boolean> {
+  try {
+    // Verify chat belongs to user before deleting
+    const chat = await sql`
+      SELECT id FROM admin_agent_chats
+      WHERE id = ${chatId} AND admin_user_id = ${userId}
+      LIMIT 1
+    `
 
+    if (chat.length === 0) {
+      return false // Chat doesn't exist or doesn't belong to user
+    }
 
+    // Delete chat (messages will be cascade deleted due to ON DELETE CASCADE)
+    await sql`
+      DELETE FROM admin_agent_chats
+      WHERE id = ${chatId} AND admin_user_id = ${userId}
+    `
 
+    return true
+  } catch (error) {
+    console.error("[v0] Error deleting chat:", error)
+    throw error
+  }
+}
 
+// Generate chat title from first message (similar to Maya's implementation)
+export async function generateChatTitle(firstMessage: string): Promise<string> {
+  // Handle edge cases
+  if (!firstMessage || firstMessage.trim().length < 5) {
+    return `Chat from ${new Date().toLocaleDateString()}`
+  }
 
+  // Check for generic greetings
+  const genericGreetings = ["hi", "hello", "hey", "greetings", "good morning", "good afternoon", "good evening"]
+  const lowerMessage = firstMessage.toLowerCase().trim()
+  if (genericGreetings.some((greeting) => lowerMessage === greeting || lowerMessage.startsWith(greeting + " "))) {
+    return "New Conversation"
+  }
 
+  // Extract key concepts from the message (simple approach)
+  let title = firstMessage.trim()
 
+  // Remove common filler words from the start
+  const fillerWords = [
+    "i want",
+    "i need",
+    "can you",
+    "could you",
+    "please",
+    "help me",
+    "i would like",
+    "create",
+    "make me",
+    "generate",
+    "show me",
+    "give me",
+    "let's do",
+    "i'd like",
+  ]
+  for (const filler of fillerWords) {
+    if (title.toLowerCase().startsWith(filler)) {
+      title = title.substring(filler.length).trim()
+    }
+  }
 
+  // Remove "a" or "an" from the start if present
+  if (title.toLowerCase().startsWith("a ")) {
+    title = title.substring(2).trim()
+  } else if (title.toLowerCase().startsWith("an ")) {
+    title = title.substring(3).trim()
+  }
 
+  // Capitalize first letter
+  title = title.charAt(0).toUpperCase() + title.slice(1)
 
+  // Limit to 50 characters for display
+  if (title.length > 50) {
+    title = title.substring(0, 47) + "..."
+  }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  return title
+}

@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { createNewChat } from "@/lib/data/admin-agent"
+import { createNewChat, generateChatTitle } from "@/lib/data/admin-agent"
 
 const ADMIN_EMAIL = "ssa@ssasocial.com"
 
@@ -21,7 +21,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Admin access required" }, { status: 403 })
     }
 
-    const newChat = await createNewChat(user.id, "New Chat", null)
+    const body = await request.json().catch(() => ({}))
+    const { firstMessage } = body
+    
+    // Generate title from first message if provided, otherwise use default
+    let chatTitle = "New Chat"
+    if (firstMessage && firstMessage.trim().length > 5) {
+      chatTitle = await generateChatTitle(firstMessage)
+    }
+
+    const newChat = await createNewChat(user.id, chatTitle, null)
 
     console.log("[v0] Created admin agent chat:", newChat.id)
 

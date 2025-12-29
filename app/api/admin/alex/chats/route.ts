@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { neon } from "@neondatabase/serverless"
+import { generateChatTitle } from "@/lib/data/admin-agent"
 
 const sql = neon(process.env.DATABASE_URL!)
 const ADMIN_EMAIL = "ssa@ssasocial.com"
@@ -26,13 +27,10 @@ export async function POST(request: Request) {
 
     const agentMode = mode || 'research'
 
-    // Generate chat title from first message
+    // Generate chat title from first message using improved logic
     let chatTitle = "New Chat"
-    if (firstMessage && firstMessage.length > 5) {
-      chatTitle = firstMessage.substring(0, 50)
-      if (firstMessage.length > 50) {
-        chatTitle += "..."
-      }
+    if (firstMessage && firstMessage.trim().length > 5) {
+      chatTitle = await generateChatTitle(firstMessage)
     }
 
     const newChat = await sql`
