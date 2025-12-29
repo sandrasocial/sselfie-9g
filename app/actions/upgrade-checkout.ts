@@ -5,6 +5,7 @@ import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getProductById } from "@/lib/products"
 import { neon } from "@neondatabase/serverless"
+import type Stripe from "stripe"
 
 export async function createUpgradeCheckoutSession(
   tier: string,
@@ -24,7 +25,7 @@ export async function createUpgradeCheckoutSession(
     throw new Error("User not found")
   }
 
-  // Map tier to product ID
+  // Map tier to product ID (EXACT same as landing page uses)
   const productIdMap: Record<string, string> = {
     creator: "sselfie_studio_membership",
     brand: "brand_studio_membership",
@@ -32,21 +33,79 @@ export async function createUpgradeCheckoutSession(
   
   const productId = productIdMap[tier] || "sselfie_studio_membership"
 
-  // Get product details to ensure correct name
+  // Get product details (EXACT same pattern as landing-checkout.ts)
   const product = getProductById(productId)
   if (!product) {
+    console.error("[v0] Product not found:", productId)
     throw new Error(`Product not found: ${productId}`)
   }
 
-  // Get Stripe price ID for the subscription
-  const priceIdMap: Record<string, string | undefined> = {
-    sselfie_studio_membership: process.env.STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID,
-    brand_studio_membership: process.env.STRIPE_BRAND_STUDIO_MEMBERSHIP_PRICE_ID,
+  // Determine which Stripe Price ID to use based on product type (EXACT same as landing-checkout.ts line 35-43)
+  let stripePriceId: string | undefined
+  if (product.type === "one_time_session") {
+    stripePriceId = process.env.STRIPE_ONE_TIME_SESSION_PRICE_ID
+  } else if (product.type === "sselfie_studio_membership") {
+    stripePriceId = process.env.STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID
+  } else if (product.type === "brand_studio_membership") {
+    stripePriceId = process.env.STRIPE_BRAND_STUDIO_MEMBERSHIP_PRICE_ID
   }
 
-  const stripePriceId = priceIdMap[productId]
+  // For upgrade checkout, use the correct Price ID for Content Creator Studio
+  // Correct Price ID: price_1SdbgLEVJvME7vkwoBRlHdNZ
+  if (product.type === "sselfie_studio_membership" && tier === "creator") {
+    const correctPriceId = "price_1SdbgLEVJvME7vkwoBRlHdNZ"
+    if (stripePriceId !== correctPriceId) {
+      console.warn(`[v0] ⚠️ Environment variable STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID (${stripePriceId}) does not match correct price ID (${correctPriceId})`)
+      console.warn(`[v0] Using correct price ID: ${correctPriceId}`)
+    }
+    stripePriceId = correctPriceId
+  }
+
   if (!stripePriceId) {
+    console.error("[v0] Missing Stripe Price ID for:", productId)
+    const envVarName =
+      product.type === "one_time_session"
+        ? "STRIPE_ONE_TIME_SESSION_PRICE_ID"
+        : product.type === "sselfie_studio_membership"
+          ? "STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID"
+          : "STRIPE_BRAND_STUDIO_MEMBERSHIP_PRICE_ID"
+    console.error("[v0] Environment variable needed:", envVarName)
     throw new Error(`Stripe Price ID not configured for ${productId}`)
+  }
+
+  console.log("[v0] Using Stripe Price ID:", stripePriceId)
+  console.log("[v0] Product details:", {
+    productId,
+    productName: product.name,
+    productType: product.type,
+    expectedEnvVar: "STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID",
+  })
+
+  // Verify the Stripe Price ID points to the correct product
+  try {
+    const stripePrice = await stripe.prices.retrieve(stripePriceId, {
+      expand: ['product'],
+    })
+    const stripeProduct = typeof stripePrice.product === 'string' 
+      ? await stripe.products.retrieve(stripePrice.product)
+      : stripePrice.product
+    
+    console.log("[v0] Stripe Price verification:", {
+      priceId: stripePriceId,
+      priceAmount: stripePrice.unit_amount ? `$${(stripePrice.unit_amount / 100).toFixed(2)}` : "N/A",
+      productId: stripeProduct.id,
+      productName: stripeProduct.name,
+      expectedName: product.name,
+      matches: stripeProduct.name === product.name,
+    })
+    
+    if (stripeProduct.name !== product.name) {
+      console.warn(`[v0] ⚠️ WARNING: Stripe product name "${stripeProduct.name}" does not match expected "${product.name}"`)
+      console.warn(`[v0] The Price ID ${stripePriceId} belongs to product "${stripeProduct.name}" but we expect "${product.name}"`)
+    }
+  } catch (error: any) {
+    console.error(`[v0] Error verifying Stripe price: ${error.message}`)
+    // Continue anyway - the price might still work
   }
 
   // Get or create Stripe customer
@@ -140,17 +199,15 @@ export async function createUpgradeCheckoutSession(
     }
   }
 
-  // Create checkout session
-  // Use the actual Stripe Price ID (like landing-checkout.ts does) - this ensures coupons work correctly
-  // The product name comes from Stripe's product configuration
-  const sessionConfig: any = {
+  // Create checkout session (EXACT same structure as landing-checkout.ts but with customer and discount)
+  const sessionConfig: Stripe.Checkout.SessionCreateParams = {
     ui_mode: "embedded",
     mode: "subscription",
     redirect_on_completion: "never",
     customer: customerId,
     line_items: [
       {
-        price: stripePriceId, // Use the actual Price ID, not price_data
+        price: stripePriceId, // EXACT same price ID as landing checkout uses
         quantity: 1,
       },
     ],
@@ -158,6 +215,7 @@ export async function createUpgradeCheckoutSession(
       metadata: {
         product_id: productId,
         product_type: product.type,
+        credits: product.credits?.toString() || "0",
         source: "email_automation",
         campaign: "onetime-to-creator",
         original_promo: promoCode || "",
@@ -167,6 +225,7 @@ export async function createUpgradeCheckoutSession(
       user_id: user.id,
       product_id: productId,
       product_type: product.type,
+      credits: product.credits?.toString() || "0",
       source: "email_automation",
       campaign: "onetime-to-creator",
     },
@@ -185,8 +244,19 @@ export async function createUpgradeCheckoutSession(
     sessionConfig.allow_promotion_codes = true
   }
   
-  const session = await stripe.checkout.sessions.create(sessionConfig)
-
-  return session.client_secret
+  try {
+    const session = await stripe.checkout.sessions.create(sessionConfig)
+    console.log("[v0] Checkout session created successfully:", session.id)
+    console.log("[v0] Client secret generated:", !!session.client_secret)
+    return session.client_secret
+  } catch (error: any) {
+    console.error("[v0] Stripe API error creating checkout session:", {
+      message: error.message,
+      type: error.type,
+      code: error.code,
+      param: error.param,
+    })
+    throw error
+  }
 }
 
