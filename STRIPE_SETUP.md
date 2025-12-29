@@ -6,8 +6,9 @@ This guide will help you configure Stripe products to match the new SSELFIE pric
 
 SSELFIE uses a simplified pricing model with three product types:
 1. **One-Time SSELFIE Session** - $49 one-time payment
-2. **SSELFIE Studio Membership** - $99/month recurring subscription
-3. **Credit Top-Ups** - Various credit packages ($12, $33, $100)
+2. **Content Creator Studio** - $79/month recurring subscription
+3. **Brand Studio** - $149/month recurring subscription
+4. **Credit Top-Ups** - Various credit packages ($12, $33, $100)
 
 ## Setup Instructions
 
@@ -45,16 +46,16 @@ If you prefer to create products manually in the Stripe Dashboard:
    STRIPE_ONE_TIME_SESSION_PRICE_ID=price_xxxxx
    \`\`\`
 
-#### 2. SSELFIE Studio Membership
+#### 2. Content Creator Studio
 
 1. Go to [Stripe Dashboard → Products](https://dashboard.stripe.com/products)
 2. Click "Add product"
 3. Fill in:
-   - **Name**: SSELFIE Studio Membership
-   - **Description**: Join the Studio for new photos, fresh tools, and monthly brand drops.
+   - **Name**: Content Creator Studio
+   - **Description**: Stop Scrambling for Content Every Week. Unlimited Photos + Videos + Feed Planning.
    - **Pricing**: Recurring
    - **Billing period**: Monthly
-   - **Price**: $99.00 USD
+   - **Price**: $79.00 USD
 4. Click "Save product"
 5. Copy the **Price ID** (starts with `price_`)
 6. Add to your environment variables:
@@ -62,7 +63,24 @@ If you prefer to create products manually in the Stripe Dashboard:
    STRIPE_STUDIO_MEMBERSHIP_PRICE_ID=price_xxxxx
    \`\`\`
 
-#### 3. Credit Top-Up Packages
+#### 3. Brand Studio
+
+1. Go to [Stripe Dashboard → Products](https://dashboard.stripe.com/products)
+2. Click "Add product"
+3. Fill in:
+   - **Name**: Brand Studio
+   - **Description**: Your Complete AI Content Team. Everything You Need to Run a Premium Brand.
+   - **Pricing**: Recurring
+   - **Billing period**: Monthly
+   - **Price**: $149.00 USD
+4. Click "Save product"
+5. Copy the **Price ID** (starts with `price_`)
+6. Add to your environment variables:
+   \`\`\`
+   STRIPE_BRAND_STUDIO_MEMBERSHIP_PRICE_ID=price_xxxxx
+   \`\`\`
+
+#### 4. Credit Top-Up Packages
 
 Create three credit packages:
 

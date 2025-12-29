@@ -57,7 +57,7 @@ export function generateLaunchFollowupEmail(params: LaunchFollowupEmailParams): 
               </p>
               
               <p style="margin: 0 0 16px; color: #292524; font-size: 15px; font-weight: 300; line-height: 1.7;">
-                After that, SSELFIE Studio goes from $49.50/mo to $99/mo. That's the regular price. Forever.
+                After that, Content Creator Studio goes from $49.50/mo to $79/mo. That's the regular price. Forever.
               </p>
               
               <p style="margin: 0 0 16px; color: #292524; font-size: 15px; font-weight: 300; line-height: 1.7;">
@@ -79,7 +79,7 @@ export function generateLaunchFollowupEmail(params: LaunchFollowupEmailParams): 
                   $49.50<span style="font-size: 18px; font-weight: 400; color: #d6d3d1;">/month</span>
                 </p>
                 <p style="margin: 0 0 24px; color: #a8a29e; font-size: 14px; font-weight: 300;">
-                  Regular price $99/mo - Save $594/year forever
+                  Regular price $79/mo - Save $354/year forever
                 </p>
                 <a href="${membershipCheckoutUrl}" style="display: inline-block; background-color: #fafaf9; color: #1c1917; padding: 16px 40px; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;">
                   CLAIM YOUR FOUNDING SPOT
@@ -136,7 +136,7 @@ But here's the thing: we've already hit 30 founding members in the first 48 hour
 
 And the beta pricing? It ends in 10 days.
 
-After that, SSELFIE Studio goes from $49.50/mo to $99/mo. That's the regular price. Forever.
+After that, Content Creator Studio goes from $49.50/mo to $79/mo. That's the regular price. Forever.
 
 But if you join NOW as a founding member? You lock in $49.50/month for life.
 
@@ -145,8 +145,8 @@ But if you join NOW as a founding member? You lock in $49.50/month for life.
 ⏰ BETA ENDING IN 10 DAYS
 
 SSELFIE Studio Founding Member
-$49.50/month (Regular price $99/mo)
-Save $594/year forever
+$49.50/month (Regular price $79/mo)
+Save $354/year forever
 
 → Claim your spot: ${membershipCheckoutUrl}
 

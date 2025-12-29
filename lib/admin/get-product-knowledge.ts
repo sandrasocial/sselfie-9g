@@ -11,15 +11,17 @@ export async function getProductKnowledge(): Promise<string> {
 
 ## What We Sell
 
-### 1. Studio Membership - $29/month
+### 1. Content Creator Studio - $79/month
 **Features:**
-- Unlimited AI photo generations
+- Unlimited professional photoshoots (fair use: 3-4/month)
+- 100+ images per month
+- 20 video clips per month
+- 9-post feed planner (saves 10 hours/month)
+- Priority generation queue
 - Maya Pro Mode (advanced controls, faster workflow)
 - Maya Classic Mode (simple, guided)
-- Feed Designer (plan cohesive Instagram feeds)
 - AI model training (upload 10-20 photos, get personalized AI model)
-- Priority support
-- Access to all future features
+- Cancel anytime
 
 **Target Customer:**
 - Women entrepreneurs who post regularly
@@ -28,24 +30,46 @@ export async function getProductKnowledge(): Promise<string> {
 - Needs consistent visibility
 
 **Value Proposition:**
-"Professional photos whenever you need them. No photoshoots, no waiting, no excuses."
+"Stop scrambling for content every week. Unlimited photos + videos + feed planning - for less than one photoshoot."
 
-### 2. One-Time Session - $12
+### 2. Brand Studio - $149/month
 **Features:**
-- 50 AI photo generations
-- Maya Classic Mode only (no Pro Mode)
-- Perfect for trying SSELFIE
-- Expires after use (no time limit)
-- No Feed Designer access
+- Everything in Content Creator Studio
+- 200+ images per month
+- 40+ video clips per month
+- Maya AI strategist (unlimited consulting)
+- Personal brand academy (2 full courses)
+- 100+ Canva templates
+- Monthly brand strategy drops
+- Direct access to Sandra
+- Priority support
+
+**Target Customer:**
+- Established entrepreneurs running premium brands
+- Need comprehensive content strategy
+- Want ongoing strategic guidance
+- Building a high-end personal brand
+
+**Value Proposition:**
+"Your complete AI content team. Everything you need to run a premium brand."
+
+### 3. One-Time Session - $49
+**Features:**
+- One AI model training
+- 50 professional photos
+- Access to all photo styles and settings
+- Download high-resolution images
+- Ready to post in 2 hours
+- Valid for 30 days
 
 **Target Customer:**
 - First-time users testing the platform
 - Occasional content creators
 - People with one-time photo needs
-- Price-sensitive customers
+- Want to try before committing to membership
 
 **Value Proposition:**
-"Try professional AI photos for the price of a fancy coffee."
+"Professional Instagram photos in 2 hours. No photographer needed. Get 50 magazine-quality images that actually look like you - for less than dinner out."
 
 ---
 
@@ -107,7 +131,8 @@ export async function getProductKnowledge(): Promise<string> {
 
 ### vs Real Photoshoots
 - **Photoshoot:** $500-2000, 1-2 hours, weeks of scheduling
-- **SSELFIE:** $29/mo, 30 seconds, unlimited photos whenever you want
+- **SSELFIE Content Creator Studio:** $79/mo, 30 seconds, unlimited photos whenever you want
+- **SSELFIE Brand Studio:** $149/mo, includes strategy and consulting
 - **Advantage:** Cost, speed, convenience, consistency
 
 **Unique Positioning:**
@@ -190,16 +215,24 @@ export async function getProductKnowledge(): Promise<string> {
 
 ## Pricing Strategy Reasoning
 
-**Why $29/mo?**
-- Affordable for solopreneurs (less than one Starbucks run per week)
+**Why $79/mo for Content Creator Studio?**
+- Affordable for solopreneurs (less than one photoshoot per month)
 - High enough to filter out tire-kickers
-- Comparable to other SaaS tools (Canva Pro = $13/mo, but we offer more value for personal branding)
+- Comparable to professional photography services ($500+ per shoot)
+- Reflects the value of unlimited professional photos and feed planning
 
-**Why $12 one-time?**
+**Why $149/mo for Brand Studio?**
+- Premium positioning for established entrepreneurs
+- Includes strategic consulting and comprehensive resources
+- Worth $3,000+/month in services
+- For serious brand builders who want the full package
+
+**Why $49 one-time?**
 - Low barrier to trial
 - Gets people in the door
 - Many upgrade to monthly after seeing results
 - Makes more than a free trial (attracts serious users)
+- Less than dinner out - easy decision point
 
 **Future Pricing Considerations:**
 - Annual plan at $250/year (save $98, 2 months free)
@@ -272,14 +305,23 @@ export async function getProductKnowledge(): Promise<string> {
 
 ## When to Recommend Each Product
 
-**Recommend Studio Membership When:**
+**Recommend Content Creator Studio ($79/mo) When:**
 - Customer posts on Instagram regularly (3+ times/week)
 - Runs email campaigns or creates course content
 - Building personal brand
 - Needs consistent content
 - Has tried SSELFIE and loves it
+- Needs 100+ images per month
 
-**Recommend One-Time Session When:**
+**Recommend Brand Studio ($149/mo) When:**
+- Established entrepreneur running premium brand
+- Needs strategic guidance and consulting
+- Wants comprehensive content strategy
+- Needs 200+ images per month
+- Wants direct access to Sandra
+- Building a high-end personal brand
+
+**Recommend One-Time Session ($49) When:**
 - First-time customer (trial)
 - Occasional content creator
 - One-time project (headshot, LinkedIn photo)
@@ -291,6 +333,13 @@ export async function getProductKnowledge(): Promise<string> {
 - When they want Pro Mode features
 - When they discover Feed Designer
 - If they're posting photos they generated
+- When they need more than 50 photos
+
+**Upsell from Content Creator to Brand Studio:**
+- When they need more than 100 images/month
+- When they want strategic consulting
+- When they need comprehensive brand strategy
+- When they want direct access to Sandra
 
 ---
 

@@ -6,6 +6,7 @@ import { DefaultChatTransport } from 'ai'
 import { Sparkles, Mail, Instagram, BarChart3, Calendar, Send, Image as ImageIcon, X } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import Image from 'next/image'
+import { AlexSuggestionCard, AlexSuggestion } from './alex-suggestion-card'
 
 interface AlexChatProps {
   userId: string
@@ -36,6 +37,10 @@ export default function AlexChat({ userId, userName, userEmail }: AlexChatProps)
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
   const [galleryOffset, setGalleryOffset] = useState(0)
   const [hasMoreImages, setHasMoreImages] = useState(true)
+  
+  // Suggestions state
+  const [suggestions, setSuggestions] = useState<AlexSuggestion[]>([])
+  const [suggestionsLoading, setSuggestionsLoading] = useState(true)
   
   const { messages, sendMessage, status, setMessages, isLoading: useChatIsLoading } = useChat({
     id: chatId ? String(chatId) : undefined,
@@ -83,6 +88,72 @@ export default function AlexChat({ userId, userName, userEmail }: AlexChatProps)
       useChatIsLoading,
     })
   }, [status, isLoading, messages.length, chatId, useChatIsLoading])
+
+  // Load proactive suggestions
+  useEffect(() => {
+    const loadSuggestions = async () => {
+      try {
+        const response = await fetch('/api/admin/alex/suggestions')
+        if (response.ok) {
+          const data = await response.json()
+          setSuggestions(data.suggestions || [])
+        }
+      } catch (error) {
+        console.error('[Alex] Error loading suggestions:', error)
+      } finally {
+        setSuggestionsLoading(false)
+      }
+    }
+    
+    loadSuggestions()
+  }, [])
+
+  // Dismiss suggestion
+  const handleDismissSuggestion = async (suggestionId: number) => {
+    try {
+      const response = await fetch('/api/admin/alex/suggestions/dismiss', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ suggestionId })
+      })
+      
+      if (response.ok) {
+        setSuggestions(prev => prev.filter(s => s.id !== suggestionId))
+      }
+    } catch (error) {
+      console.error('[Alex] Error dismissing suggestion:', error)
+      throw error
+    }
+  }
+
+  // Mark suggestion as acted upon
+  const handleActUponSuggestion = async (suggestionId: number) => {
+    try {
+      const response = await fetch('/api/admin/alex/suggestions/act-upon', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ suggestionId })
+      })
+      
+      if (response.ok) {
+        setSuggestions(prev => prev.filter(s => s.id !== suggestionId))
+      }
+    } catch (error) {
+      console.error('[Alex] Error marking suggestion acted upon:', error)
+      throw error
+    }
+  }
+
+  // Handle action click - send message to Alex
+  const handleSuggestionAction = (suggestion: AlexSuggestion) => {
+    // Extract the action text and send as a message to Alex
+    if (suggestion.action) {
+      sendMessage({ 
+        role: "user",
+        content: suggestion.action 
+      } as any)
+    }
+  }
 
   // Load existing chat on mount
   useEffect(() => {
@@ -354,31 +425,90 @@ export default function AlexChat({ userId, userName, userEmail }: AlexChatProps)
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-6">
+          {/* Proactive Suggestions */}
+          {!suggestionsLoading && suggestions.length > 0 && (
+            <div className="max-w-4xl mx-auto mb-6 space-y-4">
+              {suggestions.map((suggestion) => (
+                <AlexSuggestionCard
+                  key={suggestion.id}
+                  suggestion={suggestion}
+                  onDismiss={handleDismissSuggestion}
+                  onActUpon={handleActUponSuggestion}
+                  onActionClick={handleSuggestionAction}
+                />
+              ))}
+            </div>
+          )}
+          
           {messages.length === 0 ? (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-center max-w-md">
-                <Sparkles className="w-12 h-12 text-stone-300 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-stone-900 mb-2">
-                  Hey Sandra! I'm Alex
+            <div className="flex flex-col items-center justify-center h-full -mt-20">
+              <div className="text-center max-w-md mb-12">
+                <h3 className="text-2xl font-semibold text-stone-900 mb-3">
+                  Start a conversation
                 </h3>
-                <p className="text-stone-600 mb-6">
-                  I write all your content in YOUR voice - emails, Instagram, landing pages. 
-                  I also handle analytics, strategy, and execution. What would you like to create today?
+                <p className="text-stone-600 text-base">
+                  Ask me anything about your business, strategy, or growth!
                 </p>
-                <div className="grid grid-cols-2 gap-3">
+              </div>
+              
+              {/* Quick Actions - Inside Chat Area */}
+              <div className="w-full max-w-4xl mx-auto px-6">
+                <div className="mb-4">
+                  <h4 className="text-xs uppercase tracking-wider text-stone-900 font-semibold mb-1">
+                    QUICK ACTIONS
+                  </h4>
+                  <p className="text-xs text-stone-500">
+                    Start with a common task
+                  </p>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
                   <button
-                    onClick={() => sendMessage({ text: 'Create a newsletter about Maya Pro Mode' })}
+                    onClick={() => sendMessage({ text: 'Create a welcome email for new Studio members' })}
                     disabled={isLoading}
-                    className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-900 rounded-lg text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-3 bg-white border border-stone-200 hover:bg-stone-50 text-stone-900 rounded-lg text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   >
-                    Write Newsletter
+                    <Mail className="w-4 h-4" />
+                    Welcome Email
                   </button>
                   <button
-                    onClick={() => sendMessage({ text: 'What should I email this week?' })}
+                    onClick={() => sendMessage({ text: 'Create a newsletter about recent updates' })}
                     disabled={isLoading}
-                    className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-900 rounded-lg text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-3 bg-white border border-stone-200 hover:bg-stone-50 text-stone-900 rounded-lg text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   >
-                    Get Strategy
+                    <Sparkles className="w-4 h-4" />
+                    Newsletter
+                  </button>
+                  <button
+                    onClick={() => sendMessage({ text: 'Create a promotional email for a new feature' })}
+                    disabled={isLoading}
+                    className="px-4 py-3 bg-white border border-stone-200 hover:bg-stone-50 text-stone-900 rounded-lg text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    <BarChart3 className="w-4 h-4" />
+                    Promotional
+                  </button>
+                  <button
+                    onClick={() => sendMessage({ text: 'Check email campaign status and performance' })}
+                    disabled={isLoading}
+                    className="px-4 py-3 bg-white border border-stone-200 hover:bg-stone-50 text-stone-900 rounded-lg text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    <BarChart3 className="w-4 h-4" />
+                    Check Status
+                  </button>
+                  <button
+                    onClick={() => sendMessage({ text: 'Show me my email audience segments and data' })}
+                    disabled={isLoading}
+                    className="px-4 py-3 bg-white border border-stone-200 hover:bg-stone-50 text-stone-900 rounded-lg text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    <Mail className="w-4 h-4" />
+                    View Audience
+                  </button>
+                  <button
+                    onClick={() => sendMessage({ text: 'What should I email this week? Analyze my email strategy' })}
+                    disabled={isLoading}
+                    className="px-4 py-3 bg-white border border-stone-200 hover:bg-stone-50 text-stone-900 rounded-lg text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    <Calendar className="w-4 h-4" />
+                    Email Strategy
                   </button>
                 </div>
               </div>
@@ -431,6 +561,99 @@ export default function AlexChat({ userId, userName, userEmail }: AlexChatProps)
                   emailPreview = typeof message.data.email_preview_data === 'string' 
                     ? JSON.parse(message.data.email_preview_data)
                     : message.data.email_preview_data
+                }
+                
+                // Check for caption cards
+                let captionCard: any = null
+                if (message.role === 'assistant') {
+                  // Helper to extract tool result from part
+                  const extractToolResult = (part: any) => {
+                    // Check if already parsed in part.result
+                    if (part.result && typeof part.result === 'object') {
+                      return part.result
+                    }
+                    // Try parsing from part.content (string)
+                    if (part.content) {
+                      try {
+                        const content = typeof part.content === 'string' ? JSON.parse(part.content) : part.content
+                        return content
+                      } catch (e) {
+                        // Not JSON, ignore
+                      }
+                    }
+                    return null
+                  }
+                  
+                  // Check tool results in parts array
+                  if (message.parts && Array.isArray(message.parts)) {
+                    for (const part of message.parts) {
+                      if (part.type === 'tool-result') {
+                        const toolResult = extractToolResult(part)
+                        if (toolResult?.type === 'instagram_caption' && toolResult?.data) {
+                          captionCard = toolResult.data
+                          break
+                        }
+                      }
+                    }
+                  }
+                  // Also check message.content array format
+                  if (!captionCard && Array.isArray(message.content)) {
+                    for (const part of message.content) {
+                      if (part.type === 'tool-result') {
+                        const toolResult = extractToolResult(part)
+                        if (toolResult?.type === 'instagram_caption' && toolResult?.data) {
+                          captionCard = toolResult.data
+                          break
+                        }
+                      }
+                    }
+                  }
+                }
+
+                // Check for prompt cards
+                let promptCards: any[] = []
+                if (message.role === 'assistant') {
+                  // Helper to extract tool result from part
+                  const extractToolResult = (part: any) => {
+                    // Check if already parsed in part.result
+                    if (part.result && typeof part.result === 'object') {
+                      return part.result
+                    }
+                    // Try parsing from part.content (string)
+                    if (part.content) {
+                      try {
+                        const content = typeof part.content === 'string' ? JSON.parse(part.content) : part.content
+                        return content
+                      } catch (e) {
+                        // Not JSON, ignore
+                      }
+                    }
+                    return null
+                  }
+                  
+                  if (message.parts && Array.isArray(message.parts)) {
+                    for (const part of message.parts) {
+                      if (part.type === 'tool-result') {
+                        const toolResult = extractToolResult(part)
+                        if (toolResult?.type === 'maya_prompts' && toolResult?.data?.prompts) {
+                          promptCards = toolResult.data.prompts
+                          break
+                        }
+                      }
+                    }
+                  }
+                  // Also check message.content array format
+                  if (promptCards.length === 0 && Array.isArray(message.content)) {
+                    for (const part of message.content) {
+                      if (part.type === 'tool-result') {
+                        const toolResult = extractToolResult(part)
+                        if (toolResult?.type === 'maya_prompts' && toolResult?.data?.prompts) {
+                          promptCards = toolResult.data.prompts
+                          break
+                        }
+                      }
+                    }
+                  }
                 }
 
                 return (
@@ -556,6 +779,75 @@ export default function AlexChat({ userId, userName, userEmail }: AlexChatProps)
                             </p>
                           </div>
                         </div>
+                      </div>
+                    )}
+
+                    {/* Caption Card */}
+                    {captionCard && message.role === 'assistant' && (
+                      <div className="flex justify-start mt-4">
+                        <div className="max-w-[85%] border border-stone-200 rounded-lg overflow-hidden bg-white">
+                          <div className="bg-stone-50 px-6 py-4 border-b border-stone-200">
+                            <h3 className="text-sm font-semibold text-stone-900">
+                              📸 {captionCard.captionType?.charAt(0).toUpperCase() + captionCard.captionType?.slice(1)} Caption
+                            </h3>
+                            <p className="text-xs text-stone-600 mt-1">
+                              {captionCard.wordCount} words · {captionCard.hook}
+                            </p>
+                          </div>
+                          <div className="p-6">
+                            <div className="prose prose-sm max-w-none">
+                              <ReactMarkdown>{captionCard.fullCaption || captionCard.captionText}</ReactMarkdown>
+                            </div>
+                          </div>
+                          <div className="bg-stone-50 border-t border-stone-200 px-6 py-4">
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(captionCard.fullCaption || captionCard.captionText)
+                              }}
+                              className="px-4 py-2 bg-stone-900 text-white rounded-lg hover:bg-stone-800 transition-colors text-sm"
+                            >
+                              Copy Caption
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Prompt Cards */}
+                    {promptCards.length > 0 && message.role === 'assistant' && (
+                      <div className="flex justify-start mt-4 flex-col gap-4">
+                        {promptCards.map((prompt: any) => (
+                          <div key={prompt.id} className="max-w-[85%] border border-stone-200 rounded-lg overflow-hidden bg-white">
+                            <div className="bg-stone-50 px-6 py-4 border-b border-stone-200">
+                              <h3 className="text-sm font-semibold text-stone-900">
+                                {prompt.title || prompt.prompt_title}
+                              </h3>
+                              <div className="flex gap-2 mt-2">
+                                {prompt.tags?.map((tag: string) => (
+                                  <span key={tag} className="text-xs bg-stone-200 text-stone-700 px-2 py-1 rounded">
+                                    {tag}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="p-6">
+                              <p className="text-sm text-stone-600 mb-4">{prompt.useCase || prompt.use_case}</p>
+                              <div className="bg-stone-50 p-4 rounded-lg">
+                                <p className="text-xs font-mono text-stone-900">{prompt.promptText || prompt.prompt_text}</p>
+                              </div>
+                            </div>
+                            <div className="bg-stone-50 border-t border-stone-200 px-6 py-4">
+                              <button
+                                onClick={() => {
+                                  navigator.clipboard.writeText(prompt.promptText || prompt.prompt_text)
+                                }}
+                                className="px-4 py-2 bg-stone-900 text-white rounded-lg hover:bg-stone-800 transition-colors text-sm"
+                              >
+                                Copy Prompt
+                              </button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>

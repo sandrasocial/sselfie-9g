@@ -142,7 +142,7 @@ export async function POST(request: NextRequest) {
                       $49.50<span style="font-size: 16px; font-weight: 400; color: #d6d3d1;">/month</span>
                     </p>
                     <p style="margin: 0 0 4px; color: #a8a29e; font-size: 13px; font-weight: 300; text-decoration: line-through;">
-                      Regular $99/mo
+                      Regular $79/mo
                     </p>
                     <p style="margin: 0 0 20px; color: #d6d3d1; font-size: 14px; font-weight: 300;">
                       50% OFF FOREVER as a founding member

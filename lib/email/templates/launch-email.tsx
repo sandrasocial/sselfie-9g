@@ -226,7 +226,7 @@ Perfect for testing the basics
 → Get started: ${oneTimeCheckoutUrl}
 
 SSELFIE STUDIO - $49.50/month (50% OFF FOREVER)
-Regular $99/mo - For the woman ready to transform her entire brand
+Regular $79/mo - For the woman ready to transform her entire brand
 • Custom AI model trained on YOUR photos
 • 150+ professional images monthly
 • Full academy with video courses & templates

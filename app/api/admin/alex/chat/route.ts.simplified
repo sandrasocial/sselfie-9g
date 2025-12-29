@@ -1,0 +1,610 @@
+/**
+ * Simplified Alex Chat Route
+ * Main chat handler - uses modular tool structure
+ */
+
+import { NextResponse } from "next/server"
+import { createServerClient } from "@/lib/supabase/server"
+import { getUserByAuthId } from "@/lib/user-mapping"
+import { getCompleteAdminContext } from "@/lib/admin/get-complete-context"
+import { saveChatMessage, getOrCreateActiveChat } from "@/lib/data/admin-agent"
+import { sql } from "@vercel/postgres"
+import { toolDefinitions } from "@/lib/alex/tools"
+import { executeTool } from "@/lib/alex/handlers/tool-executor"
+import { stripHtml } from "@/lib/alex/shared/dependencies"
+import { ALEX_CONSTANTS } from "@/lib/alex/constants"
+
+const ADMIN_EMAIL = ALEX_CONSTANTS.ADMIN_EMAIL
+export const maxDuration = 60
+
+export async function POST(req: Request) {
+  console.log("[Alex] Admin agent chat API called")
+
+  try {
+    // Authentication
+    const supabase = await createServerClient()
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+
+    if (!authUser) {
+      console.error("[Alex] Authentication failed: No user")
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const user = await getUserByAuthId(authUser.id)
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 })
+    }
+
+    if (user.email !== ADMIN_EMAIL) {
+      return NextResponse.json({ error: "Admin access required" }, { status: 403 })
+    }
+
+    // Parse request
+    const body = await req.json()
+    const { messages, chatId } = body
+    const explicitChatId = chatId
+
+    if (!messages || !Array.isArray(messages) || messages.length === 0) {
+      return NextResponse.json({ error: "Messages is required" }, { status: 400 })
+    }
+
+    // Process messages
+    const modelMessages = messages
+      .filter((m: any) => m && (m.role === "user" || m.role === "assistant"))
+      .map((m: any) => {
+        // Handle images
+        if (m.content && Array.isArray(m.content)) {
+          const hasImages = m.content.some((p: any) => p && p.type === "image")
+          if (hasImages) {
+            return {
+              role: m.role,
+              content: m.content,
+            }
+          }
+        }
+
+        // Extract text content
+        let content = ""
+        if (m.parts && Array.isArray(m.parts)) {
+          const textParts = m.parts.filter((p: any) => p && p.type === "text")
+          content = textParts.map((p: any) => p.text || "").join("\n")
+        }
+        if (!content && m.content && Array.isArray(m.content)) {
+          const textParts = m.content.filter((p: any) => p && p.type === "text")
+          content = textParts.map((p: any) => p.text || "").join("\n")
+        }
+        if (!content && m.content) {
+          content = typeof m.content === 'string' ? m.content : String(m.content)
+        }
+
+        return {
+          role: m.role,
+          content: content.trim(),
+        }
+      })
+      .filter((m: any) => m.content && m.content.length > 0)
+
+    if (modelMessages.length === 0) {
+      return NextResponse.json({ error: "No valid messages to process" }, { status: 400 })
+    }
+
+    // Get or create chat
+    let activeChatId = explicitChatId
+    if (activeChatId === null || activeChatId === undefined) {
+      const existingChat = await getOrCreateActiveChat(user.id)
+      activeChatId = existingChat.id
+    } else {
+      const chatExists = await sql`
+        SELECT id FROM admin_agent_chats
+        WHERE id = ${activeChatId} AND admin_user_id = ${user.id}
+        LIMIT 1
+      `
+      if (chatExists.length === 0) {
+        const existingChat = await getOrCreateActiveChat(user.id)
+        activeChatId = existingChat.id
+      }
+    }
+
+    const modelMessagesToUse = modelMessages
+
+    // Save user message
+    const lastUserMessage = modelMessagesToUse.filter((m: any) => m.role === "user").pop()
+    if (lastUserMessage && activeChatId) {
+      try {
+        let textContent = ""
+        if (Array.isArray(lastUserMessage.content)) {
+          const textParts = lastUserMessage.content.filter((p: any) => p && p.type === "text")
+          textContent = textParts.map((p: any) => p.text || "").join("\n")
+        } else {
+          textContent = typeof lastUserMessage.content === "string" ? lastUserMessage.content : String(lastUserMessage.content || "")
+        }
+        const contentToSave = textContent.trim() || (Array.isArray(lastUserMessage.content) && lastUserMessage.content.some((p: any) => p && p.type === "image") ? "[Image message]" : "")
+        if (contentToSave) {
+          await saveChatMessage(activeChatId, "user", contentToSave)
+        }
+      } catch (error) {
+        console.error("[Alex] Error saving user message:", error)
+      }
+    }
+
+    // Extract image URLs
+    const extractImageUrls = (message: any): string[] => {
+      const urls: string[] = []
+      if (Array.isArray(message.content)) {
+        message.content.forEach((part: any) => {
+          if (part && part.type === "image" && part.image) {
+            const imageUrl = typeof part.image === 'string' ? part.image : part.image?.url
+            if (imageUrl && typeof imageUrl === 'string') {
+              urls.push(imageUrl)
+            }
+          }
+        })
+      }
+      return urls
+    }
+
+    const recentUserMessages = modelMessagesToUse
+      .filter((m: any) => m.role === 'user')
+      .slice(-5)
+    const availableImageUrls = recentUserMessages
+      .flatMap((m: any) => extractImageUrls(m))
+      .filter((url: string) => url && url.length > 0)
+
+    // Get admin context
+    const completeContext = await getCompleteAdminContext()
+    console.log('[Alex] 📚 Knowledge base loaded:', completeContext.length, 'chars')
+
+    // Get proactive suggestions
+    let proactiveSuggestions = ''
+    try {
+      const { getProactiveSuggestions } = await import('@/lib/alex/proactive-suggestions')
+      const suggestions = await getProactiveSuggestions(user.id.toString(), user.email || undefined)
+      if (suggestions && suggestions.length > 0) {
+        proactiveSuggestions = `
+
+## 💡 Proactive Email Opportunities
+
+I've identified ${suggestions.length} email opportunity${suggestions.length > 1 ? 'ies' : ''} for you:
+
+${suggestions.map((s, idx) => `${idx + 1}. **${s.text}**
+   - Priority: ${s.priority}
+   - Action: ${s.action || 'Review this suggestion'}
+   - ${s.reasoning}`).join('\n\n')}
+
+These are data-driven suggestions based on your email history and performance patterns. Feel free to ask me to act on any of these, or I'll mention them naturally in our conversation!`
+      }
+    } catch (error: any) {
+      console.error('[Alex] Error loading proactive suggestions:', error)
+    }
+
+    // Build system prompt
+    const systemPrompt = `You are Alex - Sandra's strategic business partner who genuinely gets excited about her wins and helps her scale with warmth, wisdom, and zero BS.
+
+**SSELFIE BRAND IDENTITY (CRITICAL - Apply to ALL emails):**
+- Brand Colors: #1c1917 (dark), #0c0a09 (black), #fafaf9 (light), #57534e (gray), #78716c (muted)
+- Typography: Times New Roman/Georgia for headers (editorial luxury), system fonts for body
+- Voice: Warm, empowering, personal, conversational - like a trusted friend
+- Style: Table-based email layouts, inline styles only, mobile-first design
+- Always use SSELFIE brand colors and styling in every email you create
+
+**WHO YOU REALLY ARE:**
+You're not just an AI assistant. You're Sandra's trusted partner who:
+
+- Knows her complete story, brand DNA, and what drives her
+- Speaks like a friend who happens to have scaled multiple 8-9 figure brands
+- Gets genuinely excited about her wins ✨
+- Tells it like it is - no sugarcoating, but always supportive
+- Uses data AND intuition (never one without the other)
+- Stays cutting-edge on AI tools and immediately sees how they apply to SSELFIE
+
+**YOUR COMMUNICATION STYLE (MATCH MAYA'S VIBE):**
+
+Warm and enthusiastic - show genuine excitement!
+Use emojis naturally: ✨ 🚀 💪 📈 🎯 💡 (max 2-3 per response)
+Short, punchy sentences - like texting a friend
+Sound human, not corporate
+Celebrate wins: "LOVE this! 🚀" "This is huge! 💪"
+Be direct but kind: "Here's what I'd do..." not "I recommend you consider..."
+
+Examples of your vibe:
+
+"This email is going to CRUSH it! 🚀"
+"Love seeing your open rates climb! 📈"
+"Okay so here's the strategy that'll work..."
+"Quick wins first, then we scale! 💪"
+
+NEVER say:
+
+❌ "I shall proceed with..."
+❌ "Please be advised that..."
+❌ Generic corporate speak
+❌ Overly formal language
+
+**SANDRA'S COMPLETE STORY & BRAND:**
+${completeContext}
+
+[System prompt continues with all the business context, email guidelines, etc. - this would be the full system prompt from the original file]`
+
+    const systemPromptWithContext = systemPrompt + (proactiveSuggestions ? proactiveSuggestions : '')
+    const systemPromptWithImages = availableImageUrls.length > 0
+      ? systemPromptWithContext + `\n\n**IMPORTANT: Image Context**
+Sandra has shared ${availableImageUrls.length} image(s) in this conversation. When creating emails using the create_email_sequence or edit_email tools, you MUST include these image URLs in the imageUrls parameter:
+${availableImageUrls.map((url: string, idx: number) => `${idx + 1}. ${url}`).join('\n')}
+
+These images should be included naturally in the email HTML.`
+      : systemPromptWithContext
+
+    // Convert messages to Anthropic format
+    const anthropicMessages = modelMessagesToUse.map((msg: any) => {
+      // Handle email preview data for editing
+      if (msg.email_preview_data && msg.role === 'assistant') {
+        try {
+          const emailData = typeof msg.email_preview_data === 'string' 
+            ? JSON.parse(msg.email_preview_data) 
+            : msg.email_preview_data
+          if (emailData && emailData.html && emailData.subjectLine) {
+            const emailContext = `[PREVIOUS EMAIL]
+Subject: ${emailData.subjectLine}
+
+FULL HTML (for editing):
+\`\`\`html
+${emailData.html}
+\`\`\`
+
+IMPORTANT: When user asks to edit this email:
+1. Use the FULL HTML above as previousVersion
+2. Extract it exactly as shown between the \`\`\`html tags
+3. Make ONLY the requested changes
+4. Return complete updated HTML
+[END PREVIOUS EMAIL]`
+            return {
+              role: msg.role,
+              content: [{ type: 'text', text: emailContext }]
+            }
+          }
+        } catch (error) {
+          console.error('[Alex] ❌ Failed to parse email_preview_data:', error)
+        }
+      }
+
+      // Handle parts array
+      if (msg.parts && Array.isArray(msg.parts)) {
+        const content: any[] = []
+        for (const part of msg.parts) {
+          if (part.type === 'text') {
+            content.push({ type: 'text', text: part.text || '' })
+          }
+        }
+        if (content.length > 0) {
+          return { role: msg.role, content }
+        }
+      }
+
+      // Default: use content directly
+      return {
+        role: msg.role,
+        content: Array.isArray(msg.content) ? msg.content : (msg.content || '')
+      }
+    })
+
+    // Track accumulated text and email preview
+    let accumulatedText = ''
+    let emailPreviewData: any = null
+
+    // Create SSE stream
+    const encoder = new TextEncoder()
+    const messageId = `msg-${Date.now()}`
+    let hasSentTextStart = false
+
+    const stream = new ReadableStream({
+      async start(controller) {
+        let isClosed = false
+
+        const safeEnqueue = (data: string | Uint8Array) => {
+          try {
+            if (isClosed) return
+            const encoded = typeof data === 'string' ? encoder.encode(data) : data
+            controller.enqueue(encoded)
+          } catch (error: any) {
+            if (error?.code !== 'ERR_INVALID_STATE' && !error?.message?.includes('closed')) {
+              console.error('[Alex] ❌ Error enqueueing data:', error)
+            }
+            if (error?.code === 'ERR_INVALID_STATE' || error?.message?.includes('closed')) {
+              isClosed = true
+            }
+          }
+        }
+
+        const safeClose = () => {
+          if (!isClosed) {
+            isClosed = true
+            try {
+              controller.close()
+            } catch (error) {
+              console.error('[Alex] ❌ Error closing stream:', error)
+            }
+          }
+        }
+
+        try {
+          // Tool execution loop
+          let messages = anthropicMessages
+          let iteration = 0
+          const MAX_ITERATIONS = 5
+
+          while (iteration < MAX_ITERATIONS) {
+            iteration++
+            console.log('[Alex] 🔄 Iteration', iteration)
+
+            const formattedMessages = messages.map((m: any) => ({
+              role: m.role,
+              content: Array.isArray(m.content) ? m.content : String(m.content || '')
+            }))
+
+            // Call Anthropic API
+            const response = await fetch('https://api.anthropic.com/v1/messages', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-API-Key': process.env.ANTHROPIC_API_KEY!,
+                'anthropic-version': '2023-06-01',
+              },
+              body: JSON.stringify({
+                model: ALEX_CONSTANTS.MODEL,
+                max_tokens: ALEX_CONSTANTS.MAX_TOKENS,
+                system: systemPromptWithImages,
+                messages: formattedMessages,
+                tools: toolDefinitions.length > 0 ? toolDefinitions : undefined,
+                stream: true,
+              }),
+            })
+
+            if (!response.ok) {
+              const error = await response.text()
+              console.error('[Alex] ❌ API error:', error)
+              throw new Error(`API error: ${response.status}`)
+            }
+
+            // Process SSE stream
+            const reader = response.body?.getReader()
+            if (!reader) throw new Error('No response body')
+
+            const decoder = new TextDecoder()
+            let buffer = ''
+            let toolCalls: any[] = []
+            let currentToolCall: any = null
+            let messageComplete = false
+            let hasTextInThisIteration = false
+
+            while (true) {
+              const { done, value } = await reader.read()
+              if (done) break
+
+              buffer += decoder.decode(value, { stream: true })
+              const lines = buffer.split('\n')
+              buffer = lines.pop() || ''
+
+              for (const line of lines) {
+                if (!line.startsWith('data: ')) continue
+                if (line === 'data: [DONE]') {
+                  messageComplete = true
+                  break
+                }
+
+                try {
+                  const event = JSON.parse(line.slice(6))
+
+                  // Text delta
+                  if (event.type === 'content_block_delta' && event.delta?.type === 'text_delta') {
+                    const text = event.delta.text
+                    if (text) {
+                      if (!hasSentTextStart) {
+                        safeEnqueue(encoder.encode(`data: ${JSON.stringify({ type: 'text-start', id: messageId })}\n\n`))
+                        hasSentTextStart = true
+                      }
+                      accumulatedText += text
+                      hasTextInThisIteration = true
+                      safeEnqueue(encoder.encode(`data: ${JSON.stringify({ type: 'text-delta', id: messageId, delta: text })}\n\n`))
+                    }
+                  }
+
+                  // Tool use started
+                  if (event.type === 'content_block_start' && event.content_block?.type === 'tool_use') {
+                    currentToolCall = {
+                      id: event.content_block.id,
+                      name: event.content_block.name,
+                      input: ''
+                    }
+                    console.log('[Alex] 🔧 Tool started:', currentToolCall.name)
+                  }
+
+                  // Tool input accumulation
+                  if (event.type === 'content_block_delta' && event.delta?.type === 'input_json_delta') {
+                    if (currentToolCall) {
+                      if (!currentToolCall.input) currentToolCall.input = ''
+                      currentToolCall.input += event.delta.partial_json || ''
+                    }
+                  }
+
+                  // Tool use complete
+                  if (event.type === 'content_block_stop' && currentToolCall) {
+                    try {
+                      if (!currentToolCall.input || currentToolCall.input.trim() === '') {
+                        console.warn('[Alex] ⚠️ Tool input is empty for:', currentToolCall.name)
+                        currentToolCall = null
+                        continue
+                      }
+
+                      let toolInput
+                      try {
+                        toolInput = JSON.parse(currentToolCall.input)
+                      } catch (parseError: any) {
+                        console.error('[Alex] ❌ Invalid JSON in tool input:', parseError.message)
+                        currentToolCall = null
+                        continue
+                      }
+
+                      if (!toolInput || typeof toolInput !== 'object') {
+                        console.error('[Alex] ❌ Tool input is not a valid object')
+                        currentToolCall = null
+                        continue
+                      }
+
+                      console.log('[Alex] 🔧 Executing tool:', currentToolCall.name)
+
+                      // Execute tool using modular executor
+                      const toolResult = await executeTool(currentToolCall.name, toolInput)
+
+                      // Capture email preview data
+                      if (currentToolCall.name === 'compose_email_draft' && toolResult?.email_preview_data) {
+                        emailPreviewData = {
+                          html: toolResult.email_preview_data.html,
+                          subjectLine: toolResult.email_preview_data.subject,
+                          preview: toolResult.email_preview_data.preview,
+                          purpose: toolResult.email_preview_data.purpose,
+                          to: toolResult.email_preview_data.to,
+                          from: toolResult.email_preview_data.from
+                        }
+                      } else if (currentToolCall.name === 'send_resend_email' && toolResult?.success) {
+                        emailPreviewData = null
+                      } else if (currentToolCall.name === 'create_email_sequence' && toolResult?.emails) {
+                        const lastSuccessfulEmail = [...toolResult.emails].reverse().find((e: any) => e.readyToSend && e.html && e.subjectLine)
+                        if (lastSuccessfulEmail) {
+                          emailPreviewData = {
+                            html: lastSuccessfulEmail.html,
+                            subjectLine: lastSuccessfulEmail.subjectLine,
+                            preview: lastSuccessfulEmail.preview || stripHtml(lastSuccessfulEmail.html).substring(0, 200) + '...',
+                            sequenceName: toolResult.sequenceName,
+                            sequenceEmails: toolResult.emails,
+                            isSequence: true
+                          }
+                        }
+                      } else if (currentToolCall.name === 'create_instagram_caption' && toolResult?.success && toolResult?.data) {
+                        emailPreviewData = {
+                          type: 'caption',
+                          captionData: toolResult.data
+                        }
+                      } else if (currentToolCall.name === 'suggest_maya_prompts' && toolResult?.success && toolResult?.data) {
+                        emailPreviewData = {
+                          type: 'prompts',
+                          promptData: toolResult.data
+                        }
+                      }
+
+                      // Truncate large results
+                      let toolResultContent = JSON.stringify(toolResult)
+                      const MAX_TOOL_RESULT_SIZE = 100000
+                      if (toolResultContent.length > MAX_TOOL_RESULT_SIZE) {
+                        toolResultContent = toolResultContent.substring(0, MAX_TOOL_RESULT_SIZE) + '\n\n[Content truncated due to size limits.]'
+                      }
+
+                      toolCalls.push({
+                        id: currentToolCall.id,
+                        name: currentToolCall.name,
+                        input: toolInput,
+                        result: toolResult
+                      })
+
+                      // Add tool_use and tool_result to messages
+                      messages = [
+                        ...messages,
+                        {
+                          role: 'assistant',
+                          content: [{
+                            type: 'tool_use',
+                            id: currentToolCall.id,
+                            name: currentToolCall.name,
+                            input: toolInput
+                          }]
+                        },
+                        {
+                          role: 'user',
+                          content: [{
+                            type: 'tool_result',
+                            tool_use_id: currentToolCall.id,
+                            content: toolResultContent
+                          }]
+                        }
+                      ]
+
+                      // Send tool invocation event for cards
+                      if (['create_instagram_caption', 'suggest_maya_prompts', 'create_content_calendar'].includes(currentToolCall.name)) {
+                        safeEnqueue(encoder.encode(`data: ${JSON.stringify({
+                          type: 'tool-call',
+                          id: messageId,
+                          toolCallId: currentToolCall.id,
+                          toolName: currentToolCall.name,
+                          args: toolInput,
+                          result: toolResult
+                        })}\n\n`))
+                      }
+
+                      currentToolCall = null
+                    } catch (error: any) {
+                      console.error('[Alex] ❌ Tool execution error:', error)
+                      currentToolCall = null
+                    }
+                  }
+
+                  // Message stop
+                  if (event.type === 'message_stop') {
+                    messageComplete = true
+                    break
+                  }
+                } catch (error) {
+                  // Ignore parse errors
+                }
+              }
+
+              if (messageComplete) break
+            }
+
+            // If no tools were called, we're done
+            if (toolCalls.length === 0) {
+              console.log('[Alex] ✅ Response complete (no tools)')
+              break
+            }
+
+            console.log('[Alex] 🔄 Continuing with', toolCalls.length, 'tool results')
+            hasSentTextStart = false
+          }
+
+          // Send text-end event
+          if (hasSentTextStart) {
+            safeEnqueue(encoder.encode(`data: ${JSON.stringify({ type: 'text-end', id: messageId })}\n\n`))
+          }
+
+          // Save message to database
+          if (accumulatedText && activeChatId) {
+            try {
+              await saveChatMessage(activeChatId, "assistant", accumulatedText, emailPreviewData)
+              console.log('[Alex] ✅ Saved assistant message to chat')
+            } catch (error) {
+              console.error("[Alex] ❌ Error saving message:", error)
+            }
+          }
+        } catch (error: any) {
+          console.error('[Alex] ❌ Stream error:', error)
+          if (!isClosed) {
+            safeEnqueue(encoder.encode(`data: ${JSON.stringify({ type: 'error', id: messageId, errorText: error.message || 'Stream error' })}\n\n`))
+          }
+        } finally {
+          safeClose()
+        }
+      },
+    })
+
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'X-Chat-Id': String(activeChatId),
+      },
+    })
+  } catch (error: any) {
+    console.error("[Alex] Admin agent chat error:", error)
+    return NextResponse.json({ error: "Failed to process chat", details: error.message }, { status: 500 })
+  }
+}
+

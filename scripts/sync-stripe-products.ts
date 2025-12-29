@@ -14,18 +14,26 @@ const PRICING_PRODUCTS = [
   {
     id: "one_time_session",
     name: "One-Time SSELFIE Session",
-    description: "A single session to create your premium AI-generated brand photos",
+    description: "Professional Instagram Photos in 2 Hours. No Photographer Needed.",
     type: "one_time_session",
     priceInCents: 4900, // $49
-    credits: 50,
+    credits: 70,
   },
   {
     id: "sselfie_studio_membership",
-    name: "SSELFIE Studio Membership",
-    description: "Full access to courses, monthly drops, bonuses, and ongoing photo generation",
+    name: "Content Creator Studio",
+    description: "Stop Scrambling for Content Every Week. Unlimited Photos + Videos + Feed Planning.",
     type: "sselfie_studio_membership",
-    priceInCents: 9900, // $99/month
-    credits: 200,
+    priceInCents: 7900, // $79/month
+    credits: 150,
+  },
+  {
+    id: "brand_studio_membership",
+    name: "Brand Studio",
+    description: "Your Complete AI Content Team. Everything You Need to Run a Premium Brand.",
+    type: "brand_studio_membership",
+    priceInCents: 14900, // $149/month
+    credits: 300,
   },
 ]
 

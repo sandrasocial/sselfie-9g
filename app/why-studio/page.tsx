@@ -347,7 +347,7 @@ export default function WhyStudioPage() {
                 </li>
               </ul>
               <p className="text-3xl sm:text-4xl font-light text-stone-50 mb-2" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
-                $99
+                $79
               </p>
               <p className="text-sm font-light text-stone-300">per month</p>
             </div>
@@ -438,7 +438,7 @@ export default function WhyStudioPage() {
                     className="text-5xl sm:text-6xl font-light"
                     style={{ fontFamily: "'Times New Roman', Times, serif" }}
                   >
-                    $99
+                    $79
                   </span>
                 </div>
                 <p className="text-sm sm:text-base font-light text-stone-300 mt-2">per month • 150 credits/month</p>

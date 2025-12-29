@@ -13,7 +13,7 @@ export interface PricingProduct {
   displayName: string
   description: string
   priceInCents: number
-  type: "one_time_session" | "sselfie_studio_membership" | "credit_topup"
+  type: "one_time_session" | "sselfie_studio_membership" | "brand_studio_membership" | "credit_topup"
   features?: string[]
   credits?: number
   stripePriceId?: string
@@ -38,37 +38,55 @@ export const PRICING_PRODUCTS: PricingProduct[] = [
   {
     id: "one_time_session",
     name: "One-Time SSELFIE Session",
-    displayName: "One-Time Session",
-    description: "Try one professional AI photoshoot. No subscription, just a one-time session.",
+    displayName: "Instagram Photoshoot",
+    description: "Professional Instagram Photos in 2 Hours. No Photographer Needed.",
     priceInCents: 4900,
     type: "one_time_session",
-    credits: 50,
+    credits: 70,
     features: [
-      "One AI model training",
-      "Generate up to 50 professional photos",
-      "Access to all photo styles and settings",
-      "Download high-resolution images",
-      "Valid for 30 days",
+      "Your AI model trained on your photos",
+      "One complete photoshoot session",
+      "30-50 images in multiple styles",
+      "Ready to post in 2 hours",
+      "Download all in HD",
     ],
   },
   {
     id: "sselfie_studio_membership",
-    name: "SSELFIE Studio Membership",
-    displayName: "Studio Membership",
-    description: "Join the Studio for new photos, fresh tools, and monthly brand drops.",
-    priceInCents: 9900,
+    name: "Content Creator Studio",
+    displayName: "Content Creator Studio",
+    description: "Stop Scrambling for Content Every Week. Unlimited Photos + Videos + Feed Planning.",
+    priceInCents: 7900,
     type: "sselfie_studio_membership",
-    credits: 250,
+    credits: 150,
     popular: true,
     features: [
-      "Unlimited AI model trainings",
-      "250 credits per month",
-      "Full Maya AI access",
-      "Complete Academy courses",
-      "Monthly brand drops and bonuses",
-      "Feed Designer (unlimited)",
+      "Unlimited professional photoshoots (fair use: 3-4/month)",
+      "100+ images per month",
+      "20 video clips per month",
+      "9-post feed planner (saves 10 hours/month)",
+      "Priority generation queue",
+      "Cancel anytime",
+    ],
+  },
+  {
+    id: "brand_studio_membership",
+    name: "Brand Studio",
+    displayName: "Brand Studio",
+    description: "Your Complete AI Content Team. Everything You Need to Run a Premium Brand.",
+    priceInCents: 14900,
+    type: "brand_studio_membership",
+    credits: 300,
+    features: [
+      "Everything in Content Creator Studio",
+      "200+ images per month",
+      "40+ video clips per month",
+      "Maya AI strategist (unlimited consulting)",
+      "Personal brand academy (2 full courses)",
+      "100+ Canva templates",
+      "Monthly brand strategy drops",
+      "Direct access to Sandra",
       "Priority support",
-      "Early access to new features",
     ],
   },
 ]

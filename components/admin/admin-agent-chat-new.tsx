@@ -569,6 +569,26 @@ export default function AdminAgentChatNew({
 
   const isLoading = status === "submitted" || status === "streaming"
 
+  // Debug: Log tool invocations in messages
+  useEffect(() => {
+    messages.forEach((msg: any) => {
+      if (msg.role === 'assistant' && msg.toolInvocations) {
+        msg.toolInvocations.forEach((inv: any) => {
+          if (inv.toolName === 'create_instagram_caption' || inv.toolName === 'suggest_maya_prompts') {
+            console.log('[Alex] 🔍 Tool invocation in message:', {
+              toolName: inv.toolName,
+              hasResult: !!inv.result,
+              resultType: typeof inv.result,
+              resultIsString: typeof inv.result === 'string',
+              resultKeys: inv.result && typeof inv.result === 'object' ? Object.keys(inv.result) : [],
+              fullInvocation: inv
+            })
+          }
+        })
+      }
+    })
+  }, [messages])
+
   // Add status logging
   useEffect(() => {
     console.log('[Alex] 🔄 Status changed to:', status, {
@@ -1743,11 +1763,24 @@ export default function AdminAgentChatNew({
               )}
               
               {messages.length === 0 ? (
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-center text-stone-500 px-4">
-                    <p className="text-base sm:text-lg mb-2">Start a conversation</p>
-                    <p className="text-xs sm:text-sm">Ask me anything about your business, strategy, or growth!</p>
+                <div className="flex flex-col items-center justify-center h-full -mt-20">
+                  <div className="text-center text-stone-900 px-4 mb-12">
+                    <p className="text-2xl font-semibold mb-3">Start a conversation</p>
+                    <p className="text-base text-stone-600">Ask me anything about your business, strategy, or growth!</p>
                   </div>
+                  
+                  {/* Quick Actions - Inside Chat Area */}
+                  {showQuickActions && !toolLoading && (
+                    <div className="w-full max-w-4xl mx-auto px-3 sm:px-6">
+                      <EmailQuickActions
+                        onAction={async (category, prompt) => {
+                          setShowQuickActions(false)
+                          await sendMessage({ text: prompt })
+                        }}
+                        disabled={isLoading || !!toolLoading}
+                      />
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-3 sm:space-y-4 max-w-4xl mx-auto">
@@ -1957,42 +1990,130 @@ Please acknowledge you've received the edited HTML and are ready to make further
                                     </div>
                                   )}
                                   {/* Creative Content Cards */}
+                                  {/* Check toolInvocations (live streaming) */}
                                   {(message as any).toolInvocations && Array.isArray((message as any).toolInvocations) && (
                                     <div className="mt-4 space-y-4">
                                       {(message as any).toolInvocations.map((inv: any) => {
+                                        // Debug logging
+                                        if (inv.toolName === 'create_instagram_caption' || inv.toolName === 'suggest_maya_prompts') {
+                                          console.log('[Alex] 🔍 Tool invocation found:', {
+                                            toolName: inv.toolName,
+                                            hasResult: !!inv.result,
+                                            resultType: typeof inv.result,
+                                            resultKeys: inv.result ? Object.keys(inv.result) : [],
+                                            resultData: inv.result?.data ? Object.keys(inv.result.data) : [],
+                                            fullResult: inv.result
+                                          })
+                                        }
+                                        
                                         // Instagram Caption cards
-                                        if (inv.toolName === 'create_instagram_caption' && inv.result?.data) {
-                                          return (
-                                            <div key={inv.toolCallId || `caption-${message.id}`}>
-                                              <CaptionCard caption={inv.result.data} />
-                                            </div>
-                                          )
+                                        if (inv.toolName === 'create_instagram_caption') {
+                                          // Handle both string and object results
+                                          let result = inv.result
+                                          if (typeof result === 'string') {
+                                            try {
+                                              result = JSON.parse(result)
+                                            } catch (e) {
+                                              console.warn('[Alex] ⚠️ Could not parse caption result as JSON:', e)
+                                            }
+                                          }
+                                          
+                                          if (result?.data || result?.success) {
+                                            const captionData = result.data || result
+                                            return (
+                                              <div key={inv.toolCallId || `caption-${message.id}`}>
+                                                <CaptionCard caption={captionData} />
+                                              </div>
+                                            )
+                                          }
                                         }
                                         
                                         // Content Calendar cards
-                                        if (inv.toolName === 'create_content_calendar' && inv.result?.data) {
-                                          return (
-                                            <div key={inv.toolCallId || `calendar-${message.id}`}>
-                                              <CalendarCard calendar={inv.result.data} />
-                                            </div>
-                                          )
+                                        if (inv.toolName === 'create_content_calendar') {
+                                          let result = inv.result
+                                          if (typeof result === 'string') {
+                                            try {
+                                              result = JSON.parse(result)
+                                            } catch (e) {
+                                              console.warn('[Alex] ⚠️ Could not parse calendar result as JSON:', e)
+                                            }
+                                          }
+                                          
+                                          if (result?.data || result?.success) {
+                                            const calendarData = result.data || result
+                                            return (
+                                              <div key={inv.toolCallId || `calendar-${message.id}`}>
+                                                <CalendarCard calendar={calendarData} />
+                                              </div>
+                                            )
+                                          }
                                         }
                                         
                                         // Maya Prompts cards
-                                        if (inv.toolName === 'suggest_maya_prompts' && inv.result?.data?.prompts) {
-                                          return (
-                                            <div key={inv.toolCallId || `prompts-${message.id}`} className="space-y-4">
-                                              {inv.result.data.prompts.map((prompt: any) => (
-                                                <PromptCard key={prompt.id} prompt={prompt} />
-                                              ))}
-                                            </div>
-                                          )
+                                        if (inv.toolName === 'suggest_maya_prompts') {
+                                          // Handle both string and object results
+                                          let result = inv.result
+                                          if (typeof result === 'string') {
+                                            try {
+                                              result = JSON.parse(result)
+                                            } catch (e) {
+                                              console.warn('[Alex] ⚠️ Could not parse prompt result as JSON:', e)
+                                            }
+                                          }
+                                          
+                                          const prompts = result?.data?.prompts || result?.prompts || (result?.success && result?.data?.prompts ? result.data.prompts : null)
+                                          if (prompts && Array.isArray(prompts) && prompts.length > 0) {
+                                            return (
+                                              <div key={inv.toolCallId || `prompts-${message.id}`} className="space-y-4">
+                                                {prompts.map((prompt: any) => (
+                                                  <PromptCard key={prompt.id || Math.random()} prompt={prompt} />
+                                                ))}
+                                              </div>
+                                            )
+                                          }
                                         }
                                         
                                         return null
                                       })}
                                     </div>
                                   )}
+                                  
+                                  {/* Check email_preview_data for saved caption/prompt data (loaded from database) */}
+                                  {(() => {
+                                    const emailPreviewData = (message as any).email_preview_data
+                                    if (emailPreviewData && typeof emailPreviewData === 'object') {
+                                      // Debug logging (outside JSX)
+                                      if (emailPreviewData.type === 'caption' || emailPreviewData.type === 'prompts') {
+                                        console.log('[Alex] 🔍 Found saved content data:', {
+                                          type: emailPreviewData.type,
+                                          hasCaptionData: !!emailPreviewData.captionData,
+                                          hasPromptData: !!emailPreviewData.promptData,
+                                          promptCount: emailPreviewData.promptData?.prompts?.length || 0
+                                        })
+                                      }
+                                      
+                                      return (
+                                        <div className="mt-4 space-y-4">
+                                          {/* Caption data from saved message */}
+                                          {emailPreviewData.type === 'caption' && emailPreviewData.captionData && (
+                                            <div key={`saved-caption-${message.id}`}>
+                                              <CaptionCard caption={emailPreviewData.captionData} />
+                                            </div>
+                                          )}
+                                          
+                                          {/* Prompt data from saved message */}
+                                          {emailPreviewData.type === 'prompts' && emailPreviewData.promptData?.prompts && (
+                                            <div key={`saved-prompts-${message.id}`} className="space-y-4">
+                                              {emailPreviewData.promptData.prompts.map((prompt: any) => (
+                                                <PromptCard key={prompt.id || Math.random()} prompt={prompt} />
+                                              ))}
+                                            </div>
+                                          )}
+                                        </div>
+                                      )
+                                    }
+                                    return null
+                                  })()}
                                 </>
                               )
                             })()
@@ -2456,18 +2577,6 @@ Please acknowledge you've received the edited HTML and are ready to make further
             </div>
           )}
 
-          {/* Quick Actions - Show when chat is empty or suggested by agent */}
-          {showQuickActions && messages.length === 0 && !toolLoading && (
-            <div className="max-w-4xl mx-auto px-3 sm:px-0">
-              <EmailQuickActions
-                onAction={async (category, prompt) => {
-                  setShowQuickActions(false)
-                  await sendMessage({ text: prompt })
-                }}
-                disabled={isLoading || !!toolLoading}
-              />
-            </div>
-          )}
 
           {/* Segment Selector - Show when agent requests segment selection */}
           {showSegmentSelector && (

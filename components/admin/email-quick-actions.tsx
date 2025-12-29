@@ -48,17 +48,17 @@ export default function EmailQuickActions({ onAction, disabled }: EmailQuickActi
   ]
 
   return (
-    <div className="mb-4 pb-4 border-b border-stone-200">
-      <div className="mb-2">
-        <h3 className="text-xs tracking-[0.2em] uppercase text-stone-900 font-medium">
-          Quick Actions
+    <div>
+      <div className="mb-3">
+        <h3 className="text-xs uppercase tracking-wider text-stone-900 font-semibold mb-1">
+          QUICK ACTIONS
         </h3>
-        <p className="text-[10px] text-stone-600 mt-0.5">
+        <p className="text-xs text-stone-500">
           Start with a common task
         </p>
       </div>
       
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-3">
         {quickActions.map((action) => (
           <button
             key={action.label}

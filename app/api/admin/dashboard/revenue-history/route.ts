@@ -26,23 +26,30 @@ export async function GET() {
         revenueByDate.set(date, currentRevenue + charge.amount)
       })
 
+    // Get actual subscription prices from products config
+    const { PRICING_PRODUCTS } = await import("@/lib/products")
+    
     const subscriptionRevenue = await sql`
       SELECT 
         DATE(created_at) as date,
-        COUNT(*) * 9900 as revenue
+        product_type,
+        COUNT(*) as count
       FROM subscriptions
       WHERE 
         is_test_mode = FALSE
         AND status = 'active'
-        AND product_type = 'sselfie_studio_membership'
+        AND (product_type = 'sselfie_studio_membership' OR product_type = 'brand_studio_membership')
         AND created_at >= NOW() - INTERVAL '30 days'
-      GROUP BY DATE(created_at)
+      GROUP BY DATE(created_at), product_type
     `
-
+    
+    // Calculate revenue using actual product prices
     subscriptionRevenue.forEach((row: any) => {
+      const product = PRICING_PRODUCTS.find((p) => p.type === row.product_type)
+      const priceCents = product?.priceInCents || 0
       const date = row.date
       const currentRevenue = revenueByDate.get(date) || 0
-      revenueByDate.set(date, currentRevenue + Number(row.revenue))
+      revenueByDate.set(date, currentRevenue + (Number(row.count) * priceCents))
     })
 
     const formattedHistory = Array.from(revenueByDate.entries())

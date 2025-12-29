@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { AdminNav } from './admin-nav'
+import { AlexSuggestionCard, AlexSuggestion } from './alex-suggestion-card'
 
 interface DashboardStats {
   totalUsers: number
@@ -24,12 +25,69 @@ interface MissionControlTask {
 export function AdminDashboard({ userId, userName }: { userId: string; userName: string }) {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [todaysPriorities, setTodaysPriorities] = useState<MissionControlTask[]>([])
+  const [suggestions, setSuggestions] = useState<AlexSuggestion[]>([])
   const [loading, setLoading] = useState(true)
   
   useEffect(() => {
     fetchDashboardData()
     fetchTodaysPriorities()
+    fetchSuggestions()
   }, [])
+  
+  const fetchSuggestions = async () => {
+    try {
+      const response = await fetch('/api/admin/alex/suggestions')
+      if (response.ok) {
+        const data = await response.json()
+        setSuggestions(data.suggestions || [])
+      }
+    } catch (error) {
+      console.error('Error fetching suggestions:', error)
+    }
+  }
+  
+  const handleDismissSuggestion = async (suggestionId: number) => {
+    try {
+      const response = await fetch('/api/admin/alex/suggestions/dismiss', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ suggestionId })
+      })
+      
+      if (response.ok) {
+        setSuggestions(prev => prev.filter(s => s.id !== suggestionId))
+      }
+    } catch (error) {
+      console.error('Error dismissing suggestion:', error)
+      throw error
+    }
+  }
+
+  const handleActUponSuggestion = async (suggestionId: number) => {
+    try {
+      const response = await fetch('/api/admin/alex/suggestions/act-upon', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ suggestionId })
+      })
+      
+      if (response.ok) {
+        setSuggestions(prev => prev.filter(s => s.id !== suggestionId))
+      }
+    } catch (error) {
+      console.error('Error marking suggestion acted upon:', error)
+      throw error
+    }
+  }
+
+  const handleSuggestionAction = (suggestion: AlexSuggestion) => {
+    // Navigate to Alex chat with the action as context
+    if (suggestion.action) {
+      window.location.href = `/admin/alex?action=${encodeURIComponent(suggestion.action)}`
+    } else {
+      window.location.href = '/admin/alex'
+    }
+  }
   
   const fetchDashboardData = async () => {
     try {
@@ -152,6 +210,26 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
               <p className="text-[10px] sm:text-xs text-stone-500">
                 No high priority tasks today
               </p>
+            </div>
+          )}
+
+          {/* Proactive Email Suggestions */}
+          {suggestions.length > 0 && (
+            <div className="mt-8 sm:mt-12 mb-8 sm:mb-12">
+              <h2 className="text-lg sm:text-xl font-['Times_New_Roman'] text-stone-950 mb-4 sm:mb-6 tracking-[0.1em] uppercase">
+                Email Opportunities
+              </h2>
+              <div className="space-y-4">
+                {suggestions.map((suggestion) => (
+                  <AlexSuggestionCard
+                    key={suggestion.id}
+                    suggestion={suggestion}
+                    onDismiss={handleDismissSuggestion}
+                    onActUpon={handleActUponSuggestion}
+                    onActionClick={handleSuggestionAction}
+                  />
+                ))}
+              </div>
             </div>
           )}
           
