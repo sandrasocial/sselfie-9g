@@ -342,7 +342,7 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
             </Link>
             
             {/* Maya Studio */}
-            <Link href="/studio" className="group">
+            <Link href="/admin/maya-studio" className="group">
               <div className="relative overflow-hidden aspect-[4/5] bg-stone-200 rounded-none">
                 <img
                   src="/minimalist-phone-with-instagram-aesthetic-white-ba.jpg"
