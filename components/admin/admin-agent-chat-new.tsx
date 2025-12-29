@@ -330,6 +330,26 @@ export default function AdminAgentChatNew({
       setLoadingLibrary(false)
     }
   }
+
+  // Fetch library data when activeTab changes
+  useEffect(() => {
+    if (activeTab === 'email-drafts') {
+      // Email library handles its own fetching
+    } else if (activeTab === 'captions') {
+      fetchCaptions()
+    } else if (activeTab === 'calendars') {
+      fetchCalendars()
+    } else if (activeTab === 'prompts') {
+      fetchPrompts()
+    }
+  }, [activeTab])
+
+  // Also fetch on initial mount to populate counts in tab badges
+  useEffect(() => {
+    fetchCaptions()
+    fetchCalendars()
+    fetchPrompts()
+  }, [])
   
   // Gallery state
   interface GalleryImage {
@@ -512,6 +532,21 @@ export default function AdminAgentChatNew({
         hasSequenceData: !!toolResult.result?.emails,
         resultKeys: toolResult.result ? Object.keys(toolResult.result) : []
       })
+
+      // Auto-refresh libraries when relevant tools complete
+      if (toolResult.toolName === 'create_instagram_caption') {
+        // Refresh captions library if on captions tab, or always update count
+        fetchCaptions()
+      } else if (toolResult.toolName === 'create_content_calendar') {
+        // Refresh calendars library
+        fetchCalendars()
+      } else if (toolResult.toolName === 'suggest_maya_prompts') {
+        // Refresh prompts library
+        fetchPrompts()
+      } else if (toolResult.toolName === 'compose_email_draft') {
+        // Email library handles its own refresh, but we could trigger it here if needed
+        // The EmailDraftsLibrary component has its own refresh mechanism
+      }
       
       // Update streaming message with tool result for immediate card rendering
       setStreamingMessage((prev: any) => {
@@ -555,6 +590,21 @@ export default function AdminAgentChatNew({
       // Clear loading state
       setExecutingTool(null)
       setToolLoading(null)
+      
+      // Auto-refresh libraries when relevant tools complete
+      if (toolResult.toolName === 'create_instagram_caption') {
+        // Refresh captions library to show new caption
+        fetchCaptions()
+      } else if (toolResult.toolName === 'create_content_calendar') {
+        // Refresh calendars library to show new calendar
+        fetchCalendars()
+      } else if (toolResult.toolName === 'suggest_maya_prompts') {
+        // Refresh prompts library to show new prompts
+        fetchPrompts()
+      } else if (toolResult.toolName === 'compose_email_draft') {
+        // Email library handles its own refresh via its component
+        // The EmailDraftsLibrary component has its own refresh mechanism
+      }
       
       // Force immediate re-render by updating toolResultsVersion
       // This ensures cards appear as soon as tool results arrive

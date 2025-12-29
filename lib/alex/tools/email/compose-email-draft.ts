@@ -5,6 +5,7 @@
 
 import type { Tool, ToolResult, EmailPreview } from '../../types'
 import { sql } from '../../shared/dependencies'
+import { ALEX_CONSTANTS } from '../../constants'
 
 interface ComposeEmailDraftInput {
   purpose: string
@@ -78,36 +79,48 @@ export const composeEmailDraftTool: Tool<ComposeEmailDraftInput, EmailPreview> =
 
       // Save to database - BUT CHECK FOR DUPLICATES FIRST
       try {
+        // Strip HTML for plain text version
+        const bodyText = content.replace(/<[^>]*>/g, '').trim()
+        
         const existingDraft = await sql`
-          SELECT id FROM admin_email_campaigns
+          SELECT id FROM admin_email_drafts
           WHERE subject_line = ${subject}
-            AND email_content = ${content}
+            AND body_html = ${content}
             AND created_at > NOW() - INTERVAL '5 minutes'
+            AND is_current_version = true
           LIMIT 1
         `
         
         if (existingDraft.length === 0) {
           // Only save if no duplicate found in last 5 minutes
           await sql`
-            INSERT INTO admin_email_campaigns (
-              campaign_name,
-              campaign_type,
+            INSERT INTO admin_email_drafts (
+              draft_name,
               subject_line,
-              email_content,
+              preview_text,
+              body_html,
+              body_text,
+              email_type,
+              target_segment,
               status,
-              created_at,
-              updated_at
+              version_number,
+              is_current_version,
+              created_by
             ) VALUES (
               ${purpose},
-              'newsletter',
               ${subject},
+              ${previewText},
               ${content},
+              ${bodyText},
+              'newsletter',
+              ${to_description},
               'draft',
-              NOW(),
-              NOW()
+              1,
+              true,
+              ${ALEX_CONSTANTS.ADMIN_EMAIL}
             )
           `
-          console.log('[Alex] ✅ Email draft saved to database')
+          console.log('[Alex] ✅ Email draft saved to admin_email_drafts')
         } else {
           console.log('[Alex] ⚠️ Duplicate email draft detected (within 5 minutes), skipping save')
         }
