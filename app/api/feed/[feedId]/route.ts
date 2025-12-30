@@ -51,7 +51,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ feed
         WHERE user_id = ${user.id}
         ORDER BY created_at DESC
         LIMIT 1
-      `
+      ` as any[]
 
       if (feedLayouts.length === 0) {
         return Response.json({ exists: false })
@@ -70,13 +70,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ feed
         SELECT * FROM instagram_bios
         WHERE feed_layout_id = ${feedLayout.id}
         LIMIT 1
-      `
+      ` as any[]
 
       const highlights = await sql`
         SELECT * FROM instagram_highlights
         WHERE feed_layout_id = ${feedLayout.id}
         ORDER BY created_at ASC
-      `
+      ` as any[]
 
       return Response.json({
         exists: true,
@@ -102,7 +102,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ feed
       WHERE id = ${feedIdInt}
       AND user_id = ${user.id}
       LIMIT 1
-    `
+    ` as any[]
 
     console.log("[v0] [FEED API] Feed layouts found:", feedLayouts.length)
 
@@ -119,7 +119,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ feed
       SELECT * FROM feed_posts
       WHERE feed_layout_id = ${feedIdInt}
       ORDER BY position ASC
-    `
+    ` as any[]
 
     console.log("[v0] [FEED API] Feed posts found:", feedPosts.length)
 
@@ -127,13 +127,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ feed
       SELECT * FROM instagram_bios
       WHERE feed_layout_id = ${feedIdInt}
       LIMIT 1
-    `
+    ` as any[]
 
     const highlights = await sql`
       SELECT * FROM instagram_highlights
       WHERE feed_layout_id = ${feedIdInt}
       ORDER BY created_at ASC
-    `
+    ` as any[]
 
     const response = {
       feed: {
@@ -176,7 +176,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { feedId: st
       SELECT id FROM instagram_bios
       WHERE feed_layout_id = ${feedId}
       LIMIT 1
-    `
+    ` as any[]
 
     if (existingBios.length > 0) {
       await sql`

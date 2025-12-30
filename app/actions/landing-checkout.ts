@@ -259,6 +259,10 @@ export async function getUserByStripeSession(sessionId: string) {
 
     const email = session.customer_details?.email || session.customer_email
 
+    if (!email) {
+      return null
+    }
+
     emailCache.set(sessionId, { email, timestamp: Date.now() })
 
     return getUserByEmail(email)

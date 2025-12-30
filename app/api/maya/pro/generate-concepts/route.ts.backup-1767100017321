@@ -1,0 +1,713 @@
+import { NextResponse } from "next/server"
+import type { NextRequest } from "next/server"
+import { getAuthenticatedUser } from "@/lib/auth-helper"
+import { getEffectiveNeonUser } from "@/lib/simple-impersonation"
+import { checkCredits } from "@/lib/credits"
+import { generateText } from "ai"
+import {
+  detectCategory,
+  type ImageLibrary,
+  type CategoryInfo,
+} from "@/lib/maya/pro/category-system"
+import { getCategoryByKey } from "@/lib/maya/pro/category-system"
+import { getMayaPersonality } from "@/lib/maya/personality-enhanced"
+import {
+  mergeGuidePromptWithImages,
+  extractPromptElements,
+  createVariationFromGuidePrompt,
+  type ReferenceImages,
+} from "@/lib/maya/prompt-builders/guide-prompt-handler"
+
+export const maxDuration = 120 // Increased to 2 minutes to handle slow AI responses
+
+/**
+ * Consistency Mode for Concept Generation
+ * - variety: Each concept has different outfit/location/scene (default)
+ * - consistent: All concepts use same outfit/location/lighting, only vary poses/angles
+ */
+type ConsistencyMode = 'variety' | 'consistent'
+
+/**
+ * Link images to concept based on category and concept type
+ * 🔴 ENHANCED: Intelligent image linking with smart multi-image selection
+ * Uses concept analysis to link 3-5 relevant images per concept
+ */
+function linkImagesToConcept(
+  concept: { title?: string | null; description?: string | null; brandReferences?: string[] | null; aesthetic?: string | null },
+  imageLibrary: ImageLibrary,
+  category: string | null
+): string[] {
+  const linkedImages: string[] = []
+  // Safe null/undefined handling
+  // Handle null category gracefully - link images based on concept content, not category
+  const categoryLower = (category && typeof category === 'string') ? category.toLowerCase() : ''
+  const titleLower = (concept.title && typeof concept.title === 'string') ? concept.title.toLowerCase() : ''
+  const descLower = (concept.description && typeof concept.description === 'string') ? concept.description.toLowerCase() : ''
+  const aestheticLower = (concept.aesthetic && typeof concept.aesthetic === 'string') ? concept.aesthetic.toLowerCase() : ''
+  
+  // Combine all text for keyword analysis
+  const combinedText = `${titleLower} ${descLower} ${aestheticLower}`.toLowerCase()
+
+  // ============================================
+  // STEP 1: ALWAYS INCLUDE SELFIES (Required)
+  // ============================================
+  // Prioritize selfies for character consistency - use up to 4 selfies when available
+  // This improves character consistency for Nano Banana Pro generation
+  if (imageLibrary.selfies.length > 0) {
+    // Always include at least one selfie (required for identity preservation)
+    linkedImages.push(imageLibrary.selfies[0])
+    
+    // Use multiple selfies when available (up to 4 for better character consistency)
+    // This is especially important for Nano Banana Pro which benefits from multiple reference images
+    const maxSelfies = Math.min(imageLibrary.selfies.length, 4)
+    for (let i = 1; i < maxSelfies; i++) {
+      if (!linkedImages.includes(imageLibrary.selfies[i])) {
+        linkedImages.push(imageLibrary.selfies[i])
+      }
+    }
+  }
+
+  // ============================================
+  // STEP 2: INTELLIGENT PRODUCT LINKING
+  // ============================================
+  const hasBrandReferences = concept.brandReferences && concept.brandReferences.length > 0
+  const productKeywords = [
+    'product', 'brand', 'partnership', 'collaboration', 'sponsored',
+    'skincare', 'makeup', 'beauty product', 'wellness product',
+    'fashion', 'outfit', 'clothing', 'accessories', 'jewelry',
+    'bag', 'shoes', 'sunglasses', 'watch', 'perfume'
+  ]
+  
+  const mentionsProducts = productKeywords.some(keyword => 
+    combinedText.includes(keyword)
+  ) || hasBrandReferences || 
+    categoryLower === 'beauty' ||
+    categoryLower === 'wellness' ||
+    categoryLower === 'fashion' ||
+    categoryLower === 'luxury'
+
+  if (mentionsProducts && imageLibrary.products.length > 0) {
+    // Determine how many products to link based on concept focus
+    let productCount = 1
+    if (categoryLower === 'beauty' || titleLower.includes('product') || descLower.includes('product')) {
+      productCount = 2 // Beauty/product-focused: link 2 products
+    } else if (hasBrandReferences && concept.brandReferences!.length > 1) {
+      productCount = 2 // Multiple brands: link 2 products
+    }
+    
+    // Link products
+    imageLibrary.products.slice(0, productCount).forEach(product => {
+      if (!linkedImages.includes(product) && linkedImages.length < 5) {
+        linkedImages.push(product)
+      }
+    })
+  }
+
+  // ============================================
+  // STEP 3: INTELLIGENT PEOPLE/LIFESTYLE LINKING
+  // ============================================
+  const lifestyleKeywords = [
+    'lifestyle', 'portrait', 'moment', 'group', 'people', 'friends',
+    'together', 'social', 'community', 'gathering', 'event',
+    'party', 'celebration', 'dinner', 'brunch', 'coffee', 'cafe'
+  ]
+  
+  const isLifestyle = lifestyleKeywords.some(keyword => 
+    combinedText.includes(keyword)
+  ) || categoryLower === 'lifestyle' ||
+    categoryLower === 'travel' ||
+    categoryLower === 'casual-lifestyle'
+
+  if (isLifestyle && imageLibrary.people.length > 0) {
+    // Link 1-2 people images for lifestyle concepts
+    const peopleCount = (descLower.includes('group') || descLower.includes('friends') || descLower.includes('together')) ? 2 : 1
+    imageLibrary.people.slice(0, peopleCount).forEach(person => {
+      if (!linkedImages.includes(person) && linkedImages.length < 5) {
+        linkedImages.push(person)
+      }
+    })
+  }
+
+  // ============================================
+  // STEP 4: INTELLIGENT VIBE/AESTHETIC LINKING
+  // ============================================
+  const vibeKeywords = [
+    'aesthetic', 'mood', 'inspiration', 'style', 'vibe', 'curated',
+    'editorial', 'dreamy', 'minimal', 'luxury', 'feminine', 'soft',
+    'pinterest', 'instagram', 'aspirational', 'inspo', 'mood board',
+    'visual', 'atmosphere', 'ambiance', 'feeling', 'energy'
+  ]
+  
+  const hasVibeKeywords = vibeKeywords.some(keyword => 
+    combinedText.includes(keyword)
+  )
+  
+  const isAestheticFocused = hasVibeKeywords ||
+    categoryLower === 'fashion' ||
+    categoryLower === 'luxury' ||
+    titleLower.includes('aesthetic') ||
+    titleLower.includes('mood') ||
+    titleLower.includes('style') ||
+    descLower.includes('aesthetic') ||
+    descLower.includes('mood') ||
+    descLower.includes('vibe')
+
+  if (isAestheticFocused && imageLibrary.vibes.length > 0) {
+    // Link 1-2 vibe images for aesthetic-focused concepts
+    const vibeCount = (hasVibeKeywords && imageLibrary.vibes.length > 1) ? 2 : 1
+    imageLibrary.vibes.slice(0, vibeCount).forEach(vibe => {
+      if (!linkedImages.includes(vibe) && linkedImages.length < 5) {
+        linkedImages.push(vibe)
+      }
+    })
+  }
+
+  // ============================================
+  // STEP 5: CATEGORY-SPECIFIC ENHANCEMENTS
+  // ============================================
+  if (categoryLower === 'wellness' || categoryLower === 'alo-workout') {
+    // Wellness/workout: ensure products are linked (for workout gear, supplements, etc.)
+    if (imageLibrary.products.length > 0 && !linkedImages.includes(imageLibrary.products[0]) && linkedImages.length < 5) {
+      linkedImages.push(imageLibrary.products[0])
+    }
+    // Add vibe for wellness aesthetic
+    if (imageLibrary.vibes.length > 0 && !linkedImages.includes(imageLibrary.vibes[0]) && linkedImages.length < 5) {
+      linkedImages.push(imageLibrary.vibes[0])
+    }
+  } else if (categoryLower === 'luxury' || categoryLower === 'luxury-fashion') {
+    // Luxury: prioritize products and vibes
+    if (imageLibrary.products.length > 0 && !linkedImages.includes(imageLibrary.products[0]) && linkedImages.length < 5) {
+      linkedImages.push(imageLibrary.products[0])
+    }
+    if (imageLibrary.vibes.length > 0 && !linkedImages.includes(imageLibrary.vibes[0]) && linkedImages.length < 5) {
+      linkedImages.push(imageLibrary.vibes[0])
+    }
+  } else if (categoryLower === 'travel' || categoryLower === 'travel-airport') {
+    // Travel: prioritize people and vibes
+    if (imageLibrary.people.length > 0 && !linkedImages.includes(imageLibrary.people[0]) && linkedImages.length < 5) {
+      linkedImages.push(imageLibrary.people[0])
+    }
+    if (imageLibrary.vibes.length > 0 && !linkedImages.includes(imageLibrary.vibes[0]) && linkedImages.length < 5) {
+      linkedImages.push(imageLibrary.vibes[0])
+    }
+  } else if (categoryLower === 'beauty') {
+    // Beauty: prioritize products and additional selfies
+    if (imageLibrary.products.length > 0 && !linkedImages.includes(imageLibrary.products[0]) && linkedImages.length < 5) {
+      linkedImages.push(imageLibrary.products[0])
+    }
+    // Add second product if available
+    if (imageLibrary.products.length > 1 && !linkedImages.includes(imageLibrary.products[1]) && linkedImages.length < 5) {
+      linkedImages.push(imageLibrary.products[1])
+    }
+  } else if (categoryLower === 'lifestyle' || categoryLower === 'casual-lifestyle') {
+    // Lifestyle: add people and vibes if not already linked
+    if (imageLibrary.people.length > 0 && !linkedImages.includes(imageLibrary.people[0]) && linkedImages.length < 5) {
+      linkedImages.push(imageLibrary.people[0])
+    }
+    if (imageLibrary.vibes.length > 0 && !linkedImages.includes(imageLibrary.vibes[0]) && linkedImages.length < 5) {
+      linkedImages.push(imageLibrary.vibes[0])
+    }
+  }
+
+  // ============================================
+  // STEP 6: FILL REMAINING SLOTS (up to 5 images total)
+  // ============================================
+  // Add more selfies if available (better character consistency), then other types
+  // Prioritize: more selfies > products > people > vibes
+  if (linkedImages.length < 5) {
+    // Add remaining selfies if we haven't used all available ones
+    const usedSelfies = linkedImages.filter(img => imageLibrary.selfies.includes(img))
+    if (imageLibrary.selfies.length > usedSelfies.length) {
+      const remainingSelfies = imageLibrary.selfies.filter(selfie => !usedSelfies.includes(selfie))
+      for (const selfie of remainingSelfies) {
+        if (linkedImages.length >= 5) break
+        linkedImages.push(selfie)
+      }
+    }
+    
+    // Then add other image types if slots remain
+    const availableTypes = [
+      { type: 'products', images: imageLibrary.products },
+      { type: 'people', images: imageLibrary.people },
+      { type: 'vibes', images: imageLibrary.vibes },
+    ]
+    
+    for (const { images } of availableTypes) {
+      if (linkedImages.length >= 5) break
+      
+      for (const image of images) {
+        if (!linkedImages.includes(image) && linkedImages.length < 5) {
+          linkedImages.push(image)
+          if (linkedImages.length >= 5) break
+        }
+      }
+    }
+  }
+
+  // Remove duplicates and limit to max 5 images per concept
+  const uniqueImages = [...new Set(linkedImages)]
+  return uniqueImages.slice(0, 5)
+}
+
+
+/**
+ * Pro Mode Generate Concepts API Route
+ * 
+ * Generates concepts for Studio Pro Mode using:
+ * - Category detection
+ * - Universal Prompts
+ * - Prompt builder for full prompts
+ * - Image linking logic
+ */
+export async function POST(req: NextRequest) {
+
+  try {
+    // Wrap entire function in try-catch to catch any null reference errors
+    // Authenticate user
+    const { user: authUser, error: authError } = await getAuthenticatedUser()
+
+    if (authError || !authUser) {
+      console.error("[v0] [PRO MODE] Authentication failed:", authError?.message || "No user")
+      return NextResponse.json({ error: authError?.message || "Unauthorized" }, { status: 401 })
+    }
+
+    const userId = authUser.id
+    const user = await getEffectiveNeonUser(userId)
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 })
+    }
+
+    const dbUserId = user.id
+
+
+    // Check credits (1 credit per concept generation)
+    const hasCredits = await checkCredits(dbUserId, 1)
+    if (!hasCredits) {
+      return NextResponse.json({ error: "Insufficient credits" }, { status: 402 })
+    }
+
+    // Parse request body
+    const body = await req.json()
+    const { userRequest, imageLibrary, category, essenceWords, concepts, consistencyMode = 'variety' } = body
+
+    if (!userRequest || typeof userRequest !== "string") {
+      return NextResponse.json({ error: "userRequest is required" }, { status: 400 })
+    }
+
+    if (!imageLibrary) {
+      return NextResponse.json({ error: "imageLibrary is required" }, { status: 400 })
+    }
+
+    // Safe null handling for imageLibrary - ensure all fields are arrays/strings
+    const library: ImageLibrary = {
+      selfies: (Array.isArray(imageLibrary.selfies)) ? imageLibrary.selfies : [],
+      products: (Array.isArray(imageLibrary.products)) ? imageLibrary.products : [],
+      people: (Array.isArray(imageLibrary.people)) ? imageLibrary.people : [],
+      vibes: (Array.isArray(imageLibrary.vibes)) ? imageLibrary.vibes : [],
+      intent: (imageLibrary.intent && typeof imageLibrary.intent === 'string') ? imageLibrary.intent : "",
+    }
+
+    // Validate that selfies are available (required)
+    if (library.selfies.length === 0) {
+      return NextResponse.json(
+        { error: "At least one selfie is required to generate concepts" },
+        { status: 400 }
+      )
+    }
+
+    // 🔴 FIX: Category detection is now OPTIONAL - just as hints for Maya
+    // Maya will determine categories dynamically using her personality and expertise
+    let categoryKey: string | null = (category && typeof category === 'string') ? category : null
+    let categoryInfo: CategoryInfo | null = null
+    
+    // Try to detect category as a HINT (not required)
+    if (!categoryKey) {
+      categoryInfo = detectCategory(userRequest, library)
+      if (categoryInfo && categoryInfo.key && typeof categoryInfo.key === 'string') {
+        categoryKey = categoryInfo.key
+      } else {
+        categoryKey = null
+        categoryInfo = null
+      }
+    } else {
+      // Category was provided - get category info (ensure categoryKey is string)
+      if (typeof categoryKey === 'string') {
+        categoryInfo = getCategoryByKey(categoryKey)
+        if (!categoryInfo) {
+          // Fallback: try to detect category from userRequest as hint
+          categoryInfo = detectCategory(userRequest, library)
+          if (categoryInfo && categoryInfo.key && typeof categoryInfo.key === 'string') {
+            categoryKey = categoryInfo.key
+          } else {
+            categoryKey = null
+            categoryInfo = null
+          }
+        }
+      } else {
+        // categoryKey is not a string - reset to null
+        categoryKey = null
+        categoryInfo = null
+      }
+    }
+
+    // Now log with categoryInfo safely initialized
+
+    // Declare generatedConcepts outside try block so it's accessible later
+    let generatedConcepts: any[] = []
+
+    // Get Maya's personality for Pro Mode
+    const mayaPersonality = getMayaPersonality()
+
+    // Category context is OPTIONAL - just a hint, not a requirement
+    const categoryHint = categoryInfo && categoryInfo.name && categoryInfo.description
+      ? `\n**Optional Category Hint:** ${categoryInfo.name} - ${categoryInfo.description}${(categoryInfo.brands && Array.isArray(categoryInfo.brands) && categoryInfo.brands.length > 0) ? `\nRelevant brands: ${categoryInfo.brands.join(", ")}` : ""}\n(Use this as inspiration, but determine the best category based on the user's request)`
+      : ""
+
+    const libraryContext = `
+**Image Library:**
+- Selfies: ${library.selfies.length}
+- Products: ${library.products.length}
+- People: ${library.people.length}
+- Vibes: ${library.vibes.length}
+- Intent: ${library.intent || "Not specified"}
+`
+
+    const aiPrompt = `${mayaPersonality}
+
+Generate 6 unique, creative concept cards based on the user's request. Use your fashion expertise and editorial knowledge to create diverse, sophisticated concepts.
+
+**🔴🔴🔴 CRITICAL: USER'S REQUEST IS YOUR PRIMARY GUIDE**
+**USER'S REQUEST:**
+${userRequest}
+
+**YOUR RESPONSIBILITY:**
+The user has explicitly requested: "${userRequest}"
+- Your concept titles, descriptions, and all details MUST reflect this request
+- If the user asks for "Christmas", create Christmas-themed concepts (holiday outfits, festive settings, cozy holiday moments)
+- If the user asks for "beach", create beach-themed concepts (coastal outfits, ocean settings, beach vibes)
+- Do NOT use generic defaults that ignore the user's request
+- Every concept should clearly show you understood and are delivering on their specific request
+
+${categoryHint}
+
+${libraryContext}
+
+**ESSENCE WORDS:** ${essenceWords || "None provided"}
+
+**CONSISTENCY GUIDANCE:**
+${consistencyMode === 'consistent'
+  ? `The user wants CONSISTENT concepts for video editing:
+- Use the SAME outfit across all 6 concepts (same brands, colors, style)
+- Use the SAME location/setting
+- Use the SAME lighting and mood
+- ONLY vary: poses, angles, expressions, camera framing
+- Think: "one photoshoot, different shots"
+Example: If you choose a cream cashmere sweater in concept 1, use that EXACT sweater in all 6 concepts`
+  : `The user wants VARIETY across concepts:
+- Create DIFFERENT outfits for each concept (different styles, brands, colors)
+- Create DIFFERENT locations and settings
+- Vary poses, angles, lighting, and moods
+- Think: "diverse portfolio of looks"
+Example: Concept 1 might be Alo athleisure at yoga studio, concept 2 might be The Row luxury at rooftop, etc.`}
+
+**YOUR TASK:**
+Create 6 diverse, creative concepts. Each concept must be:
+- Unique and different from the others
+- **DIRECTLY based on the user's actual request** - if they said "Christmas", make it Christmas-themed
+- Professional and editorial quality matching SSELFIE's aesthetic
+- Specific to their request (e.g., if they said "Christmas", use holiday outfits, festive settings, cozy holiday moments - NOT generic street style)
+- Use your fashion expertise to determine the most appropriate category for each concept
+
+**SELFIE CONCEPTS (When Appropriate):**
+SSELFIE Studio celebrates authentic selfie content. Consider including selfie concepts when they naturally fit the user's request:
+- If user requests selfies, create selfie concepts with iPhone front camera framing
+- For wellness/fitness: post-workout selfies, gym mirror selfies
+- For fashion: mirror selfies showcasing outfits, fitting room selfies
+- For beauty: skincare routine mirror selfies, makeup application selfies
+- For lifestyle: coffee shop selfies, morning routine mirror selfies
+- Mix professional shots with authentic selfie moments for variety when appropriate
+- If user prefers professional/editorial only, focus on DSLR/editorial concepts
+
+When creating selfie concepts, describe them naturally: "iPhone front camera selfie", "mirror selfie reflection", "handheld selfie", etc. Maintain same quality and luxury as professional concepts.
+
+
+**🔴 CRITICAL: DESCRIPTION REQUIREMENTS**
+Your "description" field MUST include:
+- Specific outfit details (e.g., "wearing cozy holiday pajamas" or "elegant holiday evening wear")
+- Specific setting details (e.g., "cozy living room with Christmas tree" or "festive holiday market")
+- Specific mood/atmosphere (e.g., "warm festive atmosphere" or "magical holiday ambiance")
+- Do NOT use generic descriptions - be specific and match the user's request
+
+**🔴🔴🔴 CRITICAL INSTRUCTION FOR DESCRIPTIONS:**
+Your description field must be EXACTLY what will appear in the final prompt. The description you write will be used directly to build the image generation prompt, so it must include:
+
+1. SPECIFIC OUTFIT DETAILS: Not "cozy outfit" but "cream cashmere sweater, high-waisted denim, Bottega Veneta leather bag"
+2. SPECIFIC SETTING DETAILS: Not "cozy setting" but "living room with marble fireplace, Christmas tree with warm lights"
+3. SPECIFIC POSE DETAILS: Not "relaxed pose" but "sitting on sofa, holding warm mug, looking at Christmas tree"
+4. BRAND NAMES: Include 1-2 accessible brands + max 1 luxury brand woven naturally into descriptions
+5. MOOD & LIGHTING: Specific lighting conditions and mood descriptors
+
+The description must be detailed enough that a prompt builder can use it verbatim without adding generic defaults.
+
+Example of GOOD description:
+"Cozy Christmas morning moment: sitting comfortably on cream sofa in elegant living room, wearing Jenni Kayne cashmere sweater in warm cream, Levi's high-waisted denim, holding ceramic mug with both hands, looking peacefully at decorated Christmas tree with twinkling lights, Bottega Veneta crossbody bag resting beside her. Soft morning light streaming through windows, warm fireplace glow, festive holiday atmosphere, quiet luxury aesthetic."
+
+Example of BAD description (too generic):
+"Cozy Christmas morning in living room wearing festive outfit."
+
+Remember: Your description IS the prompt. Make it detailed, specific, and complete.
+
+**EXAMPLE for Christmas request:**
+- Title: "Christmas Morning Cozy"
+- Description: "Cozy holiday morning moment, wearing soft cashmere sweater in festive colors, sitting by decorated Christmas tree with warm fireplace, holding warm mug, peaceful and joyful holiday atmosphere, soft morning light through windows, twinkling Christmas tree lights in background"
+- Category: "Lifestyle" or "Seasonal" (not generic "Fashion")
+
+**EXAMPLE for beach request:**
+- Title: "Coastal Beach Moment"
+- Description: "Beach setting, wearing flowy resort wear or swimwear, ocean views, soft coastal light, beach atmosphere, natural textures"
+- Category: "Travel" or "Lifestyle" (not generic "Fashion")
+
+**CATEGORY DETERMINATION:**
+You have full creative freedom to determine categories based on:
+- **The user's request and intent (PRIMARY)** - if they say "Christmas", the category should reflect holiday/seasonal themes
+- Your fashion expertise and knowledge of current trends
+- The aesthetic and style of each concept
+- Available categories: Wellness, Luxury, Lifestyle, Fashion, Travel, Beauty, or create new categories that fit
+
+Do NOT default to "Lifestyle" unless it truly fits. Use your expertise to determine the best category for each concept.
+
+Return ONLY a valid JSON array of 6 concepts:
+[
+  {
+    "title": "string - unique concept title that reflects the user's request (e.g., if user said 'Christmas', use 'Christmas Morning Cozy' or 'Holiday Fireplace Reading')",
+    "description": "string - detailed description that MUST include specific outfit details, setting, and mood that match the user's request. If user said 'Christmas', describe Christmas outfits, holiday settings, festive atmosphere. Include outfit details like 'wearing cozy holiday pajamas' or 'elegant holiday evening wear'.",
+    "category": "string - category you determine based on the concept (Wellness, Luxury, Lifestyle, Fashion, Travel, Beauty, or your own). If user said 'Christmas', use a category that reflects holiday/seasonal themes.",
+    "aesthetic": "string - aesthetic description matching SSELFIE's clean, feminine, modern aesthetic AND the user's request",
+    "brandReferences": ["string"] - array of relevant brand names that fit the concept,
+    "stylingDetails": "string - specific styling details that match the user's request",
+    "technicalSpecs": "string - camera/technical specs",
+    "prompt": "COMPLETE STRUCTURED PROMPT for Nano Banana Pro (150-400 words) - see format below"
+  }
+]
+
+**🔴 CRITICAL: PROMPT FIELD REQUIREMENTS**
+
+The "prompt" field must be a COMPLETE, STRUCTURED PROMPT ready for Nano Banana Pro. Generate this directly - do not generate a description that needs transformation.
+
+**DIVERSITY & VARIETY:**
+- Create naturally diverse concepts with varied settings, poses, and moments
+- Avoid repetitive scenarios (no "sitting on couch with mug" in multiple concepts)
+- Mix indoor/outdoor, static/active, cozy/energetic, casual/sophisticated
+- Include variety in:
+  * Settings: home, outdoor, urban, nature, work, social venues
+  * Poses: sitting, standing, walking, working, active, relaxed, social
+  * Moments: daily life, work, travel, wellness, social, creative pursuits
+  * Props: naturally varied (not just mugs/books/phones)
+  * Times: morning, afternoon, evening, golden hour, blue hour
+- Draw from your 2026 luxury influencer knowledge for current, fresh scenarios
+- Trust your creativity - no templates or forced patterns
+
+**AVOID REPETITION:**
+- ❌ Don't create multiple "sitting on sofa" concepts
+- ❌ Don't default to "holding mug/teacup" repeatedly  
+- ❌ Don't use "reading book" in multiple concepts
+- ✅ Create fresh, unique moments for each concept
+- ✅ Show variety in activities and settings
+- ✅ Make each concept feel distinct
+
+**PROMPT FORMAT (Pro Mode - Editorial Quality):**
+
+For concepts 0-2 (Editorial - first 3 concepts):
+Professional photography. Pinterest-style editorial portrait. Character consistency with provided reference images. Match the exact facial features, hair, skin tone, body type, and physical characteristics of the person in the reference images. This is the same person in a different scene. Editorial quality, professional photography aesthetic.
+
+**Outfit:** [Complete outfit with ALL brands, materials, and specific pieces. Example: "Brand-appropriate sophisticated outfit with complete styling details including all pieces, materials, and accessories"]
+
+**Pose:** [Exact action and body position. Example: "Natural pose and action matching the setting and mood of the concept, with specific body language and positioning"]
+
+**Setting:** [ALL specific items and environment details. Example: "Detailed environment description with specific elements that create the desired atmosphere and context"]
+
+**Lighting:** [Exact lighting description. Example: "Specific lighting conditions that match the time of day and mood, with detailed light sources and quality"]
+
+**Camera Composition:** Editorial portrait from mid-thigh upward, frontal camera position, symmetrical centered framing, professional DSLR, Canon EOS R5 or Sony A7R IV, 85mm f/1.4 lens, camera distance 1.5-2m from subject, shallow depth of field (f/2.0-f/2.8).
+
+**Mood:** [Mood words from description. Example: "Mood words that capture the emotional tone and atmosphere of the concept"]
+
+**Aesthetic:** [Aesthetic from description with Pinterest language. Example: "Aesthetic description using Pinterest-style language that captures the visual style and aspirational quality"]
+
+For concepts 3-5 (Authentic iPhone - last 3 concepts):
+Authentic influencer content. Pinterest-style portrait. Character consistency with provided reference images. Match the exact facial features, hair, skin tone, body type, and physical characteristics of the person in the reference images. This is the same person in a different scene. Natural, relatable iPhone aesthetic.
+
+**Outfit:** [Complete outfit with ALL brands and materials. Example: "Complete outfit description with all brands, materials, and styling details appropriate to the concept"]
+
+**Pose:** [Exact action. Example: "Natural pose and action that matches the concept's setting and mood"]
+
+**Setting:** [Environment details. Example: "Detailed environment description with specific elements that create the desired atmosphere"]
+
+**Lighting:** [Lighting description. Example: "Specific lighting conditions that match the time of day and mood of the concept"]
+
+**Camera Composition:** Authentic iPhone 15 Pro portrait mode, 77mm equivalent, natural bokeh effect, shot from 1.5m distance, portrait mode depth creating soft background blur, influencer content aesthetic.
+
+**Mood:** [Mood. Example: "Mood words that capture the emotional tone of the concept"]
+
+**Aesthetic:** [Aesthetic. Example: "Aesthetic description using Pinterest-style language that captures the visual style"]
+
+**SELFIE HANDLING:**
+If the concept is a selfie (description mentions "selfie", "front camera", "mirror selfie"):
+- Use iPhone front camera specifications (not DSLR)
+- Include selfie-specific framing details (arm extended, mirror reflection, etc.)
+- Maintain same quality and luxury as professional concepts
+- Use "iPhone 15 Pro front camera selfie" or "iPhone 15 Pro mirror selfie" in Camera Composition section
+
+**BRAND RULES:**
+- Include specific luxury brands naturally: The Row, Alo Yoga, Toteme, Khaite, Bottega Veneta, Glossier, Lululemon, Jenni Kayne, Brunello Cucinelli, Cartier, Hermès
+- No "MANDATORY" language - natural integration only
+- Brands as inspiration, not forced mentions
+- Copy brands/products EXACTLY (The Row → "The Row", not "luxury brand")
+- No vague language ("elegant sweater" → "The Row cream cashmere turtleneck")
+- Include ALL brands/items mentioned in description
+
+**CRITICAL:**
+- This prompt field should be COMPLETE and ready for Nano Banana Pro - no transformation needed
+- Generate the complete structured prompt directly - do not generate a description that needs to be transformed
+- The prompt must be usable as-is for image generation
+- Every brand in description must appear in prompt
+- No OR statements - if description says ONE item, write ONE item
+- All sentences must be complete (no fragments)
+
+Make each concept unique, sophisticated, and based on the user's request. Use your full fashion expertise - do NOT use generic descriptions.`
+
+    try {
+      const { text } = await generateText({
+        model: "anthropic/claude-sonnet-4-20250514",
+        prompt: aiPrompt,
+        temperature: 0.85,
+      })
+
+      // Parse AI response
+      const jsonMatch = text.match(/\[[\s\S]*\]/)
+      if (!jsonMatch) {
+        console.error("[v0] [PRO MODE] No JSON array found in AI response. Response text:", text.substring(0, 500))
+        throw new Error("No JSON array found in AI response")
+      }
+
+      let aiConcepts: any[]
+      try {
+        aiConcepts = JSON.parse(jsonMatch[0])
+      } catch (parseError: any) {
+        console.error("[v0] [PRO MODE] JSON parse error:", parseError)
+        console.error("[v0] [PRO MODE] JSON string that failed to parse:", jsonMatch[0].substring(0, 500))
+        throw new Error(`Failed to parse AI response as JSON: ${parseError.message}`)
+      }
+      
+      // 🔴 DEBUG: Log what Maya generated
+
+          // Create a mock UniversalPrompt for image linking (using safe values)
+          const mockUniversalPrompt = {
+            id: `concept-${Date.now()}-${index}`,
+            title: safeTitle,
+            description: safeDescription,
+            category: safeCategory,
+            aesthetic: safeAesthetic,
+            brandReferences: safeBrandReferences,
+          }
+
+          // Link images to concept using final category from direct generation
+          const categoryForLinking = (finalCategory && typeof finalCategory === 'string') ? finalCategory : (safeCategory && typeof safeCategory === 'string') ? safeCategory : 'LIFESTYLE'
+          const linkedImages = linkImagesToConcept(mockUniversalPrompt, library, categoryForLinking)
+
+          // Build concept object
+          const concept = {
+            id: `concept-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`,
+            title: safeTitle,
+            description: safeDescription,
+            category: safeCategory,
+            aesthetic: safeAesthetic,
+            linkedImages: linkedImages.length > 0 ? linkedImages : undefined,
+            fullPrompt: fullPrompt,
+            template: undefined,
+            brandReferences: safeBrandReferences,
+            stylingDetails: (aiConcept.stylingDetails && typeof aiConcept.stylingDetails === 'string') ? aiConcept.stylingDetails : undefined,
+            technicalSpecs: (aiConcept.technicalSpecs && typeof aiConcept.technicalSpecs === 'string') ? aiConcept.technicalSpecs : undefined,
+            // For compatibility with ConceptData
+            prompt: fullPrompt,
+            referenceImageUrl: linkedImages[0], // Use first linked image as reference
+          }
+          
+          conceptResults.push(concept)
+        } catch (conceptError: any) {
+          console.error(`[v0] [PRO MODE] Error building concept ${index + 1}:`, conceptError)
+          // Skip this concept but continue with others
+        }
+      }
+      
+      generatedConcepts = conceptResults
+      
+      
+      // Merge provided concepts with generated ones
+      const enhancedConcepts = concepts.map((providedConcept: any, index: number) => {
+        const generatedConcept = generatedConcepts[index] || generatedConcepts[0]
+        
+        if (!generatedConcept) {
+          console.error("[v0] [PRO MODE] No generated concept available for index", index)
+          return providedConcept
+        }
+        
+        return {
+          ...providedConcept,
+          // Enhance with generated data
+          fullPrompt: generatedConcept.fullPrompt || providedConcept.prompt,
+          linkedImages: generatedConcept.linkedImages || providedConcept.linkedImages,
+          brandReferences: generatedConcept.brandReferences || providedConcept.brandReferences,
+          stylingDetails: generatedConcept.stylingDetails || providedConcept.stylingDetails,
+          technicalSpecs: generatedConcept.technicalSpecs || providedConcept.technicalSpecs,
+          // Ensure compatibility fields
+          prompt: generatedConcept.fullPrompt || providedConcept.prompt,
+          referenceImageUrl: generatedConcept.linkedImages?.[0] || providedConcept.referenceImageUrl,
+        }
+      })
+
+      // 🔴 FIX: Match Classic Mode response format for consistency
+      // Classic Mode returns: { state: "ready", concepts: [...] }
+      // This ensures rendering and saving code works the same way
+      return NextResponse.json({
+        state: "ready",
+        concepts: enhancedConcepts,
+        category: categoryKey,
+        count: enhancedConcepts.length,
+      })
+    }
+
+    // 🔴 FIX: Match Classic Mode response format for consistency
+    // Classic Mode returns: { state: "ready", concepts: [...] }
+    // This ensures rendering and saving code works the same way
+    return NextResponse.json({
+      state: "ready",
+      concepts: generatedConcepts,
+      category: categoryKey,
+      count: generatedConcepts.length,
+    })
+  } catch (error: any) {
+    console.error("[v0] [PRO MODE] Generate concepts API error:", error)
+    console.error("[v0] [PRO MODE] Error stack:", error.stack)
+    console.error("[v0] [PRO MODE] Error details:", {
+      message: error.message,
+      name: error.name,
+      cause: error.cause,
+    })
+    
+    // Provide more helpful error message
+    const errorMessage = error.message || "Internal server error"
+    const isNullReference = errorMessage.includes("Cannot read properties of null") || errorMessage.includes("toLowerCase")
+    
+    return NextResponse.json(
+      { 
+        error: isNullReference 
+          ? "An internal error occurred while processing your request. Please try again with more specific details."
+          : errorMessage,
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined,
+      },
+      { status: 500 }
+    )
+  }
+}

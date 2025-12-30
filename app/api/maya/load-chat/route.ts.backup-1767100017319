@@ -1,0 +1,51 @@
+import { type NextRequest, NextResponse } from "next/server"
+import { getUserByAuthId } from "@/lib/user-mapping"
+import { getOrCreateActiveChat, getChatMessages, loadChatById } from "@/lib/data/maya"
+import { getAuthenticatedUser } from "@/lib/auth-helper"
+
+export async function GET(request: NextRequest) {
+  try {
+    const { user, error: authError } = await getAuthenticatedUser()
+
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const { getEffectiveNeonUser } = await import("@/lib/simple-impersonation")
+    const neonUser = await getEffectiveNeonUser(user.id)
+    if (!neonUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 })
+    }
+
+    const { searchParams } = new URL(request.url)
+    const requestedChatId = searchParams.get("chatId")
+    const chatType = searchParams.get("chatType") || "maya"
+
+    let chat
+    if (requestedChatId) {
+      chat = await loadChatById(Number.parseInt(requestedChatId), neonUser.id)
+      if (!chat) {
+        return NextResponse.json({ error: "Chat not found" }, { status: 404 })
+      }
+    } else {
+      // This is used on initial page load to show conversation history
+      chat = await getOrCreateActiveChat(neonUser.id, chatType)
+    }
+
+    const messages = await getChatMessages(chat.id)
+
+    const messagesWithConcepts = messages.filter(
+      (msg) => msg.concept_cards && Array.isArray(msg.concept_cards) && msg.concept_cards.length > 0,
+    )
+    if (messagesWithConcepts.length > 0) {
+
+    return NextResponse.json({
+      chatId: chat.id,
+      chatTitle: chat.chat_title,
+      messages: formattedMessages,
+    })
+  } catch (error: any) {
+    console.error("Error loading chat:", error)
+    return NextResponse.json({ error: "Failed to load chat" }, { status: 500 })
+  }
+}

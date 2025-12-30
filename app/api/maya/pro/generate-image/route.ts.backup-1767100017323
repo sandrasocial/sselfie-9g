@@ -1,0 +1,179 @@
+import { NextResponse } from "next/server"
+import type { NextRequest } from "next/server"
+import { getAuthenticatedUser } from "@/lib/auth-helper"
+import { getEffectiveNeonUser } from "@/lib/simple-impersonation"
+import { checkCredits, deductCredits, getUserCredits } from "@/lib/credits"
+import { generateWithNanoBanana, getStudioProCreditCost } from "@/lib/nano-banana-client"
+import { neon } from "@neondatabase/serverless"
+import { put } from "@vercel/blob"
+
+export const maxDuration = 300 // 5 minutes for image generation
+
+const sql = neon(process.env.DATABASE_URL!)
+
+/**
+ * Pro Mode Generate Image API Route
+ * 
+ * Generates images using Nano Banana Pro with full 250-500 word prompts.
+ * Handles credit deduction and saves generated images to database.
+ */
+export async function POST(req: NextRequest) {
+
+  try {
+    // Authenticate user
+    const { user: authUser, error: authError } = await getAuthenticatedUser()
+
+    if (authError || !authUser) {
+      console.error("[v0] [PRO MODE] Authentication failed:", authError?.message || "No user")
+      return NextResponse.json({ error: authError?.message || "Unauthorized" }, { status: 401 })
+    }
+
+    const userId = authUser.id
+    const user = await getEffectiveNeonUser(userId)
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 })
+    }
+
+    const dbUserId = user.id
+
+
+    // Parse request body
+    const body = await req.json()
+    const {
+      fullPrompt, // Full 250-500 word prompt from prompt builder
+      conceptTitle,
+      conceptDescription,
+      category,
+      linkedImages, // Array of image URLs to use as input
+      resolution = "2K", // "1K", "2K", or "4K"
+      aspectRatio = "1:1", // "1:1", "9:16", "16:9", "4:3", "3:4"
+      chatId,
+    } = body
+
+    if (!fullPrompt || typeof fullPrompt !== "string") {
+      return NextResponse.json({ error: "fullPrompt is required" }, { status: 400 })
+    }
+
+
+    // Generate image with Nano Banana Pro
+    const generationResult = await generateWithNanoBanana({
+      prompt: fullPrompt,
+      image_input: imageInput.length > 0 ? imageInput : undefined,
+      aspect_ratio: aspectRatio as any,
+      resolution: resolution as "1K" | "2K" | "4K",
+      output_format: "png",
+      safety_filter_level: "block_only_high",
+    })
+
+      } catch (creditError) {
+        console.error("[v0] [PRO MODE] Error deducting credits:", creditError)
+        // Don't fail the request if credit deduction fails - log it
+      }
+
+      // Save to database
+      let generationId: number | null = null
+      try {
+        // Save to ai_images gallery and get the ID
+        const [insertResult] = await sql`
+          INSERT INTO ai_images (
+            user_id,
+            image_url,
+            prompt,
+            generated_prompt,
+            prediction_id,
+            generation_status,
+            source,
+            category,
+            created_at
+          ) VALUES (
+            ${dbUserId},
+            ${blob.url},
+            ${conceptTitle || conceptDescription || "Pro Mode generation"},
+            ${fullPrompt},
+            ${generationResult.predictionId},
+            'completed',
+            'maya_pro',
+            ${category || "concept"},
+            NOW()
+          )
+          RETURNING id
+        `
+
+        generationId = insertResult.id
+      } catch (dbError) {
+        console.error("[v0] [PRO MODE] Error saving to database:", dbError)
+        // Don't fail the request if database save fails - log it
+      }
+
+      return NextResponse.json({
+        success: true,
+        predictionId: generationResult.predictionId,
+        generationId: generationId,
+        imageUrl: blob.url,
+        status: "succeeded",
+      })
+    }
+
+    // Generation is in progress, create database record for tracking
+    let generationId: number | null = null
+    try {
+      // Save to ai_images gallery and get the ID (for consistency with Classic Mode)
+      const [insertResult] = await sql`
+        INSERT INTO ai_images (
+          user_id,
+          image_url,
+          prompt,
+          generated_prompt,
+          prediction_id,
+          generation_status,
+          source,
+          category,
+          created_at
+        ) VALUES (
+          ${dbUserId},
+          '', -- Empty string for in-progress (will be updated when generation completes)
+          ${conceptTitle || conceptDescription || "Pro Mode generation"},
+          ${fullPrompt},
+          ${generationResult.predictionId},
+          'generating',
+          'maya_pro',
+          ${category || "concept"},
+          NOW()
+        )
+        RETURNING id
+      `
+      generationId = insertResult.id
+    } catch (dbError) {
+      console.error("[v0] [PRO MODE] Error creating generation record:", dbError)
+      // If database insert fails, we still need to return a generationId for polling to work
+      // The check-generation endpoint will create a fallback record if needed
+      // For now, we'll use a temporary ID based on predictionId to ensure polling can start
+      // This is a fallback - ideally the database insert should always succeed
+      console.warn("[v0] [PRO MODE] Database insert failed, but generation can still be tracked via predictionId")
+    }
+
+    // Generation is in progress, return prediction ID and generationId for polling (matches Classic Mode format)
+    // If generationId is null due to DB failure, still return predictionId - the check-generation endpoint can handle it
+    if (!generationId) {
+      console.warn("[v0] [PRO MODE] ⚠️ No generationId available, but returning predictionId for polling. Check-generation endpoint will create fallback record if needed.")
+    }
+    
+    return NextResponse.json({
+      success: true,
+      predictionId: generationResult.predictionId,
+      generationId: generationId, // May be null if DB insert failed, but polling can still work with predictionId
+      status: generationResult.status,
+      message: "Generation in progress. Poll /api/maya/pro/check-generation to check status.",
+    })
+  } catch (error: any) {
+    console.error("[v0] [PRO MODE] Generate image API error:", error)
+    return NextResponse.json(
+      {
+        error: error.message || "Internal server error",
+        details: error instanceof Error ? error.stack : String(error),
+      },
+      { status: 500 }
+    )
+  }
+}

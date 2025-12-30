@@ -1,0 +1,354 @@
+import { type NextRequest, NextResponse } from "next/server"
+import { neon } from "@neondatabase/serverless"
+import { createServerClient } from "@/lib/supabase/server"
+import { getUserByAuthId } from "@/lib/user-mapping"
+
+export async function GET(request: NextRequest) {
+  try {
+    const supabase = await createServerClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const sql = neon(process.env.DATABASE_URL!)
+
+    const { getEffectiveNeonUser } = await import("@/lib/simple-impersonation")
+    const neonUser = await getEffectiveNeonUser(user.id)
+
+    if (!neonUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 })
+    }
+
+    console.log("[v0] Fetching brand profile for user:", neonUser.id)
+
+    // Get personal brand information
+    const personalBrand = await sql`
+      SELECT 
+        upb.*,
+        usp.color_preferences,
+        usp.clothing_preferences,
+        usp.style_categories,
+        usp.settings_preferences,
+        usp.location_vibes,
+        usp.style_icons,
+        usp.brand_references
+      FROM user_personal_brand upb
+      LEFT JOIN user_style_profile usp ON usp.personal_brand_id = upb.id
+      WHERE upb.user_id = ${neonUser.id}
+      ORDER BY upb.created_at DESC
+      LIMIT 1
+    `
+
+    if (personalBrand.length === 0) {
+      return NextResponse.json({
+        exists: false,
+        completed: false,
+      })
+    }
+
+    const brand = personalBrand[0]
+
+    return NextResponse.json({
+      exists: true,
+      completed: brand.is_completed,
+      data: {
+        name: brand.name,
+        businessType: brand.business_type,
+        currentSituation: brand.current_situation,
+        transformationStory: brand.transformation_story,
+        targetAudience: brand.target_audience,
+        brandVoice: brand.brand_voice,
+        languageStyle: brand.language_style,
+        contentThemes: brand.content_themes,
+        brandVibe: brand.brand_vibe,
+        colorMood: brand.color_mood,
+        colorTheme: brand.color_theme,
+        colorPalette: brand.color_palette,
+        futureVision: brand.future_vision,
+        contentGoals: brand.content_goals,
+        photoGoals: brand.photo_goals,
+        stylePreferences: brand.style_preferences,
+        visualAesthetic: brand.visual_aesthetic,
+        settingsPreference: brand.settings_preference,
+        fashionStyle: brand.fashion_style,
+        idealAudience: brand.ideal_audience,
+        audienceChallenge: brand.audience_challenge,
+        audienceTransformation: brand.audience_transformation,
+        communicationVoice: brand.communication_voice,
+        signaturePhrases: brand.signature_phrases,
+        brandInspiration: brand.brand_inspiration,
+        inspirationLinks: brand.inspiration_links,
+        contentPillars: brand.content_pillars,
+        // Style profile fields
+        colorPreferences: brand.color_preferences,
+        clothingPreferences: brand.clothing_preferences,
+        styleCategories: brand.style_categories,
+        settingsPreferences: brand.settings_preferences,
+        locationVibes: brand.location_vibes,
+        styleIcons: brand.style_icons,
+        brandReferences: brand.brand_references,
+      },
+    })
+  } catch (error) {
+    console.error("[v0] Error fetching personal brand:", error)
+    return NextResponse.json({ error: "Failed to fetch personal brand" }, { status: 500 })
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const supabase = await createServerClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const body = await request.json()
+    console.log("[v0] Saving brand profile with data:", {
+      userId: user.id,
+      colorTheme: body.colorTheme,
+      hasCustomColors: !!body.customColors,
+      name: body.name,
+      businessType: body.businessType,
+    })
+
+    const sql = neon(process.env.DATABASE_URL!)
+
+    const { getEffectiveNeonUser } = await import("@/lib/simple-impersonation")
+    const neonUser = await getEffectiveNeonUser(user.id)
+
+    if (!neonUser) {
+      console.error("[v0] User not found for auth ID:", user.id)
+      return NextResponse.json({ error: "User not found" }, { status: 404 })
+    }
+
+    console.log("[v0] Found Neon user:", neonUser.id, neonUser.email)
+
+    const existingBrand = await sql`
+      SELECT id FROM user_personal_brand WHERE user_id = ${neonUser.id}
+    `
+
+    let brandId: number
+
+    if (existingBrand.length > 0) {
+      console.log("[v0] Updating existing brand profile:", existingBrand[0].id)
+      const result = await sql`
+        UPDATE user_personal_brand
+        SET
+          name = ${body.name || ""},
+          business_type = ${body.businessType || ""},
+          current_situation = ${body.currentSituation || ""},
+          transformation_story = ${body.transformationStory || ""},
+          target_audience = ${body.targetAudience || ""},
+          brand_voice = ${body.brandVoice || ""},
+          language_style = ${body.languageStyle || ""},
+          content_themes = ${body.contentThemes || ""},
+          brand_vibe = ${body.brandVibe || ""},
+          color_mood = ${body.colorMood || ""},
+          color_theme = ${body.colorTheme || ""},
+          color_palette = ${body.customColors || null},
+          future_vision = ${body.futureVision || ""},
+          content_goals = ${body.contentGoals || ""},
+          photo_goals = ${body.photoGoals || ""},
+          content_pillars = ${body.contentPillars || null},
+          visual_aesthetic = ${body.visualAesthetic || ""},
+          settings_preference = ${body.settingsPreference || ""},
+          fashion_style = ${body.fashionStyle || ""},
+          ideal_audience = ${body.idealAudience || ""},
+          audience_challenge = ${body.audienceChallenge || ""},
+          audience_transformation = ${body.audienceTransformation || ""},
+          communication_voice = ${body.communicationVoice || ""},
+          signature_phrases = ${body.signaturePhrases || ""},
+          brand_inspiration = ${body.brandInspiration || ""},
+          inspiration_links = ${body.inspirationLinks || ""},
+          is_completed = ${body.isCompleted || false},
+          updated_at = NOW()
+        WHERE user_id = ${neonUser.id}
+        RETURNING id
+      `
+      brandId = result[0].id
+      console.log("[v0] Updated brand profile successfully:", brandId)
+    } else {
+      console.log("[v0] Creating new brand profile for user:", neonUser.id)
+      const result = await sql`
+        INSERT INTO user_personal_brand (
+          user_id,
+          name,
+          business_type,
+          current_situation,
+          transformation_story,
+          target_audience,
+          brand_voice,
+          language_style,
+          content_themes,
+          brand_vibe,
+          color_mood,
+          color_theme,
+          color_palette,
+          future_vision,
+          content_goals,
+          photo_goals,
+          content_pillars,
+          visual_aesthetic,
+          settings_preference,
+          fashion_style,
+          ideal_audience,
+          audience_challenge,
+          audience_transformation,
+          communication_voice,
+          signature_phrases,
+          brand_inspiration,
+          inspiration_links,
+          is_completed,
+          created_at,
+          updated_at
+        ) VALUES (
+          ${neonUser.id},
+          ${body.name || ""},
+          ${body.businessType || ""},
+          ${body.currentSituation || ""},
+          ${body.transformationStory || ""},
+          ${body.targetAudience || ""},
+          ${body.brandVoice || ""},
+          ${body.languageStyle || ""},
+          ${body.contentThemes || ""},
+          ${body.brandVibe || ""},
+          ${body.colorMood || ""},
+          ${body.colorTheme || ""},
+          ${body.customColors || null},
+          ${body.futureVision || ""},
+          ${body.contentGoals || ""},
+          ${body.photoGoals || ""},
+          ${body.contentPillars || null},
+          ${body.visualAesthetic || ""},
+          ${body.settingsPreference || ""},
+          ${body.fashionStyle || ""},
+          ${body.idealAudience || ""},
+          ${body.audienceChallenge || ""},
+          ${body.audienceTransformation || ""},
+          ${body.communicationVoice || ""},
+          ${body.signaturePhrases || ""},
+          ${body.brandInspiration || ""},
+          ${body.inspirationLinks || ""},
+          ${body.isCompleted || false},
+          NOW(),
+          NOW()
+        )
+        RETURNING id
+      `
+      brandId = result[0].id
+      console.log("[v0] Created brand profile successfully:", brandId)
+    }
+
+    // Update style profile if provided
+    if (body.styleProfile) {
+      const existingProfile = await sql`
+        SELECT id FROM user_style_profile WHERE user_id = ${neonUser.id}
+      `
+
+      if (existingProfile.length > 0) {
+        // Update existing profile
+        await sql`
+          UPDATE user_style_profile
+          SET
+            personal_brand_id = ${brandId},
+            color_preferences = ${JSON.stringify(body.styleProfile.colorPreferences || {})},
+            clothing_preferences = ${JSON.stringify(body.styleProfile.clothingPreferences || {})},
+            style_categories = ${JSON.stringify(body.styleProfile.styleCategories || {})},
+            settings_preferences = ${JSON.stringify(body.styleProfile.settingsPreferences || {})},
+            location_vibes = ${JSON.stringify(body.styleProfile.locationVibes || {})},
+            style_icons = ${JSON.stringify(body.styleProfile.styleIcons || {})},
+            brand_references = ${JSON.stringify(body.styleProfile.brandReferences || {})},
+            updated_at = NOW()
+          WHERE user_id = ${neonUser.id}
+        `
+      } else {
+        // Insert new profile
+        await sql`
+          INSERT INTO user_style_profile (
+            user_id,
+            personal_brand_id,
+            color_preferences,
+            clothing_preferences,
+            style_categories,
+            settings_preferences,
+            location_vibes,
+            style_icons,
+            brand_references,
+            created_at,
+            updated_at
+          ) VALUES (
+            ${neonUser.id},
+            ${brandId},
+            ${JSON.stringify(body.styleProfile.colorPreferences || {})},
+            ${JSON.stringify(body.styleProfile.clothingPreferences || {})},
+            ${JSON.stringify(body.styleProfile.styleCategories || {})},
+            ${JSON.stringify(body.styleProfile.settingsPreferences || {})},
+            ${JSON.stringify(body.styleProfile.locationVibes || {})},
+            ${JSON.stringify(body.styleProfile.styleIcons || {})},
+            ${JSON.stringify(body.styleProfile.brandReferences || {})},
+            NOW(),
+            NOW()
+          )
+        `
+      }
+    }
+
+    const existingMemory = await sql`
+      SELECT id FROM maya_personal_memory WHERE user_id = ${neonUser.id}
+    `
+
+    if (existingMemory.length > 0) {
+      // Update existing memory to link to brand
+      await sql`
+        UPDATE maya_personal_memory
+        SET personal_brand_id = ${brandId}, updated_at = NOW()
+        WHERE user_id = ${neonUser.id}
+      `
+    } else {
+      // Create new memory linked to brand
+      await sql`
+        INSERT INTO maya_personal_memory (
+          user_id,
+          personal_brand_id,
+          memory_version,
+          preferred_topics,
+          conversation_style,
+          successful_prompt_patterns,
+          user_feedback_patterns,
+          personal_insights,
+          ongoing_goals,
+          created_at,
+          updated_at,
+          last_memory_update
+        ) VALUES (
+          ${neonUser.id},
+          ${brandId},
+          1,
+          '[]'::jsonb,
+          '{}'::jsonb,
+          '{}'::jsonb,
+          '{}'::jsonb,
+          '{}'::jsonb,
+          '{}'::jsonb,
+          NOW(),
+          NOW(),
+          NOW()
+        )
+      `
+    }
+
+    console.log("[v0] Brand profile save complete!")
+    return NextResponse.json({ success: true, brandId })
+  } catch (error) {
+    console.error("[v0] Error updating personal brand:", error)
+    return NextResponse.json({ error: "Failed to update personal brand" }, { status: 500 })
+  }
+}

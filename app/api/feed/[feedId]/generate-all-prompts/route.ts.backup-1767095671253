@@ -1,0 +1,273 @@
+/**
+ * Generate All Feed Prompts (Batch)
+ * 
+ * Generates prompts for all 9 posts in a feed using batch optimization.
+ * This endpoint should be called before generating images to optimize costs.
+ * 
+ * Week 2 Optimization: Reduces 9 API calls to 1 (89% reduction)
+ */
+
+import { type NextRequest, NextResponse } from "next/server"
+import { getAuthenticatedUser } from "@/lib/auth-helper"
+import { getUserByAuthId } from "@/lib/user-mapping"
+import { neon } from "@neondatabase/serverless"
+import { logFeedGeneration, type FeedGenerationMetrics } from "@/lib/analytics/feed-generation-metrics"
+
+const sql = neon(process.env.DATABASE_URL!)
+
+export async function POST(req: NextRequest, { params }: { params: Promise<{ feedId: string }> | { feedId: string } }) {
+  const startTime = Date.now()
+  
+  try {
+    const { user: authUser, error: authError } = await getAuthenticatedUser()
+
+    if (authError || !authUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const user = await getUserByAuthId(authUser.id)
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 })
+    }
+
+    // Resolve params
+    const resolvedParams = await Promise.resolve(params)
+    const feedId = resolvedParams.feedId
+    const feedIdInt = Number.parseInt(feedId, 10)
+    
+    if (isNaN(feedIdInt)) {
+      return NextResponse.json({ error: "Invalid feed ID" }, { status: 400 })
+    }
+
+    // Get all posts for this feed
+    const posts = await sql`
+      SELECT 
+        id,
+        position,
+        post_type,
+        caption,
+        prompt as reference_prompt,
+        category,
+        generation_status
+      FROM feed_posts
+      WHERE feed_layout_id = ${feedIdInt}
+      AND user_id = ${user.id}
+      ORDER BY position ASC
+    `
+
+    if (posts.length === 0) {
+      return NextResponse.json({ error: "No posts found for this feed" }, { status: 404 })
+    }
+
+    if (posts.length !== 9) {
+      console.warn(`[Feed] [GENERATE-ALL-PROMPTS] Expected 9 posts, found ${posts.length}. Using batch for available posts.`)
+    }
+
+    // Get feed layout for context
+    const [feedLayout] = await sql`
+      SELECT 
+        color_palette,
+        brand_vibe,
+        feed_story
+      FROM feed_layouts
+      WHERE id = ${feedIdInt}
+      AND user_id = ${user.id}
+    `
+
+    if (!feedLayout) {
+      return NextResponse.json({ error: "Feed layout not found" }, { status: 404 })
+    }
+
+    // Get user data for context
+    const [userData] = await sql`
+      SELECT 
+        u.gender,
+        u.ethnicity,
+        um.trigger_word,
+        upb.physical_preferences
+      FROM users u
+      LEFT JOIN user_models um ON u.id = um.user_id AND um.training_status = 'completed'
+      LEFT JOIN user_personal_brand upb ON u.id = upb.user_id
+      WHERE u.id = ${user.id}
+      ORDER BY um.created_at DESC
+      LIMIT 1
+    `
+
+    if (!userData || !userData.trigger_word) {
+      return NextResponse.json({ error: "User model not found" }, { status: 400 })
+    }
+
+    // Determine user gender
+    let userGender = "person"
+    if (userData.gender) {
+      const dbGender = userData.gender.toLowerCase().trim()
+      if (dbGender === "woman" || dbGender === "female") {
+        userGender = "woman"
+      } else if (dbGender === "man" || dbGender === "male") {
+        userGender = "man"
+      }
+    }
+
+    // Get brand colors
+    const [brandData] = await sql`
+      SELECT color_palette, color_theme
+      FROM user_personal_brand
+      WHERE user_id = ${user.id}
+      LIMIT 1
+    `
+    
+    let brandColors = ""
+    if (brandData) {
+      const colorData = brandData.color_palette || brandData.color_theme
+      if (colorData) {
+        if (typeof colorData === 'string' && colorData.startsWith('[')) {
+          try {
+            const colors = JSON.parse(colorData)
+            if (Array.isArray(colors) && colors.length > 0) {
+              brandColors = colors.join(", ")
+            }
+          } catch (e) {
+            brandColors = colorData
+          }
+        } else {
+          brandColors = colorData
+        }
+      }
+    }
+
+    // Prepare posts for batch endpoint
+    const postsForBatch = posts.map(post => ({
+      position: post.position,
+      postType: post.post_type || 'portrait',
+      caption: post.caption || undefined,
+      feedPosition: post.position,
+      colorTheme: feedLayout.color_palette || undefined,
+      brandVibe: feedLayout.brand_vibe || undefined,
+      referencePrompt: post.reference_prompt || undefined,
+      isRegeneration: false,
+      category: post.category || undefined,
+    }))
+
+    // Call batch prompt generation endpoint
+    console.log('[Feed] [GENERATE-ALL-PROMPTS] Calling batch prompt endpoint...')
+    
+    const batchRequest = new NextRequest(new URL(`${req.nextUrl.origin}/api/maya/generate-all-feed-prompts`), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cookie': req.headers.get('cookie') || '',
+      },
+      body: JSON.stringify({
+        posts: postsForBatch,
+        userContext: {
+          triggerWord: userData.trigger_word,
+          userEthnicity: userData.ethnicity || undefined,
+          userGender: userGender,
+          physicalPreferences: userData.physical_preferences || undefined,
+        },
+        feedStrategy: feedLayout.feed_story || undefined,
+        brandColors: brandColors || undefined,
+      }),
+    })
+
+    const { POST: batchHandler } = await import("@/app/api/maya/generate-all-feed-prompts/route")
+    const batchResponse = await batchHandler(batchRequest)
+
+    if (!batchResponse.ok) {
+      console.error('[Feed] [GENERATE-ALL-PROMPTS] Batch generation failed, will use fallback')
+      
+      // Log fallback metrics
+      const metrics: FeedGenerationMetrics = {
+        feedId: feedId,
+        userId: user.id.toString(),
+        method: 'fallback',
+        totalPosts: posts.length,
+        successfulPosts: 0,
+        failedPosts: posts.length,
+        totalDurationMs: Date.now() - startTime,
+        timestamp: new Date(),
+      }
+      await logFeedGeneration(metrics)
+      
+      return NextResponse.json({
+        error: 'Batch generation failed',
+        fallback: true,
+        message: 'Will use individual prompt generation',
+      }, { status: batchResponse.status })
+    }
+
+    const batchData = await batchResponse.json()
+    const { prompts, tokenUsage } = batchData
+
+    if (!prompts || prompts.length === 0) {
+      console.error('[Feed] [GENERATE-ALL-PROMPTS] No prompts returned from batch')
+      return NextResponse.json({ error: 'No prompts generated' }, { status: 500 })
+    }
+
+    // Update all posts with generated prompts
+    console.log('[Feed] [GENERATE-ALL-PROMPTS] Updating posts with generated prompts...')
+    
+    let successfulUpdates = 0
+    for (const promptResult of prompts) {
+      try {
+        await sql`
+          UPDATE feed_posts
+          SET prompt = ${promptResult.prompt}
+          WHERE feed_layout_id = ${feedIdInt}
+          AND position = ${promptResult.position}
+          AND user_id = ${user.id}
+        `
+        successfulUpdates++
+      } catch (error) {
+        console.error(`[Feed] [GENERATE-ALL-PROMPTS] Failed to update post ${promptResult.position}:`, error)
+      }
+    }
+
+    const duration = Date.now() - startTime
+
+    // Log metrics
+    const cacheHits = tokenUsage?.cache_read_input_tokens || 0
+    const inputTokens = tokenUsage?.input_tokens || 0
+    const cacheHitRate = cacheHits > 0 ? (cacheHits / (inputTokens + cacheHits) * 100) : 0
+
+    const metrics: FeedGenerationMetrics = {
+      feedId: feedId,
+      userId: user.id.toString(),
+      method: 'batch',
+      totalPosts: posts.length,
+      successfulPosts: successfulUpdates,
+      failedPosts: posts.length - successfulUpdates,
+      totalDurationMs: duration,
+      tokenUsage: tokenUsage ? {
+        inputTokens: inputTokens,
+        outputTokens: tokenUsage.output_tokens || 0,
+        cacheHits: cacheHits,
+        cacheHitRate: cacheHitRate,
+      } : undefined,
+      timestamp: new Date(),
+    }
+    await logFeedGeneration(metrics)
+
+    console.log(`[Feed] [GENERATE-ALL-PROMPTS] ✅ Successfully generated and updated ${successfulUpdates}/${posts.length} prompts in ${duration}ms`)
+
+    return NextResponse.json({
+      success: true,
+      updated: successfulUpdates,
+      total: posts.length,
+      method: 'batch',
+      tokenUsage: tokenUsage,
+      duration: duration,
+    })
+
+  } catch (error: any) {
+    console.error('[Feed] [GENERATE-ALL-PROMPTS] Error:', error)
+    return NextResponse.json(
+      {
+        error: error.message || 'Failed to generate prompts',
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      },
+      { status: 500 }
+    )
+  }
+}
+

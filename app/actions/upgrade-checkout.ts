@@ -86,22 +86,27 @@ export async function createUpgradeCheckoutSession(
     const stripePrice = await stripe.prices.retrieve(stripePriceId, {
       expand: ['product'],
     })
-    const stripeProduct = typeof stripePrice.product === 'string' 
+    const stripeProduct = typeof stripePrice.product === 'string'
       ? await stripe.products.retrieve(stripePrice.product)
       : stripePrice.product
     
-    console.log("[v0] Stripe Price verification:", {
-      priceId: stripePriceId,
-      priceAmount: stripePrice.unit_amount ? `$${(stripePrice.unit_amount / 100).toFixed(2)}` : "N/A",
-      productId: stripeProduct.id,
-      productName: stripeProduct.name,
-      expectedName: product.name,
-      matches: stripeProduct.name === product.name,
-    })
-    
-    if (stripeProduct.name !== product.name) {
-      console.warn(`[v0] ⚠️ WARNING: Stripe product name "${stripeProduct.name}" does not match expected "${product.name}"`)
-      console.warn(`[v0] The Price ID ${stripePriceId} belongs to product "${stripeProduct.name}" but we expect "${product.name}"`)
+    // Check if product is deleted
+    if (stripeProduct.deleted) {
+      console.warn(`[v0] ⚠️ WARNING: Stripe product is deleted for price ${stripePriceId}`)
+    } else {
+      console.log("[v0] Stripe Price verification:", {
+        priceId: stripePriceId,
+        priceAmount: stripePrice.unit_amount ? `$${(stripePrice.unit_amount / 100).toFixed(2)}` : "N/A",
+        productId: stripeProduct.id,
+        productName: stripeProduct.name,
+        expectedName: product.name,
+        matches: stripeProduct.name === product.name,
+      })
+      
+      if (stripeProduct.name !== product.name) {
+        console.warn(`[v0] ⚠️ WARNING: Stripe product name "${stripeProduct.name}" does not match expected "${product.name}"`)
+        console.warn(`[v0] The Price ID ${stripePriceId} belongs to product "${stripeProduct.name}" but we expect "${product.name}"`)
+      }
     }
   } catch (error: any) {
     console.error(`[v0] Error verifying Stripe price: ${error.message}`)

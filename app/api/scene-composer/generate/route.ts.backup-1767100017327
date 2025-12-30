@@ -1,0 +1,95 @@
+import { type NextRequest, NextResponse } from "next/server"
+import { neon } from "@neondatabase/serverless"
+import { createServerClient } from "@supabase/ssr"
+import { getUserIdFromSupabase } from "@/lib/user-mapping"
+import { generateWithNanoBanana, getStudioProCreditCost } from "@/lib/nano-banana-client"
+import { deductCredits } from "@/lib/credits"
+import { cookies } from "next/headers"
+
+export async function POST(req: NextRequest) {
+  try {
+    const sql = neon(process.env.DATABASE_URL!)
+    
+    // Authenticate user
+    const cookieStore = cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value
+          },
+        },
+      }
+    )
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const neonUserId = await getUserIdFromSupabase(user.id)
+
+    // Get request data
+    const {
+      sceneId,
+      resolution = "1K",
+      aspectRatio = "9:16",
+    } = await req.json()
+
+    if (!sceneId) {
+      return NextResponse.json({ error: "Scene ID is required" }, { status: 400 })
+    }
+
+    // Get scene from database
+    const [scene] = await sql`
+      SELECT * FROM scene_composer_scenes
+      WHERE id = ${sceneId} AND user_id = ${neonUserId}
+    `
+
+    if (!scene) {
+      return NextResponse.json({ error: "Scene not found" }, { status: 404 })
+    }
+
+      } catch (refundError) {
+        console.error("[SCENE-COMPOSER] Failed to refund credits:", refundError)
+        // Non-fatal, log and continue
+      }
+      
+      return NextResponse.json(
+        { error: "Failed to start generation" },
+        { status: 500 }
+      )
+    }
+
+    // Update scene with prediction info
+    await sql`
+      UPDATE scene_composer_scenes
+      SET 
+        prediction_id = ${prediction.id},
+        generation_status = 'processing',
+        aspect_ratio = ${aspectRatio},
+        resolution = ${resolution},
+        credits_used = ${creditCost}
+      WHERE id = ${sceneId}
+    `
+
+    return NextResponse.json({
+      success: true,
+      sceneId,
+      predictionId: prediction.id,
+      creditsDeducted: creditCost,
+      status: "processing",
+    })
+  } catch (error) {
+    console.error("[SCENE-COMPOSER] Error generating scene:", error)
+    return NextResponse.json(
+      { 
+        error: "Failed to generate scene",
+        details: error instanceof Error ? error.message : "Unknown error"
+      },
+      { status: 500 }
+    )
+  }
+}

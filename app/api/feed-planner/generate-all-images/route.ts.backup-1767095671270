@@ -1,0 +1,113 @@
+import { type NextRequest, NextResponse } from "next/server"
+import { createServerClient } from "@/lib/supabase/server"
+import { getUserByAuthId } from "@/lib/user-mapping"
+import { neon } from "@neondatabase/serverless"
+
+export async function POST(request: NextRequest) {
+  try {
+    const supabase = await createServerClient()
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser()
+
+    if (!authUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const neonUser = await getUserByAuthId(authUser.id)
+    if (!neonUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 })
+    }
+
+    const { feedLayoutId } = await request.json()
+
+    if (!feedLayoutId) {
+      return NextResponse.json({ error: "Feed layout ID is required" }, { status: 400 })
+    }
+
+    const sql = neon(process.env.DATABASE_URL!)
+
+    // Get all posts for this feed
+    const posts = await sql`
+      SELECT id, position, concept_prompt
+      FROM feed_posts
+      WHERE feed_layout_id = ${feedLayoutId}
+      ORDER BY position
+    `
+
+    console.log(`[v0] Generating images for ${posts.length} posts`)
+
+    // Week 2 Optimization: Generate all prompts in batch first (89% cost reduction)
+    console.log('[Feed] [GENERATE-ALL-IMAGES] Step 1: Generating all prompts in batch...')
+    let batchPromptSuccess = false
+    
+    try {
+      const batchPromptResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/feed/${feedLayoutId}/generate-all-prompts`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Cookie": request.headers.get("cookie") || "",
+        },
+      })
+
+      if (batchPromptResponse.ok) {
+        const batchData = await batchPromptResponse.json()
+        console.log(`[Feed] [GENERATE-ALL-IMAGES] ✅ Batch prompt generation successful: ${batchData.updated}/${batchData.total} prompts generated`)
+        batchPromptSuccess = true
+      } else {
+        console.warn('[Feed] [GENERATE-ALL-IMAGES] ⚠️ Batch prompt generation failed, will use individual calls as fallback')
+        const errorData = await batchPromptResponse.json().catch(() => ({}))
+        console.warn('[Feed] [GENERATE-ALL-IMAGES] Batch error:', errorData)
+      }
+    } catch (batchError) {
+      console.error('[Feed] [GENERATE-ALL-IMAGES] ❌ Batch prompt generation error:', batchError)
+      console.warn('[Feed] [GENERATE-ALL-IMAGES] Will use individual calls as fallback')
+    }
+
+    // Step 2: Trigger image generation for each post
+    // If batch succeeded, prompts are already in database, so generate-single will use them
+    // If batch failed, generate-single will generate prompts individually (fallback)
+    console.log('[Feed] [GENERATE-ALL-IMAGES] Step 2: Starting image generation for all posts...')
+    
+    const imagePromises = posts.map(async (post: any) => {
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/feed/${feedLayoutId}/generate-single`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            postId: post.id,
+            conceptPrompt: post.concept_prompt,
+          }),
+        })
+
+        if (!response.ok) {
+          console.error(`[v0] Failed to generate image for post ${post.position}`)
+          return null
+        }
+
+        const data = await response.json()
+        return data
+      } catch (error) {
+        console.error(`[v0] Error generating image for post ${post.position}:`, error)
+        return null
+      }
+    })
+
+    await Promise.all(imagePromises)
+    
+    console.log(`[Feed] [GENERATE-ALL-IMAGES] ✅ Image generation started for all posts (prompt method: ${batchPromptSuccess ? 'batch' : 'individual fallback'})`)
+
+    return NextResponse.json({
+      success: true,
+      message: `Image generation started for ${posts.length} posts`,
+    })
+  } catch (error) {
+    console.error("[v0] Generate all images error:", error)
+    return NextResponse.json(
+      {
+        error: error instanceof Error ? error.message : "Failed to generate images",
+      },
+      { status: 500 },
+    )
+  }
+}

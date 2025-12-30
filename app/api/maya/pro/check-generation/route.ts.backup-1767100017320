@@ -1,0 +1,168 @@
+import { NextResponse } from "next/server"
+import type { NextRequest } from "next/server"
+import { getAuthenticatedUser } from "@/lib/auth-helper"
+import { checkNanoBananaPrediction } from "@/lib/nano-banana-client"
+import { neon } from "@neondatabase/serverless"
+import { put } from "@vercel/blob"
+
+export const maxDuration = 60 // 1 minute for status checks
+
+const sql = neon(process.env.DATABASE_URL!)
+
+/**
+ * Pro Mode Check Generation Status API Route
+ * 
+ * Polls Nano Banana Pro prediction status and handles completion.
+ */
+export async function GET(req: NextRequest) {
+
+  try {
+    // Authenticate user
+    const { user: authUser, error: authError } = await getAuthenticatedUser()
+
+    if (authError || !authUser) {
+      console.error("[v0] [PRO MODE] Authentication failed:", authError?.message || "No user")
+      return NextResponse.json({ error: authError?.message || "Unauthorized" }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(req.url)
+    const predictionId = searchParams.get("predictionId")
+
+    if (!predictionId) {
+      console.error("[v0] [PRO MODE] ❌ Missing predictionId parameter")
+      return NextResponse.json({ error: "predictionId is required" }, { status: 400 })
+    }
+
+
+    // FIRST: Check database for already completed generation (prevents unnecessary Replicate API calls)
+    const [existingGeneration] = await sql`
+      SELECT id, image_url, generation_status
+      FROM ai_images
+      WHERE prediction_id = ${predictionId}
+      AND generation_status = 'completed'
+      AND image_url IS NOT NULL
+      ORDER BY created_at DESC
+      LIMIT 1
+    `
+
+    if (existingGeneration && existingGeneration.image_url) {
+
+    // Check prediction status with Replicate
+    // Add timeout handling to prevent 499 errors (client closed request)
+    let status
+    try {
+      status = await Promise.race([
+        checkNanoBananaPrediction(predictionId),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Status check timeout')), 45000) // 45 second timeout
+        )
+      ]) as Awaited<ReturnType<typeof checkNanoBananaPrediction>>
+    } catch (timeoutError: any) {
+      console.error("[v0] [PRO MODE] Status check timeout or error:", timeoutError)
+      // Return processing status instead of failing - allows polling to continue
+      return NextResponse.json({
+        status: "processing", // Continue polling
+      })
+    }
+
+      try {
+        // Get the image URL from Replicate output (status.output is already a string from checkNanoBananaPrediction)
+        const imageUrl = status.output
+
+        // Download image and upload to Vercel Blob (matches Classic Mode)
+        const imageResponse = await fetch(imageUrl)
+        if (!imageResponse.ok) {
+          console.error("[v0] [PRO MODE] ❌ Failed to download image:", imageResponse.status, imageResponse.statusText)
+          throw new Error(`Failed to download image: ${imageResponse.statusText}`)
+        }
+        const imageBlob = await imageResponse.blob()
+
+        const blob = await put(
+          `maya-pro-generations/${predictionId}.png`,
+          imageBlob,
+          {
+            access: "public",
+            contentType: "image/png",
+            addRandomSuffix: true,
+          }
+        )
+
+
+        // Find the generation record by prediction_id and update it (matches Classic Mode pattern)
+        const [generation] = await sql`
+          SELECT id, user_id, prompt, generated_prompt, category
+          FROM ai_images
+          WHERE prediction_id = ${predictionId}
+          ORDER BY created_at DESC
+          LIMIT 1
+        `
+
+        if (generation) {
+          // Update the existing record with the final image URL (matches Classic Mode)
+          const updateResult = await sql`
+            UPDATE ai_images
+            SET image_url = ${blob.url}, generation_status = 'completed'
+            WHERE id = ${generation.id}
+            RETURNING id, image_url, generation_status
+          `
+          } else {
+            console.error("[v0] [PRO MODE] ❌ Image URL verification failed:", {
+              expected: blob.url.substring(0, 100),
+              actual: verify?.image_url?.substring(0, 100) || 'null'
+            })
+          }
+        } else {
+          console.warn("[v0] [PRO MODE] No generation record found for predictionId:", predictionId)
+          // If no record exists, create one (fallback - should not happen)
+          try {
+            const { getEffectiveNeonUser } = await import("@/lib/simple-impersonation")
+            const neonUser = await getEffectiveNeonUser(authUser.id)
+            if (neonUser) {
+              await sql`
+                INSERT INTO ai_images (
+                  user_id,
+                  image_url,
+                  prompt,
+                  generated_prompt,
+                  prediction_id,
+                  generation_status,
+                  source,
+                  category,
+                  created_at
+                ) VALUES (
+                  ${neonUser.id},
+                  ${blob.url},
+                  'Pro Mode generation',
+                  '',
+                  ${predictionId},
+                  'completed',
+                  'maya_pro',
+                  'concept',
+                  NOW()
+                )
+              `
+            }
+          } catch (fallbackError: any) {
+            console.error("[v0] [PRO MODE] Error creating fallback record:", fallbackError)
+          }
+        }
+
+        // Return the blob URL (matches Classic Mode - always return blob.url, not raw output)
+        const response = {
+          status: "succeeded",
+          imageUrl: blob.url, // Always return the Blob URL, not the raw Replicate URL
+        }
+    return NextResponse.json({
+      status: status.status,
+    })
+  } catch (error: any) {
+    console.error("[v0] [PRO MODE] Check generation status error:", error)
+    return NextResponse.json(
+      {
+        error: error.message || "Internal server error",
+        details: error instanceof Error ? error.stack : String(error),
+      },
+      { status: 500 }
+    )
+  }
+}
