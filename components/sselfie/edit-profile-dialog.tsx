@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Loader2 } from "lucide-react"
+import LoadingSpinner from "./loading-spinner"
 
 interface EditProfileDialogProps {
   open: boolean
@@ -130,7 +130,7 @@ export default function EditProfileDialog({ open, onOpenChange, currentData, onS
             <Button type="submit" disabled={loading} className="bg-stone-950 text-white hover:bg-stone-800">
               {loading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <LoadingSpinner size="sm" className="mr-2" />
                   Saving...
                 </>
               ) : (

@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { Textarea } from "@/components/ui/textarea"
-import { Grid3x3, Loader2, ChevronRight, Menu, Home, Camera, MessageCircle, Grid, Settings, LogOut, Sliders, X } from "lucide-react"
+import { Grid3x3, ChevronRight, Menu, Home, Camera, MessageCircle, Grid, Settings, LogOut, Sliders, X } from "lucide-react"
+import LoadingSpinner from "../sselfie/loading-spinner"
 import { toast } from "@/hooks/use-toast"
 import useSWR, { mutate } from "swr"
 import UnifiedLoading from "../sselfie/unified-loading"
@@ -724,7 +725,7 @@ export default function FeedPlannerScreen() {
                   <span className="relative z-10 flex items-center justify-center gap-2">
                     {isEnhancing ? (
                       <>
-                        <Loader2 size={16} className="animate-spin" strokeWidth={1.5} />
+                        <LoadingSpinner size="sm" />
                         Enhancing with Maya
                       </>
                     ) : (
@@ -742,7 +743,7 @@ export default function FeedPlannerScreen() {
                   <span className="relative z-10 flex items-center justify-center gap-2">
                     {isCreatingStrategy ? (
                       <>
-                        <Loader2 size={16} className="animate-spin" strokeWidth={1.5} />
+                        <LoadingSpinner size="sm" />
                         {creationStep || "Creating Strategy..."}
                       </>
                     ) : (

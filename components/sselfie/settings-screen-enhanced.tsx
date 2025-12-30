@@ -13,7 +13,6 @@ import {
   Palette,
   ImageIcon,
   ExternalLink,
-  Loader2,
   X,
   Home,
   MessageCircle,
@@ -23,6 +22,7 @@ import {
   SettingsIcon,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
+import LoadingSpinner from "./loading-spinner"
 import PersonalBrandSection from "./personal-brand-section"
 import BrandAssetsManager from "./brand-assets-manager"
 import type { User as UserType } from "./types"
@@ -350,7 +350,7 @@ export default function SettingsScreen({ user, creditBalance }: SettingsScreenPr
                   >
                     {isLoadingPortal ? (
                       <>
-                        <Loader2 size={16} className="animate-spin" />
+                        <LoadingSpinner size="sm" />
                         Loading...
                       </>
                     ) : (

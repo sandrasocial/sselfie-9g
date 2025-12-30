@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useRef } from 'react'
-import { ImageIcon, Send, Loader2 } from 'lucide-react'
+import { ImageIcon, Send } from 'lucide-react'
+import LoadingSpinner from '../loading-spinner'
 import { Typography, Colors, BorderRadius, Spacing, ButtonLabels } from '@/lib/maya/pro/design-system'
 
 /**
@@ -212,7 +213,7 @@ export default function ProModeInput({
             title="Upload image"
           >
             {isUploadingImage ? (
-              <Loader2 size={18} className="animate-spin" />
+              <LoadingSpinner size="sm" />
             ) : (
               <ImageIcon size={18} />
             )}
@@ -314,7 +315,7 @@ export default function ProModeInput({
             title="Send message"
           >
             {isLoading ? (
-              <Loader2 size={18} className="animate-spin" />
+              <LoadingSpinner size="sm" />
             ) : (
               <Send size={18} />
             )}

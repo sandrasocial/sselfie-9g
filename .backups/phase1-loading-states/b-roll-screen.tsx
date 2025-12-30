@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useRef } from "react"
 import useSWR from "swr"
 import useSWRInfinite from "swr/infinite"
 import {
+  Loader2,
   X,
   Home,
   Aperture,
@@ -15,7 +16,6 @@ import {
   LogOut,
   Film,
 } from "lucide-react"
-import UnifiedLoading from "./unified-loading"
 import InstagramPhotoCard from "./instagram-photo-card"
 import InstagramReelCard from "./instagram-reel-card"
 import { useRouter } from "next/navigation"
@@ -467,7 +467,9 @@ export default function BRollScreen({ user }: BRollScreenProps) {
             B-Roll
           </h1>
         </div>
-        <UnifiedLoading variant="screen" message="Loading B-Roll images..." />
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="w-8 h-8 animate-spin text-stone-950" />
+        </div>
       </div>
     )
   }
@@ -712,7 +714,10 @@ export default function BRollScreen({ user }: BRollScreenProps) {
           {hasMore && (
             <div className="flex justify-center pt-8">
               {isLoadingMore ? (
-                <UnifiedLoading variant="inline" message="Loading more..." />
+                <div className="flex flex-col items-center gap-3">
+                  <Loader2 className="w-6 h-6 animate-spin text-stone-950" />
+                  <span className="text-xs tracking-wider uppercase font-light text-stone-600">Loading more...</span>
+                </div>
               ) : (
                 <button
                   onClick={() => setSize(size + 1)}

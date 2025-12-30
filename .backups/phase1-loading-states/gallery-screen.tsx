@@ -30,7 +30,6 @@ import type { GalleryImage } from "@/lib/data/images"
 import { InstagramReelPreview } from "./instagram-reel-preview"
 import { ProfileImageSelector } from "@/components/profile-image-selector"
 import { GalleryInstagramSkeleton } from "./gallery-skeleton"
-import UnifiedLoading from "./unified-loading"
 import { triggerHaptic, triggerSuccessHaptic, triggerErrorHaptic } from "@/lib/utils/haptics"
 import { ProgressiveImage } from "./progressive-image"
 import { useRouter } from "next/navigation"
@@ -975,9 +974,13 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
 
           {hasMore && (
             <div ref={loadMoreRef} className="py-8 flex justify-center">
-              {isLoadingMore ? (
-                <UnifiedLoading variant="inline" message="Loading more..." />
-              ) : (
+              {isLoadingMore && (
+                <div className="flex items-center gap-2 text-sm text-stone-500">
+                  <div className="w-4 h-4 border-2 border-stone-300 border-t-stone-600 rounded-full animate-spin" />
+                  Loading more...
+                </div>
+              )}
+              {!isLoadingMore && (
                 <button
                   onClick={() => {
                     setIsLoadingMore(true)

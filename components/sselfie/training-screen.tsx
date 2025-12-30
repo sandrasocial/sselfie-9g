@@ -2,7 +2,9 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
-import { Camera, Aperture, ChevronRight, Loader2, X } from "lucide-react"
+import { Camera, Aperture, ChevronRight, X } from "lucide-react"
+import UnifiedLoading from "./unified-loading"
+import LoadingSpinner from "./loading-spinner"
 import useSWR from "swr"
 import JSZip from "jszip"
 
@@ -446,9 +448,7 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
 
   if (!trainingStatus && !error) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-stone-950" />
-      </div>
+      <UnifiedLoading variant="screen" message="Loading training status..." />
     )
   }
 
@@ -598,7 +598,7 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
             >
               {isCanceling ? (
                 <span className="flex items-center justify-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <LoadingSpinner size="sm" />
                   Stopping Training...
                 </span>
               ) : (
@@ -801,7 +801,7 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
                         aria-label="Delete image"
                       >
                         {deletingImageId === image.id ? (
-                          <Loader2 className="w-3 h-3 animate-spin" />
+                          <LoadingSpinner size="sm" className="text-white" />
                         ) : (
                           <span className="text-xs font-bold">×</span>
                         )}

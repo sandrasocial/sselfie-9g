@@ -2,7 +2,8 @@
 
 import type React from "react"
 
-import { Play, Download, Trash2, Loader2 } from "lucide-react"
+import { Play, Download, Trash2 } from "lucide-react"
+import LoadingSpinner from "./loading-spinner"
 import { useState, useRef, useEffect } from "react"
 
 interface VideoCardProps {
@@ -82,7 +83,7 @@ export default function VideoCard({ videoUrl, imageSource, motionPrompt, status,
     return (
       <div className="bg-white/50 backdrop-blur-xl border border-white/70 rounded-2xl p-6 shadow-xl shadow-stone-900/10">
         <div className="flex items-center gap-4 mb-4">
-          <Loader2 size={20} className="text-stone-600 animate-spin" />
+          <LoadingSpinner size="md" className="text-stone-600" />
           <div className="flex-1">
             <p className="text-sm font-medium text-stone-950 mb-1">Generating Video...</p>
             <p className="text-xs text-stone-600">{progress || 0}% complete</p>
@@ -149,7 +150,7 @@ export default function VideoCard({ videoUrl, imageSource, motionPrompt, status,
               className="px-4 py-2.5 bg-white/60 backdrop-blur-xl border border-white/80 rounded-xl hover:bg-red-50 hover:border-red-200 hover:text-red-600 transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
               aria-label="Delete video"
             >
-              {isDeleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} strokeWidth={2.5} />}
+              {isDeleting ? <LoadingSpinner size="sm" /> : <Trash2 size={14} strokeWidth={2.5} />}
             </button>
           )}
         </div>
