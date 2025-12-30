@@ -1,0 +1,301 @@
+/**
+ * Batch Feed Prompt Generation
+ * 
+ * Generates all 9 feed prompts in a single API call for cost optimization.
+ * Uses direct Anthropic API with prompt caching for maximum efficiency.
+ * 
+ * Week 2 Optimization: Reduces 9 API calls to 1 (89% reduction)
+ */
+
+import { type NextRequest, NextResponse } from "next/server"
+import { neon } from "@neondatabase/serverless"
+import { getUserByAuthId } from "@/lib/user-mapping"
+import { getUserContextForMaya } from "@/lib/maya/get-user-context"
+import { getMayaPersonality } from "@/lib/maya/personality-enhanced"
+import { getAuthenticatedUser } from "@/lib/auth-helper"
+import { getFluxPromptingPrinciples } from "@/lib/maya/flux-prompting-principles"
+
+const sql = neon(process.env.DATABASE_URL || "")
+
+interface FeedPost {
+  position: number
+  postType: string
+  caption?: string
+  feedPosition?: number
+  colorTheme?: string
+  brandVibe?: string
+  referencePrompt?: string
+  isRegeneration?: boolean
+  category?: string
+}
+
+interface BatchPromptRequest {
+  posts: FeedPost[]
+  userContext: {
+    triggerWord: string
+    userEthnicity?: string
+    userGender?: string
+    userAge?: string
+    physicalPreferences?: string
+  }
+  feedStrategy?: string
+  brandColors?: string
+}
+
+interface PromptResult {
+  position: number
+  prompt: string
+  error?: string
+}
+
+export async function POST(request: NextRequest) {
+  const startTime = Date.now()
+  
+  try {
+    const { user, error: authError } = await getAuthenticatedUser()
+
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const { getEffectiveNeonUser } = await import("@/lib/simple-impersonation")
+    const neonUser = await getEffectiveNeonUser(user.id)
+    if (!neonUser) {
+      console.error("[Maya] [BATCH-FEED-PROMPT] User not found in database")
+      return NextResponse.json({ error: "User not found in database" }, { status: 404 })
+    }
+
+    const body: BatchPromptRequest = await request.json()
+    const { posts, userContext, feedStrategy, brandColors } = body
+
+    // Validate input
+    if (!posts || posts.length !== 9) {
+      return NextResponse.json(
+        { error: "Exactly 9 posts required" },
+        { status: 400 }
+      )
+    }
+
+
+    // Get user context for Maya (same as individual endpoint)
+    const mayaUserContext = await getUserContextForMaya(neonUser.id)
+    
+    // Build comprehensive system prompt with caching
+    const mayaPersonality = getMayaPersonality()
+    const fluxPrinciples = getFluxPromptingPrinciples()
+
+    const systemPrompt = `${mayaPersonality}
+
+${mayaUserContext}
+
+${fluxPrinciples}
+
+=== YOUR TASK: GENERATE INSTAGRAM FEED POST PROMPTS (BATCH) ===
+
+You are Maya, an elite AI Fashion Stylist generating FLUX prompts for Instagram feed posts. This is a BATCH generation - you will create 9 prompts in one response.
+
+Apply YOUR fashion expertise:
+- Create SPECIFIC outfit descriptions (material + color + garment type), NOT generic terms
+- Use YOUR fashion intelligence to suggest sophisticated, brand-aligned styling
+- Include detailed location descriptions that match the brand aesthetic
+- Apply natural, authentic posing and expressions
+- Create cinematic lighting that feels authentic, not staged
+
+USER CONTEXT:
+- Trigger Word: ${userContext.triggerWord}
+- Gender: ${userContext.userGender || "Not specified"}
+- Ethnicity: ${userContext.userEthnicity || "Not specified"}
+${userContext.physicalPreferences ? `- Physical Preferences: ${userContext.physicalPreferences}` : ""}
+${brandColors ? `- Brand Colors: ${brandColors}` : ""}
+
+${feedStrategy ? `FEED STRATEGY CONTEXT:\n${feedStrategy.substring(0, 1000)}${feedStrategy.length > 1000 ? "..." : ""}\n` : ""}
+
+=== 🔴 CRITICAL RULES FOR ALL PROMPTS (NON-NEGOTIABLE) ===
+
+TRIGGER WORD: "${userContext.triggerWord}"
+GENDER: "${userContext.userGender || "person"}"
+${userContext.userEthnicity ? `ETHNICITY: "${userContext.userEthnicity}" (MUST include in prompt for accurate representation)` : ""}
+${
+  userContext.physicalPreferences
+    ? `
+🔴 PHYSICAL PREFERENCES (MANDATORY - APPLY TO EVERY PROMPT):
+"${userContext.physicalPreferences}"
+
+CRITICAL INSTRUCTIONS:
+- These are USER-REQUESTED appearance modifications that MUST be in EVERY prompt
+- **IMPORTANT:** Convert instruction language to descriptive language for FLUX, but PRESERVE USER INTENT
+- **REMOVE INSTRUCTION PHRASES:** "Always keep my", "dont change", "keep my", "don't change my", "preserve my", "maintain my" - these are instructions, not prompt text
+- **CONVERT TO DESCRIPTIVE:** Convert to descriptive appearance features while preserving intent
+- Include them RIGHT AFTER the gender/ethnicity descriptor as DESCRIPTIVE features, not instructions
+`
+    : ""
+}
+
+**🔴 MANDATORY REQUIREMENTS (EVERY PROMPT MUST HAVE):**
+
+1. **Start with EXACT FORMAT** (FOR USER POSTS): "${userContext.triggerWord}, ${userContext.userEthnicity ? userContext.userEthnicity + " " : ""}${userContext.userGender || "person"}${userContext.physicalPreferences ? `, [converted physical preferences - descriptive only, no instructions]` : ""}"
+
+   **CRITICAL - TRIGGER WORD PLACEMENT** (FOR USER POSTS):
+   - Trigger word MUST be the FIRST word in every prompt
+   - This is non-negotiable for character likeness preservation
+   - Format: "${userContext.triggerWord}, ${userContext.userEthnicity ? userContext.userEthnicity + " " : ""}${userContext.userGender || "person"}, [rest of prompt]"
+   - DO NOT use username, email, or any other identifier - ONLY use the trigger word "${userContext.triggerWord}"
+
+2. **Authentic iPhone Style (MANDATORY):**
+   - ✅ **ALWAYS include:** "candid photo" or "candid moment" (prevents plastic/posed look)
+   - ✅ **ALWAYS include:** "amateur cellphone photo" or "cellphone photo" (prevents professional look)
+   - ✅ **THEN add:** "shot on iPhone 15 Pro portrait mode, shallow depth of field" OR "shot on iPhone, natural bokeh"
+
+**🔴 PROMPT STRUCTURE ARCHITECTURE (FOLLOW THIS ORDER FOR USER POSTS):**
+
+1. **TRIGGER WORD + GENDER + ETHNICITY** (MANDATORY - first 2-4 words): "${userContext.triggerWord}, ${userContext.userEthnicity ? userContext.userEthnicity + " " : ""}${userContext.userGender || "person"}"
+2. **OUTFIT** (material + color + garment type - 8-12 words, stay detailed here)
+3. **LOCATION** (simple, one-line - 3-5 words, keep brief)
+4. **LIGHTING** (simple, natural only - 3-5 words, NO dramatic/cinematic terms)
+5. **POSE + EXPRESSION** (simple, natural action - 3-5 words, NO "striking poses")
+6. **TECHNICAL SPECS** (basic iPhone only - 5-8 words, keep minimal)
+
+**Post Type Considerations:**
+- "Close-Up": Face and shoulders only, intimate facial focus, natural expression
+- "Half Body": Waist-up framing, shows upper styling and hands, relaxed natural pose
+- "selfie": Close-up face portrait, natural expression, authentic moment
+- "Object/Flatlay/Scenery": NO user/trigger word - focus on objects/scenery only
+- **NEVER create full-body shots** - they look unrealistic and AI-generated. Only use close-up, half-body, or selfie.
+
+${brandColors ? `**CRITICAL**: Incorporate the user's brand colors (${brandColors}) into the styling, clothing, background, or props. These are their chosen brand colors and MUST be reflected in the image.` : ""}
+
+**NO BANNED WORDS:** Never use "ultra realistic", "photorealistic", "8K", "4K", "high quality", "perfect", "flawless", "stunning", "beautiful", "gorgeous", "professional photography", "editorial", "magazine quality", "dramatic" (for lighting), "cinematic", "hyper detailed", "sharp focus", "ultra sharp", "crystal clear", "studio lighting", "perfect lighting", "smooth skin", "flawless skin", "airbrushed", "dramatic lighting", "professional yet approachable" - these cause plastic/generic faces and override the user LoRA.
+
+**🔴 CRITICAL: PROMPT QUALITY CHECKLIST - EVERY PROMPT MUST HAVE:**
+1. ✅ Trigger word + ethnicity + gender (no duplicates)
+2. ✅ Specific outfit description (material + color + garment type - NOT "trendy outfit")
+3. ✅ Simple setting (one-line location, keep brief)
+4. ✅ Simple natural lighting (NO dramatic/cinematic terms)
+5. ✅ Natural pose/action (NO "striking poses")
+6. ✅ Authentic iPhone specs: Includes "candid photo" or "candid moment"? Includes "amateur cellphone photo" or "cellphone photo"? "shot on iPhone 15 Pro portrait mode, shallow depth of field" OR "shot on iPhone, natural bokeh"?
+7. ✅ Total length: 50-80 words (optimal for LoRA activation)
+
+**Total target: 50-80 words for optimal LoRA activation and accurate character representation**
+
+**CRITICAL: Use YOUR fashion expertise to create detailed, specific styling.**
+- Generate 50-80 word prompts that include ALL requirements above
+- Start with: "${userContext.triggerWord}, ${userContext.userEthnicity ? userContext.userEthnicity + ", " : ""}${userContext.userGender || "person"}" (do NOT duplicate)
+- Include SPECIFIC outfit details (material + color + garment), NOT generic "trendy outfit"
+- Include SPECIFIC but simple location details, NOT generic "urban background"
+- Include simple natural lighting (NO dramatic/cinematic terms)
+- Include "shot on iPhone 15 Pro portrait mode, shallow depth of field" OR "shot on iPhone, natural bokeh"
+- Keep it simple - trust the user LoRA for appearance
+- Make it feel like a real iPhone photo, not a professional shoot`
+
+    // Build user message with all 9 posts
+    const userMessage = `Generate enhanced FLUX prompts for all 9 Instagram feed posts.
+
+For each post, follow the exact requirements from the system prompt and create a detailed, authentic FLUX prompt.
+
+POSTS TO ENHANCE:
+${posts.map((post, idx) => {
+  const row = Math.floor((post.position - 1) / 3)
+  const rowName = row === 0 ? 'Top Row' : row === 1 ? 'Middle Row' : 'Bottom Row'
+  
+  return `
+POST ${post.position} (${rowName}):
+- Position: ${post.position}
+- Type: ${post.postType}
+- Caption: ${post.caption ? post.caption.substring(0, 100) + (post.caption.length > 100 ? "..." : "") : "No caption"}
+${post.colorTheme ? `- Color Theme: ${post.colorTheme}` : ""}
+${post.brandVibe ? `- Brand Vibe: ${post.brandVibe}` : ""}
+${post.referencePrompt ? `- Reference Prompt (use for concept ideas only, generate completely new detailed prompt): ${post.referencePrompt.substring(0, 150)}${post.referencePrompt.length > 150 ? "..." : ""}` : ""}
+${post.isRegeneration ? `- REGENERATION MODE: Create a NEW variation in the SAME category (${post.category || post.postType})` : ""}
+`
+}).join('\n')}
+
+CRITICAL REQUIREMENTS FOR EACH PROMPT:
+1. Start with "${userContext.triggerWord}, ${userContext.userEthnicity ? userContext.userEthnicity + " " : ""}${userContext.userGender || "person"}" (unless post type is object/flatlay/scenery)
+2. Include specific outfit details (material, color, garment type)
+3. Include specific location details  
+4. Include technical specs: iPhone quality, natural imperfections, authentic skin texture, film grain, muted colors
+5. Match the post type (portrait/object/flatlay/scenery)
+6. NO generic templates - each must be unique and specific
+7. 50-80 words per prompt
+8. Maintain visual consistency across all 9 posts
+
+**FOR OBJECT/FLATLAY/SCENERY POSTS:**
+- DO NOT include trigger word or user
+- Focus on objects, products, flatlays, or scenery
+- Format: "[object/scenery description], shot on iPhone 15 Pro, [lighting], [styling]"
+
+Return ONLY a JSON array of 9 prompts in this exact format:
+[
+  { "position": 1, "prompt": "detailed flux prompt here..." },
+  { "position": 2, "prompt": "detailed flux prompt here..." },
+  ...
+  { "position": 9, "prompt": "detailed flux prompt here..." }
+]
+
+No other text, no markdown formatting, just the JSON array.`
+
+    // Call Anthropic API with caching
+    
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': process.env.ANTHROPIC_API_KEY!,
+        'anthropic-version': '2023-06-01',
+        'anthropic-beta': 'prompt-caching-2024-07-31',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4000, // Enough for all 9 prompts
+        system: [
+          {
+            type: 'text',
+            text: systemPrompt,
+            cache_control: { type: 'ephemeral' }
+          }
+        ],
+        messages: [
+          {
+            role: 'user',
+            content: userMessage
+          }
+        ],
+        temperature: 0.8,
+      })
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('[Maya] [BATCH-FEED-PROMPT] Anthropic API error:', response.status, errorText)
+      throw new Error(`Anthropic API error: ${response.status} - ${errorText}`)
+    }
+
+    const data = await response.json()
+    
+    // Log cache usage
+    if (data.usage) {
+      const cacheRead = data.usage.cache_read_input_tokens || 0
+      const inputTokens = data.usage.input_tokens
+      const outputTokens = data.usage.output_tokens
+      const cacheHitRate = cacheRead > 0 ? (cacheRead / (inputTokens + cacheRead) * 100).toFixed(1) : '0.0'
+    }
+
+    return NextResponse.json({
+      success: true,
+      prompts: prompts,
+      tokenUsage: data.usage,
+      duration: duration,
+    })
+
+  } catch (error: any) {
+    console.error('[Maya] [BATCH-FEED-PROMPT] Error generating batch prompts:', error)
+    return NextResponse.json(
+      { 
+        error: error.message || 'Failed to generate prompts',
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      },
+      { status: 500 }
+    )
+  }
+}
+

@@ -8,7 +8,6 @@ const nextConfig = {
   },
   // Enable Sentry instrumentation
   experimental: {
-    instrumentationHook: true,
     serverActions: {
       bodySizeLimit: '100mb',
     },
