@@ -25,7 +25,6 @@ import {
 import { useRouter } from "next/navigation"
 import BrandAssetsManager from "./brand-assets-manager"
 import { UpgradeModal } from "@/components/upgrade/upgrade-modal"
-import { DesignClasses } from "@/lib/design-tokens"
 
 interface SettingsScreenProps {
   onBack?: () => void // Made onBack optional since it's not always provided
@@ -430,7 +429,7 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
         {console.log("[v0] Settings - isStudioMembership:", isStudioMembership)}
 
         {userInfo && (
-          <div className={DesignClasses.card}>
+          <div className="bg-white/50 backdrop-blur-2xl rounded-xl sm:rounded-[1.75rem] p-4 sm:p-6 md:p-8 border border-white/60 shadow-xl shadow-stone-900/10">
             <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
               <div className="p-2.5 sm:p-3.5 bg-stone-950 rounded-lg sm:rounded-[1.125rem] shadow-lg">
                 <User size={18} className="text-white" strokeWidth={2.5} />
@@ -471,7 +470,7 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
         )}
 
         {userInfo?.product_type === "sselfie_studio_membership" && (
-          <div className={DesignClasses.card}>
+          <div className="bg-white/50 backdrop-blur-2xl rounded-xl sm:rounded-[1.75rem] p-4 sm:p-6 md:p-8 border border-white/60 shadow-xl shadow-stone-900/10">
             <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
               <div className="p-2.5 sm:p-3.5 bg-stone-950 rounded-lg sm:rounded-[1.125rem] shadow-lg">
                 <CreditCard size={18} className="text-white" strokeWidth={2.5} />
@@ -563,7 +562,7 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
         )}
 
         {((hasActiveSubscription || userInfo?.stripe_customer_id) && !isStudioMembership) && (
-          <div className={DesignClasses.card}>
+          <div className="bg-white/50 backdrop-blur-2xl rounded-xl sm:rounded-[1.75rem] p-4 sm:p-6 md:p-8 border border-white/60 shadow-xl shadow-stone-900/10">
             <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
               <div className="p-2.5 sm:p-3.5 bg-stone-950 rounded-lg sm:rounded-[1.125rem] shadow-lg">
                 <CreditCard size={18} className="text-white" strokeWidth={2.5} />
@@ -604,7 +603,7 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
           </div>
         )}
 
-        <div className={DesignClasses.card}>
+        <div className="bg-white/50 backdrop-blur-2xl rounded-xl sm:rounded-[1.75rem] p-4 sm:p-6 md:p-8 border border-white/60 shadow-xl shadow-stone-900/10">
           <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
             <div className="p-2.5 sm:p-3.5 bg-stone-950 rounded-lg sm:rounded-[1.125rem] shadow-lg">
               <Bell size={18} className="text-white" strokeWidth={2.5} />
@@ -634,7 +633,7 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
           </div>
         </div>
 
-        <div className={DesignClasses.card}>
+        <div className="bg-white/50 backdrop-blur-2xl rounded-xl sm:rounded-[1.75rem] p-4 sm:p-6 md:p-8 border border-white/60 shadow-xl shadow-stone-900/10">
           <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
             <div className="p-2.5 sm:p-3.5 bg-stone-950 rounded-lg sm:rounded-[1.125rem] shadow-lg">
               <Aperture size={18} className="text-white" strokeWidth={2.5} />
@@ -655,7 +654,7 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
           </div>
         </div>
 
-        <div className={DesignClasses.card}>
+        <div className="bg-white/50 backdrop-blur-2xl rounded-xl sm:rounded-[1.75rem] p-4 sm:p-6 md:p-8 border border-white/60 shadow-xl shadow-stone-900/10">
           <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
             <div className="p-2.5 sm:p-3.5 bg-stone-950 rounded-lg sm:rounded-[1.125rem] shadow-lg">
               <Shield size={18} className="text-white" strokeWidth={2.5} />
@@ -676,7 +675,7 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
           </div>
         </div>
 
-        <div className={DesignClasses.card}>
+        <div className="bg-white/50 backdrop-blur-2xl rounded-xl sm:rounded-[1.75rem] p-4 sm:p-6 md:p-8 border border-white/60 shadow-xl shadow-stone-900/10">
           <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
             <div className="p-2.5 sm:p-3.5 bg-stone-950 rounded-lg sm:rounded-[1.125rem] shadow-lg">
               <Package size={18} className="text-white" strokeWidth={2.5} />
@@ -686,7 +685,7 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
           <BrandAssetsManager />
         </div>
 
-        <div className={DesignClasses.card}>
+        <div className="bg-white/50 backdrop-blur-2xl rounded-xl sm:rounded-[1.75rem] p-4 sm:p-6 md:p-8 border border-white/60 shadow-xl shadow-stone-900/10">
           <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
             <div className="p-2.5 sm:p-3.5 bg-stone-950 rounded-lg sm:rounded-[1.125rem] shadow-lg">
               <Lock size={18} className="text-white" strokeWidth={2.5} />
@@ -707,7 +706,7 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
           </div>
         </div>
 
-        <div className={DesignClasses.card}>
+        <div className="bg-white/50 backdrop-blur-2xl rounded-xl sm:rounded-[1.75rem] p-4 sm:p-6 md:p-8 border border-white/60 shadow-xl shadow-stone-900/10">
           <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
             <div className="p-2.5 sm:p-3.5 bg-stone-950 rounded-lg sm:rounded-[1.125rem] shadow-lg">
               <User size={18} className="text-white" strokeWidth={2.5} />

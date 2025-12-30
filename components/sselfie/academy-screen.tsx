@@ -9,6 +9,7 @@ import ResourceCard from "../academy/resource-card"
 import UnifiedLoading from "./unified-loading"
 import { X, Home, Aperture, MessageCircle, ImageIcon, Grid, User, SettingsIcon, LogOut, Film } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { DesignClasses } from "@/lib/design-tokens"
 
 const fetcher = async (url: string) => {
   console.log("[v0] Fetching Academy data from:", url)
@@ -733,22 +734,6 @@ export default function AcademyScreen() {
 
   return (
     <div className="pb-32">
-      <div className="fixed top-0 left-0 right-0 z-30 bg-white/80 backdrop-blur-xl border-b border-stone-200/50 px-4 py-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl sm:text-2xl font-serif font-extralight tracking-[0.2em] sm:tracking-[0.3em] text-stone-950 uppercase">
-            Academy
-          </h2>
-          <button
-            onClick={() => setShowNavMenu(!showNavMenu)}
-            className="flex items-center justify-center px-3 h-9 sm:h-10 rounded-lg hover:bg-stone-100/50 transition-colors touch-manipulation active:scale-95"
-            aria-label="Navigation menu"
-            aria-expanded={showNavMenu}
-          >
-            <span className="text-xs sm:text-sm font-serif tracking-[0.2em] text-stone-950 uppercase">MENU</span>
-          </button>
-        </div>
-      </div>
-
       {showNavMenu && (
         <>
           <div
@@ -756,7 +741,7 @@ export default function AcademyScreen() {
             onClick={() => setShowNavMenu(false)}
           />
 
-          <div className="fixed top-0 right-0 bottom-0 w-80 bg-white/95 backdrop-blur-3xl border-l border-stone-200 shadow-2xl z-50 animate-in slide-in-from-right duration-300 flex flex-col">
+          <div className={`fixed top-0 right-0 bottom-0 w-80 ${DesignClasses.background.overlay} ${DesignClasses.blur.lg} border-l ${DesignClasses.border.stone} ${DesignClasses.shadows.container} z-50 animate-in slide-in-from-right duration-300 flex flex-col`}>
             <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-stone-200/50">
               <h3 className="text-sm font-serif font-extralight tracking-[0.2em] uppercase text-stone-950">Menu</h3>
               <button

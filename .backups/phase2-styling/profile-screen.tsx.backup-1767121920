@@ -14,7 +14,6 @@ import Image from "next/image"
 import UnifiedLoading from "./unified-loading"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { DesignClasses } from "@/lib/design-tokens"
 
 interface ProfileScreenProps {
   user: User
@@ -229,6 +228,20 @@ export default function ProfileScreen({ user, creditBalance }: ProfileScreenProp
 
   return (
     <div className="space-y-8 pb-24">
+      <div className="flex items-center justify-between pt-4">
+        <h2 className="text-2xl sm:text-4xl font-serif font-extralight tracking-[0.3em] text-stone-950 uppercase">
+          Profile
+        </h2>
+        <button
+          onClick={() => setShowNavMenu(!showNavMenu)}
+          className="flex items-center justify-center px-3 h-9 sm:h-10 rounded-lg hover:bg-stone-100/50 transition-colors touch-manipulation active:scale-95"
+          aria-label="Navigation menu"
+          aria-expanded={showNavMenu}
+        >
+          <span className="text-xs sm:text-sm font-serif tracking-[0.2em] text-stone-950 uppercase">MENU</span>
+        </button>
+      </div>
+
       {showNavMenu && (
         <>
           <div
@@ -370,7 +383,7 @@ export default function ProfileScreen({ user, creditBalance }: ProfileScreenProp
 
       <button
         onClick={() => setEditDialogOpen(true)}
-          className={`w-full group relative ${DesignClasses.buttonPrimary} overflow-hidden`}
+        className="w-full group relative bg-stone-950 text-white px-6 py-5 rounded-[1.5rem] font-semibold tracking-wide text-sm transition-all duration-300 hover:shadow-2xl hover:shadow-stone-900/40 hover:scale-105 active:scale-95 overflow-hidden"
       >
         <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
         <span className="relative z-10 flex items-center justify-center gap-2">
@@ -382,7 +395,7 @@ export default function ProfileScreen({ user, creditBalance }: ProfileScreenProp
       <div className="space-y-4">
         <button
           onClick={() => setIsBrandSectionExpanded(!isBrandSectionExpanded)}
-          className={`w-full flex items-center justify-between ${DesignClasses.spacing.padding.sm} ${DesignClasses.card} hover:bg-white/60 transition-all`}
+          className="w-full flex items-center justify-between p-4 bg-white/50 backdrop-blur-2xl rounded-xl border border-white/60 shadow-xl shadow-stone-900/10 hover:bg-white/60 transition-all"
         >
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-stone-950 rounded-lg shadow-lg">

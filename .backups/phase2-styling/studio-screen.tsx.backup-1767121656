@@ -12,7 +12,6 @@ import {
 } from "./studio-skeleton"
 import { DynamicHeroCarousel } from "./dynamic-hero-carousel"
 import { ContextualTips } from "./contextual-tips"
-import { DesignClasses } from "@/lib/design-tokens"
 
 interface StudioScreenProps {
   user: any
@@ -157,16 +156,16 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
           </p>
         </div>
 
-        <div className={`${DesignClasses.card} text-center`}>
-          <div className={`w-16 h-16 sm:w-20 sm:h-20 bg-white/70 ${DesignClasses.blur.md} ${DesignClasses.radius.md} flex items-center justify-center mx-auto ${DesignClasses.spacing.marginBottom.md} ${DesignClasses.border.strong} ${DesignClasses.shadows.button}`}>
+        <div className="bg-white/50 backdrop-blur-3xl border border-white/60 rounded-2xl sm:rounded-3xl p-6 sm:p-8 md:p-12 text-center shadow-xl shadow-stone-900/5">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white/70 backdrop-blur-2xl rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-4 sm:mb-6 border border-white/80 shadow-lg shadow-stone-900/5">
             <Aperture size={28} className="sm:w-8 sm:h-8" strokeWidth={1.5} />
           </div>
 
-          <h2 className={`${DesignClasses.typography.heading.h3} ${DesignClasses.text.primary} ${DesignClasses.spacing.marginBottom.md} px-4`}>
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-serif font-extralight tracking-[0.15em] sm:tracking-[0.2em] text-stone-900 uppercase mb-3 sm:mb-4 px-4">
             Train Your AI First
           </h2>
 
-          <p className={`${DesignClasses.typography.body.medium} ${DesignClasses.text.secondary} mb-6 sm:mb-8 max-w-md mx-auto leading-relaxed px-4`}>
+          <p className="text-sm sm:text-base font-light text-stone-500 mb-6 sm:mb-8 max-w-md mx-auto leading-relaxed px-4">
             Before you can create stunning photos you need to train your personal AI model with your selfies.
           </p>
 
@@ -178,9 +177,9 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
             ].map((item, i) => (
               <div
                 key={i}
-                className={`${DesignClasses.spacing.padding.md} ${DesignClasses.background.secondary} ${DesignClasses.blur.lg} ${DesignClasses.radius.lg} ${DesignClasses.border.medium} ${DesignClasses.shadows.card} ${DesignClasses.shadows.cardHover} hover:scale-105 transition-all duration-500 group`}
+                className="p-5 sm:p-6 bg-white/60 backdrop-blur-3xl rounded-xl sm:rounded-2xl border border-white/70 shadow-lg shadow-stone-900/5 hover:shadow-xl hover:shadow-stone-900/10 hover:scale-105 transition-all duration-500 group"
               >
-                <div className={`w-12 h-12 sm:w-14 sm:h-14 bg-stone-900 ${DesignClasses.radius.sm} flex items-center justify-center mx-auto ${DesignClasses.spacing.marginBottom.sm} ${DesignClasses.shadows.button} group-hover:scale-110 transition-transform duration-500`}>
+                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-stone-900 rounded-lg sm:rounded-2xl flex items-center justify-center mx-auto mb-3 sm:mb-4 shadow-lg shadow-stone-900/20 group-hover:scale-110 transition-transform duration-500">
                   <div className="text-base sm:text-lg font-light text-white">{i + 1}</div>
                 </div>
                 <div className="text-sm font-light text-stone-900 mb-2">{item.label}</div>
@@ -191,7 +190,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
 
           <button
             onClick={() => setActiveTab("training")}
-            className={`group relative ${DesignClasses.buttonPrimary} min-h-[52px] sm:min-h-[60px] overflow-hidden w-full sm:w-auto`}
+            className="group relative bg-stone-900 text-white px-8 sm:px-12 py-4 sm:py-5 rounded-xl sm:rounded-2xl font-light tracking-wider text-sm transition-all duration-500 hover:shadow-2xl hover:shadow-stone-900/30 hover:scale-105 active:scale-95 min-h-[52px] sm:min-h-[60px] overflow-hidden w-full sm:w-auto"
           >
             <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
             <span className="relative z-10 flex items-center justify-center gap-2">
@@ -205,8 +204,8 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
           </button>
         </div>
 
-        <div className={`${DesignClasses.card} ${DesignClasses.spacing.padding.lg}`}>
-          <h3 className={`${DesignClasses.typography.heading.h4} ${DesignClasses.text.primary} ${DesignClasses.spacing.marginBottom.lg}`}>
+        <div className="bg-white/50 backdrop-blur-3xl border border-white/60 rounded-2xl sm:rounded-3xl p-8 shadow-xl shadow-stone-900/5">
+          <h3 className="text-lg sm:text-xl md:text-2xl font-serif font-extralight tracking-[0.15em] sm:tracking-[0.2em] md:tracking-[0.3em] text-stone-900 uppercase mb-6 sm:mb-8">
             What You Will Need
           </h3>
 
@@ -219,7 +218,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
             ].map((item, i) => (
               <div
                 key={i}
-                className={`flex items-start ${DesignClasses.spacing.gap.md} ${DesignClasses.spacing.padding.sm} ${DesignClasses.background.secondary} ${DesignClasses.blur.md} ${DesignClasses.radius.lg} ${DesignClasses.border.medium} ${DesignClasses.shadows.card} ${DesignClasses.shadows.cardHover} hover:scale-[1.02] transition-all duration-500`}
+                className="flex items-start gap-4 p-4 bg-white/60 backdrop-blur-2xl rounded-xl sm:rounded-2xl border border-white/70 shadow-lg shadow-stone-900/5 hover:shadow-xl hover:shadow-stone-900/10 hover:scale-[1.02] transition-all duration-500"
               >
                 <div className="w-8 h-8 bg-white/80 backdrop-blur-xl rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 border border-white/70 shadow-inner shadow-stone-900/5">
                   <div className="w-1.5 h-1.5 bg-stone-600 rounded-full"></div>
@@ -254,7 +253,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
 
       <div className="space-y-6 sm:space-y-8 pb-24 sm:pb-28 md:pb-32 pt-8 overflow-x-hidden max-w-full">
         {brandStatus && !brandStatus.isCompleted && (
-          <div className={DesignClasses.card}>
+          <div className="bg-white/50 backdrop-blur-3xl border border-white/60 rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-xl shadow-stone-900/5">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
               <div className="flex-1">
                 <h2 className="font-['Times_New_Roman'] text-xl sm:text-2xl md:text-3xl font-extralight tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-900 mb-3">
@@ -277,7 +276,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
               </div>
               <button
                 onClick={() => setShowBrandWizard(true)}
-                className={DesignClasses.buttonPrimary}
+                className="bg-stone-950 text-stone-50 px-6 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 hover:scale-105 active:scale-95"
               >
                 Start Brand Profile
               </button>
@@ -286,7 +285,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
         )}
 
         {brandStatus && brandStatus.isCompleted && brandStatus.summary && (
-          <div className={DesignClasses.card}>
+          <div className="bg-white/50 backdrop-blur-3xl border border-white/60 rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-xl shadow-stone-900/5">
             <div className="flex flex-col gap-6">
               <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <h2 className="font-['Times_New_Roman'] text-xl sm:text-2xl md:text-3xl font-extralight tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-900">
@@ -477,7 +476,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
                 </button>
                 <button
                   onClick={() => setActiveTab("gallery")}
-                  className={`group relative ${DesignClasses.background.secondary} ${DesignClasses.blur.lg} ${DesignClasses.border.medium} ${DesignClasses.text.primary} px-6 py-4 ${DesignClasses.radius.md} font-light tracking-wider text-sm transition-all duration-500 hover:bg-white/80 hover:border-white/90 ${DesignClasses.shadows.cardHover} hover:scale-[1.02] active:scale-95`}
+                  className="group relative bg-white/60 backdrop-blur-3xl border border-white/70 text-stone-900 px-6 py-4 rounded-xl font-light tracking-wider text-sm transition-all duration-500 hover:bg-white/80 hover:border-white/90 hover:shadow-xl hover:shadow-stone-900/10 hover:scale-[1.02] active:scale-95"
                 >
                   <span className="relative z-10 flex items-center justify-center gap-2">
                     <Grid size={16} strokeWidth={1.5} />
@@ -490,7 +489,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
         ) : (
           <button
             onClick={() => setActiveTab("maya")}
-            className={`group w-full ${DesignClasses.cardHover}`}
+            className="group w-full bg-white/50 backdrop-blur-3xl border border-white/60 rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-xl shadow-stone-900/5 hover:bg-white/70 hover:border-white/80 hover:shadow-2xl hover:shadow-stone-900/10 transition-all duration-500 hover:scale-[1.02] active:scale-95"
           >
             <div className="flex items-center gap-6">
               <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-stone-200/60 overflow-hidden flex-shrink-0 shadow-lg group-hover:scale-110 transition-transform duration-500">

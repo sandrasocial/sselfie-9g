@@ -20,6 +20,7 @@ import InstagramPhotoCard from "./instagram-photo-card"
 import InstagramReelCard from "./instagram-reel-card"
 import { useRouter } from "next/navigation"
 import BuyCreditsModal from "./buy-credits-modal"
+import { DesignClasses } from "@/lib/design-tokens"
 
 interface BRollScreenProps {
   user: any
@@ -501,24 +502,18 @@ export default function BRollScreen({ user }: BRollScreenProps) {
         <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-extralight tracking-[0.2em] sm:tracking-[0.3em] text-stone-950 uppercase">
           B-Roll
         </h1>
-        <button
-          onClick={() => setShowNavMenu(!showNavMenu)}
-          className="flex items-center justify-center px-3 h-9 sm:h-10 rounded-lg hover:bg-stone-100/50 transition-colors touch-manipulation active:scale-95"
-          aria-label="Navigation menu"
-          aria-expanded={showNavMenu}
-        >
-          <span className="text-xs sm:text-sm font-serif tracking-[0.2em] text-stone-950 uppercase">MENU</span>
-        </button>
+        {/* Navigation menu now in global header */}
       </div>
 
-      {showNavMenu && (
+      {/* Navigation menu now in global header - custom menu disabled */}
+      {false && showNavMenu && (
         <>
           <div
             className="fixed inset-0 bg-stone-950/20 backdrop-blur-sm z-40 animate-in fade-in duration-200"
             onClick={() => setShowNavMenu(false)}
           />
 
-          <div className="fixed top-0 right-0 bottom-0 w-80 bg-white/95 backdrop-blur-3xl border-l border-stone-200 shadow-2xl z-50 animate-in slide-in-from-right duration-300 flex flex-col">
+          <div className={`fixed top-0 right-0 bottom-0 w-80 ${DesignClasses.background.overlay} ${DesignClasses.blur.lg} border-l ${DesignClasses.border.stone} ${DesignClasses.shadows.container} z-50 animate-in slide-in-from-right duration-300 flex flex-col`}>
             <div className="shrink-0 flex items-center justify-between px-6 py-4 border-b border-stone-200/50">
               <h3 className="text-sm font-serif font-extralight tracking-[0.2em] uppercase text-stone-950">Menu</h3>
               <button
@@ -610,7 +605,7 @@ export default function BRollScreen({ user }: BRollScreenProps) {
         </>
       )}
 
-      <div className="bg-stone-100/40 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 border border-stone-200/40">
+      <div className={`bg-stone-100/40 ${DesignClasses.radius.lg} ${DesignClasses.spacing.padding.md} ${DesignClasses.border.stone}`}>
         <div className="mb-4">
           <p className="text-xs sm:text-sm font-light text-stone-600 text-center">
             Create professional video content from your Maya-generated images. Click any image to animate it into a
@@ -620,7 +615,7 @@ export default function BRollScreen({ user }: BRollScreenProps) {
       </div>
 
       {images.length === 0 ? (
-        <div className="bg-stone-100/40 rounded-3xl p-8 sm:p-12 text-center border border-stone-200/40">
+        <div className={`bg-stone-100/40 ${DesignClasses.radius.xl} ${DesignClasses.spacing.padding.xl} text-center ${DesignClasses.border.stone}`}>
           <div className="max-w-md mx-auto space-y-4">
             <h3 className="text-xl font-serif font-extralight tracking-[0.15em] text-stone-950 uppercase mb-3">
               No B-Roll Images Yet

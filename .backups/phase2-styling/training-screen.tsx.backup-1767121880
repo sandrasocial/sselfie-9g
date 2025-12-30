@@ -7,7 +7,6 @@ import UnifiedLoading from "./unified-loading"
 import LoadingSpinner from "./loading-spinner"
 import useSWR from "swr"
 import JSZip from "jszip"
-import { DesignClasses } from "@/lib/design-tokens"
 
 interface TrainingScreenProps {
   user: any
@@ -482,13 +481,13 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
           </p>
 
           <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-6 sm:mb-8">
-            <div className={`${DesignClasses.spacing.padding.md} ${DesignClasses.background.secondary} ${DesignClasses.blur.sm} ${DesignClasses.radius.lg} ${DesignClasses.border.medium} ${DesignClasses.shadows.card}`}>
+            <div className="p-4 sm:p-6 bg-white/60 backdrop-blur-xl rounded-xl sm:rounded-[1.5rem] border border-white/70 shadow-lg shadow-stone-900/10">
               <div className="text-2xl sm:text-3xl font-bold text-stone-950 mb-1 sm:mb-2">{imageCount}</div>
               <div className="text-[10px] sm:text-xs tracking-wider uppercase font-semibold text-stone-600">
                 Photos Trained
               </div>
             </div>
-            <div className={`${DesignClasses.spacing.padding.md} ${DesignClasses.background.secondary} ${DesignClasses.blur.sm} ${DesignClasses.radius.lg} ${DesignClasses.border.medium} ${DesignClasses.shadows.card}`}>
+            <div className="p-4 sm:p-6 bg-white/60 backdrop-blur-xl rounded-xl sm:rounded-[1.5rem] border border-white/70 shadow-lg shadow-stone-900/10">
               <div className="text-2xl sm:text-3xl font-bold text-stone-950 mb-1 sm:mb-2">100%</div>
               <div className="text-[10px] sm:text-xs tracking-wider uppercase font-semibold text-stone-600">
                 Model Ready
@@ -501,7 +500,7 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
               setHasTrainedModel(true)
               setActiveTab("studio")
             }}
-            className={`group relative w-full ${DesignClasses.buttonPrimary} mb-3 sm:mb-4 min-h-[52px] sm:min-h-[60px] overflow-hidden`}
+            className="group relative w-full bg-stone-950 text-white py-4 sm:py-5 rounded-xl sm:rounded-[1.5rem] font-semibold tracking-wide text-xs sm:text-sm transition-all duration-300 hover:shadow-2xl hover:shadow-stone-900/40 mb-3 sm:mb-4 min-h-[52px] sm:min-h-[60px] overflow-hidden hover:scale-[1.02] active:scale-[0.98]"
           >
             <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             <span className="relative z-10 flex items-center justify-center gap-2">
@@ -512,7 +511,7 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
 
           <button
             onClick={handleRetrain}
-            className={`w-full ${DesignClasses.background.secondary} ${DesignClasses.blur.sm} ${DesignClasses.text.primary} ${DesignClasses.border.medium} py-4 sm:py-5 ${DesignClasses.radius.lg} font-semibold text-xs sm:text-sm transition-all duration-300 hover:bg-white/80 hover:border-white/90 min-h-[52px] sm:min-h-[60px] ${DesignClasses.shadows.button} hover:scale-[1.02] active:scale-[0.98]`}
+            className="w-full bg-white/60 backdrop-blur-xl text-stone-950 border border-white/70 py-4 sm:py-5 rounded-xl sm:rounded-[1.5rem] font-semibold text-xs sm:text-sm transition-all duration-300 hover:bg-white/80 hover:border-white/90 min-h-[52px] sm:min-h-[60px] shadow-lg shadow-stone-900/10 hover:scale-[1.02] active:scale-[0.98]"
           >
             Retrain Model
           </button>
@@ -520,7 +519,7 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
       )}
 
       {trainingStage === "training" && (
-        <div className={`mx-4 sm:mx-6 ${DesignClasses.card}`}>
+        <div className="mx-4 sm:mx-6 bg-white/50 backdrop-blur-2xl border border-white/60 rounded-xl sm:rounded-[1.75rem] p-5 sm:p-6 md:p-8 shadow-xl shadow-stone-900/10">
           <div className="text-center mb-8">
             <div className="relative w-24 h-24 mx-auto mb-6">
               <div className="absolute inset-0 rounded-full bg-stone-200/30 animate-ping"></div>

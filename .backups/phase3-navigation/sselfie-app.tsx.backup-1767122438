@@ -45,7 +45,6 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import { DesignClasses } from "@/lib/design-tokens"
-import { AnimatePresence, motion } from "framer-motion"
 
 interface SselfieAppProps {
   userId: string
@@ -360,7 +359,8 @@ export default function SselfieApp({
 
       <main className="relative h-full mx-1 sm:mx-2 md:mx-3 pb-2 sm:pb-3 md:pb-4">
         <div className={`h-full ${DesignClasses.container} overflow-hidden`}>
-          <header className={`sticky top-0 z-10 bg-white/70 ${DesignClasses.blur.md} border-b ${DesignClasses.border.stone} ${DesignClasses.spacing.paddingX.sm} py-3 pt-safe`}>
+          {(activeTab === "studio" || activeTab === "training") && (
+            <header className={`sticky top-0 z-10 bg-white/70 ${DesignClasses.blur.md} border-b ${DesignClasses.border.stone} ${DesignClasses.spacing.paddingX.sm} py-3 pt-safe`}>
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 shrink-0">
                   <div className={`${DesignClasses.typography.heading.h4} ${DesignClasses.text.primary}`}>
@@ -436,6 +436,7 @@ export default function SselfieApp({
                 </DropdownMenu>
               </div>
             </header>
+          )}
 
           <div
             ref={scrollContainerRef}
@@ -454,74 +455,59 @@ export default function SselfieApp({
               </div>
             )}
 
-            <AnimatePresence mode="wait">
-              {(activeTab === "studio" || activeTab === "maya" || activeTab === "training") &&
-              !access.canUseGenerators ? (
-                <motion.div
-                  key="upgrade-or-credits"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <UpgradeOrCredits
-                    feature={activeTab === "studio" ? "Studio" : activeTab === "maya" ? "Maya" : "Training"}
+            {(activeTab === "studio" || activeTab === "maya" || activeTab === "training") &&
+            !access.canUseGenerators ? (
+              <UpgradeOrCredits
+                feature={activeTab === "studio" ? "Studio" : activeTab === "maya" ? "Maya" : "Training"}
+              />
+            ) : (
+              <>
+                {activeTab === "studio" && (
+                  <StudioScreen
+                    user={user}
+                    hasTrainedModel={hasTrainedModel}
+                    setActiveTab={handleTabChange}
+                    onImageGenerated={refreshCredits}
                   />
-                </motion.div>
-              ) : (
-                <motion.div
-                  key={activeTab}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.2, ease: "easeInOut" }}
-                >
-                  {activeTab === "studio" && (
-                    <StudioScreen
-                      user={user}
-                      hasTrainedModel={hasTrainedModel}
-                      setActiveTab={handleTabChange}
-                      onImageGenerated={refreshCredits}
-                    />
-                  )}
-                  {activeTab === "training" && (
-                    <TrainingScreen
-                      user={user}
-                      userId={userId}
-                      setHasTrainedModel={setHasTrainedModel}
-                      setActiveTab={handleTabChange}
-                    />
-                  )}
-                  {activeTab === "maya" && (
-                    <MayaChatScreen 
-                      onImageGenerated={refreshCredits} 
-                      user={user} 
-                      setActiveTab={handleTabChange}
-                    />
-                  )}
-                  {activeTab === "b-roll" && <BRollScreen user={user} />}
-                  {activeTab === "gallery" && <GalleryScreen user={user} userId={userId} />}
-                  {activeTab === "feed-planner" && <FeedPlannerScreen />}
-                  {activeTab === "academy" && <AcademyScreen />}
-                  {activeTab === "profile" && <ProfileScreen user={user} creditBalance={creditBalance} />}
-                  {activeTab === "settings" && <SettingsScreen user={user} creditBalance={creditBalance} />}
-                </motion.div>
-              )}
-            </AnimatePresence>
+                )}
+                {activeTab === "training" && (
+                  <TrainingScreen
+                    user={user}
+                    userId={userId}
+                    setHasTrainedModel={setHasTrainedModel}
+                    setActiveTab={handleTabChange}
+                  />
+                )}
+                {activeTab === "maya" && (
+                  <MayaChatScreen 
+                    onImageGenerated={refreshCredits} 
+                    user={user} 
+                    setActiveTab={handleTabChange}
+                  />
+                )}
+                {activeTab === "b-roll" && <BRollScreen user={user} />}
+                {activeTab === "gallery" && <GalleryScreen user={user} userId={userId} />}
+                {activeTab === "feed-planner" && <FeedPlannerScreen />}
+                {activeTab === "academy" && <AcademyScreen />}
+                {activeTab === "profile" && <ProfileScreen user={user} creditBalance={creditBalance} />}
+                {activeTab === "settings" && <SettingsScreen user={user} creditBalance={creditBalance} />}
+              </>
+            )}
           </div>
         </div>
       </main>
 
-      <nav
-        className={`fixed bottom-0 left-0 right-0 z-40 px-2 sm:px-3 md:px-4 transition-transform duration-300 ease-in-out ${
-          isNavVisible ? "translate-y-0" : "translate-y-full"
-        }`}
-        style={{
-          paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))",
-        }}
-        aria-label="Main navigation"
-        aria-hidden={!isNavVisible}
-      >
+      {(activeTab === "studio" || activeTab === "training") && (
+        <nav
+          className={`fixed bottom-0 left-0 right-0 z-40 px-2 sm:px-3 md:px-4 transition-transform duration-300 ease-in-out ${
+            isNavVisible ? "translate-y-0" : "translate-y-full"
+          }`}
+          style={{
+            paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))",
+          }}
+          aria-label="Main navigation"
+          aria-hidden={!isNavVisible}
+        >
           <div className={`bg-white/20 ${DesignClasses.blur.lg} ${DesignClasses.radius.xl} ${DesignClasses.border.light} ${DesignClasses.shadows.container}`}>
             <div className="overflow-x-auto scrollbar-hide px-1.5 sm:px-2 md:px-3 py-2 sm:py-2.5 md:py-3">
               <div className="flex gap-1 sm:gap-2 min-w-max sm:justify-around">
@@ -568,6 +554,7 @@ export default function SselfieApp({
             </div>
           </div>
         </nav>
+      )}
 
       <InstallPrompt />
 

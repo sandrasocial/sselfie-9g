@@ -35,7 +35,6 @@ import { triggerHaptic, triggerSuccessHaptic, triggerErrorHaptic } from "@/lib/u
 import { ProgressiveImage } from "./progressive-image"
 import { useRouter } from "next/navigation"
 import FullscreenImageModal from "./fullscreen-image-modal"
-import { DesignClasses } from "@/lib/design-tokens"
 
 interface GalleryScreenProps {
   user: any
@@ -680,7 +679,7 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
           <p className="text-sm font-light text-red-600">Failed to load images</p>
           <button
             onClick={() => mutate()}
-            className={`px-4 py-2 ${DesignClasses.typography.label.uppercase} bg-stone-100/50 ${DesignClasses.border.stone} ${DesignClasses.radius.md} hover:bg-stone-100/70 transition-all duration-200`}
+            className="px-4 py-2 text-xs tracking-[0.15em] uppercase font-light bg-stone-100/50 border border-stone-200/40 rounded-xl hover:bg-stone-100/70 transition-all duration-200"
           >
             Retry
           </button>
@@ -699,7 +698,7 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
           className="fixed top-0 left-0 right-0 flex items-center justify-center z-50 transition-all"
           style={{ transform: `translateY(${Math.min(pullDistance - 40, 60)}px)` }}
         >
-          <div className={`bg-stone-950 text-white px-4 py-2 ${DesignClasses.radius.full} ${DesignClasses.typography.body.small}`}>
+          <div className="bg-stone-950 text-white px-4 py-2 rounded-full text-xs font-light tracking-wider">
             {pullDistance > 80 ? "Release to refresh" : "Pull to refresh"}
           </div>
         </div>
@@ -715,11 +714,18 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
               <>
                 <button
                   onClick={() => setSelectionMode(true)}
-                  className={`px-3 sm:px-4 py-2 ${DesignClasses.typography.label.uppercase} bg-stone-100/50 ${DesignClasses.border.stone} ${DesignClasses.radius.sm} hover:bg-stone-100/70 transition-all duration-200 min-h-[36px] sm:min-h-[40px]`}
+                  className="px-3 sm:px-4 py-2 text-[10px] sm:text-xs tracking-[0.15em] uppercase font-light bg-stone-100/50 border border-stone-200/40 rounded-lg sm:rounded-xl hover:bg-stone-100/70 transition-all duration-200 min-h-[36px] sm:min-h-[40px]"
                 >
                   Select
                 </button>
-                {/* Navigation menu now in global header */}
+                <button
+                  onClick={() => setShowNavMenu(!showNavMenu)}
+                  className="flex items-center justify-center px-3 h-9 sm:h-10 rounded-lg hover:bg-stone-100/50 transition-colors touch-manipulation active:scale-95"
+                  aria-label="Navigation menu"
+                  aria-expanded={showNavMenu}
+                >
+                  <span className="text-xs sm:text-sm font-serif tracking-[0.2em] text-stone-950 uppercase">MENU</span>
+                </button>
               </>
             )}
           </div>
@@ -733,7 +739,7 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
               placeholder="Search by description..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className={`w-full pl-10 pr-10 py-2 ${DesignClasses.typography.body.medium} bg-stone-100/50 ${DesignClasses.border.stone} ${DesignClasses.radius.md} focus:outline-none focus:ring-2 focus:ring-stone-950/20 transition-all`}
+              className="w-full pl-10 pr-10 py-2 text-sm font-light bg-stone-100/50 border border-stone-200/40 rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-950/20 transition-all"
             />
             {searchQuery && (
               <button
@@ -747,7 +753,7 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as any)}
-            className={`px-3 py-2 ${DesignClasses.typography.body.small} bg-stone-100/50 ${DesignClasses.border.stone} ${DesignClasses.radius.md} focus:outline-none focus:ring-2 focus:ring-stone-950/20 transition-all appearance-none pr-8`}
+            className="px-3 py-2 text-xs font-light bg-stone-100/50 border border-stone-200/40 rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-950/20 transition-all appearance-none pr-8"
             style={{
               backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2' strokeLinecap='round' strokeLinejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
               backgroundRepeat: "no-repeat",
@@ -761,7 +767,7 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
         </div>
       </div>
 
-      <div className={`bg-stone-100/40 ${DesignClasses.radius.lg} ${DesignClasses.spacing.padding.md} ${DesignClasses.border.stone}`}>
+      <div className="bg-stone-100/40 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 border border-stone-200/40">
         <div className="flex gap-2 mb-4 pb-4 border-b border-stone-200/40">
           {[
             { key: "all", label: "All Content" },
@@ -1146,8 +1152,7 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
       )}
 
       {/* Added navigation menu */}
-      {/* Navigation menu now in global header - custom menu disabled */}
-      {false && (
+      {showNavMenu && (
         <>
           <div
             className="fixed inset-0 bg-stone-950/20 backdrop-blur-sm z-40 animate-in fade-in duration-200"
