@@ -458,7 +458,7 @@ export default function SselfieApp({
 
             <AnimatePresence mode="wait">
               {activeTab === "maya" &&
-              !access.canUseGenerators ? (
+            !access.canUseGenerators ? (
                 <motion.div
                   key="upgrade-or-credits"
                   initial={{ opacity: 0 }}
@@ -466,9 +466,9 @@ export default function SselfieApp({
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <UpgradeOrCredits
+              <UpgradeOrCredits
                     feature={activeTab === "maya" ? "Maya" : "Training"}
-                  />
+              />
                 </motion.div>
               ) : (
                 <motion.div
@@ -478,36 +478,36 @@ export default function SselfieApp({
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.2, ease: "easeInOut" }}
                 >
-                  {activeTab === "maya" && (
-                    <MayaChatScreen 
-                      onImageGenerated={refreshCredits} 
-                      user={user} 
-                      setActiveTab={handleTabChange}
+                {activeTab === "maya" && (
+                  <MayaChatScreen 
+                    onImageGenerated={refreshCredits} 
+                    user={user} 
+                    setActiveTab={handleTabChange}
                       hasTrainedModel={hasTrainedModel}
-                    />
-                  )}
-                  {activeTab === "b-roll" && <BRollScreen user={user} />}
-                  {activeTab === "gallery" && <GalleryScreen user={user} userId={userId} />}
-                  {activeTab === "feed-planner" && <FeedPlannerScreen />}
-                  {activeTab === "academy" && <AcademyScreen />}
+                  />
+                )}
+                {activeTab === "b-roll" && <BRollScreen user={user} />}
+                {activeTab === "gallery" && <GalleryScreen user={user} userId={userId} />}
+                {activeTab === "feed-planner" && <FeedPlannerScreen />}
+                {activeTab === "academy" && <AcademyScreen />}
                   {activeTab === "account" && <AccountScreen user={user} creditBalance={creditBalance} />}
                 </motion.div>
-              )}
+            )}
             </AnimatePresence>
           </div>
         </div>
       </main>
 
-      <nav
-        className={`fixed bottom-0 left-0 right-0 z-40 px-2 sm:px-3 md:px-4 transition-transform duration-300 ease-in-out ${
-          isNavVisible ? "translate-y-0" : "translate-y-full"
-        }`}
-        style={{
-          paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))",
-        }}
-        aria-label="Main navigation"
-        aria-hidden={!isNavVisible}
-      >
+        <nav
+          className={`fixed bottom-0 left-0 right-0 z-40 px-2 sm:px-3 md:px-4 transition-transform duration-300 ease-in-out ${
+            isNavVisible ? "translate-y-0" : "translate-y-full"
+          }`}
+          style={{
+            paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))",
+          }}
+          aria-label="Main navigation"
+          aria-hidden={!isNavVisible}
+        >
           <div className={`bg-white/20 ${DesignClasses.blur.lg} ${DesignClasses.radius.xl} ${DesignClasses.border.light} ${DesignClasses.shadows.container}`}>
             <div className="overflow-x-auto scrollbar-hide px-1.5 sm:px-2 md:px-3 py-2 sm:py-2.5 md:py-3">
               <div className="flex gap-1 sm:gap-2 min-w-max sm:justify-around">

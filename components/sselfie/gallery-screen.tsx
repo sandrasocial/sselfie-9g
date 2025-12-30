@@ -715,8 +715,8 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
         <div className="flex items-center justify-between mb-4 sm:mb-6 gap-2">
           <div className="flex-1">
             <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-extralight tracking-[0.2em] sm:tracking-[0.3em] text-stone-950 uppercase mb-2">
-              Gallery
-            </h1>
+            Gallery
+          </h1>
             {stats && (
               <div className="flex items-center gap-4 text-xs sm:text-sm">
                 <div className="flex items-center gap-1.5">

@@ -30,6 +30,10 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import { createPortal } from "react-dom"
 import ConceptCard from "./concept-card"
 import MayaChatHistory from "./maya-chat-history"
+import MayaConceptCards from "./maya/maya-concept-cards"
+import MayaQuickPrompts from "./maya/maya-quick-prompts"
+import MayaSettingsPanel from "./maya/maya-settings-panel"
+import MayaChatInterface from "./maya/maya-chat-interface"
 import UnifiedLoading from "./unified-loading"
 import { useRouter } from "next/navigation"
 // SessionUser type removed - not exported from next-auth
@@ -43,6 +47,7 @@ import { useImageLibrary } from "./pro-mode/hooks/useImageLibrary"
 // Pro Mode Components
 import ProModeChat from "./pro-mode/ProModeChat"
 import ProModeHeader from "./pro-mode/ProModeHeader"
+import MayaHeader from "./maya/maya-header"
 import ProModeInput from "./pro-mode/ProModeInput"
 import ConceptCardPro from "./pro-mode/ConceptCardPro"
 import ImageLibraryModal from "./pro-mode/ImageLibraryModal"
@@ -3002,72 +3007,40 @@ export default function MayaChatScreen({
       )}
 
       {/* Header - Pro Mode or Classic Mode */}
-      {studioProMode ? (
-        <div className="relative">
-          <ProModeHeader
-            libraryCount={libraryTotalImages}
-            credits={creditBalance}
-            onManageLibrary={() => setShowLibraryModal(true)}
-            onAddImages={() => setShowUploadFlow(true)}
-            onStartFresh={async () => {
-              if (confirm('Are you sure you want to start fresh? This will clear your image library.')) {
-                await clearLibrary()
-                setMessages([])
-                handleNewChat()
-              }
-            }}
-            isAdmin={isAdmin}
-            selectedGuideId={selectedGuideId}
-            selectedGuideCategory={selectedGuideCategory}
-            onGuideChange={onGuideChange}
-            userId={userId}
-            onEditIntent={async () => {
-              const newIntent = prompt('Enter your creative intent:', imageLibrary.intent || '')
-              if (newIntent !== null) {
-                await updateIntent(newIntent)
-              }
-            }}
-            onNavigation={handleNavigation}
-            onLogout={handleLogout}
-            isLoggingOut={isLoggingOut}
-            onSwitchToClassic={() => handleModeSwitch(false)}
-            onSettings={() => setShowSettings(true)}
-          />
-        </div>
-      ) : (
-        <div className="shrink-0 flex items-center justify-between px-3 sm:px-4 py-3 bg-white/80 backdrop-blur-xl border-b border-stone-200/50 relative z-50">
-          <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-stone-200/60 overflow-hidden shrink-0">
-              <img src="https://i.postimg.cc/fTtCnzZv/out-1-22.png" alt="Maya" className="w-full h-full object-cover" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="text-sm sm:text-base font-serif font-extralight tracking-[0.2em] text-stone-950 uppercase">
-                {chatTitle}
-              </h3>
-            </div>
-          </div>
-
-          {/* Studio Pro Mode Toggle - Classic Mode */}
-          <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 mr-2">
-            <span className="text-xs text-stone-600 hidden sm:inline">Mode:</span>
-            <button
-              onClick={() => handleModeSwitch(true)}
-              className="touch-manipulation active:scale-95 flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-lg transition-colors bg-stone-100 text-stone-900 hover:bg-stone-200 min-h-[36px]"
-            >
-              <span className="text-[11px] sm:text-xs">Switch to Studio Pro</span>
-            </button>
-          </div>
-
-          <button
-            onClick={() => setShowNavMenu(!showNavMenu)}
-            className="flex items-center justify-center px-3 h-9 sm:h-10 rounded-lg hover:bg-stone-100/50 transition-colors touch-manipulation active:scale-95"
-            aria-label="Navigation menu"
-            aria-expanded={showNavMenu}
-          >
-            <span className="text-xs sm:text-sm font-serif tracking-[0.2em] text-stone-950 uppercase">MENU</span>
-          </button>
-        </div>
-      )}
+      <MayaHeader
+        studioProMode={studioProMode}
+        chatTitle={chatTitle}
+        showNavMenu={showNavMenu}
+        onToggleNavMenu={() => setShowNavMenu(!showNavMenu)}
+        onModeSwitch={handleModeSwitch}
+        libraryCount={libraryTotalImages}
+        credits={creditBalance}
+        onManageLibrary={() => setShowLibraryModal(true)}
+        onAddImages={() => setShowUploadFlow(true)}
+        onStartFresh={async () => {
+          if (confirm('Are you sure you want to start fresh? This will clear your image library.')) {
+            await clearLibrary()
+            setMessages([])
+            handleNewChat()
+          }
+        }}
+        isAdmin={isAdmin}
+        selectedGuideId={selectedGuideId}
+        selectedGuideCategory={selectedGuideCategory}
+        onGuideChange={onGuideChange}
+        userId={userId}
+        onEditIntent={async () => {
+          const newIntent = prompt('Enter your creative intent:', imageLibrary.intent || '')
+          if (newIntent !== null) {
+            await updateIntent(newIntent)
+          }
+        }}
+        onNavigation={handleNavigation}
+        onLogout={handleLogout}
+        isLoggingOut={isLoggingOut}
+        onSwitchToClassic={() => handleModeSwitch(false)}
+        onSettings={() => setShowSettings(true)}
+      />
 
       {/* Training Prompt - Show if user doesn't have trained model */}
       {!hasTrainedModel && (
@@ -3297,140 +3270,49 @@ export default function MayaChatScreen({
         </div>
       )}
 
-      {showSettings && (
-        <>
-          <div
-            className="fixed inset-0 bg-stone-950/20 backdrop-blur-sm z-[100] animate-in fade-in duration-200"
-            onClick={() => setShowSettings(false)}
-          />
+      <MayaSettingsPanel
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+        styleStrength={styleStrength}
+        promptAccuracy={promptAccuracy}
+        aspectRatio={aspectRatio}
+        realismStrength={realismStrength}
+        enhancedAuthenticity={enhancedAuthenticity}
+        onStyleStrengthChange={setStyleStrength}
+        onPromptAccuracyChange={setPromptAccuracy}
+        onAspectRatioChange={setAspectRatio}
+        onRealismStrengthChange={setRealismStrength}
+        onEnhancedAuthenticityChange={setEnhancedAuthenticity}
+        studioProMode={studioProMode}
+      />
 
-          <div className="fixed inset-x-4 top-20 bottom-4 sm:bottom-auto sm:max-h-[85vh] bg-white/95 backdrop-blur-3xl border border-stone-200 rounded-2xl shadow-xl shadow-stone-950/10 animate-in slide-in-from-top-2 duration-300 z-[101] max-w-md mx-auto flex flex-col">
-            {/* Close button */}
-            <div className="flex items-center justify-between mb-4 p-6 pb-4 flex-shrink-0">
-              <h3 className="text-sm font-serif font-extralight tracking-[0.2em] uppercase text-stone-950">
-                Generation Settings
-              </h3>
-              <button
-                onClick={() => setShowSettings(false)}
-                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-100 transition-colors"
-                aria-label="Close settings"
-              >
-                <X size={18} className="text-stone-600" strokeWidth={2} />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto px-6 pb-6 min-h-0">
-              <div className="space-y-6">
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs tracking-wider uppercase text-stone-600">Style Strength</label>
-                  <span className="text-sm font-medium text-stone-950">{styleStrength.toFixed(2)}</span>
-                </div>
-                <input
-                  type="range"
-                  min="0.9"
-                  max="1.2"
-                  step="0.05"
-                  value={styleStrength}
-                  onChange={(e) => setStyleStrength(Number.parseFloat(e.target.value))}
-                  className="w-full"
-                />
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs tracking-wider uppercase text-stone-600">Prompt Accuracy</label>
-                  <span className="text-sm font-medium text-stone-950">{promptAccuracy.toFixed(1)}</span>
-                </div>
-                <input
-                  type="range"
-                  min="2.5"
-                  max="5.0"
-                  step="0.5"
-                  value={promptAccuracy}
-                  onChange={(e) => setPromptAccuracy(Number.parseFloat(e.target.value))}
-                  className="w-full"
-                />
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs tracking-wider uppercase text-stone-600">Realism Boost</label>
-                  <span className="text-sm font-medium text-stone-950">{realismStrength.toFixed(2)}</span>
-                </div>
-                <input
-                  type="range"
-                  min="0.0"
-                  max="0.8"
-                  step="0.1"
-                  value={realismStrength}
-                  onChange={(e) => setRealismStrength(Number.parseFloat(e.target.value))}
-                  className="w-full"
-                />
-                <p className="text-xs text-stone-500 mt-1">Higher = more photorealistic, lower = more stylized</p>
-              </div>
-
-              <div>
-                <label className="text-xs tracking-wider uppercase text-stone-600 mb-2 block">Aspect Ratio</label>
-                <select
-                  value={aspectRatio}
-                  onChange={(e) => setAspectRatio(e.target.value)}
-                  className="w-full px-3 py-2 bg-white border border-stone-200 rounded-lg text-sm"
-                >
-                  <option value="1:1">Square (1:1)</option>
-                  <option value="4:5">Portrait (4:5)</option>
-                  <option value="16:9">Landscape (16:9)</option>
-                </select>
-              </div>
-
-              {/* Enhanced Authenticity Toggle - Only show in Classic mode */}
-              {!studioProMode && (
-                <div className="pt-2 border-t border-stone-200">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <label className="text-xs tracking-wider uppercase text-stone-600 mb-1 block">
-                        Enhanced Authenticity
-                      </label>
-                      <p className="text-xs text-stone-500 mt-1">
-                        More muted colors, iPhone quality, and film grain for a more authentic look
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => setEnhancedAuthenticity(!enhancedAuthenticity)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-stone-950 focus:ring-offset-2 ${
-                        enhancedAuthenticity ? 'bg-stone-900' : 'bg-stone-300'
-                      }`}
-                      role="switch"
-                      aria-checked={enhancedAuthenticity}
-                      aria-label="Enhanced Authenticity"
-                    >
-                      <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          enhancedAuthenticity ? 'translate-x-6' : 'translate-x-1'
-                        }`}
-                      />
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              </div>
-            </div>
-          </div>
-        </>
-      )}
-
-      <div className="flex-1 min-h-0 px-3 sm:px-4">
-        <div
-          ref={messagesContainerRef}
-          className="h-full overflow-y-auto pr-1 scroll-smooth"
-          style={{
-            paddingBottom: "15rem", // Increased to account for quick prompts above input
-          }}
-          role="log"
-          aria-live="polite"
-          aria-label="Chat messages"
-        >
+      <MayaChatInterface
+        messages={messages}
+        filteredMessages={filteredMessages}
+        setMessages={setMessages}
+        studioProMode={studioProMode}
+        isTyping={isTyping}
+        isGeneratingConcepts={isGeneratingConcepts}
+        isGeneratingStudioPro={isGeneratingStudioPro}
+        contentFilter={contentFilter}
+        messagesContainerRef={messagesContainerRef}
+        messagesEndRef={messagesEndRef}
+        showScrollButton={showScrollButton}
+        isAtBottomRef={isAtBottomRef}
+        scrollToBottom={scrollToBottom}
+        chatId={chatId}
+        uploadedImages={uploadedImages}
+        setCreditBalance={setCreditBalance}
+        onImageGenerated={onImageGenerated}
+        isAdmin={isAdmin}
+        selectedGuideId={selectedGuideId}
+        selectedGuideCategory={selectedGuideCategory}
+        onSaveToGuide={handleSaveToGuide}
+        userId={userId}
+        user={user}
+        promptSuggestions={promptSuggestions}
+        generateCarouselRef={generateCarouselRef}
+      />
           {/* Studio Pro Empty State */}
           {isEmpty && studioProMode && !isTyping && (
             <div className="flex-1 flex items-center justify-center p-6 sm:p-8">
@@ -3597,32 +3479,14 @@ export default function MayaChatScreen({
                               Pro Mode category examples - tap to inspire Maya
                             </p>
                           )}
-                          {currentPrompts.length > 0 ? (
-                            <div className="flex flex-wrap gap-2 justify-center max-w-2xl mx-auto">
-                              {currentPrompts.map((item, index) => (
-                                <button
-                                  key={index}
-                                  onClick={() => {
-                                    handleSendMessage(item.prompt)
-                                  }}
-                                  disabled={isTyping || isGeneratingConcepts}
-                                  className="px-4 py-2 bg-white border border-stone-300 rounded-lg hover:bg-stone-50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation active:scale-95"
-                                  style={{
-                                    fontFamily: Typography.ui.fontFamily,
-                                    fontSize: Typography.ui.sizes.sm,
-                                    fontWeight: Typography.ui.weights.regular,
-                                    color: Colors.textSecondary,
-                                  }}
-                                >
-                                  {item.label}
-                                </button>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="text-center py-2">
-                              <p className="text-xs text-stone-400 italic">Loading suggestions...</p>
-                            </div>
-                          )}
+                          <MayaQuickPrompts
+                            prompts={currentPrompts}
+                            onSelect={handleSendMessage}
+                            disabled={isTyping || isGeneratingConcepts}
+                            variant="pro-mode-empty"
+                            studioProMode={studioProMode}
+                            isEmpty={isEmpty}
+                          />
                         </div>
                       )}
                     </div>
@@ -3648,699 +3512,15 @@ export default function MayaChatScreen({
               <p className="text-xs sm:text-sm text-stone-600 tracking-wide text-center mb-4 sm:mb-6 max-w-md leading-relaxed px-4">
                 Hi, I'm Maya. I'll help you create beautiful photos and videos.
               </p>
-              <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 w-full max-w-2xl px-2 sm:px-4 -mx-2">
-                {currentPrompts.map((item, index) => (
-                  <button
-                    key={index}
-                    onClick={() => {
-                      if (studioProMode) {
-                        // Pro Mode: Send message to Maya
-                        const guidanceMessage = item.prompt
-                        
-                        // Send the message - use setTimeout to ensure state is updated
-                        setTimeout(() => {
-                          handleSendMessage(guidanceMessage)
-                        }, 100)
-                      } else {
-                        // Classic mode, send regular message
-                        handleSendMessage(item.prompt)
-                      }
-                    }}
-                    className="shrink-0 px-4 py-2.5 sm:py-3 bg-white/50 backdrop-blur-xl border border-white/70 rounded-xl hover:bg-stone-100 hover:border-stone-300 transition-all duration-300 touch-manipulation active:scale-95 min-h-[44px]"
-                  >
-                    <span className="text-xs tracking-wide font-medium text-stone-700 whitespace-nowrap">
-                      {item.label}
-                    </span>
-                  </button>
-                ))}
-              </div>
+              <MayaQuickPrompts
+                prompts={currentPrompts}
+                onSelect={handleSendMessage}
+                disabled={isTyping}
+                variant="empty-state"
+                studioProMode={studioProMode}
+              />
             </div>
           )}
-
-
-          {filteredMessages &&
-            Array.isArray(filteredMessages) &&
-            filteredMessages
-              .filter((msg) => {
-                return true
-              })
-              .map((msg) => (
-              <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                <div className={`max-w-[90%] sm:max-w-[85%] ${msg.role === "user" ? "order-2" : "order-1"}`}>
-                  {msg.parts &&
-                    Array.isArray(msg.parts) &&
-                    (() => {
-                      // Group parts by type to handle text + image together
-                      const textParts = msg.parts.filter((p) => p && p.type === "text")
-                      const imageParts = msg.parts.filter((p) => p && (p as any).type === "image") // Type assertion for image parts (not in standard UIMessagePart type)
-                      const otherParts = msg.parts.filter((p) => p && p.type !== "text" && (p as any).type !== "image")
-
-                      return (
-                        <>
-                          {/* Render text + image together if both exist */}
-                          {(textParts.length > 0 || imageParts.length > 0) && (
-                            <div
-                              className={`p-4 rounded-2xl transition-all duration-300 ${
-                                msg.role === "user"
-                                  ? "bg-stone-950 text-white shadow-lg shadow-stone-950/20"
-                                  : "bg-white/50 backdrop-blur-xl border border-white/70 shadow-lg shadow-stone-950/5 text-stone-950"
-                              }`}
-                              role={msg.role === "assistant" ? "article" : undefined}
-                            >
-                              {textParts.map((part, idx) => {
-                                const text = (part as any)?.text || ''
-                                
-                                // Check for prompt suggestions in workbench mode (parsed from text)
-                                const parsedPromptSuggestions = parsePromptSuggestions(text)
-                                
-                                // Remove prompts from display text if they're in workbench (Studio Pro mode)
-                                let displayText = text
-                                
-                                // Remove prompts that are rendered as cards (Classic Mode)
-                                if (!studioProMode && parsedPromptSuggestions.length > 0) {
-                                  // Classic mode: Remove carousel slide prompts from text (they'll be shown as cards)
-                                  parsedPromptSuggestions.forEach(suggestion => {
-                                    if (suggestion.label.includes('Slide')) {
-                                      const slideNumMatch = suggestion.label.match(/Slide\s+(\d+)/i)
-                                      if (slideNumMatch) {
-                                        const slideNum = slideNumMatch[1]
-                                        const slidePattern = new RegExp(
-                                          `Slide\\s+${slideNum}\\s*(?:of\\s+\\d+)?\\s*[-–]\\s*[^:]+:.*?(?=\\nSlide\\s+\\d+\\s*(?:of\\s+\\d+)?\\s*[-–]|\\nCopy slide|$)`,
-                                          'gis'
-                                        )
-                                        displayText = displayText.replace(slidePattern, '')
-                                      }
-                                    }
-                                  })
-                                  
-                                  // Also remove other prompts (non-slide)
-                                  const otherPrompts = parsedPromptSuggestions.filter(s => !s.label.includes('Slide'))
-                                  if (otherPrompts.length > 0) {
-                                    displayText = removePromptsFromText(displayText, otherPrompts)
-                                  }
-                                  
-                                // Remove GENERATE_PROMPTS trigger from display
-                                displayText = displayText
-                                  .replace(/\[GENERATE_PROMPTS[:\s]+[^\]]+\]/gi, '')
-                                  .replace(/\[GENERATE_PROMPTS\]/gi, '')
-                                
-                                // Remove SHOW_IMAGE_UPLOAD_MODULE trigger from display (with any following text on same line)
-                                displayText = displayText
-                                  .replace(/\[SHOW_IMAGE_UPLOAD_MODULE[:\s]+[^\]]+\]/gi, '')
-                                  .replace(/\[SHOW_IMAGE_UPLOAD_MODULE\][^\n]*/gi, '')
-                                  .replace(/\[SHOW_IMAGE_UPLOAD_MODULE\]/gi, '')
-                                
-                                // Clean up any remaining prompt fragments
-                                displayText = displayText
-                                  .replace(/Keep the .*?facial features EXACTLY identical.*?This is critical\./gis, '')
-                                  .replace(/Composition:.*?Final Use:.*?Slide \d+ of \d+/gis, '')
-                                  .replace(/\n{3,}/g, '\n\n')
-                                  .replace(/\s{2,}/g, ' ') // Clean up multiple spaces
-                                  .trim()
-                                }
-                                
-                // Remove API-generated prompts from display text if they appear in cards
-                // Note: API promptSuggestions don't have label property, so we skip this removal
-                // Only parsed suggestions from text have labels
-                                
-                                // Get original message text for category extraction
-                                const originalMessageText = textParts.map((p: any) => p.text).join(' ')
-                                
-                                // Check if this message already has concept cards
-                                const hasConceptCards = msg.parts?.some((p: any) => 
-                                  p.type === 'tool-generateConcepts' && 
-                                  p.output?.state === 'ready' && 
-                                  p.output?.concepts?.length > 0
-                                ) || false
-                                
-                                return (
-                                  <div key={idx}>
-                                    {renderMessageContent(displayText, msg.role === "user")}
-                                    
-                                    {/* Old upload module removed - will be replaced by new Pro Mode system */}
-                                    
-                                    
-                                    {/* Render prompt suggestion cards from API (concept cards pro) */}
-                                    {msg.role === 'assistant' &&
-                                      promptSuggestions.length > 0 &&
-                                      msg.id === messages[messages.length - 1]?.id && (
-                                      <div className="mt-4 space-y-3">
-                                        <div className="text-xs text-stone-700 mb-1">
-                                          Step 2 – Pick a concept you like, then send it to your Workbench below.
-                                        </div>
-                                        {promptSuggestions.map((suggestion) => (
-                                          <NewPromptSuggestionCard
-                                            key={`api-suggestion-${suggestion.id}`}
-                                            suggestion={suggestion}
-                                            onCopyToWorkbench={() => {}}
-                                            onUseInWorkbench={() => {}}
-                                          />
-                                        ))}
-                                      </div>
-                                    )}
-                                    
-                                    {/* Render non-carousel suggestions as cards (carousel slides handled in workbench) - HIDDEN in Studio Pro mode */}
-                                    {(() => {
-                                      
-                                      if (parsedPromptSuggestions.length > 0 && msg.role === 'assistant') {
-                                        // Don't render cards if we have carousel slides (they'll be in workbench)
-                                        const hasCarouselSlides = parsedPromptSuggestions.some(s => s.label.includes('Slide'))
-                                        if (hasCarouselSlides) {
-                                          return null
-                                        }
-                                        
-                                        // Render non-carousel suggestions as cards
-                                        const nonCarouselSuggestions = parsedPromptSuggestions.filter(s => !s.label.includes('Slide'))
-                                        if (nonCarouselSuggestions.length > 0) {
-                                          return (
-                                            <div className="mt-4 space-y-3">
-                                              {nonCarouselSuggestions.map((suggestion, sugIdx) => {
-                                                const fullSuggestion: PromptSuggestion = {
-                                                  id: `parsed-${msg.id}-${sugIdx}`,
-                                                  templateId: 'parsed',
-                                                  name: suggestion.label || `Prompt ${sugIdx + 1}`,
-                                                  description: suggestion.description || suggestion.label || '',
-                                                  prompt: suggestion.prompt,
-                                                  variation: 'main',
-                                                  nanoBananaCapabilities: [],
-                                                  useCases: [],
-                                                  confidence: 0.8
-                                                }
-                                                
-                                                const promptLower = suggestion.prompt.toLowerCase()
-                                                if (promptLower.includes('text') || promptLower.includes('typography')) {
-                                                  fullSuggestion.nanoBananaCapabilities.push('text_rendering')
-                                                }
-                                                if (promptLower.includes('image 1') && promptLower.includes('image 2')) {
-                                                  fullSuggestion.nanoBananaCapabilities.push('multi_image_composition')
-                                                }
-                                                if (promptLower.includes('exact') || promptLower.includes('identical') || promptLower.includes('consistency')) {
-                                                  fullSuggestion.nanoBananaCapabilities.push('character_consistency')
-                                                }
-                                                if (promptLower.includes('85mm') || promptLower.includes('f/') || promptLower.includes('lens')) {
-                                                  fullSuggestion.nanoBananaCapabilities.push('professional_controls')
-                                                }
-                                                
-                                                return (
-                                                  <NewPromptSuggestionCard
-                                                    key={`parsed-suggestion-${msg.id}-${sugIdx}`}
-                                                    suggestion={fullSuggestion}
-                                                    onCopyToWorkbench={() => {}}
-                                                    onUseInWorkbench={() => {}}
-                                                  />
-                                                )
-                                              })}
-                                            </div>
-                                          )
-                                        }
-                                      }
-                                      return null
-                                    })()}
-                                  </div>
-                                )
-                              })}
-                              {imageParts.length > 0 && (
-                                <div className={`mt-3 ${imageParts.length > 1 ? 'grid grid-cols-2 sm:grid-cols-3 gap-3' : ''}`}>
-                                  {imageParts.map((part, idx) => {
-                                    const imageUrl = (part as any).image || (part as any).url || (part as any).src
-                                    if (imageUrl) {
-                                      const isCarousel = imageParts.length > 1 && imageParts.length <= 10
-                                      return (
-                                        <div key={idx} className="relative">
-                                          <div className={`relative ${isCarousel ? 'aspect-square' : 'w-48 h-48 sm:w-40 sm:h-40'} rounded-xl overflow-hidden border border-white/60 shadow-lg`}>
-                                            <img 
-                                              src={imageUrl} 
-                                              alt={isCarousel ? `Carousel slide ${idx + 1}` : "Image"} 
-                                              className="w-full h-full object-cover" 
-                                            />
-                                          </div>
-                                          {isCarousel && (
-                                            <p className="text-xs text-stone-500 mt-1.5 tracking-wide text-center">Slide {idx + 1}</p>
-                                          )}
-                                          {!isCarousel && idx === 0 && imageParts.length === 1 && (
-                                            <p className="text-xs text-stone-500 mt-1.5 tracking-wide">Image</p>
-                                          )}
-                                        </div>
-                                      )
-                                    }
-                                    return null
-                                  })}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                          {/* Render other parts (tools, etc.) */}
-                          {otherParts.map((part, partIndex) => {
-                            if (part.type === "tool-generateConcepts") {
-                              const toolPart = part as any
-                              const output = toolPart.output
-
-                              // Show concept cards in both Classic and Studio Pro modes
-                              // Concept cards now support image upload/selection in Studio Pro mode
-                              // Workbench is kept separate for manual prompt creation
-
-                              if (output && output.state === "ready" && Array.isArray(output.concepts)) {
-                                const concepts = output.concepts
-
-                                return (
-                                  <div key={partIndex} className="mt-3 space-y-2">
-                                    <div className="flex items-center gap-2">
-                                      <div className="w-1 h-1 rounded-full bg-stone-600"></div>
-                                      <span className="text-xs tracking-[0.15em] uppercase font-light text-stone-600">
-                                        Photo Ideas
-                                      </span>
-                                    </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
-                                      {concepts.map((concept: any, conceptIndex: number) => {
-                                        // Use Pro Mode concept cards in Studio Pro, Classic cards in Classic Mode
-                                        if (studioProMode) {
-                                          // Use linkedImages from concept (already linked by API with up to 5 images)
-                                          // The API's linkImagesToConcept function links multiple images intelligently
-                                          const conceptLinkedImages = concept.linkedImages && Array.isArray(concept.linkedImages) && concept.linkedImages.length > 0
-                                            ? concept.linkedImages
-                                            : [] // If no linkedImages from API, use empty array (user needs to add images)
-
-                                          // Use stable key based on concept.id and message.id to preserve component state across re-renders
-                                          const conceptId = concept.id || `concept-${msg.id}-${conceptIndex}`
-                                          const stableKey = `pro-concept-${msg.id}-${conceptId}`
-
-                                          return (
-                                            <ConceptCardPro
-                                              key={stableKey}
-                                              concept={{
-                                                id: conceptId,
-                                                title: concept.title || concept.label || 'Untitled Concept',
-                                                description: concept.description || concept.prompt || '',
-                                                category: concept.category,
-                                                aesthetic: concept.aesthetic,
-                                                linkedImages: conceptLinkedImages,
-                                                fullPrompt: concept.fullPrompt || concept.prompt,
-                                              }}
-                                              isAdmin={isAdmin}
-                                              selectedGuideId={selectedGuideId}
-                                              onSaveToGuide={handleSaveToGuide}
-                                              onPromptUpdate={(updatedConceptId, newFullPrompt) => {
-                                                // Update the concept's fullPrompt in the messages array
-                                                setMessages((prevMessages) => {
-                                                  return prevMessages.map((message) => {
-                                                    if (message.id === msg.id && message.parts) {
-                                                      return {
-                                                        ...message,
-                                                        parts: message.parts.map((part: any) => {
-                                                          if (part.type === 'tool-generateConcepts' && part.output?.concepts) {
-                                                            return {
-                                                              ...part,
-                                                              output: {
-                                                                ...part.output,
-                                                                concepts: part.output.concepts.map((c: any) => {
-                                                                  const cId = c.id || `concept-${msg.id}-${conceptIndex}`
-                                                                  if (cId === updatedConceptId) {
-                                                                    return {
-                                                                      ...c,
-                                                                      fullPrompt: newFullPrompt,
-                                                                    }
-                                                                  }
-                                                                  return c
-                                                                }),
-                                                              },
-                                                            }
-                                                          }
-                                                          return part
-                                                        }),
-                                                      }
-                                                    }
-                                                    return message
-                                                  })
-                                                })
-                                                console.log('[Pro Mode] ✅ Prompt updated for concept:', updatedConceptId)
-                                              }}
-                                              onGenerate={async () => {
-                                                // Get the current concept from messages to ensure we use the latest prompt (including edits)
-                                                const currentMessage = messages.find(m => m.id === msg.id)
-                                                const currentConceptPart = currentMessage?.parts?.find((p: any) => 
-                                                  p && p.type === 'tool-generateConcepts' && (p as any).output?.concepts
-                                                ) as any
-                                                const currentConcepts = currentConceptPart?.output?.concepts || []
-                                                const currentConcept = currentConcepts.find((c: any) => {
-                                                  const cId = c.id || `concept-${msg.id}-${conceptIndex}`
-                                                  return cId === conceptId
-                                                }) || concept
-
-                                                const promptToUse = currentConcept.fullPrompt || currentConcept.prompt || concept.fullPrompt || concept.prompt
-
-                                                console.log('[Pro Mode] 🎬 onGenerate called for concept:', currentConcept.title || concept.title)
-                                                
-                                                if (!promptToUse) {
-                                                  console.error('[Pro Mode] ❌ Concept missing prompt')
-                                                  throw new Error('Concept missing prompt')
-                                                }
-
-                                                console.log('[Pro Mode] 📤 Calling /api/maya/pro/generate-image with:', {
-                                                  conceptTitle: currentConcept.title || concept.title,
-                                                  promptLength: promptToUse.length,
-                                                  linkedImagesCount: conceptLinkedImages?.length || 0,
-                                                })
-
-                                                try {
-                                                  const response = await fetch('/api/maya/pro/generate-image', {
-                                                    method: 'POST',
-                                                    headers: { 'Content-Type': 'application/json' },
-                                                    credentials: 'include',
-                                                    body: JSON.stringify({
-                                                      fullPrompt: promptToUse,
-                                                      conceptTitle: concept.title || concept.label,
-                                                      conceptDescription: concept.description,
-                                                      category: concept.category || 'concept',
-                                                      linkedImages: conceptLinkedImages,
-                                                      resolution: '2K',
-                                                      aspectRatio: '1:1',
-                                                    }),
-                                                  })
-
-                                                  console.log('[Pro Mode] 📥 Response status:', response.status, response.ok)
-
-                                                  const data = await response.json()
-                                                  console.log('[Pro Mode] 📥 Response data:', {
-                                                    success: data.success,
-                                                    status: data.status,
-                                                    hasPredictionId: !!data.predictionId,
-                                                    hasGenerationId: !!data.generationId,
-                                                    hasImageUrl: !!data.imageUrl,
-                                                  })
-
-                                                  if (!response.ok) {
-                                                    console.error('[Pro Mode] ❌ Generation failed:', data.error)
-                                                    throw new Error(data.error || 'Generation failed')
-                                                  }
-
-                                                  // Return predictionId and generationId so ConceptCardPro can poll
-                                                  if (data.status === 'succeeded' && data.imageUrl) {
-                                                    // Already completed - trigger callback
-                                                    console.log('[Pro Mode] ✅ Generation completed immediately, imageUrl:', data.imageUrl.substring(0, 100))
-                                                    if (onImageGenerated) {
-                                                      onImageGenerated()
-                                                    }
-                                                    return { predictionId: data.predictionId, generationId: data.generationId }
-                                                  } else if (data.predictionId) {
-                                                    // Return IDs for polling in ConceptCardPro
-                                                    console.log('[Pro Mode] ⏳ Generation in progress, returning IDs for polling')
-                                                    return { predictionId: data.predictionId, generationId: data.generationId }
-                                                  } else {
-                                                    console.warn('[Pro Mode] ⚠️ No predictionId in response')
-                                                    throw new Error('No predictionId returned from API')
-                                                  }
-                                                } catch (error) {
-                                                  console.error('[Pro Mode] ❌ Generation error:', error)
-                                                  throw error
-                                                }
-                                              }}
-                                              onImageGenerated={onImageGenerated}
-                                              onViewPrompt={() => {
-                                                // View prompt modal is handled by ConceptCardPro component
-                                                console.log('[Pro Mode] View prompt:', concept.fullPrompt || concept.prompt)
-                                              }}
-                                            />
-                                          )
-                                        }
-                                        
-                                        // Classic Mode: Use old ConceptCard
-                                        const allBaseImages = uploadedImages.filter(img => img.type === 'base').map(img => img.url)
-                                        
-                                        return (
-                                          <ConceptCard 
-                                            key={conceptIndex} 
-                                            concept={concept} 
-                                            chatId={chatId || undefined} 
-                                            onCreditsUpdate={setCreditBalance}
-                                            studioProMode={false}
-                                            baseImages={allBaseImages}
-                                            selfies={[]}
-                                            products={[]}
-                                            styleRefs={[]}
-                                            isAdmin={isAdmin}
-                                            selectedGuideId={selectedGuideId}
-                                            adminUserId={user?.id?.toString()}
-                                            onSaveToGuide={handleSaveToGuide}
-                                            // sharedImages and onSharedImagesChange removed - not in ConceptCardProps interface
-                                          />
-                                        )
-                                      })}
-                                    </div>
-                                    
-                                  </div>
-                                )
-                              }
-                              // This part is now handled by the isGeneratingConcepts check before the message
-                              return null
-                            }
-
-                            // Render carousel generation card (matches concept card styling)
-                            if (part.type === "tool-generateCarousel") {
-                              const toolPart = part as any
-                              const output = toolPart.output
-
-                              if (output && output.state === "ready") {
-                                const { topic, slideCount, credits } = output
-
-                                return (
-                                  <div key={partIndex} className="mt-3">
-                                    <div className="bg-white border rounded-lg overflow-hidden transition-all duration-300 hover:shadow-lg border-stone-300 bg-linear-to-br from-stone-50 to-white">
-                                      <div className="flex items-center justify-between px-3 py-2.5 border-b border-stone-200">
-                                        <div className="flex items-center gap-2.5">
-                                          <div className="relative">
-                                            <div className="absolute inset-0 bg-linear-to-tr from-purple-600 via-pink-600 to-orange-500 rounded-full p-[2px]">
-                                              <div className="bg-white rounded-full w-full h-full"></div>
-                                            </div>
-                                            <div className="relative w-8 h-8 rounded-full bg-linear-to-br from-stone-200 to-stone-300 flex items-center justify-center">
-                                              <span className="text-xs font-bold text-stone-700">S</span>
-                                            </div>
-                                          </div>
-                                          <div className="flex flex-col">
-                                            <div className="flex items-center gap-2">
-                                              <span className="text-sm font-semibold text-stone-950">sselfie</span>
-                                              <span className="text-[10px] font-medium text-stone-600 px-1.5 py-0.5 bg-stone-200/50 rounded">
-                                                Studio Pro
-                                              </span>
-                                            </div>
-                                            <span className="text-xs text-stone-500">Carousel</span>
-                                          </div>
-                                        </div>
-                                      </div>
-
-                                      <div className="px-3 py-3 space-y-3">
-                                        <div className="space-y-1">
-                                          <p className="text-sm leading-relaxed text-stone-950">
-                                            <span className="font-semibold">sselfie</span> {topic}
-                                          </p>
-                                          <p className="text-sm leading-relaxed text-stone-600 line-clamp-2">
-                                            {slideCount}-slide carousel with text overlay
-                                          </p>
-                                        </div>
-
-                                        {!isGeneratingStudioPro && (
-                                          <div className="space-y-2">
-                                            <button
-                                              onClick={() => {
-                                                if (generateCarouselRef.current) {
-                                                  generateCarouselRef.current({ topic, slideCount })
-                                                }
-                                              }}
-                                              className="group relative w-full text-white px-4 py-2.5 rounded-lg font-semibold text-sm transition-all duration-300 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] min-h-[40px] flex items-center justify-center bg-linear-to-br from-stone-800 via-stone-900 to-stone-950 hover:from-stone-900 hover:via-stone-950 hover:to-black"
-                                            >
-                                              <span>Create with Studio Pro</span>
-                                            </button>
-                                            <div className="space-y-1">
-                                              <p className="text-[10px] text-stone-500 text-center leading-relaxed">
-                                                {credits} credits • {slideCount} slides
-                                              </p>
-                                              <p className="text-[10px] text-stone-400 text-center leading-relaxed">
-                                                Multi-image composition with character consistency
-                                              </p>
-                                            </div>
-                                          </div>
-                                        )}
-
-                                        {isGeneratingStudioPro && (
-                                          <div className="flex flex-col items-center justify-center py-6 space-y-3">
-                                            <div className="flex gap-1.5">
-                                              <div className="w-2 h-2 bg-stone-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                                              <div className="w-2 h-2 bg-stone-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                                              <div className="w-2 h-2 bg-stone-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                                            </div>
-                                            <p className="text-xs text-stone-600">Generating carousel...</p>
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </div>
-                                )
-                              }
-                              return null
-                            }
-
-                            // Studio Pro result display
-                            if ((part as any).type === "studio-pro-result") {
-                              const output = (part as any).output
-
-                              if (output && output.state === "ready" && output.imageUrl) {
-                                return (
-                                  <div key={partIndex} className="mt-3">
-                                    <div className="bg-white/50 backdrop-blur-xl border border-white/70 rounded-xl p-4 space-y-3">
-                                      <div className="relative aspect-square rounded-lg overflow-hidden">
-                                        <img 
-                                          src={output.imageUrl} 
-                                          alt="Studio Pro generation"
-                                          className="w-full h-full object-cover"
-                                        />
-                                      </div>
-                                      <div className="flex items-center justify-between">
-                                        <span className="text-xs text-stone-600">Studio Pro</span>
-                                        <button
-                                          onClick={() => window.open(output.imageUrl, '_blank')}
-                                          className="px-3 py-1.5 bg-stone-900 text-white text-xs rounded-lg hover:bg-stone-700 transition-colors"
-                                        >
-                                          Download
-                                        </button>
-                                      </div>
-                                    </div>
-                                  </div>
-                                )
-                              }
-
-                              if (output && output.state === "processing") {
-                                return (
-                                  <div key={partIndex} className="mt-3">
-                                    <div className="flex items-center gap-2 text-stone-600">
-                                      <div className="w-1.5 h-1.5 border-2 border-stone-600 border-t-transparent rounded-full animate-spin" />
-                                      <span className="text-xs tracking-[0.15em] uppercase font-light">
-                                        Generating Studio Pro content...
-                                      </span>
-                                    </div>
-                                  </div>
-                                )
-                              }
-
-                              return null
-                            }
-
-                            if (part.type === "tool-generateVideo") {
-                              const toolPart = part as any
-                              const output = toolPart.output
-
-                              if (output && output.state === "processing") {
-                                return (
-                                  <div key={partIndex} className="mt-3">
-                                    <VideoCard
-                                      videoUrl=""
-                                      status="processing"
-                                      progress={output.progress}
-                                      motionPrompt={toolPart.args?.motionPrompt}
-                                    />
-                                  </div>
-                                )
-                              }
-
-                              if (output && output.state === "ready" && output.videoUrl) {
-                                return (
-                                  <div key={partIndex} className="mt-3">
-                                    <VideoCard
-                                      videoUrl={output.videoUrl}
-                                      motionPrompt={toolPart.args?.motionPrompt}
-                                      imageSource={toolPart.args?.imageUrl}
-                                    />
-                                  </div>
-                                )
-                              }
-
-                              if (output && output.state === "loading") {
-                                return (
-                                  <div key={partIndex} className="mt-3">
-                                    <div className="flex items-center gap-2 text-stone-600">
-                                      <div className="w-1.5 h-1.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                      <span className="text-xs tracking-[0.15em] uppercase font-light">
-                                        Starting video generation...
-                                      </span>
-                                    </div>
-                                  </div>
-                                )
-                              }
-                              return null
-                            }
-
-                            return null
-                          })}
-                        </>
-                      )
-                    })()}
-                </div>
-              </div>
-            ))}
-
-          {isTyping && (
-            <div className="flex justify-start">
-              <div className="bg-white/50 backdrop-blur-xl border border-white/70 p-3 rounded-2xl max-w-[85%] shadow-lg shadow-stone-900/5">
-                <div className="flex items-center gap-3">
-                  <div className="flex gap-1">
-                    <div className="w-1.5 h-1.5 rounded-full animate-bounce bg-stone-700"></div>
-                    <div
-                      className="w-1.5 h-1.5 rounded-full animate-bounce bg-stone-700"
-                      style={{ animationDelay: "0.2s" }}
-                    ></div>
-                    <div
-                      className="w-1.5 h-1.5 rounded-full animate-bounce bg-stone-700"
-                      style={{ animationDelay: "0.4s" }}
-                    ></div>
-                  </div>
-                  <span className="text-xs font-light text-stone-600">Maya is thinking...</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Enhanced Concept Generation Loading */}
-          {isGeneratingConcepts && (
-            <div className="flex justify-center mt-8 mb-4">
-              <div className="bg-white rounded-2xl border border-stone-200/60 p-6 max-w-md w-full shadow-lg">
-                <div className="space-y-4">
-                  
-                  {/* Animated Progress */}
-                  <div className="flex items-center justify-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-stone-900 animate-pulse"></div>
-                    <div className="w-2 h-2 rounded-full bg-stone-700 animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-                    <div className="w-2 h-2 rounded-full bg-stone-500 animate-pulse" style={{ animationDelay: '0.4s' }}></div>
-                  </div>
-                  
-                  {/* Status Text */}
-                  <div className="text-center space-y-1">
-                    <p className="text-sm font-medium text-stone-900 tracking-wide">
-                      Creating Your Concepts
-                    </p>
-                    <p className="text-xs text-stone-600 leading-relaxed">
-                      Maya is designing professional concepts for you
-                    </p>
-                  </div>
-                  
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div ref={messagesEndRef} />
-        </div>
-
-        {showScrollButton && (
-          <button
-            onClick={() => {
-              isAtBottomRef.current = true
-              scrollToBottom("smooth")
-            }}
-            className="fixed bottom-44 right-4 sm:right-6 p-3 bg-stone-950 text-white rounded-full shadow-2xl shadow-stone-900/40 hover:scale-110 active:scale-95 transition-all duration-300 z-10 animate-in fade-in slide-in-from-bottom-2 min-w-[48px] min-h-[48px] flex items-center justify-center touch-manipulation"
-            aria-label="Scroll to bottom"
-          >
-            <ArrowDown size={18} strokeWidth={2.5} />
-          </button>
-        )}
-      </div>
 
 
       <div
@@ -4350,27 +3530,15 @@ export default function MayaChatScreen({
         }}
       >
         {/* Classic Mode Quick Actions */}
-        {!isEmpty && !uploadedImage && !studioProMode && (
-          <div className="mb-2 mt-2">
-            <div className="flex gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide pb-1 -mx-2 px-2 sm:mx-0 sm:px-0">
-              {currentPrompts.map((item, index) => (
-                <button
-                  key={index}
-                  onClick={() => {
-                    // Classic mode, send regular message
-                    handleSendMessage(item.prompt)
-                  }}
-                  disabled={isTyping}
-                  className="shrink-0 px-3 py-2 bg-white/40 backdrop-blur-xl border border-white/60 rounded-lg hover:bg-white/60 transition-all duration-300 disabled:opacity-50 touch-manipulation active:scale-95 min-h-[44px]"
-                >
-                  <span className="text-xs tracking-wide font-medium text-stone-700 whitespace-nowrap">
-                    {item.label}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+        <MayaQuickPrompts
+          prompts={currentPrompts}
+          onSelect={handleSendMessage}
+          disabled={isTyping}
+          variant="input-area"
+          studioProMode={studioProMode}
+          isEmpty={isEmpty}
+          uploadedImage={uploadedImage}
+        />
 
         {uploadedImage && (
           <div className="mb-2 relative inline-block">
@@ -4441,30 +3609,15 @@ export default function MayaChatScreen({
                     }}
                   >
                     {/* Quick Suggestions */}
-                    {!isEmpty && !uploadedImage && currentPrompts.length > 0 && (
-                      <div>
-                        <div className="flex gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide pb-1">
-                          {currentPrompts.map((item, index) => (
-                            <button
-                              key={`pro-mode-prompt-${index}-${item.label}`}
-                              onClick={() => {
-                                handleSendMessage(item.prompt)
-                              }}
-                              disabled={isTyping || isGeneratingConcepts}
-                              className="shrink-0 px-3 py-2 bg-white border border-stone-300 rounded-lg hover:bg-stone-50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation active:scale-95 min-h-[44px]"
-                              style={{
-                                fontFamily: Typography.ui.fontFamily,
-                                fontSize: Typography.ui.sizes.sm,
-                                fontWeight: Typography.ui.weights.regular,
-                                color: Colors.textSecondary,
-                              }}
-                            >
-                              <span className="whitespace-nowrap">{item.label}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                    <MayaQuickPrompts
+                      prompts={currentPrompts}
+                      onSelect={handleSendMessage}
+                      disabled={isTyping || isGeneratingConcepts}
+                      variant="pro-mode-options"
+                      studioProMode={studioProMode}
+                      isEmpty={isEmpty}
+                      uploadedImage={uploadedImage}
+                    />
 
                     {/* Concept Consistency Toggle */}
                     <div className="border-t border-stone-200/50 pt-4">

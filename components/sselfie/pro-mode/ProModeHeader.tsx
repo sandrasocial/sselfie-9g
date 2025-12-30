@@ -18,6 +18,7 @@ import {
 import { Typography, Colors, BorderRadius, Spacing, UILabels, ButtonLabels } from '@/lib/maya/pro/design-system'
 import { ChevronDown, MoreVertical, X, LogOut, FolderOpen, Plus, Eye, Sliders } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import MayaModeToggle from '../maya/maya-mode-toggle'
 
 /**
  * ProModeHeader Component
@@ -531,33 +532,15 @@ export default function ProModeHeader({
           </div>
         )}
 
-        {/* Switch to Classic button - shown on larger screens, hidden on mobile (moved to menu) */}
+        {/* Mode Toggle - Pro Mode (shown on larger screens, hidden on mobile - moved to menu) */}
         {onSwitchToClassic && (
-          <button
-            onClick={onSwitchToClassic}
-            className="touch-manipulation active:scale-95 hidden md:flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-lg transition-colors"
-            style={{
-              fontFamily: Typography.ui.fontFamily,
-              fontSize: 'clamp(11px, 2vw, 13px)',
-              fontWeight: Typography.ui.weights.medium,
-              color: Colors.textSecondary,
-              backgroundColor: Colors.backgroundAlt,
-              border: `1px solid ${Colors.border}`,
-              minHeight: '36px',
-              cursor: 'pointer',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = Colors.hover
-              e.currentTarget.style.borderColor = Colors.primary
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = Colors.backgroundAlt
-              e.currentTarget.style.borderColor = Colors.border
-            }}
-          >
-            <span className="hidden lg:inline">Mode:</span>
-            <span>Switch to Classic</span>
-          </button>
+          <div className="hidden md:flex">
+            <MayaModeToggle
+              currentMode="pro"
+              onToggle={onSwitchToClassic}
+              variant="compact"
+            />
+          </div>
         )}
 
         {/* Navigation Menu Button (3 dots) - always visible */}
@@ -821,7 +804,7 @@ export default function ProModeHeader({
                         onSwitchToClassic()
                         setShowNavMenu(false)
                       }}
-                      className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-stone-50"
+                      className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-stone-50 flex items-center gap-2"
                       style={{
                         fontFamily: Typography.ui.fontFamily,
                         fontSize: Typography.ui.sizes.md,
@@ -829,7 +812,13 @@ export default function ProModeHeader({
                         color: Colors.textSecondary,
                       }}
                     >
-                      Switch to Classic
+                      <MayaModeToggle
+                        currentMode="pro"
+                        onToggle={() => {}}
+                        variant="compact"
+                        className="pointer-events-none"
+                      />
+                      <span>Switch to Classic</span>
                     </button>
                   </>
                 )}

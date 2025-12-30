@@ -12,3 +12,4 @@ CREATE INDEX IF NOT EXISTS idx_alex_suggestion_acted_upon ON alex_suggestion_his
 COMMENT ON COLUMN alex_suggestion_history.acted_upon IS 'Whether the user acted on this suggestion (e.g., created the email, set up the automation)';
 COMMENT ON COLUMN alex_suggestion_history.acted_upon_at IS 'Timestamp when the user acted on this suggestion';
 
+
