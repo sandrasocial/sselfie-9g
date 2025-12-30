@@ -149,6 +149,12 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
     dedupingInterval: 60000,
   })
 
+  const { data: stats } = useSWR("/api/studio/stats", fetcher, {
+    refreshInterval: 60000,
+    revalidateOnFocus: false,
+    dedupingInterval: 30000,
+  })
+
   useEffect(() => {
     if (!loadMoreRef.current || !hasMore || isLoadingMore) return
 
@@ -707,9 +713,23 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
 
       <div className="pt-3 sm:pt-4">
         <div className="flex items-center justify-between mb-4 sm:mb-6 gap-2">
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-extralight tracking-[0.2em] sm:tracking-[0.3em] text-stone-950 uppercase">
-            Gallery
-          </h1>
+          <div className="flex-1">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-extralight tracking-[0.2em] sm:tracking-[0.3em] text-stone-950 uppercase mb-2">
+              Gallery
+            </h1>
+            {stats && (
+              <div className="flex items-center gap-4 text-xs sm:text-sm">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-stone-500 font-light">{stats.totalGenerated || 0}</span>
+                  <span className="text-stone-400">photos</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-stone-500 font-light">{stats.favorites || 0}</span>
+                  <span className="text-stone-400">favorites</span>
+                </div>
+              </div>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             {!selectionMode && (
               <>
