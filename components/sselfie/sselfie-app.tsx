@@ -15,14 +15,12 @@ import {
   LayoutGrid,
 } from "lucide-react"
 import LoadingScreen from "./loading-screen"
-import StudioScreen from "./studio-screen"
-import TrainingScreen from "./training-screen"
+import OnboardingWizard from "./onboarding-wizard"
 import MayaChatScreen from "./maya-chat-screen"
 import GalleryScreen from "./gallery-screen"
 import BRollScreen from "./b-roll-screen"
 import AcademyScreen from "./academy-screen"
-import ProfileScreen from "./profile-screen"
-import SettingsScreen from "./settings-screen"
+import AccountScreen from "./account-screen"
 import FeedPlannerScreen from "../feed-planner/feed-planner-screen" // Fixed import path to correct location
 import { InstallPrompt } from "./install-prompt"
 import { InstallButton } from "./install-button"
@@ -68,19 +66,16 @@ export default function SselfieApp({
     if (typeof window !== "undefined") {
       const hash = window.location.hash.slice(1) // Remove the # symbol
       const validTabs = [
-        "studio",
-        "training",
         "maya",
         "b-roll",
         "gallery",
         "feed-planner",
         "academy",
-        "profile",
-        "settings",
+        "account",
       ]
-      return validTabs.includes(hash) ? hash : "studio"
+      return validTabs.includes(hash) ? hash : "maya"
     }
-    return "studio"
+    return "maya"
   }
 
   const [activeTab, setActiveTab] = useState(getInitialTab)
@@ -88,6 +83,7 @@ export default function SselfieApp({
   const [currentTime, setCurrentTime] = useState(new Date())
   const [hasTrainedModel, setHasTrainedModel] = useState(false)
   const [isLoadingTrainingStatus, setIsLoadingTrainingStatus] = useState(true)
+  const [showOnboarding, setShowOnboarding] = useState(false)
   const [creditBalance, setCreditBalance] = useState<number>(0)
   const [isLoadingCredits, setIsLoadingCredits] = useState(true)
   const [showBuyCreditsModal, setShowBuyCreditsModal] = useState(false)
@@ -109,20 +105,17 @@ export default function SselfieApp({
     const handlePopState = () => {
       const hash = window.location.hash.slice(1)
       const validTabs = [
-        "studio",
-        "training",
         "maya",
         "b-roll",
         "gallery",
         "feed-planner",
         "academy",
-        "profile",
-        "settings",
+        "account",
       ]
       if (validTabs.includes(hash)) {
         setActiveTab(hash)
       } else {
-        setActiveTab("studio")
+        setActiveTab("maya")
       }
     }
 
@@ -199,17 +192,29 @@ export default function SselfieApp({
         const response = await fetch("/api/training/status")
         const data = await response.json()
         console.log("[v0] Training status data:", data)
-        setHasTrainedModel(data.hasTrainedModel || false)
+        const hasModel = data.hasTrainedModel || false
+        setHasTrainedModel(hasModel)
+        
+        // Show onboarding for first-time users without trained model
+        if (!hasModel && !isLoadingTrainingStatus) {
+          setShowOnboarding(true)
+        } else {
+          setShowOnboarding(false)
+        }
       } catch (error) {
         console.error("[v0] Error fetching training status:", error)
         setHasTrainedModel(false)
+        // Show onboarding if we can't determine status (likely first-time user)
+        if (!isLoadingTrainingStatus) {
+          setShowOnboarding(true)
+        }
       } finally {
         setIsLoadingTrainingStatus(false)
       }
     }
 
     fetchTrainingStatus()
-  }, [])
+  }, [isLoadingTrainingStatus])
 
   useEffect(() => {
     const timer = setTimeout(() => setIsLoading(false), 2500)
@@ -250,15 +255,12 @@ export default function SselfieApp({
   }, [shouldShowCheckout, isLoadingCredits])
 
   const tabs = [
-    { id: "studio", label: "Studio", icon: Camera },
-    { id: "training", label: "Training", icon: Aperture },
     { id: "maya", label: "Maya", icon: MessageCircle },
     { id: "b-roll", label: "B-Roll", icon: Film },
     { id: "gallery", label: "Gallery", icon: ImageIcon },
     { id: "feed-planner", label: "Feed", icon: LayoutGrid },
     { id: "academy", label: "Academy", icon: Grid },
-    { id: "profile", label: "Profile", icon: User },
-    { id: "settings", label: "Settings", icon: Settings },
+    { id: "account", label: "Account", icon: User },
   ]
 
   const user: UserType = {
@@ -300,7 +302,7 @@ export default function SselfieApp({
 
   const activeUpgrade = upgradeOpportunities.find((op) => !dismissedUpgradeTypes.has(op.type))
   const shouldShowUpgradeBanner =
-    ["studio", "gallery", "maya"].includes(activeTab) && !!activeUpgrade && access.canUseGenerators
+    ["gallery", "maya"].includes(activeTab) && !!activeUpgrade && access.canUseGenerators
 
   const logUpgradeEvent = async (eventType: "impression" | "dismiss" | "cta_click", opportunityType?: string) => {
     try {
@@ -455,7 +457,7 @@ export default function SselfieApp({
             )}
 
             <AnimatePresence mode="wait">
-              {(activeTab === "studio" || activeTab === "maya" || activeTab === "training") &&
+              {activeTab === "maya" &&
               !access.canUseGenerators ? (
                 <motion.div
                   key="upgrade-or-credits"
@@ -465,7 +467,7 @@ export default function SselfieApp({
                   transition={{ duration: 0.2 }}
                 >
                   <UpgradeOrCredits
-                    feature={activeTab === "studio" ? "Studio" : activeTab === "maya" ? "Maya" : "Training"}
+                    feature={activeTab === "maya" ? "Maya" : "Training"}
                   />
                 </motion.div>
               ) : (
@@ -476,22 +478,6 @@ export default function SselfieApp({
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.2, ease: "easeInOut" }}
                 >
-                  {activeTab === "studio" && (
-                    <StudioScreen
-                      user={user}
-                      hasTrainedModel={hasTrainedModel}
-                      setActiveTab={handleTabChange}
-                      onImageGenerated={refreshCredits}
-                    />
-                  )}
-                  {activeTab === "training" && (
-                    <TrainingScreen
-                      user={user}
-                      userId={userId}
-                      setHasTrainedModel={setHasTrainedModel}
-                      setActiveTab={handleTabChange}
-                    />
-                  )}
                   {activeTab === "maya" && (
                     <MayaChatScreen 
                       onImageGenerated={refreshCredits} 
@@ -504,8 +490,7 @@ export default function SselfieApp({
                   {activeTab === "gallery" && <GalleryScreen user={user} userId={userId} />}
                   {activeTab === "feed-planner" && <FeedPlannerScreen />}
                   {activeTab === "academy" && <AcademyScreen />}
-                  {activeTab === "profile" && <ProfileScreen user={user} creditBalance={creditBalance} />}
-                  {activeTab === "settings" && <SettingsScreen user={user} creditBalance={creditBalance} />}
+                  {activeTab === "account" && <AccountScreen user={user} creditBalance={creditBalance} />}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -592,6 +577,19 @@ export default function SselfieApp({
       {activeTab !== "maya" && (
         <FeedbackButton userId={userId} userEmail={userEmail} userName={userName} />
       )}
+
+      {/* Onboarding Wizard */}
+      <OnboardingWizard
+        isOpen={showOnboarding && !hasTrainedModel}
+        onComplete={() => {
+          setShowOnboarding(false)
+          setHasTrainedModel(true)
+        }}
+        onDismiss={() => setShowOnboarding(false)}
+        hasTrainedModel={hasTrainedModel}
+        userId={userId}
+        userName={userName}
+      />
       </div>
   )
 }

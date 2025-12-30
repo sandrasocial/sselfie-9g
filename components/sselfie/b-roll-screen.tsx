@@ -541,7 +541,10 @@ export default function BRollScreen({ user }: BRollScreenProps) {
                 <span className="text-sm font-medium text-stone-700">Studio</span>
               </button>
               <button
-                onClick={() => handleNavigation("training")}
+                onClick={() => {
+                  // Training moved to Account → Settings, trigger onboarding if needed
+                  window.dispatchEvent(new CustomEvent('open-onboarding'))
+                }}
                 className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
               >
                 <Aperture size={18} className="text-stone-600" strokeWidth={2} />
@@ -576,18 +579,11 @@ export default function BRollScreen({ user }: BRollScreenProps) {
                 <span className="text-sm font-medium text-stone-700">Academy</span>
               </button>
               <button
-                onClick={() => handleNavigation("profile")}
+                onClick={() => handleNavigation("account")}
                 className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
               >
                 <UserIcon size={18} className="text-stone-600" strokeWidth={2} />
-                <span className="text-sm font-medium text-stone-700">Profile</span>
-              </button>
-              <button
-                onClick={() => handleNavigation("settings")}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
-              >
-                <SettingsIcon size={18} className="text-stone-600" strokeWidth={2} />
-                <span className="text-sm font-medium text-stone-700">Settings</span>
+                <span className="text-sm font-medium text-stone-700">Account</span>
               </button>
             </div>
 

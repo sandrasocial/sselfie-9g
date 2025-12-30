@@ -3085,20 +3085,23 @@ export default function MayaChatScreen({
               Before you can create stunning photos with Maya, you need to train your personal AI model with your selfies.
             </p>
 
-            <button
-              onClick={() => setActiveTab && setActiveTab("training")}
-              className={`group relative ${DesignClasses.buttonPrimary} min-h-[52px] sm:min-h-[60px] overflow-hidden w-full sm:w-auto`}
-            >
-              <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              <span className="relative z-10 flex items-center justify-center gap-2">
-                Start Training Now
-                <ChevronRight
-                  size={14}
-                  strokeWidth={1.5}
-                  className="group-hover:translate-x-1 transition-transform duration-500"
-                />
-              </span>
-            </button>
+                <button
+                  onClick={() => {
+                    // Trigger onboarding wizard instead of navigating to training tab
+                    window.dispatchEvent(new CustomEvent('open-onboarding'))
+                  }}
+                  className={`group relative ${DesignClasses.buttonPrimary} min-h-[52px] sm:min-h-[60px] overflow-hidden w-full sm:w-auto`}
+                >
+                  <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                  <span className="relative z-10 flex items-center justify-center gap-2">
+                    Start Training Now
+                    <ChevronRight
+                      size={14}
+                      strokeWidth={1.5}
+                      className="group-hover:translate-x-1 transition-transform duration-500"
+                    />
+                  </span>
+                </button>
           </div>
         </div>
       )}
@@ -3221,14 +3224,17 @@ export default function MayaChatScreen({
             {/* Navigation links - scrollable middle section with bottom padding */}
             <div className="flex-1 overflow-y-auto py-2 pb-32 min-h-0">
               <button
-                onClick={() => handleNavigation("studio")}
+                onClick={() => handleNavigation("maya")}
                 className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
               >
                 <Home size={18} className="text-stone-600" strokeWidth={2} />
                 <span className="text-sm font-medium text-stone-700">Studio</span>
               </button>
               <button
-                onClick={() => handleNavigation("training")}
+                onClick={() => {
+                  // Training moved to Account → Settings, trigger onboarding if needed
+                  window.dispatchEvent(new CustomEvent('open-onboarding'))
+                }}
                 className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
               >
                 <Aperture size={18} className="text-stone-600" strokeWidth={2} />
@@ -3256,18 +3262,11 @@ export default function MayaChatScreen({
                 <span className="text-sm font-medium text-stone-700">Academy</span>
               </button>
               <button
-                onClick={() => handleNavigation("profile")}
+                onClick={() => handleNavigation("account")}
                 className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
               >
                 <User size={18} className="text-stone-600" strokeWidth={2} />
-                <span className="text-sm font-medium text-stone-700">Profile</span>
-              </button>
-              <button
-                onClick={() => handleNavigation("settings")}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
-              >
-                <SettingsIcon size={18} className="text-stone-600" strokeWidth={2} />
-                <span className="text-sm font-medium text-stone-700">Settings</span>
+                <span className="text-sm font-medium text-stone-700">Account</span>
               </button>
             </div>
 
