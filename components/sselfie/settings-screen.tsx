@@ -424,10 +424,6 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
       )}
 
       <div className="px-3 py-4 sm:p-8 md:p-12 overflow-y-auto flex-1 space-y-4 sm:space-y-6 md:space-y-8 pb-24 sm:pb-32">
-        {console.log("[v0] Settings - userInfo:", userInfo)}
-        {console.log("[v0] Settings - subscriptionInfo:", subscriptionInfo)}
-        {console.log("[v0] Settings - hasActiveSubscription:", hasActiveSubscription)}
-        {console.log("[v0] Settings - isStudioMembership:", isStudioMembership)}
 
         {userInfo && (
           <div className={DesignClasses.card}>

@@ -664,7 +664,7 @@ export default function BRollScreen({ user }: BRollScreenProps) {
                     onFavoriteToggle={() => handleFavoriteToggle(image.id, false)}
                     onDelete={() => handleDelete(image.id)}
                     onAnimate={() =>
-                      handleAnimate(image.id, image.image_url, image.prompt, image.prompt, image.category || "")
+                      handleAnimate(image.id, image.image_url, image.description || image.prompt, image.prompt, image.category || "")
                     }
                     isFavorite={false}
                     showAnimateOverlay={true}

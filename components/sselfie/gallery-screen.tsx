@@ -20,6 +20,7 @@ import {
   ImageIcon as ImageIconLucide,
   Grid,
   SettingsIcon,
+  User as UserIcon,
   LogOut,
   Film,
   Save,
@@ -1193,7 +1194,7 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto py-2">
+            <div className="flex-1 overflow-y-auto min-h-0 py-2">
               <button
                 onClick={() => handleNavigation("maya")}
                 className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
@@ -1243,11 +1244,12 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
                 onClick={() => handleNavigation("account")}
                 className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
               >
-                <SettingsIcon size={18} className="text-stone-600" strokeWidth={2} />
+                <UserIcon size={18} className="text-stone-600" strokeWidth={2} />
                 <span className="text-sm font-medium text-stone-700">Account</span>
               </button>
               <button
-                onClick={() => handleNavigation("account")}
+                onClick={handleLogout}
+                disabled={isLoggingOut}
                 className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
               >
                 <LogOut size={16} strokeWidth={2} />
