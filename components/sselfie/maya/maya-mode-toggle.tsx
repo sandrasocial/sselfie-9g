@@ -14,7 +14,18 @@ interface MayaModeToggleProps {
  * 
  * Segmented control for switching between Classic and Pro features.
  * Shows both options with the active one highlighted.
- * Pro features include: Image library management, advanced generation options, concept consistency controls.
+ * 
+ * **Pro Features Include:**
+ * - Image library management (upload, organize, and reuse images)
+ * - Advanced generation options (quick prompts, concept consistency)
+ * - Enhanced concept generation with linked images
+ * - Library-based image selection for concepts
+ * 
+ * **Classic Mode:**
+ * - Basic chat interface
+ * - Simple image generation
+ * - Standard concept cards
+ * 
  * NO ICONS - uses clear text labels only, following design system guidelines.
  */
 export default function MayaModeToggle({
@@ -55,7 +66,8 @@ export default function MayaModeToggle({
               ? "bg-white text-stone-600 hover:bg-stone-50 cursor-pointer"
               : "bg-stone-950 text-white cursor-default"
           }`}
-          aria-label="Switch to Classic Mode"
+          aria-label="Switch to Classic Mode - Basic chat interface with simple image generation"
+          title="Switch to Classic Mode - Basic chat interface with simple image generation"
           disabled={!isProMode}
         >
           <span className="text-xs sm:text-sm font-serif font-extralight tracking-[0.2em] uppercase">
@@ -74,7 +86,8 @@ export default function MayaModeToggle({
               ? "bg-stone-950 text-white cursor-default"
               : "bg-white text-stone-600 hover:bg-stone-50 cursor-pointer"
           }`}
-          aria-label="Switch to Studio Pro Mode"
+          aria-label="Switch to Studio Pro Mode - Image library, advanced options, and enhanced concept generation"
+          title="Switch to Studio Pro Mode - Image library, advanced options, and enhanced concept generation"
           disabled={isProMode}
         >
           <span className="text-xs sm:text-sm font-serif font-extralight tracking-[0.2em] uppercase">
@@ -91,7 +104,12 @@ export default function MayaModeToggle({
       <button
         onClick={onToggle}
         className="touch-manipulation active:scale-95 px-4 py-2 rounded-lg transition-colors bg-stone-100 text-stone-900 hover:bg-stone-200 border border-stone-300 min-h-[36px]"
-        aria-label="Switch to Studio Pro Mode"
+        aria-label={isClassicMode 
+          ? "Switch to Studio Pro Mode - Enable image library, advanced options, and enhanced concept generation"
+          : "Switch to Classic Mode - Basic chat interface with simple image generation"}
+        title={isClassicMode 
+          ? "Switch to Studio Pro Mode - Enable image library, advanced options, and enhanced concept generation"
+          : "Switch to Classic Mode - Basic chat interface with simple image generation"}
       >
         <span className="text-xs sm:text-sm font-serif font-extralight tracking-[0.2em] uppercase">
           {isClassicMode ? "Switch to Studio Pro" : "Switch to Classic"}

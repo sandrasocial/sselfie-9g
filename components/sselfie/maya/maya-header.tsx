@@ -66,8 +66,24 @@ interface MayaHeaderUnifiedProps {
  * Single header component that handles both Classic and Pro Mode.
  * Uses progressive disclosure - Pro features appear when studioProMode is enabled.
  * 
- * Classic Mode: Simple header with chat title, mode toggle, and menu
- * Pro Mode: Enhanced header with library management, credits, guide controls (admin), etc.
+ * **Progressive Enhancement Pattern:**
+ * - Base UI structure is the same for both modes
+ * - Pro features conditionally appear when enabled
+ * - No jarring UI changes when switching modes
+ * - Smooth transitions between feature sets
+ * 
+ * **Classic Mode:**
+ * - Simple header with chat title
+ * - Mode toggle (to enable Pro features)
+ * - Navigation menu
+ * 
+ * **Pro Mode (when enabled):**
+ * - All Classic features, plus:
+ * - Image library management (count, add, manage)
+ * - Credits display
+ * - Guide controls (admin only)
+ * - Enhanced navigation menu
+ * - Settings access
  */
 export default function MayaHeaderUnified({
   studioProMode,
@@ -220,7 +236,8 @@ export default function MayaHeaderUnified({
             </div>
           )}
 
-          {/* Mode Toggle - Always show (segmented control in Pro, button in Classic) */}
+          {/* Mode Toggle - Always show (segmented control showing both options)
+              Progressive enhancement: Same component, different state based on current mode */}
           {studioProMode ? (
             onSwitchToClassic && (
               <MayaModeToggle

@@ -198,6 +198,12 @@ export default function MayaChatScreen({
   // Feature flags - derived from mode for clearer conditional rendering
   // These make it explicit what features are enabled, rather than just checking studioProMode
   // Must be defined after useMayaImages hook since hasImageLibrary depends on imageLibrary
+  // 
+  // Progressive Enhancement Pattern:
+  // - Base UI is the same for both modes
+  // - Pro features conditionally appear when hasProFeatures is true
+  // - No conditional rendering of entire components (use unified components instead)
+  // - Only conditionally show/hide specific features within unified components
   const hasProFeatures = studioProMode
   const hasImageLibrary = studioProMode && imageLibrary
   const hasLibraryManagement = studioProMode
@@ -1446,6 +1452,7 @@ export default function MayaChatScreen({
         }
       } catch (error) {
         console.error("[v0] Error fetching user gender:", error)
+        // Fallback: use studioProMode directly if hasProFeatures not available
         setCurrentPrompts(studioProMode ? getProModeQuickSuggestions() : getRandomPrompts(null))
       }
     }
@@ -3174,7 +3181,8 @@ export default function MayaChatScreen({
         )}
 
         {/* Input Area - Unified for both Classic and Pro Mode */}
-        {/* Pro Feature: Generation Options (collapsible section with quick prompts and concept consistency) */}
+        {/* Pro Feature: Generation Options (collapsible section with quick prompts and concept consistency)
+            Progressive enhancement: This section only appears when Pro features are enabled */}
         {studioProMode && (
           <div 
             className="w-full border-b"
@@ -3193,7 +3201,10 @@ export default function MayaChatScreen({
                   paddingRight: 'clamp(12px, 3vw, 24px)',
                 }}
               >
-                <span className="text-xs sm:text-sm font-serif font-extralight tracking-[0.2em] uppercase text-stone-600">
+                <span 
+                  className="text-xs sm:text-sm font-serif font-extralight tracking-[0.2em] uppercase text-stone-600"
+                  title="Advanced generation options: Quick prompts and concept consistency controls"
+                >
                   Generation Options
                 </span>
                 <ChevronDown

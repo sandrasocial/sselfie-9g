@@ -9,7 +9,24 @@ import { Typography, Colors, BorderRadius, ButtonLabels } from '@/lib/maya/pro/d
  * Maya Unified Input Component
  * 
  * Unified chat input component that works for both Classic and Pro modes.
- * Progressive enhancement: Pro features appear when enabled, but base UI is the same.
+ * Uses progressive enhancement: Pro features appear when enabled, but base UI structure is the same.
+ * 
+ * **Progressive Enhancement Pattern:**
+ * - Base input structure (textarea, send button, image upload) is identical
+ * - Pro features conditionally appear when studioProMode is enabled
+ * - No layout shifts when switching modes
+ * - Consistent user experience
+ * 
+ * **Classic Mode Features:**
+ * - Text input with image upload
+ * - Settings button (opens settings panel)
+ * - Send button
+ * 
+ * **Pro Mode Features (when enabled):**
+ * - All Classic features, plus:
+ * - "Manage Library" button (opens image library)
+ * - Enhanced styling with Pro design system
+ * - Library-based image selection
  * 
  * Design principles:
  * - Same structure for both modes
@@ -413,7 +430,7 @@ export default function MayaUnifiedInput({
           )}
         </div>
 
-        {/* Manage Library button - Pro Mode only */}
+        {/* Manage Library button - Pro Mode only (Progressive enhancement) */}
         {showLibraryButton && onManageLibrary && studioProMode && (
           <div className="mt-2 flex items-center justify-start">
             <button
@@ -426,6 +443,8 @@ export default function MayaUnifiedInput({
                 cursor: 'pointer',
                 padding: '4px 0',
               }}
+              aria-label="Open image library to manage and organize your photos"
+              title="Open image library to manage and organize your photos"
             >
               {ButtonLabels.openLibrary}
             </button>
