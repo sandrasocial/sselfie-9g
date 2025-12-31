@@ -22,8 +22,6 @@ interface ProModeInputProps {
   onSend?: (message: string, imageUrl?: string) => void
   onImageUpload?: () => void
   onManageLibrary?: () => void
-  onNewChat?: () => void
-  onShowHistory?: () => void
   isLoading?: boolean
   disabled?: boolean
   placeholder?: string
@@ -33,8 +31,6 @@ export default function ProModeInput({
   onSend,
   onImageUpload,
   onManageLibrary,
-  onNewChat,
-  onShowHistory,
   isLoading = false,
   disabled = false,
   placeholder = "What would you like to create?",
@@ -322,94 +318,24 @@ export default function ProModeInput({
           </button>
         </div>
 
-        {/* Action buttons row */}
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-          {/* Left side: Manage Library */}
-          {onManageLibrary && (
+        {/* Manage Library button (if needed, can be moved elsewhere) */}
+        {onManageLibrary && (
+          <div className="mt-2 flex items-center justify-start">
             <button
               type="button"
               onClick={onManageLibrary}
-              className="touch-manipulation active:scale-95"
+              className="touch-manipulation active:scale-95 text-xs font-serif font-extralight tracking-[0.2em] uppercase text-stone-500 hover:text-stone-700 transition-colors"
               style={{
-                fontFamily: Typography.ui.fontFamily,
-                fontSize: Typography.ui.sizes.sm,
-                fontWeight: Typography.ui.weights.regular,
-                color: Colors.textSecondary,
                 backgroundColor: 'transparent',
                 border: 'none',
                 cursor: 'pointer',
                 padding: '4px 0',
-                transition: 'opacity 0.2s ease',
               }}
             >
               {ButtonLabels.openLibrary}
             </button>
-          )}
-
-          {/* Right side: New Project and History */}
-          <div className="flex items-center gap-2 sm:gap-3 ml-auto">
-            {onNewChat && (
-              <button
-                type="button"
-                onClick={onNewChat}
-                className="touch-manipulation active:scale-95"
-                style={{
-                  fontFamily: Typography.ui.fontFamily,
-                  fontSize: Typography.ui.sizes.sm,
-                  fontWeight: Typography.ui.weights.medium,
-                  color: Colors.textSecondary,
-                  backgroundColor: 'transparent',
-                  border: `1px solid ${Colors.border}`,
-                  padding: '6px 12px',
-                  minHeight: '32px',
-                  borderRadius: BorderRadius.buttonSm,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = Colors.hover
-                  e.currentTarget.style.borderColor = Colors.primary
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent'
-                  e.currentTarget.style.borderColor = Colors.border
-                }}
-              >
-                New Project
-              </button>
-            )}
-            {onShowHistory && (
-              <button
-                type="button"
-                onClick={onShowHistory}
-                className="touch-manipulation active:scale-95"
-                style={{
-                  fontFamily: Typography.ui.fontFamily,
-                  fontSize: Typography.ui.sizes.sm,
-                  fontWeight: Typography.ui.weights.medium,
-                  color: Colors.textSecondary,
-                  backgroundColor: 'transparent',
-                  border: `1px solid ${Colors.border}`,
-                  padding: '6px 12px',
-                  minHeight: '32px',
-                  borderRadius: BorderRadius.buttonSm,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = Colors.hover
-                  e.currentTarget.style.borderColor = Colors.primary
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent'
-                  e.currentTarget.style.borderColor = Colors.border
-                }}
-              >
-                History
-              </button>
-            )}
           </div>
-        </div>
+        )}
       </form>
     </div>
   )

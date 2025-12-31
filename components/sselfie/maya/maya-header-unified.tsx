@@ -191,50 +191,411 @@ export default function MayaHeaderUnified({
     }
   }, [showNavMenu])
 
-  // Unified header styling - same for both modes
-  const headerClassName = "flex items-center justify-between w-full px-3 sm:px-4 md:px-6 py-3 sm:py-4 border-b border-stone-200/50 bg-white/80 backdrop-blur-xl relative z-50"
+  // Use Pro Mode styling when enabled, Classic styling otherwise
+  const headerStyle = studioProMode ? {
+    borderColor: Colors.border,
+    backgroundColor: Colors.surface,
+  } : {
+    // Classic Mode styling handled by Tailwind classes
+  }
+
+  const headerClassName = studioProMode 
+    ? "flex items-center justify-between w-full px-3 sm:px-4 md:px-6 py-3 sm:py-4 border-b"
+    : "shrink-0 flex items-center justify-between px-3 sm:px-4 py-3 bg-white/80 backdrop-blur-xl border-b border-stone-200/50 relative z-50"
 
   return (
     <>
       <div
         className={headerClassName}
+        style={headerStyle}
       >
-        {/* Left: SSELFIE - Always show SSELFIE logo/title */}
-        <div className="flex items-center shrink-0">
-          <h1 className="text-lg sm:text-xl font-serif font-normal text-stone-950 uppercase tracking-wide">
-            SSELFIE
-          </h1>
+        {/* Left side: Avatar/Title and Pro Mode features */}
+        <div className="flex items-center gap-2 sm:gap-3 md:gap-4 lg:gap-6 min-w-0 flex-1">
+          {/* Classic Mode: Maya Avatar */}
+          {!studioProMode && (
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-stone-200/60 overflow-hidden shrink-0">
+              <img src="https://i.postimg.cc/fTtCnzZv/out-1-22.png" alt="Maya" className="w-full h-full object-cover" />
+            </div>
+          )}
+
+          {/* Title */}
+          {studioProMode ? (
+            // Pro Mode: "Studio Pro" title
+            <h1
+              className="truncate"
+              style={{
+                fontFamily: Typography.subheaders.fontFamily,
+                fontSize: 'clamp(14px, 2.5vw, 18px)',
+                fontWeight: Typography.subheaders.weights.regular,
+                color: Colors.textPrimary,
+                lineHeight: Typography.subheaders.lineHeight,
+                letterSpacing: Typography.subheaders.letterSpacing,
+              }}
+            >
+              Studio Pro
+            </h1>
+          ) : (
+            // Classic Mode: Chat title
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm sm:text-base font-serif font-extralight tracking-[0.2em] text-stone-950 uppercase">
+                {chatTitle}
+              </h3>
+            </div>
+          )}
+
+          {/* Pro Mode: Library count (hidden on small screens) */}
+          {studioProMode && libraryCount > 0 && (
+            <p
+              className="hidden sm:inline whitespace-nowrap"
+              style={{
+                fontFamily: Typography.ui.fontFamily,
+                fontSize: 'clamp(11px, 2vw, 13px)',
+                fontWeight: Typography.ui.weights.regular,
+                color: Colors.textSecondary,
+                lineHeight: 1.5,
+              }}
+            >
+              {UILabels.library(libraryCount)}
+            </p>
+          )}
         </div>
 
-        {/* Right: Credits and Mode Toggle - Simple, clean layout */}
-        <div className="flex items-center gap-3 sm:gap-4 shrink-0">
-          {/* Credits Display - Always show when available */}
-          {credits !== undefined && (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded border border-stone-200 bg-stone-50/50">
-              <span className="text-[10px] sm:text-xs font-light text-stone-500 uppercase tracking-wider">
+        {/* Right side: Controls */}
+        <div className="flex items-center gap-2 sm:gap-3 md:gap-4 shrink-0">
+          {/* Pro Mode: Guide Controls Dropdown (Admin only) */}
+          {studioProMode && isAdmin && (
+            <DropdownMenu open={isGuideMenuOpen} onOpenChange={setIsGuideMenuOpen}>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className="touch-manipulation active:scale-95 flex items-center gap-1.5 px-2.5 py-1.5 rounded transition-colors"
+                  style={{
+                    fontFamily: Typography.ui.fontFamily,
+                    fontSize: 'clamp(11px, 2vw, 13px)',
+                    fontWeight: Typography.ui.weights.medium,
+                    color: Colors.textSecondary,
+                    backgroundColor: 'transparent',
+                    border: `1px solid ${Colors.border}`,
+                    minHeight: '36px',
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = Colors.hover
+                    e.currentTarget.style.borderColor = Colors.primary
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent'
+                    e.currentTarget.style.borderColor = Colors.border
+                  }}
+                >
+                  <FolderOpen size={14} />
+                  <span className="hidden sm:inline">
+                    {selectedGuideId 
+                      ? guides.find(g => g.id === selectedGuideId)?.title || 'Guide'
+                      : 'Guide'}
+                  </span>
+                  <ChevronDown
+                    size={12}
+                    style={{
+                      color: Colors.textSecondary,
+                      transition: 'transform 0.2s ease',
+                      transform: isGuideMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                    }}
+                  />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                style={{
+                  backgroundColor: Colors.surface,
+                  borderColor: Colors.border,
+                  borderRadius: BorderRadius.cardSm,
+                  minWidth: '280px',
+                  padding: '12px',
+                }}
+              >
+                <div className="space-y-3">
+                  <div>
+                    <label
+                      style={{
+                        fontFamily: Typography.ui.fontFamily,
+                        fontSize: Typography.ui.sizes.xs,
+                        fontWeight: Typography.ui.weights.medium,
+                        color: Colors.textSecondary,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                        marginBottom: '8px',
+                        display: 'block',
+                      }}
+                    >
+                      Active Guide
+                    </label>
+                    {isMounted ? (
+                      <Select
+                        value={selectedGuideId?.toString() || "none"}
+                        onValueChange={(value) => {
+                          if (onGuideChange) {
+                            if (value === "none") {
+                              onGuideChange(null, null)
+                            } else {
+                              const guide = guides.find(g => g.id.toString() === value)
+                              if (guide) {
+                                onGuideChange(guide.id, guide.category)
+                              }
+                            }
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="w-full" style={{ minHeight: '36px' }}>
+                          <SelectValue placeholder="Select a guide..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">No guide selected</SelectItem>
+                          {guides.map((guide) => (
+                            <SelectItem key={guide.id} value={guide.id.toString()}>
+                              {guide.title} ({guide.category})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <div className="w-full h-9 rounded-md border border-stone-200 bg-white flex items-center px-3 text-sm text-stone-500">
+                        Loading...
+                      </div>
+                    )}
+                  </div>
+
+                  {selectedGuideId && (
+                    <div className="text-xs text-stone-500 pt-1 border-t" style={{ borderColor: Colors.border }}>
+                      Prompts will be saved to: <span className="font-medium text-stone-900">
+                        {guides.find(g => g.id === selectedGuideId)?.title}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 pt-2 border-t" style={{ borderColor: Colors.border }}>
+                    <button
+                      onClick={handleCreateNewGuide}
+                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded transition-colors hover:bg-stone-100"
+                      style={{
+                        fontFamily: Typography.ui.fontFamily,
+                        fontSize: Typography.ui.sizes.sm,
+                        fontWeight: Typography.ui.weights.medium,
+                        color: Colors.textPrimary,
+                        border: `1px solid ${Colors.border}`,
+                      }}
+                    >
+                      <Plus size={14} />
+                      New Guide
+                    </button>
+                    {selectedGuideId && (
+                      <button
+                        onClick={handlePreviewGuide}
+                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded transition-colors hover:bg-stone-100"
+                        style={{
+                          fontFamily: Typography.ui.fontFamily,
+                          fontSize: Typography.ui.sizes.sm,
+                          fontWeight: Typography.ui.weights.medium,
+                          color: Colors.textPrimary,
+                          border: `1px solid ${Colors.border}`,
+                        }}
+                      >
+                        <Eye size={14} />
+                        Preview
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
+          {/* Pro Mode: Manage dropdown (hidden on small screens when menu is available) */}
+          {studioProMode && libraryCount > 0 && (
+            <DropdownMenu open={isManageOpen} onOpenChange={setIsManageOpen}>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className="touch-manipulation active:scale-95 hidden md:flex"
+                  style={{
+                    fontFamily: Typography.ui.fontFamily,
+                    fontSize: 'clamp(11px, 2vw, 14px)',
+                    fontWeight: Typography.ui.weights.medium,
+                    color: Colors.primary,
+                    backgroundColor: 'transparent',
+                    border: `1px solid ${Colors.border}`,
+                    padding: '6px 12px',
+                    borderRadius: BorderRadius.buttonSm,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    transition: 'all 0.2s ease',
+                    minHeight: '36px',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = Colors.hover
+                    e.currentTarget.style.borderColor = Colors.primary
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent'
+                    e.currentTarget.style.borderColor = Colors.border
+                  }}
+                >
+                  <span>{ButtonLabels.manage}</span>
+                  <ChevronDown
+                    size={14}
+                    style={{
+                      color: Colors.primary,
+                      transition: 'transform 0.2s ease',
+                      transform: isManageOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                    }}
+                  />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                style={{
+                  backgroundColor: Colors.surface,
+                  borderColor: Colors.border,
+                  borderRadius: BorderRadius.cardSm,
+                  minWidth: '180px',
+                  padding: '4px',
+                }}
+              >
+                <DropdownMenuItem
+                  onClick={() => {
+                    if (onManageLibrary) {
+                      onManageLibrary()
+                    }
+                    setIsManageOpen(false)
+                  }}
+                  style={{
+                    fontFamily: Typography.ui.fontFamily,
+                    fontSize: Typography.ui.sizes.sm,
+                    color: Colors.textPrimary,
+                    padding: '8px 12px',
+                    cursor: 'pointer',
+                  }}
+                  className="hover:bg-stone-100"
+                >
+                  {ButtonLabels.openLibrary}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    if (onAddImages) {
+                      onAddImages()
+                    }
+                    setIsManageOpen(false)
+                  }}
+                  style={{
+                    fontFamily: Typography.ui.fontFamily,
+                    fontSize: Typography.ui.sizes.sm,
+                    color: Colors.textPrimary,
+                    padding: '8px 12px',
+                    cursor: 'pointer',
+                  }}
+                  className="hover:bg-stone-100"
+                >
+                  {ButtonLabels.addImages}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    if (onEditIntent) {
+                      onEditIntent()
+                    }
+                    setIsManageOpen(false)
+                  }}
+                  style={{
+                    fontFamily: Typography.ui.fontFamily,
+                    fontSize: Typography.ui.sizes.sm,
+                    color: Colors.textPrimary,
+                    padding: '8px 12px',
+                    cursor: 'pointer',
+                  }}
+                  className="hover:bg-stone-100"
+                >
+                  {ButtonLabels.editIntent}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator
+                  style={{
+                    backgroundColor: Colors.border,
+                    margin: '4px 0',
+                  }}
+                />
+                <DropdownMenuItem
+                  onClick={() => {
+                    if (onStartFresh) {
+                      onStartFresh()
+                    }
+                    setIsManageOpen(false)
+                  }}
+                  style={{
+                    fontFamily: Typography.ui.fontFamily,
+                    fontSize: Typography.ui.sizes.sm,
+                    color: Colors.textSecondary,
+                    padding: '8px 12px',
+                    cursor: 'pointer',
+                  }}
+                  className="hover:bg-stone-100"
+                >
+                  {ButtonLabels.startFresh}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
+          {/* Pro Mode: Credits display (hidden on small screens) */}
+          {studioProMode && credits !== undefined && (
+            <div
+              className="hidden lg:flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 rounded"
+              style={{
+                backgroundColor: Colors.backgroundAlt,
+                border: `1px solid ${Colors.border}`,
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: Typography.ui.fontFamily,
+                  fontSize: 'clamp(11px, 2vw, 14px)',
+                  fontWeight: Typography.ui.weights.regular,
+                  color: Colors.textSecondary,
+                }}
+              >
                 Credits
               </span>
-              <span className="text-sm sm:text-base font-semibold text-stone-950 tabular-nums">
-                {credits.toFixed(1)}
+              <span
+                style={{
+                  fontFamily: Typography.data.fontFamily,
+                  fontSize: 'clamp(13px, 2.5vw, 15px)',
+                  fontWeight: Typography.data.weights.semibold,
+                  color: Colors.textPrimary,
+                }}
+              >
+                {credits}
               </span>
             </div>
           )}
 
-          {/* Mode Toggle - Always show (segmented control in Pro, button in Classic) */}
+          {/* Mode Toggle */}
           {studioProMode ? (
+            // Pro Mode: Compact toggle (switch to Classic)
             onSwitchToClassic && (
-              <MayaModeToggle
-                currentMode="pro"
-                onToggle={onSwitchToClassic}
-                variant="compact"
-              />
+              <div className="hidden md:flex">
+                <MayaModeToggle
+                  currentMode="pro"
+                  onToggle={onSwitchToClassic}
+                  variant="compact"
+                />
+              </div>
             )
           ) : (
-            <MayaModeToggle
-              currentMode="classic"
-              onToggle={() => onModeSwitch(true)}
-              variant="compact"
-            />
+            // Classic Mode: Button toggle (switch to Pro)
+            <div className="mr-2">
+              <MayaModeToggle
+                currentMode="classic"
+                onToggle={() => onModeSwitch(true)}
+                variant="button"
+              />
+            </div>
           )}
 
           {/* Menu Button */}
@@ -517,7 +878,7 @@ export default function MayaHeaderUnified({
                         onSwitchToClassic()
                         onToggleNavMenu()
                       }}
-                      className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-stone-50"
+                      className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-stone-50 flex items-center gap-2"
                       style={{
                         fontFamily: Typography.ui.fontFamily,
                         fontSize: Typography.ui.sizes.md,
@@ -525,7 +886,13 @@ export default function MayaHeaderUnified({
                         color: Colors.textSecondary,
                       }}
                     >
-                      Switch to Classic
+                      <MayaModeToggle
+                        currentMode="pro"
+                        onToggle={() => {}}
+                        variant="compact"
+                        className="pointer-events-none"
+                      />
+                      <span>Switch to Classic</span>
                     </button>
                   </>
                 )}

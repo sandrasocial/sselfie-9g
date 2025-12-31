@@ -2,8 +2,6 @@
 
 import type React from "react"
 import VideoCard from "./video-card"
-import { useChat } from "@ai-sdk/react"
-import { DefaultChatTransport } from "ai"
 import {
   Camera,
   Send,
@@ -35,6 +33,11 @@ import MayaQuickPrompts from "./maya/maya-quick-prompts"
 import MayaSettingsPanel from "./maya/maya-settings-panel"
 import MayaChatInterface from "./maya/maya-chat-interface"
 import UnifiedLoading from "./unified-loading"
+import { useMayaSettings } from "./maya/hooks/use-maya-settings"
+import { useMayaMode } from "./maya/hooks/use-maya-mode"
+import { useMayaImages } from "./maya/hooks/use-maya-images"
+import { useMayaChat } from "./maya/hooks/use-maya-chat"
+import MayaUnifiedInput from "./maya/maya-unified-input"
 import { useRouter } from "next/navigation"
 // SessionUser type removed - not exported from next-auth
 import { PromptSuggestionCard as NewPromptSuggestionCard } from "./prompt-suggestion-card"
@@ -43,13 +46,8 @@ import ImageUploadFlow from "./pro-mode/ImageUploadFlow"
 import { getConceptPrompt } from "@/lib/maya/concept-templates"
 import BuyCreditsModal from "./buy-credits-modal"
 import { ConceptConsistencyToggle } from './concept-consistency-toggle'
-import { useImageLibrary } from "./pro-mode/hooks/useImageLibrary"
 // Pro Mode Components
-import ProModeChat from "./pro-mode/ProModeChat"
-import ProModeHeader from "./pro-mode/ProModeHeader"
 import MayaHeader from "./maya/maya-header"
-import ProModeInput from "./pro-mode/ProModeInput"
-import ConceptCardPro from "./pro-mode/ConceptCardPro"
 import ImageLibraryModal from "./pro-mode/ImageLibraryModal"
 import ProModeChatHistory from "./pro-mode/ProModeChatHistory"
 import { Typography, Colors } from '@/lib/maya/pro/design-system'
@@ -85,13 +83,10 @@ export default function MayaChatScreen({
 }: MayaChatScreenProps) {
   const { toast } = useToast()
   const [inputValue, setInputValue] = useState("")
-  const [chatId, setChatId] = useState<number | null>(initialChatId || null)
-  const [chatTitle, setChatTitle] = useState<string>("Chat with Maya") // Added for chat title
-  const [isLoadingChat, setIsLoadingChat] = useState(true)
   const [showHistory, setShowHistory] = useState(false)
   const [showNavMenu, setShowNavMenu] = useState(false)
   const [showChatMenu, setShowChatMenu] = useState(false)
-  const savedMessageIds = useRef(new Set<string>())
+  // savedMessageIds is now provided by useMayaChat hook
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const [showScrollButton, setShowScrollButton] = useState(false)
@@ -109,26 +104,52 @@ export default function MayaChatScreen({
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [showBuyCreditsModal, setShowBuyCreditsModal] = useState(false)
   const router = useRouter()
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  const [styleStrength, setStyleStrength] = useState(1.0) // Updated default from 1.05 to 1.0
-  const [promptAccuracy, setPromptAccuracy] = useState(3.5) // Guidance scale: 2.5-5.0
-  const [aspectRatio, setAspectRatio] = useState("4:5")
-  const [realismStrength, setRealismStrength] = useState(0.2) // Extra LoRA scale: 0.0-0.8
+  // Mode managed by useMayaMode hook
+  const { studioProMode, setStudioProMode, getModeString, hasModeChanged } = useMayaMode(forcedStudioProMode)
+  
+  // Settings managed by useMayaSettings hook
+  const {
+    settings,
+    setStyleStrength,
+    setPromptAccuracy,
+    setAspectRatio,
+    setRealismStrength,
+    setEnhancedAuthenticity,
+  } = useMayaSettings()
+  
+  const { styleStrength, promptAccuracy, aspectRatio, realismStrength, enhancedAuthenticity } = settings
+  
   const [showSettings, setShowSettings] = useState(false)
-  // Enhanced Authenticity toggle - only for Classic mode (injects more muted colors, iPhone quality, film grain)
-  const [enhancedAuthenticity, setEnhancedAuthenticity] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('mayaEnhancedAuthenticity')
-      return saved === 'true'
-    }
-    return false // Default to off
-  })
-
-  const settingsSaveTimerRef = useRef<NodeJS.Timeout | null>(null)
   const messageSaveTimerRef = useRef<NodeJS.Timeout | null>(null)
   const lastMessageCountRef = useRef(0)
   const isSavingMessageRef = useRef(false)
+  
+  // Chat managed by useMayaChat hook (must be after mode hook since it depends on getModeString)
+  const {
+    chatId,
+    chatTitle,
+    isLoadingChat,
+    hasUsedMayaBefore,
+    loadChat,
+    handleNewChat: baseHandleNewChat,
+    handleSelectChat: baseHandleSelectChat,
+    handleDeleteChat: baseHandleDeleteChat,
+    setChatId,
+    setChatTitle,
+    setIsLoadingChat,
+    savedMessageIds,
+    hasLoadedChatRef,
+    messages,
+    sendMessage,
+    status,
+    setMessages,
+  } = useMayaChat({
+    initialChatId,
+    studioProMode,
+    user,
+    getModeString,
+  })
 
   const [pendingConceptRequest, setPendingConceptRequest] = useState<string | null>(null)
   const [isGeneratingConcepts, setIsGeneratingConcepts] = useState(false)
@@ -153,28 +174,14 @@ export default function MayaChatScreen({
   // Collapsible section state for quick prompts and concept style
   const [isOptionsExpanded, setIsOptionsExpanded] = useState(false)
   
-  // Track if user has used Maya before (has any chat history)
-  // Default to false (show welcome screen) until we know otherwise
-  const [hasUsedMayaBefore, setHasUsedMayaBefore] = useState<boolean>(false)
+  // hasUsedMayaBefore is now provided by useMayaChat hook
   
-  // Studio Pro state - use forced mode if provided (admin), otherwise use localStorage
-  const [studioProMode, setStudioProMode] = useState(() => {
-    if (forcedStudioProMode !== undefined) {
-      return forcedStudioProMode
-    }
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('mayaStudioProMode')
-      return saved === 'true'
-    }
-    return false
-  })
-  
-  // Use centralized image library hook for Pro Mode
+  // Images managed by useMayaImages hook
   const {
-    library: imageLibrary,
-    isLoading: isLibraryLoading,
-    error: libraryError,
-    totalImages: libraryTotalImages,
+    imageLibrary,
+    isLibraryLoading,
+    libraryError,
+    libraryTotalImages,
     loadLibrary,
     saveLibrary,
     addImages,
@@ -182,31 +189,23 @@ export default function MayaChatScreen({
     clearLibrary,
     updateIntent,
     refreshLibrary,
-  } = useImageLibrary()
-  
-  // Legacy uploadedImages state (kept for backward compatibility with non-Pro Mode features)
-  // In Pro Mode, use imageLibrary from useImageLibrary hook instead
-  const [uploadedImages, setUploadedImages] = useState<Array<{
-    url: string
-    type: 'base' | 'product'
-    label?: string
-    source?: 'gallery' | 'upload'
-  }>>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('mayaStudioProImages')
-      try {
-        return saved ? JSON.parse(saved) : []
-      } catch {
-        return []
-      }
-    }
-    return []
-  })
+    uploadedImages,
+    setUploadedImages,
+    galleryImages,
+    loadGalleryImages,
+  } = useMayaImages(studioProMode)
+
+  // Feature flags - derived from mode for clearer conditional rendering
+  // These make it explicit what features are enabled, rather than just checking studioProMode
+  // Must be defined after useMayaImages hook since hasImageLibrary depends on imageLibrary
+  const hasProFeatures = studioProMode
+  const hasImageLibrary = studioProMode && imageLibrary
+  const hasGenerationOptions = studioProMode
+  const hasLibraryManagement = studioProMode
   
   // Shared images from first concept card - auto-populates other cards
   const [sharedConceptImages, setSharedConceptImages] = useState<Array<string | null>>([null, null, null])
   const [showGallerySelector, setShowGallerySelector] = useState(false)
-  const [galleryImages, setGalleryImages] = useState<any[]>([])
   const [isGeneratingStudioPro, setIsGeneratingStudioPro] = useState(false)
   const processedStudioProMessagesRef = useRef<Set<string>>(new Set())
   const promptGenerationTriggeredRef = useRef<Set<string>>(new Set()) // Track messages that have already triggered prompt generation
@@ -214,10 +213,10 @@ export default function MayaChatScreen({
   const generateCarouselRef = useRef<((params: { topic: string; slideCount: number }) => Promise<void>) | null>(null)
   const generateReelCoverRef = useRef<((params: { title: string; textOverlay?: string }) => Promise<void>) | null>(null)
   
-  // Studio Pro onboarding state
+  // Pro features onboarding state
   const [showStudioProOnboarding, setShowStudioProOnboarding] = useState(false)
   
-  // Pro Mode library management state
+  // Pro features library management state
   const [showLibraryModal, setShowLibraryModal] = useState(false)
   const [showUploadFlow, setShowUploadFlow] = useState(false)
   const [showProModeHistory, setShowProModeHistory] = useState(false)
@@ -232,64 +231,9 @@ export default function MayaChatScreen({
   const isAuthenticated = !!user // Simple check for demonstration
   const chatIdToLoad = user ? Number(user.chatId) : null // Replace with actual logic to get chatIdToLoad
 
-  const hasLoadedChatRef = useRef(false)
-  const lastModeRef = useRef<string | null>(null) // Track last mode to detect changes
-  const hasClearedStateRef = useRef(false) // Track if we've already cleared state when user is undefined
+  // Refs are now managed by useMayaChat hook
 
-  useEffect(() => {
-    const settingsStr = localStorage.getItem("mayaGenerationSettings")
-    if (settingsStr) {
-      try {
-        const settings = JSON.parse(settingsStr)
-        console.log("[v0] 📊 Loaded saved settings from localStorage:", settings)
-        const loadedStyleStrength = settings.styleStrength ?? 1.0 // Updated fallback default to 1.0
-        setStyleStrength(loadedStyleStrength === 1.1 ? 1.0 : loadedStyleStrength) // Removed 1.05 migration, only migrate 1.1 to 1.0
-        setPromptAccuracy(settings.promptAccuracy || 3.5)
-        setAspectRatio(settings.aspectRatio || "4:5") // Updated default from "1:1" to "4:5"
-        // Migrate old default (0.4) to new default (0.2), but preserve custom values
-        const loadedRealismStrength = settings.realismStrength ?? 0.2
-        setRealismStrength(loadedRealismStrength === 0.4 ? 0.2 : loadedRealismStrength)
-      } catch (error) {
-        console.error("[v0] ❌ Error loading settings:", error)
-      }
-    } else {
-      console.log("[v0] 📊 No saved settings found, using defaults")
-    }
-  }, []) // Empty dependency array - only run once on mount
-
-  useEffect(() => {
-    // Clear any existing timer
-    if (settingsSaveTimerRef.current) {
-      clearTimeout(settingsSaveTimerRef.current)
-    }
-
-    // Set new timer to save after 500ms of no changes
-    settingsSaveTimerRef.current = setTimeout(() => {
-      const settings = {
-        styleStrength,
-        promptAccuracy,
-        aspectRatio,
-        realismStrength,
-      }
-      console.log("[v0] 💾 Saving settings to localStorage:", settings)
-      localStorage.setItem("mayaGenerationSettings", JSON.stringify(settings))
-    }, 500)
-
-    // Cleanup timer on unmount
-    return () => {
-      if (settingsSaveTimerRef.current) {
-        clearTimeout(settingsSaveTimerRef.current)
-      }
-    }
-  }, [styleStrength, promptAccuracy, aspectRatio, realismStrength]) // Added realismStrength to dependencies
-
-  // Save enhanced authenticity setting to localStorage
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('mayaEnhancedAuthenticity', enhancedAuthenticity.toString())
-      console.log("[v0] 💾 Saved enhanced authenticity setting:", enhancedAuthenticity)
-    }
-  }, [enhancedAuthenticity])
+  // Settings loading and persistence are now handled by useMayaSettings hook
 
   // Helper function to extract text content from UIMessage
   const getMessageText = useCallback((message: any): string => {
@@ -307,195 +251,18 @@ export default function MayaChatScreen({
     return ""
   }, [])
 
-  const { messages, sendMessage, status, setMessages } = useChat({
-    transport: new DefaultChatTransport({ 
-      api: "/api/maya/chat",
-      headers: {
-        "x-studio-pro-mode": studioProMode ? "true" : "false",
-      },
-    }) as any, // Type assertion to handle AI SDK version mismatch (v5 vs v6)
-    // initialMessages and body removed - use body parameter in sendMessage instead
-    // Custom body parameters are passed via sendMessage calls, not useChat options
-    onError: (error) => {
-      // Simplified error handling - just extract message safely
-      let errorMessage = "An error occurred while chatting with Maya. Please try again."
-      
-      // Minimal, safe error extraction
-      if (error instanceof Error && error.message) {
-        errorMessage = error.message
-      } else if (typeof error === "string" && error) {
-        errorMessage = error
-      } else if (error && typeof error === "object") {
-        const err = error as any
-        if (err.message && typeof err.message === "string") {
-          errorMessage = err.message
-        } else if (err.error && typeof err.error === "string") {
-          errorMessage = err.error
-        }
-      }
-      
-      // Minimal logging - avoid complex serialization that causes issues
-      try {
-        if (error instanceof Error) {
-          console.error("[v0] Maya chat error:", errorMessage, error.stack ? "\nStack: " + error.stack.substring(0, 200) : "")
-        } else {
-          console.error("[v0] Maya chat error:", errorMessage)
-        }
-      } catch {
-        // Silently fail if logging causes issues
-      }
-      
-      // TODO: Add toast import if you want user-facing error notifications
-      // import { toast } from "sonner"
-      // toast.error(errorMessage || "An error occurred while chatting with Maya. Please try again.")
-    },
-  })
-
-  const loadChat = useCallback(
+  // useChat hook and loadChat function are now managed by useMayaChat hook
+  
+  // Wrapper for loadChat that also closes history panel (component-specific UI state)
+  const loadChatWithUI = useCallback(
     async (specificChatId?: number) => {
-      try {
-        setIsLoadingChat(true)
-
-        // Build URL - either load specific chat or default maya chat
-        // 🔴 FIX: Use correct chatType based on mode (Pro Mode vs Classic Mode)
-        const chatType = studioProMode ? 'pro' : 'maya'
-        const url = specificChatId
-          ? `/api/maya/load-chat?chatId=${specificChatId}`
-          : `/api/maya/load-chat?chatType=${chatType}`
-
-        console.log("[v0] Loading chat from URL:", url, "chatType:", chatType, "studioProMode:", studioProMode)
-
-        const response = await fetch(url)
-        console.log("[v0] Load chat response status:", response.status)
-
-        if (!response.ok) {
-          throw new Error(`Failed to load chat: ${response.status}`)
-        }
-
-        let data: any
-        try {
-          data = await response.json()
-        } catch (jsonError) {
-          console.error("[v0] Error parsing chat response JSON")
-          // Don't throw - just log and return empty state
-          setIsLoadingChat(false)
-          return
-        }
-        
-        // Safely check if data exists before accessing properties
-        if (!data || typeof data !== "object") {
-          console.error("[v0] Invalid chat data received - data is not an object")
-          // Don't throw - just log and return empty state
-          setIsLoadingChat(false)
-          return
-        }
-        
-        console.log("[v0] Loaded chat ID:", data.chatId, "Messages:", data.messages?.length, "Title:", data.chatTitle)
-
-        if (data.chatId) {
-          setChatId(data.chatId)
-        }
-
-        if (data.chatTitle && typeof data.chatTitle === "string") {
-          setChatTitle(data.chatTitle)
-        }
-
-        if (data.messages && Array.isArray(data.messages)) {
-          let conceptCardsFound = 0
-
-          // CRITICAL: Populate refs BEFORE setting messages to prevent trigger detection
-          data.messages.forEach((msg: any) => {
-            if (msg.id) {
-              savedMessageIds.current.add(msg.id.toString())
-            }
-
-            // Check if message already has concept cards and mark as processed
-            const hasConceptCards = msg.parts?.some(
-              (p: any) => p.type === "tool-generateConcepts" && p.output?.concepts?.length > 0,
-            )
-            if (hasConceptCards) {
-              conceptCardsFound++
-              console.log("[v0] Found concept cards in message:", msg.id)
-            }
-          })
-
-          console.log(
-            "[v0] Chat loaded with",
-            data.messages.length,
-            "messages, savedIds:",
-            savedMessageIds.current.size,
-            "conceptCardsFound:",
-            conceptCardsFound,
-          )
-
-          const firstWithConcepts = data.messages.find((msg: any) =>
-            msg.parts?.some((p: any) => p.type === "tool-generateConcepts"),
-          )
-          if (firstWithConcepts) {
-            console.log(
-              "[v0] First message with concepts:",
-              JSON.stringify(firstWithConcepts, null, 2).substring(0, 500),
-            )
-          } else {
-            console.log("[v0] NO messages with tool-generateConcepts parts found in response!")
-          }
-
-          // Now set messages AFTER refs are populated
-          setMessages(data.messages)
-        } else {
-          setMessages([])
-        }
-
+      await loadChat(specificChatId)
         setShowHistory(false)
-      } catch (error) {
-        // Silently handle errors in loadChat - don't let them propagate
-        console.error("[v0] Error loading chat:", error instanceof Error ? error.message : "Unknown error")
-        // Don't throw - just log and continue
-      } finally {
-        setIsLoadingChat(false)
-      }
     },
-    [setMessages, studioProMode], // Added studioProMode to dependencies
+    [loadChat],
   )
 
-  // Check if user has any chat history to determine if welcome screen should show
-  useEffect(() => {
-    const checkChatHistory = async () => {
-      // Only run in browser
-      if (typeof window === 'undefined') {
-        return
-      }
-
-      if (!user) {
-        setHasUsedMayaBefore(false)
-        return
-      }
-
-      try {
-        // 🔴 FIX: Use correct chatType based on mode
-        const chatType = studioProMode ? 'pro' : 'maya'
-        const response = await fetch(`/api/maya/chats?chatType=${chatType}`, {
-          credentials: 'include', // Include cookies for authentication
-        })
-        if (response.ok) {
-          const data = await response.json()
-          const hasChats = data.chats && Array.isArray(data.chats) && data.chats.length > 0
-          setHasUsedMayaBefore(hasChats)
-          console.log("[v0] Chat history check:", { hasChats, chatCount: data.chats?.length || 0, chatType, studioProMode })
-        } else {
-          // Handle non-OK responses gracefully
-          console.warn("[v0] Chat history check failed with status:", response.status)
-          setHasUsedMayaBefore(false)
-        }
-      } catch (error) {
-        console.error("[v0] Error checking chat history:", error)
-        // On error, default to showing welcome screen (hasUsedMayaBefore = false)
-        setHasUsedMayaBefore(false)
-      }
-    }
-
-    checkChatHistory()
-  }, [user, studioProMode]) // Added studioProMode to dependencies
+  // Chat history checking is now handled by useMayaChat hook
 
   // Save consistency mode to localStorage when user changes it
   const handleConsistencyModeChange = useCallback((mode: 'variety' | 'consistent') => {
@@ -506,114 +273,13 @@ export default function MayaChatScreen({
     }
   }, [])
 
-  useEffect(() => {
-    // Skip if user is not available - don't do anything
-    if (!user) {
-      // Only clear state once when user becomes undefined (use ref to track)
-      if (!hasClearedStateRef.current) {
-        console.log("[v0] User is undefined, clearing chat state (one-time)")
-        hasClearedStateRef.current = true
-        hasLoadedChatRef.current = false
-        lastModeRef.current = null
-        setIsLoadingChat(false)
-        setMessages([])
-        setChatId(null)
-        setChatTitle("Chat with Maya")
-        localStorage.removeItem("mayaCurrentChatId")
-      }
-      return
-    }
+  // Chat loading and persistence are now handled by useMayaChat hook
 
-    // Reset cleared state ref when user becomes available
-    hasClearedStateRef.current = false
+  // Mode persistence is now handled by useMayaMode hook
 
-    console.log("[v0] 🚀 Loading chat for user:", user?.email, "studioProMode:", studioProMode)
+  // Image persistence and gallery loading are now handled by useMayaImages hook
 
-    // User is available - proceed with loading chat
-    // Check if mode changed
-    const currentMode = studioProMode ? 'pro' : 'maya'
-    const modeChanged = lastModeRef.current !== null && lastModeRef.current !== currentMode
-    
-    if (modeChanged) {
-      console.log("[v0] Mode changed from", lastModeRef.current, "to", currentMode, "- resetting chat load state")
-      hasLoadedChatRef.current = false
-      localStorage.setItem("mayaStudioProMode", String(studioProMode))
-    }
-    
-    lastModeRef.current = currentMode
-
-    if (!hasLoadedChatRef.current) {
-      hasLoadedChatRef.current = true
-
-      // Check localStorage for saved chat
-      const savedChatId = localStorage.getItem("mayaCurrentChatId")
-      if (savedChatId) {
-        console.log("[v0] Found saved chatId in localStorage, loading:", savedChatId)
-        loadChat(Number(savedChatId))
-      } else {
-        // No saved chat - load the most recent chat to show history
-        console.log("[v0] No saved chatId, loading most recent chat for mode:", currentMode)
-        loadChat() // This calls API without chatId, which loads most recent
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, studioProMode]) // Removed loadChat from dependencies to prevent infinite loops
-
-  useEffect(() => {
-    if (chatId) {
-      console.log("[v0] Saving chatId to localStorage:", chatId)
-      localStorage.setItem("mayaCurrentChatId", chatId.toString())
-    }
-  }, [chatId])
-
-  // Persist Studio Pro mode to localStorage
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('mayaStudioProMode', studioProMode.toString())
-    }
-  }, [studioProMode])
-
-  // Persist uploaded images to localStorage
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('mayaStudioProImages', JSON.stringify(uploadedImages))
-    }
-  }, [uploadedImages])
-
-  // Load gallery images when Studio Pro mode is enabled
-  useEffect(() => {
-    if (studioProMode && galleryImages.length === 0) {
-      loadGalleryImages()
-    }
-  }, [studioProMode])
-
-  const loadGalleryImages = async () => {
-    try {
-      const response = await fetch('/api/gallery/images', {
-        credentials: 'include', // Include cookies for authentication
-      })
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        console.error('[STUDIO-PRO] Gallery fetch failed:', response.status, errorData)
-        throw new Error(errorData.error || `Failed to load gallery: ${response.status}`)
-      }
-      
-      const data = await response.json()
-      if (data.images) {
-        setGalleryImages(data.images)
-        console.log('[STUDIO-PRO] Loaded', data.images.length, 'gallery images')
-      } else {
-        setGalleryImages([])
-      }
-    } catch (error) {
-      console.error('[STUDIO-PRO] Failed to load gallery:', error)
-      // Set empty array on error so UI doesn't break
-      setGalleryImages([])
-    }
-  }
-
-  // Studio Pro: Generate carousel (defined BEFORE useEffect that processes messages)
+  // Pro features: Generate carousel (defined BEFORE useEffect that processes messages)
   const generateCarousel = useCallback(async ({ topic, slideCount }: { topic: string; slideCount: number }) => {
     try {
       setIsGeneratingStudioPro(true)
@@ -1201,7 +867,7 @@ export default function MayaChatScreen({
         // Use reference image if available, or images from library in Pro Mode
         const allImages = referenceImageUrl 
           ? [referenceImageUrl]
-          : studioProMode && imageLibrary.selfies.length > 0
+          : hasImageLibrary && imageLibrary.selfies.length > 0
           ? imageLibrary.selfies.slice(0, 1) // Use first selfie as reference
           : []
 
@@ -1231,10 +897,10 @@ export default function MayaChatScreen({
                 conversationContext: conversationContext || undefined,
                 referenceImageUrl: allImages.length > 0 ? allImages[0] : referenceImageUrl, // Primary image
                 studioProMode: studioProMode, // Pass Studio Pro mode to use Nano Banana prompting
-                enhancedAuthenticity: !studioProMode && enhancedAuthenticity, // Only pass if Classic mode and toggle is ON
+                enhancedAuthenticity: !hasProFeatures && enhancedAuthenticity, // Only pass if Classic mode and toggle is ON
                 guidePrompt: guidePromptActive && extractedGuidePrompt ? extractedGuidePrompt : undefined, // Pass guide prompt if active
                 // Include full image library in Pro Mode
-                ...(studioProMode && imageLibrary ? {
+                ...(hasImageLibrary ? {
                   imageLibrary: imageLibrary,
                 } : {}),
               }
@@ -1777,7 +1443,7 @@ export default function MayaChatScreen({
           }
         } else {
           console.error("[v0] Profile API error:", response.status, response.statusText)
-          setCurrentPrompts(studioProMode ? getProModeQuickSuggestions() : getRandomPrompts(null))
+          setCurrentPrompts(hasProFeatures ? getProModeQuickSuggestions() : getRandomPrompts(null))
         }
       } catch (error) {
         console.error("[v0] Error fetching user gender:", error)
@@ -2085,7 +1751,7 @@ export default function MayaChatScreen({
         console.log("[v0] No chatId exists, creating new chat before sending message...")
         try {
           // 🔴 FIX: Use correct chatType based on mode (Pro Mode vs Classic Mode)
-          const chatType = studioProMode ? 'pro' : 'maya'
+          const chatType = getModeString()
           const response = await fetch("/api/maya/new-chat", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -2148,10 +1814,11 @@ export default function MayaChatScreen({
     }
   }
 
-  const handleNewChat = async () => {
-    // In Studio Pro Mode, "New Project" should clear library (like "Start Fresh")
-    if (studioProMode) {
-      // Show confirmation dialog for Studio Pro Mode (matching Start Fresh behavior)
+  // Wrapper for handleNewChat that adds component-specific logic
+  const handleNewChat = useCallback(async () => {
+    // In Pro Mode, "New Project" should clear library (like "Start Fresh")
+    if (hasProFeatures) {
+      // Show confirmation dialog for Pro Mode (matching Start Fresh behavior)
       if (!confirm('Are you sure you want to start a new project? This will clear your image library and start fresh.')) {
         return
       }
@@ -2159,36 +1826,15 @@ export default function MayaChatScreen({
       await clearLibrary()
     }
     
-    // Reset state for new chat
+    // Reset component-specific state for new chat
     setSelectedPrompt("")
     setMessagesWithUploadModule(new Set())
     setPendingConceptRequest(null)
-    
-    try {
-      // 🔴 FIX: Create new chat with correct chatType based on mode
-      const chatType = studioProMode ? 'pro' : 'maya'
-      const response = await fetch("/api/maya/new-chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chatType }),
-      })
-
-      if (!response.ok) throw new Error("Failed to create new chat")
-
-      const data = await response.json()
-      setChatId(data.chatId)
-      setChatTitle("New Chat") // Reset title for new chat
-      setMessages([])
-      savedMessageIds.current.clear()
       promptGenerationTriggeredRef.current.clear() // Clear prompt generation tracking
 
-      localStorage.setItem("mayaCurrentChatId", data.chatId.toString())
-
-      console.log("[v0] New chat created:", data.chatId)
-    } catch (error) {
-      console.error("[v0] Error creating new chat:", error)
-    }
-  }
+    // Call hook's base handler
+    await baseHandleNewChat()
+  }, [studioProMode, clearLibrary, baseHandleNewChat])
 
   // Handle mode switching - creates a new chat when switching between Classic and Studio Pro
   // Handle saving concept to guide (admin mode)
@@ -2274,22 +1920,39 @@ export default function MayaChatScreen({
 
   const handleModeSwitch = async (newMode: boolean) => {
     // Only create new chat if mode is actually changing
-    if (studioProMode === newMode) return
+    if (studioProMode === newMode) {
+      console.log("[v0] Mode switch skipped - already in", newMode ? "Pro" : "Classic", "mode")
+      return
+    }
+
+    console.log("[v0] 🔄 Switching mode:", {
+      from: studioProMode ? "Pro" : "Classic",
+      to: newMode ? "Pro" : "Classic",
+      forcedMode: forcedStudioProMode
+    })
 
     try {
       // 🔴 FIX: Create new chat with correct chatType based on mode
       const chatType = newMode ? 'pro' : 'maya'
+      console.log("[v0] Creating new chat with type:", chatType)
+      
       const response = await fetch("/api/maya/new-chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ chatType }),
       })
 
-      if (!response.ok) throw new Error("Failed to create new chat")
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error("[v0] ❌ Failed to create new chat:", response.status, errorText)
+        throw new Error(`Failed to create new chat: ${response.status}`)
+      }
 
       const data = await response.json()
+      console.log("[v0] ✅ New chat created:", data.chatId)
       
-      // Switch mode first
+      // Switch mode first (this will be saved to localStorage by the hook)
+      console.log("[v0] Setting mode to:", newMode ? "Pro" : "Classic")
       setStudioProMode(newMode)
       
       // Then reset chat state
@@ -2297,42 +1960,35 @@ export default function MayaChatScreen({
       setChatTitle("New Chat")
       setMessages([])
       savedMessageIds.current.clear()
-      setUploadedImages([]) // Clear Studio Pro images
+      setUploadedImages([]) // Clear Pro mode images
       setPromptSuggestions([]) // Clear prompt suggestions
       promptGenerationTriggeredRef.current.clear() // Clear prompt generation tracking
 
       localStorage.setItem("mayaCurrentChatId", data.chatId.toString())
 
-      console.log("[v0] Mode switched and new chat created:", {
-        mode: newMode ? "Studio Pro" : "Classic",
+      console.log("[v0] ✅ Mode switched successfully:", {
+        mode: newMode ? "Pro" : "Classic",
         chatId: data.chatId
       })
     } catch (error) {
-      console.error("[v0] Error switching mode and creating new chat:", error)
+      console.error("[v0] ❌ Error switching mode:", error)
+      toast({
+        title: "Failed to switch mode",
+        description: error instanceof Error ? error.message : "An error occurred while switching modes. Please try again.",
+        variant: "destructive",
+      })
     }
   }
 
-  const handleSelectChat = (selectedChatId: number, selectedChatTitle?: string) => {
-    // Added selectedChatTitle
-    loadChat(selectedChatId)
-    setShowHistory(false)
-    setChatTitle(selectedChatTitle || "") // Set the title of the selected chat
+  // Wrapper for handleSelectChat that adds component-specific logic
+  const handleSelectChat = useCallback((selectedChatId: number, selectedChatTitle?: string) => {
       promptGenerationTriggeredRef.current.clear() // Clear prompt generation tracking
+    setShowHistory(false) // Close history panel
+    baseHandleSelectChat(selectedChatId, selectedChatTitle)
+  }, [baseHandleSelectChat])
 
-    localStorage.setItem("mayaCurrentChatId", selectedChatId.toString())
-  }
-
-  const handleDeleteChat = (deletedChatId: number) => {
-    // If the deleted chat was the current one, switch to new chat
-    if (chatId === deletedChatId) {
-      handleNewChat()
-    }
-    // Clear localStorage if it was the current chat
-    const storedChatId = localStorage.getItem("mayaCurrentChatId")
-    if (storedChatId === deletedChatId.toString()) {
-      localStorage.removeItem("mayaCurrentChatId")
-    }
-  }
+  // Wrapper for handleDeleteChat (hook handles the logic, but we expose it)
+  const handleDeleteChat = baseHandleDeleteChat
 
   const handleLogout = async () => {
     setIsLoggingOut(true)
@@ -3265,7 +2921,7 @@ export default function MayaChatScreen({
             onSelectChat={handleSelectChat}
             onNewChat={handleNewChat}
             onDeleteChat={handleDeleteChat}
-            chatType={studioProMode ? 'pro' : 'maya'}
+            chatType={getModeString()}
           />
         </div>
       )}
@@ -3313,8 +2969,8 @@ export default function MayaChatScreen({
         promptSuggestions={promptSuggestions}
         generateCarouselRef={generateCarouselRef}
       />
-          {/* Studio Pro Empty State */}
-          {isEmpty && studioProMode && !isTyping && (
+          {/* Empty State - Pro Features: Image Upload Flow, Classic: Welcome Screen */}
+          {isEmpty && hasProFeatures && !isTyping && (
             <div className="flex-1 flex items-center justify-center p-6 sm:p-8">
               <div className="max-w-2xl w-full space-y-8">
                 {/* Show ImageUploadFlow if library is empty, otherwise show welcome */}
@@ -3322,7 +2978,7 @@ export default function MayaChatScreen({
                   <ImageUploadFlow
                     initialLibrary={imageLibrary}
                     onComplete={async (library) => {
-                      console.log("[v0] [PRO MODE] Image upload flow completed:", library)
+                      console.log("[v0] [Pro Features] Image upload flow completed:", library)
                       
                       // Save library using the hook
                       await saveLibrary(library)
@@ -3414,82 +3070,44 @@ export default function MayaChatScreen({
                     }}
                     onManageCategory={(category) => {
                       // 🔴 FIX: Open manage modal for category
-                      console.log("[v0] [PRO MODE] Manage category clicked:", category)
+                      console.log("[v0] [Pro Features] Manage category clicked:", category)
                       // Open library modal - it will show all categories, user can manage from there
                       setShowLibraryModal(true)
                     }}
                     onCancel={() => {
                       // Allow canceling - user can start chat without images
-                      console.log("[v0] [PRO MODE] Image upload flow cancelled")
+                      console.log("[v0] [Pro Features] Image upload flow cancelled")
                     }}
                   />
                 ) : (
-                  // Welcome message when library has images
-                  <div className="text-center space-y-6">
-                    <div className="space-y-4">
-                      <h2 className="text-3xl sm:text-4xl font-serif font-extralight tracking-[0.3em] uppercase text-stone-900">
-                        Studio Pro
+                  // Welcome message when library has images - matches Classic styling
+                  <div className="flex flex-col items-center justify-center text-center space-y-6">
+                    {/* Maya's Avatar - same styling as Classic */}
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-stone-200/60 overflow-hidden">
+                      <img
+                        src="https://i.postimg.cc/fTtCnzZv/out-1-22.png"
+                        alt="Maya"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      <h2 className="text-xl sm:text-2xl font-serif font-extralight tracking-[0.3em] text-stone-950 uppercase">
+                        Welcome
                       </h2>
-                      <p className="text-sm text-stone-500 font-light tracking-wide">
-                        Your creative library is ready. What would you like to create?
+                      <p className="text-xs sm:text-sm text-stone-600 tracking-wide max-w-md leading-relaxed px-4">
+                        Hi, I'm Maya. I'll help you create beautiful photos and videos.
                       </p>
                     </div>
 
-                    {/* Quick Suggestion Prompts - Pro Mode */}
-                    <div className="pt-6 space-y-6">
-                      {/* Smart suggestions based on library intent */}
-                      {imageLibrary.intent && imageLibrary.intent.trim() && (
-                        <div className="space-y-3">
-                          <p className="text-xs text-stone-600 font-light tracking-wide uppercase">
-                            Based on Your Library Intent
-                          </p>
-                          <button
-                            onClick={() => {
-                              handleSendMessage(imageLibrary.intent)
-                            }}
-                            disabled={isTyping || isGeneratingConcepts}
-                            className="px-6 py-3 bg-white border border-stone-300 rounded-lg hover:bg-stone-50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation active:scale-95"
-                            style={{
-                              fontFamily: Typography.ui.fontFamily,
-                              fontSize: Typography.ui.sizes.sm,
-                              fontWeight: Typography.ui.weights.medium,
-                              color: Colors.textPrimary,
-                            }}
-                          >
-                            {imageLibrary.intent}
-                          </button>
-                        </div>
-                      )}
-
-                      {/* Signature style prompts - Always show if available */}
-                      {(currentPrompts.length > 0 || !(imageLibrary.intent && imageLibrary.intent.trim())) && (
-                        <div className="space-y-3">
-                          <p className="text-xs text-stone-600 font-light tracking-wide uppercase">
-                            {studioProMode 
-                              ? (imageLibrary.intent && imageLibrary.intent.trim() 
-                                  ? "Or Start with Pro Mode Examples" 
-                                  : "Start with Pro Mode Examples")
-                              : (imageLibrary.intent && imageLibrary.intent.trim() 
-                                  ? "Or Start with Maya's Signature Styles" 
-                                  : "Start with Maya's Signature Styles")
-                            }
-                          </p>
-                          {studioProMode && (
-                            <p className="text-xs text-stone-500 text-center mb-3">
-                              Pro Mode category examples - tap to inspire Maya
-                            </p>
-                          )}
-                          <MayaQuickPrompts
-                            prompts={currentPrompts}
-                            onSelect={handleSendMessage}
-                            disabled={isTyping || isGeneratingConcepts}
-                            variant="pro-mode-empty"
-                            studioProMode={studioProMode}
-                            isEmpty={isEmpty}
-                          />
-                        </div>
-                      )}
-                    </div>
+                    {/* Quick Suggestion Prompts - use same variant as Classic Mode for consistency */}
+                    <MayaQuickPrompts
+                      prompts={currentPrompts}
+                      onSelect={handleSendMessage}
+                      disabled={isTyping || isGeneratingConcepts}
+                      variant="empty-state"
+                      studioProMode={studioProMode}
+                      isEmpty={isEmpty}
+                    />
                   </div>
                 )}
               </div>
@@ -3524,7 +3142,7 @@ export default function MayaChatScreen({
 
 
       <div
-        className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-3xl border-t border-stone-200/50 px-3 sm:px-4 py-2.5 sm:py-3 z-50 safe-bottom"
+        className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-3xl border-t border-stone-200/50 px-3 sm:px-4 py-2.5 sm:py-3 z-50 safe-bottom flex flex-col"
         style={{
           paddingBottom: "calc(env(safe-area-inset-bottom) + 0.75rem)",
         }}
@@ -3556,180 +3174,140 @@ export default function MayaChatScreen({
           </div>
         )}
 
-        {/* Input Area - Pro Mode or Classic Mode */}
-        {studioProMode ? (
-          <>
-            {/* Collapsible Options Section - Quick Prompts & Concept Style */}
-            <div 
-              className="w-full border-b"
-              style={{
-                borderColor: Colors.border,
-                backgroundColor: Colors.surface,
-              }}
-            >
-              <div className="max-w-[1200px] mx-auto">
-                {/* Collapsible Header */}
-                <button
-                  onClick={() => setIsOptionsExpanded(!isOptionsExpanded)}
-                  className="w-full flex items-center justify-between px-4 sm:px-6 py-3 hover:bg-stone-50/50 transition-colors touch-manipulation"
+        {/* Input Area - Unified for both Classic and Pro Mode */}
+        {/* Pro Feature: Generation Options (collapsible section with quick prompts and concept consistency) */}
+        {hasGenerationOptions && (
+          <div 
+            className="w-full border-b"
+            style={{
+              borderColor: Colors.border,
+              backgroundColor: Colors.surface,
+            }}
+          >
+            <div className="max-w-[1200px] mx-auto">
+              {/* Collapsible Header */}
+              <button
+                onClick={() => setIsOptionsExpanded(!isOptionsExpanded)}
+                className="w-full flex items-center justify-between px-4 sm:px-6 py-3 hover:bg-stone-50/50 transition-colors touch-manipulation"
+                style={{
+                  paddingLeft: 'clamp(12px, 3vw, 24px)',
+                  paddingRight: 'clamp(12px, 3vw, 24px)',
+                }}
+              >
+                <span className="text-xs sm:text-sm font-serif font-extralight tracking-[0.2em] uppercase text-stone-600">
+                  Generation Options
+                </span>
+                <ChevronDown
+                  size={18}
+                  className="text-stone-500 transition-transform duration-200"
+                  style={{
+                    transform: isOptionsExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                  }}
+                />
+              </button>
+
+              {/* Collapsible Content */}
+              {isOptionsExpanded && (
+                <div 
+                  className="px-4 sm:px-6 pb-4 space-y-4"
                   style={{
                     paddingLeft: 'clamp(12px, 3vw, 24px)',
                     paddingRight: 'clamp(12px, 3vw, 24px)',
+                    paddingBottom: 'clamp(12px, 3vw, 16px)',
                   }}
                 >
-                  <span
-                    style={{
-                      fontFamily: Typography.ui.fontFamily,
-                      fontSize: Typography.ui.sizes.sm,
-                      fontWeight: Typography.ui.weights.medium,
-                      color: Colors.textSecondary,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.05em',
-                    }}
-                  >
-                    Generation Options
-                  </span>
-                  <ChevronDown
-                    size={18}
-                    className="text-stone-500 transition-transform duration-200"
-                    style={{
-                      transform: isOptionsExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                    }}
+                  {/* Quick Suggestions */}
+                  <MayaQuickPrompts
+                    prompts={currentPrompts}
+                    onSelect={handleSendMessage}
+                    disabled={isTyping || isGeneratingConcepts}
+                    variant="pro-mode-options"
+                    studioProMode={studioProMode}
+                    isEmpty={isEmpty}
+                    uploadedImage={uploadedImage}
                   />
-                </button>
 
-                {/* Collapsible Content */}
-                {isOptionsExpanded && (
-                  <div 
-                    className="px-4 sm:px-6 pb-4 space-y-4"
-                    style={{
-                      paddingLeft: 'clamp(12px, 3vw, 24px)',
-                      paddingRight: 'clamp(12px, 3vw, 24px)',
-                      paddingBottom: 'clamp(12px, 3vw, 16px)',
-                    }}
-                  >
-                    {/* Quick Suggestions */}
-                    <MayaQuickPrompts
-                      prompts={currentPrompts}
-                      onSelect={handleSendMessage}
-                      disabled={isTyping || isGeneratingConcepts}
-                      variant="pro-mode-options"
-                      studioProMode={studioProMode}
-                      isEmpty={isEmpty}
-                      uploadedImage={uploadedImage}
+                  {/* Concept Consistency Toggle */}
+                  <div className="border-t border-stone-200/50 pt-4">
+                    <ConceptConsistencyToggle
+                      value={consistencyMode}
+                      onChange={handleConsistencyModeChange}
+                      count={6}
+                      className=""
                     />
-
-                    {/* Concept Consistency Toggle */}
-                    <div className="border-t border-stone-200/50 pt-4">
-                      <ConceptConsistencyToggle
-                        value={consistencyMode}
-                        onChange={handleConsistencyModeChange}
-                        count={6}
-                        className=""
-                      />
-                    </div>
                   </div>
-                )}
-              </div>
-            </div>
-
-            <ProModeInput
-              onSend={(message, imageUrl) => {
-                // Pro Mode: Send message with optional image
-                if (imageUrl) {
-                  // Set uploaded image state and send message
-                  setUploadedImage(imageUrl)
-                  // Use inputValue if message is empty, otherwise use message
-                  const messageToSend = message || inputValue.trim()
-                  if (messageToSend || imageUrl) {
-                    handleSendMessage(messageToSend)
-                  }
-                } else {
-                  // Just send text message
-                  handleSendMessage(message)
-                }
-              }}
-              onImageUpload={() => setShowUploadFlow(true)}
-              onManageLibrary={() => setShowLibraryModal(true)}
-              onNewChat={handleNewChat}
-              onShowHistory={() => setShowProModeHistory(true)}
-              isLoading={isTyping || isGeneratingConcepts}
-              disabled={isTyping || isGeneratingConcepts}
-              placeholder="What would you like to create?"
-            />
-          </>
-        ) : (
-          <div className="flex gap-2 items-end">
-            <div className="flex-1 relative">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="hidden"
-                aria-label="Upload image file"
-              />
-
-              {/* Chat Menu Button - Classic mode only */}
-              <button
-                onClick={() => setShowChatMenu(!showChatMenu)}
-                disabled={isTyping}
-                className="absolute left-2 bottom-2.5 w-9 h-9 flex items-center justify-center text-stone-600 hover:text-stone-950 transition-colors disabled:opacity-50 touch-manipulation active:scale-95 z-10 pointer-events-auto"
-                aria-label="Chat menu"
-                type="button"
-              >
-                <Sliders size={20} strokeWidth={2} />
-              </button>
-
-              <textarea
-                ref={textareaRef}
-                value={inputValue}
-                onChange={(e) => {
-                  setInputValue(e.target.value)
-                  e.target.style.height = "auto"
-                  e.target.style.height = Math.min(e.target.scrollHeight, 80) + "px"
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault()
-                    handleSendMessage()
-                    setTimeout(() => {
-                      const textarea = e.target as HTMLTextAreaElement
-                      textarea.style.height = "48px"
-                    }, 0)
-                  }
-                }}
-                onClick={(e) => {
-                  e.currentTarget.focus()
-                }}
-                onTouchEnd={(e) => {
-                  e.currentTarget.focus()
-                }}
-                placeholder={uploadedImage ? "Describe the style..." : "Message Maya..."}
-                className="w-full pl-12 pr-12 py-3 bg-white/40 backdrop-blur-2xl border border-white/60 rounded-xl text-stone-950 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-950/50 focus:bg-white/60 font-medium text-[16px] min-h-[48px] max-h-[80px] shadow-lg shadow-stone-950/10 transition-all duration-300 resize-none overflow-y-auto leading-relaxed touch-manipulation"
-                disabled={isTyping || isUploadingImage}
-                aria-label="Message input"
-                rows={1}
-                inputMode="text"
-                autoCapitalize="sentences"
-                autoCorrect="on"
-                spellCheck="true"
-                autoComplete="off"
-                enterKeyHint="send"
-              />
-
-              <button
-                onClick={() => handleSendMessage()}
-                className="absolute right-2 bottom-2.5 w-9 h-9 flex items-center justify-center text-stone-600 hover:text-stone-950 transition-colors disabled:opacity-50 touch-manipulation active:scale-95 z-10 pointer-events-auto"
-                disabled={isTyping || (!inputValue.trim() && !uploadedImage) || isUploadingImage}
-                aria-label="Send message"
-                type="button"
-              >
-                <Send size={20} strokeWidth={2} />
-              </button>
+                </div>
+              )}
             </div>
           </div>
         )}
+
+        {/* Unified Input Component - Works for both Classic and Pro Mode */}
+        <MayaUnifiedInput
+          onSend={(message, imageUrl) => {
+            // Handle message sending - match Pro Mode pattern
+            if (imageUrl) {
+              // Set uploaded image state first, then send message
+              setUploadedImage(imageUrl)
+              // Use message if provided, otherwise handleSendMessage will use inputValue (though unified component manages its own)
+              const messageToSend = message || ""
+              if (messageToSend || imageUrl) {
+                handleSendMessage(messageToSend || undefined)
+              }
+            } else {
+              // Just send text message
+              handleSendMessage(message || undefined)
+            }
+          }}
+          onImageUpload={hasProFeatures ? () => setShowUploadFlow(true) : undefined}
+          onFileChange={hasProFeatures ? undefined : handleImageUpload}
+          fileInputRef={hasProFeatures ? undefined : fileInputRef}
+          uploadedImage={uploadedImage}
+          isUploadingImage={isUploadingImage}
+          onRemoveImage={() => setUploadedImage(null)}
+          isLoading={isTyping || isGeneratingConcepts}
+          disabled={isTyping || isGeneratingConcepts}
+          placeholder={hasProFeatures ? "What would you like to create?" : "Message Maya..."}
+          showSettingsButton={!hasProFeatures}
+          onSettingsClick={() => setShowChatMenu(!showChatMenu)}
+          showLibraryButton={hasLibraryManagement}
+          onManageLibrary={() => setShowLibraryModal(true)}
+          studioProMode={studioProMode}
+        />
+        
+        {/* Bottom Navigation - New Project and History buttons (shared by both modes) */}
+        <div className="mt-3 flex items-center justify-end gap-2 sm:gap-3 -mx-3 sm:-mx-4 px-3 sm:px-4">
+          <button
+            onClick={handleNewChat}
+            className="touch-manipulation active:scale-95 px-3 py-2 rounded-lg border border-stone-300 bg-white text-stone-900 hover:bg-stone-50 hover:border-stone-400 transition-all"
+            style={{
+              fontFamily: 'serif',
+              fontSize: '12px',
+              fontWeight: 200,
+              letterSpacing: '0.2em',
+              textTransform: 'uppercase',
+              minHeight: '36px',
+              cursor: 'pointer',
+            }}
+          >
+            New Project
+          </button>
+          <button
+            onClick={() => hasProFeatures ? setShowProModeHistory(true) : setShowHistory(true)}
+            className="touch-manipulation active:scale-95 px-3 py-2 rounded-lg border border-stone-300 bg-white text-stone-900 hover:bg-stone-50 hover:border-stone-400 transition-all"
+            style={{
+              fontFamily: 'serif',
+              fontSize: '12px',
+              fontWeight: 200,
+              letterSpacing: '0.2em',
+              textTransform: 'uppercase',
+              minHeight: '36px',
+              cursor: 'pointer',
+            }}
+          >
+            History
+          </button>
+        </div>
 
 
         {/* Studio Pro Onboarding Modal - Rendered via Portal to avoid stacking context issues */}
@@ -3895,39 +3473,8 @@ export default function MayaChatScreen({
                 </button>
               </>
             ) : (
-              // Classic Mode Menu (with icons)
+              // Classic Mode Menu (with icons) - Only settings-related items (removed duplicates that are now in bottom nav or as icon buttons)
               <>
-                <button
-                  onClick={() => {
-                    handleNewChat()
-                    setShowChatMenu(false)
-                  }}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-stone-700 hover:bg-stone-50 transition-colors border-b border-stone-100 touch-manipulation"
-                >
-                  <Plus size={18} strokeWidth={2} />
-                  <span className="font-medium">New Chat</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setShowHistory(!showHistory)
-                    setShowChatMenu(false)
-                  }}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-stone-700 hover:bg-stone-50 transition-colors border-b border-stone-100 touch-manipulation"
-                >
-                  <Clock size={18} strokeWidth={2} />
-                  <span className="font-medium">Chat History</span>
-                </button>
-                <button
-                  onClick={() => {
-                    fileInputRef.current?.click()
-                    setShowChatMenu(false)
-                  }}
-                  disabled={isUploadingImage}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-stone-700 hover:bg-stone-50 transition-colors touch-manipulation disabled:opacity-50"
-                >
-                  <Camera size={18} strokeWidth={2} />
-                  <span className="font-medium">{isUploadingImage ? "Uploading..." : "Upload Inspiration"}</span>
-                </button>
                 <button
                   onClick={() => {
                     setShowSettings(!showSettings)
@@ -3972,8 +3519,8 @@ export default function MayaChatScreen({
         }}
       />
 
-      {/* Pro Mode Library Management Modal */}
-      {studioProMode && showLibraryModal && (
+      {/* Pro Feature: Library Management Modal (Pro Mode only) */}
+      {hasLibraryManagement && showLibraryModal && (
         <ImageLibraryModal
           isOpen={showLibraryModal}
           library={imageLibrary}
@@ -4008,8 +3555,8 @@ export default function MayaChatScreen({
         />
       )}
 
-      {/* Pro Mode Chat History Modal */}
-      {studioProMode && (
+      {/* Pro Feature: Chat History Modal (Pro Mode uses ProModeChatHistory, Classic uses MayaChatHistory) */}
+      {hasProFeatures && (
         <ProModeChatHistory
           isOpen={showProModeHistory}
           onClose={() => setShowProModeHistory(false)}
@@ -4021,8 +3568,8 @@ export default function MayaChatScreen({
         />
       )}
 
-      {/* Pro Mode Upload Flow Modal (when triggered from header/input or manage button) */}
-      {studioProMode && showUploadFlow && (
+      {/* Pro Feature: Image Upload Flow Modal (Pro Mode only - for library management) */}
+      {hasProFeatures && showUploadFlow && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
             <div className="p-4 border-b border-stone-200 flex items-center justify-between">

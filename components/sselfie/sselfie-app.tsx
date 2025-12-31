@@ -362,7 +362,9 @@ export default function SselfieApp({
 
       <main className="relative h-full mx-1 sm:mx-2 md:mx-3 pb-2 sm:pb-3 md:pb-4">
         <div className={`h-full ${DesignClasses.container} overflow-hidden`}>
-          <header className={`sticky top-0 z-10 bg-white/70 ${DesignClasses.blur.md} border-b ${DesignClasses.border.stone} ${DesignClasses.spacing.paddingX.sm} py-3 pt-safe`}>
+          {/* Hide header when in Maya tab - MayaChatScreen has its own header */}
+          {activeTab !== "maya" && (
+            <header className={`sticky top-0 z-10 bg-white/70 ${DesignClasses.blur.md} border-b ${DesignClasses.border.stone} ${DesignClasses.spacing.paddingX.sm} py-3 pt-safe`}>
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 shrink-0">
                   <div className={`${DesignClasses.typography.heading.h4} ${DesignClasses.text.primary}`}>
@@ -438,6 +440,7 @@ export default function SselfieApp({
                 </DropdownMenu>
               </div>
             </header>
+          )}
 
           <div
             ref={scrollContainerRef}
