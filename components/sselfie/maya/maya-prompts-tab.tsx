@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
-import { Sparkles, Loader2, Settings, X, ChevronLeft, ChevronRight } from "lucide-react"
+import { useState, useEffect, useRef, useMemo } from "react"
+import { Sparkles, Loader2, Settings, X, ChevronLeft, ChevronRight, Search, ArrowUpDown } from "lucide-react"
 import Image from "next/image"
 import FullscreenImageModal from "../fullscreen-image-modal"
 
@@ -66,6 +66,9 @@ export default function MayaPromptsTab({
   const [selectedPrompt, setSelectedPrompt] = useState<PromptItem | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  // Search and sorting state
+  const [searchQuery, setSearchQuery] = useState<string>("")
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "alphabetical" | "category">("newest")
   
   // Local image library state (only used if external library not provided)
   const [localImageLibrary, setLocalImageLibrary] = useState<{
@@ -464,6 +467,62 @@ export default function MayaPromptsTab({
   useEffect(() => {
     fetchPrompts()
   }, [selectedCategory])
+
+  // Filter and sort prompts
+  const filteredAndSortedPrompts = useMemo(() => {
+    let filtered = prompts
+
+    // Apply category filter
+    if (selectedCategory !== "all") {
+      filtered = filtered.filter((p) => p.category === selectedCategory)
+    }
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim()
+      filtered = filtered.filter(
+        (p) =>
+          p.concept_title?.toLowerCase().includes(query) ||
+          p.prompt_text?.toLowerCase().includes(query) ||
+          p.guide_description?.toLowerCase().includes(query) ||
+          p.category?.toLowerCase().includes(query)
+      )
+    }
+
+    // Apply sorting
+    const sorted = [...filtered]
+    switch (sortBy) {
+      case "newest":
+        // Assuming prompts are already sorted by newest from API (sort_order ASC)
+        // Keep as-is
+        break
+      case "oldest":
+        sorted.reverse()
+        break
+      case "alphabetical":
+        sorted.sort((a, b) => {
+          const titleA = (a.concept_title || "").toLowerCase()
+          const titleB = (b.concept_title || "").toLowerCase()
+          return titleA.localeCompare(titleB)
+        })
+        break
+      case "category":
+        sorted.sort((a, b) => {
+          const catA = (a.category || "").toLowerCase()
+          const catB = (b.category || "").toLowerCase()
+          if (catA === catB) {
+            // If same category, sort by title
+            const titleA = (a.concept_title || "").toLowerCase()
+            const titleB = (b.concept_title || "").toLowerCase()
+            return titleA.localeCompare(titleB)
+          }
+          return catA.localeCompare(catB)
+        })
+        break
+    }
+
+    return sorted
+  }, [prompts, selectedCategory, searchQuery, sortBy])
 
   // Poll for image generation status (different endpoints for Classic vs Pro)
   useEffect(() => {
@@ -874,6 +933,45 @@ export default function MayaPromptsTab({
             </div>
           </div>
 
+          {/* Search and Sort Controls */}
+          <div className="flex flex-col sm:flex-row gap-4 mb-6 sm:mb-8">
+            {/* Search Input */}
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" strokeWidth={2} />
+              <input
+                type="text"
+                placeholder="Search prompts..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 text-sm bg-white border border-stone-200/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-950 focus:border-transparent transition-all"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center text-stone-400 hover:text-stone-600 transition-colors"
+                  aria-label="Clear search"
+                >
+                  <X size={16} strokeWidth={2} />
+                </button>
+              )}
+            </div>
+
+            {/* Sort Dropdown */}
+            <div className="relative">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                className="appearance-none pl-4 pr-10 py-3 text-sm bg-white border border-stone-200/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-950 focus:border-transparent transition-all cursor-pointer min-w-[160px]"
+              >
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="alphabetical">Alphabetical</option>
+                <option value="category">By Category</option>
+              </select>
+              <ArrowUpDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" strokeWidth={2} />
+            </div>
+          </div>
+
           {/* Category Filter */}
           <div
             className="flex gap-3 sm:gap-4 mb-6 sm:mb-8 overflow-x-auto pb-2 scrollbar-hide"
@@ -911,7 +1009,7 @@ export default function MayaPromptsTab({
           </div>
 
           {/* Prompts Grid */}
-          {prompts.length === 0 ? (
+          {filteredAndSortedPrompts.length === 0 ? (
             <div className="text-center py-24">
               <Sparkles size={48} className="mx-auto mb-4 text-stone-400" strokeWidth={1.5} />
               <h3 className="text-lg font-serif font-light tracking-[0.2em] uppercase text-stone-950 mb-2">
@@ -923,7 +1021,7 @@ export default function MayaPromptsTab({
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-12">
-              {prompts.map((prompt) => {
+              {filteredAndSortedPrompts.map((prompt) => {
                 const genImage = generatedImages.get(prompt.id)
                 const hasGeneratedImage = genImage?.isGenerated && genImage?.imageUrl
                 const isGenerating = genImage?.isGenerating || false

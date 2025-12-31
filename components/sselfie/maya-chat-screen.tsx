@@ -44,6 +44,7 @@ import MayaUnifiedInput from "./maya/maya-unified-input"
 import MayaTabSwitcher from "./maya/maya-tab-switcher"
 import MayaVideosTab from "./maya/maya-videos-tab"
 import MayaPromptsTab from "./maya/maya-prompts-tab"
+import MayaTrainingTab from "./maya/maya-training-tab"
 import { useRouter } from "next/navigation"
 // SessionUser type removed - not exported from next-auth
 import { PromptSuggestionCard as NewPromptSuggestionCard } from "./prompt-suggestion-card"
@@ -3480,28 +3481,16 @@ export default function MayaChatScreen({
 
       {/* Tab Content - Training Tab */}
       {activeMayaTab === "training" && (
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-          <div className="max-w-7xl mx-auto">
-            <div className="text-center py-12">
-              <GraduationCap size={48} className="mx-auto mb-4 text-stone-400" strokeWidth={1.5} />
-              <h2 className="text-xl sm:text-2xl font-serif font-extralight tracking-[0.2em] uppercase text-stone-950 mb-3">
-                Training Tab
-              </h2>
-              <p className="text-sm text-stone-600 max-w-md mx-auto mb-6">
-                Train your personal AI model with your selfies. This takes about 5 minutes and you only need to do it once.
-              </p>
-              <button
-                onClick={() => {
-                  window.dispatchEvent(new CustomEvent('open-onboarding'))
-                }}
-                className="px-6 py-3 bg-stone-950 text-white rounded-lg hover:bg-stone-800 transition-colors text-sm font-medium tracking-wide uppercase"
-              >
-                Start Training
-              </button>
-            </div>
-            </div>
-          </div>
-        )}
+        <div
+          style={{
+            // Header (~56-64px) + Tabs (~50px) + safe area = ~106-114px total
+            paddingTop: 'calc(106px + max(0.625rem, env(safe-area-inset-top, 0px)))',
+            paddingBottom: '20px', // Space for content
+          }}
+        >
+          <MayaTrainingTab userId={userId} />
+        </div>
+      )}
 
         {/* Studio Pro Onboarding Modal - Rendered via Portal to avoid stacking context issues */}
         {showStudioProOnboarding && typeof window !== 'undefined' && createPortal(
