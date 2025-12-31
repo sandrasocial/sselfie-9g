@@ -200,7 +200,6 @@ export default function MayaChatScreen({
   // Must be defined after useMayaImages hook since hasImageLibrary depends on imageLibrary
   const hasProFeatures = studioProMode
   const hasImageLibrary = studioProMode && imageLibrary
-  const hasGenerationOptions = studioProMode
   const hasLibraryManagement = studioProMode
   
   // Shared images from first concept card - auto-populates other cards
@@ -3176,7 +3175,7 @@ export default function MayaChatScreen({
 
         {/* Input Area - Unified for both Classic and Pro Mode */}
         {/* Pro Feature: Generation Options (collapsible section with quick prompts and concept consistency) */}
-        {hasGenerationOptions && (
+        {studioProMode && (
           <div 
             className="w-full border-b"
             style={{

@@ -2,7 +2,8 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
-import { Camera, Aperture, ChevronRight, X, Sparkles } from "lucide-react"
+import { Camera, Aperture, ChevronRight, X } from "lucide-react"
+import Image from "next/image"
 import UnifiedLoading from "./unified-loading"
 import LoadingSpinner from "./loading-spinner"
 import useSWR from "swr"
@@ -400,15 +401,19 @@ export default function OnboardingWizard({
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className={`w-full max-w-2xl max-h-[90vh] overflow-y-auto ${DesignClasses.card} ${DesignClasses.spacing.padding.lg} relative`}>
+            <div className={`w-full max-w-2xl max-h-[90vh] overflow-y-auto ${currentStep === "welcome" ? "bg-stone-950/95 backdrop-blur-xl" : DesignClasses.card} ${DesignClasses.spacing.padding.lg} relative ${currentStep === "welcome" ? "border border-stone-800" : ""}`}>
               {/* Close Button */}
               {onDismiss && currentStep !== "training" && (
                 <button
                   onClick={onDismiss}
-                  className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-100 transition-colors z-10"
+                  className={`absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg transition-colors z-10 ${
+                    currentStep === "welcome" 
+                      ? "hover:bg-stone-800 text-white/80 hover:text-white" 
+                      : "hover:bg-stone-100 text-stone-600"
+                  }`}
                   aria-label="Close"
                 >
-                  <X size={18} className="text-stone-600" />
+                  <X size={18} />
                 </button>
               )}
 
@@ -422,20 +427,28 @@ export default function OnboardingWizard({
                     exit={{ opacity: 0, x: -20 }}
                     className="text-center space-y-6"
                   >
-                    <div className="w-20 h-20 bg-stone-950 rounded-full flex items-center justify-center mx-auto shadow-2xl">
-                      <Sparkles size={32} className="text-white" strokeWidth={2.5} />
+                    <div className="w-20 h-20 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full flex items-center justify-center mx-auto shadow-2xl">
+                      <div className="w-12 h-12 relative">
+                        <Image
+                          src="/icon.svg"
+                          alt="SSELFIE Logo"
+                          fill
+                          className="object-contain brightness-0 invert"
+                          style={{ opacity: 0.95 }}
+                        />
+                      </div>
                     </div>
-                    <h2 className={`${DesignClasses.typography.heading.h2} ${DesignClasses.text.primary}`}>
+                    <h2 className={`${DesignClasses.typography.heading.h2} text-white`}>
                       Welcome to SSELFIE!
                     </h2>
-                    <p className={`${DesignClasses.typography.body.md} ${DesignClasses.text.secondary} max-w-md mx-auto`}>
+                    <p className={`${DesignClasses.typography.body.md} text-white/90 max-w-md mx-auto`}>
                       Let's train your personal AI model with your selfies. This takes about 5 minutes and you only need to do it once.
                     </p>
                     <button
                       onClick={() => setCurrentStep("upload")}
-                      className={`group relative ${DesignClasses.buttonPrimary} min-h-[52px] overflow-hidden`}
+                      className="group relative bg-white text-stone-950 px-6 py-3 rounded-lg font-medium min-h-[52px] overflow-hidden hover:bg-stone-100 transition-all"
                     >
-                      <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                      <div className="absolute inset-0 bg-stone-950/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                       <span className="relative z-10 flex items-center justify-center gap-2">
                         Get Started
                         <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />

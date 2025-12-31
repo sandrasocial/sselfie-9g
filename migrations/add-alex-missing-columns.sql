@@ -13,3 +13,4 @@ COMMENT ON COLUMN alex_suggestion_history.acted_upon IS 'Whether the user acted 
 COMMENT ON COLUMN alex_suggestion_history.acted_upon_at IS 'Timestamp when the user acted on this suggestion';
 
 
+
