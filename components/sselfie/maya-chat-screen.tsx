@@ -23,6 +23,8 @@ import {
   Menu,
   ChevronDown,
   ChevronRight,
+  Film,
+  GraduationCap,
 } from "lucide-react"
 import { useState, useEffect, useRef, useCallback } from "react"
 import { createPortal } from "react-dom"
@@ -38,6 +40,7 @@ import { useMayaMode } from "./maya/hooks/use-maya-mode"
 import { useMayaImages } from "./maya/hooks/use-maya-images"
 import { useMayaChat } from "./maya/hooks/use-maya-chat"
 import MayaUnifiedInput from "./maya/maya-unified-input"
+import MayaTabSwitcher from "./maya/maya-tab-switcher"
 import { useRouter } from "next/navigation"
 // SessionUser type removed - not exported from next-auth
 import { PromptSuggestionCard as NewPromptSuggestionCard } from "./prompt-suggestion-card"
@@ -104,7 +107,30 @@ export default function MayaChatScreen({
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [showBuyCreditsModal, setShowBuyCreditsModal] = useState(false)
   const router = useRouter()
-
+  
+  // Tab state for Photos/Videos/Prompts/Training tabs
+  const [activeMayaTab, setActiveMayaTab] = useState<"photos" | "videos" | "prompts" | "training">(() => {
+    // Check URL hash for tab selection (e.g., #maya/videos, #maya/prompts, #maya/training)
+    if (typeof window !== "undefined") {
+      const hash = window.location.hash
+      if (hash === "#maya/videos" || hash === "#videos") {
+        return "videos"
+      }
+      if (hash === "#maya/prompts" || hash === "#prompts") {
+        return "prompts"
+      }
+      if (hash === "#maya/training" || hash === "#training") {
+        return "training"
+      }
+      // Check localStorage for persisted tab selection
+      const savedTab = localStorage.getItem("mayaActiveTab")
+      if (savedTab === "photos" || savedTab === "videos" || savedTab === "prompts" || savedTab === "training") {
+        return savedTab as "photos" | "videos" | "prompts" | "training"
+      }
+    }
+    return "photos" // Default to Photos tab
+  })
+  
   // Mode managed by useMayaMode hook
   const { studioProMode, setStudioProMode, getModeString, hasModeChanged } = useMayaMode(forcedStudioProMode)
   
@@ -2649,6 +2675,7 @@ export default function MayaChatScreen({
   // The old ProModeWrapper (form-based interface) has been removed in favor of the workbench-based chat UI
 
   return (
+    <>
     <div
       className="flex flex-col h-full bg-linear-to-b from-stone-50 to-white relative overflow-hidden"
       onDragEnter={handleDragEnter}
@@ -2668,7 +2695,8 @@ export default function MayaChatScreen({
         </div>
       )}
 
-      {/* Header - Pro Mode or Classic Mode */}
+      {/* Sticky Header - Pro Mode or Classic Mode */}
+      <div className="sticky top-0 z-50 bg-white/85 backdrop-blur-xl border-b border-stone-200/50">
       <MayaHeader
         studioProMode={studioProMode}
         chatTitle={chatTitle}
@@ -2703,6 +2731,31 @@ export default function MayaChatScreen({
         onSwitchToClassic={() => handleModeSwitch(false)}
         onSettings={() => setShowSettings(true)}
       />
+      </div>
+
+      {/* Sticky Tab Switcher - Photos/Videos/Prompts/Training tabs */}
+      <div className="sticky top-[60px] z-40 bg-white border-b border-stone-200/50">
+        <div className="w-full px-3 sm:px-4 md:px-6">
+          <MayaTabSwitcher
+            activeTab={activeMayaTab}
+            onTabChange={(tab) => {
+              setActiveMayaTab(tab)
+              // Persist to localStorage
+              if (typeof window !== "undefined") {
+                localStorage.setItem("mayaActiveTab", tab)
+                // Update URL hash
+                const hashMap: Record<string, string> = {
+                  photos: "#maya",
+                  videos: "#maya/videos",
+                  prompts: "#maya/prompts",
+                  training: "#maya/training",
+                }
+                window.history.replaceState(null, "", hashMap[tab] || "#maya")
+              }
+            }}
+          />
+        </div>
+      </div>
 
       {/* Training Prompt - Show if user doesn't have trained model */}
       {!hasTrainedModel && (
@@ -2948,6 +3001,10 @@ export default function MayaChatScreen({
         studioProMode={studioProMode}
       />
 
+      {/* Tab Content - Photos Tab */}
+      {activeMayaTab === "photos" && (
+        <>
+          <div className="flex-1 overflow-hidden flex flex-col">
       <MayaChatInterface
         messages={messages}
         filteredMessages={filteredMessages}
@@ -3096,24 +3153,24 @@ export default function MayaChatScreen({
                         className="w-full h-full object-cover"
                       />
                     </div>
-                    <div className="space-y-3">
+                        <div className="space-y-3">
                       <h2 className="text-xl sm:text-2xl font-serif font-extralight tracking-[0.3em] text-stone-950 uppercase">
                         Welcome
                       </h2>
                       <p className="text-xs sm:text-sm text-stone-600 tracking-wide max-w-md leading-relaxed px-4">
                         Hi, I'm Maya. I'll help you create beautiful photos and videos.
                       </p>
-                    </div>
+                        </div>
 
                     {/* Quick Suggestion Prompts - use same variant as Classic Mode for consistency */}
-                    <MayaQuickPrompts
-                      prompts={currentPrompts}
-                      onSelect={handleSendMessage}
-                      disabled={isTyping || isGeneratingConcepts}
+                          <MayaQuickPrompts
+                            prompts={currentPrompts}
+                            onSelect={handleSendMessage}
+                            disabled={isTyping || isGeneratingConcepts}
                       variant="empty-state"
-                      studioProMode={studioProMode}
-                      isEmpty={isEmpty}
-                    />
+                            studioProMode={studioProMode}
+                            isEmpty={isEmpty}
+                          />
                   </div>
                 )}
               </div>
@@ -3145,10 +3202,11 @@ export default function MayaChatScreen({
               />
             </div>
           )}
+          </div>
 
-
+          {/* Fixed Bottom Input Area - Only show in Photos tab */}
       <div
-        className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-3xl border-t border-stone-200/50 px-3 sm:px-4 py-2.5 sm:py-3 z-50 safe-bottom flex flex-col"
+            className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-3xl border-t border-stone-200/50 px-3 sm:px-4 py-2.5 sm:py-3 z-50 safe-bottom flex flex-col"
         style={{
           paddingBottom: "calc(env(safe-area-inset-bottom) + 0.75rem)",
         }}
@@ -3184,88 +3242,88 @@ export default function MayaChatScreen({
         {/* Pro Feature: Generation Options (collapsible section with quick prompts and concept consistency)
             Progressive enhancement: This section only appears when Pro features are enabled */}
         {studioProMode && (
-          <div 
-            className="w-full border-b"
-            style={{
-              borderColor: Colors.border,
-              backgroundColor: Colors.surface,
-            }}
-          >
-            <div className="max-w-[1200px] mx-auto">
-              {/* Collapsible Header */}
-              <button
-                onClick={() => setIsOptionsExpanded(!isOptionsExpanded)}
-                className="w-full flex items-center justify-between px-4 sm:px-6 py-3 hover:bg-stone-50/50 transition-colors touch-manipulation"
-                style={{
-                  paddingLeft: 'clamp(12px, 3vw, 24px)',
-                  paddingRight: 'clamp(12px, 3vw, 24px)',
-                }}
-              >
-                <span 
-                  className="text-xs sm:text-sm font-serif font-extralight tracking-[0.2em] uppercase text-stone-600"
-                  title="Advanced generation options: Quick prompts and concept consistency controls"
-                >
-                  Generation Options
-                </span>
-                <ChevronDown
-                  size={18}
-                  className="text-stone-500 transition-transform duration-200"
-                  style={{
-                    transform: isOptionsExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                  }}
-                />
-              </button>
-
-              {/* Collapsible Content */}
-              {isOptionsExpanded && (
-                <div 
-                  className="px-4 sm:px-6 pb-4 space-y-4"
+            <div 
+              className="w-full border-b"
+              style={{
+                borderColor: Colors.border,
+                backgroundColor: Colors.surface,
+              }}
+            >
+              <div className="max-w-[1200px] mx-auto">
+                {/* Collapsible Header */}
+                <button
+                  onClick={() => setIsOptionsExpanded(!isOptionsExpanded)}
+                  className="w-full flex items-center justify-between px-4 sm:px-6 py-3 hover:bg-stone-50/50 transition-colors touch-manipulation"
                   style={{
                     paddingLeft: 'clamp(12px, 3vw, 24px)',
                     paddingRight: 'clamp(12px, 3vw, 24px)',
-                    paddingBottom: 'clamp(12px, 3vw, 16px)',
                   }}
                 >
-                  {/* Quick Suggestions */}
-                  <MayaQuickPrompts
-                    prompts={currentPrompts}
-                    onSelect={handleSendMessage}
-                    disabled={isTyping || isGeneratingConcepts}
-                    variant="pro-mode-options"
-                    studioProMode={studioProMode}
-                    isEmpty={isEmpty}
-                    uploadedImage={uploadedImage}
+                  <span
+                  className="text-xs sm:text-sm font-serif font-extralight tracking-[0.2em] uppercase text-stone-600"
+                  title="Advanced generation options: Quick prompts and concept consistency controls"
+                  >
+                    Generation Options
+                  </span>
+                  <ChevronDown
+                    size={18}
+                    className="text-stone-500 transition-transform duration-200"
+                    style={{
+                      transform: isOptionsExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                    }}
                   />
+                </button>
 
-                  {/* Concept Consistency Toggle */}
-                  <div className="border-t border-stone-200/50 pt-4">
-                    <ConceptConsistencyToggle
-                      value={consistencyMode}
-                      onChange={handleConsistencyModeChange}
-                      count={6}
-                      className=""
+                {/* Collapsible Content */}
+                {isOptionsExpanded && (
+                  <div 
+                    className="px-4 sm:px-6 pb-4 space-y-4"
+                    style={{
+                      paddingLeft: 'clamp(12px, 3vw, 24px)',
+                      paddingRight: 'clamp(12px, 3vw, 24px)',
+                      paddingBottom: 'clamp(12px, 3vw, 16px)',
+                    }}
+                  >
+                    {/* Quick Suggestions */}
+                    <MayaQuickPrompts
+                      prompts={currentPrompts}
+                      onSelect={handleSendMessage}
+                      disabled={isTyping || isGeneratingConcepts}
+                      variant="pro-mode-options"
+                      studioProMode={studioProMode}
+                      isEmpty={isEmpty}
+                      uploadedImage={uploadedImage}
                     />
+
+                    {/* Concept Consistency Toggle */}
+                    <div className="border-t border-stone-200/50 pt-4">
+                      <ConceptConsistencyToggle
+                        value={consistencyMode}
+                        onChange={handleConsistencyModeChange}
+                        count={6}
+                        className=""
+                      />
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          </div>
         )}
 
         {/* Unified Input Component - Works for both Classic and Pro Mode */}
         <MayaUnifiedInput
-          onSend={(message, imageUrl) => {
+              onSend={(message, imageUrl) => {
             // Handle message sending - match Pro Mode pattern
-            if (imageUrl) {
+                if (imageUrl) {
               // Set uploaded image state first, then send message
-              setUploadedImage(imageUrl)
+                  setUploadedImage(imageUrl)
               // Use message if provided, otherwise handleSendMessage will use inputValue (though unified component manages its own)
               const messageToSend = message || ""
-              if (messageToSend || imageUrl) {
+                  if (messageToSend || imageUrl) {
                 handleSendMessage(messageToSend || undefined)
-              }
-            } else {
-              // Just send text message
+                  }
+                } else {
+                  // Just send text message
               handleSendMessage(message || undefined)
             }
           }}
@@ -3275,8 +3333,8 @@ export default function MayaChatScreen({
           uploadedImage={uploadedImage}
           isUploadingImage={isUploadingImage}
           onRemoveImage={() => setUploadedImage(null)}
-          isLoading={isTyping || isGeneratingConcepts}
-          disabled={isTyping || isGeneratingConcepts}
+              isLoading={isTyping || isGeneratingConcepts}
+              disabled={isTyping || isGeneratingConcepts}
           placeholder={hasProFeatures ? "What would you like to create?" : "Message Maya..."}
           showSettingsButton={!hasProFeatures}
           onSettingsClick={() => setShowChatMenu(!showChatMenu)}
@@ -3287,7 +3345,7 @@ export default function MayaChatScreen({
         
         {/* Bottom Navigation - New Project and History buttons (shared by both modes) */}
         <div className="mt-3 flex items-center justify-end gap-2 sm:gap-3 -mx-3 sm:-mx-4 px-3 sm:px-4">
-          <button
+              <button
             onClick={handleNewChat}
             className="touch-manipulation active:scale-95 px-3 py-2 rounded-lg border border-stone-300 bg-white text-stone-900 hover:bg-stone-50 hover:border-stone-400 transition-all"
             style={{
@@ -3301,8 +3359,8 @@ export default function MayaChatScreen({
             }}
           >
             New Project
-          </button>
-          <button
+              </button>
+              <button
             onClick={() => hasProFeatures ? setShowProModeHistory(true) : setShowHistory(true)}
             className="touch-manipulation active:scale-95 px-3 py-2 rounded-lg border border-stone-300 bg-white text-stone-900 hover:bg-stone-50 hover:border-stone-400 transition-all"
             style={{
@@ -3316,9 +3374,70 @@ export default function MayaChatScreen({
             }}
           >
             History
-          </button>
-        </div>
+              </button>
+            </div>
+          </div>
+        </>
+      )}
 
+      {/* Tab Content - Videos Tab */}
+      {activeMayaTab === "videos" && (
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center py-12">
+              <Film size={48} className="mx-auto mb-4 text-stone-400" strokeWidth={1.5} />
+              <h2 className="text-xl sm:text-2xl font-serif font-extralight tracking-[0.2em] uppercase text-stone-950 mb-3">
+                Videos Tab
+              </h2>
+              <p className="text-sm text-stone-600 max-w-md mx-auto">
+                B-Roll video generation will be integrated here. This tab will allow you to animate your generated images into stunning video reels.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab Content - Prompts Tab */}
+      {activeMayaTab === "prompts" && (
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center py-12">
+              <Sparkles size={48} className="mx-auto mb-4 text-stone-400" strokeWidth={1.5} />
+              <h2 className="text-xl sm:text-2xl font-serif font-extralight tracking-[0.2em] uppercase text-stone-950 mb-3">
+                Prompts Tab
+              </h2>
+              <p className="text-sm text-stone-600 max-w-md mx-auto">
+                Browse ready-to-use prompts from your free prompt guide. Select a prompt to generate professional photos instantly.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab Content - Training Tab */}
+      {activeMayaTab === "training" && (
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center py-12">
+              <GraduationCap size={48} className="mx-auto mb-4 text-stone-400" strokeWidth={1.5} />
+              <h2 className="text-xl sm:text-2xl font-serif font-extralight tracking-[0.2em] uppercase text-stone-950 mb-3">
+                Training Tab
+              </h2>
+              <p className="text-sm text-stone-600 max-w-md mx-auto mb-6">
+                Train your personal AI model with your selfies. This takes about 5 minutes and you only need to do it once.
+              </p>
+              <button
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent('open-onboarding'))
+                }}
+                className="px-6 py-3 bg-stone-950 text-white rounded-lg hover:bg-stone-800 transition-colors text-sm font-medium tracking-wide uppercase"
+              >
+                Start Training
+              </button>
+            </div>
+            </div>
+          </div>
+        )}
 
         {/* Studio Pro Onboarding Modal - Rendered via Portal to avoid stacking context issues */}
         {showStudioProOnboarding && typeof window !== 'undefined' && createPortal(
@@ -3664,6 +3783,6 @@ export default function MayaChatScreen({
           </div>
         </div>
       )}
-    </div>
+    </>
   )
 }
