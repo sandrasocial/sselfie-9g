@@ -1435,7 +1435,7 @@ export default function ConceptCard({
       {/* Gallery Modal */}
       {showGalleryModal && (
         <ImageGalleryModal
-          images={galleryImages}
+          fetchImages={true}
           onSelect={handleGallerySelect}
           onClose={() => {
             setShowGalleryModal(false)

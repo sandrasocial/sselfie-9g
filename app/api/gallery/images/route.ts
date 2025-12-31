@@ -22,7 +22,12 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    // FETCH user's gallery images (ai_images table)
+    // GET pagination parameters
+    const { searchParams } = new URL(req.url)
+    const limit = Number.parseInt(searchParams.get("limit") || "100")
+    const offset = Number.parseInt(searchParams.get("offset") || "0")
+
+    // FETCH user's gallery images (ai_images table) with pagination
     const images = await sql`
       SELECT 
         id,
@@ -35,10 +40,28 @@ export async function GET(req: NextRequest) {
       AND generation_status = 'completed'
       AND image_url IS NOT NULL
       ORDER BY created_at DESC
-      LIMIT 100
+      LIMIT ${limit}
+      OFFSET ${offset}
     `
 
-    return NextResponse.json({ images })
+    // Get total count for pagination
+    const totalCountResult = await sql`
+      SELECT COUNT(*) as total
+      FROM ai_images
+      WHERE user_id = ${neonUserId}
+      AND generation_status = 'completed'
+      AND image_url IS NOT NULL
+    `
+    const totalCount = Number.parseInt(totalCountResult[0]?.total || "0")
+    const hasMore = offset + limit < totalCount
+
+    return NextResponse.json({ 
+      images,
+      hasMore,
+      total: totalCount,
+      offset,
+      limit
+    })
 
   } catch (error) {
     console.error("[GALLERY] Fetch error:", error)

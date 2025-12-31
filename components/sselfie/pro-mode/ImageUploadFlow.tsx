@@ -34,7 +34,7 @@ interface ImageUploadFlowProps {
   showAfterState?: boolean
   editCategory?: 'selfies' | 'products' | 'people' | 'vibes' | null // Category being edited/managed
   onManageCategory?: (category: 'selfies' | 'products' | 'people' | 'vibes') => void
-  onStartCreating?: () => void
+  onStartCreating?: (library: ImageLibrary) => void
 }
 
 export default function ImageUploadFlow({
@@ -63,10 +63,8 @@ export default function ImageUploadFlow({
       intent: '',
     }
   )
-  const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([])
   const [showGalleryModal, setShowGalleryModal] = useState(false)
   const [galleryCategory, setGalleryCategory] = useState<'selfies' | 'products' | 'people' | 'vibes' | null>(null)
-  const [isLoadingGallery, setIsLoadingGallery] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [validationError, setValidationError] = useState<string | null>(null)
@@ -121,46 +119,7 @@ export default function ImageUploadFlow({
     )
   }
 
-  // Load gallery images when component mounts
-  useEffect(() => {
-    const loadGalleryImages = async () => {
-      try {
-        setIsLoadingGallery(true)
-        const response = await fetch('/api/gallery/images', {
-          credentials: 'include',
-        })
-        
-        if (!response.ok) {
-          throw new Error('Failed to load gallery images')
-        }
-        
-        const data = await response.json()
-        if (data.images) {
-          // Map API response to GalleryImage format
-          const mappedImages: GalleryImage[] = data.images.map((img: any) => ({
-            id: img.id?.toString() || '',
-            user_id: '', // Not needed for display
-            image_url: img.image_url || '',
-            prompt: img.prompt || '',
-            description: img.description,
-            category: img.category,
-            style: img.style,
-            is_favorite: img.is_favorite || false,
-            created_at: img.created_at || new Date().toISOString(),
-            source: 'ai_images' as const,
-          }))
-          setGalleryImages(mappedImages)
-        }
-      } catch (error) {
-        console.error('[ImageUploadFlow] Failed to load gallery:', error)
-        setGalleryImages([])
-      } finally {
-        setIsLoadingGallery(false)
-      }
-    }
-    
-    loadGalleryImages()
-  }, [])
+  // Gallery images are now fetched directly by ImageGalleryModal with pagination support
 
   const handleBeginSetup = () => {
     setCurrentStep(2)
@@ -377,9 +336,10 @@ export default function ImageUploadFlow({
     }
   }
 
-  const handleStartCreating = () => {
+  const handleStartCreating = async () => {
     if (onStartCreating) {
-      onStartCreating()
+      // Pass the current library state to the callback
+      onStartCreating(library)
     } else if (onComplete) {
       // If no onStartCreating callback, use onComplete to trigger concept generation
       // This ensures the library is saved and concept generation is triggered
@@ -780,7 +740,7 @@ export default function ImageUploadFlow({
       {/* Gallery Modal */}
       {showGalleryModal && (
         <ImageGalleryModal
-          images={galleryImages}
+          fetchImages={true}
           onSelect={handleGalleryImageSelect}
           onClose={() => {
             setShowGalleryModal(false)
@@ -1082,7 +1042,7 @@ export default function ImageUploadFlow({
       {/* Gallery Modal */}
       {showGalleryModal && (
         <ImageGalleryModal
-          images={galleryImages}
+          fetchImages={true}
           onSelect={handleGalleryImageSelect}
           onClose={() => {
             setShowGalleryModal(false)
@@ -1439,7 +1399,7 @@ export default function ImageUploadFlow({
         {/* Gallery Modal */}
         {showGalleryModal && (
           <ImageGalleryModal
-            images={galleryImages}
+            fetchImages={true}
             onSelect={handleGalleryImageSelect}
             onClose={() => {
               setShowGalleryModal(false)
@@ -1702,7 +1662,7 @@ export default function ImageUploadFlow({
       {/* Gallery Modal */}
       {showGalleryModal && (
         <ImageGalleryModal
-          images={galleryImages}
+          fetchImages={true}
           onSelect={handleGalleryImageSelect}
           onClose={() => {
             setShowGalleryModal(false)
@@ -1727,7 +1687,7 @@ export default function ImageUploadFlow({
       {/* Gallery Modal - available in all steps */}
       {showGalleryModal && (
         <ImageGalleryModal
-          images={galleryImages}
+          fetchImages={true}
           onSelect={handleGalleryImageSelect}
           onClose={() => {
             setShowGalleryModal(false)

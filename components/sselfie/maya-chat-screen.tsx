@@ -3146,27 +3146,37 @@ export default function MayaChatScreen({
                         })
                       }
                     }}
-                    onStartCreating={async () => {
+                    onStartCreating={async (library) => {
                       // 🔴 FIX: Navigate to creation flow after "Start Creating" button
-                      console.log("[v0] [PRO MODE] Start Creating clicked - triggering concept generation")
+                      console.log("[v0] [PRO MODE] Start Creating clicked - triggering concept generation", library)
                       
-                      // Ensure library is saved
-                      await saveLibrary(imageLibrary)
+                      // Use the library passed from ImageUploadFlow, not the stale imageLibrary
+                      // saveLibrary expects Partial<ImageLibrary>, so we pass the full library
+                      await saveLibrary({
+                        selfies: library.selfies,
+                        products: library.products,
+                        people: library.people,
+                        vibes: library.vibes,
+                        intent: library.intent,
+                      })
+                      
+                      // Refresh library to ensure Prompts tab gets updated state
+                      await refreshLibrary()
                       
                       // If intent exists, update it
-                      if (imageLibrary.intent) {
-                        await updateIntent(imageLibrary.intent)
+                      if (library.intent) {
+                        await updateIntent(library.intent)
                       }
                       
                       // Trigger concept generation by sending a message to Maya
-                      if (sendMessage && imageLibrary.selfies.length > 0) {
-                        const messageText = imageLibrary.intent || "I'm ready to create concepts with my images"
+                      if (sendMessage && library.selfies.length > 0) {
+                        const messageText = library.intent || "I'm ready to create concepts with my images"
                         
                         const allImages = [
-                          ...imageLibrary.selfies,
-                          ...imageLibrary.products,
-                          ...imageLibrary.people,
-                          ...imageLibrary.vibes,
+                          ...library.selfies,
+                          ...library.products,
+                          ...library.people,
+                          ...library.vibes,
                         ]
                         
                         const messageParts: Array<{ type: string; text?: string; image?: string }> = []
@@ -3458,6 +3468,12 @@ export default function MayaChatScreen({
               description: img.description,
               category: img.category,
             }))}
+            userId={userId}
+            creditBalance={creditBalance}
+            onCreditsUpdate={setCreditBalance}
+            studioProMode={studioProMode}
+            imageLibrary={imageLibrary}
+            onOpenUploadFlow={() => setShowUploadFlow(true)}
           />
         </div>
       )}
@@ -3746,8 +3762,9 @@ export default function MayaChatScreen({
       )}
 
       {/* Pro Feature: Image Upload Flow Modal (Pro Mode only - for library management) */}
+      {/* Modal must be above header (z-[100]) and bottom nav (z-[70]) */}
       {hasProFeatures && showUploadFlow && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[150] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
           <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
             <div className="p-4 border-b border-stone-200 flex items-center justify-between">
               <h3 className="text-lg font-medium">Add Images to Library</h3>
@@ -3775,22 +3792,34 @@ export default function MayaChatScreen({
                     setShowLibraryModal(true) // Reopen library modal to show updated library
                   }
                 }}
-                onStartCreating={async () => {
+                onStartCreating={async (library) => {
                   // 🔴 FIX: Navigate to creation flow after "Start Creating" button
-                  console.log("[v0] [PRO MODE] Start Creating clicked from upload flow modal")
+                  console.log("[v0] [PRO MODE] Start Creating clicked from upload flow modal", library)
                   
-                  await saveLibrary(imageLibrary)
-                  if (imageLibrary.intent) {
-                    await updateIntent(imageLibrary.intent)
+                  // Use the library passed from ImageUploadFlow, not the stale imageLibrary
+                  // saveLibrary expects Partial<ImageLibrary>, so we pass the full library
+                  await saveLibrary({
+                    selfies: library.selfies,
+                    products: library.products,
+                    people: library.people,
+                    vibes: library.vibes,
+                    intent: library.intent,
+                  })
+                  
+                  // Refresh library to ensure Prompts tab gets updated state
+                  await refreshLibrary()
+                  
+                  if (library.intent) {
+                    await updateIntent(library.intent)
                   }
                   
-                  if (sendMessage && imageLibrary.selfies.length > 0) {
-                    const messageText = imageLibrary.intent || "I'm ready to create concepts with my images"
+                  if (sendMessage && library.selfies.length > 0) {
+                    const messageText = library.intent || "I'm ready to create concepts with my images"
                     const allImages = [
-                      ...imageLibrary.selfies,
-                      ...imageLibrary.products,
-                      ...imageLibrary.people,
-                      ...imageLibrary.vibes,
+                      ...library.selfies,
+                      ...library.products,
+                      ...library.people,
+                      ...library.vibes,
                     ]
                     
                     const messageParts: Array<{ type: string; text?: string; image?: string }> = []
