@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+import { useEffect, useRef } from "react"
 import { ImageIcon, Film, Sparkles, GraduationCap } from "lucide-react"
 
 interface MayaTabSwitcherProps {
@@ -43,19 +44,56 @@ export default function MayaTabSwitcher({
     { id: "training" as const, label: "Training" },
   ]
 
+  const containerRef = useRef<HTMLDivElement>(null)
+  const activeTabRef = useRef<HTMLButtonElement>(null)
+
+  // Scroll active tab into view on mobile when tab changes
+  useEffect(() => {
+    if (activeTabRef.current && containerRef.current) {
+      const container = containerRef.current
+      const activeButton = activeTabRef.current
+      
+      // Calculate scroll position to center the active tab
+      const containerRect = container.getBoundingClientRect()
+      const buttonRect = activeButton.getBoundingClientRect()
+      const scrollLeft = container.scrollLeft
+      const buttonLeft = buttonRect.left - containerRect.left + scrollLeft
+      const buttonWidth = buttonRect.width
+      const containerWidth = containerRect.width
+      
+      // Center the active tab in the viewport
+      const targetScroll = buttonLeft - (containerWidth / 2) + (buttonWidth / 2)
+      
+      container.scrollTo({
+        left: targetScroll,
+        behavior: 'smooth',
+      })
+    }
+  }, [activeTab])
+
   return (
-    <div className={`flex gap-8 overflow-x-auto ${className}`} style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+    <div 
+      ref={containerRef}
+      className={`flex gap-4 sm:gap-6 md:gap-8 overflow-x-auto ${className}`} 
+      style={{ 
+        scrollbarWidth: 'none', 
+        msOverflowStyle: 'none',
+        WebkitOverflowScrolling: 'touch',
+        scrollSnapType: 'x proximity',
+      }}
+    >
       {tabs.map((tab) => {
         const isActive = activeTab === tab.id
         return (
           <button
             key={tab.id}
+            ref={isActive ? activeTabRef : null}
             onClick={() => {
               if (!isActive) {
                 onTabChange(tab.id)
               }
             }}
-            className={`px-1 py-5 border-b-2 transition-all touch-manipulation active:scale-95 min-h-[44px] flex items-center gap-2 whitespace-nowrap ${
+            className={`px-2 sm:px-3 md:px-4 py-3 sm:py-4 md:py-5 border-b-2 transition-all touch-manipulation active:scale-95 min-h-[44px] sm:min-h-[48px] flex items-center gap-1.5 sm:gap-2 whitespace-nowrap scroll-snap-align-start ${
               isActive
                 ? "border-stone-950 text-stone-950 cursor-default"
                 : "border-transparent text-stone-400 hover:text-stone-600 hover:border-stone-300 cursor-pointer"
@@ -65,7 +103,7 @@ export default function MayaTabSwitcher({
             disabled={isActive}
             style={{
               fontFamily: 'serif',
-              fontSize: '12px',
+              fontSize: '11px',
               fontWeight: 500,
               letterSpacing: '0.08em',
               textTransform: 'uppercase',

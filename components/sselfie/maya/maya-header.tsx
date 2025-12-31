@@ -20,6 +20,7 @@ import { Typography, Colors, BorderRadius, UILabels, ButtonLabels } from '@/lib/
 import { ChevronDown, MoreVertical, X, LogOut, FolderOpen, Plus, Eye } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import MayaModeToggle from "./maya-mode-toggle"
+import MayaTabSwitcher from "./maya-tab-switcher"
 
 interface Guide {
   id: number
@@ -58,6 +59,12 @@ interface MayaHeaderUnifiedProps {
   onNavigation?: (tab: string) => void
   onLogout?: () => void
   isLoggingOut?: boolean
+  
+  // Tab Switcher Props (integrated into header)
+  activeTab?: "photos" | "videos" | "prompts" | "training"
+  onTabChange?: (tab: "photos" | "videos" | "prompts" | "training") => void
+  photosCount?: number
+  videosCount?: number
 }
 
 /**
@@ -107,6 +114,10 @@ export default function MayaHeaderUnified({
   onNavigation,
   onLogout,
   isLoggingOut = false,
+  activeTab,
+  onTabChange,
+  photosCount,
+  videosCount,
 }: MayaHeaderUnifiedProps) {
   const [isManageOpen, setIsManageOpen] = useState(false)
   const [isGuideMenuOpen, setIsGuideMenuOpen] = useState(false)
@@ -208,7 +219,9 @@ export default function MayaHeaderUnified({
   }, [showNavMenu])
 
   // Unified header styling - same for both modes
-  const headerClassName = "flex items-center justify-between w-full px-3 sm:px-4 md:px-6 py-3 sm:py-4 border-b border-stone-200/50 bg-white/80 backdrop-blur-xl relative z-50"
+  // Mobile optimized: proper touch targets, safe area insets, responsive spacing
+  // Note: border-b removed since tabs section will have its own border
+  const headerClassName = "flex items-center justify-between w-full px-3 sm:px-4 md:px-6 py-2.5 sm:py-3 md:py-4 bg-white/80 backdrop-blur-xl relative z-[100]"
 
   return (
     <>
@@ -216,21 +229,21 @@ export default function MayaHeaderUnified({
         className={headerClassName}
       >
         {/* Left: SSELFIE - Always show SSELFIE logo/title */}
-        <div className="flex items-center shrink-0">
-          <h1 className="text-lg sm:text-xl font-serif font-normal text-stone-950 uppercase tracking-wide">
+        <div className="flex items-center shrink-0 min-h-[44px]">
+          <h1 className="text-base sm:text-lg md:text-xl font-serif font-normal text-stone-950 uppercase tracking-wide">
             SSELFIE
           </h1>
         </div>
 
         {/* Right: Credits and Mode Toggle - Simple, clean layout */}
-        <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3 md:gap-4 shrink-0">
           {/* Credits Display - Always show when available */}
           {credits !== undefined && (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded border border-stone-200 bg-stone-50/50">
-              <span className="text-[10px] sm:text-xs font-light text-stone-500 uppercase tracking-wider">
+            <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 rounded border border-stone-200 bg-stone-50/50 min-h-[36px] sm:min-h-[40px]">
+              <span className="text-[9px] sm:text-[10px] md:text-xs font-light text-stone-500 uppercase tracking-wider">
                 Credits
               </span>
-              <span className="text-sm sm:text-base font-semibold text-stone-950 tabular-nums">
+              <span className="text-xs sm:text-sm md:text-base font-semibold text-stone-950 tabular-nums">
                 {credits.toFixed(1)}
               </span>
             </div>
@@ -260,12 +273,12 @@ export default function MayaHeaderUnified({
             <button
               onClick={onToggleNavMenu}
               data-menu-trigger
-              className="touch-manipulation active:scale-95 flex items-center justify-center shrink-0"
+              className="touch-manipulation active:scale-95 flex items-center justify-center shrink-0 min-w-[44px] min-h-[44px]"
               style={studioProMode ? {
-                width: '36px',
-                height: '36px',
-                minWidth: '36px',
-                minHeight: '36px',
+                width: '44px',
+                height: '44px',
+                minWidth: '44px',
+                minHeight: '44px',
                 borderRadius: BorderRadius.buttonSm,
                 border: `1px solid ${Colors.border}`,
                 backgroundColor: 'transparent',
@@ -295,15 +308,29 @@ export default function MayaHeaderUnified({
             <button
               onClick={onToggleNavMenu}
               data-menu-trigger
-              className="flex items-center justify-center px-3 h-9 sm:h-10 rounded-lg hover:bg-stone-100/50 transition-colors touch-manipulation active:scale-95"
+              className="flex items-center justify-center px-3 min-h-[44px] sm:min-h-[48px] rounded-lg hover:bg-stone-100/50 transition-colors touch-manipulation active:scale-95"
               aria-label="Navigation menu"
               aria-expanded={showNavMenu}
             >
-              <span className="text-xs sm:text-sm font-serif tracking-[0.2em] text-stone-950 uppercase">MENU</span>
+              <span className="text-[10px] sm:text-xs md:text-sm font-serif tracking-[0.2em] text-stone-950 uppercase">MENU</span>
             </button>
           )}
         </div>
       </div>
+
+      {/* Tab Switcher - Integrated into header */}
+      {activeTab && onTabChange && (
+        <div className="w-full border-t border-stone-200/50 bg-white/80 backdrop-blur-sm z-[100] relative">
+          <div className="px-3 sm:px-4 md:px-6">
+            <MayaTabSwitcher
+              activeTab={activeTab}
+              onTabChange={onTabChange}
+              photosCount={photosCount}
+              videosCount={videosCount}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Navigation Menu Slide-in (shared between both modes) */}
       {showNavMenu && onNavigation && (

@@ -52,6 +52,7 @@ export default function MayaModeToggle({
     
     // Segmented control: shows both Classic and Pro, with active one highlighted
     // When in Pro mode, clicking Classic switches to Classic. Clicking Pro does nothing (already active)
+    // Mobile optimized: min 44px touch targets, responsive text sizes
     return (
       <div className={`inline-flex rounded-lg border border-stone-300 bg-white p-0.5 ${className}`}>
         <button
@@ -61,7 +62,7 @@ export default function MayaModeToggle({
               onToggle()
             }
           }}
-          className={`px-3 py-1.5 rounded-md transition-all touch-manipulation active:scale-95 min-h-[32px] ${
+          className={`px-2 sm:px-3 py-1.5 rounded-md transition-all touch-manipulation active:scale-95 min-h-[36px] sm:min-h-[40px] flex items-center justify-center ${
             isProMode
               ? "bg-white text-stone-600 hover:bg-stone-50 cursor-pointer"
               : "bg-stone-950 text-white cursor-default"
@@ -70,7 +71,7 @@ export default function MayaModeToggle({
           title="Switch to Classic Mode - Basic chat interface with simple image generation"
           disabled={!isProMode}
         >
-          <span className="text-xs sm:text-sm font-serif font-extralight tracking-[0.2em] uppercase">
+          <span className="text-[10px] sm:text-xs md:text-sm font-serif font-extralight tracking-[0.2em] uppercase whitespace-nowrap">
             Classic
           </span>
         </button>
@@ -81,7 +82,7 @@ export default function MayaModeToggle({
               onToggle()
             }
           }}
-          className={`px-3 py-1.5 rounded-md transition-all touch-manipulation active:scale-95 min-h-[32px] ${
+          className={`px-2 sm:px-3 py-1.5 rounded-md transition-all touch-manipulation active:scale-95 min-h-[36px] sm:min-h-[40px] flex items-center justify-center ${
             isProMode
               ? "bg-stone-950 text-white cursor-default"
               : "bg-white text-stone-600 hover:bg-stone-50 cursor-pointer"
@@ -90,7 +91,7 @@ export default function MayaModeToggle({
           title="Switch to Studio Pro Mode - Image library, advanced options, and enhanced concept generation"
           disabled={isProMode}
         >
-          <span className="text-xs sm:text-sm font-serif font-extralight tracking-[0.2em] uppercase">
+          <span className="text-[10px] sm:text-xs md:text-sm font-serif font-extralight tracking-[0.2em] uppercase whitespace-nowrap">
             Pro
           </span>
         </button>

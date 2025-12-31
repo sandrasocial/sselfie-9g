@@ -4,6 +4,12 @@ import { MessageSquare, Clock, ChevronRight, Aperture, Trash2, MoreVertical, X }
 import useSWR from "swr"
 import { useState, useEffect, useRef } from "react"
 import UnifiedLoading from "./unified-loading"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 
 interface MayaChat {
   id: number
@@ -16,6 +22,8 @@ interface MayaChat {
 }
 
 interface MayaChatHistoryProps {
+  isOpen: boolean
+  onClose: () => void
   currentChatId: number | null
   onSelectChat: (chatId: number, title?: string) => void
   onNewChat: () => void
@@ -26,6 +34,8 @@ interface MayaChatHistoryProps {
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 export default function MayaChatHistory({
+  isOpen,
+  onClose,
   currentChatId,
   onSelectChat,
   onNewChat,
@@ -34,9 +44,13 @@ export default function MayaChatHistory({
 }: MayaChatHistoryProps) {
   const apiUrl = chatType ? `/api/maya/chats?chatType=${chatType}` : "/api/maya/chats?chatType=maya"
 
-  const { data, error, isLoading, mutate } = useSWR<{ chats: MayaChat[] }>(apiUrl, fetcher, {
-    refreshInterval: 30000,
-  })
+  const { data, error, isLoading, mutate } = useSWR<{ chats: MayaChat[] }>(
+    isOpen ? apiUrl : null,
+    fetcher,
+    {
+      refreshInterval: 30000,
+    }
+  )
 
   const chats = data?.chats || []
   const [showMenuForChat, setShowMenuForChat] = useState<number | null>(null)
@@ -166,42 +180,57 @@ export default function MayaChatHistory({
     )
   }
 
-  if (isLoading) {
-    return <UnifiedLoading message="Loading chat history..." />
-  }
-
-  if (error) {
-    return (
-      <div className="bg-white/40 backdrop-blur-2xl border border-white/60 rounded-xl p-4 text-center">
-        <p className="text-xs font-light text-stone-500">Failed to load chat history</p>
-        <button
-          onClick={() => window.location.reload()}
-          className="mt-2 text-xs tracking-[0.1em] uppercase font-light text-stone-600 hover:text-stone-900 transition-colors duration-300"
-        >
-          Retry
-        </button>
-      </div>
-    )
-  }
-
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between mb-4 pb-3 border-b border-stone-200/50">
-        <div>
-          <h3 className="text-xs tracking-[0.15em] uppercase font-light text-stone-600 mb-1">Chat History</h3>
-          <p className="text-[10px] font-light text-stone-400">{chats.length} conversations with Maya</p>
-        </div>
-        <button
-          onClick={onNewChat}
-          className="px-3 py-1.5 bg-stone-900 text-white text-[10px] tracking-[0.1em] uppercase font-light rounded-lg hover:bg-stone-800 transition-all duration-300 hover:scale-105 active:scale-95"
-          aria-label="Start new conversation"
-        >
-          New Chat
-        </button>
-      </div>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent
+        className="max-w-[95vw] sm:max-w-2xl md:max-w-3xl max-h-[90vh] overflow-hidden mx-2 sm:mx-4 p-0 flex flex-col bg-white border-stone-200"
+      >
+        <DialogHeader className="px-6 py-4 border-b border-stone-200">
+          <div className="flex items-center justify-between">
+            <DialogTitle className="text-base sm:text-lg font-serif font-normal text-stone-950 uppercase tracking-wide">
+              Project History
+            </DialogTitle>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={onNewChat}
+                className="touch-manipulation active:scale-95 px-3 py-1.5 bg-stone-900 text-white text-[10px] tracking-[0.1em] uppercase font-light rounded-lg hover:bg-stone-800 transition-all duration-300"
+                aria-label="Start new project"
+              >
+                New Project
+              </button>
+              <button
+                onClick={onClose}
+                className="touch-manipulation active:scale-95 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-100 transition-colors"
+                aria-label="Close"
+              >
+                <X size={18} className="text-stone-600" strokeWidth={2} />
+              </button>
+            </div>
+          </div>
+          {chats.length > 0 && (
+            <p className="text-xs font-light text-stone-500 mt-2">
+              {chats.length} project{chats.length !== 1 ? 's' : ''}
+            </p>
+          )}
+        </DialogHeader>
 
-      {chats.length === 0 ? (
-        <div className="bg-white/40 backdrop-blur-2xl border border-white/60 rounded-xl p-8 text-center">
+        <div className="flex-1 overflow-y-auto px-6 py-4">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <p className="text-sm font-light text-stone-500">Loading chat history...</p>
+            </div>
+          ) : error ? (
+            <div className="bg-white/40 backdrop-blur-2xl border border-white/60 rounded-xl p-4 text-center">
+              <p className="text-xs font-light text-stone-500">Failed to load chat history</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="mt-2 text-xs tracking-[0.1em] uppercase font-light text-stone-600 hover:text-stone-900 transition-colors duration-300"
+              >
+                Retry
+              </button>
+            </div>
+          ) : chats.length === 0 ? (
+            <div className="bg-white/40 backdrop-blur-2xl border border-white/60 rounded-xl p-8 text-center">
           <MessageSquare size={32} className="text-stone-400 mx-auto mb-4" strokeWidth={1.5} />
           <h4 className="text-sm font-light text-stone-900 mb-2">No conversations yet</h4>
           <p className="text-xs font-light text-stone-500 mb-4 max-w-[200px] mx-auto">
@@ -215,7 +244,7 @@ export default function MayaChatHistory({
           </button>
         </div>
       ) : (
-        <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-stone-300 scrollbar-track-transparent">
+            <div className="space-y-2">
           {chats.map((chat) => {
             const isActive = chat.id === currentChatId
             const displayTitle = getDisplayTitle(chat)
@@ -385,8 +414,10 @@ export default function MayaChatHistory({
               </div>
             )
           })}
+            </div>
+          )}
         </div>
-      )}
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }

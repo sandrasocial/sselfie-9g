@@ -57,6 +57,10 @@ interface MayaUnifiedInputProps {
   showLibraryButton?: boolean
   onManageLibrary?: () => void
   
+  // Navigation buttons (replaces Open Library, consistent in both modes)
+  onNewProject?: () => void
+  onHistory?: () => void
+  
   // Styling
   studioProMode?: boolean
 }
@@ -76,6 +80,8 @@ export default function MayaUnifiedInput({
   onSettingsClick,
   showLibraryButton = false,
   onManageLibrary,
+  onNewProject,
+  onHistory,
   studioProMode = false,
 }: MayaUnifiedInputProps) {
   const [inputValue, setInputValue] = useState('')
@@ -149,14 +155,15 @@ export default function MayaUnifiedInput({
   }
 
   // Use Pro Mode design system styling when in Pro Mode, Classic styling otherwise
+  // Subtle background for contrast - light enough to not block bottom nav
   const inputContainerClass = studioProMode
-    ? "w-full border-t"
+    ? "w-full"
     : "w-full"
     
   const inputContainerStyle = studioProMode
     ? {
-        borderColor: Colors.border,
-        backgroundColor: Colors.surface,
+        backgroundColor: 'rgba(255, 255, 255, 0.4)',
+        backdropFilter: 'blur(8px)',
         paddingTop: 'clamp(12px, 3vw, 16px)',
         paddingBottom: 'clamp(12px, 3vw, 16px)',
         paddingLeft: 'clamp(12px, 3vw, 24px)',
@@ -170,7 +177,7 @@ export default function MayaUnifiedInput({
 
   const textareaClass = studioProMode
     ? "focus:outline-none touch-manipulation"
-    : "w-full pl-12 pr-12 py-3 bg-white/40 backdrop-blur-2xl border border-white/60 rounded-xl text-stone-950 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-950/50 focus:bg-white/60 font-medium text-[16px] min-h-[48px] max-h-[80px] shadow-lg shadow-stone-950/10 transition-all duration-300 resize-none overflow-y-auto leading-relaxed touch-manipulation"
+    : "w-full pl-12 pr-12 py-3 bg-white border border-stone-200 rounded-xl text-stone-950 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-950/50 focus:bg-white font-medium text-[16px] min-h-[48px] max-h-[80px] shadow-lg shadow-stone-950/10 transition-all duration-300 resize-none overflow-y-auto leading-relaxed touch-manipulation"
 
   const textareaStyle = studioProMode
     ? {
@@ -430,24 +437,46 @@ export default function MayaUnifiedInput({
           )}
         </div>
 
-        {/* Manage Library button - Pro Mode only (Progressive enhancement) */}
-        {showLibraryButton && onManageLibrary && studioProMode && (
-          <div className="mt-2 flex items-center justify-start">
-            <button
-              type="button"
-              onClick={onManageLibrary}
-              className="touch-manipulation active:scale-95 text-xs font-serif font-extralight tracking-[0.2em] uppercase text-stone-500 hover:text-stone-700 transition-colors"
-              style={{
-                backgroundColor: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                padding: '4px 0',
-              }}
-              aria-label="Open image library to manage and organize your photos"
-              title="Open image library to manage and organize your photos"
-            >
-              {ButtonLabels.openLibrary}
-            </button>
+        {/* Navigation buttons - New Project and History (replaces Open Library, consistent in both modes) */}
+        {/* Text-only buttons with no background, positioned to avoid bottom nav overlap */}
+        {(onNewProject || onHistory) && (
+          <div className="mt-2 mb-1 flex items-center justify-start gap-4">
+            {onNewProject && (
+              <button
+                type="button"
+                onClick={onNewProject}
+                className="touch-manipulation active:scale-95 text-xs font-serif font-extralight tracking-[0.2em] uppercase text-stone-500 hover:text-stone-700 transition-colors"
+                style={{
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '0',
+                  margin: '0',
+                }}
+                aria-label="Start a new project"
+                title="Start a new project"
+              >
+                New Project
+              </button>
+            )}
+            {onHistory && (
+              <button
+                type="button"
+                onClick={onHistory}
+                className="touch-manipulation active:scale-95 text-xs font-serif font-extralight tracking-[0.2em] uppercase text-stone-500 hover:text-stone-700 transition-colors"
+                style={{
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '0',
+                  margin: '0',
+                }}
+                aria-label="View chat history"
+                title="View chat history"
+              >
+                History
+              </button>
+            )}
           </div>
         )}
       </form>

@@ -223,27 +223,9 @@ export default function SselfieApp({
   }, [])
 
   useEffect(() => {
-    const scrollContainer = scrollContainerRef.current
-    if (!scrollContainer) return
-
-    const handleScroll = () => {
-      const currentScrollY = scrollContainer.scrollTop
-      const scrollDifference = currentScrollY - lastScrollY.current
-
-      if (currentScrollY < 50) {
-        setIsNavVisible(true)
-      } else if (scrollDifference < -10) {
-        setIsNavVisible(true)
-      } else if (scrollDifference > 10) {
-        setIsNavVisible(false)
-      }
-
-      lastScrollY.current = currentScrollY
-    }
-
-    scrollContainer.addEventListener("scroll", handleScroll, { passive: true })
-    return () => scrollContainer.removeEventListener("scroll", handleScroll)
-  }, [])
+    // Always show bottom nav - it should be visible on all tabs
+    setIsNavVisible(true)
+  }, [activeTab])
 
   useEffect(() => {
     if (shouldShowCheckout && !isLoadingCredits) {
@@ -357,7 +339,7 @@ export default function SselfieApp({
       )}
 
       <main className="relative h-full mx-1 sm:mx-2 md:mx-3 pb-2 sm:pb-3 md:pb-4">
-        <div className={`h-full ${DesignClasses.container} overflow-hidden`}>
+        <div className={`h-full ${DesignClasses.container} ${activeTab === "maya" ? "overflow-visible" : "overflow-hidden"}`}>
           {/* Hide header when in Maya tab - MayaChatScreen has its own header */}
           {activeTab !== "maya" && (
             <header className={`sticky top-0 z-10 bg-white/70 ${DesignClasses.blur.md} border-b ${DesignClasses.border.stone} ${DesignClasses.spacing.paddingX.sm} py-3 pt-safe`}>
@@ -498,7 +480,7 @@ export default function SselfieApp({
       </main>
 
         <nav
-          className={`fixed bottom-0 left-0 right-0 z-40 px-2 sm:px-3 md:px-4 transition-transform duration-300 ease-in-out ${
+          className={`fixed bottom-0 left-0 right-0 z-[70] px-2 sm:px-3 md:px-4 transition-transform duration-300 ease-in-out ${
             isNavVisible ? "translate-y-0" : "translate-y-full"
           }`}
           style={{

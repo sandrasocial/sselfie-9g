@@ -2719,7 +2719,10 @@ export default function MayaChatScreen({
   return (
     <>
     <div
-      className="flex flex-col h-full bg-linear-to-b from-stone-50 to-white relative overflow-hidden"
+      className="flex flex-col h-full bg-linear-to-b from-stone-50 to-white relative"
+      style={{
+        paddingBottom: '80px', // Space for bottom navigation (approx 60-70px nav + safe area)
+      }}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}
@@ -2737,66 +2740,67 @@ export default function MayaChatScreen({
         </div>
       )}
 
-      {/* Sticky Header - Pro Mode or Classic Mode */}
-      <div className="sticky top-0 z-50 bg-white/85 backdrop-blur-xl border-b border-stone-200/50">
-      <MayaHeader
-        studioProMode={studioProMode}
-        chatTitle={chatTitle}
-        showNavMenu={showNavMenu}
-        onToggleNavMenu={() => setShowNavMenu(!showNavMenu)}
-        onModeSwitch={handleModeSwitch}
-        libraryCount={libraryTotalImages}
-        credits={creditBalance}
-        onManageLibrary={() => setShowLibraryModal(true)}
-        onAddImages={() => setShowUploadFlow(true)}
-        onStartFresh={async () => {
-          if (confirm('Are you sure you want to start fresh? This will clear your image library.')) {
-            await clearLibrary()
-            setMessages([])
-            handleNewChat()
-          }
+      {/* Fixed Header with Integrated Tabs - Always visible */}
+      {/* Mobile optimized: safe area insets, responsive padding */}
+      {/* Using z-[100] to ensure it's above all other content */}
+      <div 
+        className="fixed top-0 left-0 right-0 z-[100] bg-white/95 backdrop-blur-xl shadow-sm"
+        style={{
+          paddingTop: 'max(0.625rem, env(safe-area-inset-top, 0px))',
         }}
-        isAdmin={isAdmin}
-        selectedGuideId={selectedGuideId}
-        selectedGuideCategory={selectedGuideCategory}
-        onGuideChange={onGuideChange}
-        userId={userId}
-        onEditIntent={async () => {
-          const newIntent = prompt('Enter your creative intent:', imageLibrary.intent || '')
-          if (newIntent !== null) {
-            await updateIntent(newIntent)
-          }
-        }}
-        onNavigation={handleNavigation}
-        onLogout={handleLogout}
-        isLoggingOut={isLoggingOut}
-        onSwitchToClassic={() => handleModeSwitch(false)}
-        onSettings={() => setShowSettings(true)}
-      />
-      </div>
-
-      {/* Sticky Tab Switcher - Photos/Videos/Prompts/Training tabs */}
-      <div className="sticky top-[60px] z-40 bg-white border-b border-stone-200/50">
-        <div className="w-full px-3 sm:px-4 md:px-6">
-          <MayaTabSwitcher
-            activeTab={activeMayaTab}
-            onTabChange={(tab) => {
-              setActiveMayaTab(tab)
-              // Persist to localStorage
-              if (typeof window !== "undefined") {
-                localStorage.setItem("mayaActiveTab", tab)
-                // Update URL hash
-                const hashMap: Record<string, string> = {
-                  photos: "#maya",
-                  videos: "#maya/videos",
-                  prompts: "#maya/prompts",
-                  training: "#maya/training",
-                }
-                window.history.replaceState(null, "", hashMap[tab] || "#maya")
+      >
+        <MayaHeader
+          studioProMode={studioProMode}
+          chatTitle={chatTitle}
+          showNavMenu={showNavMenu}
+          onToggleNavMenu={() => setShowNavMenu(!showNavMenu)}
+          onModeSwitch={handleModeSwitch}
+          libraryCount={libraryTotalImages}
+          credits={creditBalance}
+          onManageLibrary={() => setShowLibraryModal(true)}
+          onAddImages={() => setShowUploadFlow(true)}
+          onStartFresh={async () => {
+            if (confirm('Are you sure you want to start fresh? This will clear your image library.')) {
+              await clearLibrary()
+              setMessages([])
+              handleNewChat()
+            }
+          }}
+          isAdmin={isAdmin}
+          selectedGuideId={selectedGuideId}
+          selectedGuideCategory={selectedGuideCategory}
+          onGuideChange={onGuideChange}
+          userId={userId}
+          onEditIntent={async () => {
+            const newIntent = prompt('Enter your creative intent:', imageLibrary.intent || '')
+            if (newIntent !== null) {
+              await updateIntent(newIntent)
+            }
+          }}
+          onNavigation={handleNavigation}
+          onLogout={handleLogout}
+          isLoggingOut={isLoggingOut}
+          onSwitchToClassic={() => handleModeSwitch(false)}
+          onSettings={() => setShowSettings(true)}
+          activeTab={activeMayaTab}
+          onTabChange={(tab) => {
+            setActiveMayaTab(tab)
+            // Persist to localStorage
+            if (typeof window !== "undefined") {
+              localStorage.setItem("mayaActiveTab", tab)
+              // Update URL hash
+              const hashMap: Record<string, string> = {
+                photos: "#maya",
+                videos: "#maya/videos",
+                prompts: "#maya/prompts",
+                training: "#maya/training",
               }
-            }}
-          />
-        </div>
+              window.history.replaceState(null, "", hashMap[tab] || "#maya")
+            }
+          }}
+          photosCount={undefined} // Can be added later if needed
+          videosCount={undefined} // Can be added later if needed
+        />
       </div>
 
       {/* Training Prompt - Show if user doesn't have trained model */}
@@ -3015,16 +3019,17 @@ export default function MayaChatScreen({
         </>
       )}
 
-      {showHistory && (
-        <div className="shrink-0 mx-4 mt-2 mb-2 bg-white/50 backdrop-blur-3xl border border-white/60 rounded-2xl p-4 shadow-xl shadow-stone-950/5 animate-in slide-in-from-top-2 duration-300">
-          <MayaChatHistory
-            currentChatId={chatId}
-            onSelectChat={handleSelectChat}
-            onNewChat={handleNewChat}
-            onDeleteChat={handleDeleteChat}
-            chatType={getModeString()}
-          />
-        </div>
+      {/* Classic Mode: Chat History Modal (consistent with Pro Mode) */}
+      {!hasProFeatures && (
+        <MayaChatHistory
+          isOpen={showHistory}
+          onClose={() => setShowHistory(false)}
+          currentChatId={chatId}
+          onSelectChat={handleSelectChat}
+          onNewChat={handleNewChat}
+          onDeleteChat={handleDeleteChat}
+          chatType={getModeString()}
+        />
       )}
 
       <MayaSettingsPanel
@@ -3044,9 +3049,15 @@ export default function MayaChatScreen({
       />
 
       {/* Tab Content - Photos Tab */}
+      {/* Add padding-top to account for fixed header + tabs, padding-bottom for fixed input */}
       {activeMayaTab === "photos" && (
         <>
-          <div className="flex-1 overflow-hidden flex flex-col">
+          <div 
+            className="flex-1 min-h-0 flex flex-col"
+            style={{
+              paddingBottom: '140px', // Space for fixed bottom input
+            }}
+          >
       <MayaChatInterface
         messages={messages}
         filteredMessages={filteredMessages}
@@ -3247,10 +3258,14 @@ export default function MayaChatScreen({
           </div>
 
           {/* Fixed Bottom Input Area - Only show in Photos tab */}
+      {/* Positioned above bottom navigation (nav is ~70px tall) */}
+      {/* Subtle background for contrast - positioned above nav, z-index below nav */}
       <div
-            className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-3xl border-t border-stone-200/50 px-3 sm:px-4 py-2.5 sm:py-3 z-50 safe-bottom flex flex-col"
+            className="fixed left-0 right-0 bg-white/60 backdrop-blur-md border-t border-stone-200/30 px-3 sm:px-4 py-2.5 sm:py-3 z-[65] safe-bottom flex flex-col"
         style={{
-          paddingBottom: "calc(env(safe-area-inset-bottom) + 0.75rem)",
+          bottom: '80px', // Position above bottom navigation with extra spacing
+          paddingBottom: "calc(env(safe-area-inset-bottom) + 0.5rem)",
+          maxHeight: 'calc(100vh - 80px)', // Prevent extending beyond viewport
         }}
       >
         {/* Classic Mode Quick Actions */}
@@ -3285,10 +3300,10 @@ export default function MayaChatScreen({
             Progressive enhancement: This section only appears when Pro features are enabled */}
         {studioProMode && (
             <div 
-              className="w-full border-b"
+              className="w-full border-b border-stone-200/30"
               style={{
-                borderColor: Colors.border,
-                backgroundColor: Colors.surface,
+                backgroundColor: 'rgba(255, 255, 255, 0.4)',
+                backdropFilter: 'blur(8px)',
               }}
             >
               <div className="max-w-[1200px] mx-auto">
@@ -3380,54 +3395,29 @@ export default function MayaChatScreen({
           placeholder={hasProFeatures ? "What would you like to create?" : "Message Maya..."}
           showSettingsButton={!hasProFeatures}
           onSettingsClick={() => setShowChatMenu(!showChatMenu)}
-          showLibraryButton={hasLibraryManagement}
-          onManageLibrary={() => setShowLibraryModal(true)}
+          showLibraryButton={false} // Removed - image icon handles library access
+          onManageLibrary={undefined} // Removed - image icon handles library access
+          onNewProject={handleNewChat}
+          onHistory={() => hasProFeatures ? setShowProModeHistory(true) : setShowHistory(true)}
           studioProMode={studioProMode}
         />
-        
-        {/* Bottom Navigation - New Project and History buttons (shared by both modes) */}
-        <div className="mt-3 flex items-center justify-end gap-2 sm:gap-3 -mx-3 sm:-mx-4 px-3 sm:px-4">
-              <button
-            onClick={handleNewChat}
-            className="touch-manipulation active:scale-95 px-3 py-2 rounded-lg border border-stone-300 bg-white text-stone-900 hover:bg-stone-50 hover:border-stone-400 transition-all"
-            style={{
-              fontFamily: 'serif',
-              fontSize: '12px',
-              fontWeight: 200,
-              letterSpacing: '0.2em',
-              textTransform: 'uppercase',
-              minHeight: '36px',
-              cursor: 'pointer',
-            }}
-          >
-            New Project
-              </button>
-              <button
-            onClick={() => hasProFeatures ? setShowProModeHistory(true) : setShowHistory(true)}
-            className="touch-manipulation active:scale-95 px-3 py-2 rounded-lg border border-stone-300 bg-white text-stone-900 hover:bg-stone-50 hover:border-stone-400 transition-all"
-            style={{
-              fontFamily: 'serif',
-              fontSize: '12px',
-              fontWeight: 200,
-              letterSpacing: '0.2em',
-              textTransform: 'uppercase',
-              minHeight: '36px',
-              cursor: 'pointer',
-            }}
-          >
-            History
-              </button>
-            </div>
           </div>
         </>
       )}
 
       {/* Tab Content - Videos Tab */}
       {activeMayaTab === "videos" && (
-        <MayaVideosTab
-          user={user}
-          creditBalance={creditBalance}
-          onCreditsUpdate={setCreditBalance}
+        <div
+          style={{
+            // Header (~56-64px) + Tabs (~50px) + safe area = ~106-114px total
+            paddingTop: 'calc(106px + max(0.625rem, env(safe-area-inset-top, 0px)))',
+            paddingBottom: '20px', // Space for content
+          }}
+        >
+          <MayaVideosTab
+            user={user}
+            creditBalance={creditBalance}
+            onCreditsUpdate={setCreditBalance}
           sharedImages={getSharedImages().map(img => ({
             url: img.url,
             id: img.id,
@@ -3435,7 +3425,8 @@ export default function MayaChatScreen({
             description: img.description,
             category: img.category,
           }))}
-        />
+          />
+        </div>
       )}
 
       {/* Tab Content - Prompts Tab */}
