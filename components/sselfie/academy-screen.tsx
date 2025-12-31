@@ -789,12 +789,18 @@ export default function AcademyScreen() {
                 <ImageIcon size={18} className="text-stone-600" strokeWidth={2} />
                 <span className="text-sm font-medium text-stone-700">Gallery</span>
               </button>
+              {/* B-Roll moved to Maya Videos tab */}
               <button
-                onClick={() => handleNavigation("b-roll")}
+                onClick={() => {
+                  handleNavigation("maya")
+                  setTimeout(() => {
+                    window.location.hash = "#maya/videos"
+                  }, 100)
+                }}
                 className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
               >
                 <Film size={18} className="text-stone-600" strokeWidth={2} />
-                <span className="text-sm font-medium text-stone-700">B-roll</span>
+                <span className="text-sm font-medium text-stone-700">Videos</span>
               </button>
               <button
                 onClick={() => handleNavigation("academy")}

@@ -39,8 +39,10 @@ import { useMayaSettings } from "./maya/hooks/use-maya-settings"
 import { useMayaMode } from "./maya/hooks/use-maya-mode"
 import { useMayaImages } from "./maya/hooks/use-maya-images"
 import { useMayaChat } from "./maya/hooks/use-maya-chat"
+import { useMayaSharedImages } from "./maya/hooks/use-maya-shared-images"
 import MayaUnifiedInput from "./maya/maya-unified-input"
 import MayaTabSwitcher from "./maya/maya-tab-switcher"
+import MayaVideosTab from "./maya/maya-videos-tab"
 import { useRouter } from "next/navigation"
 // SessionUser type removed - not exported from next-auth
 import { PromptSuggestionCard as NewPromptSuggestionCard } from "./prompt-suggestion-card"
@@ -221,6 +223,19 @@ export default function MayaChatScreen({
     loadGalleryImages,
   } = useMayaImages(studioProMode)
 
+  // Shared images between Photos and Videos tabs
+  const {
+    sharedImages,
+    addImage,
+    addImages: addSharedImages,
+    clearSharedImages,
+    getSharedImages,
+  } = useMayaSharedImages({
+    persistToStorage: true,
+    autoExtractFromMessages: true,
+    messages,
+  })
+
   // Feature flags - derived from mode for clearer conditional rendering
   // These make it explicit what features are enabled, rather than just checking studioProMode
   // Must be defined after useMayaImages hook since hasImageLibrary depends on imageLibrary
@@ -382,6 +397,19 @@ export default function MayaChatScreen({
           return updated
         })
 
+        // Add images to shared images for Videos tab
+        if (result.imageUrls && result.imageUrls.length > 0) {
+          addSharedImages(
+            result.imageUrls.map((url: string, index: number) => ({
+              url,
+              id: `carousel-${result.generationId}-${index}`,
+              prompt: `Carousel slide ${index + 1} about "${topic}"`,
+              description: `Carousel slide ${index + 1} about "${topic}"`,
+              category: "carousel",
+            }))
+          )
+        }
+
         // Refresh gallery
         if (onImageGenerated) {
           onImageGenerated()
@@ -461,6 +489,17 @@ export default function MayaChatScreen({
           const updated = [...prev, reelCoverMessage as any]
           return updated as any
         })
+
+        // Add image to shared images for Videos tab
+        if (result.imageUrl) {
+          addImage({
+            url: result.imageUrl,
+            id: `reel-cover-${result.generationId}`,
+            prompt: `Reel cover for "${title}"${textOverlay ? ` with text: "${textOverlay}"` : ''}`,
+            description: `Reel cover for "${title}"${textOverlay ? ` with text: "${textOverlay}"` : ''}`,
+            category: "reel-cover",
+          })
+        }
 
         // Refresh gallery
         if (onImageGenerated) {
@@ -1864,9 +1903,12 @@ export default function MayaChatScreen({
     setPendingConceptRequest(null)
       promptGenerationTriggeredRef.current.clear() // Clear prompt generation tracking
 
+    // Clear shared images when starting new chat
+    clearSharedImages()
+
     // Call hook's base handler
     await baseHandleNewChat()
-  }, [studioProMode, clearLibrary, baseHandleNewChat])
+  }, [studioProMode, clearLibrary, baseHandleNewChat, clearSharedImages])
 
   // Handle mode switching - creates a new chat when switching between Classic and Studio Pro
   // Handle saving concept to guide (admin mode)
@@ -3382,19 +3424,18 @@ export default function MayaChatScreen({
 
       {/* Tab Content - Videos Tab */}
       {activeMayaTab === "videos" && (
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-          <div className="max-w-7xl mx-auto">
-            <div className="text-center py-12">
-              <Film size={48} className="mx-auto mb-4 text-stone-400" strokeWidth={1.5} />
-              <h2 className="text-xl sm:text-2xl font-serif font-extralight tracking-[0.2em] uppercase text-stone-950 mb-3">
-                Videos Tab
-              </h2>
-              <p className="text-sm text-stone-600 max-w-md mx-auto">
-                B-Roll video generation will be integrated here. This tab will allow you to animate your generated images into stunning video reels.
-              </p>
-            </div>
-          </div>
-        </div>
+        <MayaVideosTab
+          user={user}
+          creditBalance={creditBalance}
+          onCreditsUpdate={setCreditBalance}
+          sharedImages={getSharedImages().map(img => ({
+            url: img.url,
+            id: img.id,
+            prompt: img.prompt,
+            description: img.description,
+            category: img.category,
+          }))}
+        />
       )}
 
       {/* Tab Content - Prompts Tab */}

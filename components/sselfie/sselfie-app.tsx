@@ -11,14 +11,13 @@ import {
   Settings,
   MoreVertical,
   LogOut,
-  Film,
   LayoutGrid,
 } from "lucide-react"
 import LoadingScreen from "./loading-screen"
 import OnboardingWizard from "./onboarding-wizard"
 import MayaChatScreen from "./maya-chat-screen"
 import GalleryScreen from "./gallery-screen"
-import BRollScreen from "./b-roll-screen"
+// B-Roll functionality moved to Maya Videos tab
 import AcademyScreen from "./academy-screen"
 import AccountScreen from "./account-screen"
 import FeedPlannerScreen from "../feed-planner/feed-planner-screen" // Fixed import path to correct location
@@ -67,7 +66,6 @@ export default function SselfieApp({
       const hash = window.location.hash.slice(1) // Remove the # symbol
       const validTabs = [
         "maya",
-        "b-roll",
         "gallery",
         "feed-planner",
         "academy",
@@ -106,7 +104,6 @@ export default function SselfieApp({
       const hash = window.location.hash.slice(1)
       const validTabs = [
         "maya",
-        "b-roll",
         "gallery",
         "feed-planner",
         "academy",
@@ -256,7 +253,6 @@ export default function SselfieApp({
 
   const tabs = [
     { id: "maya", label: "Maya", icon: MessageCircle },
-    { id: "b-roll", label: "B-Roll", icon: Film },
     { id: "gallery", label: "Gallery", icon: ImageIcon },
     { id: "feed-planner", label: "Feed", icon: LayoutGrid },
     { id: "academy", label: "Academy", icon: Grid },
