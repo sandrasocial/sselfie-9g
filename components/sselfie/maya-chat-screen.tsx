@@ -43,6 +43,7 @@ import { useMayaSharedImages } from "./maya/hooks/use-maya-shared-images"
 import MayaUnifiedInput from "./maya/maya-unified-input"
 import MayaTabSwitcher from "./maya/maya-tab-switcher"
 import MayaVideosTab from "./maya/maya-videos-tab"
+import MayaPromptsTab from "./maya/maya-prompts-tab"
 import { useRouter } from "next/navigation"
 // SessionUser type removed - not exported from next-auth
 import { PromptSuggestionCard as NewPromptSuggestionCard } from "./prompt-suggestion-card"
@@ -3431,18 +3432,33 @@ export default function MayaChatScreen({
 
       {/* Tab Content - Prompts Tab */}
       {activeMayaTab === "prompts" && (
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-          <div className="max-w-7xl mx-auto">
-            <div className="text-center py-12">
-              <Sparkles size={48} className="mx-auto mb-4 text-stone-400" strokeWidth={1.5} />
-              <h2 className="text-xl sm:text-2xl font-serif font-extralight tracking-[0.2em] uppercase text-stone-950 mb-3">
-                Prompts Tab
-              </h2>
-              <p className="text-sm text-stone-600 max-w-md mx-auto">
-                Browse ready-to-use prompts from your free prompt guide. Select a prompt to generate professional photos instantly.
-              </p>
-            </div>
-          </div>
+        <div
+          style={{
+            // Header (~56-64px) + Tabs (~50px) + safe area = ~106-114px total
+            paddingTop: 'calc(106px + max(0.625rem, env(safe-area-inset-top, 0px)))',
+            paddingBottom: '20px', // Space for content
+          }}
+        >
+          <MayaPromptsTab
+            onSelectPrompt={(prompt, title) => {
+              // Switch to Photos tab and send the prompt
+              setActiveMayaTab("photos")
+              // Persist to localStorage and URL
+              if (typeof window !== "undefined") {
+                localStorage.setItem("mayaActiveTab", "photos")
+                window.history.replaceState(null, "", "#maya")
+              }
+              // Send the prompt message
+              handleSendMessage(prompt)
+            }}
+            sharedImages={getSharedImages().map(img => ({
+              url: img.url,
+              id: img.id,
+              prompt: img.prompt,
+              description: img.description,
+              category: img.category,
+            }))}
+          />
         </div>
       )}
 
