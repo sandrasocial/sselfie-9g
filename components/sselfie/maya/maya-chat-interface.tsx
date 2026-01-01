@@ -377,6 +377,7 @@ export default function MayaChatInterface({
             .map((msg) => (
               <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                 <div className={`max-w-[90%] sm:max-w-[85%] ${msg.role === "user" ? "order-2" : "order-1"}`}>
+                  {/* Handle messages with parts array (preferred format) */}
                   {msg.parts &&
                     Array.isArray(msg.parts) &&
                     (() => {
@@ -793,6 +794,19 @@ export default function MayaChatInterface({
                         </>
                       )
                     })()}
+                  {/* Fallback: Handle messages with content field but no parts array */}
+                  {(!msg.parts || !Array.isArray(msg.parts)) && typeof (msg as any).content === "string" && (msg as any).content.trim() && (
+                    <div
+                      className={`p-4 rounded-2xl transition-all duration-300 ${
+                        msg.role === "user"
+                          ? "bg-stone-950 text-white shadow-lg shadow-stone-950/20"
+                          : "bg-white/50 backdrop-blur-xl border border-white/70 shadow-lg shadow-stone-950/5 text-stone-950"
+                      }`}
+                      role={msg.role === "assistant" ? "article" : undefined}
+                    >
+                      {renderMessageContent((msg as any).content, msg.role === "user")}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

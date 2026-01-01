@@ -4,9 +4,12 @@ import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { neon } from "@neondatabase/serverless"
 import { checkCredits, deductCredits, CREDIT_COSTS } from "@/lib/credits"
+import { getStudioProCreditCost } from "@/lib/nano-banana-client"
+import { detectRequiredMode } from "./mode-detection"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 import { generateInstagramCaption } from "@/lib/feed-planner/caption-writer"
 import { getFluxPromptingPrinciples } from "@/lib/maya/flux-prompting-principles"
+import { detectRequiredMode, detectProModeType } from "@/lib/feed-planner/mode-detection"
 import { getFashionIntelligencePrinciples } from "@/lib/maya/fashion-knowledge-2025"
 import INFLUENCER_POSING_KNOWLEDGE from "@/lib/maya/influencer-posing-knowledge"
 
@@ -36,9 +39,10 @@ export async function POST(request: NextRequest) {
     console.log("[v0] Neon user found:", neonUser.id)
 
     const body = await request.json()
-    const { request: userRequest, chatId, customSettings } = body
+    const { request: userRequest, chatId, customSettings, strategyData } = body
     
     console.log("[v0] Custom settings received:", customSettings)
+    console.log("[v0] Strategy data received:", strategyData ? "YES (will use approved strategy)" : "NO (will generate new strategy)")
 
     if (!userRequest) {
       return NextResponse.json({ error: "Request is required" }, { status: 400 })
@@ -47,25 +51,23 @@ export async function POST(request: NextRequest) {
     console.log("[v0] Feed Planner API: Creating strategy for user", neonUser.id)
     console.log("[v0] User request:", userRequest.substring(0, 100) + "...")
 
-    // Total cost: 5 credits for strategy + 9 credits for 9 images = 14 credits
+    // Check strategy credits upfront (always 5 credits)
     const strategyCredits = 5
-    const imageCredits = 9
-    const totalCreditsNeeded = strategyCredits + imageCredits
-    const hasCredits = await checkCredits(neonUser.id.toString(), totalCreditsNeeded)
+    const hasStrategyCredits = await checkCredits(neonUser.id.toString(), strategyCredits)
 
-    if (!hasCredits) {
-      console.error("[v0] Insufficient credits for auto-generation")
+    if (!hasStrategyCredits) {
+      console.error("[v0] Insufficient credits for strategy creation")
       return NextResponse.json(
         {
-          error: `Insufficient credits. You need ${totalCreditsNeeded} credits (${strategyCredits} for strategy + ${imageCredits} for images) to create your feed.`,
+          error: `Insufficient credits. You need ${strategyCredits} credits to create your feed strategy.`,
         },
         { status: 402 },
       )
     }
 
-    console.log("[v0] Credits checked: User has enough credits")
+    console.log("[v0] Strategy credits checked: User has enough credits")
     
-    // Deduct credits for strategy creation (5 credits)
+    // Deduct credits for strategy creation (5 credits) - done upfront
     const strategyDeduction = await deductCredits(
       neonUser.id.toString(),
       strategyCredits,
@@ -84,11 +86,10 @@ export async function POST(request: NextRequest) {
     }
 
     console.log("[v0] Credits deducted for strategy. Remaining balance:", strategyDeduction.newBalance)
-    console.log("[v0] Starting strategy generation...")
 
     const sql = neon(process.env.DATABASE_URL!)
 
-    // Get brand profile
+    // Get brand profile (needed for both paths)
     const [brandProfile] = await sql`
       SELECT * FROM user_personal_brand
       WHERE user_id = ${neonUser.id}
@@ -102,15 +103,75 @@ export async function POST(request: NextRequest) {
 
     console.log("[v0] Brand profile loaded")
 
-    // Get full user context for personalization
-    console.log("[v0] Getting user context for strategy generation...")
-    const userContext = await getUserContextForMaya(authUser.id)
-    console.log("[v0] User context retrieved, length:", userContext.length)
+    // If strategyData is provided (from approved preview), use it instead of regenerating
+    let strategy: any
+    let isApprovedStrategy = false // Flag to track if we're using an approved strategy
+    if (strategyData && strategyData.posts && Array.isArray(strategyData.posts) && strategyData.posts.length === 9) {
+      console.log("[v0] ✅ Using approved strategy data from preview (skipping Claude generation)")
+      isApprovedStrategy = true
+      
+      // Normalize strategyData format to match API expectations
+      // Map: type -> postType, purpose -> contentPillar, description -> prompt
+      strategy = {
+        userRequest: strategyData.userRequest || userRequest,
+        gridPattern: strategyData.gridPattern || "3x3 grid",
+        visualRhythm: strategyData.visualRhythm || "Cohesive visual flow",
+        strategyDocument: strategyData.strategyDocument || `Feed strategy for: ${userRequest}`,
+        posts: strategyData.posts.map((post: any, index: number) => {
+          // Determine narrative role based on position (1-3: origin, 4-6: conflict, 7-9: outcome)
+          let narrativeRole = "origin"
+          if (post.position >= 4 && post.position <= 6) {
+            narrativeRole = "conflict"
+          } else if (post.position >= 7) {
+            narrativeRole = "outcome"
+          }
 
-    // Query knowledge base for Instagram best practices
-    console.log("[v0] Querying knowledge base for Instagram best practices...")
-    let knowledgeBaseInsights = ""
-    try {
+          return {
+            position: post.position,
+            postType: post.type || post.postType || "portrait", // Normalize field name
+            contentPillar: post.purpose || post.contentPillar || "general", // Use purpose as content pillar
+            description: post.description || "",
+            purpose: post.purpose || "general", // Keep purpose for reference
+            // Note: prompt will be generated by concept generation logic below (same as Claude path)
+            // Store the visual direction description for concept generation
+            visualDirection: post.description || post.prompt || `Feed post ${post.position}`,
+            prompt: post.description || post.prompt || `Feed post ${post.position}`, // Temporary - will be replaced by full FLUX prompt
+            tone: post.tone || "warm",
+            generationMode: post.generationMode || "classic", // Preserve user's approved generation mode
+            narrativeRole: post.narrativeRole || narrativeRole, // Auto-assign based on position
+            // These will be generated by caption writer if missing (it has fallbacks)
+            hookConcept: post.hookConcept || undefined,
+            storyConcept: post.storyConcept || undefined,
+            valueConcept: post.valueConcept || undefined,
+            ctaConcept: post.ctaConcept || undefined,
+            hashtags: post.hashtags || [],
+          }
+        }),
+      }
+      
+      console.log("[v0] ✅ Approved strategy normalized and ready to use")
+      console.log("[v0] Strategy has", strategy.posts.length, "posts")
+      
+      // Validate strategy structure (same checks as Claude-generated strategy)
+      if (!strategy.posts || !Array.isArray(strategy.posts) || strategy.posts.length === 0) {
+        console.error("[v0] ERROR: Invalid strategy data - no posts array found")
+        throw new Error("Approved strategy is invalid: No posts array found")
+      }
+      
+      console.log("[v0] ✅ Approved strategy validated successfully")
+    } else {
+      // No approved strategy - generate new one with Claude
+      console.log("[v0] No approved strategy data - generating new strategy from scratch")
+
+      // Get full user context for personalization
+      console.log("[v0] Getting user context for strategy generation...")
+      const userContext = await getUserContextForMaya(authUser.id)
+      console.log("[v0] User context retrieved, length:", userContext.length)
+
+      // Query knowledge base for Instagram best practices
+      console.log("[v0] Querying knowledge base for Instagram best practices...")
+      let knowledgeBaseInsights = ""
+      try {
       const bestPractices = await sql`
         SELECT title, content, confidence_level
         FROM admin_knowledge_base
@@ -250,7 +311,7 @@ CRITICAL JSON RULES:
       "hashtags": ["tag1", "tag2", "tag3", "tag4", "tag5"],
       "prompt": "Brief visual description for image generation (1-2 sentences). For portrait: describe the scene/mood. For object/flatlay/scenery: describe items/scenery. NOTE: Actual FLUX prompts are generated separately by Maya with full technical specs - this is just a visual direction description."
     },
-    ... (9 posts total - MUST include 1-2 posts with postType: "object", "flatlay", or "scenery" for the 80/20 rule)
+    ... (9 posts total - postType should match the visual direction and user's goal)
   ]
 }
 
@@ -260,7 +321,7 @@ Distribute content pillars strategically (not all same type).
 Each post must have unique hook, story, value, and CTA concepts.
 Include 5-10 strategic hashtags per post (mix of sizes).
 
-CRITICAL: You MUST create 1-2 posts with postType: "object", "flatlay", or "scenery" (NOT "portrait") to follow the 80/20 rule. These posts should not feature the user - only objects, products, flatlays, or scenery.`,
+Note: Choose postType based on what makes sense for each post. Portrait posts feature the user, object/flatlay/scenery posts don't. Create the mix that best serves the user's goal and narrative.`,
       temperature: 0.8,
     })
 
@@ -432,17 +493,19 @@ CRITICAL: You MUST create 1-2 posts with postType: "object", "flatlay", or "scen
           )
         }
       }
-    }
+      }
 
-    console.log("[v0] Strategy parsed successfully!")
-    console.log("[v0] Strategy has posts array:", Array.isArray(strategy.posts))
-    console.log("[v0] Posts array length:", strategy.posts?.length || 0)
+      console.log("[v0] Strategy parsed successfully!")
+      console.log("[v0] Strategy has posts array:", Array.isArray(strategy.posts))
+      console.log("[v0] Posts array length:", strategy.posts?.length || 0)
     if (strategy.posts && strategy.posts.length > 0) {
       console.log("[v0] First post structure:", JSON.stringify(strategy.posts[0], null, 2))
     }
 
-    // Validate 80/20 rule
+    // Log post type distribution (for monitoring - no forcing)
     if (strategy.posts && strategy.posts.length === 9) {
+      // Trust Maya's AI strategy - no post-type forcing
+      // If Maya creates 7 portraits, it's intentional and matches the user's goal
       const userPosts = strategy.posts.filter(
         (p: any) => p.postType === "portrait" || !p.postType || p.postType === "post"
       ).length
@@ -450,39 +513,7 @@ CRITICAL: You MUST create 1-2 posts with postType: "object", "flatlay", or "scen
         (p: any) => p.postType === "object" || p.postType === "flatlay" || p.postType === "scenery"
       ).length
 
-      console.log(`[v0] 80/20 Rule Check: ${userPosts} user posts, ${objectPosts} object/flatlay/scenery posts`)
-
-      if (objectPosts < 1 || objectPosts > 2) {
-        console.warn(`[v0] ⚠️ 80/20 Rule violation: Expected 1-2 object/flatlay/scenery posts, got ${objectPosts}`)
-        console.warn(`[v0] Fixing: Converting some posts to object/flatlay type...`)
-        
-        // Fix: Convert 1-2 posts to object/flatlay/scenery
-        const postsToConvert = objectPosts === 0 ? 2 : (objectPosts > 2 ? 1 : 0)
-        if (postsToConvert > 0) {
-          // Find posts that are NOT position 1 or 9 (keep those as user posts)
-          const convertiblePosts = strategy.posts.filter(
-            (p: any, idx: number) => 
-              (p.postType === "portrait" || !p.postType || p.postType === "post") &&
-              idx > 0 && idx < 8 // Not first or last
-          )
-          
-          // Convert middle posts to object/flatlay
-          const types = ["object", "flatlay", "scenery"]
-          for (let i = 0; i < Math.min(postsToConvert, convertiblePosts.length); i++) {
-            const post = convertiblePosts[i]
-            post.postType = types[i % types.length]
-            console.log(`[v0] ✅ Converted post ${post.position} to ${post.postType}`)
-          }
-        }
-        
-        const newUserPosts = strategy.posts.filter(
-          (p: any) => p.postType === "portrait" || !p.postType || p.postType === "post"
-        ).length
-        const newObjectPosts = strategy.posts.filter(
-          (p: any) => p.postType === "object" || p.postType === "flatlay" || p.postType === "scenery"
-        ).length
-        console.log(`[v0] ✅ After fix: ${newUserPosts} user posts, ${newObjectPosts} object/flatlay/scenery posts`)
-      }
+      console.log(`[v0] Post type distribution (trusting AI strategy): ${userPosts} portrait/user posts, ${objectPosts} object/flatlay/scenery posts`)
     }
 
     const truncate = (str: string, max = 50) => (str && str.length > max ? str.substring(0, max) : str)
@@ -545,119 +576,209 @@ CRITICAL: You MUST create 1-2 posts with postType: "object", "flatlay", or "scen
     // Generate actual captions using the sophisticated caption writer
     // Process in parallel batches to improve performance
     console.log("[v0] Generating captions using Hook-Story-Value-CTA framework...")
-    const postsWithCaptions = []
+    const postsWithCaptions: Array<{ post: any; caption: string; success: boolean }> = []
 
-    // Generate captions in parallel (3 at a time to avoid rate limits)
-    const captionPromises = strategy.posts.map(async (post: any, index: number) => {
-      try {
-        console.log(`[v0] === Generating caption for post ${index + 1}/9 (position ${post.position}) ===`)
-        console.log(`[v0] Post data: position=${post.position}, type=${post.postType}, pillar=${post.contentPillar}`)
-        console.log(`[v0] Narrative role: ${post.narrativeRole || "not specified"}`)
-
-        // Determine emotional tone based on narrative role
-        let emotionalTone = "authentic"
-        if (post.narrativeRole === "origin") {
-          emotionalTone = "introducing"
-        } else if (post.narrativeRole === "conflict") {
-          emotionalTone = "vulnerable"
-        } else if (post.narrativeRole === "outcome") {
-          emotionalTone = "inspiring"
-        }
-
-        // Generate caption using the sophisticated caption writer
-        let finalCaption = ""
-
-        // Collect previous captions for uniqueness
-        const previousCaptions = postsWithCaptions
-          .slice(0, index)
-          .map((prevPost: any) => ({
-            position: prevPost.post.position,
-            caption: prevPost.caption || "",
-          }))
-
-        try {
-          const captionResult = await generateInstagramCaption({
-            postPosition: post.position,
-            shotType: post.postType || "portrait", // postType can be "portrait", "object", "flatlay", or "scenery"
-            purpose: post.contentPillar || "general",
-            emotionalTone: emotionalTone,
-            brandProfile: brandProfile,
-            targetAudience: brandProfile.target_audience,
-            brandVoice: brandProfile.brand_voice,
-            contentPillar: post.contentPillar,
-            hookConcept: post.hookConcept,
-            storyConcept: post.storyConcept,
-            valueConcept: post.valueConcept,
-            ctaConcept: post.ctaConcept,
-            hashtags: post.hashtags,
-            previousCaptions,
-            narrativeRole: post.narrativeRole,
-            // researchData: null, // Research data not available in this context
-          })
-
-          finalCaption = captionResult.caption
-          
-          // Fix any escaped newlines that might have been stored
-          finalCaption = finalCaption.replace(/\\n/g, '\n')
-          
-          console.log(`[v0] ✓ Caption generated for post ${post.position} (${finalCaption.length} chars)`)
-        } catch (captionErr: any) {
-          console.error(`[v0] ⚠️ Caption generation failed for post ${post.position}:`, captionErr.message)
-          
-          // Fallback: Build caption from concepts if caption writer fails
-          if (post.hookConcept && post.storyConcept && post.valueConcept && post.ctaConcept) {
-            finalCaption = `${post.hookConcept}\n\n${post.storyConcept}\n\n${post.valueConcept}\n\n${post.ctaConcept}`
-            console.log(`[v0] Using fallback caption from concepts`)
-          } else if (post.caption) {
-            finalCaption = post.caption
-            // Fix escaped newlines in strategy-generated captions
-            finalCaption = finalCaption.replace(/\\n/g, '\n')
-            console.log(`[v0] Using strategy-generated caption as fallback`)
-          } else {
-            // Last resort: create basic caption
-            finalCaption = `Post ${post.position} - ${post.contentPillar || "content"}`
-            console.log(`[v0] ⚠️ Using minimal caption placeholder`)
-          }
-        }
-
-        // Hashtags are now integrated in caption-writer, but ensure we have them if missing
-        const hashtags = post.hashtags || []
-        if (hashtags.length > 0 && !finalCaption.includes("#")) {
-          // Only add if caption writer didn't include any
-          finalCaption = `${finalCaption}\n\n${hashtags.map((h: string) => `#${h.replace("#", "")}`).join(" ")}`
-        }
-
-        return {
-          post,
-          caption: finalCaption,
-          success: true,
-        }
-      } catch (error: any) {
-        console.error(`[v0] ✗ Error processing post ${post.position}:`, error.message)
-        return {
-          post,
-          caption: post.caption || `Post ${post.position}`,
-          success: false,
-          error: error.message,
-        }
-      }
-    })
-
-    // Process captions in batches of 3 to avoid overwhelming the API
+    // Generate captions in batches (3 at a time) to ensure previous captions are available
+    // Each batch needs access to previously generated captions for uniqueness checking
     const batchSize = 3
     const captionResults = []
-    for (let i = 0; i < captionPromises.length; i += batchSize) {
-      const batch = captionPromises.slice(i, i + batchSize)
-      const batchResults = await Promise.all(batch)
-      captionResults.push(...batchResults)
+    
+    // CRITICAL: Sort strategy.posts by position FIRST to ensure consistent ordering
+    // This ensures that captionResults indices align with strategy.posts indices
+    const sortedPosts = [...strategy.posts].sort((a, b) => a.position - b.position)
+    
+    // Process posts in batches
+    for (let batchStart = 0; batchStart < sortedPosts.length; batchStart += batchSize) {
+      const batchEnd = Math.min(batchStart + batchSize, sortedPosts.length)
+      const batch = sortedPosts.slice(batchStart, batchEnd)
       
-      // Small delay between batches
-      if (i + batchSize < captionPromises.length) {
+      // Execute batch FIRST, then use results for previousCaptions in next batch
+      // Create promises for this batch
+      const batchPromises = batch.map(async (post: any, batchIndex: number) => {
+        const actualIndex = batchStart + batchIndex
+        try {
+          console.log(`[v0] === Generating caption for post ${actualIndex + 1}/9 (position ${post.position}) ===`)
+          console.log(`[v0] Post data: position=${post.position}, type=${post.postType}, pillar=${post.contentPillar}`)
+          console.log(`[v0] Narrative role: ${post.narrativeRole || "not specified"}`)
+
+          // Determine emotional tone based on narrative role
+          let emotionalTone = "authentic"
+          if (post.narrativeRole === "origin") {
+            emotionalTone = "introducing"
+          } else if (post.narrativeRole === "conflict") {
+            emotionalTone = "vulnerable"
+          } else if (post.narrativeRole === "outcome") {
+            emotionalTone = "inspiring"
+          }
+
+          // Generate caption using the sophisticated caption writer
+          let finalCaption = ""
+
+          // CRITICAL: Collect previous captions ONLY from completed batches
+          // postsWithCaptions only contains results from fully completed batches
+          // Use position-based matching (not index) to ensure correct ordering
+          // This ensures previousCaptions is consistent and complete, even if posts are out of order
+          const previousCaptions = postsWithCaptions
+            .filter((prevPost: any) => prevPost.post.position < post.position) // Only posts before this one
+            .sort((a: any, b: any) => a.post.position - b.post.position) // Sort by position
+            .map((prevPost: any) => ({
+              position: prevPost.post.position,
+              caption: prevPost.caption || "",
+            }))
+
+            try {
+              const captionResult = await generateInstagramCaption({
+                postPosition: post.position,
+                shotType: post.postType || "portrait", // postType can be "portrait", "object", "flatlay", or "scenery"
+                purpose: post.contentPillar || "general",
+                emotionalTone: emotionalTone,
+                brandProfile: brandProfile,
+                targetAudience: brandProfile.target_audience,
+                brandVoice: brandProfile.brand_voice,
+                contentPillar: post.contentPillar,
+                hookConcept: post.hookConcept,
+                storyConcept: post.storyConcept,
+                valueConcept: post.valueConcept,
+                ctaConcept: post.ctaConcept,
+                hashtags: post.hashtags,
+                previousCaptions,
+                narrativeRole: post.narrativeRole,
+                // researchData: null, // Research data not available in this context
+              })
+
+              finalCaption = captionResult.caption
+              
+              // Fix any escaped newlines that might have been stored
+              finalCaption = finalCaption.replace(/\\n/g, '\n')
+              
+              console.log(`[v0] ✓ Caption generated for post ${post.position} (${finalCaption.length} chars)`)
+            } catch (captionErr: any) {
+              console.error(`[v0] ⚠️ Caption generation failed for post ${post.position}:`, captionErr.message)
+              
+              // Fallback: Build caption from concepts if caption writer fails
+              if (post.hookConcept && post.storyConcept && post.valueConcept && post.ctaConcept) {
+                finalCaption = `${post.hookConcept}\n\n${post.storyConcept}\n\n${post.valueConcept}\n\n${post.ctaConcept}`
+                console.log(`[v0] Using fallback caption from concepts`)
+              } else if (post.caption) {
+                finalCaption = post.caption
+                // Fix escaped newlines in strategy-generated captions
+                finalCaption = finalCaption.replace(/\\n/g, '\n')
+                console.log(`[v0] Using strategy-generated caption as fallback`)
+              } else {
+                // Last resort: create basic caption
+                finalCaption = `Post ${post.position} - ${post.contentPillar || "content"}`
+                console.log(`[v0] ⚠️ Using minimal caption placeholder`)
+              }
+            }
+
+            // Hashtags are now integrated in caption-writer, but ensure we have them if missing
+            const hashtags = post.hashtags || []
+            if (hashtags.length > 0 && !finalCaption.includes("#")) {
+              // Only add if caption writer didn't include any
+              finalCaption = `${finalCaption}\n\n${hashtags.map((h: string) => `#${h.replace("#", "")}`).join(" ")}`
+            }
+
+            return {
+              post,
+              caption: finalCaption,
+              success: true,
+            }
+          } catch (error: any) {
+            console.error(`[v0] ✗ Error processing post ${post.position}:`, error.message)
+            return {
+              post,
+              caption: post.caption || `Post ${post.position}`,
+              success: false,
+              error: error.message,
+            }
+          }
+      })
+
+      // Execute this batch and wait for ALL results to complete
+      const batchResults = await Promise.all(batchPromises)
+      
+      // CRITICAL: Sort batch results by position to maintain correct order
+      // Since strategy.posts is now sorted, captionResults will align by index
+      const sortedBatchResults = [...batchResults].sort((a, b) => a.post.position - b.post.position)
+      
+      // Store in captionResults (will be used by insertion loop by index)
+      captionResults.push(...sortedBatchResults)
+      
+      // CRITICAL: Update postsWithCaptions AFTER batch completes
+      // This ensures next batch's previousCaptions has complete data from all prior batches
+      postsWithCaptions.push(...sortedBatchResults)
+      
+      // Small delay between batches to avoid rate limits
+      if (batchEnd < strategy.posts.length) {
         await new Promise((resolve) => setTimeout(resolve, 500))
       }
     }
 
     console.log(`[v0] Caption generation complete: ${captionResults.filter(r => r.success).length} successful, ${captionResults.filter(r => !r.success).length} failed`)
+
+    // CRITICAL: Calculate actual image credits based on posts' generationMode
+    // This must happen AFTER strategy is generated/loaded to account for Pro Mode posts
+    let actualImageCredits = 0
+    for (const post of sortedPosts) {
+      // For approved strategies, generationMode is already set
+      // For Claude-generated strategies, detect it (same logic as in insertion loop)
+      let postGenerationMode: 'classic' | 'pro'
+      if (isApprovedStrategy && post.generationMode) {
+        postGenerationMode = post.generationMode as 'classic' | 'pro'
+      } else {
+        // Detect Pro Mode for Claude-generated strategies
+        const postDescription = post.description || post.prompt || post.purpose || ""
+        postGenerationMode = detectRequiredMode({
+          post_type: post.postType,
+          description: postDescription,
+          prompt: post.prompt || "",
+          content_pillar: post.contentPillar || "",
+        })
+      }
+      
+      // Calculate credits: Pro Mode = 2 credits, Classic = 1 credit
+      if (postGenerationMode === 'pro') {
+        actualImageCredits += getStudioProCreditCost('2K') // 2 credits
+      } else {
+        actualImageCredits += CREDIT_COSTS.IMAGE // 1 credit
+      }
+    }
+    
+    // Check if user has enough credits for strategy + actual image credits
+    const totalCreditsNeeded = strategyCredits + actualImageCredits
+    const hasEnoughCredits = await checkCredits(neonUser.id.toString(), totalCreditsNeeded)
+    
+    if (!hasEnoughCredits) {
+      console.error("[v0] Insufficient credits for image generation after strategy created")
+      const proModeCount = sortedPosts.filter(p => {
+        if (isApprovedStrategy && p.generationMode) {
+          return p.generationMode === 'pro'
+        }
+        const postDesc = p.description || p.prompt || p.purpose || ""
+        return detectRequiredMode({ post_type: p.postType, description: postDesc, prompt: p.prompt || "", content_pillar: p.contentPillar || "" }) === 'pro'
+      }).length
+      const classicCount = sortedPosts.length - proModeCount
+      
+      // Strategy credits already deducted - we could refund here, but for now just return error
+      // The queue-images function will handle the credit check again before generation
+      return NextResponse.json(
+        {
+          error: `Strategy created, but insufficient credits for image generation. You need ${actualImageCredits} credits for images (${proModeCount} Pro Mode posts × 2 + ${classicCount} Classic posts × 1). Total needed: ${totalCreditsNeeded} credits (${strategyCredits} strategy + ${actualImageCredits} images).`,
+        },
+        { status: 402 },
+      )
+    }
+    
+    console.log(`[v0] ✅ Credit check passed: ${strategyCredits} strategy + ${actualImageCredits} image credits = ${totalCreditsNeeded} total`)
+    const proModeCount = sortedPosts.filter(p => {
+      if (isApprovedStrategy && p.generationMode) {
+        return p.generationMode === 'pro'
+      }
+      const postDesc = p.description || p.prompt || p.purpose || ""
+      return detectRequiredMode({ post_type: p.postType, description: postDesc, prompt: p.prompt || "", content_pillar: p.contentPillar || "" }) === 'pro'
+    }).length
+    const classicCount = sortedPosts.length - proModeCount
+    console.log(`[v0] Image credits breakdown: ${proModeCount} Pro Mode (×2) + ${classicCount} Classic (×1) = ${actualImageCredits} credits`)
 
     // Get user data for Maya concept generation (same as concept cards)
     const userDataResult = await sql`
@@ -774,9 +895,11 @@ CRITICAL INSTRUCTIONS:
     // Track previous posts for variety and cohesion
     const previousPosts: Array<{ position: number; outfit?: string; location?: string; concept?: string; lighting?: string }> = []
 
+    // CRITICAL: Use sortedPosts for insertion loop to match captionResults indices
+    // Both sortedPosts and captionResults are sorted by position, so indices align
     // Insert posts with generated captions AND full FLUX prompts
-    for (let i = 0; i < strategy.posts.length; i++) {
-      const post = strategy.posts[i]
+    for (let i = 0; i < sortedPosts.length; i++) {
+      const post = sortedPosts[i]
       const captionResult = captionResults[i]
 
       try {
@@ -955,6 +1078,50 @@ Return ONLY valid JSON, no markdown:
           lighting: lightingStyle,
         })
 
+        // Detect Pro Mode requirements
+        // For approved strategies, use the user's approved generationMode (don't re-detect)
+        // For Claude-generated strategies, detect based on post type and description
+        let generationMode: 'classic' | 'pro'
+        let proModeType: string | null = null
+        
+        if (isApprovedStrategy && post.generationMode) {
+          // Use the user's approved generation mode (preserve their choice)
+          generationMode = post.generationMode as 'classic' | 'pro'
+          console.log(`[v0] Using approved generation mode for post ${post.position}: ${generationMode}`)
+          
+          // If Pro Mode, detect the specific type
+          if (generationMode === 'pro') {
+            const postDescription = post.description || post.visualDirection || post.prompt || post.purpose || ""
+            proModeType = detectProModeType({
+              generation_mode: generationMode,
+              post_type: post.postType,
+              description: postDescription,
+              prompt: fluxPrompt,
+              content_pillar: post.contentPillar,
+            })
+          }
+        } else {
+          // Claude-generated strategy: detect Pro Mode requirements
+          // Note: Claude-generated posts have 'prompt' field, not 'description'
+          // Use prompt || description || purpose for detection
+          const postDescription = post.description || post.prompt || post.purpose || ""
+          generationMode = detectRequiredMode({
+            post_type: post.postType,
+            description: postDescription,
+            prompt: fluxPrompt,
+            content_pillar: post.contentPillar,
+          })
+          proModeType = generationMode === 'pro' 
+            ? detectProModeType({
+                generation_mode: generationMode,
+                post_type: post.postType,
+                description: postDescription,
+                prompt: fluxPrompt,
+                content_pillar: post.contentPillar,
+              })
+            : null
+        }
+
         await sql`
           INSERT INTO feed_posts (
             feed_layout_id,
@@ -966,6 +1133,8 @@ Return ONLY valid JSON, no markdown:
             prompt,
             post_status,
             generation_status,
+            generation_mode,
+            pro_mode_type,
             created_at,
             updated_at
           ) VALUES (
@@ -978,6 +1147,8 @@ Return ONLY valid JSON, no markdown:
             ${fluxPrompt},
             'draft',
             'pending',
+            ${generationMode},
+            ${proModeType},
             NOW(),
             NOW()
           )

@@ -4,6 +4,9 @@ import { neon } from "@neondatabase/serverless"
 import { CREDIT_COSTS, checkCredits, deductCredits } from "@/lib/credits"
 import { getReplicateClient } from "@/lib/replicate-client"
 import { MAYA_QUALITY_PRESETS } from "@/lib/maya/quality-settings"
+import { generateWithNanoBanana } from "@/lib/nano-banana-client"
+import { buildNanoBananaPrompt } from "@/lib/maya/nano-banana-prompt-builder"
+import { getStudioProCreditCost } from "@/lib/nano-banana-client"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -31,9 +34,9 @@ export async function queueAllImagesForFeed(
 
   console.log("[v0] Queueing images for feed layout:", feedLayoutId)
 
-  // Get all posts for this feed that need images
+  // Get all posts for this feed that need images (including Pro Mode info)
   const posts = await sql`
-    SELECT id, position, prompt, post_type, caption, generation_status, prediction_id, image_url
+    SELECT id, position, prompt, post_type, caption, generation_status, prediction_id, image_url, generation_mode, pro_mode_type
     FROM feed_posts
     WHERE feed_layout_id = ${feedLayoutId}
     AND user_id = ${neonUser.id}
@@ -79,11 +82,13 @@ export async function queueAllImagesForFeed(
     throw new Error("No trained model found")
   }
 
-  // Check credits upfront
-  const totalCreditsNeeded = CREDIT_COSTS.IMAGE * posts.length
+  // Check credits upfront (Pro Mode = 2 credits, Classic = 1 credit)
+  const proModePosts = posts.filter(p => p.generation_mode === 'pro')
+  const classicPosts = posts.filter(p => !p.generation_mode || p.generation_mode === 'classic')
+  const totalCreditsNeeded = (proModePosts.length * getStudioProCreditCost('2K')) + (classicPosts.length * CREDIT_COSTS.IMAGE)
   const hasEnoughCredits = await checkCredits(neonUser.id, totalCreditsNeeded)
   if (!hasEnoughCredits) {
-    throw new Error(`Insufficient credits. You need ${totalCreditsNeeded} credits to generate ${posts.length} images.`)
+    throw new Error(`Insufficient credits. You need ${totalCreditsNeeded} credits (${proModePosts.length} Pro Mode × 2 + ${classicPosts.length} Classic × 1) to generate ${posts.length} images.`)
   }
 
   const replicate = getReplicateClient()
@@ -96,7 +101,121 @@ export async function queueAllImagesForFeed(
     const post = posts[i]
     try {
       console.log(`[v0] ==================== GENERATING POST ${post.position} (${i + 1}/${posts.length}) ====================`)
-      console.log(`[v0] Post ID: ${post.id}, Position: ${post.position}`)
+      console.log(`[v0] Post ID: ${post.id}, Position: ${post.position}, Mode: ${post.generation_mode || 'classic'}`)
+
+      // Check if this is a Pro Mode post
+      if (post.generation_mode === 'pro') {
+        console.log(`[v0] 🎨 Pro Mode post detected - routing to Studio Pro API`)
+        console.log(`[v0] Pro Mode Type: ${post.pro_mode_type || 'workbench'}`)
+        
+        try {
+          // Get avatar images (required for Pro Mode)
+          const avatarImages = await sql`
+            SELECT image_url
+            FROM user_avatar_images
+            WHERE user_id = ${neonUser.id} AND is_active = true
+            ORDER BY display_order ASC, uploaded_at ASC
+            LIMIT 5
+          `
+          
+          if (avatarImages.length < 3) {
+            throw new Error('Pro Mode requires at least 3 avatar images. Please complete avatar setup first.')
+          }
+          
+          // All avatar images are user photos - they preserve the user's identity
+          // In Feed Planner Pro Mode, all images should be classified as 'user-photo'
+          // to ensure proper identity preservation across all generated images
+          const baseImages = avatarImages.map((img: any) => ({
+            url: img.image_url,
+            type: 'user-photo' as const,
+          }))
+          
+          // Get brand kit if available
+          const [brandKit] = await sql`
+            SELECT primary_color, secondary_color, accent_color, font_style, brand_tone
+            FROM brand_kits
+            WHERE user_id = ${neonUser.id} AND is_default = true
+            LIMIT 1
+          `
+          
+          // Build Nano Banana prompt
+          const proModeType = (post.pro_mode_type || 'workbench') as any
+          const userRequest = post.caption || post.prompt || `Feed post ${post.position}`
+          
+          const { optimizedPrompt } = await buildNanoBananaPrompt({
+            userId: neonUser.id,
+            mode: proModeType,
+            userRequest,
+            inputImages: {
+              baseImages,
+              productImages: [],
+              textElements: post.post_type === 'quote' ? [{
+                text: post.caption || '',
+                style: 'quote' as const,
+              }] : undefined,
+            },
+            workflowMeta: {
+              platformFormat: customSettings?.aspectRatio || '4:5',
+            },
+            brandKit: brandKit ? {
+              primaryColor: brandKit.primary_color,
+              secondaryColor: brandKit.secondary_color,
+              accentColor: brandKit.accent_color,
+              fontStyle: brandKit.font_style,
+              brandTone: brandKit.brand_tone,
+            } : undefined,
+          })
+          
+          // Generate with Nano Banana Pro (credits deducted at end for successful generations only)
+          // Note: Instagram portrait posts use 4:5 (1080×1350px) - preserve this aspect ratio
+          const aspectRatio = customSettings?.aspectRatio || '4:5'
+          const generation = await generateWithNanoBanana({
+            prompt: optimizedPrompt,
+            image_input: baseImages.map(img => img.url),
+            aspect_ratio: aspectRatio, // Use aspect ratio directly (4:5 for Instagram portrait, 1:1 for square, 16:9 for landscape)
+            resolution: '2K',
+            output_format: 'png',
+            safety_filter_level: 'block_only_high',
+          })
+          
+          // Update database with prediction ID
+          await sql`
+            UPDATE feed_posts
+            SET generation_status = 'generating',
+                prediction_id = ${generation.predictionId},
+                updated_at = NOW()
+            WHERE id = ${post.id}
+          `
+          
+          console.log(`[v0] ✅ Successfully created Pro Mode prediction for post ${post.position}:`, generation.predictionId)
+          results.push({
+            success: true,
+            postId: post.id,
+            position: post.position,
+            predictionId: generation.predictionId,
+          })
+          
+          // Wait between predictions
+          if (i < posts.length - 1) {
+            await new Promise((resolve) => setTimeout(resolve, 11000))
+          }
+          
+          continue // Skip Classic Mode logic below
+        } catch (error: any) {
+          console.error(`[v0] ❌ Error generating Pro Mode post ${post.position}:`, {
+            error: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
+          })
+          results.push({
+            success: false,
+            postId: post.id,
+            position: post.position,
+            error: error instanceof Error ? error.message : "Unknown error",
+          })
+          await new Promise((resolve) => setTimeout(resolve, 2000))
+          continue
+        }
+      }
 
       // Use prompt directly from database (already generated by Maya's concept generation)
       // No enhancement needed - prompts are generated using the same proven logic as concept cards
@@ -178,7 +297,7 @@ export async function queueAllImagesForFeed(
       
       const loraScale = finalQualitySettings.lora_scale
 
-      // Create Replicate prediction directly
+      // Create Replicate prediction directly (credits deducted at end for successful generations only)
       let retries = 0
       const maxRetries = 3
       let prediction: any = null
@@ -267,18 +386,41 @@ export async function queueAllImagesForFeed(
     }
   }
 
-  // Deduct credits once for all successful generations
+  // Deduct credits once for all successful generations (pay on success, not attempt)
   const successful = results.filter((r) => r.success).length
+  const proModeSuccessful = results.filter((r) => {
+    const post = posts.find(p => p.id === r.postId)
+    return r.success && post?.generation_mode === 'pro'
+  }).length
+  const classicSuccessful = successful - proModeSuccessful
+  
   if (successful > 0) {
-    const creditsToDeduct = CREDIT_COSTS.IMAGE * successful
-    const deduction = await deductCredits(
+    // Calculate total credits for successful posts only
+    const proModeCredits = proModeSuccessful * getStudioProCreditCost('2K')
+    const classicCredits = classicSuccessful * CREDIT_COSTS.IMAGE
+    const totalCreditsToDeduct = proModeCredits + classicCredits
+    
+    console.log(`[v0] Generation complete: ${successful} successful (${classicSuccessful} Classic × ${CREDIT_COSTS.IMAGE} credit, ${proModeSuccessful} Pro Mode × ${getStudioProCreditCost('2K')} credits)`)
+    console.log(`[v0] Deducting ${totalCreditsToDeduct} credits for successful generations only...`)
+    
+    // Get prediction IDs for reference (use first successful prediction ID as reference)
+    const firstSuccessfulResult = results.find(r => r.success)
+    const referenceId = firstSuccessfulResult?.predictionId || `feed-${feedLayoutId}-${Date.now()}`
+    
+    const deductionResult = await deductCredits(
       neonUser.id,
-      creditsToDeduct,
-      "image",
-      `Feed planner: ${successful} images`,
-      results.find(r => r.success)?.predictionId || "",
+      totalCreditsToDeduct,
+      'image',
+      `Feed Planner: ${successful} images (${classicSuccessful} Classic, ${proModeSuccessful} Pro)`,
+      referenceId
     )
-    console.log(`[v0] Credits deducted: ${creditsToDeduct}, New balance: ${deduction.newBalance || "unknown"}`)
+    
+    if (!deductionResult.success) {
+      console.error(`[v0] ❌ Failed to deduct credits: ${deductionResult.error}`)
+      // Log error but don't throw - posts are already queued
+    } else {
+      console.log(`[v0] ✅ Credits deducted: ${totalCreditsToDeduct}, New balance: ${deductionResult.newBalance || "unknown"}`)
+    }
   }
 
   const failed = results.length - successful

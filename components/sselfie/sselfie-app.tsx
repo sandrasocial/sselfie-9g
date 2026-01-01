@@ -554,8 +554,8 @@ export default function SselfieApp({
       <LowCreditModal credits={creditBalance} threshold={30} />
       <ZeroCreditsUpgradeModal credits={creditBalance} />
 
-      {/* Hide feedback button when on maya chat screen */}
-      {activeTab !== "maya" && (
+      {/* Hide feedback button when on maya chat screen or feed planner */}
+      {activeTab !== "maya" && activeTab !== "feed-planner" && (
         <FeedbackButton userId={userId} userEmail={userEmail} userName={userName} />
       )}
 

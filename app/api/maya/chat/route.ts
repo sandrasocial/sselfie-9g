@@ -376,11 +376,42 @@ export async function POST(req: Request) {
 
     console.log("[v0] Conversation summary length:", conversationSummary.length)
 
+    // CRITICAL: Normalize messages to ensure they have 'parts' array format
+    // convertToModelMessages expects messages with 'parts' array, not just 'content' field
+    // CRITICAL: Preserve all original message fields (id, role, timestamp, etc.) using spread operator
+    const normalizedMessages = messages.map((m: any) => {
+      // Skip normalization if message already has 'parts' array
+      if (m.parts && Array.isArray(m.parts) && m.parts.length > 0) {
+        return m
+      }
+      
+      // If message has 'content' field (string) but no 'parts', convert it to 'parts' format
+      // Preserve all original fields using spread operator
+      if (typeof m.content === "string" && m.content.trim()) {
+        return {
+          ...m, // Preserve id, role, timestamp, and all other metadata
+          parts: [{ type: "text", text: m.content }],
+        }
+      }
+      
+      // If message has 'content' as array (already in parts-like format), convert to parts
+      // Preserve all original fields using spread operator
+      if (Array.isArray(m.content) && m.content.length > 0) {
+        return {
+          ...m, // Preserve id, role, timestamp, and all other metadata
+          parts: m.content,
+        }
+      }
+      
+      // Keep message as-is if it doesn't match above patterns
+      return m
+    })
+
     // Convert UI messages to model messages using AI SDK's convertToModelMessages
     // This properly handles images, text, and other content types
     let modelMessages: any[]
     try {
-      modelMessages = await convertToModelMessages(messages)
+      modelMessages = await convertToModelMessages(normalizedMessages)
       
       // CRITICAL: Ensure modelMessages is always an array
       if (!Array.isArray(modelMessages)) {
@@ -389,11 +420,11 @@ export async function POST(req: Request) {
       }
     } catch (conversionError: any) {
       console.error("[v0] ⚠️ Error converting messages to model format:", conversionError)
-      console.error("[v0] Messages that failed conversion:", JSON.stringify(messages, null, 2))
+      console.error("[v0] Messages that failed conversion:", JSON.stringify(normalizedMessages, null, 2))
       modelMessages = []
     }
     
-    console.log("[v0] Converted", messages.length, "UI messages to", modelMessages.length, "model messages")
+    console.log("[v0] Converted", normalizedMessages.length, "normalized messages to", modelMessages.length, "model messages")
     
     // CRITICAL: Validate and filter model messages to ensure they're in correct format
     modelMessages = modelMessages.filter((m: any) => {

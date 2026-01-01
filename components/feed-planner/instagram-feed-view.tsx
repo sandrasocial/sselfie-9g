@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo, useRef } from "react"
+import type React from "react"
 import {
   Grid3x3,
   LayoutGrid,
@@ -32,6 +33,60 @@ interface InstagramFeedViewProps {
 }
 
 export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewProps) {
+  // Declare refs and functions BEFORE useSWR (they're used in the onSuccess callback)
+  const hasShownConfettiRef = useRef(false)
+  
+  const triggerConfetti = () => {
+    const duration = 3000
+    const animationEnd = Date.now() + duration
+    const colors = ["#292524", "#57534e", "#78716c"] // stone colors only
+
+    const randomInRange = (min: number, max: number) => {
+      return Math.random() * (max - min) + min
+    }
+
+    const confettiInterval = setInterval(() => {
+      const timeLeft = animationEnd - Date.now()
+
+      if (timeLeft <= 0) {
+        clearInterval(confettiInterval)
+        return
+      }
+
+      const particleCount = 3
+
+      // Create confetti particles
+      for (let i = 0; i < particleCount; i++) {
+        const particle = document.createElement("div")
+        particle.style.position = "fixed"
+        particle.style.width = "8px"
+        particle.style.height = "8px"
+        particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)]
+        particle.style.left = Math.random() * window.innerWidth + "px"
+        particle.style.top = "-10px"
+        particle.style.zIndex = "9999"
+        particle.style.pointerEvents = "none"
+        particle.style.borderRadius = "2px"
+        particle.style.transition = "transform 3s linear, opacity 3s linear"
+        
+        document.body.appendChild(particle)
+
+        requestAnimationFrame(() => {
+          particle.style.transform = `translateY(${window.innerHeight + 100}px) rotate(${randomInRange(-180, 180)}deg)`
+          particle.style.opacity = "0"
+        })
+
+        setTimeout(() => {
+          particle.remove()
+        }, duration)
+      }
+    }, 50)
+
+    setTimeout(() => {
+      clearInterval(confettiInterval)
+    }, duration)
+  }
+
   // Use SWR for data fetching with intelligent polling
   const { data: feedData, error: feedError, mutate } = useSWR(
     feedId ? `/api/feed/${feedId}` : null,
@@ -51,16 +106,15 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
       revalidateOnFocus: true, // Refresh when tab becomes visible
       onSuccess: (data) => {
         // Check if all posts complete - trigger confetti
+        // Note: Confetti is also triggered in useEffect below, but we check ref here to avoid double-trigger
         const allComplete = data?.posts?.every((p: any) => p.image_url)
         if (allComplete && !hasShownConfettiRef.current) {
-          triggerConfetti()
-          hasShownConfettiRef.current = true
+          // Don't trigger here - let the useEffect handle it to avoid double confetti
+          // The useEffect (lines 251-266) will handle the confetti animation
         }
       },
     }
   )
-
-  const hasShownConfettiRef = useRef(false)
   console.log("[v0] ==================== INSTAGRAM FEED VIEW RENDERED ====================")
   console.log("[v0] feedData:", feedData ? "exists" : "null")
   console.log("[v0] feedData structure:", feedData ? Object.keys(feedData) : "null")
@@ -76,11 +130,32 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
   const [showGallery, setShowGallery] = useState<number | null>(null)
   const [showProfileGallery, setShowProfileGallery] = useState(false)
 
+  // Prevent body scroll when any modal is open
+  useEffect(() => {
+    const hasOpenModal = !!selectedPost || !!showGallery || showProfileGallery
+    
+    if (hasOpenModal) {
+      // Save original overflow style
+      const originalOverflow = document.body.style.overflow
+      // Prevent body scroll
+      document.body.style.overflow = 'hidden'
+      // Cleanup: restore original overflow on unmount or when modal closes
+      return () => {
+        document.body.style.overflow = originalOverflow
+      }
+    }
+  }, [selectedPost, showGallery, showProfileGallery])
+
   const [showConfetti, setShowConfetti] = useState(false)
   const [generatingRemaining, setGeneratingRemaining] = useState(false)
   const [copiedCaptions, setCopiedCaptions] = useState<Set<number>>(new Set())
   const [enhancingCaptions, setEnhancingCaptions] = useState<Set<number>>(new Set())
   const [isGeneratingBio, setIsGeneratingBio] = useState(false)
+  
+  // Drag-and-drop state for reordering posts
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
+  const [reorderedPosts, setReorderedPosts] = useState<any[]>([])
+  const [isSavingOrder, setIsSavingOrder] = useState(false)
 
   // Derived state from feedData (single source of truth)
   const postStatuses = useMemo(() => {
@@ -179,79 +254,153 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
   const progress = Math.round((readyPosts / totalPosts) * 100)
   const isFeedComplete = readyPosts === totalPosts
 
-  const triggerConfetti = () => {
-    const duration = 3000
-    const animationEnd = Date.now() + duration
-    const colors = ["#292524", "#57534e", "#78716c"] // stone colors only
-
-    const randomInRange = (min: number, max: number) => {
-      return Math.random() * (max - min) + min
+  // Initialize reorderedPosts when posts change (only if not currently dragging)
+  // CRITICAL: reorderedPosts must always be in sync with posts for drag handlers to work correctly
+  useEffect(() => {
+    if (draggedIndex === null && posts.length > 0) {
+      setReorderedPosts(posts)
     }
+  }, [posts, draggedIndex])
 
-    const confettiInterval = setInterval(() => {
-      const timeLeft = animationEnd - Date.now()
+  // Ensure reorderedPosts is always initialized (use posts as fallback for rendering if empty)
+  const displayPosts = reorderedPosts.length > 0 ? reorderedPosts : posts
 
-      if (timeLeft <= 0) {
-        clearInterval(confettiInterval)
-        return
-      }
-
-      const particleCount = 3
-
-      // Create confetti particles
-      for (let i = 0; i < particleCount; i++) {
-        const particle = document.createElement("div")
-        particle.style.position = "fixed"
-        particle.style.width = "8px"
-        particle.style.height = "8px"
-        particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)]
-        particle.style.left = Math.random() * window.innerWidth + "px"
-        particle.style.top = "-10px"
-        particle.style.zIndex = "9999"
-        particle.style.pointerEvents = "none"
-        particle.style.borderRadius = "2px"
-        particle.style.opacity = "0.8"
-
-        document.body.appendChild(particle)
-
-        const angle = randomInRange(-30, 30)
-        const velocity = randomInRange(2, 5)
-        const rotation = randomInRange(0, 360)
-
-        let posY = -10
-        let posX = Number.parseFloat(particle.style.left)
-        let rotateAngle = 0
-
-        const animate = () => {
-          posY += velocity
-          posX += Math.sin((angle * Math.PI) / 180) * 2
-          rotateAngle += 5
-
-          particle.style.top = posY + "px"
-          particle.style.left = posX + "px"
-          particle.style.transform = `rotate(${rotateAngle}deg)`
-
-          if (posY < window.innerHeight) {
-            requestAnimationFrame(animate)
-          } else {
-            particle.remove()
-          }
-        }
-
-        requestAnimationFrame(animate)
-      }
-    }, 100)
+  // Drag-and-drop handlers for reordering posts
+  const handleDragStart = (index: number) => {
+    // Only allow dragging if post is complete
+    // Use displayPosts to ensure we're working with the same array that's rendered
+    const post = displayPosts[index]
+    if (!post?.image_url || post.generation_status !== 'completed') {
+      return
+    }
+    // Ensure reorderedPosts is initialized if it was empty
+    if (reorderedPosts.length === 0) {
+      setReorderedPosts(displayPosts)
+    }
+    setDraggedIndex(index)
   }
 
-  // Confetti trigger when all posts are complete
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>, index: number) => {
+    e.preventDefault()
+    if (draggedIndex !== null && draggedIndex !== index) {
+      const newPosts = [...reorderedPosts]
+      const [draggedPost] = newPosts.splice(draggedIndex, 1)
+      newPosts.splice(index, 0, draggedPost)
+      setReorderedPosts(newPosts)
+      setDraggedIndex(index)
+    }
+  }
+
+  const handleDragEnd = async () => {
+    if (draggedIndex === null) return
+    
+    const originalIndex = draggedIndex
+    setDraggedIndex(null)
+    
+    // Check if order actually changed
+    const orderChanged = reorderedPosts.some((post, index) => {
+      const originalPost = posts[index]
+      return !originalPost || post.id !== originalPost.id
+    })
+    
+    if (!orderChanged) {
+      // Order didn't change, revert to original
+      setReorderedPosts(posts)
+      return
+    }
+    
+    // Save new order to database
+    try {
+      setIsSavingOrder(true)
+      const response = await fetch(`/api/feed/${feedId}/reorder`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          postOrders: reorderedPosts.map((post, index) => ({
+            postId: post.id,
+            newPosition: index + 1, // 1-9
+          })),
+        }),
+      })
+      
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: 'Failed to save order' }))
+        throw new Error(error.error || 'Failed to save order')
+      }
+      
+      toast({
+        title: "Feed reordered",
+        description: "Your feed layout has been updated",
+      })
+      
+      // Refresh feed data to get updated positions
+      await mutate()
+    } catch (error) {
+      console.error("[v0] Reorder error:", error)
+      toast({
+        title: "Failed to save order",
+        description: error instanceof Error ? error.message : "Please try again",
+        variant: "destructive",
+      })
+      // Revert to original order
+      setReorderedPosts(posts)
+    } finally {
+      setIsSavingOrder(false)
+    }
+  }
+
+  // Download bundle handler
+  const [isDownloadingBundle, setIsDownloadingBundle] = useState(false)
+  
+  const handleDownloadBundle = async () => {
+    if (!feedData || !isFeedComplete) return
+    
+    try {
+      setIsDownloadingBundle(true)
+      const response = await fetch(`/api/feed/${feedId}/download-bundle`)
+      
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: 'Download failed' }))
+        throw new Error(error.error || 'Download failed')
+      }
+      
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `instagram-feed-${feedId}.zip`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+      
+      toast({
+        title: "Download started",
+        description: "Your feed bundle is downloading",
+      })
+    } catch (error) {
+      console.error("[v0] Download bundle error:", error)
+      toast({
+        title: "Download failed",
+        description: error instanceof Error ? error.message : "Please try again",
+        variant: "destructive",
+      })
+    } finally {
+      setIsDownloadingBundle(false)
+    }
+  }
+
+  // Confetti trigger when all posts are complete (single trigger point to avoid duplicate)
   useEffect(() => {
     const totalPosts = 9
     if (readyPosts === totalPosts && !hasShownConfettiRef.current) {
+      // Set ref immediately to prevent duplicate triggers (from SWR onSuccess or multiple renders)
+      hasShownConfettiRef.current = true
+      
       console.log("[v0] 🎉 All posts complete! Revealing feed with confetti")
       setTimeout(() => {
         setShowConfetti(true)
         triggerConfetti()
-        hasShownConfettiRef.current = true
       }, 500)
       
       // Clear confetti after 3 seconds
@@ -1012,6 +1161,13 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
               <p className="text-xs text-stone-600 leading-relaxed">
                 All 9 images have been generated. You can now download them, edit captions, or regenerate individual posts if needed.
               </p>
+              <button
+                onClick={handleDownloadBundle}
+                disabled={isDownloadingBundle}
+                className="mt-2 px-4 py-2 bg-stone-900 text-white rounded-lg text-sm font-medium hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isDownloadingBundle ? "Preparing download..." : `Download All (${totalPosts} images + captions + strategy)`}
+              </button>
             </div>
           </div>
         </div>
@@ -1020,14 +1176,27 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
       <div className="pb-20">
         {activeTab === "grid" && (
           <div className="grid grid-cols-3 gap-[2px] md:gap-1">
-            {posts.map((post: any) => {
+            {displayPosts.map((post: any, index: number) => {
               const postStatus = postStatuses.find(p => p.id === post.id)
               const isGenerating = postStatus?.isGenerating || post.generation_status === "generating"
               const isRegenerating = regeneratingPost === post.id
               const shotTypeLabel = post.content_pillar?.toLowerCase() || `post ${post.position}`
+              const isComplete = post.image_url && post.generation_status === 'completed'
+              const isDragging = draggedIndex === index
 
               return (
-                <div key={post.id} className="aspect-square bg-stone-100 relative group">
+                <div
+                  key={post.id}
+                  draggable={isComplete && !isSavingOrder}
+                  onDragStart={() => handleDragStart(index)}
+                  onDragOver={(e) => handleDragOver(e, index)}
+                  onDragEnd={handleDragEnd}
+                  className={`aspect-square bg-stone-100 relative group transition-all duration-200 ${
+                    isDragging ? 'opacity-50 scale-95' : ''
+                  } ${
+                    isComplete && !isSavingOrder ? 'cursor-move hover:scale-[1.02]' : 'cursor-default'
+                  }`}
+                >
                   {post.image_url && !isRegenerating && !isGenerating ? (
                     <>
                       <Image

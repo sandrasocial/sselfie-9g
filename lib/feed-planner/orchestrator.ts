@@ -10,6 +10,7 @@ import { getFashionIntelligencePrinciples } from "../maya/fashion-knowledge-2025
 import INFLUENCER_POSING_KNOWLEDGE from "../maya/influencer-posing-knowledge"
 import INSTAGRAM_LOCATION_INTELLIGENCE from "../maya/instagram-location-intelligence"
 import { getLuxuryLifestyleSettings } from "../maya/luxury-lifestyle-settings"
+import { detectRequiredMode, detectProModeType } from "./mode-detection"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -372,6 +373,23 @@ Return ONLY valid JSON, no markdown:
           postType = postLayout.shotType // Keep as-is for non-user posts
         }
 
+        // Detect Pro Mode requirements
+        const generationMode = detectRequiredMode({
+          post_type: postType,
+          description: postLayout.purpose,
+          prompt: fluxPrompt,
+          content_pillar: postLayout.purpose,
+        })
+        const proModeType = generationMode === 'pro' 
+          ? detectProModeType({
+              generation_mode: generationMode,
+              post_type: postType,
+              description: postLayout.purpose,
+              prompt: fluxPrompt,
+              content_pillar: postLayout.purpose,
+            })
+          : null
+
         await sql`
           INSERT INTO feed_posts (
             feed_layout_id,
@@ -382,7 +400,9 @@ Return ONLY valid JSON, no markdown:
             caption,
             content_pillar,
             generation_status,
-            post_status
+            post_status,
+            generation_mode,
+            pro_mode_type
           ) VALUES (
             ${feedLayoutId},
             ${userId},
@@ -392,7 +412,9 @@ Return ONLY valid JSON, no markdown:
             ${truncateString(caption, 5000)},
             ${postLayout.purpose},
             ${"pending"},
-            ${"draft"}
+            ${"draft"},
+            ${generationMode},
+            ${proModeType}
           )
         `
 
