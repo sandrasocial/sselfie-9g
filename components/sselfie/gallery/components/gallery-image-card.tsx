@@ -102,13 +102,21 @@ function GalleryImageCardComponent({
 }
 
 // Memoize component to prevent unnecessary re-renders
+// Note: Refs (wasLongPress, longPressTimer, longPressImageId) are stable and don't need comparison
+// Function props are created inline in GalleryImageGrid.map(), so checking them would always return false
+// Instead, we rely on the parent functions being stable via useCallback, and only check data props
 export const GalleryImageCard = React.memo(GalleryImageCardComponent, (prevProps, nextProps) => {
-  // Only re-render if these props change
+  // Return true if props are equal (skip re-render), false if different (do re-render)
+  // Only check data props - function props are intentionally omitted since they're created inline
   return (
     prevProps.image.id === nextProps.image.id &&
     prevProps.image.image_url === nextProps.image.image_url &&
     prevProps.isSelected === nextProps.isSelected &&
     prevProps.selectionMode === nextProps.selectionMode
+    // Function props and refs are intentionally omitted:
+    // - Functions are created inline in map() so checking them would prevent memoization
+    // - Refs are stable references that don't change
+    // - Parent functions (handleImageClick, handleToggleSelection, etc.) are stable via useCallback
   )
 })
 

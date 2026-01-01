@@ -14,7 +14,7 @@ import { ProfileImageSelector } from "@/components/profile-image-selector"
 import { GalleryInstagramSkeleton } from "./gallery-skeleton"
 import UnifiedLoading from "./unified-loading"
 import { triggerHaptic, triggerSuccessHaptic, triggerErrorHaptic } from "@/lib/utils/haptics"
-import { useRouter } from "next/navigation"
+import { useToast } from "@/hooks/use-toast"
 import FullscreenImageModal from "./fullscreen-image-modal"
 import { DesignClasses } from "@/lib/design-tokens"
 // Hooks
@@ -67,15 +67,11 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
   const [previewVideo, setPreviewVideo] = useState<GeneratedVideo | null>(null)
   const [showProfileSelector, setShowProfileSelector] = useState(false)
   const [profileImage, setProfileImage] = useState(user.avatar || "/placeholder.svg")
-  const [creditBalance, setCreditBalance] = useState(0)
   const [isPulling, setIsPulling] = useState(false)
   const touchStartY = useRef(0)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [pullDistance, setPullDistance] = useState(0)
 
-  const router = useRouter()
-  const [showNavMenu, setShowNavMenu] = useState(false)
-  const [isLoggingOut, setIsLoggingOut] = useState(false)
 
   // Use hooks for data fetching and state management
   const {
@@ -139,6 +135,56 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
 
   // Use bulk operations hook
   const { isProcessing: isBulkProcessing, bulkDelete, bulkFavorite, bulkSave, bulkDownload } = useBulkOperations()
+  const { toast } = useToast()
+
+  // Error handlers for bulk operations
+  const handleBulkDelete = async () => {
+    try {
+      await bulkDelete(Array.from(selectedImages), mutate, setSelectedImages, setSelectionMode)
+    } catch (error) {
+      toast({
+        title: "Delete failed",
+        description: "Failed to delete some images. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleBulkFavorite = async () => {
+    try {
+      await bulkFavorite(Array.from(selectedImages), mutate, setSelectedImages, setSelectionMode)
+    } catch (error) {
+      toast({
+        title: "Favorite failed",
+        description: "Failed to favorite some images. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleBulkSave = async () => {
+    try {
+      await bulkSave(Array.from(selectedImages), mutate, setSelectedImages, setSelectionMode)
+    } catch (error) {
+      toast({
+        title: "Save failed",
+        description: "Failed to save some images. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleBulkDownload = async () => {
+    try {
+      await bulkDownload(Array.from(selectedImages), displayImages, setSelectedImages, setSelectionMode)
+    } catch (error) {
+      toast({
+        title: "Download failed",
+        description: "Failed to download some images. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
 
   useEffect(() => {
     const handleTouchStart = (e: TouchEvent) => {
@@ -215,13 +261,14 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
   }, [toggleImageSelection])
 
   useEffect(() => {
+    // Sync userData changes to profileImage (one-way sync from API to state)
+    // Only depend on userData - adding profileImage would cause race condition:
+    // When handleProfileImageUpdate sets profileImage and calls mutateUser(),
+    // this effect would run before API completes and revert profileImage to old value
     if (userData?.user?.profile_image_url && profileImage !== userData.user.profile_image_url) {
       setProfileImage(userData.user.profile_image_url)
     }
-    if (userData?.user?.credit_balance !== undefined) {
-      setCreditBalance(userData.user.credit_balance)
-    }
-  }, [userData])
+  }, [userData]) // Only userData - this effect syncs API data to state, not vice versa
 
   // Filtering and sorting is now handled by useGalleryFilters hook
 
@@ -319,51 +366,9 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
     selectAllImages((displayImages || []).map((img) => img.id))
   }
 
-  const handleBulkDelete = async () => {
-    await bulkDelete(Array.from(selectedImages), mutate, setSelectedImages, setSelectionMode)
-  }
-
-  const handleBulkFavorite = async () => {
-    await bulkFavorite(Array.from(selectedImages), mutate, setSelectedImages, setSelectionMode)
-  }
-
-  const handleBulkSave = async () => {
-    await bulkSave(Array.from(selectedImages), mutate, setSelectedImages, setSelectionMode)
-  }
-
-  const handleBulkDownload = async () => {
-    await bulkDownload(Array.from(selectedImages), displayImages, setSelectedImages, setSelectionMode)
-  }
-
-
   const handleProfileImageUpdate = (imageUrl: string) => {
     setProfileImage(imageUrl)
     mutateUser()
-  }
-
-  const handleNavigation = (tab: string) => {
-    window.location.hash = tab
-    setShowNavMenu(false)
-  }
-
-  const handleLogout = async () => {
-    setIsLoggingOut(true)
-    try {
-      const response = await fetch("/api/auth/logout", {
-        method: "POST",
-        credentials: "include",
-      })
-
-      if (response.ok) {
-        router.push("/auth/login")
-      } else {
-        console.error("[v0] Logout failed")
-        setIsLoggingOut(false)
-      }
-    } catch (error) {
-      console.error("[v0] Error during logout:", error)
-      setIsLoggingOut(false)
-    }
   }
 
   if (isLoading) {
@@ -411,7 +416,7 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
         </div>
       )}
 
-      {!selectionMode && (
+            {!selectionMode && (
         <GalleryHeader
           stats={stats}
           searchQuery={searchQuery}
@@ -439,7 +444,8 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
           onToggleSelection={handleToggleSelection}
           onVideoClick={(video) => {
             triggerHaptic("light")
-            setPreviewVideo(video)
+            // Type assertion needed due to interface mismatch between components
+            setPreviewVideo(video as any as GeneratedVideo)
           }}
           hasMore={hasMore}
           isLoadingMore={isLoadingMore}
@@ -497,17 +503,16 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
               <p className="text-sm font-light text-stone-600 mb-6 max-w-md mx-auto">
                 {selectedCategory === "favorited"
                   ? "Tap the heart icon on any image to add it to your favorites collection."
-                  : "Create your first AI-generated photo in the Studio to start building your gallery."}
+                  : "Create your first AI-generated photo with Maya to start building your gallery."}
               </p>
               {selectedCategory !== "favorited" && (
                 <button
                   onClick={() => {
-                    const studioTab = document.querySelector('[data-tab="studio"]') as HTMLButtonElement
-                    studioTab?.click()
+                    window.location.hash = "maya"
                   }}
                   className="px-6 py-3 text-xs tracking-[0.15em] uppercase font-light bg-stone-950 text-white rounded-xl hover:bg-stone-800 transition-all duration-200"
                 >
-                  Go to Studio
+                  Go to Maya
                 </button>
               )}
             </>
@@ -550,106 +555,6 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
         />
       )}
 
-      {/* Added navigation menu */}
-      {/* Navigation menu now in global header - custom menu disabled */}
-      {false && (
-        <>
-          <div
-            className="fixed inset-0 bg-stone-950/20 backdrop-blur-sm z-40 animate-in fade-in duration-200"
-            onClick={() => setShowNavMenu(false)}
-          />
-
-          <div className="fixed top-0 right-0 bottom-0 w-80 bg-white/95 backdrop-blur-3xl border-l border-stone-200 shadow-2xl z-50 animate-in slide-in-from-right duration-300 flex flex-col">
-            <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-stone-200/50">
-              <h3 className="text-sm font-serif font-extralight tracking-[0.2em] uppercase text-stone-950">Menu</h3>
-              <button
-                onClick={() => setShowNavMenu(false)}
-                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-100 transition-colors"
-                aria-label="Close menu"
-              >
-                <X size={18} className="text-stone-600" strokeWidth={2} />
-              </button>
-            </div>
-
-            <div className="flex-shrink-0 px-6 py-6 border-b border-stone-200/50">
-              <div className="text-[10px] tracking-[0.15em] uppercase font-light text-stone-500 mb-2">Your Credits</div>
-              <div className="text-3xl font-serif font-extralight text-stone-950 tabular-nums">
-                {creditBalance.toFixed(1)}
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto min-h-0 py-2">
-              <button
-                onClick={() => handleNavigation("maya")}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
-              >
-                <Home size={18} className="text-stone-600" strokeWidth={2} />
-                <span className="text-sm font-medium text-stone-700">Studio</span>
-              </button>
-              <button
-                onClick={() => {
-                  // Training moved to Account → Settings, trigger onboarding if needed
-                  window.dispatchEvent(new CustomEvent('open-onboarding'))
-                }}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
-              >
-                <Aperture size={18} className="text-stone-600" strokeWidth={2} />
-                <span className="text-sm font-medium text-stone-700">Training</span>
-              </button>
-              <button
-                onClick={() => handleNavigation("maya")}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
-              >
-                <MessageCircle size={18} className="text-stone-600" strokeWidth={2} />
-                <span className="text-sm font-medium text-stone-700">Maya</span>
-              </button>
-              <button
-                onClick={() => handleNavigation("gallery")}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left bg-stone-100/50 border-l-2 border-stone-950"
-              >
-                <ImageIconLucide size={18} className="text-stone-950" strokeWidth={2} />
-                <span className="text-sm font-medium text-stone-950">Gallery</span>
-              </button>
-              {/* B-Roll moved to Maya Videos tab */}
-              <button
-                onClick={() => {
-                  handleNavigation("maya")
-                  // Navigate to Videos tab after a short delay to ensure Maya screen is loaded
-                  setTimeout(() => {
-                    window.location.hash = "#maya/videos"
-                  }, 100)
-                }}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
-              >
-                <Film size={18} className="text-stone-600" strokeWidth={2} />
-                <span className="text-sm font-medium text-stone-700">Videos</span>
-              </button>
-              <button
-                onClick={() => handleNavigation("academy")}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
-              >
-                <Grid size={18} className="text-stone-600" strokeWidth={2} />
-                <span className="text-sm font-medium text-stone-700">Academy</span>
-              </button>
-              <button
-                onClick={() => handleNavigation("account")}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
-              >
-                <UserIcon size={18} className="text-stone-600" strokeWidth={2} />
-                <span className="text-sm font-medium text-stone-700">Account</span>
-              </button>
-              <button
-                onClick={handleLogout}
-                disabled={isLoggingOut}
-                className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
-              >
-                <LogOut size={16} strokeWidth={2} />
-                <span>{isLoggingOut ? "Signing Out..." : "Sign Out"}</span>
-              </button>
-            </div>
-          </div>
-        </>
-      )}
 
       {lightboxImage && (
         <FullscreenImageModal

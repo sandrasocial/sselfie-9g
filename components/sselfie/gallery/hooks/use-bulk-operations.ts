@@ -45,7 +45,8 @@ export function useBulkOperations(): UseBulkOperationsReturn {
     } catch (error) {
       console.error("[Gallery] Error bulk deleting:", error)
       triggerErrorHaptic()
-      alert("Failed to delete some images. Please try again.")
+      // Error is logged - UI will show no change indicating failure
+      throw error // Re-throw so component can handle if needed
     } finally {
       setIsProcessing(false)
     }
@@ -79,7 +80,8 @@ export function useBulkOperations(): UseBulkOperationsReturn {
     } catch (error) {
       console.error("[Gallery] Error bulk favoriting:", error)
       triggerErrorHaptic()
-      alert("Failed to favorite some images. Please try again.")
+      // Error is logged - UI will show no change indicating failure
+      throw error // Re-throw so component can handle if needed
     } finally {
       setIsProcessing(false)
     }
@@ -114,7 +116,8 @@ export function useBulkOperations(): UseBulkOperationsReturn {
     } catch (error) {
       console.error("[Gallery] Error bulk saving:", error)
       triggerErrorHaptic()
-      alert("Failed to save some images. Please try again.")
+      // Error is logged - UI will show no change indicating failure
+      throw error // Re-throw so component can handle if needed
     } finally {
       setIsProcessing(false)
     }
@@ -136,7 +139,10 @@ export function useBulkOperations(): UseBulkOperationsReturn {
     } catch (error) {
       console.error("[Gallery] Error bulk downloading:", error)
       triggerErrorHaptic()
-      alert("Failed to download some images. Please try again.")
+      // Error is logged - UI will show no change indicating failure
+      throw error // Re-throw so component can handle if needed
+    } finally {
+      // Always reset processing state, regardless of success or failure
       setIsProcessing(false)
     }
   }
