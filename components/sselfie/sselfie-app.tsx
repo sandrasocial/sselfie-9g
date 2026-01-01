@@ -468,7 +468,6 @@ export default function SselfieApp({
                     hasTrainedModel={hasTrainedModel}
                   />
                 )}
-                {activeTab === "b-roll" && <BRollScreen user={user} />}
                 {activeTab === "gallery" && <GalleryScreen user={user} userId={userId} />}
                 {activeTab === "feed-planner" && <FeedPlannerScreen />}
                 {activeTab === "academy" && <AcademyScreen />}

@@ -351,10 +351,10 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
                   <span className="text-sm font-medium text-stone-900">Maya</span>
                 </button>
 
-                {/* B-Roll moved to Maya Videos tab */}
+                {/* Videos moved to Maya Videos tab */}
                 <button
                   onClick={() => {
-                    window.location.hash = "maya/videos"
+                    window.location.hash = "#maya/videos"
                     window.location.reload()
                   }}
                   className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-stone-100/50 transition-colors text-left"
