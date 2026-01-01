@@ -265,8 +265,11 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
     // Only depend on userData - adding profileImage would cause race condition:
     // When handleProfileImageUpdate sets profileImage and calls mutateUser(),
     // this effect would run before API completes and revert profileImage to old value
-    if (userData?.user?.profile_image_url && profileImage !== userData.user.profile_image_url) {
-      setProfileImage(userData.user.profile_image_url)
+    if (userData?.user?.profile_image_url) {
+      setProfileImage((prev: string) => {
+        // Only update if different to avoid unnecessary state updates
+        return prev !== userData.user.profile_image_url ? userData.user.profile_image_url : prev
+      })
     }
   }, [userData]) // Only userData - this effect syncs API data to state, not vice versa
 

@@ -88,7 +88,8 @@ export async function bulkDownloadImages(
       }
     } catch (shareError: any) {
       // Share API failed, fall through to download method
-      console.log("[Gallery] Share API failed, falling back to download method:", shareError?.message)
+      // Share API failed, falling back to download method
+      console.error("[Gallery] Share API failed:", shareError?.message)
     }
   }
 
