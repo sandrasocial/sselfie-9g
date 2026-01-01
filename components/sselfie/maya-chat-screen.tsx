@@ -3488,7 +3488,11 @@ export default function MayaChatScreen({
             paddingBottom: '20px', // Space for content
           }}
         >
-          <MayaTrainingTab userId={userId} />
+          <MayaTrainingTab 
+            userId={userId} 
+            setActiveTab={setActiveTab}
+            userName={user?.name || user?.email?.split('@')[0] || null}
+          />
         </div>
       )}
 

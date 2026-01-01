@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef, useMemo } from "react"
-import { Sparkles, Loader2, Settings, X, ChevronLeft, ChevronRight, Search, ArrowUpDown } from "lucide-react"
+import { Sparkles, Loader2, Settings, X, ChevronLeft, ChevronRight, Search, ArrowUpDown, Heart, Clock, TrendingUp } from "lucide-react"
 import Image from "next/image"
 import FullscreenImageModal from "../fullscreen-image-modal"
 
@@ -68,6 +68,7 @@ export default function MayaPromptsTab({
   const [error, setError] = useState<string | null>(null)
   // Search and sorting state
   const [searchQuery, setSearchQuery] = useState<string>("")
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>("")
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "alphabetical" | "category">("newest")
   
   // Local image library state (only used if external library not provided)
@@ -103,7 +104,10 @@ export default function MayaPromptsTab({
     isFavorite: boolean
     predictionId?: string
   } | null>(null)
-  const [favorites, setFavorites] = useState<Set<string>>(new Set())
+  const [imageFavorites, setImageFavorites] = useState<Set<string>>(new Set()) // Image favorites (for fullscreen modal)
+  const [promptFavorites, setPromptFavorites] = useState<Set<number>>(new Set()) // Prompt favorites
+  const [recentlyUsedPrompts, setRecentlyUsedPrompts] = useState<number[]>([]) // Recently used prompt IDs
+  const [promptUsageCounts, setPromptUsageCounts] = useState<Map<number, number>>(new Map()) // Usage counts
   
   // Get all images for preview
   const getAllImages = () => {
@@ -158,13 +162,13 @@ export default function MayaPromptsTab({
     const newFavoriteState = !currentFavoriteState
     
     // Update local state
-    const newFavorites = new Set(favorites)
+    const newFavorites = new Set(imageFavorites)
     if (newFavoriteState) {
       newFavorites.add(imageId)
     } else {
       newFavorites.delete(imageId)
     }
-    setFavorites(newFavorites)
+    setImageFavorites(newFavorites)
     
     // Update fullscreen image state
     if (fullscreenImage) {
@@ -205,13 +209,13 @@ export default function MayaPromptsTab({
     } catch (error) {
       console.error("[MayaPromptsTab] Error toggling favorite:", error)
       // Revert local state on error
-      const revertedFavorites = new Set(favorites)
+      const revertedFavorites = new Set(imageFavorites)
       if (currentFavoriteState) {
         revertedFavorites.add(imageId)
       } else {
         revertedFavorites.delete(imageId)
       }
-      setFavorites(revertedFavorites)
+      setImageFavorites(revertedFavorites)
       if (fullscreenImage) {
         setFullscreenImage({
           ...fullscreenImage,
@@ -453,6 +457,39 @@ export default function MayaPromptsTab({
           console.error("[MayaPromptsTab] Error loading generated images:", err)
         }
       }
+      
+      // Load prompt favorites
+      const savedFavorites = localStorage.getItem("mayaPromptFavorites")
+      if (savedFavorites) {
+        try {
+          const parsed = JSON.parse(savedFavorites)
+          setPromptFavorites(new Set(parsed))
+        } catch (err) {
+          console.error("[MayaPromptsTab] Error loading prompt favorites:", err)
+        }
+      }
+      
+      // Load recently used prompts
+      const savedRecent = localStorage.getItem("mayaRecentlyUsedPrompts")
+      if (savedRecent) {
+        try {
+          const parsed = JSON.parse(savedRecent)
+          setRecentlyUsedPrompts(parsed)
+        } catch (err) {
+          console.error("[MayaPromptsTab] Error loading recently used prompts:", err)
+        }
+      }
+      
+      // Load usage counts
+      const savedCounts = localStorage.getItem("mayaPromptUsageCounts")
+      if (savedCounts) {
+        try {
+          const parsed = JSON.parse(savedCounts)
+          setPromptUsageCounts(new Map(Object.entries(parsed).map(([k, v]) => [Number(k), v as number])))
+        } catch (err) {
+          console.error("[MayaPromptsTab] Error loading usage counts:", err)
+        }
+      }
     }
   }, [])
 
@@ -464,9 +501,40 @@ export default function MayaPromptsTab({
     }
   }, [generatedImages])
 
+  // Save prompt favorites to localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("mayaPromptFavorites", JSON.stringify(Array.from(promptFavorites)))
+    }
+  }, [promptFavorites])
+
+  // Save recently used prompts to localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined" && recentlyUsedPrompts.length > 0) {
+      localStorage.setItem("mayaRecentlyUsedPrompts", JSON.stringify(recentlyUsedPrompts))
+    }
+  }, [recentlyUsedPrompts])
+
+  // Save usage counts to localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined" && promptUsageCounts.size > 0) {
+      const obj = Object.fromEntries(promptUsageCounts)
+      localStorage.setItem("mayaPromptUsageCounts", JSON.stringify(obj))
+    }
+  }, [promptUsageCounts])
+
   useEffect(() => {
     fetchPrompts()
   }, [selectedCategory])
+
+  // Debounce search query (300ms delay)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery)
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [searchQuery])
 
   // Filter and sort prompts
   const filteredAndSortedPrompts = useMemo(() => {
@@ -477,9 +545,9 @@ export default function MayaPromptsTab({
       filtered = filtered.filter((p) => p.category === selectedCategory)
     }
 
-    // Apply search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim()
+    // Apply search filter (using debounced query)
+    if (debouncedSearchQuery.trim()) {
+      const query = debouncedSearchQuery.toLowerCase().trim()
       filtered = filtered.filter(
         (p) =>
           p.concept_title?.toLowerCase().includes(query) ||
@@ -522,7 +590,7 @@ export default function MayaPromptsTab({
     }
 
     return sorted
-  }, [prompts, selectedCategory, searchQuery, sortBy])
+  }, [prompts, selectedCategory, debouncedSearchQuery, sortBy])
 
   // Poll for image generation status (different endpoints for Classic vs Pro)
   useEffect(() => {
@@ -641,6 +709,38 @@ export default function MayaPromptsTab({
 
   const handlePromptClick = (prompt: PromptItem) => {
     setSelectedPrompt(prompt)
+    // Track usage
+    trackPromptUsage(prompt.id)
+  }
+
+  // Track prompt usage for analytics
+  const trackPromptUsage = (promptId: number) => {
+    // Update usage count
+    setPromptUsageCounts((prev) => {
+      const newMap = new Map(prev)
+      const currentCount = newMap.get(promptId) || 0
+      newMap.set(promptId, currentCount + 1)
+      return newMap
+    })
+
+    // Update recently used (keep last 10)
+    setRecentlyUsedPrompts((prev) => {
+      const filtered = prev.filter((id) => id !== promptId)
+      return [promptId, ...filtered].slice(0, 10)
+    })
+  }
+
+  // Toggle prompt favorite
+  const togglePromptFavorite = (promptId: number) => {
+    setPromptFavorites((prev) => {
+      const newSet = new Set(prev)
+      if (newSet.has(promptId)) {
+        newSet.delete(promptId)
+      } else {
+        newSet.add(promptId)
+      }
+      return newSet
+    })
   }
 
   const handleGenerate = async (prompt: PromptItem, isRegenerate: boolean = false) => {
@@ -800,6 +900,8 @@ export default function MayaPromptsTab({
 
   const handleGenerateFromPreview = () => {
     if (selectedPrompt) {
+      // Track usage
+      trackPromptUsage(selectedPrompt.id)
       // Switch to Photos tab and send the prompt
       onSelectPrompt(selectedPrompt.prompt_text, selectedPrompt.concept_title || undefined)
       // Reset selection after sending
@@ -1008,6 +1110,208 @@ export default function MayaPromptsTab({
             ))}
           </div>
 
+          {/* Recently Used Section */}
+          {recentlyUsedPrompts.length > 0 && searchQuery === "" && selectedCategory === "all" && (
+            <div className="mb-8 sm:mb-12">
+              <div className="flex items-center gap-2 mb-4 sm:mb-6">
+                <Clock size={18} className="text-stone-600" strokeWidth={1.5} />
+                <h3 className="text-sm sm:text-base font-serif font-light tracking-[0.15em] uppercase text-stone-950">
+                  Recently Used
+                </h3>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                {recentlyUsedPrompts
+                  .map((id) => prompts.find((p) => p.id === id))
+                  .filter((p): p is PromptItem => p !== undefined)
+                  .slice(0, 6)
+                  .map((prompt) => {
+                    const genImage = generatedImages.get(prompt.id)
+                    const hasGeneratedImage = genImage?.isGenerated && genImage?.imageUrl
+                    const isGenerating = genImage?.isGenerating || false
+                    const displayImage = hasGeneratedImage ? genImage.imageUrl : prompt.image_url
+
+                    return (
+                      <div
+                        key={`recent-${prompt.id}`}
+                        className="group bg-white border border-stone-200/40 rounded-[20px] overflow-hidden transition-all duration-300 hover:border-stone-300/30 hover:shadow-[0_12px_40px_rgba(28,25,23,0.06)] hover:-translate-y-1"
+                      >
+                        <div className="w-full aspect-[3/4] relative bg-gradient-to-br from-stone-100 via-stone-200/50 to-stone-300/50">
+                          {displayImage ? (
+                            <Image
+                              src={displayImage}
+                              alt={prompt.concept_title || "Prompt preview"}
+                              fill
+                              className="object-cover"
+                              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                              loading="lazy"
+                              quality={85}
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <span className="text-[10px] sm:text-[11px] tracking-[0.15em] uppercase text-stone-400 font-medium">
+                                Preview
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="p-4 sm:p-5">
+                          <h3 className="text-base sm:text-lg font-serif font-light tracking-[0.02em] text-stone-950 mb-2 leading-snug">
+                            {prompt.concept_title || "Untitled Concept"}
+                          </h3>
+                          <button
+                            onClick={() => handlePromptClick(prompt)}
+                            className="w-full px-3 py-2 bg-stone-950 text-white text-[10px] tracking-[0.08em] uppercase font-medium rounded-lg hover:bg-stone-800 transition-all touch-manipulation active:scale-95"
+                          >
+                            Use Again
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
+              </div>
+            </div>
+          )}
+
+          {/* Favorites Section */}
+          {promptFavorites.size > 0 && searchQuery === "" && selectedCategory === "all" && (
+            <div className="mb-8 sm:mb-12">
+              <div className="flex items-center gap-2 mb-4 sm:mb-6">
+                <Heart size={18} className="text-red-500 fill-current" strokeWidth={1.5} />
+                <h3 className="text-sm sm:text-base font-serif font-light tracking-[0.15em] uppercase text-stone-950">
+                  Favorites
+                </h3>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                {Array.from(promptFavorites)
+                  .map((id) => prompts.find((p) => p.id === id))
+                  .filter((p): p is PromptItem => p !== undefined)
+                  .map((prompt) => {
+                    const genImage = generatedImages.get(prompt.id)
+                    const hasGeneratedImage = genImage?.isGenerated && genImage?.imageUrl
+                    const isGenerating = genImage?.isGenerating || false
+                    const displayImage = hasGeneratedImage ? genImage.imageUrl : prompt.image_url
+
+                    return (
+                      <div
+                        key={`favorite-${prompt.id}`}
+                        className="group bg-white border border-stone-200/40 rounded-[20px] overflow-hidden transition-all duration-300 hover:border-stone-300/30 hover:shadow-[0_12px_40px_rgba(28,25,23,0.06)] hover:-translate-y-1"
+                      >
+                        <div className="w-full aspect-[3/4] relative bg-gradient-to-br from-stone-100 via-stone-200/50 to-stone-300/50">
+                          {displayImage ? (
+                            <Image
+                              src={displayImage}
+                              alt={prompt.concept_title || "Prompt preview"}
+                              fill
+                              className="object-cover"
+                              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                              loading="lazy"
+                              quality={85}
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <span className="text-[10px] sm:text-[11px] tracking-[0.15em] uppercase text-stone-400 font-medium">
+                                Preview
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="p-4 sm:p-5">
+                          <h3 className="text-base sm:text-lg font-serif font-light tracking-[0.02em] text-stone-950 mb-2 leading-snug">
+                            {prompt.concept_title || "Untitled Concept"}
+                          </h3>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handlePromptClick(prompt)}
+                              className="flex-1 px-3 py-2 bg-stone-950 text-white text-[10px] tracking-[0.08em] uppercase font-medium rounded-lg hover:bg-stone-800 transition-all touch-manipulation active:scale-95"
+                            >
+                              Use
+                            </button>
+                            <button
+                              onClick={() => togglePromptFavorite(prompt.id)}
+                              className="p-2 text-red-500 bg-red-50 rounded-lg hover:bg-red-100 transition-all touch-manipulation active:scale-95"
+                              aria-label="Remove from favorites"
+                            >
+                              <Heart size={16} className="fill-current" strokeWidth={2} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+              </div>
+            </div>
+          )}
+
+          {/* Most Used Prompts Section (Analytics) */}
+          {promptUsageCounts.size > 0 && searchQuery === "" && selectedCategory === "all" && (
+            <div className="mb-8 sm:mb-12">
+              <div className="flex items-center gap-2 mb-4 sm:mb-6">
+                <TrendingUp size={18} className="text-stone-600" strokeWidth={1.5} />
+                <h3 className="text-sm sm:text-base font-serif font-light tracking-[0.15em] uppercase text-stone-950">
+                  Most Used
+                </h3>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                {Array.from(promptUsageCounts.entries())
+                  .sort((a, b) => b[1] - a[1]) // Sort by usage count descending
+                  .slice(0, 6) // Show top 6
+                  .map(([promptId, count]) => {
+                    const prompt = prompts.find((p) => p.id === promptId)
+                    if (!prompt) return null
+
+                    const genImage = generatedImages.get(prompt.id)
+                    const hasGeneratedImage = genImage?.isGenerated && genImage?.imageUrl
+                    const displayImage = hasGeneratedImage ? genImage.imageUrl : prompt.image_url
+
+                    return (
+                      <div
+                        key={`most-used-${prompt.id}`}
+                        className="group bg-white border border-stone-200/40 rounded-[20px] overflow-hidden transition-all duration-300 hover:border-stone-300/30 hover:shadow-[0_12px_40px_rgba(28,25,23,0.06)] hover:-translate-y-1"
+                      >
+                        <div className="w-full aspect-[3/4] relative bg-gradient-to-br from-stone-100 via-stone-200/50 to-stone-300/50">
+                          {displayImage ? (
+                            <Image
+                              src={displayImage}
+                              alt={prompt.concept_title || "Prompt preview"}
+                              fill
+                              className="object-cover"
+                              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                              loading="lazy"
+                              quality={85}
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <span className="text-[10px] sm:text-[11px] tracking-[0.15em] uppercase text-stone-400 font-medium">
+                                Preview
+                              </span>
+                            </div>
+                          )}
+                          {/* Usage count badge */}
+                          <div className="absolute top-2 right-2 px-2 py-1 bg-stone-950/80 backdrop-blur-sm rounded-full flex items-center gap-1">
+                            <TrendingUp size={12} className="text-white" strokeWidth={2} />
+                            <span className="text-[10px] text-white font-medium">{count}</span>
+                          </div>
+                        </div>
+                        <div className="p-4 sm:p-5">
+                          <h3 className="text-base sm:text-lg font-serif font-light tracking-[0.02em] text-stone-950 mb-2 leading-snug">
+                            {prompt.concept_title || "Untitled Concept"}
+                          </h3>
+                          <p className="text-[10px] text-stone-500 mb-3">Used {count} time{count !== 1 ? "s" : ""}</p>
+                          <button
+                            onClick={() => handlePromptClick(prompt)}
+                            className="w-full px-3 py-2 bg-stone-950 text-white text-[10px] tracking-[0.08em] uppercase font-medium rounded-lg hover:bg-stone-800 transition-all touch-manipulation active:scale-95"
+                          >
+                            Use
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })
+                  .filter(Boolean)}
+              </div>
+            </div>
+          )}
+
           {/* Prompts Grid */}
           {filteredAndSortedPrompts.length === 0 ? (
             <div className="text-center py-24">
@@ -1055,6 +1359,8 @@ export default function MayaPromptsTab({
                               fill
                               className="object-cover"
                               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                              loading="lazy"
+                              quality={85}
                             />
                             {/* Show original as small thumbnail if generated image exists */}
                             {prompt.image_url && (
@@ -1065,6 +1371,8 @@ export default function MayaPromptsTab({
                                   width={64}
                                   height={64}
                                   className="w-full h-full object-cover"
+                                  loading="lazy"
+                                  quality={75}
                                 />
                               </div>
                             )}
@@ -1083,6 +1391,8 @@ export default function MayaPromptsTab({
                               fill
                               className="object-cover"
                               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                              loading="lazy"
+                              quality={85}
                             />
                             {/* Loading overlay */}
                             {isGenerating && (
@@ -1159,6 +1469,24 @@ export default function MayaPromptsTab({
                           className="px-3 py-2 border border-stone-300 text-stone-700 text-[10px] tracking-[0.08em] uppercase font-medium rounded-lg hover:bg-stone-50 transition-all touch-manipulation active:scale-95"
                         >
                           Use
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            togglePromptFavorite(prompt.id)
+                          }}
+                          className={`p-2 rounded-lg transition-all touch-manipulation active:scale-95 ${
+                            promptFavorites.has(prompt.id)
+                              ? "text-red-500 bg-red-50 hover:bg-red-100"
+                              : "text-stone-400 hover:text-stone-600 hover:bg-stone-50"
+                          }`}
+                          aria-label={promptFavorites.has(prompt.id) ? "Remove from favorites" : "Add to favorites"}
+                        >
+                          <Heart
+                            size={16}
+                            className={promptFavorites.has(prompt.id) ? "fill-current" : ""}
+                            strokeWidth={2}
+                          />
                         </button>
                       </div>
 
@@ -1244,11 +1572,11 @@ export default function MayaPromptsTab({
           title={fullscreenImage.title}
           isOpen={!!fullscreenImage}
           onClose={() => setFullscreenImage(null)}
-          isFavorite={fullscreenImage.isFavorite || favorites.has(fullscreenImage.imageId)}
+          isFavorite={fullscreenImage.isFavorite || imageFavorites.has(fullscreenImage.imageId)}
           onFavoriteToggle={async () => {
             await toggleFavorite(
               fullscreenImage.imageId,
-              fullscreenImage.isFavorite || favorites.has(fullscreenImage.imageId)
+              fullscreenImage.isFavorite || imageFavorites.has(fullscreenImage.imageId)
             )
           }}
           onDelete={fullscreenImage.imageId.startsWith("ai_") ? async () => {

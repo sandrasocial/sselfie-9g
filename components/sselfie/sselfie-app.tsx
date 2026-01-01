@@ -464,7 +464,8 @@ export default function SselfieApp({
                     onImageGenerated={refreshCredits} 
                     user={user} 
                     setActiveTab={handleTabChange}
-                      hasTrainedModel={hasTrainedModel}
+                    userId={userId}
+                    hasTrainedModel={hasTrainedModel}
                   />
                 )}
                 {activeTab === "b-roll" && <BRollScreen user={user} />}

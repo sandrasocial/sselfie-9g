@@ -1,17 +1,21 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Loader2 } from "lucide-react"
+import { Loader2, Aperture } from "lucide-react"
 import useSWR from "swr"
 import Image from "next/image"
+import RetrainModelModal from "../retrain-model-modal"
 
 interface MayaTrainingTabProps {
   userId?: string
+  setActiveTab?: (tab: string) => void
+  userName?: string | null
 }
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
-export default function MayaTrainingTab({ userId }: MayaTrainingTabProps) {
+export default function MayaTrainingTab({ userId, setActiveTab, userName }: MayaTrainingTabProps) {
+  const [showRetrainModal, setShowRetrainModal] = useState(false)
   const { data: trainingStatus, error, mutate } = useSWR("/api/training/status", fetcher, {
     refreshInterval: (data) => {
       // Poll every 15 seconds if training is in progress
@@ -48,8 +52,13 @@ export default function MayaTrainingTab({ userId }: MayaTrainingTabProps) {
   }
 
   const handleManageTraining = () => {
-    // Navigate to settings/account where training is managed
-    window.dispatchEvent(new CustomEvent('navigate-to-settings'))
+    // Navigate to account tab where training is managed
+    if (setActiveTab) {
+      setActiveTab("account")
+    } else {
+      // Fallback: try to navigate via custom event if setActiveTab not provided
+      window.dispatchEvent(new CustomEvent('navigate-to-settings'))
+    }
   }
 
   if (error) {
@@ -136,12 +145,26 @@ export default function MayaTrainingTab({ userId }: MayaTrainingTabProps) {
                   Trained on {new Date(model.created_at).toLocaleDateString()}
                 </p>
               )}
-              <div className="flex gap-3 justify-center">
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <button
+                  onClick={() => {
+                    if (!userId) {
+                      console.error("[MayaTrainingTab] Cannot retrain: userId is missing")
+                      alert("Unable to retrain model. Please refresh the page and try again.")
+                      return
+                    }
+                    console.log("[MayaTrainingTab] Opening retrain modal, userId:", userId)
+                    setShowRetrainModal(true)
+                  }}
+                  className="px-6 py-3 bg-stone-950 text-white rounded-lg hover:bg-stone-800 transition-colors text-sm font-medium tracking-wide uppercase"
+                >
+                  Retrain Model
+                </button>
                 <button
                   onClick={handleManageTraining}
                   className="px-6 py-3 bg-stone-100 text-stone-700 rounded-lg hover:bg-stone-200 transition-colors text-sm font-medium tracking-wide uppercase"
                 >
-                  Manage Training
+                  Manage Images
                 </button>
               </div>
             </div>
@@ -231,6 +254,25 @@ export default function MayaTrainingTab({ userId }: MayaTrainingTabProps) {
           </div>
         )}
       </div>
+
+      {/* Retrain Model Modal */}
+      {userId && (
+        <RetrainModelModal
+          isOpen={showRetrainModal}
+          onClose={() => {
+            console.log("[MayaTrainingTab] Closing retrain modal")
+            setShowRetrainModal(false)
+          }}
+          onComplete={() => {
+            // Refresh training status after retraining
+            console.log("[MayaTrainingTab] Retrain complete, refreshing status")
+            mutate()
+            setShowRetrainModal(false)
+          }}
+          userId={userId}
+          userName={userName || null}
+        />
+      )}
     </div>
   )
 }
