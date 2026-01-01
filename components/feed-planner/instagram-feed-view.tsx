@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import {
   Grid3x3,
   LayoutGrid,
@@ -18,18 +18,49 @@ import {
   Sparkles,
 } from "lucide-react"
 import Image from "next/image"
-import { mutate } from "swr"
+import useSWR from "swr"
 import { toast } from "@/hooks/use-toast"
 import { FeedPostGallerySelector } from "./feed-post-gallery-selector"
 import { FeedProfileGallerySelector } from "./feed-profile-gallery-selector"
 import ReactMarkdown from "react-markdown"
 
+const fetcher = (url: string) => fetch(url).then((res) => res.json())
+
 interface InstagramFeedViewProps {
-  feedData: any
+  feedId: number
   onBack?: () => void
 }
 
-export default function InstagramFeedView({ feedData, onBack }: InstagramFeedViewProps) {
+export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewProps) {
+  // Use SWR for data fetching with intelligent polling
+  const { data: feedData, error: feedError, mutate } = useSWR(
+    feedId ? `/api/feed/${feedId}` : null,
+    fetcher,
+    {
+      refreshInterval: (data) => {
+        // Only poll if posts are still generating
+        const hasGeneratingPosts = data?.posts?.some(
+          (p: any) => 
+            p.prediction_id && 
+            !p.image_url && 
+            p.generation_status !== 'completed'
+        )
+        return hasGeneratingPosts ? 5000 : 0 // Poll every 5s if generating, stop if done
+      },
+      refreshWhenHidden: false, // Stop when tab hidden
+      revalidateOnFocus: true, // Refresh when tab becomes visible
+      onSuccess: (data) => {
+        // Check if all posts complete - trigger confetti
+        const allComplete = data?.posts?.every((p: any) => p.image_url)
+        if (allComplete && !hasShownConfettiRef.current) {
+          triggerConfetti()
+          hasShownConfettiRef.current = true
+        }
+      },
+    }
+  )
+
+  const hasShownConfettiRef = useRef(false)
   console.log("[v0] ==================== INSTAGRAM FEED VIEW RENDERED ====================")
   console.log("[v0] feedData:", feedData ? "exists" : "null")
   console.log("[v0] feedData structure:", feedData ? Object.keys(feedData) : "null")
@@ -41,22 +72,34 @@ export default function InstagramFeedView({ feedData, onBack }: InstagramFeedVie
   const [activeTab, setActiveTab] = useState<"grid" | "posts" | "strategy">("grid")
   const [selectedPost, setSelectedPost] = useState<any | null>(null)
   const [expandedCaptions, setExpandedCaptions] = useState<Set<number>>(new Set())
-  const [generatingPosts, setGeneratingPosts] = useState<Set<number>>(new Set())
-  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
-  const isPollingActiveRef = useRef(false)
-  const [completedPosts, setCompletedPosts] = useState<Set<number>>(new Set())
-  const [pollBackoff, setPollBackoff] = useState(10000) // Start at 10 seconds instead of 5
   const [regeneratingPost, setRegeneratingPost] = useState<number | null>(null)
   const [showGallery, setShowGallery] = useState<number | null>(null)
   const [showProfileGallery, setShowProfileGallery] = useState(false)
-  const [postStartTimes, setPostStartTimes] = useState<Map<number, number>>(new Map())
 
-  const [isFeedComplete, setIsFeedComplete] = useState(false)
   const [showConfetti, setShowConfetti] = useState(false)
   const [generatingRemaining, setGeneratingRemaining] = useState(false)
   const [copiedCaptions, setCopiedCaptions] = useState<Set<number>>(new Set())
   const [enhancingCaptions, setEnhancingCaptions] = useState<Set<number>>(new Set())
   const [isGeneratingBio, setIsGeneratingBio] = useState(false)
+
+  // Derived state from feedData (single source of truth)
+  const postStatuses = useMemo(() => {
+    if (!feedData?.posts) return []
+    
+    return feedData.posts.map((post: any) => ({
+      id: post.id,
+      position: post.position,
+      status: post.generation_status,
+      hasImage: !!post.image_url,
+      isGenerating: !!post.prediction_id && !post.image_url && post.generation_status !== 'completed',
+      isComplete: post.image_url && post.generation_status === 'completed',
+      imageUrl: post.image_url,
+      predictionId: post.prediction_id,
+    }))
+  }, [feedData])
+
+  const readyPosts = postStatuses.filter(p => p.isComplete).length
+  const generatingPosts = postStatuses.filter(p => p.isGenerating)
 
   // Handle error responses
   if (feedData?.error) {
@@ -132,48 +175,9 @@ export default function InstagramFeedView({ feedData, onBack }: InstagramFeedVie
   }
 
   const posts = feedData?.posts ? [...feedData.posts].sort((a: any, b: any) => a.position - b.position) : []
-  const feedId = feedData?.feed?.id
   const totalPosts = 9
-  const readyPosts = posts.filter((p: any) => p.image_url).length
   const progress = Math.round((readyPosts / totalPosts) * 100)
-
-  console.log("[v0] Calculated values:")
-  console.log("[v0]  - posts count:", posts.length)
-  console.log("[v0]  - feedId:", feedId)
-  console.log("[v0]  - readyPosts:", readyPosts)
-  console.log("[v0]  - progress:", progress + "%")
-
-  useEffect(() => {
-    console.log(
-      "[v0] Feed completion check - readyPosts:",
-      readyPosts,
-      "totalPosts:",
-      totalPosts,
-      "isFeedComplete:",
-      isFeedComplete,
-    )
-
-    if (readyPosts === totalPosts && !isFeedComplete) {
-      console.log("[v0] 🎉 All posts complete! Revealing feed with confetti")
-      setIsFeedComplete(true)
-
-      // Trigger confetti celebration
-      setTimeout(() => {
-        setShowConfetti(true)
-        triggerConfetti()
-      }, 500)
-
-      // Clear confetti after 3 seconds
-      setTimeout(() => {
-        setShowConfetti(false)
-      }, 3500)
-
-      // Clear localStorage
-      if (feedId) {
-        localStorage.removeItem(`feedPolling_${feedId}`)
-      }
-    }
-  }, [readyPosts, totalPosts, isFeedComplete, feedId])
+  const isFeedComplete = readyPosts === totalPosts
 
   const triggerConfetti = () => {
     const duration = 3000
@@ -239,307 +243,44 @@ export default function InstagramFeedView({ feedData, onBack }: InstagramFeedVie
     }, 100)
   }
 
+  // Confetti trigger when all posts are complete
   useEffect(() => {
-    console.log(
-      "[v0] Feed completion check - readyPosts:",
-      readyPosts,
-      "totalPosts:",
-      totalPosts,
-      "isFeedComplete:",
-      isFeedComplete,
-    )
-    if (!feedId) {
-      console.log("[v0] No feedId, skipping localStorage init")
-      return
+    const totalPosts = 9
+    if (readyPosts === totalPosts && !hasShownConfettiRef.current) {
+      console.log("[v0] 🎉 All posts complete! Revealing feed with confetti")
+      setTimeout(() => {
+        setShowConfetti(true)
+        triggerConfetti()
+        hasShownConfettiRef.current = true
+      }, 500)
+      
+      // Clear confetti after 3 seconds
+      setTimeout(() => {
+        setShowConfetti(false)
+      }, 3500)
     }
+  }, [readyPosts])
 
-    const savedState = localStorage.getItem(`feedPolling_${feedId}`)
-    if (savedState) {
-      try {
-        const { completedPostIds, backoffDelay } = JSON.parse(savedState)
-        setCompletedPosts(new Set(completedPostIds))
-        setPollBackoff(backoffDelay)
-        console.log(
-          "[v0] Resumed polling state from localStorage - completed:",
-          completedPostIds.length,
-          "backoff:",
-          backoffDelay,
-        )
-      } catch (error) {
-        console.error("[v0] Error loading polling state:", error)
-      }
-    } else {
-      console.log("[v0] No saved polling state found")
-    }
-  }, [feedId])
-
+  // Log post status for debugging (optional - can be removed in production)
   useEffect(() => {
-    if (!feedId || completedPosts.size === 0) return
-
-    const timeoutId = setTimeout(() => {
-      localStorage.setItem(
-        `feedPolling_${feedId}`,
-        JSON.stringify({
-          completedPostIds: Array.from(completedPosts),
-          backoffDelay: pollBackoff,
-        }),
-      )
-      console.log("[v0] Saved polling state - completed:", completedPosts.size, "backoff:", pollBackoff)
-    }, 500)
-
-    return () => clearTimeout(timeoutId)
-  }, [completedPosts, pollBackoff, feedId])
-
-  useEffect(() => {
-    if (!feedId || !feedData?.posts) {
-      console.log("[v0] No feed posts data, skipping polling setup")
-      return
-    }
-
-    // Log detailed post status for debugging
-    console.log("[v0] ==================== POST STATUS CHECK ====================")
-    console.log("[v0] Total posts:", feedData.posts.length)
-    feedData.posts.forEach((p: any) => {
-      console.log(`[v0] Post ${p.position} (ID: ${p.id}):`, {
-        status: p.generation_status,
-        hasPredictionId: !!p.prediction_id,
-        predictionId: p.prediction_id,
-        hasImage: !!p.image_url,
-        imageUrl: p.image_url ? "exists" : "missing",
-      })
-    })
-
-    // More lenient filter - include posts with prediction_id even if status isn't exactly "generating"
-    // Also include posts that are in the generatingPosts set (for regenerated posts)
-    // For regenerated posts, include them even if they have an old image_url
-    const postsInProgress = feedData.posts.filter(
-      (p: any) => {
-        const hasPrediction = !!p.prediction_id
-        const isNotCompleted = p.generation_status !== "completed"
-        const hasNoImage = !p.image_url
-        const notInCompleted = !completedPosts.has(p.id)
-        const isInGeneratingSet = generatingPosts.has(p.id)
-        
-        // Include if:
-        // 1. It has a prediction_id and is not completed and has no image (new generation)
-        // 2. OR it's in the generatingPosts set (regenerated post - may have old image_url)
-        return (hasPrediction && isNotCompleted && hasNoImage && notInCompleted) || isInGeneratingSet
-      }
-    )
-
-    console.log("[v0] Posts in progress details:", postsInProgress.map((p: any) => ({
-      id: p.id,
-      position: p.position,
-      predictionId: p.prediction_id,
-      status: p.generation_status,
-      hasImage: !!p.image_url,
-    })))
-
+    if (!feedData?.posts) return
+    
     const postsWithoutPrediction = feedData.posts.filter(
       (p: any) => !p.prediction_id && p.generation_status !== "completed" && !p.image_url,
     )
-
-    console.log("[v0] Polling check:")
-    console.log("[v0]  - Total posts:", feedData.posts.length)
-    console.log("[v0]  - Posts with prediction_id:", feedData.posts.filter((p: any) => p.prediction_id).length)
-    console.log(
-      "[v0]  - Posts generating:",
-      feedData.posts.filter((p: any) => p.generation_status === "generating").length,
-    )
-    console.log("[v0]  - Posts in progress (needs polling):", postsInProgress.length)
-    console.log("[v0]  - Posts without prediction_id (may need manual generation):", postsWithoutPrediction.length)
-    if (postsWithoutPrediction.length > 0) {
-      console.warn("[v0] ⚠️ Posts without prediction_id:", postsWithoutPrediction.map((p: any) => ({ id: p.id, position: p.position, status: p.generation_status })))
-    }
-    console.log(
-      "[v0]  - Posts in progress IDs:",
-      postsInProgress.map((p: any) => p.id),
-    )
-
-    // Auto-generate posts that don't have prediction_id (fallback if queue-all-images failed)
-    // queue-all-images is called automatically by create-strategy API
-    // We just need to wait and poll for updates - no need to generate individually
+    
     if (postsWithoutPrediction.length > 0) {
       const feedCreatedRecently = feedData.feed?.created_at 
         ? (Date.now() - new Date(feedData.feed.created_at).getTime()) < 120000 // 2 minutes
         : false
       
       if (feedCreatedRecently) {
-        console.log(`[v0] ⏳ Feed was just created - queue-all-images is processing ${postsWithoutPrediction.length} posts in background. Polling for updates...`)
+        console.log(`[v0] ⏳ Feed was just created - queue-all-images is processing ${postsWithoutPrediction.length} posts in background. SWR will poll for updates...`)
       } else {
         console.log(`[v0] ⚠️ Found ${postsWithoutPrediction.length} posts without prediction_id. If this persists, use the "Generate All" button.`)
       }
     }
-
-    if (postsInProgress.length === 0) {
-      if (pollIntervalRef.current) {
-        console.log("[v0] No posts in progress, clearing poll interval")
-        clearInterval(pollIntervalRef.current)
-        pollIntervalRef.current = null
-        isPollingActiveRef.current = false
-      }
-      // localStorage.removeItem(`feedPolling_${feedId}`) // Removed this line, it was clearing state prematurely
-      return
-    }
-
-    if (isPollingActiveRef.current) {
-      console.log("[v0] Polling already active, skipping new interval setup.")
-      console.log("[v0] Current poll interval:", pollIntervalRef.current ? "exists" : "null")
-      return
-    }
-
-    isPollingActiveRef.current = true
-    console.log("[v0] ==================== SETTING UP POLLING ====================")
-    console.log("[v0] Posts to poll:", postsInProgress.length)
-    console.log("[v0] Poll backoff delay:", pollBackoff, "ms")
-
-    const poll = async () => {
-      console.log("[v0] === POLLING TICK === Checking posts...")
-      // Re-fetch latest feed data to check current state
-      const latestFeedRes = await fetch(`/api/feed/${feedId}`)
-      if (!latestFeedRes.ok) {
-        console.error("[v0] Failed to fetch latest feed data:", latestFeedRes.status)
-        return
-      }
-
-      const latestFeed = await latestFeedRes.json()
-      const stillGenerating = latestFeed.posts.filter(
-        (p: any) => {
-          const hasPrediction = !!p.prediction_id
-          const isNotCompleted = p.generation_status !== "completed"
-          const hasNoImage = !p.image_url
-          const notInCompleted = !completedPosts.has(p.id)
-          const isInGeneratingSet = generatingPosts.has(p.id)
-          
-          // Include if:
-          // 1. It has a prediction_id and is not completed and has no image (new generation)
-          // 2. OR it's in the generatingPosts set (regenerated post - may have old image_url)
-          return (hasPrediction && isNotCompleted && hasNoImage && notInCompleted) || isInGeneratingSet
-        }
-      )
-
-      if (stillGenerating.length === 0) {
-        console.log("[v0] No more posts generating in the latest fetch.")
-        if (pollIntervalRef.current) {
-          clearInterval(pollIntervalRef.current)
-          pollIntervalRef.current = null
-          isPollingActiveRef.current = false
-          console.log("[v0] Cleared polling interval.")
-        }
-        return
-      }
-
-      console.log(
-        "[v0] Polling for:",
-        stillGenerating.map((p: any) => p.id),
-      )
-
-      console.log("[v0] Still generating posts count:", stillGenerating.length)
-      console.log("[v0] Still generating post IDs:", stillGenerating.map((p: any) => p.id))
-
-      for (const post of stillGenerating) {
-        if (!post.prediction_id) {
-          console.log("[v0] Post", post.id, "- No prediction_id, skipping check.")
-          continue
-        }
-
-        try {
-          const checkUrl = `/api/feed/${feedId}/check-post?predictionId=${post.prediction_id}&postId=${post.id}`
-          console.log("[v0] Post", post.id, `(position ${post.position})`, "- Checking prediction:", post.prediction_id)
-          const response = await fetch(checkUrl)
-
-          console.log("[v0] Post", post.id, "- Response status:", response.status)
-
-          if (response.status === 429) {
-            console.log("[v0] Rate limited, backing off...")
-            setPollBackoff((prev) => {
-              const newBackoff = Math.min(prev * 2, 30000)
-              console.log("[v0] New backoff delay:", newBackoff)
-              return newBackoff
-            })
-            // Don't process further in this tick if rate limited, wait for next interval with backoff
-            return
-          }
-
-          if (!response.ok) {
-            console.error("[v0] Post", post.id, "- Check-post error:", response.status)
-            continue
-          }
-
-          const data = await response.json()
-          console.log("[v0] Post", post.id, "- Status:", data.status, "Response:", JSON.stringify(data).substring(0, 200))
-
-          if (data.status === "succeeded" && data.imageUrl) {
-            console.log("[v0] Post", post.id, "- ✓ COMPLETED! Image URL:", data.imageUrl)
-            setCompletedPosts((prev) => {
-              const updated = new Set(prev).add(post.id)
-              console.log("[v0] Updated completed posts count:", updated.size)
-              return updated
-            })
-            // Remove from generatingPosts set since it's now complete
-            setGeneratingPosts((prev) => {
-              const updated = new Set(prev)
-              updated.delete(post.id)
-              return updated
-            })
-            // Clear regeneratingPost state if this was a regenerated post
-            setRegeneratingPost((prev) => prev === post.id ? null : prev)
-            // Clear start time tracking
-            setPostStartTimes((prev) => {
-              const updated = new Map(prev)
-              updated.delete(post.id)
-              return updated
-            })
-            await mutate(`/api/feed/${feedId}`)
-            setPollBackoff(10000) // Reset to 10 seconds
-          } else if (data.status === "failed") {
-            console.error("[v0] Post", post.id, "- ❌ Generation failed:", data.error)
-            // Remove from generating sets and mark as failed
-            setGeneratingPosts((prev) => {
-              const updated = new Set(prev)
-              updated.delete(post.id)
-              return updated
-            })
-            setRegeneratingPost((prev) => prev === post.id ? null : prev)
-            // Clear start time tracking
-            setPostStartTimes((prev) => {
-              const updated = new Map(prev)
-              updated.delete(post.id)
-              return updated
-            })
-            await mutate(`/api/feed/${feedId}`)
-            toast({
-              title: "Generation failed",
-              description: data.error || "The image generation failed. Please try regenerating.",
-              variant: "destructive",
-            })
-          } else if (data.status === "processing" || data.status === "starting") {
-            // Keep polling if still processing
-            console.log("[v0] Post", post.id, "- Still processing, status:", data.status)
-          } else {
-            // Unknown status - log it but keep polling
-            console.warn("[v0] Post", post.id, "- Unknown status:", data.status)
-          }
-        } catch (error) {
-          console.error("[v0] Post", post.id, "- Error during polling:", error)
-        }
-      }
-      console.log("[v0] === POLLING TICK COMPLETE ===")
-    }
-
-    poll() // Initial call
-    pollIntervalRef.current = setInterval(poll, pollBackoff)
-    console.log("[v0] Polling interval started with delay:", pollBackoff, "ms")
-
-    return () => {
-      if (pollIntervalRef.current) {
-        console.log("[v0] Cleaning up poll interval")
-        clearInterval(pollIntervalRef.current)
-        pollIntervalRef.current = null
-        isPollingActiveRef.current = false
-      }
-    }
-  }, [feedId, feedData, completedPosts, pollBackoff])
+  }, [feedData])
 
   const toggleCaption = (postId: number) => {
     const newExpanded = new Set(expandedCaptions)
@@ -1280,7 +1021,8 @@ export default function InstagramFeedView({ feedData, onBack }: InstagramFeedVie
         {activeTab === "grid" && (
           <div className="grid grid-cols-3 gap-[2px] md:gap-1">
             {posts.map((post: any) => {
-              const isGenerating = post.generation_status === "generating" || generatingPosts.has(post.id)
+              const postStatus = postStatuses.find(p => p.id === post.id)
+              const isGenerating = postStatus?.isGenerating || post.generation_status === "generating"
               const isRegenerating = regeneratingPost === post.id
               const shotTypeLabel = post.content_pillar?.toLowerCase() || `post ${post.position}`
 

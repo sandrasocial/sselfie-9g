@@ -808,7 +808,7 @@ export default function FeedPlannerScreen() {
               </div>
 
               <InstagramFeedView
-                feedData={feedData}
+                feedId={currentFeedId!}
                 onBack={() => {
                   setStep("request")
                   setCurrentFeedId(null)
