@@ -1,42 +1,32 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import {
   Heart,
   Camera,
-  Trash2,
   Video,
-  Play,
   Search,
-  X,
-  CheckSquare,
-  Square,
-  ChevronLeft,
-  ChevronRight,
-  Download,
-  Home,
-  Aperture,
-  MessageCircle,
-  ImageIcon as ImageIconLucide,
-  Grid,
-  SettingsIcon,
-  User as UserIcon,
-  LogOut,
-  Film,
-  Save,
 } from "lucide-react"
 import useSWR from "swr"
-import useSWRInfinite from "swr/infinite"
 import type { GalleryImage } from "@/lib/data/images"
 import { InstagramReelPreview } from "./instagram-reel-preview"
 import { ProfileImageSelector } from "@/components/profile-image-selector"
 import { GalleryInstagramSkeleton } from "./gallery-skeleton"
 import UnifiedLoading from "./unified-loading"
 import { triggerHaptic, triggerSuccessHaptic, triggerErrorHaptic } from "@/lib/utils/haptics"
-import { ProgressiveImage } from "./progressive-image"
 import { useRouter } from "next/navigation"
 import FullscreenImageModal from "./fullscreen-image-modal"
 import { DesignClasses } from "@/lib/design-tokens"
+// Hooks
+import { useGalleryImages } from "./gallery/hooks/use-gallery-images"
+import { useGalleryFilters } from "./gallery/hooks/use-gallery-filters"
+import { useSelectionMode } from "./gallery/hooks/use-selection-mode"
+import { useBulkOperations } from "./gallery/hooks/use-bulk-operations"
+// Components
+import { GalleryHeader } from "./gallery/components/gallery-header"
+import { GalleryFilters } from "./gallery/components/gallery-filters"
+import { GalleryImageGrid } from "./gallery/components/gallery-image-grid"
+import { GallerySelectionBar } from "./gallery/components/gallery-selection-bar"
 
 interface GalleryScreenProps {
   user: any
@@ -71,74 +61,33 @@ function getOptimizedImageUrl(url: string, width?: number, quality?: number): st
   return url
 }
 
-function categorizeImage(image: GalleryImage): string {
-  if (image.category) {
-    const cat = image.category.toLowerCase()
-    if (cat.includes("close") || cat.includes("portrait")) return "close-up"
-    if (cat.includes("half") || cat.includes("waist")) return "half-body"
-    if (cat.includes("full")) return "full-body"
-    if (cat.includes("scenery") || cat.includes("landscape")) return "scenery"
-    if (cat.includes("flat")) return "flatlay"
-  }
-
-  const prompt = image.prompt?.toLowerCase() || ""
-  if (prompt.includes("close") || prompt.includes("portrait") || prompt.includes("face")) return "close-up"
-  if (prompt.includes("half") || prompt.includes("waist")) return "half-body"
-  if (prompt.includes("full") && !prompt.includes("scenery")) return "full-body"
-  if (prompt.includes("scenery") || prompt.includes("landscape")) return "scenery"
-  if (prompt.includes("flat") || prompt.includes("overhead")) return "flatlay"
-
-  return "close-up"
-}
-
 export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
-  const [contentFilter, setContentFilter] = useState<"all" | "photos" | "videos">("all")
-  const [selectedCategory, setSelectedCategory] = useState<string>("all")
   const [favorites, setFavorites] = useState<Set<string>>(new Set())
   const [lightboxImage, setLightboxImage] = useState<GalleryImage | null>(null)
   const [previewVideo, setPreviewVideo] = useState<GeneratedVideo | null>(null)
   const [showProfileSelector, setShowProfileSelector] = useState(false)
   const [profileImage, setProfileImage] = useState(user.avatar || "/placeholder.svg")
   const [creditBalance, setCreditBalance] = useState(0)
-
-  const [searchQuery, setSearchQuery] = useState("")
-  const [sortBy, setSortBy] = useState<"date-desc" | "date-asc" | "favorites">("date-desc")
-  const [selectionMode, setSelectionMode] = useState(false)
-  const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set())
   const [isPulling, setIsPulling] = useState(false)
   const touchStartY = useRef(0)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
-  const categoryScrollRef = useRef<HTMLDivElement>(null)
-  const [showLeftArrow, setShowLeftArrow] = useState(false)
-  const [showRightArrow, setShowRightArrow] = useState(true)
-  const [pullDistance, setPullDistance] = useState(0) // Declare pullDistance variable
-  
-  // Long-press detection for selection mode
-  const longPressTimer = useRef<NodeJS.Timeout | null>(null)
-  const longPressImageId = useRef<string | null>(null)
-  const wasLongPress = useRef(false) // Track if a long-press occurred to prevent click
-
-  // New state for pagination
-  const [isLoadingMore, setIsLoadingMore] = useState(false)
-  const [hasMore, setHasMore] = useState(true)
-  const loadMoreRef = useRef<HTMLDivElement>(null)
+  const [pullDistance, setPullDistance] = useState(0)
 
   const router = useRouter()
-
   const [showNavMenu, setShowNavMenu] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
 
-  const getKey = (pageIndex: number, previousPageData: any) => {
-    if (previousPageData && !previousPageData.hasMore) return null
-    return `/api/images?limit=50&offset=${pageIndex * 50}`
-  }
-
-  const { data, error, isLoading, mutate, size, setSize } = useSWRInfinite(getKey, fetcher, {
-    revalidateOnFocus: false,
-    revalidateOnReconnect: false,
-    dedupingInterval: 60000,
-    revalidateFirstPage: false,
-  })
+  // Use hooks for data fetching and state management
+  const {
+    images: allImages,
+    isLoading,
+    error,
+    hasMore,
+    isLoadingMore,
+    mutate,
+    loadMore,
+    loadMoreRef,
+  } = useGalleryImages()
 
   const { data: videosData, mutate: mutateVideos } = useSWR("/api/maya/videos", fetcher, {
     revalidateOnFocus: false,
@@ -151,36 +100,45 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
   })
 
   const { data: stats } = useSWR("/api/studio/stats", fetcher, {
-    refreshInterval: 60000,
     revalidateOnFocus: false,
-    dedupingInterval: 30000,
+    dedupingInterval: 60000, // Increased from 30s to 60s for consistency
+    // Removed refreshInterval - stats don't need to auto-refresh every minute
+    // Users can manually refresh if needed, or stats update on navigation
   })
 
-  useEffect(() => {
-    if (!loadMoreRef.current || !hasMore || isLoadingMore) return
+  const allVideos: GeneratedVideo[] = videosData?.videos || []
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
-          setIsLoadingMore(true)
-          setSize((prev) => prev + 1)
-        }
-      },
-      { threshold: 0.1 },
-    )
+  // Use selection mode hook
+  const {
+    selectionMode,
+    setSelectionMode,
+    selectedImages,
+    setSelectedImages,
+    toggleImageSelection,
+    selectAll: selectAllImages,
+    deselectAll,
+    clearSelection,
+    wasLongPress,
+    longPressTimer,
+    longPressImageId,
+  } = useSelectionMode()
 
-    observer.observe(loadMoreRef.current)
+  // Use filters hook
+  const {
+    contentFilter,
+    setContentFilter,
+    selectedCategory,
+    setSelectedCategory,
+    searchQuery,
+    setSearchQuery,
+    sortBy,
+    setSortBy,
+    displayImages,
+    displayVideos,
+  } = useGalleryFilters(allImages || [], allVideos, favorites)
 
-    return () => observer.disconnect()
-  }, [hasMore, isLoadingMore, setSize])
-
-  useEffect(() => {
-    if (data) {
-      const lastPage = data[data.length - 1]
-      setHasMore(lastPage?.hasMore || false)
-      setIsLoadingMore(false)
-    }
-  }, [data])
+  // Use bulk operations hook
+  const { isProcessing: isBulkProcessing, bulkDelete, bulkFavorite, bulkSave, bulkDownload } = useBulkOperations()
 
   useEffect(() => {
     const handleTouchStart = (e: TouchEvent) => {
@@ -222,27 +180,39 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
     }
   }, [pullDistance, mutate, mutateVideos])
 
-  useEffect(() => {
-    const handleScroll = () => {
-      if (categoryScrollRef.current) {
-        const { scrollLeft, scrollWidth, clientWidth } = categoryScrollRef.current
-        setShowLeftArrow(scrollLeft > 10)
-        setShowRightArrow(scrollLeft < scrollWidth - clientWidth - 10)
-      }
-    }
+  // Long-press handlers for selection mode
+  const handleLongPressStart = useCallback((imageId: string) => {
+    if (selectionMode) return
+    
+    wasLongPress.current = false
+    longPressImageId.current = imageId
+    longPressTimer.current = setTimeout(() => {
+      wasLongPress.current = true
+      setSelectionMode(true)
+      toggleImageSelection(imageId)
+      triggerHaptic("medium")
+      longPressTimer.current = null
+    }, 500) // 500ms long-press
+  }, [selectionMode, setSelectionMode, toggleImageSelection])
 
-    const scrollContainer = categoryScrollRef.current
-    if (scrollContainer) {
-      scrollContainer.addEventListener("scroll", handleScroll)
-      handleScroll()
+  const handleLongPressEnd = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current)
+      longPressTimer.current = null
+      wasLongPress.current = false
     }
+  }, [])
 
-    return () => {
-      if (scrollContainer) {
-        scrollContainer.removeEventListener("scroll", handleScroll)
-      }
-    }
-  }, [selectedCategory])
+  // Wrapper for image click with haptic
+  const handleImageClick = useCallback((image: GalleryImage) => {
+    triggerHaptic("light")
+    setLightboxImage(image)
+  }, [])
+
+  // Wrapper for image selection toggle with haptic
+  const handleToggleSelection = useCallback((imageId: string) => {
+    toggleImageSelection(imageId)
+  }, [toggleImageSelection])
 
   useEffect(() => {
     if (userData?.user?.profile_image_url && profileImage !== userData.user.profile_image_url) {
@@ -253,53 +223,7 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
     }
   }, [userData])
 
-  const allImages: GalleryImage[] = data ? data.flatMap((page) => page.images || []) : []
-  const allVideos: GeneratedVideo[] = videosData?.videos || []
-  const favoritedImages = allImages.filter((img) => img.is_favorite || favorites.has(img.id))
-
-  const getFilteredImages = () => {
-    let filtered = allImages
-
-    // Category filter
-    if (selectedCategory === "favorited") {
-      filtered = favoritedImages
-    } else if (selectedCategory !== "all") {
-      filtered = filtered.filter((img) => categorizeImage(img) === selectedCategory)
-    }
-
-    // Search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase()
-      filtered = filtered.filter(
-        (img) => img.prompt?.toLowerCase().includes(query) || img.category?.toLowerCase().includes(query),
-      )
-    }
-
-    // Sort
-    if (sortBy === "date-desc") {
-      filtered = [...filtered].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    } else if (sortBy === "date-asc") {
-      filtered = [...filtered].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
-    } else if (sortBy === "favorites") {
-      filtered = [...filtered].sort((a, b) => {
-        const aFav = a.is_favorite || favorites.has(a.id) ? 1 : 0
-        const bFav = b.is_favorite || favorites.has(b.id) ? 1 : 0
-        return bFav - aFav
-      })
-    }
-
-    return filtered
-  }
-
-  const filteredImages = getFilteredImages()
-
-  const getFilteredContent = () => {
-    if (contentFilter === "photos") return { images: filteredImages, videos: [] }
-    if (contentFilter === "videos") return { images: [], videos: allVideos }
-    return { images: filteredImages, videos: allVideos }
-  }
-
-  const { images: displayImages, videos: displayVideos } = getFilteredContent()
+  // Filtering and sorting is now handled by useGalleryFilters hook
 
   const toggleFavorite = async (imageId: string, currentFavoriteState: boolean) => {
     const newFavoriteState = !currentFavoriteState
@@ -390,252 +314,27 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
     }
   }
 
-  const toggleImageSelection = (imageId: string) => {
-    const newSelected = new Set(selectedImages)
-    if (newSelected.has(imageId)) {
-      newSelected.delete(imageId)
-    } else {
-      newSelected.add(imageId)
-    }
-    setSelectedImages(newSelected)
-    triggerHaptic("light")
-  }
-
+  // Selection and bulk operations are now handled by hooks
   const selectAll = () => {
-    setSelectedImages(new Set(displayImages.map((img) => img.id)))
+    selectAllImages((displayImages || []).map((img) => img.id))
   }
 
-  const deselectAll = () => {
-    setSelectedImages(new Set())
+  const handleBulkDelete = async () => {
+    await bulkDelete(Array.from(selectedImages), mutate, setSelectedImages, setSelectionMode)
   }
 
-  const bulkDelete = async () => {
-    if (selectedImages.size === 0) return
-    if (!confirm(`Are you sure you want to delete ${selectedImages.size} image(s)?`)) return
-
-    triggerHaptic("medium")
-
-    try {
-      await Promise.all(
-        Array.from(selectedImages).map((imageId) =>
-          fetch("/api/images/delete", {
-            method: "DELETE",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ imageId }),
-          }),
-        ),
-      )
-      triggerSuccessHaptic()
-      mutate()
-      setSelectedImages(new Set())
-      setSelectionMode(false)
-    } catch (error) {
-      console.error("[v0] Error bulk deleting:", error)
-      triggerErrorHaptic()
-      alert("Failed to delete some images. Please try again.")
-    }
+  const handleBulkFavorite = async () => {
+    await bulkFavorite(Array.from(selectedImages), mutate, setSelectedImages, setSelectionMode)
   }
 
-  const bulkFavorite = async () => {
-    if (selectedImages.size === 0) return
-
-    triggerHaptic("light")
-
-    try {
-      await Promise.all(
-        Array.from(selectedImages).map((imageId) =>
-          fetch("/api/images/favorite", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ imageId, isFavorite: true }),
-          }),
-        ),
-      )
-      triggerSuccessHaptic()
-      mutate()
-      setSelectedImages(new Set())
-      setSelectionMode(false)
-    } catch (error) {
-      console.error("[v0] Error bulk favoriting:", error)
-      triggerErrorHaptic()
-      alert("Failed to favorite some images. Please try again.")
-    }
+  const handleBulkSave = async () => {
+    await bulkSave(Array.from(selectedImages), mutate, setSelectedImages, setSelectionMode)
   }
 
-  const bulkSave = async () => {
-    if (selectedImages.size === 0) return
-
-    triggerHaptic("medium")
-
-    try {
-      const response = await fetch("/api/images/bulk-save", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageIds: Array.from(selectedImages) }),
-      })
-
-      if (!response.ok) {
-        throw new Error("Failed to save images")
-      }
-
-      triggerSuccessHaptic()
-      mutate()
-      setSelectedImages(new Set())
-      setSelectionMode(false)
-    } catch (error) {
-      console.error("[v0] Error bulk saving:", error)
-      triggerErrorHaptic()
-      alert("Failed to save some images. Please try again.")
-    }
+  const handleBulkDownload = async () => {
+    await bulkDownload(Array.from(selectedImages), displayImages, setSelectedImages, setSelectionMode)
   }
 
-  const bulkDownload = async () => {
-    if (selectedImages.size === 0) return
-
-    triggerHaptic("light")
-
-    try {
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
-      const selectedImageList = Array.from(selectedImages)
-      
-      // On mobile, use Share API for camera roll saving
-      if (isMobile && navigator.share) {
-        console.log("[v0] Mobile device detected, using Share API for", selectedImageList.length, "image(s)...")
-        
-        try {
-          // Fetch all images as blobs
-          const imagePromises = selectedImageList.map(async (imageId) => {
-            const image = displayImages.find((img) => img.id === imageId)
-            if (!image) return null
-            
-            const response = await fetch(image.image_url)
-            if (!response.ok) throw new Error(`Failed to fetch image ${imageId}`)
-            const blob = await response.blob()
-            const fileName = `${categorizeImage(image)}-${imageId}.png`
-            return new File([blob], fileName, { type: "image/png" })
-          })
-
-          const files = (await Promise.all(imagePromises)).filter((f): f is File => f !== null)
-          
-          if (files.length === 0) {
-            throw new Error("No valid images to download")
-          }
-
-          // Try sharing all files at once (supported on iOS 14.5+ and some Android browsers)
-          try {
-            const shareData: ShareData = {
-              files: files,
-              title: files.length === 1 ? "sselfie Image" : `${files.length} sselfie Images`,
-            }
-
-            // Check if we can share multiple files (if canShare is available)
-            if (!navigator.canShare || navigator.canShare(shareData)) {
-              await navigator.share(shareData)
-              console.log("[v0] ✅ All images shared successfully (user can save to camera roll)")
-              triggerSuccessHaptic()
-              setSelectedImages(new Set())
-              setSelectionMode(false)
-              return
-            }
-          } catch (shareError: any) {
-            // If sharing multiple files fails or is not supported, share one by one
-            if (shareError.name !== "AbortError" && files.length > 1) {
-              console.log("[v0] Multiple file share not supported, sharing one by one...")
-              
-              for (let i = 0; i < files.length; i++) {
-                try {
-                  const shareData: ShareData = {
-                    files: [files[i]],
-                    title: `sselfie Image ${i + 1} of ${files.length}`,
-                  }
-                  
-                  if (!navigator.canShare || navigator.canShare(shareData)) {
-                    await navigator.share(shareData)
-                    // Small delay between shares to avoid overwhelming the user
-                    if (i < files.length - 1) {
-                      await new Promise((resolve) => setTimeout(resolve, 500))
-                    }
-                  }
-                } catch (singleShareError: any) {
-                  if (singleShareError.name === "AbortError") {
-                    // User cancelled - stop sharing remaining images
-                    console.log("[v0] User cancelled sharing")
-                    break
-                  }
-                  console.error(`[v0] Error sharing image ${i + 1}:`, singleShareError)
-                }
-              }
-              
-              triggerSuccessHaptic()
-              setSelectedImages(new Set())
-              setSelectionMode(false)
-              return
-            } else if (shareError.name === "AbortError") {
-              // User cancelled
-              console.log("[v0] User cancelled sharing")
-              return
-            }
-          }
-        } catch (shareError: any) {
-          // Share API failed, fall through to download method
-          console.log("[v0] Share API failed, falling back to download method:", shareError?.message)
-        }
-      }
-
-      // Fallback: Desktop or Share API not available - use download method
-      console.log("[v0] Using download method for", selectedImageList.length, "image(s)...")
-      
-      for (let i = 0; i < selectedImageList.length; i++) {
-        const imageId = selectedImageList[i]
-        const image = displayImages.find((img) => img.id === imageId)
-        if (image) {
-          try {
-            const response = await fetch(image.image_url)
-            if (!response.ok) throw new Error(`Failed to fetch image ${imageId}`)
-            const blob = await response.blob()
-            const url = window.URL.createObjectURL(blob)
-            const a = document.createElement("a")
-            a.href = url
-            a.download = `${categorizeImage(image)}-${imageId}.png`
-            a.style.display = "none"
-            document.body.appendChild(a)
-            a.click()
-            
-            // Clean up after a delay
-            setTimeout(() => {
-              window.URL.revokeObjectURL(url)
-              document.body.removeChild(a)
-            }, 100)
-            
-            // Add delay between downloads to avoid browser blocking
-            if (i < selectedImageList.length - 1) {
-              await new Promise((resolve) => setTimeout(resolve, 300))
-            }
-          } catch (error) {
-            console.error(`[v0] Error downloading image ${imageId}:`, error)
-          }
-        }
-      }
-      
-      triggerSuccessHaptic()
-      setSelectedImages(new Set())
-      setSelectionMode(false)
-    } catch (error) {
-      console.error("[v0] Error bulk downloading:", error)
-      triggerErrorHaptic()
-      alert("Failed to download some images. Please try again.")
-    }
-  }
-
-  const scrollCategory = (direction: "left" | "right") => {
-    if (categoryScrollRef.current) {
-      const scrollAmount = 200
-      categoryScrollRef.current.scrollBy({
-        left: direction === "left" ? -scrollAmount : scrollAmount,
-        behavior: "smooth",
-      })
-    }
-  }
 
   const handleProfileImageUpdate = (imageUrl: string) => {
     setProfileImage(imageUrl)
@@ -712,300 +411,46 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
         </div>
       )}
 
-      <div className="pt-3 sm:pt-4">
-        <div className="flex items-center justify-between mb-4 sm:mb-6 gap-2">
-          <div className="flex-1">
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-extralight tracking-[0.2em] sm:tracking-[0.3em] text-stone-950 uppercase mb-2">
-            Gallery
-          </h1>
-            {stats && (
-              <div className="flex items-center gap-4 text-xs sm:text-sm">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-stone-500 font-light">{stats.totalGenerated || 0}</span>
-                  <span className="text-stone-400">photos</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-stone-500 font-light">{stats.favorites || 0}</span>
-                  <span className="text-stone-400">favorites</span>
-                </div>
-              </div>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            {!selectionMode && (
-              <>
-                <button
-                  onClick={() => setSelectionMode(true)}
-                  className={`px-3 sm:px-4 py-2 ${DesignClasses.typography.label.uppercase} bg-stone-100/50 ${DesignClasses.border.stone} ${DesignClasses.radius.sm} hover:bg-stone-100/70 transition-all duration-200 min-h-[36px] sm:min-h-[40px]`}
-                >
-                  Select
-                </button>
-                {/* Navigation menu now in global header */}
-              </>
-            )}
-          </div>
-        </div>
+      {!selectionMode && (
+        <GalleryHeader
+          stats={stats}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          sortBy={sortBy}
+          onSortChange={setSortBy}
+          onSelectClick={() => setSelectionMode(true)}
+        />
+      )}
 
-        <div className="flex gap-2 mb-4">
-          <div className="flex-1 relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
-            <input
-              type="text"
-              placeholder="Search by description..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className={`w-full pl-10 pr-10 py-2 ${DesignClasses.typography.body.medium} bg-stone-100/50 ${DesignClasses.border.stone} ${DesignClasses.radius.md} focus:outline-none focus:ring-2 focus:ring-stone-950/20 transition-all`}
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600"
-              >
-                <X size={16} />
-              </button>
-            )}
-          </div>
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as any)}
-            className={`px-3 py-2 ${DesignClasses.typography.body.small} bg-stone-100/50 ${DesignClasses.border.stone} ${DesignClasses.radius.md} focus:outline-none focus:ring-2 focus:ring-stone-950/20 transition-all appearance-none pr-8`}
-            style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2' strokeLinecap='round' strokeLinejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
-              backgroundRepeat: "no-repeat",
-              backgroundPosition: "right 0.5rem center",
-            }}
-          >
-            <option value="date-desc">Newest First</option>
-            <option value="date-asc">Oldest First</option>
-            <option value="favorites">Favorites First</option>
-          </select>
-        </div>
-      </div>
+      <GalleryFilters
+        contentFilter={contentFilter}
+        onContentFilterChange={setContentFilter}
+        selectedCategory={selectedCategory}
+        onCategoryChange={setSelectedCategory}
+      />
 
-      <div className={`bg-stone-100/40 ${DesignClasses.radius.lg} ${DesignClasses.spacing.padding.md} ${DesignClasses.border.stone}`}>
-        <div className="flex gap-2 mb-4 pb-4 border-b border-stone-200/40">
-          {[
-            { key: "all", label: "All Content" },
-            { key: "photos", label: "Photos" },
-            { key: "videos", label: "Videos" },
-          ].map((filter) => (
-            <button
-              key={filter.key}
-              onClick={() => setContentFilter(filter.key as "all" | "photos" | "videos")}
-              className={`px-3 sm:px-4 py-2 text-[10px] sm:text-xs tracking-[0.15em] uppercase font-light border border-stone-200/40 rounded-full transition-all duration-200 whitespace-nowrap flex-shrink-0 min-h-[36px] sm:min-h-[40px] ${
-                contentFilter === filter.key ? "bg-stone-950 text-white" : "bg-stone-50 hover:bg-stone-100"
-              }`}
-            >
-              {filter.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="relative">
-          {showLeftArrow && (
-            <button
-              onClick={() => scrollCategory("left")}
-              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-stone-950 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
-            >
-              <ChevronLeft size={16} />
-            </button>
-          )}
-          {showRightArrow && (
-            <button
-              onClick={() => scrollCategory("right")}
-              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-stone-950 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
-            >
-              <ChevronRight size={16} />
-            </button>
-          )}
-          <div
-            ref={categoryScrollRef}
-            className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide relative"
-            style={{
-              maskImage:
-                showLeftArrow || showRightArrow
-                  ? "linear-gradient(to right, transparent, black 40px, black calc(100% - 40px), transparent)"
-                  : "none",
-              WebkitMaskImage:
-                showLeftArrow || showRightArrow
-                  ? "linear-gradient(to right, transparent, black 40px, black calc(100% - 40px), transparent)"
-                  : "none",
-            }}
-          >
-            {[
-              { key: "all", label: "All" },
-              { key: "favorited", label: "Favorited" },
-              { key: "close-up", label: "Close-Up" },
-              { key: "half-body", label: "Half-Body" },
-              { key: "full-body", label: "Full-Body" },
-              { key: "scenery", label: "Scenery" },
-              { key: "flatlay", label: "Flatlay" },
-            ].map((category) => (
-              <button
-                key={category.key}
-                onClick={() => setSelectedCategory(category.key)}
-                className={`px-3 sm:px-4 py-2 text-[10px] sm:text-xs tracking-[0.15em] uppercase font-light border border-stone-200/40 rounded-full transition-all duration-200 whitespace-nowrap flex-shrink-0 min-h-[36px] sm:min-h-[40px] ${
-                  selectedCategory === category.key ? "bg-stone-950 text-white" : "bg-stone-50 hover:bg-stone-100"
-                }`}
-              >
-                {category.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {displayImages.length > 0 || displayVideos.length > 0 ? (
-        <>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-1">
-            {/* Photos */}
-            {displayImages.map((image) => (
-              <button
-                key={`img-${image.id}`}
-                onClick={() => {
-                  // If this was a long-press, don't handle click (long-press already handled it)
-                  if (wasLongPress.current) {
-                    wasLongPress.current = false
-                    return
-                  }
-                  
-                  // Clear long-press timer if it exists
-                  if (longPressTimer.current) {
-                    clearTimeout(longPressTimer.current)
-                    longPressTimer.current = null
-                  }
-                  
-                  triggerHaptic("light")
-                  selectionMode ? toggleImageSelection(image.id) : setLightboxImage(image)
-                }}
-                onTouchStart={(e) => {
-                  if (!selectionMode) {
-                    wasLongPress.current = false
-                    longPressImageId.current = image.id
-                    longPressTimer.current = setTimeout(() => {
-                      // Enter selection mode on long-press
-                      wasLongPress.current = true
-                      setSelectionMode(true)
-                      toggleImageSelection(image.id)
-                      triggerHaptic("medium")
-                      longPressTimer.current = null
-                    }, 500) // 500ms long-press
-                  }
-                }}
-                onTouchEnd={() => {
-                  // Clear timer if touch ends before long-press completes
-                  if (longPressTimer.current) {
-                    clearTimeout(longPressTimer.current)
-                    longPressTimer.current = null
-                    wasLongPress.current = false
-                  }
-                }}
-                onTouchCancel={() => {
-                  // Clear timer on touch cancel
-                  if (longPressTimer.current) {
-                    clearTimeout(longPressTimer.current)
-                    longPressTimer.current = null
-                    wasLongPress.current = false
-                  }
-                }}
-                onMouseDown={(e) => {
-                  // Also support long-press on desktop (hold mouse button for 500ms)
-                  if (!selectionMode && e.button === 0) {
-                    wasLongPress.current = false
-                    longPressImageId.current = image.id
-                    longPressTimer.current = setTimeout(() => {
-                      wasLongPress.current = true
-                      setSelectionMode(true)
-                      toggleImageSelection(image.id)
-                      triggerHaptic("medium")
-                      longPressTimer.current = null
-                    }, 500)
-                  }
-                }}
-                onMouseUp={() => {
-                  if (longPressTimer.current) {
-                    clearTimeout(longPressTimer.current)
-                    longPressTimer.current = null
-                    wasLongPress.current = false
-                  }
-                }}
-                onMouseLeave={() => {
-                  if (longPressTimer.current) {
-                    clearTimeout(longPressTimer.current)
-                    longPressTimer.current = null
-                    wasLongPress.current = false
-                  }
-                }}
-                className="aspect-square relative group overflow-hidden bg-stone-200/30"
-              >
-                <ProgressiveImage
-                  src={image.image_url || "/placeholder.svg"}
-                  thumbnailSrc={getOptimizedImageUrl(image.image_url, 600, 80)}
-                  alt={image.prompt || `Gallery ${image.id}`}
-                  className="w-full h-full object-cover"
-                />
-                {selectionMode && (
-                  <div className="absolute top-2 right-2 z-10">
-                    {selectedImages.has(image.id) ? (
-                      <CheckSquare size={24} className="text-stone-950 bg-white rounded" fill="currentColor" />
-                    ) : (
-                      <Square size={24} className="text-white drop-shadow-lg" />
-                    )}
-                  </div>
-                )}
-                {!selectionMode && (
-                  <div className="absolute inset-0 bg-stone-950/0 group-hover:bg-stone-950/30 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
-                    <div className="flex items-center gap-4 text-stone-50">
-                      <div className="flex items-center gap-1">
-                        <Heart size={16} fill="currentColor" strokeWidth={1.5} />
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </button>
-            ))}
-
-            {/* Videos */}
-            {displayVideos.map((video) => (
-              <button
-                key={`vid-${video.id}`}
-                onClick={() => {
-                  triggerHaptic("light")
-                  setPreviewVideo(video)
-                }}
-                className="aspect-square relative group overflow-hidden bg-stone-200/30"
-              >
-                <video src={video.video_url} className="w-full h-full object-cover" muted playsInline preload="none" />
-                <div className="absolute inset-0 bg-stone-950/40 flex items-center justify-center">
-                  <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center">
-                    <Play size={20} className="text-stone-950 ml-1" fill="currentColor" />
-                  </div>
-                </div>
-                <div className="absolute top-2 right-2">
-                  <Video size={16} className="text-white drop-shadow-lg" />
-                </div>
-              </button>
-            ))}
-          </div>
-
-          {hasMore && (
-            <div ref={loadMoreRef} className="py-8 flex justify-center">
-              {isLoadingMore ? (
-                <UnifiedLoading variant="inline" message="Loading more..." />
-              ) : (
-                <button
-                  onClick={() => {
-                    setIsLoadingMore(true)
-                    setSize((prev) => prev + 1)
-                  }}
-                  className="px-6 py-3 text-xs tracking-[0.15em] uppercase font-light bg-stone-100/50 border border-stone-200/40 rounded-xl hover:bg-stone-100/70 transition-all duration-200"
-                >
-                  Load More Images
-                </button>
-              )}
-            </div>
-          )}
-        </>
+      {(displayImages?.length ?? 0) > 0 || (displayVideos?.length ?? 0) > 0 ? (
+        <GalleryImageGrid
+          images={displayImages ?? []}
+          videos={displayVideos ?? []}
+          selectedImages={selectedImages}
+          selectionMode={selectionMode}
+          onImageClick={handleImageClick}
+          onToggleSelection={handleToggleSelection}
+          onVideoClick={(video) => {
+            triggerHaptic("light")
+            setPreviewVideo(video)
+          }}
+          hasMore={hasMore}
+          isLoadingMore={isLoadingMore}
+          loadMoreRef={loadMoreRef}
+          onLoadMore={loadMore}
+          wasLongPress={wasLongPress}
+          longPressTimer={longPressTimer}
+          longPressImageId={longPressImageId}
+          onLongPressStart={handleLongPressStart}
+          onLongPressEnd={handleLongPressEnd}
+        />
       ) : (
         <div className="bg-stone-100/40 rounded-3xl p-8 sm:p-12 text-center border border-stone-200/40">
           {contentFilter === "videos" ? (
@@ -1071,79 +516,18 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
       )}
 
       {selectionMode && (
-        <div className="fixed bottom-0 left-0 right-0 bg-stone-950 text-white p-3 sm:p-4 shadow-2xl z-50 border-t border-stone-800 safe-area-inset-bottom">
-          <div className="max-w-screen-xl mx-auto">
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-              <div className="flex items-center justify-between sm:justify-start gap-3">
-                <button
-                  onClick={() => {
-                    setSelectionMode(false)
-                    setSelectedImages(new Set())
-                    // Clear any pending long-press timers
-                    if (longPressTimer.current) {
-                      clearTimeout(longPressTimer.current)
-                      longPressTimer.current = null
-                    }
-                  }}
-                  className="text-sm font-light tracking-wide hover:text-stone-300 transition-colors min-h-[44px] px-2 touch-manipulation"
-                >
-                  Cancel
-                </button>
-                <span className="text-sm font-light">{selectedImages.size} selected</span>
-              </div>
-              <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
-                {selectedImages.size < displayImages.length && (
-                  <button
-                    onClick={selectAll}
-                    className="px-3 sm:px-4 py-2 text-xs tracking-[0.15em] uppercase font-light bg-stone-800 rounded-lg hover:bg-stone-700 transition-all min-h-[44px] touch-manipulation"
-                  >
-                    Select All
-                  </button>
-                )}
-                {selectedImages.size > 0 && (
-                  <>
-                    {selectedImages.size === displayImages.length && (
-                      <button
-                        onClick={deselectAll}
-                        className="px-3 sm:px-4 py-2 text-xs tracking-[0.15em] uppercase font-light bg-stone-800 rounded-lg hover:bg-stone-700 transition-all min-h-[44px] touch-manipulation"
-                      >
-                        Deselect
-                      </button>
-                    )}
-                    <button
-                      onClick={bulkSave}
-                      className="px-3 sm:px-4 py-2 text-xs tracking-[0.15em] uppercase font-light bg-stone-900 rounded-lg hover:bg-stone-800 transition-all flex items-center justify-center gap-2 min-h-[44px] touch-manipulation"
-                    >
-                      <Save size={14} />
-                      <span className="hidden sm:inline">Save</span>
-                    </button>
-                    <button
-                      onClick={bulkDownload}
-                      className="px-3 sm:px-4 py-2 text-xs tracking-[0.15em] uppercase font-light bg-stone-800 rounded-lg hover:bg-stone-700 transition-all flex items-center justify-center gap-2 min-h-[44px] touch-manipulation"
-                    >
-                      <Download size={14} />
-                      <span className="hidden sm:inline">Download</span>
-                    </button>
-                    <button
-                      onClick={bulkFavorite}
-                      className="px-3 sm:px-4 py-2 text-xs tracking-[0.15em] uppercase font-light bg-stone-800 rounded-lg hover:bg-stone-700 transition-all flex items-center justify-center gap-2 min-h-[44px] touch-manipulation"
-                    >
-                      <Heart size={14} />
-                      <span className="hidden sm:inline">Favorite</span>
-                    </button>
-                    <button
-                      onClick={bulkDelete}
-                      className="px-3 sm:px-4 py-2 text-xs tracking-[0.15em] uppercase font-light bg-red-600 rounded-lg hover:bg-red-700 transition-all flex items-center justify-center gap-2 min-h-[44px] col-span-2 sm:col-span-1 touch-manipulation"
-                    >
-                      <Trash2 size={14} />
-                      Delete
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+        <GallerySelectionBar
+          selectedCount={selectedImages.size}
+          totalCount={displayImages?.length ?? 0}
+          onCancel={clearSelection}
+          onSelectAll={selectAll}
+          onDeselectAll={deselectAll}
+          onSave={handleBulkSave}
+          onDownload={handleBulkDownload}
+          onFavorite={handleBulkFavorite}
+          onDelete={handleBulkDelete}
+          isProcessing={isBulkProcessing}
+        />
       )}
 
       {previewVideo && (

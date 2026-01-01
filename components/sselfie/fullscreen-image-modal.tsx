@@ -96,15 +96,48 @@ export default function FullscreenImageModal({
   const handleDownload = async () => {
     try {
       const response = await fetch(imageUrl)
+      if (!response.ok) throw new Error("Failed to fetch image")
       const blob = await response.blob()
+      
+      // On mobile, use Share API for camera roll saving (proper image, not file)
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+      if (isMobile && navigator.share) {
+        try {
+          const fileName = `${title.replace(/\s+/g, "-").toLowerCase()}.png`
+          const file = new File([blob], fileName, { type: "image/png" })
+          
+          const shareData: ShareData = {
+            files: [file],
+            title: "sselfie Image",
+          }
+          
+          if (!navigator.canShare || navigator.canShare(shareData)) {
+            await navigator.share(shareData)
+            // Share API saves to camera roll as proper image ✅
+            return
+          }
+        } catch (shareError: any) {
+          // If Share API fails (user cancelled or not supported), fall through to download
+          if (shareError.name === "AbortError") {
+            // User cancelled - that's fine
+            return
+          }
+          console.log("[v0] Share API failed, falling back to download:", shareError?.message)
+        }
+      }
+      
+      // Fallback: Desktop or Share API not available - use download method
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement("a")
       a.href = url
       a.download = `${title.replace(/\s+/g, "-").toLowerCase()}.png`
       document.body.appendChild(a)
       a.click()
-      window.URL.revokeObjectURL(url)
-      document.body.removeChild(a)
+      
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url)
+        document.body.removeChild(a)
+      }, 100)
     } catch (error) {
       console.error("[v0] Error downloading image:", error)
     }
