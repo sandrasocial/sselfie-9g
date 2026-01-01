@@ -3,18 +3,14 @@
 import { useState, useMemo } from "react"
 import { useDebounce } from "./use-debounce"
 import type { GalleryImage } from "@/lib/data/images"
-import { categorizeImage } from "../utils/categorize-image"
 
 interface UseGalleryFiltersReturn {
-  contentFilter: "all" | "photos" | "videos"
-  setContentFilter: (filter: "all" | "photos" | "videos") => void
-  selectedCategory: string
-  setSelectedCategory: (category: string) => void
+  contentFilter: "photos" | "videos" | "favorited"
+  setContentFilter: (filter: "photos" | "videos" | "favorited") => void
   searchQuery: string
   setSearchQuery: (query: string) => void
   sortBy: "date-desc" | "date-asc" | "favorites"
   setSortBy: (sort: "date-desc" | "date-asc" | "favorites") => void
-  filteredImages: GalleryImage[]
   displayImages: GalleryImage[]
   displayVideos: any[]
 }
@@ -24,8 +20,7 @@ export function useGalleryFilters(
   allVideos: any[],
   favorites: Set<string>
 ): UseGalleryFiltersReturn {
-  const [contentFilter, setContentFilter] = useState<"all" | "photos" | "videos">("all")
-  const [selectedCategory, setSelectedCategory] = useState<string>("all")
+  const [contentFilter, setContentFilter] = useState<"photos" | "videos" | "favorited">("photos")
   const [searchQuery, setSearchQuery] = useState("")
   const [sortBy, setSortBy] = useState<"date-desc" | "date-asc" | "favorites">("date-desc")
 
@@ -42,11 +37,9 @@ export function useGalleryFilters(
   const filteredImages = useMemo(() => {
     let filtered = safeAllImages
 
-    // Category filter
-    if (selectedCategory === "favorited") {
+    // Content filter: favorited
+    if (contentFilter === "favorited") {
       filtered = favoritedImages
-    } else if (selectedCategory !== "all") {
-      filtered = filtered.filter((img) => categorizeImage(img) === selectedCategory)
     }
 
     // Search filter (using debounced query)
@@ -78,7 +71,7 @@ export function useGalleryFilters(
     }
 
     return filtered
-  }, [safeAllImages, selectedCategory, debouncedSearchQuery, sortBy, favorites, favoritedImages])
+  }, [safeAllImages, contentFilter, debouncedSearchQuery, sortBy, favorites, favoritedImages])
 
   const { images: displayImages, videos: displayVideos } = useMemo(() => {
     const safeAllVideos = Array.isArray(allVideos) ? allVideos : []
@@ -88,6 +81,9 @@ export function useGalleryFilters(
       result = { images: filteredImages, videos: [] }
     } else if (contentFilter === "videos") {
       result = { images: [], videos: safeAllVideos }
+    } else if (contentFilter === "favorited") {
+      // Favourites filter shows only favorited images (no videos)
+      result = { images: filteredImages, videos: [] }
     } else {
       result = { images: filteredImages, videos: safeAllVideos }
     }
@@ -98,13 +94,10 @@ export function useGalleryFilters(
   return {
     contentFilter,
     setContentFilter,
-    selectedCategory,
-    setSelectedCategory,
     searchQuery,
     setSearchQuery,
     sortBy,
     setSortBy,
-    filteredImages,
     displayImages: displayImages ?? [],
     displayVideos: displayVideos ?? [],
   }

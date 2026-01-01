@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useCallback } from "react"
+import React, { useCallback, useRef, useEffect, useState } from "react"
 import { Video, Play } from "lucide-react"
 import { triggerHaptic } from "@/lib/utils/haptics"
 import { GalleryImageCard } from "./gallery-image-card"
@@ -10,6 +10,8 @@ import type { GalleryImage } from "@/lib/data/images"
 interface GeneratedVideo {
   id: number
   video_url: string
+  image_source?: string | null
+  image_id?: number | null
   [key: string]: any
 }
 
@@ -74,23 +76,19 @@ function GalleryImageGridComponent({
           />
         ))}
 
-        {videos.map((video) => (
-          <button
-            key={`vid-${video.id}`}
-            onClick={() => handleVideoClick(video)}
-            className="aspect-square relative group overflow-hidden bg-stone-200/30"
-          >
-            <video src={video.video_url} className="w-full h-full object-cover" muted playsInline preload="none" />
-            <div className="absolute inset-0 bg-stone-950/40 flex items-center justify-center">
-              <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center">
-                <Play size={20} className="text-stone-950 ml-1" fill="currentColor" />
-              </div>
-            </div>
-            <div className="absolute top-2 right-2">
-              <Video size={16} className="text-white drop-shadow-lg" />
-            </div>
-          </button>
-        ))}
+        {videos.map((video) => {
+          // Use image_source as poster/thumbnail (the original image that was animated)
+          const posterImage = video.image_source || undefined
+          
+          return (
+            <VideoThumbnail
+              key={`vid-${video.id}`}
+              video={video}
+              posterImage={posterImage}
+              onVideoClick={handleVideoClick}
+            />
+          )
+        })}
       </div>
 
       {hasMore && (
@@ -108,6 +106,85 @@ function GalleryImageGridComponent({
         </div>
       )}
     </>
+  )
+}
+
+// Video Thumbnail Component with IntersectionObserver lazy loading
+function VideoThumbnail({
+  video,
+  posterImage,
+  onVideoClick,
+}: {
+  video: GeneratedVideo
+  posterImage?: string
+  onVideoClick: (video: GeneratedVideo) => void
+}) {
+  const [isVisible, setIsVisible] = useState(false)
+  const [shouldLoadVideo, setShouldLoadVideo] = useState(false)
+  const containerRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    if (!containerRef.current) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsVisible(true)
+            // Only load video metadata when visible
+            setShouldLoadVideo(true)
+            observer.disconnect()
+          }
+        })
+      },
+      {
+        rootMargin: "50px", // Start loading 50px before entering viewport
+      }
+    )
+
+    observer.observe(containerRef.current)
+
+    return () => {
+      observer.disconnect()
+    }
+  }, [])
+
+  return (
+    <button
+      ref={containerRef}
+      onClick={() => onVideoClick(video)}
+      className="aspect-square relative group overflow-hidden bg-stone-200/30"
+    >
+      {posterImage ? (
+        // Show poster image as thumbnail (lazy loaded)
+        <img
+          src={posterImage}
+          alt="Video thumbnail"
+          className="w-full h-full object-cover"
+          loading="lazy"
+        />
+      ) : shouldLoadVideo ? (
+        // Only load video metadata when visible
+        <video
+          src={video.video_url}
+          className="w-full h-full object-cover"
+          muted
+          playsInline
+          preload="metadata"
+        />
+      ) : (
+        // Placeholder while waiting to load
+        <div className="w-full h-full bg-stone-200/30 animate-pulse" />
+      )}
+      <div className="absolute inset-0 bg-stone-950/40 flex items-center justify-center">
+        <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center">
+          <Play size={20} className="text-stone-950 ml-1" fill="currentColor" />
+        </div>
+      </div>
+      <div className="absolute top-2 right-2">
+        <Video size={16} className="text-white drop-shadow-lg" />
+      </div>
+    </button>
   )
 }
 

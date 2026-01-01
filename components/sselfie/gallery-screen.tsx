@@ -48,19 +48,6 @@ interface GeneratedVideo {
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
-function getOptimizedImageUrl(url: string, width?: number, quality?: number): string {
-  if (!url) return "/placeholder.svg"
-
-  if (url.includes("blob.vercel-storage.com") || url.includes("public.blob.vercel-storage.com")) {
-    const params = new URLSearchParams()
-    if (width) params.append("width", width.toString())
-    if (quality) params.append("quality", quality.toString())
-    return `${url}?${params.toString()}`
-  }
-
-  return url
-}
-
 export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
   const [favorites, setFavorites] = useState<Set<string>>(new Set())
   const [lightboxImage, setLightboxImage] = useState<GalleryImage | null>(null)
@@ -123,8 +110,6 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
   const {
     contentFilter,
     setContentFilter,
-    selectedCategory,
-    setSelectedCategory,
     searchQuery,
     setSearchQuery,
     sortBy,
@@ -333,11 +318,16 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
 
       triggerSuccessHaptic()
       mutate()
+      mutateUser() // Revalidate user data (e.g., total generated count)
       setLightboxImage(null)
     } catch (error) {
       console.error("[v0] Error deleting image:", error)
       triggerErrorHaptic()
-      alert("Failed to delete image. Please try again.")
+      toast({
+        title: "Delete failed",
+        description: "Failed to delete image. Please try again.",
+        variant: "destructive",
+      })
     }
   }
 
@@ -357,10 +347,17 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
         throw new Error("Failed to delete video")
       }
 
+      triggerSuccessHaptic()
       mutateVideos()
+      setPreviewVideo(null) // Close modal if open
     } catch (error) {
       console.error("[v0] Error deleting video:", error)
-      alert("Failed to delete video. Please try again.")
+      triggerErrorHaptic()
+      toast({
+        title: "Delete failed",
+        description: "Failed to delete video. Please try again.",
+        variant: "destructive",
+      })
     }
   }
 
@@ -404,7 +401,6 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
   }
 
   const displayName = user.name || user.email?.split("@")[0] || "User"
-  const userInitial = displayName.charAt(0).toUpperCase()
 
   return (
     <div className="space-y-4 sm:space-y-6 pb-24" ref={scrollContainerRef}>
@@ -433,8 +429,6 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
       <GalleryFilters
         contentFilter={contentFilter}
         onContentFilterChange={setContentFilter}
-        selectedCategory={selectedCategory}
-        onCategoryChange={setSelectedCategory}
       />
 
       {(displayImages?.length ?? 0) > 0 || (displayVideos?.length ?? 0) > 0 ? (
@@ -501,14 +495,14 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
             <>
               <Camera size={48} className="mx-auto mb-6 text-stone-400" strokeWidth={1.5} />
               <h3 className="text-xl font-serif font-extralight tracking-[0.15em] text-stone-950 uppercase mb-3">
-                {selectedCategory === "favorited" ? "No Favorites Yet" : "No Images Yet"}
+                {contentFilter === "favorited" ? "No Favorites Yet" : "No Images Yet"}
               </h3>
               <p className="text-sm font-light text-stone-600 mb-6 max-w-md mx-auto">
-                {selectedCategory === "favorited"
+                {contentFilter === "favorited"
                   ? "Tap the heart icon on any image to add it to your favorites collection."
                   : "Create your first AI-generated photo with Maya to start building your gallery."}
               </p>
-              {selectedCategory !== "favorited" && (
+              {contentFilter !== "favorited" && (
                 <button
                   onClick={() => {
                     window.location.hash = "maya"

@@ -3,6 +3,7 @@
 import type React from "react"
 
 import { useState, useRef, useEffect } from "react"
+import { createPortal } from "react-dom"
 import {
   X,
   Heart,
@@ -51,9 +52,33 @@ export function InstagramReelPreview({
   const [isPlaying, setIsPlaying] = useState(true)
   const [isMuted, setIsMuted] = useState(true)
   const [liked, setLiked] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const currentVideo = videos[currentIndex]
   const userInitial = userName.charAt(0).toUpperCase()
+
+  useEffect(() => {
+    setMounted(true)
+    return () => setMounted(false)
+  }, [])
+
+  useEffect(() => {
+    // Lock body scroll when modal is open
+    document.body.style.overflow = "hidden"
+    return () => {
+      document.body.style.overflow = ""
+    }
+  }, [])
+
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose()
+      }
+    }
+    window.addEventListener("keydown", handleEscape)
+    return () => window.removeEventListener("keydown", handleEscape)
+  }, [onClose])
 
   useEffect(() => {
     if (videoRef.current) {
@@ -104,14 +129,29 @@ export function InstagramReelPreview({
     document.body.removeChild(a)
   }
 
-  return (
-    <div className="fixed inset-0 z-50 bg-stone-950 flex items-center justify-center">
-      {/* Close button */}
+  if (!mounted) return null
+
+  const modalContent = (
+    <div
+      className="fixed inset-0 z-[9999] bg-stone-950 flex items-center justify-center p-4"
+      style={{
+        paddingTop: `max(env(safe-area-inset-top), 1rem)`,
+        paddingBottom: `max(env(safe-area-inset-bottom), 1rem)`,
+        paddingLeft: `max(env(safe-area-inset-left), 1rem)`,
+        paddingRight: `max(env(safe-area-inset-right), 1rem)`,
+      }}
+    >
+      {/* Close button - top right corner, always visible */}
       <button
         onClick={onClose}
-        className="absolute top-4 left-4 z-10 p-3 bg-stone-950/50 hover:bg-stone-950/70 rounded-full transition-colors backdrop-blur-sm"
+        className="absolute z-[100] min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-black/80 hover:bg-black transition-colors backdrop-blur-md shadow-2xl border border-white/20"
+        style={{
+          top: `max(calc(env(safe-area-inset-top) + 0.5rem), 0.5rem)`,
+          right: `max(calc(env(safe-area-inset-right) + 0.5rem), 0.5rem)`,
+        }}
+        aria-label="Close video preview"
       >
-        <X size={24} className="text-white" strokeWidth={1.5} />
+        <X size={24} className="text-white" strokeWidth={3} />
       </button>
 
       {/* Navigation */}
@@ -119,21 +159,33 @@ export function InstagramReelPreview({
         <>
           <button
             onClick={handlePrevious}
-            className="absolute left-4 bottom-1/2 z-10 p-3 bg-stone-950/50 hover:bg-stone-950/70 rounded-full transition-colors backdrop-blur-sm"
+            className="absolute z-20 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-stone-950/80 hover:bg-stone-950/90 transition-colors backdrop-blur-sm"
+            style={{
+              left: `max(env(safe-area-inset-left), 1rem)`,
+              top: "50%",
+              transform: "translateY(-50%)",
+            }}
+            aria-label="Previous video"
           >
             <ChevronLeft size={24} className="text-white" strokeWidth={1.5} />
           </button>
           <button
             onClick={handleNext}
-            className="absolute right-4 bottom-1/2 z-10 p-3 bg-stone-950/50 hover:bg-stone-950/70 rounded-full transition-colors backdrop-blur-sm"
+            className="absolute z-20 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-stone-950/80 hover:bg-stone-950/90 transition-colors backdrop-blur-sm"
+            style={{
+              right: `max(env(safe-area-inset-right), 1rem)`,
+              top: "50%",
+              transform: "translateY(-50%)",
+            }}
+            aria-label="Next video"
           >
             <ChevronRight size={24} className="text-white" strokeWidth={1.5} />
           </button>
         </>
       )}
 
-      {/* Instagram Reel Style */}
-      <div className="relative w-full max-w-md aspect-[9/16] bg-stone-950 rounded-xl overflow-hidden flex flex-col">
+      {/* Instagram Reel Style - with proper constraints */}
+      <div className="relative w-full max-w-md aspect-[9/16] bg-stone-950 rounded-xl overflow-hidden flex flex-col max-h-[calc(100vh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-2rem)]">
         {/* Video */}
         <div className="relative flex-1 overflow-hidden">
           <video
@@ -231,4 +283,6 @@ export function InstagramReelPreview({
       </div>
     </div>
   )
+
+  return createPortal(modalContent, document.body)
 }
