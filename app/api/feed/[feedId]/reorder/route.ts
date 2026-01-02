@@ -24,6 +24,10 @@ export async function POST(
     // Resolve params (handle both Promise and direct object)
     const resolvedParams = await Promise.resolve(params)
     const feedId = resolvedParams.feedId
+    const feedIdInt = Number.parseInt(feedId, 10)
+    if (isNaN(feedIdInt)) {
+      return NextResponse.json({ error: "Invalid feed ID format" }, { status: 400 })
+    }
 
     const { postOrders } = await req.json()
     
@@ -38,7 +42,7 @@ export async function POST(
     const [feed] = await sql`
       SELECT id, user_id
       FROM feed_layouts
-      WHERE id = ${feedId} AND user_id = ${neonUser.id}
+      WHERE id = ${feedIdInt} AND user_id = ${neonUser.id}
       LIMIT 1
     `
     
@@ -57,7 +61,7 @@ export async function POST(
         UPDATE feed_posts
         SET position = ${newPosition}, updated_at = NOW()
         WHERE id = ${postId} 
-          AND feed_layout_id = ${feedId}
+          AND feed_layout_id = ${feedIdInt}
           AND user_id = ${neonUser.id}
       `
     }

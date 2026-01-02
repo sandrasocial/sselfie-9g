@@ -1,5 +1,4 @@
 import { NextRequest } from "next/server"
-import { type NextRequest } from "next/server"
 import { getAuthenticatedUserWithRetry, clearAuthCache } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { neon } from "@neondatabase/serverless"
@@ -7,6 +6,8 @@ import { getReplicateClient } from "@/lib/replicate-client"
 import { MAYA_QUALITY_PRESETS } from "@/lib/maya/quality-settings"
 import { checkGenerationRateLimit } from "@/lib/rate-limit"
 import { checkCredits, deductCredits, CREDIT_COSTS } from "@/lib/credits"
+import { extractReplicateVersionId, ensureTriggerWordPrefix, buildClassicModeReplicateInput } from "@/lib/replicate-helpers"
+import { generateWithNanoBanana, getStudioProCreditCost } from "@/lib/nano-banana-client"
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ feedId: string }> | { feedId: string } }) {
   try {
@@ -91,19 +92,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       )
     }
 
-    const hasCredits = await checkCredits(user.id.toString(), CREDIT_COSTS.IMAGE)
-    if (!hasCredits) {
-      console.error("[v0] [GENERATE-SINGLE] Insufficient credits")
-      return Response.json(
-        {
-          error: "Insufficient credits",
-          details: `You need ${CREDIT_COSTS.IMAGE} credit to generate an image. Please purchase more credits.`,
-          creditsNeeded: CREDIT_COSTS.IMAGE,
-        },
-        { status: 402 },
-      )
-    }
-
     const { postId } = await req.json()
     
     console.log("[v0] [GENERATE-SINGLE] Request params:", { feedId, postId })
@@ -143,41 +131,168 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       return Response.json({ error: "Post not found" }, { status: 404 })
     }
 
+    // Check generation mode (Pro Mode vs Classic Mode)
+    const generationMode = post.generation_mode || 'classic'
+    const proModeType = post.pro_mode_type || null
+    console.log("[v0] [GENERATE-SINGLE] Post generation mode:", { generationMode, proModeType })
+
+    // Check credits based on generation mode (Pro Mode = 2 credits, Classic = 1 credit)
+    const creditsNeeded = generationMode === 'pro' ? getStudioProCreditCost('2K') : CREDIT_COSTS.IMAGE
+    const hasCredits = await checkCredits(user.id.toString(), creditsNeeded)
+    if (!hasCredits) {
+      console.error("[v0] [GENERATE-SINGLE] Insufficient credits")
+      return Response.json(
+        {
+          error: "Insufficient credits",
+          details: `You need ${creditsNeeded} credit${creditsNeeded > 1 ? 's' : ''} to generate this ${generationMode === 'pro' ? 'Pro Mode' : 'Classic Mode'} image. Please purchase more credits.`,
+          creditsNeeded,
+        },
+        { status: 402 },
+      )
+    }
+
     const [feedLayout] = await sql`
       SELECT color_palette, brand_vibe, photoshoot_enabled, photoshoot_base_seed FROM feed_layouts WHERE id = ${feedIdInt}
     `
 
-    const [model] = await sql`
-      SELECT trigger_word, replicate_version_id, lora_scale, lora_weights_url
-      FROM user_models
-      WHERE user_id = ${user.id}
-      AND training_status = 'completed'
-      AND (is_test = false OR is_test IS NULL)
-      ORDER BY created_at DESC
-      LIMIT 1
-    `
+    // Only fetch model for Classic Mode (Pro Mode doesn't need custom model)
+    let model: any = null
+    if (generationMode === 'classic') {
+      const [modelResult] = await sql`
+        SELECT trigger_word, replicate_version_id, lora_scale, lora_weights_url
+        FROM user_models
+        WHERE user_id = ${user.id}
+        AND training_status = 'completed'
+        AND (is_test = false OR is_test IS NULL)
+        ORDER BY created_at DESC
+        LIMIT 1
+      `
+      model = modelResult
 
-    console.log("[v0] [GENERATE-SINGLE] User model lookup:", {
-      found: !!model,
-      hasLoraUrl: !!model?.lora_weights_url,
-      hasVersionId: !!model?.replicate_version_id,
-    })
+      console.log("[v0] [GENERATE-SINGLE] User model lookup:", {
+        found: !!model,
+        hasLoraUrl: !!model?.lora_weights_url,
+        hasVersionId: !!model?.replicate_version_id,
+      })
 
-    if (!model) {
-      console.error("[v0] [GENERATE-SINGLE] No trained model found for user:", user.id)
-      return Response.json({ error: "No trained model found" }, { status: 400 })
+      if (!model) {
+        console.error("[v0] [GENERATE-SINGLE] No trained model found for user:", user.id)
+        return Response.json({ error: "No trained model found" }, { status: 400 })
+      }
+
+      if (!model.lora_weights_url) {
+        console.error("[v0] [GENERATE-SINGLE] LoRA weights URL not found for model")
+        return Response.json({ error: "LoRA weights URL not found" }, { status: 400 })
+      }
+
+      if (!model.replicate_version_id) {
+        console.error("[v0] [GENERATE-SINGLE] Replicate version ID not found for model")
+        return Response.json({ error: "Replicate version ID not found" }, { status: 400 })
+      }
     }
 
-    if (!model.lora_weights_url) {
-      console.error("[v0] [GENERATE-SINGLE] LoRA weights URL not found for model")
-      return Response.json({ error: "LoRA weights URL not found" }, { status: 400 })
+    // Route to Pro Mode or Classic Mode based on generation_mode
+    if (generationMode === 'pro') {
+      console.log("[v0] [GENERATE-SINGLE] 🎨 Pro Mode post detected - routing to Nano Banana Pro")
+      
+      // Fetch user's avatar images for Pro Mode
+      const avatarImages = await sql`
+        SELECT image_url, display_order, uploaded_at
+        FROM user_avatar_images
+        WHERE user_id = ${user.id}
+        AND is_active = true
+        ORDER BY display_order ASC, uploaded_at ASC
+        LIMIT 5
+      `
+      
+      if (avatarImages.length === 0) {
+        return Response.json(
+          {
+            error: "Pro Mode requires reference images",
+            details: "Please upload at least one avatar image in your profile settings to use Pro Mode.",
+          },
+          { status: 400 },
+        )
+      }
+      
+      if (avatarImages.length < 3) {
+        console.warn(`[v0] [GENERATE-SINGLE] ⚠️ Only ${avatarImages.length} avatar image(s) available. Pro Mode works best with 3+ images.`)
+      }
+      
+      const baseImages = avatarImages.map((img: any) => ({
+        url: img.image_url,
+        type: 'user-photo' as const,
+      }))
+      
+      // Get brand kit if available
+      const [brandKit] = await sql`
+        SELECT primary_color, secondary_color, accent_color, font_style, brand_tone
+        FROM brand_kits
+        WHERE user_id = ${user.id} AND is_default = true
+        LIMIT 1
+      `
+      
+      // Use stored prompt from feed creation (should already be a Nano Banana prompt)
+      // Prompt is generated during feed creation using buildNanoBananaPrompt (same as Maya Chat Pro Mode)
+      let finalPrompt = post.prompt
+      
+      if (!finalPrompt || finalPrompt.trim().length < 20) {
+        // This shouldn't happen - prompts should be generated during feed creation
+        // But if it does, use content_pillar as minimal fallback
+        console.error(`[v0] [GENERATE-SINGLE] ⚠️ Pro Mode post ${post.position} missing prompt! This should have been generated during feed creation. Using fallback.`)
+        finalPrompt = post.content_pillar || `Feed post ${post.position}`
+      } else {
+        console.log(`[v0] [GENERATE-SINGLE] ✅ Using pre-generated Nano Banana prompt from feed creation (${finalPrompt.split(/\s+/).length} words)`)
+      }
+      
+      // Generate with Nano Banana Pro
+      const generation = await generateWithNanoBanana({
+        prompt: finalPrompt,
+        image_input: baseImages.map(img => img.url),
+        aspect_ratio: '4:5', // Instagram portrait format
+        resolution: '2K',
+        output_format: 'png',
+        safety_filter_level: 'block_only_high',
+      })
+      
+      // Update database with prediction ID
+      await sql`
+        UPDATE feed_posts
+        SET generation_status = 'generating',
+            prediction_id = ${generation.predictionId},
+            prompt = ${finalPrompt},
+            updated_at = NOW()
+        WHERE id = ${postId}
+      `
+      
+      // Deduct Pro Mode credits (2 credits)
+      const deduction = await deductCredits(
+        user.id.toString(),
+        getStudioProCreditCost('2K'),
+        "image",
+        `Feed post generation (Pro Mode) - ${post.post_type}`,
+        generation.predictionId,
+      )
+      
+      if (!deduction.success) {
+        console.error("[v0] [GENERATE-SINGLE] Failed to deduct credits:", deduction.error)
+      } else {
+        console.log("[v0] [GENERATE-SINGLE] Credits deducted. New balance:", deduction.newBalance)
+      }
+      
+      console.log("[v0] [GENERATE-SINGLE] ✅ Pro Mode prediction created successfully:", generation.predictionId)
+      
+      return Response.json({ 
+        predictionId: generation.predictionId,
+        success: true,
+        message: "Pro Mode image generation started",
+        mode: 'pro',
+      })
     }
-
-    if (!model.replicate_version_id) {
-      console.error("[v0] [GENERATE-SINGLE] Replicate version ID not found for model")
-      return Response.json({ error: "Replicate version ID not found" }, { status: 400 })
-    }
-
+    
+    // Classic Mode path (existing logic)
+    console.log("[v0] [GENERATE-SINGLE] Classic Mode post - using trained model")
+    
     // Always use Maya's expertise to generate/enhance prompts
     // This ensures trigger word, personal brand styling, and user context are always included
     console.log("[v0] [GENERATE-SINGLE] Calling Maya to generate enhanced prompt with expertise...")
@@ -304,13 +419,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       console.log("[v0] [GENERATE-SINGLE] ✅ Maya generated enhanced prompt (cleaned):", finalPrompt?.substring(0, 150))
 
       // Double-check trigger word is present (backup validation)
-      const promptLower = finalPrompt.toLowerCase().trim()
-      const triggerLower = model.trigger_word.toLowerCase()
-      if (!promptLower.startsWith(triggerLower)) {
-        console.log("[v0] [GENERATE-SINGLE] ⚠️ Trigger word not at start, prepending:", model.trigger_word)
-        finalPrompt = `${model.trigger_word}, ${finalPrompt}`
-      } else {
+      finalPrompt = ensureTriggerWordPrefix(finalPrompt, model.trigger_word)
+      if (finalPrompt.toLowerCase().startsWith(model.trigger_word.toLowerCase())) {
         console.log("[v0] [GENERATE-SINGLE] ✅ Trigger word confirmed at start of prompt")
+      } else {
+        console.log("[v0] [GENERATE-SINGLE] ⚠️ Trigger word prepended:", model.trigger_word)
       }
     } catch (jsonError) {
       console.error("[v0] [GENERATE-SINGLE] Failed to parse Maya response as JSON:", jsonError)
@@ -330,6 +443,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       qualitySettings.lora_scale = Number(model.lora_scale)
     }
 
+    // Extract version ID using shared helper
+    const replicateVersionId = extractReplicateVersionId(model.replicate_version_id)
+    
+    if (!replicateVersionId) {
+      console.error("[v0] [GENERATE-SINGLE] Replicate version ID not found after extraction")
+      return Response.json({ error: "Replicate version ID not found" }, { status: 400 })
+    }
+
     console.log("[v0] [GENERATE-SINGLE] Generating feed post with Maya's intelligent prompt:", {
       postId,
       postType: post.post_type,
@@ -339,36 +460,28 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
 
     const replicate = getReplicateClient()
 
-    const generationInput: any = {
-      prompt: finalPrompt,
-      guidance_scale: qualitySettings.guidance_scale,
-      num_inference_steps: qualitySettings.num_inference_steps,
-      aspect_ratio: qualitySettings.aspect_ratio,
-      megapixels: qualitySettings.megapixels,
-      output_format: qualitySettings.output_format,
-      output_quality: qualitySettings.output_quality,
-      lora_scale: Number(qualitySettings.lora_scale),
-      hf_lora: model.lora_weights_url, // Use hf_lora instead of lora for consistency
-      extra_lora: qualitySettings.extra_lora,
-      extra_lora_scale: qualitySettings.extra_lora_scale,
-      disable_safety_checker: qualitySettings.disable_safety_checker ?? true,
-      go_fast: qualitySettings.go_fast ?? false,
-      num_outputs: qualitySettings.num_outputs ?? 1,
-      model: qualitySettings.model ?? "dev",
+    // Calculate seed for photoshoot mode if enabled
+    let seed: number | undefined = undefined
+    if (feedLayout?.photoshoot_enabled && feedLayout?.photoshoot_base_seed) {
+      const seedVariation = post.seed_variation || 0
+      seed = feedLayout.photoshoot_base_seed + seedVariation
+      console.log("[v0] [GENERATE-SINGLE] Using photoshoot seed:", seed, "variation:", seedVariation)
     }
 
-    if (feedLayout?.photoshoot_enabled && feedLayout?.photoshoot_base_seed) {
-      // Add seed variation for diversity while maintaining consistency
-      const seedVariation = post.seed_variation || 0
-      generationInput.seed = feedLayout.photoshoot_base_seed + seedVariation
-      console.log("[v0] [GENERATE-SINGLE] Using photoshoot seed:", generationInput.seed, "variation:", seedVariation)
-    }
+    // Build Replicate input using shared helper
+    const generationInput = buildClassicModeReplicateInput({
+      prompt: finalPrompt,
+      qualitySettings,
+      loraWeightsUrl: model.lora_weights_url,
+      seed,
+    })
 
     console.log("[v0] [GENERATE-SINGLE] Creating Replicate prediction with:", {
       version: replicateVersionId,
-      hasLora: !!generationInput.lora,
+      hasLora: !!generationInput.hf_lora,
       promptLength: generationInput.prompt?.length,
       seed: generationInput.seed,
+      extraLoraIncluded: !!generationInput.extra_lora,
     })
 
     const prediction = await replicate.predictions.create({
@@ -378,11 +491,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
 
     console.log("[v0] [GENERATE-SINGLE] ✅ Prediction created successfully:", prediction.id)
 
+    // Deduct Classic Mode credits (1 credit)
     const deduction = await deductCredits(
       user.id.toString(),
       CREDIT_COSTS.IMAGE,
       "image",
-      `Feed post generation - ${post.post_type}`,
+      `Feed post generation (Classic Mode) - ${post.post_type}`,
       prediction.id,
     )
 

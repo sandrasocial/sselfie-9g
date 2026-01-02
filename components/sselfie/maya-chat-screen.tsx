@@ -59,7 +59,7 @@ import ImageLibraryModal from "./pro-mode/ImageLibraryModal"
 import ProModeChatHistory from "./pro-mode/ProModeChatHistory"
 import { Typography, Colors } from '@/lib/maya/pro/design-system'
 import { useToast } from "@/hooks/use-toast"
-import { DesignClasses } from "@/lib/design-tokens"
+import { DesignClasses, ComponentClasses } from "@/lib/design-tokens"
 
 interface MayaChatScreenProps {
   onImageGenerated?: () => void
@@ -112,9 +112,9 @@ export default function MayaChatScreen({
   const [showBuyCreditsModal, setShowBuyCreditsModal] = useState(false)
   const router = useRouter()
   
-  // Tab state for Photos/Videos/Prompts/Training tabs
-  const [activeMayaTab, setActiveMayaTab] = useState<"photos" | "videos" | "prompts" | "training">(() => {
-    // Check URL hash for tab selection (e.g., #maya/videos, #maya/prompts, #maya/training)
+  // Tab state for Photos/Videos/Prompts/Training/Feed tabs
+  const [activeMayaTab, setActiveMayaTab] = useState<"photos" | "videos" | "prompts" | "training" | "feed">(() => {
+    // Check URL hash for tab selection (e.g., #maya/videos, #maya/prompts, #maya/training, #maya/feed)
     if (typeof window !== "undefined") {
       const hash = window.location.hash
       if (hash === "#maya/videos" || hash === "#videos") {
@@ -126,10 +126,13 @@ export default function MayaChatScreen({
       if (hash === "#maya/training" || hash === "#training") {
         return "training"
       }
+      if (hash === "#maya/feed" || hash === "#feed") {
+        return "feed"
+      }
       // Check localStorage for persisted tab selection
       const savedTab = localStorage.getItem("mayaActiveTab")
-      if (savedTab === "photos" || savedTab === "videos" || savedTab === "prompts" || savedTab === "training") {
-        return savedTab as "photos" | "videos" | "prompts" | "training"
+      if (savedTab === "photos" || savedTab === "videos" || savedTab === "prompts" || savedTab === "training" || savedTab === "feed") {
+        return savedTab as "photos" | "videos" | "prompts" | "training" | "feed"
       }
     }
     return "photos" // Default to Photos tab
@@ -179,10 +182,12 @@ export default function MayaChatScreen({
     studioProMode,
     user,
     getModeString,
+    activeTab: activeMayaTab, // Pass Feed tab flag
   })
 
   const [pendingConceptRequest, setPendingConceptRequest] = useState<string | null>(null)
   const [isGeneratingConcepts, setIsGeneratingConcepts] = useState(false)
+  const [isCreatingFeed, setIsCreatingFeed] = useState(false)
   
   // Track messages that should show image upload module
   const [messagesWithUploadModule, setMessagesWithUploadModule] = useState<Set<string>>(new Set())
@@ -258,6 +263,7 @@ export default function MayaChatScreen({
   const processedStudioProMessagesRef = useRef<Set<string>>(new Set())
   const promptGenerationTriggeredRef = useRef<Set<string>>(new Set()) // Track messages that have already triggered prompt generation
   const carouselCardsAddedRef = useRef<Set<string>>(new Set()) // Track messages that already have carousel cards added
+  const processedFeedMessagesRef = useRef<Set<string>>(new Set()) // Track messages that have already triggered feed creation
   const generateCarouselRef = useRef<((params: { topic: string; slideCount: number }) => Promise<void>) | null>(null)
   const generateReelCoverRef = useRef<((params: { title: string; textOverlay?: string }) => Promise<void>) | null>(null)
   
@@ -327,6 +333,288 @@ export default function MayaChatScreen({
 
   // Image persistence and gallery loading are now handled by useMayaImages hook
 
+  // Feed creation handler
+  const createFeedFromStrategy = useCallback(async (strategy: any) => {
+    setIsCreatingFeed(true)
+    try {
+      console.log("[FEED] Creating feed from strategy...")
+      console.log("[FEED] PRO Mode:", studioProMode ? 'PRO' : 'CLASSIC')
+      
+      const response = await fetch('/api/feed-planner/create-from-strategy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          strategy,
+          userModePreference: studioProMode ? 'pro' : 'classic', // Pass PRO mode preference
+          customSettings: {
+            styleStrength: styleStrength,
+            promptAccuracy: promptAccuracy,
+            aspectRatio: aspectRatio,
+            realismStrength: realismStrength,
+          },
+        }),
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        const errorMessage = errorData.error || 'Failed to create feed'
+        console.error("[FEED] ❌ Feed creation failed:", errorMessage)
+        alert(errorMessage)
+        return
+      }
+      
+      const data = await response.json()
+      console.log("[FEED] ✅ Feed created:", data.feedLayoutId)
+      
+      if (data.feedLayoutId) {
+        // Feed created successfully - user will click "Generate Feed" button when ready
+        console.log("[FEED] ✅ Feed created successfully:", data.feedLayoutId)
+        
+        // Fetch feed data to display in preview card
+        const feedResponse = await fetch(`/api/feed/${data.feedLayoutId}`)
+        if (feedResponse.ok) {
+          const feedData = await feedResponse.json()
+          
+          // Find the last assistant message to get its ID for persistence
+          let lastAssistantMessageId: number | null = null
+          setMessages((prevMessages: any[]) => {
+            const updatedMessages = [...prevMessages]
+            
+            // Find the last assistant message (iterate backwards)
+            for (let i = updatedMessages.length - 1; i >= 0; i--) {
+              if (updatedMessages[i].role === 'assistant') {
+                const lastAssistant = updatedMessages[i]
+                
+                // Check if feed card already exists (prevent duplicates on refresh)
+                const hasFeedCard = lastAssistant.parts?.some(
+                  (p: any) => p.type === 'tool-generateFeed'
+                )
+                
+                if (hasFeedCard) {
+                  console.log("[FEED] Feed card already exists in message, skipping")
+                  break
+                }
+                
+                // Store message ID for persistence (outside the callback)
+                lastAssistantMessageId = parseInt(lastAssistant.id)
+                
+                const updatedParts = [
+                  ...(lastAssistant.parts || []),
+                  {
+                    type: 'tool-generateFeed',
+                    output: {
+                      feedId: data.feedLayoutId,
+                      title: feedData.feed?.brand_name || 'Instagram Feed',
+                      description: feedData.feed?.description || feedData.feed?.gridPattern || '',
+                      posts: feedData.posts || [], // Posts are at root level, not nested in feed
+                    },
+                  },
+                ]
+                
+                // Also save feed marker to message content for persistence
+                // This allows feed cards to be restored on page refresh
+                const feedMarker = `[FEED_CARD:${data.feedLayoutId}]`
+                const contentWithMarker = lastAssistant.content 
+                  ? `${lastAssistant.content}\n\n${feedMarker}`
+                  : feedMarker
+                
+                updatedMessages[i] = {
+                  ...lastAssistant,
+                  content: contentWithMarker,
+                  parts: updatedParts,
+                }
+                
+                break
+              }
+            }
+            
+            return updatedMessages
+          })
+          
+          // Save feed marker to database for persistence (outside setMessages callback)
+          if (lastAssistantMessageId) {
+            const feedMarker = `[FEED_CARD:${data.feedLayoutId}]`
+            // Append marker to existing message content
+            fetch('/api/maya/update-message', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                messageId: lastAssistantMessageId,
+                content: feedMarker,
+                append: true, // Append to existing content
+              }),
+            }).catch(err => {
+              console.warn("[FEED] Failed to save feed marker to database (non-critical):", err)
+            })
+          }
+        }
+      }
+    } catch (error) {
+      console.error("[FEED] ❌ Error creating feed:", error)
+      alert('Failed to create feed. Please try again.')
+    } finally {
+      setIsCreatingFeed(false)
+    }
+  }, [styleStrength, promptAccuracy, aspectRatio, realismStrength, studioProMode, setMessages])
+
+  // Generate captions for feed handler
+  const generateCaptionsForFeed = useCallback(async () => {
+    try {
+      console.log("[FEED-CAPTIONS] Generating captions for latest feed...")
+      
+      // Get latest feed ID
+      const latestFeedResponse = await fetch('/api/feed/latest')
+      if (!latestFeedResponse.ok) {
+        console.error("[FEED-CAPTIONS] ❌ Failed to get latest feed")
+        return
+      }
+      
+      const latestFeedData = await latestFeedResponse.json()
+      if (!latestFeedData.exists || !latestFeedData.feed?.id) {
+        console.error("[FEED-CAPTIONS] ❌ No feed found")
+        return
+      }
+      
+      const feedId = latestFeedData.feed.id
+      console.log("[FEED-CAPTIONS] Found feed:", feedId)
+      
+      // Generate captions
+      const captionsResponse = await fetch(`/api/feed/${feedId}/generate-captions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      })
+      
+      if (!captionsResponse.ok) {
+        const errorData = await captionsResponse.json().catch(() => ({}))
+        console.error("[FEED-CAPTIONS] ❌ Failed to generate captions:", errorData.error)
+        return
+      }
+      
+      const captionsData = await captionsResponse.json()
+      console.log("[FEED-CAPTIONS] ✅ Generated captions:", captionsData.captions.length)
+      
+      // Add caption cards to the last assistant message
+      setMessages((prevMessages: any[]) => {
+        const updatedMessages = [...prevMessages]
+        
+        // Find the last assistant message (iterate backwards)
+        for (let i = updatedMessages.length - 1; i >= 0; i--) {
+          if (updatedMessages[i].role === 'assistant') {
+            const lastAssistant = updatedMessages[i]
+            const existingParts = lastAssistant.parts || []
+            
+            // Check if caption cards already exist
+            const hasCaptionCards = existingParts.some(
+              (p: any) => p.type === 'tool-generateCaptions'
+            )
+            
+            if (!hasCaptionCards) {
+              const updatedParts = [
+                ...existingParts,
+                {
+                  type: 'tool-generateCaptions',
+                  output: {
+                    feedId,
+                    captions: captionsData.captions,
+                  },
+                },
+              ]
+              
+              updatedMessages[i] = {
+                ...lastAssistant,
+                parts: updatedParts,
+              }
+            }
+            break
+          }
+        }
+        
+        return updatedMessages
+      })
+    } catch (error) {
+      console.error("[FEED-CAPTIONS] ❌ Error generating captions:", error)
+    }
+  }, [setMessages])
+
+  // Generate strategy for feed handler
+  const generateStrategyForFeed = useCallback(async () => {
+    try {
+      console.log("[FEED-STRATEGY] Generating strategy for latest feed...")
+      
+      // Get latest feed ID
+      const latestFeedResponse = await fetch('/api/feed/latest')
+      if (!latestFeedResponse.ok) {
+        console.error("[FEED-STRATEGY] ❌ Failed to get latest feed")
+        return
+      }
+      
+      const latestFeedData = await latestFeedResponse.json()
+      if (!latestFeedData.exists || !latestFeedData.feed?.id) {
+        console.error("[FEED-STRATEGY] ❌ No feed found")
+        return
+      }
+      
+      const feedId = latestFeedData.feed.id
+      console.log("[FEED-STRATEGY] Found feed:", feedId)
+      
+      // Generate strategy
+      const strategyResponse = await fetch(`/api/feed/${feedId}/generate-strategy`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      })
+      
+      if (!strategyResponse.ok) {
+        const errorData = await strategyResponse.json().catch(() => ({}))
+        console.error("[FEED-STRATEGY] ❌ Failed to generate strategy:", errorData.error)
+        return
+      }
+      
+      const strategyData = await strategyResponse.json()
+      console.log("[FEED-STRATEGY] ✅ Generated strategy")
+      
+      // Add strategy card to the last assistant message
+      setMessages((prevMessages: any[]) => {
+        const updatedMessages = [...prevMessages]
+        
+        // Find the last assistant message (iterate backwards)
+        for (let i = updatedMessages.length - 1; i >= 0; i--) {
+          if (updatedMessages[i].role === 'assistant') {
+            const lastAssistant = updatedMessages[i]
+            const existingParts = lastAssistant.parts || []
+            
+            // Check if strategy card already exists
+            const hasStrategyCard = existingParts.some(
+              (p: any) => p.type === 'tool-generateStrategy'
+            )
+            
+            if (!hasStrategyCard) {
+              const updatedParts = [
+                ...existingParts,
+                {
+                  type: 'tool-generateStrategy',
+                  output: {
+                    feedId,
+                    strategy: strategyData.strategy,
+                  },
+                },
+              ]
+              
+              updatedMessages[i] = {
+                ...lastAssistant,
+                parts: updatedParts,
+              }
+            }
+            break
+          }
+        }
+        
+        return updatedMessages
+      })
+    } catch (error) {
+      console.error("[FEED-STRATEGY] ❌ Error generating strategy:", error)
+    }
+  }, [setMessages])
+
   // Pro features: Generate carousel (defined BEFORE useEffect that processes messages)
   const generateCarousel = useCallback(async ({ topic, slideCount }: { topic: string; slideCount: number }) => {
     try {
@@ -393,7 +681,7 @@ export default function MayaChatScreen({
           imageParts: carouselMessage.parts.filter(p => p.type === 'image').length,
         })
 
-        setMessages((prev) => {
+        setMessages((prev: any[]) => {
           const updated = [...prev, carouselMessage]
           console.log('[CAROUSEL] Updated messages, total count:', updated.length)
           return updated
@@ -487,7 +775,7 @@ export default function MayaChatScreen({
           ],
         }
 
-        setMessages((prev) => {
+        setMessages((prev: any[]) => {
           const updated = [...prev, reelCoverMessage as any]
           return updated as any
         })
@@ -640,6 +928,70 @@ export default function MayaChatScreen({
       })
     }
 
+    // Check for [CREATE_FEED_STRATEGY] trigger (Feed tab only)
+    if (activeMayaTab === "feed") {
+      // CRITICAL: Check if message already has feed card FIRST (like concept cards check)
+      const alreadyHasFeedCard = lastAssistantMessage.parts?.some(
+        (p: any) => p.type === "tool-generateFeed"
+      )
+      if (alreadyHasFeedCard) {
+        console.log("[FEED] Message already has feed card, skipping:", messageId)
+        // Mark as processed and skip (prevents reprocessing on refresh)
+        processedFeedMessagesRef.current.add(messageId)
+        return
+      }
+      
+      // CRITICAL: Skip if already creating a feed (prevents concurrent creation)
+      if (isCreatingFeed) {
+        return
+      }
+      
+      // CRITICAL: Check if message has already been processed (prevent loops)
+      if (processedFeedMessagesRef.current.has(messageId)) {
+        return // Already processed, skip immediately
+      }
+      
+      const feedStrategyMatch = textContent.match(/\[CREATE_FEED_STRATEGY:\s*(\{[\s\S]*\})\]/i)
+      
+      if (feedStrategyMatch) {
+        // Mark as processed BEFORE triggering to prevent re-processing
+        processedFeedMessagesRef.current.add(messageId)
+        
+        const strategyJson = feedStrategyMatch[1]
+        console.log("[FEED] ✅ Detected feed creation trigger:", {
+          messageId,
+          strategyJsonLength: strategyJson.length,
+        })
+        
+        try {
+          const strategy = JSON.parse(strategyJson)
+          createFeedFromStrategy(strategy)
+        } catch (error) {
+          console.error("[FEED] ❌ Failed to parse strategy JSON:", error)
+          // Remove from processed set on error so it can be retried
+          processedFeedMessagesRef.current.delete(messageId)
+        }
+        return // Don't check other triggers
+      }
+
+      // Check for [GENERATE_CAPTIONS] trigger (Feed tab only)
+      const generateCaptionsMatch = textContent.match(/\[GENERATE_CAPTIONS\]/i)
+      if (generateCaptionsMatch && activeMayaTab === "feed") {
+        console.log("[FEED-CAPTIONS] ✅ Detected caption generation trigger")
+        generateCaptionsForFeed()
+        return // Don't check other triggers
+      }
+
+      // Check for [GENERATE_STRATEGY] trigger (Feed tab only)
+      const generateStrategyMatch = textContent.match(/\[GENERATE_STRATEGY\]/i)
+      if (generateStrategyMatch && activeMayaTab === "feed") {
+        console.log("[FEED-STRATEGY] ✅ Detected strategy generation trigger")
+        generateStrategyForFeed()
+        return // Don't check other triggers
+      }
+
+    }
+
     // Check for Studio Pro generation triggers FIRST (before other Studio Pro checks)
     // [GENERATE_CAROUSEL: ...]
     // Use a more robust regex that handles the full parameter string
@@ -714,7 +1066,7 @@ export default function MayaChatScreen({
         }
         
         // Add the carousel card part to the last assistant message
-        setMessages((prev) => {
+        setMessages((prev: any[]) => {
           const updated = [...prev]
           const lastIndex = updated.length - 1
           if (lastIndex >= 0 && updated[lastIndex].role === "assistant") {
@@ -757,7 +1109,7 @@ export default function MayaChatScreen({
       // Call generateReelCover via ref to avoid dependency issues
       generateReelCoverRef.current?.({ title, textOverlay })
     }
-  }, [messages, status, isGeneratingConcepts, pendingConceptRequest, isGeneratingStudioPro, studioProMode, messagesWithUploadModule])
+  }, [messages, status, isGeneratingConcepts, pendingConceptRequest, isGeneratingStudioPro, studioProMode, messagesWithUploadModule, activeMayaTab, isCreatingFeed])
 
   // The problem was: message was saved BEFORE concepts were generated, so concepts were never persisted
   useEffect(() => {
@@ -1043,7 +1395,7 @@ export default function MayaChatScreen({
           // In Studio Pro mode, show concept cards (they now support image upload/selection)
           // Workbench is kept separate for manual prompt creation
           // Always show concept cards - they work in both Classic and Studio Pro modes
-          setMessages((prevMessages) => {
+          setMessages((prevMessages: any[]) => {
             const newMessages = [...prevMessages]
             const lastIndex = newMessages.length - 1
             if (lastIndex >= 0 && newMessages[lastIndex].role === "assistant") {
@@ -1487,9 +1839,26 @@ export default function MayaChatScreen({
     return selected.sort(() => Math.random() - 0.5).slice(0, 4)
   }
 
-  // Update prompts based on mode
+  // Feed Tab Quick Prompts
+  const getFeedQuickPrompts = (): Array<{ label: string; prompt: string }> => {
+    return [
+      { label: "Create Feed Layout", prompt: "Create an Instagram feed layout for my business" },
+      { label: "Create Captions", prompt: "Create captions for my feed posts" },
+      { label: "Create Strategy", prompt: "Create a strategy document for my feed" },
+    ]
+  }
+
+  // Update prompts based on mode and active tab
   useEffect(() => {
-    // Both modes now support quick suggestions
+    // Feed tab uses feed-specific prompts
+    if (activeMayaTab === "feed") {
+      const feedPrompts = getFeedQuickPrompts()
+      console.log("[v0] Setting Feed tab prompts:", feedPrompts.length)
+      setCurrentPrompts(feedPrompts)
+      return
+    }
+
+    // Both modes now support quick suggestions (for Photos tab)
     const fetchUserGender = async () => {
       try {
         console.log("[v0] Fetching user gender from /api/user/profile")
@@ -1524,7 +1893,7 @@ export default function MayaChatScreen({
       }
     }
     fetchUserGender()
-  }, [studioProMode])
+  }, [studioProMode, activeMayaTab])
 
   useEffect(() => {
     const fetchCredits = async () => {
@@ -2256,7 +2625,7 @@ export default function MayaChatScreen({
           }
           
           // Add result to messages
-          setMessages(prev => {
+          setMessages((prev: any[]) => {
             const newMessages = [...prev]
             const lastIndex = newMessages.length - 1
             
@@ -2746,7 +3115,7 @@ export default function MayaChatScreen({
       {/* Mobile optimized: safe area insets, responsive padding */}
       {/* Using z-[100] to ensure it's above all other content */}
       <div 
-        className="fixed top-0 left-0 right-0 z-[100] bg-white/95 backdrop-blur-xl shadow-sm"
+        className="fixed top-0 left-0 right-0 z-100 bg-white/95 backdrop-blur-xl shadow-sm"
         style={{
           paddingTop: 'max(0.625rem, env(safe-area-inset-top, 0px))',
         }}
@@ -2796,6 +3165,7 @@ export default function MayaChatScreen({
                 videos: "#maya/videos",
                 prompts: "#maya/prompts",
                 training: "#maya/training",
+                feed: "#maya/feed",
               }
               window.history.replaceState(null, "", hashMap[tab] || "#maya")
             }
@@ -2808,7 +3178,7 @@ export default function MayaChatScreen({
       {/* Training Prompt - Show if user doesn't have trained model */}
       {!hasTrainedModel && (
         <div className="shrink-0 mx-3 sm:mx-4 mt-4 mb-4">
-          <div className={`${DesignClasses.card} text-center`}>
+          <div className={`${ComponentClasses.card} text-center`}>
             <div className={`w-16 h-16 sm:w-20 sm:h-20 bg-white/70 ${DesignClasses.blur.md} ${DesignClasses.radius.md} flex items-center justify-center mx-auto ${DesignClasses.spacing.marginBottom.md} ${DesignClasses.border.strong} ${DesignClasses.shadows.button}`}>
               <Aperture size={28} className="sm:w-8 sm:h-8" strokeWidth={1.5} />
             </div>
@@ -2826,7 +3196,7 @@ export default function MayaChatScreen({
                     // Trigger onboarding wizard instead of navigating to training tab
                     window.dispatchEvent(new CustomEvent('open-onboarding'))
                   }}
-                  className={`group relative ${DesignClasses.buttonPrimary} min-h-[52px] sm:min-h-[60px] overflow-hidden w-full sm:w-auto`}
+                  className={`group relative ${ComponentClasses.buttonPrimary} min-h-[52px] sm:min-h-[60px] overflow-hidden w-full sm:w-auto`}
                 >
                   <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                   <span className="relative z-10 flex items-center justify-center gap-2">
@@ -3069,12 +3439,12 @@ export default function MayaChatScreen({
         isGeneratingConcepts={isGeneratingConcepts}
         isGeneratingStudioPro={isGeneratingStudioPro}
         contentFilter={contentFilter}
-        messagesContainerRef={messagesContainerRef}
-        messagesEndRef={messagesEndRef}
+        messagesContainerRef={messagesContainerRef as React.RefObject<HTMLDivElement>}
+        messagesEndRef={messagesEndRef as React.RefObject<HTMLDivElement>}
         showScrollButton={showScrollButton}
         isAtBottomRef={isAtBottomRef}
         scrollToBottom={scrollToBottom}
-        chatId={chatId}
+        chatId={chatId ?? undefined}
         uploadedImages={uploadedImages}
         setCreditBalance={setCreditBalance}
         onImageGenerated={onImageGenerated}
@@ -3108,8 +3478,9 @@ export default function MayaChatScreen({
                       
                       // Trigger concept generation with the library
                       if (sendMessage && library.selfies.length > 0) {
-                        // Build message with intent
-                        const messageText = library.intent || "I'm ready to create concepts with my images"
+                        // Build message with intent - we're in Photos tab, so use concepts message
+                        const defaultMessage = "I'm ready to create concepts with my images"
+                        const messageText = library.intent || defaultMessage
                         
                         // Add all images to message
                         const allImages = [
@@ -3171,7 +3542,9 @@ export default function MayaChatScreen({
                       
                       // Trigger concept generation by sending a message to Maya
                       if (sendMessage && library.selfies.length > 0) {
-                        const messageText = library.intent || "I'm ready to create concepts with my images"
+                        // We're in Photos tab, so use concepts message
+                        const defaultMessage = "I'm ready to create concepts with my images"
+                        const messageText = library.intent || defaultMessage
                         
                         const allImages = [
                           ...library.selfies,
@@ -3268,153 +3641,155 @@ export default function MayaChatScreen({
             </div>
           )}
           </div>
+        </>
+      )}
 
-          {/* Fixed Bottom Input Area - Only show in Photos tab */}
+      {/* Fixed Bottom Input Area - Show in Photos and Feed tabs */}
       {/* Positioned above bottom navigation (nav is ~70px tall) */}
       {/* Subtle background for contrast - positioned above nav, z-index below nav */}
-      <div
-            className="fixed left-0 right-0 bg-white/60 backdrop-blur-md border-t border-stone-200/30 px-3 sm:px-4 py-2.5 sm:py-3 z-[65] safe-bottom flex flex-col"
-        style={{
-          bottom: '80px', // Position above bottom navigation with extra spacing
-          paddingBottom: "calc(env(safe-area-inset-bottom) + 0.5rem)",
-          maxHeight: 'calc(100vh - 80px)', // Prevent extending beyond viewport
-        }}
-      >
-        {/* Classic Mode Quick Actions */}
-        <MayaQuickPrompts
-          prompts={currentPrompts}
-          onSelect={handleSendMessage}
-          disabled={isTyping}
-          variant="input-area"
-          studioProMode={studioProMode}
-          isEmpty={isEmpty}
-          uploadedImage={uploadedImage}
-        />
+      {(activeMayaTab === "photos" || activeMayaTab === "feed") && (
+        <div
+          className="fixed left-0 right-0 bg-white/60 backdrop-blur-md border-t border-stone-200/30 px-3 sm:px-4 py-2.5 sm:py-3 z-65 safe-bottom flex flex-col"
+          style={{
+            bottom: '80px', // Position above bottom navigation with extra spacing
+            paddingBottom: "calc(env(safe-area-inset-bottom) + 0.5rem)",
+            maxHeight: 'calc(100vh - 80px)', // Prevent extending beyond viewport
+          }}
+        >
+          {/* Quick Actions */}
+          <MayaQuickPrompts
+            prompts={currentPrompts}
+            onSelect={handleSendMessage}
+            disabled={isTyping}
+            variant="input-area"
+            studioProMode={studioProMode}
+            isEmpty={isEmpty}
+            uploadedImage={uploadedImage}
+          />
 
-        {uploadedImage && (
-          <div className="mb-2 relative inline-block">
-            <div className="relative w-20 h-20 sm:w-16 sm:h-16 rounded-lg overflow-hidden border border-white/60 shadow-lg">
-              <img src={uploadedImage || "/placeholder.svg"} alt="Inspiration" className="w-full h-full object-cover" />
-              <button
-                onClick={() => setUploadedImage(null)}
-                className="absolute top-1 right-1 w-6 h-6 bg-stone-950 text-white rounded-full flex items-center justify-center hover:scale-110 transition-transform touch-manipulation"
-                aria-label="Remove image"
-              >
-                <X size={14} strokeWidth={2.5} />
-              </button>
-            </div>
-            <p className="text-xs text-stone-600 mt-1 tracking-wide">Inspiration Image</p>
-          </div>
-        )}
-
-        {/* Input Area - Unified for both Classic and Pro Mode */}
-        {/* Pro Feature: Generation Options (collapsible section with quick prompts and concept consistency)
-            Progressive enhancement: This section only appears when Pro features are enabled */}
-        {studioProMode && (
-            <div 
-              className="w-full border-b border-stone-200/30"
-              style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.4)',
-                backdropFilter: 'blur(8px)',
-              }}
-            >
-              <div className="max-w-[1200px] mx-auto">
-                {/* Collapsible Header */}
+          {uploadedImage && (
+            <div className="mb-2 relative inline-block">
+              <div className="relative w-20 h-20 sm:w-16 sm:h-16 rounded-lg overflow-hidden border border-white/60 shadow-lg">
+                <img src={uploadedImage || "/placeholder.svg"} alt="Inspiration" className="w-full h-full object-cover" />
                 <button
-                  onClick={() => setIsOptionsExpanded(!isOptionsExpanded)}
-                  className="w-full flex items-center justify-between px-4 sm:px-6 py-3 hover:bg-stone-50/50 transition-colors touch-manipulation"
-                  style={{
-                    paddingLeft: 'clamp(12px, 3vw, 24px)',
-                    paddingRight: 'clamp(12px, 3vw, 24px)',
-                  }}
+                  onClick={() => setUploadedImage(null)}
+                  className="absolute top-1 right-1 w-6 h-6 bg-stone-950 text-white rounded-full flex items-center justify-center hover:scale-110 transition-transform touch-manipulation"
+                  aria-label="Remove image"
                 >
-                  <span
-                  className="text-xs sm:text-sm font-serif font-extralight tracking-[0.2em] uppercase text-stone-600"
-                  title="Advanced generation options: Quick prompts and concept consistency controls"
-                  >
-                    Generation Options
-                  </span>
-                  <ChevronDown
-                    size={18}
-                    className="text-stone-500 transition-transform duration-200"
-                    style={{
-                      transform: isOptionsExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                    }}
-                  />
+                  <X size={14} strokeWidth={2.5} />
                 </button>
+              </div>
+              <p className="text-xs text-stone-600 mt-1 tracking-wide">Inspiration Image</p>
+            </div>
+          )}
 
-                {/* Collapsible Content */}
-                {isOptionsExpanded && (
-                  <div 
-                    className="px-4 sm:px-6 pb-4 space-y-4"
+          {/* Input Area - Unified for both Classic and Pro Mode */}
+          {/* Pro Feature: Generation Options (collapsible section with quick prompts and concept consistency)
+              Progressive enhancement: This section only appears when Pro features are enabled */}
+          {studioProMode && (
+              <div 
+                className="w-full border-b border-stone-200/30"
+                style={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.4)',
+                  backdropFilter: 'blur(8px)',
+                }}
+              >
+                <div className="max-w-[1200px] mx-auto">
+                  {/* Collapsible Header */}
+                  <button
+                    onClick={() => setIsOptionsExpanded(!isOptionsExpanded)}
+                    className="w-full flex items-center justify-between px-4 sm:px-6 py-3 hover:bg-stone-50/50 transition-colors touch-manipulation"
                     style={{
                       paddingLeft: 'clamp(12px, 3vw, 24px)',
                       paddingRight: 'clamp(12px, 3vw, 24px)',
-                      paddingBottom: 'clamp(12px, 3vw, 16px)',
                     }}
                   >
-                    {/* Quick Suggestions */}
-                    <MayaQuickPrompts
-                      prompts={currentPrompts}
-                      onSelect={handleSendMessage}
-                      disabled={isTyping || isGeneratingConcepts}
-                      variant="pro-mode-options"
-                      studioProMode={studioProMode}
-                      isEmpty={isEmpty}
-                      uploadedImage={uploadedImage}
+                    <span
+                    className="text-xs sm:text-sm font-serif font-extralight tracking-[0.2em] uppercase text-stone-600"
+                    title="Advanced generation options: Quick prompts and concept consistency controls"
+                    >
+                      Generation Options
+                    </span>
+                    <ChevronDown
+                      size={18}
+                      className="text-stone-500 transition-transform duration-200"
+                      style={{
+                        transform: isOptionsExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                      }}
                     />
+                  </button>
 
-                    {/* Concept Consistency Toggle */}
-                    <div className="border-t border-stone-200/50 pt-4">
-                      <ConceptConsistencyToggle
-                        value={consistencyMode}
-                        onChange={handleConsistencyModeChange}
-                        count={6}
-                        className=""
+                  {/* Collapsible Content */}
+                  {isOptionsExpanded && (
+                    <div 
+                      className="px-4 sm:px-6 pb-4 space-y-4"
+                      style={{
+                        paddingLeft: 'clamp(12px, 3vw, 24px)',
+                        paddingRight: 'clamp(12px, 3vw, 24px)',
+                        paddingBottom: 'clamp(12px, 3vw, 16px)',
+                      }}
+                    >
+                      {/* Quick Suggestions */}
+                      <MayaQuickPrompts
+                        prompts={currentPrompts}
+                        onSelect={handleSendMessage}
+                        disabled={isTyping || isGeneratingConcepts}
+                        variant="pro-mode-options"
+                        studioProMode={studioProMode}
+                        isEmpty={isEmpty}
+                        uploadedImage={uploadedImage}
                       />
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-        )}
 
-        {/* Unified Input Component - Works for both Classic and Pro Mode */}
-        <MayaUnifiedInput
-              onSend={(message, imageUrl) => {
-            // Handle message sending - match Pro Mode pattern
-                if (imageUrl) {
-              // Set uploaded image state first, then send message
-                  setUploadedImage(imageUrl)
-              // Use message if provided, otherwise handleSendMessage will use inputValue (though unified component manages its own)
-              const messageToSend = message || ""
-                  if (messageToSend || imageUrl) {
-                handleSendMessage(messageToSend || undefined)
-                  }
-                } else {
-                  // Just send text message
-              handleSendMessage(message || undefined)
-            }
-          }}
-          onImageUpload={hasProFeatures ? () => setShowUploadFlow(true) : undefined}
-          onFileChange={hasProFeatures ? undefined : handleImageUpload}
-          fileInputRef={hasProFeatures ? undefined : fileInputRef}
-          uploadedImage={uploadedImage}
-          isUploadingImage={isUploadingImage}
-          onRemoveImage={() => setUploadedImage(null)}
-              isLoading={isTyping || isGeneratingConcepts}
-              disabled={isTyping || isGeneratingConcepts}
-          placeholder={hasProFeatures ? "What would you like to create?" : "Message Maya..."}
-          showSettingsButton={!hasProFeatures}
-          onSettingsClick={() => setShowChatMenu(!showChatMenu)}
-          showLibraryButton={false} // Removed - image icon handles library access
-          onManageLibrary={undefined} // Removed - image icon handles library access
-          onNewProject={handleNewChat}
-          onHistory={() => hasProFeatures ? setShowProModeHistory(true) : setShowHistory(true)}
-          studioProMode={studioProMode}
-        />
-          </div>
-        </>
+                      {/* Concept Consistency Toggle */}
+                      <div className="border-t border-stone-200/50 pt-4">
+                        <ConceptConsistencyToggle
+                          value={consistencyMode}
+                          onChange={handleConsistencyModeChange}
+                          count={6}
+                          className=""
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+          )}
+
+          {/* Unified Input Component - Works for Photos and Feed tabs */}
+          <MayaUnifiedInput
+            onSend={(message, imageUrl) => {
+              // Handle message sending - match Pro Mode pattern
+              if (imageUrl) {
+                // Set uploaded image state first, then send message
+                setUploadedImage(imageUrl)
+                // Use message if provided, otherwise handleSendMessage will use inputValue (though unified component manages its own)
+                const messageToSend = message || ""
+                if (messageToSend || imageUrl) {
+                  handleSendMessage(messageToSend || undefined)
+                }
+              } else {
+                // Just send text message
+                handleSendMessage(message || undefined)
+              }
+            }}
+            onImageUpload={hasProFeatures ? () => setShowUploadFlow(true) : undefined}
+            onFileChange={hasProFeatures ? undefined : handleImageUpload}
+            fileInputRef={hasProFeatures ? undefined : (fileInputRef as React.RefObject<HTMLInputElement>)}
+            uploadedImage={uploadedImage}
+            isUploadingImage={isUploadingImage}
+            onRemoveImage={() => setUploadedImage(null)}
+            isLoading={isTyping || isGeneratingConcepts}
+            disabled={isTyping || isGeneratingConcepts}
+            placeholder={hasProFeatures ? "What would you like to create?" : "Message Maya..."}
+            showSettingsButton={!hasProFeatures}
+            onSettingsClick={() => setShowChatMenu(!showChatMenu)}
+            showLibraryButton={false} // Removed - image icon handles library access
+            onManageLibrary={undefined} // Removed - image icon handles library access
+            onNewProject={handleNewChat}
+            onHistory={() => hasProFeatures ? setShowProModeHistory(true) : setShowHistory(true)}
+            studioProMode={studioProMode}
+          />
+        </div>
       )}
 
       {/* Tab Content - Videos Tab */}
@@ -3479,6 +3854,74 @@ export default function MayaChatScreen({
         </div>
       )}
 
+      {/* Tab Content - Feed Tab */}
+      {activeMayaTab === "feed" && (
+        <>
+          <div 
+            className="flex-1 min-h-0 flex flex-col"
+            style={{
+              paddingBottom: '140px', // Space for fixed bottom input
+            }}
+          >
+            <MayaChatInterface
+              messages={messages}
+              filteredMessages={filteredMessages}
+              setMessages={setMessages}
+              studioProMode={studioProMode}
+              isTyping={isTyping}
+              isGeneratingConcepts={isGeneratingConcepts}
+              isGeneratingStudioPro={isGeneratingStudioPro}
+              isCreatingFeed={isCreatingFeed}
+              contentFilter={contentFilter}
+              messagesContainerRef={messagesContainerRef as React.RefObject<HTMLDivElement>}
+              messagesEndRef={messagesEndRef as React.RefObject<HTMLDivElement>}
+              showScrollButton={showScrollButton}
+              isAtBottomRef={isAtBottomRef}
+              scrollToBottom={scrollToBottom}
+              chatId={chatId ?? undefined}
+              uploadedImages={uploadedImages}
+              setCreditBalance={setCreditBalance}
+              onImageGenerated={onImageGenerated}
+              isAdmin={isAdmin}
+              selectedGuideId={selectedGuideId}
+              selectedGuideCategory={selectedGuideCategory}
+              onSaveToGuide={handleSaveToGuide}
+              userId={userId}
+              user={user}
+              promptSuggestions={promptSuggestions}
+              generateCarouselRef={generateCarouselRef}
+            />
+            {/* Empty State - Feed Tab */}
+            {isEmpty && !isTyping && (
+              <div className="flex flex-col items-center justify-center h-full px-4 py-8 animate-in fade-in duration-500">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-stone-200/60 overflow-hidden mb-4 sm:mb-6">
+                  <img
+                    src="https://i.postimg.cc/fTtCnzZv/out-1-22.png"
+                    alt="Maya"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <h2 className="text-xl sm:text-2xl font-serif font-extralight tracking-[0.3em] text-stone-950 uppercase mb-2 sm:mb-3 text-center">
+                  Welcome
+                </h2>
+                <p className="text-xs sm:text-sm text-stone-600 tracking-wide text-center mb-4 sm:mb-6 max-w-md leading-relaxed px-4">
+                  Hi, I'm Maya. I'll help you create Instagram feeds, captions, and strategies.
+                </p>
+                {/* Feed-specific quick prompts */}
+                <MayaQuickPrompts
+                  prompts={currentPrompts}
+                  onSelect={handleSendMessage}
+                  disabled={isTyping}
+                  variant="empty-state"
+                  studioProMode={studioProMode}
+                  isEmpty={isEmpty}
+                />
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
       {/* Tab Content - Training Tab */}
       {activeMayaTab === "training" && (
         <div
@@ -3530,7 +3973,7 @@ export default function MayaChatScreen({
                 {/* Step 1 */}
                 <div className="space-y-2">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-stone-900 flex items-center justify-center flex-shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-stone-900 flex items-center justify-center shrink-0">
                       <span className="text-white text-sm font-serif">1</span>
                     </div>
                     <h3 className="text-sm font-medium text-stone-900 tracking-wide">
@@ -3545,7 +3988,7 @@ export default function MayaChatScreen({
                 {/* Step 2 */}
                 <div className="space-y-2">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-stone-900 flex items-center justify-center flex-shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-stone-900 flex items-center justify-center shrink-0">
                       <span className="text-white text-sm font-serif">2</span>
                     </div>
                     <h3 className="text-sm font-medium text-stone-900 tracking-wide">
@@ -3560,7 +4003,7 @@ export default function MayaChatScreen({
                 {/* Step 3 */}
                 <div className="space-y-2">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-stone-900 flex items-center justify-center flex-shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-stone-900 flex items-center justify-center shrink-0">
                       <span className="text-white text-sm font-serif">3</span>
                     </div>
                     <h3 className="text-sm font-medium text-stone-900 tracking-wide">
@@ -3575,7 +4018,7 @@ export default function MayaChatScreen({
                 {/* Step 4 */}
                 <div className="space-y-2">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-stone-900 flex items-center justify-center flex-shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-stone-900 flex items-center justify-center shrink-0">
                       <span className="text-white text-sm font-serif">4</span>
                     </div>
                     <h3 className="text-sm font-medium text-stone-900 tracking-wide">
@@ -3757,7 +4200,7 @@ export default function MayaChatScreen({
       {/* Pro Feature: Image Upload Flow Modal (Pro Mode only - for library management) */}
       {/* Modal must be above header (z-[100]) and bottom nav (z-[70]) */}
       {hasProFeatures && showUploadFlow && (
-        <div className="fixed inset-0 z-[150] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
+        <div className="fixed inset-0 z-150 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
           <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
             <div className="p-4 border-b border-stone-200 flex items-center justify-between">
               <h3 className="text-lg font-medium">Add Images to Library</h3>
@@ -3807,7 +4250,11 @@ export default function MayaChatScreen({
                   }
                   
                   if (sendMessage && library.selfies.length > 0) {
-                    const messageText = library.intent || "I'm ready to create concepts with my images"
+                    // Use feed message if in Feed tab, otherwise use concepts message
+                    const defaultMessage = activeMayaTab === "feed" 
+                      ? "Create an Instagram feed layout"
+                      : "I'm ready to create concepts with my images"
+                    const messageText = library.intent || defaultMessage
                     const allImages = [
                       ...library.selfies,
                       ...library.products,

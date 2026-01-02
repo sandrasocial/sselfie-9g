@@ -11,6 +11,17 @@ import { getStudioProCreditCost } from "@/lib/nano-banana-client"
 const sql = neon(process.env.DATABASE_URL!)
 
 /**
+ * Image Library interface (user's selected images from library wizard)
+ */
+interface ImageLibrary {
+  selfies: string[]
+  products: string[]
+  people: string[]
+  vibes: string[]
+  intent: string
+}
+
+/**
  * Queue all images for a feed layout - extracted logic that can be called directly
  */
 export async function queueAllImagesForFeed(
@@ -23,7 +34,8 @@ export async function queueAllImagesForFeed(
     aspectRatio?: string
     realismStrength?: number
     extraLoraScale?: number
-  }
+  },
+  imageLibrary?: ImageLibrary // CRITICAL: User's selected images from library wizard (Pro Mode only)
 ) {
   console.log("[v0] ==================== QUEUE ALL IMAGES (DIRECT CALL) ====================")
 
@@ -35,8 +47,9 @@ export async function queueAllImagesForFeed(
   console.log("[v0] Queueing images for feed layout:", feedLayoutId)
 
   // Get all posts for this feed that need images (including Pro Mode info)
+  // Note: description column doesn't exist - visual direction is in prompt field or strategy
   const posts = await sql`
-    SELECT id, position, prompt, post_type, caption, generation_status, prediction_id, image_url, generation_mode, pro_mode_type
+    SELECT id, position, prompt, post_type, caption, content_pillar, generation_status, prediction_id, image_url, generation_mode, pro_mode_type
     FROM feed_posts
     WHERE feed_layout_id = ${feedLayoutId}
     AND user_id = ${neonUser.id}
@@ -69,19 +82,6 @@ export async function queueAllImagesForFeed(
     throw new Error("Feed layout not found")
   }
 
-  const [model] = await sql`
-    SELECT trigger_word, replicate_version_id, replicate_model_id, lora_scale, lora_weights_url
-    FROM user_models
-    WHERE user_id = ${neonUser.id}
-    AND training_status = 'completed'
-    ORDER BY created_at DESC
-    LIMIT 1
-  `
-
-  if (!model || !model.replicate_version_id || !model.lora_weights_url) {
-    throw new Error("No trained model found")
-  }
-
   // Check credits upfront (Pro Mode = 2 credits, Classic = 1 credit)
   const proModePosts = posts.filter(p => p.generation_mode === 'pro')
   const classicPosts = posts.filter(p => !p.generation_mode || p.generation_mode === 'classic')
@@ -89,6 +89,24 @@ export async function queueAllImagesForFeed(
   const hasEnoughCredits = await checkCredits(neonUser.id, totalCreditsNeeded)
   if (!hasEnoughCredits) {
     throw new Error(`Insufficient credits. You need ${totalCreditsNeeded} credits (${proModePosts.length} Pro Mode × 2 + ${classicPosts.length} Classic × 1) to generate ${posts.length} images.`)
+  }
+
+  // Only fetch model if we have Classic Mode posts (Pro Mode doesn't need custom model)
+  let model: any = null
+  if (classicPosts.length > 0) {
+    const [modelResult] = await sql`
+      SELECT trigger_word, replicate_version_id, replicate_model_id, lora_scale, lora_weights_url
+      FROM user_models
+      WHERE user_id = ${neonUser.id}
+      AND training_status = 'completed'
+      ORDER BY created_at DESC
+      LIMIT 1
+    `
+    model = modelResult
+
+    if (!model || !model.replicate_version_id || !model.lora_weights_url) {
+      throw new Error("No trained model found. Classic Mode requires a trained model. Please train your model first or switch to Pro Mode.")
+    }
   }
 
   const replicate = getReplicateClient()
@@ -109,26 +127,41 @@ export async function queueAllImagesForFeed(
         console.log(`[v0] Pro Mode Type: ${post.pro_mode_type || 'workbench'}`)
         
         try {
-          // Get avatar images (required for Pro Mode)
-          const avatarImages = await sql`
-            SELECT image_url
-            FROM user_avatar_images
-            WHERE user_id = ${neonUser.id} AND is_active = true
-            ORDER BY display_order ASC, uploaded_at ASC
-            LIMIT 5
-          `
+          // Fetch avatar images from database if not provided in imageLibrary
+          let avatarImages: Array<{ image_url: string }> = []
           
-          if (avatarImages.length < 3) {
-            throw new Error('Pro Mode requires at least 3 avatar images. Please complete avatar setup first.')
+          if (imageLibrary && imageLibrary.selfies && imageLibrary.selfies.length > 0) {
+            // Use provided image library (from library wizard)
+            console.log(`[v0] 📚 Using ${imageLibrary.selfies.length} selfie(s) from provided image library`)
+            avatarImages = imageLibrary.selfies.map((url: string) => ({ image_url: url }))
+          } else {
+            // Auto-fetch avatar images from database (same as generate-single route)
+            console.log(`[v0] 📚 Auto-fetching avatar images from database`)
+            avatarImages = await sql`
+              SELECT image_url
+              FROM user_avatar_images
+              WHERE user_id = ${neonUser.id}
+              AND is_active = true
+              ORDER BY display_order ASC, uploaded_at ASC
+              LIMIT 5
+            `
+            
+            if (avatarImages.length === 0) {
+              throw new Error('Pro Mode requires at least one avatar image. Please upload avatar images in your profile settings to use Pro Mode.')
+            }
           }
-          
-          // All avatar images are user photos - they preserve the user's identity
-          // In Feed Planner Pro Mode, all images should be classified as 'user-photo'
-          // to ensure proper identity preservation across all generated images
-          const baseImages = avatarImages.map((img: any) => ({
+
+          if (avatarImages.length < 3) {
+            console.warn(`[v0] ⚠️ Only ${avatarImages.length} avatar image(s) available. Pro Mode works best with 3+ images.`)
+          }
+
+          // Map to baseImages format for Nano Banana (up to 5 images)
+          const baseImages = avatarImages.slice(0, 5).map((img: any) => ({
             url: img.image_url,
             type: 'user-photo' as const,
           }))
+
+          console.log(`[v0] ✅ Using ${baseImages.length} avatar image(s) for Pro Mode generation`)
           
           // Get brand kit if available
           const [brandKit] = await sql`
@@ -138,39 +171,51 @@ export async function queueAllImagesForFeed(
             LIMIT 1
           `
           
-          // Build Nano Banana prompt
-          const proModeType = (post.pro_mode_type || 'workbench') as any
-          const userRequest = post.caption || post.prompt || `Feed post ${post.position}`
+          // CRITICAL: Use the already-generated prompt from create-from-strategy
+          // post.prompt contains the proper Nano Banana prompt generated by create-from-strategy
+          // Only regenerate if prompt is missing (shouldn't happen, but safety check)
+          let finalPrompt = post.prompt
           
-          const { optimizedPrompt } = await buildNanoBananaPrompt({
-            userId: neonUser.id,
-            mode: proModeType,
-            userRequest,
-            inputImages: {
-              baseImages,
-              productImages: [],
-              textElements: post.post_type === 'quote' ? [{
-                text: post.caption || '',
-                style: 'quote' as const,
-              }] : undefined,
-            },
-            workflowMeta: {
-              platformFormat: customSettings?.aspectRatio || '4:5',
-            },
-            brandKit: brandKit ? {
-              primaryColor: brandKit.primary_color,
-              secondaryColor: brandKit.secondary_color,
-              accentColor: brandKit.accent_color,
-              fontStyle: brandKit.font_style,
-              brandTone: brandKit.brand_tone,
-            } : undefined,
-          })
+          if (!finalPrompt || finalPrompt.trim().length < 20) {
+            console.warn(`[v0] ⚠️ Post ${post.position} missing prompt, regenerating...`)
+            // If prompt is missing, regenerate using content_pillar or prompt field
+            const proModeType = (post.pro_mode_type || 'workbench') as any
+            // Note: description column doesn't exist - use content_pillar or prompt field
+            const userRequest = post.content_pillar || post.prompt || `Feed post ${post.position}`
+            
+            const { optimizedPrompt } = await buildNanoBananaPrompt({
+              userId: neonUser.id,
+              mode: proModeType,
+              userRequest, // Visual direction, NOT Instagram caption
+              inputImages: {
+                baseImages,
+                productImages: [],
+                textElements: post.post_type === 'quote' ? [{
+                  text: post.caption || '',
+                  style: 'quote' as const,
+                }] : undefined,
+              },
+              workflowMeta: {
+                platformFormat: customSettings?.aspectRatio || '4:5',
+              },
+              brandKit: brandKit ? {
+                primaryColor: brandKit.primary_color,
+                secondaryColor: brandKit.secondary_color,
+                accentColor: brandKit.accent_color,
+                fontStyle: brandKit.font_style,
+                brandTone: brandKit.brand_tone,
+              } : undefined,
+            })
+            finalPrompt = optimizedPrompt
+          } else {
+            console.log(`[v0] ✅ Using pre-generated prompt for post ${post.position} (${finalPrompt.split(/\s+/).length} words)`)
+          }
           
           // Generate with Nano Banana Pro (credits deducted at end for successful generations only)
           // Note: Instagram portrait posts use 4:5 (1080×1350px) - preserve this aspect ratio
           const aspectRatio = customSettings?.aspectRatio || '4:5'
           const generation = await generateWithNanoBanana({
-            prompt: optimizedPrompt,
+            prompt: finalPrompt, // Use the proper prompt (pre-generated or regenerated)
             image_input: baseImages.map(img => img.url),
             aspect_ratio: aspectRatio, // Use aspect ratio directly (4:5 for Instagram portrait, 1:1 for square, 16:9 for landscape)
             resolution: '2K',
@@ -217,6 +262,7 @@ export async function queueAllImagesForFeed(
         }
       }
 
+      // CLASSIC MODE: Use custom FLUX model with trigger word (NO reference images)
       // Use prompt directly from database (already generated by Maya's concept generation)
       // No enhancement needed - prompts are generated using the same proven logic as concept cards
       let finalPrompt = post.prompt || ""
@@ -225,7 +271,12 @@ export async function queueAllImagesForFeed(
         throw new Error(`No prompt available for post ${post.position}`)
       }
       
-      console.log(`[v0] 📝 Using Maya-generated prompt (${finalPrompt.split(/\s+/).length} words): ${finalPrompt.substring(0, 150)}...`)
+      console.log(`[v0] 📝 Classic Mode: Using Maya-generated prompt (${finalPrompt.split(/\s+/).length} words): ${finalPrompt.substring(0, 150)}...`)
+
+      // CRITICAL: Classic Mode requires trained model with trigger word
+      if (!model || !model.trigger_word) {
+        throw new Error(`Classic Mode requires a trained model with trigger word. Post ${post.position} is set to Classic Mode but no model found.`)
+      }
 
       // CRITICAL: Validate and fix trigger word before sending to Replicate
       const promptLower = finalPrompt.toLowerCase().trim()

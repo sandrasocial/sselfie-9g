@@ -5,8 +5,8 @@ import { useDebounce } from "./use-debounce"
 import type { GalleryImage } from "@/lib/data/images"
 
 interface UseGalleryFiltersReturn {
-  contentFilter: "photos" | "videos" | "favorited"
-  setContentFilter: (filter: "photos" | "videos" | "favorited") => void
+  contentFilter: "photos" | "videos" | "favorited" | "feed"
+  setContentFilter: (filter: "photos" | "videos" | "favorited" | "feed") => void
   searchQuery: string
   setSearchQuery: (query: string) => void
   sortBy: "date-desc" | "date-asc" | "favorites"
@@ -18,9 +18,10 @@ interface UseGalleryFiltersReturn {
 export function useGalleryFilters(
   allImages: GalleryImage[],
   allVideos: any[],
-  favorites: Set<string>
+  favorites: Set<string>,
+  feedImages?: GalleryImage[]
 ): UseGalleryFiltersReturn {
-  const [contentFilter, setContentFilter] = useState<"photos" | "videos" | "favorited">("photos")
+  const [contentFilter, setContentFilter] = useState<"photos" | "videos" | "favorited" | "feed">("photos")
   const [searchQuery, setSearchQuery] = useState("")
   const [sortBy, setSortBy] = useState<"date-desc" | "date-asc" | "favorites">("date-desc")
 
@@ -40,6 +41,9 @@ export function useGalleryFilters(
     // Content filter: favorited
     if (contentFilter === "favorited") {
       filtered = favoritedImages
+    } else if (contentFilter === "feed") {
+      // Feed filter: use feed images if provided
+      filtered = feedImages || []
     }
 
     // Search filter (using debounced query)
@@ -71,7 +75,7 @@ export function useGalleryFilters(
     }
 
     return filtered
-  }, [safeAllImages, contentFilter, debouncedSearchQuery, sortBy, favorites, favoritedImages])
+  }, [safeAllImages, contentFilter, debouncedSearchQuery, sortBy, favorites, favoritedImages, feedImages])
 
   const { images: displayImages, videos: displayVideos } = useMemo(() => {
     const safeAllVideos = Array.isArray(allVideos) ? allVideos : []
@@ -83,6 +87,9 @@ export function useGalleryFilters(
       result = { images: [], videos: safeAllVideos }
     } else if (contentFilter === "favorited") {
       // Favourites filter shows only favorited images (no videos)
+      result = { images: filteredImages, videos: [] }
+    } else if (contentFilter === "feed") {
+      // Feed filter shows only feed images (no videos)
       result = { images: filteredImages, videos: [] }
     } else {
       result = { images: filteredImages, videos: safeAllVideos }

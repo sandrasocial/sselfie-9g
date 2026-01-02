@@ -11,6 +11,7 @@ interface FeedPost {
   prompt: string
   caption: string
   content_pillar: string
+  post_type?: string
   image_url: string | null
   generation_status: string
   prediction_id: string | null
@@ -117,14 +118,33 @@ export default function FeedGridPreview({ feedId, posts, onGenerate }: FeedGridP
               <button
                 onClick={() => handleGeneratePost(post.id)}
                 disabled={generatingPostId !== null}
-                className="w-full h-full flex flex-col items-center justify-center bg-stone-50 hover:bg-white transition-colors p-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-stone-50 to-stone-100 hover:bg-white transition-colors p-3 disabled:opacity-50 disabled:cursor-not-allowed relative"
               >
-                <ImageIcon size={20} className="text-stone-300 mb-2" strokeWidth={1.5} />
-                <p className="text-[10px] text-stone-900 font-light mb-1 tracking-wider">Post {post.position}</p>
-                <p className="text-[9px] text-stone-500 text-center line-clamp-2 leading-tight">
-                  {post.prompt || post.content_pillar}
-                </p>
-                <span className="text-[9px] text-stone-400 mt-2 tracking-wider uppercase">Generate</span>
+                {/* Subtle background pattern */}
+                <div className="absolute inset-0 opacity-5">
+                  <div className="w-full h-full" style={{
+                    backgroundImage: 'radial-gradient(circle at 2px 2px, rgb(0 0 0) 1px, transparent 0)',
+                    backgroundSize: '16px 16px'
+                  }}></div>
+                </div>
+                
+                {/* Content */}
+                <div className="relative z-10 flex flex-col items-center">
+                  {/* Post Type Badge */}
+                  <div className="mb-3 px-3 py-1 bg-white/80 backdrop-blur-sm border border-stone-200 rounded-full">
+                    <span className="text-[9px] font-medium text-stone-900 tracking-wider uppercase">
+                      {post.post_type?.toLowerCase() || 'portrait'}
+                    </span>
+                  </div>
+                  
+                  {/* Icon */}
+                  <div className="mb-2 w-12 h-12 rounded-full bg-white/60 backdrop-blur-sm border border-stone-200 flex items-center justify-center shadow-sm">
+                    <ImageIcon size={20} className="text-stone-400" strokeWidth={1.5} />
+                  </div>
+                  
+                  {/* Generate Button */}
+                  <span className="text-[9px] font-medium text-stone-700 tracking-wider uppercase">Click to generate</span>
+                </div>
               </button>
             )}
 

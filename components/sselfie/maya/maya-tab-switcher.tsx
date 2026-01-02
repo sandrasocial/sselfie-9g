@@ -5,8 +5,8 @@ import { useEffect, useRef } from "react"
 import { ImageIcon, Film, Sparkles, GraduationCap } from "lucide-react"
 
 interface MayaTabSwitcherProps {
-  activeTab: "photos" | "videos" | "prompts" | "training"
-  onTabChange: (tab: "photos" | "videos" | "prompts" | "training") => void
+  activeTab: "photos" | "videos" | "prompts" | "training" | "feed"
+  onTabChange: (tab: "photos" | "videos" | "prompts" | "training" | "feed") => void
   photosCount?: number // Optional: show count of generated photos
   videosCount?: number // Optional: show count of generated videos
   className?: string
@@ -42,6 +42,7 @@ export default function MayaTabSwitcher({
     { id: "videos" as const, label: "Videos" },
     { id: "prompts" as const, label: "Prompts" },
     { id: "training" as const, label: "Training" },
+    { id: "feed" as const, label: "Feed" },
   ]
 
   const containerRef = useRef<HTMLDivElement>(null)

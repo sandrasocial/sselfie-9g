@@ -13,7 +13,8 @@
     "audit-subscriptions": "npx tsx scripts/audit-subscription-data.ts",
     "audit-revenue": "npx tsx scripts/audit-revenue-sources.ts",
     "backfill-payment-ids": "npx tsx scripts/backfill-payment-ids.ts",
-    "migrate-015": "npx tsx scripts/run-migration-015.ts"
+    "migrate-015": "npx tsx scripts/run-migration-015.ts",
+    "test:feed-planner": "npx tsx scripts/test-feed-planner-issues.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "latest",

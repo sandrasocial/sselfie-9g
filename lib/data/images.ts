@@ -39,7 +39,9 @@ export interface GalleryImage {
   style?: string
   is_favorite?: boolean
   created_at: string
-  source: "ai_images" | "generated_images"
+  source: "ai_images" | "generated_images" | "feed"
+  feed_layout_id?: number
+  feed_title?: string
 }
 
 /**

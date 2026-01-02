@@ -1,8 +1,8 @@
 "use client"
 
 interface GalleryFiltersProps {
-  contentFilter: "photos" | "videos" | "favorited"
-  onContentFilterChange: (filter: "photos" | "videos" | "favorited") => void
+  contentFilter: "photos" | "videos" | "favorited" | "feed"
+  onContentFilterChange: (filter: "photos" | "videos" | "favorited" | "feed") => void
 }
 
 export function GalleryFilters({
@@ -13,6 +13,7 @@ export function GalleryFilters({
     { key: "photos" as const, label: "Photos" },
     { key: "videos" as const, label: "Videos" },
     { key: "favorited" as const, label: "Favourites" },
+    { key: "feed" as const, label: "Feed" },
   ]
 
   return (

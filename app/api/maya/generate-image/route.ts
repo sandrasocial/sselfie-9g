@@ -10,6 +10,7 @@ import { checkCredits, deductCredits, getUserCredits, CREDIT_COSTS } from "@/lib
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { rateLimit } from "@/lib/rate-limit-api"
 import { guardClassicModeRoute } from "@/lib/maya/type-guards"
+import { extractReplicateVersionId, ensureTriggerWordPrefix, buildClassicModeReplicateInput } from "@/lib/replicate-helpers"
 
 const sql = getDbClient()
 
@@ -114,19 +115,8 @@ export async function POST(request: NextRequest) {
     const gender = userData.gender
     const ethnicity = userData.ethnicity
     
-    // CRITICAL FIX: Ensure version is just the hash, not full model path
-    // replicate_version_id should be just the hash (e.g., "4e0de78d")
-    // If it's in format "model:hash", extract just the hash
-    let replicateVersionId = userData.replicate_version_id
-    if (replicateVersionId && replicateVersionId.includes(':')) {
-      const parts = replicateVersionId.split(':')
-      replicateVersionId = parts[parts.length - 1] // Get last part (the hash)
-      console.log("[v0] ⚠️ Version was in full format, extracted hash:", replicateVersionId)
-    }
-    
-    const replicateModelId = userData.replicate_model_id
-    const userLoraScale = userData.lora_scale
-    const loraWeightsUrl = userData.lora_weights_url
+    // Extract version ID using shared helper
+    const replicateVersionId = extractReplicateVersionId(userData.replicate_version_id)
     
     // Validate version exists
     if (!replicateVersionId) {
@@ -136,6 +126,10 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+    
+    const replicateModelId = userData.replicate_model_id
+    const userLoraScale = userData.lora_scale
+    const loraWeightsUrl = userData.lora_weights_url
 
     let genderEthnicityTerm = "person"
 
@@ -157,14 +151,8 @@ export async function POST(request: NextRequest) {
     
     let finalPrompt = conceptPrompt.trim()
     
-    // Ensure trigger word is first (only essential fix)
-    const promptLower = finalPrompt.toLowerCase()
-    const triggerLower = triggerWord.toLowerCase()
-    
-    if (!promptLower.startsWith(triggerLower)) {
-      finalPrompt = `${triggerWord}, ${finalPrompt}`
-      console.log("[v0] Added trigger word to start of prompt")
-    }
+    // Ensure trigger word is first using shared helper
+    finalPrompt = ensureTriggerWordPrefix(finalPrompt, triggerWord)
     
     console.log("[v0] Using Maya's prompt directly:", {
       promptLength: finalPrompt.length,
@@ -296,49 +284,28 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const predictionInput: any = {
-      prompt: finalPrompt,
-      guidance_scale: qualitySettings.guidance_scale,
-      num_inference_steps: qualitySettings.num_inference_steps,
-      aspect_ratio: qualitySettings.aspect_ratio,
-      megapixels: qualitySettings.megapixels,
-      output_format: qualitySettings.output_format,
-      output_quality: qualitySettings.output_quality,
-      lora_scale: Number(qualitySettings.lora_scale),
-      hf_lora: loraWeightsUrl,
-      seed: customSettings?.seed || qualitySettings.seed || Math.floor(Math.random() * 1000000),
-      disable_safety_checker: qualitySettings.disable_safety_checker ?? true,
-      go_fast: qualitySettings.go_fast ?? false,
-      num_outputs: qualitySettings.num_outputs ?? 1,
-      model: qualitySettings.model ?? "dev",
-    }
+    // Calculate seed: customSettings seed, preset seed, or random
+    const seed = customSettings?.seed || qualitySettings.seed || Math.floor(Math.random() * 1000000)
 
-    // Only include Super-Realism LoRA if scale is > 0 (disabled for authentic photos)
-    if (qualitySettings.extra_lora && qualitySettings.extra_lora_scale > 0) {
-      predictionInput.extra_lora = qualitySettings.extra_lora
-      predictionInput.extra_lora_scale = qualitySettings.extra_lora_scale
+    // Build Replicate input using shared helper
+    // The helper handles conditional extra_lora inclusion (only if scale > 0)
+    const predictionInput = buildClassicModeReplicateInput({
+      prompt: finalPrompt,
+      qualitySettings,
+      loraWeightsUrl,
+      seed,
+      referenceImageUrl,
+      extraLoraDisabled: shouldDisableExtraLora, // Pass the computed flag
+    })
+
+    if (qualitySettings.extra_lora && qualitySettings.extra_lora_scale && qualitySettings.extra_lora_scale > 0 && !shouldDisableExtraLora) {
       console.log("[v0] ✅ Super-Realism LoRA included:", qualitySettings.extra_lora_scale)
     } else {
       console.log("[v0] ✅ Super-Realism LoRA disabled (scale = 0) for authentic aesthetic")
     }
 
-    // 🔴 CRITICAL: Include reference image if provided
-    // FLUX.1 [dev] uses `image` parameter (single reference image only)
-    // Note: FLUX.1 [dev] may not support reference images - this is for compatibility
-    // If referenceImageUrl is an array, use the first image only
     if (referenceImageUrl) {
-      const imageUrl = Array.isArray(referenceImageUrl) 
-        ? referenceImageUrl.find(url => url) // Get first truthy URL from array
-        : referenceImageUrl
-      
-      if (imageUrl) {
-        predictionInput.image = imageUrl
-        console.log("[v0] ✅ Reference image included:", imageUrl)
-      } else {
-        console.log("[v0] ⚠️ Reference image array provided but empty - skipping")
-      }
-    } else {
-      console.log("[v0] ⚠️ No reference image provided - character consistency may be affected")
+      console.log("[v0] ✅ Reference image included in input")
     }
 
     const prediction = await replicate.predictions.create({

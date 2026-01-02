@@ -61,8 +61,8 @@ interface MayaHeaderUnifiedProps {
   isLoggingOut?: boolean
   
   // Tab Switcher Props (integrated into header)
-  activeTab?: "photos" | "videos" | "prompts" | "training"
-  onTabChange?: (tab: "photos" | "videos" | "prompts" | "training") => void
+  activeTab?: "photos" | "videos" | "prompts" | "training" | "feed"
+  onTabChange?: (tab: "photos" | "videos" | "prompts" | "training" | "feed") => void
   photosCount?: number
   videosCount?: number
 }

@@ -7,6 +7,9 @@ import MayaConceptCards from "./maya-concept-cards"
 import { PromptSuggestionCard as NewPromptSuggestionCard } from "../prompt-suggestion-card"
 import type { PromptSuggestion } from "@/lib/maya/prompt-generator"
 import { ArrowDown } from "lucide-react"
+import FeedPreviewCard from "@/components/feed-planner/feed-preview-card"
+import FeedCaptionCard from "@/components/feed-planner/feed-caption-card"
+import FeedStrategyCard from "@/components/feed-planner/feed-strategy-card"
 
 interface MayaChatInterfaceProps {
   // Messages
@@ -21,6 +24,7 @@ interface MayaChatInterfaceProps {
   isTyping: boolean
   isGeneratingConcepts: boolean
   isGeneratingStudioPro: boolean
+  isCreatingFeed?: boolean
   contentFilter: "all" | "photos" | "videos"
   
   // Refs
@@ -73,6 +77,7 @@ export default function MayaChatInterface({
   isTyping,
   isGeneratingConcepts,
   isGeneratingStudioPro,
+  isCreatingFeed = false,
   contentFilter,
   messagesContainerRef,
   messagesEndRef,
@@ -212,6 +217,37 @@ export default function MayaChatInterface({
   const renderMessageContent = (text: string, isUser: boolean) => {
     let cleanedText = text.replace(/\[GENERATE_PROMPTS[:\s]+[^\]]+\]/gi, "").trim()
     cleanedText = cleanedText.replace(/\[GENERATE_CONCEPTS\]\s*[^\n]*/gi, "").trim()
+    // Remove feed creation trigger (with JSON content)
+    // Use bracket counting to properly match nested JSON structures
+    // This handles complex JSON with nested arrays/objects by finding the matching closing bracket
+    let feedStrategyIndex = cleanedText.search(/\[CREATE_FEED_STRATEGY:/i)
+    while (feedStrategyIndex >= 0) {
+      // Find the matching closing bracket by counting brackets
+      let bracketCount = 0
+      let endIndex = -1
+      for (let i = feedStrategyIndex; i < cleanedText.length; i++) {
+        if (cleanedText[i] === '[') bracketCount++
+        if (cleanedText[i] === ']') {
+          bracketCount--
+          if (bracketCount === 0) {
+            endIndex = i
+            break
+          }
+        }
+      }
+      if (endIndex >= 0) {
+        cleanedText = cleanedText.substring(0, feedStrategyIndex) + cleanedText.substring(endIndex + 1)
+      } else {
+        // If no matching bracket found, just remove from [CREATE_FEED_STRATEGY: to end
+        cleanedText = cleanedText.substring(0, feedStrategyIndex)
+        break
+      }
+      feedStrategyIndex = cleanedText.search(/\[CREATE_FEED_STRATEGY:/i)
+    }
+    cleanedText = cleanedText.trim()
+    // Also remove other feed-related triggers
+    cleanedText = cleanedText.replace(/\[GENERATE_CAPTIONS\]/gi, "").trim()
+    cleanedText = cleanedText.replace(/\[GENERATE_STRATEGY\]/gi, "").trim()
 
     // Check if message contains an inspiration image
     const inspirationImageMatch = cleanedText.match(/\[Inspiration Image: (https?:\/\/[^\]]+)\]/)
@@ -406,6 +442,35 @@ export default function MayaChatInterface({
                                 
                                 // Remove prompts from display text if they're in workbench (Studio Pro mode)
                                 let displayText = text
+                                
+                                // Remove feed-related triggers from display text (always, regardless of mode)
+                                // Use bracket counting to properly match nested JSON structures
+                                let feedStrategyIndex = displayText.search(/\[CREATE_FEED_STRATEGY:/i)
+                                while (feedStrategyIndex >= 0) {
+                                  let bracketCount = 0
+                                  let endIndex = -1
+                                  for (let i = feedStrategyIndex; i < displayText.length; i++) {
+                                    if (displayText[i] === '[') bracketCount++
+                                    if (displayText[i] === ']') {
+                                      bracketCount--
+                                      if (bracketCount === 0) {
+                                        endIndex = i
+                                        break
+                                      }
+                                    }
+                                  }
+                                  if (endIndex >= 0) {
+                                    displayText = displayText.substring(0, feedStrategyIndex) + displayText.substring(endIndex + 1)
+                                  } else {
+                                    displayText = displayText.substring(0, feedStrategyIndex)
+                                    break
+                                  }
+                                  feedStrategyIndex = displayText.search(/\[CREATE_FEED_STRATEGY:/i)
+                                }
+                                displayText = displayText
+                                  .replace(/\[GENERATE_CAPTIONS\]/gi, '')
+                                  .replace(/\[GENERATE_STRATEGY\]/gi, '')
+                                  .trim()
                                 
                                 // Remove prompts that are rendered as cards (Classic Mode)
                                 if (!studioProMode && parsedPromptSuggestions.length > 0) {
@@ -610,6 +675,82 @@ export default function MayaChatInterface({
                                     onSaveToGuide={onSaveToGuide}
                                     userId={userId}
                                     user={user}
+                                  />
+                                )
+                              }
+                              return null
+                            }
+
+                            // Render feed preview card
+                            if (part.type === "tool-generateFeed") {
+                              const toolPart = part as any
+                              const output = toolPart.output
+                              
+                              if (output && output.feedId) {
+                                // FeedPreviewCard will handle fetching if _needsRestore is true
+                                return (
+                                  <FeedPreviewCard
+                                    key={partIndex}
+                                    feedId={output.feedId}
+                                    feedTitle={output.title || 'Instagram Feed'}
+                                    feedDescription={output.description || ''}
+                                    posts={output.posts || []}
+                                    needsRestore={output._needsRestore === true}
+                                    onViewFullFeed={() => {
+                                      // Navigate will be handled by FeedPreviewCard component
+                                    }}
+                                  />
+                                )
+                              }
+                              return null
+                            }
+
+                            // Render caption cards
+                            if (part.type === "tool-generateCaptions") {
+                              const toolPart = part as any
+                              const output = toolPart.output
+                              
+                              if (output && output.feedId && output.captions && Array.isArray(output.captions)) {
+                                return (
+                                  <div key={partIndex} className="space-y-3">
+                                    {output.captions.map((caption: any) => (
+                                      <FeedCaptionCard
+                                        key={caption.postId}
+                                        caption={caption.text || caption.caption || ""}
+                                        postPosition={caption.position}
+                                        postPrompt={caption.prompt}
+                                        hashtags={caption.hashtags || []}
+                                        feedId={output.feedId}
+                                        postId={caption.postId}
+                                        onAddToFeed={async () => {
+                                          // Will be handled by FeedCaptionCard component
+                                        }}
+                                        onRegenerate={async () => {
+                                          // Regenerate caption for this post
+                                          // This could trigger a new caption generation
+                                        }}
+                                      />
+                                    ))}
+                                  </div>
+                                )
+                              }
+                              return null
+                            }
+
+                            // Render strategy card
+                            if (part.type === "tool-generateStrategy") {
+                              const toolPart = part as any
+                              const output = toolPart.output
+                              
+                              if (output && output.feedId && output.strategy) {
+                                return (
+                                  <FeedStrategyCard
+                                    key={partIndex}
+                                    strategy={output.strategy}
+                                    feedId={output.feedId}
+                                    onAddToFeed={async () => {
+                                      // Will be handled by FeedStrategyCard component
+                                    }}
                                   />
                                 )
                               }
@@ -851,6 +992,32 @@ export default function MayaChatInterface({
                     </p>
                     <p className="text-xs text-stone-600 leading-relaxed">
                       Maya is designing professional concepts for you
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Feed Creation Loading */}
+          {isCreatingFeed && (
+            <div className="flex justify-center mt-8 mb-4">
+              <div className="bg-white rounded-2xl border border-stone-200/60 p-6 max-w-md w-full shadow-lg">
+                <div className="space-y-4">
+                  {/* Animated Progress */}
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-stone-900 animate-pulse"></div>
+                    <div className="w-2 h-2 rounded-full bg-stone-700 animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                    <div className="w-2 h-2 rounded-full bg-stone-500 animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                  </div>
+                  
+                  {/* Status Text */}
+                  <div className="text-center space-y-1">
+                    <p className="text-sm font-medium text-stone-900 tracking-wide">
+                      Creating Your Feed Layout
+                    </p>
+                    <p className="text-xs text-stone-600 leading-relaxed">
+                      Maya is designing your Instagram feed strategy
                     </p>
                   </div>
                 </div>

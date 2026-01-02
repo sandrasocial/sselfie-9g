@@ -65,8 +65,41 @@ export async function GET(request: NextRequest) {
       ORDER BY position ASC
     `
 
+    // Calculate processing progress
+    const totalPosts = feedPosts.length
+    const postsWithPrompts = feedPosts.filter((post) => post.prompt && post.prompt !== 'Generating prompt...').length
+    const postsWithCaptions = feedPosts.filter((post) => post.caption && post.caption !== 'Generating caption...').length
     const completedPosts = feedPosts.filter((post) => post.image_url && post.generation_status === "completed")
     const pendingConcepts = feedPosts.filter((post) => !post.image_url && post.generation_status === "pending")
+    
+    // Determine processing stage
+    let processingStage: 'creating_posts' | 'generating_prompts' | 'generating_captions' | 'queueing_images' | 'generating_images' | 'completed' = 'creating_posts'
+    let processingProgress = 0
+    
+    // Guard against division by zero when feed has no posts yet
+    if (totalPosts > 0) {
+      if (feedLayout.status === 'processing') {
+        if (postsWithPrompts === totalPosts && postsWithCaptions === totalPosts) {
+          processingStage = 'queueing_images'
+          processingProgress = 90
+        } else if (postsWithPrompts === totalPosts) {
+          processingStage = 'generating_captions'
+          processingProgress = 50 + Math.round((postsWithCaptions / totalPosts) * 40)
+        } else {
+          processingStage = 'generating_prompts'
+          processingProgress = Math.round((postsWithPrompts / totalPosts) * 50)
+        }
+      } else if (feedLayout.status === 'queueing') {
+        processingStage = 'queueing_images'
+        processingProgress = 90
+      } else if (feedLayout.status === 'pending') {
+        processingStage = 'generating_images'
+        processingProgress = 90 + Math.round((completedPosts.length / totalPosts) * 10)
+      } else if (completedPosts.length === totalPosts) {
+        processingStage = 'completed'
+        processingProgress = 100
+      }
+    }
 
     const previewImages = completedPosts.slice(0, 9).map((post) => ({
       url: post.image_url,
@@ -120,6 +153,11 @@ export async function GET(request: NextRequest) {
         status: feedLayout.status,
         bio: bio?.bio_text || null,
         highlights: highlights || [],
+        // Progress tracking
+        processingStage,
+        processingProgress,
+        postsWithPrompts,
+        postsWithCaptions,
       },
     })
   } catch (error) {

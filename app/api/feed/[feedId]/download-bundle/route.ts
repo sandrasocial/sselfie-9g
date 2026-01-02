@@ -25,12 +25,16 @@ export async function GET(
     // Resolve params
     const resolvedParams = await Promise.resolve(params)
     const feedId = resolvedParams.feedId
+    const feedIdInt = Number.parseInt(feedId, 10)
+    if (isNaN(feedIdInt)) {
+      return NextResponse.json({ error: "Invalid feed ID format" }, { status: 400 })
+    }
 
     // Validate feed ownership
     const [feed] = await sql`
       SELECT id, user_id, feed_story, visual_rhythm, layout_type
       FROM feed_layouts
-      WHERE id = ${feedId} AND user_id = ${neonUser.id}
+      WHERE id = ${feedIdInt} AND user_id = ${neonUser.id}
       LIMIT 1
     `
     
@@ -42,7 +46,7 @@ export async function GET(
     const feedPosts = await sql`
       SELECT id, position, image_url, caption, post_type, content_pillar
       FROM feed_posts
-      WHERE feed_layout_id = ${feedId}
+      WHERE feed_layout_id = ${feedIdInt}
         AND user_id = ${neonUser.id}
         AND image_url IS NOT NULL
       ORDER BY position ASC

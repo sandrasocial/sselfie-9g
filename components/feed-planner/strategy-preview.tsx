@@ -1,5 +1,7 @@
 "use client"
 
+import { Loader2 } from "lucide-react"
+
 interface StrategyPreviewProps {
   strategy: {
     gridPattern: string
@@ -16,32 +18,22 @@ interface StrategyPreviewProps {
   }
   onApprove: () => void
   onAdjust: () => void
+  isCreating?: boolean
 }
 
-export default function StrategyPreview({ strategy, onApprove, onAdjust }: StrategyPreviewProps) {
-  // Color mapping for post types and tones
-  const getColorForType = (type: string, tone: string): string => {
-    // Warm tones: cream, beige, warm white
-    // Cool tones: sage, blue-gray, cool white
-    const warmColors: Record<string, string> = {
-      portrait: '#F5F1ED', // cream
-      object: '#E8E3DD', // beige
-      flatlay: '#FDFCFA', // warm white
-      carousel: '#E5D5C8', // warm stone
-      quote: '#D4C4B8', // warm taupe
-      infographic: '#C9B8A8', // warm brown
+export default function StrategyPreview({ strategy, onApprove, onAdjust, isCreating = false }: StrategyPreviewProps) {
+  // Stone color palette only (consistent with concept cards)
+  const getStoneColor = (type: string): string => {
+    // Use subtle stone colors for visual distinction
+    const stoneColors: Record<string, string> = {
+      portrait: '#F5F5F4', // stone-100
+      carousel: '#E7E5E4', // stone-200
+      quote: '#D6D3D1', // stone-300
+      infographic: '#D6D3D1', // stone-300
+      object: '#E7E5E4', // stone-200
+      flatlay: '#F5F5F4', // stone-100
     }
-    const coolColors: Record<string, string> = {
-      portrait: '#E5E8E5', // sage
-      object: '#D4D9DC', // blue-gray
-      flatlay: '#F5F7F7', // cool white
-      carousel: '#D0D8DC', // cool blue
-      quote: '#C4CFD4', // cool gray
-      infographic: '#B8C4C9', // cool blue-gray
-    }
-    
-    const colors = tone === 'warm' ? warmColors : coolColors
-    return colors[type] || colors.portrait
+    return stoneColors[type] || '#F5F5F4' // Default to stone-100
   }
   
   const classicCount = strategy.posts.filter(p => p.generationMode === 'classic').length
@@ -76,18 +68,25 @@ export default function StrategyPreview({ strategy, onApprove, onAdjust }: Strat
         </p>
       </div>
       
-      {/* Large 3x3 Color-Coded Grid */}
-      <div className="grid grid-cols-3 gap-2 bg-white p-4 rounded-2xl border border-stone-200">
+      {/* Large 3x3 Grid - Clean Stone Design */}
+      <div className="grid grid-cols-3 gap-2 bg-stone-100 p-4 rounded-2xl border border-stone-200">
         {strategy.posts
           .sort((a, b) => a.position - b.position)
           .map(post => (
           <div
             key={post.position}
-            className="aspect-square rounded-xl relative overflow-hidden border-2 border-stone-200"
-            style={{ backgroundColor: getColorForType(post.type, post.tone) }}
+            className="aspect-square rounded-xl relative overflow-hidden bg-gradient-to-br from-stone-50 to-stone-100 border border-stone-200"
           >
+            {/* Subtle background pattern */}
+            <div className="absolute inset-0 opacity-5">
+              <div className="w-full h-full" style={{
+                backgroundImage: 'radial-gradient(circle at 2px 2px, rgb(0 0 0) 1px, transparent 0)',
+                backgroundSize: '16px 16px'
+              }}></div>
+            </div>
+            
             {/* Position Number */}
-            <div className="absolute top-2 left-2 w-6 h-6 bg-white rounded-full flex items-center justify-center text-xs font-medium text-stone-900 shadow-sm">
+            <div className="absolute top-2 left-2 w-6 h-6 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center text-xs font-medium text-stone-900 shadow-sm border border-stone-200">
               {post.position}
             </div>
             
@@ -98,14 +97,13 @@ export default function StrategyPreview({ strategy, onApprove, onAdjust }: Strat
               </div>
             )}
             
-            {/* Post Type Label with Description */}
-            <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/70 to-transparent">
-              <p className="text-white text-xs font-medium capitalize mb-0.5">
-                {post.type}
-              </p>
-              <p className="text-white/80 text-[10px] truncate leading-tight">
-                {post.description}
-              </p>
+            {/* Post Type Badge - Centered, Clean */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="bg-white/90 backdrop-blur-sm border border-stone-200 rounded-full px-4 py-2 shadow-sm">
+                <span className="text-xs font-medium text-stone-900 tracking-wider uppercase">
+                  {post.type}
+                </span>
+              </div>
             </div>
           </div>
         ))}
@@ -173,7 +171,8 @@ export default function StrategyPreview({ strategy, onApprove, onAdjust }: Strat
       <div className="flex gap-4">
         <button
           onClick={onAdjust}
-          className="flex-1 px-6 py-4 border-2 border-stone-300 rounded-xl font-medium hover:bg-stone-50 transition-colors text-stone-700"
+          disabled={isCreating}
+          className="flex-1 px-6 py-4 border-2 border-stone-300 rounded-xl font-medium hover:bg-stone-50 transition-colors text-stone-700 disabled:opacity-50 disabled:cursor-not-allowed"
           style={{
             fontFamily: 'Inter, sans-serif',
           }}
@@ -182,12 +181,20 @@ export default function StrategyPreview({ strategy, onApprove, onAdjust }: Strat
         </button>
         <button
           onClick={onApprove}
-          className="flex-1 px-6 py-4 bg-stone-900 text-white rounded-xl font-medium hover:bg-stone-800 transition-colors"
+          disabled={isCreating}
+          className="flex-1 px-6 py-4 bg-stone-900 text-white rounded-xl font-medium hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           style={{
             fontFamily: 'Inter, sans-serif',
           }}
         >
-          Generate Feed ({strategy.totalCredits} credits)
+          {isCreating ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Creating Feed...</span>
+            </>
+          ) : (
+            `Generate Feed (${strategy.totalCredits} credits)`
+          )}
         </button>
       </div>
     </div>

@@ -31,6 +31,7 @@ export interface UseMayaChatProps {
   studioProMode: boolean
   user: any | null
   getModeString: () => "pro" | "maya" | "feed-planner"
+  activeTab?: string // Feed tab flag
 }
 
 export interface UseMayaChatReturn {
@@ -106,6 +107,7 @@ export function useMayaChat({
   studioProMode,
   user,
   getModeString,
+  activeTab,
 }: UseMayaChatProps): UseMayaChatReturn {
   // Chat state
   const [chatId, setChatId] = useState<number | null>(initialChatId || null)
@@ -120,12 +122,15 @@ export function useMayaChat({
   const hasClearedStateRef = useRef(false)
 
   // Integrate useChat from AI SDK
+  // Note: Headers are evaluated once when transport is created
+  // For dynamic values, we use current values at initialization time
   const { messages, sendMessage, status, setMessages } = useChat({
     transport: new DefaultChatTransport({
       api: "/api/maya/chat",
       headers: {
         "x-studio-pro-mode": studioProMode ? "true" : "false",
         "x-chat-type": getModeString(), // Send chatType via header (Feed Planner uses 'feed-planner')
+        ...(activeTab ? { "x-active-tab": activeTab } : {}), // Only include if activeTab is set
       },
     }) as any,
     onError: (error) => {
@@ -252,16 +257,33 @@ export function useMayaChat({
   // Check if user has chat history
   useEffect(() => {
     async function checkChatHistory() {
-      if (!user) {
+      // Ensure we're in the browser and user is available
+      if (typeof window === "undefined" || !user) {
         setHasUsedMayaBefore(false)
         return
       }
 
       try {
-        const chatType = getModeString()
-        const response = await fetch(`/api/maya/chats?chatType=${chatType}`, {
+        // Safely get chat type with fallback
+        let chatType: string
+        try {
+          chatType = getModeString() || "maya"
+        } catch (modeError) {
+          console.warn("[useMayaChat] Error getting mode string, using default:", modeError)
+          chatType = "maya"
+        }
+
+        // Validate chatType before making request
+        if (!chatType || typeof chatType !== "string") {
+          console.warn("[useMayaChat] Invalid chatType, skipping history check:", chatType)
+          setHasUsedMayaBefore(false)
+          return
+        }
+
+        const response = await fetch(`/api/maya/chats?chatType=${encodeURIComponent(chatType)}`, {
           credentials: "include",
         })
+        
         if (response.ok) {
           const data = await response.json()
           const hasChats = data.chats && Array.isArray(data.chats) && data.chats.length > 0
@@ -277,7 +299,12 @@ export function useMayaChat({
           setHasUsedMayaBefore(false)
         }
       } catch (error) {
-        console.error("[useMayaChat] Error checking chat history:", error)
+        // More specific error logging
+        if (error instanceof TypeError && error.message === "Failed to fetch") {
+          console.warn("[useMayaChat] Network error checking chat history (API may not be available yet):", error)
+        } else {
+          console.error("[useMayaChat] Error checking chat history:", error)
+        }
         setHasUsedMayaBefore(false)
       }
     }

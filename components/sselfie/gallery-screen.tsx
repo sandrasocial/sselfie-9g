@@ -19,6 +19,7 @@ import FullscreenImageModal from "./fullscreen-image-modal"
 import { DesignClasses } from "@/lib/design-tokens"
 // Hooks
 import { useGalleryImages } from "./gallery/hooks/use-gallery-images"
+import { useGalleryFeedImages } from "./gallery/hooks/use-gallery-feed-images"
 import { useGalleryFilters } from "./gallery/hooks/use-gallery-filters"
 import { useSelectionMode } from "./gallery/hooks/use-selection-mode"
 import { useBulkOperations } from "./gallery/hooks/use-bulk-operations"
@@ -72,6 +73,18 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
     loadMoreRef,
   } = useGalleryImages()
 
+  // Feed images hook (only fetch when needed)
+  const {
+    images: feedImages,
+    isLoading: isLoadingFeed,
+    error: feedError,
+    hasMore: hasMoreFeed,
+    isLoadingMore: isLoadingMoreFeed,
+    mutate: mutateFeed,
+    loadMore: loadMoreFeed,
+    loadMoreRef: loadMoreFeedRef,
+  } = useGalleryFeedImages()
+
   const { data: videosData, mutate: mutateVideos } = useSWR("/api/maya/videos", fetcher, {
     revalidateOnFocus: false,
     dedupingInterval: 60000,
@@ -116,7 +129,7 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
     setSortBy,
     displayImages,
     displayVideos,
-  } = useGalleryFilters(allImages || [], allVideos, favorites)
+  } = useGalleryFilters(allImages || [], allVideos, favorites, feedImages || [])
 
   // Use bulk operations hook
   const { isProcessing: isBulkProcessing, bulkDelete, bulkFavorite, bulkSave, bulkDownload } = useBulkOperations()
@@ -194,6 +207,9 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
       if (pullDistance > 80) {
         mutate()
         mutateVideos()
+        if (contentFilter === "feed") {
+          mutateFeed()
+        }
       }
       setIsPulling(false)
       setPullDistance(0)
@@ -209,7 +225,7 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
       window.removeEventListener("touchmove", handleTouchMove)
       window.removeEventListener("touchend", handleTouchEnd)
     }
-  }, [pullDistance, mutate, mutateVideos])
+  }, [pullDistance, mutate, mutateVideos, mutateFeed, contentFilter])
 
   // Long-press handlers for selection mode
   const handleLongPressStart = useCallback((imageId: string) => {
@@ -371,7 +387,10 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
     mutateUser()
   }
 
-  if (isLoading) {
+  // Determine loading state based on active filter
+  const isCurrentlyLoading = contentFilter === "feed" ? isLoadingFeed : isLoading
+
+  if (isCurrentlyLoading) {
     return (
       <div className="space-y-4 sm:space-y-6 pb-24 pt-3 sm:pt-4">
         <div className="flex items-center justify-between mb-4 sm:mb-6">
@@ -384,13 +403,21 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
     )
   }
 
-  if (error) {
+  // Determine error state based on active filter
+  const currentError = contentFilter === "feed" ? feedError : error
+
+  if (currentError) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center space-y-4">
           <p className="text-sm font-light text-red-600">Failed to load images</p>
           <button
-            onClick={() => mutate()}
+            onClick={() => {
+              mutate()
+              if (contentFilter === "feed") {
+                mutateFeed()
+              }
+            }}
             className={`px-4 py-2 ${DesignClasses.typography.label.uppercase} bg-stone-100/50 ${DesignClasses.border.stone} ${DesignClasses.radius.md} hover:bg-stone-100/70 transition-all duration-200`}
           >
             Retry
@@ -444,10 +471,10 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
             // Type assertion needed due to interface mismatch between components
             setPreviewVideo(video as any as GeneratedVideo)
           }}
-          hasMore={hasMore}
-          isLoadingMore={isLoadingMore}
-          loadMoreRef={loadMoreRef}
-          onLoadMore={loadMore}
+          hasMore={contentFilter === "feed" ? hasMoreFeed : hasMore}
+          isLoadingMore={contentFilter === "feed" ? isLoadingMoreFeed : isLoadingMore}
+          loadMoreRef={contentFilter === "feed" ? loadMoreFeedRef : loadMoreRef}
+          onLoadMore={contentFilter === "feed" ? loadMoreFeed : loadMore}
           wasLongPress={wasLongPress}
           longPressTimer={longPressTimer}
           longPressImageId={longPressImageId}
@@ -473,6 +500,24 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
                 className="px-6 py-3 text-xs tracking-[0.15em] uppercase font-light bg-stone-950 text-white rounded-xl hover:bg-stone-800 transition-all duration-200"
               >
                 Go to Maya
+              </button>
+            </>
+          ) : contentFilter === "feed" ? (
+            <>
+              <Camera size={48} className="mx-auto mb-6 text-stone-400" strokeWidth={1.5} />
+              <h3 className="text-xl font-serif font-extralight tracking-[0.15em] text-stone-950 uppercase mb-3">
+                No Feed Images Yet
+              </h3>
+              <p className="text-sm font-light text-stone-600 mb-6 max-w-md mx-auto">
+                Create your first Instagram feed with the Feed Planner to see your feed images here.
+              </p>
+              <button
+                onClick={() => {
+                  window.location.hash = "feed-planner"
+                }}
+                className="px-6 py-3 text-xs tracking-[0.15em] uppercase font-light bg-stone-950 text-white rounded-xl hover:bg-stone-800 transition-all duration-200"
+              >
+                Go to Feed Planner
               </button>
             </>
           ) : searchQuery ? (

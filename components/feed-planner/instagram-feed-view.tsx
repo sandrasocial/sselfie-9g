@@ -17,15 +17,37 @@ import {
   Copy,
   Check,
   Sparkles,
+  ImageIcon,
 } from "lucide-react"
 import Image from "next/image"
 import useSWR from "swr"
 import { toast } from "@/hooks/use-toast"
 import { FeedPostGallerySelector } from "./feed-post-gallery-selector"
 import { FeedProfileGallerySelector } from "./feed-profile-gallery-selector"
+import FeedPostCard from "./feed-post-card"
 import ReactMarkdown from "react-markdown"
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json())
+const fetcher = async (url: string) => {
+  const res = await fetch(url)
+  const data = await res.json()
+  
+  // If the response has an error and is not a 200 status, throw to let SWR handle it
+  if (!res.ok && data.error) {
+    // Return the error data so SWR can handle it properly
+    return data
+  }
+  
+  // Validate response structure
+  if (data && !data.feed && !data.error && !data.exists) {
+    console.warn("[v0] Fetcher: Unexpected response structure:", {
+      url,
+      dataKeys: Object.keys(data),
+      status: res.status,
+    })
+  }
+  
+  return data
+}
 
 interface InstagramFeedViewProps {
   feedId: number
@@ -88,23 +110,48 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
   }
 
   // Use SWR for data fetching with intelligent polling
-  const { data: feedData, error: feedError, mutate } = useSWR(
+  // Track last update time to continue polling for a grace period after updates
+  const lastUpdateRef = useRef<number>(Date.now())
+  
+  const { data: feedData, error: feedError, mutate, isLoading: isFeedLoading, isValidating } = useSWR(
     feedId ? `/api/feed/${feedId}` : null,
     fetcher,
     {
       refreshInterval: (data) => {
-        // Only poll if posts are still generating
+        // Poll if:
+        // 1. Posts are generating images (prediction_id but no image_url)
+        // 2. Feed is processing prompts/captions (status: processing/queueing/generating)
         const hasGeneratingPosts = data?.posts?.some(
-          (p: any) => 
-            p.prediction_id && 
-            !p.image_url && 
-            p.generation_status !== 'completed'
+          (p: any) => p.prediction_id && !p.image_url
         )
-        return hasGeneratingPosts ? 5000 : 0 // Poll every 5s if generating, stop if done
+        const isProcessing = data?.feed?.status === 'processing' || 
+                            data?.feed?.status === 'queueing' ||
+                            data?.feed?.status === 'generating'
+        
+        // Continue polling if generating or processing
+        if (hasGeneratingPosts || isProcessing) {
+          lastUpdateRef.current = Date.now()
+          return 3000 // Poll every 3s (faster for better UX)
+        }
+        
+        // Grace period: Continue polling for 15s after last update
+        // This ensures UI catches database updates even if timing is slightly off
+        const timeSinceLastUpdate = Date.now() - lastUpdateRef.current
+        const shouldContinuePolling = timeSinceLastUpdate < 15000
+        
+        return shouldContinuePolling ? 3000 : 0
       },
       refreshWhenHidden: false, // Stop when tab hidden
       revalidateOnFocus: true, // Refresh when tab becomes visible
       onSuccess: (data) => {
+        // Update last update time when data changes
+        if (data?.posts) {
+          const hasNewImages = data.posts.some((p: any) => p.image_url)
+          if (hasNewImages) {
+            lastUpdateRef.current = Date.now()
+          }
+        }
+        
         // Check if all posts complete - trigger confetti
         // Note: Confetti is also triggered in useEffect below, but we check ref here to avoid double-trigger
         const allComplete = data?.posts?.every((p: any) => p.image_url)
@@ -158,6 +205,8 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
   const [isSavingOrder, setIsSavingOrder] = useState(false)
 
   // Derived state from feedData (single source of truth)
+  // SIMPLIFIED: A post is complete if it has an image_url (regardless of generation_status)
+  // This fixes the issue where images are ready but status isn't updated to 'completed'
   const postStatuses = useMemo(() => {
     if (!feedData?.posts) return []
     
@@ -166,8 +215,10 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
       position: post.position,
       status: post.generation_status,
       hasImage: !!post.image_url,
-      isGenerating: !!post.prediction_id && !post.image_url && post.generation_status !== 'completed',
-      isComplete: post.image_url && post.generation_status === 'completed',
+      // Simplified: isGenerating = has prediction_id but no image_url yet
+      isGenerating: !!post.prediction_id && !post.image_url,
+      // Simplified: isComplete = has image_url (regardless of status - images are ready to preview)
+      isComplete: !!post.image_url,
       imageUrl: post.image_url,
       predictionId: post.prediction_id,
     }))
@@ -196,8 +247,8 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
     )
   }
 
-  // Handle missing feed data
-  if (!feedData) {
+  // Handle loading state
+  if (isFeedLoading && !feedData) {
     return (
       <div className="w-full max-w-none md:max-w-[935px] mx-auto bg-white min-h-screen flex items-center justify-center p-4">
         <div className="text-center space-y-4">
@@ -208,13 +259,13 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
     )
   }
 
-  // Handle error responses
-  if (feedData.error) {
+  // Handle error responses (check both feedData.error and feedError from SWR)
+  if (feedError || feedData?.error) {
     return (
       <div className="w-full max-w-none md:max-w-[935px] mx-auto bg-white min-h-screen flex items-center justify-center p-4">
         <div className="text-center space-y-4 max-w-md">
           <h2 className="text-xl font-light text-stone-900">Feed Not Found</h2>
-          <p className="text-sm text-stone-600">{feedData.error}</p>
+          <p className="text-sm text-stone-600">{feedData?.error || feedError?.message || "Unable to load feed data"}</p>
           {onBack && (
             <button
               onClick={onBack}
@@ -228,9 +279,40 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
     )
   }
 
-  // Handle missing feed object
-  if (!feedData.feed) {
-    console.error("[v0] Feed data exists but feed object is missing:", feedData)
+  // Handle missing feed data or missing feed object
+  if (!feedData || !feedData.feed) {
+    console.error("[v0] Feed data exists but feed object is missing:", {
+      hasFeedData: !!feedData,
+      feedDataKeys: feedData ? Object.keys(feedData) : [],
+      feedDataError: feedData?.error,
+      feedDataFeed: feedData?.feed,
+      feedDataExists: feedData?.exists,
+      feedId,
+      feedError: feedError,
+      isFeedLoading,
+    })
+    
+    // If we have an error in the response, show that
+    if (feedData?.error) {
+      return (
+        <div className="w-full max-w-none md:max-w-[935px] mx-auto bg-white min-h-screen flex items-center justify-center p-4">
+          <div className="text-center space-y-4 max-w-md">
+            <h2 className="text-xl font-light text-stone-900">Feed Not Found</h2>
+            <p className="text-sm text-stone-600">{feedData.error}</p>
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="text-sm text-stone-500 hover:text-stone-900 underline mt-4"
+              >
+                Go back
+              </button>
+            )}
+          </div>
+        </div>
+      )
+    }
+    
+    // If feedData exists but doesn't have feed, it's a structure issue
     return (
       <div className="w-full max-w-none md:max-w-[935px] mx-auto bg-white min-h-screen flex items-center justify-center p-4">
         <div className="text-center space-y-4 max-w-md">
@@ -249,18 +331,60 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
     )
   }
 
-  const posts = feedData?.posts ? [...feedData.posts].sort((a: any, b: any) => a.position - b.position) : []
+  // Memoize posts to prevent unnecessary re-renders
+  const posts = useMemo(() => {
+    return feedData?.posts ? [...feedData.posts].sort((a: any, b: any) => a.position - b.position) : []
+  }, [feedData?.posts])
+  
   const totalPosts = 9
-  const progress = Math.round((readyPosts / totalPosts) * 100)
+  
+  // Get processing progress from feed data (if available)
+  const processingProgress = feedData?.feed?.processingProgress || 0
+  const processingStage = feedData?.feed?.processingStage
+  const isProcessing = feedData?.feed?.status === 'processing' || feedData?.feed?.status === 'queueing'
+  
+  // Calculate image generation progress
+  const imageProgress = Math.round((readyPosts / totalPosts) * 100)
   const isFeedComplete = readyPosts === totalPosts
+  
+  // Overall progress (combines processing + image generation)
+  const overallProgress = isProcessing 
+    ? Math.min(processingProgress, 90) // Processing is 0-90%, images are 90-100%
+    : imageProgress
+  
+  // Progress message based on stage
+  const getProgressMessage = () => {
+    if (isProcessing && processingStage) {
+      switch (processingStage) {
+        case 'generating_prompts':
+          return 'Generating prompts...'
+        case 'generating_captions':
+          return 'Writing captions...'
+        case 'queueing_images':
+          return 'Queueing images...'
+        default:
+          return 'Processing...'
+      }
+    }
+    if (readyPosts < totalPosts) {
+      return `Generating images... (${readyPosts}/${totalPosts})`
+    }
+    return 'Complete!'
+  }
+
+  // Track previous posts to detect actual changes
+  const prevPostsRef = useRef<string>('')
+  const postsKey = posts.map((p: any) => `${p.id}-${p.position}`).join(',')
 
   // Initialize reorderedPosts when posts change (only if not currently dragging)
   // CRITICAL: reorderedPosts must always be in sync with posts for drag handlers to work correctly
   useEffect(() => {
-    if (draggedIndex === null && posts.length > 0) {
+    // Only update if posts actually changed (by comparing IDs and positions)
+    if (draggedIndex === null && posts.length > 0 && prevPostsRef.current !== postsKey) {
+      prevPostsRef.current = postsKey
       setReorderedPosts(posts)
     }
-  }, [posts, draggedIndex])
+  }, [posts, draggedIndex, postsKey])
 
   // Ensure reorderedPosts is always initialized (use posts as fallback for rendering if empty)
   const displayPosts = reorderedPosts.length > 0 ? reorderedPosts : posts
@@ -656,8 +780,16 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
         description: "This takes about 30 seconds",
       })
 
-      // Refresh feed data after a short delay
-      setTimeout(() => mutate(`/api/feed/${feedId}`), 1000)
+      // Refresh feed data after a short delay to pick up prediction_id
+      // Then refresh again after longer delay to catch completed images
+      setTimeout(() => {
+        mutate(`/api/feed/${feedId}`)
+      }, 1000)
+      
+      // Additional refresh after 5 seconds to catch early completions
+      setTimeout(() => {
+        mutate(`/api/feed/${feedId}`)
+      }, 5000)
     } catch (error: any) {
       setGeneratingPosts((prev) => {
         const next = new Set(prev)
@@ -987,19 +1119,18 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
                     <div className="w-full bg-stone-200 rounded-full h-2.5 overflow-hidden">
                       <div
                         className="bg-stone-900 h-2.5 rounded-full transition-all duration-500 ease-out"
-                        style={{ width: `${progress}%` }}
+                        style={{ width: `${overallProgress}%` }}
                       />
                     </div>
 
           <div className="flex items-center gap-2 justify-center">
             <Loader2 size={14} className="animate-spin text-stone-600" />
             <p className="text-xs font-light text-stone-500">
-              {readyPosts === 0
-                ? "Starting image generation..."
-                : readyPosts < totalPosts
-                  ? `Generating remaining ${totalPosts - readyPosts} images...`
-                  : "Finalizing your feed..."}
+              {getProgressMessage()}
             </p>
+            {isValidating && (
+              <span className="text-xs text-stone-400 ml-2">(checking...)</span>
+            )}
           </div>
           {readyPosts < totalPosts && (
             <button
@@ -1180,8 +1311,8 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
               const postStatus = postStatuses.find(p => p.id === post.id)
               const isGenerating = postStatus?.isGenerating || post.generation_status === "generating"
               const isRegenerating = regeneratingPost === post.id
-              const shotTypeLabel = post.content_pillar?.toLowerCase() || `post ${post.position}`
-              const isComplete = post.image_url && post.generation_status === 'completed'
+              // SIMPLIFIED: A post is complete if it has an image_url (regardless of status)
+              const isComplete = !!post.image_url
               const isDragging = draggedIndex === index
 
               return (
@@ -1191,77 +1322,38 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
                   onDragStart={() => handleDragStart(index)}
                   onDragOver={(e) => handleDragOver(e, index)}
                   onDragEnd={handleDragEnd}
-                  className={`aspect-square bg-stone-100 relative group transition-all duration-200 ${
+                  className={`aspect-square bg-stone-100 relative transition-all duration-200 ${
                     isDragging ? 'opacity-50 scale-95' : ''
                   } ${
-                    isComplete && !isSavingOrder ? 'cursor-move hover:scale-[1.02]' : 'cursor-default'
+                    isComplete && !isSavingOrder ? 'cursor-move hover:opacity-90' : 'cursor-pointer'
                   }`}
                 >
                   {post.image_url && !isRegenerating && !isGenerating ? (
-                    <>
-                      <Image
-                        src={post.image_url || "/placeholder.svg"}
-                        alt={`Post ${post.position}`}
-                        fill
-                        className="object-cover cursor-pointer"
-                        sizes="(max-width: 768px) 33vw, 311px"
-                        onClick={() => setSelectedPost(post)}
-                      />
-                      <div className="absolute inset-0 bg-stone-900/70 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-2">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleRegeneratePost(post.id)
-                          }}
-                          disabled={isRegenerating || isGenerating}
-                          className="text-[10px] font-semibold text-white bg-stone-900 hover:bg-stone-800 px-3 py-1.5 rounded transition-colors disabled:opacity-50"
-                        >
-                          Regenerate
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setShowGallery(post.id)
-                          }}
-                          className="text-[10px] font-semibold text-white bg-stone-700 hover:bg-stone-600 px-3 py-1.5 rounded transition-colors"
-                        >
-                          Choose from Gallery
-                        </button>
-                      </div>
-                    </>
+                    <Image
+                      src={post.image_url || "/placeholder.svg"}
+                      alt={`Post ${post.position}`}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 33vw, 311px"
+                      onClick={() => setSelectedPost(post)}
+                    />
                   ) : isRegenerating || isGenerating ? (
-                    <div className="absolute inset-0 bg-stone-50 flex flex-col items-center justify-center p-3">
-                      <Loader2 className="w-6 h-6 text-stone-400 animate-spin mb-2" strokeWidth={1.5} />
+                    <div className="absolute inset-0 bg-stone-50 flex flex-col items-center justify-center">
+                      <Loader2 className="w-8 h-8 text-stone-400 animate-spin mb-2" strokeWidth={1.5} />
                       <div className="text-[10px] font-light text-stone-500 text-center">
                         {isRegenerating ? "Regenerating..." : "Creating"}
                       </div>
                     </div>
                   ) : (
                     <div
-                      className="absolute inset-0 bg-white border border-stone-200 flex flex-col"
+                      className="absolute inset-0 bg-white flex flex-col items-center justify-center p-3 cursor-pointer hover:bg-stone-50 transition-colors"
                       onClick={(e) => {
                         e.stopPropagation()
                         handleGenerateSingle(post.id)
                       }}
                     >
-                      <div className="flex items-center gap-1.5 px-2 py-1.5 border-b border-stone-100">
-                        <div className="w-4 h-4 rounded-full bg-gradient-to-br from-stone-200 to-stone-300 flex items-center justify-center flex-shrink-0">
-                          <span className="text-[8px] font-bold text-stone-700">S</span>
-                        </div>
-                        <div className="flex flex-col min-w-0">
-                          <span className="text-[8px] font-semibold text-stone-950 truncate">sselfie</span>
-                          <span className="text-[7px] text-stone-500 truncate lowercase">{shotTypeLabel}</span>
-                        </div>
-                      </div>
-
-                      <div className="flex-1 flex flex-col items-center justify-center p-3 text-center">
-                        <p className="text-[11px] font-light leading-relaxed text-stone-600 mb-3 lowercase">
-                          {shotTypeLabel}
-                        </p>
-                        <button className="text-[9px] font-semibold text-stone-900 hover:text-stone-700 transition-colors px-3 py-1.5 bg-stone-100 rounded">
-                          Create Photo
-                        </button>
-                      </div>
+                      <ImageIcon className="w-10 h-10 text-stone-300 mb-2" strokeWidth={1.5} />
+                      <div className="text-[10px] font-light text-stone-500 text-center">Click to generate</div>
                     </div>
                   )}
                 </div>
@@ -1272,6 +1364,24 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
 
         {activeTab === "posts" && (
           <div className="space-y-6 md:space-y-8">
+            {/* Create Captions Button - Show if no captions exist */}
+            {posts.length > 0 && posts.every((p: any) => !p.caption || p.caption.trim() === "") && (
+              <div className="flex justify-center pb-4">
+                <button
+                  onClick={() => {
+                    // Navigate to Maya Feed tab with "Create captions" prompt
+                    window.location.href = "/studio#maya/feed"
+                    // Small delay to ensure tab is loaded, then trigger prompt
+                    setTimeout(() => {
+                      // The prompt will be sent via quick prompt click or user can type it
+                    }, 500)
+                  }}
+                  className="px-6 py-3 bg-stone-900 text-white rounded-xl text-sm font-medium hover:bg-stone-800 transition-colors flex items-center gap-2"
+                >
+                  <span>Create Captions</span>
+                </button>
+              </div>
+            )}
             {posts.map((post: any) => {
               const isExpanded = expandedCaptions.has(post.id)
               const caption = post.caption || ""
@@ -1391,6 +1501,24 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
 
         {activeTab === "strategy" && (
           <div className="p-4 md:p-8">
+            {/* Create Strategy Button - Show if no strategy exists */}
+            {!feedData.feed?.description && (
+              <div className="flex justify-center pb-6">
+                <button
+                  onClick={() => {
+                    // Navigate to Maya Feed tab with "Create strategy" prompt
+                    window.location.href = "/studio#maya/feed"
+                    // Small delay to ensure tab is loaded, then trigger prompt
+                    setTimeout(() => {
+                      // The prompt will be sent via quick prompt click or user can type it
+                    }, 500)
+                  }}
+                  className="px-6 py-3 bg-stone-900 text-white rounded-xl text-sm font-medium hover:bg-stone-800 transition-colors flex items-center gap-2"
+                >
+                  <span>Create Strategy</span>
+                </button>
+              </div>
+            )}
             {/* Full Strategy Document */}
             <div className="bg-white/50 backdrop-blur-3xl border border-white/60 rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-xl shadow-stone-900/5">
               {feedData.feed?.description ? (
@@ -1653,101 +1781,56 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
 
       {selectedPost && (
         <div
-          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 overflow-y-auto"
           onClick={() => setSelectedPost(null)}
         >
           <div
-            className="relative max-w-5xl w-full max-h-[90vh] bg-white rounded-lg overflow-hidden flex flex-col md:flex-row"
+            className="relative w-full max-w-[470px] my-8"
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Close button */}
             <button
               onClick={() => setSelectedPost(null)}
-              className="absolute top-4 right-4 z-10 p-2 bg-stone-900/60 hover:bg-stone-900/80 rounded-full transition-colors"
+              className="absolute -top-12 right-0 z-10 p-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-full transition-colors"
             >
               <X size={20} className="text-white" />
             </button>
 
-            <div className="md:w-2/3 bg-stone-900 flex items-center justify-center">
-              <Image
-                src={selectedPost.image_url || "/placeholder.svg"}
-                alt={`Post ${selectedPost.position}`}
-                width={800}
-                height={800}
-                className="max-h-[90vh] object-contain"
-              />
-            </div>
-
-            <div className="md:w-1/3 flex flex-col">
-              <div className="flex items-center justify-between px-4 py-3 border-b border-stone-200">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 p-[2px]">
-                    <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
-                      <span className="text-xs font-bold text-stone-900">S</span>
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-stone-900">sselfie</p>
-                  </div>
-                </div>
-                <button className="p-2 hover:bg-stone-50 rounded-full transition-colors">
-                  <MoreHorizontal size={24} className="text-stone-900" />
+            {/* Action buttons - shown when image exists */}
+            {selectedPost.image_url && (
+              <div className="absolute -top-12 left-0 z-10 flex items-center gap-2">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleRegeneratePost(selectedPost.id)
+                  }}
+                  disabled={regeneratingPost === selectedPost.id}
+                  className="px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {regeneratingPost === selectedPost.id ? "Regenerating..." : "Regenerate"}
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setShowGallery(selectedPost.id)
+                    setSelectedPost(null)
+                  }}
+                  className="px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white text-sm font-medium rounded-lg transition-colors"
+                >
+                  Choose from Gallery
                 </button>
               </div>
+            )}
 
-              <div className="flex-1 overflow-y-auto px-4 py-4">
-                <div className="text-sm">
-                  <span className="font-semibold text-stone-900">sselfie</span>{" "}
-                  <div className="flex items-start justify-between gap-3">
-                    <span className="text-stone-900 whitespace-pre-wrap flex-1">{selectedPost.caption}</span>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <button
-                        onClick={() => copyCaptionToClipboard(selectedPost.caption, selectedPost.id)}
-                        className="p-1.5 hover:bg-stone-100 rounded transition-colors"
-                        title="Copy caption"
-                      >
-                        {copiedCaptions.has(selectedPost.id) ? (
-                          <Check size={16} className="text-green-600" />
-                        ) : (
-                          <Copy size={16} className="text-stone-600" />
-                        )}
-                      </button>
-                      <button
-                        onClick={() => handleEnhanceCaption(selectedPost.id, selectedPost.caption)}
-                        disabled={enhancingCaptions.has(selectedPost.id)}
-                        className="p-1.5 hover:bg-stone-100 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Enhance with Maya"
-                      >
-                        {enhancingCaptions.has(selectedPost.id) ? (
-                          <Loader2 size={16} className="text-stone-600 animate-spin" />
-                        ) : (
-                          <Sparkles size={16} className="text-stone-600" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                <p className="text-xs text-stone-400 uppercase tracking-wide mt-3">Just now</p>
-              </div>
-
-              <div className="border-t border-stone-200 px-4 py-3">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-4">
-                    <button className="hover:opacity-60 transition-opacity">
-                      <Heart size={24} className="text-stone-900" strokeWidth={2} />
-                    </button>
-                    <button className="hover:opacity-60 transition-opacity">
-                      <MessageCircle size={24} className="text-stone-900" strokeWidth={2} />
-                    </button>
-                    <button className="hover:opacity-60 transition-opacity">
-                      <Send size={24} className="text-stone-900" strokeWidth={2} />
-                    </button>
-                  </div>
-                  <button className="hover:opacity-60 transition-opacity">
-                    <Bookmark size={24} className="text-stone-900" strokeWidth={2} />
-                  </button>
-                </div>
-              </div>
-            </div>
+            {/* Use FeedPostCard component for full Instagram post mockup */}
+            <FeedPostCard
+              post={selectedPost}
+              feedId={feedId}
+              onGenerate={() => {
+                mutate()
+                setSelectedPost(null)
+              }}
+            />
           </div>
         </div>
       )}

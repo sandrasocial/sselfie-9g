@@ -115,6 +115,37 @@ export async function GET(request: NextRequest) {
         console.log("[v0] ✅ Restored inspiration image for message", msg.id)
       }
 
+      // Check for feed card marker in content (persisted format: [FEED_CARD:feedId])
+      // Remove marker from text content (it's metadata, not visible text)
+      const feedCardMatch = textContent.match(/\[FEED_CARD:(\d+)\]/)
+      if (feedCardMatch) {
+        const feedId = parseInt(feedCardMatch[1], 10)
+        console.log("[v0] Found feed card marker for feedId:", feedId)
+        
+        // Remove marker from text content
+        const cleanTextContent = textContent.replace(/\[FEED_CARD:\d+\]/g, '').trim()
+        if (parts.length > 0 && parts[0].type === 'text') {
+          parts[0].text = cleanTextContent || ""
+        } else if (cleanTextContent) {
+          parts.unshift({
+            type: "text",
+            text: cleanTextContent,
+          })
+        }
+        
+        // Add feed card part (will be fetched on client side)
+        parts.push({
+          type: 'tool-generateFeed',
+          output: {
+            feedId: feedId,
+            title: 'Instagram Feed',
+            description: '',
+            posts: [],
+            _needsRestore: true, // Flag to fetch on client
+          },
+        })
+      }
+
       return {
         ...baseMessage,
         parts: parts.length > 0 ? parts : [{ type: "text", text: "" }],

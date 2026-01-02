@@ -109,7 +109,9 @@ export async function POST(req: Request) {
     
     // Get chatType from body, or fallback to header, or default to "maya"
     const chatTypeHeader = req.headers.get("x-chat-type")
+    const activeTabHeader = req.headers.get("x-active-tab") // Feed tab flag
     const chatType = chatTypeFromBody || chatTypeHeader || "maya"
+    const isFeedTab = activeTabHeader === "feed"
     
     console.log("[v0] Chat type detected:", { 
       fromBody: chatTypeFromBody, 
@@ -391,30 +393,50 @@ export async function POST(req: Request) {
     // convertToModelMessages expects messages with 'parts' array, not just 'content' field
     // CRITICAL: Preserve all original message fields (id, role, timestamp, etc.) using spread operator
     const normalizedMessages = messages.map((m: any) => {
-      // Skip normalization if message already has 'parts' array
+      // Skip normalization if message already has valid non-empty 'parts' array
       if (m.parts && Array.isArray(m.parts) && m.parts.length > 0) {
         return m
       }
       
-      // If message has 'content' field (string) but no 'parts', convert it to 'parts' format
-      // Preserve all original fields using spread operator
-      if (typeof m.content === "string" && m.content.trim()) {
+      // If message has empty 'parts' array, normalize it to ensure at least one empty text part
+      // This prevents convertToModelMessages from failing on messages with empty parts
+      if (m.parts && Array.isArray(m.parts) && m.parts.length === 0) {
         return {
           ...m, // Preserve id, role, timestamp, and all other metadata
-          parts: [{ type: "text", text: m.content }],
+          parts: [{ type: "text", text: "" }], // Normalize empty parts to empty text part
+        }
+      }
+      
+      // If message has 'content' field (string) but no 'parts', convert it to 'parts' format
+      // Preserve all original fields using spread operator
+      // Always normalize string content, even if empty, to maintain consistent message structure
+      if (typeof m.content === "string") {
+        return {
+          ...m, // Preserve id, role, timestamp, and all other metadata
+          parts: [{ type: "text", text: m.content }], // Include empty strings to maintain format consistency
         }
       }
       
       // If message has 'content' as array (already in parts-like format), convert to parts
       // Preserve all original fields using spread operator
-      if (Array.isArray(m.content) && m.content.length > 0) {
+      // Handle empty arrays to maintain consistent message structure
+      if (Array.isArray(m.content)) {
         return {
           ...m, // Preserve id, role, timestamp, and all other metadata
-          parts: m.content,
+          parts: m.content.length > 0 ? m.content : [{ type: "text", text: "" }], // Normalize empty arrays to empty text part
         }
       }
       
-      // Keep message as-is if it doesn't match above patterns
+      // If message has neither 'parts' nor 'content', create empty parts array
+      // This ensures all messages have a consistent structure
+      if (!m.parts && !m.content) {
+        return {
+          ...m, // Preserve id, role, timestamp, and all other metadata
+          parts: [{ type: "text", text: "" }], // Create empty text part for normalization
+        }
+      }
+      
+      // Keep message as-is if it doesn't match above patterns (should rarely happen)
       return m
     })
 
@@ -634,7 +656,7 @@ export async function POST(req: Request) {
     if (chatType === "prompt_builder") {
       systemPrompt = PROMPT_BUILDER_SYSTEM
       console.log("[Maya Chat] Using Prompt Builder system prompt")
-    } else if (chatType === "feed-planner") {
+    } else if (chatType === "feed-planner" || isFeedTab) {
       // Import Feed Planner context with visual design guidance
       const { getFeedPlannerContextAddon } = await import("@/lib/maya/feed-planner-context")
       
@@ -658,6 +680,7 @@ export async function POST(req: Request) {
         userSelectedMode,
         studioProHeader,
         hasStudioProHeader,
+        isFeedTab,
         message: userSelectedMode === "pro" ? "User selected Pro Mode - all posts will be Pro" :
                  userSelectedMode === "classic" ? "User selected Classic Mode - all posts will be Classic" :
                  "Auto-detect mode per post (default)"

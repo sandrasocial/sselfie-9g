@@ -3,12 +3,13 @@ import { generateText } from "ai"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { neon } from "@neondatabase/serverless"
-import { checkCredits, deductCredits, CREDIT_COSTS } from "@/lib/credits"
+import { checkCredits, deductCredits, addCredits, getUserCredits, CREDIT_COSTS } from "@/lib/credits"
 import { getStudioProCreditCost } from "@/lib/nano-banana-client"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 import { generateInstagramCaption } from "@/lib/feed-planner/caption-writer"
 import { getFluxPromptingPrinciples } from "@/lib/maya/flux-prompting-principles"
 import { detectRequiredMode, detectProModeType } from "@/lib/feed-planner/mode-detection"
+import { buildNanoBananaPrompt } from "@/lib/maya/nano-banana-prompt-builder"
 import { getFashionIntelligencePrinciples } from "@/lib/maya/fashion-knowledge-2025"
 import INFLUENCER_POSING_KNOWLEDGE from "@/lib/maya/influencer-posing-knowledge"
 
@@ -50,41 +51,9 @@ export async function POST(request: NextRequest) {
     console.log("[v0] Feed Planner API: Creating strategy for user", neonUser.id)
     console.log("[v0] User request:", userRequest.substring(0, 100) + "...")
 
-    // Check strategy credits upfront (always 5 credits)
+    // Strategy credits (always 5 credits)
+    // NOTE: We'll deduct after checking total credits (strategy + images) to ensure atomicity
     const strategyCredits = 5
-    const hasStrategyCredits = await checkCredits(neonUser.id.toString(), strategyCredits)
-
-    if (!hasStrategyCredits) {
-      console.error("[v0] Insufficient credits for strategy creation")
-      return NextResponse.json(
-        {
-          error: `Insufficient credits. You need ${strategyCredits} credits to create your feed strategy.`,
-        },
-        { status: 402 },
-      )
-    }
-
-    console.log("[v0] Strategy credits checked: User has enough credits")
-    
-    // Deduct credits for strategy creation (5 credits) - done upfront
-    const strategyDeduction = await deductCredits(
-      neonUser.id.toString(),
-      strategyCredits,
-      "image",
-      "Feed strategy creation",
-    )
-
-    if (!strategyDeduction.success) {
-      console.error("[v0] Failed to deduct credits for strategy")
-      return NextResponse.json(
-        {
-          error: "Failed to deduct credits. Please try again.",
-        },
-        { status: 500 },
-      )
-    }
-
-    console.log("[v0] Credits deducted for strategy. Remaining balance:", strategyDeduction.newBalance)
 
     const sql = neon(process.env.DATABASE_URL!)
 
@@ -493,6 +462,7 @@ Note: Choose postType based on what makes sense for each post. Portrait posts fe
         }
       }
     }
+    } // Close else block
 
     console.log("[v0] Strategy parsed successfully!")
       console.log("[v0] Strategy has posts array:", Array.isArray(strategy.posts))
@@ -517,15 +487,162 @@ Note: Choose postType based on what makes sense for each post. Portrait posts fe
 
     const truncate = (str: string, max = 50) => (str && str.length > max ? str.substring(0, max) : str)
 
+    // Helper function to generate SHORT layout type label (max 50 chars) from post analysis
+    const getLayoutType = (gridPattern: string | undefined, posts: any[]): string => {
+      if (!posts || posts.length === 0) return "Mixed Layout"
+      
+      // Count post types
+      const portraitCount = posts.filter(p => 
+        p.postType === "portrait" || !p.postType || p.postType === "post"
+      ).length
+      const objectCount = posts.filter(p => 
+        p.postType === "object" || p.postType === "flatlay" || p.postType === "scenery"
+      ).length
+      const proCount = posts.filter(p => {
+        if (p.generationMode) {
+          // Normalize to lowercase to handle 'Pro' vs 'pro' casing inconsistencies
+          return (p.generationMode as string).toLowerCase() === 'pro'
+        }
+        // Detect Pro Mode for posts without explicit generationMode
+        const postDesc = (p.description || p.prompt || p.purpose || "").toLowerCase()
+        return postDesc.includes('carousel') || postDesc.includes('quote') || postDesc.includes('infographic')
+      }).length
+      const quoteCount = posts.filter(p => 
+        p.postType === "quote" || (p.description || "").toLowerCase().includes('quote')
+      ).length
+      
+      // Generate descriptive but SHORT label (max 50 chars)
+      if (proCount >= 5) return "Pro-Heavy"
+      if (portraitCount >= 6) return "Portrait-Focused"
+      if (objectCount >= 5) return "Lifestyle-Rich"
+      if (quoteCount >= 3) return "Quote-Heavy"
+      if (portraitCount === objectCount && portraitCount > 0) return "Balanced Mix"
+      if (proCount >= 3) return "Mixed with Pro"
+      if (portraitCount > objectCount) return "Portrait-Dominant"
+      if (objectCount > portraitCount) return "Lifestyle-Dominant"
+      
+      return "Mixed Layout"
+    }
+
     // Extract username from brand profile or generate one
     const username = brandProfile.business_name 
       ? brandProfile.business_name.toLowerCase().replace(/\s+/g, '') 
       : `user${neonUser.id}`
     const brandName = brandProfile.business_name || brandProfile.name || "Personal Brand"
 
+    // Generate SHORT layout type label and store FULL gridPattern in visual_rhythm
+    const layoutTypeLabel = getLayoutType(strategy.gridPattern, strategy.posts || [])
+    const fullGridPattern = strategy.gridPattern || strategy.visualRhythm || 'Balanced flow'
+
+    // Ensure layoutTypeLabel is always a valid string (safety check)
+    const safeLayoutTypeLabel = (layoutTypeLabel || 'Mixed Layout').substring(0, 50)
+    
+    console.log("[v0] Layout type label:", safeLayoutTypeLabel)
+    console.log("[v0] Full grid pattern length:", fullGridPattern.length)
+
+    // CRITICAL: Calculate actual image credits BEFORE inserting feed layout
+    // This ensures we check total credits (strategy + images) before any database writes
+    // Sort posts for consistent processing
+    const sortedPostsForCredits = [...strategy.posts].sort((a, b) => a.position - b.position)
+    let actualImageCredits = 0
+    
+    for (const post of sortedPostsForCredits) {
+      // For approved strategies, generationMode is already set
+      // For Claude-generated strategies, detect it (same logic as in insertion loop)
+      let postGenerationMode: 'classic' | 'pro'
+      if (isApprovedStrategy && post.generationMode) {
+        // Normalize to lowercase to handle 'Pro' vs 'pro' casing inconsistencies
+        postGenerationMode = (post.generationMode as string).toLowerCase() as 'classic' | 'pro'
+      } else {
+        // Detect Pro Mode for Claude-generated strategies
+        const postDescription = post.description || post.prompt || post.purpose || ""
+        postGenerationMode = detectRequiredMode({
+          post_type: post.postType,
+          description: postDescription,
+          prompt: post.prompt || "",
+          content_pillar: post.contentPillar || "",
+        })
+      }
+      
+      // Calculate credits: Pro Mode = 2 credits, Classic = 1 credit
+      if (postGenerationMode === 'pro') {
+        actualImageCredits += getStudioProCreditCost('2K') // 2 credits
+      } else {
+        actualImageCredits += CREDIT_COSTS.IMAGE // 1 credit
+      }
+    }
+    
+    // Check if user has enough credits for strategy + image generation BEFORE any database writes
+    const totalCreditsNeeded = strategyCredits + actualImageCredits
+    const currentBalance = await getUserCredits(neonUser.id.toString())
+    const hasEnoughCredits = currentBalance >= totalCreditsNeeded
+    
+    if (!hasEnoughCredits) {
+      console.error("[v0] Insufficient credits for strategy + image generation")
+      const proModeCount = sortedPostsForCredits.filter(p => {
+        if (isApprovedStrategy && p.generationMode) {
+          // Normalize to lowercase to handle 'Pro' vs 'pro' casing inconsistencies
+          return (p.generationMode as string).toLowerCase() === 'pro'
+        }
+        const postDesc = p.description || p.prompt || p.purpose || ""
+        return detectRequiredMode({ post_type: p.postType, description: postDesc, prompt: p.prompt || "", content_pillar: p.contentPillar || "" }) === 'pro'
+      }).length
+      const classicCount = sortedPostsForCredits.length - proModeCount
+      
+      // No credits deducted yet, so just return error (no refund needed)
+      return NextResponse.json(
+        {
+          error: `Insufficient credits. You need ${totalCreditsNeeded} total credits (${strategyCredits} for strategy + ${actualImageCredits} for images). You have ${currentBalance} credits. Image generation requires ${actualImageCredits} credits (${proModeCount} Pro Mode posts × 2 + ${classicCount} Classic posts × 1).`,
+          creditsNeeded: totalCreditsNeeded,
+          currentBalance,
+          strategyCredits,
+          imageCredits: actualImageCredits,
+          proModeCount,
+          classicCount,
+        },
+        { status: 402 },
+      )
+    }
+    
+    console.log(`[v0] ✅ Total credit check passed: ${totalCreditsNeeded} total credits needed (${strategyCredits} strategy + ${actualImageCredits} images)`)
+    const proModeCount = sortedPostsForCredits.filter(p => {
+      if (isApprovedStrategy && p.generationMode) {
+        // Normalize to lowercase to handle 'Pro' vs 'pro' casing inconsistencies
+        return (p.generationMode as string).toLowerCase() === 'pro'
+      }
+      const postDesc = p.description || p.prompt || p.purpose || ""
+      return detectRequiredMode({ post_type: p.postType, description: postDesc, prompt: p.prompt || "", content_pillar: p.contentPillar || "" }) === 'pro'
+    }).length
+    const classicCount = sortedPostsForCredits.length - proModeCount
+    console.log(`[v0] Image credits breakdown: ${proModeCount} Pro Mode (×2) + ${classicCount} Classic (×1) = ${actualImageCredits} credits`)
+
+    // Deduct strategy credits (after validation, before database writes)
+    console.log(`[v0] Deducting strategy credits (${strategyCredits} credits)...`)
+    const strategyDeduction = await deductCredits(
+      neonUser.id.toString(),
+      strategyCredits,
+      "image",
+      `Feed strategy creation`,
+      null, // No prediction ID for strategy credits
+    )
+    
+    if (!strategyDeduction.success) {
+      console.error("[v0] Failed to deduct strategy credits:", strategyDeduction.error)
+      return NextResponse.json(
+        {
+          error: "Failed to process strategy creation. Please try again.",
+          details: strategyDeduction.error,
+        },
+        { status: 500 },
+      )
+    }
+    
+    console.log(`[v0] ✅ Strategy credits deducted. Remaining balance: ${strategyDeduction.newBalance}`)
+
     // Store custom settings as JSONB if provided
     const customSettingsJson = customSettings ? JSON.stringify(customSettings) : null
 
+    // NOW safe to insert feed layout (credits validated and deducted)
     const [feedLayout] = await sql`
       INSERT INTO feed_layouts (
         user_id, 
@@ -547,8 +664,8 @@ Note: Choose postType based on what makes sense for each post. Portrait posts fe
         ${strategy.strategyDocument},
         ${truncate(brandProfile.business_type)}, 
         ${truncate(brandProfile.brand_vibe)},
-        ${truncate(strategy.gridPattern)}, 
-        ${strategy.visualRhythm},
+        ${safeLayoutTypeLabel},
+        ${fullGridPattern},
         ${userRequest.substring(0, 500)},
         ${username},
         ${brandName},
@@ -625,72 +742,80 @@ Note: Choose postType based on what makes sense for each post. Portrait posts fe
               caption: prevPost.caption || "",
             }))
 
-            try {
-              const captionResult = await generateInstagramCaption({
-                postPosition: post.position,
-                shotType: post.postType || "portrait", // postType can be "portrait", "object", "flatlay", or "scenery"
-                purpose: post.contentPillar || "general",
-                emotionalTone: emotionalTone,
-                brandProfile: brandProfile,
-                targetAudience: brandProfile.target_audience,
-                brandVoice: brandProfile.brand_voice,
-                contentPillar: post.contentPillar,
-                hookConcept: post.hookConcept,
-                storyConcept: post.storyConcept,
-                valueConcept: post.valueConcept,
-                ctaConcept: post.ctaConcept,
-                hashtags: post.hashtags,
-                previousCaptions,
-                narrativeRole: post.narrativeRole,
-                // researchData: null, // Research data not available in this context
-              })
+          try {
+            const captionResult = await generateInstagramCaption({
+              postPosition: post.position,
+              shotType: post.postType || "portrait", // postType can be "portrait", "object", "flatlay", or "scenery"
+              purpose: post.contentPillar || "general",
+              emotionalTone: emotionalTone,
+              brandProfile: brandProfile,
+              targetAudience: brandProfile.target_audience,
+              brandVoice: brandProfile.brand_voice,
+              contentPillar: post.contentPillar,
+              hookConcept: post.hookConcept,
+              storyConcept: post.storyConcept,
+              valueConcept: post.valueConcept,
+              ctaConcept: post.ctaConcept,
+              hashtags: post.hashtags,
+              previousCaptions,
+              narrativeRole: post.narrativeRole,
+              // researchData: null, // Research data not available in this context
+            })
 
-              finalCaption = captionResult.caption
-              
-              // Fix any escaped newlines that might have been stored
+            finalCaption = captionResult.caption
+            
+            // Fix any escaped newlines that might have been stored
+            finalCaption = finalCaption.replace(/\\n/g, '\n')
+            
+            console.log(`[v0] ✓ Caption generated for post ${post.position} (${finalCaption.length} chars)`)
+          } catch (captionErr: any) {
+            console.error(`[v0] ⚠️ Caption generation failed for post ${post.position}:`, captionErr.message)
+            
+            // Fallback: Build caption from concepts if caption writer fails
+            if (post.hookConcept && post.storyConcept && post.valueConcept && post.ctaConcept) {
+              finalCaption = `${post.hookConcept}\n\n${post.storyConcept}\n\n${post.valueConcept}\n\n${post.ctaConcept}`
+              console.log(`[v0] Using fallback caption from concepts`)
+            } else if (post.caption) {
+              finalCaption = post.caption
+              // Fix escaped newlines in strategy-generated captions
               finalCaption = finalCaption.replace(/\\n/g, '\n')
-              
-              console.log(`[v0] ✓ Caption generated for post ${post.position} (${finalCaption.length} chars)`)
-            } catch (captionErr: any) {
-              console.error(`[v0] ⚠️ Caption generation failed for post ${post.position}:`, captionErr.message)
-              
-              // Fallback: Build caption from concepts if caption writer fails
-              if (post.hookConcept && post.storyConcept && post.valueConcept && post.ctaConcept) {
-                finalCaption = `${post.hookConcept}\n\n${post.storyConcept}\n\n${post.valueConcept}\n\n${post.ctaConcept}`
-                console.log(`[v0] Using fallback caption from concepts`)
-              } else if (post.caption) {
-                finalCaption = post.caption
-                // Fix escaped newlines in strategy-generated captions
-                finalCaption = finalCaption.replace(/\\n/g, '\n')
-                console.log(`[v0] Using strategy-generated caption as fallback`)
-              } else {
-                // Last resort: create basic caption
-                finalCaption = `Post ${post.position} - ${post.contentPillar || "content"}`
-                console.log(`[v0] ⚠️ Using minimal caption placeholder`)
-              }
+              console.log(`[v0] Using strategy-generated caption as fallback`)
+            } else {
+              // Last resort: create basic caption
+              finalCaption = `Post ${post.position} - ${post.contentPillar || "content"}`
+              console.log(`[v0] ⚠️ Using minimal caption placeholder`)
             }
+          }
 
-            // Hashtags are now integrated in caption-writer, but ensure we have them if missing
+          // Hashtags processing: runs after caption generation (success or fallback)
+          // Hashtags are now integrated in caption-writer, but ensure we have them if missing
+          try {
             const hashtags = post.hashtags || []
-            if (hashtags.length > 0 && !finalCaption.includes("#")) {
+            if (hashtags.length > 0 && finalCaption && !finalCaption.includes("#")) {
               // Only add if caption writer didn't include any
               finalCaption = `${finalCaption}\n\n${hashtags.map((h: string) => `#${h.replace("#", "")}`).join(" ")}`
             }
-
-            return {
-              post,
-              caption: finalCaption,
-              success: true,
-            }
-          } catch (error: any) {
-            console.error(`[v0] ✗ Error processing post ${post.position}:`, error.message)
-            return {
-              post,
-              caption: post.caption || `Post ${post.position}`,
-              success: false,
-              error: error.message,
-            }
+          } catch (hashtagErr: any) {
+            // If hashtag processing fails, log but don't fail the whole caption
+            console.warn(`[v0] ⚠️ Hashtag processing failed for post ${post.position}:`, hashtagErr.message)
           }
+
+          // Return successful result
+          return {
+            post,
+            caption: finalCaption,
+            success: true,
+          }
+        } catch (error: any) {
+          // Outer catch: handles any unexpected errors in the entire post processing flow
+          console.error(`[v0] ✗ Error processing post ${post.position}:`, error.message)
+          return {
+            post,
+            caption: post.caption || `Post ${post.position}`,
+            success: false,
+            error: error.message,
+          }
+        }
       })
 
       // Execute this batch and wait for ALL results to complete
@@ -715,69 +840,8 @@ Note: Choose postType based on what makes sense for each post. Portrait posts fe
 
     console.log(`[v0] Caption generation complete: ${captionResults.filter(r => r.success).length} successful, ${captionResults.filter(r => !r.success).length} failed`)
 
-    // CRITICAL: Calculate actual image credits based on posts' generationMode
-    // This must happen AFTER strategy is generated/loaded to account for Pro Mode posts
-    let actualImageCredits = 0
-    for (const post of sortedPosts) {
-      // For approved strategies, generationMode is already set
-      // For Claude-generated strategies, detect it (same logic as in insertion loop)
-      let postGenerationMode: 'classic' | 'pro'
-      if (isApprovedStrategy && post.generationMode) {
-        postGenerationMode = post.generationMode as 'classic' | 'pro'
-      } else {
-        // Detect Pro Mode for Claude-generated strategies
-        const postDescription = post.description || post.prompt || post.purpose || ""
-        postGenerationMode = detectRequiredMode({
-          post_type: post.postType,
-          description: postDescription,
-          prompt: post.prompt || "",
-          content_pillar: post.contentPillar || "",
-        })
-      }
-      
-      // Calculate credits: Pro Mode = 2 credits, Classic = 1 credit
-      if (postGenerationMode === 'pro') {
-        actualImageCredits += getStudioProCreditCost('2K') // 2 credits
-      } else {
-        actualImageCredits += CREDIT_COSTS.IMAGE // 1 credit
-      }
-    }
-    
-    // Check if user has enough credits for strategy + actual image credits
-    const totalCreditsNeeded = strategyCredits + actualImageCredits
-    const hasEnoughCredits = await checkCredits(neonUser.id.toString(), totalCreditsNeeded)
-    
-    if (!hasEnoughCredits) {
-      console.error("[v0] Insufficient credits for image generation after strategy created")
-      const proModeCount = sortedPosts.filter(p => {
-        if (isApprovedStrategy && p.generationMode) {
-          return p.generationMode === 'pro'
-        }
-        const postDesc = p.description || p.prompt || p.purpose || ""
-        return detectRequiredMode({ post_type: p.postType, description: postDesc, prompt: p.prompt || "", content_pillar: p.contentPillar || "" }) === 'pro'
-      }).length
-      const classicCount = sortedPosts.length - proModeCount
-      
-      // Strategy credits already deducted - we could refund here, but for now just return error
-      // The queue-images function will handle the credit check again before generation
-      return NextResponse.json(
-        {
-          error: `Strategy created, but insufficient credits for image generation. You need ${actualImageCredits} credits for images (${proModeCount} Pro Mode posts × 2 + ${classicCount} Classic posts × 1). Total needed: ${totalCreditsNeeded} credits (${strategyCredits} strategy + ${actualImageCredits} images).`,
-        },
-        { status: 402 },
-      )
-    }
-    
-    console.log(`[v0] ✅ Credit check passed: ${strategyCredits} strategy + ${actualImageCredits} image credits = ${totalCreditsNeeded} total`)
-    const proModeCount = sortedPosts.filter(p => {
-      if (isApprovedStrategy && p.generationMode) {
-        return p.generationMode === 'pro'
-      }
-      const postDesc = p.description || p.prompt || p.purpose || ""
-      return detectRequiredMode({ post_type: p.postType, description: postDesc, prompt: p.prompt || "", content_pillar: p.contentPillar || "" }) === 'pro'
-    }).length
-    const classicCount = sortedPosts.length - proModeCount
-    console.log(`[v0] Image credits breakdown: ${proModeCount} Pro Mode (×2) + ${classicCount} Classic (×1) = ${actualImageCredits} credits`)
+    // Credit check was already done before feed layout insertion - actualImageCredits was calculated earlier
+    // No need to check again since feed layout insertion only happens after credit validation passes
 
     // Get user data for Maya concept generation (same as concept cards)
     const userDataResult = await sql`
@@ -901,6 +965,27 @@ CRITICAL INSTRUCTIONS:
       const post = sortedPosts[i]
       const captionResult = captionResults[i]
 
+      // Validate captionResult exists and has a caption
+      if (!captionResult) {
+        console.error(`[v0] ❌ No caption result found for post ${post.position} at index ${i}. CaptionResults length: ${captionResults.length}, Expected: ${sortedPosts.length}`)
+        throw new Error(`Caption generation failed for post ${post.position}: No result available at index ${i}`)
+      }
+
+      // Validate caption exists and is not empty
+      const caption = captionResult.caption
+      if (!caption || (typeof caption === 'string' && caption.trim().length === 0)) {
+        console.error(`[v0] ❌ Caption result exists but caption is missing or empty for post ${post.position}. CaptionResult:`, { success: captionResult.success, hasCaption: !!caption })
+        // Use fallback caption instead of throwing
+        const fallbackCaption = `Post ${post.position} - ${post.contentPillar || "content"}`
+        console.warn(`[v0] Using fallback caption for post ${post.position}`)
+        captionResult.caption = fallbackCaption
+      }
+      
+      // Log warning if caption generation failed but we have a fallback
+      if (captionResult.success === false) {
+        console.warn(`[v0] ⚠️ Caption generation failed for post ${post.position}, using fallback caption`)
+      }
+
       try {
         console.log(`[v0] === Generating concept card and inserting post ${i + 1}/9 (position ${post.position}) ===`)
 
@@ -946,10 +1031,139 @@ This is the FIRST post (position ${post.position} of 9). Create a strong, unique
 - Current post type: ${post.postType || "portrait"}
 ===`
 
-        // Generate full FLUX prompt using Maya's concept generation (same as concept cards)
-        const userRequest = `${post.prompt || post.visualDirection || "Professional Instagram post"}. Position ${post.position} in a 9-post Instagram feed. Shot type: ${post.postType || "portrait"}`
+        // CRITICAL: Detect Pro Mode BEFORE generating prompts
+        // This ensures we generate the correct prompt type (Nano Banana for Pro, FLUX for Classic)
+        let generationMode: 'classic' | 'pro'
+        let proModeType: string | null = null
         
-        const conceptPrompt = `You are Maya, an elite fashion photographer with 15 years of experience shooting for Vogue, Elle, and creating viral Instagram content. You have an OBSESSIVE eye for authenticity - you know that the best images feel stolen from real life, not produced.
+        if (isApprovedStrategy && post.generationMode) {
+          // Use the user's approved generation mode (preserve their choice)
+          // Normalize to lowercase to handle 'Pro' vs 'pro' casing inconsistencies
+          generationMode = (post.generationMode as string).toLowerCase() as 'classic' | 'pro'
+          console.log(`[v0] Using approved generation mode for post ${post.position}: ${generationMode}`)
+          
+          // If Pro Mode, detect the specific type
+          if (generationMode === 'pro') {
+            const postDescription = post.description || post.visualDirection || post.prompt || post.purpose || ""
+            proModeType = detectProModeType({
+              generation_mode: generationMode,
+              post_type: post.postType,
+              description: postDescription,
+              prompt: post.prompt || "",
+              content_pillar: post.contentPillar,
+            })
+          }
+        } else {
+          // Claude-generated strategy: detect Pro Mode requirements
+          // Note: Claude-generated posts have 'prompt' field, not 'description'
+          const postDescription = post.description || post.prompt || post.purpose || ""
+          generationMode = detectRequiredMode({
+            post_type: post.postType,
+            description: postDescription,
+            prompt: post.prompt || "",
+            content_pillar: post.contentPillar,
+          })
+          proModeType = generationMode === 'pro' 
+            ? detectProModeType({
+                generation_mode: generationMode,
+                post_type: post.postType,
+                description: postDescription,
+                prompt: post.prompt || "",
+                content_pillar: post.contentPillar,
+              })
+            : null
+        }
+        
+        console.log(`[v0] Post ${post.position} generation mode: ${generationMode}${proModeType ? ` (${proModeType})` : ''}`)
+        
+        // Generate prompt based on mode
+        let finalPrompt = post.prompt || ""
+        let outfitDescription = ""
+        let locationDescription = ""
+        
+        if (generationMode === 'pro') {
+          // PRO MODE: Generate Nano Banana prompt (same as Maya Chat Pro Mode)
+          console.log(`[v0] 🎨 Generating Nano Banana prompt for Pro Mode post ${post.position}`)
+          
+          try {
+            // Fetch user's avatar images for Pro Mode
+            const avatarImages = await sql`
+              SELECT image_url, display_order, uploaded_at
+              FROM user_avatar_images
+              WHERE user_id = ${neonUser.id}
+              AND is_active = true
+              ORDER BY display_order ASC, uploaded_at ASC
+              LIMIT 5
+            `
+            
+            if (avatarImages.length === 0) {
+              console.warn(`[v0] ⚠️ No avatar images found for Pro Mode post ${post.position}, using fallback strategy prompt`)
+              // Use strategy prompt as fallback when no avatar images are available
+              finalPrompt = post.prompt || post.visualDirection || post.contentPillar || `Feed post ${post.position}`
+              console.log(`[v0] Using fallback strategy prompt for post ${post.position} (${finalPrompt.split(/\s+/).length} words)`)
+            } else {
+              const baseImages = avatarImages.map((img: any) => ({
+                url: img.image_url,
+                type: 'user-photo' as const,
+              }))
+              
+              // Get brand kit if available
+              const [brandKit] = await sql`
+                SELECT primary_color, secondary_color, accent_color, font_style, brand_tone
+                FROM brand_kits
+                WHERE user_id = ${neonUser.id} AND is_default = true
+                LIMIT 1
+              `
+              
+              const userRequest = post.prompt || post.visualDirection || post.contentPillar || `Feed post ${post.position}`
+              
+              // Use proper Pro Mode type (detectProModeType now defaults to 'brand-scene', not 'workbench')
+              // 'workbench' mode just passes through raw prompts without AI transformation - not suitable for feed posts
+              const effectiveProMode = proModeType || 'brand-scene'
+              
+              // For quote posts, use the generated caption (from captionResult) instead of post.caption
+              // post.caption doesn't exist yet since captions are generated in captionResults
+              const quoteCaption = post.postType === 'quote' 
+                ? (captionResult.caption || caption || '') 
+                : undefined
+
+              const { optimizedPrompt } = await buildNanoBananaPrompt({
+                userId: neonUser.id,
+                mode: effectiveProMode as any,
+                userRequest, // Visual direction, NOT Instagram caption
+                inputImages: {
+                  baseImages,
+                  productImages: [],
+                  textElements: quoteCaption ? [{
+                    text: quoteCaption,
+                    style: 'quote' as const,
+                  }] : undefined,
+                },
+                workflowMeta: {
+                  platformFormat: '4:5', // Instagram portrait format
+                },
+                brandKit: brandKit ? {
+                  primaryColor: brandKit.primary_color,
+                  secondaryColor: brandKit.secondary_color,
+                  accentColor: brandKit.accent_color,
+                  fontStyle: brandKit.font_style,
+                  brandTone: brandKit.brand_tone,
+                } : undefined,
+              })
+              
+              finalPrompt = optimizedPrompt
+              console.log(`[v0] ✅ Generated Nano Banana prompt for post ${post.position} (${finalPrompt.split(/\s+/).length} words)`)
+            }
+          } catch (proModeError) {
+            console.error(`[v0] ⚠️ Failed to generate Nano Banana prompt for post ${post.position}:`, proModeError)
+            // Fallback to strategy prompt if Pro Mode generation fails
+            finalPrompt = post.prompt || post.visualDirection || ""
+          }
+        } else {
+          // CLASSIC MODE: Generate FLUX prompt using Maya's concept generation (same as concept cards)
+          const userRequest = `${post.prompt || post.visualDirection || "Professional Instagram post"}. Position ${post.position} in a 9-post Instagram feed. Shot type: ${post.postType || "portrait"}`
+          
+          const conceptPrompt = `You are Maya, an elite fashion photographer with 15 years of experience shooting for Vogue, Elle, and creating viral Instagram content. You have an OBSESSIVE eye for authenticity - you know that the best images feel stolen from real life, not produced.
 
 ${fashionIntelligence}
 
@@ -1029,96 +1243,64 @@ Return ONLY valid JSON, no markdown:
   "prompt": "YOUR CRAFTED FLUX PROMPT - MUST start with ${triggerWord}, ${userEthnicity ? userEthnicity + " " : ""}${userGender}${physicalPreferences ? `, [converted physical preferences - descriptive only]` : ""}"
 }`
 
-        const { text: conceptText } = await generateText({
-          model: "anthropic/claude-sonnet-4-20250514",
-          messages: [
-            {
-              role: "user",
-              content: conceptPrompt,
-            },
-          ],
-          maxTokens: 2000,
-          temperature: 0.85,
-        })
+          const { text: conceptText } = await generateText({
+            model: "anthropic/claude-sonnet-4-20250514",
+            messages: [
+              {
+                role: "user",
+                content: conceptPrompt,
+              },
+            ],
+            maxTokens: 2000,
+            temperature: 0.85,
+          })
 
-        // Parse JSON response
-        let fluxPrompt = post.prompt || "" // Fallback to strategy prompt if concept generation fails
-        let outfitDescription = ""
-        let locationDescription = ""
-        const jsonMatch = conceptText.match(/\{[\s\S]*\}/)
-        if (jsonMatch) {
-          try {
-            const concept = JSON.parse(jsonMatch[0])
-            fluxPrompt = concept.prompt || post.prompt || ""
-            outfitDescription = concept.outfit || ""
-            locationDescription = concept.location || ""
-            
-            if (fluxPrompt) {
-              console.log(`[v0] ✅ Generated full FLUX prompt (${fluxPrompt.split(/\s+/).length} words) for post ${post.position}`)
-              if (outfitDescription) console.log(`[v0]   Outfit: ${outfitDescription}`)
-              if (locationDescription) console.log(`[v0]   Location: ${locationDescription}`)
+          // Parse JSON response
+          const jsonMatch = conceptText.match(/\{[\s\S]*\}/)
+          if (jsonMatch) {
+            try {
+              const concept = JSON.parse(jsonMatch[0])
+              finalPrompt = concept.prompt || post.prompt || ""
+              outfitDescription = concept.outfit || ""
+              locationDescription = concept.location || ""
+              
+              if (finalPrompt) {
+                console.log(`[v0] ✅ Generated full FLUX prompt (${finalPrompt.split(/\s+/).length} words) for post ${post.position}`)
+                if (outfitDescription) console.log(`[v0]   Outfit: ${outfitDescription}`)
+                if (locationDescription) console.log(`[v0]   Location: ${locationDescription}`)
+              }
+            } catch (parseError) {
+              console.error(`[v0] ⚠️ Failed to parse concept JSON for post ${post.position}, using strategy prompt:`, parseError)
+              finalPrompt = post.prompt || ""
             }
-          } catch (parseError) {
-            console.error(`[v0] ⚠️ Failed to parse concept JSON for post ${post.position}, using strategy prompt:`, parseError)
+          } else {
+            console.warn(`[v0] ⚠️ No JSON found in concept response for post ${post.position}, using strategy prompt`)
+            finalPrompt = post.prompt || ""
           }
-        } else {
-          console.warn(`[v0] ⚠️ No JSON found in concept response for post ${post.position}, using strategy prompt`)
         }
         
         // Track this post for variety in next iterations (also track lighting for consistency)
-        const lightingMatch = fluxPrompt.match(/(soft natural|golden hour|moody|bright natural|soft indoor|warm|cool|dramatic|diffused)\s+lighting/i)
-        const lightingStyle = lightingMatch ? lightingMatch[0] : ""
-        
-        previousPosts.push({
-          position: post.position,
-          outfit: outfitDescription,
-          location: locationDescription,
-          concept: post.contentPillar || "",
-          lighting: lightingStyle,
-        })
-
-        // Detect Pro Mode requirements
-        // For approved strategies, use the user's approved generationMode (don't re-detect)
-        // For Claude-generated strategies, detect based on post type and description
-        let generationMode: 'classic' | 'pro'
-        let proModeType: string | null = null
-        
-        if (isApprovedStrategy && post.generationMode) {
-          // Use the user's approved generation mode (preserve their choice)
-          generationMode = post.generationMode as 'classic' | 'pro'
-          console.log(`[v0] Using approved generation mode for post ${post.position}: ${generationMode}`)
+        // Only track lighting for Classic Mode (Pro Mode doesn't use lighting tracking the same way)
+        if (generationMode === 'classic') {
+          const lightingMatch = finalPrompt.match(/(soft natural|golden hour|moody|bright natural|soft indoor|warm|cool|dramatic|diffused)\s+lighting/i)
+          const lightingStyle = lightingMatch ? lightingMatch[0] : ""
           
-          // If Pro Mode, detect the specific type
-          if (generationMode === 'pro') {
-            const postDescription = post.description || post.visualDirection || post.prompt || post.purpose || ""
-            proModeType = detectProModeType({
-              generation_mode: generationMode,
-              post_type: post.postType,
-              description: postDescription,
-              prompt: fluxPrompt,
-              content_pillar: post.contentPillar,
-            })
-          }
-        } else {
-          // Claude-generated strategy: detect Pro Mode requirements
-          // Note: Claude-generated posts have 'prompt' field, not 'description'
-          // Use prompt || description || purpose for detection
-          const postDescription = post.description || post.prompt || post.purpose || ""
-          generationMode = detectRequiredMode({
-            post_type: post.postType,
-            description: postDescription,
-            prompt: fluxPrompt,
-            content_pillar: post.contentPillar,
+          previousPosts.push({
+            position: post.position,
+            outfit: outfitDescription || "",
+            location: locationDescription || "",
+            concept: post.contentPillar || "",
+            lighting: lightingStyle,
           })
-          proModeType = generationMode === 'pro' 
-            ? detectProModeType({
-                generation_mode: generationMode,
-                post_type: post.postType,
-                description: postDescription,
-                prompt: fluxPrompt,
-                content_pillar: post.contentPillar,
-              })
-            : null
+        } else {
+          // Pro Mode: just track position and concept for reference
+          previousPosts.push({
+            position: post.position,
+            outfit: "",
+            location: "",
+            concept: post.contentPillar || "",
+            lighting: "",
+          })
         }
 
         await sql`
@@ -1142,8 +1324,8 @@ Return ONLY valid JSON, no markdown:
             ${post.position},
             ${post.postType || "post"},
             ${post.contentPillar || "general"},
-            ${captionResult.caption},
-            ${fluxPrompt},
+            ${captionResult.caption || `Post ${post.position} - ${post.contentPillar || "content"}`},
+            ${finalPrompt},
             'draft',
             'pending',
             ${generationMode},
@@ -1153,12 +1335,12 @@ Return ONLY valid JSON, no markdown:
           )
         `
 
-        if (fluxPrompt && fluxPrompt.length > 50) {
-          console.log(`[v0] ✓ Successfully inserted post ${post.position} with full FLUX prompt (${fluxPrompt.split(/\s+/).length} words)`)
+        if (finalPrompt && finalPrompt.length > 50) {
+          console.log(`[v0] ✓ Successfully inserted post ${post.position} with ${generationMode === 'pro' ? 'Nano Banana' : 'FLUX'} prompt (${finalPrompt.split(/\s+/).length} words)`)
         } else {
-          console.warn(`[v0] ⚠️ Post ${post.position} prompt is too short (${fluxPrompt.length} chars), may need enhancement later`)
+          console.warn(`[v0] ⚠️ Post ${post.position} prompt is too short (${finalPrompt.length} chars), may need enhancement later`)
         }
-        postsWithCaptions.push({ ...post, caption: captionResult.caption })
+        postsWithCaptions.push({ ...post, caption: captionResult.caption || `Post ${post.position} - ${post.contentPillar || "content"}` })
       } catch (error) {
         console.error(`[v0] ✗ Error inserting post ${post.position}:`, error)
         throw error
@@ -1224,15 +1406,51 @@ Return ONLY valid JSON, no markdown:
       feedLayoutId: feedLayoutId,
       message: "Strategy created! Images are being generated automatically.",
     })
-    }
   } catch (error) {
     console.error("[v0] Feed Planner API error:", error)
-    return NextResponse.json(
-      {
-        error: error instanceof Error ? error.message : "Failed to create feed strategy",
-        details: error instanceof Error ? error.stack : undefined,
-      },
-      { status: 500 },
-    )
+    
+    // Safely extract error message and details
+    let errorMessage = "Failed to create feed strategy"
+    let errorDetails: string | undefined = undefined
+    
+    if (error instanceof Error) {
+      errorMessage = error.message || errorMessage
+      try {
+        // Try to stringify stack trace, but don't fail if it has circular references
+        errorDetails = error.stack || undefined
+      } catch (stackError) {
+        // If stack trace can't be serialized, just use message
+        errorDetails = undefined
+      }
+    } else if (typeof error === "string") {
+      errorMessage = error
+    } else if (error && typeof error === "object") {
+      try {
+        errorMessage = (error as any).message || JSON.stringify(error).substring(0, 200) || errorMessage
+      } catch {
+        errorMessage = "Failed to create feed strategy (unknown error)"
+      }
+    }
+    
+    // Always return a valid JSON response, even if error serialization fails
+    try {
+      return NextResponse.json(
+        {
+          error: errorMessage,
+          ...(errorDetails && { details: errorDetails }),
+        },
+        { status: 500 },
+      )
+    } catch (jsonError) {
+      // Last resort: return a simple error response
+      console.error("[v0] Failed to create JSON error response:", jsonError)
+      return new NextResponse(
+        JSON.stringify({ error: errorMessage }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        }
+      )
+    }
   }
 }

@@ -115,13 +115,207 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ feed
     console.log("[v0] [FEED API] Feed layout found:", feedLayout.id, "user_id:", feedLayout.user_id)
 
     // Get feed posts
-    const feedPosts = await sql`
+    let feedPosts = await sql`
       SELECT * FROM feed_posts
       WHERE feed_layout_id = ${feedIdInt}
       ORDER BY position ASC
     ` as any[]
 
     console.log("[v0] [FEED API] Feed posts found:", feedPosts.length)
+
+    // CRITICAL: Check Replicate status for posts that have prediction_id but no image_url
+    // This ensures images ready in Replicate are immediately visible (fixes stuck progress)
+    const { getReplicateClient } = await import("@/lib/replicate-client")
+    const { put } = await import("@vercel/blob")
+    const replicate = getReplicateClient()
+    
+    const postsToCheck = feedPosts.filter((p: any) => p.prediction_id && !p.image_url)
+    if (postsToCheck.length > 0) {
+      console.log(`[v0] [FEED API] Checking ${postsToCheck.length} posts with prediction_id but no image_url`)
+      
+      // Limit to 5 posts per request to avoid rate limits (remaining posts will be checked on next poll)
+      const postsToCheckNow = postsToCheck.slice(0, 5)
+      for (const post of postsToCheckNow) {
+        try {
+          const prediction = await replicate.predictions.get(post.prediction_id)
+          
+          if (prediction.status === "succeeded" && prediction.output) {
+            const imageUrl = Array.isArray(prediction.output) ? prediction.output[0] : prediction.output
+            
+            // Validate that imageUrl is a valid string before using it
+            if (!imageUrl || typeof imageUrl !== 'string' || imageUrl.trim() === '') {
+              console.error(`[v0] [FEED API] Invalid image URL for post ${post.position}:`, imageUrl)
+              continue
+            }
+            
+            console.log(`[v0] [FEED API] ✅ Post ${post.position} completed in Replicate, uploading to Blob...`)
+            
+            // Upload to Blob storage for permanent URL
+            try {
+              const imageResponse = await fetch(imageUrl)
+              if (imageResponse.ok) {
+                const imageBlob = await imageResponse.blob()
+                const blob = await put(`feed-posts/${post.id}.png`, imageBlob, {
+                  access: "public",
+                  contentType: "image/png",
+                  addRandomSuffix: true,
+                })
+                
+                // Update database with permanent URL
+                await sql`
+                  UPDATE feed_posts
+                  SET 
+                    image_url = ${blob.url},
+                    generation_status = 'completed',
+                    updated_at = NOW()
+                  WHERE id = ${post.id}
+                `
+                
+                // Save to ai_images gallery (like concept cards)
+                try {
+                  const [postData] = await sql`
+                    SELECT prompt, caption, post_type, user_id, position FROM feed_posts WHERE id = ${post.id}
+                  `
+                  
+                  if (postData) {
+                    // Check if this image already exists in the gallery
+                    const [existing] = await sql`
+                      SELECT id FROM ai_images 
+                      WHERE prediction_id = ${post.prediction_id} 
+                      OR image_url = ${blob.url}
+                      LIMIT 1
+                    `
+                    
+                    if (!existing) {
+                      const displayCaption = postData.caption || `Feed post ${postData.position}`
+                      const fluxPrompt = postData.prompt || ""
+                      
+                      await sql`
+                        INSERT INTO ai_images (
+                          user_id,
+                          image_url,
+                          prompt,
+                          generated_prompt,
+                          prediction_id,
+                          generation_status,
+                          source,
+                          category,
+                          created_at
+                        ) VALUES (
+                          ${postData.user_id},
+                          ${blob.url},
+                          ${displayCaption},
+                          ${fluxPrompt},
+                          ${post.prediction_id},
+                          'completed',
+                          'feed_planner',
+                          ${postData.post_type || 'feed_post'},
+                          NOW()
+                        )
+                      `
+                      console.log(`[v0] [FEED API] ✅ Image saved to ai_images gallery for post ${post.position}`)
+                    }
+                  }
+                } catch (galleryError: any) {
+                  console.error(`[v0] [FEED API] ❌ Failed to save post ${post.position} to gallery:`, galleryError?.message)
+                  // Don't fail the whole request if gallery save fails
+                }
+                
+                // Update local feedPosts array so response includes the new image_url
+                const updatedPost = feedPosts.find((p: any) => p.id === post.id)
+                if (updatedPost) {
+                  updatedPost.image_url = blob.url
+                  updatedPost.generation_status = 'completed'
+                }
+                
+                console.log(`[v0] [FEED API] ✅ Post ${post.position} updated with image URL`)
+              }
+            } catch (blobError) {
+              console.error(`[v0] [FEED API] ❌ Failed to upload post ${post.position} to Blob:`, blobError)
+              // Fallback: use Replicate URL directly (temporary but works)
+              await sql`
+                UPDATE feed_posts
+                SET 
+                  image_url = ${imageUrl},
+                  generation_status = 'completed',
+                  updated_at = NOW()
+                WHERE id = ${post.id}
+              `
+              
+              // Save to ai_images gallery even with fallback URL
+              try {
+                const [postData] = await sql`
+                  SELECT prompt, caption, post_type, user_id, position FROM feed_posts WHERE id = ${post.id}
+                `
+                
+                if (postData) {
+                  const [existing] = await sql`
+                    SELECT id FROM ai_images 
+                    WHERE prediction_id = ${post.prediction_id} 
+                    OR image_url = ${imageUrl}
+                    LIMIT 1
+                  `
+                  
+                  if (!existing) {
+                    const displayCaption = postData.caption || `Feed post ${postData.position}`
+                    const fluxPrompt = postData.prompt || ""
+                    
+                    await sql`
+                      INSERT INTO ai_images (
+                        user_id,
+                        image_url,
+                        prompt,
+                        generated_prompt,
+                        prediction_id,
+                        generation_status,
+                        source,
+                        category,
+                        created_at
+                      ) VALUES (
+                        ${postData.user_id},
+                        ${imageUrl},
+                        ${displayCaption},
+                        ${fluxPrompt},
+                        ${post.prediction_id},
+                        'completed',
+                        'feed_planner',
+                        ${postData.post_type || 'feed_post'},
+                        NOW()
+                      )
+                    `
+                    console.log(`[v0] [FEED API] ✅ Image saved to ai_images gallery (fallback URL) for post ${post.position}`)
+                  }
+                }
+              } catch (galleryError: any) {
+                console.error(`[v0] [FEED API] ❌ Failed to save post ${post.position} to gallery (fallback):`, galleryError?.message)
+              }
+              
+              const updatedPost = feedPosts.find((p: any) => p.id === post.id)
+              if (updatedPost) {
+                updatedPost.image_url = imageUrl
+                updatedPost.generation_status = 'completed'
+              }
+            }
+          } else if (prediction.status === "failed") {
+            console.log(`[v0] [FEED API] ❌ Post ${post.position} failed in Replicate`)
+            await sql`
+              UPDATE feed_posts
+              SET 
+                generation_status = 'failed',
+                updated_at = NOW()
+              WHERE id = ${post.id}
+            `
+            const updatedPost = feedPosts.find((p: any) => p.id === post.id)
+            if (updatedPost) {
+              updatedPost.generation_status = 'failed'
+            }
+          }
+        } catch (error) {
+          console.error(`[v0] [FEED API] Error checking post ${post.position}:`, error)
+          // Continue checking other posts
+        }
+      }
+    }
 
     const bios = await sql`
       SELECT * FROM instagram_bios
@@ -135,13 +329,32 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ feed
       ORDER BY created_at ASC
     ` as any[]
 
+    // Ensure feedLayout exists before creating response (double-check after all async operations)
+    if (!feedLayout || !feedLayout.id) {
+      console.error("[v0] [FEED API] Feed layout is null/undefined after query:", {
+        feedLayout: feedLayout,
+        feedIdInt,
+        userId: user.id,
+      })
+      return Response.json({ error: "Feed layout not found" }, { status: 404 })
+    }
+
+    // Ensure we have a valid feed object
+    const feedObject = {
+      ...feedLayout,
+      id: feedLayout.id, // Ensure id is explicitly included
+    }
+
+    // Validate feed object has required properties
+    if (!feedObject.id) {
+      console.error("[v0] [FEED API] Feed object missing id:", feedObject)
+      return Response.json({ error: "Invalid feed data structure" }, { status: 500 })
+    }
+
     const response = {
-      feed: {
-        ...feedLayout,
-        id: feedLayout.id, // Ensure id is explicitly included
-      },
+      feed: feedObject,
       posts: feedPosts || [],
-      bio: bios[0] || null,
+      bio: bios && bios.length > 0 ? bios[0] : null,
       highlights: highlights || [],
     }
 
@@ -150,7 +363,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ feed
       postsCount: response.posts.length,
       hasBio: !!response.bio,
       highlightsCount: response.highlights.length,
+      feedKeys: Object.keys(response.feed),
     })
+
+    // Final validation before returning
+    if (!response.feed || !response.feed.id) {
+      console.error("[v0] [FEED API] Response validation failed - feed object is invalid:", response)
+      return Response.json({ error: "Failed to construct feed response" }, { status: 500 })
+    }
 
     return Response.json(response)
   } catch (error: any) {

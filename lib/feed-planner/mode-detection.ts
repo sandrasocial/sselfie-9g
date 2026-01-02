@@ -14,11 +14,11 @@ export function detectRequiredMode(post: any): 'classic' | 'pro' {
   if (post.post_type === 'infographic') return 'pro'
   if (post.post_type === 'quote') return 'pro'
   
-  // Check description/prompt for Pro Mode keywords
-  const description = (post.description || '').toLowerCase()
+  // Check content_pillar/prompt for Pro Mode keywords
+  // Note: description column doesn't exist - use content_pillar instead
   const prompt = (post.prompt || '').toLowerCase()
   const contentPillar = (post.content_pillar || '').toLowerCase()
-  const combined = `${description} ${prompt} ${contentPillar}`
+  const combined = `${prompt} ${contentPillar}`
   
   if (
     combined.includes('carousel') ||
@@ -41,10 +41,10 @@ export function detectRequiredMode(post: any): 'classic' | 'pro' {
 export function detectProModeType(post: any): string | null {
   if (post.generation_mode !== 'pro') return null
   
-  const description = (post.description || '').toLowerCase()
+  // Note: description column doesn't exist - use content_pillar instead
   const prompt = (post.prompt || '').toLowerCase()
   const contentPillar = (post.content_pillar || '').toLowerCase()
-  const combined = `${description} ${prompt} ${contentPillar}`
+  const combined = `${prompt} ${contentPillar}`
   
   // Carousel slides
   if (combined.includes('carousel') || post.post_type === 'carousel') {
@@ -66,7 +66,7 @@ export function detectProModeType(post: any): string | null {
     return 'text-overlay'
   }
   
-  // Default to workbench for other Pro Mode posts
-  return 'workbench'
+  // Default to brand-scene for lifestyle/portrait posts (not workbench - workbench just passes through raw prompts)
+  return 'brand-scene'
 }
 

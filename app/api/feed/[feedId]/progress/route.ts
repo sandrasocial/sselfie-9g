@@ -46,6 +46,12 @@ export async function GET(request: Request, { params }: { params: { feedId: stri
         if (prediction.status === "succeeded" && prediction.output) {
           const imageUrl = Array.isArray(prediction.output) ? prediction.output[0] : prediction.output
 
+          // Validate that imageUrl is a valid string before using it
+          if (!imageUrl || typeof imageUrl !== 'string' || imageUrl.trim() === '') {
+            console.error(`[v0] [PROGRESS] Invalid image URL for post ${post.position}:`, imageUrl)
+            continue
+          }
+
           let finalImageUrl = imageUrl
           if (post.text_overlay) {
             finalImageUrl = await applyTextOverlay(imageUrl, post.text_overlay)
@@ -59,6 +65,56 @@ export async function GET(request: Request, { params }: { params: { feedId: stri
               updated_at = NOW()
             WHERE id = ${post.id}
           `
+
+          // Save to ai_images gallery (like concept cards)
+          try {
+            const [postData] = await sql`
+              SELECT prompt, caption, post_type, user_id, position FROM feed_posts WHERE id = ${post.id}
+            `
+            
+            if (postData) {
+              // Check if this image already exists in the gallery
+              const [existing] = await sql`
+                SELECT id FROM ai_images 
+                WHERE prediction_id = ${post.prediction_id} 
+                OR image_url = ${finalImageUrl}
+                LIMIT 1
+              `
+              
+              if (!existing) {
+                const displayCaption = postData.caption || `Feed post ${postData.position}`
+                const fluxPrompt = postData.prompt || ""
+                
+                await sql`
+                  INSERT INTO ai_images (
+                    user_id,
+                    image_url,
+                    prompt,
+                    generated_prompt,
+                    prediction_id,
+                    generation_status,
+                    source,
+                    category,
+                    created_at
+                  ) VALUES (
+                    ${postData.user_id},
+                    ${finalImageUrl},
+                    ${displayCaption},
+                    ${fluxPrompt},
+                    ${post.prediction_id},
+                    'completed',
+                    'feed_planner',
+                    ${postData.post_type || 'feed_post'},
+                    NOW()
+                  )
+                `
+                console.log(`[v0] [PROGRESS] ✅ Image saved to ai_images gallery for post ${post.position}`)
+              }
+            }
+          } catch (galleryError: any) {
+            console.error(`[v0] [PROGRESS] ❌ Failed to save post ${post.position} to gallery:`, galleryError?.message)
+            // Don't fail the whole request if gallery save fails
+          }
 
           completedCount++
         } else if (prediction.status === "failed") {

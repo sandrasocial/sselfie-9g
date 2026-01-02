@@ -16,7 +16,7 @@ const sql = neon(process.env.DATABASE_URL!)
  */
 export async function GET(req: NextRequest) {
   try {
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
     const {
       data: { user },
       error: authError,
