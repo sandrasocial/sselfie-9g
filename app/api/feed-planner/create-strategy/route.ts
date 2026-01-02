@@ -5,7 +5,6 @@ import { getUserByAuthId } from "@/lib/user-mapping"
 import { neon } from "@neondatabase/serverless"
 import { checkCredits, deductCredits, CREDIT_COSTS } from "@/lib/credits"
 import { getStudioProCreditCost } from "@/lib/nano-banana-client"
-import { detectRequiredMode } from "./mode-detection"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 import { generateInstagramCaption } from "@/lib/feed-planner/caption-writer"
 import { getFluxPromptingPrinciples } from "@/lib/maya/flux-prompting-principles"
@@ -446,8 +445,8 @@ Note: Choose postType based on what makes sense for each post. Portrait posts fe
       } catch (repairError: any) {
         console.error("[v0] JSON repair failed:", repairError.message)
         
-          // Try a more aggressive repair: fix hashtags breaking JSON strings
-          try {
+        // Try a more aggressive repair: fix hashtags breaking JSON strings
+        try {
             let aggressiveRepair = cleanedText
             
             // Find JSON boundaries
@@ -473,7 +472,7 @@ Note: Choose postType based on what makes sense for each post. Portrait posts fe
             // Try parsing again
             strategy = JSON.parse(aggressiveRepair)
             console.log("[v0] ✅ Aggressive JSON repair successful!")
-          } catch (aggressiveError: any) {
+        } catch (aggressiveError: any) {
           console.error("[v0] Aggressive repair also failed:", aggressiveError.message)
           
           // Log the problematic section for debugging
@@ -493,9 +492,9 @@ Note: Choose postType based on what makes sense for each post. Portrait posts fe
           )
         }
       }
-      }
+    }
 
-      console.log("[v0] Strategy parsed successfully!")
+    console.log("[v0] Strategy parsed successfully!")
       console.log("[v0] Strategy has posts array:", Array.isArray(strategy.posts))
       console.log("[v0] Posts array length:", strategy.posts?.length || 0)
     if (strategy.posts && strategy.posts.length > 0) {
@@ -1207,7 +1206,7 @@ Return ONLY valid JSON, no markdown:
           stack: error.stack,
         })
         // Non-blocking - strategy is created, images can be generated manually if needed
-      })
+      });
 
     console.log("[v0] ==================== CREATE STRATEGY API COMPLETE ====================")
     console.log("[v0] Feed layout ID type:", typeof feedLayout.id)
@@ -1225,6 +1224,7 @@ Return ONLY valid JSON, no markdown:
       feedLayoutId: feedLayoutId,
       message: "Strategy created! Images are being generated automatically.",
     })
+    }
   } catch (error) {
     console.error("[v0] Feed Planner API error:", error)
     return NextResponse.json(

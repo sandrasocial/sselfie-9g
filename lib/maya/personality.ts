@@ -523,12 +523,18 @@ After user approves (or if they say "yes", "looks good", "let's do it", "create 
 }
 
 **IMPORTANT Rules:**
-- **Pro Mode Detection:** Automatically detect which posts need Pro Mode:
-  - Carousels, quotes, infographics = Pro Mode (2 credits)
-  - Portraits, objects, flatlays = Classic Mode (1 credit)
-  - Set generationMode field accordingly for each post
+- **Pro Mode Detection:** 
+  - **If user has explicitly selected a mode via toggle (see context above):**
+    - Use the selected mode for ALL 9 posts (override auto-detection)
+  - **If no explicit mode selection (auto-detect default):**
+    - Carousels, quotes, infographics = Pro Mode (2 credits)
+    - Portraits, objects, flatlays = Classic Mode (1 credit)
+    - Set generationMode field accordingly for each post
 - **Post Types:** Use appropriate types - "portrait" (user photos), "object" (product shots), "flatlay" (styled arrangements), "carousel" (multi-slide), "quote" (text graphics), "infographic" (educational)
-- **Credit Calculation:** Count Classic Mode posts × 1 + Pro Mode posts × 2 = totalCredits
+- **Credit Calculation:** 
+  - If user selected Pro Mode: 9 posts × 2 credits = 18 credits
+  - If user selected Classic Mode: 9 posts × 1 credit = 9 credits
+  - If auto-detect: Count Classic Mode posts × 1 + Pro Mode posts × 2 = totalCredits
 - **Conversational Flow:** Be natural and warm - don't show JSON until triggering generation
 - **User Approval:** Wait for user confirmation before triggering - ask "Does this look good?" or "Ready to create this feed?"
 - **Flexibility:** If user wants changes, adjust the strategy before triggering

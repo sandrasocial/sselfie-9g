@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { DesignClasses } from "@/lib/design-tokens"
 import { AnimatePresence, motion } from "framer-motion"
+import MayaModeToggle from "./maya/maya-mode-toggle"
 
 interface SselfieAppProps {
   userId: string
@@ -84,6 +85,46 @@ export default function SselfieApp({
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [creditBalance, setCreditBalance] = useState<number>(0)
   const [isLoadingCredits, setIsLoadingCredits] = useState(true)
+  
+  // Feed Planner Pro Mode state (shared with Maya via localStorage)
+  const [feedPlannerProMode, setFeedPlannerProMode] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false
+    const saved = localStorage.getItem("mayaStudioProMode")
+    return saved === "true"
+  })
+  
+  // Sync Feed Planner Pro Mode with localStorage changes
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "mayaStudioProMode") {
+        setFeedPlannerProMode(e.newValue === "true")
+      }
+    }
+    
+    const handleCustomEvent = (e: CustomEvent) => {
+      setFeedPlannerProMode(e.detail.mode)
+    }
+    
+    window.addEventListener("storage", handleStorageChange)
+    window.addEventListener("feedPlannerModeChanged" as any, handleCustomEvent)
+    
+    // Also check localStorage periodically for same-window changes
+    const interval = setInterval(() => {
+      const saved = localStorage.getItem("mayaStudioProMode")
+      const newMode = saved === "true"
+      if (newMode !== feedPlannerProMode) {
+        setFeedPlannerProMode(newMode)
+      }
+    }, 100)
+    
+    return () => {
+      window.removeEventListener("storage", handleStorageChange)
+      window.removeEventListener("feedPlannerModeChanged" as any, handleCustomEvent)
+      clearInterval(interval)
+    }
+  }, [feedPlannerProMode])
   const [showBuyCreditsModal, setShowBuyCreditsModal] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
@@ -346,11 +387,40 @@ export default function SselfieApp({
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 shrink-0">
                   <div className={`${DesignClasses.typography.heading.h4} ${DesignClasses.text.primary}`}>
-                    SSELFIE
+                    {activeTab === "feed-planner" ? "FEED PLANNER" : "SSELFIE"}
                   </div>
                 </div>
 
-                <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+                <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                  {/* Feed Planner: Credits and Pro Mode Toggle */}
+                  {activeTab === "feed-planner" && (
+                    <>
+                      {/* Credits Display */}
+                      <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 rounded border border-stone-200 bg-stone-50/50 min-h-[36px] sm:min-h-[40px]">
+                        <span className="text-[9px] sm:text-[10px] md:text-xs font-light text-stone-500 uppercase tracking-wider">
+                          Credits
+                        </span>
+                        <span className="text-xs sm:text-sm md:text-base font-semibold text-stone-950 tabular-nums">
+                          {creditBalance.toFixed(1)}
+                        </span>
+                      </div>
+
+                      {/* Mode Toggle */}
+                      <MayaModeToggle
+                        currentMode={feedPlannerProMode ? "pro" : "classic"}
+                        onToggle={() => {
+                          const newMode = !feedPlannerProMode
+                          localStorage.setItem("mayaStudioProMode", newMode.toString())
+                          setFeedPlannerProMode(newMode)
+                          // Trigger a custom event so Feed Planner can react
+                          window.dispatchEvent(new CustomEvent("feedPlannerModeChanged", { detail: { mode: newMode } }))
+                        }}
+                        variant="compact"
+                      />
+                    </>
+                  )}
+
+                  <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
                   <DropdownMenuTrigger asChild>
                     <button
                       className={`flex items-center justify-center w-9 h-9 ${DesignClasses.radius.sm} bg-white/70 ${DesignClasses.border.medium} hover:bg-white/90 transition-colors shadow-sm`}
@@ -416,6 +486,7 @@ export default function SselfieApp({
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+                </div>
               </div>
             </header>
           )}

@@ -2,12 +2,18 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { useMayaSettings } from "@/components/sselfie/maya/hooks/use-maya-settings"
+import { useMayaMode } from "@/components/sselfie/maya/hooks/use-maya-mode"
+import { useMayaImages } from "@/components/sselfie/maya/hooks/use-maya-images"
 import { useMayaChat } from "@/components/sselfie/maya/hooks/use-maya-chat"
 import MayaChatInterface from "../sselfie/maya/maya-chat-interface"
 import MayaUnifiedInput from "../sselfie/maya/maya-unified-input"
 import StrategyPreview from "./strategy-preview"
 import FeedWelcomeScreen from "./feed-welcome-screen"
 import MayaQuickPrompts from "../sselfie/maya/maya-quick-prompts"
+import MayaChatHistory from "../sselfie/maya-chat-history"
+import MayaModeToggle from "../sselfie/maya/maya-mode-toggle"
+import ImageLibraryModal from "../sselfie/pro-mode/ImageLibraryModal"
+import ImageUploadFlow from "../sselfie/pro-mode/ImageUploadFlow"
 import { toast } from "@/hooks/use-toast"
 import useSWR, { mutate } from "swr"
 import UnifiedLoading from "../sselfie/unified-loading"
@@ -22,6 +28,10 @@ export default function FeedPlannerScreen() {
   const [isCheckingStatus, setIsCheckingStatus] = useState(true)
   const [isDeleting, setIsDeleting] = useState(false)
   const [showWelcome, setShowWelcome] = useState(true)
+  const [showHistory, setShowHistory] = useState(false)
+  const [showLibraryModal, setShowLibraryModal] = useState(false)
+  const [showUploadFlow, setShowUploadFlow] = useState(false)
+  const [manageCategory, setManageCategory] = useState<'selfies' | 'products' | 'people' | 'vibes' | null>(null)
   
   // Use Maya settings hook - unified settings across app
   const { settings } = useMayaSettings()
@@ -32,8 +42,43 @@ export default function FeedPlannerScreen() {
   // Memoize user object to prevent infinite re-renders (user object reference changes on every SWR update)
   const user = useMemo(() => userData?.user || null, [userData?.user?.id, userData?.user?.email])
   
-  // Memoize getModeString to prevent infinite re-renders
-  const getModeString = useCallback(() => 'maya', [])
+  // Fetch credit balance
+  const { data: creditsData } = useSWR("/api/user/credits", fetcher)
+  const creditBalance = creditsData?.balance || 0
+  
+  // Pro/Classic Mode - sync with localStorage (shared with Maya)
+  const { studioProMode, setStudioProMode, getModeString: getMayaModeString } = useMayaMode()
+  
+  // Sync mode with custom event from unified header toggle
+  useEffect(() => {
+    const handleModeChange = (e: CustomEvent) => {
+      setStudioProMode(e.detail.mode)
+    }
+    window.addEventListener("feedPlannerModeChanged" as any, handleModeChange)
+    return () => {
+      window.removeEventListener("feedPlannerModeChanged" as any, handleModeChange)
+    }
+  }, [setStudioProMode])
+  
+  // For Feed Planner, chatType is always 'feed-planner', but we use Pro Mode for features
+  const getModeString = useCallback(() => 'feed-planner', [])
+  
+  // Images managed by useMayaImages hook (for Pro Mode)
+  const {
+    imageLibrary,
+    isLibraryLoading,
+    libraryError,
+    libraryTotalImages,
+    loadLibrary,
+    saveLibrary,
+    addImages,
+    removeImages,
+    clearLibrary,
+    updateIntent,
+    refreshLibrary,
+    uploadedImages,
+    setUploadedImages,
+  } = useMayaImages(studioProMode)
   
   // Integrate useMayaChat hook for conversational strategy creation
   const {
@@ -43,17 +88,40 @@ export default function FeedPlannerScreen() {
     setMessages,
     chatId,
     isLoadingChat,
+    handleNewChat: baseHandleNewChat,
+    handleSelectChat: baseHandleSelectChat,
+    handleDeleteChat,
+    savedMessageIds,
   } = useMayaChat({
-    studioProMode: false, // Feed Planner always uses Classic Mode
+    studioProMode: studioProMode, // Use Pro Mode from toggle
     user: user,
-    getModeString: getModeString, // Use 'maya' chat type for Feed Planner
+    getModeString: getModeString, // Always 'feed-planner' for Feed Planner chats
   })
+
+  // Wrapper for handleNewChat (consistent with Maya screen)
+  const handleNewChat = useCallback(async () => {
+    setShowHistory(false) // Close history panel
+    await baseHandleNewChat()
+  }, [baseHandleNewChat])
+
+  // Wrapper for handleSelectChat (consistent with Maya screen)
+  const handleSelectChat = useCallback((selectedChatId: number, selectedChatTitle?: string) => {
+    setShowHistory(false) // Close history panel
+    baseHandleSelectChat(selectedChatId, selectedChatTitle)
+  }, [baseHandleSelectChat])
   
   // Refs for tracking processed messages (prevent duplicate trigger processing)
   const processedStrategyMessagesRef = useRef<Set<string>>(new Set())
   
   // Strategy preview state (shown when trigger is detected)
   const [strategyPreview, setStrategyPreview] = useState<any>(null)
+  
+  // Load image library when Pro Mode is enabled
+  useEffect(() => {
+    if (studioProMode && !isLibraryLoading && imageLibrary.selfies.length === 0 && imageLibrary.products.length === 0 && imageLibrary.people.length === 0 && imageLibrary.vibes.length === 0) {
+      loadLibrary()
+    }
+  }, [studioProMode, isLibraryLoading, imageLibrary, loadLibrary])
   
   // Refs for MayaChatInterface (needed for scroll handling)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
@@ -91,7 +159,105 @@ export default function FeedPlannerScreen() {
     handleScroll() // Initial check
     return () => container.removeEventListener('scroll', handleScroll)
   }, [handleScroll])
+
+  // Auto-scroll to bottom when new messages arrive (if user is already at bottom)
+  useEffect(() => {
+    // Only auto-scroll if user is at bottom (respects manual scrolling up)
+    if (isAtBottomRef.current) {
+      requestAnimationFrame(() => {
+        scrollToBottom("smooth")
+      })
+    }
+  }, [messages.length, scrollToBottom])
   
+  // Helper function to remove trigger JSON from message content for display
+  const filterTriggerFromMessage = useCallback((message: any): any => {
+    if (!message) return message
+    
+    // Clone the message to avoid mutating the original
+    const filteredMessage = { ...message }
+    
+    // Function to remove trigger JSON from text (handles nested braces and multiline JSON)
+    const removeTrigger = (text: string): string => {
+      if (!text || typeof text !== 'string') return text
+      
+      // Match [CREATE_FEED_STRATEGY: followed by optional whitespace and opening brace
+      // Pattern matches: [CREATE_FEED_STRATEGY: { or [CREATE_FEED_STRATEGY:{ or [CREATE_FEED_STRATEGY: \n {
+      const triggerPattern = /\[CREATE_FEED_STRATEGY:\s*\{/i
+      const triggerMatch = text.match(triggerPattern)
+      
+      if (!triggerMatch) {
+        // Also check for trigger without opening brace (in case it's formatted differently)
+        if (/\[CREATE_FEED_STRATEGY:/i.test(text)) {
+          // Remove everything from trigger to end of string
+          return text.replace(/\[CREATE_FEED_STRATEGY:[\s\S]*$/i, '').trim()
+        }
+        return text
+      }
+      
+      const triggerStartIndex = triggerMatch.index!
+      const jsonStartIndex = triggerStartIndex + triggerMatch[0].length - 1 // Index of opening brace
+      
+      // Find matching closing brace by counting nested braces (handles multiline)
+      let braceCount = 0
+      let jsonEndIndex = jsonStartIndex
+      let foundClosingBrace = false
+      
+      for (let i = jsonStartIndex; i < text.length; i++) {
+        if (text[i] === '{') {
+          braceCount++
+        } else if (text[i] === '}') {
+          braceCount--
+          if (braceCount === 0) {
+            jsonEndIndex = i + 1 // Include the closing brace
+            foundClosingBrace = true
+            break
+          }
+        }
+      }
+      
+      if (foundClosingBrace && jsonEndIndex > jsonStartIndex) {
+        // Remove the entire trigger including brackets and JSON
+        const beforeTrigger = text.substring(0, triggerStartIndex).trim()
+        const afterTrigger = text.substring(jsonEndIndex).trim()
+        // Only add space if both parts exist
+        if (beforeTrigger && afterTrigger) {
+          return (beforeTrigger + ' ' + afterTrigger).trim()
+        }
+        return beforeTrigger || afterTrigger || ''
+      }
+      
+      // If we couldn't find matching brace, remove everything from trigger to end
+      // This handles cases where JSON might be incomplete or malformed
+      const beforeTrigger = text.substring(0, triggerStartIndex).trim()
+      return beforeTrigger || ''
+    }
+    
+    // Handle messages with parts array
+    if (filteredMessage.parts && Array.isArray(filteredMessage.parts)) {
+      filteredMessage.parts = filteredMessage.parts.map((part: any) => {
+        if (part.type === 'text' && typeof part.text === 'string') {
+          const filteredText = removeTrigger(part.text)
+          // Only update if text actually changed (avoid unnecessary re-renders)
+          if (filteredText !== part.text) {
+            return { ...part, text: filteredText }
+          }
+        }
+        return part
+      })
+    }
+    
+    // Handle messages with content field (string)
+    if (typeof filteredMessage.content === 'string') {
+      const filteredContent = removeTrigger(filteredMessage.content)
+      if (filteredContent !== filteredMessage.content) {
+        filteredMessage.content = filteredContent
+      }
+    }
+    
+    return filteredMessage
+  }, [])
+
   // Helper function to extract text content from UIMessage (same pattern as Maya chat screen)
   const getMessageText = useCallback((message: any): string => {
     // UIMessage uses parts array, not content property
@@ -107,6 +273,27 @@ export default function FeedPlannerScreen() {
     }
     return ""
   }, [])
+
+  // Filter messages to hide trigger JSON from display
+  const filteredMessages = useMemo(() => {
+    const filtered = messages.map((msg) => {
+      const filteredMsg = filterTriggerFromMessage(msg)
+      // Debug: Log if trigger was found and removed
+      if (msg.role === 'assistant') {
+        const originalText = getMessageText(msg)
+        const filteredText = getMessageText(filteredMsg)
+        if (originalText !== filteredText && /\[CREATE_FEED_STRATEGY:/i.test(originalText)) {
+          console.log('[FeedPlanner] ✅ Filtered trigger JSON from message:', {
+            messageId: msg.id,
+            originalLength: originalText.length,
+            filteredLength: filteredText.length,
+          })
+        }
+      }
+      return filteredMsg
+    })
+    return filtered
+  }, [messages, filterTriggerFromMessage, getMessageText])
 
   const { data: brandData, isLoading: brandLoading } = useSWR("/api/profile/personal-brand", fetcher)
   const { data: feedStatus, error: feedStatusError } = useSWR("/api/feed-planner/status", fetcher)
@@ -362,6 +549,121 @@ export default function FeedPlannerScreen() {
     }
   }, [messages, status, isCreatingStrategy, getMessageText, toast])
 
+  // Save assistant messages to database (same logic as Maya chat screen)
+  useEffect(() => {
+    if (status !== "ready" || !chatId || messages.length === 0) {
+      return
+    }
+
+    // Find the last assistant message
+    const lastAssistantMessage = [...messages].reverse().find((m) => m.role === "assistant")
+    if (!lastAssistantMessage) {
+      return
+    }
+
+    // Skip if already saved
+    if (savedMessageIds.current.has(lastAssistantMessage.id)) {
+      return
+    }
+
+    // Extract text content from parts for saving
+    let saveTextContent = ""
+    if (lastAssistantMessage.parts && Array.isArray(lastAssistantMessage.parts)) {
+      const textParts = lastAssistantMessage.parts.filter((p: any) => p.type === "text")
+      saveTextContent = textParts
+        .map((p: any) => p.text)
+        .join("\n")
+        .trim()
+    } else {
+      saveTextContent = getMessageText(lastAssistantMessage)
+    }
+
+    // Only save if we have content
+    if (!saveTextContent) {
+      return
+    }
+
+    // Mark as saved immediately to prevent duplicate saves
+    savedMessageIds.current.add(lastAssistantMessage.id)
+
+    // Save to database
+    fetch("/api/maya/save-message", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        chatId,
+        role: "assistant",
+        content: saveTextContent || "",
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          console.log("[FeedPlanner] ✅ Assistant message saved successfully")
+        } else {
+          console.error("[FeedPlanner] ❌ Failed to save assistant message:", data.error)
+          savedMessageIds.current.delete(lastAssistantMessage.id)
+        }
+      })
+      .catch((error) => {
+        console.error("[FeedPlanner] ❌ Assistant message save error:", error)
+        savedMessageIds.current.delete(lastAssistantMessage.id)
+      })
+  }, [status, chatId, messages, getMessageText])
+
+  // Save user messages to database (same logic as Maya chat screen)
+  useEffect(() => {
+    if (status !== "ready" || !chatId || messages.length === 0) return
+
+    // Find unsaved user messages
+    const unsavedUserMessages = messages.filter((msg) => msg.role === "user" && !savedMessageIds.current.has(msg.id))
+
+    for (const userMsg of unsavedUserMessages) {
+      // Extract text content
+      let textContent = ""
+      if (userMsg.parts && Array.isArray(userMsg.parts)) {
+        const textParts = userMsg.parts.filter((p: any) => p.type === "text")
+        textContent = textParts
+          .map((p: any) => p.text)
+          .join("\n")
+          .trim()
+      } else {
+        textContent = getMessageText(userMsg)
+      }
+
+      if (!textContent) continue
+
+      // Mark as saved immediately
+      savedMessageIds.current.add(userMsg.id)
+
+      // Save user message to database
+      fetch("/api/maya/save-message", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          chatId,
+          role: "user",
+          content: textContent,
+        }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            console.log("[FeedPlanner] ✅ User message saved")
+          } else {
+            console.error("[FeedPlanner] ❌ Failed to save user message:", data.error)
+            savedMessageIds.current.delete(userMsg.id)
+          }
+        })
+        .catch((error) => {
+          console.error("[FeedPlanner] ❌ User message save error:", error)
+          savedMessageIds.current.delete(userMsg.id)
+        })
+    }
+  }, [status, chatId, messages, getMessageText])
+
   useEffect(() => {
     // If feedStatus is undefined and no error, still loading - keep checking status
     if (feedStatus === undefined && !feedStatusError) {
@@ -468,23 +770,19 @@ export default function FeedPlannerScreen() {
 
   return (
     <div className="flex flex-col h-full bg-background">
-      {/* Title Section - Match Gallery style (sselfie-app.tsx provides the unified header) - Hide on welcome screen */}
-      {!showWelcomeScreen && (
-        <div className="pt-6 pb-4 px-3 sm:px-4 md:px-6">
-          <h1
-            style={{
-              fontFamily: 'Hatton, Georgia, serif',
-              fontSize: '28px',
-              fontWeight: 300,
-              letterSpacing: '0.3em',
-              color: '#1C1917',
-              textTransform: 'uppercase',
-              marginBottom: '12px',
-            }}
+      {/* Pro Mode: Library Button - Show in header area when Pro Mode is enabled */}
+      {!showWelcomeScreen && studioProMode && (
+        <div className="px-3 sm:px-4 md:px-6 pt-2 pb-2">
+          <button
+            onClick={() => setShowLibraryModal(true)}
+            className="px-2 sm:px-3 py-1.5 rounded border border-stone-300 bg-white hover:bg-stone-50 transition-colors min-h-[36px] sm:min-h-[40px] flex items-center justify-center"
+            title="Manage Image Library"
           >
-            FEED PLANNER
-          </h1>
-        </div>
+            <span className="text-[10px] sm:text-xs md:text-sm font-medium text-stone-700">
+              Library ({libraryTotalImages})
+            </span>
+          </button>
+          </div>
       )}
 
       {/* Welcome Screen */}
@@ -514,9 +812,9 @@ export default function FeedPlannerScreen() {
                       <p className="text-sm text-stone-700 leading-relaxed">
                         I'll help you create a strategic 9-post Instagram feed that tells your story and drives growth. 
                         Let's start by understanding your goals!
-                      </p>
-                    </div>
-                  </div>
+                  </p>
+                </div>
+              </div>
                   
                   {/* Starter prompts */}
                   <div className="space-y-3">
@@ -548,17 +846,17 @@ export default function FeedPlannerScreen() {
                       studioProMode={false}
                       isEmpty={true}
                     />
-                  </div>
                 </div>
               </div>
+                    </div>
             )}
             
             <MayaChatInterface
-              messages={messages}
-              filteredMessages={messages}
+              messages={filteredMessages}
+              filteredMessages={filteredMessages}
               setMessages={setMessages}
               studioProMode={false}
-              isTyping={status === 'streaming'}
+              isTyping={status === 'streaming' || status === 'submitted'}
               isGeneratingConcepts={false}
               isGeneratingStudioPro={false}
               contentFilter="all"
@@ -580,7 +878,7 @@ export default function FeedPlannerScreen() {
               generateCarouselRef={{ current: null }}
             />
             <div ref={messagesEndRef} />
-          </div>
+                    </div>
 
           <div 
             className="border-t border-stone-200 bg-white/60 backdrop-blur-md fixed left-0 right-0 z-[65] safe-bottom flex flex-col"
@@ -594,12 +892,15 @@ export default function FeedPlannerScreen() {
                 onSend={(message) => sendMessage({ content: message })}
                 disabled={status === 'streaming' || isCreatingStrategy}
                 placeholder="Tell Maya about your Instagram feed..."
-                studioProMode={false}
-              />
-            </div>
-          </div>
-        </div>
-      )}
+                studioProMode={studioProMode}
+                onNewProject={handleNewChat}
+                onHistory={() => setShowHistory(true)}
+                onImageUpload={studioProMode ? () => setShowUploadFlow(true) : undefined}
+                      />
+                    </div>
+                    </div>
+                  </div>
+                )}
       
       {/* Strategy Preview View */}
       {showPreview && (
@@ -607,8 +908,8 @@ export default function FeedPlannerScreen() {
           {/* Show conversation history above preview */}
           <div className="p-6 space-y-4">
             <MayaChatInterface
-              messages={messages}
-              filteredMessages={messages}
+              messages={filteredMessages}
+              filteredMessages={filteredMessages}
               setMessages={setMessages}
               studioProMode={false}
               isTyping={false}
@@ -632,7 +933,7 @@ export default function FeedPlannerScreen() {
               promptSuggestions={[]}
               generateCarouselRef={{ current: null }}
             />
-          </div>
+                      </div>
 
           {/* Strategy Preview */}
           <div className="px-4 sm:px-6 pb-6">
@@ -714,11 +1015,11 @@ export default function FeedPlannerScreen() {
             style={{ paddingBottom: '140px' }}
           >
             <MayaChatInterface
-              messages={messages}
-              filteredMessages={messages}
+              messages={filteredMessages}
+              filteredMessages={filteredMessages}
               setMessages={setMessages}
               studioProMode={false}
-              isTyping={status === 'streaming'}
+              isTyping={status === 'streaming' || status === 'submitted'}
               isGeneratingConcepts={false}
               isGeneratingStudioPro={false}
               contentFilter="all"
@@ -754,7 +1055,118 @@ export default function FeedPlannerScreen() {
                 onSend={(message) => sendMessage({ content: message })}
                 disabled={status === 'streaming' || isCreatingStrategy}
                 placeholder="Tell Maya about your Instagram feed..."
-                studioProMode={false}
+                studioProMode={studioProMode}
+                onNewProject={handleNewChat}
+                onHistory={() => setShowHistory(true)}
+                onImageUpload={studioProMode ? () => setShowUploadFlow(true) : undefined}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Chat History Modal */}
+      <MayaChatHistory
+        isOpen={showHistory}
+        onClose={() => setShowHistory(false)}
+        currentChatId={chatId}
+        onSelectChat={handleSelectChat}
+        onNewChat={handleNewChat}
+        onDeleteChat={handleDeleteChat}
+        chatType="feed-planner"
+      />
+
+      {/* Pro Mode: Image Library Modal */}
+      {studioProMode && (
+        <ImageLibraryModal
+          isOpen={showLibraryModal}
+          library={imageLibrary}
+          onClose={() => setShowLibraryModal(false)}
+          onManageCategory={(category) => {
+            setManageCategory(category)
+            setShowLibraryModal(false)
+            requestAnimationFrame(() => {
+              requestAnimationFrame(() => {
+                setShowUploadFlow(true)
+              })
+            })
+          }}
+          onStartFresh={async () => {
+            if (confirm('Are you sure you want to start fresh? This will clear your image library.')) {
+              await clearLibrary()
+              setMessages([])
+              handleNewChat()
+              setShowLibraryModal(false)
+            }
+          }}
+          onEditIntent={async () => {
+            const newIntent = prompt('Enter your creative intent:', imageLibrary.intent || '')
+            if (newIntent !== null) {
+              await updateIntent(newIntent)
+            }
+          }}
+        />
+      )}
+
+      {/* Pro Mode: Image Upload Flow Modal */}
+      {studioProMode && showUploadFlow && (
+        <div className="fixed inset-0 z-[150] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
+          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            <div className="p-4 border-b border-stone-200 flex items-center justify-between">
+              <h3 className="text-lg font-medium">Add Images to Library</h3>
+              <button
+                onClick={() => {
+                  setShowUploadFlow(false)
+                  setManageCategory(null)
+                }}
+                className="p-2 hover:bg-stone-100 rounded-lg transition-colors"
+              >
+                <span className="text-2xl">×</span>
+              </button>
+            </div>
+            <div className="p-4 overflow-y-auto max-h-[calc(90vh-120px)]">
+              <ImageUploadFlow
+                initialLibrary={imageLibrary}
+                showAfterState={!manageCategory}
+                editCategory={manageCategory || undefined}
+                onComplete={async (library) => {
+                  await saveLibrary(library)
+                  if (library.intent) {
+                    await updateIntent(library.intent)
+                  }
+                  if (manageCategory) {
+                    setShowUploadFlow(false)
+                    setManageCategory(null)
+                    setShowLibraryModal(true)
+                  }
+                }}
+                onStartCreating={async (library) => {
+                  await saveLibrary({
+                    selfies: library.selfies,
+                    products: library.products,
+                    people: library.people,
+                    vibes: library.vibes,
+                    intent: library.intent,
+                  })
+                  await refreshLibrary()
+                  if (library.intent) {
+                    await updateIntent(library.intent)
+                  }
+                  setShowUploadFlow(false)
+                }}
+                onManageCategory={(category) => {
+                  setShowUploadFlow(false)
+                  setShowLibraryModal(true)
+                }}
+                onCancel={() => {
+                  setShowUploadFlow(false)
+                  setManageCategory(null)
+                  if (manageCategory) {
+                    setTimeout(() => {
+                      setShowLibraryModal(true)
+                    }, 100)
+                  }
+                }}
               />
             </div>
           </div>

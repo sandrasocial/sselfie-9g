@@ -17,13 +17,20 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport } from "ai"
 
-const CHAT_ID_STORAGE_KEY = "mayaCurrentChatId"
+const CHAT_ID_STORAGE_KEY_PREFIX = "mayaCurrentChatId"
+
+/**
+ * Get localStorage key for chat ID based on chat type
+ */
+function getChatIdStorageKey(chatType: string): string {
+  return `${CHAT_ID_STORAGE_KEY_PREFIX}_${chatType}`
+}
 
 export interface UseMayaChatProps {
   initialChatId?: number
   studioProMode: boolean
   user: any | null
-  getModeString: () => "pro" | "maya"
+  getModeString: () => "pro" | "maya" | "feed-planner"
 }
 
 export interface UseMayaChatReturn {
@@ -56,15 +63,16 @@ export interface UseMayaChatReturn {
 }
 
 /**
- * Load chat ID from localStorage
+ * Load chat ID from localStorage (chat-type-specific)
  */
-function loadChatIdFromStorage(): number | null {
+function loadChatIdFromStorage(chatType: string): number | null {
   if (typeof window === "undefined") {
     return null
   }
 
   try {
-    const saved = localStorage.getItem(CHAT_ID_STORAGE_KEY)
+    const storageKey = getChatIdStorageKey(chatType)
+    const saved = localStorage.getItem(storageKey)
     return saved ? Number.parseInt(saved, 10) : null
   } catch (error) {
     console.error("[useMayaChat] ❌ Error loading chatId from localStorage:", error)
@@ -73,19 +81,20 @@ function loadChatIdFromStorage(): number | null {
 }
 
 /**
- * Save chat ID to localStorage
+ * Save chat ID to localStorage (chat-type-specific)
  */
-function saveChatIdToStorage(chatId: number | null) {
+function saveChatIdToStorage(chatId: number | null, chatType: string) {
   if (typeof window === "undefined") {
     return
   }
 
   try {
+    const storageKey = getChatIdStorageKey(chatType)
     if (chatId) {
-      localStorage.setItem(CHAT_ID_STORAGE_KEY, chatId.toString())
-      console.log("[useMayaChat] 💾 Saved chatId to localStorage:", chatId)
+      localStorage.setItem(storageKey, chatId.toString())
+      console.log("[useMayaChat] 💾 Saved chatId to localStorage:", { chatId, chatType, storageKey })
     } else {
-      localStorage.removeItem(CHAT_ID_STORAGE_KEY)
+      localStorage.removeItem(storageKey)
     }
   } catch (error) {
     console.error("[useMayaChat] ❌ Error saving chatId to localStorage:", error)
@@ -116,6 +125,7 @@ export function useMayaChat({
       api: "/api/maya/chat",
       headers: {
         "x-studio-pro-mode": studioProMode ? "true" : "false",
+        "x-chat-type": getModeString(), // Send chatType via header (Feed Planner uses 'feed-planner')
       },
     }) as any,
     onError: (error) => {
@@ -289,7 +299,7 @@ export function useMayaChat({
         setMessages([])
         setChatId(null)
         setChatTitle("Chat with Maya")
-        localStorage.removeItem(CHAT_ID_STORAGE_KEY)
+        // Note: We don't clear localStorage here because chat types are separate
       }
       return
     }
@@ -313,10 +323,10 @@ export function useMayaChat({
     if (!hasLoadedChatRef.current) {
       hasLoadedChatRef.current = true
 
-      // Check localStorage for saved chat
-      const savedChatId = loadChatIdFromStorage()
+      // Check localStorage for saved chat (chat-type-specific)
+      const savedChatId = loadChatIdFromStorage(currentMode)
       if (savedChatId) {
-        console.log("[useMayaChat] Found saved chatId in localStorage, loading:", savedChatId)
+        console.log("[useMayaChat] Found saved chatId in localStorage for", currentMode, ":", savedChatId)
         loadChat(savedChatId)
       } else {
         // No saved chat - load the most recent chat to show history
@@ -327,10 +337,11 @@ export function useMayaChat({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, studioProMode, getModeString]) // Removed loadChat from dependencies to prevent infinite loops
 
-  // Save chatId to localStorage when it changes
+  // Save chatId to localStorage when it changes (chat-type-specific)
   useEffect(() => {
-    saveChatIdToStorage(chatId)
-  }, [chatId])
+    const currentMode = getModeString()
+    saveChatIdToStorage(chatId, currentMode)
+  }, [chatId, getModeString])
 
   // Handle new chat
   const handleNewChat = useCallback(async () => {
@@ -352,7 +363,7 @@ export function useMayaChat({
       setMessages([])
       savedMessageIds.current.clear()
 
-      saveChatIdToStorage(data.chatId)
+      saveChatIdToStorage(data.chatId, chatType)
 
       console.log("[useMayaChat] New chat created:", { chatId: data.chatId, chatType })
     } catch (error) {
@@ -363,11 +374,12 @@ export function useMayaChat({
   // Handle select chat
   const handleSelectChat = useCallback(
     (selectedChatId: number, selectedChatTitle?: string) => {
+      const currentMode = getModeString()
       loadChat(selectedChatId)
       setChatTitle(selectedChatTitle || "")
-      saveChatIdToStorage(selectedChatId)
+      saveChatIdToStorage(selectedChatId, currentMode)
     },
-    [loadChat],
+    [loadChat, getModeString],
   )
 
   // Handle delete chat
@@ -377,13 +389,15 @@ export function useMayaChat({
       if (chatId === deletedChatId) {
         handleNewChat()
       }
-      // Clear localStorage if it was the current chat
-      const storedChatId = loadChatIdFromStorage()
+      // Clear localStorage if it was the current chat (chat-type-specific)
+      const currentMode = getModeString()
+      const storedChatId = loadChatIdFromStorage(currentMode)
       if (storedChatId === deletedChatId) {
-        localStorage.removeItem(CHAT_ID_STORAGE_KEY)
+        const storageKey = getChatIdStorageKey(currentMode)
+        localStorage.removeItem(storageKey)
       }
     },
-    [chatId, handleNewChat],
+    [chatId, handleNewChat, getModeString],
   )
 
   return {

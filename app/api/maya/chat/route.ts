@@ -7,6 +7,7 @@ import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { checkCredits, deductCredits } from "@/lib/credits"
 import { detectStudioProIntent, getStudioProSystemPrompt } from "@/lib/maya/studio-pro-system-prompt"
+import { getOrCreateActiveChat } from "@/lib/data/maya"
 
 import { NextResponse } from "next/server"
 import type { Request } from "next/server"
@@ -104,7 +105,17 @@ export async function POST(req: Request) {
     console.log("[v0] User authenticated:", { userId, dbUserId, userEmail: user.email })
 
     const body = await req.json()
-    const { messages: uiMessages, chatId, chatType } = body
+    const { messages: uiMessages, chatId, chatType: chatTypeFromBody } = body
+    
+    // Get chatType from body, or fallback to header, or default to "maya"
+    const chatTypeHeader = req.headers.get("x-chat-type")
+    const chatType = chatTypeFromBody || chatTypeHeader || "maya"
+    
+    console.log("[v0] Chat type detected:", { 
+      fromBody: chatTypeFromBody, 
+      fromHeader: chatTypeHeader, 
+      final: chatType 
+    })
 
     // Check if this is prompt_builder mode (admin tool) or admin user - bypass credit check
     const isPromptBuilder = chatType === "prompt_builder"
@@ -623,6 +634,34 @@ export async function POST(req: Request) {
     if (chatType === "prompt_builder") {
       systemPrompt = PROMPT_BUILDER_SYSTEM
       console.log("[Maya Chat] Using Prompt Builder system prompt")
+    } else if (chatType === "feed-planner") {
+      // Import Feed Planner context with visual design guidance
+      const { getFeedPlannerContextAddon } = await import("@/lib/maya/feed-planner-context")
+      
+      // Determine user's explicit mode selection (override auto-detection if toggle is set)
+      // For Feed Planner, we check the header:
+      // - Header "true" → User selected Pro Mode → ALL posts Pro Mode
+      // - Header "false" → User selected Classic Mode → ALL posts Classic Mode
+      // - Header not set/null → Auto-detect per post (default behavior)
+      let userSelectedMode: "pro" | "classic" | null = null
+      if (studioProHeader === "true") {
+        userSelectedMode = "pro"
+      } else if (studioProHeader === "false") {
+        userSelectedMode = "classic"
+      } else {
+        // Header not set or undefined → Auto-detect (null)
+        userSelectedMode = null
+      }
+      
+      systemPrompt = getFeedPlannerContextAddon(userSelectedMode) + MAYA_SYSTEM_PROMPT
+      console.log("[Maya Chat] Using Maya with Feed Planner visual design guidance", {
+        userSelectedMode,
+        studioProHeader,
+        hasStudioProHeader,
+        message: userSelectedMode === "pro" ? "User selected Pro Mode - all posts will be Pro" :
+                 userSelectedMode === "classic" ? "User selected Classic Mode - all posts will be Classic" :
+                 "Auto-detect mode per post (default)"
+      })
     } else {
       // Use Maya Pro personality if in Studio Pro mode, otherwise use standard Maya
       systemPrompt = isStudioProMode ? MAYA_PRO_SYSTEM_PROMPT : MAYA_SYSTEM_PROMPT
@@ -942,9 +981,18 @@ You: "Love the cozy fall vibe! 🥰 Creating some concepts with warm textures, t
       throw streamError // Re-throw to be caught by outer catch block
     }
 
-    // Save chat to database if we have a chatId
-    if (chatId && supabase) {
-      try {
+    // Save chat to database - ensure chat exists with correct chat_type
+    try {
+      let finalChatId = chatId
+
+      // If no chatId, create/get active chat with correct chatType
+      if (!finalChatId) {
+        const activeChat = await getOrCreateActiveChat(dbUserId, chatType)
+        finalChatId = activeChat.id
+        console.log("[v0] Created/get active chat:", { chatId: finalChatId, chatType })
+      }
+
+      if (finalChatId && supabase) {
         const lastUserMessage = uiMessages.filter((m: { role: string }) => m.role === "user").pop()
         if (lastUserMessage) {
           // Extract text content for title
@@ -958,19 +1006,22 @@ You: "Love the cozy fall vibe! 🥰 Creating some concepts with warm textures, t
           // Remove inspiration image marker from title
           titleText = titleText.replace(/\[Inspiration Image: https?:\/\/[^\]]+\]/g, "").trim()
           
+          // CRITICAL: Include chat_type in upsert so Feed Planner chats are saved correctly
           await supabase.from("maya_chats").upsert(
             {
-              id: chatId,
+              id: finalChatId,
               user_id: dbUserId,
               title: titleText.slice(0, 50) + (titleText.length > 50 ? "..." : ""),
+              chat_type: chatType, // Include chat_type so chats are filtered correctly
               updated_at: new Date().toISOString(),
             },
             { onConflict: "id" },
           )
+          console.log("[v0] ✅ Chat saved with chat_type:", { chatId: finalChatId, chatType })
         }
-      } catch (dbError) {
-        console.error("[v0] Error saving chat:", dbError)
       }
+    } catch (dbError) {
+      console.error("[v0] Error saving chat:", dbError)
     }
 
     // Wrapped in try/catch to avoid breaking the stream if deduction fails
