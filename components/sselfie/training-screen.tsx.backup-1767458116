@@ -7,7 +7,7 @@ import UnifiedLoading from "./unified-loading"
 import LoadingSpinner from "./loading-spinner"
 import useSWR from "swr"
 import JSZip from "jszip"
-import { DesignClasses, ComponentClasses } from "@/lib/design-tokens"
+import { DesignClasses } from "@/lib/design-tokens"
 
 interface TrainingScreenProps {
   user: any
@@ -555,7 +555,7 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
               setHasTrainedModel(true)
               setActiveTab("studio")
             }}
-            className={`group relative w-full ${ComponentClasses.buttonPrimary} mb-3 sm:mb-4 min-h-[52px] sm:min-h-[60px] overflow-hidden`}
+            className={`group relative w-full ${DesignClasses.buttonPrimary} mb-3 sm:mb-4 min-h-[52px] sm:min-h-[60px] overflow-hidden`}
           >
             <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             <span className="relative z-10 flex items-center justify-center gap-2">
@@ -574,7 +574,7 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
       )}
 
       {trainingStage === "training" && (
-        <div className={`mx-4 sm:mx-6 ${ComponentClasses.card}`}>
+        <div className={`mx-4 sm:mx-6 ${DesignClasses.card}`}>
           <div className="text-center mb-8">
             <div className="relative w-24 h-24 mx-auto mb-6">
               <div className="absolute inset-0 rounded-full bg-stone-200/30 animate-ping"></div>

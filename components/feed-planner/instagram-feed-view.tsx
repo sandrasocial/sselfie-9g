@@ -230,7 +230,66 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
     return feedData?.posts ? [...feedData.posts].sort((a: any, b: any) => a.position - b.position) : []
   }, [feedData?.posts])
 
+  // ALL HOOKS MUST BE DECLARED BEFORE EARLY RETURNS (Rules of Hooks)
+  // Track previous posts to detect actual changes
+  const prevPostsRef = useRef<string>('')
+  const postsKey = posts.map((p: any) => `${p.id}-${p.position}`).join(',')
+
+  // Download bundle state
+  const [isDownloadingBundle, setIsDownloadingBundle] = useState(false)
+
+  // Initialize reorderedPosts when posts change (only if not currently dragging)
+  // CRITICAL: reorderedPosts must always be in sync with posts for drag handlers to work correctly
+  useEffect(() => {
+    // Only update if posts actually changed (by comparing IDs and positions)
+    if (draggedIndex === null && posts.length > 0 && prevPostsRef.current !== postsKey) {
+      prevPostsRef.current = postsKey
+      setReorderedPosts(posts)
+    }
+  }, [posts, draggedIndex, postsKey])
+
+  // Confetti trigger when all posts are complete (single trigger point to avoid duplicate)
   const readyPosts = postStatuses.filter(p => p.isComplete).length
+  useEffect(() => {
+    const totalPosts = 9
+    if (readyPosts === totalPosts && !hasShownConfettiRef.current) {
+      // Set ref immediately to prevent duplicate triggers (from SWR onSuccess or multiple renders)
+      hasShownConfettiRef.current = true
+      
+      console.log("[v0] 🎉 All posts complete! Revealing feed with confetti")
+      setTimeout(() => {
+        setShowConfetti(true)
+        triggerConfetti()
+      }, 500)
+      
+      // Clear confetti after 3 seconds
+      setTimeout(() => {
+        setShowConfetti(false)
+      }, 3500)
+    }
+  }, [readyPosts])
+
+  // Log post status for debugging (optional - can be removed in production)
+  useEffect(() => {
+    if (!feedData?.posts) return
+    
+    const postsWithoutPrediction = feedData.posts.filter(
+      (p: any) => !p.prediction_id && p.generation_status !== "completed" && !p.image_url,
+    )
+    
+    if (postsWithoutPrediction.length > 0) {
+      const feedCreatedRecently = feedData.feed?.created_at 
+        ? (Date.now() - new Date(feedData.feed.created_at).getTime()) < 120000 // 2 minutes
+        : false
+      
+      if (feedCreatedRecently) {
+        console.log(`[v0] ⏳ Feed was just created - queue-all-images is processing ${postsWithoutPrediction.length} posts in background. SWR will poll for updates...`)
+      } else {
+        console.log(`[v0] ⚠️ Found ${postsWithoutPrediction.length} posts without prediction_id. If this persists, use the "Generate All" button.`)
+      }
+    }
+  }, [feedData])
+
   const generatingPosts = postStatuses.filter(p => p.isGenerating)
 
   // Handle error responses
@@ -376,20 +435,6 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
     return 'Complete!'
   }
 
-  // Track previous posts to detect actual changes
-  const prevPostsRef = useRef<string>('')
-  const postsKey = posts.map((p: any) => `${p.id}-${p.position}`).join(',')
-
-  // Initialize reorderedPosts when posts change (only if not currently dragging)
-  // CRITICAL: reorderedPosts must always be in sync with posts for drag handlers to work correctly
-  useEffect(() => {
-    // Only update if posts actually changed (by comparing IDs and positions)
-    if (draggedIndex === null && posts.length > 0 && prevPostsRef.current !== postsKey) {
-      prevPostsRef.current = postsKey
-      setReorderedPosts(posts)
-    }
-  }, [posts, draggedIndex, postsKey])
-
   // Ensure reorderedPosts is always initialized (use posts as fallback for rendering if empty)
   const displayPosts = reorderedPosts.length > 0 ? reorderedPosts : posts
 
@@ -478,8 +523,6 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
   }
 
   // Download bundle handler
-  const [isDownloadingBundle, setIsDownloadingBundle] = useState(false)
-  
   const handleDownloadBundle = async () => {
     if (!feedData || !isFeedComplete) return
     
@@ -517,47 +560,6 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
       setIsDownloadingBundle(false)
     }
   }
-
-  // Confetti trigger when all posts are complete (single trigger point to avoid duplicate)
-  useEffect(() => {
-    const totalPosts = 9
-    if (readyPosts === totalPosts && !hasShownConfettiRef.current) {
-      // Set ref immediately to prevent duplicate triggers (from SWR onSuccess or multiple renders)
-      hasShownConfettiRef.current = true
-      
-      console.log("[v0] 🎉 All posts complete! Revealing feed with confetti")
-      setTimeout(() => {
-        setShowConfetti(true)
-        triggerConfetti()
-      }, 500)
-      
-      // Clear confetti after 3 seconds
-      setTimeout(() => {
-        setShowConfetti(false)
-      }, 3500)
-    }
-  }, [readyPosts])
-
-  // Log post status for debugging (optional - can be removed in production)
-  useEffect(() => {
-    if (!feedData?.posts) return
-    
-    const postsWithoutPrediction = feedData.posts.filter(
-      (p: any) => !p.prediction_id && p.generation_status !== "completed" && !p.image_url,
-    )
-    
-    if (postsWithoutPrediction.length > 0) {
-      const feedCreatedRecently = feedData.feed?.created_at 
-        ? (Date.now() - new Date(feedData.feed.created_at).getTime()) < 120000 // 2 minutes
-        : false
-      
-      if (feedCreatedRecently) {
-        console.log(`[v0] ⏳ Feed was just created - queue-all-images is processing ${postsWithoutPrediction.length} posts in background. SWR will poll for updates...`)
-      } else {
-        console.log(`[v0] ⚠️ Found ${postsWithoutPrediction.length} posts without prediction_id. If this persists, use the "Generate All" button.`)
-      }
-    }
-  }, [feedData])
 
   const toggleCaption = (postId: number) => {
     const newExpanded = new Set(expandedCaptions)

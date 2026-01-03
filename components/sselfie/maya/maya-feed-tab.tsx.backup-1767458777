@@ -181,22 +181,11 @@ export default function MayaFeedTab({
                 parts: updatedParts,
               }
 
-              console.log("[FEED] ✅ Feed card part added to message:", {
-                messageId: lastAssistant.id,
-                partsCount: updatedParts.length,
-                feedCardPart: updatedParts.find((p: any) => p.type === "tool-generateFeed"),
-                hasStrategy: !!strategy,
-                postsCount: strategy.posts?.length || 0,
-              })
-
               break
             }
           }
 
-          const updatedMessagesFinal = updatedMessages
-          console.log("[FEED] ✅ Message state updated with feed card part")
-          
-          return updatedMessagesFinal
+          return updatedMessages
         })
 
         // Notify parent callback (for any additional state management)
@@ -371,50 +360,19 @@ export default function MayaFeedTab({
 
   // Detect feed triggers in messages
   useEffect(() => {
-    if (isCreatingFeed) {
-      console.log("[FEED] ⏸️ Skipping trigger detection: isCreatingFeed is true")
-      return
-    }
+    if (isCreatingFeed) return
 
     const lastAssistantMessage = messages
       .filter((m: any) => m.role === "assistant")
       .slice(-1)[0]
 
-    if (!lastAssistantMessage) {
-      console.log("[FEED] ⏸️ No assistant messages found")
-      return
-    }
+    if (!lastAssistantMessage) return
 
     const messageId = lastAssistantMessage.id
-    
-    // Create a tracking key: use messageId if available, otherwise use content hash
-    // This allows trigger detection even during streaming when messages don't have IDs yet
-    let messageKey: string
-    if (messageId) {
-      messageKey = messageId
-    } else {
-      // Generate a key from message content for tracking during streaming
-      // Extract text content first (simplified version for key generation)
-      const textContentForKey = lastAssistantMessage.parts?.find((p: any) => p?.type === "text")?.text || lastAssistantMessage.content || ""
-      if (!textContentForKey) {
-        console.log("[FEED] ⏸️ Last assistant message has no ID and no content")
-        return
-      }
-      // Use a hash of the content for collision-resistant key generation
-      // Simple hash function: convert string to numeric hash, then to base36 string
-      let hash = 0
-      for (let i = 0; i < textContentForKey.length; i++) {
-        const char = textContentForKey.charCodeAt(i)
-        hash = ((hash << 5) - hash) + char
-        hash = hash & hash // Convert to 32bit integer
-      }
-      const contentHash = Math.abs(hash).toString(36)
-      messageKey = `streaming-${contentHash}`
-    }
+    if (!messageId) return
 
-    // Skip if already processed (using messageKey instead of just messageId)
-    if (processedFeedMessagesRef.current.has(messageKey)) {
-      console.log("[FEED] ⏸️ Message already processed:", messageKey)
+    // Skip if already processed
+    if (processedFeedMessagesRef.current.has(messageId)) {
       return
     }
 
@@ -423,27 +381,8 @@ export default function MayaFeedTab({
     if (lastAssistantMessage.parts && Array.isArray(lastAssistantMessage.parts)) {
       const textParts = lastAssistantMessage.parts.filter((p: any) => p && p.type === "text")
       textContent = textParts.map((p: any) => p.text || "").join("\n")
-      console.log("[FEED] 🔍 Checking message for trigger (from parts):", {
-        messageId,
-        textLength: textContent.length,
-        hasCreateFeedTrigger: textContent.includes("[CREATE_FEED_STRATEGY"),
-        textPreview: textContent.substring(0, 200),
-      })
     } else if (typeof lastAssistantMessage.content === "string") {
       textContent = lastAssistantMessage.content
-      console.log("[FEED] 🔍 Checking message for trigger (from content):", {
-        messageKey: messageId || "streaming (no ID yet)",
-        textLength: textContent.length,
-        hasCreateFeedTrigger: textContent.includes("[CREATE_FEED_STRATEGY"),
-        textPreview: textContent.substring(0, 200),
-      })
-    } else {
-      console.log("[FEED] ⚠️ Message has no text content (parts or content):", {
-        messageKey: messageId || "streaming (no ID yet)",
-        hasParts: !!lastAssistantMessage.parts,
-        hasContent: !!lastAssistantMessage.content,
-      })
-      return
     }
 
     // Check for [CREATE_FEED_STRATEGY] trigger
@@ -456,25 +395,24 @@ export default function MayaFeedTab({
         (p: any) => p.type === "tool-generateFeed"
       )
       if (alreadyHasFeedCard) {
-        console.log("[FEED] ⚠️ Message already has feed card, skipping trigger (likely from page refresh):", messageKey)
-        processedFeedMessagesRef.current.add(messageKey)
+        console.log("[FEED] ⚠️ Message already has feed card, skipping trigger (likely from page refresh):", messageId)
+        processedFeedMessagesRef.current.add(messageId)
         return
       }
       
       // Also check if feed marker exists in content (another indicator feed was already created)
       const hasFeedMarker = lastAssistantMessage.content?.includes('[FEED_CARD:')
       if (hasFeedMarker) {
-        console.log("[FEED] ⚠️ Message already has feed marker, skipping trigger (likely from page refresh):", messageKey)
-        processedFeedMessagesRef.current.add(messageKey)
+        console.log("[FEED] ⚠️ Message already has feed marker, skipping trigger (likely from page refresh):", messageId)
+        processedFeedMessagesRef.current.add(messageId)
         return
       }
 
-      processedFeedMessagesRef.current.add(messageKey)
+      processedFeedMessagesRef.current.add(messageId)
 
       const strategyJson = feedStrategyMatch[1]
       console.log("[FEED] ✅ Detected feed creation trigger:", {
-        messageKey,
-        messageId: messageId || "streaming (no ID yet)",
+        messageId,
         strategyLength: strategyJson.length,
       })
 
@@ -483,7 +421,7 @@ export default function MayaFeedTab({
         handleCreateFeed(strategy)
       } catch (error) {
         console.error("[FEED] ❌ Failed to parse strategy JSON:", error)
-        processedFeedMessagesRef.current.delete(messageKey)
+        processedFeedMessagesRef.current.delete(messageId)
       }
       return
     }
@@ -493,7 +431,7 @@ export default function MayaFeedTab({
     if (generateCaptionsMatch) {
       console.log("[FEED-CAPTIONS] ✅ Detected caption generation trigger")
       handleGenerateCaptions()
-      processedFeedMessagesRef.current.add(messageKey)
+      processedFeedMessagesRef.current.add(messageId)
       return
     }
 
@@ -502,7 +440,7 @@ export default function MayaFeedTab({
     if (generateStrategyMatch) {
       console.log("[FEED-STRATEGY] ✅ Detected strategy generation trigger")
       handleGenerateStrategy()
-      processedFeedMessagesRef.current.add(messageKey)
+      processedFeedMessagesRef.current.add(messageId)
       return
     }
   }, [messages, isCreatingFeed, handleCreateFeed, handleGenerateCaptions, handleGenerateStrategy])

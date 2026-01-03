@@ -894,21 +894,19 @@ export default function FeedPreviewCard({
             </button>
 
             {/* FeedPostCard */}
-            {feedId && (
-              <FeedPostCard
-                post={{
-                  id: selectedPost.id,
-                  position: selectedPost.position,
-                  prompt: selectedPost.prompt || '',
-                  caption: selectedPost.caption || '',
-                  content_pillar: selectedPost.post_type || selectedPost.content_pillar || '',
-                  image_url: selectedPost.image_url,
-                  generation_status: selectedPost.generation_status,
-                }}
-                feedId={feedId}
-                onGenerate={handleRefreshPosts}
-              />
-            )}
+            <FeedPostCard
+              post={{
+                id: selectedPost.id,
+                position: selectedPost.position,
+                prompt: selectedPost.prompt || '',
+                caption: selectedPost.caption || '',
+                content_pillar: selectedPost.post_type || selectedPost.content_pillar || '',
+                image_url: selectedPost.image_url,
+                generation_status: selectedPost.generation_status,
+              }}
+              feedId={feedId}
+              onGenerate={handleRefreshPosts}
+            />
           </div>
         </div>,
         document.body

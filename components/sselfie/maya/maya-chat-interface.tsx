@@ -421,7 +421,7 @@ export default function MayaChatInterface({
                       const textParts = msg.parts.filter((p) => p && p.type === "text")
                       const imageParts = msg.parts.filter((p) => p && (p as any).type === "image")
                       const otherParts = msg.parts.filter((p) => p && p.type !== "text" && (p as any).type !== "image")
-
+                      
                       return (
                         <>
                           {/* Render text + image together if both exist */}

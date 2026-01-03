@@ -6,7 +6,7 @@ import { Camera, Aperture, X, ChevronRight } from "lucide-react"
 import LoadingSpinner from "./loading-spinner"
 import useSWR from "swr"
 import JSZip from "jszip"
-import { DesignClasses } from "@/lib/design-tokens"
+import { DesignClasses, ComponentClasses } from "@/lib/design-tokens"
 import { motion, AnimatePresence } from "framer-motion"
 
 interface RetrainModelModalProps {
@@ -450,7 +450,7 @@ export default function RetrainModelModal({
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className={`w-full max-w-2xl max-h-[90vh] overflow-y-auto ${DesignClasses.card} ${DesignClasses.spacing.padding.lg} relative`}>
+            <div className={`w-full max-w-2xl max-h-[90vh] overflow-y-auto ${ComponentClasses.card} ${DesignClasses.spacing.padding.lg} relative`}>
               {/* Close Button */}
               {stage !== "training" && (
                 <button
@@ -476,7 +476,7 @@ export default function RetrainModelModal({
                       <h2 className={`${DesignClasses.typography.heading.h3} ${DesignClasses.text.primary} mb-2`}>
                         Retrain Your Model
                       </h2>
-                      <p className={`${DesignClasses.typography.body.sm} ${DesignClasses.text.tertiary}`}>
+                      <p className={`${DesignClasses.typography.body.small} ${DesignClasses.text.tertiary}`}>
                         Upload new selfies to improve your AI model
                       </p>
                     </div>
@@ -613,7 +613,7 @@ export default function RetrainModelModal({
                       <button
                         onClick={startTraining}
                         disabled={isUploading || compressionProgress.total > 0}
-                        className={`w-full ${DesignClasses.buttonPrimary} min-h-[52px] disabled:opacity-50 disabled:cursor-not-allowed`}
+                        className={`w-full ${ComponentClasses.buttonPrimary} min-h-[52px] disabled:opacity-50 disabled:cursor-not-allowed`}
                       >
                         {isUploading || compressionProgress.total > 0 ? (
                           <span className="flex items-center justify-center gap-2">
@@ -646,7 +646,7 @@ export default function RetrainModelModal({
                     <h2 className={`${DesignClasses.typography.heading.h3} ${DesignClasses.text.primary}`}>
                       Retraining Your Model
                     </h2>
-                    <p className={`${DesignClasses.typography.body.md} ${DesignClasses.text.secondary}`}>
+                    <p className={`${DesignClasses.typography.body.medium} ${DesignClasses.text.secondary}`}>
                       Your AI is learning from your new photos. This usually takes a couple of minutes.
                     </p>
                     <div className="w-full bg-stone-200/40 rounded-full h-3 overflow-hidden">
@@ -683,7 +683,7 @@ export default function RetrainModelModal({
                     <h2 className={`${DesignClasses.typography.heading.h2} ${DesignClasses.text.primary}`}>
                       Retraining Complete! 🎉
                     </h2>
-                    <p className={`${DesignClasses.typography.body.md} ${DesignClasses.text.secondary} max-w-md mx-auto`}>
+                    <p className={`${DesignClasses.typography.body.medium} ${DesignClasses.text.secondary} max-w-md mx-auto`}>
                       Your AI model has been updated with your new photos.
                     </p>
                   </motion.div>

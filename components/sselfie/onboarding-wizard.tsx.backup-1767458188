@@ -8,7 +8,7 @@ import UnifiedLoading from "./unified-loading"
 import LoadingSpinner from "./loading-spinner"
 import useSWR from "swr"
 import JSZip from "jszip"
-import { DesignClasses, ComponentClasses } from "@/lib/design-tokens"
+import { DesignClasses } from "@/lib/design-tokens"
 import { motion, AnimatePresence } from "framer-motion"
 
 interface OnboardingWizardProps {
@@ -458,7 +458,7 @@ export default function OnboardingWizard({
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className={`w-full max-w-2xl max-h-[90vh] overflow-y-auto ${currentStep === "welcome" ? "bg-stone-950/95 backdrop-blur-xl" : ComponentClasses.card} ${DesignClasses.spacing.padding.lg} relative ${currentStep === "welcome" ? "border border-stone-800" : ""}`}>
+            <div className={`w-full max-w-2xl max-h-[90vh] overflow-y-auto ${currentStep === "welcome" ? "bg-stone-950/95 backdrop-blur-xl" : DesignClasses.card} ${DesignClasses.spacing.padding.lg} relative ${currentStep === "welcome" ? "border border-stone-800" : ""}`}>
               {/* Close Button */}
               {onDismiss && currentStep !== "training" && (
                 <button
@@ -498,7 +498,7 @@ export default function OnboardingWizard({
                     <h2 className={`${DesignClasses.typography.heading.h2} text-white`}>
                       Welcome to SSELFIE!
                     </h2>
-                    <p className={`${DesignClasses.typography.body.medium} text-white/90 max-w-md mx-auto`}>
+                    <p className={`${DesignClasses.typography.body.md} text-white/90 max-w-md mx-auto`}>
                       Let's train your personal AI model with your selfies. This takes about 5 minutes and you only need to do it once.
                     </p>
                     <button
@@ -527,7 +527,7 @@ export default function OnboardingWizard({
                       <h2 className={`${DesignClasses.typography.heading.h3} ${DesignClasses.text.primary} mb-2`}>
                         Train Your AI Model
                       </h2>
-                      <p className={`${DesignClasses.typography.body.small} ${DesignClasses.text.tertiary}`}>
+                      <p className={`${DesignClasses.typography.body.sm} ${DesignClasses.text.tertiary}`}>
                         Upload 10-20 selfies to get started
                       </p>
                     </div>
@@ -664,7 +664,7 @@ export default function OnboardingWizard({
                       <button
                         onClick={startTraining}
                         disabled={isUploading || compressionProgress.total > 0}
-                        className={`w-full ${ComponentClasses.buttonPrimary} min-h-[52px] disabled:opacity-50 disabled:cursor-not-allowed`}
+                        className={`w-full ${DesignClasses.buttonPrimary} min-h-[52px] disabled:opacity-50 disabled:cursor-not-allowed`}
                       >
                         {isUploading || compressionProgress.total > 0 ? (
                           <span className="flex items-center justify-center gap-2">
@@ -697,7 +697,7 @@ export default function OnboardingWizard({
                     <h2 className={`${DesignClasses.typography.heading.h3} ${DesignClasses.text.primary}`}>
                       Training Your Model
                     </h2>
-                    <p className={`${DesignClasses.typography.body.medium} ${DesignClasses.text.secondary}`}>
+                    <p className={`${DesignClasses.typography.body.md} ${DesignClasses.text.secondary}`}>
                       Your AI is learning from your photos. This usually takes a couple of minutes.
                     </p>
                     <div className="w-full bg-stone-200/40 rounded-full h-3 overflow-hidden">
@@ -734,12 +734,12 @@ export default function OnboardingWizard({
                     <h2 className={`${DesignClasses.typography.heading.h2} ${DesignClasses.text.primary}`}>
                       Success! 🎉
                     </h2>
-                    <p className={`${DesignClasses.typography.body.medium} ${DesignClasses.text.secondary} max-w-md mx-auto`}>
+                    <p className={`${DesignClasses.typography.body.md} ${DesignClasses.text.secondary} max-w-md mx-auto`}>
                       Your AI model is ready! You can now create stunning professional photos.
                     </p>
                     <button
                       onClick={onComplete}
-                      className={`group relative ${ComponentClasses.buttonPrimary} min-h-[52px] overflow-hidden w-full`}
+                      className={`group relative ${DesignClasses.buttonPrimary} min-h-[52px] overflow-hidden w-full`}
                     >
                       <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                       <span className="relative z-10 flex items-center justify-center gap-2">

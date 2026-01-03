@@ -2,27 +2,24 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
-import { Camera, Aperture, ChevronRight, X } from "lucide-react"
-import Image from "next/image"
-import UnifiedLoading from "./unified-loading"
+import { Camera, Aperture, X, ChevronRight } from "lucide-react"
 import LoadingSpinner from "./loading-spinner"
 import useSWR from "swr"
 import JSZip from "jszip"
-import { DesignClasses, ComponentClasses } from "@/lib/design-tokens"
+import { DesignClasses } from "@/lib/design-tokens"
 import { motion, AnimatePresence } from "framer-motion"
 
-interface OnboardingWizardProps {
+interface RetrainModelModalProps {
   isOpen: boolean
+  onClose: () => void
   onComplete: () => void
-  onDismiss?: () => void
-  hasTrainedModel: boolean
   userId: string
   userName: string | null
 }
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
-// Reuse compression and zip functions from TrainingScreen
+// Reuse compression and zip functions
 const compressImage = async (file: File, maxSize = 1600, quality = 0.85): Promise<File> => {
   return new Promise((resolve, reject) => {
     const isHEIC =
@@ -34,7 +31,7 @@ const compressImage = async (file: File, maxSize = 1600, quality = 0.85): Promis
     if (isHEIC) {
       reject(
         new Error(
-          `${file.name} is in HEIC format which is not supported by web browsers. Please convert to JPG/PNG first:\n\n1. Open the photo in your gallery\n2. Share/Export as JPG or PNG\n3. Try uploading again`,
+          `${file.name} is in HEIC format which is not supported. Please convert to JPG/PNG first.`,
         ),
       )
       return
@@ -53,7 +50,7 @@ const compressImage = async (file: File, maxSize = 1600, quality = 0.85): Promis
     const reader = new FileReader()
     reader.readAsDataURL(file)
     reader.onload = (e) => {
-      const img = document.createElement("img")
+      const img = new Image()
       img.src = e.target?.result as string
       img.onload = () => {
         const canvas = document.createElement("canvas")
@@ -118,17 +115,16 @@ const createZipFromFiles = async (files: File[]): Promise<Blob> => {
   })
 }
 
-type WizardStep = "welcome" | "upload" | "training" | "success"
+type RetrainStage = "upload" | "training" | "completed"
 
-export default function OnboardingWizard({
+export default function RetrainModelModal({
   isOpen,
+  onClose,
   onComplete,
-  onDismiss,
-  hasTrainedModel,
   userId,
   userName,
-}: OnboardingWizardProps) {
-  const [currentStep, setCurrentStep] = useState<WizardStep>("welcome")
+}: RetrainModelModalProps) {
+  const [stage, setStage] = useState<RetrainStage>("upload")
   const [selectedGender, setSelectedGender] = useState("")
   const [selectedEthnicity, setSelectedEthnicity] = useState("")
   const [uploadedImages, setUploadedImages] = useState<File[]>([])
@@ -139,7 +135,6 @@ export default function OnboardingWizard({
 
   const {
     data: trainingStatus,
-    error,
     mutate,
   } = useSWR("/api/training/status", fetcher, {
     refreshInterval: 0,
@@ -161,29 +156,22 @@ export default function OnboardingWizard({
 
   // Auto-advance to training step if training is in progress
   useEffect(() => {
-    if (isTraining && currentStep === "upload") {
-      setCurrentStep("training")
+    if (isTraining && stage === "upload") {
+      setStage("training")
     }
-  }, [isTraining, currentStep])
+  }, [isTraining, stage])
 
   // Check if training completed
   useEffect(() => {
     const currentModel = progressData?.model || trainingStatus?.model
-    if (currentModel?.training_status === "completed" && currentStep === "training") {
-      setCurrentStep("success")
+    if (currentModel?.training_status === "completed" && stage === "training") {
+      setStage("completed")
+      setTimeout(() => {
+        onComplete()
+        onClose()
+      }, 2000)
     }
-  }, [trainingStatus, progressData, currentStep])
-
-  // Close wizard if model is trained
-  useEffect(() => {
-    if (hasTrainedModel && isOpen) {
-      onComplete()
-    }
-  }, [hasTrainedModel, isOpen, onComplete])
-
-  if (!isOpen || hasTrainedModel) {
-    return null
-  }
+  }, [trainingStatus, progressData, stage, onComplete, onClose])
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
@@ -377,10 +365,10 @@ export default function OnboardingWizard({
 
       await new Promise((resolve) => setTimeout(resolve, 500))
 
-      setCurrentStep("training")
+      setStage("training")
       mutate()
     } catch (error: any) {
-      console.error("[Onboarding] Error starting training:", error)
+      console.error("[Retrain] Error starting training:", error)
 
       let errorMessage = "Something went wrong. Please try again."
 
@@ -423,11 +411,11 @@ export default function OnboardingWizard({
       }
 
       await mutate()
-      setCurrentStep("upload")
+      setStage("upload")
       setUploadProgress({ current: 0, total: 0 })
       setCompressionProgress({ current: 0, total: 0, stage: "" })
     } catch (error) {
-      console.error("[Onboarding] Error canceling training:", error)
+      console.error("[Retrain] Error canceling training:", error)
       alert(`Failed to cancel training: ${error instanceof Error ? error.message : "Unknown error"}`)
     } finally {
       setIsCanceling(false)
@@ -436,6 +424,10 @@ export default function OnboardingWizard({
 
   const model = progressData?.model || trainingStatus?.model
   const trainingProgress = progressData?.progress || model?.training_progress || 0
+
+  if (!isOpen) {
+    return null
+  }
 
   return (
     <AnimatePresence>
@@ -447,10 +439,10 @@ export default function OnboardingWizard({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-stone-950/60 backdrop-blur-sm z-50"
-            onClick={onDismiss}
+            onClick={onClose}
           />
 
-          {/* Wizard Modal */}
+          {/* Modal */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -458,64 +450,21 @@ export default function OnboardingWizard({
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className={`w-full max-w-2xl max-h-[90vh] overflow-y-auto ${currentStep === "welcome" ? "bg-stone-950/95 backdrop-blur-xl" : ComponentClasses.card} ${DesignClasses.spacing.padding.lg} relative ${currentStep === "welcome" ? "border border-stone-800" : ""}`}>
+            <div className={`w-full max-w-2xl max-h-[90vh] overflow-y-auto ${DesignClasses.card} ${DesignClasses.spacing.padding.lg} relative`}>
               {/* Close Button */}
-              {onDismiss && currentStep !== "training" && (
+              {stage !== "training" && (
                 <button
-                  onClick={onDismiss}
-                  className={`absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg transition-colors z-10 ${
-                    currentStep === "welcome" 
-                      ? "hover:bg-stone-800 text-white/80 hover:text-white" 
-                      : "hover:bg-stone-100 text-stone-600"
-                  }`}
+                  onClick={onClose}
+                  className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-100 transition-colors z-10"
                   aria-label="Close"
                 >
-                  <X size={18} />
+                  <X size={18} className="text-stone-600" />
                 </button>
               )}
 
               <AnimatePresence mode="wait">
-                {/* Step 1: Welcome */}
-                {currentStep === "welcome" && (
-                  <motion.div
-                    key="welcome"
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    className="text-center space-y-6"
-                  >
-                    <div className="w-20 h-20 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full flex items-center justify-center mx-auto shadow-2xl">
-                      <div className="w-12 h-12 relative">
-                        <Image
-                          src="/icon.svg"
-                          alt="SSELFIE Logo"
-                          fill
-                          className="object-contain brightness-0 invert"
-                          style={{ opacity: 0.95 }}
-                        />
-                      </div>
-                    </div>
-                    <h2 className={`${DesignClasses.typography.heading.h2} text-white`}>
-                      Welcome to SSELFIE!
-                    </h2>
-                    <p className={`${DesignClasses.typography.body.medium} text-white/90 max-w-md mx-auto`}>
-                      Let's train your personal AI model with your selfies. This takes about 5 minutes and you only need to do it once.
-                    </p>
-                    <button
-                      onClick={() => setCurrentStep("upload")}
-                      className="group relative bg-white text-stone-950 px-6 py-3 rounded-lg font-medium min-h-[52px] overflow-hidden hover:bg-stone-100 transition-all"
-                    >
-                      <div className="absolute inset-0 bg-stone-950/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                      <span className="relative z-10 flex items-center justify-center gap-2">
-                        Get Started
-                        <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
-                      </span>
-                    </button>
-                  </motion.div>
-                )}
-
-                {/* Step 2: Upload */}
-                {currentStep === "upload" && (
+                {/* Upload Stage */}
+                {stage === "upload" && (
                   <motion.div
                     key="upload"
                     initial={{ opacity: 0, x: 20 }}
@@ -525,10 +474,10 @@ export default function OnboardingWizard({
                   >
                     <div className="text-center">
                       <h2 className={`${DesignClasses.typography.heading.h3} ${DesignClasses.text.primary} mb-2`}>
-                        Train Your AI Model
+                        Retrain Your Model
                       </h2>
-                      <p className={`${DesignClasses.typography.body.small} ${DesignClasses.text.tertiary}`}>
-                        Upload 10-20 selfies to get started
+                      <p className={`${DesignClasses.typography.body.sm} ${DesignClasses.text.tertiary}`}>
+                        Upload new selfies to improve your AI model
                       </p>
                     </div>
 
@@ -664,7 +613,7 @@ export default function OnboardingWizard({
                       <button
                         onClick={startTraining}
                         disabled={isUploading || compressionProgress.total > 0}
-                        className={`w-full ${ComponentClasses.buttonPrimary} min-h-[52px] disabled:opacity-50 disabled:cursor-not-allowed`}
+                        className={`w-full ${DesignClasses.buttonPrimary} min-h-[52px] disabled:opacity-50 disabled:cursor-not-allowed`}
                       >
                         {isUploading || compressionProgress.total > 0 ? (
                           <span className="flex items-center justify-center gap-2">
@@ -672,15 +621,15 @@ export default function OnboardingWizard({
                             {isUploading && compressionProgress.total === 0 ? "Uploading..." : compressionProgress.stage || "Processing..."}
                           </span>
                         ) : (
-                          "Start Training"
+                          "Start Retraining"
                         )}
                       </button>
                     )}
                   </motion.div>
                 )}
 
-                {/* Step 3: Training */}
-                {currentStep === "training" && (
+                {/* Training Stage */}
+                {stage === "training" && (
                   <motion.div
                     key="training"
                     initial={{ opacity: 0, x: 20 }}
@@ -695,10 +644,10 @@ export default function OnboardingWizard({
                       </div>
                     </div>
                     <h2 className={`${DesignClasses.typography.heading.h3} ${DesignClasses.text.primary}`}>
-                      Training Your Model
+                      Retraining Your Model
                     </h2>
-                    <p className={`${DesignClasses.typography.body.medium} ${DesignClasses.text.secondary}`}>
-                      Your AI is learning from your photos. This usually takes a couple of minutes.
+                    <p className={`${DesignClasses.typography.body.md} ${DesignClasses.text.secondary}`}>
+                      Your AI is learning from your new photos. This usually takes a couple of minutes.
                     </p>
                     <div className="w-full bg-stone-200/40 rounded-full h-3 overflow-hidden">
                       <div
@@ -716,10 +665,10 @@ export default function OnboardingWizard({
                   </motion.div>
                 )}
 
-                {/* Step 4: Success */}
-                {currentStep === "success" && (
+                {/* Completed Stage */}
+                {stage === "completed" && (
                   <motion.div
-                    key="success"
+                    key="completed"
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
@@ -732,21 +681,11 @@ export default function OnboardingWizard({
                       </div>
                     </div>
                     <h2 className={`${DesignClasses.typography.heading.h2} ${DesignClasses.text.primary}`}>
-                      Success! 🎉
+                      Retraining Complete! 🎉
                     </h2>
-                    <p className={`${DesignClasses.typography.body.medium} ${DesignClasses.text.secondary} max-w-md mx-auto`}>
-                      Your AI model is ready! You can now create stunning professional photos.
+                    <p className={`${DesignClasses.typography.body.md} ${DesignClasses.text.secondary} max-w-md mx-auto`}>
+                      Your AI model has been updated with your new photos.
                     </p>
-                    <button
-                      onClick={onComplete}
-                      className={`group relative ${ComponentClasses.buttonPrimary} min-h-[52px] overflow-hidden w-full`}
-                    >
-                      <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                      <span className="relative z-10 flex items-center justify-center gap-2">
-                        Start Creating
-                        <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
-                      </span>
-                    </button>
                   </motion.div>
                 )}
               </AnimatePresence>

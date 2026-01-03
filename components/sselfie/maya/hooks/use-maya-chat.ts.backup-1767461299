@@ -44,7 +44,7 @@ export interface UseMayaChatReturn {
   // Chat operations
   loadChat: (specificChatId?: number) => Promise<void>
   handleNewChat: () => Promise<void>
-  handleSelectChat: (selectedChatId: number, selectedChatTitle?: string) => Promise<void>
+  handleSelectChat: (selectedChatId: number, selectedChatTitle?: string) => void
   handleDeleteChat: (deletedChatId: number) => void
 
   // Setters (exposed for flexibility)
@@ -270,16 +270,6 @@ export function useMayaChat({
         setIsLoadingChat(false)
       } catch (error) {
         console.error("[useMayaChat] Error loading chat:", error)
-        
-        // If we were trying to load a specific chatId that failed, clear it from localStorage
-        // This prevents repeatedly trying to load a chat that doesn't exist
-        if (specificChatId) {
-          const chatType = getChatType()
-          const storageKey = getChatIdStorageKey(chatType)
-          localStorage.removeItem(storageKey)
-          console.log("[useMayaChat] Cleared invalid chatId from localStorage:", storageKey)
-        }
-        
         setIsLoadingChat(false)
       }
     },
@@ -496,26 +486,14 @@ export function useMayaChat({
 
   // Handle select chat
   const handleSelectChat = useCallback(
-    async (selectedChatId: number, selectedChatTitle?: string) => {
+    (selectedChatId: number, selectedChatTitle?: string) => {
       const chatType = getChatType()
       console.log("[useMayaChat] Selecting chat:", selectedChatId, "for chatType:", chatType)
-      
-      // Save to localStorage first
+      loadChat(selectedChatId)
+      setChatTitle(selectedChatTitle || "")
       saveChatIdToStorage(selectedChatId, chatType)
-      
-      // Set ref to true FIRST to prevent useEffect from interfering
-      // This prevents the useEffect from loading the old chatId from storage
-      hasLoadedChatRef.current = true
-      
-      // Update title
-      if (selectedChatTitle) {
-        setChatTitle(selectedChatTitle)
-      }
-      
-      // Load the chat (this will set chatId and hasLoadedChatRef appropriately)
-      await loadChat(selectedChatId)
     },
-    [loadChat, getChatType, saveChatIdToStorage],
+    [loadChat, getChatType],
   )
 
   // Handle delete chat

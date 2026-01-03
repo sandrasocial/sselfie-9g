@@ -439,15 +439,8 @@ export default function MayaUnifiedInput({
 
         {/* Navigation buttons - New Project and History (replaces Open Library, consistent in both modes) */}
         {/* Text-only buttons with no background, positioned to avoid bottom nav overlap */}
-        {/* Added extra padding-bottom on desktop to prevent overlap with bottom navigation (bottom nav is ~80px) */}
         {(onNewProject || onHistory) && (
-          <div 
-            className="mt-2 flex items-center justify-start gap-4"
-            style={{
-              paddingBottom: 'max(8px, calc(env(safe-area-inset-bottom, 0px) + 12px))',
-              marginBottom: '8px',
-            }}
-          >
+          <div className="mt-2 mb-1 flex items-center justify-start gap-4">
             {onNewProject && (
               <button
                 type="button"

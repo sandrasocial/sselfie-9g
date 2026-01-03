@@ -2141,10 +2141,10 @@ export default function MayaChatScreen({
   }
 
   // Wrapper for handleSelectChat that adds component-specific logic
-  const handleSelectChat = useCallback(async (selectedChatId: number, selectedChatTitle?: string) => {
+  const handleSelectChat = useCallback((selectedChatId: number, selectedChatTitle?: string) => {
       promptGenerationTriggeredRef.current.clear() // Clear prompt generation tracking
     setShowHistory(false) // Close history panel
-    await baseHandleSelectChat(selectedChatId, selectedChatTitle)
+    baseHandleSelectChat(selectedChatId, selectedChatTitle)
   }, [baseHandleSelectChat])
 
   // Wrapper for handleDeleteChat (hook handles the logic, but we expose it)

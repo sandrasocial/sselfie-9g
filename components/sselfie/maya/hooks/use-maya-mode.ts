@@ -12,7 +12,7 @@
  * - Feature availability
  */
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 
 const STORAGE_KEY = "mayaStudioProMode"
 
@@ -114,10 +114,10 @@ export function useMayaMode(forcedMode?: boolean): UseMayaModeReturn {
     setStudioProModeState(mode)
   }
 
-  // Get current mode as string
-  const getModeString = (): "pro" | "maya" => {
+  // Get current mode as string (memoized to prevent infinite loops)
+  const getModeString = useCallback((): "pro" | "maya" => {
     return studioProMode ? "pro" : "maya"
-  }
+  }, [studioProMode])
 
   // Check if mode changed from previous mode string
   const hasModeChanged = (previousMode: string | null): boolean => {

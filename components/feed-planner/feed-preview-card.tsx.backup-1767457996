@@ -169,14 +169,14 @@ export default function FeedPreviewCard({
           
           if (feedData.posts && Array.isArray(feedData.posts) && feedData.posts.length > 0) {
             postsToSet = feedData.posts
-            console.log("[FeedPreviewCard] ✅ Using posts from root level:", feedData.posts.length)
+            console.log("[FeedPreviewCard] ✅ Using posts from root level:", postsToSet.length)
           } else if (feedData.feed?.posts && Array.isArray(feedData.feed.posts) && feedData.feed.posts.length > 0) {
             // Fallback for legacy format
             postsToSet = feedData.feed.posts
-            console.log("[FeedPreviewCard] ✅ Using posts from feed.posts (legacy format):", feedData.feed.posts.length)
+            console.log("[FeedPreviewCard] ✅ Using posts from feed.posts (legacy format):", postsToSet.length)
           }
           
-          if (postsToSet && postsToSet.length > 0) {
+          if (postsToSet) {
             // Log image URL status for debugging
             const postsWithImages = postsToSet.filter(p => p.image_url)
             const postsWithoutImages = postsToSet.filter(p => !p.image_url)
@@ -325,7 +325,6 @@ export default function FeedPreviewCard({
         caption: p.caption || '',
         post_type: p.postType || p.type || 'user',
         content_pillar: p.purpose || '',
-        prediction_id: undefined, // Strategy posts don't have prediction_id
       }))
     : postsData
 
@@ -333,10 +332,9 @@ export default function FeedPreviewCard({
   const readyCount = effectivePosts.filter(p => p.image_url).length
   const totalPosts = effectivePosts.length
   const pendingCount = effectivePosts.filter(p => !p.image_url && p.generation_status !== "generating").length
-  const generatingCount = effectivePosts.filter(p => {
-    const post = p as FeedPost
-    return p.generation_status === "generating" || (post.prediction_id && !p.image_url)
-  }).length
+  const generatingCount = effectivePosts.filter(p => 
+    p.generation_status === "generating" || (p.prediction_id && !p.image_url)
+  ).length
   const hasPendingPosts = pendingCount > 0
   const hasImages = effectivePosts.some(p => p.image_url)
   const isAnyGenerating = generatingCount > 0 || isGenerating
@@ -684,9 +682,8 @@ export default function FeedPreviewCard({
         {sortedPosts.length > 0 ? (
           <div className="grid grid-cols-3 gap-0.5 sm:gap-1 bg-white w-full sm:max-w-[600px] sm:mx-auto">
           {sortedPosts.slice(0, 9).map((post, index) => {
-          const postWithPrediction = post as FeedPost
           const isGeneratingPost = post.generation_status === "generating" || 
-            (postWithPrediction.prediction_id && !post.image_url) ||
+            (post.prediction_id && !post.image_url) ||
             (isAnyGenerating && !post.image_url && post.generation_status !== "failed")
           const hasImage = !!post.image_url
           
@@ -894,21 +891,19 @@ export default function FeedPreviewCard({
             </button>
 
             {/* FeedPostCard */}
-            {feedId && (
-              <FeedPostCard
-                post={{
-                  id: selectedPost.id,
-                  position: selectedPost.position,
-                  prompt: selectedPost.prompt || '',
-                  caption: selectedPost.caption || '',
-                  content_pillar: selectedPost.post_type || selectedPost.content_pillar || '',
-                  image_url: selectedPost.image_url,
-                  generation_status: selectedPost.generation_status,
-                }}
-                feedId={feedId}
-                onGenerate={handleRefreshPosts}
-              />
-            )}
+            <FeedPostCard
+              post={{
+                id: selectedPost.id,
+                position: selectedPost.position,
+                prompt: selectedPost.prompt || '',
+                caption: selectedPost.caption || '',
+                content_pillar: selectedPost.post_type || selectedPost.content_pillar || '',
+                image_url: selectedPost.image_url,
+                generation_status: selectedPost.generation_status,
+              }}
+              feedId={feedId}
+              onGenerate={handleRefreshPosts}
+            />
           </div>
         </div>,
         document.body

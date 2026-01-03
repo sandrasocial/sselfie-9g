@@ -1211,26 +1211,7 @@ export default function MayaChatScreen({
       return
     }
 
-    // Check if this message has a [CREATE_FEED_STRATEGY] trigger but no feed card yet
-    // If so, don't save yet - wait for feed card creation
-    // CRITICAL: For unsaved feeds, the CREATE_FEED_STRATEGY trigger must stay in text
-    // so it can be detected again on page reload (like concept cards work)
-    const hasFeedTrigger = /\[CREATE_FEED_STRATEGY:/i.test(textContent)
-    const hasFeedCard = lastAssistantMessage.parts?.some(
-      (p: any) => p.type === "tool-generateFeed",
-    )
-
-    console.log("[v0] Save effect - hasFeedTrigger:", hasFeedTrigger, "hasFeedCard:", hasFeedCard)
-
-    // If there's a feed trigger but no feed card yet, wait for feed card creation
-    if (hasFeedTrigger && !hasFeedCard) {
-      console.log("[v0] Message has feed trigger but no feed card yet, waiting for creation...")
-      return
-    }
-
     // Extract text content from parts for saving
-    // CRITICAL: Keep CREATE_FEED_STRATEGY trigger in text for unsaved feeds
-    // This allows the feed card to be recreated on page reload (same as concept cards)
     let saveTextContent = ""
     if (lastAssistantMessage.parts && Array.isArray(lastAssistantMessage.parts)) {
       const textParts = lastAssistantMessage.parts.filter((p: any) => p.type === "text")
@@ -1238,20 +1219,6 @@ export default function MayaChatScreen({
         .map((p: any) => p.text)
         .join("\n")
         .trim()
-    }
-    
-    // If message has content property (fallback), use that
-    if (!saveTextContent && typeof lastAssistantMessage.content === "string") {
-      saveTextContent = lastAssistantMessage.content
-    }
-    
-    // Log feed trigger status for debugging
-    if (hasFeedTrigger) {
-      console.log("[v0] Save effect - preserving CREATE_FEED_STRATEGY trigger in text:", {
-        hasFeedCard,
-        textContainsTrigger: saveTextContent.includes("[CREATE_FEED_STRATEGY"),
-        textLength: saveTextContent.length,
-      })
     }
 
     // Extract concept cards from parts
@@ -2141,10 +2108,10 @@ export default function MayaChatScreen({
   }
 
   // Wrapper for handleSelectChat that adds component-specific logic
-  const handleSelectChat = useCallback(async (selectedChatId: number, selectedChatTitle?: string) => {
+  const handleSelectChat = useCallback((selectedChatId: number, selectedChatTitle?: string) => {
       promptGenerationTriggeredRef.current.clear() // Clear prompt generation tracking
     setShowHistory(false) // Close history panel
-    await baseHandleSelectChat(selectedChatId, selectedChatTitle)
+    baseHandleSelectChat(selectedChatId, selectedChatTitle)
   }, [baseHandleSelectChat])
 
   // Wrapper for handleDeleteChat (hook handles the logic, but we expose it)
