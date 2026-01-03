@@ -113,18 +113,20 @@ export async function POST(req: Request) {
     const chatType = chatTypeFromBody || chatTypeHeader || "maya"
     const isFeedTab = activeTabHeader === "feed"
     
-    console.log("[Maya Chat API] 🔍 Headers received:", { 
-      fromBody: chatTypeFromBody, 
-      fromHeader: chatTypeHeader, 
-      activeTabHeader,
-      isFeedTab,
-      final: chatType,
-      allHeaders: {
-        "x-chat-type": chatTypeHeader,
-        "x-active-tab": activeTabHeader,
-        "x-studio-pro-mode": req.headers.get("x-studio-pro-mode"),
-      }
-    })
+  console.log("[Maya Chat API] 🔍 Headers received:", {
+    fromBody: chatTypeFromBody,
+    fromHeader: chatTypeHeader,
+    activeTabHeader,
+    isFeedTab,
+    final: chatType,
+    allHeaders: {
+      "x-chat-type": chatTypeHeader,
+      "x-active-tab": activeTabHeader,
+      "x-studio-pro-mode": req.headers.get("x-studio-pro-mode"),
+    },
+    // PRODUCTION DEBUG: Log ALL headers
+    allRequestHeaders: Object.fromEntries(req.headers.entries()),
+  })
     
     if (isFeedTab) {
       console.log("[Maya Chat API] ✅ FEED TAB DETECTED - Will load aesthetic expertise")

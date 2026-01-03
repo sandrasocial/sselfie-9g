@@ -487,6 +487,15 @@ export default function MayaFeedTab({
     }
 
     // Check for [CREATE_FEED_STRATEGY] trigger
+    // PRODUCTION DEBUG: Log what we're searching for
+    console.log("[FEED] 🔍 PRODUCTION DEBUG - Checking for feed trigger:", {
+      messageId: lastAssistantMessage?.id,
+      textContentLength: textContent.length,
+      textContentPreview: textContent.substring(0, 200),
+      hasCreateFeedStrategy: textContent.includes("[CREATE_FEED_STRATEGY"),
+      environment: typeof window !== 'undefined' ? window.location.hostname : 'server',
+    })
+    
     const feedStrategyMatch = textContent.match(/\[CREATE_FEED_STRATEGY:\s*(\{[\s\S]*\})\]/i)
 
     if (feedStrategyMatch) {
