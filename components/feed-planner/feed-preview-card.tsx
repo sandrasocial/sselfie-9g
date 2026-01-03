@@ -362,32 +362,32 @@ export default function FeedPreviewCard({
   return (
     <div className="bg-white rounded-none border border-stone-200 overflow-hidden">
       {/* Header - Editorial Style */}
-      <div className="border-b border-stone-200 px-6 py-4">
+      <div className="border-b border-stone-200 px-3 sm:px-4 md:px-6 py-3 sm:py-4">
         <h3 
-          className="text-xl font-light tracking-wide text-stone-950"
+          className="text-base sm:text-lg md:text-xl font-light tracking-wide text-stone-950 break-words"
           style={{ fontFamily: "'Times New Roman', serif" }}
         >
           {feedTitle || "Instagram Feed"}
         </h3>
-        <p className="text-xs text-stone-500 mt-1 uppercase tracking-widest">
+        <p className="text-[10px] sm:text-xs text-stone-500 mt-1 uppercase tracking-wider sm:tracking-widest">
           Instagram Feed Preview
         </p>
         {feedDescription && (
-          <p className="text-sm text-stone-600 mt-2 font-light leading-relaxed">
+          <p className="text-xs sm:text-sm text-stone-600 mt-2 font-light leading-relaxed break-words">
             {feedDescription}
           </p>
         )}
-        {/* Status indicators - Editorial style */}
-        <div className="flex items-center gap-4 mt-3 text-xs text-stone-500 uppercase tracking-wider">
+        {/* Status indicators - Editorial style - Stack on mobile */}
+        <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-3 text-[10px] sm:text-xs text-stone-500 uppercase tracking-wider">
           <span>{readyCount} Ready</span>
           {pendingCount > 0 && <span>{pendingCount} Pending</span>}
           {generatingCount > 0 && <span>{generatingCount} Generating</span>}
         </div>
       </div>
 
-      {/* 3x3 Grid - Real Instagram Layout */}
-      <div className="p-4 bg-stone-50">
-        <div className="grid grid-cols-3 gap-1 bg-white max-w-[600px] mx-auto">
+      {/* 3x3 Grid - Real Instagram Layout - Full width on mobile */}
+      <div className="p-2 sm:p-3 md:p-4 bg-stone-50">
+        <div className="grid grid-cols-3 gap-0.5 sm:gap-1 bg-white w-full sm:max-w-[600px] sm:mx-auto">
         {sortedPosts.slice(0, 9).map((post) => {
           const isGeneratingPost = post.generation_status === "generating" || 
             generatingPostId === post.id || 
@@ -398,7 +398,7 @@ export default function FeedPreviewCard({
           return (
             <div
               key={post.id}
-              className="relative aspect-square group cursor-pointer overflow-hidden bg-stone-100"
+              className="relative aspect-square group cursor-pointer overflow-hidden bg-stone-100 touch-manipulation active:scale-[0.98] transition-transform duration-150 min-h-[100px] sm:min-h-[120px]"
               onClick={() => {
                 if (hasImage) {
                   handleImageClick(post)
@@ -414,10 +414,13 @@ export default function FeedPreviewCard({
                     src={post.image_url!}
                     alt={`Post ${post.position}`}
                     fill
+                    sizes="(max-width: 640px) 33vw, (max-width: 1024px) 200px, 200px"
                     className="object-cover"
+                    loading="lazy"
+                    quality={85}
                   />
-                  {/* Hover Overlay - Instagram Style */}
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  {/* Hover/Tap Overlay - Instagram Style - Show on tap for mobile */}
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity flex items-center justify-center">
                     <span className="text-white text-xs font-medium">
                       View Post
                     </span>
@@ -439,13 +442,13 @@ export default function FeedPreviewCard({
 
               {/* Pending State - Elegant Placeholder */}
               {!hasImage && !isGeneratingPost && (
-                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-stone-50 to-stone-100 group-hover:from-stone-100 group-hover:to-stone-200 transition-all">
-                  <div className="flex flex-col items-center gap-2">
-                    <div className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center">
-                      <ImageIcon className="w-5 h-5 text-stone-400" strokeWidth={1.5} />
+                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-stone-50 to-stone-100 group-hover:from-stone-100 group-hover:to-stone-200 group-active:from-stone-100 group-active:to-stone-200 transition-all">
+                  <div className="flex flex-col items-center gap-1 sm:gap-2">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white shadow-sm flex items-center justify-center">
+                      <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5 text-stone-400" strokeWidth={1.5} />
                     </div>
-                    <span className="text-[10px] text-stone-500 uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity">
-                      Click to Generate
+                    <span className="text-[9px] sm:text-[10px] text-stone-500 uppercase tracking-wider opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity">
+                      Tap to Generate
                     </span>
                   </div>
                 </div>
@@ -465,11 +468,11 @@ export default function FeedPreviewCard({
 
       {/* Caption Preview - Editorial Format */}
       {sortedPosts.length > 0 && sortedPosts[0].caption && (
-        <div className="border-t border-stone-200 px-6 py-4 bg-white">
-          <p className="text-xs text-stone-500 uppercase tracking-widest mb-2">
+        <div className="border-t border-stone-200 px-3 sm:px-4 md:px-6 py-3 sm:py-4 bg-white">
+          <p className="text-[10px] sm:text-xs text-stone-500 uppercase tracking-wider sm:tracking-widest mb-2">
             Feed Strategy
           </p>
-          <p className="text-sm text-stone-700 leading-relaxed font-light">
+          <p className="text-xs sm:text-sm text-stone-700 leading-relaxed font-light break-words">
             {sortedPosts[0].caption.substring(0, 150)}
             {sortedPosts[0].caption.length > 150 ? '...' : ''}
           </p>
@@ -477,13 +480,13 @@ export default function FeedPreviewCard({
       )}
 
       {/* Action Buttons */}
-      <div className="border-t border-stone-200 px-6 py-4 bg-white space-y-3">
+      <div className="border-t border-stone-200 px-3 sm:px-4 md:px-6 py-3 sm:py-4 bg-white space-y-2 sm:space-y-3">
         {/* Generate Feed Button - Show when there are pending posts and not generating */}
         {pendingCount > 0 && !isAnyGenerating && (
           <button
             onClick={handleGenerateFeed}
             disabled={isGenerating}
-            className="w-full py-3 bg-stone-900 hover:bg-stone-800 text-white text-sm font-light tracking-wider uppercase transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed border border-stone-900"
+            className="w-full py-3 sm:py-3 bg-stone-900 hover:bg-stone-800 active:bg-stone-700 text-white text-xs sm:text-sm font-light tracking-wider uppercase transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed border border-stone-900 min-h-[44px] touch-manipulation"
           >
             {isGenerating ? (
               <span className="flex items-center justify-center gap-2">
@@ -498,7 +501,7 @@ export default function FeedPreviewCard({
         
         {/* Generating State - Show when any images are generating */}
         {isAnyGenerating && (
-          <div className="w-full py-3 bg-stone-100 text-stone-600 text-xs font-light tracking-wider uppercase text-center border border-stone-200">
+          <div className="w-full py-3 bg-stone-100 text-stone-600 text-xs font-light tracking-wider uppercase text-center border border-stone-200 min-h-[44px] flex items-center justify-center">
             Generating {generatingCount > 0 ? `${generatingCount} ` : ''}Images...
           </div>
         )}
@@ -510,7 +513,7 @@ export default function FeedPreviewCard({
               router.push("/studio#maya/feed")
               setTimeout(() => {}, 100)
             }}
-            className="w-full py-3 bg-stone-900 text-white hover:bg-stone-800 transition-colors duration-200 text-xs font-light tracking-wider uppercase border border-stone-900"
+            className="w-full py-3 bg-stone-900 text-white hover:bg-stone-800 active:bg-stone-700 transition-colors duration-200 text-xs font-light tracking-wider uppercase border border-stone-900 min-h-[44px] touch-manipulation"
           >
             Create Captions
           </button>
@@ -523,7 +526,7 @@ export default function FeedPreviewCard({
               router.push("/studio#maya/feed")
               setTimeout(() => {}, 100)
             }}
-            className="w-full py-3 bg-stone-900 text-white hover:bg-stone-800 transition-colors duration-200 text-xs font-light tracking-wider uppercase border border-stone-900"
+            className="w-full py-3 bg-stone-900 text-white hover:bg-stone-800 active:bg-stone-700 transition-colors duration-200 text-xs font-light tracking-wider uppercase border border-stone-900 min-h-[44px] touch-manipulation"
           >
             Create Strategy
           </button>
@@ -532,7 +535,7 @@ export default function FeedPreviewCard({
         {/* View Full Feed Button */}
         <button
           onClick={handleViewFullFeed}
-          className="w-full py-3 bg-white border border-stone-200 text-stone-900 hover:bg-stone-50 hover:border-stone-300 transition-all duration-200 text-xs font-light tracking-wider uppercase"
+          className="w-full py-3 bg-white border border-stone-200 text-stone-900 hover:bg-stone-50 active:bg-stone-100 hover:border-stone-300 transition-all duration-200 text-xs font-light tracking-wider uppercase min-h-[44px] touch-manipulation"
         >
           View Full Feed
         </button>
@@ -541,20 +544,24 @@ export default function FeedPreviewCard({
       {/* Fullscreen Post Card Modal */}
       {isModalOpen && selectedPost && typeof window !== 'undefined' && createPortal(
         <div
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 backdrop-blur-sm animate-in fade-in duration-200"
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 backdrop-blur-sm animate-in fade-in duration-200 p-3 sm:p-4"
           onClick={handleCloseModal}
+          style={{
+            paddingTop: "calc(1rem + env(safe-area-inset-top))",
+            paddingBottom: "calc(1rem + env(safe-area-inset-bottom))",
+          }}
         >
           <div
-            className="relative max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+            className="relative max-w-2xl w-full mx-2 sm:mx-4 max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Close Button */}
+            {/* Close Button - Touch-friendly */}
             <button
               onClick={handleCloseModal}
-              className="absolute top-4 right-4 z-10 p-2 bg-black/50 hover:bg-black/70 rounded-full text-white transition-colors focus:outline-none focus:ring-2 focus:ring-white/50"
+              className="absolute top-2 right-2 sm:top-4 sm:right-4 z-10 p-2 sm:p-2 bg-black/50 hover:bg-black/70 active:bg-black/80 rounded-full text-white transition-colors focus:outline-none focus:ring-2 focus:ring-white/50 min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation"
               aria-label="Close modal"
             >
-              <X size={24} />
+              <X size={20} className="sm:w-6 sm:h-6" />
             </button>
 
             {/* FeedPostCard */}

@@ -493,22 +493,23 @@ export default function MayaFeedTab({
       <div
         className="flex-1 min-h-0 flex flex-col"
         style={{
-          paddingBottom: "140px", // Space for fixed bottom input
+          paddingBottom: "calc(140px + env(safe-area-inset-bottom))", // Space for fixed bottom input + safe area
+          paddingTop: "env(safe-area-inset-top)", // Safe area for notch/status bar
         }}
       >
         {/* Feed List Section - Show when there are feeds or when loading */}
         {(feeds.length > 0 || feedsLoading) && (
-          <div className="border-b border-stone-200 bg-white px-6 py-4">
-            <div className="max-w-7xl mx-auto">
-              <div className="flex items-center justify-between mb-4">
-                <div>
+          <div className="border-b border-stone-200 bg-white px-3 sm:px-4 md:px-6 py-3 sm:py-4">
+            <div className="w-full max-w-7xl mx-auto">
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
+                <div className="flex-1 min-w-0">
                   <h2 
-                    className="text-lg font-light tracking-wide text-stone-950"
+                    className="text-base sm:text-lg font-light tracking-wide text-stone-950 break-words"
                     style={{ fontFamily: "'Times New Roman', serif" }}
                   >
                     Your Feeds
                   </h2>
-                  <p className="text-xs text-stone-500 mt-1 uppercase tracking-widest">
+                  <p className="text-[10px] sm:text-xs text-stone-500 mt-1 uppercase tracking-wider sm:tracking-widest">
                     Strategic 9-post Instagram feeds created with Maya
                   </p>
                 </div>
@@ -523,11 +524,11 @@ export default function MayaFeedTab({
 
               {/* Error state */}
               {feedsError && !feedsLoading && (
-                <div className="p-4 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+                <div className="p-3 sm:p-4 bg-red-50 border border-red-200 rounded text-red-700 text-xs sm:text-sm">
                   {feedsError}
                   <button
                     onClick={() => window.location.reload()}
-                    className="mt-4 block text-sm text-red-700 underline"
+                    className="mt-3 sm:mt-4 block text-xs sm:text-sm text-red-700 underline min-h-[44px] touch-manipulation active:opacity-70"
                   >
                     Try again
                   </button>
@@ -541,7 +542,7 @@ export default function MayaFeedTab({
 
               {/* Feed grid */}
               {!feedsLoading && !feedsError && feeds.length > 0 && (
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-6">
                   {feeds.map((feed) => {
                     // Normalize feed data for InstagramFeedCard
                     const normalizedFeed = {
@@ -616,15 +617,15 @@ export default function MayaFeedTab({
         />
         {/* Empty State - Feed Tab */}
         {isEmpty && !isTyping && (
-          <div className="flex flex-col items-center justify-center h-full px-4 py-8 animate-in fade-in duration-500">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-stone-200/60 overflow-hidden mb-4 sm:mb-6">
+          <div className="flex flex-col items-center justify-center h-full px-3 sm:px-4 py-6 sm:py-8 animate-in fade-in duration-500">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full border-2 border-stone-200/60 overflow-hidden mb-3 sm:mb-4 md:mb-6">
               <img
                 src="https://i.postimg.cc/fTtCnzZv/out-1-22.png"
                 alt="Maya"
                 className="w-full h-full object-cover"
               />
             </div>
-            <h2 className="text-xl sm:text-2xl font-serif font-extralight tracking-[0.3em] text-stone-950 uppercase mb-2 sm:mb-3 text-center">
+            <h2 className="text-lg sm:text-xl md:text-2xl font-serif font-extralight tracking-[0.2em] sm:tracking-[0.3em] text-stone-950 uppercase mb-2 sm:mb-3 text-center px-4">
               Welcome
             </h2>
             <p className="text-xs sm:text-sm text-stone-600 tracking-wide text-center mb-4 sm:mb-6 max-w-md leading-relaxed px-4">
