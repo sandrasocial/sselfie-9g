@@ -1123,8 +1123,9 @@ This is the FIRST post (position ${post.position} of 9). Create a strong, unique
               
               // For quote posts, use the generated caption (from captionResult) instead of post.caption
               // post.caption doesn't exist yet since captions are generated in captionResults
+              // Use only captionResult.caption since it's guaranteed to have a value after fallback assignment at line 981
               const quoteCaption = post.postType === 'quote' 
-                ? (captionResult.caption || caption || '') 
+                ? captionResult.caption 
                 : undefined
 
               const { optimizedPrompt } = await buildNanoBananaPrompt({

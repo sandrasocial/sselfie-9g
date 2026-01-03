@@ -2,7 +2,8 @@ import { type NextRequest, NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { deductCredits, checkCredits, getUserCredits } from "@/lib/credits"
+import { deductCredits, checkCredits, getUserCredits, CREDIT_COSTS } from "@/lib/credits"
+import { getStudioProCreditCost } from "@/lib/nano-banana-client"
 import { generateInstagramCaption } from "@/lib/feed-planner/caption-writer"
 import { detectRequiredMode, detectProModeType } from "@/lib/feed-planner/mode-detection"
 import { generateVisualComposition } from "@/lib/feed-planner/visual-composition-expert"
@@ -118,7 +119,6 @@ export async function POST(request: NextRequest) {
     }
 
     console.log("[FEED-FROM-STRATEGY] Received strategy with", strategy.posts.length, "posts")
-    console.log("[FEED-FROM-STRATEGY] Total credits needed:", strategy.totalCredits)
 
     // ==================== PREREQUISITE VALIDATION (BEFORE CREATING FEED) ====================
     // Determine which posts will be Classic vs Pro Mode
@@ -149,6 +149,20 @@ export async function POST(request: NextRequest) {
     }
     
     console.log(`[FEED-FROM-STRATEGY] Mode distribution: ${classicPosts.length} Classic, ${proPosts.length} Pro`)
+    
+    // Calculate total credits needed (strategy + images)
+    // Strategy credits: 1 credit (fixed)
+    const strategyCredits = CREDIT_COSTS.STRATEGY || 1
+    
+    // Image credits: Classic posts × 1 credit, Pro posts × 2 credits
+    const classicImageCredits = classicPosts.length * CREDIT_COSTS.IMAGE
+    const proImageCredits = proPosts.length * getStudioProCreditCost('2K')
+    const totalImageCredits = classicImageCredits + proImageCredits
+    
+    // Total credits needed
+    const totalCredits = strategyCredits + totalImageCredits
+    
+    console.log(`[FEED-FROM-STRATEGY] Credit calculation: ${strategyCredits} (strategy) + ${totalImageCredits} (images: ${classicPosts.length} Classic × ${CREDIT_COSTS.IMAGE} + ${proPosts.length} Pro × ${getStudioProCreditCost('2K')}) = ${totalCredits} total credits`)
     
     // Check for trained model (required for Classic Mode posts)
     if (classicPosts.length > 0) {
@@ -217,17 +231,21 @@ export async function POST(request: NextRequest) {
     }
     
     // Check credits BEFORE creating feed layout
-    const hasEnoughCredits = await checkCredits(neonUser.id.toString(), strategy.totalCredits)
+    const hasEnoughCredits = await checkCredits(neonUser.id.toString(), totalCredits)
     if (!hasEnoughCredits) {
       const currentBalance = await getUserCredits(neonUser.id.toString())
-      console.error(`[FEED-FROM-STRATEGY] ❌ Insufficient credits: need ${strategy.totalCredits}, have ${currentBalance}`)
+      console.error(`[FEED-FROM-STRATEGY] ❌ Insufficient credits: need ${totalCredits}, have ${currentBalance}`)
       return NextResponse.json(
         {
           error: "Insufficient credits",
-          message: `You need ${strategy.totalCredits} credits to create this feed. You currently have ${currentBalance} credits.`,
-          requiredCredits: strategy.totalCredits,
+          message: `You need ${totalCredits} credits to create this feed (${strategyCredits} for strategy + ${totalImageCredits} for images). You currently have ${currentBalance} credits.`,
+          requiredCredits: totalCredits,
           currentBalance: currentBalance,
-          shortfall: strategy.totalCredits - currentBalance,
+          shortfall: totalCredits - currentBalance,
+          strategyCredits,
+          imageCredits: totalImageCredits,
+          classicPostsCount: classicPosts.length,
+          proPostsCount: proPosts.length,
         },
         { status: 402 }
       )
@@ -239,7 +257,7 @@ export async function POST(request: NextRequest) {
     // Deduct credits upfront for entire feed
     const deduction = await deductCredits(
       neonUser.id.toString(),
-      strategy.totalCredits,
+      totalCredits,
       "image",
       "Feed Planner - Complete feed strategy"
     )

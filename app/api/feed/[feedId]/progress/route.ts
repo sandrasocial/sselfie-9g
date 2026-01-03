@@ -52,9 +52,31 @@ export async function GET(request: Request, { params }: { params: { feedId: stri
             continue
           }
 
+          // Upload to Blob storage for permanent URL (Replicate URLs are temporary)
           let finalImageUrl = imageUrl
-          if (post.text_overlay) {
-            finalImageUrl = await applyTextOverlay(imageUrl, post.text_overlay)
+          try {
+            // Apply text overlay if needed (this already uploads to Blob)
+            if (post.text_overlay) {
+              finalImageUrl = await applyTextOverlay(imageUrl, post.text_overlay)
+              console.log(`[v0] [PROGRESS] ✅ Image with text overlay uploaded to Blob storage for post ${post.position}`)
+            } else {
+              // Upload to Blob storage for permanent URL (no text overlay)
+              const imageResponse = await fetch(imageUrl)
+              if (imageResponse.ok) {
+                const imageBlob = await imageResponse.blob()
+                const blob = await put(`feed-posts/${post.id}.png`, imageBlob, {
+                  access: "public",
+                  contentType: "image/png",
+                  addRandomSuffix: true,
+                })
+                finalImageUrl = blob.url
+                console.log(`[v0] [PROGRESS] ✅ Image uploaded to Blob storage for post ${post.position}`)
+              }
+            }
+          } catch (blobError: any) {
+            console.error(`[v0] [PROGRESS] ❌ Failed to upload to Blob, using Replicate URL (temporary):`, blobError?.message)
+            // Note: Using Replicate URL is temporary - it will expire after a few hours
+            // This is a fallback, but images may not persist on page refresh
           }
 
           await sql`

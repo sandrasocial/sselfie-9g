@@ -391,52 +391,64 @@ export async function POST(req: Request) {
 
     // CRITICAL: Normalize messages to ensure they have 'parts' array format
     // convertToModelMessages expects messages with 'parts' array, not just 'content' field
-    // CRITICAL: Preserve all original message fields (id, role, timestamp, etc.) using spread operator
+    // CRITICAL: Remove 'content' field when creating 'parts' to avoid dual-field structure
     const normalizedMessages = messages.map((m: any) => {
       // Skip normalization if message already has valid non-empty 'parts' array
+      // Also remove 'content' field if present to avoid dual-field issues
       if (m.parts && Array.isArray(m.parts) && m.parts.length > 0) {
-        return m
+        const { content, ...rest } = m
+        return rest // Remove 'content' field if it exists
       }
       
       // If message has empty 'parts' array, normalize it to ensure at least one empty text part
       // This prevents convertToModelMessages from failing on messages with empty parts
       if (m.parts && Array.isArray(m.parts) && m.parts.length === 0) {
+        const { content, parts, ...rest } = m
         return {
-          ...m, // Preserve id, role, timestamp, and all other metadata
+          ...rest, // Preserve id, role, timestamp, and all other metadata (excluding content and parts)
           parts: [{ type: "text", text: "" }], // Normalize empty parts to empty text part
         }
       }
       
       // If message has 'content' field (string) but no 'parts', convert it to 'parts' format
-      // Preserve all original fields using spread operator
+      // Remove 'content' field to avoid dual-field structure that could confuse convertToModelMessages
       // Always normalize string content, even if empty, to maintain consistent message structure
       if (typeof m.content === "string") {
+        const { content, ...rest } = m
         return {
-          ...m, // Preserve id, role, timestamp, and all other metadata
-          parts: [{ type: "text", text: m.content }], // Include empty strings to maintain format consistency
+          ...rest, // Preserve id, role, timestamp, and all other metadata (excluding content)
+          parts: [{ type: "text", text: content }], // Convert content to parts format
         }
       }
       
       // If message has 'content' as array (already in parts-like format), convert to parts
-      // Preserve all original fields using spread operator
+      // Remove 'content' field to avoid dual-field structure
       // Handle empty arrays to maintain consistent message structure
       if (Array.isArray(m.content)) {
+        const { content, ...rest } = m
         return {
-          ...m, // Preserve id, role, timestamp, and all other metadata
-          parts: m.content.length > 0 ? m.content : [{ type: "text", text: "" }], // Normalize empty arrays to empty text part
+          ...rest, // Preserve id, role, timestamp, and all other metadata (excluding content)
+          parts: content.length > 0 ? content : [{ type: "text", text: "" }], // Normalize empty arrays to empty text part
         }
       }
       
       // If message has neither 'parts' nor 'content', create empty parts array
       // This ensures all messages have a consistent structure
       if (!m.parts && !m.content) {
+        const { content, parts, ...rest } = m
         return {
-          ...m, // Preserve id, role, timestamp, and all other metadata
+          ...rest, // Preserve id, role, timestamp, and all other metadata
           parts: [{ type: "text", text: "" }], // Create empty text part for normalization
         }
       }
       
       // Keep message as-is if it doesn't match above patterns (should rarely happen)
+      // But still remove 'content' if it exists alongside 'parts'
+      if (m.content) {
+        const { content, ...rest } = m
+        return rest
+      }
+      
       return m
     })
 
