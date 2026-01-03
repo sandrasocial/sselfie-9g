@@ -683,16 +683,17 @@ export default function MayaChatInterface({
 
                             // Render feed preview card
                             if (part.type === "tool-generateFeed") {
+                              console.log("[FEED-CARD] 🎨 RENDERING FEED CARD IN CHAT")
                               const toolPart = part as any
                               const output = toolPart.output
                               
                               // CRITICAL: Log for debugging feed card rendering
                               if (!output) {
-                                console.warn("[MayaChatInterface] Feed card part has no output:", part)
+                                console.warn("[FEED-CARD] ⚠️ Feed card part has no output:", part)
                                 return null
                               }
                               
-                              console.log("[MayaChatInterface] Rendering feed card:", {
+                              console.log("[FEED-CARD] ✅ Feed card data:", {
                                 feedId: output.feedId,
                                 title: output.title,
                                 hasPosts: Array.isArray(output.posts),

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import Image from "next/image"
-import { ImageIcon, Loader2, X, Wand2 } from 'lucide-react'
+import { ImageIcon, Loader2, X, Wand2, Eye } from 'lucide-react'
 import { useRouter } from "next/navigation"
 import { toast } from "@/hooks/use-toast"
 import { createPortal } from "react-dom"
@@ -62,7 +62,8 @@ export default function FeedPreviewCard({
   const router = useRouter()
   
   // Determine if feed is saved (has feedId)
-  const isSaved = isSavedProp && !!feedIdProp
+  // CRITICAL FIX: Use the computed feedId (which includes savedFeedId), not just feedIdProp
+  // This ensures isSaved updates correctly after saving a feed
   const [savedFeedId, setSavedFeedId] = useState<number | null>(feedIdProp || null)
   const [isSaving, setIsSaving] = useState(false)
   // Track if we just saved to preserve strategy posts until data is fetched
@@ -70,6 +71,9 @@ export default function FeedPreviewCard({
   
   // Use savedFeedId if available, otherwise use feedIdProp
   const feedId = savedFeedId || feedIdProp || null
+  
+  // Compute isSaved using the resolved feedId (not just the prop)
+  const isSaved = (isSavedProp || !!savedFeedId) && !!feedId
   
   const [postsData, setPostsData] = useState<FeedPost[]>(posts)
   // State for title and description that can be updated from fetched data
@@ -82,10 +86,13 @@ export default function FeedPreviewCard({
   // REMOVED: generatingPostId state - Individual post generation is disabled
   const [selectedPost, setSelectedPost] = useState<FeedPost | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [showPromptModal, setShowPromptModal] = useState(false)
+  const [selectedPostForPrompt, setSelectedPostForPrompt] = useState<FeedPost | null>(null)
   
   // Track if we've attempted to fetch to avoid stale closure issues
   // Store fetchKey string to track fetches per feedId/needsRestore combination
   const hasFetchedRef = useRef<string | false>(false)
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
   
   // Reset fetch flag when feedId changes (new feed card)
   // Only fetch if feed is saved (has feedId)
@@ -167,16 +174,19 @@ export default function FeedPreviewCard({
           // Update posts data - check both response formats
           let postsToSet: FeedPost[] | null = null
           
-          if (feedData.posts && Array.isArray(feedData.posts) && feedData.posts.length > 0) {
+          // CRITICAL FIX: Removed .length > 0 checks to allow empty arrays (Bug 1)
+          if (feedData.posts && Array.isArray(feedData.posts)) {
             postsToSet = feedData.posts
             console.log("[FeedPreviewCard] ✅ Using posts from root level:", postsToSet.length)
-          } else if (feedData.feed?.posts && Array.isArray(feedData.feed.posts) && feedData.feed.posts.length > 0) {
+          } else if (feedData.feed?.posts && Array.isArray(feedData.feed.posts)) {
             // Fallback for legacy format
             postsToSet = feedData.feed.posts
             console.log("[FeedPreviewCard] ✅ Using posts from feed.posts (legacy format):", postsToSet.length)
           }
           
-          if (postsToSet && postsToSet.length > 0) {
+          // CRITICAL FIX: Allow empty arrays to be set (feeds with no posts are valid)
+          // Empty arrays are now properly handled since we removed .length > 0 checks above
+          if (postsToSet) {
             // Log image URL status for debugging
             const postsWithImages = postsToSet.filter(p => p.image_url)
             const postsWithoutImages = postsToSet.filter(p => !p.image_url)
@@ -235,82 +245,8 @@ export default function FeedPreviewCard({
     }
   }, [needsRestore, feedId, posts?.length]) // Fetch when needsRestore changes, feedId changes, or posts length changes
 
-  // Poll for feed updates to show progress (only while generating)
-  useEffect(() => {
-    // Early return if feedId is not set (unsaved feeds don't need polling)
-    if (!feedId) {
-      return
-    }
-    
-    // Poll if:
-    // 1. There are posts with generating status
-    // 2. There are posts without images (might be generating)
-    // 3. We're in generating state
-    const hasGeneratingPosts = postsData.some((p: FeedPost) => 
-      p.generation_status === "generating" || p.prediction_id !== null
-    )
-    const hasPendingPosts = postsData.some((p: FeedPost) => 
-      !p.image_url && p.generation_status !== "failed"
-    )
-    
-    // Always poll if there are posts without images (they might be generating)
-    if (!hasGeneratingPosts && !hasPendingPosts && !isGenerating) {
-      return // Don't poll if nothing is generating or pending
-    }
-    
-    const interval = setInterval(async () => {
-      try {
-        const response = await fetch(`/api/feed/${feedId}`)
-        if (response.ok) {
-          const data = await response.json()
-          // Posts are at root level, not nested in feed
-          if (data.posts && Array.isArray(data.posts)) {
-            setPostsData(data.posts)
-            // Check if any images are still generating
-            const stillGenerating = data.posts.some((p: FeedPost) => 
-              p.generation_status === "generating" || (p.prediction_id && !p.image_url)
-            )
-            const allCompleted = data.posts.every((p: FeedPost) => 
-              p.image_url || p.generation_status === "failed"
-            )
-            
-            if (stillGenerating) {
-              setIsGenerating(true)
-            } else if (allCompleted) {
-              setIsGenerating(false)
-            }
-          } else if (data.feed?.posts && Array.isArray(data.feed.posts)) {
-            // Fallback for legacy format (backward compatibility)
-            setPostsData(data.feed.posts)
-          }
-          
-          // Update title and description from polled data (same priority as initial fetch)
-          const polledTitle = data.title || 
-                             data.brand_name || 
-                             data.feed?.title || 
-                             data.feed?.brand_name ||
-                             data.feed?.gridPattern ||
-                             null
-          if (polledTitle && polledTitle !== displayTitle) {
-            setDisplayTitle(polledTitle)
-          }
-          
-          const polledDescription = data.description || 
-                                   data.feed?.description || 
-                                   data.feed?.gridPattern ||
-                                   data.feed?.overall_vibe ||
-                                   null
-          if (polledDescription && polledDescription !== displayDescription) {
-            setDisplayDescription(polledDescription)
-          }
-        }
-      } catch (error) {
-        console.error("[FeedPreviewCard] Error fetching feed updates:", error)
-      }
-    }, 3000) // Poll every 3 seconds
-
-    return () => clearInterval(interval)
-  }, [feedId, postsData, isGenerating])
+  // REMOVED: Old polling effect (replaced by new polling effect below at line 353-423)
+  // This was causing duplicate polling and incorrect state management
 
   // For unsaved feeds OR just-saved feeds (before data arrives), use strategy posts if available
   // Preserve strategy posts until real data is fetched (postsData has items)
@@ -340,6 +276,79 @@ export default function FeedPreviewCard({
   const hasPendingPosts = pendingCount > 0
   const hasImages = effectivePosts.some(p => p.image_url)
   const isAnyGenerating = generatingCount > 0 || isGenerating
+
+  // CRITICAL: Poll for feed updates when images are generating
+  // This ensures feed cards in chat stay up-to-date with image generation progress (like concept cards)
+  // FIX: Remove readyCount and totalPosts from dependencies to avoid stale closure issues
+  useEffect(() => {
+    // Only poll if:
+    // 1. We have a feedId (feed is saved)
+    // 2. There are posts generating (isAnyGenerating is enough to trigger polling)
+    const shouldPoll = feedId && isAnyGenerating
+    
+    if (shouldPoll) {
+      console.log("[FeedPreviewCard] 🔄 Starting polling for feed updates:", {
+        feedId,
+        generatingCount,
+      })
+      
+      // Clear any existing interval
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current)
+      }
+      
+      // Poll every 3 seconds (same as concept cards)
+      pollIntervalRef.current = setInterval(async () => {
+        try {
+          const response = await fetch(`/api/feed/${feedId}`)
+          if (response.ok) {
+            const feedData = await response.json()
+            if (feedData.posts && Array.isArray(feedData.posts)) {
+              const newCompletedCount = feedData.posts.filter((p: any) => p.generation_status === 'completed' && p.image_url).length
+              const newGeneratingCount = feedData.posts.filter((p: any) => p.generation_status === 'generating').length
+              
+              console.log("[FeedPreviewCard] ✅ Polling update - posts refreshed:", {
+                newCompletedCount,
+                newGeneratingCount,
+                totalPosts: feedData.posts.length,
+              })
+              
+              // Update posts data - React will trigger re-render and recalculate readyCount
+              setPostsData(feedData.posts)
+              
+              // If all posts are complete, stop polling and update generating state
+              const allComplete = feedData.posts.every((p: any) => p.generation_status === 'completed' && p.image_url)
+              if (allComplete) {
+                console.log("[FeedPreviewCard] ✅ All posts complete - stopping polling")
+                setIsGenerating(false) // CRITICAL: Set generating state to false when complete
+                if (pollIntervalRef.current) {
+                  clearInterval(pollIntervalRef.current)
+                  pollIntervalRef.current = null
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.error("[FeedPreviewCard] ❌ Error polling feed updates:", error)
+        }
+      }, 3000)
+    } else {
+      // Stop polling if conditions are no longer met
+      if (pollIntervalRef.current) {
+        console.log("[FeedPreviewCard] ⏹️ Stopping polling - conditions no longer met")
+        clearInterval(pollIntervalRef.current)
+        pollIntervalRef.current = null
+      }
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current)
+        pollIntervalRef.current = null
+      }
+    }
+  }, [feedId, isAnyGenerating])
 
   const handleViewFullFeed = () => {
     // Guard against null feedId (race condition during save)
@@ -416,11 +425,10 @@ export default function FeedPreviewCard({
         description: "Your feed has been saved successfully. Redirecting to Feed Planner...",
       })
       
-      // CRITICAL: Navigate to feed planner screen so users can manage their feed
-      // This matches the original behavior where saved feeds go to feed planner
-      setTimeout(() => {
-        router.push(`/feed-planner?feedId=${newFeedId}`)
-      }, 1000) // Small delay to show toast
+      // CRITICAL FIX (Bug 2): Do NOT redirect when in chat context
+      // Users expect to remain in chat after saving to continue the workflow
+      // Only redirect if explicitly requested via onSave callback or if not in chat
+      // The onSave callback will update the message state and keep the user in context
     } catch (error) {
       console.error("[FeedPreviewCard] ❌ Error saving feed:", error)
       toast({
@@ -977,6 +985,17 @@ export default function FeedPreviewCard({
             View Feed
           </button>
         )}
+        
+        {/* View Prompts Button - Minimalistic, show for all feeds with posts */}
+        {postsData.length > 0 && (
+          <button
+            onClick={() => setShowPromptModal(true)}
+            className="w-full py-2 sm:py-2 bg-white hover:bg-stone-50 active:bg-stone-100 text-stone-600 text-[10px] sm:text-xs font-light tracking-wider uppercase transition-colors duration-200 border border-stone-200 min-h-[36px] touch-manipulation flex items-center justify-center gap-1.5"
+          >
+            <Eye size={14} className="opacity-60" />
+            View Prompts
+          </button>
+        )}
       </div>
 
       {/* Fullscreen Post Card Modal */}
@@ -1029,6 +1048,120 @@ export default function FeedPreviewCard({
                 </button>
               </div>
             )}
+          </div>
+        </div>,
+        document.body
+      )}
+      
+      {/* Prompt Viewer Modal - Same style as Pro Concept Cards */}
+      {showPromptModal && typeof window !== 'undefined' && createPortal(
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+          onClick={() => setShowPromptModal(false)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-stone-200">
+              <div>
+                <h3 className="text-lg font-semibold text-stone-900">Feed Prompts</h3>
+                <p className="text-sm text-stone-500 mt-1">Review prompts before generating</p>
+              </div>
+              <button
+                onClick={() => setShowPromptModal(false)}
+                className="p-2 hover:bg-stone-100 rounded-full transition-colors"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5 text-stone-600" />
+              </button>
+            </div>
+
+            {/* Content - Scrollable list of prompts */}
+            <div className="flex-1 overflow-y-auto px-6 py-4">
+              <div className="space-y-6">
+                {sortedPosts.map((post) => (
+                  <div key={post.id || post.position} className="border border-stone-200 rounded-lg overflow-hidden">
+                    {/* Post Header */}
+                    <div className="bg-stone-50 px-4 py-3 border-b border-stone-200">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-white border border-stone-300 flex items-center justify-center">
+                            <span className="text-xs font-medium text-stone-700">{post.position}</span>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-stone-900">
+                              Post {post.position}
+                            </p>
+                            <p className="text-xs text-stone-500">
+                              {post.post_type || 'Portrait'} • {post.content_pillar || 'Feed post'}
+                            </p>
+                          </div>
+                        </div>
+                        {post.image_url && (
+                          <div className="w-12 h-12 rounded-lg overflow-hidden border border-stone-200">
+                            <Image
+                              src={post.image_url}
+                              alt={`Post ${post.position}`}
+                              width={48}
+                              height={48}
+                              className="object-cover w-full h-full"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Prompt Content */}
+                    <div className="p-4 bg-white">
+                      {post.prompt ? (
+                        <>
+                          <div className="bg-stone-50 rounded-lg p-4 border border-stone-200">
+                            <p className="text-xs text-stone-700 font-mono leading-relaxed whitespace-pre-wrap">
+                              {post.prompt}
+                            </p>
+                          </div>
+                          <div className="mt-2 flex items-center justify-between text-xs text-stone-500">
+                            <span>{post.prompt.length} characters</span>
+                            <span>{post.prompt.split(/\s+/).length} words</span>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                          <p className="text-xs text-amber-800">
+                            ⚠️ No prompt available for this post
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Caption Preview (if available) */}
+                    {post.caption && (
+                      <div className="px-4 pb-4">
+                        <p className="text-[10px] uppercase tracking-wider text-stone-500 mb-2">Caption Preview</p>
+                        <p className="text-xs text-stone-600 leading-relaxed line-clamp-3">
+                          {post.caption}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-between px-6 py-4 border-t border-stone-200 bg-stone-50">
+              <p className="text-xs text-stone-500">
+                {sortedPosts.filter(p => p.prompt).length} of {sortedPosts.length} prompts ready
+              </p>
+              <button
+                onClick={() => setShowPromptModal(false)}
+                className="px-4 py-2 text-sm font-medium text-white bg-stone-900 hover:bg-stone-800 rounded-lg transition-colors"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>,
         document.body

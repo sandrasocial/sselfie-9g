@@ -113,7 +113,7 @@ export async function POST(req: Request) {
     const chatType = chatTypeFromBody || chatTypeHeader || "maya"
     const isFeedTab = activeTabHeader === "feed"
     
-    console.log("[v0] Chat type detected:", { 
+    console.log("[Maya Chat API] 🔍 Headers received:", { 
       fromBody: chatTypeFromBody, 
       fromHeader: chatTypeHeader, 
       activeTabHeader,
@@ -125,6 +125,12 @@ export async function POST(req: Request) {
         "x-studio-pro-mode": req.headers.get("x-studio-pro-mode"),
       }
     })
+    
+    if (isFeedTab) {
+      console.log("[Maya Chat API] ✅ FEED TAB DETECTED - Will load aesthetic expertise")
+    } else {
+      console.log("[Maya Chat API] ⚠️ NOT feed tab - activeTabHeader:", activeTabHeader)
+    }
 
     // Check if this is prompt_builder mode (admin tool) or admin user - bypass credit check
     const isPromptBuilder = chatType === "prompt_builder"
@@ -698,11 +704,13 @@ export async function POST(req: Request) {
       }
       
       systemPrompt = getFeedPlannerContextAddon(userSelectedMode) + MAYA_SYSTEM_PROMPT
-      console.log("[Maya Chat] Feed Planner mode: Using visual design guidance", {
+      console.log("[Maya Chat] ✅✅✅ FEED PLANNER AESTHETIC EXPERTISE LOADED ✅✅✅", {
         userSelectedMode,
         studioProHeader,
         hasStudioProHeader,
         isFeedTab,
+        systemPromptLength: systemPrompt.length,
+        feedContextLength: getFeedPlannerContextAddon(userSelectedMode).length,
         message: userSelectedMode === "pro" ? "User selected Pro Mode - all posts will be Pro" :
                  userSelectedMode === "classic" ? "User selected Classic Mode - all posts will be Classic" :
                  "Auto-detect mode per post (default)"

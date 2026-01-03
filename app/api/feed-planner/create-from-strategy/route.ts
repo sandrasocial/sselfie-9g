@@ -127,6 +127,20 @@ export async function POST(request: NextRequest) {
     }
 
     console.log("[FEED-FROM-STRATEGY] Received strategy with", strategy.posts.length, "posts")
+    
+    // 🔴 CRITICAL FIX: Normalize "imagePrompt" to "prompt" if Maya used wrong field name
+    // Maya sometimes outputs "imagePrompt" instead of "prompt" - this normalizes it
+    for (const post of strategy.posts) {
+      if ((post as any).imagePrompt && !(post as any).prompt) {
+        console.log(`[FEED-FROM-STRATEGY] ⚠️ Post ${post.position}: Converting "imagePrompt" to "prompt"`)
+        ;(post as any).prompt = (post as any).imagePrompt
+        delete (post as any).imagePrompt
+      }
+    }
+    
+    // Log prompt status for debugging
+    const promptsCount = strategy.posts.filter((p: any) => p.prompt && p.prompt.trim().length > 20).length
+    console.log(`[FEED-FROM-STRATEGY] Posts with valid prompts: ${promptsCount} out of ${strategy.posts.length}`)
 
     // ==================== PREREQUISITE VALIDATION (BEFORE CREATING FEED) ====================
     // Determine which posts will be Classic vs Pro Mode

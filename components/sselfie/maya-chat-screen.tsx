@@ -1254,6 +1254,36 @@ export default function MayaChatScreen({
       })
     }
 
+    // CRITICAL: Extract feed cards and add persistence markers
+    // Feed cards need [FEED_CARD:feedId] markers to persist across page reloads
+    const feedCards: Array<{ feedId: number }> = []
+    if (lastAssistantMessage.parts && Array.isArray(lastAssistantMessage.parts)) {
+      for (const part of lastAssistantMessage.parts) {
+        if (part.type === "tool-generateFeed") {
+          const toolPart = part as any
+          const output = toolPart.output
+          if (output && output.feedId) {
+            feedCards.push({ feedId: output.feedId })
+            console.log("[v0] Save effect - found feed card with feedId:", output.feedId)
+          }
+        }
+      }
+    }
+    
+    // Add feed card markers to content text (for persistence)
+    // These markers allow the load-chat API to restore feed cards on reload
+    if (feedCards.length > 0) {
+      // CRITICAL: Remove [CREATE_FEED_STRATEGY] trigger for SAVED feeds
+      // Unsaved feeds keep the trigger so they can be recreated on reload
+      // Saved feeds use [FEED_CARD:feedId] markers instead
+      saveTextContent = saveTextContent.replace(/\[CREATE_FEED_STRATEGY:\s*\{[\s\S]*?\}\]/gi, '').trim()
+      console.log("[v0] Save effect - removed CREATE_FEED_STRATEGY trigger for saved feed")
+      
+      const feedMarkers = feedCards.map(f => `[FEED_CARD:${f.feedId}]`).join(" ")
+      saveTextContent = `${saveTextContent}\n${feedMarkers}`.trim()
+      console.log("[v0] Save effect - added feed card markers to content:", feedMarkers)
+    }
+
     // Extract concept cards from parts
     // 🔴 FIX: Both Classic Mode and Pro Mode now return { state: "ready", concepts: [...] }
     // This ensures consistent handling across both modes
@@ -1284,8 +1314,9 @@ export default function MayaChatScreen({
     })
 
     // Only save if we have something to save
-    if (!saveTextContent && conceptCards.length === 0) {
-      console.log("[v0] Save effect - nothing to save (no text, no concepts)")
+    // CRITICAL: Check for feed cards too, not just concepts!
+    if (!saveTextContent && conceptCards.length === 0 && feedCards.length === 0) {
+      console.log("[v0] Save effect - nothing to save (no text, no concepts, no feed cards)")
       return
     }
 
@@ -1295,9 +1326,20 @@ export default function MayaChatScreen({
     console.log(
       "[v0] 📝 Saving assistant message with",
       conceptCards.length,
-      "concept cards, text length:",
+      "concept cards,",
+      feedCards.length,
+      "feed cards, text length:",
       saveTextContent.length,
     )
+    
+    // CRITICAL: Log parts before saving to verify feed cards are present
+    console.log("[v0] 🔍 Message parts before save:", {
+      messageId: lastAssistantMessage.id,
+      partsCount: lastAssistantMessage.parts?.length || 0,
+      partsTypes: lastAssistantMessage.parts?.map((p: any) => p.type) || [],
+      hasFeedCard: lastAssistantMessage.parts?.some((p: any) => p.type === "tool-generateFeed"),
+      feedCardsExtracted: feedCards.length,
+    })
     // </CHANGE>
 
     // Save to database

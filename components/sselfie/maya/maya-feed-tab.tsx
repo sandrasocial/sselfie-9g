@@ -191,6 +191,13 @@ export default function MayaFeedTab({
                 hasStrategy: !!strategy,
                 postsCount: strategy.posts?.length || 0,
               })
+              
+              // CRITICAL: Log to verify parts are actually in the message
+              console.log("[FEED] 🔍 VERIFY: Message parts after update:", {
+                messageId: lastAssistant.id,
+                partsTypes: updatedParts.map((p: any) => p.type),
+                hasFeedCard: updatedParts.some((p: any) => p.type === "tool-generateFeed"),
+              })
 
               break
             }
@@ -374,18 +381,20 @@ export default function MayaFeedTab({
 
   // Detect feed triggers in messages
   useEffect(() => {
+    console.log("[FEED] 🔍 Trigger detection useEffect fired:", {
+      messagesCount: messages.length,
+      status,
+      isCreatingFeed,
+    })
+    
     // Allow processing when ready OR when messages change (to catch newly saved messages)
     if (messages.length === 0) return
     
-    // 🔴 CRITICAL: Don't process while actively streaming - this is the main check
+    // 🔴 CRITICAL: Don't process while actively streaming OR creating feed
     // Once status is NOT "streaming" or "submitted", the message is complete and safe to process
-    if (status === "streaming" || status === "submitted") {
-      console.log("[FEED] ⏳ Skipping trigger detection - status is:", status)
-      return
-    }
-    
-    if (isCreatingFeed) {
-      console.log("[FEED] ⏸️ Skipping trigger detection: isCreatingFeed is true")
+    // Also skip if isCreatingFeed is true to prevent race conditions
+    if (status === "streaming" || status === "submitted" || isCreatingFeed) {
+      console.log("[FEED] ⏳ Skipping trigger detection - status:", status, "isCreatingFeed:", isCreatingFeed)
       return
     }
 

@@ -108,7 +108,7 @@ When creating your strategy, explicitly state in your reasoning:
 
 ## 🎨 PROMPT GENERATION REQUIREMENTS
 
-You MUST include an "imagePrompt" field for each post in your strategy. This is the detailed prompt that will generate the image. Your prompts are validated for quality, so follow these standards carefully.
+You MUST include a "prompt" field for each post in your strategy. This is the detailed prompt that will generate the image. Your prompts are validated for quality, so follow these standards carefully.
 
 ### CRITICAL RULES:
 
@@ -180,7 +180,7 @@ Example JSON structure:
   "purpose": "Hook post - approachable, warm first impression",
   "caption": "Your caption text here...",
   "generationMode": "pro",
-  "imagePrompt": "A woman maintaining exactly the same physical characteristics of the woman in the attached image (face, body, skin tone, hair, and visual identity), without modifications. wearing soft beige ribbed knit sweater with delicate gold layered necklaces, warm natural lighting with golden hour quality creating soft dimensional shadows across her face and highlighting the texture of the knit fabric, natural authentic moment with genuine warm smile, positioned against warm cream colored wall with subtle texture, editorial luxury aesthetic reminiscent of warm lifestyle magazines, shot on iPhone 15 Pro using portrait mode, 35mm equivalent focal length, shallow depth of field with professional bokeh, soft beige warm cream latte brown cappuccino tan color palette creating visual cohesion, magazine-quality composition, warm color temperature, cozy inviting sophisticated mood"
+  "prompt": "A woman maintaining exactly the same physical characteristics of the woman in the attached image (face, body, skin tone, hair, and visual identity), without modifications. wearing soft beige ribbed knit sweater with delicate gold layered necklaces, warm natural lighting with golden hour quality creating soft dimensional shadows across her face and highlighting the texture of the knit fabric, natural authentic moment with genuine warm smile, positioned against warm cream colored wall with subtle texture, editorial luxury aesthetic reminiscent of warm lifestyle magazines, shot on iPhone 15 Pro using portrait mode, 35mm equivalent focal length, shallow depth of field with professional bokeh, soft beige warm cream latte brown cappuccino tan color palette creating visual cohesion, magazine-quality composition, warm color temperature, cozy inviting sophisticated mood"
 }
 
 ---

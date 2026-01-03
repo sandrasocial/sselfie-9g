@@ -135,6 +135,14 @@ export function useMayaChat({
   // This ensures headers reflect the current activeTab and studioProMode
   const currentChatType = getChatType()
   const chatTransport = useMemo(() => {
+    console.log("[useMayaChat] 🚀 Creating chat transport with headers:", {
+      "x-studio-pro-mode": studioProMode ? "true" : "false",
+      "x-chat-type": currentChatType,
+      "x-active-tab": activeTab || "(not set)",
+      activeTab,
+      studioProMode,
+      currentChatType,
+    })
     return new DefaultChatTransport({
       api: "/api/maya/chat",
       headers: {

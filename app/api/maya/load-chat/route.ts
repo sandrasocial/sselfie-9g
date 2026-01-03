@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const formattedMessages = messages.map((msg) => {
+    const formattedMessages = await Promise.all(messages.map(async (msg) => {
       const baseMessage = {
         id: msg.id.toString(),
         role: msg.role,
@@ -139,15 +139,18 @@ export async function GET(request: NextRequest) {
                 GROUP BY fl.id, fl.title, fl.description, fl.brand_vibe, fl.color_palette
               `
               
-              if (feedData && feedData.posts) {
-                console.log("[v0] ✅ Loaded feed data with", feedData.posts.length, "posts including captions")
+              if (feedData) {
+                // CRITICAL: json_agg returns NULL (not []) when LEFT JOIN has zero rows
+                // Convert NULL to empty array to properly handle saved feeds with no posts
+                const posts = feedData.posts === null ? [] : (feedData.posts || [])
+                console.log("[v0] ✅ Loaded feed data with", posts.length, "posts including captions")
                 parts.push({
                   type: 'tool-generateFeed',
                   output: {
                     feedId: feedId,
                     title: feedData.feed_title || 'Instagram Feed',
                     description: feedData.feed_description || '',
-                    posts: feedData.posts || [],
+                    posts: posts,
                     strategy: {
                       gridPattern: feedData.brand_vibe || '',
                       visualRhythm: feedData.color_palette || '',
@@ -263,15 +266,18 @@ export async function GET(request: NextRequest) {
               GROUP BY fl.id, fl.title, fl.description, fl.brand_vibe, fl.color_palette
             `
             
-            if (feedData && feedData.posts) {
-              console.log("[v0] ✅ Loaded feed data with", feedData.posts.length, "posts including captions")
+            if (feedData) {
+              // CRITICAL: json_agg returns NULL (not []) when LEFT JOIN has zero rows
+              // Convert NULL to empty array to properly handle saved feeds with no posts
+              const posts = feedData.posts === null ? [] : (feedData.posts || [])
+              console.log("[v0] ✅ Loaded feed data with", posts.length, "posts including captions")
               parts.push({
                 type: 'tool-generateFeed',
                 output: {
                   feedId: feedId,
                   title: feedData.feed_title || 'Instagram Feed',
                   description: feedData.feed_description || '',
-                  posts: feedData.posts || [],
+                  posts: posts,
                   strategy: {
                     gridPattern: feedData.brand_vibe || '',
                     visualRhythm: feedData.color_palette || '',
@@ -327,7 +333,7 @@ export async function GET(request: NextRequest) {
         ...baseMessage,
         parts: parts.length > 0 ? parts : [{ type: "text", text: "" }],
       }
-    })
+    }))
 
     const formattedWithConcepts = formattedMessages.filter((msg: any) =>
       msg.parts?.some((p: any) => p.type === "tool-generateConcepts"),
