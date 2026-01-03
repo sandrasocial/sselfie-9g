@@ -8,12 +8,12 @@ import { ArrowLeft, ImageIcon } from "lucide-react"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
-interface FeedViewScreenProps {
+interface FeedPlannerScreenProps {
   feedId?: number | null
 }
 
 /**
- * Feed View Screen - View Only
+ * Simplified Feed Planner Screen - View Only
  * 
  * This screen displays a feed in view-only mode.
  * Feed creation is handled in Maya Chat (Feed tab).
@@ -25,7 +25,7 @@ interface FeedViewScreenProps {
  * When no feedId is provided, automatically fetches the latest feed.
  * Shows placeholder state if no feed exists.
  */
-export default function FeedViewScreen({ feedId: feedIdProp }: FeedViewScreenProps = {}) {
+export default function FeedPlannerScreen({ feedId: feedIdProp }: FeedPlannerScreenProps = {}) {
   const router = useRouter()
   const searchParams = useSearchParams()
   

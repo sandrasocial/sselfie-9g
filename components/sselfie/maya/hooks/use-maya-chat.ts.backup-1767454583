@@ -145,14 +145,7 @@ export function useMayaChat({
     }) as any
   }, [studioProMode, currentChatType, activeTab])
 
-  // Create a unique ID for the chat session to force useChat to reset when chatId changes
-  // This ensures that when a new chat is created, all previous messages are cleared
-  const chatSessionId = useMemo(() => {
-    return `maya-chat-${chatId || 'new'}-${currentChatType}`
-  }, [chatId, currentChatType])
-
   const { messages, sendMessage, status, setMessages } = useChat({
-    id: chatSessionId, // Force reset when chatId or chatType changes
     transport: chatTransport,
     onError: (error) => {
       // Simplified error handling - just extract message safely
@@ -340,7 +333,7 @@ export function useMayaChat({
     if (!user) {
       // Only clear state once when user becomes undefined (use ref to track)
       if (!hasClearedStateRef.current) {
-        console.log("[useMayaChat] User is undefined/null, clearing chat state (one-time)")
+        console.log("[useMayaChat] User is undefined, clearing chat state (one-time)")
         hasClearedStateRef.current = true
         hasLoadedChatRef.current = false
         lastModeRef.current = null
@@ -353,30 +346,10 @@ export function useMayaChat({
       return
     }
 
-    // Additional check: ensure user has at least one required property (id or email)
-    // Some user objects might be truthy but incomplete
-    // Check if both id and email are missing or empty strings
-    const hasId = user.id && typeof user.id === 'string' && user.id.trim().length > 0
-    const hasEmail = user.email && typeof user.email === 'string' && user.email.trim().length > 0
-    
-    if (!hasId && !hasEmail) {
-      console.warn("[useMayaChat] User object exists but missing valid id and email properties, skipping chat load", {
-        userId: user.id,
-        userEmail: user.email,
-        userKeys: Object.keys(user)
-      })
-      if (!hasClearedStateRef.current) {
-        hasClearedStateRef.current = true
-        hasLoadedChatRef.current = false
-        setIsLoadingChat(false)
-      }
-      return
-    }
-
     // Reset cleared state ref when user becomes available
     hasClearedStateRef.current = false
 
-    console.log("[useMayaChat] 🚀 Loading chat for user:", user?.email || user?.id || "unknown", "studioProMode:", studioProMode, "activeTab:", activeTab)
+    console.log("[useMayaChat] 🚀 Loading chat for user:", user?.email, "studioProMode:", studioProMode, "activeTab:", activeTab)
 
     // Check if mode/chatType changed (using chatType instead of mode to handle Feed tab)
     const currentChatType = getChatType()

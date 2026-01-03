@@ -1,4 +1,6 @@
 export interface User {
+  id?: string // User ID (for useMayaChat hook)
+  email?: string | null // User email (for useMayaChat hook)
   name: string
   avatar: string
   membershipTier: string

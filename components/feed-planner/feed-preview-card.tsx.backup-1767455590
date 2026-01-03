@@ -65,8 +65,6 @@ export default function FeedPreviewCard({
   const isSaved = isSavedProp && !!feedIdProp
   const [savedFeedId, setSavedFeedId] = useState<number | null>(feedIdProp || null)
   const [isSaving, setIsSaving] = useState(false)
-  // Track if we just saved to preserve strategy posts until data is fetched
-  const justSavedRef = useRef(false)
   
   // Use savedFeedId if available, otherwise use feedIdProp
   const feedId = savedFeedId || feedIdProp || null
@@ -188,8 +186,6 @@ export default function FeedPreviewCard({
             })
             
             setPostsData(postsToSet)
-            // Clear justSavedRef now that we have real data
-            justSavedRef.current = false
           } else {
             console.warn("[FeedPreviewCard] ⚠️ No posts found in feed data - structure:", {
               hasPosts: !!feedData.posts,
@@ -312,10 +308,8 @@ export default function FeedPreviewCard({
     return () => clearInterval(interval)
   }, [feedId, postsData, isGenerating])
 
-  // For unsaved feeds OR just-saved feeds (before data arrives), use strategy posts if available
-  // Preserve strategy posts until real data is fetched (postsData has items)
-  const shouldUseStrategyPosts = (!feedId || justSavedRef.current) && strategy?.posts && postsData.length === 0
-  const effectivePosts = shouldUseStrategyPosts
+  // For unsaved feeds, use strategy posts if available
+  const effectivePosts = !feedId && strategy?.posts 
     ? strategy.posts.map((p: any, index: number) => ({
         id: index + 1, // Temporary ID for display
         position: p.position || index + 1,
@@ -340,12 +334,6 @@ export default function FeedPreviewCard({
   const isAnyGenerating = generatingCount > 0 || isGenerating
 
   const handleViewFullFeed = () => {
-    // Guard against null feedId (race condition during save)
-    if (!feedId) {
-      console.warn("[FeedPreviewCard] Cannot view feed: feedId is null")
-      return
-    }
-    
     if (onViewFullFeed) {
       onViewFullFeed()
     } else {
@@ -380,27 +368,22 @@ export default function FeedPreviewCard({
 
       const options: CreateFeedOptions = {
         studioProMode,
-        customSettings: {
-          styleStrength,
-          promptAccuracy,
-          aspectRatio,
-          realismStrength,
-        },
+        styleStrength,
+        promptAccuracy,
+        aspectRatio,
+        realismStrength,
       }
 
       const result = await createFeedFromStrategyHandler(strategy, options)
       
-      if (!result || !result.success || !result.feedId) {
+      if (!result || !result.feedLayoutId) {
         throw new Error("Failed to save feed: no feed ID returned")
       }
 
-      const newFeedId = Number(result.feedId)
+      const newFeedId = result.feedLayoutId
       
       console.log("[FeedPreviewCard] ✅ Feed saved successfully:", newFeedId)
 
-      // Mark that we just saved to preserve strategy posts until data is fetched
-      justSavedRef.current = true
-      
       // Update local state
       setSavedFeedId(newFeedId)
 

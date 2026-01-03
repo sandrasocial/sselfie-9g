@@ -13,9 +13,22 @@ import { buildNanoBananaPrompt } from "@/lib/maya/nano-banana-prompt-builder"
 import { getFashionIntelligencePrinciples } from "@/lib/maya/fashion-knowledge-2025"
 import INFLUENCER_POSING_KNOWLEDGE from "@/lib/maya/influencer-posing-knowledge"
 
+/**
+ * @deprecated This endpoint is deprecated. 
+ * Feed strategies should be generated through Maya Chat (Feed Tab) which uses the conversational approach.
+ * 
+ * Migration path:
+ * - Use Maya Chat Feed Tab to generate feed strategies
+ * - Maya generates strategies with [CREATE_FEED_STRATEGY] trigger
+ * - Strategies are saved via /api/feed-planner/create-from-strategy
+ * 
+ * This endpoint remains for backward compatibility but will be removed in a future version.
+ */
 export async function POST(request: NextRequest) {
+  console.warn("[DEPRECATED] /api/feed-planner/create-strategy is deprecated. Use Maya Chat Feed Tab instead.")
+  
   try {
-    console.log("[v0] ==================== CREATE STRATEGY API CALLED ====================")
+    console.log("[v0] ==================== CREATE STRATEGY API CALLED (DEPRECATED) ====================")
 
     const supabase = await createServerClient()
     const {

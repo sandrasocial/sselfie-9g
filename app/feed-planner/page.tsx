@@ -1,7 +1,7 @@
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId, getOrCreateNeonUser } from "@/lib/user-mapping"
 import { redirect } from 'next/navigation'
-import FeedPlannerScreen from "@/components/feed-planner/feed-planner-screen"
+import FeedViewScreen from "@/components/feed-planner/feed-view-screen"
 
 export default async function FeedPlannerPage() {
   const supabase = await createServerClient()
@@ -32,6 +32,6 @@ export default async function FeedPlannerPage() {
     redirect("/auth/login?returnTo=/feed-planner")
   }
 
-  return <FeedPlannerScreen />
+  return <FeedViewScreen />
   // </CHANGE>
 }

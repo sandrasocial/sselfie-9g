@@ -690,38 +690,24 @@ export default function MayaChatInterface({
                                 const isSaved = output.isSaved !== false && !!output.feedId
                                 
                                 // Handle save callback to update message part with feedId
-                                // Use message ID and part type for structural comparison (not identity)
-                                // Identity comparison fails after React re-renders with new message objects
-                                const currentMessageId = msg.id
                                 const handleSave = (feedId: number) => {
                                   setMessages((prevMessages: any[]) => {
-                                    return prevMessages.map((message) => {
-                                      // Find the message by ID
-                                      if (message.id === currentMessageId && message.parts && Array.isArray(message.parts)) {
-                                        // Find and update the tool-generateFeed part
-                                        const updatedParts = message.parts.map((p: any) => {
-                                          if (p.type === "tool-generateFeed") {
-                                            // Create new output object without strategy property
-                                            const { strategy, ...outputWithoutStrategy } = p.output || {}
-                                            return {
-                                              ...p,
-                                              output: {
-                                                ...outputWithoutStrategy,
-                                                feedId,
-                                                isSaved: true,
-                                              },
-                                            }
+                                    const updated = [...prevMessages]
+                                    // Find and update the message part
+                                    for (const msg of updated) {
+                                      if (msg.parts && Array.isArray(msg.parts)) {
+                                        for (const p of msg.parts) {
+                                          if (p === toolPart) {
+                                            p.output.feedId = feedId
+                                            p.output.isSaved = true
+                                            // Remove strategy from output (no longer needed)
+                                            delete p.output.strategy
+                                            break
                                           }
-                                          return p
-                                        })
-                                        
-                                        return {
-                                          ...message,
-                                          parts: updatedParts,
                                         }
                                       }
-                                      return message
-                                    })
+                                    }
+                                    return updated
                                   })
                                 }
                                 

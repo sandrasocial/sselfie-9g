@@ -31,7 +31,20 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ feed
     console.log("[v0] [FEED API] Fetching feed with ID:", feedId, "for user:", user.id)
 
     if (feedId === "latest") {
-      // Reuse the already-authenticated user object (no need to re-authenticate)
+      const supabase = await createServerClient()
+
+      const { user: authUser, error: authError } = await getAuthenticatedUserWithRetry()
+
+      if (authError || !authUser) {
+        return Response.json({ error: "Unauthorized" }, { status: 401 })
+      }
+
+      const user = await getUserByAuthId(authUser.id)
+
+      if (!user) {
+        return Response.json({ error: "Unauthorized" }, { status: 401 })
+      }
+
       // Get user's most recent feed layout
       const feedLayouts = await sql`
         SELECT * FROM feed_layouts

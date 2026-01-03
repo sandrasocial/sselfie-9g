@@ -13,7 +13,7 @@
  * in the component for message management.
  */
 
-import { useState, useEffect, useRef, useCallback, useMemo } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport } from "ai"
 
@@ -121,39 +121,18 @@ export function useMayaChat({
   const lastModeRef = useRef<string | null>(null)
   const hasClearedStateRef = useRef(false)
 
-  // Helper function to get the correct chatType based on activeTab
-  // Feed tab uses "feed-planner", otherwise use getModeString() result
-  const getChatType = useCallback((): string => {
-    if (activeTab === "feed") {
-      return "feed-planner"
-    }
-    return getModeString()
-  }, [activeTab, getModeString])
-
   // Integrate useChat from AI SDK
-  // NOTE: Headers are evaluated once when transport is created, so we use useMemo to recreate transport when dependencies change
-  // This ensures headers reflect the current activeTab and studioProMode
-  const currentChatType = getChatType()
-  const chatTransport = useMemo(() => {
-    return new DefaultChatTransport({
+  // Note: Headers are evaluated once when transport is created
+  // For dynamic values, we use current values at initialization time
+  const { messages, sendMessage, status, setMessages } = useChat({
+    transport: new DefaultChatTransport({
       api: "/api/maya/chat",
       headers: {
         "x-studio-pro-mode": studioProMode ? "true" : "false",
-        "x-chat-type": currentChatType,
-        ...(activeTab ? { "x-active-tab": activeTab } : {}),
+        "x-chat-type": getModeString(), // Send chatType via header (Feed Planner uses 'feed-planner')
+        ...(activeTab ? { "x-active-tab": activeTab } : {}), // Only include if activeTab is set
       },
-    }) as any
-  }, [studioProMode, currentChatType, activeTab])
-
-  // Create a unique ID for the chat session to force useChat to reset when chatId changes
-  // This ensures that when a new chat is created, all previous messages are cleared
-  const chatSessionId = useMemo(() => {
-    return `maya-chat-${chatId || 'new'}-${currentChatType}`
-  }, [chatId, currentChatType])
-
-  const { messages, sendMessage, status, setMessages } = useChat({
-    id: chatSessionId, // Force reset when chatId or chatType changes
-    transport: chatTransport,
+    }) as any,
     onError: (error) => {
       // Simplified error handling - just extract message safely
       let errorMessage = "An error occurred while chatting with Maya. Please try again."
@@ -192,13 +171,12 @@ export function useMayaChat({
         setIsLoadingChat(true)
 
         // Build URL - either load specific chat or default maya chat
-        // Use getChatType() to correctly handle Feed tab (feed-planner) vs Photos tab (maya/pro)
-        const chatType = getChatType()
+        const chatType = getModeString()
         const url = specificChatId
           ? `/api/maya/load-chat?chatId=${specificChatId}`
           : `/api/maya/load-chat?chatType=${chatType}`
 
-        console.log("[useMayaChat] Loading chat from URL:", url, "chatType:", chatType, "activeTab:", activeTab, "studioProMode:", studioProMode)
+        console.log("[useMayaChat] Loading chat from URL:", url, "chatType:", chatType, "studioProMode:", studioProMode)
 
         const response = await fetch(url)
         console.log("[useMayaChat] Load chat response status:", response.status)
@@ -273,7 +251,7 @@ export function useMayaChat({
         setIsLoadingChat(false)
       }
     },
-    [getChatType, activeTab, studioProMode, setMessages],
+    [getModeString, studioProMode, setMessages],
   )
 
   // Check if user has chat history
@@ -286,12 +264,12 @@ export function useMayaChat({
       }
 
       try {
-        // Safely get chat type with fallback (use getChatType to handle Feed tab)
+        // Safely get chat type with fallback
         let chatType: string
         try {
-          chatType = getChatType()
+          chatType = getModeString() || "maya"
         } catch (modeError) {
-          console.warn("[useMayaChat] Error getting chat type, using default:", modeError)
+          console.warn("[useMayaChat] Error getting mode string, using default:", modeError)
           chatType = "maya"
         }
 
@@ -332,7 +310,7 @@ export function useMayaChat({
     }
 
     checkChatHistory()
-  }, [user, studioProMode, getChatType, activeTab])
+  }, [user, studioProMode, getModeString])
 
   // Load chat when user or mode changes
   useEffect(() => {
@@ -340,7 +318,7 @@ export function useMayaChat({
     if (!user) {
       // Only clear state once when user becomes undefined (use ref to track)
       if (!hasClearedStateRef.current) {
-        console.log("[useMayaChat] User is undefined/null, clearing chat state (one-time)")
+        console.log("[useMayaChat] User is undefined, clearing chat state (one-time)")
         hasClearedStateRef.current = true
         hasLoadedChatRef.current = false
         lastModeRef.current = null
@@ -353,96 +331,54 @@ export function useMayaChat({
       return
     }
 
-    // Additional check: ensure user has at least one required property (id or email)
-    // Some user objects might be truthy but incomplete
-    // Check if both id and email are missing or empty strings
-    const hasId = user.id && typeof user.id === 'string' && user.id.trim().length > 0
-    const hasEmail = user.email && typeof user.email === 'string' && user.email.trim().length > 0
-    
-    if (!hasId && !hasEmail) {
-      console.warn("[useMayaChat] User object exists but missing valid id and email properties, skipping chat load", {
-        userId: user.id,
-        userEmail: user.email,
-        userKeys: Object.keys(user)
-      })
-      if (!hasClearedStateRef.current) {
-        hasClearedStateRef.current = true
-        hasLoadedChatRef.current = false
-        setIsLoadingChat(false)
-      }
-      return
-    }
-
     // Reset cleared state ref when user becomes available
     hasClearedStateRef.current = false
 
-    console.log("[useMayaChat] 🚀 Loading chat for user:", user?.email || user?.id || "unknown", "studioProMode:", studioProMode, "activeTab:", activeTab)
+    console.log("[useMayaChat] 🚀 Loading chat for user:", user?.email, "studioProMode:", studioProMode)
 
-    // Check if mode/chatType changed (using chatType instead of mode to handle Feed tab)
-    const currentChatType = getChatType()
-    const chatTypeChanged = lastModeRef.current !== null && lastModeRef.current !== currentChatType
+    // Check if mode changed
+    const currentMode = getModeString()
+    const modeChanged = lastModeRef.current !== null && lastModeRef.current !== currentMode
 
-    if (chatTypeChanged) {
-      console.log("[useMayaChat] ChatType changed from", lastModeRef.current, "to", currentChatType, "- clearing messages and resetting chat load state")
-      // CRITICAL: Clear messages immediately when chatType changes to prevent showing wrong messages
-      setMessages([])
-      savedMessageIds.current.clear()
-      setChatId(null)
-      setChatTitle("Chat with Maya")
+    if (modeChanged) {
+      console.log("[useMayaChat] Mode changed from", lastModeRef.current, "to", currentMode, "- resetting chat load state")
       hasLoadedChatRef.current = false
     }
 
-    lastModeRef.current = currentChatType
+    lastModeRef.current = currentMode
 
     if (!hasLoadedChatRef.current) {
       hasLoadedChatRef.current = true
 
       // Check localStorage for saved chat (chat-type-specific)
-      const savedChatId = loadChatIdFromStorage(currentChatType)
+      const savedChatId = loadChatIdFromStorage(currentMode)
       if (savedChatId) {
-        console.log("[useMayaChat] Found saved chatId in localStorage for", currentChatType, ":", savedChatId)
+        console.log("[useMayaChat] Found saved chatId in localStorage for", currentMode, ":", savedChatId)
         loadChat(savedChatId)
       } else {
         // No saved chat - start fresh (don't auto-load most recent chat)
         // User can access history through chat history panel if they want
-        console.log("[useMayaChat] No saved chatId for", currentChatType, "- starting with empty chat (not loading most recent)")
+        console.log("[useMayaChat] No saved chatId for", currentMode, "- starting with empty chat (not loading most recent)")
         setMessages([])
         setChatId(null)
         setChatTitle("Chat with Maya")
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, studioProMode, activeTab, getChatType]) // Use getChatType instead of getModeString to handle Feed tab
+  }, [user, studioProMode, getModeString]) // Removed loadChat from dependencies to prevent infinite loops
 
   // Save chatId to localStorage when it changes (chat-type-specific)
-  // BUT: Skip saving if we're in the middle of creating a new chat (to prevent reload)
-  const isCreatingNewChatRef = useRef(false)
   useEffect(() => {
-    // Skip saving if we're creating a new chat (handleNewChat will save it)
-    if (isCreatingNewChatRef.current) {
-      return
-    }
-    const chatType = getChatType()
-    saveChatIdToStorage(chatId, chatType)
-  }, [chatId, getChatType])
+    const currentMode = getModeString()
+    saveChatIdToStorage(chatId, currentMode)
+  }, [chatId, getModeString])
 
   // Handle new chat
   const handleNewChat = useCallback(async () => {
     // Reset state for new chat (clearLibrary will be called by component if needed)
     try {
-      // Set flag to prevent useEffect from saving chatId and triggering reloads
-      isCreatingNewChatRef.current = true
-      
-      // CRITICAL: Clear messages FIRST before creating new chat
-      // This ensures useChat hook's internal state is reset
-      setMessages([])
-      savedMessageIds.current.clear()
-      
-      // Create new chat with correct chatType based on activeTab
-      // Feed tab uses "feed-planner", Photos tab uses "maya" or "pro"
-      const chatType = getChatType()
-      console.log("[useMayaChat] Creating new chat with chatType:", chatType, "activeTab:", activeTab)
-      
+      // Create new chat with correct chatType based on mode
+      const chatType = getModeString()
       const response = await fetch("/api/maya/new-chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -452,48 +388,31 @@ export function useMayaChat({
       if (!response.ok) throw new Error("Failed to create new chat")
 
       const data = await response.json()
-      
-      // Mark as loaded BEFORE setting chatId to prevent useEffect from loading
-      hasLoadedChatRef.current = true
-      
-      // Save to localStorage BEFORE setting chatId (to prevent useEffect from triggering)
-      saveChatIdToStorage(data.chatId, chatType)
-      
-      // Set new chatId AFTER saving and marking as loaded
       setChatId(data.chatId)
       setChatTitle("New Chat") // Reset title for new chat
-      
-      // CRITICAL: Clear messages again after setting chatId to ensure useChat hook resets
-      // This is necessary because useChat might maintain internal state
-      setMessages([])
+      setMessages([]) // CRITICAL: Clear messages immediately for new chat (new chat has no messages)
       savedMessageIds.current.clear()
-      
-      // Reset flag in next tick to allow useEffect to run normally
-      setTimeout(() => {
-        isCreatingNewChatRef.current = false
-      }, 0)
+      // Keep hasLoadedChatRef.current = true to prevent useEffect from reloading
+      // The new chat is empty, so we don't need to load anything
 
-      console.log("[useMayaChat] ✅ New chat created:", { chatId: data.chatId, chatType, activeTab })
+      saveChatIdToStorage(data.chatId, chatType)
+
+      console.log("[useMayaChat] New chat created:", { chatId: data.chatId, chatType })
       console.log("[useMayaChat] ✅ Messages cleared and chat state reset for new chat (empty)")
     } catch (error) {
-      console.error("[useMayaChat] ❌ Error creating new chat:", error)
-      // On error, ensure messages are still cleared and reset flag
-      setMessages([])
-      savedMessageIds.current.clear()
-      isCreatingNewChatRef.current = false
+      console.error("[useMayaChat] Error creating new chat:", error)
     }
-  }, [getChatType, activeTab, setMessages])
+  }, [getModeString, setMessages])
 
   // Handle select chat
   const handleSelectChat = useCallback(
     (selectedChatId: number, selectedChatTitle?: string) => {
-      const chatType = getChatType()
-      console.log("[useMayaChat] Selecting chat:", selectedChatId, "for chatType:", chatType)
+      const currentMode = getModeString()
       loadChat(selectedChatId)
       setChatTitle(selectedChatTitle || "")
-      saveChatIdToStorage(selectedChatId, chatType)
+      saveChatIdToStorage(selectedChatId, currentMode)
     },
-    [loadChat, getChatType],
+    [loadChat, getModeString],
   )
 
   // Handle delete chat
@@ -504,14 +423,14 @@ export function useMayaChat({
         handleNewChat()
       }
       // Clear localStorage if it was the current chat (chat-type-specific)
-      const chatType = getChatType()
-      const storedChatId = loadChatIdFromStorage(chatType)
+      const currentMode = getModeString()
+      const storedChatId = loadChatIdFromStorage(currentMode)
       if (storedChatId === deletedChatId) {
-        const storageKey = getChatIdStorageKey(chatType)
+        const storageKey = getChatIdStorageKey(currentMode)
         localStorage.removeItem(storageKey)
       }
     },
-    [chatId, handleNewChat, getChatType],
+    [chatId, handleNewChat, getModeString],
   )
 
   return {

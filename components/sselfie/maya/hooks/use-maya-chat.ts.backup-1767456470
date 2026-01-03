@@ -353,18 +353,10 @@ export function useMayaChat({
       return
     }
 
-    // Additional check: ensure user has at least one required property (id or email)
+    // Additional check: ensure user has required properties (id or email)
     // Some user objects might be truthy but incomplete
-    // Check if both id and email are missing or empty strings
-    const hasId = user.id && typeof user.id === 'string' && user.id.trim().length > 0
-    const hasEmail = user.email && typeof user.email === 'string' && user.email.trim().length > 0
-    
-    if (!hasId && !hasEmail) {
-      console.warn("[useMayaChat] User object exists but missing valid id and email properties, skipping chat load", {
-        userId: user.id,
-        userEmail: user.email,
-        userKeys: Object.keys(user)
-      })
+    if (!user.id && !user.email) {
+      console.warn("[useMayaChat] User object exists but missing id and email properties, skipping chat load")
       if (!hasClearedStateRef.current) {
         hasClearedStateRef.current = true
         hasLoadedChatRef.current = false

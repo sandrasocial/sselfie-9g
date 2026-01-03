@@ -224,12 +224,6 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
     }))
   }, [feedData])
 
-  // Memoize posts to prevent unnecessary re-renders
-  // NOTE: This hook MUST be called before any early returns to comply with Rules of Hooks
-  const posts = useMemo(() => {
-    return feedData?.posts ? [...feedData.posts].sort((a: any, b: any) => a.position - b.position) : []
-  }, [feedData?.posts])
-
   const readyPosts = postStatuses.filter(p => p.isComplete).length
   const generatingPosts = postStatuses.filter(p => p.isGenerating)
 
@@ -337,8 +331,10 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
     )
   }
 
-  // All hooks must be declared before this point (Rules of Hooks)
-  // The 'posts' useMemo has been moved above the early returns
+  // Memoize posts to prevent unnecessary re-renders
+  const posts = useMemo(() => {
+    return feedData?.posts ? [...feedData.posts].sort((a: any, b: any) => a.position - b.position) : []
+  }, [feedData?.posts])
   
   const totalPosts = 9
   

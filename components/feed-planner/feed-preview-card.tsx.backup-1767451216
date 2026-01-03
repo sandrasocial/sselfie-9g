@@ -7,10 +7,7 @@ import { useRouter } from "next/navigation"
 import { toast } from "@/hooks/use-toast"
 import { createPortal } from "react-dom"
 import FeedPostCard from "./feed-post-card"
-import { createFeedFromStrategyHandler, type FeedStrategy, type CreateFeedOptions } from "@/lib/maya/feed-generation-handler"
 
-// Using shared types from lib/feed/types.ts
-// Note: FeedPost interface is compatible, keeping local type for now due to optional fields
 interface FeedPost {
   id: number
   position: number
@@ -24,53 +21,23 @@ interface FeedPost {
 }
 
 interface FeedPreviewCardProps {
-  feedId?: number // Optional - if not provided, card is in "unsaved" state
+  feedId: number
   feedTitle?: string
   feedDescription?: string
   posts: FeedPost[]
   onViewFullFeed?: () => void
   needsRestore?: boolean // If true, fetch feed data on mount
-  // NEW: Props for unsaved state
-  strategy?: FeedStrategy // Strategy data for unsaved feeds
-  isSaved?: boolean // Flag to indicate if feed is saved
-  onSave?: (feedId: number) => void // Callback when feed is saved
-  // Options for saving (passed from parent)
-  studioProMode?: boolean
-  styleStrength?: number
-  promptAccuracy?: number
-  aspectRatio?: string
-  realismStrength?: number
 }
 
 export default function FeedPreviewCard({
-  feedId: feedIdProp,
+  feedId,
   feedTitle,
   feedDescription,
   posts,
   onViewFullFeed,
   needsRestore = false,
-  // NEW: Props for unsaved state
-  strategy,
-  isSaved: isSavedProp = true, // Default to true for backward compatibility
-  onSave,
-  studioProMode = false,
-  styleStrength = 0.8,
-  promptAccuracy = 0.8,
-  aspectRatio = "1:1",
-  realismStrength = 0.8,
 }: FeedPreviewCardProps) {
   const router = useRouter()
-  
-  // Determine if feed is saved (has feedId)
-  const isSaved = isSavedProp && !!feedIdProp
-  const [savedFeedId, setSavedFeedId] = useState<number | null>(feedIdProp || null)
-  const [isSaving, setIsSaving] = useState(false)
-  // Track if we just saved to preserve strategy posts until data is fetched
-  const justSavedRef = useRef(false)
-  
-  // Use savedFeedId if available, otherwise use feedIdProp
-  const feedId = savedFeedId || feedIdProp || null
-  
   const [postsData, setPostsData] = useState<FeedPost[]>(posts)
   // State for title and description that can be updated from fetched data
   const [displayTitle, setDisplayTitle] = useState<string>(feedTitle || "Instagram Feed")
@@ -88,20 +55,10 @@ export default function FeedPreviewCard({
   const hasFetchedRef = useRef<string | false>(false)
   
   // Reset fetch flag when feedId changes (new feed card)
-  // Only fetch if feed is saved (has feedId)
   useEffect(() => {
-    if (feedId) {
-      hasFetchedRef.current = false
-      console.log("[FeedPreviewCard] 🔄 Feed ID changed, reset fetch flag:", feedId)
-    }
+    hasFetchedRef.current = false
+    console.log("[FeedPreviewCard] 🔄 Feed ID changed, reset fetch flag:", feedId)
   }, [feedId])
-  
-  // Update savedFeedId when feedIdProp changes (from parent)
-  useEffect(() => {
-    if (feedIdProp) {
-      setSavedFeedId(feedIdProp)
-    }
-  }, [feedIdProp])
   
   // Update state from props when they change (separate effect to avoid resetting fetch flag)
   useEffect(() => {
@@ -124,11 +81,6 @@ export default function FeedPreviewCard({
     // This prevents infinite loops while still allowing fresh fetches when needsRestore changes
     const fetchKey = `${feedId}-${needsRestore}`
     const hasFetchedForThisRestore = hasFetchedRef.current === fetchKey
-    
-    // Only fetch if feed is saved (has feedId)
-    if (!feedId) {
-      return // No feedId = unsaved feed, don't fetch
-    }
     
     // Determine if we should fetch:
     // 1. If needsRestore is true and we haven't fetched for this restore combination yet
@@ -188,8 +140,6 @@ export default function FeedPreviewCard({
             })
             
             setPostsData(postsToSet)
-            // Clear justSavedRef now that we have real data
-            justSavedRef.current = false
           } else {
             console.warn("[FeedPreviewCard] ⚠️ No posts found in feed data - structure:", {
               hasPosts: !!feedData.posts,
@@ -237,11 +187,6 @@ export default function FeedPreviewCard({
 
   // Poll for feed updates to show progress (only while generating)
   useEffect(() => {
-    // Early return if feedId is not set (unsaved feeds don't need polling)
-    if (!feedId) {
-      return
-    }
-    
     // Poll if:
     // 1. There are posts with generating status
     // 2. There are posts without images (might be generating)
@@ -312,116 +257,23 @@ export default function FeedPreviewCard({
     return () => clearInterval(interval)
   }, [feedId, postsData, isGenerating])
 
-  // For unsaved feeds OR just-saved feeds (before data arrives), use strategy posts if available
-  // Preserve strategy posts until real data is fetched (postsData has items)
-  const shouldUseStrategyPosts = (!feedId || justSavedRef.current) && strategy?.posts && postsData.length === 0
-  const effectivePosts = shouldUseStrategyPosts
-    ? strategy.posts.map((p: any, index: number) => ({
-        id: index + 1, // Temporary ID for display
-        position: p.position || index + 1,
-        image_url: null,
-        generation_status: 'pending',
-        prompt: p.prompt || p.imagePrompt || '',
-        caption: p.caption || '',
-        post_type: p.postType || p.type || 'user',
-        content_pillar: p.purpose || '',
-      }))
-    : postsData
-
-  const sortedPosts = [...effectivePosts].sort((a, b) => a.position - b.position)
-  const readyCount = effectivePosts.filter(p => p.image_url).length
-  const totalPosts = effectivePosts.length
-  const pendingCount = effectivePosts.filter(p => !p.image_url && p.generation_status !== "generating").length
-  const generatingCount = effectivePosts.filter(p => 
+  const sortedPosts = [...postsData].sort((a, b) => a.position - b.position)
+  const readyCount = postsData.filter(p => p.image_url).length
+  const totalPosts = postsData.length
+  const pendingCount = postsData.filter(p => !p.image_url && p.generation_status !== "generating").length
+  const generatingCount = postsData.filter(p => 
     p.generation_status === "generating" || (p.prediction_id && !p.image_url)
   ).length
   const hasPendingPosts = pendingCount > 0
-  const hasImages = effectivePosts.some(p => p.image_url)
+  const hasImages = postsData.some(p => p.image_url)
   const isAnyGenerating = generatingCount > 0 || isGenerating
 
   const handleViewFullFeed = () => {
-    // Guard against null feedId (race condition during save)
-    if (!feedId) {
-      console.warn("[FeedPreviewCard] Cannot view feed: feedId is null")
-      return
-    }
-    
     if (onViewFullFeed) {
       onViewFullFeed()
     } else {
       // Route to feed planner with feedId query param
       router.push(`/feed-planner?feedId=${feedId}`)
-    }
-  }
-
-  // Handle saving an unsaved feed strategy
-  const handleSaveFeed = async () => {
-    if (!strategy) {
-      console.error("[FeedPreviewCard] ❌ Cannot save feed: no strategy provided")
-      toast({
-        title: "Error",
-        description: "No feed strategy to save",
-        variant: "destructive",
-      })
-      return
-    }
-
-    setIsSaving(true)
-    
-    try {
-      console.log("[FeedPreviewCard] 💾 Saving feed strategy...", {
-        hasStrategy: !!strategy,
-        studioProMode,
-        styleStrength,
-        promptAccuracy,
-        aspectRatio,
-        realismStrength,
-      })
-
-      const options: CreateFeedOptions = {
-        studioProMode,
-        customSettings: {
-          styleStrength,
-          promptAccuracy,
-          aspectRatio,
-          realismStrength,
-        },
-      }
-
-      const result = await createFeedFromStrategyHandler(strategy, options)
-      
-      if (!result || !result.success || !result.feedId) {
-        throw new Error("Failed to save feed: no feed ID returned")
-      }
-
-      const newFeedId = Number(result.feedId)
-      
-      console.log("[FeedPreviewCard] ✅ Feed saved successfully:", newFeedId)
-
-      // Mark that we just saved to preserve strategy posts until data is fetched
-      justSavedRef.current = true
-      
-      // Update local state
-      setSavedFeedId(newFeedId)
-
-      // Call onSave callback to update parent component (e.g., update message part)
-      if (onSave) {
-        onSave(newFeedId)
-      }
-
-      toast({
-        title: "Feed saved",
-        description: "Your feed has been saved successfully",
-      })
-    } catch (error) {
-      console.error("[FeedPreviewCard] ❌ Error saving feed:", error)
-      toast({
-        title: "Failed to save feed",
-        description: error instanceof Error ? error.message : "An error occurred while saving",
-        variant: "destructive",
-      })
-    } finally {
-      setIsSaving(false)
     }
   }
 
@@ -783,88 +635,64 @@ export default function FeedPreviewCard({
 
       {/* Action Buttons */}
       <div className="border-t border-stone-200 px-3 sm:px-4 md:px-6 py-3 sm:py-4 bg-white space-y-2 sm:space-y-3">
-        {/* Only show generation/caption buttons for saved feeds */}
-        {isSaved && feedId && (
-          <>
-            {/* Generate Feed Button - Show when there are pending posts and not generating */}
-            {pendingCount > 0 && !isAnyGenerating && (
-              <button
-                onClick={handleGenerateFeed}
-                disabled={isGenerating}
-                className="w-full py-3 sm:py-3 bg-stone-900 hover:bg-stone-800 active:bg-stone-700 text-white text-xs sm:text-sm font-light tracking-wider uppercase transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed border border-stone-900 min-h-[44px] touch-manipulation"
-              >
-                {isGenerating ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <Loader2 size={16} className="animate-spin" />
-                    Starting Generation...
-                  </span>
-                ) : (
-                  `Generate All ${pendingCount} Image${pendingCount > 1 ? 's' : ''}`
-                )}
-              </button>
+        {/* Generate Feed Button - Show when there are pending posts and not generating */}
+        {pendingCount > 0 && !isAnyGenerating && (
+          <button
+            onClick={handleGenerateFeed}
+            disabled={isGenerating}
+            className="w-full py-3 sm:py-3 bg-stone-900 hover:bg-stone-800 active:bg-stone-700 text-white text-xs sm:text-sm font-light tracking-wider uppercase transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed border border-stone-900 min-h-[44px] touch-manipulation"
+          >
+            {isGenerating ? (
+              <span className="flex items-center justify-center gap-2">
+                <Loader2 size={16} className="animate-spin" />
+                Starting Generation...
+              </span>
+            ) : (
+              `Generate All ${pendingCount} Image${pendingCount > 1 ? 's' : ''}`
             )}
-            
-            {/* Generating State - Show when any images are generating */}
-            {isAnyGenerating && (
-              <div className="w-full py-3 bg-stone-100 text-stone-600 text-xs font-light tracking-wider uppercase text-center border border-stone-200 min-h-[44px] flex items-center justify-center">
-                Generating {generatingCount > 0 ? `${generatingCount} ` : ''}Images...
-              </div>
-            )}
-            
-            {/* Create Captions Button - Show after images are generated */}
-            {hasImages && (
-              <button
-                onClick={() => {
-                  router.push("/studio#maya/feed")
-                  setTimeout(() => {}, 100)
-                }}
-                className="w-full py-3 bg-stone-900 text-white hover:bg-stone-800 active:bg-stone-700 transition-colors duration-200 text-xs font-light tracking-wider uppercase border border-stone-900 min-h-[44px] touch-manipulation"
-              >
-                Create Captions
-              </button>
-            )}
-            
-            {/* Create Strategy Button - Show after images are generated */}
-            {hasImages && (
-              <button
-                onClick={() => {
-                  router.push("/studio#maya/feed")
-                  setTimeout(() => {}, 100)
-                }}
-                className="w-full py-3 bg-stone-900 text-white hover:bg-stone-800 active:bg-stone-700 transition-colors duration-200 text-xs font-light tracking-wider uppercase border border-stone-900 min-h-[44px] touch-manipulation"
-              >
-                Create Strategy
-              </button>
-            )}
-          </>
+          </button>
         )}
         
-        {/* Save Feed or View Feed Button */}
-        {!isSaved || !feedId ? (
-          // Unsaved state: Show "Save Feed" button
+        {/* Generating State - Show when any images are generating */}
+        {isAnyGenerating && (
+          <div className="w-full py-3 bg-stone-100 text-stone-600 text-xs font-light tracking-wider uppercase text-center border border-stone-200 min-h-[44px] flex items-center justify-center">
+            Generating {generatingCount > 0 ? `${generatingCount} ` : ''}Images...
+          </div>
+        )}
+        
+        {/* Create Captions Button - Show after images are generated */}
+        {hasImages && (
           <button
-            onClick={handleSaveFeed}
-            disabled={isSaving || !strategy}
-            className="w-full py-3 bg-stone-900 hover:bg-stone-800 active:bg-stone-700 text-white text-xs font-light tracking-wider uppercase transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed border border-stone-900 min-h-[44px] touch-manipulation flex items-center justify-center gap-2"
+            onClick={() => {
+              router.push("/studio#maya/feed")
+              setTimeout(() => {}, 100)
+            }}
+            className="w-full py-3 bg-stone-900 text-white hover:bg-stone-800 active:bg-stone-700 transition-colors duration-200 text-xs font-light tracking-wider uppercase border border-stone-900 min-h-[44px] touch-manipulation"
           >
-            {isSaving ? (
-              <>
-                <Loader2 size={16} className="animate-spin" />
-                Saving Feed...
-              </>
-            ) : (
-              "Save Feed"
-            )}
-          </button>
-        ) : (
-          // Saved state: Show "View Feed" button
-          <button
-            onClick={handleViewFullFeed}
-            className="w-full py-3 bg-white border border-stone-200 text-stone-900 hover:bg-stone-50 active:bg-stone-100 hover:border-stone-300 transition-all duration-200 text-xs font-light tracking-wider uppercase min-h-[44px] touch-manipulation"
-          >
-            View Feed
+            Create Captions
           </button>
         )}
+        
+        {/* Create Strategy Button - Show after images are generated */}
+        {hasImages && (
+          <button
+            onClick={() => {
+              router.push("/studio#maya/feed")
+              setTimeout(() => {}, 100)
+            }}
+            className="w-full py-3 bg-stone-900 text-white hover:bg-stone-800 active:bg-stone-700 transition-colors duration-200 text-xs font-light tracking-wider uppercase border border-stone-900 min-h-[44px] touch-manipulation"
+          >
+            Create Strategy
+          </button>
+        )}
+        
+        {/* View Full Feed Button */}
+        <button
+          onClick={handleViewFullFeed}
+          className="w-full py-3 bg-white border border-stone-200 text-stone-900 hover:bg-stone-50 active:bg-stone-100 hover:border-stone-300 transition-all duration-200 text-xs font-light tracking-wider uppercase min-h-[44px] touch-manipulation"
+        >
+          View Full Feed
+        </button>
       </div>
 
       {/* Fullscreen Post Card Modal */}

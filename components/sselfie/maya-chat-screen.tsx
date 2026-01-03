@@ -3082,7 +3082,7 @@ export default function MayaChatScreen({
           onSelectChat={handleSelectChat}
           onNewChat={handleNewChat}
           onDeleteChat={handleDeleteChat}
-          chatType={getModeString()}
+          chatType={activeMayaTab === "feed" ? "feed-planner" : getModeString()}
         />
       )}
 
@@ -3850,7 +3850,7 @@ export default function MayaChatScreen({
           onSelectChat={handleSelectChat}
           onNewChat={handleNewChat}
           onDeleteChat={handleDeleteChat}
-          chatType="pro"
+          chatType={activeMayaTab === "feed" ? "feed-planner" : getModeString()}
         />
       )}
 

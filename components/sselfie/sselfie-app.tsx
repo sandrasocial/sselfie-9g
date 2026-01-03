@@ -20,7 +20,7 @@ import GalleryScreen from "./gallery-screen"
 // B-Roll functionality moved to Maya Videos tab
 import AcademyScreen from "./academy-screen"
 import AccountScreen from "./account-screen"
-import FeedPlannerScreen from "../feed-planner/feed-planner-screen" // Fixed import path to correct location
+import { FeedViewScreen as FeedPlannerScreen } from "../feed-planner" // Using FeedViewScreen (backward compatible export)
 import { InstallPrompt } from "./install-prompt"
 import { InstallButton } from "./install-button"
 import { ServiceWorkerProvider } from "./service-worker-provider"
@@ -46,7 +46,7 @@ import { AnimatePresence, motion } from "framer-motion"
 import MayaModeToggle from "./maya/maya-mode-toggle"
 
 interface SselfieAppProps {
-  userId: string
+  userId: string | number // Can be string or number (from database)
   userName: string | null
   userEmail: string | null
   isWelcome?: boolean
@@ -283,6 +283,9 @@ export default function SselfieApp({
   ]
 
   const user: UserType = {
+    // Ensure id is a non-empty string for useMayaChat hook (convert number to string if needed)
+    id: userId != null ? String(userId).trim() : undefined,
+    email: userEmail && typeof userEmail === 'string' && userEmail.trim().length > 0 ? userEmail : undefined,
     name: userName || "User",
     avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userEmail}`,
     membershipTier: "Premium",
