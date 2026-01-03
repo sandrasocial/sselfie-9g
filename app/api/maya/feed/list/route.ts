@@ -39,6 +39,7 @@ export async function GET(req: NextRequest) {
         business_type,
         layout_type,
         visual_rhythm,
+        color_palette,
         status,
         created_at,
         updated_at

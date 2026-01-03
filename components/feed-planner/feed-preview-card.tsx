@@ -51,7 +51,8 @@ export default function FeedPreviewCard({
   const [isModalOpen, setIsModalOpen] = useState(false)
   
   // Track if we've attempted to fetch to avoid stale closure issues
-  const hasFetchedRef = useRef(false)
+  // Store fetchKey string to track fetches per feedId/needsRestore combination
+  const hasFetchedRef = useRef<string | false>(false)
   
   // Reset fetch flag when feedId changes (new feed card)
   useEffect(() => {
@@ -70,28 +71,33 @@ export default function FeedPreviewCard({
   // This ensures feed cards restore correctly on page reload
   useEffect(() => {
     // Always fetch if:
-    // 1. needsRestore is true (page refresh scenario) - ALWAYS fetch to get latest images
+    // 1. needsRestore is true (page refresh scenario) AND we haven't fetched for this restore yet
     // 2. OR posts prop is empty/missing AND we haven't fetched yet
     if (!feedId) {
       return // No feedId, can't fetch
     }
     
-    // CRITICAL: If needsRestore is true, ALWAYS fetch (ignore hasFetchedRef to ensure we get latest images)
-    // For restored cards, we need fresh data from the database
-    const shouldFetch = needsRestore || (!hasFetchedRef.current && (!posts || posts.length === 0))
+    // Use a combination of feedId and needsRestore to track if we've fetched for this specific restore
+    // This prevents infinite loops while still allowing fresh fetches when needsRestore changes
+    const fetchKey = `${feedId}-${needsRestore}`
+    const hasFetchedForThisRestore = hasFetchedRef.current === fetchKey
+    
+    // Determine if we should fetch:
+    // 1. If needsRestore is true and we haven't fetched for this restore combination yet
+    // 2. OR if we haven't fetched at all AND posts are empty/missing
+    const shouldFetch = (needsRestore && !hasFetchedForThisRestore) || 
+                       (hasFetchedRef.current === false && (!posts || posts.length === 0))
     
     if (shouldFetch) {
-      // Only set flag if not needsRestore (to allow re-fetch on restore)
-      if (!needsRestore) {
-        hasFetchedRef.current = true
-      }
+      // Set flag BEFORE fetch to prevent duplicate fetches on same render cycle
+      hasFetchedRef.current = fetchKey
       
       console.log("[FeedPreviewCard] 🔄 Fetching feed data:", { 
         feedId, 
         needsRestore, 
         postsCount: posts?.length || 0,
-        hasFetchedBefore: hasFetchedRef.current,
-        reason: needsRestore ? "needsRestore=true (ALWAYS fetch for restored cards)" : "posts empty/missing"
+        fetchKey,
+        reason: needsRestore ? "needsRestore=true (restore fetch)" : "posts empty/missing"
       })
       
       fetch(`/api/feed/${feedId}`)
@@ -168,12 +174,13 @@ export default function FeedPreviewCard({
             setDisplayDescription(fetchedDescription)
           }
           
-          // Mark as fetched after successful fetch (for needsRestore, set flag to prevent infinite loops)
-          hasFetchedRef.current = true
+          // Flag is already set before fetch to prevent duplicate fetches
+          // No need to set it again here
         })
         .catch(err => {
           console.error("[FeedPreviewCard] ❌ Failed to restore feed data:", err)
-          hasFetchedRef.current = false // Reset on error so it can retry
+          // Reset to false on error so it can retry (will create new fetchKey on next attempt)
+          hasFetchedRef.current = false
         })
     }
   }, [needsRestore, feedId, posts?.length]) // Fetch when needsRestore changes, feedId changes, or posts length changes

@@ -356,9 +356,12 @@ export function useMayaChat({
         console.log("[useMayaChat] Found saved chatId in localStorage for", currentMode, ":", savedChatId)
         loadChat(savedChatId)
       } else {
-        // No saved chat - load the most recent chat to show history
-        console.log("[useMayaChat] No saved chatId, loading most recent chat for mode:", currentMode)
-        loadChat() // This calls API without chatId, which loads most recent
+        // No saved chat - start fresh (don't auto-load most recent chat)
+        // User can access history through chat history panel if they want
+        console.log("[useMayaChat] No saved chatId for", currentMode, "- starting with empty chat (not loading most recent)")
+        setMessages([])
+        setChatId(null)
+        setChatTitle("Chat with Maya")
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -387,12 +390,15 @@ export function useMayaChat({
       const data = await response.json()
       setChatId(data.chatId)
       setChatTitle("New Chat") // Reset title for new chat
-      setMessages([])
+      setMessages([]) // CRITICAL: Clear messages immediately for new chat (new chat has no messages)
       savedMessageIds.current.clear()
+      // Keep hasLoadedChatRef.current = true to prevent useEffect from reloading
+      // The new chat is empty, so we don't need to load anything
 
       saveChatIdToStorage(data.chatId, chatType)
 
       console.log("[useMayaChat] New chat created:", { chatId: data.chatId, chatType })
+      console.log("[useMayaChat] ✅ Messages cleared and chat state reset for new chat (empty)")
     } catch (error) {
       console.error("[useMayaChat] Error creating new chat:", error)
     }
