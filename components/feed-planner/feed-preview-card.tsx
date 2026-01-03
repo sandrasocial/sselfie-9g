@@ -316,10 +316,15 @@ export default function FeedPreviewCard({
               // Update posts data - React will trigger re-render and recalculate readyCount
               setPostsData(feedData.posts)
               
-              // If all posts are complete, stop polling and update generating state
-              const allComplete = feedData.posts.every((p: any) => p.generation_status === 'completed' && p.image_url)
+              // CRITICAL FIX (Bug 1): Check if all posts are complete OR failed
+              // Failed posts should also be considered "done" to stop polling
+              // This matches the logic at line 271 where failed posts are not counted as "generating"
+              const allComplete = feedData.posts.every((p: any) => 
+                (p.generation_status === 'completed' && p.image_url) || 
+                p.generation_status === 'failed'
+              )
               if (allComplete) {
-                console.log("[FeedPreviewCard] ✅ All posts complete - stopping polling")
+                console.log("[FeedPreviewCard] ✅ All posts complete or failed - stopping polling")
                 setIsGenerating(false) // CRITICAL: Set generating state to false when complete
                 if (pollIntervalRef.current) {
                   clearInterval(pollIntervalRef.current)

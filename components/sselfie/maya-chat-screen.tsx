@@ -1340,6 +1340,16 @@ export default function MayaChatScreen({
       hasFeedCard: lastAssistantMessage.parts?.some((p: any) => p.type === "tool-generateFeed"),
       feedCardsExtracted: feedCards.length,
     })
+    
+    // CRITICAL DEBUG: Check if messages array still has feed cards
+    const currentMessagesWithFeedCards = messages.filter((m: any) => 
+      m.role === "assistant" && m.parts?.some((p: any) => p.type === "tool-generateFeed")
+    )
+    console.log("[v0] 🔍 Current messages state (before save):", {
+      totalMessages: messages.length,
+      messagesWithFeedCards: currentMessagesWithFeedCards.length,
+      feedCardMessageIds: currentMessagesWithFeedCards.map((m: any) => m.id),
+    })
     // </CHANGE>
 
     // Save to database
@@ -1356,7 +1366,16 @@ export default function MayaChatScreen({
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
-          console.log("[v0] Assistant message saved successfully with concepts:", conceptCards.length)
+          console.log("[v0] Assistant message saved successfully with concepts:", conceptCards.length, "feedCards:", feedCards.length)
+          
+          // CRITICAL DEBUG: Check if feed cards still exist AFTER save
+          const messagesAfterSave = messages.filter((m: any) => 
+            m.role === "assistant" && m.parts?.some((p: any) => p.type === "tool-generateFeed")
+          )
+          console.log("[v0] 🔍 Feed cards after save:", {
+            messagesWithFeedCards: messagesAfterSave.length,
+            feedCardMessageIds: messagesAfterSave.map((m: any) => m.id),
+          })
         } else {
           console.error("[v0] Failed to save message:", data.error)
           savedMessageIds.current.delete(lastAssistantMessage.id)
@@ -1367,6 +1386,104 @@ export default function MayaChatScreen({
         savedMessageIds.current.delete(lastAssistantMessage.id)
       })
   }, [status, chatId, messages, isGeneratingConcepts, pendingConceptRequest]) // Updated dependency to messages
+  
+  // CRITICAL DEBUG: Watchdog to monitor when feed cards disappear from messages
+  useEffect(() => {
+    const feedCardMessages = messages.filter((m: any) => 
+      m.role === "assistant" && m.parts?.some((p: any) => p.type === "tool-generateFeed")
+    )
+    
+    if (feedCardMessages.length > 0) {
+      console.log("[v0] 🔍 WATCHDOG: Feed cards present in messages:", {
+        count: feedCardMessages.length,
+        messageIds: feedCardMessages.map((m: any) => m.id),
+        status,
+        isCreatingFeed,
+        totalMessages: messages.length,
+      })
+    } else if (messages.length > 0) {
+      // Log when there are messages but no feed cards
+      const lastMessage = messages[messages.length - 1]
+      if (lastMessage?.role === "assistant") {
+        console.log("[v0] 🔍 WATCHDOG: NO feed cards found but have messages:", {
+          totalMessages: messages.length,
+          lastMessageId: lastMessage.id,
+          lastMessageParts: lastMessage.parts?.map((p: any) => p.type) || [],
+          status,
+          isCreatingFeed,
+        })
+      }
+    }
+  }, [messages, status, isCreatingFeed])
+  
+  // CRITICAL: Handle feed save callback to update database with [FEED_CARD:feedId] marker
+  // This ensures saved feeds persist across page reloads and tab switches with their images
+  const handleFeedSaved = useCallback(async (messageId: string, feedId: number) => {
+    if (!chatId) {
+      console.warn("[v0] ❌ No chatId available, cannot save feed marker")
+      return
+    }
+    
+    console.log("[v0] 🔄 Feed saved, updating message in database:", { messageId, feedId, chatId })
+    
+    // Find the message in current state
+    const message = messages.find((m: any) => m.id === messageId)
+    if (!message) {
+      console.error("[v0] ❌ Message not found:", messageId)
+      return
+    }
+    
+    // Extract text content and replace [CREATE_FEED_STRATEGY:...] with [FEED_CARD:feedId]
+    let textContent = ""
+    if (message.parts && Array.isArray(message.parts)) {
+      const textParts = message.parts.filter((p: any) => p.type === "text")
+      textContent = textParts.map((p: any) => p.text).join("\n").trim()
+    }
+    if (!textContent && typeof message.content === "string") {
+      textContent = message.content
+    }
+    
+    // Remove [CREATE_FEED_STRATEGY:...] trigger and add [FEED_CARD:feedId] marker
+    const updatedContent = textContent
+      .replace(/\[CREATE_FEED_STRATEGY:\s*\{[\s\S]*?\}\]/gi, '')
+      .trim() + `\n[FEED_CARD:${feedId}]`
+    
+    console.log("[v0] 🔄 Updating message content:", {
+      messageId,
+      feedId,
+      hadTrigger: textContent.includes("[CREATE_FEED_STRATEGY"),
+      addedMarker: updatedContent.includes(`[FEED_CARD:${feedId}]`),
+    })
+    
+    // Save to database
+    try {
+      const response = await fetch("/api/maya/save-message", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          chatId,
+          messageId,
+          role: message.role,
+          content: updatedContent,
+          conceptCards: [], // No concept cards in feed messages
+        }),
+      })
+      
+      if (!response.ok) {
+        throw new Error(`Failed to save message: ${response.status}`)
+      }
+      
+      const data = await response.json()
+      if (data.success) {
+        console.log("[v0] ✅ Feed marker saved to database:", { messageId, feedId })
+      } else {
+        console.error("[v0] ❌ Failed to save feed marker:", data.error)
+      }
+    } catch (error) {
+      console.error("[v0] ❌ Error saving feed marker:", error)
+    }
+  }, [chatId, messages])
 
   useEffect(() => {
     if (status !== "ready" || !chatId || messages.length === 0) return
@@ -3201,6 +3318,7 @@ export default function MayaChatScreen({
         showScrollButton={showScrollButton}
         isAtBottomRef={isAtBottomRef}
         scrollToBottom={scrollToBottom}
+        onFeedSaved={handleFeedSaved}
         chatId={chatId ?? undefined}
         uploadedImages={uploadedImages}
         setCreditBalance={setCreditBalance}

@@ -35,6 +35,7 @@ interface MayaChatInterfaceProps {
   
   // Callbacks
   scrollToBottom: (behavior?: ScrollBehavior) => void
+  onFeedSaved?: (messageId: string, feedId: number) => void
   
   // Concept Cards Props
   chatId?: number
@@ -84,6 +85,7 @@ export default function MayaChatInterface({
   showScrollButton,
   isAtBottomRef,
   scrollToBottom,
+  onFeedSaved,
   chatId,
   uploadedImages,
   setCreditBalance,
@@ -711,6 +713,8 @@ export default function MayaChatInterface({
                               const currentMessageId = msg.id
                               const handleSave = (feedId: number) => {
                                 console.log("[MayaChatInterface] Feed saved, updating message:", feedId)
+                                
+                                // CRITICAL: Update message parts with feedId
                                 setMessages((prevMessages: any[]) => {
                                   return prevMessages.map((message) => {
                                     // Find the message by ID
@@ -732,6 +736,8 @@ export default function MayaChatInterface({
                                         return p
                                       })
                                       
+                                      console.log("[MayaChatInterface] 🔄 Message updated with feedId:", feedId, "triggering re-save")
+                                      
                                       return {
                                         ...message,
                                         parts: updatedParts,
@@ -740,6 +746,12 @@ export default function MayaChatInterface({
                                     return message
                                   })
                                 })
+                                
+                                // CRITICAL: Trigger re-save by calling onFeedSaved callback
+                                // This allows the parent component to update the database with [FEED_CARD:feedId] marker
+                                if (onFeedSaved) {
+                                  onFeedSaved(currentMessageId, feedId)
+                                }
                               }
                               
                               return (

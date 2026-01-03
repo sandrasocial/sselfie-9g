@@ -162,6 +162,29 @@ export function useMayaChat({
   const { messages, sendMessage, status, setMessages } = useChat({
     id: chatSessionId, // Force reset when chatId or chatType changes
     transport: chatTransport,
+    onFinish: ({ message, messages: currentMessages }) => {
+      // CRITICAL FIX (Bug 1): Use currentMessages from SDK callback instead of closure variable
+      // The SDK provides the up-to-date messages array, closure variable may be stale
+      console.log("[useMayaChat] 🔍 AI SDK onFinish called:", {
+        messageId: message.id,
+        role: message.role,
+        hasContent: !!message.content,
+        hasParts: !!message.parts,
+        partsCount: message.parts?.length || 0,
+        partsTypes: message.parts?.map((p: any) => p.type) || [],
+        currentMessagesCount: currentMessages.length, // Use SDK-provided messages
+      })
+      
+      // Check if feed cards are still in messages after finish
+      // CRITICAL: Use currentMessages from SDK callback, not closure variable
+      const feedCardMessages = currentMessages.filter((m: any) => 
+        m.role === "assistant" && m.parts?.some((p: any) => p.type === "tool-generateFeed")
+      )
+      console.log("[useMayaChat] 🔍 Feed cards after onFinish:", {
+        messagesWithFeedCards: feedCardMessages.length,
+        feedCardMessageIds: feedCardMessages.map((m: any) => m.id),
+      })
+    },
     onError: (error) => {
       // Simplified error handling - just extract message safely
       let errorMessage = "An error occurred while chatting with Maya. Please try again."
@@ -272,6 +295,20 @@ export function useMayaChat({
 
           // Now set messages AFTER refs are populated
           setMessages(data.messages)
+          
+          // CRITICAL DEBUG: Check if loaded messages have feed cards
+          const loadedFeedCardMessages = data.messages.filter((m: any) => 
+            m.role === "assistant" && m.parts?.some((p: any) => p.type === "tool-generateFeed")
+          )
+          console.log("[useMayaChat] 🔍 LOADED MESSAGES from DB:", {
+            totalMessages: data.messages.length,
+            messagesWithFeedCards: loadedFeedCardMessages.length,
+            feedCardMessageIds: loadedFeedCardMessages.map((m: any) => ({ 
+              id: m.id, 
+              parts: m.parts?.map((p: any) => p.type),
+              hasFeedCard: m.parts?.some((p: any) => p.type === "tool-generateFeed"),
+            })),
+          })
         } else {
           setMessages([])
         }
@@ -407,12 +444,25 @@ export function useMayaChat({
 
     if (chatTypeChanged) {
       console.log("[useMayaChat] ChatType changed from", lastModeRef.current, "to", currentChatType, "- clearing messages and resetting chat load state")
+      
+      // CRITICAL DEBUG: Log messages state before clearing
+      const feedCardMessages = messages.filter((m: any) => 
+        m.role === "assistant" && m.parts?.some((p: any) => p.type === "tool-generateFeed")
+      )
+      console.log("[useMayaChat] 🔍 TAB SWITCH: Messages before clear:", {
+        totalMessages: messages.length,
+        messagesWithFeedCards: feedCardMessages.length,
+        feedCardMessageIds: feedCardMessages.map((m: any) => ({ id: m.id, parts: m.parts?.map((p: any) => p.type) })),
+      })
+      
       // CRITICAL: Clear messages immediately when chatType changes to prevent showing wrong messages
       setMessages([])
       savedMessageIds.current.clear()
       setChatId(null)
       setChatTitle("Chat with Maya")
       hasLoadedChatRef.current = false
+      
+      console.log("[useMayaChat] 🔍 TAB SWITCH: Messages cleared, will reload from DB")
     }
 
     lastModeRef.current = currentChatType

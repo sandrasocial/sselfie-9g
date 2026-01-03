@@ -419,6 +419,11 @@ export async function POST(request: NextRequest) {
           ? post.prompt.trim()
           : 'Generating prompt...'
         
+        // CRITICAL FIX: Use caption from strategy JSON if available (Maya generates it), otherwise use placeholder
+        const postCaption = post.caption && post.caption.trim() && post.caption !== 'Generating caption...'
+          ? post.caption.trim()
+          : 'Generating caption...'
+        
         try {
           // Try with all columns first (including seed_variation for photoshoot consistency)
           await sql`
@@ -443,7 +448,7 @@ export async function POST(request: NextRequest) {
               ${post.position},
               ${truncate(post.type || post.postType, 50, 'portrait')},
               ${truncate(post.purpose, 255, 'general')},
-              ${'Generating caption...'},
+              ${truncate(postCaption, 5000)},
               ${postPrompt},
               'draft',
               'pending',
@@ -454,7 +459,11 @@ export async function POST(request: NextRequest) {
               NOW()
             )
           `
-          console.log(`[FEED-FROM-STRATEGY] ✅ Post ${post.position} created (placeholder)`)
+          console.log(`[FEED-FROM-STRATEGY] ✅ Post ${post.position} created:`, {
+            hasCaption: post.caption && post.caption.trim().length > 0,
+            captionLength: postCaption.length,
+            usingPlaceholder: postCaption === 'Generating caption...'
+          })
         } catch (insertError: any) {
           // If generation_mode/pro_mode_type columns don't exist, try without them
           if (insertError?.code === '42703' && (insertError?.message?.includes('generation_mode') || insertError?.message?.includes('pro_mode_type'))) {
@@ -480,7 +489,7 @@ export async function POST(request: NextRequest) {
                 ${post.position},
                 ${truncate(post.type || post.postType, 50, 'portrait')},
                 ${truncate(post.purpose, 255, 'general')},
-                ${'Generating caption...'},
+                ${truncate(postCaption, 5000)},
                 ${postPrompt},
                 'draft',
                 'pending',

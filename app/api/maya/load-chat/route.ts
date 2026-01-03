@@ -94,6 +94,46 @@ export async function GET(request: NextRequest) {
           },
         })
         
+        // CRITICAL: Check for UNSAVED feed strategy in messages with concept cards
+        const createFeedStrategyMatch = textContent.match(/\[CREATE_FEED_STRATEGY:\s*(\{[\s\S]*?\})\]/i)
+        if (createFeedStrategyMatch) {
+          try {
+            const strategyJson = createFeedStrategyMatch[1]
+            const strategy = JSON.parse(strategyJson)
+            console.log("[v0] ✅ Found unsaved feed strategy in concept card message:", {
+              hasStrategy: !!strategy,
+              postsCount: strategy.posts?.length || 0,
+            })
+            
+            // Check if feed card part already exists (avoid duplicates)
+            const hasExistingFeedCard = parts.some((p: any) => p.type === 'tool-generateFeed')
+            
+            if (!hasExistingFeedCard) {
+              // Add the feed card part so it renders in the UI
+              parts.push({
+                type: 'tool-generateFeed',
+                output: {
+                  // No feedId - indicates unsaved state
+                  strategy: strategy,
+                  title: strategy.feedTitle || strategy.title || 'Instagram Feed',
+                  description: strategy.overallVibe || strategy.colorPalette || '',
+                  posts: strategy.posts || [],
+                  isSaved: false,
+                  // Settings from strategy (if available)
+                  studioProMode: strategy.studioProMode || false,
+                  styleStrength: strategy.styleStrength || 0.8,
+                  promptAccuracy: strategy.promptAccuracy || 0.8,
+                  aspectRatio: strategy.aspectRatio || '4:5',
+                  realismStrength: strategy.realismStrength || 0.8,
+                },
+              })
+              console.log("[v0] ✅ Added unsaved feed card part to concept card message")
+            }
+          } catch (error) {
+            console.error("[v0] ❌ Failed to parse CREATE_FEED_STRATEGY JSON in concept card message:", error)
+          }
+        }
+        
         // Check for feed card marker in messages with concept cards too
         const feedCardMatch = textContent.match(/\[FEED_CARD:(\d+)\]/)
         if (feedCardMatch) {
@@ -214,6 +254,43 @@ export async function GET(request: NextRequest) {
         console.log("[v0] ✅ Restored inspiration image for message", msg.id)
       }
 
+      // CRITICAL: Check for UNSAVED feed strategy (CREATE_FEED_STRATEGY trigger)
+      // This allows unsaved feeds to persist across page reloads and tab switches
+      const createFeedStrategyMatch = textContent.match(/\[CREATE_FEED_STRATEGY:\s*(\{[\s\S]*?\})\]/i)
+      if (createFeedStrategyMatch) {
+        try {
+          const strategyJson = createFeedStrategyMatch[1]
+          const strategy = JSON.parse(strategyJson)
+          console.log("[v0] ✅ Found unsaved feed strategy in message:", {
+            hasStrategy: !!strategy,
+            postsCount: strategy.posts?.length || 0,
+          })
+          
+          // Keep the trigger in text content (it's still unsaved)
+          // But also add the feed card part so it renders in the UI
+          parts.push({
+            type: 'tool-generateFeed',
+            output: {
+              // No feedId - indicates unsaved state
+              strategy: strategy,
+              title: strategy.feedTitle || strategy.title || 'Instagram Feed',
+              description: strategy.overallVibe || strategy.colorPalette || '',
+              posts: strategy.posts || [],
+              isSaved: false,
+              // Settings from strategy (if available)
+              studioProMode: strategy.studioProMode || false,
+              styleStrength: strategy.styleStrength || 0.8,
+              promptAccuracy: strategy.promptAccuracy || 0.8,
+              aspectRatio: strategy.aspectRatio || '4:5',
+              realismStrength: strategy.realismStrength || 0.8,
+            },
+          })
+          console.log("[v0] ✅ Added unsaved feed card part to message")
+        } catch (error) {
+          console.error("[v0] ❌ Failed to parse CREATE_FEED_STRATEGY JSON:", error)
+        }
+      }
+      
       // Check for feed card marker in content (persisted format: [FEED_CARD:feedId])
       // Remove marker from text content (it's metadata, not visible text)
       // IMPORTANT: Only add feed card part if it doesn't already exist (prevent duplicates)
@@ -339,6 +416,22 @@ export async function GET(request: NextRequest) {
       msg.parts?.some((p: any) => p.type === "tool-generateConcepts"),
     )
     console.log("[v0] Formatted messages with tool-generateConcepts parts:", formattedWithConcepts.length)
+    
+    // CRITICAL DEBUG: Count feed cards restored
+    const formattedWithFeedCards = formattedMessages.filter((msg: any) =>
+      msg.parts?.some((p: any) => p.type === "tool-generateFeed"),
+    )
+    const savedFeedCards = formattedWithFeedCards.filter((msg: any) =>
+      msg.parts?.some((p: any) => p.type === "tool-generateFeed" && p.output?.feedId),
+    )
+    const unsavedFeedCards = formattedWithFeedCards.filter((msg: any) =>
+      msg.parts?.some((p: any) => p.type === "tool-generateFeed" && !p.output?.feedId),
+    )
+    console.log("[v0] 🔍 Formatted messages with tool-generateFeed parts:", {
+      total: formattedWithFeedCards.length,
+      saved: savedFeedCards.length,
+      unsaved: unsavedFeedCards.length,
+    })
 
     return NextResponse.json({
       chatId: chat.id,

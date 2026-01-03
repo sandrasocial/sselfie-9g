@@ -198,6 +198,14 @@ export default function MayaFeedTab({
                 partsTypes: updatedParts.map((p: any) => p.type),
                 hasFeedCard: updatedParts.some((p: any) => p.type === "tool-generateFeed"),
               })
+              
+              // CRITICAL DEBUG: Log the full message object to verify structure
+              console.log("[FEED] 🔍 FULL MESSAGE AFTER UPDATE:", JSON.stringify({
+                id: lastAssistant.id,
+                role: lastAssistant.role,
+                partsCount: updatedParts.length,
+                parts: updatedParts.map((p: any) => ({ type: p.type, hasOutput: !!p.output })),
+              }, null, 2))
 
               break
             }
@@ -205,6 +213,16 @@ export default function MayaFeedTab({
 
           const updatedMessagesFinal = updatedMessages
           console.log("[FEED] ✅ Message state updated with feed card part")
+          
+          // CRITICAL DEBUG: Verify the updated messages array
+          const feedCardMessages = updatedMessagesFinal.filter((m: any) => 
+            m.parts?.some((p: any) => p.type === "tool-generateFeed")
+          )
+          console.log("[FEED] 🔍 Messages with feed cards after setMessages:", {
+            totalMessages: updatedMessagesFinal.length,
+            messagesWithFeedCards: feedCardMessages.length,
+            feedCardMessageIds: feedCardMessages.map((m: any) => m.id),
+          })
           
           return updatedMessagesFinal
         })
