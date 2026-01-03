@@ -360,38 +360,35 @@ export default function FeedPreviewCard({
   }, [isModalOpen])
 
   return (
-    <div className="bg-white/50 backdrop-blur-3xl border border-white/60 rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-xl shadow-stone-900/5">
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-serif text-xl sm:text-2xl font-extralight tracking-[0.15em] sm:tracking-[0.2em] text-stone-900 uppercase">
-            {feedTitle || "Instagram Feed"}
-          </h3>
-          <div className="flex items-center gap-3 text-xs sm:text-sm font-light text-stone-600">
-            <div className="flex items-center gap-1.5">
-              <div className="w-2 h-2 bg-stone-900 rounded-full"></div>
-              <span>{readyCount} Ready</span>
-            </div>
-            {pendingCount > 0 && (
-              <div className="flex items-center gap-1.5">
-                <div className="w-2 h-2 bg-stone-300 rounded-full"></div>
-                <span>{pendingCount} Pending</span>
-              </div>
-            )}
-          </div>
-        </div>
+    <div className="bg-white rounded-none border border-stone-200 overflow-hidden">
+      {/* Header - Editorial Style */}
+      <div className="border-b border-stone-200 px-6 py-4">
+        <h3 
+          className="text-xl font-light tracking-wide text-stone-950"
+          style={{ fontFamily: "'Times New Roman', serif" }}
+        >
+          {feedTitle || "Instagram Feed"}
+        </h3>
+        <p className="text-xs text-stone-500 mt-1 uppercase tracking-widest">
+          Instagram Feed Preview
+        </p>
         {feedDescription && (
-          <p className="text-sm font-light text-stone-500 leading-relaxed">
+          <p className="text-sm text-stone-600 mt-2 font-light leading-relaxed">
             {feedDescription}
           </p>
         )}
+        {/* Status indicators - Editorial style */}
+        <div className="flex items-center gap-4 mt-3 text-xs text-stone-500 uppercase tracking-wider">
+          <span>{readyCount} Ready</span>
+          {pendingCount > 0 && <span>{pendingCount} Pending</span>}
+          {generatingCount > 0 && <span>{generatingCount} Generating</span>}
+        </div>
       </div>
 
-      {/* 3x3 Grid Preview */}
-      <div className="grid grid-cols-3 gap-1 bg-stone-100 p-1 rounded-xl mb-4">
+      {/* 3x3 Grid - Real Instagram Layout */}
+      <div className="p-4 bg-stone-50">
+        <div className="grid grid-cols-3 gap-1 bg-white max-w-[600px] mx-auto">
         {sortedPosts.slice(0, 9).map((post) => {
-          // Get post description for banner (show post_type, not content_pillar)
-          const postDescription = post.post_type || `Post ${post.position}`
           const isGeneratingPost = post.generation_status === "generating" || 
             generatingPostId === post.id || 
             (post.prediction_id && !post.image_url) ||
@@ -401,81 +398,92 @@ export default function FeedPreviewCard({
           return (
             <div
               key={post.id}
-              className="aspect-square bg-white rounded-lg overflow-hidden relative group"
+              className="relative aspect-square group cursor-pointer overflow-hidden bg-stone-100"
+              onClick={() => {
+                if (hasImage) {
+                  handleImageClick(post)
+                } else if (!hasImage && post.generation_status === 'pending' && !isAnyGenerating) {
+                  handleGeneratePost(post.id)
+                }
+              }}
             >
-              {hasImage ? (
-                <button
-                  onClick={() => handleImageClick(post)}
-                  className="w-full h-full relative focus:outline-none focus:ring-2 focus:ring-stone-400 focus:ring-offset-2 rounded-lg"
-                >
+              {/* Generated Image */}
+              {hasImage && (
+                <>
                   <Image
                     src={post.image_url!}
                     alt={`Post ${post.position}`}
                     fill
                     className="object-cover"
                   />
-                </button>
-              ) : isGeneratingPost ? (
-                <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-stone-50 to-stone-100/50">
-                  <Loader2 size={20} className="text-stone-400 animate-spin mb-2" strokeWidth={1.5} />
-                  <p className="text-[10px] text-stone-500 font-extralight tracking-[0.15em] uppercase">Creating...</p>
-                </div>
-              ) : (
-                <button
-                  onClick={() => handleGeneratePost(post.id)}
-                  disabled={isAnyGenerating}
-                  className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-stone-50 via-stone-50/50 to-stone-100/50 hover:from-white hover:via-white hover:to-stone-50 transition-all duration-300 p-4 disabled:opacity-50 disabled:cursor-not-allowed relative group"
-                >
-                  {/* Elegant background pattern */}
-                  <div className="absolute inset-0 opacity-[0.03] group-hover:opacity-[0.05] transition-opacity duration-300">
-                    <div className="w-full h-full" style={{
-                      backgroundImage: 'radial-gradient(circle at 2px 2px, rgb(28 25 23) 1px, transparent 0)',
-                      backgroundSize: '20px 20px'
-                    }}></div>
-                  </div>
-                  
-                  {/* Subtle gradient overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-stone-100/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  
-                  {/* Content */}
-                  <div className="relative z-10 flex flex-col items-center">
-                    {/* Post Type Badge - More luxurious */}
-                    <div className="mb-4 px-4 py-1.5 bg-white/90 backdrop-blur-md border border-stone-200/80 rounded-full shadow-sm group-hover:shadow-md transition-shadow duration-300">
-                      <span className="text-[10px] font-light text-stone-900 tracking-[0.15em] uppercase">
-                        {post.post_type?.toLowerCase() || 'portrait'}
-                      </span>
-                    </div>
-                    
-                    {/* Icon - More refined */}
-                    <div className="mb-3 w-14 h-14 rounded-full bg-white/70 backdrop-blur-md border border-stone-200/60 flex items-center justify-center shadow-sm group-hover:shadow-md group-hover:border-stone-300/80 transition-all duration-300">
-                      <ImageIcon size={22} className="text-stone-400 group-hover:text-stone-500 transition-colors duration-300" strokeWidth={1.5} />
-                    </div>
-                    
-                    {/* Generate Button - More elegant typography */}
-                    <span className="text-[10px] font-extralight text-stone-600 tracking-[0.2em] uppercase group-hover:text-stone-700 transition-colors duration-300">
-                      Click to generate
+                  {/* Hover Overlay - Instagram Style */}
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <span className="text-white text-xs font-medium">
+                      View Post
                     </span>
                   </div>
-                </button>
+                </>
               )}
-              
-              {/* Position indicator - More elegant */}
-              <div className="absolute top-2 left-2 w-5 h-5 bg-white/95 backdrop-blur-md rounded-full flex items-center justify-center shadow-sm border border-stone-200/50 z-10">
-                <span className="text-[10px] font-extralight text-stone-900">{post.position}</span>
+
+              {/* Generating State */}
+              {!hasImage && isGeneratingPost && (
+                <div className="absolute inset-0 flex items-center justify-center bg-stone-50">
+                  <div className="flex flex-col items-center gap-2">
+                    <Loader2 className="w-5 h-5 text-stone-400 animate-spin" strokeWidth={1.5} />
+                    <span className="text-[10px] text-stone-500 uppercase tracking-wider">
+                      Creating
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Pending State - Elegant Placeholder */}
+              {!hasImage && !isGeneratingPost && (
+                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-stone-50 to-stone-100 group-hover:from-stone-100 group-hover:to-stone-200 transition-all">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center">
+                      <ImageIcon className="w-5 h-5 text-stone-400" strokeWidth={1.5} />
+                    </div>
+                    <span className="text-[10px] text-stone-500 uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity">
+                      Click to Generate
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Position Number - Subtle Corner Tag */}
+              <div className="absolute top-1 right-1 w-5 h-5 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center">
+                <span className="text-[10px] font-medium text-stone-700">
+                  {post.position}
+                </span>
               </div>
             </div>
           )
         })}
+        </div>
       </div>
 
+      {/* Caption Preview - Editorial Format */}
+      {sortedPosts.length > 0 && sortedPosts[0].caption && (
+        <div className="border-t border-stone-200 px-6 py-4 bg-white">
+          <p className="text-xs text-stone-500 uppercase tracking-widest mb-2">
+            Feed Strategy
+          </p>
+          <p className="text-sm text-stone-700 leading-relaxed font-light">
+            {sortedPosts[0].caption.substring(0, 150)}
+            {sortedPosts[0].caption.length > 150 ? '...' : ''}
+          </p>
+        </div>
+      )}
+
       {/* Action Buttons */}
-      <div className="space-y-3 mt-6">
+      <div className="border-t border-stone-200 px-6 py-4 bg-white space-y-3">
         {/* Generate Feed Button - Show when there are pending posts and not generating */}
         {pendingCount > 0 && !isAnyGenerating && (
           <button
             onClick={handleGenerateFeed}
             disabled={isGenerating}
-            className="w-full py-3 sm:py-4 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-sm sm:text-base font-light tracking-[0.15em] uppercase transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed border border-stone-900"
+            className="w-full py-3 bg-stone-900 hover:bg-stone-800 text-white text-sm font-light tracking-wider uppercase transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed border border-stone-900"
           >
             {isGenerating ? (
               <span className="flex items-center justify-center gap-2">
@@ -490,7 +498,7 @@ export default function FeedPreviewCard({
         
         {/* Generating State - Show when any images are generating */}
         {isAnyGenerating && (
-          <div className="w-full py-3 sm:py-3.5 bg-stone-100 text-stone-600 rounded-xl text-xs sm:text-sm font-light tracking-[0.15em] uppercase text-center border border-stone-200">
+          <div className="w-full py-3 bg-stone-100 text-stone-600 text-xs font-light tracking-wider uppercase text-center border border-stone-200">
             Generating {generatingCount > 0 ? `${generatingCount} ` : ''}Images...
           </div>
         )}
@@ -499,14 +507,10 @@ export default function FeedPreviewCard({
         {hasImages && (
           <button
             onClick={() => {
-              // Navigate to Maya Feed tab with "Create captions" prompt
               router.push("/studio#maya/feed")
-              // Small delay to ensure tab is loaded
-              setTimeout(() => {
-                // User can use quick prompt or type "Create captions"
-              }, 100)
+              setTimeout(() => {}, 100)
             }}
-            className="w-full py-3 sm:py-3.5 bg-stone-900 text-white rounded-xl hover:bg-stone-800 active:bg-stone-950 transition-all duration-300 text-xs sm:text-sm font-light tracking-[0.15em] uppercase shadow-md hover:shadow-lg"
+            className="w-full py-3 bg-stone-900 text-white hover:bg-stone-800 transition-colors duration-200 text-xs font-light tracking-wider uppercase border border-stone-900"
           >
             Create Captions
           </button>
@@ -516,14 +520,10 @@ export default function FeedPreviewCard({
         {hasImages && (
           <button
             onClick={() => {
-              // Navigate to Maya Feed tab with "Create strategy" prompt
               router.push("/studio#maya/feed")
-              // Small delay to ensure tab is loaded
-              setTimeout(() => {
-                // User can use quick prompt or type "Create strategy"
-              }, 100)
+              setTimeout(() => {}, 100)
             }}
-            className="w-full py-3 sm:py-3.5 bg-stone-900 text-white rounded-xl hover:bg-stone-800 active:bg-stone-950 transition-all duration-300 text-xs sm:text-sm font-light tracking-[0.15em] uppercase shadow-md hover:shadow-lg"
+            className="w-full py-3 bg-stone-900 text-white hover:bg-stone-800 transition-colors duration-200 text-xs font-light tracking-wider uppercase border border-stone-900"
           >
             Create Strategy
           </button>
@@ -532,7 +532,7 @@ export default function FeedPreviewCard({
         {/* View Full Feed Button */}
         <button
           onClick={handleViewFullFeed}
-          className="w-full py-3 sm:py-3.5 bg-white/80 backdrop-blur-sm border border-stone-200 text-stone-900 rounded-xl hover:bg-white hover:border-stone-300 active:bg-stone-50 transition-all duration-300 text-xs sm:text-sm font-light tracking-[0.15em] uppercase shadow-sm hover:shadow-md"
+          className="w-full py-3 bg-white border border-stone-200 text-stone-900 hover:bg-stone-50 hover:border-stone-300 transition-all duration-200 text-xs font-light tracking-wider uppercase"
         >
           View Full Feed
         </button>

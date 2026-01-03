@@ -141,3 +141,4 @@ The Feed Planner Workflow section in `lib/maya/personality.ts` doesn't explicitl
 ### 🎯 Conclusion:
 **Caption cards and strategy cards are working correctly and don't need fixes.** They don't have the same data structure inconsistencies that the feed preview card had.
 
+

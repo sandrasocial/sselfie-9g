@@ -182,3 +182,4 @@ No special tab needed. Maya handles it naturally.
 - User clicks "View Full Feed" → Feed Planner Screen
 
 **Keep it simple!** 🎯
+

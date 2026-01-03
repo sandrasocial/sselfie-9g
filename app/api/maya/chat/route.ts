@@ -669,7 +669,10 @@ export async function POST(req: Request) {
       systemPrompt = PROMPT_BUILDER_SYSTEM
       console.log("[Maya Chat] Using Prompt Builder system prompt")
     } else if (chatType === "feed-planner" || isFeedTab) {
-      // Import Feed Planner context with visual design guidance
+      // Feed Planner Context: Add visual design guidance for feed creation
+      // This context is essential for Maya to understand how to create Instagram feed strategies
+      // It provides instructions on post types, visual composition, and feed planning
+      // Note: Feed-specific handlers and trigger detection are in FeedTab component
       const { getFeedPlannerContextAddon } = await import("@/lib/maya/feed-planner-context")
       
       // Determine user's explicit mode selection (override auto-detection if toggle is set)
@@ -688,7 +691,7 @@ export async function POST(req: Request) {
       }
       
       systemPrompt = getFeedPlannerContextAddon(userSelectedMode) + MAYA_SYSTEM_PROMPT
-      console.log("[Maya Chat] Using Maya with Feed Planner visual design guidance", {
+      console.log("[Maya Chat] Feed Planner mode: Using visual design guidance", {
         userSelectedMode,
         studioProHeader,
         hasStudioProHeader,

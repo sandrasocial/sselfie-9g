@@ -34,6 +34,7 @@ import MayaConceptCards from "./maya/maya-concept-cards"
 import MayaQuickPrompts from "./maya/maya-quick-prompts"
 import MayaSettingsPanel from "./maya/maya-settings-panel"
 import MayaChatInterface from "./maya/maya-chat-interface"
+import MayaFeedTab from "./maya/maya-feed-tab"
 import UnifiedLoading from "./unified-loading"
 import { useMayaSettings } from "./maya/hooks/use-maya-settings"
 import { useMayaMode } from "./maya/hooks/use-maya-mode"
@@ -263,7 +264,7 @@ export default function MayaChatScreen({
   const processedStudioProMessagesRef = useRef<Set<string>>(new Set())
   const promptGenerationTriggeredRef = useRef<Set<string>>(new Set()) // Track messages that have already triggered prompt generation
   const carouselCardsAddedRef = useRef<Set<string>>(new Set()) // Track messages that already have carousel cards added
-  const processedFeedMessagesRef = useRef<Set<string>>(new Set()) // Track messages that have already triggered feed creation
+  // processedFeedMessagesRef moved to MayaFeedTab component (feed trigger detection is now handled in FeedTab)
   const generateCarouselRef = useRef<((params: { topic: string; slideCount: number }) => Promise<void>) | null>(null)
   const generateReelCoverRef = useRef<((params: { title: string; textOverlay?: string }) => Promise<void>) | null>(null)
   
@@ -333,287 +334,29 @@ export default function MayaChatScreen({
 
   // Image persistence and gallery loading are now handled by useMayaImages hook
 
-  // Feed creation handler
+  // Feed creation handler - notification callback
+  // Actual feed creation logic is in FeedTab component using lib/maya/feed-generation-handler.ts
+  // FeedTab manages its own loading state via setIsCreatingFeed prop
+  // This callback is called AFTER feed creation completes (for any additional side effects if needed)
   const createFeedFromStrategy = useCallback(async (strategy: any) => {
-    setIsCreatingFeed(true)
-    try {
-      console.log("[FEED] Creating feed from strategy...")
-      console.log("[FEED] PRO Mode:", studioProMode ? 'PRO' : 'CLASSIC')
-      
-      const response = await fetch('/api/feed-planner/create-from-strategy', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          strategy,
-          userModePreference: studioProMode ? 'pro' : 'classic', // Pass PRO mode preference
-          customSettings: {
-            styleStrength: styleStrength,
-            promptAccuracy: promptAccuracy,
-            aspectRatio: aspectRatio,
-            realismStrength: realismStrength,
-          },
-        }),
-      })
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        const errorMessage = errorData.error || 'Failed to create feed'
-        console.error("[FEED] ❌ Feed creation failed:", errorMessage)
-        alert(errorMessage)
-        return
-      }
-      
-      const data = await response.json()
-      console.log("[FEED] ✅ Feed created:", data.feedLayoutId)
-      
-      if (data.feedLayoutId) {
-        // Feed created successfully - user will click "Generate Feed" button when ready
-        console.log("[FEED] ✅ Feed created successfully:", data.feedLayoutId)
-        
-        // Fetch feed data to display in preview card
-        const feedResponse = await fetch(`/api/feed/${data.feedLayoutId}`)
-        if (feedResponse.ok) {
-          const feedData = await feedResponse.json()
-          
-          // Find the last assistant message to get its ID for persistence
-          let lastAssistantMessageId: number | null = null
-          setMessages((prevMessages: any[]) => {
-            const updatedMessages = [...prevMessages]
-            
-            // Find the last assistant message (iterate backwards)
-            for (let i = updatedMessages.length - 1; i >= 0; i--) {
-              if (updatedMessages[i].role === 'assistant') {
-                const lastAssistant = updatedMessages[i]
-                
-                // Check if feed card already exists (prevent duplicates on refresh)
-                const hasFeedCard = lastAssistant.parts?.some(
-                  (p: any) => p.type === 'tool-generateFeed'
-                )
-                
-                if (hasFeedCard) {
-                  console.log("[FEED] Feed card already exists in message, skipping")
-                  break
-                }
-                
-                // Store message ID for persistence (outside the callback)
-                lastAssistantMessageId = parseInt(lastAssistant.id)
-                
-                const updatedParts = [
-                  ...(lastAssistant.parts || []),
-                  {
-                    type: 'tool-generateFeed',
-                    output: {
-                      feedId: data.feedLayoutId,
-                      title: feedData.feed?.brand_name || 'Instagram Feed',
-                      description: feedData.feed?.description || feedData.feed?.gridPattern || '',
-                      posts: feedData.posts || [], // Posts are at root level, not nested in feed
-                    },
-                  },
-                ]
-                
-                // Also save feed marker to message content for persistence
-                // This allows feed cards to be restored on page refresh
-                const feedMarker = `[FEED_CARD:${data.feedLayoutId}]`
-                const contentWithMarker = lastAssistant.content 
-                  ? `${lastAssistant.content}\n\n${feedMarker}`
-                  : feedMarker
-                
-                updatedMessages[i] = {
-                  ...lastAssistant,
-                  content: contentWithMarker,
-                  parts: updatedParts,
-                }
-                
-                break
-              }
-            }
-            
-            return updatedMessages
-          })
-          
-          // Save feed marker to database for persistence (outside setMessages callback)
-          if (lastAssistantMessageId) {
-            const feedMarker = `[FEED_CARD:${data.feedLayoutId}]`
-            // Append marker to existing message content
-            fetch('/api/maya/update-message', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                messageId: lastAssistantMessageId,
-                content: feedMarker,
-                append: true, // Append to existing content
-              }),
-            }).catch(err => {
-              console.warn("[FEED] Failed to save feed marker to database (non-critical):", err)
-            })
-          }
-        }
-      }
-    } catch (error) {
-      console.error("[FEED] ❌ Error creating feed:", error)
-      alert('Failed to create feed. Please try again.')
-    } finally {
-      setIsCreatingFeed(false)
-    }
-  }, [styleStrength, promptAccuracy, aspectRatio, realismStrength, studioProMode, setMessages])
+    // FeedTab already handles feed creation and loading state
+    // This is just a notification callback for any additional parent-side logic if needed
+    console.log("[FEED] Feed creation completed via FeedTab:", strategy?.posts?.length || 0, "posts")
+  }, [])
 
-  // Generate captions for feed handler
+  // Generate captions for feed handler - now just a placeholder
+  // Actual caption generation logic moved to FeedTab component using lib/maya/feed-generation-handler.ts
   const generateCaptionsForFeed = useCallback(async () => {
-    try {
-      console.log("[FEED-CAPTIONS] Generating captions for latest feed...")
-      
-      // Get latest feed ID
-      const latestFeedResponse = await fetch('/api/feed/latest')
-      if (!latestFeedResponse.ok) {
-        console.error("[FEED-CAPTIONS] ❌ Failed to get latest feed")
-        return
-      }
-      
-      const latestFeedData = await latestFeedResponse.json()
-      if (!latestFeedData.exists || !latestFeedData.feed?.id) {
-        console.error("[FEED-CAPTIONS] ❌ No feed found")
-        return
-      }
-      
-      const feedId = latestFeedData.feed.id
-      console.log("[FEED-CAPTIONS] Found feed:", feedId)
-      
-      // Generate captions
-      const captionsResponse = await fetch(`/api/feed/${feedId}/generate-captions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      })
-      
-      if (!captionsResponse.ok) {
-        const errorData = await captionsResponse.json().catch(() => ({}))
-        console.error("[FEED-CAPTIONS] ❌ Failed to generate captions:", errorData.error)
-        return
-      }
-      
-      const captionsData = await captionsResponse.json()
-      console.log("[FEED-CAPTIONS] ✅ Generated captions:", captionsData.captions.length)
-      
-      // Add caption cards to the last assistant message
-      setMessages((prevMessages: any[]) => {
-        const updatedMessages = [...prevMessages]
-        
-        // Find the last assistant message (iterate backwards)
-        for (let i = updatedMessages.length - 1; i >= 0; i--) {
-          if (updatedMessages[i].role === 'assistant') {
-            const lastAssistant = updatedMessages[i]
-            const existingParts = lastAssistant.parts || []
-            
-            // Check if caption cards already exist
-            const hasCaptionCards = existingParts.some(
-              (p: any) => p.type === 'tool-generateCaptions'
-            )
-            
-            if (!hasCaptionCards) {
-              const updatedParts = [
-                ...existingParts,
-                {
-                  type: 'tool-generateCaptions',
-                  output: {
-                    feedId,
-                    captions: captionsData.captions,
-                  },
-                },
-              ]
-              
-              updatedMessages[i] = {
-                ...lastAssistant,
-                parts: updatedParts,
-              }
-            }
-            break
-          }
-        }
-        
-        return updatedMessages
-      })
-    } catch (error) {
-      console.error("[FEED-CAPTIONS] ❌ Error generating captions:", error)
-    }
-  }, [setMessages])
+    // This callback is called by FeedTab after it handles the caption generation
+    // FeedTab manages the actual generation and message updates
+  }, [])
 
-  // Generate strategy for feed handler
+  // Generate strategy for feed handler - now just a placeholder
+  // Actual strategy generation logic moved to FeedTab component using lib/maya/feed-generation-handler.ts
   const generateStrategyForFeed = useCallback(async () => {
-    try {
-      console.log("[FEED-STRATEGY] Generating strategy for latest feed...")
-      
-      // Get latest feed ID
-      const latestFeedResponse = await fetch('/api/feed/latest')
-      if (!latestFeedResponse.ok) {
-        console.error("[FEED-STRATEGY] ❌ Failed to get latest feed")
-        return
-      }
-      
-      const latestFeedData = await latestFeedResponse.json()
-      if (!latestFeedData.exists || !latestFeedData.feed?.id) {
-        console.error("[FEED-STRATEGY] ❌ No feed found")
-        return
-      }
-      
-      const feedId = latestFeedData.feed.id
-      console.log("[FEED-STRATEGY] Found feed:", feedId)
-      
-      // Generate strategy
-      const strategyResponse = await fetch(`/api/feed/${feedId}/generate-strategy`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      })
-      
-      if (!strategyResponse.ok) {
-        const errorData = await strategyResponse.json().catch(() => ({}))
-        console.error("[FEED-STRATEGY] ❌ Failed to generate strategy:", errorData.error)
-        return
-      }
-      
-      const strategyData = await strategyResponse.json()
-      console.log("[FEED-STRATEGY] ✅ Generated strategy")
-      
-      // Add strategy card to the last assistant message
-      setMessages((prevMessages: any[]) => {
-        const updatedMessages = [...prevMessages]
-        
-        // Find the last assistant message (iterate backwards)
-        for (let i = updatedMessages.length - 1; i >= 0; i--) {
-          if (updatedMessages[i].role === 'assistant') {
-            const lastAssistant = updatedMessages[i]
-            const existingParts = lastAssistant.parts || []
-            
-            // Check if strategy card already exists
-            const hasStrategyCard = existingParts.some(
-              (p: any) => p.type === 'tool-generateStrategy'
-            )
-            
-            if (!hasStrategyCard) {
-              const updatedParts = [
-                ...existingParts,
-                {
-                  type: 'tool-generateStrategy',
-                  output: {
-                    feedId,
-                    strategy: strategyData.strategy,
-                  },
-                },
-              ]
-              
-              updatedMessages[i] = {
-                ...lastAssistant,
-                parts: updatedParts,
-              }
-            }
-            break
-          }
-        }
-        
-        return updatedMessages
-      })
-    } catch (error) {
-      console.error("[FEED-STRATEGY] ❌ Error generating strategy:", error)
-    }
-  }, [setMessages])
+    // This callback is called by FeedTab after it handles the strategy generation
+    // FeedTab manages the actual generation and message updates
+  }, [])
 
   // Pro features: Generate carousel (defined BEFORE useEffect that processes messages)
   const generateCarousel = useCallback(async ({ topic, slideCount }: { topic: string; slideCount: number }) => {
@@ -928,69 +671,8 @@ export default function MayaChatScreen({
       })
     }
 
-    // Check for [CREATE_FEED_STRATEGY] trigger (Feed tab only)
-    if (activeMayaTab === "feed") {
-      // CRITICAL: Check if message already has feed card FIRST (like concept cards check)
-      const alreadyHasFeedCard = lastAssistantMessage.parts?.some(
-        (p: any) => p.type === "tool-generateFeed"
-      )
-      if (alreadyHasFeedCard) {
-        console.log("[FEED] Message already has feed card, skipping:", messageId)
-        // Mark as processed and skip (prevents reprocessing on refresh)
-        processedFeedMessagesRef.current.add(messageId)
-        return
-      }
-      
-      // CRITICAL: Skip if already creating a feed (prevents concurrent creation)
-      if (isCreatingFeed) {
-        return
-      }
-      
-      // CRITICAL: Check if message has already been processed (prevent loops)
-      if (processedFeedMessagesRef.current.has(messageId)) {
-        return // Already processed, skip immediately
-      }
-      
-      const feedStrategyMatch = textContent.match(/\[CREATE_FEED_STRATEGY:\s*(\{[\s\S]*\})\]/i)
-      
-      if (feedStrategyMatch) {
-        // Mark as processed BEFORE triggering to prevent re-processing
-        processedFeedMessagesRef.current.add(messageId)
-        
-        const strategyJson = feedStrategyMatch[1]
-        console.log("[FEED] ✅ Detected feed creation trigger:", {
-          messageId,
-          strategyJsonLength: strategyJson.length,
-        })
-        
-        try {
-          const strategy = JSON.parse(strategyJson)
-          createFeedFromStrategy(strategy)
-        } catch (error) {
-          console.error("[FEED] ❌ Failed to parse strategy JSON:", error)
-          // Remove from processed set on error so it can be retried
-          processedFeedMessagesRef.current.delete(messageId)
-        }
-        return // Don't check other triggers
-      }
-
-      // Check for [GENERATE_CAPTIONS] trigger (Feed tab only)
-      const generateCaptionsMatch = textContent.match(/\[GENERATE_CAPTIONS\]/i)
-      if (generateCaptionsMatch && activeMayaTab === "feed") {
-        console.log("[FEED-CAPTIONS] ✅ Detected caption generation trigger")
-        generateCaptionsForFeed()
-        return // Don't check other triggers
-      }
-
-      // Check for [GENERATE_STRATEGY] trigger (Feed tab only)
-      const generateStrategyMatch = textContent.match(/\[GENERATE_STRATEGY\]/i)
-      if (generateStrategyMatch && activeMayaTab === "feed") {
-        console.log("[FEED-STRATEGY] ✅ Detected strategy generation trigger")
-        generateStrategyForFeed()
-        return // Don't check other triggers
-      }
-
-    }
+    // Feed trigger detection moved to MayaFeedTab component
+    // (Feed tab handles its own triggers: [CREATE_FEED_STRATEGY], [GENERATE_CAPTIONS], [GENERATE_STRATEGY])
 
     // Check for Studio Pro generation triggers FIRST (before other Studio Pro checks)
     // [GENERATE_CAROUSEL: ...]
@@ -3856,14 +3538,7 @@ export default function MayaChatScreen({
 
       {/* Tab Content - Feed Tab */}
       {activeMayaTab === "feed" && (
-        <>
-          <div 
-            className="flex-1 min-h-0 flex flex-col"
-            style={{
-              paddingBottom: '140px', // Space for fixed bottom input
-            }}
-          >
-            <MayaChatInterface
+        <MayaFeedTab
               messages={messages}
               filteredMessages={filteredMessages}
               setMessages={setMessages}
@@ -3872,6 +3547,7 @@ export default function MayaChatScreen({
               isGeneratingConcepts={isGeneratingConcepts}
               isGeneratingStudioPro={isGeneratingStudioPro}
               isCreatingFeed={isCreatingFeed}
+          setIsCreatingFeed={setIsCreatingFeed}
               contentFilter={contentFilter}
               messagesContainerRef={messagesContainerRef as React.RefObject<HTMLDivElement>}
               messagesEndRef={messagesEndRef as React.RefObject<HTMLDivElement>}
@@ -3890,36 +3566,17 @@ export default function MayaChatScreen({
               user={user}
               promptSuggestions={promptSuggestions}
               generateCarouselRef={generateCarouselRef}
-            />
-            {/* Empty State - Feed Tab */}
-            {isEmpty && !isTyping && (
-              <div className="flex flex-col items-center justify-center h-full px-4 py-8 animate-in fade-in duration-500">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-stone-200/60 overflow-hidden mb-4 sm:mb-6">
-                  <img
-                    src="https://i.postimg.cc/fTtCnzZv/out-1-22.png"
-                    alt="Maya"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <h2 className="text-xl sm:text-2xl font-serif font-extralight tracking-[0.3em] text-stone-950 uppercase mb-2 sm:mb-3 text-center">
-                  Welcome
-                </h2>
-                <p className="text-xs sm:text-sm text-stone-600 tracking-wide text-center mb-4 sm:mb-6 max-w-md leading-relaxed px-4">
-                  Hi, I'm Maya. I'll help you create Instagram feeds, captions, and strategies.
-                </p>
-                {/* Feed-specific quick prompts */}
-                <MayaQuickPrompts
-                  prompts={currentPrompts}
-                  onSelect={handleSendMessage}
-                  disabled={isTyping}
-                  variant="empty-state"
-                  studioProMode={studioProMode}
+          styleStrength={styleStrength}
+          promptAccuracy={promptAccuracy}
+          aspectRatio={aspectRatio}
+          realismStrength={realismStrength}
+          onCreateFeed={createFeedFromStrategy}
+          onGenerateCaptions={generateCaptionsForFeed}
+          onGenerateStrategy={generateStrategyForFeed}
+          currentPrompts={currentPrompts}
+          handleSendMessage={handleSendMessage}
                   isEmpty={isEmpty}
                 />
-              </div>
-            )}
-          </div>
-        </>
       )}
 
       {/* Tab Content - Training Tab */}

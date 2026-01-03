@@ -14,6 +14,11 @@ export async function POST(
 ) {
   try {
     const { feedId } = await Promise.resolve(params)
+    const feedIdInt = Number.parseInt(feedId, 10)
+    if (isNaN(feedIdInt)) {
+      return NextResponse.json({ error: "Invalid feed ID format" }, { status: 400 })
+    }
+
     const body = await request.json()
     const { postId, caption } = body
 
@@ -24,7 +29,7 @@ export async function POST(
       )
     }
 
-    console.log("[ADD-CAPTION] Adding caption to post:", postId, "in feed:", feedId)
+    console.log("[ADD-CAPTION] Adding caption to post:", postId, "in feed:", feedIdInt)
 
     const { user: authUser, error: authError } = await getAuthenticatedUser()
     if (authError || !authUser) {
@@ -42,7 +47,7 @@ export async function POST(
       FROM feed_posts fp
       INNER JOIN feed_layouts fl ON fp.feed_layout_id = fl.id
       WHERE fp.id = ${postId}
-      AND fp.feed_layout_id = ${feedId}
+      AND fp.feed_layout_id = ${feedIdInt}
       AND fp.user_id = ${neonUser.id}
       AND fl.user_id = ${neonUser.id}
     `

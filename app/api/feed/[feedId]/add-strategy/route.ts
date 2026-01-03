@@ -14,6 +14,11 @@ export async function POST(
 ) {
   try {
     const { feedId } = await Promise.resolve(params)
+    const feedIdInt = Number.parseInt(feedId, 10)
+    if (isNaN(feedIdInt)) {
+      return NextResponse.json({ error: "Invalid feed ID format" }, { status: 400 })
+    }
+
     const body = await request.json()
     const { strategy } = body
 
@@ -24,7 +29,7 @@ export async function POST(
       )
     }
 
-    console.log("[ADD-STRATEGY] Adding strategy to feed:", feedId)
+    console.log("[ADD-STRATEGY] Adding strategy to feed:", feedIdInt)
 
     const { user: authUser, error: authError } = await getAuthenticatedUser()
     if (authError || !authUser) {
@@ -40,7 +45,7 @@ export async function POST(
     const [feed] = await sql`
       SELECT id
       FROM feed_layouts
-      WHERE id = ${feedId}
+      WHERE id = ${feedIdInt}
       AND user_id = ${neonUser.id}
     `
 
@@ -58,11 +63,11 @@ export async function POST(
       UPDATE feed_layouts
       SET description = ${strategy},
           updated_at = NOW()
-      WHERE id = ${feedId}
+      WHERE id = ${feedIdInt}
       AND user_id = ${neonUser.id}
     `
 
-    console.log("[ADD-STRATEGY] ✅ Strategy added to feed:", feedId)
+    console.log("[ADD-STRATEGY] ✅ Strategy added to feed:", feedIdInt)
 
     return NextResponse.json({
       success: true,

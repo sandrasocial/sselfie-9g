@@ -8,6 +8,14 @@ import { generateInstagramCaption } from "@/lib/feed-planner/caption-writer"
 import { detectRequiredMode, detectProModeType } from "@/lib/feed-planner/mode-detection"
 import { generateVisualComposition } from "@/lib/feed-planner/visual-composition-expert"
 import { buildSophisticatedQuotePrompt } from "@/lib/maya/quote-graphic-prompt-builder"
+import { 
+  generateFeedPrompt,
+  validateFeedPrompt,
+  getColorPaletteByPreference,
+  ensureFeedCohesion,
+  getPostTypeDistribution,
+  type ColorPalette
+} from '@/lib/feed-planner/feed-prompt-expert'
 
 const sql = neon(process.env.DATABASE_URL!)
 

@@ -99,3 +99,4 @@ Simplify feed generation to match concept cards pattern: Maya generates prompts 
   a) Update in feed planner (call `/api/feed/[feedId]/add-caption`)
   b) Create new card in chat with image preview (like FeedCaptionCard but with image)
 
+

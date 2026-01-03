@@ -17,3 +17,4 @@ COMMENT ON COLUMN alex_suggestion_history.acted_upon_at IS 'Timestamp when the u
 
 
 
+
