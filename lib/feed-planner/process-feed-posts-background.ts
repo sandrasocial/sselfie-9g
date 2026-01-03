@@ -1,7 +1,8 @@
 /**
  * Background processing for feed posts
- * Generates prompts and captions, then queues images
- * This runs after feed layout is created to return faster to user
+ * Generates prompts and captions ONLY
+ * CRITICAL: Does NOT queue images - user must click "Generate Feed" button
+ * This prevents automatic generation on page refresh and saves costs
  */
 
 import { neon } from "@neondatabase/serverless"
@@ -10,7 +11,7 @@ import { generateInstagramCaption } from "@/lib/feed-planner/caption-writer"
 import { detectRequiredMode, detectProModeType } from "@/lib/feed-planner/mode-detection"
 import { generateVisualComposition } from "@/lib/feed-planner/visual-composition-expert"
 import { buildSophisticatedQuotePrompt } from "@/lib/maya/quote-graphic-prompt-builder"
-import { queueAllImagesForFeed } from "./queue-images"
+// REMOVED: import { queueAllImagesForFeed } from "./queue-images" - Images only generate when user clicks button
 import { 
   generateFeedPrompt,
   validateFeedPrompt,
@@ -375,53 +376,22 @@ export async function processFeedPostsInBackground(params: ProcessFeedPostsParam
       }
     }
     
-    console.log(`[BACKGROUND-PROCESSING] ✅ All posts processed (${processedCount}/${totalPosts}). Queueing images...`)
+    console.log(`[BACKGROUND-PROCESSING] ✅ All posts processed (${processedCount}/${totalPosts}). Prompts and captions ready.`)
     
-    // Update status to indicate queueing
+    // CRITICAL: DO NOT automatically queue images - user must click "Generate Feed" button
+    // Images will only be generated when user explicitly clicks the generate button
+    // This prevents automatic generation on page refresh and saves costs
+    
+    // Update status to 'draft' (ready for user to generate images)
     await sql`
       UPDATE feed_layouts
-      SET status = 'queueing',
+      SET status = 'draft',
           updated_at = NOW()
       WHERE id = ${feedLayoutId}
     `
 
-    // Queue images for generation
-    const queueSettings = customSettings ? {
-      styleStrength: customSettings.styleStrength,
-      promptAccuracy: customSettings.promptAccuracy,
-      aspectRatio: customSettings.aspectRatio,
-      realismStrength: customSettings.realismStrength,
-      extraLoraScale: customSettings.realismStrength,
-    } : undefined
-
-    const queueResult = await queueAllImagesForFeed(
-      feedLayoutId,
-      authUserId,
-      origin,
-      queueSettings,
-      userImageLibrary
-    )
-
-    if (!queueResult.success) {
-      console.error(`[BACKGROUND-PROCESSING] ❌ Queue failed:`, queueResult)
-      await sql`
-        UPDATE feed_layouts
-        SET status = 'queue_failed', updated_at = NOW()
-        WHERE id = ${feedLayoutId}
-      `
-      return { success: false, error: queueResult.message || "Queue failed" }
-    }
-
-    // Update status to 'pending' (images are queued, waiting for generation)
-    await sql`
-      UPDATE feed_layouts
-      SET status = 'pending',
-          updated_at = NOW()
-      WHERE id = ${feedLayoutId}
-    `
-
-    console.log(`[BACKGROUND-PROCESSING] ✅ Images queued successfully`)
-    return { success: true, queuedCount: queueResult.queuedCount || posts.length }
+    console.log(`[BACKGROUND-PROCESSING] ✅ Background processing complete. Images will NOT be auto-generated - user must click "Generate Feed" button.`)
+    return { success: true, processedCount, message: "Prompts and captions generated. Images will be generated when user clicks Generate Feed button." }
   } catch (error) {
     console.error(`[BACKGROUND-PROCESSING] ❌ Background processing error:`, error)
     await sql`

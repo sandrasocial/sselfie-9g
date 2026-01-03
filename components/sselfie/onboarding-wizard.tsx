@@ -53,7 +53,7 @@ const compressImage = async (file: File, maxSize = 1600, quality = 0.85): Promis
     const reader = new FileReader()
     reader.readAsDataURL(file)
     reader.onload = (e) => {
-      const img = new Image()
+      const img = document.createElement("img")
       img.src = e.target?.result as string
       img.onload = () => {
         const canvas = document.createElement("canvas")
@@ -134,6 +134,7 @@ export default function OnboardingWizard({
   const [uploadedImages, setUploadedImages] = useState<File[]>([])
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 })
+  const [compressionProgress, setCompressionProgress] = useState({ current: 0, total: 0, stage: "" })
   const [isCanceling, setIsCanceling] = useState(false)
 
   const {
@@ -231,6 +232,17 @@ export default function OnboardingWizard({
     setUploadedImages((prev) => prev.filter((_, i) => i !== index))
   }
 
+  // Helper function to yield to UI thread
+  const yieldToUI = (): Promise<void> => {
+    return new Promise((resolve) => {
+      if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+        requestIdleCallback(() => resolve(), { timeout: 100 })
+      } else {
+        setTimeout(() => resolve(), 100)
+      }
+    })
+  }
+
   const startTraining = async () => {
     if (uploadedImages.length < 10) {
       alert("Please upload at least 10 images to train your AI model.")
@@ -249,7 +261,9 @@ export default function OnboardingWizard({
 
     try {
       setIsUploading(true)
-      setUploadProgress({ current: 0, total: uploadedImages.length })
+      setCompressionProgress({ current: 0, total: uploadedImages.length, stage: "Preparing images..." })
+
+      const totalSizeMB = uploadedImages.reduce((sum, f) => sum + f.size, 0) / 1024 / 1024
 
       const compressionLevels = [
         { maxSize: 1600, quality: 0.85, name: "High quality" },
@@ -264,17 +278,34 @@ export default function OnboardingWizard({
       let zipBlob: Blob | null = null
       let successfulLevel: (typeof compressionLevels)[0] | null = null
 
-      for (const level of compressionLevels) {
+      // Always start from highest quality and work down - don't skip optimal quality levels
+      // The compression loop will naturally try higher quality first, then degrade if needed
+      for (let levelIndex = 0; levelIndex < compressionLevels.length; levelIndex++) {
+        const level = compressionLevels[levelIndex]
+        setCompressionProgress({ current: 0, total: uploadedImages.length, stage: `Compressing at ${level.name}...` })
         compressedFiles = []
+
+        // Yield to UI before starting compression
+        await yieldToUI()
 
         for (let i = 0; i < uploadedImages.length; i++) {
           const file = uploadedImages[i]
-          setUploadProgress({ current: i, total: uploadedImages.length })
+          setCompressionProgress({ 
+            current: i + 1, 
+            total: uploadedImages.length, 
+            stage: `Compressing image ${i + 1} of ${uploadedImages.length}...` 
+          })
 
           try {
             const compressedFile = await compressImage(file, level.maxSize, level.quality)
             compressedFiles.push(compressedFile)
-            await new Promise((resolve) => setTimeout(resolve, 50))
+            
+            // Yield to UI thread after every image to prevent freezing
+            if (i % 3 === 0 || i === uploadedImages.length - 1) {
+              await yieldToUI()
+            } else {
+              await new Promise((resolve) => setTimeout(resolve, 50))
+            }
           } catch (error: any) {
             if (error.message?.includes("HEIC") || error.message?.includes("HEIF")) {
               throw new Error(`One or more photos are in HEIC format.\n\n${error.message}`)
@@ -283,12 +314,24 @@ export default function OnboardingWizard({
           }
         }
 
+        setCompressionProgress({ 
+          current: uploadedImages.length, 
+          total: uploadedImages.length, 
+          stage: "Creating ZIP file..." 
+        })
+        
+        // Yield before creating ZIP
+        await yieldToUI()
+
         zipBlob = await createZipFromFiles(compressedFiles)
         const zipSizeMB = zipBlob.size / (1024 * 1024)
 
         if (zipSizeMB < 4.0) {
           successfulLevel = level
           break
+        } else {
+          // Yield before trying next level
+          await yieldToUI()
         }
       }
 
@@ -297,6 +340,10 @@ export default function OnboardingWizard({
           "Unable to compress images small enough. Please try with fewer images (10-12) or use smaller original files.",
         )
       }
+
+      // Reset compression progress to hide compression progress bar during upload
+      setCompressionProgress({ current: 0, total: 0, stage: "" })
+      setUploadProgress({ current: 0, total: 1 })
 
       const formData = new FormData()
       formData.append("zipFile", zipBlob, "training_images.zip")
@@ -317,9 +364,16 @@ export default function OnboardingWizard({
 
       const result = await uploadResponse.json()
 
+      // Update upload progress to 100% before resetting to show completion
+      setUploadProgress({ current: 1, total: 1 })
+      
+      // Brief delay to show 100% completion before transitioning
+      await new Promise((resolve) => setTimeout(resolve, 300))
+
       setUploadedImages([])
       setIsUploading(false)
       setUploadProgress({ current: 0, total: 0 })
+      setCompressionProgress({ current: 0, total: 0, stage: "" })
 
       await new Promise((resolve) => setTimeout(resolve, 500))
 
@@ -343,6 +397,7 @@ export default function OnboardingWizard({
 
       setIsUploading(false)
       setUploadProgress({ current: 0, total: 0 })
+      setCompressionProgress({ current: 0, total: 0, stage: "" })
     }
   }
 
@@ -369,6 +424,8 @@ export default function OnboardingWizard({
 
       await mutate()
       setCurrentStep("upload")
+      setUploadProgress({ current: 0, total: 0 })
+      setCompressionProgress({ current: 0, total: 0, stage: "" })
     } catch (error) {
       console.error("[Onboarding] Error canceling training:", error)
       alert(`Failed to cancel training: ${error instanceof Error ? error.message : "Unknown error"}`)
@@ -553,7 +610,7 @@ export default function OnboardingWizard({
                             />
                             <button
                               onClick={() => handleRemoveUploadedImage(i)}
-                              className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                              className="absolute top-1 right-1 w-6 h-6 bg-stone-950/80 hover:bg-stone-950 active:bg-stone-900 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                             >
                               <X size={14} />
                             </button>
@@ -563,30 +620,60 @@ export default function OnboardingWizard({
                     )}
 
                     {/* Upload Progress */}
-                    {isUploading && (
+                    {(isUploading || compressionProgress.total > 0) && (
                       <div className="p-4 bg-white/50 rounded-xl border border-white/60">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-semibold text-stone-950">Processing images...</span>
-                          <span className="text-sm font-semibold text-stone-950">
-                            {uploadProgress.current} / {uploadProgress.total}
-                          </span>
-                        </div>
-                        <div className="relative w-full h-2 bg-stone-200/40 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-stone-950 rounded-full transition-all duration-300"
-                            style={{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%` }}
-                          ></div>
-                        </div>
+                        {compressionProgress.total > 0 && (
+                          <>
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm font-semibold text-stone-950">
+                                {compressionProgress.stage || "Processing images..."}
+                              </span>
+                              <span className="text-sm font-semibold text-stone-950">
+                                {compressionProgress.current} / {compressionProgress.total}
+                              </span>
+                            </div>
+                            <div className="relative w-full h-2 bg-stone-200/40 rounded-full overflow-hidden mb-4">
+                              <div
+                                className="h-full bg-stone-950 rounded-full transition-all duration-300"
+                                style={{ width: `${(compressionProgress.current / compressionProgress.total) * 100}%` }}
+                              ></div>
+                            </div>
+                          </>
+                        )}
+                        {uploadProgress.total > 0 && (
+                          <>
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm font-semibold text-stone-950">Uploading to server...</span>
+                              <span className="text-sm font-semibold text-stone-950">
+                                {uploadProgress.current} / {uploadProgress.total}
+                              </span>
+                            </div>
+                            <div className="relative w-full h-2 bg-stone-200/40 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-stone-950 rounded-full transition-all duration-300"
+                                style={{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%` }}
+                              ></div>
+                            </div>
+                          </>
+                        )}
                       </div>
                     )}
 
                     {/* Start Training Button */}
-                    {uploadedImages.length >= 10 && selectedGender && selectedEthnicity && !isUploading && (
+                    {uploadedImages.length >= 10 && selectedGender && selectedEthnicity && (
                       <button
                         onClick={startTraining}
-                        className={`w-full ${DesignClasses.buttonPrimary} min-h-[52px]`}
+                        disabled={isUploading || compressionProgress.total > 0}
+                        className={`w-full ${DesignClasses.buttonPrimary} min-h-[52px] disabled:opacity-50 disabled:cursor-not-allowed`}
                       >
-                        Start Training
+                        {isUploading || compressionProgress.total > 0 ? (
+                          <span className="flex items-center justify-center gap-2">
+                            <LoadingSpinner size="sm" />
+                            {isUploading && compressionProgress.total === 0 ? "Uploading..." : compressionProgress.stage || "Processing..."}
+                          </span>
+                        ) : (
+                          "Start Training"
+                        )}
                       </button>
                     )}
                   </motion.div>
@@ -622,7 +709,7 @@ export default function OnboardingWizard({
                     <button
                       onClick={handleCancelTraining}
                       disabled={isCanceling}
-                      className="text-sm text-stone-600 hover:text-red-600 transition-colors disabled:opacity-50"
+                      className="text-sm text-stone-600 hover:text-stone-950 transition-colors disabled:opacity-50"
                     >
                       {isCanceling ? "Stopping..." : "Stop Training"}
                     </button>

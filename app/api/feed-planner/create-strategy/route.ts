@@ -1360,36 +1360,12 @@ Return ONLY valid JSON, no markdown:
     console.log(`[v0]  - Posts with hook concepts: ${strategy.posts.filter((p: any) => p.hookConcept).length}/9`)
     console.log(`[v0]  - Posts with CTA concepts: ${strategy.posts.filter((p: any) => p.ctaConcept).length}/9`)
 
-    // Automatically queue all images for generation (fire and forget)
-    // Call queue-all-images logic directly instead of HTTP to avoid auth issues
-    console.log("[v0] ==================== QUEUEING IMAGES FOR GENERATION ====================")
+    // CRITICAL: DO NOT automatically queue images - user must click "Generate Feed" button
+    // Images will only be generated when user explicitly clicks the generate button
+    // This prevents automatic generation on page refresh and saves costs
+    console.log("[v0] ==================== FEED CREATED - WAITING FOR USER TO CLICK GENERATE ====================")
     console.log("[v0] Feed layout ID:", feedLayout.id)
-    
-    // Call queue function directly (non-blocking, fire and forget)
-    const { queueAllImagesForFeed } = await import("@/lib/feed-planner/queue-images")
-    const origin = process.env.NEXT_PUBLIC_APP_URL || request.headers.get("origin") || "http://localhost:3000"
-    
-    // Map customSettings to the format expected by queue-images
-    const queueSettings = customSettings ? {
-      styleStrength: customSettings.styleStrength,
-      promptAccuracy: customSettings.promptAccuracy,
-      aspectRatio: customSettings.aspectRatio,
-      realismStrength: customSettings.realismStrength,
-      extraLoraScale: customSettings.realismStrength, // Map realismStrength to extraLoraScale
-    } : undefined
-    
-    queueAllImagesForFeed(feedLayout.id, authUser.id, origin, queueSettings)
-      .then((result) => {
-        console.log("[v0] ✅ Queue-all-images success:", result)
-      })
-      .catch((error: any) => {
-        console.error("[v0] ❌ Error queueing images (non-blocking):", error)
-        console.error("[v0] Error details:", {
-          message: error.message,
-          stack: error.stack,
-        })
-        // Non-blocking - strategy is created, images can be generated manually if needed
-      });
+    console.log("[v0] ⚠️ Images will NOT be auto-generated. User must click 'Generate Feed' button to start generation.");
 
     console.log("[v0] ==================== CREATE STRATEGY API COMPLETE ====================")
     console.log("[v0] Feed layout ID type:", typeof feedLayout.id)
@@ -1405,7 +1381,7 @@ Return ONLY valid JSON, no markdown:
     return NextResponse.json({
       success: true,
       feedLayoutId: feedLayoutId,
-      message: "Strategy created! Images are being generated automatically.",
+      message: "Strategy created! Click 'Generate Feed' button to create images.",
     })
   } catch (error) {
     console.error("[v0] Feed Planner API error:", error)

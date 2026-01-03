@@ -122,6 +122,7 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
   const [uploadedImages, setUploadedImages] = useState<File[]>([])
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 })
+  const [compressionProgress, setCompressionProgress] = useState({ current: 0, total: 0, stage: "" })
   const [deletingImageId, setDeletingImageId] = useState<number | null>(null)
   const [isCanceling, setIsCanceling] = useState(false)
   const [selectedEthnicity, setSelectedEthnicity] = useState<string>("")
@@ -229,6 +230,17 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
     setUploadedImages((prev) => prev.filter((_, i) => i !== index))
   }
 
+  // Helper function to yield to UI thread
+  const yieldToUI = (): Promise<void> => {
+    return new Promise((resolve) => {
+      if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+        requestIdleCallback(() => resolve(), { timeout: 100 })
+      } else {
+        setTimeout(() => resolve(), 100)
+      }
+    })
+  }
+
   const startTraining = async () => {
     if (uploadedImages.length < 10) {
       alert("Please upload at least 10 images to train your AI model.")
@@ -247,18 +259,17 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
 
     try {
       setIsUploading(true)
-      setUploadProgress({ current: 0, total: uploadedImages.length })
+      setCompressionProgress({ current: 0, total: uploadedImages.length, stage: "Preparing images..." })
 
       console.log(
         `[v0] Starting adaptive compression - ${uploadedImages.length} images, gender: ${selectedGender}, ethnicity: ${selectedEthnicity}`,
       )
       console.log("[v0] Browser:", navigator.userAgent)
-      console.log(
-        "[v0] Total size before compression:",
-        uploadedImages.reduce((sum, f) => sum + f.size, 0) / 1024 / 1024,
-        "MB",
-      )
+      
+      const totalSizeMB = uploadedImages.reduce((sum, f) => sum + f.size, 0) / 1024 / 1024
+      console.log("[v0] Total size before compression:", totalSizeMB, "MB")
 
+      // Smart compression level selection based on total file size
       const compressionLevels = [
         { maxSize: 1600, quality: 0.85, name: "High quality" },
         { maxSize: 1400, quality: 0.75, name: "Medium-high quality" },
@@ -272,18 +283,35 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
       let zipBlob: Blob | null = null
       let successfulLevel: (typeof compressionLevels)[0] | null = null
 
-      for (const level of compressionLevels) {
+      // Always start from highest quality and work down - don't skip optimal quality levels
+      // The compression loop will naturally try higher quality first, then degrade if needed
+      for (let levelIndex = 0; levelIndex < compressionLevels.length; levelIndex++) {
+        const level = compressionLevels[levelIndex]
         console.log(`[v0] Trying compression: ${level.name} (${level.maxSize}px, ${(level.quality * 100).toFixed(0)}%)`)
+        setCompressionProgress({ current: 0, total: uploadedImages.length, stage: `Compressing at ${level.name}...` })
         compressedFiles = []
+
+        // Yield to UI before starting compression
+        await yieldToUI()
 
         for (let i = 0; i < uploadedImages.length; i++) {
           const file = uploadedImages[i]
-          setUploadProgress({ current: i, total: uploadedImages.length })
+          setCompressionProgress({ 
+            current: i + 1, 
+            total: uploadedImages.length, 
+            stage: `Compressing image ${i + 1} of ${uploadedImages.length}...` 
+          })
 
           try {
             const compressedFile = await compressImage(file, level.maxSize, level.quality)
             compressedFiles.push(compressedFile)
-            await new Promise((resolve) => setTimeout(resolve, 50))
+            
+            // Yield to UI thread after every image to prevent freezing
+            if (i % 3 === 0 || i === uploadedImages.length - 1) {
+              await yieldToUI()
+            } else {
+              await new Promise((resolve) => setTimeout(resolve, 50))
+            }
           } catch (error: any) {
             console.error(`[v0] Error processing image ${i + 1}:`, error)
             if (error.message?.includes("HEIC") || error.message?.includes("HEIF")) {
@@ -292,6 +320,15 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
             throw error
           }
         }
+
+        setCompressionProgress({ 
+          current: uploadedImages.length, 
+          total: uploadedImages.length, 
+          stage: "Creating ZIP file..." 
+        })
+        
+        // Yield before creating ZIP
+        await yieldToUI()
 
         zipBlob = await createZipFromFiles(compressedFiles)
         const zipSizeMB = zipBlob.size / (1024 * 1024)
@@ -303,6 +340,8 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
           break
         } else {
           console.log(`[v0] ZIP too large (${zipSizeMB.toFixed(2)}MB), trying next compression level...`)
+          // Yield before trying next level
+          await yieldToUI()
         }
       }
 
@@ -314,6 +353,10 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
 
       const zipSizeMB = (zipBlob.size / (1024 * 1024)).toFixed(2)
       console.log(`[v0] Final ZIP created with ${successfulLevel.name}, size: ${zipSizeMB}MB`)
+
+      // Reset compression progress to hide compression progress bar during upload
+      setCompressionProgress({ current: 0, total: 0, stage: "" })
+      setUploadProgress({ current: 0, total: 1 })
 
       console.log("[v0] Uploading ZIP to server...")
       const formData = new FormData()
@@ -337,9 +380,16 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
       const result = await uploadResponse.json()
       console.log("[v0] Training started successfully:", result)
 
+      // Update upload progress to 100% before resetting to show completion
+      setUploadProgress({ current: 1, total: 1 })
+      
+      // Brief delay to show 100% completion before transitioning
+      await new Promise((resolve) => setTimeout(resolve, 300))
+
       setUploadedImages([])
       setIsUploading(false)
       setUploadProgress({ current: 0, total: 0 })
+      setCompressionProgress({ current: 0, total: 0, stage: "" })
 
       await new Promise((resolve) => setTimeout(resolve, 500))
 
@@ -375,6 +425,7 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
 
       setIsUploading(false)
       setUploadProgress({ current: 0, total: 0 })
+      setCompressionProgress({ current: 0, total: 0, stage: "" })
     }
   }
 
@@ -385,6 +436,7 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
     setSelectedEthnicity("")
     setIsUploading(false)
     setUploadProgress({ current: 0, total: 0 })
+    setCompressionProgress({ current: 0, total: 0, stage: "" })
   }
 
   const handleCancelTraining = async () => {
@@ -414,6 +466,8 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
       await mutate()
 
       setTrainingStage("upload")
+      setUploadProgress({ current: 0, total: 0 })
+      setCompressionProgress({ current: 0, total: 0, stage: "" })
     } catch (error) {
       console.error("[v0] Error canceling training:", error)
       alert(`Failed to cancel training: ${error instanceof Error ? error.message : "Unknown error"}`)
@@ -595,7 +649,7 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
             <button
               onClick={handleCancelTraining}
               disabled={isCanceling}
-              className="w-full bg-white/60 backdrop-blur-xl text-stone-950 border border-white/70 py-4 sm:py-5 rounded-xl sm:rounded-[1.5rem] font-semibold text-xs sm:text-sm transition-all duration-300 hover:bg-red-50/70 hover:border-red-200/80 hover:text-red-700 min-h-[52px] sm:min-h-[60px] shadow-lg shadow-stone-900/10 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              className="w-full bg-white/60 backdrop-blur-xl text-stone-950 border border-white/70 py-4 sm:py-5 rounded-xl sm:rounded-[1.5rem] font-semibold text-xs sm:text-sm transition-all duration-300 hover:bg-stone-50/70 hover:border-stone-300/80 hover:text-stone-950 min-h-[52px] sm:min-h-[60px] shadow-lg shadow-stone-900/10 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
               {isCanceling ? (
                 <span className="flex items-center justify-center gap-2">
@@ -740,20 +794,42 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
               </p>
             </label>
 
-            {isUploading && (
+            {(isUploading || compressionProgress.total > 0) && (
               <div className="mb-6 p-6 bg-white/50 backdrop-blur-xl rounded-xl border border-white/60">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-semibold text-stone-950">Uploading images...</span>
-                  <span className="text-sm font-semibold text-stone-950">
-                    {uploadProgress.current} / {uploadProgress.total}
-                  </span>
-                </div>
-                <div className="relative w-full h-2 bg-stone-200/40 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-stone-950 rounded-full transition-all duration-300"
-                    style={{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%` }}
-                  ></div>
-                </div>
+                {compressionProgress.total > 0 && (
+                  <>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm font-semibold text-stone-950">
+                        {compressionProgress.stage || "Processing images..."}
+                      </span>
+                      <span className="text-sm font-semibold text-stone-950">
+                        {compressionProgress.current} / {compressionProgress.total}
+                      </span>
+                    </div>
+                    <div className="relative w-full h-2 bg-stone-200/40 rounded-full overflow-hidden mb-4">
+                      <div
+                        className="h-full bg-stone-950 rounded-full transition-all duration-300"
+                        style={{ width: `${(compressionProgress.current / compressionProgress.total) * 100}%` }}
+                      ></div>
+                    </div>
+                  </>
+                )}
+                {uploadProgress.total > 0 && (
+                  <>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm font-semibold text-stone-950">Uploading to server...</span>
+                      <span className="text-sm font-semibold text-stone-950">
+                        {uploadProgress.current} / {uploadProgress.total}
+                      </span>
+                    </div>
+                    <div className="relative w-full h-2 bg-stone-200/40 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-stone-950 rounded-full transition-all duration-300"
+                        style={{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%` }}
+                      ></div>
+                    </div>
+                  </>
+                )}
               </div>
             )}
 
@@ -771,7 +847,7 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
                     />
                     <button
                       onClick={() => handleRemoveUploadedImage(i)}
-                      className="absolute top-2 right-2 w-8 h-8 bg-red-500 hover:bg-red-600 active:bg-red-700 text-white rounded-full flex items-center justify-center shadow-lg transition-all duration-200 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200"
+                      className="absolute top-2 right-2 w-8 h-8 bg-stone-950/80 hover:bg-stone-950 active:bg-stone-900 text-white rounded-full flex items-center justify-center shadow-lg transition-all duration-200 opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
                       aria-label="Remove image"
                     >
                       <X size={18} strokeWidth={2.5} />
@@ -853,12 +929,30 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
               </select>
             </div>
 
+            {(!selectedGender || !selectedEthnicity || uploadedImages.length < 10) && (
+              <div className="mb-4 p-4 bg-stone-100/80 border border-stone-300/60 rounded-xl text-sm">
+                <p className="text-stone-950 font-medium mb-1">Complete these steps to start training:</p>
+                <ul className="text-stone-700 space-y-1 text-xs list-disc list-inside">
+                  {!selectedGender && <li>Select your gender above</li>}
+                  {!selectedEthnicity && <li>Select your ethnicity above</li>}
+                  {uploadedImages.length < 10 && <li>Upload at least 10 photos ({uploadedImages.length}/10)</li>}
+                </ul>
+              </div>
+            )}
+            
             <button
               onClick={startTraining}
-              disabled={uploadedImages.length < 10 || !selectedGender || !selectedEthnicity || isUploading}
-              className="w-full bg-stone-950 text-stone-50 py-4 sm:py-5 rounded-2xl font-light tracking-[0.15em] uppercase text-sm transition-all duration-200 hover:bg-stone-800 min-h-[52px] disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation active:scale-95"
+              disabled={uploadedImages.length < 10 || !selectedGender || !selectedEthnicity || isUploading || compressionProgress.total > 0}
+              className="w-full bg-stone-950 text-stone-50 py-4 sm:py-5 rounded-2xl font-light tracking-[0.15em] uppercase text-sm transition-all duration-200 hover:bg-stone-800 min-h-[52px] disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation active:scale-95 relative"
             >
-              {isUploading ? "Uploading..." : "Start Training"}
+              {isUploading || compressionProgress.total > 0 ? (
+                <span className="flex items-center justify-center gap-2">
+                  <LoadingSpinner size="sm" />
+                  {isUploading && compressionProgress.total === 0 ? "Uploading..." : compressionProgress.stage || "Processing..."}
+                </span>
+              ) : (
+                "Start Training"
+              )}
             </button>
           </div>
         </>

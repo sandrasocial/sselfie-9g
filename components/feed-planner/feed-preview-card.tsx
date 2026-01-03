@@ -39,29 +39,144 @@ export default function FeedPreviewCard({
 }: FeedPreviewCardProps) {
   const router = useRouter()
   const [postsData, setPostsData] = useState<FeedPost[]>(posts)
+  // State for title and description that can be updated from fetched data
+  const [displayTitle, setDisplayTitle] = useState<string>(feedTitle || "Instagram Feed")
+  const [displayDescription, setDisplayDescription] = useState<string>(feedDescription || "")
   const [isGenerating, setIsGenerating] = useState(() => {
     // Initialize generating state based on posts - if any have prediction_id or generating status
     return posts.some(p => p.generation_status === "generating" || (p.prediction_id && !p.image_url))
   })
-  const [generatingPostId, setGeneratingPostId] = useState<number | null>(null)
+  // REMOVED: generatingPostId state - Individual post generation is disabled
   const [selectedPost, setSelectedPost] = useState<FeedPost | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   
-  // Restore feed data if needed (on page refresh)
+  // Track if we've attempted to fetch to avoid stale closure issues
+  const hasFetchedRef = useRef(false)
+  
+  // Reset fetch flag when feedId changes (new feed card)
   useEffect(() => {
-    if (needsRestore && feedId) {
+    hasFetchedRef.current = false
+    console.log("[FeedPreviewCard] 🔄 Feed ID changed, reset fetch flag:", feedId)
+  }, [feedId])
+  
+  // Update state from props when they change (separate effect to avoid resetting fetch flag)
+  useEffect(() => {
+    setDisplayTitle(feedTitle || "Instagram Feed")
+    setDisplayDescription(feedDescription || "")
+    setPostsData(posts)
+  }, [feedTitle, feedDescription, posts])
+  
+  // CRITICAL: Always fetch feed data when needsRestore is true OR when posts is empty/missing
+  // This ensures feed cards restore correctly on page reload
+  useEffect(() => {
+    // Always fetch if:
+    // 1. needsRestore is true (page refresh scenario) - ALWAYS fetch to get latest images
+    // 2. OR posts prop is empty/missing AND we haven't fetched yet
+    if (!feedId) {
+      return // No feedId, can't fetch
+    }
+    
+    // CRITICAL: If needsRestore is true, ALWAYS fetch (ignore hasFetchedRef to ensure we get latest images)
+    // For restored cards, we need fresh data from the database
+    const shouldFetch = needsRestore || (!hasFetchedRef.current && (!posts || posts.length === 0))
+    
+    if (shouldFetch) {
+      // Only set flag if not needsRestore (to allow re-fetch on restore)
+      if (!needsRestore) {
+        hasFetchedRef.current = true
+      }
+      
+      console.log("[FeedPreviewCard] 🔄 Fetching feed data:", { 
+        feedId, 
+        needsRestore, 
+        postsCount: posts?.length || 0,
+        hasFetchedBefore: hasFetchedRef.current,
+        reason: needsRestore ? "needsRestore=true (ALWAYS fetch for restored cards)" : "posts empty/missing"
+      })
+      
       fetch(`/api/feed/${feedId}`)
-        .then(res => res.json())
-        .then(feedData => {
-          if (feedData.posts && Array.isArray(feedData.posts)) {
-            setPostsData(feedData.posts)
+        .then(res => {
+          if (!res.ok) {
+            throw new Error(`Failed to fetch feed: ${res.status} ${res.statusText}`)
           }
+          return res.json()
+        })
+        .then(feedData => {
+          console.log("[FeedPreviewCard] ✅ Feed data fetched:", { 
+            hasPosts: !!(feedData.posts || feedData.feed?.posts),
+            hasFeed: !!feedData.feed,
+            hasTitle: !!(feedData.title || feedData.feed?.title || feedData.brand_name || feedData.feed?.brand_name),
+            postsArrayLength: feedData.posts?.length || 0,
+            feedPostsLength: feedData.feed?.posts?.length || 0,
+          })
+          
+          // Update posts data - check both response formats
+          let postsToSet: FeedPost[] | null = null
+          
+          if (feedData.posts && Array.isArray(feedData.posts) && feedData.posts.length > 0) {
+            postsToSet = feedData.posts
+            console.log("[FeedPreviewCard] ✅ Using posts from root level:", postsToSet.length)
+          } else if (feedData.feed?.posts && Array.isArray(feedData.feed.posts) && feedData.feed.posts.length > 0) {
+            // Fallback for legacy format
+            postsToSet = feedData.feed.posts
+            console.log("[FeedPreviewCard] ✅ Using posts from feed.posts (legacy format):", postsToSet.length)
+          }
+          
+          if (postsToSet) {
+            // Log image URL status for debugging
+            const postsWithImages = postsToSet.filter(p => p.image_url)
+            const postsWithoutImages = postsToSet.filter(p => !p.image_url)
+            console.log("[FeedPreviewCard] 📸 Posts image status:", {
+              total: postsToSet.length,
+              withImages: postsWithImages.length,
+              withoutImages: postsWithoutImages.length,
+              imageUrls: postsWithImages.slice(0, 3).map(p => ({ position: p.position, url: p.image_url?.substring(0, 50) + '...' })),
+            })
+            
+            setPostsData(postsToSet)
+          } else {
+            console.warn("[FeedPreviewCard] ⚠️ No posts found in feed data - structure:", {
+              hasPosts: !!feedData.posts,
+              postsIsArray: Array.isArray(feedData.posts),
+              postsLength: feedData.posts?.length,
+              hasFeedPosts: !!feedData.feed?.posts,
+              feedPostsIsArray: Array.isArray(feedData.feed?.posts),
+              feedPostsLength: feedData.feed?.posts?.length,
+            })
+          }
+          
+          // Update title from fetched data (priority: title > brand_name > feed.title > feed.brand_name > existing)
+          const fetchedTitle = feedData.title || 
+                              feedData.brand_name || 
+                              feedData.feed?.title || 
+                              feedData.feed?.brand_name ||
+                              feedData.feed?.gridPattern ||
+                              null
+          if (fetchedTitle && fetchedTitle !== displayTitle) {
+            console.log("[FeedPreviewCard] ✅ Updated title from fetched data:", fetchedTitle)
+            setDisplayTitle(fetchedTitle)
+          }
+          
+          // Update description from fetched data (priority: description > feed.description > feed.gridPattern > existing)
+          const fetchedDescription = feedData.description || 
+                                    feedData.feed?.description || 
+                                    feedData.feed?.gridPattern ||
+                                    feedData.feed?.overall_vibe ||
+                                    null
+          if (fetchedDescription && fetchedDescription !== displayDescription) {
+            console.log("[FeedPreviewCard] ✅ Updated description from fetched data:", fetchedDescription.substring(0, 50))
+            setDisplayDescription(fetchedDescription)
+          }
+          
+          // Mark as fetched after successful fetch (for needsRestore, set flag to prevent infinite loops)
+          hasFetchedRef.current = true
         })
         .catch(err => {
-          console.error("[FeedPreviewCard] Failed to restore feed data:", err)
+          console.error("[FeedPreviewCard] ❌ Failed to restore feed data:", err)
+          hasFetchedRef.current = false // Reset on error so it can retry
         })
     }
-  }, [needsRestore, feedId])
+  }, [needsRestore, feedId, posts?.length]) // Fetch when needsRestore changes, feedId changes, or posts length changes
 
   // Poll for feed updates to show progress (only while generating)
   useEffect(() => {
@@ -106,6 +221,26 @@ export default function FeedPreviewCard({
             // Fallback for legacy format (backward compatibility)
             setPostsData(data.feed.posts)
           }
+          
+          // Update title and description from polled data (same priority as initial fetch)
+          const polledTitle = data.title || 
+                             data.brand_name || 
+                             data.feed?.title || 
+                             data.feed?.brand_name ||
+                             data.feed?.gridPattern ||
+                             null
+          if (polledTitle && polledTitle !== displayTitle) {
+            setDisplayTitle(polledTitle)
+          }
+          
+          const polledDescription = data.description || 
+                                   data.feed?.description || 
+                                   data.feed?.gridPattern ||
+                                   data.feed?.overall_vibe ||
+                                   null
+          if (polledDescription && polledDescription !== displayDescription) {
+            setDisplayDescription(polledDescription)
+          }
         }
       } catch (error) {
         console.error("[FeedPreviewCard] Error fetching feed updates:", error)
@@ -135,70 +270,9 @@ export default function FeedPreviewCard({
     }
   }
 
-  const handleGeneratePost = async (postId: number) => {
-    setGeneratingPostId(postId)
-
-    try {
-      const response = await fetch(`/api/feed/${feedId}/generate-single`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ postId }),
-      })
-
-      if (!response.ok) {
-        // Try to parse error response for detailed error message
-        let errorMessage = "Failed to generate image"
-        let errorDetails = ""
-        
-        try {
-          const errorData = await response.json()
-          errorMessage = errorData.error || errorMessage
-          errorDetails = errorData.details || ""
-          console.error("[FeedPreviewCard] API Error:", {
-            status: response.status,
-            error: errorMessage,
-            details: errorDetails,
-            fullError: errorData
-          })
-        } catch (parseError) {
-          // If JSON parsing fails, use status text
-          errorMessage = response.statusText || errorMessage
-          console.error("[FeedPreviewCard] Failed to parse error response:", parseError)
-        }
-
-        throw new Error(errorDetails || errorMessage)
-      }
-
-      const result = await response.json()
-      console.log("[FeedPreviewCard] ✅ Generation started:", result)
-
-      toast({
-        title: "Generating photo",
-        description: "This takes about 30 seconds",
-      })
-
-      // Refresh posts data
-      const feedResponse = await fetch(`/api/feed/${feedId}`)
-      if (feedResponse.ok) {
-        const feedData = await feedResponse.json()
-        if (feedData.posts) {
-          setPostsData(feedData.posts)
-        }
-      }
-    } catch (error) {
-      console.error("[FeedPreviewCard] Generate error:", error)
-      const errorMessage = error instanceof Error ? error.message : "Please try again"
-      
-      toast({
-        title: "Generation failed",
-        description: errorMessage,
-        variant: "destructive",
-        duration: 5000, // Show longer for error messages
-      })
-    } finally {
-      setGeneratingPostId(null)
-    }
-  }
+  // REMOVED: handleGeneratePost - Individual post generation is disabled
+  // Users must click "Generate Feed" button to generate ALL images in batch
+  // This prevents accidental single-image generation and ensures proper batch processing
 
   const handleGenerateFeed = async () => {
     setIsGenerating(true)
@@ -254,6 +328,27 @@ export default function FeedPreviewCard({
           const feedData = await feedResponse.json()
           if (feedData.posts && Array.isArray(feedData.posts)) {
             setPostsData(feedData.posts)
+            
+            // Update title and description if available
+            const refreshedTitle = feedData.title || 
+                                  feedData.brand_name || 
+                                  feedData.feed?.title || 
+                                  feedData.feed?.brand_name ||
+                                  feedData.feed?.gridPattern ||
+                                  null
+            if (refreshedTitle && refreshedTitle !== displayTitle) {
+              setDisplayTitle(refreshedTitle)
+            }
+            
+            const refreshedDescription = feedData.description || 
+                                        feedData.feed?.description || 
+                                        feedData.feed?.gridPattern ||
+                                        feedData.feed?.overall_vibe ||
+                                        null
+            if (refreshedDescription && refreshedDescription !== displayDescription) {
+              setDisplayDescription(refreshedDescription)
+            }
+            
             // Check if posts are actually generating after queue
             const hasGeneratingPosts = feedData.posts.some((p: FeedPost) => 
               p.generation_status === "generating" || (p.prediction_id && !p.image_url)
@@ -268,6 +363,27 @@ export default function FeedPreviewCard({
                   const recheckData = await recheckResponse.json()
                   if (recheckData.posts && Array.isArray(recheckData.posts)) {
                     setPostsData(recheckData.posts)
+                    
+                    // Update title and description from recheck
+                    const recheckTitle = recheckData.title || 
+                                        recheckData.brand_name || 
+                                        recheckData.feed?.title || 
+                                        recheckData.feed?.brand_name ||
+                                        recheckData.feed?.gridPattern ||
+                                        null
+                    if (recheckTitle && recheckTitle !== displayTitle) {
+                      setDisplayTitle(recheckTitle)
+                    }
+                    
+                    const recheckDescription = recheckData.description || 
+                                              recheckData.feed?.description || 
+                                              recheckData.feed?.gridPattern ||
+                                              recheckData.feed?.overall_vibe ||
+                                              null
+                    if (recheckDescription && recheckDescription !== displayDescription) {
+                      setDisplayDescription(recheckDescription)
+                    }
+                    
                     const stillGenerating = recheckData.posts.some((p: FeedPost) => 
                       p.generation_status === "generating" || (p.prediction_id && !p.image_url)
                     )
@@ -332,6 +448,26 @@ export default function FeedPreviewCard({
             }
           }
         }
+        
+        // Update title and description from refreshed data
+        const refreshedTitle = data.title || 
+                              data.brand_name || 
+                              data.feed?.title || 
+                              data.feed?.brand_name ||
+                              data.feed?.gridPattern ||
+                              null
+        if (refreshedTitle && refreshedTitle !== displayTitle) {
+          setDisplayTitle(refreshedTitle)
+        }
+        
+        const refreshedDescription = data.description || 
+                                    data.feed?.description || 
+                                    data.feed?.gridPattern ||
+                                    data.feed?.overall_vibe ||
+                                    null
+        if (refreshedDescription && refreshedDescription !== displayDescription) {
+          setDisplayDescription(refreshedDescription)
+        }
       }
     } catch (error) {
       console.error("[FeedPreviewCard] Error refreshing posts:", error)
@@ -367,14 +503,14 @@ export default function FeedPreviewCard({
           className="text-base sm:text-lg md:text-xl font-light tracking-wide text-stone-950 break-words"
           style={{ fontFamily: "'Times New Roman', serif" }}
         >
-          {feedTitle || "Instagram Feed"}
+          {displayTitle}
         </h3>
         <p className="text-[10px] sm:text-xs text-stone-500 mt-1 uppercase tracking-wider sm:tracking-widest">
           Instagram Feed Preview
         </p>
-        {feedDescription && (
+        {displayDescription && (
           <p className="text-xs sm:text-sm text-stone-600 mt-2 font-light leading-relaxed break-words">
-            {feedDescription}
+            {displayDescription}
           </p>
         )}
         {/* Status indicators - Editorial style - Stack on mobile */}
@@ -387,10 +523,11 @@ export default function FeedPreviewCard({
 
       {/* 3x3 Grid - Real Instagram Layout - Full width on mobile */}
       <div className="p-2 sm:p-3 md:p-4 bg-stone-50">
-        <div className="grid grid-cols-3 gap-0.5 sm:gap-1 bg-white w-full sm:max-w-[600px] sm:mx-auto">
-        {sortedPosts.slice(0, 9).map((post) => {
+        {/* Show grid only if we have posts */}
+        {sortedPosts.length > 0 ? (
+          <div className="grid grid-cols-3 gap-0.5 sm:gap-1 bg-white w-full sm:max-w-[600px] sm:mx-auto">
+          {sortedPosts.slice(0, 9).map((post) => {
           const isGeneratingPost = post.generation_status === "generating" || 
-            generatingPostId === post.id || 
             (post.prediction_id && !post.image_url) ||
             (isAnyGenerating && !post.image_url && post.generation_status !== "failed")
           const hasImage = !!post.image_url
@@ -400,11 +537,12 @@ export default function FeedPreviewCard({
               key={post.id}
               className="relative aspect-square group cursor-pointer overflow-hidden bg-stone-100 touch-manipulation active:scale-[0.98] transition-transform duration-150 min-h-[100px] sm:min-h-[120px]"
               onClick={() => {
+                // CRITICAL: Only allow clicking to view images - NO individual generation
+                // Users must click "Generate Feed" button to generate ALL images in batch
                 if (hasImage) {
                   handleImageClick(post)
-                } else if (!hasImage && post.generation_status === 'pending' && !isAnyGenerating) {
-                  handleGeneratePost(post.id)
                 }
+                // Removed: Individual post generation - users must use "Generate Feed" button
               }}
             >
               {/* Generated Image */}
@@ -447,8 +585,8 @@ export default function FeedPreviewCard({
                     <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white shadow-sm flex items-center justify-center">
                       <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5 text-stone-400" strokeWidth={1.5} />
                     </div>
-                    <span className="text-[9px] sm:text-[10px] text-stone-500 uppercase tracking-wider opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity">
-                      Tap to Generate
+                    <span className="text-[9px] sm:text-[10px] text-stone-500 uppercase tracking-wider">
+                      Pending
                     </span>
                   </div>
                 </div>
@@ -463,7 +601,16 @@ export default function FeedPreviewCard({
             </div>
           )
         })}
-        </div>
+          </div>
+        ) : (
+          // Loading state when posts are being fetched
+          <div className="w-full sm:max-w-[600px] sm:mx-auto bg-white aspect-square flex items-center justify-center min-h-[300px]">
+            <div className="flex flex-col items-center gap-2">
+              <Loader2 className="w-6 h-6 text-stone-400 animate-spin" strokeWidth={1.5} />
+              <span className="text-xs text-stone-500 uppercase tracking-wider">Loading feed posts...</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Caption Preview - Editorial Format */}

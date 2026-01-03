@@ -2,12 +2,14 @@
 
 import type React from "react"
 import { useState, useEffect, useRef, useCallback } from "react"
+import { createPortal } from "react-dom"
 import MayaChatInterface from "./maya-chat-interface"
 import MayaQuickPrompts from "./maya-quick-prompts"
 import InstagramFeedCard, { 
   InstagramFeedCardSkeleton,
   InstagramFeedEmptyState 
 } from "@/components/feed/instagram-feed-card"
+import FeedPostCard from "@/components/feed-planner/feed-post-card"
 import {
   createFeedFromStrategyHandler,
   generateCaptionsHandler,
@@ -120,6 +122,11 @@ export default function MayaFeedTab({
   const [feeds, setFeeds] = useState<any[]>([])
   const [feedsLoading, setFeedsLoading] = useState(true)
   const [feedsError, setFeedsError] = useState<string | null>(null)
+  
+  // Post detail modal state
+  const [selectedPost, setSelectedPost] = useState<any | null>(null)
+  const [selectedFeedId, setSelectedFeedId] = useState<number | null>(null)
+  const [isPostModalOpen, setIsPostModalOpen] = useState(false)
 
   // Feed Tab Quick Prompts
   const getFeedQuickPrompts = (): Array<{ label: string; prompt: string }> => {
@@ -195,11 +202,78 @@ export default function MayaFeedTab({
   }, [])
 
   // Handle post click (for detail view)
-  const handlePostClick = useCallback((post: any) => {
-    console.log('[FEED-TAB] Post clicked:', post)
-    // TODO: Open modal with post details, caption, prompt, etc.
-    // For now, just log
+  const handlePostClick = useCallback((post: any, feedId?: number | string) => {
+    console.log('[FEED-TAB] Post clicked:', post, 'feedId:', feedId)
+    
+    // Normalize post data to match FeedPostCard interface
+    const normalizedPost = {
+      id: post.id,
+      position: post.position,
+      prompt: post.prompt || '',
+      caption: post.caption || '',
+      content_pillar: post.content_pillar || post.purpose || '',
+      post_type: post.postType || post.post_type || 'portrait',
+      image_url: post.imageUrl || post.image_url || null,
+      generation_status: post.status || post.generationStatus || post.generation_status || 'pending',
+    }
+    
+    setSelectedPost(normalizedPost)
+    setSelectedFeedId(feedId ? Number(feedId) : null)
+    setIsPostModalOpen(true)
   }, [])
+  
+  // Handle modal close
+  const handleClosePostModal = useCallback(() => {
+    setIsPostModalOpen(false)
+    setSelectedPost(null)
+    setSelectedFeedId(null)
+  }, [])
+  
+  // Handle post update after generation/regeneration
+  const handlePostUpdate = useCallback(async () => {
+    if (!selectedFeedId) return
+    
+    // Refresh feeds to get updated post data
+    await refreshFeeds()
+    
+    // Find the updated post in the refreshed feeds
+    const feed = feeds.find(f => (f.id || f.feedId) === selectedFeedId)
+    if (feed && selectedPost) {
+      const updatedPost = feed.posts?.find((p: any) => p.id === selectedPost.id)
+      if (updatedPost) {
+        const normalizedPost = {
+          id: updatedPost.id,
+          position: updatedPost.position,
+          prompt: updatedPost.prompt || '',
+          caption: updatedPost.caption || '',
+          content_pillar: updatedPost.content_pillar || updatedPost.purpose || '',
+          post_type: updatedPost.postType || updatedPost.post_type || 'portrait',
+          image_url: updatedPost.imageUrl || updatedPost.image_url || null,
+          generation_status: updatedPost.status || updatedPost.generationStatus || updatedPost.generation_status || 'pending',
+        }
+        setSelectedPost(normalizedPost)
+      }
+    }
+  }, [selectedFeedId, selectedPost, feeds, refreshFeeds])
+  
+  // Handle ESC key to close modal
+  useEffect(() => {
+    if (!isPostModalOpen) return
+    
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleClosePostModal()
+      }
+    }
+    
+    document.addEventListener('keydown', handleEscape)
+    document.body.style.overflow = 'hidden'
+    
+    return () => {
+      document.removeEventListener('keydown', handleEscape)
+      document.body.style.overflow = ''
+    }
+  }, [isPostModalOpen, handleClosePostModal])
 
   // Wrapper handlers that use the pure functions and update UI state
   const handleCreateFeed = useCallback(
@@ -223,8 +297,17 @@ export default function MayaFeedTab({
           return
         }
 
-      // Update messages with feed card
+      // Find the last assistant message ID BEFORE updating state (setState is async)
+      // This ensures we have the message ID available for database persistence
       let lastAssistantMessageId: number | null = null
+      for (let i = messages.length - 1; i >= 0; i--) {
+        if (messages[i].role === "assistant") {
+          lastAssistantMessageId = parseInt(messages[i].id)
+          break
+        }
+      }
+
+      // Update messages with feed card
       setMessages((prevMessages: any[]) => {
         const updatedMessages = [...prevMessages]
 
@@ -233,18 +316,15 @@ export default function MayaFeedTab({
           if (updatedMessages[i].role === "assistant") {
             const lastAssistant = updatedMessages[i]
 
-            // Check if feed card already exists (prevent duplicates on refresh)
+            // Check if feed card already exists for this specific feedId (prevent duplicates)
             const hasFeedCard = lastAssistant.parts?.some(
-              (p: any) => p.type === "tool-generateFeed"
+              (p: any) => p.type === "tool-generateFeed" && p.output?.feedId === result.feedId
             )
 
             if (hasFeedCard) {
-              console.log("[FEED] Feed card already exists in message, skipping")
+              console.log("[FEED] Feed card already exists in message for feedId:", result.feedId, "- skipping duplicate")
               break
             }
-
-            // Store message ID for persistence
-            lastAssistantMessageId = parseInt(lastAssistant.id)
 
             const updatedParts = [
               ...(lastAssistant.parts || []),
@@ -278,7 +358,7 @@ export default function MayaFeedTab({
         return updatedMessages
       })
 
-        // Save feed marker to database for persistence
+        // Save feed marker to database for persistence (using ID captured before setState)
         if (lastAssistantMessageId) {
           await saveFeedMarkerToMessage(lastAssistantMessageId, result.feedId)
         }
@@ -296,6 +376,7 @@ export default function MayaFeedTab({
       }
     },
     [
+      messages, // Added: used to find last assistant message ID
       studioProMode,
       styleStrength,
       promptAccuracy,
@@ -309,10 +390,33 @@ export default function MayaFeedTab({
   )
 
   const handleGenerateCaptions = useCallback(async () => {
-    const result = await generateCaptionsHandler()
+    // Extract feedId from the latest feed card in messages
+    let feedId: string | undefined
+    
+    // Find the most recent feed card in messages
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const msg = messages[i]
+      if (msg.role === "assistant" && msg.parts) {
+        const feedCardPart = msg.parts.find((p: any) => p.type === "tool-generateFeed")
+        if (feedCardPart?.output?.feedId) {
+          feedId = String(feedCardPart.output.feedId)
+          break
+        }
+      }
+    }
+    
+    if (!feedId) {
+      console.error("[FEED-CAPTIONS] ❌ No feed ID found in messages")
+      alert("Please create a feed first before generating captions.")
+      return
+    }
+    
+    console.log("[FEED-CAPTIONS] Generating captions for feed:", feedId)
+    const result = await generateCaptionsHandler(feedId)
 
     if (!result.success || !result.captions) {
       console.error("[FEED-CAPTIONS] Failed to generate captions:", result.error)
+      alert(result.error || "Failed to generate captions. Please try again.")
       return
     }
 
@@ -357,13 +461,36 @@ export default function MayaFeedTab({
 
     // Call parent callback
     await onGenerateCaptions()
-  }, [setMessages, onGenerateCaptions])
+  }, [messages, setMessages, onGenerateCaptions])
 
   const handleGenerateStrategy = useCallback(async () => {
-    const result = await generateStrategyHandler()
+    // Extract feedId from the latest feed card in messages
+    let feedId: string | undefined
+    
+    // Find the most recent feed card in messages
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const msg = messages[i]
+      if (msg.role === "assistant" && msg.parts) {
+        const feedCardPart = msg.parts.find((p: any) => p.type === "tool-generateFeed")
+        if (feedCardPart?.output?.feedId) {
+          feedId = String(feedCardPart.output.feedId)
+          break
+        }
+      }
+    }
+    
+    if (!feedId) {
+      console.error("[FEED-STRATEGY] ❌ No feed ID found in messages")
+      alert("Please create a feed first before generating strategy.")
+      return
+    }
+    
+    console.log("[FEED-STRATEGY] Generating strategy for feed:", feedId)
+    const result = await generateStrategyHandler(feedId)
 
     if (!result.success || !result.strategy) {
       console.error("[FEED-STRATEGY] Failed to generate strategy:", result.error)
+      alert(result.error || "Failed to generate strategy. Please try again.")
       return
     }
 
@@ -408,7 +535,7 @@ export default function MayaFeedTab({
 
     // Call parent callback
     await onGenerateStrategy()
-  }, [setMessages, onGenerateStrategy])
+  }, [messages, setMessages, onGenerateStrategy])
 
   // Detect feed triggers in messages
   useEffect(() => {
@@ -441,12 +568,21 @@ export default function MayaFeedTab({
     const feedStrategyMatch = textContent.match(/\[CREATE_FEED_STRATEGY:\s*(\{[\s\S]*\})\]/i)
 
     if (feedStrategyMatch) {
-      // CRITICAL: Check if message already has feed card FIRST (like concept cards check)
+      // CRITICAL: Check if message already has feed card FIRST (prevent duplicate creation on page refresh)
+      // This is essential because on page reload, messages are loaded from DB and triggers are re-evaluated
       const alreadyHasFeedCard = lastAssistantMessage.parts?.some(
         (p: any) => p.type === "tool-generateFeed"
       )
       if (alreadyHasFeedCard) {
-        console.log("[FEED] Message already has feed card, skipping:", messageId)
+        console.log("[FEED] ⚠️ Message already has feed card, skipping trigger (likely from page refresh):", messageId)
+        processedFeedMessagesRef.current.add(messageId)
+        return
+      }
+      
+      // Also check if feed marker exists in content (another indicator feed was already created)
+      const hasFeedMarker = lastAssistantMessage.content?.includes('[FEED_CARD:')
+      if (hasFeedMarker) {
+        console.log("[FEED] ⚠️ Message already has feed marker, skipping trigger (likely from page refresh):", messageId)
         processedFeedMessagesRef.current.add(messageId)
         return
       }
@@ -576,7 +712,7 @@ export default function MayaFeedTab({
                       <InstagramFeedCard
                         key={normalizedFeed.id}
                         feed={normalizedFeed}
-                        onPostClick={handlePostClick}
+                        onPostClick={(post) => handlePostClick(post, normalizedFeed.id)}
                         onDelete={() => handleDeleteFeed(normalizedFeed.id!)}
                       />
                     )
@@ -643,6 +779,53 @@ export default function MayaFeedTab({
           </div>
         )}
       </div>
+      
+      {/* Post Detail Modal */}
+      {isPostModalOpen && selectedPost && selectedFeedId && typeof window !== 'undefined' && createPortal(
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={handleClosePostModal}
+          style={{
+            paddingTop: "env(safe-area-inset-top)",
+            paddingBottom: "env(safe-area-inset-bottom)",
+          }}
+        >
+          {/* Modal Content */}
+          <div
+            className="relative w-full h-full max-w-4xl max-h-[90vh] bg-white rounded-lg overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            <button
+              onClick={handleClosePostModal}
+              className="absolute top-4 right-4 z-10 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-colors min-w-[44px] min-h-[44px] touch-manipulation active:scale-95"
+              aria-label="Close modal"
+            >
+              <svg
+                className="w-5 h-5 text-stone-950"
+                fill="none"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            
+            {/* FeedPostCard */}
+            <div className="flex-1 overflow-y-auto">
+              <FeedPostCard
+                post={selectedPost}
+                feedId={selectedFeedId}
+                onGenerate={handlePostUpdate}
+              />
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </>
   )
 }

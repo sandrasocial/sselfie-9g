@@ -1,14 +1,17 @@
 /**
  * Feed Prompt Expert
  * 
- * Specialized AI prompting for cohesive 9-post Instagram feeds
- * Unlike concept cards (maximize diversity), feeds require visual harmony
+ * VALIDATES and AUGMENTS Maya's prompts rather than replacing them.
+ * Maya generates prompts using her intelligence and brand knowledge.
+ * This module ensures quality standards are met and provides fallback generation.
  * 
  * Supports:
+ * - Validation: Checks Maya's prompts for quality, trigger words, color palette, forbidden terms
+ * - Augmentation: Adds missing elements (color palette, lighting) when needed
+ * - Fallback: Generates replacement prompts only when Maya's prompt is critically broken
  * - Classic Mode: LoRA-trained model prompts (short, trigger word)
  * - Pro Mode: NanaBanana Pro prompts (detailed, editorial)
  * - 5 signature aesthetics with specific visual elements
- * - 80% user photos / 20% lifestyle content
  */
 
 // ============================================================================
@@ -239,7 +242,7 @@ export const AESTHETIC_POSES_MOMENTS: Record<string, string[]> = {
 // PROMPT GENERATION FUNCTIONS
 // ============================================================================
 
-interface FeedPromptParams {
+export interface FeedPromptParams {
   mode: 'classic' | 'pro'
   postType: 'user' | 'lifestyle'
   shotType: 'portrait' | 'half-body' | 'full-body' | 'object' | 'flatlay' | 'scenery'
@@ -285,7 +288,15 @@ function generateClassicModePrompt(params: FeedPromptParams): string {
  * Generate feed-optimized prompt for Pro Mode (NanaBanana)
  */
 function generateProModePrompt(params: FeedPromptParams): string {
-  const { postType, shotType, colorPalette, visualDirection, purpose, background, gender, ethnicity, physicalPreferences } = params
+  const { postType, shotType, colorPalette, visualDirection, purpose, background, gender, ethnicity, physicalPreferences, triggerWord } = params
+  
+  // CRITICAL: Pro Mode should NEVER receive or use trigger word
+  if (triggerWord) {
+    console.error('[PROMPT-EXPERT] ❌ ERROR: Trigger word provided to Pro Mode - this is wrong!')
+    console.error('[PROMPT-EXPERT] Pro Mode uses reference images, NOT trigger words')
+    console.error('[PROMPT-EXPERT] Trigger word received:', triggerWord)
+    console.error('[PROMPT-EXPERT] This should not happen - Pro Mode prompts should not include trigger words')
+  }
   
   if (postType === 'lifestyle') {
     // Detailed lifestyle object description
@@ -326,10 +337,35 @@ function generateProModePrompt(params: FeedPromptParams): string {
  * Main export: Generate feed prompt
  */
 export function generateFeedPrompt(params: FeedPromptParams): string {
+  console.log(`[PROMPT-EXPERT] 🎨 Generating ${params.mode} mode prompt for ${params.postType} post (${params.shotType})`)
+  console.log(`[PROMPT-EXPERT] 🎨 Aesthetic: ${params.colorPalette.name} (${params.colorPalette.id})`)
+  console.log(`[PROMPT-EXPERT] 🎨 Color palette: ${params.colorPalette.hexCodes.join(', ')}`)
+  
   if (params.mode === 'classic') {
-    return generateClassicModePrompt(params)
+    const prompt = generateClassicModePrompt(params)
+    console.log(`[PROMPT-EXPERT] ✅ Classic prompt generated (${prompt.length} chars)`)
+    console.log(`[PROMPT-EXPERT] Preview: ${prompt.substring(0, 100)}...`)
+    if (params.triggerWord) {
+      console.log(`[PROMPT-EXPERT] ✅ Trigger word used: ${params.triggerWord}`)
+    } else {
+      console.warn(`[PROMPT-EXPERT] ⚠️ No trigger word provided for Classic Mode`)
+    }
+    return prompt
   } else {
-    return generateProModePrompt(params)
+    // Pro Mode - validate no trigger word
+    if (params.triggerWord) {
+      console.error(`[PROMPT-EXPERT] ❌ CRITICAL: Trigger word "${params.triggerWord}" provided to Pro Mode - this is incorrect!`)
+    }
+    const prompt = generateProModePrompt(params)
+    console.log(`[PROMPT-EXPERT] ✅ Pro prompt generated (${prompt.length} chars)`)
+    console.log(`[PROMPT-EXPERT] Preview: ${prompt.substring(0, 100)}...`)
+    if (prompt.length < 150) {
+      console.warn(`[PROMPT-EXPERT] ⚠️ Pro Mode prompt is shorter than recommended (<150 chars)`)
+    }
+    if (prompt.length > 300) {
+      console.warn(`[PROMPT-EXPERT] ⚠️ Pro Mode prompt is longer than recommended (>300 chars)`)
+    }
+    return prompt
   }
 }
 
@@ -338,64 +374,203 @@ export function generateFeedPrompt(params: FeedPromptParams): string {
 // ============================================================================
 
 /**
- * Validate prompt meets feed quality standards
+ * Validate and augment Maya's prompt
+ * Returns validation results + suggested improvements + augmented prompt if needed
+ */
+export function validateAndAugmentPrompt(
+  prompt: string,
+  mode: 'classic' | 'pro',
+  colorPalette: ColorPalette,
+  postType: 'user' | 'lifestyle',
+  userTriggerWord?: string // User's actual trigger word for validation
+): {
+  valid: boolean
+  score: number // 0-100
+  errors: string[]
+  warnings: string[]
+  suggestions: string[]
+  augmentedPrompt?: string
+} {
+  const errors: string[] = []
+  const warnings: string[] = []
+  const suggestions: string[] = []
+  let score = 100
+  
+  // Length validation
+  const wordCount = prompt.split(/\s+/).filter(w => w.length > 0).length
+  if (mode === 'classic') {
+    if (wordCount > 100) {
+      warnings.push(`Classic mode prompt is too long (${wordCount} words, should be 50-100)`)
+      score -= 10
+    }
+    if (wordCount < 30) {
+      warnings.push(`Classic mode prompt is too short (${wordCount} words, should be 50-100)`)
+      score -= 10
+    }
+  } else {
+    if (wordCount > 300) {
+      warnings.push(`Pro mode prompt is too long (${wordCount} words, should be 150-250)`)
+      score -= 10
+    }
+    if (wordCount < 100) {
+      errors.push(`Pro mode prompt is too short (${wordCount} words, should be 150-250)`)
+      score -= 30
+    }
+  }
+  
+  const lowerPrompt = prompt.toLowerCase()
+  
+  // Trigger word validation
+  if (mode === 'classic') {
+    if (userTriggerWord) {
+      // Check if Maya used the correct user's trigger word
+      const triggerWordLower = userTriggerWord.toLowerCase()
+      const promptStartsWithTrigger = prompt.trim().toLowerCase().startsWith(triggerWordLower)
+      
+      if (!promptStartsWithTrigger) {
+        errors.push(`Classic mode MUST start with your trigger word: "${userTriggerWord}"`)
+        score -= 50
+        suggestions.push(`Start prompt with: "${userTriggerWord}, [ethnicity] [gender], ..."`)
+      } else {
+        console.log(`[PROMPT-VALIDATION] ✅ Classic mode prompt correctly starts with trigger word: ${userTriggerWord}`)
+      }
+    } else {
+      // Fallback: check for generic trigger word pattern
+      const hasTriggerPattern = /^(ohwx|sselfie_\w+)/i.test(prompt.trim())
+      if (!hasTriggerPattern) {
+        errors.push('Classic mode MUST start with trigger word (e.g., "ohwx" or "sselfie_username_social")')
+        score -= 50
+      }
+    }
+  } else {
+    // Pro Mode: Check that NO trigger word is present
+    if (userTriggerWord) {
+      const triggerWordLower = userTriggerWord.toLowerCase()
+      if (prompt.toLowerCase().includes(triggerWordLower)) {
+        errors.push(`Pro mode must NOT include trigger word "${userTriggerWord}" (uses reference images instead)`)
+        score -= 50
+      }
+    } else {
+      // Fallback: check for generic trigger word pattern
+      const hasTriggerPattern = /(ohwx|sselfie_\w+)/i.test(prompt)
+      if (hasTriggerPattern) {
+        errors.push('Pro mode must NOT include trigger word (uses reference images instead)')
+        score -= 50
+      }
+    }
+  }
+  
+  // Forbidden business language
+  const forbiddenTerms = [
+    'professional woman working',
+    'entrepreneur at desk',
+    'office setting',
+    'corporate',
+    'business meeting',
+    'boss mom',
+    'ceo energy',
+    'girlboss',
+    'laptop prominently',
+    'linkedin',
+    'stock photo'
+  ]
+  
+  forbiddenTerms.forEach(term => {
+    if (lowerPrompt.includes(term)) {
+      errors.push(`Contains forbidden business language: "${term}"`)
+      score -= 20
+    }
+  })
+  
+  // Color palette check
+  const hasColorPalette = colorPalette.colors.some(color => 
+    lowerPrompt.includes(color.toLowerCase())
+  ) || colorPalette.hexCodes.some(hex =>
+    lowerPrompt.includes(hex.toLowerCase())
+  ) || lowerPrompt.includes('color palette') || lowerPrompt.includes('palette')
+  
+  if (!hasColorPalette) {
+    warnings.push(`Should mention color palette: ${colorPalette.colors.join(', ')}`)
+    score -= 15
+    suggestions.push(`Add color reference: "${colorPalette.colors.slice(0, 3).join(', ')} color palette"`)
+  }
+  
+  // Lighting check
+  if (!lowerPrompt.includes('light')) {
+    warnings.push('Should include lighting description')
+    score -= 10
+    suggestions.push(`Add lighting: "${colorPalette.lighting.split(',')[0]}"`)
+  }
+  
+  // Aesthetic mood check
+  const aestheticMoods = ['editorial', 'luxury', 'sophisticated', 'minimal', 'romantic', 'serene', 'cozy', 'elegant']
+  const hasMood = aestheticMoods.some(mood => lowerPrompt.includes(mood))
+  if (!hasMood) {
+    warnings.push('Consider adding aesthetic mood descriptor')
+    suggestions.push(`Add mood: "${colorPalette.mood.split(',')[0]}"`)
+  }
+  
+  // Augment prompt if needed (add missing critical elements)
+  let augmentedPrompt = prompt
+  
+  // Fix missing trigger word in Classic Mode (critical fix)
+  if (mode === 'classic' && userTriggerWord) {
+    const triggerWordLower = userTriggerWord.toLowerCase()
+    const promptStartsWithTrigger = prompt.trim().toLowerCase().startsWith(triggerWordLower)
+    
+    if (!promptStartsWithTrigger) {
+      // Prepend the correct trigger word
+      augmentedPrompt = `${userTriggerWord} ${prompt.trim()}`
+      console.log(`[PROMPT-AUGMENTATION] ✅ Added missing trigger word "${userTriggerWord}" to Classic Mode prompt`)
+    }
+  }
+  
+  // Add missing color palette
+  if (!hasColorPalette && suggestions.length > 0) {
+    // Add color palette to end
+    augmentedPrompt += `, ${colorPalette.colors.slice(0, 3).join(' ')} color palette`
+  }
+  
+  return {
+    valid: errors.length === 0,
+    score,
+    errors,
+    warnings,
+    suggestions,
+    augmentedPrompt: augmentedPrompt !== prompt ? augmentedPrompt : undefined
+  }
+}
+
+/**
+ * Legacy validation function (kept for backward compatibility)
  */
 export function validateFeedPrompt(prompt: string, mode: 'classic' | 'pro'): {
   valid: boolean
   errors: string[]
   warnings: string[]
 } {
-  const errors: string[] = []
-  const warnings: string[] = []
-  
-  // Length validation
-  if (mode === 'classic' && prompt.length > 500) {
-    warnings.push('Classic mode prompt is longer than recommended (>500 chars)')
-  }
-  if (mode === 'pro' && prompt.length < 200) {
-    warnings.push('Pro mode prompt is shorter than recommended (<200 chars)')
-  }
-  
-  // Forbidden terms check
-  const forbiddenTerms = [
-    'professional woman working',
-    'entrepreneur at desk',
-    'office setting',
-    'laptop prominently',
-    'corporate',
-    'business meeting',
-    'linkedin',
-    'stock photo'
-  ]
-  
-  const lowerPrompt = prompt.toLowerCase()
-  forbiddenTerms.forEach(term => {
-    if (lowerPrompt.includes(term)) {
-      errors.push(`Contains forbidden business language: "${term}"`)
-    }
-  })
-  
-  // Check for color palette mention
-  if (!lowerPrompt.includes('color') && !lowerPrompt.includes('palette') && !lowerPrompt.includes('tone')) {
-    warnings.push('Prompt should mention color palette for visual cohesion')
-  }
-  
-  // Check for lighting description
-  if (!lowerPrompt.includes('light')) {
-    errors.push('Prompt must include lighting description')
-  }
-  
-  // Check for aesthetic mood
-  const aestheticMoods = ['editorial', 'luxury', 'sophisticated', 'minimal', 'romantic', 'serene', 'cozy', 'elegant']
-  const hasMood = aestheticMoods.some(mood => lowerPrompt.includes(mood))
-  if (!hasMood) {
-    warnings.push('Consider adding aesthetic mood descriptor for better quality')
-  }
+  // Use default palette for basic validation
+  const defaultPalette = MAYA_SIGNATURE_PALETTES.BEIGE_SIMPLE
+  const result = validateAndAugmentPrompt(prompt, mode, defaultPalette, 'user')
   
   return {
-    valid: errors.length === 0,
-    errors,
-    warnings
+    valid: result.valid,
+    errors: result.errors,
+    warnings: result.warnings
+  }
+}
+
+/**
+ * Use feed-prompt-expert as FALLBACK only
+ * If Maya's prompt is completely broken, generate a replacement
+ */
+export function generateFallbackPrompt(params: FeedPromptParams): string {
+  console.warn('[PROMPT-EXPERT] ⚠️ Using fallback prompt generation (Maya\'s prompt was invalid)')
+  
+  if (params.mode === 'classic') {
+    return generateClassicModePrompt(params)
+  } else {
+    return generateProModePrompt(params)
   }
 }
 
