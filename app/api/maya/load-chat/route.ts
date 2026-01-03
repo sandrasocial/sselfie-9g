@@ -2,6 +2,9 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getOrCreateActiveChat, getChatMessages, loadChatById } from "@/lib/data/maya"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
+import { neon } from "@neondatabase/serverless"
+
+const sql = neon(process.env.DATABASE_URL!)
 
 export async function GET(request: NextRequest) {
   try {
@@ -109,16 +112,77 @@ export async function GET(request: NextRequest) {
               parts[0].text = cleanTextContent || ""
             }
             
-            parts.push({
-              type: 'tool-generateFeed',
-              output: {
-                feedId: feedId,
-                title: 'Instagram Feed',
-                description: '',
-                posts: [],
-                _needsRestore: true,
-              },
-            })
+            // CRITICAL: Fetch full feed data including posts with captions and prompts
+            try {
+              const [feedData] = await sql`
+                SELECT 
+                  fl.id as feed_id,
+                  fl.title as feed_title,
+                  fl.description as feed_description,
+                  fl.brand_vibe,
+                  fl.color_palette,
+                  json_agg(
+                    json_build_object(
+                      'id', fp.id,
+                      'position', fp.position,
+                      'prompt', fp.prompt,
+                      'caption', fp.caption,
+                      'content_pillar', fp.content_pillar,
+                      'post_type', fp.post_type,
+                      'image_url', fp.image_url,
+                      'generation_status', fp.generation_status
+                    ) ORDER BY fp.position ASC
+                  ) as posts
+                FROM feed_layouts fl
+                LEFT JOIN feed_posts fp ON fp.feed_layout_id = fl.id
+                WHERE fl.id = ${feedId} AND fl.user_id = ${neonUser.id}
+                GROUP BY fl.id, fl.title, fl.description, fl.brand_vibe, fl.color_palette
+              `
+              
+              if (feedData && feedData.posts) {
+                console.log("[v0] ✅ Loaded feed data with", feedData.posts.length, "posts including captions")
+                parts.push({
+                  type: 'tool-generateFeed',
+                  output: {
+                    feedId: feedId,
+                    title: feedData.feed_title || 'Instagram Feed',
+                    description: feedData.feed_description || '',
+                    posts: feedData.posts || [],
+                    strategy: {
+                      gridPattern: feedData.brand_vibe || '',
+                      visualRhythm: feedData.color_palette || '',
+                    },
+                    isSaved: true,
+                  },
+                })
+              } else {
+                // Fallback if feed not found
+                console.warn("[v0] ⚠️ Feed not found for feedId:", feedId, "- using empty placeholder")
+                parts.push({
+                  type: 'tool-generateFeed',
+                  output: {
+                    feedId: feedId,
+                    title: 'Instagram Feed',
+                    description: '',
+                    posts: [],
+                    _needsRestore: true,
+                  },
+                })
+              }
+            } catch (error) {
+              console.error("[v0] ❌ Error loading feed data:", error)
+              // Fallback on error
+              parts.push({
+                type: 'tool-generateFeed',
+                output: {
+                  feedId: feedId,
+                  title: 'Instagram Feed',
+                  description: '',
+                  posts: [],
+                  _needsRestore: true,
+                },
+              })
+            }
             console.log("[v0] ✅ Added feed card part for feedId:", feedId, "to concept card message")
           }
         }
@@ -172,17 +236,77 @@ export async function GET(request: NextRequest) {
             })
           }
           
-          // Add feed card part (will be fetched on client side)
-          parts.push({
-            type: 'tool-generateFeed',
-            output: {
-              feedId: feedId,
-              title: 'Instagram Feed',
-              description: '',
-              posts: [],
-              _needsRestore: true, // Flag to fetch on client
-            },
-          })
+          // CRITICAL: Fetch full feed data including posts with captions and prompts
+          try {
+            const [feedData] = await sql`
+              SELECT 
+                fl.id as feed_id,
+                fl.title as feed_title,
+                fl.description as feed_description,
+                fl.brand_vibe,
+                fl.color_palette,
+                json_agg(
+                  json_build_object(
+                    'id', fp.id,
+                    'position', fp.position,
+                    'prompt', fp.prompt,
+                    'caption', fp.caption,
+                    'content_pillar', fp.content_pillar,
+                    'post_type', fp.post_type,
+                    'image_url', fp.image_url,
+                    'generation_status', fp.generation_status
+                  ) ORDER BY fp.position ASC
+                ) as posts
+              FROM feed_layouts fl
+              LEFT JOIN feed_posts fp ON fp.feed_layout_id = fl.id
+              WHERE fl.id = ${feedId} AND fl.user_id = ${neonUser.id}
+              GROUP BY fl.id, fl.title, fl.description, fl.brand_vibe, fl.color_palette
+            `
+            
+            if (feedData && feedData.posts) {
+              console.log("[v0] ✅ Loaded feed data with", feedData.posts.length, "posts including captions")
+              parts.push({
+                type: 'tool-generateFeed',
+                output: {
+                  feedId: feedId,
+                  title: feedData.feed_title || 'Instagram Feed',
+                  description: feedData.feed_description || '',
+                  posts: feedData.posts || [],
+                  strategy: {
+                    gridPattern: feedData.brand_vibe || '',
+                    visualRhythm: feedData.color_palette || '',
+                  },
+                  isSaved: true,
+                },
+              })
+            } else {
+              // Fallback if feed not found
+              console.warn("[v0] ⚠️ Feed not found for feedId:", feedId, "- using empty placeholder")
+              parts.push({
+                type: 'tool-generateFeed',
+                output: {
+                  feedId: feedId,
+                  title: 'Instagram Feed',
+                  description: '',
+                  posts: [],
+                  _needsRestore: true,
+                },
+              })
+            }
+          } catch (error) {
+            console.error("[v0] ❌ Error loading feed data:", error)
+            // Fallback on error
+            parts.push({
+              type: 'tool-generateFeed',
+              output: {
+                feedId: feedId,
+                title: 'Instagram Feed',
+                description: '',
+                posts: [],
+                _needsRestore: true,
+              },
+            })
+          }
           console.log("[v0] ✅ Added feed card part for feedId:", feedId)
         } else {
           console.log("[v0] ⚠️ Feed card part already exists for feedId:", feedId, "- skipping duplicate")

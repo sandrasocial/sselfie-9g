@@ -116,7 +116,14 @@ export async function POST(req: Request) {
     console.log("[v0] Chat type detected:", { 
       fromBody: chatTypeFromBody, 
       fromHeader: chatTypeHeader, 
-      final: chatType 
+      activeTabHeader,
+      isFeedTab,
+      final: chatType,
+      allHeaders: {
+        "x-chat-type": chatTypeHeader,
+        "x-active-tab": activeTabHeader,
+        "x-studio-pro-mode": req.headers.get("x-studio-pro-mode"),
+      }
     })
 
     // Check if this is prompt_builder mode (admin tool) or admin user - bypass credit check

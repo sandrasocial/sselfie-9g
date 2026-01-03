@@ -176,22 +176,26 @@ export async function queueAllImagesForFeed(
           // Only regenerate if prompt is missing (shouldn't happen, but safety check)
           let finalPrompt = post.prompt
           
-          if (!finalPrompt || finalPrompt.trim().length < 20) {
-            console.warn(`[v0] ⚠️ Post ${post.position} missing prompt, regenerating...`)
-            // If prompt is missing, regenerate using content_pillar or prompt field
+          if (!finalPrompt || finalPrompt.trim().length < 20 || finalPrompt.includes('Generating prompt')) {
+            console.warn(`[v0] ⚠️ Post ${post.position} missing proper prompt (has: "${finalPrompt}"), regenerating with fallback logic...`)
+            // FALLBACK: If Maya didn't include prompts in strategy, generate basic prompt
+            // This shouldn't happen if Maya follows instructions, but provides safety net
             const proModeType = (post.pro_mode_type || 'workbench') as any
-            // Note: description column doesn't exist - use content_pillar or prompt field
-            const userRequest = post.content_pillar || post.prompt || `Feed post ${post.position}`
+            
+            // Use content_pillar for visual direction (NOT caption - caption is for Instagram)
+            const visualDirection = post.content_pillar || `Position ${post.position} - ${post.post_type || 'portrait'} post`
+            
+            console.warn(`[v0] 🔄 Regenerating prompt with visual direction: "${visualDirection}"`)
             
             const { optimizedPrompt } = await buildNanoBananaPrompt({
               userId: neonUser.id,
               mode: proModeType,
-              userRequest, // Visual direction, NOT Instagram caption
+              userRequest: visualDirection, // Visual direction for image generation
               inputImages: {
                 baseImages,
                 productImages: [],
                 textElements: post.post_type === 'quote' ? [{
-                  text: post.caption || '',
+                  text: post.caption && !post.caption.includes('Generating') ? post.caption : 'Inspiring Quote',
                   style: 'quote' as const,
                 }] : undefined,
               },
@@ -206,9 +210,20 @@ export async function queueAllImagesForFeed(
                 brandTone: brandKit.brand_tone,
               } : undefined,
             })
+            
             finalPrompt = optimizedPrompt
+            
+            // Update database with regenerated prompt so it's not lost
+            await sql`
+              UPDATE feed_posts 
+              SET prompt = ${finalPrompt}, updated_at = NOW()
+              WHERE id = ${post.id}
+            `
+            
+            console.log(`[v0] ⚠️ Regenerated and saved prompt for post ${post.position} (${finalPrompt.length} chars)`)
+            console.log(`[v0] ⚠️ NOTE: This shouldn't happen if Maya includes prompts in [CREATE_FEED_STRATEGY] JSON`)
           } else {
-            console.log(`[v0] ✅ Using pre-generated prompt for post ${post.position} (${finalPrompt.split(/\s+/).length} words)`)
+            console.log(`[v0] ✅ Using Maya's expert prompt from strategy (${finalPrompt.split(/\s+/).length} words)`)
           }
           
           // Generate with Nano Banana Pro (credits deducted at end for successful generations only)

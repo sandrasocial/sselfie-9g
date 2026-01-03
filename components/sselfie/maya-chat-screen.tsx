@@ -3577,6 +3577,7 @@ export default function MayaChatScreen({
               setMessages={setMessages}
               studioProMode={studioProMode}
               isTyping={isTyping}
+              status={status}
               isGeneratingConcepts={isGeneratingConcepts}
               isGeneratingStudioPro={isGeneratingStudioPro}
               isCreatingFeed={isCreatingFeed}

@@ -169,11 +169,11 @@ export default function FeedPreviewCard({
           
           if (feedData.posts && Array.isArray(feedData.posts) && feedData.posts.length > 0) {
             postsToSet = feedData.posts
-            console.log("[FeedPreviewCard] ✅ Using posts from root level:", feedData.posts.length)
+            console.log("[FeedPreviewCard] ✅ Using posts from root level:", postsToSet.length)
           } else if (feedData.feed?.posts && Array.isArray(feedData.feed.posts) && feedData.feed.posts.length > 0) {
             // Fallback for legacy format
             postsToSet = feedData.feed.posts
-            console.log("[FeedPreviewCard] ✅ Using posts from feed.posts (legacy format):", feedData.feed.posts.length)
+            console.log("[FeedPreviewCard] ✅ Using posts from feed.posts (legacy format):", postsToSet.length)
           }
           
           if (postsToSet && postsToSet.length > 0) {
@@ -413,8 +413,14 @@ export default function FeedPreviewCard({
 
       toast({
         title: "Feed saved",
-        description: "Your feed has been saved successfully",
+        description: "Your feed has been saved successfully. Redirecting to Feed Planner...",
       })
+      
+      // CRITICAL: Navigate to feed planner screen so users can manage their feed
+      // This matches the original behavior where saved feeds go to feed planner
+      setTimeout(() => {
+        router.push(`/feed-planner?feedId=${newFeedId}`)
+      }, 1000) // Small delay to show toast
     } catch (error) {
       console.error("[FeedPreviewCard] ❌ Error saving feed:", error)
       toast({
@@ -431,17 +437,79 @@ export default function FeedPreviewCard({
   // Users must click "Generate Feed" button to generate ALL images in batch
   // This prevents accidental single-image generation and ensures proper batch processing
 
-  const handleGenerateFeed = async () => {
+  // Handle generating images for unsaved feeds (saves first, then generates)
+  const handleGenerateImages = async () => {
+    try {
+      // First, save the feed if not saved
+      if (!isSaved || !feedId) {
+        console.log("[FeedPreviewCard] Feed not saved yet, saving first...")
+        setIsSaving(true)
+        
+        try {
+          const saveResponse = await fetch('/api/feed-planner/create-from-strategy', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+              strategy,
+              studioProMode,
+              styleStrength,
+              promptAccuracy,
+              aspectRatio,
+              realismStrength,
+            }),
+          })
+
+          if (!saveResponse.ok) {
+            const errorData = await saveResponse.json().catch(() => ({}))
+            throw new Error(errorData.error || 'Failed to save feed')
+          }
+
+          const saveData = await saveResponse.json()
+          const newFeedId = saveData.feedLayoutId
+          
+          console.log("[FeedPreviewCard] ✅ Feed saved successfully:", newFeedId)
+          setSavedFeedId(newFeedId)
+          
+          if (onSave) {
+            onSave(newFeedId)
+          }
+          
+          // Now generate images with the new feedId
+          await handleGenerateFeedWithId(newFeedId)
+        } catch (saveError) {
+          console.error("[FeedPreviewCard] ❌ Error saving feed:", saveError)
+          toast({
+            title: "Failed to save feed",
+            description: saveError instanceof Error ? saveError.message : "An error occurred while saving",
+            variant: "destructive",
+          })
+          setIsSaving(false)
+        }
+      } else {
+        // Feed is already saved, just generate
+        await handleGenerateFeedWithId(feedId)
+      }
+    } catch (error) {
+      console.error("[FeedPreviewCard] ❌ Error in handleGenerateImages:", error)
+      setIsGenerating(false)
+      setIsSaving(false)
+    }
+  }
+
+  // Internal function to generate feed images (used by both handleGenerateFeed and handleGenerateImages)
+  const handleGenerateFeedWithId = async (feedIdToUse: number) => {
     setIsGenerating(true)
+    setIsSaving(false) // Clear saving state if it was set
     
     try {
-      console.log("[FeedPreviewCard] 🚀 Generating ALL feed images for feed:", feedId)
+      console.log("[FeedPreviewCard] 🚀 Generating ALL feed images for feed:", feedIdToUse)
       
       const response = await fetch(`/api/feed-planner/queue-all-images`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ feedLayoutId: feedId }),
+        body: JSON.stringify({ feedLayoutId: feedIdToUse }),
       })
       
       if (!response.ok) {
@@ -477,10 +545,18 @@ export default function FeedPreviewCard({
         })
       }
       
+      // Update feedId state if this was called from handleGenerateImages (unsaved feed)
+      if (!feedId || feedId !== feedIdToUse) {
+        setSavedFeedId(feedIdToUse)
+        if (onSave) {
+          onSave(feedIdToUse)
+        }
+      }
+
       // Refresh posts data immediately to show generating status
       // The polling will continue to update, but we need an immediate refresh
       try {
-        const feedResponse = await fetch(`/api/feed/${feedId}`)
+        const feedResponse = await fetch(`/api/feed/${feedIdToUse}`)
         if (feedResponse.ok) {
           const feedData = await feedResponse.json()
           if (feedData.posts && Array.isArray(feedData.posts)) {
@@ -515,7 +591,7 @@ export default function FeedPreviewCard({
             } else {
               // Wait a bit more for posts to update, then check again
               setTimeout(async () => {
-                const recheckResponse = await fetch(`/api/feed/${feedId}`)
+                const recheckResponse = await fetch(`/api/feed/${feedIdToUse}`)
                 if (recheckResponse.ok) {
                   const recheckData = await recheckResponse.json()
                   if (recheckData.posts && Array.isArray(recheckData.posts)) {
@@ -589,6 +665,16 @@ export default function FeedPreviewCard({
     setIsModalOpen(false)
     setSelectedPost(null)
   }
+
+  // CRITICAL: Close modal if feedId becomes null (race condition during save)
+  // This prevents empty modal from displaying when feedId is temporarily null
+  useEffect(() => {
+    if (isModalOpen && !feedId) {
+      console.warn("[FeedPreviewCard] feedId became null while modal is open, closing modal")
+      setIsModalOpen(false)
+      setSelectedPost(null)
+    }
+  }, [feedId, isModalOpen])
 
   const handleRefreshPosts = async () => {
     try {
@@ -786,13 +872,36 @@ export default function FeedPreviewCard({
 
       {/* Action Buttons */}
       <div className="border-t border-stone-200 px-3 sm:px-4 md:px-6 py-3 sm:py-4 bg-white space-y-2 sm:space-y-3">
+        {/* Generate Images Button - Show for unsaved feeds (saves first, then generates) */}
+        {(!isSaved || !feedId) && strategy && (
+          <button
+            onClick={handleGenerateImages}
+            disabled={isGenerating || isSaving}
+            className="w-full py-3 sm:py-3 bg-stone-900 hover:bg-stone-800 active:bg-stone-700 text-white text-xs sm:text-sm font-light tracking-wider uppercase transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed border border-stone-900 min-h-[44px] touch-manipulation flex items-center justify-center gap-2"
+          >
+            {isSaving ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                Saving Feed...
+              </>
+            ) : isGenerating ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                Starting Generation...
+              </>
+            ) : (
+              "Generate Images"
+            )}
+          </button>
+        )}
+
         {/* Only show generation/caption buttons for saved feeds */}
         {isSaved && feedId && (
           <>
             {/* Generate Feed Button - Show when there are pending posts and not generating */}
             {pendingCount > 0 && !isAnyGenerating && (
               <button
-                onClick={handleGenerateFeed}
+                onClick={() => handleGenerateFeedWithId(feedId)}
                 disabled={isGenerating}
                 className="w-full py-3 sm:py-3 bg-stone-900 hover:bg-stone-800 active:bg-stone-700 text-white text-xs sm:text-sm font-light tracking-wider uppercase transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed border border-stone-900 min-h-[44px] touch-manipulation"
               >
@@ -844,11 +953,11 @@ export default function FeedPreviewCard({
         
         {/* Save Feed or View Feed Button */}
         {!isSaved || !feedId ? (
-          // Unsaved state: Show "Save Feed" button
+          // Unsaved state: Show "Save Feed" button (secondary action)
           <button
             onClick={handleSaveFeed}
-            disabled={isSaving || !strategy}
-            className="w-full py-3 bg-stone-900 hover:bg-stone-800 active:bg-stone-700 text-white text-xs font-light tracking-wider uppercase transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed border border-stone-900 min-h-[44px] touch-manipulation flex items-center justify-center gap-2"
+            disabled={isSaving || isGenerating || !strategy}
+            className="w-full py-3 bg-white border border-stone-200 text-stone-900 hover:bg-stone-50 active:bg-stone-100 hover:border-stone-300 transition-all duration-200 text-xs font-light tracking-wider uppercase disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] touch-manipulation flex items-center justify-center gap-2"
           >
             {isSaving ? (
               <>
@@ -894,7 +1003,7 @@ export default function FeedPreviewCard({
             </button>
 
             {/* FeedPostCard */}
-            {feedId && (
+            {feedId ? (
               <FeedPostCard
                 post={{
                   id: selectedPost.id,
@@ -908,6 +1017,17 @@ export default function FeedPreviewCard({
                 feedId={feedId}
                 onGenerate={handleRefreshPosts}
               />
+            ) : (
+              // Fallback UI when feedId is null (should be rare due to useEffect above)
+              <div className="bg-white rounded-lg p-6 text-center">
+                <p className="text-stone-600 mb-4">Feed needs to be saved before viewing post details.</p>
+                <button
+                  onClick={handleCloseModal}
+                  className="px-4 py-2 bg-stone-900 text-white rounded hover:bg-stone-800"
+                >
+                  Close
+                </button>
+              </div>
             )}
           </div>
         </div>,

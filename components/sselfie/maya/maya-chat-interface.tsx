@@ -686,68 +686,82 @@ export default function MayaChatInterface({
                               const toolPart = part as any
                               const output = toolPart.output
                               
-                              if (output) {
-                                const isSaved = output.isSaved !== false && !!output.feedId
-                                
-                                // Handle save callback to update message part with feedId
-                                // Use message ID and part type for structural comparison (not identity)
-                                // Identity comparison fails after React re-renders with new message objects
-                                const currentMessageId = msg.id
-                                const handleSave = (feedId: number) => {
-                                  setMessages((prevMessages: any[]) => {
-                                    return prevMessages.map((message) => {
-                                      // Find the message by ID
-                                      if (message.id === currentMessageId && message.parts && Array.isArray(message.parts)) {
-                                        // Find and update the tool-generateFeed part
-                                        const updatedParts = message.parts.map((p: any) => {
-                                          if (p.type === "tool-generateFeed") {
-                                            // Create new output object without strategy property
-                                            const { strategy, ...outputWithoutStrategy } = p.output || {}
-                                            return {
-                                              ...p,
-                                              output: {
-                                                ...outputWithoutStrategy,
-                                                feedId,
-                                                isSaved: true,
-                                              },
-                                            }
-                                          }
-                                          return p
-                                        })
-                                        
-                                        return {
-                                          ...message,
-                                          parts: updatedParts,
-                                        }
-                                      }
-                                      return message
-                                    })
-                                  })
-                                }
-                                
-                                return (
-                                  <FeedPreviewCard
-                                    key={partIndex}
-                                    feedId={output.feedId}
-                                    feedTitle={output.title || 'Instagram Feed'}
-                                    feedDescription={output.description || ''}
-                                    posts={output.posts || []}
-                                    needsRestore={output._needsRestore === true}
-                                    strategy={output.strategy}
-                                    isSaved={isSaved}
-                                    onSave={handleSave}
-                                    studioProMode={output.studioProMode ?? studioProMode}
-                                    styleStrength={output.styleStrength ?? 0.8}
-                                    promptAccuracy={output.promptAccuracy ?? 0.8}
-                                    aspectRatio={output.aspectRatio ?? "1:1"}
-                                    realismStrength={output.realismStrength ?? 0.8}
-                                    onViewFullFeed={() => {
-                                      // Navigate will be handled by FeedPreviewCard component
-                                    }}
-                                  />
-                                )
+                              // CRITICAL: Log for debugging feed card rendering
+                              if (!output) {
+                                console.warn("[MayaChatInterface] Feed card part has no output:", part)
+                                return null
                               }
-                              return null
+                              
+                              console.log("[MayaChatInterface] Rendering feed card:", {
+                                feedId: output.feedId,
+                                title: output.title,
+                                hasPosts: Array.isArray(output.posts),
+                                postsCount: output.posts?.length || 0,
+                                needsRestore: output._needsRestore,
+                                hasStrategy: !!output.strategy,
+                                isSaved: output.isSaved,
+                              })
+                              
+                              const isSaved = output.isSaved !== false && !!output.feedId
+                              
+                              // Handle save callback to update message part with feedId
+                              // Use message ID and part type for structural comparison (not identity)
+                              // Identity comparison fails after React re-renders with new message objects
+                              const currentMessageId = msg.id
+                              const handleSave = (feedId: number) => {
+                                console.log("[MayaChatInterface] Feed saved, updating message:", feedId)
+                                setMessages((prevMessages: any[]) => {
+                                  return prevMessages.map((message) => {
+                                    // Find the message by ID
+                                    if (message.id === currentMessageId && message.parts && Array.isArray(message.parts)) {
+                                      // Find and update the tool-generateFeed part
+                                      const updatedParts = message.parts.map((p: any) => {
+                                        if (p.type === "tool-generateFeed") {
+                                          // Create new output object without strategy property
+                                          const { strategy, ...outputWithoutStrategy } = p.output || {}
+                                          return {
+                                            ...p,
+                                            output: {
+                                              ...outputWithoutStrategy,
+                                              feedId,
+                                              isSaved: true,
+                                            },
+                                          }
+                                        }
+                                        return p
+                                      })
+                                      
+                                      return {
+                                        ...message,
+                                        parts: updatedParts,
+                                      }
+                                    }
+                                    return message
+                                  })
+                                })
+                              }
+                              
+                              return (
+                                <FeedPreviewCard
+                                  key={partIndex}
+                                  feedId={output.feedId}
+                                  feedTitle={output.title || 'Instagram Feed'}
+                                  feedDescription={output.description || ''}
+                                  posts={output.posts || []}
+                                  needsRestore={output._needsRestore === true}
+                                  strategy={output.strategy}
+                                  isSaved={isSaved}
+                                  onSave={handleSave}
+                                  studioProMode={output.studioProMode ?? studioProMode}
+                                  styleStrength={output.styleStrength ?? 0.8}
+                                  promptAccuracy={output.promptAccuracy ?? 0.8}
+                                  aspectRatio={output.aspectRatio ?? "1:1"}
+                                  realismStrength={output.realismStrength ?? 0.8}
+                                  onViewFullFeed={() => {
+                                    // Navigate will be handled by FeedPreviewCard component
+                                  }}
+                                />
+                              )
                             }
 
                             // Render caption cards
@@ -1018,8 +1032,8 @@ export default function MayaChatInterface({
             </div>
           )}
 
-          {/* Enhanced Concept Generation Loading */}
-          {isGeneratingConcepts && (
+          {/* Feed Creation Loading - Show first if active */}
+          {isCreatingFeed && (
             <div className="flex justify-center mt-8 mb-4">
               <div className="bg-white rounded-2xl border border-stone-200/60 p-6 max-w-md w-full shadow-lg">
                 <div className="space-y-4">
@@ -1033,10 +1047,10 @@ export default function MayaChatInterface({
                   {/* Status Text */}
                   <div className="text-center space-y-1">
                     <p className="text-sm font-medium text-stone-900 tracking-wide">
-                      Creating Your Concepts
+                      Creating Your Feed Layout
                     </p>
                     <p className="text-xs text-stone-600 leading-relaxed">
-                      Maya is designing professional concepts for you
+                      Maya is designing your Instagram feed strategy
                     </p>
                   </div>
                 </div>
@@ -1044,8 +1058,8 @@ export default function MayaChatInterface({
             </div>
           )}
 
-          {/* Feed Creation Loading */}
-          {isCreatingFeed && (
+          {/* Enhanced Concept Generation Loading - Only show if NOT creating feed */}
+          {isGeneratingConcepts && !isCreatingFeed && (
             <div className="flex justify-center mt-8 mb-4">
               <div className="bg-white rounded-2xl border border-stone-200/60 p-6 max-w-md w-full shadow-lg">
                 <div className="space-y-4">

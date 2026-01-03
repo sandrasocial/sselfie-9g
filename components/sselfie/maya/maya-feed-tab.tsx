@@ -19,6 +19,7 @@ interface MayaFeedTabProps {
   setMessages: (messages: any[] | ((prev: any[]) => any[])) => void
   studioProMode: boolean
   isTyping: boolean
+  status: "idle" | "streaming" | "submitted" | "ready" // Chat status from useChat hook
   isGeneratingConcepts: boolean
   isGeneratingStudioPro: boolean
   isCreatingFeed: boolean
@@ -77,6 +78,7 @@ export default function MayaFeedTab({
   setMessages,
   studioProMode,
   isTyping,
+  status,
   isGeneratingConcepts,
   isGeneratingStudioPro,
   isCreatingFeed,
@@ -129,7 +131,8 @@ export default function MayaFeedTab({
   // Wrapper handlers that use the pure functions and update UI state
   const handleCreateFeed = useCallback(
     async (strategy: FeedStrategy) => {
-      setIsCreatingFeed(true)
+      // NOTE: isCreatingFeed is set to true in trigger detection (before calling this function)
+      // This ensures the loading indicator shows immediately when trigger is detected
       try {
         // NEW: Store strategy in message part WITHOUT saving to database
         // User will click "Save Feed" button to save it
@@ -371,6 +374,16 @@ export default function MayaFeedTab({
 
   // Detect feed triggers in messages
   useEffect(() => {
+    // Allow processing when ready OR when messages change (to catch newly saved messages)
+    if (messages.length === 0) return
+    
+    // 🔴 CRITICAL: Don't process while actively streaming - this is the main check
+    // Once status is NOT "streaming" or "submitted", the message is complete and safe to process
+    if (status === "streaming" || status === "submitted") {
+      console.log("[FEED] ⏳ Skipping trigger detection - status is:", status)
+      return
+    }
+    
     if (isCreatingFeed) {
       console.log("[FEED] ⏸️ Skipping trigger detection: isCreatingFeed is true")
       return
@@ -478,13 +491,26 @@ export default function MayaFeedTab({
         strategyLength: strategyJson.length,
       })
 
-      try {
-        const strategy = JSON.parse(strategyJson) as FeedStrategy
-        handleCreateFeed(strategy)
-      } catch (error) {
-        console.error("[FEED] ❌ Failed to parse strategy JSON:", error)
-        processedFeedMessagesRef.current.delete(messageKey)
+      // CRITICAL: Set loading state IMMEDIATELY when trigger is detected
+      // This shows the loading indicator right away, before parsing JSON
+      setIsCreatingFeed(true)
+      console.log("[FEED] 🚀 Setting isCreatingFeed=true - showing loading indicator")
+
+      // Create async function to handle feed creation (useEffect callbacks can't be async)
+      const processFeedCreation = async () => {
+        try {
+          const strategy = JSON.parse(strategyJson) as FeedStrategy
+          // handleCreateFeed will be called, which will eventually set isCreatingFeed(false) in its finally block
+          await handleCreateFeed(strategy)
+        } catch (error) {
+          console.error("[FEED] ❌ Failed to parse strategy JSON:", error)
+          processedFeedMessagesRef.current.delete(messageKey)
+          // Reset loading state on error
+          setIsCreatingFeed(false)
+        }
       }
+
+      processFeedCreation()
       return
     }
 
@@ -505,7 +531,7 @@ export default function MayaFeedTab({
       processedFeedMessagesRef.current.add(messageKey)
       return
     }
-  }, [messages, isCreatingFeed, handleCreateFeed, handleGenerateCaptions, handleGenerateStrategy])
+  }, [messages, status, isCreatingFeed, handleCreateFeed, handleGenerateCaptions, handleGenerateStrategy])
 
   return (
     <>

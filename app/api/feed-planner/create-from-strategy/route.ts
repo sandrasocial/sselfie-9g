@@ -526,7 +526,7 @@ export async function POST(request: NextRequest) {
     if (hasPromptsInJSON) {
       console.log("[FEED-FROM-STRATEGY] ✅ Prompts already in strategy JSON (Maya-generated) - skipping prompt generation")
     } else {
-      console.log("[FEED-FROM-STRATEGY] ⚠️ No prompts in strategy JSON - will generate in background")
+      console.log("[FEED-FROM-STRATEGY] ⚠️ No prompts in strategy JSON - prompts will be generated when user clicks 'Generate Feed'")
     }
     
     console.log("[FEED-FROM-STRATEGY] ✅ Posts created. Feed saved to database.")
