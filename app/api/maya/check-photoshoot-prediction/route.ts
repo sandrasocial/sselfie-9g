@@ -75,6 +75,16 @@ export async function GET(request: NextRequest) {
 
           console.log(`[v0] ⬆️ Uploading to Blob storage (${Math.round(imageBlob.size / 1024)}KB)`)
 
+          // Validate blob before uploading (prevent black/corrupted images)
+          if (imageBlob.size === 0) {
+            throw new Error(`Image ${i + 1} blob is empty (0 bytes) - Replicate image may not be ready yet`)
+          }
+
+          const MIN_IMAGE_SIZE = 1024 // 1KB minimum
+          if (imageBlob.size < MIN_IMAGE_SIZE) {
+            console.warn(`[v0] ⚠️ Image ${i + 1} blob is very small:`, imageBlob.size, "bytes - may be corrupted")
+          }
+
           const blob = await put(`photoshoots/${predictionId}-${i}.png`, imageBlob, {
             access: "public",
             contentType: "image/png",

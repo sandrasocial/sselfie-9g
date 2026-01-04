@@ -128,6 +128,22 @@ export async function GET(request: Request) {
         }
         const imageBlob = await imageResponse.blob()
         console.log("[v0] Image blob size:", imageBlob.size, "bytes")
+        console.log("[v0] Image blob type:", imageBlob.type)
+
+        // Validate blob before uploading (prevent black/corrupted images)
+        if (imageBlob.size === 0) {
+          throw new Error("Image blob is empty (0 bytes) - Replicate image may not be ready yet")
+        }
+
+        // Valid PNG/JPEG images should be at least a few KB
+        const MIN_IMAGE_SIZE = 1024 // 1KB minimum
+        if (imageBlob.size < MIN_IMAGE_SIZE) {
+          console.warn("[v0] ⚠️ Image blob is very small:", imageBlob.size, "bytes - may be corrupted")
+        }
+
+        if (!imageBlob.type.startsWith("image/")) {
+          console.warn("[v0] ⚠️ Blob type is not an image:", imageBlob.type, "- proceeding anyway")
+        }
 
         const blob = await put(`feed-posts/${postId}.png`, imageBlob, {
           access: "public",

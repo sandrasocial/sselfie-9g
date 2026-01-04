@@ -30,7 +30,20 @@ export async function GET(request: NextRequest) {
       const imageUrl = Array.isArray(prediction.output) ? prediction.output[0] : prediction.output
 
       const imageResponse = await fetch(imageUrl)
+      if (!imageResponse.ok) {
+        throw new Error(`Failed to fetch image: ${imageResponse.status} ${imageResponse.statusText}`)
+      }
       const imageBlob = await imageResponse.blob()
+
+      // Validate blob before uploading (prevent black/corrupted images)
+      if (imageBlob.size === 0) {
+        throw new Error("Image blob is empty (0 bytes) - Replicate image may not be ready yet")
+      }
+
+      const MIN_IMAGE_SIZE = 1024 // 1KB minimum
+      if (imageBlob.size < MIN_IMAGE_SIZE) {
+        console.warn("[v0] ⚠️ Image blob is very small:", imageBlob.size, "bytes - may be corrupted")
+      }
 
       const blob = await put(`maya-generations/${generationId}.png`, imageBlob, {
         access: "public",
