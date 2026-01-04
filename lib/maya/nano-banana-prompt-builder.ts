@@ -95,77 +95,19 @@ export function cleanStudioProPrompt(prompt: string, userRequest?: string): stri
 
   let cleaned = prompt
 
-  // 1. Remove markdown headlines (e.g., **MOVEMENT & ACTION:**, **OUTFIT & STYLING:**)
-  // Match patterns like **HEADLINE:** or **HEADLINE WITH SPACES:**
-  cleaned = cleaned.replace(/\*\*[^*]+\*\*:\s*/g, '')
+  // 1. Remove ** bold formatting
+  cleaned = cleaned.replace(/\*\*/g, '')
   
-  // Also remove standalone headlines without colons (e.g., **MOVEMENT & ACTION**)
-  cleaned = cleaned.replace(/\*\*[^*]+\*\*\s*\n/g, '')
+  // 2. Remove "Note:" sections
+  cleaned = cleaned.replace(/^Note:.*$/gm, '')
   
-  // Remove any remaining markdown bold formatting
-  cleaned = cleaned.replace(/\*\*([^*]+)\*\*/g, '$1')
-
-  // 2. Remove "Note:" instructions (these are for system, not for Replicate)
-  // Match "Note:" followed by text until end of line or next section
-  cleaned = cleaned.replace(/Note:\s*[^\n]+/gi, '')
-  cleaned = cleaned.replace(/Note\s*:\s*[^\n]+/gi, '')
-  // Also handle "Note: Use the first base image..." patterns
-  cleaned = cleaned.replace(/Note:\s*Use\s+the\s+first\s+base\s+image[^\n]*/gi, '')
-  cleaned = cleaned.replace(/Note:\s*Use\s+other\s+base\s+images[^\n]*/gi, '')
-
-  // 3. Check if user explicitly requested black and white
-  const userRequestLower = (userRequest || '').toLowerCase()
-  const explicitlyRequestedBw = 
-    userRequestLower.includes('black and white') ||
-    userRequestLower.includes('black & white') ||
-    userRequestLower.includes('b&w') ||
-    userRequestLower.includes('monochrome') ||
-    userRequestLower.includes('grayscale')
-
-  // 4. Remove "black and white" unless explicitly requested
-  if (!explicitlyRequestedBw) {
-    // Remove various forms of black and white mentions
-    cleaned = cleaned.replace(/\bblack\s+and\s+white\b/gi, '')
-    cleaned = cleaned.replace(/\bblack\s+&\s+white\b/gi, '')
-    cleaned = cleaned.replace(/\bb&w\b/gi, '')
-    cleaned = cleaned.replace(/\bmonochrome\b/gi, '')
-    cleaned = cleaned.replace(/\bgrayscale\b/gi, '')
-  }
-
-  // 5. Fix "visible pores" issues - remove incomplete phrases
-  // Remove patterns like "visible pores (not )" or "visible pores (not"
-  cleaned = cleaned.replace(/\bvisible\s+pores\s*\(not\s*\)/gi, 'natural skin texture')
-  cleaned = cleaned.replace(/\bvisible\s+pores\s*\(not\b/gi, 'natural skin texture')
-  cleaned = cleaned.replace(/\bvisible\s+pores\s*\(not\s+[^)]*\)/gi, 'natural skin texture')
+  // 3. Remove "CRITICAL:" sections  
+  cleaned = cleaned.replace(/^CRITICAL:.*$/gm, '')
   
-  // Remove standalone "black and white" at the end (if not explicitly requested)
-  if (!explicitlyRequestedBw) {
-    // Remove at end of line or end of prompt
-    cleaned = cleaned.replace(/,\s*black\s+and\s+white\s*$/i, '')
-    cleaned = cleaned.replace(/,\s*black\s+&\s+white\s*$/i, '')
-    cleaned = cleaned.replace(/\s+black\s+and\s+white\s*$/i, '')
-    cleaned = cleaned.replace(/\s+black\s+&\s+white\s*$/i, '')
-    // Also remove if it's on its own line at the end
-    cleaned = cleaned.replace(/\n\s*black\s+and\s+white\s*$/i, '')
-    cleaned = cleaned.replace(/\n\s*black\s+&\s+white\s*$/i, '')
-  }
-
-  // 6. Clean up extra whitespace and newlines
-  cleaned = cleaned.replace(/\n{3,}/g, '\n\n') // Max 2 consecutive newlines
-  cleaned = cleaned.replace(/[ \t]+/g, ' ') // Multiple spaces to single space
-  cleaned = cleaned.replace(/^\s+|\s+$/gm, '') // Trim each line
-  cleaned = cleaned.replace(/\n\s*\n/g, '\n') // Remove empty lines between content
-
-  // 7. Remove any remaining formatting artifacts
-  cleaned = cleaned.replace(/^[-*]\s+/gm, '') // Remove bullet points
-  cleaned = cleaned.replace(/^\d+\.\s+/gm, '') // Remove numbered lists
-
-  // 8. Ensure proper sentence structure - fix common issues
-  cleaned = cleaned.replace(/,\s*,/g, ',') // Remove double commas
-  cleaned = cleaned.replace(/\s+\./g, '.') // Fix space before period
-  cleaned = cleaned.replace(/\.\s*\./g, '.') // Remove double periods
-
-  // 9. Final trim
+  // 4. Remove empty lines
+  cleaned = cleaned.replace(/\n\n+/g, '\n\n')
+  
+  // 5. Trim
   cleaned = cleaned.trim()
 
   return cleaned
@@ -666,202 +608,27 @@ function buildBrandScenePrompt(params: {
   brandContext?: { name?: string; aesthetic?: any; visuals?: any } | null
   platformFormat?: '1:1' | '4:5' | '9:16' | '16:9'
 }): string {
-  const { userRequest, inputImages, platformFormat, brandContext } = params
+  const { userRequest, inputImages } = params
   
-  // CRITICAL: Check if userRequest is already a detailed prompt from Maya (concept cards)
-  // Maya's prompts contain specific markers like:
-  // - Character consistency instructions ("maintaining exactly the characteristics")
-  // - Detailed outfit descriptions with materials/fabrics
-  // - Camera specs (lens, aperture, professional photography)
-  // - Specific lighting descriptions
-  // - Brand mentions ("from Alo", "Alo brand outfit")
-  // - Text overlay instructions
-  // - Long, detailed descriptions (typically 150+ words)
-  // - NOT the generic "Create a natural lifestyle brand scene" pattern
-  const isGenericPrompt = userRequest.trim().startsWith('Create a natural lifestyle brand scene')
-  const isMayaDetailedPrompt = !isGenericPrompt && (
-    // Character consistency markers (Maya always includes this for Studio Pro)
-    userRequest.includes('maintaining exactly the characteristics') ||
-    userRequest.includes('maintaining exactly the characteristics of the') ||
-    userRequest.includes('without copying the photo') ||
-    // Camera specs (Maya includes specific technical details)
-    (userRequest.includes('85mm lens') || userRequest.includes('50mm lens') || userRequest.includes('35mm lens')) ||
-    (userRequest.includes('professional photography') && userRequest.includes('lens')) ||
-    (userRequest.includes('f/') && (userRequest.includes('lens') || userRequest.includes('aperture'))) ||
-    // Brand mentions (Maya includes brand context)
-    (userRequest.includes('from ') && (userRequest.includes('brand') || userRequest.includes('Alo') || userRequest.includes('Chanel'))) ||
-    // Text overlay markers
-    userRequest.includes('**TEXT OVERLAY:**') ||
-    userRequest.includes('**Composition:**') ||
-    userRequest.includes('Font size:') ||
-    userRequest.includes('Text placement:') ||
-    // Detailed outfit descriptions (Maya includes materials/fabrics)
-    (userRequest.includes('wearing') && (userRequest.includes('leather') || userRequest.includes('cashmere') || userRequest.includes('silk') || userRequest.includes('wool'))) ||
-    // Long, detailed prompts (Maya's prompts are typically 150+ words)
-    (userRequest.length > 200 && userRequest.includes('Vertical') && userRequest.includes('format')) ||
-    // Studio Pro attachment reference format
-    (userRequest.includes('Woman, maintaining') && userRequest.length > 150) ||
-    // If prompt is long (>150 chars) and doesn't match generic pattern, assume it's Maya's
-    (userRequest.length > 150 && !isGenericPrompt)
-  )
+  // Maya already created the perfect prompt in concept generation
+  // We just need to:
+  // 1. Remove any ** formatting that might have slipped through
+  // 2. Add multi-image instruction if needed
   
-  // Log detection for debugging
-  console.log('[PROMPT-BUILDER] Checking if prompt is Maya\'s:', {
-    isGenericPrompt,
-    isMayaDetailedPrompt,
-    promptLength: userRequest.length,
-    promptStart: userRequest.substring(0, 100),
-    hasMaintaining: userRequest.includes('maintaining exactly the characteristics'),
-    hasLens: userRequest.includes('lens'),
-    hasBrand: userRequest.includes('from ') && userRequest.includes('brand'),
-  })
+  let prompt = userRequest
   
-  if (isMayaDetailedPrompt) {
-    // Maya has already created a detailed, specific prompt - clean it before using
-    // This preserves all the text overlay instructions, character details, composition specs, etc.
-    // but removes formatting and unwanted terms
-    console.log('[PROMPT-BUILDER] ✅ Detected Maya detailed prompt - using Maya\'s prompt (cleaned)')
-    
-    // Clean the prompt to remove headlines and formatting
-    let cleanedPrompt = cleanStudioProPrompt(userRequest, userRequest)
-    
-    // Add brand context as guidance if detected (not replacement, just context)
-    if (brandContext?.name) {
-      const brandGuidance = []
-      brandGuidance.push(`Brand context: ${brandContext.name}`)
-      if (brandContext.aesthetic) {
-        brandGuidance.push(`Brand aesthetic: ${JSON.stringify(brandContext.aesthetic)}`)
-      }
-      if (brandContext.visuals?.commonElements) {
-        brandGuidance.push(`Brand elements to consider: ${brandContext.visuals.commonElements.join(', ')}`)
-      }
-      if (brandGuidance.length > 0) {
-        cleanedPrompt = `${cleanedPrompt}\n\nBrand guidance (for reference only, adapt to user's request): ${brandGuidance.join('. ')}`
-      }
-    }
-    
-    // Only add multi-image instruction if there are style references mixed with selfies
-    // When all images are selfies of the user, they should ALL be used for identity preservation
-    const hasStyleReferences = inputImages.baseImages.some(img => img.type === 'reference-photo')
-    const hasUserPhotos = inputImages.baseImages.some(img => img.type === 'user-photo')
-    
-    if (inputImages.baseImages.length > 1 && hasStyleReferences && hasUserPhotos) {
-      // Mixed: user photos + style references - need guidance
-      cleanedPrompt = `${cleanedPrompt}\n\nUse the user photos (type: user-photo) to preserve the person's face and identity. Use reference photos (type: reference-photo) only as style/reference.`
-    }
-    // If all images are selfies (user-photo), no guidance needed - they're all for identity preservation
-    // If all images are style references, no guidance needed - no identity to preserve
-    
-    return cleanedPrompt
+  // Light cleaning - remove formatting only
+  prompt = prompt.replace(/\*\*/g, '') // Remove ** bold
+  prompt = prompt.replace(/^Note:/gm, '') // Remove "Note:" lines
+  prompt = prompt.replace(/^CRITICAL:/gm, '') // Remove "CRITICAL:" lines
+  prompt = prompt.trim()
+  
+  // Add multi-image instruction if we have multiple base images
+  if (inputImages.baseImages.length > 1) {
+    prompt = `${prompt}\n\nUse the first base image to preserve the person's face and identity.`
   }
   
-  console.log('[PROMPT-BUILDER] ⚠️ Not detected as Maya prompt - building generic prompt')
-  
-  // Fallback: Build generic prompt for workbench-style requests
-  const products = inputImages.productImages || []
-  const productLine = products.length
-    ? `Include the product(s): ${products
-        .map((p) => `${p.brandName ? `${p.brandName} ` : ''}${p.label}`)
-        .join(', ')}.`
-    : `No product is required unless the reference images include one.`
-
-  // 🔴 CRITICAL: Build attachment reference matching Maya's style
-  let attachmentReference = ''
-  if (inputImages.baseImages.length > 0) {
-    const selfieCount = inputImages.baseImages.length
-    if (selfieCount === 1) {
-      attachmentReference = `Woman, maintaining exactly the characteristics of the woman in image 1 (face, body, skin tone, hair and visual identity), without copying the photo.`
-    } else {
-      const selfieNumbers = Array.from({ length: selfieCount }, (_, i) => i + 1).join(', ')
-      attachmentReference = `Woman, maintaining exactly the characteristics of the woman in image ${selfieNumbers} (face, body, skin tone, hair and visual identity), without copying the photo.`
-    }
-  } else {
-    attachmentReference = `Woman, maintaining exactly the characteristics of the woman in the image (face, body, skin tone, hair and visual identity), without copying the photo.`
-  }
-
-  const scene = pickSetting(userRequest)
-  const mood = pickMood(userRequest)
-  const lighting = pickLighting(scene, userRequest)
-  
-  // Extract outfit from userRequest if present
-  const outfitMatch = userRequest.match(/\b(wearing|dressed in|outfit|in)\s+([^,\.]+(?:with|and|\+|,)\s*[^,\.]*){0,3}/i)
-  const outfitDescription = outfitMatch 
-    ? outfitMatch[0].replace(/\b(wearing|dressed in|outfit|in)\s+/i, '').trim()
-    : scene === 'modern interior' ? 'elegant outfit' : scene === 'outdoor' ? 'casual outfit' : 'stylish outfit'
-  
-  // Extract pose from userRequest if present
-  const poseMatch = userRequest.match(/\b(standing|sitting|walking|holding|leaning|posing|lounging)\s+[^,\.]*(?:with|and|\+)?[^,\.]*/i)
-  const poseDescription = poseMatch ? poseMatch[0].trim() : 'standing confidently'
-  
-  // Build location phrase
-  const locationPhrase = scene === 'modern interior' 
-    ? 'in a modern interior setting'
-    : scene === 'living room'
-      ? 'in a living room'
-      : `in ${scene}`
-  
-  // Build natural language matching Maya's style
-  const naturalDesc = `Wearing ${outfitDescription}, ${poseDescription}, ${locationPhrase}, ${lighting}.`
-  const productText = products.length > 0 ? ' Product naturally integrated into scene.' : ''
-
-  // Only add multi-image guidance if there are style references mixed with user photos
-  // When all images are selfies (user-photo), they all preserve identity - no guidance needed
-  const hasStyleReferences = inputImages.baseImages.some(img => img.type === 'reference-photo')
-  const hasUserPhotos = inputImages.baseImages.some(img => img.type === 'user-photo')
-  const allAreUserPhotos = inputImages.baseImages.length > 0 && inputImages.baseImages.every(img => img.type === 'user-photo' || !img.type)
-  
-  let multiImageNote = ''
-  if (inputImages.baseImages.length === 0) {
-    multiImageNote = ''
-  } else if (inputImages.baseImages.length === 1) {
-    // Single image - simple guidance
-    if (inputImages.baseImages[0].type === 'user-photo' || !inputImages.baseImages[0].type) {
-      multiImageNote = `Use the base image to preserve the person's face and identity.`
-    }
-    // If it's a reference photo, no guidance needed
-  } else if (hasStyleReferences && hasUserPhotos) {
-    // Mixed: user photos + style references - need guidance
-    multiImageNote = `Use the user photos to preserve the person's face and identity. Use reference photos only as style/reference inputs. Keep the person consistent.`
-  } else if (allAreUserPhotos) {
-    // All images are selfies - no guidance needed, they all preserve identity
-    multiImageNote = ''
-  }
-  // If all are style references, no guidance needed
-
-  // Add brand context as guidance if detected (not replacement, just context)
-  let brandGuidance = ''
-  if (brandContext?.name) {
-    const guidanceParts = []
-    guidanceParts.push(`Brand: ${brandContext.name}`)
-    if (brandContext.aesthetic) {
-      guidanceParts.push(`Aesthetic: ${JSON.stringify(brandContext.aesthetic)}`)
-    }
-    if (brandContext.visuals?.commonElements) {
-      guidanceParts.push(`Consider: ${brandContext.visuals.commonElements.join(', ')}`)
-    }
-    if (brandContext.visuals?.avoid) {
-      guidanceParts.push(`Avoid: ${brandContext.visuals.avoid.join(', ')}`)
-    }
-    brandGuidance = `\n\nBrand context (for reference, adapt to user's request): ${guidanceParts.join('. ')}`
-  }
-
-  return `
-Create a natural lifestyle brand scene for social media (${platformFormat || '4:5'}).
-Scene: ${scene}. Mood: ${mood}. Lighting: ${lighting}.
-
-${productLine}
-${multiImageNote}${brandGuidance}
-
-Composition requirements:
-- The person is the primary subject.
-- Product placement feels organic (not staged).
-- Keep it believable: realistic shadows, scale, and contact points.
-- iPhone-like authenticity: candid framing, slight imperfection, not over-polished.
-
-Avoid:
-- "AI keywords" like masterpiece/8K.
-- Overly commercial "ad" look.
-`.trim()
+  return prompt
 }
 
 function buildUgcProductPrompt(params: {

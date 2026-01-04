@@ -183,7 +183,7 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
   const actions = useFeedActions(feedId, posts, feedData, mutate)
   
   // Calculate ready posts for confetti
-  const readyPosts = postStatuses.filter(p => p.isComplete).length
+  const readyPosts = postStatuses.filter((p: any) => p.isComplete).length
   const { showConfetti } = useFeedConfetti(readyPosts)
 
   // Log post status for debugging (optional - can be removed in production)
@@ -207,7 +207,7 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
     }
   }, [feedData])
 
-  const generatingPosts = postStatuses.filter(p => p.isGenerating)
+  const generatingPosts = postStatuses.filter((p: any) => p.isGenerating)
 
   // Handle error responses
   if (feedData?.error) {
@@ -355,7 +355,7 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
   
   // For manual feeds, show grid even if not complete (allow adding images)
   // For Maya feeds, show loading overlay while actively generating
-  const hasGeneratingPosts = postStatuses.some(p => p.isGenerating)
+  const hasGeneratingPosts = postStatuses.some((p: any) => p.isGenerating)
   const isMayaProcessing = feedData?.feed?.status === 'processing' || 
                           feedData?.feed?.status === 'queueing' ||
                           feedData?.feed?.status === 'generating'

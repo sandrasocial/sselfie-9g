@@ -39,6 +39,8 @@ import INFLUENCER_POSING_KNOWLEDGE from "@/lib/maya/influencer-posing-knowledge"
 import INSTAGRAM_LOCATION_INTELLIGENCE from "@/lib/maya/instagram-location-intelligence"
 import { getLuxuryLifestyleSettings } from "@/lib/maya/luxury-lifestyle-settings"
 import { getNanoBananaPromptingPrinciples } from "@/lib/maya/nano-banana-prompt-builder"
+import { getNanoBananaPerfectExamples } from "@/lib/maya/nano-banana-examples"
+import { validateNanoBananaPrompt } from "@/lib/maya/nano-banana-validator"
 import { getConceptPrompt } from "@/lib/maya/concept-templates"
 import {
   shouldIncludeSkinTexture,
@@ -202,7 +204,7 @@ function mapCategoryForBrandLibrary(mappedCategory: string | null, userRequest?:
   if (categoryLower === 'travel-airport' || categoryLower.includes('travel') || categoryLower === 'airport') {
     return 'travel'
   }
-  if (categoryLower === 'casual-lifestyle') {
+  if (categoryLower === 'casual-lifestyle') { {
     // For casual-lifestyle, infer from user request context
     if (/coffee|cafe|coffeeshop/i.test(requestLower)) {
       return 'coffee-run'
@@ -1694,24 +1696,26 @@ ${
 
 ${getNanoBananaPromptingPrinciples()}
 
-**For Nano Banana Pro:**
-- No trigger words (Nano Banana doesn't use LoRA trigger words)
-- Natural language descriptions (50-80 words optimal)
-- Focus on scene composition, mood, and visual storytelling
-- Include brand context and user preferences naturally
-- Professional quality descriptions (not iPhone/cellphone photo style)
-- Rich, detailed scene descriptions with lighting, environment, and mood
+**YOUR CRAFTED NANO BANANA PRO PROMPT:**
 
-${
-  templateExamples.length > 0
-    ? `
-**Optional Template Examples:**
-- You have ${templateExamples.length} template examples above (if provided) - use these as optional inspiration
-- The user's request is your primary guide - adapt examples to match user intent
-- Be creative and don't feel constrained by examples if the user wants something different
+You MUST generate prompts following the EXACT structure shown in these perfect examples.
+
+${getNanoBananaPerfectExamples()}
+
+**CRITICAL RULES:**
+1. ALWAYS start with: "maintaining exactly the same physical characteristics of the woman in the attached image..."
+2. Describe outfit with EXTREME detail: specific brands, materials, textures, how garments fall/fit
+3. Describe hair with PRECISION: part type, texture, shine level, exact styling method
+4. List ALL accessories: eyewear, jewelry (metals, styles), bags with specific details
+5. Specify expression AND pose: facial expression, head position, lip/mouth details, attitude
+6. Include technical lighting: light source, angle, shadows, how it affects skin/materials
+7. End with aesthetic description: luxury level + brand identity + attitude/energy + style category
+8. Length: 150-200 words
+9. Format: Natural flowing description - NO bullet points, NO ** sections, NO "Note:" additions
+10. VARY outfits across all ${count} concepts - each should have DIFFERENT outfit/styling
+
+**GENERATE ${count} PROMPTS NOW - each matching the structure above but with varied outfits/scenes.**
 `
-    : ""
-}`
     : `=== YOUR FLUX PROMPTING MASTERY FOR CLASSIC MODE ===
 
 🔴 CRITICAL: Classic Mode = SHORT, NATURAL LANGUAGE PROMPTS (30-60 words)
@@ -2803,6 +2807,19 @@ Same quality/luxury/styling as professional concepts, but with:
           console.warn(`[v0] Concept ${i + 1} missing prompt, using description fallback`)
           // Simple fallback only if Maya didn't generate a prompt
           concept.prompt = `${triggerWord || ''}, ${concept.description || ''}`.trim()
+        }
+        
+        // Validate Nano Banana prompts (Pro Mode only)
+        if (studioProMode && concept.prompt) {
+          const validation = validateNanoBananaPrompt(concept.prompt)
+          
+          if (!validation.isValid) {
+            console.warn(`[v0] [VALIDATION] Invalid prompt for concept "${concept.title}":`, validation.errors)
+          }
+          
+          if (validation.warnings.length > 0) {
+            console.log(`[v0] [VALIDATION] Warnings for concept "${concept.title}":`, validation.warnings)
+          }
         }
       })
       
