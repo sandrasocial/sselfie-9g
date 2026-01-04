@@ -100,3 +100,4 @@ Simplify feed generation to match concept cards pattern: Maya generates prompts 
   b) Create new card in chat with image preview (like FeedCaptionCard but with image)
 
 
+
