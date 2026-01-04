@@ -595,11 +595,8 @@ function validateProductionPrompt(prompt: string): { valid: boolean; warnings: s
     warnings.push('Missing lighting description')
   }
   
-  // Check for brands (at least one) - expanded list to include all top brands
-  const brandPattern = /Alo Yoga|Lululemon|Adidas|Levi's|Nike|New Balance|Bottega|Cartier|UGG|The Row|Chanel|Hermès|Common Projects|New Era|Ray-Ban|Agolde|Zara|COS|Everlane|Reformation|Toteme|Skims|Khy/i
-  if (!brandPattern.test(prompt)) {
-    warnings.push('Missing brand names')
-  }
+  // Brand names are optional - Maya chooses brands based on context and aesthetic
+  // No validation needed - let Maya use her intelligence to select appropriate brands
   
   // Check for resolution/quality
   if (!/4K|8K|hyper-realistic|hyper realistic/.test(prompt)) {
@@ -1595,7 +1592,7 @@ Example: If you choose a cream cashmere sweater in concept 1, use that EXACT swe
 - Create DIFFERENT locations and settings
 - Vary poses, angles, lighting, and moods
 - Think: "diverse portfolio of looks"
-Example: Concept 1 might be Alo athleisure at yoga studio, concept 2 might be The Row luxury at rooftop, etc.`}
+Example: Concept 1 might be athletic wear at yoga studio, concept 2 might be luxury pieces at rooftop, etc.`}
 
 **🔴🔴🔴 CRITICAL: OUTFIT VARIATION RULE - DEFAULT BEHAVIOR (ONLY WHEN NOT USING GUIDE PROMPT):**
 - **This rule ONLY applies when there is NO guide prompt**
@@ -1761,7 +1758,7 @@ ${getNanoBananaPerfectExamples()}
 - And so on for ALL ${count} concepts
 
 **YOU MUST VARY EVERYTHING:**
-- Outfits: Different brands (don't repeat The Row/Alo/Chanel - mix them up), different colors, different styles, different materials
+- Outfits: Different brands (mix them up - don't repeat the same brand), different colors, different styles, different materials
 - Hair styling: Different part, different texture, different styling method
 - Locations/scenes: Different settings (don't repeat minimalist apartment - vary between street, studio, outdoor, etc.)
 - Lighting styles: Different light sources, different times of day, different moods
@@ -1769,7 +1766,7 @@ ${getNanoBananaPerfectExamples()}
 - Aesthetic vibes: Different luxury levels, different brand identities, different attitudes
 
 **DO NOT REPEAT:**
-- Same brand across concepts (if Concept 1 uses The Row, Concept 2 MUST use a different brand)
+- Same brand across concepts (if Concept 1 uses a specific brand, Concept 2 MUST use a different brand)
 - Same location/scene across concepts (if Concept 1 is minimalist apartment, Concept 2 MUST be different)
 - Same outfit style across concepts (if Concept 1 is quiet luxury, Concept 2 MUST be different aesthetic)
 - Same hair styling across concepts

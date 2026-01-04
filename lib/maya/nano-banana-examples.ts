@@ -24,7 +24,7 @@ Aesthetic of bold luxury, logo-loaded and attitude-driven, conveying absolute co
 
 ---
 
-## PERFECT EXAMPLE 2 - QUIET LUXURY (The Row-style)
+## PERFECT EXAMPLE 2 - QUIET LUXURY
 
 Editorial fashion portrait, Modern minimalist style, maintaining exactly the same physical characteristics of the woman in the attached image (face, body, skin tone, hair, and visual identity), without modifications.
 
