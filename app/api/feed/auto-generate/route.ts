@@ -58,60 +58,35 @@ export async function POST(req: NextRequest) {
 
     console.log("[v0] Photoshoot session created with base seed:", session.baseSeed)
 
-    const existingFeedResult = await sql`
-      SELECT id FROM feed_layouts
-      WHERE user_id = ${user.id}
-      ORDER BY created_at DESC
-      LIMIT 1
+    // ALWAYS create a NEW feed - never reuse existing feeds
+    // This ensures users can have multiple feeds and don't lose their work
+    const newFeedResult = await sql`
+      INSERT INTO feed_layouts (
+        user_id, 
+        brand_name, 
+        username, 
+        description,
+        photoshoot_base_seed,
+        photoshoot_base_outfit,
+        photoshoot_base_location,
+        photoshoot_enabled,
+        created_by
+      )
+      VALUES (
+        ${user.id},
+        ${brandProfile.name || "Personal Brand"},
+        ${user.name?.toLowerCase().replace(/\s+/g, "") || "yourbrand"},
+        ${brandProfile.transformation_story || "Your brand story"},
+        ${session.baseSeed},
+        ${session.baseOutfit},
+        ${session.baseLocation},
+        true,
+        'maya'
+      )
+      RETURNING id
     `
-
-    let feedId: number
-
-    if (existingFeedResult.length > 0) {
-      feedId = existingFeedResult[0].id
-      console.log("[v0] Using existing feed layout:", feedId)
-      
-      await sql`
-        UPDATE feed_layouts
-        SET 
-          photoshoot_base_seed = ${session.baseSeed},
-          photoshoot_base_outfit = ${session.baseOutfit},
-          photoshoot_base_location = ${session.baseLocation},
-          photoshoot_enabled = true
-        WHERE id = ${feedId}
-      `
-    } else {
-      const newFeedResult = await sql`
-        INSERT INTO feed_layouts (
-          user_id, 
-          brand_name, 
-          username, 
-          description,
-          photoshoot_base_seed,
-          photoshoot_base_outfit,
-          photoshoot_base_location,
-          photoshoot_enabled
-        )
-        VALUES (
-          ${user.id},
-          ${brandProfile.name || "Personal Brand"},
-          ${user.name?.toLowerCase().replace(/\s+/g, "") || "yourbrand"},
-          ${brandProfile.transformation_story || "Your brand story"},
-          ${session.baseSeed},
-          ${session.baseOutfit},
-          ${session.baseLocation},
-          true
-        )
-        RETURNING id
-      `
-      feedId = newFeedResult[0].id
-      console.log("[v0] Created new feed layout with photoshoot mode:", feedId)
-    }
-
-    await sql`
-      DELETE FROM feed_posts
-      WHERE feed_layout_id = ${feedId}
-    `
+    const feedId = newFeedResult[0].id
+    console.log("[v0] Created NEW feed layout with photoshoot mode:", feedId)
 
     const [model] = await sql`
       SELECT trigger_word FROM user_models

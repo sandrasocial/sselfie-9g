@@ -47,8 +47,59 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
     }
   }, [showBioModal, feedData?.bio?.bio_text])
 
-  const handleWriteBio = () => {
+  const handleWriteBio = async () => {
+    if (!feedId) return
+    
+    setIsSavingBio(true)
     setShowBioModal(true)
+    
+    try {
+      // Generate bio using AI
+      const response = await fetch(`/api/feed/${feedId}/generate-bio`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Failed to generate bio' }))
+        throw new Error(errorData.error || 'Failed to generate bio')
+      }
+
+      const data = await response.json()
+      
+      if (data.bio) {
+        setBioText(data.bio)
+        await mutate() // Refresh feed data
+        toast({
+          title: "Bio generated",
+          description: "Your AI-generated bio is ready. You can edit it if needed.",
+        })
+      } else {
+        throw new Error('No bio generated')
+      }
+    } catch (error) {
+      console.error("[v0] Error generating bio:", error)
+      const errorMessage = error instanceof Error ? error.message : "Failed to generate bio. Please try again."
+      
+      // Check if it's a brand profile error
+      if (errorMessage.includes("brand profile")) {
+        toast({
+          title: "Brand Profile Required",
+          description: "Please complete your personal brand profile first to generate a bio.",
+          variant: "destructive",
+        })
+        setShowBioModal(false)
+      } else {
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive",
+        })
+      }
+    } finally {
+      setIsSavingBio(false)
+    }
   }
 
   const handleSaveBio = async () => {
@@ -85,59 +136,9 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
     }
   }
 
-  const handleCreateNewFeed = async () => {
-    try {
-      const response = await fetch('/api/feed/create-manual', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({}),
-      })
-
-      if (!response.ok) {
-        // Try to get error message from response
-        let errorMessage = 'Failed to create feed'
-        let errorDetails = ''
-        try {
-          const errorData = await response.json()
-          errorMessage = errorData.error || errorMessage
-          errorDetails = errorData.details || ''
-          // Combine error and details if both exist
-          if (errorDetails && errorMessage !== errorDetails) {
-            errorMessage = `${errorMessage}: ${errorDetails}`
-          } else if (errorDetails) {
-            errorMessage = errorDetails
-          }
-        } catch (e) {
-          // If response is not JSON, use status text
-          errorMessage = response.statusText || errorMessage
-        }
-        console.error("[v0] API error response:", {
-          status: response.status,
-          statusText: response.statusText,
-          errorMessage,
-        })
-        throw new Error(errorMessage)
-      }
-
-      const data = await response.json()
-      
-      if (!data.feedId) {
-        throw new Error('Feed created but no feed ID returned')
-      }
-      
-      // Navigate to the new feed
-      if (typeof window !== "undefined") {
-        window.location.href = `/feed-planner?feedId=${data.feedId}`
-      }
-    } catch (error) {
-      console.error("[v0] Error creating new feed:", error)
-      const errorMessage = error instanceof Error ? error.message : "Failed to create new feed. Please try again."
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      })
+  const handleFeedChange = (newFeedId: number) => {
+    if (typeof window !== "undefined") {
+      window.location.href = `/feed-planner?feedId=${newFeedId}`
     }
   }
 
@@ -404,10 +405,11 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
     <div className="w-full max-w-none md:max-w-[935px] mx-auto bg-white min-h-screen">
       <FeedHeader
         feedData={feedData}
+        currentFeedId={feedId}
         onBack={onBack}
         onProfileImageClick={() => setShowProfileGallery(true)}
         onWriteBio={handleWriteBio}
-        onCreateNewFeed={handleCreateNewFeed}
+        onFeedChange={handleFeedChange}
       />
       
       <FeedTabs
@@ -511,33 +513,48 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
 
       {/* Bio Editing Modal */}
       {showBioModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowBioModal(false)}>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => !isSavingBio && setShowBioModal(false)}>
           <div className="bg-white rounded-lg max-w-md w-full p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold text-stone-900">Write Bio</h2>
-            <textarea
-              value={bioText}
-              onChange={(e) => setBioText(e.target.value)}
-              placeholder="Write your Instagram bio here..."
-              className="w-full h-32 p-3 border border-stone-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-stone-900 text-sm"
-              maxLength={150}
-            />
-            <div className="text-xs text-stone-500 text-right">
-              {bioText.length}/150 characters
-            </div>
+            <h2 className="text-lg font-semibold text-stone-900">
+              {isSavingBio && !bioText ? "Generating Bio..." : "Edit Bio"}
+            </h2>
+            {isSavingBio && !bioText ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="w-6 h-6 border-2 border-stone-300 border-t-stone-900 rounded-full animate-spin" />
+                <span className="ml-3 text-sm text-stone-600">AI is creating your bio...</span>
+              </div>
+            ) : (
+              <>
+                <textarea
+                  value={bioText}
+                  onChange={(e) => setBioText(e.target.value)}
+                  placeholder="Your AI-generated bio will appear here..."
+                  className="w-full h-32 p-3 border border-stone-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-stone-900 text-sm"
+                  maxLength={150}
+                  disabled={isSavingBio}
+                />
+                <div className="text-xs text-stone-500 text-right">
+                  {bioText.length}/150 characters
+                </div>
+              </>
+            )}
             <div className="flex gap-2 justify-end">
               <button
                 onClick={() => setShowBioModal(false)}
-                className="px-4 py-2 text-sm text-stone-600 hover:text-stone-900 transition-colors"
+                disabled={isSavingBio}
+                className="px-4 py-2 text-sm text-stone-600 hover:text-stone-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>
-              <button
-                onClick={handleSaveBio}
-                disabled={isSavingBio || !bioText.trim()}
-                className="px-4 py-2 bg-stone-900 text-white text-sm font-semibold rounded-lg hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isSavingBio ? "Saving..." : "Save"}
-              </button>
+              {!isSavingBio && bioText && (
+                <button
+                  onClick={handleSaveBio}
+                  disabled={!bioText.trim()}
+                  className="px-4 py-2 bg-stone-900 text-white text-sm font-semibold rounded-lg hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Save
+                </button>
+              )}
             </div>
           </div>
         </div>

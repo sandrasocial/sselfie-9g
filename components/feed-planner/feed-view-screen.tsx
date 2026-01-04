@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import useSWR from "swr"
 import InstagramFeedView from "./instagram-feed-view"
@@ -59,14 +59,22 @@ export default function FeedViewScreen({ feedId: feedIdProp }: FeedViewScreenPro
   const feedExists = feedData?.exists !== false && (feedData?.feed || feedData?.posts)
 
   // Fetch feed list for selector (only if we have a feed)
-  const { data: feedListData } = useSWR(
+  const { data: feedListData, mutate: mutateFeedList } = useSWR(
     feedExists ? '/api/feed/list' : null,
     fetcher,
     {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
+      revalidateOnFocus: true, // Revalidate when tab becomes visible
+      revalidateOnReconnect: true, // Revalidate on reconnect
+      refreshInterval: 0, // Don't auto-poll, but allow manual refresh
     }
   )
+
+  // Revalidate feed list when feedId changes (e.g., after creating new feed)
+  useEffect(() => {
+    if (effectiveFeedId && mutateFeedList) {
+      mutateFeedList()
+    }
+  }, [effectiveFeedId, mutateFeedList])
 
   const feeds = feedListData?.feeds || []
   const hasMultipleFeeds = feeds.length > 1
@@ -101,6 +109,11 @@ export default function FeedViewScreen({ feedId: feedIdProp }: FeedViewScreenPro
       }
 
       const data = await response.json()
+      
+      // Invalidate feed list cache so selector appears immediately
+      if (mutateFeedList) {
+        await mutateFeedList()
+      }
       
       // Navigate to the new feed
       router.push(`/feed-planner?feedId=${data.feedId}`)
@@ -259,7 +272,7 @@ export default function FeedViewScreen({ feedId: feedIdProp }: FeedViewScreenPro
         </button>
         
         <div className="flex items-center gap-3 flex-1 justify-end">
-          {/* Feed Selector - only show if multiple feeds */}
+          {/* Feed Selector - show if multiple feeds exist */}
           {hasMultipleFeeds && (
             <div className="flex items-center gap-2">
               <span className="text-xs text-stone-500 uppercase tracking-wider hidden sm:inline">
@@ -284,22 +297,6 @@ export default function FeedViewScreen({ feedId: feedIdProp }: FeedViewScreenPro
               </div>
             </div>
           )}
-
-          {/* Create New Feed Button - show when feed exists */}
-          <button
-            onClick={handleCreateManualFeed}
-            disabled={isCreatingManual}
-            className="text-sm font-light text-stone-600 hover:text-stone-900 transition-colors px-3 py-1.5 border border-stone-300 rounded-lg hover:bg-stone-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap"
-          >
-            {isCreatingManual ? (
-              <>
-                <Loader2 size={14} className="animate-spin" />
-                Creating...
-              </>
-            ) : (
-              "+ Create New Feed"
-            )}
-          </button>
         </div>
       </div>
 

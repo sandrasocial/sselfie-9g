@@ -1,25 +1,43 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
-import { ChevronLeft, MoreHorizontal } from "lucide-react"
+import { ChevronLeft, MoreHorizontal, ChevronDown } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
+import useSWR from "swr"
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 interface FeedHeaderProps {
   feedData: any
+  currentFeedId: number
   onBack?: () => void
   onProfileImageClick: () => void
   onWriteBio: () => void
-  onCreateNewFeed: () => void
+  onFeedChange?: (feedId: number) => void
 }
 
 export default function FeedHeader({
   feedData,
+  currentFeedId,
   onBack,
   onProfileImageClick,
   onWriteBio,
-  onCreateNewFeed,
+  onFeedChange,
 }: FeedHeaderProps) {
+  // Fetch feed list for selector
+  const { data: feedListData } = useSWR(
+    currentFeedId ? '/api/feed/list' : null,
+    fetcher,
+    {
+      revalidateOnFocus: true, // Revalidate when tab becomes visible
+      revalidateOnReconnect: true, // Revalidate on reconnect
+      refreshInterval: 0, // Don't auto-poll, but allow manual refresh
+    }
+  )
+
+  const feeds = feedListData?.feeds || []
+  const hasMultipleFeeds = feeds.length > 1
 
   const hasProfileImage = !!feedData?.feed?.profile_image_url
   const hasBio = !!feedData?.bio?.bio_text
@@ -98,19 +116,46 @@ export default function FeedHeader({
               </div>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <button
                 onClick={onWriteBio}
                 className="flex-1 md:flex-none md:px-8 bg-stone-100 hover:bg-stone-200 text-stone-900 text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors"
               >
                 Write Bio
               </button>
+              {/* TODO: Implement highlights creation feature */}
               <button
-                onClick={onCreateNewFeed}
-                className="flex-1 md:flex-none md:px-8 bg-stone-100 hover:bg-stone-200 text-stone-900 text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors"
+                disabled
+                className="flex-1 md:flex-none md:px-8 bg-stone-100 text-stone-400 text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors cursor-not-allowed opacity-60"
+                title="Coming soon - Create Highlights feature"
               >
-                New Feed
+                Create Highlights
               </button>
+              {/* Feed Selector - show if multiple feeds */}
+              {hasMultipleFeeds && onFeedChange && (
+                <div className="flex items-center gap-2 w-full md:w-auto">
+                  <span className="text-xs text-stone-500 uppercase tracking-wider hidden sm:inline whitespace-nowrap">
+                    My Feeds:
+                  </span>
+                  <div className="relative flex-1 md:flex-none">
+                    <select
+                      value={currentFeedId || ''}
+                      onChange={(e) => onFeedChange(Number(e.target.value))}
+                      className="appearance-none bg-white border border-stone-300 rounded-lg px-4 py-1.5 pr-8 text-sm font-light text-stone-900 hover:border-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-900 focus:border-transparent transition-colors cursor-pointer w-full md:w-auto"
+                    >
+                      {feeds.map((feed: any) => (
+                        <option key={feed.id} value={feed.id}>
+                          {feed.title} {feed.image_count > 0 ? `(${feed.image_count}/9)` : ''}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown 
+                      size={16} 
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-500 pointer-events-none" 
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
