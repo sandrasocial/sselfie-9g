@@ -3,8 +3,7 @@
 import { X } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import FeedPostCard from "./feed-post-card"
-import { FeedPostGallerySelector } from "./feed-post-gallery-selector"
-import { FeedProfileGallerySelector } from "./feed-profile-gallery-selector"
+import { FeedGallerySelector } from "./feed-gallery-selector"
 
 interface FeedModalsProps {
   selectedPost: any | null
@@ -93,7 +92,8 @@ export default function FeedModals({
       )}
 
       {showGallery && feedData?.feed?.id && (
-        <FeedPostGallerySelector
+        <FeedGallerySelector
+          type="post"
           postId={showGallery}
           feedId={feedData.feed.id}
           onClose={async () => {
@@ -113,7 +113,8 @@ export default function FeedModals({
       )}
 
       {showProfileGallery && feedData?.feed?.id && (
-        <FeedProfileGallerySelector
+        <FeedGallerySelector
+          type="profile"
           feedId={feedData.feed.id}
           onClose={onCloseProfileGallery}
           onImageSelected={async () => {
