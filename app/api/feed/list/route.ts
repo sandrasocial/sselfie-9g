@@ -28,10 +28,11 @@ export async function GET(req: NextRequest) {
     const sql = getDb()
 
     // Get all feeds for user with post counts
+    // Note: Uses feed_layout_id (if feed_id exists, migration scripts handle the rename)
     const feeds = await sql`
       SELECT 
         fl.id,
-        fl.brand_name as title,
+        COALESCE(NULLIF(fl.brand_name, ''), NULLIF(fl.title, ''), NULLIF(fl.name, ''), 'Feed ' || fl.id::text) as title,
         fl.created_at,
         fl.created_by,
         fl.status,
@@ -40,7 +41,7 @@ export async function GET(req: NextRequest) {
       FROM feed_layouts fl
       LEFT JOIN feed_posts fp ON fl.id = fp.feed_layout_id
       WHERE fl.user_id = ${user.id}
-      GROUP BY fl.id, fl.brand_name, fl.created_at, fl.created_by, fl.status
+      GROUP BY fl.id, fl.brand_name, fl.title, fl.name, fl.created_at, fl.created_by, fl.status
       ORDER BY fl.created_at DESC
     ` as any[]
 

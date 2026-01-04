@@ -6,6 +6,8 @@ import { generateInstagramCaption } from "@/lib/feed-planner/caption-writer"
 
 const sql = neon(process.env.DATABASE_URL!)
 
+export const maxDuration = 300 // 5 minutes for generating 9 captions
+
 /**
  * Generate captions for all posts in a feed
  * Saves captions directly to database
@@ -143,8 +145,12 @@ export async function POST(
     const captionResults = []
     const previousCaptions: Array<{ position: number; caption: string }> = []
 
-    for (const post of posts) {
+    console.log(`[GENERATE-CAPTIONS] Starting caption generation for ${posts.length} posts`)
+
+    for (let i = 0; i < posts.length; i++) {
+      const post = posts[i]
       try {
+        console.log(`[GENERATE-CAPTIONS] Processing post ${post.position} (${i + 1}/${posts.length})`)
         const captionType = getCaptionType(post.position)
         const pillarInfo = getContentPillarForPost(post.position, post.content_pillar)
         

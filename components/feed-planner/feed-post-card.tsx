@@ -25,6 +25,7 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
   const [showFullCaption, setShowFullCaption] = useState(false)
   const [copiedCaption, setCopiedCaption] = useState(false)
   const [isEnhancing, setIsEnhancing] = useState(false)
+  const [isRegenerating, setIsRegenerating] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [editedCaption, setEditedCaption] = useState("")
   const [isSaving, setIsSaving] = useState(false)
