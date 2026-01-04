@@ -507,6 +507,17 @@ export default function FeedPreviewCard({
       console.error("[FeedPreviewCard] ❌ Error in handleGenerateImages:", error)
       setIsGenerating(false)
       setIsSaving(false)
+      
+      // User-friendly error message
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : "We couldn't generate your feed right now. Please try again."
+      
+      toast({
+        title: "Generation failed",
+        description: errorMessage,
+        variant: "destructive",
+      })
     }
   }
 
@@ -527,7 +538,19 @@ export default function FeedPreviewCard({
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
-        const errorMessage = errorData.error || errorData.details || 'Failed to generate feed images'
+        let errorMessage = errorData.message || errorData.error || errorData.details || 'Failed to generate feed images'
+        
+        // Provide user-friendly messages based on status code
+        if (response.status === 402) {
+          errorMessage = "You don't have enough credits. Please purchase more credits or upgrade your plan."
+        } else if (response.status === 401) {
+          errorMessage = "Your session has expired. Please refresh the page and try again."
+        } else if (response.status === 400) {
+          errorMessage = errorData.message || "Your feed request is invalid. Please check your feed and try again."
+        } else if (response.status === 500) {
+          errorMessage = "We're experiencing technical difficulties. Please try again in a moment."
+        }
+        
         console.error("[FeedPreviewCard] ❌ API Error:", {
           status: response.status,
           error: errorMessage,

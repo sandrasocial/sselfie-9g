@@ -382,6 +382,8 @@ export async function POST(request: NextRequest) {
     // Insert posts with placeholder prompts/captions (fast - allows immediate return)
     console.log(`[FEED-FROM-STRATEGY] Creating ${strategy.posts.length} posts with placeholder data...`)
     
+    const failedPosts: Array<{ position: number; error: string }> = []
+    
     for (const post of strategy.posts) {
       try {
         // Determine generation mode (needed for post creation)
@@ -504,15 +506,13 @@ export async function POST(request: NextRequest) {
           }
         }
       } catch (error) {
-        console.error(`[FEED-FROM-STRATEGY] ❌ Error creating post ${post.position}:`, error)
-        // Log full error details for debugging
-        if (error instanceof Error) {
-          console.error(`[FEED-FROM-STRATEGY] Error details:`, {
-            message: error.message,
-            stack: error.stack,
-          })
-        }
-        // Continue with next post
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        console.error(`[FEED-FROM-STRATEGY] ❌ Error creating post ${post.position}:`, errorMessage)
+        failedPosts.push({
+          position: post.position,
+          error: errorMessage,
+        })
+        // Continue with next post - we'll report failures at the end
       }
     }
 
@@ -532,15 +532,30 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           feedLayoutId: feedLayout.id,
-          error: "Failed to create posts",
-          message: "All posts failed to insert. Please check server logs for details.",
+          error: "Failed to create feed posts",
+          message: "We couldn't create any posts for your feed. This might be a temporary issue. Please try again, or contact support if the problem continues.",
+          failedPosts: failedPosts,
+          canRetry: true,
         },
         { status: 500 }
       )
     }
     
     if (actualPostCount < strategy.posts.length) {
-      console.warn(`[FEED-FROM-STRATEGY] ⚠️ Only ${actualPostCount} out of ${strategy.posts.length} posts were created`)
+      const failedCount = strategy.posts.length - actualPostCount
+      console.warn(`[FEED-FROM-STRATEGY] ⚠️ Only ${actualPostCount} out of ${strategy.posts.length} posts were created (${failedCount} failed)`)
+      
+      // Return partial success with warning
+      return NextResponse.json({
+        success: true,
+        feedLayoutId: feedLayout.id,
+        message: `Feed created with ${actualPostCount} of ${strategy.posts.length} posts. ${failedCount} post(s) failed to create.`,
+        status: "partial",
+        createdCount: actualPostCount,
+        expectedCount: strategy.posts.length,
+        failedPosts: failedPosts,
+        warning: `${failedCount} post(s) could not be created. You can regenerate them later.`,
+      })
     }
     
     // Check if prompts are already in the strategy JSON (Maya-generated, like concept cards)
@@ -570,10 +585,37 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error("[FEED-FROM-STRATEGY] Error:", error)
+    
+    // Provide user-friendly error messages based on error type
+    let errorMessage = "We couldn't create your feed right now."
+    let userMessage = "Something went wrong while creating your feed. Please try again in a moment."
+    
+    if (error instanceof Error) {
+      // Database connection errors
+      if (error.message.includes("connection") || error.message.includes("timeout")) {
+        userMessage = "We're having trouble connecting to the database. Please try again in a moment."
+      }
+      // Validation errors
+      else if (error.message.includes("Invalid") || error.message.includes("required")) {
+        userMessage = "Your feed request is missing some information. Please check your input and try again."
+      }
+      // Credit errors (should be caught earlier, but just in case)
+      else if (error.message.includes("credit") || error.message.includes("insufficient")) {
+        userMessage = "You don't have enough credits to create this feed. Please purchase more credits or upgrade your plan."
+      }
+      // Generic error
+      else {
+        userMessage = "We encountered an unexpected error. Please try again, or contact support if the problem continues."
+      }
+      
+      errorMessage = error.message
+    }
+    
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : "Failed to create feed",
-        details: error instanceof Error ? error.stack : undefined,
+        error: errorMessage,
+        message: userMessage,
+        canRetry: true,
       },
       { status: 500 }
     )
